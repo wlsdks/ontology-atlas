@@ -31,7 +31,7 @@ let _authEmulatorConnected = false;
  * 런타임 safeguard — 환경변수가 localhost emulator 를 가리키지만 실행 중인
  * 브라우저가 프로덕션 도메인이면 emulator 연결을 무시한다. `.env.local` 의
  * emulator 설정이 `pnpm build` 에 baked 된 채 프로덕션 배포된 과거 회귀
- * (post-loop iter 4 smoke 발견) 같은 케이스를 마지막에서 막는다.
+ * (smoke 발견) 같은 케이스를 마지막에서 막는다.
  *
  * 원칙: 개발자가 `.env.development.local` 로 분리해 빌드에서 제외하는 게
  * 정도지만, 그 실수가 반복돼도 프로덕션 사용자가 localhost 에 붙지 않도록

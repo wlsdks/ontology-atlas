@@ -29,7 +29,7 @@ describe("resolveSubscribeUpdate", () => {
   const fallback = [iam, reactor];
 
   it("returns next=null when subscribe list does not contain slug", () => {
-    // iter 16 regression: 비로그인·데모 세션 으로 인해 구독한 스코프에 iam
+    // regression: 비로그인·데모 세션 으로 인해 구독한 스코프에 iam
     // 이 없으면 next 가 null 이 되어 호출측이 setProject 를 건너뛴다.
     const result = resolveSubscribeUpdate(
       [makeProject("other", "Other")],

@@ -4,7 +4,7 @@ import type { KnowledgeDocument } from '@/entities/knowledge-document/model';
 import type { Project } from '@/entities/project/model';
 import type { Status } from '@/entities/status/model';
 import type { WorkspaceProject } from '@/entities/workspace-project/model';
-import { generateAslanBlueprint } from './demo-blueprint';
+import { generateDemoBlueprint } from './demo-blueprint';
 
 // 엔티티 DEFAULT_STATUSES 의 순수 값 복제. shared 가 entities 의 runtime value 를
 // 참조하면 FSD 레이어가 역행하므로 여기서 동일 데이터를 정의한다. entity 쪽
@@ -75,7 +75,7 @@ const PLANNED_CATEGORY: Omit<Category, 'createdAt' | 'updatedAt'> = {
   borderStyle: 'dashed',
 };
 
-// (legacy DomainProfile / DOMAIN_PROFILES 제거 — ASLAN_BLUEPRINT 가 대체)
+// (legacy DomainProfile / DOMAIN_PROFILES 제거 — DEMO_BLUEPRINT 가 대체)
 
 const OWNERS = [
   '플랫폼팀',
@@ -124,7 +124,7 @@ function buildStatuses(): Status[] {
   }));
 }
 
-// (legacy generateProjectSeeds 제거 — ASLAN_BLUEPRINT 기반으로 buildProjects 가
+// (legacy generateProjectSeeds 제거 — DEMO_BLUEPRINT 기반으로 buildProjects 가
 // 직접 청사진 → seed list 변환을 수행)
 
 function weightedPickStatus(rng: () => number, statuses: Status[], isHub: boolean): Status {
@@ -211,7 +211,7 @@ function buildLinks(rng: () => number, slug: string) {
 // 만든다. 4 컨테이너 × 약 5 hubs × 5–12 nodes ≈ 200 프로젝트. 이름·설명은
 // 실제 우리가 만든 / 만들 시스템 이름. cross-container 의존도 명시.
 //
-// 새 hub/node 를 추가하려면 ASLAN_BLUEPRINT 만 수정하면 됨. 분배는 자동.
+// 새 hub/node 를 추가하려면 DEMO_BLUEPRINT 만 수정하면 됨. 분배는 자동.
 
 interface BlueprintNode {
   slug: string;
@@ -238,10 +238,10 @@ interface BlueprintContainer {
   hubs: BlueprintHub[];
 }
 
-const ASLAN_BLUEPRINT: ReadonlyArray<BlueprintContainer> = generateAslanBlueprint();
+const DEMO_BLUEPRINT: ReadonlyArray<BlueprintContainer> = generateDemoBlueprint();
 
 const SLUG_TO_CONTAINER = new Map<string, string>();
-for (const container of ASLAN_BLUEPRINT) {
+for (const container of DEMO_BLUEPRINT) {
   for (const hub of container.hubs) {
     SLUG_TO_CONTAINER.set(hub.slug, container.id);
     for (const node of hub.nodes) {
@@ -271,7 +271,7 @@ function buildProjects(
     extraDeps: string[];
   }
   const seeds: FlatSeed[] = [];
-  for (const container of ASLAN_BLUEPRINT) {
+  for (const container of DEMO_BLUEPRINT) {
     for (const hub of container.hubs) {
       seeds.push({
         slug: hub.slug,
@@ -389,18 +389,18 @@ function buildProjects(
 }
 
 /**
- * 데모 컨테이너 — ASLAN_BLUEPRINT 에서 직접 도출. project.slug 가 어느
+ * 데모 컨테이너 — DEMO_BLUEPRINT 에서 직접 도출. project.slug 가 어느
  * 컨테이너에 속하는지는 hash 가 아니라 청사진 매핑(SLUG_TO_CONTAINER) 로
  * deterministic.
  */
 function pickContainerId(slug: string): string {
-  return SLUG_TO_CONTAINER.get(slug) ?? ASLAN_BLUEPRINT[0].id;
+  return SLUG_TO_CONTAINER.get(slug) ?? DEMO_BLUEPRINT[0].id;
 }
 
 function buildWorkspaceProjects(): WorkspaceProject[] {
   const createdAt = new Date(SEED_BASE);
   const updatedAt = new Date(NOW);
-  return ASLAN_BLUEPRINT.map((container) => ({
+  return DEMO_BLUEPRINT.map((container) => ({
     id: container.id,
     accountId: DEMO_ACCOUNT_ID,
     name: container.name,
@@ -638,7 +638,7 @@ export function getDemoContainerStats(
   if (containerStatsCache) return containerStatsCache;
 
   const stats = new Map<string, DemoContainerStats>();
-  for (const container of ASLAN_BLUEPRINT) {
+  for (const container of DEMO_BLUEPRINT) {
     let hubs = 0;
     let nodes = 0;
     for (const hub of container.hubs) {

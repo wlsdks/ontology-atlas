@@ -47,10 +47,10 @@ describe("demo dataset sanity", () => {
   });
 
   it("getDemoProjectsForContainer 가 분배된 프로젝트만 반환", () => {
-    const narniaProjects = getDemoProjectsForContainer("demo-workspace", "demo");
-    expect(narniaProjects.length).toBeGreaterThan(0);
+    const demoProjects = getDemoProjectsForContainer("demo-workspace", "demo");
+    expect(demoProjects.length).toBeGreaterThan(0);
     // demo 의 첫 hub 는 core 역할 (demo-blueprint HUB_ROLE_POOL 첫 roll).
-    expect(narniaProjects.some((p) => p.isHub)).toBe(true);
+    expect(demoProjects.some((p) => p.isHub)).toBe(true);
   });
 
   it("cross-container 의존이 1개 이상 존재 (예: demo → demo-knowledge)", () => {

@@ -135,7 +135,7 @@ export function LandingPage({ accountId, next }: Props) {
           hero 패턴 (Linear/Vercel/Cursor 참고). pointer-events 는 끊어
           클릭·드래그 불가, 시각적 자극만. 우측으로 치우쳐 좌측 카피와
           겹치지 않게. opacity·mask 로 주변과 부드럽게 섞이도록.
-          iter 10: opacity 0.6 → 0.78, mask alpha 강화 해 "배경" 이 아니라
+          opacity 0.6 → 0.78, mask alpha 강화 해 "배경" 이 아니라
           "제품 증거" 로 읽히게. 여전히 카피 가독성은 mask outer 로 보호. */}
       {isDesktop && (
         <div

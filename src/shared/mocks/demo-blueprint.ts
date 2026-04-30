@@ -106,7 +106,7 @@ function toSlugSuffix(role: string): string {
   return role.toLowerCase();
 }
 
-export function generateAslanBlueprint(): ReadonlyArray<BlueprintContainer> {
+export function generateDemoBlueprint(): ReadonlyArray<BlueprintContainer> {
   return CONTAINER_THEMES.map((theme, containerIndex) => {
     const rng = mulberry32(hashSeed(theme.id));
     const hubs: BlueprintHub[] = [];

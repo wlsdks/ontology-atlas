@@ -420,7 +420,7 @@ export function ProjectDetailPage({
 
   // 클라이언트에서 실시간 구독으로 최신 데이터 유지. subscribe 가 현재 slug
   // 를 못 찾은 경우 initialProject/fallback 을 null 로 덮지 않는 invariant 는
-  // resolveSubscribeUpdate 에 추출해 유닛 테스트로 회귀 방지 (iter 25).
+  // resolveSubscribeUpdate 에 추출해 유닛 테스트로 회귀 방지.
   useEffect(() => {
     if (!slug) return;
 

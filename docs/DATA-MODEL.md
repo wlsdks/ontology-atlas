@@ -777,10 +777,4 @@ redelivery 요청 상태도 같은 문서에 남긴다.
 
 ## 9. 변경 이력
 
-- 2026-04-12: 초기 작성 (공개 제품 기준)
-- 2026-04-17: knowledge subsystem v2용 private/public boundary, Storage 원문 계약, approved graph canonical store, trusted backend 계약 추가
-- 2026-04-17: evidence, approval/publish/review audit, projection lineage, retention 원칙 추가
-- 2026-04-23: sharedDocs (Docs Vault 임시 공개 링크) 추가
-- 2026-04-25: developerActivityEvents / developerActivityDeliveries 추가
-- 2026-04-27: knowledgeApprovedNodes/Edges 에 `source` / `manualAuthor` / `manualNote` 옵션 필드 추가 (manual editor v0 — Phase 1 데이터 모델). 기존 데이터 호환성 유지: legacy 는 `undefined` (UI 가 `extraction` 으로 처리)
-- 2026-04-28: ontologyTBoxVersions / ontologyTBoxState 컬렉션 추가 (TBox 진화 P1 Phase 1). knowledgeApprovedNodes/Edges 에 `tboxVersionId` 옵션 필드. fact 와 schema 시점 일치 추적. firestore.rules 에 `isAccountOwner(accountId)` helper 추가 — schema 변경은 owner 한정. spec: `docs/superpowers/specs/2026-04-28-ontology-tbox-evolution.md`
+`oh-my-ontology` 로 코드베이스가 새로 출발한 시점부터의 변경만 기록한다. 본격적인 changelog 는 첫 release 후 별도 운영.

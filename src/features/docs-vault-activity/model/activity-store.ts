@@ -66,7 +66,7 @@ export interface DeveloperActivityDelivery {
 
 declare global {
   interface Window {
-    aslanDocsVaultActivityIngest?: (
+    demoDocsVaultActivityIngest?: (
       input: DeveloperActivityInput,
     ) => DeveloperActivityEvent | null;
   }
@@ -148,13 +148,13 @@ export function subscribeDeveloperActivityEvents(
   window.addEventListener('storage', handleStorage);
   window.addEventListener(DEVELOPER_ACTIVITY_CHANGE_EVENT, onStoreChange);
   window.addEventListener(DEVELOPER_ACTIVITY_APPEND_EVENT, handleAppend);
-  window.aslanDocsVaultActivityIngest = appendDeveloperActivityEvent;
+  window.demoDocsVaultActivityIngest = appendDeveloperActivityEvent;
   return () => {
     window.removeEventListener('storage', handleStorage);
     window.removeEventListener(DEVELOPER_ACTIVITY_CHANGE_EVENT, onStoreChange);
     window.removeEventListener(DEVELOPER_ACTIVITY_APPEND_EVENT, handleAppend);
-    if (window.aslanDocsVaultActivityIngest === appendDeveloperActivityEvent) {
-      delete window.aslanDocsVaultActivityIngest;
+    if (window.demoDocsVaultActivityIngest === appendDeveloperActivityEvent) {
+      delete window.demoDocsVaultActivityIngest;
     }
   };
 }

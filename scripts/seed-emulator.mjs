@@ -5,7 +5,7 @@ import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import {
   SEED_ACCOUNT_MEMBERSHIPS,
   SEED_ACCOUNTS,
-  SEED_ASLAN_PROJECTS,
+  SEED_DEMO_PROJECTS,
   SEED_CATEGORIES,
   SEED_PROJECTS,
   SEED_SANDBOX_PROJECTS,
@@ -140,7 +140,7 @@ function buildNodeDoc({ slug, name, description, tags, position, hubIds, account
   };
 }
 
-async function seedAslanTree(accountId, tree) {
+async function seedDemoTree(accountId, tree) {
   const HUB_RING_RADIUS = 320;
   const NODE_RING_RADIUS = 140;
   let containerCount = 0;
@@ -222,9 +222,9 @@ await seedCollection('categories', SEED_CATEGORIES, 'id');
 await seedCollection('statuses', SEED_STATUSES, 'id');
 await seedCollection('projects', SEED_PROJECTS, 'slug', normalizeProject);
 await seedAccountProjects('demo-workspace', SEED_SANDBOX_PROJECTS);
-await seedAccountProjects('demo', SEED_ASLAN_PROJECTS);
-const aslanTreeStats = await seedAslanTree('demo', DEMO_TREE);
+await seedAccountProjects('demo', SEED_DEMO_PROJECTS);
+const demoTreeStats = await seedDemoTree('demo', DEMO_TREE);
 
 console.log(
-  `[seed-emulator] accounts=${SEED_ACCOUNTS.length} memberships=${SEED_ACCOUNT_MEMBERSHIPS.length} categories=${SEED_CATEGORIES.length} statuses=${SEED_STATUSES.length} projects=${SEED_PROJECTS.length} sandboxProjects=${SEED_SANDBOX_PROJECTS.length} aslanProjects=${SEED_ASLAN_PROJECTS.length} aslanContainers=${aslanTreeStats.containerCount} aslanHubs=${aslanTreeStats.hubCount} aslanNodes=${aslanTreeStats.nodeCount}`,
+  `[seed-emulator] accounts=${SEED_ACCOUNTS.length} memberships=${SEED_ACCOUNT_MEMBERSHIPS.length} categories=${SEED_CATEGORIES.length} statuses=${SEED_STATUSES.length} projects=${SEED_PROJECTS.length} sandboxProjects=${SEED_SANDBOX_PROJECTS.length} demoProjects=${SEED_DEMO_PROJECTS.length} demoContainers=${demoTreeStats.containerCount} demoHubs=${demoTreeStats.hubCount} demoNodes=${demoTreeStats.nodeCount}`,
 );

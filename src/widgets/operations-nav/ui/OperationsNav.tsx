@@ -91,7 +91,7 @@ export function OperationsNav({ accountId, rightSlot }: OperationsNavProps) {
     accountId !== undefined ? accountId : queryAccountId;
 
   // 로그아웃 후 /login/ 으로 명시 redirect — 이전엔 같은 페이지에 머물러 데이터가
-  // 조용히 사라지는 회귀 (audit A2). PermissionGate 가 있는 페이지는 자동 fallback
+  // 조용히 사라지는 회귀. PermissionGate 가 있는 페이지는 자동 fallback
   // 했지만 ontology 3 페이지처럼 gate 없는 곳은 빈 상태로 남았음.
   const handleSignOut = async () => {
     try {
@@ -157,7 +157,7 @@ export function OperationsNav({ accountId, rightSlot }: OperationsNavProps) {
           {rightSlot}
           <ThemeToggle />
           <Link href={appendAccountQuery('/projects/', resolvedAccountId)} className="inline-flex">
-            {/* '↗' 는 외부 링크 의미로 오해 가능 (audit N2) — 내부 라우트라
+            {/* '↗' 는 외부 링크 의미로 오해 가능 — 내부 라우트라
                 '→' 로 명확화. */}
             <Button variant="ghost" size="sm" type="button">
               프로젝트 →

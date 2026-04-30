@@ -143,7 +143,7 @@ export const SEED_PROJECTS: ProjectInput[] = [
     links: [
       {
         label: "GitHub",
-        url: "https://github.com/AslanLabs/arc-reactor-web",
+        url: "https://github.com/wlsdks/oh-my-ontology",
       },
     ],
     dependencies: ["reactor", "iam"],

@@ -39,7 +39,7 @@ interface Props {
  *
  * Notion / Obsidian 식 "내가 주인인 공간은 즉시 편집" UX 를 위한 기본 블록.
  * owner 가 자기 프로젝트 상세 페이지를 보면 h1·description 을 바로 고칠
- * 수 있도록 사용한다 (P0-A).
+ * 수 있도록 사용한다.
  *
  * 저장 실패 처리는 호출부(onSave) 책임 — 이 컴포넌트는 throw 를 그대로
  * 흘려보내지 않고 삼킨 뒤 view 모드로 복귀한다.

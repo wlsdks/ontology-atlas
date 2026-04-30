@@ -324,7 +324,7 @@ export function buildGraph(
     const isContainer = attrs.categoryId === CONTAINER_CATEGORY_SENTINEL;
     const isLayer0Hub = hasContainers && attrs.isHub;
     if (isContainer) {
-      // 절반 축소 (M-24): 10 → 13 (degree 가중). hub 와 거의 같은 사이즈
+      // 절반 축소: 10 → 13 (degree 가중). hub 와 거의 같은 사이즈
       // 범위지만 amber 색 + 중앙 위치로 충분히 구분.
       graph.setNodeAttribute(
         id,

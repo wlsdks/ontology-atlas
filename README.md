@@ -3,7 +3,7 @@
 > Markdown 문서에서 지식 그래프를 자동으로 키우는 오픈소스 온톨로지 워크벤치.
 > An open-source ontology workbench that grows a knowledge graph from your markdown.
 
-[![License: TBD](https://img.shields.io/badge/license-TBD-lightgrey.svg)](#라이선스)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
@@ -241,7 +241,7 @@ scripts/                   시드 / 배포 / 검증 스크립트
 
 ## 라이선스
 
-**TBD (검토 중).** v0.1 안정화 시점에 OSI-승인 라이선스 (MIT / Apache-2.0 / GPL-3.0 등) 중 하나로 결정될 예정입니다. 그 전까지는 학습 / 평가 / 비상업 fork 만 권장합니다.
+[MIT License](LICENSE) — fork·수정·재배포 자유. 자세한 내용은 [`LICENSE`](LICENSE).
 
 ## Credits
 

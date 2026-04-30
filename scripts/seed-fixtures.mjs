@@ -80,7 +80,7 @@ export const SEED_STATUSES = [
   },
 ];
 
-export const SEED_ASLAN_ACCOUNT = {
+export const SEED_DEMO_ACCOUNT = {
   id: "demo",
   name: "Demo",
   description:
@@ -88,8 +88,8 @@ export const SEED_ASLAN_ACCOUNT = {
   isPublic: true,
 };
 
-export const SEED_ASLAN_MEMBERSHIP = {
-  id: "dev-admin-bypass__aslan",
+export const SEED_DEMO_MEMBERSHIP = {
+  id: "dev-admin-bypass__demo",
   accountId: "demo",
   uid: "dev-admin-bypass",
   email: "dev-admin@local",
@@ -103,7 +103,7 @@ export const SEED_ACCOUNTS = [
     description: "기존 공개 데이터와 분리된 테스트용 워크스페이스",
     isPublic: true,
   },
-  SEED_ASLAN_ACCOUNT,
+  SEED_DEMO_ACCOUNT,
 ];
 
 export const SEED_ACCOUNT_MEMBERSHIPS = [
@@ -114,7 +114,7 @@ export const SEED_ACCOUNT_MEMBERSHIPS = [
     email: "dev-admin@local",
     role: "owner",
   },
-  SEED_ASLAN_MEMBERSHIP,
+  SEED_DEMO_MEMBERSHIP,
 ];
 
 export const SEED_PROJECTS = [
@@ -218,7 +218,7 @@ export const SEED_PROJECTS = [
     links: [
       {
         label: "GitHub",
-        url: "https://github.com/AslanLabs/arc-reactor-web",
+        url: "https://github.com/wlsdks/oh-my-ontology",
       },
     ],
     dependencies: ["reactor"],
@@ -351,7 +351,7 @@ export const SEED_SANDBOX_PROJECTS = [
   },
 ];
 
-export const SEED_ASLAN_PROJECTS = [
+export const SEED_DEMO_PROJECTS = [
   {
     slug: "demo-iam",
     name: "Demo IAM",
@@ -473,7 +473,7 @@ export const SEED_ASLAN_PROJECTS = [
     links: [
       {
         label: "GitHub",
-        url: "https://github.com/AslanLabs/arc-reactor-web",
+        url: "https://github.com/wlsdks/oh-my-ontology",
       },
     ],
     dependencies: ["reactor"],

@@ -192,7 +192,7 @@ export function AccountSettingsPage() {
                     label="권한"
                     value={
                       // 데모 세션은 role chip 이 "데모 체험 중" 으로 노출되는
-                      // 헤더 PublicAccountMenu (iter 21) 와 일관되게 여기도
+                      // 헤더 PublicAccountMenu 와 일관되게 여기도
                       // "데모 체험 중" 우선. 데모 아니고 account 쿼리가 있으면
                       // 실 역할 (owner/editor/viewer/admin) 표시. 그 외는
                       // global roles 폴백.

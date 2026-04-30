@@ -1146,7 +1146,7 @@ export function ProjectForm({
             <span>
               허브 노드로 표시{" "}
               <span className="text-[color:var(--color-text-quaternary)]">
-                (IAM, Reactor처럼 인디고 강조)
+                (인증·에이전트 허브처럼 인디고 강조)
               </span>
             </span>
           </label>

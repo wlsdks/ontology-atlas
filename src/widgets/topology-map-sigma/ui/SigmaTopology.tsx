@@ -74,7 +74,7 @@ const AUDIT_PROMOTION_MIN_FAN_IN = 4;
 // Demo camera motion curve — cubic-bezier(0.22, 1, 0.36, 1) 근사치.
 // 토스·애플 감성의 "빠르게 출발해서 부드럽게 안착" — 기존 cubicInOut 의
 // 양 끝 대칭 감 대신 arrival 쪽을 더 길게 풀어 준다. easeOutQuart.
-const NARNIA_CAMERA_EASING = (k: number) => 1 - Math.pow(1 - k, 4);
+const CAMERA_EASING = (k: number) => 1 - Math.pow(1 - k, 4);
 
 // 선택 bounce — 토스 버튼 / 애플 아이콘 탭 탄성. 280ms sine curve 로
 // 1.0 → 1.2 → 1.0. 너무 길면 요란, 너무 짧으면 안 느껴짐. 280 이 체감 스윗스팟.
@@ -843,7 +843,7 @@ export function SigmaTopology({
       physics.release(draggedNode);
       draggedNode = null;
       // 드래그 종료 시 hover 여부 따라 cursor 복원 — 여전히 노드 위라면
-      // pointer (M-27), 바깥이면 기본으로.
+      // pointer, 바깥이면 기본으로.
       if (containerRef.current) {
         containerRef.current.style.cursor = hoveredNode ? 'pointer' : '';
       }
@@ -1154,7 +1154,7 @@ export function SigmaTopology({
           y: display.y,
           ratio: targetRatio,
         },
-        { duration: 520, easing: NARNIA_CAMERA_EASING },
+        { duration: 520, easing: CAMERA_EASING },
       );
     });
     return () => cancelAnimationFrame(frame);
@@ -1189,7 +1189,7 @@ export function SigmaTopology({
         y: sumY / count,
         ratio: minimal ? 1.1 : 0.75,
       },
-      { duration: 460, easing: NARNIA_CAMERA_EASING },
+      { duration: 460, easing: CAMERA_EASING },
     );
   }, [activeCategory, graph, minimal]);
 
@@ -1234,7 +1234,7 @@ export function SigmaTopology({
     const camera = sigmaRef.current.getCamera();
     camera.animate(
       { x: target.x, y: target.y, ratio: count === 1 ? 0.45 : 0.8 },
-      { duration: 460, easing: NARNIA_CAMERA_EASING },
+      { duration: 460, easing: CAMERA_EASING },
     );
   }, [searchQuery, graph]);
 
@@ -1252,7 +1252,7 @@ export function SigmaTopology({
     const camera = renderer.getCamera();
     camera.animate(
       { x: 0.5, y: 0.5, ratio: 1 },
-      { duration: 520, easing: NARNIA_CAMERA_EASING },
+      { duration: 520, easing: CAMERA_EASING },
     );
   }, [fitViewToken]);
 
@@ -1271,7 +1271,7 @@ export function SigmaTopology({
             y: display.y,
             ratio: minimal ? 1.1 : 0.5,
           },
-          { duration: 420, easing: NARNIA_CAMERA_EASING },
+          { duration: 420, easing: CAMERA_EASING },
         );
         return;
       }
@@ -1297,13 +1297,13 @@ export function SigmaTopology({
           y: hubSumY / hubCount,
           ratio: minimal ? 1.1 : 1,
         },
-        { duration: 420, easing: NARNIA_CAMERA_EASING },
+        { duration: 420, easing: CAMERA_EASING },
       );
       return;
     }
     camera.animate(
       { x: 0.5, y: 0.5, ratio: 1 },
-      { duration: 420, easing: NARNIA_CAMERA_EASING },
+      { duration: 420, easing: CAMERA_EASING },
     );
   }, [graph, minimal, selectedSlug]);
 

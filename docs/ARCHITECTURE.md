@@ -117,7 +117,7 @@ tags: [architecture, infra, overview]
 - `accounts/{accountId}/knowledgeDocuments` **조건부** — 계정
   `isPublic == true` + 문서 `status == 'published'` 일 때만 비인증 read
   허용. 공개 detail 페이지가 "이 프로젝트를 설명하는 문서" 섹션을 그리기
-  위한 경로 (iter 32).
+  위한 경로.
 
 ### 자기 계정 private model (계정 주인 / 멤버 only)
 
@@ -204,7 +204,7 @@ src/
 | `/diagnostics/insights` | 운영 지표 | editor 이상 |
 | `/dev/login` | 개발 빌드 한정 우회 로그인 | dev only |
 
-> 폐기됨: `/admin/*` 네임스페이스 전체. 이전 라우트는 위 표의 새 위치로 이동하거나 인라인 흡수되었다 (이행 계획: `superpowers/plans/2026-04-25-admin-namespace-removal.md`).
+> 권한 모델은 URL 네임스페이스가 아닌 Firestore Security Rules 와 capability 훅으로 갈린다. 같은 공개 surface 안에서 권한에 따라 인라인 액션이 노출된다.
 
 ## 9. 현재 구현됨 vs 계획됨
 
@@ -234,104 +234,15 @@ src/
 
 ## 10. 연관 문서
 
-- [`DATA-MODEL.md`](./DATA-MODEL.md)
-- [`OPERATIONS-GUIDE.md`](./OPERATIONS-GUIDE.md)
-- [`superpowers/specs/2026-04-17-document-knowledge-subsystem-v2.md`](./superpowers/specs/2026-04-17-document-knowledge-subsystem-v2.md)
-- [`superpowers/specs/2026-04-17-knowledge-backend-contract-v1.md`](./superpowers/specs/2026-04-17-knowledge-backend-contract-v1.md)
-- [`superpowers/specs/2026-04-27-ontology-design-loop.md`](./superpowers/specs/2026-04-27-ontology-design-loop.md) — C-1 phase 자율 기획-구현 루프
-- [`superpowers/specs/2026-04-27-ontology-frontmatter-contract.md`](./superpowers/specs/2026-04-27-ontology-frontmatter-contract.md) — md frontmatter v1 계약 + 등급 A/B/C
-- [`superpowers/specs/2026-04-27-ontology-id-resolution.md`](./superpowers/specs/2026-04-27-ontology-id-resolution.md) — canonical node ID + stub
-- [`superpowers/specs/2026-04-27-ontology-manual-editor-v0.md`](./superpowers/specs/2026-04-27-ontology-manual-editor-v0.md) — manual source 채널
-- [`superpowers/specs/2026-04-27-ontology-v1-experience-concept.md`](./superpowers/specs/2026-04-27-ontology-v1-experience-concept.md) — v1 UX 시나리오
-- [`superpowers/notes/2026-04-27-ontology-c1-runbook.md`](./superpowers/notes/2026-04-27-ontology-c1-runbook.md) — T-11 측정 절차서
-- [`superpowers/plans/2026-04-17-phase-2a-knowledge-subsystem-foundation-v2.md`](./superpowers/plans/2026-04-17-phase-2a-knowledge-subsystem-foundation-v2.md)
-- [`superpowers/plans/2026-04-25-admin-namespace-removal.md`](./superpowers/plans/2026-04-25-admin-namespace-removal.md)
+- [`DATA-MODEL.md`](./DATA-MODEL.md) — Firestore 컬렉션 + Storage 경로 + Security Rules
+- [`DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md) — 디자인 토큰 / 모션 / 금지 규칙
+- [`DEPLOYMENT.md`](./DEPLOYMENT.md) — Firebase 배포 / 롤백 / 도메인
+- [`../AGENTS.md`](../AGENTS.md) / [`../CLAUDE.md`](../CLAUDE.md) — 에이전트 / 컨트리뷰터 가이드
+- [`../.claude/rules/`](../.claude/rules/) — 세부 작업 규율 (architecture / design / git / testing / local-first / auth / firestore-schema / documentation / forbidden)
 
-## 11. 운영 ontology 시드 흐름
+## 11. 확장성 트리거
 
-운영 Demo 워크스페이스 (`account=demo`) 의 ontology 데이터는 자율
-루프 (`docs/superpowers/notes/2026-04-28-functional-completeness-audit.md`)
-가 단계적으로 관리한다. 3 helper 가 분리되어 있어 각각 독립 실행 가능
-— 부분 갱신이 다른 영역을 깨지 않는다.
-
-### 11.1 비밀번호 재설정 — `scripts/demo-reset-password.mjs`
-
-`demo@demo.dev` Auth user 의 password 만 갱신. Firebase Admin SDK
-사용 (ADC). `push-demo-prod.mjs` 와 달리 DEMO_TREE 데이터 시드는
-건너뛴다 — 자율 루프가 비번 회전 만 하고 데이터는 손대지 않는 흐름.
-
-```bash
-gcloud auth application-default login --account=devqamain@gmail.com
-node scripts/demo-reset-password.mjs   # 새 16 자 비번 출력
-# 출력 비번을 .local-credentials/demo.env 의 ASLAN_PASSWORD 로 갱신
-```
-
-### 11.2 Fixture 시드 — `scripts/seed-demo-ontology-fixture.mjs <fixture-id>`
-
-`tests/fixtures/golden-ontology/<id>.expected.json` 을 읽어
-`knowledgeApprovedNodes/Edges` 로 변환·시드. Admin SDK 라
-firestore.rules 우회 가능 (운영 시드 전용).
-
-- ID 결정적: `<fixture-id>__<slug-of-title>` — 재실행 idempotent
-- source: `manual`, manualNote: `Track D fixture seed: <id>`
-- confidence: 1.0 (정답 fixture 라 최대치)
-- isStub: false
-
-```bash
-set -a; source .local-credentials/demo.env; set +a
-node scripts/seed-demo-ontology-fixture.mjs 02-demo-builder
-```
-
-### 11.3 Cross-project edge 시드 — `scripts/seed-demo-cross-project-edges.mjs`
-
-각 fixture 가 self-contained 라 cross-project 의존 (예: reactor-admin
-→ reactor) 이 누락된다. 별도 스크립트가 EDGES 배열에 명시된 페어를
-`knowledgeApprovedEdges` 에 추가.
-
-- ID 결정적: `cross__<from>__<type>__<to>` — idempotent
-- source: `manual`, manualNote: `Track D-cont cross-project: <설명>`
-
-현재 시드된 7 edge: reactor-admin/web → reactor (depends_on),
-mcp-servers → reactor (uses), sample-app → sample-app-backend / demo-iam,
-sample-app-backend → demo-iam, demo-verse-web → demo-iam.
-
-### 11.4 Golden 채점 자동화 — `scripts/score-golden-fixtures.mjs`
-
-11 fixture 무결성 + scoreOntology precision/recall/f1. 두 모드:
-
-- self-sanity (기본) — 모든 fixture self → F1 = 1.0 검증
-- `--from <dir>` — 운영 추출 결과 (`<id>.actual.json`) 로 채점
-
-`pnpm verify:golden` 이 default threshold 1.0 + pre-commit hook
-(`.githooks/pre-commit`) 통합. fixture 가 깨진 채 commit 차단.
-
-```bash
-pnpm setup:hooks                    # 1 회 hooksPath 설정
-pnpm verify:golden                  # 11 fixture self-sanity F1=1.0
-pnpm score:golden --from out/ext    # 운영 추출 결과 채점
-```
-
-### 11.5 흐름도
-
-```
-자율 루프 cycle
-   ├─ Track D-N → seed-demo-ontology-fixture.mjs <fixture> → knowledgeApprovedNodes/Edges
-   ├─ D-cont-N → seed-demo-cross-project-edges.mjs        → knowledgeApprovedEdges
-   ├─ 비번 회전 → demo-reset-password.mjs                 → Auth user 만
-   └─ A4-4 pre-commit → verify:golden                       → fixture 무결성 차단
-```
-
-## 12. 확장성 트리거
-
-- 프로젝트 수 25개 돌파 시 단일 캔버스 → 탭 분리 재검토
-- knowledge 문서 수 증가 시 review queue와 publish를 별도 단계로 분리 검토
+- 컨테이너 수 증가 시 단일 캔버스 → 탭 분리 재검토
+- knowledge 문서 수 증가 시 review queue 와 publish 를 별도 단계로 분리 검토
 - extraction volume 증가 시 Functions → Cloud Run 분리 검토
-- 이미지/문서 업로드 증가 시 Storage lifecycle 및 리전 재검토
-
-## 13. 변경 이력
-
-- 2026-04-12: 초기 작성 (공개 제품 기준)
-- 2026-04-17: knowledge subsystem v2 trusted backend boundary, public/private/backend-owned 모델, planned admin routes 반영
-- 2026-04-18: 작업 공간, 공개 로그인, owner/editor 권한, 문서 기반 온톨로지 흐름을 현재 구현 기준으로 반영
-- 2026-04-25: `/admin/*` 네임스페이스 폐기 결정에 맞춰 페이지 표를 새 URL 공간(`/settings`, `/review`, `/diagnostics`, `/knowledge`)으로 재정렬. 권한 게이트는 라우트가 아니라 Firestore rules + capability 훅으로 명시
-- 2026-04-29: §11 신설 — 운영 ontology 시드 흐름 (demo-reset-password / seed-demo-ontology-fixture / seed-demo-cross-project-edges / score-golden-fixtures + pre-commit hook). 자율 루프 Track D / D-cont / A4-4 결과 docs 화
+- 이미지 / 문서 업로드 증가 시 Storage lifecycle 및 리전 재검토

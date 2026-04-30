@@ -163,7 +163,7 @@ test.describe("audit batch — 라벨 / focus / FrontmatterOnboarding", () => {
   }) => {
     await loginAsDemo(page);
     await page.goto("/knowledge/");
-    // '프로젝트' 외부 링크 button 의 텍스트 — '↗' 가 아닌 '→' (audit N2).
+    // '프로젝트' 외부 링크 button 의 텍스트 — '↗' 가 아닌 '→'.
     const projectButton = page.getByRole("button", { name: /프로젝트/ });
     if ((await projectButton.count()) > 0) {
       const text = await projectButton.first().textContent();
