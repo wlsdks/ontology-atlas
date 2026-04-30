@@ -3,4 +3,3 @@ export type {
   ScopedAccountAccess,
   ScopedAccountAccessKind,
 } from "./model/account-access";
-export { AccountScopeSelector } from "./ui/AccountScopeSelector";
