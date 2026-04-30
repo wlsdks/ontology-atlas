@@ -29,7 +29,6 @@ import { RegionNavigator } from "@/widgets/region-navigator";
 import { SearchHint } from "@/widgets/search-hint";
 import { PublicAccountMenu } from "@/widgets/account-menu";
 import { WorkspaceOntologyStrip } from "@/widgets/workspace-ontology-strip";
-import { subscribeProjectsForContainer } from "@/features/workspace-project-bridge";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { hasDemoSession } from "@/shared/lib/demo-session";
 import {
@@ -280,11 +279,6 @@ export function HomePage() {
   const [selectorOpen, setSelectorOpen] = useState(false);
   // single-user 모드: workspace 컨테이너 fetch 비활성. derive fallback 만 사용.
   const workspaceProjectContainers: import("../model/workspace-container-fallback").WorkspaceProjectContainerFallback[] = [];
-  const workspaceProjectsLoading = false;
-  const workspaceProjectIds = useMemo(
-    () => new Set(workspaceProjectContainers.map((container) => container.id)),
-    [workspaceProjectContainers],
-  );
   const effectiveWorkspaceProjectContainers = useMemo(
     () =>
       workspaceProjectContainers.length > 0
@@ -442,10 +436,8 @@ export function HomePage() {
   // single-user 모드: account 이름 fetch 안 함. scopedAccountName 항상 null.
 
   // Sigma 홈 토폴로지는 projects 구독을 HomePage가 직접 관리한다.
-  //
-  // P0-B Phase 6 (점진 전환): activeProjectId 가 truthy 면 컨테이너의 hubs+
-  // nodes 서브컬렉션을 합쳐 읽음. null 이면 기존 flat `projects` 로 폴백 —
-  // 마이그레이션 안 한 사용자는 영향 없이 그대로 동작.
+  // single-user 모드에서는 flat `projects` 컬렉션만 읽고, activeProjectId
+  // 가 지정된 경우 client-side 로 그 컨테이너에 속한 프로젝트만 추려낸다.
   useEffect(() => {
     // 에러 상태 초기화는 일부러 안 함 (setState-in-effect 금지 룰) — 재구독
     // 직후 callback 이 fresh data 혹은 fresh error 로 덮어쓴다.
@@ -476,45 +468,24 @@ export function HomePage() {
       setProjectsError(friendly);
       setProjectsLoaded(true);
     };
-    const hasConcreteContainer =
-      activeProjectId !== null && workspaceProjectIds.has(activeProjectId);
-    const shouldUseFlatContainerFallback =
-      activeProjectId !== null &&
-      !hasConcreteContainer &&
-      (!workspaceProjectsLoading || workspaceProjectContainers.length === 0);
-    const unsub =
-      activeProjectId && !shouldUseFlatContainerFallback
-        ? subscribeProjectsForContainer(
-            scopedAccountId,
-            activeProjectId,
-            onNext,
-            onError,
-          )
-        : subscribeProjects(
-            scopedAccountId,
-            (next) => {
-              if (!activeProjectId || !shouldUseFlatContainerFallback) {
-                onNext(next);
-                return;
-              }
-              onNext(
-                next.filter(
-                  (project) =>
-                    inferWorkspaceProjectGroup(project).id === activeProjectId,
-                ),
-              );
-            },
-            onError,
-          );
+    const unsub = subscribeProjects(
+      scopedAccountId,
+      (next) => {
+        if (!activeProjectId) {
+          onNext(next);
+          return;
+        }
+        onNext(
+          next.filter(
+            (project) =>
+              inferWorkspaceProjectGroup(project).id === activeProjectId,
+          ),
+        );
+      },
+      onError,
+    );
     return () => unsub();
-  }, [
-    scopedAccountId,
-    activeProjectId,
-    projectsRetryToken,
-    workspaceProjectIds,
-    workspaceProjectContainers.length,
-    workspaceProjectsLoading,
-  ]);
+  }, [scopedAccountId, activeProjectId, projectsRetryToken]);
   // Local graph 모드: 선택 노드 + 2-hop 이웃만 Sigma에 넘김. 전체 지도에서
   // 벗어나 해당 노드 주변만 집중해서 볼 수 있게 한다. Esc 또는 닫기 버튼으로
   // 전체 맵 복귀.
