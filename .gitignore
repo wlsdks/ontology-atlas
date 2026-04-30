@@ -69,8 +69,10 @@ output/
 *.tmp
 .cache/
 
-# Claude CLI local state
-.claude/
+# Claude Code — 로컬 개인 상태만 ignore. 공유 가이드는 commit.
+.claude/settings.local.json
+.claude/cache/
+.claude/local/
 
 # Docs Vault 빌드 결과물 — public/ raw 사본만 gitignore, manifest.json 은
 # TS import 안정성 때문에 커밋해서 fresh checkout 에서도 타입체크 통과하게.

@@ -15,12 +15,8 @@ import { getFirebaseAuth } from '@/shared/api';
 import { env } from '@/shared/config/env';
 import { ensureOwnWorkspace } from '@/entities/account';
 import {
-  clearIamSession,
   fetchSessionProfile,
   hasDemoSession,
-  hasIamSession,
-  isIamSessionEnabled,
-  signInWithIamSession,
   signInWithLocalDemo,
   signOutCombined,
   type AuthSessionUser,
@@ -28,17 +24,12 @@ import {
 
 /**
  * 인증 성공 직후 "내 공간" 을 보장한다. 실패해도 로그인 플로우는 계속 진행
- * (fire-and-forget). 데모 세션·IAM 세션은 이미 mock 또는 외부 시스템 기반이라
- * Firestore 생성이 필요 없어 함수 내부에서 분기.
- *
- * 빈 "General" 컨테이너 자동 생성은 제거 — 실제 데이터 없이 placeholder
- * 컨테이너만 토폴로지에 추가되어 의미 없는 노드가 생기는 문제 해소. 컨테이너
- * 0 개 케이스는 deriveWorkspaceProjectContainers fallback 이 flat projects 에서
- * 자동 합성하므로 사용자 경험 손실 없음.
+ * (fire-and-forget). 데모 세션은 mock 기반이라 Firestore 생성이 필요 없어
+ * 분기.
  */
 function bootstrapWorkspace(user: AuthSessionUser): void {
   if (!user.uid) return;
-  if (user.provider === 'demo' || user.provider === 'iam') return;
+  if (user.provider === 'demo') return;
   void ensureOwnWorkspace({
     uid: user.uid,
     email: user.email,
@@ -80,7 +71,7 @@ function mapAuthError(error: unknown) {
     case 'auth/network-request-failed':
       return '네트워크가 불안정합니다. 연결 확인 후 다시 시도해주세요.';
     case 'auth/operation-not-allowed':
-      return '이 로그인 방식은 현재 사용할 수 없습니다. 지속되면 보고해주세요.';
+      return '이 로그인 방식은 현재 사용할 수 없습니다.';
     case 'auth/account-exists-with-different-credential':
       return '같은 이메일이 다른 로그인 방식으로 이미 가입되어 있습니다. 기존 방식으로 로그인하세요.';
     case 'auth/popup-closed-by-user':
@@ -88,7 +79,7 @@ function mapAuthError(error: unknown) {
     case 'auth/popup-blocked':
       return '팝업이 차단됐습니다. 브라우저 설정에서 팝업을 허용해주세요.';
     case 'auth/user-disabled':
-      return '이 계정은 비활성화됐습니다. 지속되면 보고해주세요.';
+      return '이 계정은 비활성화됐습니다.';
     default:
       return error instanceof Error ? error.message : '인증 처리에 실패했습니다.';
   }
@@ -106,7 +97,6 @@ function mapFirebaseUser(user: Awaited<ReturnType<typeof signInWithPopup>>['user
 export async function signInWithGoogle(): Promise<AuthSessionUser> {
   const auth = getFirebaseAuth();
   try {
-    clearIamSession();
     const result = await signInWithPopup(auth, provider);
     const user = mapFirebaseUser(result.user);
     bootstrapWorkspace(user);
@@ -120,17 +110,8 @@ export async function signInWithEmail(input: {
   email: string;
   password: string;
 }): Promise<AuthSessionUser> {
-  if (isIamSessionEnabled()) {
-    try {
-      return await signInWithIamSession(input);
-    } catch (error) {
-      throw new Error(mapAuthError(error));
-    }
-  }
-
   const auth = getFirebaseAuth();
   try {
-    clearIamSession();
     const result = await signInWithEmailAndPassword(
       auth,
       input.email.trim(),
@@ -149,40 +130,8 @@ export async function signUpWithEmail(input: {
   password: string;
   displayName: string;
 }): Promise<AuthSessionUser> {
-  if (isIamSessionEnabled()) {
-    try {
-      await fetch(`${env.NEXT_PUBLIC_IAM_BASE_URL}/api/auth/register`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: input.email.trim(),
-          password: input.password,
-        }),
-      }).then(async (response) => {
-        if (!response.ok) {
-          const payload = await response.text();
-          const data = payload ? JSON.parse(payload) as { detail?: string } : null;
-          if (response.status === 409) {
-            throw new Error('이미 가입된 이메일입니다. 로그인 화면에서 다시 시도하세요.');
-          }
-          if (response.status === 429) {
-            throw new Error('요청이 많습니다. 잠시 후 다시 시도해주세요.');
-          }
-          throw new Error(data?.detail || '회원가입에 실패했습니다.');
-        }
-      });
-      return await signInWithIamSession(input);
-    } catch (error) {
-      throw new Error(mapAuthError(error));
-    }
-  }
-
   const auth = getFirebaseAuth();
   try {
-    clearIamSession();
     const result = await createUserWithEmailAndPassword(
       auth,
       input.email.trim(),
@@ -204,7 +153,6 @@ export async function signUpWithEmail(input: {
 
 export async function signInWithDemo(): Promise<AuthSessionUser> {
   const email = env.NEXT_PUBLIC_DEMO_LOGIN_EMAIL?.trim() || 'demo-viewer@local';
-  clearIamSession();
   return signInWithLocalDemo({ email, displayName: '데모 뷰어' });
 }
 
@@ -217,23 +165,14 @@ export async function getCurrentAuthProfile(): Promise<AuthSessionUser | null> {
 }
 
 export function getPasswordSupportState(): PasswordSupportState {
-  // 데모 세션은 Firebase/IAM 이 아니므로 별도 분기 — "게스트" 라고 부르면
-  // "로그인 안됨" 으로 오해되지만 실제론 데모 공간 주인.
+  // 데모 세션은 Firebase 가 아니므로 별도 분기 — "게스트" 라고 부르면
+  // "로그인 안됨" 으로 오해되지만 실제로는 데모 공간 주인.
   if (hasDemoSession()) {
     return {
       canChangePassword: false,
       canResetPassword: false,
       providerLabel: '데모 로그인',
       reason: '데모 계정은 비밀번호 변경 없이 바로 체험용으로 사용됩니다.',
-    };
-  }
-
-  if (hasIamSession() && isIamSessionEnabled()) {
-    return {
-      canChangePassword: true,
-      canResetPassword: false,
-      providerLabel: '서비스 로그인',
-      reason: '현재 서비스 인증은 비밀번호 재설정 메일을 아직 지원하지 않습니다.',
     };
   }
 
@@ -277,31 +216,6 @@ export async function changePassword(input: {
     throw new Error('비밀번호는 8자 이상으로 입력해주세요.');
   }
 
-  if (hasIamSession() && isIamSessionEnabled()) {
-    const response = await fetch(`${env.NEXT_PUBLIC_IAM_BASE_URL}/api/auth/change-password`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        currentPassword: input.currentPassword,
-        newPassword: input.newPassword,
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 401) {
-        throw new Error('현재 비밀번호를 다시 확인해주세요.');
-      }
-      const payload = await response.text();
-      const data = payload ? (JSON.parse(payload) as { detail?: string }) : null;
-      throw new Error(data?.detail || '비밀번호 변경에 실패했습니다.');
-    }
-
-    return;
-  }
-
   const auth = getFirebaseAuth();
   const currentUser = auth.currentUser;
 
@@ -334,10 +248,6 @@ export async function sendPasswordReset(input: { email: string }): Promise<void>
 
   if (!email) {
     throw new Error('이메일을 입력해주세요.');
-  }
-
-  if (isIamSessionEnabled()) {
-    throw new Error('현재 서비스 인증은 비밀번호 재설정 메일을 아직 지원하지 않습니다.');
   }
 
   try {
