@@ -1,0 +1,17 @@
+{
+  "id": "01-design-system",
+  "description": "Aslan 디자인 시스템 mini spec — frontmatter A 등급 가정. 색·타이포·모션 3 도메인 + 인디고 브랜드 element.",
+  "nodes": [
+    { "title": "Design System", "kind": "project" },
+    { "title": "Color", "kind": "domain" },
+    { "title": "Indigo Brand", "kind": "element" },
+    { "title": "Typography", "kind": "domain" },
+    { "title": "Motion", "kind": "domain" }
+  ],
+  "edges": [
+    { "from": "Color", "to": "Design System", "type": "belongs_to" },
+    { "from": "Indigo Brand", "to": "Color", "type": "belongs_to" },
+    { "from": "Typography", "to": "Design System", "type": "belongs_to" },
+    { "from": "Motion", "to": "Design System", "type": "belongs_to" }
+  ]
+}

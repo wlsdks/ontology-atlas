@@ -1,0 +1,37 @@
+{
+  "id": "02-aslan-builder",
+  "description": "Aslan Builder — drag-and-drop visual AI agent builder. 도메인 3 (워크플로우 / 에이전트 빌더 / 실행 런타임), 기능 6 (캔버스 / 위저드 / DAG 실행기 / LLM 추상화 / 노드 레지스트리 / 샌드박스), 요소 4 (Better Auth / Postgres / BullMQ / Turbo).",
+  "nodes": [
+    { "title": "Aslan Builder", "kind": "project" },
+    { "title": "Workflow", "kind": "domain" },
+    { "title": "Agent Builder", "kind": "domain" },
+    { "title": "Execution Runtime", "kind": "domain" },
+    { "title": "Canvas Editor", "kind": "capability" },
+    { "title": "AI Wizard", "kind": "capability" },
+    { "title": "DAG Executor", "kind": "capability" },
+    { "title": "LLM Provider Abstraction", "kind": "capability" },
+    { "title": "Node Registry", "kind": "capability" },
+    { "title": "Sandbox", "kind": "capability" },
+    { "title": "Better Auth", "kind": "element" },
+    { "title": "PostgreSQL + pgvector", "kind": "element" },
+    { "title": "BullMQ + Valkey", "kind": "element" },
+    { "title": "Turbo monorepo", "kind": "element" }
+  ],
+  "edges": [
+    { "from": "Workflow", "to": "Aslan Builder", "type": "belongs_to" },
+    { "from": "Agent Builder", "to": "Aslan Builder", "type": "belongs_to" },
+    { "from": "Execution Runtime", "to": "Aslan Builder", "type": "belongs_to" },
+    { "from": "Canvas Editor", "to": "Agent Builder", "type": "belongs_to" },
+    { "from": "AI Wizard", "to": "Agent Builder", "type": "belongs_to" },
+    { "from": "DAG Executor", "to": "Execution Runtime", "type": "belongs_to" },
+    { "from": "LLM Provider Abstraction", "to": "Agent Builder", "type": "belongs_to" },
+    { "from": "Node Registry", "to": "Workflow", "type": "belongs_to" },
+    { "from": "Sandbox", "to": "Execution Runtime", "type": "belongs_to" },
+    { "from": "DAG Executor", "to": "Sandbox", "type": "uses" },
+    { "from": "AI Wizard", "to": "LLM Provider Abstraction", "type": "uses" },
+    { "from": "Workflow", "to": "PostgreSQL + pgvector", "type": "uses" },
+    { "from": "DAG Executor", "to": "BullMQ + Valkey", "type": "uses" },
+    { "from": "Aslan Builder", "to": "Better Auth", "type": "uses" },
+    { "from": "Aslan Builder", "to": "Turbo monorepo", "type": "uses" }
+  ]
+}

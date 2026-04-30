@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Pre-commit hook — golden ontology fixture 무결성 차단 (A4-4).
+#
+# tests/fixtures/golden-ontology/ 가 staged 일 때만 verify:golden 실행.
+# 매 commit 마다 돌면 무관한 변경에서도 시간이 들어 노이즈 — 변경 영향
+# 있는 commit 만 차단.
+#
+# 활성: pnpm setup:hooks (한 번) → git config core.hooksPath .githooks.
+# 비활성: git config --unset core.hooksPath.
+
+set -euo pipefail
+
+# staged 파일 중 fixture 경로 또는 score 스크립트 / golden lib 변경 검사
+TARGET_PATTERN='^(tests/fixtures/golden-ontology/|scripts/score-golden-fixtures\.mjs|src/shared/lib/golden-ontology/)'
+
+if git diff --cached --name-only --diff-filter=ACMR | grep -qE "$TARGET_PATTERN"; then
+  echo "[pre-commit] golden fixture / score 모듈 변경 감지 — verify:golden 실행"
+  if ! pnpm verify:golden; then
+    echo ""
+    echo "[pre-commit] ❌ golden fixture 무결성 실패 — commit 차단"
+    echo "  fixture 의 dangling node / kind 오타 / scoreOntology F1 < 1.0 검사"
+    echo "  통과시키려면 fixture 수정 후 다시 git add + commit"
+    exit 1
+  fi
+  echo "[pre-commit] ✅ golden fixture OK"
+fi
+
+exit 0

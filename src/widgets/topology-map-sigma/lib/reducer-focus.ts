@@ -1,0 +1,119 @@
+import { INDIGO_FOCUS, INDIGO_HIGHLIGHT } from '@/shared/config/indigo-tokens';
+import type { SigmaNodeAttrs } from './graph-build';
+
+/**
+ * SigmaTopology nodeReducer 의 focus / neighbor / secondHop tint 분기.
+ * A2-4 의 anim/audit 추출에 이은 다음 슬라이스 (A3-1).
+ *
+ * 호출자는 다음 4 가지 정보를 미리 계산해 전달:
+ * - focus 노드 (선택된 ID, null = 비활성)
+ * - 1-hop neighbors set
+ * - 2-hop secondHop set
+ * - backrefHighlight overlay 상태 + backrefNodes set (옵션)
+ * - bounceFactor (선택 후 탄성 phase, 1.0 = 변화 없음)
+ *
+ * helper 자체는 React / Sigma 의존 0 — 순수 lookup + 색 토큰. 단위 테스트
+ * 가능. focus 가 null 이면 caller 가 호출 안 해야 (또는 attrs 그대로 반환).
+ */
+
+export const FOCUS_DENSE_THRESHOLD = 8;
+
+export interface FocusContext {
+  focusNode: string;
+  /** 1-hop neighbor 집합. */
+  neighbors: ReadonlySet<string>;
+  /** 2-hop neighbor 집합. */
+  secondHop: ReadonlySet<string>;
+  /** backref overlay 가 켜져 있을 때 highlight 대상 (in-neighbor) 집합. */
+  backrefNodes: ReadonlySet<string>;
+  backrefHighlight: boolean;
+  /** 선택 후 탄성 phase factor. computeBounceFactor 결과. */
+  bounceFactor: number;
+  /** focus 가 충분한 이웃을 가졌는지 (dense 분기). 미정 시 caller 가 계산. */
+  isDenseFocus?: boolean;
+}
+
+/**
+ * focus 컨텍스트를 적용해 노드의 attrs 를 변경. caller 는 overlay 상관
+ * 없이 (audit / search / category / depth 모두 통과한) attrs 를 넘김.
+ */
+export function applyFocusOverlay(
+  node: string,
+  attrs: SigmaNodeAttrs,
+  ctx: FocusContext,
+) {
+  const denseFocus =
+    ctx.isDenseFocus ?? ctx.neighbors.size >= FOCUS_DENSE_THRESHOLD;
+
+  // 1) focus 노드 자기 자신
+  if (node === ctx.focusNode) {
+    const focusScale = attrs.isHub ? 1.25 : 1.6;
+    return {
+      ...attrs,
+      color: INDIGO_HIGHLIGHT,
+      borderColor: 'rgba(139, 151, 255, 0.95)',
+      outerBorderColor: 'rgba(139, 151, 255, 0.22)',
+      size: attrs.size * focusScale * ctx.bounceFactor,
+      zIndex: 10,
+      label: undefined,
+      forceLabel: false,
+    };
+  }
+
+  // 2) 1-hop neighbor
+  if (ctx.neighbors.has(node)) {
+    // backref overlay 가 켜져 있고 이 노드가 backref 매치면 amber 톤
+    if (ctx.backrefHighlight && ctx.backrefNodes.has(node)) {
+      return {
+        ...attrs,
+        color: 'rgba(232, 196, 162, 0.96)',
+        borderColor: 'rgba(232, 196, 162, 0.55)',
+        zIndex: 9,
+        label: attrs.label,
+        forceLabel: !denseFocus,
+      };
+    }
+
+    // dense focus — vivid 인디고 (라벨 솎아냄)
+    if (denseFocus) {
+      return {
+        ...attrs,
+        color: 'rgba(139, 151, 255, 0.92)',
+        borderColor: 'rgba(180, 190, 255, 0.7)',
+        zIndex: 9,
+      };
+    }
+
+    // 일반 1-hop — 허브 / 비허브 톤 분기
+    return {
+      ...attrs,
+      color: attrs.isHub ? INDIGO_FOCUS : 'rgba(190, 200, 225, 0.92)',
+      borderColor: attrs.isHub
+        ? 'rgba(139, 151, 255, 0.6)'
+        : 'rgba(220, 230, 245, 0.35)',
+      zIndex: 9,
+      label: attrs.label,
+      forceLabel: true,
+    };
+  }
+
+  // 3) 2-hop — 약한 dim
+  if (ctx.secondHop.has(node)) {
+    return {
+      ...attrs,
+      color: 'rgba(70, 75, 90, 0.1)',
+      borderColor: 'rgba(70, 75, 90, 0.05)',
+      label: undefined,
+      forceLabel: false,
+    };
+  }
+
+  // 4) 그 외 — deep dim
+  return {
+    ...attrs,
+    color: 'rgba(70, 75, 90, 0.06)',
+    borderColor: 'rgba(70, 75, 90, 0.04)',
+    label: undefined,
+    forceLabel: false,
+  };
+}

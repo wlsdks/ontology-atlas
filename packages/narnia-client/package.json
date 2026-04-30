@@ -1,0 +1,39 @@
+{
+  "name": "project-narnia-client",
+  "version": "0.1.0",
+  "description": "Narnia HTTP API 클라이언트 — 외부 도구 (CLI · CI · MCP) 가 워크스페이스에 노드를 push.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "narnia",
+    "aslan",
+    "topology",
+    "api-client"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vitest": "^1.6.0"
+  }
+}

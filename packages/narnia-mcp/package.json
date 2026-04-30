@@ -1,0 +1,47 @@
+{
+  "name": "project-narnia-mcp",
+  "version": "0.1.0",
+  "description": "Narnia MCP server — Claude Code · Cursor 등 MCP 클라이언트가 워크스페이스에 노드/허브를 push.",
+  "type": "module",
+  "bin": {
+    "project-narnia-mcp": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc && chmod +x dist/cli.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "narnia",
+    "aslan",
+    "mcp",
+    "model-context-protocol",
+    "claude-code",
+    "cursor"
+  ],
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vitest": "^1.6.0"
+  }
+}

@@ -1,0 +1,222 @@
+@import "tailwindcss";
+
+/*
+ * Aslan Project Map — Design Tokens
+ *
+ * Linear 베이스 디자인 시스템. 절제된 흑백 + 단일 인디고 악센트.
+ * 상세: docs/DESIGN-SYSTEM.md, docs/design-references/DESIGN-linear.md
+ *
+ * 금지 사항 (AI 클리셰 방지):
+ * - 보라→핑크 그라디언트
+ * - glassmorphism (backdrop-blur)
+ * - glow pulse / neon
+ * - 움직이는 그라디언트 배경 / 오로라
+ * - scale 기반 호버
+ * - 둘 이상의 채색 시스템
+ */
+
+@theme {
+  /* 배경 서피스 */
+  --color-canvas: #08090a;
+  --color-panel: #0f1011;
+  --color-elevated: #191a1b;
+  --color-secondary-surface: #28282c;
+
+  /* 텍스트 */
+  --color-text-primary: #f7f8f8;
+  --color-text-secondary: #d0d6e0;
+  --color-text-tertiary: #8a8f98;
+  /*
+   * Linear 원본 은 #62666d(3.45:1) 이지만 WCAG AA (4.5:1) 미달이라
+   * canvas #08090a 기준 ~4.8:1 로 한 단계 밝게 보정. 시각 리듬 유지.
+   */
+  --color-text-quaternary: #787c84;
+
+  /* 인디고 악센트 (시스템 유일 채색) */
+  --color-indigo-brand: #5e6ad2;
+  --color-indigo-accent: #7170ff;
+  --color-indigo-hover: #828fff;
+
+  /* 상태 (status dot + 경고·에러 서피스) */
+  --color-status-success: #27a644;
+  --color-status-warning: #f4b731;
+  --color-status-paused: #8a8f98;
+  --color-status-danger: #e5484d;
+
+  /*
+   * 라이트/다크 양쪽 호환 semantic tokens.
+   * 다크 (default): rgba(255,255,255,*) — surface 위 밝은 톤 가장자리/오버레이.
+   * 라이트 ([data-theme="light"]): rgba(0,0,0,*) — surface 위 어두운 톤 가장자리/오버레이.
+   *
+   * 사용 가이드:
+   * - border-soft: hairline border (rounded card 가장자리)
+   * - border-strong: 강조 border (focus / active state)
+   * - overlay-1: 0.02 — 살짝 떠오른 surface 배경
+   * - overlay-2: 0.06 — hover 배경
+   * - overlay-3: 0.10 — pressed / 강한 hover
+   * - divider: 명시적 구분선 (8% / 10% 기준)
+   */
+  --color-border-soft: rgba(255, 255, 255, 0.06);
+  --color-border-strong: rgba(255, 255, 255, 0.14);
+  --color-overlay-1: rgba(255, 255, 255, 0.02);
+  --color-overlay-2: rgba(255, 255, 255, 0.06);
+  --color-overlay-3: rgba(255, 255, 255, 0.10);
+  --color-divider: rgba(255, 255, 255, 0.08);
+  /* tap highlight — webkit 기본 회색 ghost 대신 시스템 톤. */
+  --color-tap-highlight: rgba(255, 255, 255, 0.04);
+
+  /*
+   * 다크 톤 surface — modal backdrop / sticky nav 배경 / 강한 패널 처럼
+   * "주변보다 짙게" 만드는 곳. 다크에선 캔버스 톤, 라이트에선 약하게
+   * 어둡힌 흰색 톤으로 뒤집힌다.
+   */
+  --color-backdrop-strong: rgba(8, 9, 10, 0.85);
+  --color-backdrop-medium: rgba(8, 9, 10, 0.6);
+  --color-backdrop-soft: rgba(8, 9, 10, 0.22);
+  --color-nav-surface: rgba(10, 11, 13, 0.96);
+
+  /* 폰트 패밀리 */
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+
+  /* Linear 고유 — 510 weight (regular와 medium 사이) */
+  --font-weight-signature: 510;
+
+  /* Letter-spacing 스케일 */
+  --tracking-hero: -0.022em;
+  --tracking-display: -0.022em;
+  --tracking-section: -0.020em;
+  --tracking-card: -0.015em;
+}
+
+@layer base {
+  /*
+   * Tailwind v4 @theme 가 alpha rgba 토큰을 :root 에 emit 하지 않는 동작이 있어
+   * border-[color:var(--color-divider)] 같은 arbitrary value 가 변수를 resolve
+   * 못해 fallback (currentColor = text-primary) 으로 떨어져 화이트 보더로 보이는
+   * 회귀가 있었다. 다크 디폴트 alpha 토큰을 :root 에 명시해 강제 emit.
+   */
+  :root {
+    --color-border-soft: rgba(255, 255, 255, 0.06);
+    --color-border-strong: rgba(255, 255, 255, 0.14);
+    --color-overlay-1: rgba(255, 255, 255, 0.02);
+    --color-overlay-2: rgba(255, 255, 255, 0.06);
+    --color-overlay-3: rgba(255, 255, 255, 0.10);
+    --color-divider: rgba(255, 255, 255, 0.08);
+    --color-tap-highlight: rgba(255, 255, 255, 0.04);
+  }
+
+  html {
+    background-color: var(--color-canvas);
+    color: var(--color-text-primary);
+    font-feature-settings: "cv01", "ss03";
+    color-scheme: dark;
+  }
+
+  /*
+   * 라이트 모드 — 사용자가 토글로 [data-theme="light"] 를 html 에 박으면
+   * 이 블록의 token override 가 적용된다. 표면색 / 텍스트 / overlay 만
+   * 뒤집고 인디고 악센트 / 상태 색은 둘 다 동일.
+   *
+   * canvas 는 순수 #ffffff 가 아니라 살짝 부드러운 기본 종이톤 (#f7f8fa)
+   * 으로. 텍스트는 Linear 라이트 모드 기준 톤 차용.
+   */
+  html[data-theme="light"] {
+    color-scheme: light;
+    --color-canvas: #f7f8fa;
+    --color-panel: #ffffff;
+    --color-elevated: #ffffff;
+    --color-secondary-surface: #eef0f4;
+
+    --color-text-primary: #0a0b0c;
+    --color-text-secondary: #1f2329;
+    --color-text-tertiary: #5b6068;
+    --color-text-quaternary: #6f7480;
+
+    --color-border-soft: rgba(0, 0, 0, 0.08);
+    --color-border-strong: rgba(0, 0, 0, 0.18);
+    --color-overlay-1: rgba(0, 0, 0, 0.02);
+    --color-overlay-2: rgba(0, 0, 0, 0.04);
+    --color-overlay-3: rgba(0, 0, 0, 0.08);
+    --color-divider: rgba(0, 0, 0, 0.10);
+    --color-tap-highlight: rgba(0, 0, 0, 0.04);
+
+    /* 다크 backdrop 들은 라이트에선 흐릿한 흰색 + 살짝 검정 톤으로. */
+    --color-backdrop-strong: rgba(247, 248, 250, 0.92);
+    --color-backdrop-medium: rgba(247, 248, 250, 0.78);
+    --color-backdrop-soft: rgba(0, 0, 0, 0.04);
+    --color-nav-surface: rgba(255, 255, 255, 0.96);
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* 접근성: 모션 감소 선호 사용자 존중 */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* 접근성: 고대비 모드(Windows 고대비·사파리 increase contrast) 대응 */
+  @media (prefers-contrast: more) {
+    :root {
+      --color-text-tertiary: #b0b5be;
+      --color-text-quaternary: #8f95a0;
+    }
+  }
+
+  /* 선택 색 */
+  ::selection {
+    background-color: rgba(94, 106, 210, 0.4);
+    color: var(--color-text-primary);
+  }
+
+  a,
+  button,
+  [role="button"] {
+    -webkit-tap-highlight-color: var(--color-tap-highlight);
+    touch-action: manipulation;
+  }
+
+  /* 인쇄 — Docs Vault 뷰어 본문만 남기고 UI 숨김. 밝은 배경으로 반전해
+     프린터·PDF 저장에서 잉크/가독성 개선. */
+  @media print {
+    body > * {
+      visibility: hidden;
+    }
+    [data-docs-viewer],
+    [data-docs-viewer] * {
+      visibility: visible;
+    }
+    [data-docs-viewer] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      color: #111;
+      background: #fff;
+    }
+    [data-docs-viewer] a {
+      color: #1a1a1a;
+    }
+  }
+}
+
+/*
+ * BottomTabBar 숨김 — dead-end surface (404, 인증) 가 body 에
+ * data-no-tabbar 를 세팅하면 모바일 탭바 자체를 감춰 사용자가 카드
+ * 내부의 명확한 출구만 보게 한다.
+ */
+body[data-no-tabbar] [aria-label="주요 메뉴"] {
+  display: none;
+}

@@ -1,0 +1,23 @@
+{
+  "name": "Aslan Docs Vault Activity",
+  "url": "https://example.com",
+  "hook_attributes": {
+    "url": "https://asia-northeast3-<firebase-project-id>.cloudfunctions.net/receiveGitHubActivity?accountId=<accountId>",
+    "active": true
+  },
+  "redirect_url": "https://example.com/admin/docs?audience=engineer",
+  "public": false,
+  "default_events": [
+    "push",
+    "pull_request",
+    "issues",
+    "issue_comment"
+  ],
+  "default_permissions": {
+    "contents": "read",
+    "issues": "read",
+    "metadata": "read",
+    "pull_requests": "read"
+  },
+  "description": "Sends repository activity to Aslan Docs Vault so related documents and topology nodes can be highlighted for developers."
+}

@@ -1,0 +1,17 @@
+{
+  "documentId": "REPLACE_WITH_DOC_ID",
+  "note": "측정 N 회차 결과 박음 — 진안 yyyy-mm-dd. 다음 사이클 자동 채점 baseline.",
+  "expected": {
+    "nodes": [
+      { "kind": "capability", "title": "예시 capability" },
+      { "kind": "element", "title": "예시 element" }
+    ],
+    "edges": [
+      {
+        "type": "depends_on",
+        "fromTitle": "예시 capability",
+        "toTitle": "예시 element"
+      }
+    ]
+  }
+}

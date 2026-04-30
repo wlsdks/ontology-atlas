@@ -1,0 +1,1729 @@
+"use client";
+
+import Link from "next/link";
+import Image from "next/image";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { BookOpen, X } from "lucide-react";
+import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
+import { subscribeProjects } from "@/entities/project";
+// 타입/기본값은 Sigma(WebGL) 의존성 없는 별도 모듈에서 직접 import해서
+// SSR 평가 경로에 WebGL 참조가 끼지 않도록 한다.
+import {
+  DEFAULT_SIGMA_CONTROLS,
+  type SigmaControlsState,
+} from "@/widgets/topology-map-sigma/model/controls-state";
+import { resolveFeaturedPathPresets } from "@/widgets/featured-paths";
+import { HeroHeader, HeroCollapsed } from "@/widgets/hero-header";
+import { Legend } from "@/widgets/legend";
+import dynamic from "next/dynamic";
+import {
+  resolvePortfolioChapters,
+  type PortfolioChapter,
+} from "@/widgets/portfolio-showcase";
+import { ProjectDrawer } from "@/widgets/project-drawer";
+import { ProjectKnowledgeTopologyScene } from "@/widgets/project-knowledge-topology";
+import { resolveProjectTourSteps } from "@/widgets/project-tour";
+import { RegionNavigator } from "@/widgets/region-navigator";
+import { SearchHint } from "@/widgets/search-hint";
+import { PublicAccountMenu } from "@/widgets/account-menu";
+import {
+  WorkspaceProjectSelector,
+  useWorkspaceProjects,
+} from "@/widgets/workspace-project-selector";
+import { WorkspaceOntologyStrip } from "@/widgets/workspace-ontology-strip";
+import { subscribeProjectsForContainer } from "@/features/workspace-project-bridge";
+import { useDocumentTitle } from "@/shared/lib/use-document-title";
+import { hasDemoSession } from "@/shared/lib/demo-session";
+import {
+  getDemoContainerStats,
+  type DemoContainerStats,
+} from "@/shared/mocks/demo-data";
+import { useTaxonomy } from "@/features/taxonomy";
+import { useGlobalAdmin } from "@/features/permissions";
+
+// 첫 방문에 바로 필요 없는 오버레이들은 지연 로딩.
+// 초기 번들에서 분리되어 FCP/LCP 와 TTI 가 더 빨라진다.
+// SigmaTopology 는 sigma.js + edge-curve + node-border 등 무거운 deps 를
+// 끌고 와 chunk 가 큼. 첫 진입 / 캐시 비었을 때 chunk 다운로드 동안 빈
+// 화면이 그대로 보여 "멈춤" 느낌이라, 데이터 구독 skeleton 과 동일 톤
+// fallback 을 모듈 로드 단계에도 표시.
+function TopologyLoadingFallback() {
+  return (
+    <div
+      className="absolute inset-0 z-10 flex items-center justify-center"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="flex items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:var(--color-panel)] px-4 py-2 shadow-[0_12px_28px_rgba(0,0,0,0.45)]">
+        <span className="flex gap-1">
+          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:rgba(139,151,255,0.8)] [animation-delay:0ms]" />
+          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:rgba(139,151,255,0.8)] [animation-delay:150ms]" />
+          <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:rgba(139,151,255,0.8)] [animation-delay:300ms]" />
+        </span>
+        <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-tertiary)]">
+          토폴로지 엔진 불러오는 중
+        </span>
+      </div>
+    </div>
+  );
+}
+
+const SigmaTopology = dynamic(
+  () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaTopology),
+  { ssr: false, loading: () => <TopologyLoadingFallback /> },
+);
+const SigmaControls = dynamic(
+  () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaControls),
+  { ssr: false },
+);
+const SigmaHubRail = dynamic(
+  () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaHubRail),
+  { ssr: false },
+);
+const PortfolioShowcase = dynamic(
+  () =>
+    import("@/widgets/portfolio-showcase").then((m) => m.PortfolioShowcase),
+  { ssr: false },
+);
+const ProjectTour = dynamic(
+  () => import("@/widgets/project-tour").then((m) => m.ProjectTour),
+  { ssr: false },
+);
+const SearchPalette = dynamic(
+  () => import("@/widgets/search-palette").then((m) => m.SearchPalette),
+  { ssr: false },
+);
+const ShortcutSheet = dynamic(
+  () => import("@/widgets/shortcut-sheet").then((m) => m.ShortcutSheet),
+  { ssr: false },
+);
+const DocsQuickDrawer = dynamic(
+  () => import("@/widgets/docs-quick-drawer").then((m) => m.DocsQuickDrawer),
+  { ssr: false },
+);
+const MountedGlobalSearch = dynamic(
+  () =>
+    import("@/widgets/global-search").then((m) => m.MountedGlobalSearch),
+  { ssr: false },
+);
+import { GestureHint } from "@/widgets/gesture-hint";
+import { Button, LiveAnnouncer, Tooltip, useToast } from "@/shared/ui";
+import {
+  getProjectDetailHref,
+  type Project,
+  type ProjectImpactMode,
+} from "@/entities/project";
+import { buildDocsVaultHref } from "@/entities/docs-vault";
+import {
+  buildKnowledgeProjectEvidenceSummary,
+  subscribeKnowledgeProjectInsight,
+  type KnowledgeProjectInsight,
+} from "@/entities/knowledge-graph";
+import { getAccount } from "@/entities/account";
+import { ACCOUNT_QUERY_KEY, appendAccountQuery } from "@/shared/lib/account-scope";
+import { useScopedAccountId } from "@/shared/lib/use-scoped-account-id";
+import { useAutoResolveAccountId } from "@/features/account-scope";
+import {
+  deriveWorkspaceProjectContainers,
+  inferWorkspaceProjectGroup,
+} from "../model/workspace-container-fallback";
+import { useHomeRouteState } from "../model/use-home-route-state";
+
+const TOUR_DISMISSED_KEY = "aslan:project-tour:dismissed:v1";
+const LEFT_PANEL_COLLAPSED_KEY = "aslan:left-panel-collapsed:v2";
+
+export function HomePage() {
+  const { showCategoryRegions, categories: taxonomyCategories } = useTaxonomy();
+  const adminAuth = useGlobalAdmin();
+  const isAdmin = adminAuth.status === "authenticated";
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [sigmaControls, setSigmaControls] = useState<SigmaControlsState>(
+    DEFAULT_SIGMA_CONTROLS,
+  );
+  const [localGraphStack, setLocalGraphStack] = useState<string[]>([]);
+  const localGraphRoot =
+    localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
+  const [fitViewToken, setFitViewToken] = useState(0);
+  const [sigmaVisibleCount, setSigmaVisibleCount] = useState<number | null>(null);
+  const [sigmaHintDismissed, setSigmaHintDismissed] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    try {
+      return window.localStorage.getItem('aslan:sigma-hint-dismissed:v1') === '1';
+    } catch {
+      return true;
+    }
+  });
+  const dismissSigmaHint = useCallback(() => {
+    setSigmaHintDismissed(true);
+    try {
+      window.localStorage.setItem('aslan:sigma-hint-dismissed:v1', '1');
+    } catch {
+      /* private mode — skip */
+    }
+  }, []);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const scopedAccountId = useScopedAccountId(searchParams.get(ACCOUNT_QUERY_KEY));
+  // 로그인 사용자가 ?account= 없이 진입하면 owned membership 첫 번째로 URL 보강 —
+  // legacy 전역 collection 이 아닌 본인 워크스페이스 데이터로 즉시 스코프.
+  useAutoResolveAccountId("/");
+  const [scopedAccountName, setScopedAccountName] = useState<string | null>(null);
+  const [routeState, setRouteState] = useHomeRouteState();
+  // 상세 화면에서 Cmd+K를 누르면 홈으로 이동하며 sessionStorage 플래그를
+  // 남긴다. 여기서 그 플래그가 있으면 첫 렌더부터 검색 팔레트를 열어 hydration
+  // mismatch 없이 한 번에 보이게 한다. lazy initializer는 클라이언트에서만 실제
+  // 실행되므로 SSR은 항상 false, 클라이언트 hydration도 sessionStorage 없는
+  // 서버 프리렌더 기준 false → 불일치 없음.
+  const [searchOpen, setSearchOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      if (window.sessionStorage.getItem("aslan:open-search") === "1") {
+        window.sessionStorage.removeItem("aslan:open-search");
+        return true;
+      }
+    } catch {
+      /* private mode — skip */
+    }
+    return false;
+  });
+  // Fire 2 — 홈에서도 ⇧⌘K 로 ontology / 문서 / 프로젝트 통합 검색 (project
+  // 전용 SearchPalette 와 별 슬롯). MountedGlobalSearch 가 controlled mode 로
+  // open state 를 받아서 작동.
+  const [ontologySearchOpen, setOntologySearchOpen] = useState(false);
+  const [presentationMode, setPresentationMode] = useState(false);
+  const [regionsMobileOpen, setRegionsMobileOpen] = useState(false);
+  const [regionsDesktopOpen, setRegionsDesktopOpen] = useState(false);
+  const [accountMenuDismissToken, setAccountMenuDismissToken] = useState(0);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourIndex, setTourIndex] = useState(0);
+  const [tourDirection, setTourDirection] = useState<1 | -1>(1);
+  const [portfolioOpen, setPortfolioOpen] = useState(false);
+  const [portfolioSlug, setPortfolioSlug] = useState<string | null>(null);
+  const [shortcutsOpen, setShortcutsOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      if (window.sessionStorage.getItem("aslan:open-shortcuts") === "1") {
+        window.sessionStorage.removeItem("aslan:open-shortcuts");
+        return true;
+      }
+    } catch {
+      /* private mode */
+    }
+    return false;
+  });
+  const [docsDrawerOpen, setDocsDrawerOpen] = useState(false);
+  const [docsPinnedCount, setDocsPinnedCount] = useState(0);
+  const [selectedKnowledgeInsight, setSelectedKnowledgeInsight] = useState<{
+    projectSlug: string | null;
+    insight: KnowledgeProjectInsight;
+  }>({
+    projectSlug: null,
+    insight: {
+      nodes: [],
+      edges: [],
+      meta: null,
+    },
+  });
+  const [knowledgeSceneProjectSlug, setKnowledgeSceneProjectSlug] = useState<string | null>(null);
+  const [leftPanelCollapsed, setLeftPanelCollapsed] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const saved = window.localStorage.getItem(LEFT_PANEL_COLLAPSED_KEY);
+    return saved === null ? true : saved === "1";
+  });
+  const [topologyRelayoutToken, setTopologyRelayoutToken] = useState(0);
+  // subscribeProjects 실패 시 UI 가 빈 채로 영구 고착되는 걸 막기 위한 에러
+  // 상태. 네트워크·auth·quota 문제 등으로 Firestore 구독이 실패하면 배너
+  // 노출 + "다시 시도" 버튼으로 복구.
+  const [projectsError, setProjectsError] = useState<string | null>(null);
+  const [projectsRetryToken, setProjectsRetryToken] = useState(0);
+  const [projectsLoaded, setProjectsLoaded] = useState(false);
+  const toast = useToast();
+  const hydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
+  const prefetchedProjectHrefsRef = useRef(new Set<string>());
+  const preloadedImageUrlsRef = useRef(new Set<string>());
+
+  const toggleLeftPanel = useCallback(() => {
+    setLeftPanelCollapsed((current) => {
+      const next = !current;
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          LEFT_PANEL_COLLAPSED_KEY,
+          next ? "1" : "0",
+        );
+      }
+      return next;
+    });
+  }, []);
+  const dismissAccountMenu = useCallback(() => {
+    setAccountMenuDismissToken((current) => current + 1);
+  }, []);
+  const {
+    activeCategory,
+    selectedSlug,
+    focusedHubSlug,
+    featuredPathId: activeFeaturedPathId,
+    impactMode,
+    projectId: activeProjectId,
+  } = routeState;
+  const resetSigmaFilters = useCallback(() => {
+    setSigmaControls((current) => ({
+      ...current,
+      depthLimit: null,
+      searchQuery: "",
+      hubsOnly: false,
+    }));
+  }, []);
+  // 컨테이너 zoom-in (Layer 0 → Layer 1) 전환 시 sigma 가 graph 재구성 +
+  // re-init 동안 잠깐 빈 캔버스로 보여 "멈춤" 느낌이 남. 짧은 transient
+  // 스피너로 "지금 들어가는 중" 시각 단서 제공.
+  const [containerSwitching, setContainerSwitching] = useState(false);
+  const handleSelectWorkspaceProject = useCallback(
+    (projectId: string) => {
+      resetSigmaFilters();
+      setContainerSwitching(true);
+      setRouteState((current) => ({ ...current, projectId }));
+      // Layer 1 진입 = onboarding 완료 의미 (이미 Layer 0 에서 클릭으로 진입).
+      dismissSigmaHint();
+      // sigma graph rebuild + re-init 이 끝나는 정확한 신호는 sigma side
+      // 에 없어 RAF 두 번 + 350ms 의 보수적 타이머. 빠른 환경에선 그 전에
+      // 사라진 것처럼 자연스럽고, 느린 환경에선 사용자가 진행 중임을 인지.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setTimeout(() => setContainerSwitching(false), 350);
+        });
+      });
+    },
+    [setRouteState, dismissSigmaHint, resetSigmaFilters],
+  );
+  const [selectorOpen, setSelectorOpen] = useState(false);
+  // P0-B Phase 6 — 활성 컨테이너 이름을 hero subtitle/eyebrow 에 합성해
+  // selector pill 외에도 "지금 narnia 안" 이라는 시각 단서 강화.
+  const {
+    projects: workspaceProjectContainers,
+    loading: workspaceProjectsLoading,
+  } = useWorkspaceProjects(scopedAccountId);
+  const workspaceProjectIds = useMemo(
+    () => new Set(workspaceProjectContainers.map((container) => container.id)),
+    [workspaceProjectContainers],
+  );
+  const effectiveWorkspaceProjectContainers = useMemo(
+    () =>
+      workspaceProjectContainers.length > 0
+        ? workspaceProjectContainers
+        : deriveWorkspaceProjectContainers(projects, scopedAccountId),
+    [projects, scopedAccountId, workspaceProjectContainers],
+  );
+  const activeContainerName =
+    activeProjectId && effectiveWorkspaceProjectContainers.length > 0
+      ? (effectiveWorkspaceProjectContainers.find((c) => c.id === activeProjectId)?.name ?? null)
+      : null;
+  // 컨테이너 zoom-out view: ?pj 미설정 + 컨테이너 1개 이상이면 컨테이너 자체
+  // 를 토폴로지 노드로 보여줌 (4-layer 의 "Workspace 지도" 단계). 컨테이너
+  // 클릭 → setActiveProjectId 로 zoom-in. 컨테이너가 0개면 기존 flat view.
+  const showContainerView =
+    !activeProjectId && effectiveWorkspaceProjectContainers.length > 0;
+  // 사용자 요구 "Project > Hub > Node 3계층 구조" 반영:
+  // Layer 0 에서는 프로젝트 컨테이너만 보여주고, Hub/Node 는 Layer 1
+  // (`?pj=`) zoom-in 에서만 노출한다.
+  const containerProjects = useMemo<Project[]>(() => {
+    if (!showContainerView) return [];
+    const stats: Map<string, DemoContainerStats> = hasDemoSession()
+      ? getDemoContainerStats(scopedAccountId)
+      : new Map();
+    // 컨테이너 사이 cross-edge 계산: flat `accounts/{aid}/projects/*` 의
+    // dependencies 를 컨테이너 id 와 매칭. flat slug 와 컨테이너 id 가 1:1 인
+    // 시드 규약 (예: "reactor", "aslan-iam") 을 따른다.
+    const containerIdSet = new Set(
+      effectiveWorkspaceProjectContainers.map((c) => c.id),
+    );
+    const flatBySlug = new Map(projects.map((p) => [p.slug, p]));
+    return effectiveWorkspaceProjectContainers.map((container) => {
+      const stat = stats.get(container.id);
+      let crossDeps: string[] = [];
+      if (stat) {
+        const sortedDeps = Array.from(stat.depsToContainers.entries()).sort(
+          (a, b) => b[1] - a[1],
+        );
+        for (const [targetContainerId] of sortedDeps) {
+          crossDeps.push(targetContainerId);
+        }
+      } else {
+        const flat = flatBySlug.get(container.id);
+        if (flat?.dependencies?.length) {
+          crossDeps = flat.dependencies.filter(
+            (dep) => containerIdSet.has(dep) && dep !== container.id,
+          );
+        }
+      }
+      const fallbackCounts =
+        "hubCount" in container && "nodeCount" in container
+          ? ` · ${container.hubCount} hubs · ${container.nodeCount} nodes`
+          : "";
+      const countLabel = stat
+        ? ` · ${stat.hubs} hubs · ${stat.nodes} nodes`
+        : fallbackCounts;
+      return {
+        slug: container.id,
+        name: container.name,
+        category: "__container__",
+        status: "developing",
+        description: (container.description ?? "프로젝트 컨테이너") + countLabel,
+        tags: [],
+        stack: [],
+        links: [],
+        dependencies: crossDeps,
+        screenshots: [],
+        timeline: {},
+        isHub: true,
+        position: { x: 0, y: 0 },
+        accountId: scopedAccountId ?? container.accountId ?? undefined,
+        createdAt: container.createdAt,
+        updatedAt: container.updatedAt,
+      };
+    });
+  }, [
+    showContainerView,
+    effectiveWorkspaceProjectContainers,
+    scopedAccountId,
+    projects,
+  ]);
+  const renderProjects = showContainerView ? containerProjects : projects;
+  const selectedProject = useMemo(
+    () =>
+      selectedSlug
+        ? (renderProjects.find((p) => p.slug === selectedSlug) ?? null)
+        : null,
+    [selectedSlug, renderProjects],
+  );
+  // 컨테이너 view ↔ zoom-in 전환 시 카메라 자동 fit. 노드 set 이 통째로 바뀌면
+  // viewport 가 빈 영역에 머물 위험 큼. derived hash 로 fitViewToken 에 합산.
+  const viewModeHash = useMemo(() => {
+    const key = showContainerView ? "out" : `in:${activeProjectId ?? "flat"}`;
+    let h = 0;
+    for (let i = 0; i < key.length; i += 1) {
+      h = (h * 31 + key.charCodeAt(i)) | 0;
+    }
+    return Math.abs(h);
+  }, [showContainerView, activeProjectId]);
+  const combinedFitToken = fitViewToken + viewModeHash;
+  // P1-5 — 클라이언트 사이드 동적 타이틀. 컨테이너/선택 프로젝트 컨텍스트
+  // 를 탭·검색바에 노출 (정적 export 환경의 page metadata 한계 보완).
+  // 브랜드·컨테이너·계정 이름이 같으면 (예: 컨테이너명이 "Narnia") 중복 제거.
+  useDocumentTitle(
+    Array.from(
+      new Set(
+        [
+          "Narnia",
+          activeContainerName,
+          selectedProject?.name ?? scopedAccountName,
+        ].filter((value): value is string => Boolean(value)),
+      ),
+    ).join(" · ") || null,
+  );
+  const projectBySlug = useMemo(
+    () => new Map(renderProjects.map((project) => [project.slug, project])),
+    [renderProjects],
+  );
+  // reverse dependency map: slug → 이 slug 를 의존하는 프로젝트들.
+  // localGraphProjects 2-hop 확장에서 매번 projects 전체 순회를 피하려고 1회
+  // 계산해 재사용. O(E) 빌드, 조회 O(1).
+  const reverseDeps = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const project of renderProjects) {
+      for (const dep of project.dependencies) {
+        const existing = map.get(dep);
+        if (existing) {
+          existing.push(project.slug);
+        } else {
+          map.set(dep, [project.slug]);
+        }
+      }
+    }
+    return map;
+  }, [renderProjects]);
+
+  const hubs = useMemo(() => renderProjects.filter((p) => p.isHub), [renderProjects]);
+  // 지난 7일 내 updatedAt 된 프로젝트 수. hero subtitle 성장 카운터용.
+  // Date.now() 는 순수 경고 때문에 useState lazy initializer 로 mount 시 1회
+  // 만 캡처 (re-render 마다 경계 흔들리는 것도 방지 — 세션 동안 "이번 주"
+  // 기준점이 안정적).
+  const [mountNowMs] = useState<number>(() => Date.now());
+  const recentlyUpdatedCount = useMemo(() => {
+    const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+    return renderProjects.reduce((n, p) => {
+      const updated = p.updatedAt ? p.updatedAt.getTime() : 0;
+      return mountNowMs - updated < SEVEN_DAYS_MS ? n + 1 : n;
+    }, 0);
+  }, [renderProjects, mountNowMs]);
+  const featuredPaths = useMemo(
+    () => resolveFeaturedPathPresets(renderProjects),
+    [renderProjects],
+  );
+  const activeFeaturedPath = useMemo(
+    () =>
+      featuredPaths.find((path) => path.id === activeFeaturedPathId) ?? null,
+    [activeFeaturedPathId, featuredPaths],
+  );
+  const projectsOverviewHref = useMemo(
+    () => appendAccountQuery("/projects", scopedAccountId),
+    [scopedAccountId],
+  );
+  const tourSteps = useMemo(
+    () => resolveProjectTourSteps(projects),
+    [projects],
+  );
+  const activeTourStep = tourSteps[tourIndex] ?? null;
+
+  useEffect(() => {
+    if (!scopedAccountId) return;
+
+    let cancelled = false;
+    void getAccount(scopedAccountId).then((account) => {
+      if (!cancelled) {
+        setScopedAccountName(account?.name ?? scopedAccountId);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [scopedAccountId]);
+
+  // Sigma 홈 토폴로지는 projects 구독을 HomePage가 직접 관리한다.
+  //
+  // P0-B Phase 6 (점진 전환): activeProjectId 가 truthy 면 컨테이너의 hubs+
+  // nodes 서브컬렉션을 합쳐 읽음. null 이면 기존 flat `projects` 로 폴백 —
+  // 마이그레이션 안 한 사용자는 영향 없이 그대로 동작.
+  useEffect(() => {
+    // 에러 상태 초기화는 일부러 안 함 (setState-in-effect 금지 룰) — 재구독
+    // 직후 callback 이 fresh data 혹은 fresh error 로 덮어쓴다.
+    const onNext = (next: Project[]) => {
+      setProjects(next);
+      setProjectsError(null);
+      setProjectsLoaded(true);
+    };
+    const onError = (error: Error) => {
+      // Firestore 원시 영어 메시지 ("Missing or insufficient permissions.")
+      // 대신 code 매핑으로 사용자에게 actionable 한 한글 문구 제공.
+      const code = (error as Error & { code?: string }).code;
+      let friendly: string;
+      switch (code) {
+        case 'permission-denied':
+          friendly = '이 공간을 열 권한이 없습니다. 공간 소유자에게 초대를 요청하거나 다른 계정으로 로그인하세요.';
+          break;
+        case 'unauthenticated':
+          friendly = '로그인 세션이 만료됐습니다. 다시 로그인해 주세요.';
+          break;
+        case 'unavailable':
+        case 'deadline-exceeded':
+          friendly = '네트워크가 일시적으로 불안정합니다. 잠시 후 다시 시도해 주세요.';
+          break;
+        default:
+          friendly = error.message?.trim() || '프로젝트 목록을 불러오지 못했습니다.';
+      }
+      setProjectsError(friendly);
+      setProjectsLoaded(true);
+    };
+    const hasConcreteContainer =
+      activeProjectId !== null && workspaceProjectIds.has(activeProjectId);
+    const shouldUseFlatContainerFallback =
+      activeProjectId !== null &&
+      !hasConcreteContainer &&
+      (!workspaceProjectsLoading || workspaceProjectContainers.length === 0);
+    const unsub =
+      activeProjectId && !shouldUseFlatContainerFallback
+        ? subscribeProjectsForContainer(
+            scopedAccountId,
+            activeProjectId,
+            onNext,
+            onError,
+          )
+        : subscribeProjects(
+            scopedAccountId,
+            (next) => {
+              if (!activeProjectId || !shouldUseFlatContainerFallback) {
+                onNext(next);
+                return;
+              }
+              onNext(
+                next.filter(
+                  (project) =>
+                    inferWorkspaceProjectGroup(project).id === activeProjectId,
+                ),
+              );
+            },
+            onError,
+          );
+    return () => unsub();
+  }, [
+    scopedAccountId,
+    activeProjectId,
+    projectsRetryToken,
+    workspaceProjectIds,
+    workspaceProjectContainers.length,
+    workspaceProjectsLoading,
+  ]);
+  // Local graph 모드: 선택 노드 + 2-hop 이웃만 Sigma에 넘김. 전체 지도에서
+  // 벗어나 해당 노드 주변만 집중해서 볼 수 있게 한다. Esc 또는 닫기 버튼으로
+  // 전체 맵 복귀.
+  const localGraphProjects = useMemo(() => {
+    if (!localGraphRoot) return renderProjects;
+    // bySlug/reverseDeps 는 상위 useMemo 결과 재사용 — 매번 동일 Map 재생성
+    // 방지. dep 확장 = O(|deps|), 역방향 확장 = O(|reverseDeps[slug]|).
+    // 전체는 O(N + E) 로 2-hop 서브그래프 추출.
+    const visited = new Set<string>([localGraphRoot]);
+    let frontier = [localGraphRoot];
+    for (let hop = 0; hop < 2; hop += 1) {
+      const next: string[] = [];
+      for (const slug of frontier) {
+        const project = projectBySlug.get(slug);
+        if (!project) continue;
+        for (const dep of project.dependencies) {
+          if (!visited.has(dep) && projectBySlug.has(dep)) {
+            visited.add(dep);
+            next.push(dep);
+          }
+        }
+        const refs = reverseDeps.get(slug);
+        if (refs) {
+          for (const ref of refs) {
+            if (!visited.has(ref)) {
+              visited.add(ref);
+              next.push(ref);
+            }
+          }
+        }
+      }
+      frontier = next;
+      if (frontier.length === 0) break;
+    }
+    return renderProjects.filter((p) => visited.has(p.slug));
+  }, [renderProjects, localGraphRoot, projectBySlug, reverseDeps]);
+
+  useEffect(() => {
+    if (!localGraphRoot) return;
+    const handler = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setLocalGraphStack((stack) => stack.slice(0, -1));
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [localGraphRoot]);
+
+  const portfolioChapters = useMemo(
+    () => resolvePortfolioChapters(projects, featuredPaths),
+    [featuredPaths, projects],
+  );
+  const canvasSelectedSlug = portfolioOpen ? portfolioSlug : selectedSlug;
+  const drawerProject = portfolioOpen ? null : selectedProject;
+
+  const handleSelect = useCallback(
+    (
+      slug: string,
+      options?: { preserveFeaturedPath?: boolean; preserveImpact?: boolean },
+    ) => {
+      // Layer 0 컨테이너 클릭 = drawer 열기 (설명 · 지표 · "토폴로지 열기"
+      // CTA). 이전엔 바로 `?pj=X` 로 zoom-in 해버려서 ① 드래그 중 오발생 클릭
+      // 으로도 갑자기 내부로 들어가고, ② container 설명을 읽을 기회 없었음.
+      // drawer 안의 ProjectDrawer 가 container slug 를 보고 "토폴로지 열기"
+      // 버튼을 띄워 명시적 2-step 진입.
+      // 허브를 선택하면 포커스 모드 자동 활성. 일반 노드는 포커스 해제.
+      const project = renderProjects.find((p) => p.slug === slug);
+      setRouteState((current) => ({
+        ...current,
+        selectedSlug: slug,
+        focusedHubSlug: project?.isHub && !showContainerView ? slug : null,
+        featuredPathId: options?.preserveFeaturedPath
+          ? current.featuredPathId
+          : null,
+        impactMode: options?.preserveImpact ? current.impactMode : "none",
+      }));
+      // hub rail / search palette 어느 경로든 한 번 선택했으면 온보딩
+      // 역할은 끝. sigma 캔버스 onFirstInteraction 만으로는 rail 전용
+      // 사용자 케이스를 놓쳤음.
+      dismissSigmaHint();
+    },
+    [renderProjects, setRouteState, showContainerView, dismissSigmaHint],
+  );
+
+  const handleClose = useCallback(() => {
+    setRouteState((current) => ({
+      ...current,
+      selectedSlug: null,
+      focusedHubSlug: null,
+      featuredPathId: null,
+      impactMode: "none",
+    }));
+  }, [setRouteState]);
+
+  const handleDismissTour = useCallback(() => {
+    setTourOpen(false);
+    handleClose();
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(TOUR_DISMISSED_KEY, "1");
+    }
+  }, [handleClose]);
+
+  const handleMoveTourStep = useCallback(
+    (nextIndex: number) => {
+      const nextStep = tourSteps[nextIndex];
+      if (!nextStep) return;
+      setTourDirection(nextIndex >= tourIndex ? 1 : -1);
+      setTourIndex(nextIndex);
+      handleSelect(nextStep.slug);
+    },
+    [handleSelect, tourIndex, tourSteps],
+  );
+
+  const handleOpenTour = useCallback(() => {
+    if (tourSteps.length === 0) return;
+    handleMoveTourStep(0);
+    setTourOpen(true);
+  }, [handleMoveTourStep, tourSteps.length]);
+
+  const handleOpenTourFromPortfolio = useCallback(() => {
+    setPortfolioOpen(false);
+    setPortfolioSlug(null);
+    handleOpenTour();
+  }, [handleOpenTour]);
+
+  const handleClosePortfolio = useCallback(() => {
+    setPortfolioOpen(false);
+    setPortfolioSlug(null);
+  }, []);
+
+  const handleChangePortfolioChapter = useCallback(
+    (chapter: PortfolioChapter) => {
+      const project = projects.find((item) => item.slug === chapter.slug) ?? null;
+      setPortfolioSlug(chapter.slug);
+      setRouteState((current) => ({
+        ...current,
+        activeCategory: chapter.category,
+        featuredPathId: chapter.pathId === "default" ? null : chapter.pathId,
+        focusedHubSlug: chapter.focusedHubSlug ?? (project?.isHub ? project.slug : null),
+        impactMode: "none",
+      }));
+    },
+    [projects, setRouteState],
+  );
+
+  const handleNextTourStep = useCallback(() => {
+    if (tourIndex >= tourSteps.length - 1) {
+      handleDismissTour();
+      return;
+    }
+    handleMoveTourStep(tourIndex + 1);
+  }, [handleDismissTour, handleMoveTourStep, tourIndex, tourSteps.length]);
+
+  const handlePreviousTourStep = useCallback(() => {
+    handleMoveTourStep(Math.max(0, tourIndex - 1));
+  }, [handleMoveTourStep, tourIndex]);
+
+  const handleToggleHub = useCallback(
+    (slug: string) => {
+      // 같은 허브 재클릭 → 해제
+      if (focusedHubSlug === slug) {
+        handleClose();
+        return;
+      }
+      // 다른 허브 선택 → 드로어 오픈 + 포커스
+      setRouteState((current) => ({
+        ...current,
+        selectedSlug: slug,
+        focusedHubSlug: slug,
+        featuredPathId: null,
+        impactMode: "none",
+      }));
+    },
+    [focusedHubSlug, handleClose, setRouteState],
+  );
+
+  const handleChangeCategory = useCallback(
+    (category: string | null) => {
+      setRouteState((current) => ({
+        ...current,
+        activeCategory: category,
+        featuredPathId: null,
+      }));
+    },
+    [setRouteState],
+  );
+
+  const handleSelectImpactMode = useCallback(
+    (nextMode: ProjectImpactMode) => {
+      setRouteState((current) => ({
+        ...current,
+        impactMode: nextMode,
+      }));
+    },
+    [setRouteState],
+  );
+
+  // '문서' 버튼에 띄울 pinned 뱃지 카운트 — 드로어 닫힐 때 localStorage 에서
+  // 갱신. 드로어 내부에서 pin 토글하고 닫으면 즉시 버튼에 반영.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = window.localStorage.getItem(
+        "aslan:docs-vault:pinned:v1:server",
+      );
+      if (!raw) {
+        queueMicrotask(() => setDocsPinnedCount(0));
+        return;
+      }
+      const parsed: unknown = JSON.parse(raw);
+      const nextCount = Array.isArray(parsed)
+        ? parsed.filter((s): s is string => typeof s === "string").length
+        : 0;
+      queueMicrotask(() => setDocsPinnedCount(nextCount));
+    } catch {
+      queueMicrotask(() => setDocsPinnedCount(0));
+    }
+  }, [docsDrawerOpen]);
+
+  // 공용 useTypingShortcuts로 글로벌 키 단축키 통합.
+  // portfolio 오버레이가 열려 있으면 모두 비활성.
+  useTypingShortcuts([
+    // Fire 2 — ⇧⌘K 가 ⌘K 보다 먼저 매치되어야 (useTypingShortcuts 가 첫
+    // 일치 후 return). ontology / 문서 통합 검색 슬롯.
+    {
+      combo: { key: "k", meta: true, shift: true },
+      disabled: portfolioOpen,
+      onFire: () => setOntologySearchOpen((v) => !v),
+    },
+    {
+      combo: { key: "k", meta: true },
+      disabled: portfolioOpen,
+      onFire: () => setSearchOpen((v) => !v),
+    },
+    {
+      combo: { key: "f" },
+      disabled: portfolioOpen,
+      onFire: () => setPresentationMode((v) => !v),
+    },
+    {
+      combo: { key: "?" },
+      disabled: portfolioOpen,
+      onFire: () => setShortcutsOpen((v) => !v),
+    },
+    {
+      combo: { key: "d" },
+      disabled: portfolioOpen,
+      onFire: () => setDocsDrawerOpen((v) => !v),
+    },
+  ]);
+
+  // presentationMode 진입/해제 시 브라우저 fullscreen API 연동
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (presentationMode) {
+      if (
+        !document.fullscreenElement &&
+        document.documentElement.requestFullscreen
+      ) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      }
+    } else {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  }, [presentationMode]);
+
+  // 사용자가 ESC 등으로 브라우저 fullscreen 빠져나가면 상태 동기화
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const handler = () => {
+      if (!document.fullscreenElement) setPresentationMode(false);
+    };
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
+  }, []);
+
+  const drawerOpen = drawerProject !== null;
+  const selectedEvidenceSummary = useMemo(
+    () =>
+      selectedKnowledgeInsight.projectSlug === selectedProject?.slug
+        ? buildKnowledgeProjectEvidenceSummary(selectedKnowledgeInsight.insight, {
+            subjectName: selectedProject.name,
+          })
+        : null,
+    [selectedKnowledgeInsight, selectedProject],
+  );
+  const selectedHasKnowledgeEvidence = selectedEvidenceSummary?.hasEvidence ?? false;
+  const showProjectTopologyScene =
+    !portfolioOpen &&
+    knowledgeSceneProjectSlug === selectedProject?.slug &&
+    selectedProject !== null &&
+    selectedKnowledgeInsight.projectSlug === selectedProject.slug &&
+    selectedHasKnowledgeEvidence;
+  const hideMobileOverlayControls = drawerOpen;
+  const shouldShowRegions = Boolean(scopedAccountId) && showCategoryRegions;
+  const regionsOpen =
+    shouldShowRegions && (regionsMobileOpen || regionsDesktopOpen);
+
+  useEffect(() => {
+    if (shouldShowRegions || activeCategory === null) return;
+    setRouteState((current) => ({
+      ...current,
+      activeCategory: null,
+    }));
+  }, [activeCategory, setRouteState, shouldShowRegions]);
+
+  const preloadProjectAsset = useCallback(
+    (slug: string) => {
+      const project = projectBySlug.get(slug);
+      // Layer 0 컨테이너 synthetic project 는 slug 가 container id (narnia,
+      // aslan-reactor 등). `/project/{id}/` 정적 페이지는 존재하지 않아
+      // prefetch 시 404 소음만 만든다. 실제로는 `?pj=` zoom-in 으로 이동.
+      if (!project || project.category === "__container__") return;
+
+      const href = getProjectDetailHref(slug, scopedAccountId);
+      if (!prefetchedProjectHrefsRef.current.has(href)) {
+        prefetchedProjectHrefsRef.current.add(href);
+        router.prefetch(href);
+      }
+
+      project.screenshots.slice(0, 2).forEach((url) => {
+        if (!url || preloadedImageUrlsRef.current.has(url)) return;
+        preloadedImageUrlsRef.current.add(url);
+        const image = new window.Image();
+        image.decoding = "async";
+        image.src = url;
+        image.decode?.().catch(() => {});
+      });
+    },
+    [projectBySlug, router, scopedAccountId],
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const candidateSlugs = new Set<string>();
+    if (selectedSlug) candidateSlugs.add(selectedSlug);
+    if (activeTourStep) candidateSlugs.add(activeTourStep.slug);
+
+    [tourIndex - 1, tourIndex + 1].forEach((index) => {
+      const step = tourSteps[index];
+      if (step) candidateSlugs.add(step.slug);
+    });
+
+    // 허브 top 5 도 백그라운드 preload — 홈에 오자마자 사용자가 허브를
+    // 클릭해 드로어 열 때 스크린샷 즉시 뜨도록. idle callback 으로 현재
+    // 인터랙션 방해 없이 수행.
+    const addTopHubs = () => {
+      hubs.slice(0, 5).forEach((hub) => candidateSlugs.add(hub.slug));
+      candidateSlugs.forEach(preloadProjectAsset);
+    };
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof win.requestIdleCallback === 'function') {
+      const id = win.requestIdleCallback(addTopHubs);
+      return () => win.cancelIdleCallback?.(id);
+    }
+    const handle = window.setTimeout(addTopHubs, 200);
+    return () => window.clearTimeout(handle);
+  }, [activeTourStep, hubs, preloadProjectAsset, selectedSlug, tourIndex, tourSteps]);
+
+  useEffect(() => {
+    if (!selectedProject || portfolioOpen) return;
+
+    const unsubscribe = subscribeKnowledgeProjectInsight(
+      selectedProject.slug,
+      scopedAccountId,
+      (nextInsight) => {
+        setSelectedKnowledgeInsight({
+          projectSlug: selectedProject.slug,
+          insight: nextInsight,
+        });
+      },
+      (error) => {
+        console.warn("[HomePage] knowledge insight subscribe failed", error);
+      },
+    );
+
+    return () => unsubscribe();
+  }, [portfolioOpen, scopedAccountId, selectedProject]);
+
+  return (
+    <main id="main" className="relative h-screen w-screen overflow-hidden bg-[color:var(--color-canvas)]">
+      {/*
+        스크린리더 랜드마크 명시 + SEO h1. 시각 디자인은 canvas 중심이라
+        visible h1 을 두기 어려워 sr-only 로 문서 구조 only 에 보이게 한다.
+      */}
+      <h1 className="sr-only">
+        {scopedAccountName ?? "Narnia"} 프로젝트 토폴로지 지도
+      </h1>
+      <GestureHint
+        disabled={presentationMode || portfolioOpen || tourOpen || drawerOpen}
+      />
+      <LiveAnnouncer
+        message={(() => {
+          if (presentationMode) return "프레젠테이션 모드 시작";
+          if (portfolioOpen) return "포트폴리오 모드 시작";
+          if (!selectedProject) return "";
+          const deps = selectedProject.dependencies.length;
+          const referenced = projects.filter((p) =>
+            p.dependencies.includes(selectedProject.slug),
+          ).length;
+          return `${selectedProject.name} 선택됨. 의존 ${deps}개, 연결 ${referenced}개.`;
+        })()}
+      />
+      {!presentationMode && !portfolioOpen && (
+          <>
+            {/* 모바일 전용 미니 브랜드 라벨 */}
+            <div className="pointer-events-none absolute left-4 top-[22px] z-10 -translate-y-1/2 md:hidden">
+              <div className="flex items-center gap-2">
+                <Image
+                  src="/logo.png"
+                  alt=""
+                  aria-hidden="true"
+                  width={26}
+                  height={26}
+                  priority
+                  className="h-[26px] w-[26px] shrink-0 rounded-[7px] border border-[color:var(--color-border-soft)] object-cover"
+                />
+                <div>
+                  <span
+                    translate="no"
+                    className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]"
+                  >
+                    Narnia
+                  </span>
+                  <p className="mt-0.5 max-w-[180px] text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    제품·인증·에이전트.
+                  </p>
+                </div>
+              </div>
+            </div>
+            {(() => {
+              // Workspace context 라벨 — "여기는 전체 지도" 라는 시그널을 hero
+              // subtitle 에 태워서 hero 펼침·접힘 상태 무관 항상 보이게.
+              const containerPrefix = activeContainerName
+                ? `Project · ${activeContainerName}`
+                : "Workspace";
+              // 성장 시그널 — 지난 7일 내 updatedAt 된 프로젝트 수.
+              // "지식이 자라고 있다" 를 2초 안에 느끼게 하는 카운터. 0 이면 숨김.
+              const growthLabel = recentlyUpdatedCount > 0
+                ? ` · 이번 주 +${recentlyUpdatedCount}`
+                : "";
+              // 라벨 카피는 랜딩 CTA "데모 지도 열기 · N 컨테이너" 와 같은 단어로
+              // 일치시킨다. 진입 직후 "여기 N 컨테이너 안에 1,979 프로젝트가 있다"
+              // 가 한 줄로 잡혀야, 첫 인상에서 약속·실제가 어긋나지 않는다.
+              const containerCount = effectiveWorkspaceProjectContainers.length;
+              const totalProjectCount = projects.length;
+              const workspaceSubtitle = showContainerView
+                ? `Workspace 지도 · ${containerCount} 컨테이너 · ${totalProjectCount.toLocaleString("en-US")} 프로젝트${growthLabel}`
+                : `${containerPrefix} · ${renderProjects.length} 프로젝트 · ${hubs.length} 허브${growthLabel}`;
+              const workspaceEyebrow = showContainerView
+                ? `Workspace · ${containerCount} 컨테이너`
+                : `${containerPrefix} · ${renderProjects.length} 프로젝트`;
+              return hydrated && (leftPanelCollapsed || drawerOpen) ? (
+                <div className="pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8">
+                  <HeroCollapsed
+                    onExpand={
+                      drawerOpen ? handleClose : toggleLeftPanel
+                    }
+                    title={selectedProject?.name ?? scopedAccountName ?? "Narnia"}
+                    subtitle={
+                      selectedProject
+                        ? "선택한 프로젝트"
+                        : projects.length > 0
+                          ? workspaceSubtitle
+                          : "워크스페이스 지도 펼치기"
+                    }
+                    icon={selectedProject?.icon ?? null}
+                    ariaLabel={
+                      drawerOpen
+                        ? "선택한 프로젝트 닫기"
+                        : "좌측 패널 펼치기"
+                    }
+                    titleText={
+                      drawerOpen
+                        ? "선택한 프로젝트 닫기"
+                        : "좌측 패널 펼치기"
+                    }
+                    // Layer 1 zoomed-in + hero 접힌 상태에서도 한 번에
+                    // Workspace 지도로 drill-out 할 수 있게. drawer open
+                    // 상태엔 drawer close 가 우선이라 생략.
+                    workspaceMapHref={
+                      activeProjectId && !drawerOpen
+                        ? scopedAccountId
+                          ? `/?${ACCOUNT_QUERY_KEY}=${encodeURIComponent(scopedAccountId)}`
+                          : "/"
+                        : undefined
+                    }
+                    onWorkspaceMapClick={resetSigmaFilters}
+                    docsVaultHref={appendAccountQuery("/docs/", scopedAccountId)}
+                    ontologyHref={appendAccountQuery("/ontology/", scopedAccountId)}
+                  />
+                  {/* P0-B Phase 4c · collapsed hero 에서도 컨테이너 맥락 유지.
+                      drawer open 상태엔 drawer 가 선택 프로젝트 맥락을 이미
+                      담당하므로 생략. */}
+                  {!drawerOpen && (
+                    <div className="pointer-events-auto">
+                      <WorkspaceProjectSelector
+                        accountId={scopedAccountId}
+                        selectedId={activeProjectId}
+                        onSelect={handleSelectWorkspaceProject}
+                        onOpenChange={setSelectorOpen}
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="pointer-events-none absolute left-4 top-4 z-10 hidden max-h-[calc(100vh-2.5rem)] w-[288px] items-start gap-2.5 overflow-y-auto overscroll-contain pr-1 md:left-6 md:top-6 md:flex md:flex-col lg:max-h-[calc(100vh-3rem)] lg:w-[304px] xl:left-8 xl:top-8 xl:max-h-[calc(100vh-4rem)] xl:w-[340px] [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
+                  <HeroHeader
+                    className="block w-full"
+                    hidden={drawerOpen}
+                    activePathLabel={activeFeaturedPath?.label ?? null}
+                    onOpenSearch={() => setSearchOpen(true)}
+                    onCollapse={toggleLeftPanel}
+                    title={selectedProject?.name ?? scopedAccountName ?? "Narnia"}
+                    eyebrow={
+                      selectedProject
+                        ? "선택한 프로젝트"
+                        : projects.length > 0
+                          ? workspaceEyebrow
+                          : "워크스페이스 지도"
+                    }
+                    description={
+                      selectedProject?.description ||
+                      (projects.length > 0
+                        ? showContainerView
+                          ? `프로젝트 ${effectiveWorkspaceProjectContainers.length}개가 각자 허브를 품고 있습니다. 덩어리 위에 마우스를 올리면 안에 뭐가 있는지 살짝 미리 보여요.`
+                          : `${hubs.length}개 허브를 중심으로 ${projects.length}개 프로젝트가 엮여 있습니다. 노드를 클릭해 상세를 열어 볼 수 있어요.`
+                        : undefined)
+                    }
+                    icon={selectedProject?.icon ?? null}
+                    projectsListHref={projectsOverviewHref}
+                    docsVaultHref={appendAccountQuery("/docs/", scopedAccountId)}
+                    ontologyHref={appendAccountQuery("/ontology/", scopedAccountId)}
+                    // activeProjectId 가 있으면 컨테이너 zoom-in 상태.
+                    // 버튼으로 Layer 0 (워크스페이스 지도) 복귀.
+                    // ⚠️ appendAccountQuery 는 runtime `?pj=` 를 자동 상속해
+                    //    Layer 0 복귀 href 에 pj 가 도로 붙어 no-op 되는 버그
+                    //    있었음. account query 만 명시적으로 붙이고 pj 는 생략.
+                    workspaceMapHref={
+                      activeProjectId
+                        ? scopedAccountId
+                          ? `/?${ACCOUNT_QUERY_KEY}=${encodeURIComponent(scopedAccountId)}`
+                          : "/"
+                        : undefined
+                    }
+                    onWorkspaceMapClick={resetSigmaFilters}
+                  />
+                  {/* P0-B Phase 4b · 자기 워크스페이스에서만 "현재 프로젝트
+                      컨테이너" pill 노출. 지금은 컨테이너 1개만 존재하므로
+                      read-only. 2+ 되면 dropdown 으로 확장 (Phase 5). */}
+                  <div className="pointer-events-auto self-start">
+                    <WorkspaceProjectSelector
+                      accountId={scopedAccountId}
+                      selectedId={activeProjectId}
+                      onSelect={handleSelectWorkspaceProject}
+                      onOpenChange={setSelectorOpen}
+                    />
+                  </div>
+                  {/* O-9 — 워크스페이스 전체 보기 (selectedProject 없음 + 컨테이너
+                      zoom-in 도 아닐 때) 에 ontology summary strip. 사용자 첫
+                      인상에 "내 ontology 가 자라고 있다" 즉각 인지. 매치 0 자동
+                      숨김 (widget 자체 처리). */}
+                  {!selectedProject && !activeProjectId ? (
+                    <div className="pointer-events-auto self-start">
+                      <WorkspaceOntologyStrip accountId={scopedAccountId} />
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })()}
+            <SearchHint
+              onOpenSearch={() => {
+                dismissAccountMenu();
+                setSearchOpen(true);
+                setRegionsMobileOpen(false);
+                setRegionsDesktopOpen(false);
+              }}
+              onToggleRegions={() => {
+                if (!shouldShowRegions) return;
+                dismissAccountMenu();
+                if (drawerOpen) {
+                  handleClose();
+                }
+                if (typeof window !== "undefined" && window.innerWidth >= 768) {
+                  setRegionsDesktopOpen((current) => !current);
+                  setRegionsMobileOpen(false);
+                  return;
+                }
+                setRegionsMobileOpen((current) => !current);
+                setRegionsDesktopOpen(false);
+              }}
+              regionsOpen={regionsOpen}
+              showRegionsToggle={shouldShowRegions}
+              onRelayout={() => {
+                setTopologyRelayoutToken((current) => current + 1);
+                toast.show("토폴로지를 다시 정렬합니다", "info");
+              }}
+            />
+            <div className="absolute right-4 top-4 z-20 flex items-center gap-2 md:right-6 md:top-6 xl:right-8 xl:top-8">
+              <Tooltip content="문서 볼트 빠른 보기 (D)" side="bottom" withProvider={false}>
+              <button
+                type="button"
+                onClick={() => setDocsDrawerOpen((v) => !v)}
+                aria-expanded={docsDrawerOpen}
+                aria-label="문서 볼트 빠른 보기 열기 (D)"
+                className="inline-flex h-11 items-center gap-2 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] shadow-[0_10px_26px_rgba(0,0,0,0.14)] transition-[background-color,border-color,box-shadow,transform] duration-180 ease-out hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:var(--color-panel)] active:translate-y-[1px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none motion-reduce:transform-none"
+              >
+                <BookOpen size={15} className="text-[color:var(--color-indigo-accent)]" />
+                <span>문서</span>
+                {docsPinnedCount > 0 ? (
+                  <span
+                    className="inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-[color:rgba(94,106,210,0.28)] px-1.5 font-mono text-[10px] tabular-nums text-[color:var(--color-indigo-accent)]"
+                    aria-label={`고정된 문서 ${docsPinnedCount}개`}
+                    title={`고정된 문서 ${docsPinnedCount}개`}
+                  >
+                    {docsPinnedCount}
+                  </span>
+                ) : null}
+                <kbd className="hidden rounded border border-[color:var(--color-overlay-3)] px-1 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)] sm:inline">
+                  D
+                </kbd>
+              </button>
+              </Tooltip>
+              <PublicAccountMenu
+                accountId={scopedAccountId}
+                accountLabel={scopedAccountName ?? scopedAccountId}
+                dismissToken={accountMenuDismissToken}
+                onOpenChange={(open) => {
+                  if (!open) return;
+                  setRegionsMobileOpen(false);
+                  setRegionsDesktopOpen(false);
+                }}
+              />
+            </div>
+            {!drawerOpen && shouldShowRegions && (
+              <RegionNavigator
+                active={activeCategory}
+                onChange={handleChangeCategory}
+                focusedHub={focusedHubSlug}
+                onToggleHub={handleToggleHub}
+                hubs={hubs}
+                open={regionsOpen}
+                onClosed={() => {
+                  setRegionsMobileOpen(false);
+                  setRegionsDesktopOpen(false);
+                }}
+              />
+            )}
+            <Legend
+              hidden={hideMobileOverlayControls || (!shouldShowRegions && !scopedAccountId)}
+              showCategories={shouldShowRegions}
+            />
+            {/* ProjectTour 런처는 온보딩 카드 + SearchHint 로 이미 초기 발견
+                경로가 충분해, 추가 floating launcher 로 인한 시각 노이즈 제거.
+                투어 자체는 tourOpen state 로 외부 트리거 (예: 단축키 help
+                sheet 의 "투어 보기" 링크) 에서 열 수 있도록 유지. */}
+            <ProjectTour
+              open={tourOpen}
+              step={activeTourStep}
+              stepIndex={tourIndex}
+              stepDirection={tourDirection}
+              totalSteps={tourSteps.length}
+              launcherHidden
+              drawerOpen={drawerOpen}
+              onOpen={handleOpenTour}
+              onClose={handleDismissTour}
+              onPrevious={handlePreviousTourStep}
+              onNext={handleNextTourStep}
+            />
+          </>
+      )}
+      {presentationMode && (
+          <>
+            <Tooltip content="프레젠테이션 모드 종료 (F)" side="bottom" withProvider={false}>
+            <button
+              type="button"
+              onClick={() => setPresentationMode(false)}
+              className="pointer-events-auto absolute right-4 top-4 z-10 flex h-11 items-center gap-2 rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 font-[var(--font-weight-signature)] text-[13px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-1)] md:right-10 md:top-10"
+              aria-label="프레젠테이션 모드 종료"
+            >
+              <X size={14} />
+              <span className="hidden md:inline">닫기</span>
+              <span className="flex items-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                F
+              </span>
+            </button>
+            </Tooltip>
+          </>
+        )}
+        <div className="absolute inset-0">
+          {showProjectTopologyScene ? (
+            <>
+              <ProjectKnowledgeTopologyScene
+                nodes={selectedKnowledgeInsight.insight.nodes}
+                edges={selectedKnowledgeInsight.insight.edges}
+                projectName={selectedProject?.name}
+                summaryText={selectedEvidenceSummary?.summaryText}
+                onOpenDetail={() => {
+                  if (!selectedProject) return;
+                  router.push(
+                    `${getProjectDetailHref(selectedProject.slug, scopedAccountId)}#project-detail-insight`,
+                  );
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setKnowledgeSceneProjectSlug(null)}
+                className="pointer-events-auto absolute left-1/2 top-[96px] z-30 inline-flex max-w-[calc(100vw-32px)] -translate-x-1/2 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-panel)] px-3 py-1.5 text-[12px] text-[color:var(--color-text-secondary)] shadow-[0_10px_28px_rgba(0,0,0,0.36)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+                aria-label="워크스페이스 지도로 돌아가기"
+              >
+                <span className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
+                  Evidence
+                </span>
+                <span className="truncate">워크스페이스 지도</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <div
+                key={localGraphRoot ?? '__root__'}
+                className="absolute inset-0 animate-[sigmaFade_220ms_ease-out]"
+              >
+                <SigmaTopology
+                  projects={localGraphProjects}
+                  categories={taxonomyCategories}
+                  accountId={scopedAccountId}
+                  selectedSlug={canvasSelectedSlug}
+                  onSelectProject={(slug) => handleSelect(slug)}
+                  onProjectOpen={(slug) => setLocalGraphStack((stack) => [...stack, slug])}
+                  fitViewToken={combinedFitToken}
+                  relayoutToken={topologyRelayoutToken}
+                  onVisibleCountChange={setSigmaVisibleCount}
+                  onPaneClick={handleClose}
+                  onFirstInteraction={dismissSigmaHint}
+                  activeCategory={activeCategory}
+                  depthLimit={sigmaControls.depthLimit}
+                  searchQuery={sigmaControls.searchQuery}
+                  forces={
+                    // Layer 0 은 Workspace 지도: 프로젝트 컨테이너 21개만
+                    // 보여준다. Hub/Node 는 컨테이너 내부 Layer 1 에서 노출.
+                    showContainerView
+                      ? {
+                          repel: -900,
+                          linkDistance: 260,
+                          collideMultiplier: 2.2,
+                        }
+                      : sigmaControls.forces
+                  }
+                  hubsOnly={sigmaControls.hubsOnly}
+                  overlays={sigmaControls.overlays}
+                  // Layer 1 에서 hub 라벨의 container 이름 prefix 단축.
+                  // Layer 0 (activeContainerName null) 이면 원본 이름 유지.
+                  stripNamePrefix={activeContainerName ?? undefined}
+                />
+              </div>
+              <style jsx>{`
+                @keyframes sigmaFade {
+                  from { opacity: 0.5; transform: scale(0.995); }
+                  to { opacity: 1; transform: scale(1); }
+                }
+              `}</style>
+              <SigmaControls
+                value={sigmaControls}
+                onChange={setSigmaControls}
+                onFitView={() => setFitViewToken((t) => t + 1)}
+                visibleCount={sigmaVisibleCount}
+                totalCount={localGraphProjects.length}
+              />
+              {/* 단축키 도움말 진입점 — 우상단 SigmaControls 아래 36×36 아이콘.
+                  ? 키로도 열리지만 시각적 affordance 가 없어 발견성 낮았음. */}
+              {/* 키보드 단축키 도움말 — 모바일에서는 키보드가 없어 의미 없음. 데스크톱(md+) 에서만 노출. */}
+              <Tooltip content="키보드 단축키 (?)" side="left" withProvider={false}>
+              <button
+                type="button"
+                onClick={() => setShortcutsOpen(true)}
+                aria-label="키보드 단축키 보기"
+                className="pointer-events-auto absolute right-4 top-[228px] z-20 hidden h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] font-mono text-[14px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:right-6 md:flex xl:right-8"
+              >
+                ?
+              </button>
+              </Tooltip>
+              <SigmaHubRail
+                projects={renderProjects}
+                selectedSlug={canvasSelectedSlug}
+                onSelect={(slug) => handleSelect(slug)}
+                // Hero 패널이 펼쳐져 있을 때 겹침 방지. hero 가 Collapsed
+                // (pill) 이거나 drawer 상태면 Hub Rail 이 정상 노출.
+                // selector dropdown 이 열린 동안에도 같은 좌상단 영역과 겹쳐
+                // 보이므로 함께 suppress.
+                suppressed={(!leftPanelCollapsed && !drawerOpen) || selectorOpen}
+                stripNamePrefix={activeContainerName ?? undefined}
+              />
+              {localGraphStack.length > 0 ? (
+                <div className="pointer-events-auto absolute left-1/2 top-[96px] z-30 flex max-w-[70vw] -translate-x-1/2 items-center gap-2 rounded-full border border-[color:rgba(139,151,255,0.32)] bg-[color:var(--color-panel)] px-3 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                    Local
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setLocalGraphStack([])}
+                    className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  >
+                    Root
+                  </button>
+                  {localGraphStack.map((slug, idx) => (
+                    <span key={slug} className="flex items-center gap-2">
+                      <span className="text-[color:var(--color-text-quaternary)]">▸</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setLocalGraphStack((stack) => stack.slice(0, idx + 1))
+                        }
+                        className={`truncate text-[12px] transition-colors ${
+                          idx === localGraphStack.length - 1
+                            ? 'text-[color:var(--color-text-primary)]'
+                            : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
+                        }`}
+                        title={slug}
+                      >
+                        {slug}
+                      </button>
+                    </span>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setLocalGraphStack((stack) => stack.slice(0, -1))}
+                    className="ml-2 rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)]"
+                  >
+                    Esc
+                  </button>
+                </div>
+              ) : null}
+
+              {!portfolioOpen && selectedProject && selectedHasKnowledgeEvidence ? (
+                <button
+                  type="button"
+                  onClick={() => setKnowledgeSceneProjectSlug(selectedProject.slug)}
+                  className={`pointer-events-auto absolute left-1/2 z-20 inline-flex max-w-[calc(100vw-32px)] -translate-x-1/2 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:var(--color-panel)] px-3 py-1.5 text-[12px] text-[color:var(--color-text-secondary)] shadow-[0_10px_28px_rgba(0,0,0,0.36)] transition-colors hover:border-[color:rgba(139,151,255,0.5)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] ${
+                    localGraphStack.length > 0 ? "top-[144px]" : "top-[96px]"
+                  }`}
+                  aria-label={`${selectedProject.name} 문서 근거 지도 보기`}
+                >
+                  <BookOpen size={13} className="shrink-0 text-[color:var(--color-indigo-accent)]" />
+                  <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+                    문서 근거
+                  </span>
+                  <span className="truncate">
+                    {selectedEvidenceSummary?.counts.documents ?? 0} docs · {selectedEvidenceSummary?.counts.edges ?? 0} links
+                  </span>
+                </button>
+              ) : null}
+
+              {/* 필터 컨텍스트 — 현재 visible 노드 수가 전체보다 적으면 표시.
+                  SigmaControls 검색창 배지와 중복이지만, controls가 접힌 상태에서도
+                  필터 중임을 알려주는 컨텍스트 칩. */}
+              {sigmaVisibleCount !== null && sigmaVisibleCount < localGraphProjects.length ? (
+                <div className="pointer-events-none absolute bottom-6 left-[220px] z-10 rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.9)] md:left-[228px] xl:left-[236px]">
+                  filter · {sigmaVisibleCount} / {localGraphProjects.length}
+                </div>
+              ) : null}
+
+              {/* 매칭 0건 empty state */}
+              {sigmaVisibleCount === 0 ? (
+                <div className="pointer-events-auto absolute left-1/2 top-1/2 z-20 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-3 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-6 py-5 text-center shadow-[0_12px_32px_rgba(0,0,0,0.55)]">
+                  <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+                    No matches
+                  </p>
+                  <p className="text-[13px] text-[color:var(--color-text-secondary)]">
+                    현재 필터 조건에 맞는 프로젝트가 없습니다.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSigmaControls({
+                        ...sigmaControls,
+                        searchQuery: '',
+                        depthLimit: null,
+                      })
+                    }
+                    className="rounded-md border border-[color:rgba(139,151,255,0.3)] bg-[color:rgba(94,106,210,0.1)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
+                  >
+                    필터 해제
+                  </button>
+                </div>
+              ) : null}
+
+              {/* 첫 진입 온보딩 카드 — bottom-center 는 중앙 hub 노드(IAM 등)를
+                  가려 사용자가 "여기를 클릭해야 하는지" 알 수 없게 만들었다.
+                  좌하단 status bar 위로 옮겨 중앙 시야를 비운다. SigmaHubRail
+                  접힌 상태(기본값) 와 status bar 사이 빈 공간을 활용. */}
+              {!sigmaHintDismissed && sigmaVisibleCount !== 0 ? (
+                <div className="pointer-events-auto absolute bottom-14 left-4 z-10 hidden max-w-[320px] flex-col gap-2 rounded-2xl border border-[color:rgba(139,151,255,0.32)] bg-[color:var(--color-panel)] px-4 py-3 text-[11px] text-[color:var(--color-text-tertiary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] sm:flex md:left-6 xl:left-8">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                      프로젝트 지형도
+                    </p>
+                    <button
+                      type="button"
+                      onClick={dismissSigmaHint}
+                      aria-label="안내 닫기"
+                      className="text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                  <p className="leading-5">
+                    {showContainerView
+                      ? "프로젝트 덩어리 위에 올리면 내부 구성이 보이고, 클릭하면 안으로 들어갑니다."
+                      : "노드는 프로젝트, 선은 의존 관계입니다. 클릭해서 상세를 열고 검색으로 좁혀보세요."}
+                  </p>
+                  <ul className="flex flex-col gap-1 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                    {showContainerView ? (
+                      <li>
+                        <span className="text-[color:var(--color-text-secondary)]">올리기</span>
+                        <span className="text-[color:var(--color-text-quaternary)]"> · 내부 허브 미리보기</span>
+                      </li>
+                    ) : null}
+                    <li>
+                      <span className="text-[color:var(--color-text-secondary)]">클릭</span>
+                      <span className="text-[color:var(--color-text-quaternary)]">
+                        {showContainerView
+                          ? " · 프로젝트 안으로 들어가기"
+                          : " · 상세 패널 열기"}
+                      </span>
+                    </li>
+                    <li>
+                      <span className="text-[color:var(--color-text-secondary)]">드래그</span>
+                      <span className="text-[color:var(--color-text-quaternary)]"> · 노드 위치 이동</span>
+                    </li>
+                    <li>
+                      <kbd className="rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1 font-mono text-[9px]">⌘</kbd>
+                      <kbd className="ml-0.5 rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1 font-mono text-[9px]">K</kbd>
+                      <span className="text-[color:var(--color-text-quaternary)]"> 검색 · </span>
+                      <kbd className="rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1 font-mono text-[9px]">?</kbd>
+                      <span className="text-[color:var(--color-text-quaternary)]"> 단축키</span>
+                    </li>
+                  </ul>
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
+        {projectsError ? (
+          <div
+            role="alert"
+            className="pointer-events-auto absolute left-1/2 top-[52px] z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(236,116,116,0.32)] bg-[color:rgba(18,20,26,0.98)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
+          >
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(236,116,116,0.9)]">
+              Error
+            </span>
+            <span>{projectsError}</span>
+            <button
+              type="button"
+              onClick={() => setProjectsRetryToken((t) => t + 1)}
+              className="ml-2 rounded-full border border-[color:var(--color-divider)] px-2.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            >
+              다시 시도
+            </button>
+          </div>
+        ) : null}
+        {/* 로딩 스켈레톤 — (a) 구독 첫 콜백 전, empty state 오인 방지.
+            (b) 컨테이너 zoom-in 직후 sigma 재구성 중 빈 캔버스 인지 차단. */}
+        {(scopedAccountId &&
+          !projectsLoaded &&
+          !projectsError &&
+          !portfolioOpen) ||
+        containerSwitching ? (
+          <div
+            className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
+            role="status"
+            aria-live="polite"
+          >
+            <div className="pointer-events-auto flex items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.28)] bg-[color:var(--color-panel)] px-4 py-2 shadow-[0_12px_28px_rgba(0,0,0,0.45)]">
+              <span className="flex gap-1">
+                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:rgba(139,151,255,0.8)] [animation-delay:0ms]" />
+                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:rgba(139,151,255,0.8)] [animation-delay:150ms]" />
+                <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:rgba(139,151,255,0.8)] [animation-delay:300ms]" />
+              </span>
+              <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-tertiary)]">
+                {containerSwitching ? "토폴로지 다시 그리는 중" : "워크스페이스 지도 불러오는 중"}
+              </span>
+            </div>
+          </div>
+        ) : null}
+        {scopedAccountId && projectsLoaded && projects.length === 0 && !portfolioOpen && !tourOpen ? (
+          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-4">
+            <section className="pointer-events-auto w-full max-w-xl rounded-[28px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-6 py-6 text-center shadow-[0_28px_64px_rgba(0,0,0,0.34)]">
+              <p className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
+                {activeContainerName
+                  ? `Project · ${activeContainerName}`
+                  : "워크스페이스 지도"}
+              </p>
+              <h2 className="mt-3 text-2xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                {activeContainerName
+                  ? `"${activeContainerName}" 컨테이너에 노드가 없습니다`
+                  : "아직 이 공간에 프로젝트가 없습니다"}
+              </h2>
+              {isAdmin ? (
+                <>
+                  <p className="mt-4 text-sm leading-7 text-[color:var(--color-text-secondary)]">
+                    {activeContainerName
+                      ? "이 컨테이너에 아직 프로젝트가 없습니다. 새 프로젝트를 추가해 시작하세요."
+                      : "첫 프로젝트 하나만 있으면 지도가 살아납니다. 어떤 방식으로 시작할지 고르세요."}
+                  </p>
+                  <div className="mt-5 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center">
+                    <Link
+                      href={appendAccountQuery("/project/new/", scopedAccountId)}
+                      className="inline-flex"
+                    >
+                      <Button type="button" size="sm" className="w-full sm:w-auto">
+                        {activeContainerName ? "프로젝트 추가" : "첫 프로젝트 만들기"}
+                      </Button>
+                    </Link>
+                    <Link
+                      href={appendAccountQuery("/settings/import/", scopedAccountId)}
+                      className="inline-flex"
+                    >
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full sm:w-auto"
+                      >
+                        {activeContainerName
+                          ? "CSV 로 한 번에 올리기"
+                          : "샘플 5개로 바로 체험"}
+                      </Button>
+                    </Link>
+                  </div>
+                  <p className="mt-4 text-xs leading-5 text-[color:var(--color-text-tertiary)]">
+                    {activeContainerName
+                      ? "다른 컨테이너로 전환하려면 좌상단 셀렉터를 사용하세요."
+                      : "샘플은 인증·결제·알림 같은 실제 서비스 5개로 감을 먼저 잡아주고, CSV 는 이미 정리된 프로젝트를 한 번에 올립니다."}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-4 text-sm leading-7 text-[color:var(--color-text-secondary)]">
+                    공간 소유자가 프로젝트를 등록하면 여기에 지도로 보입니다.
+                  </p>
+                  <div className="mt-5 flex flex-col items-center gap-2">
+                    <Link href={projectsOverviewHref} className="inline-flex">
+                      <Button type="button" variant="outline">
+                        프로젝트 목록 보기
+                      </Button>
+                    </Link>
+                  </div>
+                </>
+              )}
+            </section>
+          </div>
+        ) : null}
+        <PortfolioShowcase
+          open={portfolioOpen}
+          chapters={portfolioChapters}
+          activeSlug={portfolioSlug}
+          onClose={handleClosePortfolio}
+          onChangeChapter={handleChangePortfolioChapter}
+          onOpenGuide={handleOpenTourFromPortfolio}
+        />
+        <ProjectDrawer
+          project={showProjectTopologyScene ? null : drawerProject}
+          allProjects={renderProjects}
+          accountId={scopedAccountId}
+          activeProjectId={activeProjectId}
+          impactMode={impactMode}
+          onChangeImpactMode={handleSelectImpactMode}
+          onClose={handleClose}
+          onSelectProject={(slug) =>
+            handleSelect(slug, { preserveImpact: impactMode !== "none" })
+          }
+          containerLabel={activeContainerName}
+          knowledgeInsight={
+            selectedKnowledgeInsight.projectSlug === drawerProject?.slug
+              ? selectedKnowledgeInsight.insight
+              : null
+          }
+          onOpenKnowledgeScene={(slug) => setKnowledgeSceneProjectSlug(slug)}
+          onEnterContainer={(slug) => {
+            // Drawer 의 "토폴로지 열기" CTA 에서 넘어오는 slug:
+            // - container (Layer 0 주인공): 그 컨테이너로 zoom-in
+            // - hub (Layer 0 보조): 이 허브가 속한 컨테이너로 zoom-in + 허브
+            //   slug 는 selectedSlug 로 유지해 Layer 1 에서 자동 focus.
+            const proj = renderProjects.find((p) => p.slug === slug);
+            if (!proj) return;
+            if (proj.category === "__container__") {
+              handleSelectWorkspaceProject(slug);
+              return;
+            }
+            // Hub/Node slug 로 들어온 경우 → 소속 컨테이너 찾기.
+            // 실제 workspaceProjects 가 없으면 legacy name/slug prefix 로 추론한
+            // 컨테이너 목록을 사용한다.
+            const containerIds = effectiveWorkspaceProjectContainers
+              .map((c) => c.id)
+              .sort((a, b) => b.length - a.length);
+            const containerId = containerIds.find(
+              (id) => slug === id || slug.startsWith(`${id}-`),
+            );
+            if (containerId) {
+              handleSelectWorkspaceProject(containerId);
+              // 허브 slug 는 selectedSlug 로 남겨 Layer 1 에서 자동 포커스.
+              setRouteState((current) => ({
+                ...current,
+                selectedSlug: slug,
+              }));
+            }
+          }}
+        />
+        <SearchPalette
+          open={searchOpen && !portfolioOpen}
+          onClose={() => setSearchOpen(false)}
+          projects={renderProjects}
+          onSelect={(slug) => {
+            handleSelect(slug);
+          }}
+          containerLabel={activeContainerName}
+          accountId={scopedAccountId}
+        />
+        {/* Fire 2 — ⇧⌘K 로 열리는 ontology / 문서 통합 검색. project 전용
+            SearchPalette 와 별 슬롯 — layer filter / 최근 검색 등 SearchPalette
+            의 고유 기능 보존. controlled mode (open/onOpenChange) 라 hotkey
+            는 useTypingShortcuts 가 관리. */}
+        <MountedGlobalSearch
+          accountId={scopedAccountId}
+          open={ontologySearchOpen && !portfolioOpen}
+          onOpenChange={setOntologySearchOpen}
+          onSelectProject={(project) => handleSelect(project.slug)}
+        />
+        <ShortcutSheet
+          open={shortcutsOpen}
+          onClose={() => setShortcutsOpen(false)}
+        />
+        <DocsQuickDrawer
+          open={docsDrawerOpen}
+          onClose={() => setDocsDrawerOpen(false)}
+          getDocHref={(slug) => buildDocsVaultHref({ accountId: scopedAccountId, slug })}
+          contextProject={
+            selectedProject
+              ? {
+                  slug: selectedProject.slug,
+                  name: selectedProject.name,
+                }
+              : null
+          }
+        />
+    </main>
+  );
+}

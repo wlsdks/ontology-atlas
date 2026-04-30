@@ -1,0 +1,41 @@
+{
+  "id": "03-aslan-iam",
+  "description": "Aslan IAM — JWT 발급 단일 권한 보유 IAM 서비스. Kotlin + Spring Boot 3.3 헥사고날. 도메인 3 (인증 / 인가 / 2FA), 기능 6 (사용자 API / 관리자 API / JWT 발급기 / Refresh 저장소 / 헥사고날 어댑터 / 보안 필터), 요소 6 (Spring Boot / PostgreSQL / Redis / Flyway / BCrypt / TOTP).",
+  "nodes": [
+    { "title": "Aslan IAM", "kind": "project" },
+    { "title": "Authentication", "kind": "domain" },
+    { "title": "Authorization", "kind": "domain" },
+    { "title": "2FA", "kind": "domain" },
+    { "title": "User API", "kind": "capability" },
+    { "title": "Admin API", "kind": "capability" },
+    { "title": "JWT Issuer", "kind": "capability" },
+    { "title": "Refresh Token Store", "kind": "capability" },
+    { "title": "Hexagonal Adapters", "kind": "capability" },
+    { "title": "JwtAuthenticationFilter", "kind": "capability" },
+    { "title": "Spring Boot 3.3", "kind": "element" },
+    { "title": "PostgreSQL 15", "kind": "element" },
+    { "title": "Redis 7", "kind": "element" },
+    { "title": "Flyway", "kind": "element" },
+    { "title": "BCrypt", "kind": "element" },
+    { "title": "TOTP", "kind": "element" }
+  ],
+  "edges": [
+    { "from": "Authentication", "to": "Aslan IAM", "type": "belongs_to" },
+    { "from": "Authorization", "to": "Aslan IAM", "type": "belongs_to" },
+    { "from": "2FA", "to": "Aslan IAM", "type": "belongs_to" },
+    { "from": "User API", "to": "Authentication", "type": "belongs_to" },
+    { "from": "Admin API", "to": "Authorization", "type": "belongs_to" },
+    { "from": "JWT Issuer", "to": "Authentication", "type": "belongs_to" },
+    { "from": "Refresh Token Store", "to": "Authentication", "type": "belongs_to" },
+    { "from": "Hexagonal Adapters", "to": "Aslan IAM", "type": "belongs_to" },
+    { "from": "JwtAuthenticationFilter", "to": "Authentication", "type": "belongs_to" },
+    { "from": "User API", "to": "JwtAuthenticationFilter", "type": "uses" },
+    { "from": "Admin API", "to": "JwtAuthenticationFilter", "type": "uses" },
+    { "from": "JWT Issuer", "to": "BCrypt", "type": "uses" },
+    { "from": "Refresh Token Store", "to": "Redis 7", "type": "uses" },
+    { "from": "Hexagonal Adapters", "to": "PostgreSQL 15", "type": "uses" },
+    { "from": "Hexagonal Adapters", "to": "Flyway", "type": "uses" },
+    { "from": "2FA", "to": "TOTP", "type": "uses" },
+    { "from": "Aslan IAM", "to": "Spring Boot 3.3", "type": "uses" }
+  ]
+}

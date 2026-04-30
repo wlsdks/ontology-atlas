@@ -1,0 +1,438 @@
+rules_version = '2';
+
+// Aslan Project Map — Firestore Security Rules
+//
+// 공개 제품:
+// - projects, categories, statuses, meta: 누구나 읽기 가능
+// - 쓰기는 admins 화이트리스트 이메일만 가능
+//
+// Knowledge subsystem v2:
+// - public projection과 public pointer만 공개 읽기 허용
+// - documents / versions / reviews는 admin만 읽기·쓰기
+// - jobs는 backend가 생성/갱신하고 admin은 읽기만
+// - chunks / evidence / outputs / audit / approved graph / public projection은 backend-owned
+//
+// Ontology TBox (schema):
+// - ontologyClasses, ontologyRelations: 누구나 읽기, admin만 쓰기
+//   (TBox 는 공개 라벨이라 read 열려야 하지만 schema 변경은 system-level)
+// - ontologyTBoxVersions: account member 읽기, account owner 만 신규 create.
+//   immutable snapshot — update/delete 차단 (P1 Phase 1).
+// - ontologyTBoxState/{accountId}: 활성 TBox version 포인터. owner 만 swap.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/admins/$(request.auth.token.email));
+    }
+
+    function isAccountPublic(accountId) {
+      return exists(/databases/$(database)/documents/accounts/$(accountId))
+        && get(/databases/$(database)/documents/accounts/$(accountId)).data.isPublic == true;
+    }
+
+    function isAccountMember(accountId) {
+      return request.auth != null
+        && exists(
+          /databases/$(database)/documents/accountMemberships/$(request.auth.uid + "__" + accountId)
+        );
+    }
+
+    // accountMemberships.role == 'owner' 인 멤버만. schema 변경 같은 system-level
+    // 결정에 사용 — TBox 진화 (ontologyTBoxVersions / ontologyTBoxState) 처럼
+    // 잘못 박히면 전체 fact graph 의미가 흔들리는 곳에 한정.
+    function isAccountOwner(accountId) {
+      return isAccountMember(accountId)
+        && get(
+          /databases/$(database)/documents/accountMemberships/$(request.auth.uid + "__" + accountId)
+        ).data.role == 'owner';
+    }
+
+    match /projects/{projectId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /statuses/{statusId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /meta/{document} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /admins/{email} {
+      allow read: if request.auth != null
+        && request.auth.token.email == email;
+      allow write: if false;
+    }
+
+    match /accounts/{accountId} {
+      // 공개 목록/스코프 확인 목적으로 누구나 읽기. 쓰기는 "자기 공간"
+      // (auth.uid == accountId) 에 한해 본인만 create/update. 삭제는
+      // 연쇄 정리 (projects, memberships 등) 필요하므로 일단 차단.
+      allow read: if true;
+      allow create: if request.auth != null
+        && request.auth.uid == accountId
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update: if request.auth != null
+        && request.auth.uid == accountId
+        && resource.data.ownerUid == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /accountMemberships/{membershipId} {
+      // 본인 uid 로 매치된 membership 은 항상 읽기 가능.
+      // 이메일 초대 (uid 미연결 invited 상태) 는 로그인 후 자기 이메일과
+      // 일치하는 doc 을 읽을 수 있어야 `listAccountMembershipsByEmail`
+      // 로 접근 권한을 감지 가능. Cloud Function 이 uid 동기화 전까지
+      // 이메일 기반 매치 허용.
+      allow read: if request.auth != null
+        && (
+          resource.data.uid == request.auth.uid
+          || (
+            resource.data.email != null
+            && resource.data.email == request.auth.token.email
+          )
+        );
+      // "내 공간" 의 초기 owner membership 은 본인 스스로 생성 가능.
+      // membershipId 는 `{uid}__{accountId}` 규약이고 이 두 값은 auth.uid
+      // 와 일치해야만 owner 부여 — 즉 자기 자신의 공간에만 owner 가 됨.
+      allow create: if request.auth != null
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.accountId == request.auth.uid
+        && membershipId == request.auth.uid + "__" + request.auth.uid
+        && request.resource.data.role == 'owner';
+      // editor/viewer 초대 + 제거는 Cloud Function (Admin SDK) 만 가능.
+      // client-side update/delete 는 계속 차단.
+      allow update, delete: if false;
+    }
+
+    match /accounts/{accountId}/projects/{projectId} {
+      allow read: if isAccountPublic(accountId) || isAccountMember(accountId);
+      allow write: if isAdmin() || isAccountMember(accountId);
+    }
+
+    // M2 · 외부 HTTP API key. account member 가 발급/조회/revoke. 평문 키는
+    // hash 만 저장돼 firestore 노출돼도 사용 불가. delete 는 차단 — revoke
+    // 후 audit 보존. Cloud Function (receiveDoc) 가 admin SDK 로 read/write
+    // 하므로 client-side rule 은 발급/관리 흐름만 커버.
+    match /accounts/{accountId}/apiKeys/{keyId} {
+      allow read: if isAdmin() || isAccountMember(accountId);
+      allow create: if isAdmin() || isAccountMember(accountId);
+      // update 는 revokedAt 설정만 (revoke). affectedKeys().hasOnly(['revokedAt'])
+      // 으로 hash/prefix/name/scopes 등 다른 필드가 함께 변조되는 경로 차단.
+      // 클라이언트 revokeApiKey() 는 updateDoc 에 revokedAt 만 넘기므로 정상
+      // 플로우엔 영향 없음.
+      allow update: if (isAdmin() || isAccountMember(accountId))
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['revokedAt']);
+      allow delete: if false;
+    }
+
+    // P0-B · Workspace > Project > Hub + Node 4-layer (Phase 5 설계 확정).
+    // 의도적으로 nodes 를 hubs 의 sibling 으로 배치 — 한 node 가 여러 hub 에
+    // 의존할 수 있으므로 parent-child 중첩 대신 배열 참조(`hubIds[]`) 모델.
+    // 기존 flat `projects` 와 병존 (마이그레이션 완료 전까지).
+    match /accounts/{accountId}/workspaceProjects/{projectId} {
+      allow read: if isAccountPublic(accountId) || isAccountMember(accountId);
+      allow create, update: if isAdmin() || isAccountMember(accountId);
+      // 삭제는 하위 hubs/nodes cleanup 이 필요하므로 일단 차단. Phase 6
+      // legacy 제거 단계에서 Cloud Function 기반 cascade 삭제로 전환.
+      allow delete: if false;
+
+      match /hubs/{hubId} {
+        allow read: if isAccountPublic(accountId) || isAccountMember(accountId);
+        allow write: if isAdmin() || isAccountMember(accountId);
+      }
+
+      // sibling: nodes 는 hubs 와 같은 레벨. `hubIds: string[]` 필드로 0~N
+      // 개 hub 에 속할 수 있다. array-contains 쿼리로 허브별 필터.
+      match /nodes/{nodeId} {
+        allow read: if isAccountPublic(accountId) || isAccountMember(accountId);
+        allow write: if isAdmin() || isAccountMember(accountId);
+      }
+    }
+
+    match /accounts/{accountId}/projectActivity/{eventId} {
+      // 활동 로그: 공간 멤버·admin 은 읽기. 생성은 admin 또는 계정 멤버
+      // (프로젝트를 수정할 수 있는 쪽이 기록도 남긴다). 수정·삭제는 금지
+      // — 감사 로그는 append-only.
+      allow read: if isAdmin() || isAccountMember(accountId);
+      allow create: if isAdmin() || isAccountMember(accountId);
+      allow update, delete: if false;
+    }
+
+    match /accounts/{accountId}/developerActivityEvents/{eventId} {
+      // Developer Activity Ingest: GitHub App webhook / MCP / API 가 backend
+      // boundary 에서 append. 클라이언트는 읽기와 "확인 처리"만 가능.
+      allow read: if isAdmin() || isAccountMember(accountId);
+      allow create: if false;
+      allow update: if (isAdmin() || isAccountMember(accountId))
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['unread', 'acknowledgedAt'])
+        && request.resource.data.unread == false;
+      allow delete: if false;
+    }
+
+    match /accounts/{accountId}/developerActivityDeliveries/{deliveryId} {
+      // Webhook delivery log. Payload 는 GitHub App webhook 이 실제로 도착한
+      // 경우만 backend 가 저장한다. 운영자는 상태 확인과 재처리 판단만 한다.
+      allow read: if isAdmin() || isAccountMember(accountId);
+      allow write: if false;
+    }
+
+    // 클라이언트 측 예기치 않은 에러를 관찰 가능하게. global-error.tsx /
+    // error.tsx 가 hydration·render 실패 시 여기 append. Sentry 같은 외부
+    // 서비스 도입 전까지의 간이 관찰 채널.
+    match /accounts/{accountId}/clientErrors/{errorId} {
+      allow read: if isAdmin() || isAccountMember(accountId);
+      allow create: if isAdmin() || isAccountMember(accountId);
+      allow update, delete: if false;
+    }
+
+    match /accounts/{accountId}/knowledgeDocuments/{documentId} {
+      // 공개 계정의 published 문서는 누구나 읽을 수 있다. 공개 detail 페이지가
+      // 해당 프로젝트에 연결된 문서 목록을 보여주려면 이 경로가 열려야 함.
+      // draft/reviewing/processing/error 상태의 문서는 여전히 member/admin 만.
+      allow read: if isAdmin()
+        || isAccountMember(accountId)
+        || (isAccountPublic(accountId) && resource.data.status == 'published');
+      allow write: if isAdmin() || isAccountMember(accountId);
+    }
+
+    match /accounts/{accountId}/knowledgeDocumentVersions/{versionId} {
+      allow read: if isAdmin() || isAccountMember(accountId);
+      allow create: if isAdmin() || isAccountMember(accountId);
+      allow update, delete: if false;
+    }
+
+    match /knowledgeDocuments/{documentId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /knowledgeDocumentVersions/{versionId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /knowledgeDocumentChunks/{chunkId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /knowledgeEvidence/{evidenceId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /knowledgeExtractionJobs/{jobId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /knowledgeExtractionOutputs/{outputId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /knowledgeReviews/{reviewId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /knowledgeReviewEvents/{eventId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /knowledgeApprovalEvents/{eventId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    // knowledgeApprovedNodes / knowledgeApprovedEdges
+    //
+    // 기본은 trusted server (Cloud Functions `applyReviewActionCore`) 만 write —
+    // extraction-검수-승인 경로의 canonical store.
+    //
+    // Manual editor v0 (B 라인) 부터 client 가 `source: "manual"` 인 노드/엣지를
+    // 직접 create/update/delete 가능. extraction 출처는 여전히 server 만.
+    // - account member 만 write (auth 본인 uid 와 manualAuthor 일치)
+    // - kind/type 화이트리스트 + 필수 필드 비어있지 않음
+    // - account member 또는 admin 이 read
+    match /knowledgeApprovedNodes/{nodeId} {
+      allow read: if isAdmin() || isAccountMember(resource.data.accountId);
+      // Manual create:
+      // - kind 화이트리스트 5 종 (unknown 제외 — stub placeholder 는
+      //   server 의 Cloud Function 만 생성).
+      // - client 가 isStub / pendingType / pendingFromId 를 주입해
+      //   server-created stub 으로 위장하는 경로 차단.
+      allow create: if isAccountMember(request.resource.data.accountId)
+                    && request.resource.data.source == "manual"
+                    && request.resource.data.manualAuthor == request.auth.uid
+                    && request.resource.data.kind in [
+                      "project", "domain", "capability", "element", "document"
+                    ]
+                    && request.resource.data.title is string
+                    && request.resource.data.title.size() > 0
+                    && (!('isStub' in request.resource.data)
+                        || request.resource.data.isStub == false)
+                    && !('pendingType' in request.resource.data)
+                    && !('pendingFromId' in request.resource.data);
+      // Manual update:
+      // - server-created stub (resource.data.isStub == true) 은 client 가
+      //   update 로 가로챌 수 없다. promote/dismiss 는 Cloud Function 전용.
+      // - source / manualAuthor / kind / accountId 변조 금지.
+      // - deletedAt / deletedBy / deletedReason 은 server-only soft-delete
+      //   메타. client 가 박거나 지울 수 없다.
+      allow update: if isAccountMember(resource.data.accountId)
+                    && resource.data.source == "manual"
+                    && resource.data.manualAuthor == request.auth.uid
+                    && resource.data.isStub != true
+                    && request.resource.data.source == "manual"
+                    && request.resource.data.manualAuthor == request.auth.uid
+                    && request.resource.data.accountId == resource.data.accountId
+                    && request.resource.data.kind == resource.data.kind
+                    && !('deletedAt' in request.resource.data)
+                    && !('deletedBy' in request.resource.data)
+                    && !('deletedReason' in request.resource.data);
+      allow delete: if isAccountMember(resource.data.accountId)
+                    && resource.data.source == "manual"
+                    && resource.data.manualAuthor == request.auth.uid
+                    && resource.data.isStub != true;
+    }
+
+    match /knowledgeApprovedEdges/{edgeId} {
+      allow read: if isAdmin() || isAccountMember(resource.data.accountId);
+      allow create: if isAccountMember(request.resource.data.accountId)
+                    && request.resource.data.source == "manual"
+                    && request.resource.data.manualAuthor == request.auth.uid
+                    && request.resource.data.from is string
+                    && request.resource.data.from.size() > 0
+                    && request.resource.data.to is string
+                    && request.resource.data.to.size() > 0
+                    && request.resource.data.type in [
+                      "contains", "belongs_to", "depends_on",
+                      "implements", "uses", "describes", "related_to"
+                    ];
+      // Manual update: source / type / from / to 변조 금지.
+      // deletedAt 등 soft-delete 메타도 server-only.
+      allow update: if isAccountMember(resource.data.accountId)
+                    && resource.data.source == "manual"
+                    && resource.data.manualAuthor == request.auth.uid
+                    && request.resource.data.source == "manual"
+                    && request.resource.data.manualAuthor == request.auth.uid
+                    && request.resource.data.accountId == resource.data.accountId
+                    && request.resource.data.from == resource.data.from
+                    && request.resource.data.to == resource.data.to
+                    && request.resource.data.type == resource.data.type
+                    && !('deletedAt' in request.resource.data)
+                    && !('deletedBy' in request.resource.data)
+                    && !('deletedReason' in request.resource.data);
+      allow delete: if isAccountMember(resource.data.accountId)
+                    && resource.data.source == "manual"
+                    && resource.data.manualAuthor == request.auth.uid;
+    }
+
+    match /knowledgePublishes/{publishId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
+    match /knowledgePublicMeta/{documentId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /knowledgePublicNodes/{nodeId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /knowledgePublicEdges/{edgeId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Ontology TBox — knowledge subsystem 의 schema 정의.
+    // 누구나 읽기 가능 (공개 surface 가 클래스/관계 라벨을 표시). 쓰기는
+    // admin 만. seed 와 schema 변경은 모두 system-level 결정이라 일반 멤버
+    // 권한으로 변경 불가. Cloud Function 시드 스크립트는 Admin SDK 로 우회.
+    match /ontologyClasses/{classId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /ontologyRelations/{relationId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // P1 Phase 1 — TBox versioning. 각 schema 변경 시점의 immutable snapshot.
+    // 호환성 + audit trail 목적으로 새 버전 추가만 가능, 기존 버전 update/delete 불가.
+    // spec: docs/superpowers/specs/2026-04-28-ontology-tbox-evolution.md
+    match /ontologyTBoxVersions/{versionId} {
+      allow read: if isAdmin() || isAccountMember(resource.data.accountId);
+      // owner 만 새 버전 생성. classes / relations 가 array 인 것만 형식 검증
+      // (각 항목 schema 는 코드 레벨에서 검증). createdBy 는 본인 uid 일치.
+      allow create: if isAccountOwner(request.resource.data.accountId)
+                    && request.resource.data.createdBy == request.auth.uid
+                    && request.resource.data.classes is list
+                    && request.resource.data.relations is list;
+      // immutable — 변경은 새 version 으로.
+      allow update, delete: if false;
+    }
+
+    // 활성 TBox 포인터 (account 당 단일 doc). 새 버전 활성화는 setDoc 으로 swap.
+    // doc id == accountId 고정 — request.resource.data.accountId 와 일치 강제.
+    match /ontologyTBoxState/{accountId} {
+      allow read: if isAdmin() || isAccountMember(accountId);
+      allow create, update: if isAccountOwner(accountId)
+                           && request.resource.data.versionId is string
+                           && request.resource.data.activatedBy == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // Share URL (S-1) — Docs Vault 의 임시 공개 링크.
+    // 생성은 로그인된 사용자만 허용, token 으로 주소가 발급되면 누구나
+    // 읽을 수 있다 (링크 자체가 credential). 수정·삭제는 생성자만.
+    //
+    // 필드 계약:
+    //   token (doc id), createdBy (uid), createdAt (ts), expiresAt (ts|null),
+    //   slug (string), title (string), content (string), maxViews (int|null),
+    //   viewCount (int, default 0).
+    match /sharedDocs/{token} {
+      allow read: if true;
+      allow create:
+        if request.auth != null
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.content is string
+        && request.resource.data.slug is string
+        && request.resource.data.title is string
+        && request.resource.data.viewCount == 0;
+      allow update:
+        if request.auth != null
+        && resource.data.createdBy == request.auth.uid;
+      // viewCount 는 누구나 +1 할 수 있게 — 조회수 증가 용.
+      allow update:
+        if request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['viewCount'])
+        && request.resource.data.viewCount == resource.data.viewCount + 1;
+      allow delete:
+        if request.auth != null
+        && resource.data.createdBy == request.auth.uid;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

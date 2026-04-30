@@ -1,0 +1,59 @@
+rules_version = '2';
+
+// Aslan Project Map — Firebase Storage Rules
+//
+// screenshots/: 공개 읽기, admin 업로드
+// knowledge-documents/: admin 전용 원문 저장
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isAdmin() {
+      return request.auth != null
+        && firestore.exists(
+          /databases/(default)/documents/admins/$(request.auth.token.email)
+        );
+    }
+
+    function isAccountMember(accountId) {
+      return request.auth != null
+        && firestore.exists(
+          /databases/(default)/documents/accountMemberships/$(request.auth.uid + "__" + accountId)
+        );
+    }
+
+    match /screenshots/{projectSlug}/{file} {
+      allow read: if true;
+      allow write: if isAdmin()
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|webp)');
+    }
+
+    match /accounts/{accountId}/screenshots/{projectSlug}/{file} {
+      allow read: if true;
+      allow write: if (isAdmin() || isAccountMember(accountId))
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg|webp)');
+    }
+
+    match /accounts/{accountId}/knowledge-documents/{documentId}/{file} {
+      allow read: if isAdmin() || isAccountMember(accountId);
+      allow write: if resource == null
+        && (isAdmin() || isAccountMember(accountId))
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('(text/markdown|text/plain|application/octet-stream)');
+    }
+
+    match /knowledge-documents/{documentId}/{file} {
+      allow read: if isAdmin();
+      allow write: if resource == null
+        && isAdmin()
+        && request.resource.size < 2 * 1024 * 1024
+        && request.resource.contentType.matches('(text/markdown|text/plain|application/octet-stream)');
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

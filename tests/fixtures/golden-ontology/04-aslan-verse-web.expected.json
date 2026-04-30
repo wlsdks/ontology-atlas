@@ -1,0 +1,42 @@
+{
+  "id": "04-aslan-verse-web",
+  "description": "Aslan Verse Web — Vite + React 19 + xyflow 워크스페이스 시각화 앱. 도메인 3 (Landing / Workspace / Dashboard), 기능 6, 요소 7.",
+  "nodes": [
+    { "title": "Aslan Verse Web", "kind": "project" },
+    { "title": "Landing", "kind": "domain" },
+    { "title": "Workspace", "kind": "domain" },
+    { "title": "Dashboard", "kind": "domain" },
+    { "title": "Landing Page", "kind": "capability" },
+    { "title": "Workspace List", "kind": "capability" },
+    { "title": "Workspace Canvas", "kind": "capability" },
+    { "title": "Dashboard Page", "kind": "capability" },
+    { "title": "Auth Flow", "kind": "capability" },
+    { "title": "Server State", "kind": "capability" },
+    { "title": "Vite", "kind": "element" },
+    { "title": "React 19", "kind": "element" },
+    { "title": "xyflow/react", "kind": "element" },
+    { "title": "react-router 7", "kind": "element" },
+    { "title": "Tailwind v4", "kind": "element" },
+    { "title": "Lion UI", "kind": "element" },
+    { "title": "react-hook-form + zod", "kind": "element" }
+  ],
+  "edges": [
+    { "from": "Landing", "to": "Aslan Verse Web", "type": "belongs_to" },
+    { "from": "Workspace", "to": "Aslan Verse Web", "type": "belongs_to" },
+    { "from": "Dashboard", "to": "Aslan Verse Web", "type": "belongs_to" },
+    { "from": "Landing Page", "to": "Landing", "type": "belongs_to" },
+    { "from": "Workspace List", "to": "Workspace", "type": "belongs_to" },
+    { "from": "Workspace Canvas", "to": "Workspace", "type": "belongs_to" },
+    { "from": "Dashboard Page", "to": "Dashboard", "type": "belongs_to" },
+    { "from": "Auth Flow", "to": "Aslan Verse Web", "type": "belongs_to" },
+    { "from": "Server State", "to": "Aslan Verse Web", "type": "belongs_to" },
+    { "from": "Workspace Canvas", "to": "xyflow/react", "type": "uses" },
+    { "from": "Server State", "to": "React 19", "type": "uses" },
+    { "from": "Aslan Verse Web", "to": "Vite", "type": "uses" },
+    { "from": "Aslan Verse Web", "to": "React 19", "type": "uses" },
+    { "from": "Aslan Verse Web", "to": "react-router 7", "type": "uses" },
+    { "from": "Aslan Verse Web", "to": "Tailwind v4", "type": "uses" },
+    { "from": "Aslan Verse Web", "to": "Lion UI", "type": "uses" },
+    { "from": "Auth Flow", "to": "react-hook-form + zod", "type": "uses" }
+  ]
+}
