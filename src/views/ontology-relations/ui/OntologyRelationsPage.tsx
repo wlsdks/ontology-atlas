@@ -76,7 +76,7 @@ export function OntologyRelationsPage() {
         {/* UX-8: 모바일 좌상단 back chevron (iOS 표준 패턴). md+ 는 기존
             우상단 link 유지. */}
         <Link
-          href={appendAccountQuery("/ontology/", accountId)}
+          href={"/ontology/"}
           aria-label="온톨로지 트리로 돌아가기"
           className="inline-flex items-center gap-1 text-xs text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] md:hidden"
         >
@@ -92,13 +92,13 @@ export function OntologyRelationsPage() {
           </h1>
           <div className="flex items-center gap-2">
             <Link
-              href={appendAccountQuery("/ontology/", accountId)}
+              href={"/ontology/"}
               className="hidden h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] md:inline-flex"
             >
               ← 트리로
             </Link>
             <Link
-              href={appendAccountQuery("/ontology/insights/", accountId)}
+              href={"/ontology/insights/"}
               className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
             >
               인사이트
@@ -128,7 +128,7 @@ export function OntologyRelationsPage() {
             <>
               아직 승인된 관계가 없어요.{" "}
               <Link
-                href={appendAccountQuery("/ontology/", accountId)}
+                href={"/ontology/"}
                 className="text-[color:rgba(159,170,235,0.95)] underline"
               >
                 트리
@@ -226,8 +226,8 @@ export function OntologyRelationsPage() {
             </header>
             <ol className="space-y-1">
               {strongEdges.map(({ edge, evidence, fromTitle, toTitle, isCrossProject }) => {
-                const fromHref = `${appendAccountQuery("/ontology/", accountId)}${accountId ? "&" : "?"}node=${encodeURIComponent(edge.from)}`;
-                const toHref = `${appendAccountQuery("/ontology/", accountId)}${accountId ? "&" : "?"}node=${encodeURIComponent(edge.to)}`;
+                const fromHref = `${"/ontology/"}${accountId ? "&" : "?"}node=${encodeURIComponent(edge.from)}`;
+                const toHref = `${"/ontology/"}${accountId ? "&" : "?"}node=${encodeURIComponent(edge.to)}`;
                 return (
                   <li
                     key={edge.id}

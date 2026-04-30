@@ -14,7 +14,6 @@ import {
 import { PermissionGate } from '@/features/permissions';
 import {
   ACCOUNT_QUERY_KEY,
-  appendAccountQuery,
 } from '@/shared/lib/account-scope';
 import { OperationsNav } from '@/widgets/operations-nav';
 
@@ -52,25 +51,25 @@ function SettingsHubContent() {
         {
           label: '카테고리',
           helper: '지도 위 클러스터의 라벨·배치·크기',
-          href: appendAccountQuery('/settings/categories/', accountId),
+          href: '/settings/categories/',
           icon: Layers,
         },
         {
           label: '상태',
           helper: '프로젝트 상태 라벨과 dot 색',
-          href: appendAccountQuery('/settings/statuses/', accountId),
+          href: '/settings/statuses/',
           icon: Tag,
         },
         {
           label: '프로젝트 가져오기',
           helper: '샘플로 시작하거나 CSV 로 한 번에 올리기',
-          href: appendAccountQuery('/settings/import/', accountId),
+          href: '/settings/import/',
           icon: Database,
         },
         {
           label: '온톨로지 schema',
           helper: '활성 TBox 클래스·관계 보기 (곧 직접 추가 가능)',
-          href: appendAccountQuery('/settings/ontology/', accountId),
+          href: '/settings/ontology/',
           icon: Network,
         },
       ],
@@ -81,7 +80,7 @@ function SettingsHubContent() {
         {
           label: 'API 키',
           helper: 'CLI · CI · MCP 가 push 할 때 쓰는 키',
-          href: appendAccountQuery('/settings/api-keys/', accountId),
+          href: '/settings/api-keys/',
           icon: KeyRound,
         },
       ],
@@ -92,7 +91,7 @@ function SettingsHubContent() {
         {
           label: '오늘 챙길 곳',
           helper: '오래된 · 외톨이 · 허브 후보',
-          href: appendAccountQuery('/diagnostics/insights/', accountId),
+          href: '/diagnostics/insights/',
           icon: Compass,
         },
       ],

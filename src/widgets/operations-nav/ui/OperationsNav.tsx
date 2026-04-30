@@ -102,7 +102,7 @@ export function OperationsNav({ accountId, rightSlot }: OperationsNavProps) {
 
   const renderTab = (item: NavItem, variant: 'desktop' | 'mobile') => {
     const active = item.prefixes.some((p) => pathname.startsWith(p));
-    const href = appendAccountQuery(item.basePath, resolvedAccountId);
+    const href = item.basePath;
     // 모바일 chip 은 본문 톤 (text-[12px]) 유지하되 padding 살짝 줄여
     // 5 개가 375 폭 가로 스크롤 안에 자연스럽게 흐르게.
     const sizeClass =
@@ -141,7 +141,7 @@ export function OperationsNav({ accountId, rightSlot }: OperationsNavProps) {
       <div className="hidden items-center justify-between gap-3 px-4 py-2.5 md:flex md:px-6">
         <div className="flex items-center gap-3">
           <Link
-            href={appendAccountQuery('/', resolvedAccountId)}
+            href={'/'}
             aria-label="워크스페이스 지도로 돌아가기"
             className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] px-2.5 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
           >
@@ -155,7 +155,7 @@ export function OperationsNav({ accountId, rightSlot }: OperationsNavProps) {
         <div className="flex items-center gap-2">
           {rightSlot}
           <ThemeToggle />
-          <Link href={appendAccountQuery('/projects/', resolvedAccountId)} className="inline-flex">
+          <Link href={'/projects/'} className="inline-flex">
             {/* '↗' 는 외부 링크 의미로 오해 가능 — 내부 라우트라
                 '→' 로 명확화. */}
             <Button variant="ghost" size="sm" type="button">
@@ -174,7 +174,7 @@ export function OperationsNav({ accountId, rightSlot }: OperationsNavProps) {
           금지). */}
       <div className="flex items-center gap-2 overflow-x-auto px-4 py-2 md:hidden">
         <Link
-          href={appendAccountQuery('/', resolvedAccountId)}
+          href={'/'}
           aria-label="워크스페이스 지도로 돌아가기"
           className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
         >

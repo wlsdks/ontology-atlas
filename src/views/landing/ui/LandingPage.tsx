@@ -41,7 +41,7 @@ function buildAuthHref(
   accountId?: string | null,
   next?: string | null,
 ) {
-  const url = new URL(appendAccountQuery(path, accountId), "http://local.test");
+  const url = new URL(path, "http://local.test");
   if (next?.trim()) {
     url.searchParams.set("next", next.trim());
   }

@@ -1,5 +1,4 @@
 import {
-  appendAccountQuery,
   appendWorkspaceProjectQuery,
 } from "../../../shared/lib/account-scope";
 
@@ -43,11 +42,11 @@ function appendKnowledgeParams(path: string, options?: KnowledgeHrefOptions): st
 
 function decorate(
   path: string,
-  accountId?: string | null,
+  _accountId?: string | null,
   options?: KnowledgeHrefOptions,
 ): string {
   return appendWorkspaceProjectQuery(
-    appendAccountQuery(appendKnowledgeParams(path, options), accountId),
+    appendKnowledgeParams(path, options),
     options?.workspaceProjectId,
   );
 }

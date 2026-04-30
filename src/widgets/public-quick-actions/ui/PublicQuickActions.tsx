@@ -1,5 +1,6 @@
 "use client";
 
+import { appendAccountQuery } from "@/shared/lib/account-scope";
 import Link from "next/link";
 import { useMemo } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
@@ -8,7 +9,6 @@ import {
   getKnowledgeDocumentNewHref,
 } from "@/entities/knowledge-document";
 import { useScopedAccountAccess } from "@/features/account-scope";
-import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { Button, InfoHint } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 
@@ -36,7 +36,7 @@ export function PublicQuickActions({
 
   const newProjectHref = useMemo(() => {
     const url = new URL(
-      appendAccountQuery("/project/new/", accountId),
+      "/project/new/",
       "http://local.test",
     );
     url.searchParams.set("returnTo", returnTo);

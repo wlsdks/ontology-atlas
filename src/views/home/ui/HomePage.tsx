@@ -436,7 +436,7 @@ export function HomePage() {
     }, 0);
   }, [renderProjects, mountNowMs]);
   const projectsOverviewHref = useMemo(
-    () => appendAccountQuery("/projects", scopedAccountId),
+    () => "/projects",
     [scopedAccountId],
   );
 
@@ -929,8 +929,8 @@ export function HomePage() {
                         : undefined
                     }
                     onWorkspaceMapClick={resetSigmaFilters}
-                    docsVaultHref={appendAccountQuery("/docs/", scopedAccountId)}
-                    ontologyHref={appendAccountQuery("/ontology/", scopedAccountId)}
+                    docsVaultHref={"/docs/"}
+                    ontologyHref={"/ontology/"}
                   />
                 </div>
               ) : (
@@ -959,8 +959,8 @@ export function HomePage() {
                     }
                     icon={selectedProject?.icon ?? null}
                     projectsListHref={projectsOverviewHref}
-                    docsVaultHref={appendAccountQuery("/docs/", scopedAccountId)}
-                    ontologyHref={appendAccountQuery("/ontology/", scopedAccountId)}
+                    docsVaultHref={"/docs/"}
+                    ontologyHref={"/ontology/"}
                     // activeProjectId 가 있으면 컨테이너 zoom-in 상태.
                     // 버튼으로 Layer 0 (워크스페이스 지도) 복귀.
                     // ⚠️ appendAccountQuery 는 runtime `?pj=` 를 자동 상속해
@@ -1405,7 +1405,7 @@ export function HomePage() {
                   </p>
                   <div className="mt-5 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center">
                     <Link
-                      href={appendAccountQuery("/project/new/", scopedAccountId)}
+                      href={"/project/new/"}
                       className="inline-flex"
                     >
                       <Button type="button" size="sm" className="w-full sm:w-auto">
@@ -1413,7 +1413,7 @@ export function HomePage() {
                       </Button>
                     </Link>
                     <Link
-                      href={appendAccountQuery("/settings/import/", scopedAccountId)}
+                      href={"/settings/import/"}
                       className="inline-flex"
                     >
                       <Button

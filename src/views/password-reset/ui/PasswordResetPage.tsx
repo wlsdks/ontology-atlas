@@ -16,7 +16,7 @@ export function PasswordResetPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const loginHref = useMemo(() => appendAccountQuery('/login', accountId), [accountId]);
+  const loginHref = useMemo(() => '/login', [accountId]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

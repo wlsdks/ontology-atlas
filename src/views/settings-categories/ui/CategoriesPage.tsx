@@ -1,5 +1,6 @@
 "use client";
 
+import { appendAccountQuery } from "@/shared/lib/account-scope";
 import {
   useCallback,
   useEffect,
@@ -27,7 +28,6 @@ import {
 import { findProjectPlacement } from "@/features/project-edit/model";
 import { computeInitialLayout } from "@/features/topology-layout";
 import { Button } from "@/shared/ui";
-import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { cn } from "@/shared/lib/cn";
 import { CategoryCanvasEditor } from "./CategoryCanvasEditor";

@@ -136,7 +136,7 @@ export function OntologyInsightsPage() {
         {/* UX-8: 모바일 한정 좌상단 back chevron — 한 손 도달 가능 위치
             (iOS 표준 패턴). md+ 데스크톱은 기존 우상단 link 유지. */}
         <Link
-          href={appendAccountQuery("/ontology/", accountId)}
+          href={"/ontology/"}
           aria-label="온톨로지 트리로 돌아가기"
           className="inline-flex items-center gap-1 text-xs text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] md:hidden"
         >
@@ -151,7 +151,7 @@ export function OntologyInsightsPage() {
             인사이트
           </h1>
           <Link
-            href={appendAccountQuery("/ontology/", accountId)}
+            href={"/ontology/"}
             className="hidden h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] md:inline-flex"
           >
             ← 트리로
@@ -183,7 +183,7 @@ export function OntologyInsightsPage() {
             <>
               아직 ontology 가 비어 있어요.{" "}
               <Link
-                href={appendAccountQuery("/knowledge/documents/", accountId)}
+                href={"/knowledge/documents/"}
                 className="text-[color:rgba(159,170,235,0.95)] underline"
               >
                 문서 볼트
@@ -344,7 +344,7 @@ export function OntologyInsightsPage() {
                 </span>
               </div>
               <p className="mt-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-                자세한 분기 표시는 <Link href={appendAccountQuery("/ontology/relations/", accountId)} className="underline text-[color:rgba(159,170,235,0.95)]">관계</Link> 페이지의 강한 관계 리스트 — `cross` chip 가 단 행을 부각.
+                자세한 분기 표시는 <Link href={"/ontology/relations/"} className="underline text-[color:rgba(159,170,235,0.95)]">관계</Link> 페이지의 강한 관계 리스트 — `cross` chip 가 단 행을 부각.
               </p>
             </Panel>
           ) : null}
@@ -358,7 +358,7 @@ export function OntologyInsightsPage() {
                 {topHubs.map(({ node, degree }, idx) => (
                   <li key={node.id}>
                     <Link
-                      href={`${appendAccountQuery("/ontology/", accountId)}${accountId ? "&" : "?"}node=${encodeURIComponent(node.id)}`}
+                      href={`${"/ontology/"}${accountId ? "&" : "?"}node=${encodeURIComponent(node.id)}`}
                       className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[12px] transition-colors hover:border-[color:rgba(94,106,210,0.32)]"
                     >
                       <span className="w-5 shrink-0 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
@@ -387,7 +387,7 @@ export function OntologyInsightsPage() {
               {recent.map((node) => (
                 <li key={node.id}>
                   <Link
-                    href={`${appendAccountQuery("/ontology/", accountId)}${accountId ? "&" : "?"}node=${encodeURIComponent(node.id)}`}
+                    href={`${"/ontology/"}${accountId ? "&" : "?"}node=${encodeURIComponent(node.id)}`}
                     className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[12px] transition-colors hover:border-[color:rgba(94,106,210,0.32)]"
                   >
                     <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">

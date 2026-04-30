@@ -1,5 +1,6 @@
 "use client";
 
+import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -23,7 +24,6 @@ import {
   deleteProjectAdaptive,
   persistProjectAdaptive,
 } from "@/features/workspace-project-bridge";
-import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useToast } from "@/shared/ui";
 

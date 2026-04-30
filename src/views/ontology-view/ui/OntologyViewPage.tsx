@@ -275,7 +275,7 @@ export function OntologyViewPage() {
             </Tooltip>
             <Tooltip content="ERD 캔버스 편집기 — 노드를 끌어다 놓고 관계 그리기 (v1)" withProvider={false}>
               <Link
-                href={appendAccountQuery("/ontology/edit/", accountId)}
+                href={"/ontology/edit/"}
                 className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.12)] px-3 text-xs text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)]"
                 aria-label="ontology ERD 캔버스 편집기 열기"
               >
@@ -284,7 +284,7 @@ export function OntologyViewPage() {
             </Tooltip>
             <Tooltip content="ontology 인사이트 — kind 분포 · 허브 노드 · 최근 활동 · 미연결" withProvider={false}>
               <Link
-                href={appendAccountQuery("/ontology/insights/", accountId)}
+                href={"/ontology/insights/"}
                 className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
                 aria-label="ontology 인사이트 — kind 분포 · 허브 노드 · 최근 활동 · 미연결"
               >
@@ -293,7 +293,7 @@ export function OntologyViewPage() {
             </Tooltip>
             <Tooltip content="ontology 관계 — edge type 분포 + 강한 관계" withProvider={false}>
               <Link
-                href={appendAccountQuery("/ontology/relations/", accountId)}
+                href={"/ontology/relations/"}
                 className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
                 aria-label="ontology 관계 — edge type 분포 + 강한 관계"
               >
@@ -302,7 +302,7 @@ export function OntologyViewPage() {
             </Tooltip>
             <Tooltip content="검수 큐 열기 — 추출 후보 승인 / 반려" withProvider={false}>
               <Link
-                href={appendAccountQuery("/review/knowledge/", accountId)}
+                href={"/review/knowledge/"}
                 className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
                 aria-label="검수 큐 열기 — 추출 후보 승인 / 반려"
               >
@@ -341,7 +341,7 @@ export function OntologyViewPage() {
           accent={stubCount > 0 ? "amber" : undefined}
           href={
             stubCount > 0
-              ? appendAccountQuery("/review/knowledge/", accountId)
+              ? "/review/knowledge/"
               : undefined
           }
         />
@@ -422,13 +422,13 @@ export function OntologyViewPage() {
               </ol>
               <div className="mt-5 flex flex-wrap gap-2">
                 <Link
-                  href={appendAccountQuery("/knowledge/documents/", accountId)}
+                  href={"/knowledge/documents/"}
                   className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] px-4 py-2 text-sm text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
                 >
                   문서 볼트 열기 →
                 </Link>
                 <Link
-                  href={appendAccountQuery("/review/knowledge/", accountId)}
+                  href={"/review/knowledge/"}
                   className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 py-2 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   검수 큐 열기
@@ -885,7 +885,7 @@ function NodeDetailPanel({
 
       {isProject && projectSlug ? (
         <Link
-          href={appendAccountQuery(`/project/${projectSlug}/`, accountId)}
+          href={`/project/${projectSlug}/`}
           className="mt-4 inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] px-3.5 py-1.5 text-xs text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
         >
           공개 상세 페이지 →

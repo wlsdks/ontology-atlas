@@ -1,5 +1,5 @@
+import { appendAccountQuery } from "@/shared/lib/account-scope";
 import {
-  appendAccountQuery,
   appendWorkspaceProjectQuery,
 } from "../../../shared/lib/account-scope";
 

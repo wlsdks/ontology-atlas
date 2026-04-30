@@ -38,7 +38,7 @@ export function DevLoginPage() {
               onClick={() => {
                 enableDevAdminBypass();
                 rememberAccountId(accountId);
-                router.push(appendAccountQuery('/projects/', accountId));
+                router.push('/projects/');
               }}
             >
               개발용 로컬 우회로 접속

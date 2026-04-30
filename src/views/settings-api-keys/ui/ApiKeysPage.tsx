@@ -17,7 +17,6 @@ import { copyText } from "@/shared/lib/copy-text";
 import { formatDate } from "@/shared/lib/format-date";
 import {
   ACCOUNT_QUERY_KEY,
-  appendAccountQuery,
 } from "@/shared/lib/account-scope";
 
 /**
@@ -55,7 +54,7 @@ function ApiKeysContent() {
   }, [accountId]);
 
   const dashboardHref = useMemo(
-    () => appendAccountQuery("/settings/", accountId),
+    () => "/settings/",
     [accountId],
   );
   const userEmail = user?.email ?? null;
@@ -148,7 +147,7 @@ function ApiKeysContent() {
             공간의 API 키를 관리할 수 있어요.
           </p>
           <Link
-            href={appendAccountQuery("/account", accountId)}
+            href={"/account"}
             className="mt-4 inline-flex h-9 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.08)] px-3 break-keep text-[13px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.14)]"
           >
             내 공간으로 가기

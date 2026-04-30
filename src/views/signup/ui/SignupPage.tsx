@@ -10,8 +10,8 @@ import { ACCOUNT_QUERY_KEY, appendAccountQuery } from '@/shared/lib/account-scop
 
 function resolveNextHref(nextParam: string | null, accountId?: string | null) {
   // 회원가입 직후 기본 도착지 = 자기 워크스페이스 지도 (Layer 0).
-  if (!nextParam) return appendAccountQuery('/', accountId);
-  return appendAccountQuery(nextParam, accountId);
+  if (!nextParam) return '/';
+  return nextParam;
 }
 
 export function SignupPage() {
@@ -38,7 +38,7 @@ export function SignupPage() {
   }, [nextHref, router, status]);
 
   const loginHref = useMemo(() => {
-    const url = new URL(appendAccountQuery('/login', accountId), 'http://local.test');
+    const url = new URL('/login', 'http://local.test');
     const next = searchParams.get('next');
     if (next) url.searchParams.set('next', next);
     return `${url.pathname}?${url.searchParams.toString()}`;

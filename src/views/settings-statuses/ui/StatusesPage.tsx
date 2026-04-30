@@ -1,5 +1,6 @@
 "use client";
 
+import { appendAccountQuery } from "@/shared/lib/account-scope";
 import {
   useCallback,
   useEffect,
@@ -9,7 +10,6 @@ import {
 } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { ArrowLeft, Plus, SquareArrowOutUpRight, Trash2 } from "lucide-react";
 import { PermissionGate } from "@/features/permissions";
 import {

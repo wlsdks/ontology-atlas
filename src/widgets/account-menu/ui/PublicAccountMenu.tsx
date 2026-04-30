@@ -8,7 +8,6 @@ import { useGlobalAdmin } from "@/features/permissions";
 import { useScopedAccountAccess } from "@/features/account-scope";
 import { buildServiceEntryHref, signInWithDemo, signOut } from "@/features/user-auth";
 import { getDemoProjectsHref } from "@/shared/config/demo-space";
-import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { hasDemoSession } from "@/shared/lib/demo-session";
 import { cn } from "@/shared/lib/cn";
 import { useTheme } from "@/shared/lib/theme";
@@ -81,28 +80,28 @@ export function PublicAccountMenu({
     return `${pathname || "/"}${search ? `?${search}` : ""}`;
   }, [pathname, searchParams]);
   const loginHref = useMemo(() => {
-    const url = new URL(appendAccountQuery("/login", accountId), "http://local.test");
+    const url = new URL("/login", "http://local.test");
     url.searchParams.set("next", currentPath);
     return `${url.pathname}?${url.searchParams.toString()}`;
   }, [accountId, currentPath]);
   const signupHref = useMemo(() => {
-    const url = new URL(appendAccountQuery("/signup", accountId), "http://local.test");
+    const url = new URL("/signup", "http://local.test");
     url.searchParams.set("next", currentPath);
     return `${url.pathname}?${url.searchParams.toString()}`;
   }, [accountId, currentPath]);
   const projectsHref = useMemo(() => {
-    const url = new URL(appendAccountQuery("/projects", accountId), "http://local.test");
+    const url = new URL("/projects", "http://local.test");
     url.searchParams.set("returnTo", currentPath);
     return `${url.pathname}?${url.searchParams.toString()}`;
   }, [accountId, currentPath]);
-  const accountSettingsHref = appendAccountQuery("/account", accountId);
-  const docsVaultHref = appendAccountQuery("/docs/", accountId);
+  const accountSettingsHref = "/account";
+  const docsVaultHref = "/docs/";
   const demoHref = getDemoProjectsHref();
   const settingsHref = scopedAccess.canManage
-    ? appendAccountQuery("/projects/", accountId)
+    ? "/projects/"
     : loginHref;
   const scopeLabel = accountLabel?.trim() || accountId?.trim() || null;
-  const overviewHref = appendAccountQuery("/", accountId);
+  const overviewHref = "/";
   const serviceEntryHref = buildServiceEntryHref();
 
   const handleDemoLogin = async () => {

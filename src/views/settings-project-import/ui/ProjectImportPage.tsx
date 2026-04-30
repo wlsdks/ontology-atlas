@@ -15,7 +15,6 @@ import { STARTER_SAMPLE_PROJECTS } from "@/shared/config/starter-samples";
 import { Button, DetailCard, EmptyState, useToast } from "@/shared/ui";
 import {
   ACCOUNT_QUERY_KEY,
-  appendAccountQuery,
 } from "@/shared/lib/account-scope";
 import { useWorkspaceProjectQuery } from "@/shared/lib/use-workspace-project-query";
 import { OperationsNav } from "@/widgets/operations-nav";
@@ -49,8 +48,8 @@ function ImportContent() {
     return parseProjectsCsv(csvText);
   }, [csvText]);
 
-  const dashboardHref = appendAccountQuery("/projects/", accountId);
-  const homeHref = appendAccountQuery("/", accountId);
+  const dashboardHref = "/projects/";
+  const homeHref = "/";
 
   const writeProjects = async (projects: ProjectInput[]): Promise<ImportOutcome> => {
     const succeeded: string[] = [];

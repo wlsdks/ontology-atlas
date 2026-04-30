@@ -201,7 +201,7 @@ export function OntologyEditPage() {
               </>
             ) : null}
             <Link
-              href={appendAccountQuery(treeHref, accountId)}
+              href={treeHref}
               className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
               aria-label="ontology 트리로 보기 (read-only)"
             >

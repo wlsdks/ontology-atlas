@@ -20,7 +20,6 @@ import {
   type KnowledgePublicMeta,
 } from "@/entities/knowledge-graph";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Tooltip } from "@/shared/ui";
-import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { useWorkspaceProjectQuery } from "@/shared/lib/use-workspace-project-query";
 import { DashboardOntologySummary } from "@/widgets/dashboard-ontology-summary";
 import { MountedGlobalSearch } from "@/widgets/global-search";
@@ -189,7 +188,7 @@ function DashboardContent() {
               eyebrow="온톨로지"
               title="승인된 그래프 트리"
               description="승인된 노드와 관계를 계층 트리로 펼쳐서 봐요."
-              href={appendAccountQuery("/ontology/", accountId)}
+              href={"/ontology/"}
               cta="온톨로지 열기"
             />
           </div>

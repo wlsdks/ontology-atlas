@@ -12,7 +12,6 @@ import {
 import { getOntologyKindLabel } from '@/entities/ontology-class';
 import {
   ACCOUNT_QUERY_KEY,
-  appendAccountQuery,
 } from '@/shared/lib/account-scope';
 import { OperationsNav } from '@/widgets/operations-nav';
 import { OntologyExportModal } from '@/widgets/ontology-export-modal';
@@ -78,7 +77,7 @@ function SettingsOntologyContent() {
         <header className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <Link
-              href={appendAccountQuery('/settings/', accountId)}
+              href={'/settings/'}
               className="mb-2 inline-flex items-center gap-1 text-[12px] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
             >
               <ArrowLeft size={12} aria-hidden /> 정리로 돌아가기
@@ -283,7 +282,7 @@ function SettingsOntologyContent() {
 
             <section className="flex flex-wrap items-center gap-3 rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-5 py-4">
               <Link
-                href={appendAccountQuery('/settings/ontology/history/', accountId)}
+                href={'/settings/ontology/history/'}
                 className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
               >
                 version 히스토리 →

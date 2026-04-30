@@ -1,5 +1,6 @@
 "use client";
 
+import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
@@ -26,7 +27,6 @@ import { useScopedAccountAccess } from "@/features/account-scope";
 import { buildServiceEntryHref } from "@/features/user-auth";
 import {
   WORKSPACE_PROJECT_QUERY_KEY,
-  appendAccountQuery,
 } from "@/shared/lib/account-scope";
 import {
   formatProjectIntegrityIssue,
@@ -245,7 +245,7 @@ function ProjectDetailState({
           </Link>
           {accountId ? (
             <Link
-              href={appendAccountQuery("/projects/", accountId)}
+              href={"/projects/"}
               className="inline-flex h-9 items-center rounded-md border border-[color:var(--color-divider)] px-3 text-sm text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
             >
               프로젝트 목록

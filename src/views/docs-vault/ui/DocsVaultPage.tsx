@@ -1,5 +1,6 @@
 'use client';
 
+import { appendAccountQuery } from "@/shared/lib/account-scope";
 import dynamic from 'next/dynamic';
 import {
   Suspense,
@@ -48,7 +49,6 @@ import { Tooltip } from '@/shared/ui';
 // Fire 4-d-1 — 추출된 헬퍼들.
 import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
 import { useDocsVaultScrollSpy } from '../lib/use-scroll-spy';
-import { appendAccountQuery } from '@/shared/lib/account-scope';
 import {
   buildDocsVaultHref,
   buildTopologyFromVault,
@@ -140,11 +140,11 @@ function AdminDocsContent() {
   const accountId = searchParams?.get('account')?.trim() || null;
   // 로그인 사용자가 ?account= 없이 진입하면 본인 워크스페이스로 자동 스코프.
   const adminDashboardHref = useMemo(
-    () => appendAccountQuery('/projects/', accountId),
+    () => '/projects/',
     [accountId],
   );
   const workspaceHref = useMemo(
-    () => appendAccountQuery('/', accountId),
+    () => '/',
     [accountId],
   );
   const getDocHref = useCallback(

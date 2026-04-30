@@ -1,5 +1,6 @@
 "use client";
 
+import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { type ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -39,7 +40,6 @@ import {
 } from "@/entities/knowledge-version";
 import type { KnowledgeVersion } from "@/entities/knowledge-version";
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, buttonVariants } from "@/shared/ui";
-import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { cn } from "@/shared/lib/cn";
 import { formatDate } from "@/shared/lib/format-date";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";

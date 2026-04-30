@@ -28,7 +28,6 @@ import { PublicAccountMenu } from "@/widgets/account-menu";
 import { WorkspaceOntologyStrip } from "@/widgets/workspace-ontology-strip";
 import {
   ACCOUNT_QUERY_KEY,
-  appendAccountQuery,
 } from "@/shared/lib/account-scope";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
@@ -187,9 +186,9 @@ export function ProjectSelectorPage() {
     return counts;
   }, [projects, query, selectedCategory]);
 
-  const loginHref = appendAccountQuery("/login", accountId);
-  const signupHref = appendAccountQuery("/signup", accountId);
-  const overviewHref = appendAccountQuery("/", accountId);
+  const loginHref = "/login";
+  const signupHref = "/signup";
+  const overviewHref = "/";
   const knowledgeDocumentsHref = getKnowledgeDocumentListHref(accountId);
   const knowledgeReviewHref = getKnowledgeReviewWorkspaceHref(undefined, accountId);
   const currentPath = useMemo(() => {

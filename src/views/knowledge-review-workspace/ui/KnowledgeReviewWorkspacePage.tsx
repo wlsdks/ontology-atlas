@@ -1,5 +1,6 @@
 "use client";
 
+import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -43,7 +44,6 @@ import { OntologyOutputBadges } from "@/widgets/ontology-output-badges";
 import { OntologyStubList } from "@/widgets/ontology-stub-list";
 import type { KnowledgeEvidence } from "@/entities/knowledge-evidence";
 import type { KnowledgeVersion } from "@/entities/knowledge-version";
-import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { formatDate } from "@/shared/lib/format-date";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";

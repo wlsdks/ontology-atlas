@@ -11,8 +11,8 @@ import { ACCOUNT_QUERY_KEY, appendAccountQuery } from '@/shared/lib/account-scop
 function resolveNextHref(nextParam: string | null, accountId?: string | null) {
   // 로그인 기본 도착지 = 워크스페이스 지도 (Layer 0). 사용자가 전체
   // 조망부터 보도록 `/projects` 리스트 대신 `/` 홈으로.
-  if (!nextParam) return appendAccountQuery('/', accountId);
-  return appendAccountQuery(nextParam, accountId);
+  if (!nextParam) return '/';
+  return nextParam;
 }
 
 export function LoginPage() {
@@ -37,13 +37,13 @@ export function LoginPage() {
   }, [nextHref, router, status]);
 
   const signupHref = useMemo(() => {
-    const url = new URL(appendAccountQuery('/signup', accountId), 'http://local.test');
+    const url = new URL('/signup', 'http://local.test');
     const next = searchParams.get('next');
     if (next) url.searchParams.set('next', next);
     return `${url.pathname}?${url.searchParams.toString()}`;
   }, [accountId, searchParams]);
   const passwordResetHref = useMemo(() => {
-    const url = new URL(appendAccountQuery('/reset-password', accountId), 'http://local.test');
+    const url = new URL('/reset-password', 'http://local.test');
     if (email.trim()) {
       url.searchParams.set('email', email.trim());
     }

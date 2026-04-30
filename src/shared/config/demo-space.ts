@@ -1,4 +1,3 @@
-import { appendAccountQuery } from "@/shared/lib/account-scope";
 import {
   getDemoContainerStats,
   getDemoDataset,
@@ -9,11 +8,11 @@ export const DEMO_ACCOUNT_ID = "demo-workspace";
 const DEMO_PROJECT_SLUG = "demo-indexer-10";
 
 export function getDemoProjectsHref() {
-  return appendAccountQuery("/projects", DEMO_ACCOUNT_ID);
+  return "/projects";
 }
 
 export function getDemoHomeHref() {
-  return appendAccountQuery("/", DEMO_ACCOUNT_ID);
+  return "/";
 }
 
 export function getDemoProjectHref() {

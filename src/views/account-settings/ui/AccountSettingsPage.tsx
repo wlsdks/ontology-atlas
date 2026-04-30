@@ -20,8 +20,8 @@ import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } fro
 import { PublicAccountMenu } from '@/widgets/account-menu';
 
 function resolveLoginHref(accountId?: string | null) {
-  const url = new URL(appendAccountQuery('/login', accountId), 'http://local.test');
-  url.searchParams.set('next', appendAccountQuery('/account', accountId));
+  const url = new URL('/login', 'http://local.test');
+  url.searchParams.set('next', '/account');
   return `${url.pathname}?${url.searchParams.toString()}`;
 }
 
@@ -68,7 +68,7 @@ export function AccountSettingsPage() {
   const [resetSuccess, setResetSuccess] = useState<string | null>(null);
 
   const loginHref = useMemo(() => resolveLoginHref(accountId), [accountId]);
-  const backHref = appendAccountQuery('/projects', accountId);
+  const backHref = '/projects';
 
   useEffect(() => {
     if (status === 'authenticated') {

@@ -13,7 +13,6 @@ import {
 } from '@/entities/ontology-tbox';
 import {
   ACCOUNT_QUERY_KEY,
-  appendAccountQuery,
 } from '@/shared/lib/account-scope';
 import { OperationsNav } from '@/widgets/operations-nav';
 import { EmptyState } from '@/shared/ui';
@@ -69,7 +68,7 @@ function SettingsOntologyHistoryContent() {
       <div className="mx-auto w-full max-w-3xl px-5 py-6 md:px-10 md:py-10">
         <header className="mb-6">
           <Link
-            href={appendAccountQuery('/settings/ontology/', accountId)}
+            href={'/settings/ontology/'}
             className="mb-2 inline-flex items-center gap-1 text-[12px] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
           >
             <ArrowLeft size={12} aria-hidden /> 활성 schema 로 돌아가기

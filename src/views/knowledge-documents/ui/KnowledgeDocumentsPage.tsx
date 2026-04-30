@@ -1,5 +1,6 @@
 "use client";
 
+import { appendAccountQuery } from "@/shared/lib/account-scope";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -31,7 +32,6 @@ import {
   CardTitle,
 } from "@/shared/ui";
 import {
-  appendAccountQuery,
 } from "@/shared/lib/account-scope";
 import { formatDate } from "@/shared/lib/format-date";
 import { useKnowledgePublicNodes } from "@/entities/knowledge-graph";
@@ -209,7 +209,7 @@ function DocumentsContent() {
         {/* audit N3 — 이전엔 md:hidden 으로 데스크톱 사용자가 breadcrumb 없이
             OperationsNav 만 의존. 모든 viewport 에서 노출. */}
         <Link
-          href={appendAccountQuery("/knowledge/", accountId)}
+          href={"/knowledge/"}
           className="inline-flex items-center gap-1.5 break-keep text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
         >
           <ArrowLeft size={14} />
@@ -459,7 +459,7 @@ function DocumentsContent() {
                   variant="outline"
                   onClick={() =>
                     router.replace(
-                      appendAccountQuery("/knowledge/documents/", accountId),
+                      "/knowledge/documents/",
                     )
                   }
                 >
