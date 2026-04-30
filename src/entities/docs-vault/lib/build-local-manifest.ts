@@ -100,6 +100,41 @@ export interface LocalVaultBuild {
   fileHandles: Map<string, FileSystemFileHandle>;
   /** 이미지 등 asset 파일. key 는 vault root 기준 상대 경로 (예: 'img/foo.png'). */
   imageHandles: Map<string, FileSystemFileHandle>;
+  /**
+   * 빌드 시점의 디렉터리 fingerprint — `${path}@${mtime}` 들을 정렬·join 한 문자열.
+   * 이후 `computeLocalVaultFingerprint(root)` 결과와 비교해 변동 없으면 재빌드 skip 가능.
+   */
+  fingerprint: string;
+}
+
+function fingerprintFromEntries(
+  entries: Array<{ relativePath: string; lastModified: number }>,
+): string {
+  return entries
+    .map((e) => `${e.relativePath}@${e.lastModified}`)
+    .sort()
+    .join('\n');
+}
+
+/**
+ * 디렉터리를 walk 하며 *content 를 읽지 않고* 파일 mtime 만 모아 fingerprint
+ * 만든다. 같은 fingerprint = 마지막 빌드 후 .md / 이미지 변경 없음. 호출자
+ * (예: focus auto-refresh) 가 이를 비교해 불필요한 전체 재빌드를 회피.
+ */
+export async function computeLocalVaultFingerprint(
+  root: FileSystemDirectoryHandle,
+): Promise<string> {
+  const files = await walk(root);
+  const stamps = await Promise.all(
+    files.map(async (entry) => {
+      const file = await entry.handle.getFile();
+      return {
+        relativePath: entry.relativePath,
+        lastModified: file.lastModified,
+      };
+    }),
+  );
+  return fingerprintFromEntries(stamps);
 }
 
 /**
@@ -115,13 +150,23 @@ export async function buildLocalManifest(
   const imageHandles = new Map<string, FileSystemFileHandle>();
   const backlinksDetailMap = new Map<string, VaultBacklinkEntry[]>();
   const tagsMap = new Map<string, Set<string>>();
+  const fingerprintStamps: Array<{ relativePath: string; lastModified: number }> = [];
 
   for (const entry of files) {
     if (entry.kind === 'image') {
       imageHandles.set(entry.relativePath, entry.handle);
+      const imgFile = await entry.handle.getFile();
+      fingerprintStamps.push({
+        relativePath: entry.relativePath,
+        lastModified: imgFile.lastModified,
+      });
       continue;
     }
     const file = await entry.handle.getFile();
+    fingerprintStamps.push({
+      relativePath: entry.relativePath,
+      lastModified: file.lastModified,
+    });
     const raw = await file.text();
     const slug = entry.relativePath.replace(/\.md$/, '');
     fileHandles.set(slug, entry.handle);
@@ -211,5 +256,10 @@ export async function buildLocalManifest(
     tags,
     tree,
   };
-  return { manifest, fileHandles, imageHandles };
+  return {
+    manifest,
+    fileHandles,
+    imageHandles,
+    fingerprint: fingerprintFromEntries(fingerprintStamps),
+  };
 }

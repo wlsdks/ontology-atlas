@@ -19,7 +19,10 @@ export type {
 export type { RelationshipRadarSuggestion } from './model/relationship-radar';
 export { findRelationshipRadarSuggestions } from './model/relationship-radar';
 export { default as vaultManifest } from './data/manifest.json';
-export { buildLocalManifest } from './lib/build-local-manifest';
+export {
+  buildLocalManifest,
+  computeLocalVaultFingerprint,
+} from './lib/build-local-manifest';
 export type { LocalVaultBuild } from './lib/build-local-manifest';
 export { findRelatedDocs } from './lib/related-docs';
 export type { RelatedDocMatch } from './lib/related-docs';

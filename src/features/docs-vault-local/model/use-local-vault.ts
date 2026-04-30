@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   buildLocalManifest,
+  computeLocalVaultFingerprint,
   type LocalVaultBuild,
   type VaultManifest,
 } from '@/entities/docs-vault';
@@ -156,11 +157,15 @@ export function useLocalVault() {
     emptyState(isSupported() ? 'idle' : 'unsupported'),
   );
 
+  /** 마지막 성공 빌드의 fingerprint — auto-refresh 시 변경 없으면 skip 의 비교 기준. */
+  const lastFingerprintRef = useRef<string | null>(null);
+
   const load = useCallback(async (handle: FileSystemDirectoryHandle) => {
     setState((s) => ({ ...s, status: 'loading', handle, errorMessage: null }));
     try {
-      const { manifest, fileHandles, imageHandles }: LocalVaultBuild =
-        await buildLocalManifest(handle);
+      const build: LocalVaultBuild = await buildLocalManifest(handle);
+      const { manifest, fileHandles, imageHandles, fingerprint } = build;
+      lastFingerprintRef.current = fingerprint;
       setState({
         status: 'loaded',
         handle,
@@ -234,6 +239,8 @@ export function useLocalVault() {
 
   // 탭 포커스 복귀 시 자동 refresh — IDE 에서 편집 후 브라우저로 돌아오면
   // 스스로 다시 스캔해 최신 상태로. 2초 debounce 로 중복 호출 방지.
+  // fingerprint 비교를 먼저 수행해 변경 없으면 전체 재빌드를 skip — 큰 볼트
+  // 에서 focus 시 잠깐 멈추는 현상 완화.
   const autoRefreshRef = useRef<{
     lastAt: number;
     timer: ReturnType<typeof setTimeout> | null;
@@ -246,6 +253,15 @@ export function useLocalVault() {
     if (state.status !== 'loaded' || !state.handle) return;
     const handle = state.handle;
     const tracker = autoRefreshRef.current;
+    const tryReload = async () => {
+      try {
+        const fp = await computeLocalVaultFingerprint(handle);
+        if (fp === lastFingerprintRef.current) return; // no-op skip
+      } catch {
+        /* fingerprint 실패는 무시 — 안전하게 전체 재빌드로 폴백 */
+      }
+      loadRef.current(handle);
+    };
     const fire = () => {
       const now = Date.now();
       const last = tracker.lastAt;
@@ -253,12 +269,12 @@ export function useLocalVault() {
         if (tracker.timer) clearTimeout(tracker.timer);
         tracker.timer = setTimeout(() => {
           tracker.lastAt = Date.now();
-          loadRef.current(handle);
+          void tryReload();
         }, AUTO_REFRESH_DEBOUNCE_MS - (now - last));
         return;
       }
       tracker.lastAt = now;
-      loadRef.current(handle);
+      void tryReload();
     };
     const onVisibility = () => {
       if (document.visibilityState === 'visible') fire();
