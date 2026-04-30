@@ -41,7 +41,7 @@ export function getDemoStats(): DemoStats {
     totalNodes += stat.nodes;
   }
   demoStatsCache = {
-    workspaceName: dataset.account.name,
+    workspaceName: 'oh-my-ontology',
     totalProjects: dataset.projects.length,
     totalContainers: containers.length,
     totalHubs,

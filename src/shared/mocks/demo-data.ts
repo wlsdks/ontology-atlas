@@ -1,4 +1,3 @@
-import type { Account, AccountMembership } from '@/entities/account/model';
 import type { Category } from '@/entities/category/model';
 import type { KnowledgeDocument } from '@/entities/knowledge-document/model';
 import type { Project } from '@/entities/project/model';
@@ -22,7 +21,6 @@ const DEMO_DEFAULT_STATUSES: Omit<Status, 'createdAt' | 'updatedAt'>[] = [
 ];
 
 export const DEMO_ACCOUNT_ID = 'demo-workspace';
-const DEMO_VIEWER_UID = 'demo-viewer-local';
 const DEMO_VIEWER_EMAIL = 'demo-viewer@local';
 
 const SEED_BASE = new Date('2025-10-01T00:00:00Z').getTime();
@@ -412,37 +410,10 @@ function buildWorkspaceProjects(): WorkspaceProject[] {
   }));
 }
 
-function buildAccount(): Account {
-  return {
-    id: DEMO_ACCOUNT_ID,
-    name: 'oh-my-ontology',
-    description: 'Demo 팀의 실 로드맵을 본뜬 데모 워크스페이스 — Demo · Demo IAM · Demo Reactor · Demo Knowledge 4 컨테이너로 구성.',
-    isPublic: true,
-    createdAt: new Date(SEED_BASE),
-    updatedAt: new Date(NOW),
-  };
-}
-
-function buildMembership(): AccountMembership {
-  return {
-    id: `${DEMO_VIEWER_UID}__${DEMO_ACCOUNT_ID}`,
-    accountId: DEMO_ACCOUNT_ID,
-    uid: DEMO_VIEWER_UID,
-    email: DEMO_VIEWER_EMAIL,
-    // 데모 사용자는 자기 워크스페이스의 owner — Notion/Obsidian 모델.
-    // "데모도 자기거에 로그인한거니까 자기는 admin" UX 와 일치.
-    role: 'owner',
-    createdAt: new Date(SEED_BASE),
-    updatedAt: new Date(NOW),
-  };
-}
-
 interface DemoDataset {
   projects: Project[];
   categories: Category[];
   statuses: Status[];
-  account: Account;
-  membership: AccountMembership;
   documents: KnowledgeDocument[];
   workspaceProjects: WorkspaceProject[];
 }
@@ -525,16 +496,12 @@ export function getDemoDataset(): DemoDataset {
   const categories = buildCategories();
   const statuses = buildStatuses();
   const projects = buildProjects(DEFAULT_PROJECT_COUNT, categories, statuses);
-  const account = buildAccount();
-  const membership = buildMembership();
   const documents = buildDocuments(projects);
   const workspaceProjects = buildWorkspaceProjects();
   cache = {
     projects,
     categories,
     statuses,
-    account,
-    membership,
     documents,
     workspaceProjects,
   };
@@ -559,25 +526,6 @@ export function getDemoCategories(): Category[] {
 
 export function getDemoStatuses(): Status[] {
   return getDemoDataset().statuses;
-}
-
-export function getDemoAccount(accountId: string): Account | null {
-  if (accountId.trim() === DEMO_ACCOUNT_ID) return getDemoDataset().account;
-  return null;
-}
-
-export function getDemoPublicAccounts(): Account[] {
-  return [getDemoDataset().account];
-}
-
-export function getDemoMembershipsByUid(uid: string): AccountMembership[] {
-  if (uid === DEMO_VIEWER_UID) return [getDemoDataset().membership];
-  return [];
-}
-
-export function getDemoMembershipsByEmail(email: string): AccountMembership[] {
-  if (email.trim().toLowerCase() === DEMO_VIEWER_EMAIL) return [getDemoDataset().membership];
-  return [];
 }
 
 export function getDemoKnowledgeDocumentsByProject(

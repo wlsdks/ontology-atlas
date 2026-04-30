@@ -11,10 +11,6 @@ import {
  * 회귀 시 즉시 잡힘.
  */
 describe("demo dataset sanity", () => {
-  it("워크스페이스 이름은 'oh-my-ontology'", () => {
-    expect(getDemoDataset().account.name).toBe("oh-my-ontology");
-  });
-
   it("컨테이너 20~30 (데모 풀-스케일 기준)", () => {
     const containers = getDemoWorkspaceProjects();
     expect(containers.length).toBeGreaterThanOrEqual(20);

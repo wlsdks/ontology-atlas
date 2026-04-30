@@ -13,7 +13,6 @@ import {
   type PasswordSupportState,
 } from '@/features/user-auth';
 import { useScopedAccountAccess } from '@/features/account-scope';
-import { AccountMembersPanel } from '@/features/account-members';
 import { hasDemoSession } from '@/shared/lib/demo-session';
 import { ACCOUNT_QUERY_KEY, appendAccountQuery } from '@/shared/lib/account-scope';
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui';
@@ -319,18 +318,6 @@ export function AccountSettingsPage() {
             </section>
           </CardContent>
         </Card>
-
-        {/* 멤버 관리 — owner 만 노출. 데모 세션은 mocks 상 owner 매핑이지만
-            실 Cloud Function 호출은 불가 (permission-denied) 이므로 panel 도
-            같이 숨김. 실 Google/email 로그인한 owner 에게만 active. */}
-        {scopedAccess.kind === 'owner' && accountId && !hasDemoSession() ? (
-          <div className="mt-8">
-            <AccountMembersPanel
-              accountId={accountId}
-              currentUid={user?.uid}
-            />
-          </div>
-        ) : null}
       </div>
     </main>
   );
