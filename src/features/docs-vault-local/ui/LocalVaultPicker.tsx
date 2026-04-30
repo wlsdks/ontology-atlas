@@ -59,7 +59,7 @@ export function LocalVaultPicker({
   }, [status, lastLoadedAt]);
   if (status === 'unsupported') {
     return (
-      <div className="flex flex-1 items-center gap-2 rounded-md border border-[color:rgba(239,180,120,0.3)] bg-[color:rgba(239,180,120,0.06)] px-3 py-1.5 text-[11.5px] text-[color:rgba(239,200,150,0.95)]">
+      <div className="flex flex-1 items-center gap-2 rounded-md border border-[color:rgba(244,183,49,0.35)] bg-[color:rgba(244,183,49,0.12)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-warning)]">
         <Shield size={12} aria-hidden />
         이 브라우저는 File System Access API 를 지원하지 않아 로컬 볼트를
         쓸 수 없습니다. Chrome·Edge·Safari 18.2+ 또는 Opera 권장.
@@ -68,7 +68,7 @@ export function LocalVaultPicker({
   }
   if (status === 'permission-needed') {
     return (
-      <div className="flex flex-1 items-center gap-2 rounded-md border border-[color:rgba(239,180,120,0.3)] bg-[color:rgba(239,180,120,0.06)] px-3 py-1.5 text-[11.5px] text-[color:rgba(239,200,150,0.95)]">
+      <div className="flex flex-1 items-center gap-2 rounded-md border border-[color:rgba(244,183,49,0.35)] bg-[color:rgba(244,183,49,0.12)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-warning)]">
         <Shield size={12} aria-hidden />
         <span className="flex-1">
           이전에 열었던 폴더가 있어요. 다시 승인하면 그대로 이어서 봅니다.
@@ -76,7 +76,7 @@ export function LocalVaultPicker({
         <button
           type="button"
           onClick={onRequestPermission}
-          className="rounded-sm border border-[color:rgba(239,200,150,0.4)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:rgba(239,180,120,0.12)]"
+          className="rounded-sm border border-[color:rgba(244,183,49,0.35)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:rgba(244,183,49,0.18)]"
         >
           재승인
         </button>
@@ -94,12 +94,12 @@ export function LocalVaultPicker({
   }
   if (status === 'error') {
     return (
-      <div className="flex flex-1 items-center gap-2 rounded-md border border-[color:rgba(220,120,120,0.3)] bg-[color:rgba(220,120,120,0.06)] px-3 py-1.5 text-[11.5px] text-[color:rgba(240,180,180,0.95)]">
+      <div className="flex flex-1 items-center gap-2 rounded-md border border-[color:rgba(229,72,77,0.32)] bg-[color:rgba(229,72,77,0.08)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-danger)]">
         <span>{errorMessage ?? '로컬 볼트 오류'}</span>
         <button
           type="button"
           onClick={onOpen}
-          className="ml-auto rounded-sm border border-[color:rgba(240,180,180,0.4)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:rgba(220,120,120,0.12)]"
+          className="ml-auto rounded-sm border border-[color:rgba(229,72,77,0.32)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:rgba(229,72,77,0.14)]"
         >
           다시 선택
         </button>
@@ -111,7 +111,7 @@ export function LocalVaultPicker({
       <div className="flex flex-1 items-center gap-2 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-text-tertiary)]">
         <HardDrive
           size={12}
-          className="text-[color:rgba(139,151,255,0.7)]"
+          className="text-[color:var(--color-indigo-accent)]"
           aria-hidden
         />
         <span className="truncate text-[color:var(--color-text-primary)]">
@@ -133,7 +133,7 @@ export function LocalVaultPicker({
             type="button"
             onClick={onRefresh}
             aria-label="다시 스캔"
-            className="ml-auto inline-flex items-center gap-1 rounded-sm border border-transparent px-1.5 py-0.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.25)] hover:text-[color:var(--color-text-primary)]"
+            className="ml-auto inline-flex items-center gap-1 rounded-sm border border-transparent px-1.5 py-0.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.3)] hover:text-[color:var(--color-text-primary)]"
           >
             <RefreshCw size={11} aria-hidden />
           </button>
@@ -143,7 +143,7 @@ export function LocalVaultPicker({
             type="button"
             onClick={onClose}
             aria-label="로컬 볼트 닫기"
-            className="inline-flex items-center gap-1 rounded-sm border border-transparent px-1.5 py-0.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(220,120,120,0.3)] hover:text-[color:rgba(240,180,180,0.95)]"
+            className="inline-flex items-center gap-1 rounded-sm border border-transparent px-1.5 py-0.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(229,72,77,0.32)] hover:text-[color:var(--color-status-danger)]"
           >
             <FolderX size={11} aria-hidden />
           </button>
@@ -156,7 +156,7 @@ export function LocalVaultPicker({
       type="button"
       onClick={onOpen}
       disabled={status === 'opening' || status === 'loading'}
-      className="inline-flex flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-[color:rgba(139,151,255,0.3)] bg-[color:rgba(94,106,210,0.06)] px-3 py-1.5 text-[11.5px] text-[color:rgba(200,210,255,0.9)] transition-colors hover:border-[color:rgba(139,151,255,0.5)] hover:bg-[color:rgba(94,106,210,0.1)] disabled:opacity-60"
+      className="inline-flex flex-1 items-center justify-center gap-2 rounded-md border border-dashed border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.06)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.1)] disabled:opacity-60"
     >
       <FolderOpen size={12} aria-hidden />
       {status === 'opening'
