@@ -32,11 +32,11 @@ import type { WorkspaceProject, WorkspaceProjectInput } from "../model/types";
 
 const COLLECTION = "workspaceProjects";
 
-function containerCollection(accountId: string) {
+function containerCollection() {
   return collection(getDb(), COLLECTION);
 }
 
-function containerDoc(accountId: string, projectId: string) {
+function containerDoc(projectId: string) {
   return doc(getDb(), COLLECTION, projectId);
 }
 
@@ -50,7 +50,7 @@ export async function listWorkspaceProjects(
   if (!normalized) return [];
   if (hasDemoSession()) return getDemoWorkspaceProjects(normalized);
   const snapshot = await getDocs(
-    query(containerCollection(normalized), orderBy("order", "asc")),
+    query(containerCollection(), orderBy("order", "asc")),
   );
   return snapshot.docs.map((d) => fromFirestoreWorkspaceProject(d.id, d.data()));
 }
@@ -64,7 +64,7 @@ export async function getWorkspaceProject(
 ): Promise<WorkspaceProject | null> {
   const normalized = normalizeAccountId(accountId);
   if (!normalized || !projectId || hasDemoSession()) return null;
-  const snapshot = await getDoc(containerDoc(normalized, projectId));
+  const snapshot = await getDoc(containerDoc(projectId));
   if (!snapshot.exists()) return null;
   return fromFirestoreWorkspaceProject(snapshot.id, snapshot.data());
 }
@@ -81,7 +81,7 @@ export async function upsertWorkspaceProject(
   if (hasDemoSession()) return;
 
   const projectId = input.id?.trim() || "general";
-  const ref = containerDoc(normalizedAccountId, projectId);
+  const ref = containerDoc(projectId);
   const existing = await getDoc(ref);
   const payload: DocumentData = {
     accountId: normalizedAccountId,
@@ -147,7 +147,7 @@ export async function ensureDefaultWorkspaceProject(
   if (hasDemoSession()) return;
 
   try {
-    const ref = containerDoc(normalized, "general");
+    const ref = containerDoc("general");
     const existing = await getDoc(ref);
     if (existing.exists()) return;
     await setDoc(
@@ -188,7 +188,7 @@ export function subscribeWorkspaceProjects(
     Promise.resolve().then(() => callback(containers));
     return () => {};
   }
-  const q = query(containerCollection(normalized), orderBy("order", "asc"));
+  const q = query(containerCollection(), orderBy("order", "asc"));
   return onSnapshot(
     q,
     (snapshot) => {

@@ -19,8 +19,7 @@ import type { ProjectActivity, ProjectActivityInput } from "../model/types";
 
 const COLLECTION = "projectActivity";
 
-function activityCollection(accountId?: string | null) {
-  const normalizedAccountId = normalizeAccountId(accountId);
+function activityCollection() {
   return collection(getDb(), COLLECTION);
 }
 
@@ -73,7 +72,7 @@ export async function recordProjectActivity(
   }
 
   try {
-    await addDoc(activityCollection(input.accountId), {
+    await addDoc(activityCollection(), {
       action: input.action,
       projectSlug: input.projectSlug,
       projectName: input.projectName,
@@ -108,7 +107,7 @@ export function subscribeProjectActivity(
   }
 
   const q = query(
-    activityCollection(normalizedAccountId),
+    activityCollection(),
     orderBy("createdAt", "desc"),
     limit(limitCount),
   );

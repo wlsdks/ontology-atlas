@@ -66,13 +66,8 @@ function approvedEdgesCollection() {
   return collection(getDb(), "knowledgeApprovedEdges");
 }
 
-function publicMetaDoc(accountId?: string | null) {
-  const scopedAccountId = normalizeAccountId(accountId);
-  return doc(
-    getDb(),
-    PUBLIC_META_COLLECTION,
-    scopedAccountId ? `current__${scopedAccountId}` : "current",
-  );
+function publicMetaDoc() {
+  return doc(getDb(), PUBLIC_META_COLLECTION, "current");
 }
 
 export async function approveKnowledgeOutput(
@@ -150,7 +145,7 @@ export async function listKnowledgeProjectInsight(
       where("projectIds", "array-contains", projectId),
     ),
   );
-  const metaSnapshot = await getDoc(publicMetaDoc(scopedAccountId));
+  const metaSnapshot = await getDoc(publicMetaDoc());
 
   return {
     nodes: nodeSnapshot.docs
@@ -181,7 +176,7 @@ export function subscribeKnowledgePublicMeta(
   }
   const scopedAccountId = normalizeAccountId(accountId);
   return onSnapshot(
-    publicMetaDoc(scopedAccountId),
+    publicMetaDoc(),
     (snapshot) => {
       callback(
         snapshot.exists()
@@ -258,7 +253,7 @@ export function subscribeKnowledgeProjectInsight(
   );
 
   const unsubscribeMeta = onSnapshot(
-    publicMetaDoc(scopedAccountId),
+    publicMetaDoc(),
     (snapshot) => {
       latestMeta = snapshot.exists()
         ? fromFirestoreKnowledgePublicMeta(snapshot.id, snapshot.data())
@@ -334,7 +329,7 @@ export function subscribeKnowledgePublicGraph(
   );
 
   const unsubscribeMeta = onSnapshot(
-    publicMetaDoc(scopedAccountId),
+    publicMetaDoc(),
     (snapshot) => {
       latestMeta = snapshot.exists()
         ? fromFirestoreKnowledgePublicMeta(snapshot.id, snapshot.data())

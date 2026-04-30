@@ -37,13 +37,11 @@ import {
 
 const COLLECTION = "projects";
 
-function projectsCollection(accountId?: string | null) {
-  const normalizedAccountId = normalizeAccountId(accountId);
+function projectsCollection() {
   return collection(getDb(), COLLECTION);
 }
 
-function projectDoc(slug: string, accountId?: string | null) {
-  const normalizedAccountId = normalizeAccountId(accountId);
+function projectDoc(slug: string) {
   return doc(getDb(), COLLECTION, slug);
 }
 
@@ -60,7 +58,7 @@ export async function listProjects(accountId?: string | null): Promise<Project[]
     return projects.map(fromDevAdminProjectRecord);
   }
 
-  const snapshot = await getDocs(projectsCollection(accountId));
+  const snapshot = await getDocs(projectsCollection());
   return snapshot.docs.map((d) => fromFirestore(d.id, d.data()));
 }
 
@@ -75,7 +73,7 @@ export async function getProject(
     return getDemoProject(slug, accountId);
   }
 
-  const snapshot = await getDoc(projectDoc(slug, accountId));
+  const snapshot = await getDoc(projectDoc(slug));
   if (!snapshot.exists()) return null;
   return fromFirestore(snapshot.id, snapshot.data());
 }
@@ -95,7 +93,7 @@ export async function upsertProject(input: ProjectInput): Promise<void> {
     return;
   }
 
-  const ref = projectDoc(input.slug, accountId);
+  const ref = projectDoc(input.slug);
   const existing = await getDoc(ref);
   const existingProject = existing.exists()
     ? fromFirestore(existing.id, existing.data())
@@ -144,7 +142,7 @@ export async function upsertProjectPositions(
 
   const batch = writeBatch(getDb());
   for (const { slug, position } of positions) {
-    batch.update(projectDoc(slug, accountId), {
+    batch.update(projectDoc(slug), {
       position,
       updatedAt: serverTimestamp(),
     });
@@ -174,7 +172,7 @@ export async function deleteProject(
     await deleteDevAdminProject(slug, accountId);
     return;
   }
-  await deleteDoc(projectDoc(slug, accountId));
+  await deleteDoc(projectDoc(slug));
 
   if (normalizedAccountId) {
     void recordProjectActivity({
@@ -217,7 +215,7 @@ export async function deleteProjects(
 
   const batch = writeBatch(getDb());
   for (const slug of targetSlugs) {
-    batch.delete(projectDoc(slug, accountId));
+    batch.delete(projectDoc(slug));
   }
   await batch.commit();
 }
@@ -282,7 +280,7 @@ export function subscribeProjects(
   }
 
   return onSnapshot(
-    projectsCollection(normalizedAccountId),
+    projectsCollection(),
     (snapshot) => {
       const projects = snapshot.docs.map((d) => fromFirestore(d.id, d.data()));
       callback(projects);

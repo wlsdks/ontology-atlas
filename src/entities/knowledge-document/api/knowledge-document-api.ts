@@ -57,23 +57,19 @@ import {
 const DOCUMENTS_COLLECTION = "knowledgeDocuments";
 const VERSIONS_COLLECTION = "knowledgeDocumentVersions";
 
-function knowledgeDocumentsCollection(accountId?: string | null) {
-  const normalizedAccountId = normalizeAccountId(accountId);
+function knowledgeDocumentsCollection() {
   return collection(getDb(), DOCUMENTS_COLLECTION);
 }
 
-function knowledgeDocumentVersionsCollection(accountId?: string | null) {
-  const normalizedAccountId = normalizeAccountId(accountId);
+function knowledgeDocumentVersionsCollection() {
   return collection(getDb(), VERSIONS_COLLECTION);
 }
 
-function knowledgeDocumentDoc(documentId: string, accountId?: string | null) {
-  const normalizedAccountId = normalizeAccountId(accountId);
+function knowledgeDocumentDoc(documentId: string) {
   return doc(getDb(), DOCUMENTS_COLLECTION, documentId);
 }
 
-function knowledgeDocumentVersionDoc(versionId: string, accountId?: string | null) {
-  const normalizedAccountId = normalizeAccountId(accountId);
+function knowledgeDocumentVersionDoc(versionId: string) {
   return doc(getDb(), VERSIONS_COLLECTION, versionId);
 }
 
@@ -104,7 +100,7 @@ export async function listKnowledgeDocuments(
   }
 
   const snapshot = await getDocs(
-    query(knowledgeDocumentsCollection(accountId), orderBy("updatedAt", "desc")),
+    query(knowledgeDocumentsCollection(), orderBy("updatedAt", "desc")),
   );
 
   return snapshot.docs.map((entry) =>
@@ -121,7 +117,7 @@ export async function getKnowledgeDocument(
     return record ? fromDevAdminKnowledgeDocumentRecord(record) : null;
   }
 
-  const snapshot = await getDoc(knowledgeDocumentDoc(documentId, accountId));
+  const snapshot = await getDoc(knowledgeDocumentDoc(documentId));
   if (!snapshot.exists()) return null;
   return fromFirestoreKnowledgeDocument(snapshot.id, snapshot.data());
 }
@@ -180,7 +176,7 @@ export function subscribeKnowledgeDocuments(
   }
 
   return onSnapshot(
-    query(knowledgeDocumentsCollection(scopedAccountId), orderBy("updatedAt", "desc")),
+    query(knowledgeDocumentsCollection(), orderBy("updatedAt", "desc")),
     (snapshot) => {
       callbackFn(
         snapshot.docs.map((entry) =>
@@ -231,7 +227,7 @@ export function subscribeKnowledgeDocumentsByProject(
 
   return onSnapshot(
     query(
-      knowledgeDocumentsCollection(scopedAccountId),
+      knowledgeDocumentsCollection(),
       where("projectIds", "array-contains", projectSlug),
       orderBy("updatedAt", "desc"),
     ),
@@ -289,7 +285,7 @@ export async function getPublicDocumentsForProject(
   try {
     const snapshot = await getDocs(
       query(
-        knowledgeDocumentsCollection(scopedAccountId),
+        knowledgeDocumentsCollection(),
         where('status', '==', 'published'),
         where('projectIds', 'array-contains', projectSlug),
         orderBy('updatedAt', 'desc'),
@@ -356,12 +352,12 @@ export async function createKnowledgeDocumentWithInitialVersion(
   await uploadKnowledgeMarkdown(storagePath, input.rawMarkdown);
   try {
     const batch = writeBatch(getDb());
-    batch.set(knowledgeDocumentDoc(documentId, accountId), {
+    batch.set(knowledgeDocumentDoc(documentId), {
       ...documentPayload,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    batch.set(knowledgeDocumentVersionDoc(versionId, accountId), {
+    batch.set(knowledgeDocumentVersionDoc(versionId), {
       ...versionPayload,
       createdAt: serverTimestamp(),
     });
@@ -425,11 +421,11 @@ export async function createKnowledgeDocumentVersion(input: {
   await uploadKnowledgeMarkdown(storagePath, input.rawMarkdown);
   try {
     const batch = writeBatch(getDb());
-    batch.set(knowledgeDocumentVersionDoc(versionId, accountId), {
+    batch.set(knowledgeDocumentVersionDoc(versionId), {
       ...versionPayload,
       createdAt: serverTimestamp(),
     });
-    batch.update(knowledgeDocumentDoc(input.documentId, accountId), {
+    batch.update(knowledgeDocumentDoc(input.documentId), {
       updatedAt: serverTimestamp(),
     });
     await batch.commit();
@@ -458,7 +454,7 @@ export async function setKnowledgeDocumentCurrentVersion(input: {
     return;
   }
 
-  await updateDoc(knowledgeDocumentDoc(input.document.id, accountId), {
+  await updateDoc(knowledgeDocumentDoc(input.document.id), {
     title: input.version.title,
     kind: input.version.kind,
     projectIds: input.version.projectIds,
@@ -481,7 +477,7 @@ export async function listKnowledgeVersionsByDocument(
   if (hasDemoSession()) return [];
 
   const snapshot = await getDocs(
-    query(knowledgeDocumentVersionsCollection(accountId), orderBy("createdAt", "desc")),
+    query(knowledgeDocumentVersionsCollection(), orderBy("createdAt", "desc")),
   );
 
   return snapshot.docs
@@ -547,7 +543,7 @@ export function subscribeKnowledgeVersionsByDocument(
   }
 
   return onSnapshot(
-    query(knowledgeDocumentVersionsCollection(scopedAccountId), orderBy("createdAt", "desc")),
+    query(knowledgeDocumentVersionsCollection(), orderBy("createdAt", "desc")),
     (snapshot) => {
       callbackFn(
         snapshot.docs

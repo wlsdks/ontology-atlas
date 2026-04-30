@@ -12,7 +12,7 @@ import type { ClientErrorInput } from "../model/types";
 const COLLECTION = "clientErrors";
 const MAX_STACK_LEN = 2_000;
 
-function clientErrorsCollection(accountId: string) {
+function clientErrorsCollection() {
   return collection(getDb(), COLLECTION);
 }
 
@@ -48,7 +48,7 @@ export async function reportClientError(
   };
 
   try {
-    await addDoc(clientErrorsCollection(normalized), payload);
+    await addDoc(clientErrorsCollection(), payload);
   } catch (err) {
     // 로깅 자체가 실패해도 main error flow 에 영향 주지 않는다.
     console.warn("[reportClientError] failed", err);

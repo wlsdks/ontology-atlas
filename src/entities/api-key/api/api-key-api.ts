@@ -31,11 +31,11 @@ import type { ApiKey } from "../model/types";
 
 const COLLECTION = "apiKeys";
 
-function apiKeysCollection(accountId: string) {
+function apiKeysCollection() {
   return collection(getDb(), COLLECTION);
 }
 
-function apiKeyDoc(accountId: string, keyId: string) {
+function apiKeyDoc(keyId: string) {
   return doc(getDb(), COLLECTION, keyId);
 }
 
@@ -67,7 +67,7 @@ export async function generateApiKey(input: {
   const keyHash = await sha256Hex(plaintext);
   const keyPrefix = plaintext.slice(0, 12); // "nk_xxxxxxxx" 정도
 
-  const ref = doc(apiKeysCollection(accountId));
+  const ref = doc(apiKeysCollection());
   await setDoc(ref, {
     accountId,
     name: trimmedName,
@@ -106,7 +106,7 @@ export async function listApiKeys(
   const normalized = normalizeAccountId(accountId);
   if (!normalized || hasDemoSession()) return [];
   const snapshot = await getDocs(
-    query(apiKeysCollection(normalized), orderBy("createdAt", "desc")),
+    query(apiKeysCollection(), orderBy("createdAt", "desc")),
   );
   return snapshot.docs.map((d) => fromFirestoreApiKey(d.id, d.data()));
 }
@@ -122,7 +122,7 @@ export function subscribeApiKeys(
     Promise.resolve().then(() => callback([]));
     return () => {};
   }
-  const q = query(apiKeysCollection(normalized), orderBy("createdAt", "desc"));
+  const q = query(apiKeysCollection(), orderBy("createdAt", "desc"));
   return onSnapshot(
     q,
     (snapshot) => {
@@ -143,7 +143,7 @@ export async function revokeApiKey(
     throw new Error("데모 세션에서는 revoke 할 수 없습니다.");
   }
   if (!keyId.trim()) throw new Error("keyId 가 필요합니다.");
-  await updateDoc(apiKeyDoc(normalized, keyId), {
+  await updateDoc(apiKeyDoc(keyId), {
     revokedAt: serverTimestamp(),
   });
 }
