@@ -111,7 +111,7 @@ const SEED_PROJECTS = [
     category: "in-progress",
     status: "deploy-ready",
     description:
-      "통합 인증 서비스. 모든 아슬란 프로젝트의 인증이 여기를 거친다.",
+      "통합 인증 서비스. 모든 Demo 프로젝트의 인증이 여기를 거친다.",
     tags: ["Auth", "Hub"],
     stack: ["Next.js", "Firebase Auth"],
     isHub: true,
@@ -119,7 +119,7 @@ const SEED_PROJECTS = [
   },
   {
     slug: "reactor",
-    name: "Reactor",
+    name: "Demo Reactor",
     nameEn: "Reactor",
     category: "in-progress",
     status: "deploy-ready",
@@ -135,7 +135,7 @@ const SEED_PROJECTS = [
     name: "Sample",
     category: "in-progress",
     status: "developing",
-    description: "아슬란의 프로젝트 토폴로지 지도 (이 사이트).",
+    description: "Demo 의 프로젝트 토폴로지 지도 (이 사이트).",
     tags: ["Portfolio", "Visualization"],
     stack: ["Next.js", "Sigma.js", "Firebase"],
     dependencies: ["iam"],

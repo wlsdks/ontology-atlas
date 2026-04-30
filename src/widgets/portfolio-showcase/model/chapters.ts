@@ -65,7 +65,7 @@ export function resolvePortfolioChapters(
     slug: project.slug,
     pathId: "default",
     pathLabel: "포트폴리오",
-    pathSummary: "아슬란의 주요 시스템을 빠르게 훑는 기본 포트폴리오 순서",
+    pathSummary: "Demo 의 주요 시스템을 빠르게 훑는 기본 포트폴리오 순서",
     focusedHubSlug: project.isHub ? project.slug : null,
     category: project.category,
     title: project.name,

@@ -245,7 +245,7 @@ describe("matchProjects", () => {
     }),
     project({
       slug: "reactor-runtime",
-      name: "Reactor",
+      name: "Demo Reactor",
       description: "AI Agent 런타임",
       tags: ["agent"],
       updatedAt: new Date("2026-04-27T00:00:00Z"),

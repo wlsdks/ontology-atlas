@@ -42,7 +42,7 @@ describe("resolvePortfolioChapters", () => {
         ? {
             ...project,
             detail:
-              "# Intro\n\n아슬란의 프로젝트를 하나의 포트폴리오 지도로 설명합니다.\n\n- detail line",
+              "# Intro\n\nDemo 의 프로젝트를 하나의 포트폴리오 지도로 설명합니다.\n\n- detail line",
           }
         : project,
     );
@@ -54,7 +54,7 @@ describe("resolvePortfolioChapters", () => {
     const mapsChapter = chapters.find((chapter) => chapter.slug === "sample");
 
     expect(mapsChapter?.narrative).toBe(
-      "아슬란의 프로젝트를 하나의 포트폴리오 지도로 설명합니다.",
+      "Demo 의 프로젝트를 하나의 포트폴리오 지도로 설명합니다.",
     );
   });
 });
