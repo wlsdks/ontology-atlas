@@ -21,9 +21,7 @@ const COLLECTION = "projectActivity";
 
 function activityCollection(accountId?: string | null) {
   const normalizedAccountId = normalizeAccountId(accountId);
-  return normalizedAccountId
-    ? collection(getDb(), "accounts", normalizedAccountId, COLLECTION)
-    : collection(getDb(), COLLECTION);
+  return collection(getDb(), COLLECTION);
 }
 
 function fromFirestore(doc: QueryDocumentSnapshot<DocumentData>): ProjectActivity {

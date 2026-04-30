@@ -33,11 +33,11 @@ import type { WorkspaceProject, WorkspaceProjectInput } from "../model/types";
 const COLLECTION = "workspaceProjects";
 
 function containerCollection(accountId: string) {
-  return collection(getDb(), "accounts", accountId, COLLECTION);
+  return collection(getDb(), COLLECTION);
 }
 
 function containerDoc(accountId: string, projectId: string) {
-  return doc(getDb(), "accounts", accountId, COLLECTION, projectId);
+  return doc(getDb(), COLLECTION, projectId);
 }
 
 /**
@@ -111,16 +111,12 @@ export async function countContainerHubsAndNodes(
     const db = getDb();
     const hubsColl = collection(
       db,
-      "accounts",
-      normalized,
       "workspaceProjects",
       projectId,
       "hubs",
     );
     const nodesColl = collection(
       db,
-      "accounts",
-      normalized,
       "workspaceProjects",
       projectId,
       "nodes",

@@ -59,30 +59,22 @@ const VERSIONS_COLLECTION = "knowledgeDocumentVersions";
 
 function knowledgeDocumentsCollection(accountId?: string | null) {
   const normalizedAccountId = normalizeAccountId(accountId);
-  return normalizedAccountId
-    ? collection(getDb(), "accounts", normalizedAccountId, DOCUMENTS_COLLECTION)
-    : collection(getDb(), DOCUMENTS_COLLECTION);
+  return collection(getDb(), DOCUMENTS_COLLECTION);
 }
 
 function knowledgeDocumentVersionsCollection(accountId?: string | null) {
   const normalizedAccountId = normalizeAccountId(accountId);
-  return normalizedAccountId
-    ? collection(getDb(), "accounts", normalizedAccountId, VERSIONS_COLLECTION)
-    : collection(getDb(), VERSIONS_COLLECTION);
+  return collection(getDb(), VERSIONS_COLLECTION);
 }
 
 function knowledgeDocumentDoc(documentId: string, accountId?: string | null) {
   const normalizedAccountId = normalizeAccountId(accountId);
-  return normalizedAccountId
-    ? doc(getDb(), "accounts", normalizedAccountId, DOCUMENTS_COLLECTION, documentId)
-    : doc(getDb(), DOCUMENTS_COLLECTION, documentId);
+  return doc(getDb(), DOCUMENTS_COLLECTION, documentId);
 }
 
 function knowledgeDocumentVersionDoc(versionId: string, accountId?: string | null) {
   const normalizedAccountId = normalizeAccountId(accountId);
-  return normalizedAccountId
-    ? doc(getDb(), "accounts", normalizedAccountId, VERSIONS_COLLECTION, versionId)
-    : doc(getDb(), VERSIONS_COLLECTION, versionId);
+  return doc(getDb(), VERSIONS_COLLECTION, versionId);
 }
 
 function buildKnowledgeDocumentId(title: string) {

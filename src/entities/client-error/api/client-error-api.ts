@@ -13,7 +13,7 @@ const COLLECTION = "clientErrors";
 const MAX_STACK_LEN = 2_000;
 
 function clientErrorsCollection(accountId: string) {
-  return collection(getDb(), "accounts", accountId, COLLECTION);
+  return collection(getDb(), COLLECTION);
 }
 
 /**

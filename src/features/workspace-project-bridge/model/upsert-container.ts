@@ -52,8 +52,6 @@ export async function upsertProjectInContainer(args: {
   const sub = isHub ? "hubs" : "nodes";
   const ref = doc(
     getDb(),
-    "accounts",
-    accountId,
     "workspaceProjects",
     args.projectId,
     sub,

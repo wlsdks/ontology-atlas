@@ -32,11 +32,11 @@ import type { ApiKey } from "../model/types";
 const COLLECTION = "apiKeys";
 
 function apiKeysCollection(accountId: string) {
-  return collection(getDb(), "accounts", accountId, COLLECTION);
+  return collection(getDb(), COLLECTION);
 }
 
 function apiKeyDoc(accountId: string, keyId: string) {
-  return doc(getDb(), "accounts", accountId, COLLECTION, keyId);
+  return doc(getDb(), COLLECTION, keyId);
 }
 
 export interface GenerateApiKeyResult {
