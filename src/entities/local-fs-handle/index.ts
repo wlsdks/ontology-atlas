@@ -6,3 +6,9 @@ export {
   putLocalFsHandle,
   touchLocalFsHandle,
 } from './api/store';
+export type {
+  FsHandle,
+  FsPermissionMode,
+  FsPermissionState,
+} from './api/permission';
+export { verifyHandlePermission } from './api/permission';

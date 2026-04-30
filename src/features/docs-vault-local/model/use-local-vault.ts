@@ -12,6 +12,7 @@ import {
   getLocalFsHandle,
   putLocalFsHandle,
   touchLocalFsHandle,
+  verifyHandlePermission,
 } from '@/entities/local-fs-handle';
 /** 탭 포커스 복귀 시 자동 refresh 의 최소 간격 (ms). 너무 자주 돌면
  *  사용자가 IDE 로 짧게 오갈 때마다 번쩍이므로 2초 간격으로 throttle. */
@@ -131,20 +132,11 @@ function isSupported(): boolean {
   );
 }
 
-async function verifyRead(
+function verifyRead(
   handle: FileSystemDirectoryHandle,
   ask = false,
 ): Promise<'granted' | 'prompt' | 'denied'> {
-  const opts = { mode: 'read' as const };
-  const query =
-    (await handle.queryPermission?.(opts)) ?? ('granted' as const);
-  if (query === 'granted') return 'granted';
-  if (ask) {
-    const req =
-      (await handle.requestPermission?.(opts)) ?? ('granted' as const);
-    return req;
-  }
-  return query;
+  return verifyHandlePermission(handle, 'read', { ask });
 }
 
 /**
