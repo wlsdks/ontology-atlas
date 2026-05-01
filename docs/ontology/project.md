@@ -6,6 +6,7 @@ domain: workbench
 capabilities:
   - frontmatter-to-ontology
   - mode-aware-adapter
+  - ontology-hub-mode-aware
   - 3-view-rendering
   - ai-agent-partner
   - tbox-versioning

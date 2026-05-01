@@ -28,10 +28,12 @@ import { resolve } from 'node:path';
 
 import {
   ensureVaultRoot,
+  findBacklinks,
   loadVaultDocs,
   readDoc,
   slugToPath,
   patchFrontmatter,
+  updateDoc,
   writeDoc,
 } from './vault.mjs';
 
@@ -39,7 +41,7 @@ const VAULT_ROOT = resolve(process.env.OMOT_VAULT || process.cwd());
 ensureVaultRoot(VAULT_ROOT);
 
 const server = new Server(
-  { name: 'oh-my-ontology-mcp', version: '0.1.0' },
+  { name: 'oh-my-ontology-mcp', version: '0.2.0' },
   { capabilities: { tools: {} } },
 );
 
@@ -150,6 +152,48 @@ const TOOLS = [
       required: ['from', 'to', 'type'],
     },
   },
+  {
+    name: 'patch_concept',
+    description:
+      '기존 ontology 노드 (.md 파일) 의 frontmatter 와/또는 body 를 갱신. ' +
+      'AI agent 가 기존 노드를 수정·심화·재분류할 때 사용. frontmatter ' +
+      'patch 는 키 단위 — null = 키 삭제, 미지정 = 기존 보존. body 는 전체 ' +
+      '교체 또는 미지정 시 보존.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        slug: { type: 'string', description: 'vault-relative slug (확장자 제외).' },
+        frontmatter: {
+          type: 'object',
+          description:
+            '갱신할 frontmatter 키-값 (예: { kind: "capability", domain: "views" }). null 은 키 삭제.',
+        },
+        body: {
+          type: 'string',
+          description: 'markdown 본문 전체 교체 (옵션). 미지정 시 보존.',
+        },
+      },
+      required: ['slug'],
+    },
+  },
+  {
+    name: 'find_backlinks',
+    description:
+      '특정 노드 (slug) 를 가리키는 다른 노드 목록 반환. frontmatter 배열 ' +
+      '키 (capabilities / elements / dependencies / relates / contains / ' +
+      'describes 등) 와 body 의 wikilink / markdown link 모두 검사. AI ' +
+      'agent 가 "이 노드 의존자가 누구인지" 그래프 탐색 시 사용.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        slug: {
+          type: 'string',
+          description: 'backlink 대상 vault-relative slug (확장자 제외).',
+        },
+      },
+      required: ['slug'],
+    },
+  },
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
@@ -170,6 +214,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(addConcept(args));
       case 'add_relation':
         return ok(addRelation(args));
+      case 'patch_concept':
+        return ok(patchConcept(args));
+      case 'find_backlinks':
+        return ok(findBacklinksTool(args));
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -284,6 +332,25 @@ function addRelation({ from, to, type }) {
   const next = [...existing, to];
   patchFrontmatter(VAULT_ROOT, from, { [key]: next });
   return { ok: true, from, to, type, key };
+}
+
+function patchConcept({ slug, frontmatter, body }) {
+  if (!slug) {
+    throw new Error('slug 가 필요합니다.');
+  }
+  if (frontmatter === undefined && body === undefined) {
+    throw new Error('frontmatter 또는 body 중 하나는 지정해야 합니다.');
+  }
+  const filePath = updateDoc(VAULT_ROOT, slug, { frontmatter, body });
+  return { ok: true, slug, filePath };
+}
+
+function findBacklinksTool({ slug }) {
+  if (!slug) {
+    throw new Error('slug 가 필요합니다.');
+  }
+  const matches = findBacklinks(VAULT_ROOT, slug);
+  return { target: slug, total: matches.length, matches };
 }
 
 // ── 부팅 ──────────────────────────────────────────────────────────────────

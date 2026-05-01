@@ -121,6 +121,85 @@ export function patchFrontmatter(rootPath, slug, patch) {
 }
 
 /**
+ * 기존 doc 의 frontmatter + body 를 동시에 갱신. frontmatter 는 patchFrontmatter
+ * 와 동일한 patch 의미 (null = 삭제, undefined = skip). body 가 string 이면
+ * 교체, undefined 면 보존, null 이면 빈 본문.
+ */
+export function updateDoc(rootPath, slug, { frontmatter: patch, body }) {
+  const filePath = slugToPath(rootPath, slug);
+  if (!existsSync(filePath)) {
+    throw new Error(`Doc not found: ${slug}`);
+  }
+  const raw = readFileSync(filePath, 'utf-8');
+  const { frontmatter, body: oldBody } = parseFrontmatter(raw);
+  const nextFm = { ...frontmatter };
+  if (patch) {
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === null) {
+        delete nextFm[key];
+      } else if (value !== undefined) {
+        nextFm[key] = value;
+      }
+    }
+  }
+  const nextBody =
+    body === undefined ? oldBody : body === null ? '' : body;
+  const md = buildMarkdown({ frontmatter: nextFm, body: nextBody });
+  writeFileSync(filePath, md, 'utf-8');
+  return filePath;
+}
+
+/**
+ * 어느 vault doc 이 `targetSlug` 를 가리키는지 스캔. frontmatter 의 array
+ * 키 (capabilities, elements, dependencies, relates, contains, describes)
+ * 와 body 의 wikilink/markdown link 까지 본다.
+ */
+export function findBacklinks(rootPath, targetSlug) {
+  const docs = loadVaultDocs(rootPath);
+  const matches = [];
+  // frontmatter array 키 안의 항목이 targetSlug 와 일치 또는 끝부분 일치
+  // (예: targetSlug='capabilities/mcp-server' 가 항목 'mcp-server' 와도
+  // 매칭). markdown link 형식 `(./capabilities/mcp-server.md)` 도 잡는다.
+  const slugTail = targetSlug.split('/').pop();
+  for (const doc of docs) {
+    if (doc.slug === targetSlug) continue;
+    const matchedKeys = [];
+    for (const key of Object.keys(doc.frontmatter)) {
+      const value = doc.frontmatter[key];
+      if (Array.isArray(value)) {
+        if (
+          value.some(
+            (v) =>
+              typeof v === 'string' &&
+              (v === targetSlug || v === slugTail || v.endsWith(`/${slugTail}`)),
+          )
+        ) {
+          matchedKeys.push(key);
+        }
+      } else if (typeof value === 'string') {
+        if (value === targetSlug || value === slugTail) {
+          matchedKeys.push(key);
+        }
+      }
+    }
+    const bodyHit =
+      doc.body.includes(`[[${targetSlug}]]`) ||
+      doc.body.includes(`[[${slugTail}]]`) ||
+      doc.body.includes(`(${targetSlug}.md)`) ||
+      doc.body.includes(`/${slugTail}.md`);
+    if (matchedKeys.length === 0 && !bodyHit) continue;
+    matches.push({
+      slug: doc.slug,
+      kind: doc.frontmatter.kind,
+      title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
+      matchedKeys: matchedKeys.length > 0 ? matchedKeys : undefined,
+      matchedInBody: bodyHit || undefined,
+    });
+  }
+  return matches;
+}
+
+/**
  * vault root 가 markdown vault 같은지 가벼운 검사. 절대 경로 + 디렉토리만
  * OK 로 본다 (frontmatter 가 없는 폴더도 빈 vault 로 허용).
  */
