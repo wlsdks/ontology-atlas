@@ -28,6 +28,12 @@ export {
   buildProjectMarkdown,
   projectToFrontmatter,
 } from './lib/project-frontmatter';
+export { deriveOntologyFromVault } from './lib/derive-ontology-from-vault';
+export type {
+  OntologyStubEdge,
+  OntologyStubNode,
+  VaultOntologyDerivation,
+} from './lib/derive-ontology-from-vault';
 export { findRelatedDocs } from './lib/related-docs';
 export type { RelatedDocMatch } from './lib/related-docs';
 export { buildDocsVaultHref } from './lib/href';

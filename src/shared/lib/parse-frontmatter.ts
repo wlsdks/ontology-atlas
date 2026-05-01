@@ -14,12 +14,34 @@ export function parseFrontmatter(raw: string): ParsedFrontmatter {
   const block = raw.slice(4, end).trim();
   const body = raw.slice(end + 4).replace(/^\r?\n/, '');
   const frontmatter: Record<string, unknown> = {};
-  for (const line of block.split('\n')) {
+  const lines = block.split('\n');
+  // multi-line YAML list 지원 — `key:` 다음 줄에 들여쓰기 + dash 가 이어지면
+  // 그 items 를 array 로 모은다. 인라인 `[a, b]` 와 단일 값은 그대로.
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
     const idx = line.indexOf(':');
     if (idx === -1) continue;
     const key = line.slice(0, idx).trim();
     const value = line.slice(idx + 1).trim();
     if (!key) continue;
+    if (value === '') {
+      const items: string[] = [];
+      let j = i + 1;
+      while (j < lines.length) {
+        const next = lines[j];
+        const dashMatch = next.match(/^\s+-\s+(.+)$/);
+        if (!dashMatch) break;
+        items.push(dashMatch[1].trim().replace(/^["']|["']$/g, ''));
+        j += 1;
+      }
+      if (items.length > 0) {
+        frontmatter[key] = items;
+        i = j - 1;
+        continue;
+      }
+      frontmatter[key] = '';
+      continue;
+    }
     if (value.startsWith('[') && value.endsWith(']')) {
       frontmatter[key] = value
         .slice(1, -1)
