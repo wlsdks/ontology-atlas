@@ -4,13 +4,12 @@ import { getOntologyKindIcon, getOntologyKindLabel } from "@/entities/ontology-c
 import type { ManualNodeKind } from "@/entities/knowledge-graph";
 
 /**
- * Track C-3 + C-10 폴리시 — 좌측 palette. kind chip 4개.
+ * 빌더 좌측 palette — kind 4종 클릭 시 캔버스 가운데에 임시 노드 추가.
  *
- * C-10 추가:
- * - kind 별 미니 아이콘 (lucide). T35 (Phase 4) — `getOntologyKindIcon`
- *   shared helper 사용해 Tree / Stub / Search 와 같은 매핑.
- * - hover 시 인디고 alpha bg 톤 변화 (헌장 §11 — scale 없이 색만)
- * - 더 풍부한 시각 hierarchy (label + hint 분리)
+ * 시각:
+ * - kind 별 미니 아이콘 (`getOntologyKindIcon` 공용 — Tree / Stub / Search 와 같음)
+ * - hover 시 인디고 alpha 톤만 변화 (헌장 §11 — scale 없이 색만)
+ * - label + hint 2-line hierarchy
  */
 const PALETTE_KINDS: Array<{
   kind: Exclude<ManualNodeKind, "document">;
@@ -85,7 +84,7 @@ export function OntologyKindPalette({ onAddNode }: OntologyKindPaletteProps) {
       </ul>
       <footer className="mt-auto pt-3">
         <p className="text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
-          ephemeral — 아직 저장은 별도 단계 (C-4/C-5).
+          새 노드는 임시 — 오른쪽 인스펙터에서 이름 입력 + 저장해야 vault/.md 로 들어가요.
         </p>
       </footer>
     </aside>
