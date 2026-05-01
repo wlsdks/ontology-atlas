@@ -30,6 +30,7 @@ import {
   deleteDoc,
   ensureVaultRoot,
   findBacklinks,
+  findOrphans,
   findPath,
   listKinds,
   loadVaultDocs,
@@ -44,7 +45,7 @@ const VAULT_ROOT = resolve(process.env.OMOT_VAULT || process.cwd());
 ensureVaultRoot(VAULT_ROOT);
 
 const server = new Server(
-  { name: 'oh-my-ontology-mcp', version: '0.4.0' },
+  { name: 'oh-my-ontology-mcp', version: '0.5.0' },
   { capabilities: { tools: {} } },
 );
 
@@ -228,6 +229,30 @@ const TOOLS = [
     },
   },
   {
+    name: 'find_orphans',
+    description:
+      'vault 의 고립 노드 (어느 다른 노드도 frontmatter array 키에서 가리키지 ' +
+      '않는 doc) 목록. AI agent 가 cleanup 시작점 / 사용자가 "안 쓰이는 ' +
+      '노드 뭐냐" 점검 시 사용. find_backlinks 와 같은 매칭 정책 (절대 slug ' +
+      '또는 마지막 segment). vault-readme 같은 sentinel kind 는 기본 제외.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        kind: {
+          type: 'string',
+          description:
+            '특정 kind 만 대상 (예: capability). 미지정 시 모든 kind.',
+        },
+        excludeKinds: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            '결과에서 제외할 kind 목록. 미지정 시 [\'vault-readme\'] 기본.',
+        },
+      },
+    },
+  },
+  {
     name: 'delete_concept',
     description:
       '⚠ DESTRUCTIVE — vault 의 .md 파일 영구 삭제. 안전 가드 2단:\n' +
@@ -285,6 +310,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(findPathTool(args));
       case 'list_kinds':
         return ok(listKindsTool());
+      case 'find_orphans':
+        return ok(findOrphansTool(args));
       case 'delete_concept':
         return ok(deleteConcept(args));
       default:
@@ -435,6 +462,13 @@ function findPathTool({ from, to, maxHops }) {
 
 function listKindsTool() {
   return listKinds(VAULT_ROOT);
+}
+
+function findOrphansTool({ kind, excludeKinds } = {}) {
+  return findOrphans(VAULT_ROOT, {
+    kind: typeof kind === 'string' ? kind : undefined,
+    excludeKinds: Array.isArray(excludeKinds) ? excludeKinds : undefined,
+  });
 }
 
 function deleteConcept({ slug, confirm = false, force = false }) {

@@ -34,6 +34,7 @@ const EXPECTED_TOOLS = [
   'find_backlinks',
   'find_path',
   'list_kinds',
+  'find_orphans',
   'add_concept',
   'add_relation',
   'patch_concept',

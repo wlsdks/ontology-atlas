@@ -191,6 +191,84 @@ export function listKinds(rootPath) {
 }
 
 /**
+ * vault 의 orphan 노드 찾기 — 다른 어느 노드도 frontmatter array 키
+ * (capabilities/elements/dependencies/relates/contains/describes) 에서
+ * 가리키지 않는 doc. 매칭 정책은 findBacklinks 와 동일 (절대 slug 또는
+ * 마지막 segment).
+ *
+ * 옵션:
+ *   - kind: 특정 kind 만 대상
+ *   - excludeKinds: 이 kind 들은 결과에서 제외 (기본 ['vault-readme'])
+ *
+ * 사용 시나리오: AI agent 가 "이 vault 의 고립 노드 정리하자" / 사용자가
+ * "내가 만든 노드 중 안 쓰이는 거 뭐냐" 점검.
+ */
+export function findOrphans(rootPath, options = {}) {
+  const docs = loadVaultDocs(rootPath);
+  const kindFilter = typeof options.kind === 'string' ? options.kind : null;
+  const excludeKinds = new Set(
+    Array.isArray(options.excludeKinds)
+      ? options.excludeKinds
+      : ['vault-readme'],
+  );
+  const NEIGHBOR_KEYS = [
+    'capabilities',
+    'elements',
+    'dependencies',
+    'relates',
+    'contains',
+    'describes',
+  ];
+  const slugs = new Set(docs.map((d) => d.slug));
+  const tailToFull = new Map();
+  for (const slug of slugs) {
+    const tail = slug.split('/').pop();
+    if (tail && tail !== slug && !tailToFull.has(tail)) {
+      tailToFull.set(tail, slug);
+    }
+  }
+  const referenced = new Set();
+  for (const doc of docs) {
+    for (const key of NEIGHBOR_KEYS) {
+      const value = doc.frontmatter[key];
+      if (!Array.isArray(value)) continue;
+      for (const ref of value) {
+        if (typeof ref !== 'string') continue;
+        if (slugs.has(ref)) {
+          if (ref !== doc.slug) referenced.add(ref);
+          continue;
+        }
+        if (tailToFull.has(ref)) {
+          const resolved = tailToFull.get(ref);
+          if (resolved && resolved !== doc.slug) referenced.add(resolved);
+          continue;
+        }
+        for (const slug of slugs) {
+          if (slug.endsWith(`/${ref}`) && slug !== doc.slug) {
+            referenced.add(slug);
+            break;
+          }
+        }
+      }
+    }
+  }
+  const orphans = [];
+  for (const doc of docs) {
+    const kind = doc.frontmatter.kind;
+    if (typeof kind !== 'string' || !kind) continue;
+    if (excludeKinds.has(kind)) continue;
+    if (kindFilter && kind !== kindFilter) continue;
+    if (referenced.has(doc.slug)) continue;
+    orphans.push({
+      slug: doc.slug,
+      kind,
+      title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
+    });
+  }
+  return { total: orphans.length, orphans };
+}
+
+/**
  * 두 slug 사이 그래프 최단 경로 (T30, BFS). edge 는 frontmatter array
  * 키 (capabilities, elements, dependencies, relates, contains, describes)
  * 의 항목 + 양방향 (backlink) 으로 구성된 무방향 그래프.
