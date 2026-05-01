@@ -316,15 +316,6 @@ export function OntologyViewPage() {
                 관계
               </Link>
             </Tooltip>
-            <Tooltip content="검수 큐 열기 — 추출 후보 승인 / 반려" withProvider={false}>
-              <Link
-                href={"/review/knowledge/"}
-                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-                aria-label="검수 큐 열기 — 추출 후보 승인 / 반려"
-              >
-                검수 큐
-              </Link>
-            </Tooltip>
           </div>
         </div>
       </section>
@@ -344,15 +335,10 @@ export function OntologyViewPage() {
         />
         <Stat
           label="미해결 참조"
-          hint="검수 대기 placeholder"
-          hintFull="frontmatter relates.target 이 가리킨 미존재 노드. 검수에서 승격 또는 폐기."
+          hint="트리 하단의 stub 리스트에서 처리"
+          hintFull="frontmatter relates.target 이 가리킨 미존재 노드. 트리 하단 stub 리스트에서 승격 (kind 부여) 또는 폐기."
           value={String(stubCount)}
           accent={stubCount > 0 ? "amber" : undefined}
-          href={
-            stubCount > 0
-              ? "/review/knowledge/"
-              : undefined
-          }
         />
         <Stat
           // UX-4: 모바일 2-col 그리드에서 5 번째 카드만 단독 row 가 되어
@@ -436,16 +422,16 @@ export function OntologyViewPage() {
               </ol>
               <div className="mt-5 flex flex-wrap gap-2">
                 <Link
-                  href={"/knowledge/documents/"}
+                  href={"/docs/"}
                   className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] px-4 py-2 text-sm text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
                 >
-                  문서 볼트 열기 →
+                  vault 열기 →
                 </Link>
                 <Link
-                  href={"/review/knowledge/"}
+                  href={"/ontology/edit/"}
                   className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 py-2 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
-                  검수 큐 열기
+                  빌더 열기
                 </Link>
               </div>
             </div>

@@ -15,7 +15,7 @@ interface OperationsNavProps {
 }
 
 interface NavItem {
-  id: 'knowledge' | 'review' | 'ontology' | 'topology' | 'settings' | 'diagnostics';
+  id: 'knowledge' | 'ontology' | 'topology' | 'settings' | 'diagnostics';
   label: string;
   /** Tooltip 본문 — 라벨이 짧아 첫 사용자에게 의미 약할 때 보조 안내. */
   description: string;
@@ -36,16 +36,9 @@ function buildItems(mode: 'static' | 'local' | 'cloud'): ReadonlyArray<NavItem> 
       description:
         mode === 'local'
           ? '내 vault 의 .md 들 — 직접 편집하면 즉시 ontology stub 으로 자람'
-          : '문서 등록 / 분석 / 골라내기 / 공개 — 4단계 워크플로 진입점',
+          : '문서 등록 + frontmatter 또는 빌더에서 ontology 노드 추가',
       basePath: docsBase,
       prefixes: ['/knowledge', '/docs'],
-    },
-    {
-      id: 'review',
-      label: '문서 확인',
-      description: '추출 후보를 살펴보고 승인할 노드·관계 골라내기',
-      basePath: '/review/knowledge/',
-      prefixes: ['/review'],
     },
     // ontology view — 승인된 노드/관계의 트리. mission 의 척추.
     // / 도 OntologyViewPage 를 렌더하므로 prefix 에 양쪽 포함.
@@ -84,16 +77,16 @@ function buildItems(mode: 'static' | 'local' | 'cloud'): ReadonlyArray<NavItem> 
 }
 
 /**
- * 운영 메뉴 공통 nav. /knowledge ↔ /review ↔ /settings ↔ /diagnostics
+ * 운영 메뉴 공통 nav. /knowledge ↔ /settings ↔ /diagnostics ↔ ontology
  * 사이 전환이 각 페이지 nav 안에 묻혀 있어 사용자가 메뉴 사이 점프
  * 못 하던 문제 해소. 모든 운영 페이지 상단에 동일하게 배치.
  *
- * 데스크톱 (md+): 5 탭 + 우측 보조 (rightSlot / 프로젝트 / 로그아웃).
+ * 데스크톱 (md+): 탭 + 우측 보조 (rightSlot / 프로젝트 / 로그아웃).
  *
- * 모바일 (<md, A2-6): 5 탭만 horizontal scroll chip row 로 노출. 보조
+ * 모바일 (<md, A2-6): 탭만 horizontal scroll chip row 로 노출. 보조
  * 버튼은 BottomTabBar (지도 / 프로젝트 / 문서 / 정리) 와 사용자 메뉴가
- * 대체. 1 차 결정 (모바일 nav 자체 숨김) 은 sub-page 점프 (review ↔
- * diagnostics 등) 가 답 없는 문제를 만들어 뒤집음. iOS / Android 표준
+ * 대체. 1 차 결정 (모바일 nav 자체 숨김) 은 sub-page 점프가 답 없는
+ * 문제를 만들어 뒤집음. iOS / Android 표준
  * 가로 스크롤 칩 패턴 (음원/뱅킹 앱에서 흔한 sub-tab) 같은 형태.
  *
  * 활성 표시는 pathname prefix 매칭 — 동일 룰 양쪽 적용.

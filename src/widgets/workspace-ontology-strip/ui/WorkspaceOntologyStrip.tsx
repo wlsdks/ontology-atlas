@@ -36,9 +36,8 @@ export function WorkspaceOntologyStrip({ accountId }: WorkspaceOntologyStripProp
   const ontologyHref = accountId
     ? `/ontology/?${ACCOUNT_QUERY_KEY}=${encodeURIComponent(accountId)}`
     : "/ontology/";
-  const reviewHref = accountId
-    ? `/review/knowledge/?${ACCOUNT_QUERY_KEY}=${encodeURIComponent(accountId)}`
-    : "/review/knowledge/";
+  // 미해결 stub 은 /ontology 의 OntologyStubList 위젯에서 처리 (promote/dismiss).
+  const stubHref = ontologyHref;
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-[color:var(--color-text-tertiary)]">
@@ -55,10 +54,10 @@ export function WorkspaceOntologyStrip({ accountId }: WorkspaceOntologyStripProp
       {counts.element > 0 ? <CountChip label="요소" value={counts.element} /> : null}
       {counts.stub > 0 ? (
         <Link
-          href={reviewHref}
+          href={stubHref}
           className="inline-flex items-center gap-1 rounded-full border border-[color:rgba(255,179,71,0.32)] bg-[color:rgba(255,179,71,0.08)] px-2.5 py-1 text-[10px] tracking-[0.02em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:bg-[color:rgba(255,179,71,0.16)]"
-          aria-label="검수 큐 — 미해결 참조 처리"
-          title="frontmatter 의 relates.target 이 가리킨 아직 존재하지 않는 노드. 검수에서 승격(promote) 또는 폐기(dismiss)."
+          aria-label="미해결 참조 — 트리에서 승격 또는 폐기"
+          title="frontmatter 의 relates.target 이 가리킨 아직 존재하지 않는 노드. /ontology 트리 하단의 stub 리스트에서 승격 또는 폐기."
         >
           미해결 참조 {counts.stub}
           <span aria-hidden>→</span>
