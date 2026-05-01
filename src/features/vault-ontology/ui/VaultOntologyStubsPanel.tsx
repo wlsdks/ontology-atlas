@@ -5,11 +5,11 @@ import { ArrowRight, Sparkles } from 'lucide-react';
 import { useVaultOntology } from '../model/use-vault-ontology';
 
 /**
- * 로컬 vault 에서 추출한 ontology stub 들을 *간결한 리스트*로 보여주는 패널.
+ * 로컬 vault frontmatter 에서 자란 ontology 노드 *간결 리스트* 패널.
  *
- * 통합 트리 / ego 그래프 와는 별개 — 이건 *fast path* 의 입증용 surface.
- * stub 은 evidence 미부여 (검수 안 됨) 상태로, 사용자가 frontmatter 만으로
- * 즉시 ontology 가 자라는 모습을 보여 mission 약속의 절반을 가시화.
+ * 통합 트리 / ego 그래프 와는 별개 — vault 안 .md frontmatter 의 `kind:`
+ * 가 즉시 노드로 surface 되는 mission v2 모델 ("vault frontmatter 가 곧
+ * 그래프, 검수 단계 없음") 의 가시 증명.
  *
  * 디자인 헌장 안: 단일 인디고 + 무채색, 애니메이션 0.
  */
@@ -33,7 +33,7 @@ export function VaultOntologyStubsPanel() {
         </div>
         <p className="mt-3 text-[12.5px] leading-6 text-[color:var(--color-text-tertiary)]">
           {warnings[0] ??
-            'vault 의 .md 어디에도 frontmatter `kind:` 가 없어 stub 후보가 비어있습니다. 문서 상단에 `kind: project` (또는 capability / element / workflow / decision) 추가 시 즉시 노드로 자랍니다.'}
+            'vault 의 .md 어디에도 frontmatter `kind:` 가 없어 ontology 가 비어 있어요. 문서 상단에 `kind: project` (또는 capability / element / workflow / decision) 추가 시 즉시 노드로 자랍니다.'}
         </p>
       </section>
     );
@@ -63,29 +63,25 @@ export function VaultOntologyStubsPanel() {
           </h2>
         </div>
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-          {nodes.length} nodes · {edges.length} relations · stub
+          {nodes.length} nodes · {edges.length} relations
         </p>
       </header>
       <p className="mt-2 text-[12px] text-[color:var(--color-text-tertiary)]">
-        AI 추출 거치지 않은 fast-path stub. evidence 가 붙으면 정식 ontology fact 로 승격됩니다.
+        vault 안 .md 의 frontmatter `kind:` 가 그대로 노드. 추출·검수 단계 없이 즉시 그래프.
       </p>
 
-      {/* 다음 단계 안내 — vault stub 을 영구 fact 로 만드는 두 path 안내.
-          IndexedDB 기반 promote 큐는 후속 (Phase 7+) 으로 미루고, 현재 가능한
-          두 우회 경로 (빌더 + cloud 검수) 를 명시. */}
+      {/* 다음 단계 안내 — frontmatter 만으로도 충분하지만 시각적으로 더
+          편하게 다듬고 싶을 때의 옵션. mission v2 에서 cloud 검수 큐 promote
+          path 가 폐기됐으므로 빌더 한 가지만 명시. */}
       <details className="mt-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] px-3 py-2 text-[12px] text-[color:var(--color-text-secondary)]">
         <summary className="cursor-pointer font-[var(--font-weight-signature)]">
-          이 stub 을 어떻게 영구 fact 로 만들까요?
+          노드·관계를 시각적으로 다듬고 싶다면?
         </summary>
         <div className="mt-2 space-y-2 text-[color:var(--color-text-tertiary)]">
           <p>
-            <strong>(1) 빌더에서 직접 그리기</strong> — `/ontology/edit/` 빌더
-            캔버스에서 노드와 관계를 직접 추가하면 즉시 영구 저장 (cloud 모드).
-          </p>
-          <p>
-            <strong>(2) cloud 검수 큐</strong> — 추후 도입 예정 (Phase 7+). 현재는
-            local stub → cloud 검수 큐 promote path 가 wiring 안 되어 있어, 빌더
-            에서 직접 그리는 (1) 경로 추천.
+            `/ontology/edit/` 빌더 캔버스에서 같은 vault 를 ERD-like 캔버스로 보고
+            노드 위치 / frontmatter 키를 inline 편집할 수 있어요. 저장은 같은 vault
+            의 .md 에 직접 — 별도 promote 단계 없음.
           </p>
           <Link
             href="/ontology/edit/"
