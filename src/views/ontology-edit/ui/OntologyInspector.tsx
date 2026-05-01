@@ -99,7 +99,7 @@ export function OntologyInspector({
           Inspector
         </p>
         <p className="mt-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-          캔버스에서 노드를 클릭하면 상세가 여기에 보여요.
+          선택한 노드의 상세 + 인라인 편집.
         </p>
       </header>
       <AnimatePresence mode="wait">
@@ -110,7 +110,7 @@ export function OntologyInspector({
             className="rounded-md border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] p-3"
           >
             <p className="text-[12px] leading-5 text-[color:var(--color-text-quaternary)]">
-              아직 선택된 노드가 없어요.
+              왼쪽 palette 에서 종류를 클릭해 첫 노드를 만들거나, 캔버스의 노드를 클릭하면 상세가 여기에 보여요.
             </p>
           </motion.div>
         ) : ephemeralSelected ? (
