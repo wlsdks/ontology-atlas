@@ -8,7 +8,6 @@ import {
 } from "firebase/firestore";
 import { getDb } from "@/shared/api";
 import { normalizeAccountId } from "@/shared/lib/account-scope";
-import { hasDemoSession } from "@/shared/lib/demo-session";
 import {
   fromFirestoreKnowledgeJob,
   type KnowledgeJob,
@@ -58,11 +57,9 @@ export function subscribeKnowledgeJobsByDocument(
       ? maybeOnError
       : (callbackOrOnError as ((error: Error) => void) | undefined);
 
-  if (hasDemoSession()) {
-    Promise.resolve().then(() => callbackFn([]));
-    return () => {};
-  }
-
+  // mission v2 — knowledge-job 자체가 cloud LLM extraction 흐름 (PR #5/#6 폐기)
+  // 의 잔여 구독자. mission v2 default path (vault-first) 에서는 호출자 0.
+  // 이전 hasDemoSession 분기는 PR #37 에서 제거.
   return onSnapshot(
     query(
       knowledgeJobsCollection(),

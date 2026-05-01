@@ -10,8 +10,6 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { getDb } from '@/shared/api';
-import { hasDemoSession } from '@/shared/lib/demo-session';
-import { getDemoCategories } from '@/shared/mocks/demo-data';
 import {
   DEFAULT_CATEGORIES,
   fromFirestore,
@@ -33,17 +31,15 @@ function categoryDoc(id: string) {
 /**
  * 전체 카테고리 실시간 구독. order ASC로 정렬해서 반환.
  * 콜백은 Firestore 스냅샷이 올 때마다 호출됨.
+ *
+ * mission v2 — TaxonomyProvider 가 mode-aware 라 cloud 모드에서만 호출.
+ * static / local 모드는 DEFAULT_CATEGORIES 로 즉시 동작. 이전 hasDemoSession
+ * 분기는 PR #37 에서 제거 (mission v2 default 흐름과 misalign).
  */
 export function subscribeCategories(
   callback: (categories: Category[]) => void,
   onError?: (error: Error) => void,
 ): Unsubscribe {
-  if (hasDemoSession()) {
-    const list = getDemoCategories();
-    Promise.resolve().then(() => callback(list));
-    return () => {};
-  }
-
   return onSnapshot(
     categoriesCollection(),
     (snapshot) => {

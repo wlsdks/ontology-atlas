@@ -10,8 +10,6 @@ import {
   type Unsubscribe,
 } from 'firebase/firestore';
 import { getDb } from '@/shared/api';
-import { hasDemoSession } from '@/shared/lib/demo-session';
-import { getDemoStatuses } from '@/shared/mocks/demo-data';
 import {
   DEFAULT_STATUSES,
   fromFirestore,
@@ -30,16 +28,15 @@ function statusDoc(id: string) {
   return doc(getDb(), COLLECTION, id);
 }
 
+/**
+ * mission v2 — TaxonomyProvider 가 mode-aware 라 cloud 모드에서만 호출.
+ * static / local 모드는 DEFAULT_STATUSES 로 즉시 동작. 이전 hasDemoSession
+ * 분기는 PR #37 에서 제거.
+ */
 export function subscribeStatuses(
   callback: (statuses: Status[]) => void,
   onError?: (error: Error) => void,
 ): Unsubscribe {
-  if (hasDemoSession()) {
-    const list = getDemoStatuses();
-    Promise.resolve().then(() => callback(list));
-    return () => {};
-  }
-
   return onSnapshot(
     statusesCollection(),
     (snapshot) => {
