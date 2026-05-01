@@ -4,25 +4,30 @@
 
 ## Project overview
 
-`oh-my-ontology` 는 markdown 문서에서 지식 그래프를 자동으로 키우는 오픈소스 온톨로지 워크벤치다. 사용자가 글을 쓰면 시스템이 개념·관계·근거를 추출해 검수·승인하면 토폴로지·트리·ERD 세 가지 view 로 자라난다.
+`oh-my-ontology` 는 **사람과 AI agent 가 같이 저작하는 codebase ontology workbench** 다 (mission v2 — 2026-05-01). vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — frontmatter 자체가 자기-승인이라 별도 검수 단계 없음. 사람은 빌더 캔버스 또는 직접 `.md` 편집으로, AI agent (Claude Code 등) 는 `mcp/` MCP 서버로 같은 graph 를 read/write.
 
-자세한 소개와 모티베이션: `README.md`.
+자세한 방향: `docs/PRODUCT-DIRECTION.md`. 사용자 가시 기능 전수: `docs/FEATURES.md`.
 
 핵심 원칙 한 줄:
 
-> **토폴로지는 출구 중 하나, 진짜 척추는 md 문서 → 온톨로지.**
+> **md frontmatter 가 곧 그래프. 사람도 AI agent 도 같은 vault 에 쓴다.**
 
 ## Quick start
 
 ```bash
 pnpm install
-cp .env.example .env.local        # Firebase 사용 시 값 채움 (optional)
-pnpm dev                          # http://localhost:3000
+pnpm dev                          # http://localhost:3000 — 로그인 0, vault 폴더 선택만으로 즉시 동작
 
-pnpm test:run                     # vitest 137 files / 958 tests
+# Firebase 사용 시 (옵션 — cloud sync 필요할 때만)
+cp .env.example .env.local
+
+# 검증
+pnpm test:run                     # vitest 117 files / 843 tests
 pnpm exec tsc --noEmit
 pnpm lint
 pnpm build                        # 정적 export → out/
+
+# AI agent (Claude Code) 등록 — .mcp.json.example 복사 + 가이드: mcp/README.md
 ```
 
 ## Tech stack
@@ -30,9 +35,11 @@ pnpm build                        # 정적 export → out/
 - **Framework** Next.js 16 · App Router · `output: 'export'`
 - **Language** TypeScript 5
 - **Style** Tailwind CSS 4 (`@theme` CSS-based tokens)
-- **Visualization** Sigma.js (WebGL) · Graphology · ForceAtlas2 · d3-force · xyflow · Framer Motion
-- **Backend** Firebase (Firestore · Storage · Auth · Hosting · Functions 2nd gen) — 옵션. 로컬 폴더 모드만 써도 동작
-- **State** Firestore `onSnapshot` 실시간 구독 + React local state · URL state
+- **Visualization** Sigma.js (WebGL) · Graphology · ForceAtlas2 · xyflow
+- **Local-first** File System Access API + IndexedDB (vault handle 영속)
+- **AI agent** `@modelcontextprotocol/sdk` (stdin/stdout JSON-RPC server, `mcp/` 패키지)
+- **Backend** Firebase (Firestore · Storage · Auth · Hosting · Functions) — **옵션**. local-first 가 default
+- **State** Firestore `onSnapshot` (cloud) 또는 in-memory + IndexedDB (local) · React local state · URL state
 - **Architecture** Feature-Sliced Design (ESLint boundaries 로 import 방향 강제)
 - **Test** Vitest + Testing Library + jsdom · Playwright (E2E)
 - **Lint** ESLint 9 flat config
@@ -49,8 +56,10 @@ src/                       FSD 레이어
   ├── features/            인터랙션 단위
   ├── entities/            비즈니스 엔티티
   └── shared/              UI · lib · config · api 재사용 기반
+mcp/                       MCP 서버 (AI agent partner surface)
 docs/                      장기 문서 (architecture / data-model / design / deployment)
-functions/                 Cloud Functions (2nd gen)
+docs/ontology/             이 프로젝트 자기 ontology vault (dogfood, 20 노드)
+functions/                 Cloud Functions — 옵션 (mission v2 후 cold storage)
 tests/                     Vitest 단위 + Playwright E2E
 scripts/                   시드 / 배포 / 검증 보조
 .claude/rules/             세부 작업 규율 (자동 로드)
@@ -61,19 +70,21 @@ scripts/                   시드 / 배포 / 검증 보조
 ## Routes
 
 ```
-/                          토폴로지 view (전체 그래프)
-/projects                  프로젝트 목록
+/                          ontology 트리 hub (vault 활성 시 자동 vault 데이터)
+/topology                  토폴로지 view (Sigma WebGL)
+/projects                  프로젝트 목록 (mode-aware)
 /project/[slug]            프로젝트 상세 (권한 시 인라인 편집)
-/knowledge · /knowledge/*  문서 등록 / 분석 / 목록
-/review/knowledge          검수 큐
-/ontology                  승인된 트리 view
-/ontology/edit             ERD 캔버스 편집기
+/docs                      vault picker / vault 활성 시 문서 surface
+/knowledge · /knowledge/*  cloud 모드 문서 등록 / 목록
+/ontology/edit             ERD 캔버스 빌더 (xyflow + .md 내보내기)
 /ontology/insights         그래프 인사이트
 /ontology/relations        관계 분포
-/settings/*                카테고리 / 상태 / API 키 / 임포트
-/diagnostics/*             운영 인사이트
-/login · /signup · /reset-password · /account   인증 surface (옵션)
+/settings/*                카테고리 / 상태 / 가져오기
+/diagnostics/insights      운영 인사이트
+/login · /signup · /reset-password · /account   Firebase Auth surface (옵션)
 ```
+
+> mission v2 정렬: `/review/knowledge` 검수 큐 라우트 + `/admin/*` 네임스페이스는 폐기됨 (vault frontmatter 가 자기-승인). cloud LLM 추출 흐름 (`enqueueExtractionJob` 등) 도 functions/ 와 entity layer 모두에서 제거됨 — 자세히 `docs/MISSION-CLEANUP-CANDIDATES.md`.
 
 ## Working principles
 
@@ -95,12 +106,16 @@ scripts/                   시드 / 배포 / 검증 보조
 - `next.config.ts`
 - `app/layout.tsx`
 
-장기 문서:
+장기 문서 (mission v2 우선):
 
-- `@docs/ARCHITECTURE.md`
-- `@docs/DATA-MODEL.md`
-- `@docs/DESIGN-SYSTEM.md`
-- `@docs/DEPLOYMENT.md`
+- `@docs/PRODUCT-DIRECTION.md` — mission v2 방향
+- `@docs/FEATURES.md` — 사용자가 *지금* 사용 가능한 기능 전수
+- `@docs/MISSION-CLEANUP-CANDIDATES.md` — mission 정렬 cleanup 진행 (4 stage 완료)
+- `@docs/ONTOLOGY-MODEL-V2-DRAFT.md` — V1.x → V2 ontology 모델 진화 spec
+- `@docs/MODE-AWARE-CRUD.md` — local/cloud/static 분기 contributor 가이드
+- `@docs/ARCHITECTURE.md` · `@docs/DATA-MODEL.md` · `@docs/DESIGN-SYSTEM.md` · `@docs/DEPLOYMENT.md`
+- `@docs/CHANGELOG.md` — 사용자 가시 변화 시간순
+- `@mcp/README.md` — AI agent partner (MCP 7 도구) 등록 + 사용
 
 ## 이 프로젝트의 ontology
 
