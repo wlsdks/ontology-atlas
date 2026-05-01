@@ -22,13 +22,34 @@ const FADE_MOTION = {
  * - approved 노드: read-only (cloud 모드 legacy)
  * - 미선택: 안내 placeholder
  */
+export type VaultArrayKey =
+  | "capabilities"
+  | "elements"
+  | "dependencies"
+  | "relates";
+
+export interface VaultSelected {
+  slug: string;
+  kind: string;
+  title: string;
+  capabilities: string[];
+  elements: string[];
+  dependencies: string[];
+  relates: string[];
+}
+
 export interface OntologyInspectorProps {
   ephemeralSelected: EphemeralNode | null;
   approvedSelected: { id: string; kind: string; title: string } | null;
-  vaultSelected: { slug: string; kind: string; title: string } | null;
+  vaultSelected: VaultSelected | null;
   onRenameEphemeral: (id: string, title: string) => void;
   onSaveEphemeral?: (id: string) => Promise<void> | void;
   onSaveVaultRename?: (slug: string, nextTitle: string) => Promise<void> | void;
+  onEditVaultArrayKey?: (
+    slug: string,
+    key: VaultArrayKey,
+    next: string[],
+  ) => Promise<void> | void;
   onDeleteVault?: (slug: string) => Promise<void> | void;
   onClearSelection: () => void;
   saving?: boolean;
@@ -49,6 +70,7 @@ export function OntologyInspector({
   onRenameEphemeral,
   onSaveEphemeral,
   onSaveVaultRename,
+  onEditVaultArrayKey,
   onDeleteVault,
   onClearSelection,
   saving,
@@ -93,6 +115,7 @@ export function OntologyInspector({
             <VaultDetail
               node={vaultSelected}
               onSaveRename={onSaveVaultRename}
+              onEditArrayKey={onEditVaultArrayKey}
               onDelete={onDeleteVault}
               saving={Boolean(saving)}
               onDeselect={onClearSelection}
@@ -203,15 +226,28 @@ function EphemeralDetail({
   );
 }
 
+const ARRAY_KEY_LABELS: Record<VaultArrayKey, string> = {
+  capabilities: "역량 (capabilities)",
+  elements: "요소 (elements)",
+  dependencies: "의존 (dependencies)",
+  relates: "관련 (relates)",
+};
+
 function VaultDetail({
   node,
   onSaveRename,
+  onEditArrayKey,
   onDelete,
   saving,
   onDeselect,
 }: {
-  node: { slug: string; kind: string; title: string };
+  node: VaultSelected;
   onSaveRename?: (slug: string, nextTitle: string) => Promise<void> | void;
+  onEditArrayKey?: (
+    slug: string,
+    key: VaultArrayKey,
+    next: string[],
+  ) => Promise<void> | void;
   onDelete?: (slug: string) => Promise<void> | void;
   saving: boolean;
   onDeselect: () => void;
@@ -273,6 +309,21 @@ function VaultDetail({
         제목만 frontmatter `title:` 에 patch 됩니다. 본문이나 다른 키는 그대로
         유지돼요. AI agent (MCP) 도 동일 vault 를 보고 있어 즉시 반영됩니다.
       </p>
+      {onEditArrayKey ? (
+        <div className="flex flex-col gap-3">
+          {(["capabilities", "elements", "dependencies", "relates"] as const).map(
+            (key) => (
+              <ArrayKeyEditor
+                key={key}
+                fieldKey={key}
+                values={node[key]}
+                onChange={(next) => onEditArrayKey(node.slug, key, next)}
+                disabled={saving}
+              />
+            ),
+          )}
+        </div>
+      ) : null}
       {onDelete ? (
         <button
           type="button"
@@ -284,6 +335,86 @@ function VaultDetail({
           ⚠ vault 에서 삭제
         </button>
       ) : null}
+    </div>
+  );
+}
+
+function ArrayKeyEditor({
+  fieldKey,
+  values,
+  onChange,
+  disabled,
+}: {
+  fieldKey: VaultArrayKey;
+  values: string[];
+  onChange: (next: string[]) => void;
+  disabled: boolean;
+}) {
+  const [input, setInput] = useState("");
+  // 노드 변경 시 입력 buffer 초기화 — 다른 노드의 입력이 새 노드에 새 옴 안 함.
+  useEffect(() => {
+    setInput("");
+  }, [values.join("|"), fieldKey]);
+  const submit = () => {
+    const trimmed = input.trim();
+    if (!trimmed || values.includes(trimmed) || disabled) return;
+    onChange([...values, trimmed]);
+    setInput("");
+  };
+  const remove = (slug: string) => {
+    if (disabled) return;
+    onChange(values.filter((v) => v !== slug));
+  };
+  return (
+    <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        {ARRAY_KEY_LABELS[fieldKey]}
+      </p>
+      {values.length > 0 ? (
+        <ul className="mt-2 flex flex-wrap gap-1">
+          {values.map((slug) => (
+            <li key={slug}>
+              <button
+                type="button"
+                onClick={() => remove(slug)}
+                disabled={disabled}
+                aria-label={`${slug} 제거`}
+                className="inline-flex items-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2 py-0.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(229,72,77,0.46)] hover:bg-[color:rgba(229,72,77,0.10)] disabled:opacity-50"
+              >
+                <span className="font-mono break-all">{slug}</span>
+                <span aria-hidden className="text-[color:var(--color-text-tertiary)]">
+                  ×
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      <div className="mt-2 flex gap-1">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              submit();
+            }
+          }}
+          disabled={disabled}
+          placeholder="slug 입력 + Enter"
+          className="flex-1 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2 py-1 font-mono text-[11px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)] disabled:opacity-50"
+        />
+        <button
+          type="button"
+          onClick={submit}
+          disabled={disabled || !input.trim() || values.includes(input.trim())}
+          aria-label="추가"
+          className="inline-flex h-7 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.18)] px-2 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          +
+        </button>
+      </div>
     </div>
   );
 }
