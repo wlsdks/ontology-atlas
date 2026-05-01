@@ -195,7 +195,7 @@ export function PublicAccountMenu({
         <div
           role="menu"
           aria-label="내 정보 메뉴"
-          className="absolute right-0 top-[calc(100%+0.75rem)] z-40 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-[20px] border border-[color:var(--color-divider)] bg-[color:rgba(11,12,14,0.98)] shadow-[0_28px_60px_rgba(0,0,0,0.34)]"
+          className="absolute right-0 top-[calc(100%+0.75rem)] z-40 w-[min(20rem,calc(100vw-2rem))] overflow-hidden rounded-[20px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] shadow-[0_28px_60px_rgba(0,0,0,0.34)]"
         >
           <div className="border-b border-[color:var(--color-border-soft)] px-4 py-4">
             <p className="mt-2 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
