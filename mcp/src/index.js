@@ -1,14 +1,23 @@
 #!/usr/bin/env node
 /**
- * oh-my-ontology-mcp — MCP 서버.
+ * oh-my-ontology-mcp — MCP 서버 v0.5.0 (도구 11종 = read 7 + write 4).
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
- * 도구:
- *   - list_concepts     — vault 의 노드 목록 (kind 필터)
- *   - get_concept       — 단일 노드 + 이웃
- *   - find_evidence     — 어떤 문서가 이 concept 의 근거인지
- *   - add_concept       — 새 노드 (.md 파일 작성)
- *   - add_relation      — 두 노드 사이 edge (frontmatter patch)
+ *
+ * read 7:
+ *   - list_concepts     — vault 의 노드 목록 (kind / project_filter)
+ *   - get_concept       — 단일 노드 + 이웃 (dependencies / relates)
+ *   - find_evidence     — title / capabilities / elements / body 부분매칭
+ *   - find_backlinks    — 특정 slug 를 가리키는 다른 노드들
+ *   - find_path         — 두 slug 사이 그래프 최단 경로 (BFS, 무방향)
+ *   - list_kinds        — vault kind 분포 census
+ *   - find_orphans      — 어느 다른 노드도 frontmatter 에서 가리키지 않는 doc
+ *
+ * write 4:
+ *   - add_concept       — 새 노드 (.md 파일 작성, 기존 slug 면 throw)
+ *   - add_relation      — 두 노드 사이 edge (frontmatter 배열 키 append)
+ *   - patch_concept     — 기존 노드 frontmatter (key 단위, null = 삭제) + body
+ *   - delete_concept    — 노드 영구 삭제 (dry-run + backlinks 가드 + force)
  *
  * 환경 변수:
  *   OMOT_VAULT=/abs/path/to/vault   — vault root 디렉토리. 미지정 시 cwd.
