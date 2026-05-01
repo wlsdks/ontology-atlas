@@ -6,7 +6,6 @@ import { cn } from "@/shared/lib/cn";
 import { buttonVariants } from "@/shared/ui";
 
 interface Props {
-  accountId?: string | null;
   next?: string | null;
 }
 

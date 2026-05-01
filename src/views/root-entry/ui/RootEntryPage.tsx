@@ -1,56 +1,39 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useScopedAccountAccess } from "@/features/account-scope";
 import { useGlobalAdmin } from "@/features/permissions";
 import { useUserAuth } from "@/features/user-auth";
-import { } from "@/shared/lib/account-scope";
 import { OntologyViewPage } from "@/views/ontology-view";
 import { LandingPage } from "@/views/landing";
 
 /**
- * 루트 `/` 진입 분기. (Phase 1 — Direction A 적용)
+ * 루트 `/` 진입 분기.
  *
- * 이 서비스는 **온톨로지 워크벤치** — 인증 사용자 의 첫 화면은 ontology hub
- * (트리 + ego graph + stub 처리). 토폴로지는 출구 view 중 하나로 `/topology`
- * 에 별도 라우트.
+ * 이 서비스는 **온톨로지 워크벤치** — 인증 사용자의 첫 화면은 ontology hub
+ * (트리 + ego graph + stub 처리). 토폴로지는 별도 `/topology` 라우트.
  *
  * - 비인증: LandingPage
- * - 인증: OntologyViewPage (트리 + 컨텍스트 패널)
- * - 토폴로지가 보고 싶으면 nav / 헤더 에서 `/topology`
+ * - 인증 (또는 dev-bypass): OntologyViewPage
  *
- * `?account=X` (legacy multi-account scope) 가 있으면 membership 조회 후
- * 같은 분기. dev-bypass 사용자는 useGlobalAdmin 으로 인증 처리.
+ * 과거 `?account=X` 멀티-계정 scope 분기는 mission v2 single-user 전환으로
+ * 폐기 — `accountId` 는 항상 null. ontology 데이터는 vault > 빌드타임 dogfood
+ * > Firestore 우선순위 (`useOntologyInsight`) 로 결정되므로 라우팅 단계에서
+ * 계정 분기 불필요.
  */
 export function RootEntryPage() {
   const searchParams = useSearchParams();
-  const accountId = null;
   const next = searchParams.get("next");
   const userAuth = useUserAuth();
   const globalAdmin = useGlobalAdmin();
-  const scopedAccess = useScopedAccountAccess();
 
-  // Account-scoped 방문만 membership-aware scope 로 판정.
-  if (accountId) {
-    if (scopedAccess.kind === "loading") {
-      return <AuthLoadingSpinner />;
-    }
-    if (scopedAccess.kind === "guest") {
-      return <LandingPage accountId={accountId} next={next} />;
-    }
-    return <OntologyViewPage />;
-  }
-
-  // 공개 홈 — Firebase Auth 초기화만 기다리면 충분.
   if (userAuth.status === "loading" || globalAdmin.status === "loading") {
     return <AuthLoadingSpinner />;
   }
-  // dev-bypass 사용자도 인증된 사용자로 간주 → OntologyViewPage.
   if (
     userAuth.status === "unauthenticated" &&
     globalAdmin.status !== "authenticated"
   ) {
-    return <LandingPage accountId={null} next={next} />;
+    return <LandingPage next={next} />;
   }
   return <OntologyViewPage />;
 }
