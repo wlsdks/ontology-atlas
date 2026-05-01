@@ -12,16 +12,19 @@ tags: [architecture, infra, overview]
 ```text
 ┌───────────────────────────────────────────────────────┐
 │ Next.js 정적 앱 (output: 'export')                   │
-│ ├─ /                     전체 지도                    │
-│ ├─ /projects             프로젝트 목록               │
+│ ├─ /                     ontology 트리 hub (mission v2)│
+│ ├─ /topology             Sigma WebGL 토폴로지         │
+│ ├─ /projects             프로젝트 목록 (mode-aware)   │
 │ ├─ /project/[slug]       개별 프로젝트 (인라인 편집)  │
-│ ├─ /knowledge/*          지식 문서                   │
-│ ├─ /ontology/*           승인된 ontology 트리·통계   │
-│ ├─ /review               검토 큐                     │
-│ ├─ /settings/*           시스템 설정                 │
-│ ├─ /diagnostics/*        운영 도구                   │
+│ ├─ /docs                 vault picker / 문서 surface  │
+│ ├─ /knowledge/*          cloud 모드 문서 등록 / 목록  │
+│ ├─ /ontology/edit        xyflow ERD 빌더              │
+│ ├─ /ontology/insights    그래프 인사이트              │
+│ ├─ /ontology/relations   관계 분포                    │
+│ ├─ /settings/*           카테고리 / 상태 / 가져오기   │
+│ ├─ /diagnostics/insights 운영 인사이트                │
 │ ├─ /account              사용자 계정 설정            │
-│ └─ /login, /signup       단일 사용자 인증            │
+│ └─ /login, /signup       Firebase Auth (옵션)         │
 └───────────────────────────────────────────────────────┘
                     ↓ Firebase Web SDK
 ┌───────────────────────────────────────────────────────┐
@@ -33,14 +36,20 @@ tags: [architecture, infra, overview]
 └───────────────────────────────────────────────────────┘
                     ↓ trusted execution boundary
 ┌───────────────────────────────────────────────────────┐
-│ Cloud Functions for Firebase (knowledge jobs)         │
-│ ├─ chunk 생성                                         │
-│ ├─ extraction provider 호출                           │
-│ ├─ output 저장                                        │
-│ ├─ approved graph 반영                                │
-│ └─ public projection publish                          │
+│ Cloud Functions for Firebase (옵션 — cloud 모드만)    │
+│ ├─ promoteStubNode (stub → 정식 노드 승격)            │
+│ ├─ dismissStubNode (stub 폐기)                        │
+│ └─ publishKnowledgeProjection (private → public)      │
+└───────────────────────────────────────────────────────┘
+                    ↑ 별도 trusted boundary
+┌───────────────────────────────────────────────────────┐
+│ MCP 서버 (mcp/) — AI agent partner                    │
+│ ├─ stdin/stdout JSON-RPC                              │
+│ └─ vault frontmatter read/write (7 도구)              │
 └───────────────────────────────────────────────────────┘
 ```
+
+> **mission v2 정렬 (2026-05-01)**: Cloud LLM extraction 흐름 (`enqueueExtractionJob` / `processExtractionJob` / `applyReviewAction` 등) 은 제거됨. AI 추출은 user-side AI agent (Claude Code 등) 가 MCP 서버로 직접 vault 갱신.
 
 ## 2. 도메인 모델
 
@@ -87,19 +96,20 @@ tags: [architecture, infra, overview]
 - canonical approved graph 저장
 - public projection 저장
 
-### Cloud Functions 2nd gen
+### Cloud Functions 2nd gen (mission v2 cleanup 후 슬림)
 
-- document version 로드
-- chunking
-- extraction provider 호출
-- extraction output 저장
-- evidence write
-- review/approval audit write
-- review seed 생성
-- approved graph write
-- publish log write
-- public projection publish
-- stale lease reclaim과 retry 처리
+- promote stub node (kind 부여)
+- dismiss stub node (폐기)
+- publish public projection (private canonical → public)
+
+> 이전: chunking / extraction provider 호출 / extraction output 저장 / review seed / approval audit / stale lease reclaim 등은 mission v2 cleanup 으로 모두 제거됨 (PR #5/#6). 자세히: `docs/MISSION-CLEANUP-CANDIDATES.md`.
+
+### MCP 서버 (mission v2 신설)
+
+- **`mcp/` 패키지** — `@modelcontextprotocol/sdk` 의존, stdin/stdout JSON-RPC
+- AI agent (Claude Code 등) 가 직접 vault `.md` read/write
+- 7 도구: list_concepts / get_concept / find_evidence / find_backlinks / add_concept / add_relation / patch_concept
+- 등록: `.mcp.json.example` 또는 `mcp/README.md` 참고
 
 ## 5. 데이터 경계
 
@@ -135,18 +145,22 @@ tags: [architecture, infra, overview]
 
 아래는 backend가 쓰고 사용자는 읽기만 한다.
 
-- `knowledgeDocumentChunks`
-- `knowledgeExtractionOutputs`
-- `knowledgeEvidence`
-- `knowledgeReviewEvents`
-- `knowledgeApprovalEvents`
-- `knowledgeApprovedNodes`
-- `knowledgeApprovedEdges`
-- `knowledgePublishes`
-- `knowledgePublicNodes`
-- `knowledgePublicEdges`
+- `knowledgeApprovedNodes` — manual editor 또는 publish 결과 canonical
+- `knowledgeApprovedEdges` — V1.1 qualifiers + rank 옵셔널 필드 추가
+- `knowledgePublishes` — publish event log
+- `knowledgePublicNodes` — public projection
+- `knowledgePublicEdges` — public projection (V1.1 fields-pass-through)
 
-`knowledgeExtractionJobs`는 브라우저가 직접 쓰지 않고, 사용자 요청을 받은 backend가 생성/갱신한다.
+#### Cold storage (mission v2 cleanup 후 read-only)
+
+아래는 mission v2 cleanup 으로 더 이상 callable 가 없어 read-only:
+
+- `knowledgeExtractionJobs` — extraction enqueue 끊김
+- `knowledgeExtractionOutputs` — extraction worker 끊김
+- `knowledgeReviewEvents` — review queue 페이지 삭제
+- `knowledgeApprovalEvents` — applyReviewAction 제거
+- `knowledgeDocumentChunks` — chunking 제거
+- `knowledgeEvidence` — extraction worker 끊김
 
 ## 6. 권한 모델
 
@@ -181,27 +195,26 @@ src/
 
 | 경로 | 역할 | 접근 |
 | --- | --- | --- |
-| `/` | 전체 지도 | 전체 공개 |
+| `/` | ontology 트리 hub (project → domain → capability → element) + 검색 + ego graph (mission v2). vault 활성 시 vault frontmatter 자동 사용 (Q1=(a)) | 전체 공개 |
+| `/topology` | Sigma WebGL 토폴로지 (출구 view) | 전체 공개 |
 | `/projects` | 프로젝트 목록 (권한 시 "새 프로젝트" 버튼) | 전체 공개 |
 | `/project/[slug]` | 개별 프로젝트 canonical route (권한 시 인라인 편집) | 전체 공개 |
-| `/project/view?slug=...` | legacy redirect 호환 경로 | 전체 공개 |
-| `/login` | 단일 로그인 | 전체 공개 |
-| `/signup` | 회원가입 | 전체 공개 |
+| `/project/new` · `/project/[slug]/edit` | 프로젝트 에디터 | editor 이상 |
+| `/docs` | vault picker / vault 활성 시 문서 surface | 전체 공개 (vault 는 사용자 디스크) |
+| `/login` · `/signup` · `/reset-password` | Firebase Auth surface | 전체 공개 |
 | `/account` | 사용자 자기 계정 설정 | 로그인 사용자 |
-| `/knowledge/documents` | 문서 목록 | viewer 이상 (rules) |
-| `/knowledge/documents/new` | 새 문서 등록 | editor 이상 |
-| `/knowledge/documents/[id]` | 문서 상세 (등록/버전/추출/공개 반영) | editor 이상 |
-| `/ontology` | 승인된 ontology 트리 (project → domain → capability → element) + 검색 + ego graph | viewer 이상 (`knowledgePublicNodes` read) |
-| `/ontology/insights` | 4 패널 통계 — 허브 노드 / 최근 활동 / 30일 활동 타임라인 / 미연결 노드 | viewer 이상 |
+| `/knowledge` | 문서 대시보드 | viewer 이상 |
+| `/knowledge/documents` | 문서 목록 | viewer 이상 |
+| `/knowledge/documents/new` | 새 문서 등록 (mode-aware) | editor 이상 |
+| `/knowledge/documents/view?id=...` | 문서 상세 (2단계 stepper: 올리기 → 공개) | editor 이상 |
+| `/ontology/edit` | xyflow ERD 빌더 + frontmatter md 내보내기 | editor 이상 |
+| `/ontology/insights` | 4 패널 통계 — 허브 / 최근 활동 / 30일 타임라인 / 미연결 | viewer 이상 |
 | `/ontology/relations` | edge 단위 뷰 — 관계 타입별 필터 + 분포 | viewer 이상 |
-| `/review` | 검토 큐 허브 | editor 이상 |
-| `/review/knowledge` | 지식 연결 검토 워크스페이스 (추출 → 검수 → 승인 → publish) | editor 이상 |
-| `/settings/categories` | 카테고리/배치 편집 | editor 이상 |
-| `/settings/statuses` | 상태 편집 | editor 이상 |
-| `/settings/api-keys` | API 키 관리 | owner / global admin |
-| `/settings/import` | 프로젝트 임포트 | editor 이상 |
-| `/diagnostics/migrate` | 데이터 마이그레이션 | global admin |
-| `/diagnostics/insights` | 운영 지표 | editor 이상 |
+| `/settings/categories` · `/settings/statuses` · `/settings/import` | 카테고리/상태/CSV import | editor 이상 |
+| `/settings/ontology` · `/settings/ontology/history` | TBox read-only + version 이력 | viewer 이상 |
+| `/diagnostics/insights` | 운영 지표 (stale / orphan / promote 후보) | editor 이상 |
+
+> mission v2 cleanup 후 폐기: `/review` / `/review/knowledge` / `/settings/api-keys` / `/diagnostics/migrate` / `/admin/*` / `/project/topology` / `/project/view` 등 모두 제거됨.
 | `/dev/login` | 개발 빌드 한정 우회 로그인 | dev only |
 
 > 권한 모델은 URL 네임스페이스가 아닌 Firestore Security Rules 와 capability 훅으로 갈린다. 같은 공개 surface 안에서 권한에 따라 인라인 액션이 노출된다.
@@ -214,35 +227,48 @@ src/
 - 공개 로그인 / 회원가입
 - account-scoped workspace와 membership(role: owner/editor/viewer)
 - 공개 화면에서 owner/editor의 빠른 수정 흐름
-- 프로젝트 CRUD
-- 문서 등록 / 버전 업로드 / 추출 요청 / 연결 검토 / 공개 반영 최소 루프
-- ontology v0 (C-1 phase): TBox 시드 (5 클래스 + unknown / 7 관계), Anthropic 추출 워커, frontmatter 등급 A/B/C 계약, canonical ID + stub 처리, `/ontology` 트리 + ego graph + insights + relations 4 surface, manual editor (검수 우회 직접 쓰기)
+- 프로젝트 CRUD (mode-aware: local vault / cloud Firestore)
+- 문서 등록 / 버전 업로드 / 공개 반영 (cloud 모드)
+- vault frontmatter → ontology stub fast-path (mission v2)
+- ontology v0: TBox 시드 (5 클래스 + 7 관계), `/` 트리 + ego graph, `/ontology/edit` 빌더, `/ontology/insights` + `/ontology/relations`, manual editor 직접 쓰기
+- V1.1 — Wikidata statement qualifiers + rank (옵셔널 필드, additive)
+- AI agent partner (MCP 서버) — 7 도구로 vault read/write
+- dogfood vault (`docs/ontology/`) — 자기 자신 mental model
 - global admin whitelist
 
 ### 아직 계획 단계인 것
 
-- graph inspector
-- 고도화된 ontology-first public graph experience
-- 노드/영역 직접 편집용 project-internal editor
-- 고도화된 extraction worker / merge quality 향상
-- ontology v1: 모든 surface 에서 클래스 가시 (홈 토폴로지 색상 분기 / frontmatter 추천 / 통합 검색 / 2-hop ego 탐색) — 진행 중
-- T-11 측정 (정확도 ≥ 80% / 단가 ≤ \$0.05/page / 검수 cycle ≤ 24h / 실패율 < 5%) → C-1 → C-2 cutover
+- V1.2 — literal properties (`knowledgeApprovedLiterals`)
+- V1.3 — rich references (retrievedAt / extractionModelId / confidence)
+- V1.4 — ActionType (Palantir 영감, DEFERRED)
+- V1.5 — relation cardinality
+- V2 — 통합 KnowledgeStatement (RDF-star 호환)
+- multi-vault — 여러 vault 동시 활성
+- Phase 4 비개발자 surface (kind 별 아이콘, 한국어 매핑 layer 등)
 
-현재는 `문서 기반 온톨로지 foundation`이 구현된 상태다. 다만 공개 메인 경험은 아직 `프로젝트 중심 뷰 + 문서 인사이트`에 가깝고, 향후에는 public projection 중심의 ontology-first 경험으로 더 옮겨갈 계획이다.
+자세히: `docs/BACKLOG.md` (T19-T38).
 
 문서에 경로가 있어도, 해당 경로가 실제 코드에 없으면 아직 계획 단계로 본다.
 
 ## 10. 연관 문서
 
+- [`PRODUCT-DIRECTION.md`](./PRODUCT-DIRECTION.md) — mission v2 방향
+- [`FEATURES.md`](./FEATURES.md) — 사용자가 *지금* 사용 가능한 기능 전수
+- [`BACKLOG.md`](./BACKLOG.md) — next-work 통합 (T28-T38)
+- [`MODE-AWARE-CRUD.md`](./MODE-AWARE-CRUD.md) — local/cloud/static 분기 가이드
+- [`ONTOLOGY-MODEL-V2-DRAFT.md`](./ONTOLOGY-MODEL-V2-DRAFT.md) — V1.x → V2 spec
+- [`MISSION-CLEANUP-CANDIDATES.md`](./MISSION-CLEANUP-CANDIDATES.md) — 4 stage cleanup 진행 (모두 ✅)
 - [`DATA-MODEL.md`](./DATA-MODEL.md) — Firestore 컬렉션 + Storage 경로 + Security Rules
 - [`DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md) — 디자인 토큰 / 모션 / 금지 규칙
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md) — Firebase 배포 / 롤백 / 도메인
+- [`CHANGELOG.md`](./CHANGELOG.md) — 시간순 사용자 가시 변화
+- [`../mcp/README.md`](../mcp/README.md) — MCP 서버 7 도구 + 등록
 - [`../AGENTS.md`](../AGENTS.md) / [`../CLAUDE.md`](../CLAUDE.md) — 에이전트 / 컨트리뷰터 가이드
-- [`../.claude/rules/`](../.claude/rules/) — 세부 작업 규율 (architecture / design / git / testing / local-first / auth / firestore-schema / documentation / forbidden)
+- [`../.claude/rules/`](../.claude/rules/) — 세부 작업 규율
 
 ## 11. 확장성 트리거
 
 - 컨테이너 수 증가 시 단일 캔버스 → 탭 분리 재검토
-- knowledge 문서 수 증가 시 review queue 와 publish 를 별도 단계로 분리 검토
+- vault 문서 수 증가 시 fingerprint diff + worker 분리 검토
 - extraction volume 증가 시 Functions → Cloud Run 분리 검토
 - 이미지 / 문서 업로드 증가 시 Storage lifecycle 및 리전 재검토
