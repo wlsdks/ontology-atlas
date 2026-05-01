@@ -58,6 +58,9 @@ const KIND_LABEL: Record<DisplayKind, string> = {
   other: "기타",
 };
 
+// 디자인 헌장 §11: "채색은 인디고 하나 + 무채색". kind 별 차별화는 색이
+// 아닌 위치 (anchor) + spacing + 채도 단계. document 는 핵심 anchor 라
+// 인디고 brand, 그 외 kind 는 인디고 alpha 단계 또는 무채색.
 const KIND_STYLE: Record<
   DisplayKind,
   { fill: string; stroke: string; labelClassName: string; anchor: [number, number]; spacing: number }
@@ -70,38 +73,36 @@ const KIND_STYLE: Record<
     spacing: 28,
   },
   domain: {
-    fill: "rgba(244,183,49,0.92)",
-    stroke: "rgba(253,224,71,0.95)",
-    labelClassName: "text-[color:#f4c454]",
+    fill: "rgba(94,106,210,0.7)",
+    stroke: "rgba(129,140,248,0.78)",
+    labelClassName: "text-[color:var(--color-indigo-accent)]",
     anchor: [0.25, 0.32],
     spacing: 22,
   },
   capability: {
-    fill: "rgba(93,211,158,0.92)",
-    stroke: "rgba(134,239,172,0.95)",
-    labelClassName: "text-[color:#8df0b8]",
+    fill: "rgba(94,106,210,0.55)",
+    stroke: "rgba(129,140,248,0.66)",
+    labelClassName: "text-[color:var(--color-indigo-accent)]",
     anchor: [0.74, 0.34],
     spacing: 19,
   },
   element: {
-    fill: "rgba(155,166,184,0.92)",
-    // stroke 는 라이트/다크 양쪽에서 확인 가능한 중간 톤 — 이전엔 white 0.9
-    // 라 라이트 캔버스에서 사라졌음.
+    fill: "rgba(155,166,184,0.7)",
     stroke: "rgba(110,120,140,0.85)",
     labelClassName: "text-[color:var(--color-text-secondary)]",
     anchor: [0.72, 0.72],
     spacing: 17,
   },
   concept: {
-    fill: "rgba(151,163,255,0.88)",
-    stroke: "rgba(196,181,253,0.92)",
-    labelClassName: "text-[color:#c3b5fd]",
+    fill: "rgba(94,106,210,0.4)",
+    stroke: "rgba(129,140,248,0.55)",
+    labelClassName: "text-[color:var(--color-indigo-accent)]",
     anchor: [0.28, 0.72],
     spacing: 18,
   },
   other: {
-    fill: "rgba(163,163,163,0.88)",
-    stroke: "rgba(100,100,100,0.7)",
+    fill: "rgba(155,166,184,0.55)",
+    stroke: "rgba(110,120,140,0.7)",
     labelClassName: "text-[color:var(--color-text-tertiary)]",
     anchor: [0.5, 0.56],
     spacing: 16,
