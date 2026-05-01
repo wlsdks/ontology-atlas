@@ -166,15 +166,25 @@ export function OntologyEditPage() {
   );
   const ephemeralSelected = findById(selectedId);
   // C-5 — vault 모드에서는 selectedId 가 vault slug. manifest 에서 lookup
-  // 해 인스펙터에 frontmatter 와 함께 전달 (in-canvas rename 가능).
+  // 해 인스펙터에 frontmatter + array 키 (capabilities/elements/...) 까지
+  // 함께 전달 (in-canvas rename + array 편집 가능).
   const vaultSelected = (() => {
     if (!selectedId || ephemeralSelected) return null;
     const doc = vault.manifest?.docs.find((d) => d.slug === selectedId);
     if (!doc || typeof doc.frontmatter.kind !== "string") return null;
+    const fm = doc.frontmatter as Record<string, unknown>;
+    const asStrings = (v: unknown): string[] =>
+      Array.isArray(v)
+        ? v.filter((x): x is string => typeof x === "string")
+        : [];
     return {
       slug: doc.slug,
       kind: String(doc.frontmatter.kind),
       title: doc.title || doc.slug,
+      capabilities: asStrings(fm.capabilities),
+      elements: asStrings(fm.elements),
+      dependencies: asStrings(fm.dependencies),
+      relates: asStrings(fm.relates),
     };
   })();
   // cloud approved 모드 fallback — vault 매니페스트 없을 때만. 현재 사용자
@@ -202,6 +212,26 @@ export function OntologyEditPage() {
         toast.show(message, "error");
       } finally {
         setRenamingId(null);
+      }
+    },
+    [toast, vault],
+  );
+
+  // C-5 — vault frontmatter array 키 (capabilities/elements/dependencies/
+  // relates) 편집. 빈 배열은 키 자체를 제거 (null) — frontmatter 깨끗.
+  const editVaultArrayKey = useCallback(
+    async (
+      slug: string,
+      key: "capabilities" | "elements" | "dependencies" | "relates",
+      next: string[],
+    ) => {
+      try {
+        await vault.updateFrontmatter(slug, {
+          [key]: next.length === 0 ? null : next,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "저장 실패";
+        toast.show(message, "error");
       }
     },
     [toast, vault],
@@ -443,6 +473,7 @@ export function OntologyEditPage() {
             onRenameEphemeral={(id, title) => updateNode(id, { title })}
             onSaveEphemeral={saveEphemeral}
             onSaveVaultRename={renameVaultDoc}
+            onEditVaultArrayKey={editVaultArrayKey}
             onDeleteVault={deleteVaultDoc}
             saving={savingId !== null || renamingId !== null}
             onClearSelection={() => setSelectedId(null)}
