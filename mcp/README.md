@@ -68,22 +68,56 @@
 | `add_relation` | 두 slug 사이 edge. `type`: `depends_on` (→ dependencies), `relates` (→ relates), `contains` (→ contains), `describes` (→ describes). frontmatter 배열에 append. |
 | `patch_concept` | 기존 노드 frontmatter (key 단위 patch — null = 삭제) + body 갱신. `add_concept` 가 throw 한 기존 slug 를 *수정* 할 때 사용. |
 
-## 로컬 검증
+## 로컬 검증 (UX-3)
+
+### 1줄 verify CLI
 
 ```bash
-# 의존성 install
 cd mcp && npm install
+OMOT_VAULT=../docs/ontology npm run verify
+```
 
-# parser smoke test
+verify 가 성공하면 다음 출력:
+
+```
+[oh-my-ontology-mcp verify]
+· step 1 — parser smoke test
+✓ result: 7 passed, 0 failed
+· step 2 — server boot + tools/list + list_concepts
+✓ initialize OK — server oh-my-ontology-mcp@0.2.0
+✓ tools/list 7/7 — add_concept · add_relation · find_backlinks · find_evidence · get_concept · list_concepts · patch_concept
+✓ list_concepts — vault total 22 노드
+
+전체 통과 — Claude Code 에 .mcp.json 등록 후 재시작하면 7 도구 사용 가능합니다.
+```
+
+실패 시 어느 step 에서 막혔는지 + 진단 메시지 노출.
+
+### 수동 (참고)
+
+```bash
+# parser smoke
 node src/parser.test.mjs
 
-# 실 서버 boot — list_concepts 호출
+# 실 서버 stdin/stdout JSON-RPC
 printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' \
   '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list_concepts","arguments":{"limit":5}}}' \
   | OMOT_VAULT=../docs/ontology node src/index.js
 ```
+
+## Claude Code 등록 후 첫 호출 (sample prompt)
+
+`.mcp.json` 등록 + Claude Code 재시작 후 LLM 에게 다음을 시도하세요:
+
+> **첫 탐색 — vault 의 ontology 가 보이는지 확인**
+> 1. `mcp__oh-my-ontology__list_concepts` 호출해 vault 의 모든 노드를 list 해줘
+> 2. `get_concept({ slug: "project" })` 로 root 노드의 frontmatter + 이웃을 보여줘
+> 3. `find_backlinks({ slug: "capabilities/mcp-server" })` 로 그 capability 의 의존자를 찾아줘
+> 4. (선택) `add_concept` 로 새 capability 노드 만들어줘 — slug, kind, title 필요
+
+LLM 이 7 도구를 정상 호출하면 vault 데이터가 응답으로 반환됨. agent 가 자기 codebase 분석 결과를 이 도구들로 ontology 에 *commit* 하면 사람·AI agent 양립 저작 흐름 시작.
 
 ## 설계 원칙
 
