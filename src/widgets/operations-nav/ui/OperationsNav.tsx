@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { signOut } from '@/features/user-auth';
 import { useDataSourceMode } from '@/features/data-source-mode';
+import { useLocalVault } from '@/features/docs-vault-local';
 import { ThemeToggle } from '@/features/theme-toggle';
 import { Button, Tooltip } from '@/shared/ui';
 
@@ -91,6 +92,59 @@ function buildItems(mode: 'static' | 'local' | 'cloud'): ReadonlyArray<NavItem> 
  *
  * 활성 표시는 pathname prefix 매칭 — 동일 룰 양쪽 적용.
  */
+/**
+ * Mode badge — UX-2. 사용자가 *지금 어떤 source 에 데이터가 가는지* 한눈에
+ * 보게. local 모드면 vault 폴더 이름 + doc count, cloud 면 "cloud sync",
+ * static (비활성/비로그인) 이면 "데모". mode 바뀜 = 데이터 destination 바뀜.
+ */
+function ModeBadge({ mode }: { mode: 'static' | 'local' | 'cloud' }) {
+  // local 모드일 때만 vault 메타 가져오기. cloud/static 은 그냥 chip.
+  // useLocalVault 자체는 SSR-safe (window 가드).
+  const vault = useLocalVault();
+  if (mode === 'local') {
+    const docCount = vault.manifest?.docs.length ?? 0;
+    const handleName = vault.handle?.name ?? 'vault';
+    const tooltip = `vault 모드 — ${handleName} (${docCount} docs). 모든 변경이 로컬 디스크에 저장됨.`;
+    return (
+      <Tooltip content={tooltip}>
+        <span
+          aria-label={tooltip}
+          className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
+        >
+          <span aria-hidden>●</span>
+          <span>vault</span>
+          <span className="text-[color:var(--color-text-tertiary)]">·</span>
+          <span>{docCount} docs</span>
+        </span>
+      </Tooltip>
+    );
+  }
+  if (mode === 'cloud') {
+    return (
+      <Tooltip content="cloud 모드 — Firestore 실시간 동기. 변경이 cloud 저장.">
+        <span
+          aria-label="cloud 모드"
+          className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+        >
+          <span aria-hidden>●</span>
+          <span>cloud sync</span>
+        </span>
+      </Tooltip>
+    );
+  }
+  return (
+    <Tooltip content="데모 모드 — vault 미선택 + 비로그인. 빌드 타임 demo manifest 만 노출, 변경 저장 안 됨.">
+      <span
+        aria-label="데모 모드"
+        className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.08)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)]"
+      >
+        <span aria-hidden>●</span>
+        <span>데모</span>
+      </span>
+    </Tooltip>
+  );
+}
+
 export function OperationsNav({ accountId, rightSlot }: OperationsNavProps) {
   const pathname = usePathname() ?? '';
   const searchParams = useSearchParams();
@@ -167,6 +221,7 @@ export function OperationsNav({ accountId, rightSlot }: OperationsNavProps) {
         </div>
         <div className="flex items-center gap-2">
           {rightSlot}
+          <ModeBadge mode={dataSourceMode} />
           <ThemeToggle />
           <Link href={'/projects/'} className="inline-flex">
             {/* '↗' 는 외부 링크 의미로 오해 가능 — 내부 라우트라
@@ -199,6 +254,9 @@ export function OperationsNav({ accountId, rightSlot }: OperationsNavProps) {
         >
           {items.map((item) => renderTab(item, 'mobile'))}
         </ul>
+        <div className="ml-auto shrink-0">
+          <ModeBadge mode={dataSourceMode} />
+        </div>
       </div>
     </nav>
   );

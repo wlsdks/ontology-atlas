@@ -1600,6 +1600,19 @@ function AdminDocsContent() {
                       onRefresh={localVault.refresh}
                       onRequestPermission={localVault.requestPermission}
                     />
+                    {/* T29 dogfood hint — vault 미활성 사용자에게 *어떤
+                        폴더를 골라야 하는지* 답. 이 repo 자체의 ontology 가
+                        `docs/ontology/` 에 21 노드로 표현돼 있어 첫 시도
+                        path 로 적합. */}
+                    {localVault.status === 'idle' ? (
+                      <p className="text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                        처음이세요? 이 repo 의{' '}
+                        <code className="rounded bg-[color:var(--color-overlay-1)] px-1 py-0.5 font-mono text-[10.5px] text-[color:var(--color-indigo-accent)]">
+                          docs/ontology/
+                        </code>
+                        를 선택해 보세요 — 이 도구 자체의 ontology (21 노드) 가 즉시 트리에 등장합니다.
+                      </p>
+                    ) : null}
                     {canEditCurrent ? (
                       <button
                         type="button"

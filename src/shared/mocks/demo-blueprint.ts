@@ -69,11 +69,11 @@ export const CONTAINER_THEMES: ReadonlyArray<ContainerTheme> = [
   {
     id: 'demo-knowledge',
     name: 'Demo Knowledge',
-    description: '문서 파이프라인 + 온톨로지 빌더 + 공개 그래프.',
+    description: 'vault frontmatter → ontology 척추 + 사람·AI agent 양립 저작.',
     hubCount: 3,
     crossDepFrom: 'demo',
-    capabilities: ['문서 등록', 'frontmatter 추출', 'stub 승격', '검수 큐'],
-    elements: ['markdown parser', 'Firestore', 'Cloud Functions'],
+    capabilities: ['vault frontmatter 진실원', 'AI agent partner (MCP)', '빌더 직접 저작', 'TBox 버전'],
+    elements: ['markdown parser', 'frontmatter 파서', 'MCP SDK', 'IndexedDB'],
   },
   {
     id: 'demo-vault',
