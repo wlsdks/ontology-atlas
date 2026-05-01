@@ -6,6 +6,67 @@
 
 ---
 
+## 2026-05-01 (저녁) — Phase 3 (AI agent partner) + mission v2 cleanup
+
+PRODUCT-DIRECTION v2 의 mission "사람과 AI agent 가 같이 저작하는 codebase ontology" 를 코드 + functions + dogfood vault 까지 일관시킨 큰 cleanup. 누적 PR #5 / #6 / #7 머지.
+
+### 사용자 가시 변화
+
+- **AI agent partner 신설** — `mcp/` MCP 서버 (`@modelcontextprotocol/sdk@^1.0.0`). Claude Code 같은 LLM agent 가 stdin/stdout JSON-RPC 로 vault ontology 를 read/write. v0.2.0 7 도구: `list_concepts` / `get_concept` / `find_evidence` / `find_backlinks` / `add_concept` / `add_relation` / `patch_concept`. 등록: `.mcp.json.example` 또는 `mcp/README.md`.
+- **`docs/ontology/` dogfood vault** — 이 프로젝트 자기 자신의 mental model 을 frontmatter md 로 표현. 1 project + 8 domain + 6 capability + 4 element = 20 노드.
+- **`/` ontology hub mode-aware** (Q1=(a)) — vault 활성 시 `/` 가 자동으로 vault frontmatter 의 stub 노드를 트리·ego graph·검색에 표시 (LOOP-TASK Open question #1 답).
+- **빈 vault UX** — local 모드에서 vault 가 활성됐는데 ontology 노드가 없으면 "vault 가 비어있어요" 안내 + 2-step (frontmatter / 빌더) CTA. local 모드면 "vault 열기" step skip.
+- **"분석 시작" cloud LLM 추출 흐름 제거** — mission v2 의 비용 모델이 *user-side AI agent (Claude Code)* 로 옮겨감. 영향 surface:
+  - `/knowledge/documents/[id]` 상세 — 4 단계 stepper → 2 단계 (upload → publish), `ExtractorVersionToggle` / "분석 시작" / "다시 분석" CTA 4곳 제거 → "vault 열기" / "빌더 열기" CTA
+  - `/review/knowledge` 검수 큐 — 페이지 + 라우트 통째 삭제. `OperationsNav` '문서 확인' 탭 제거 (5탭 → 4탭). 6 view 의 review 링크 제거
+  - `/ontology` toolbar 의 "검수 큐" pill 제거, "미해결 참조" Stat 의 review 큐 링크 → 페이지 안 stub 리스트로 변경
+  - `WorkspaceOntologyStrip` 의 stub chip target → `/ontology` 트리 stub 리스트로
+  - landing onboarding ValueChainRail "추출 돌리기" → "frontmatter 자체가 자기 승인"
+
+### 새 entity / feature / module
+
+- `mcp/` 통째 — MCP 서버 패키지 (parser.mjs / vault.mjs / index.js / parser.test.mjs). v0.1.0 (5 도구) → v0.2.0 (7 도구).
+- `src/features/vault-ontology/model/use-ontology-insight.ts` — mode-aware ontology insight. local: vault frontmatter stub 변환, cloud: knowledgePublic projection.
+- `docs/ontology/` 통째 — 자기 ontology vault.
+- `docs/MISSION-CLEANUP-CANDIDATES.md` — 4 stage cleanup staging plan (Stage 1+2+3+4 모두 완료).
+- `.mcp.json.example` — Claude Code 등록 템플릿.
+
+### 제거 / 정리
+
+- **functions/index.js: 2,012 → 543 줄 (-73%)**
+  - `enqueueExtractionJob` / `processExtractionJob` / `reclaimStaleExtractionJobs` (extraction 흐름 3 handler) 제거
+  - `applyReviewAction` (검수 큐 callable) 제거
+  - 의존 cores + helpers 약 20 함수 정리
+  - `extract-gemini.js` (224 줄) + `ontology-extract.js` (1,295 줄) + `ontology-extract.test.mjs` (812 줄) 삭제
+  - secrets `GEMINI_API_KEY` / `ANTHROPIC_API_KEY` 제거. `@google/generative-ai` 의존성 제거
+- **`src/views/knowledge-review-workspace/` 통째 삭제** (1,357 줄 view + barrel)
+- **`app/review/` 통째 삭제** (page + redirect + sub-route)
+- **entity layer**: `enqueueKnowledgeExtractionJob` httpsCallable wrapper, `approveKnowledgeOutput` / `rejectKnowledgeOutput` callable + 6 type, `getKnowledgeReviewWorkspaceHref` helper 제거. 각 barrel export 정리.
+- **6 view caller**: KnowledgeDocumentDetailPage / (지운 KnowledgeReviewWorkspacePage) / KnowledgeDocumentsPage / KnowledgeDashboardPage / ProjectSelectorPage / ProjectEditorPage 의 review 큐 링크 정리
+- **누적 정리**: PR #5 -3,729 줄 + PR #6 -2,096 줄 + PR #7 -8 줄 = **약 -5,833 라인**
+
+### 검증 통과 상태
+
+- **117 test files / 843 tests passing**
+- tsc 0 errors
+- lint 0 errors (warnings 79 pre-existing)
+- `node --check functions/index.js` syntax OK
+- MCP 서버 stdin/stdout JSON-RPC: initialize → tools/list (7 도구) → tools/call (`add_concept` / `patch_concept` / `find_backlinks` / `find_evidence` / `get_concept` / `list_concepts`) end-to-end 정상
+- dev server (port 3210) 핵심 라우트 200, 삭제된 `/review/knowledge/` 404, HTML 에 Error 마커 0
+
+### Open questions
+
+- **Q1** — ✅ 답완료 ((a) 채택, useOntologyInsight 도입)
+- **Q2 (share-doc 제거)** — 여전히 대기
+- **Q3-Q8 (V2 spec)** — 여전히 대기
+
+### 운영 노트
+
+- `firebase deploy --only functions` 는 user 가 실행 안 함 (firebase 배포 안 함 정책). functions/ 변경은 코드만 정리, deploy 안 됨. 기존 cloud functions 가 살아있어도 호출자 0 이라 dead.
+- 기존 `knowledgeExtractionJobs` / `knowledgeExtractionOutputs` / `knowledgeReviews` / `knowledgeApprovalEvents` Firestore 컬렉션 데이터 — cold storage (read-only), 더 이상 callable 없어 archive-only.
+
+---
+
 ## 2026-05-01 — Mode-aware CRUD + Builder rebrand
 
 ### 사용자 가시 변화

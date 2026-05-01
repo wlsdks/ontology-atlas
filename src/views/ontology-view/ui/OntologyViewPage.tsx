@@ -389,25 +389,37 @@ export function OntologyViewPage() {
             emptyHint="아직 승인된 ontology 노드가 없어요. 아래 단계로 첫 그래프를 자라게 할 수 있어요."
           />
           {/* 빈 상태 onboarding — tree / orphans 모두 비었을 때만 노출.
-              검수 큐 진입과 함께 "온톨로지란 무엇이고, 어떻게 자라는지" 3 단계
-              가이드. 데이터 있을 때 화면 뺏지 않게 빈 상태 한정. */}
+              "온톨로지란 무엇이고, 어떻게 자라는지" 가이드. 데이터 있을 때
+              화면 뺏지 않게 빈 상태 한정. mode 별로 다른 다음-단계 안내:
+              - local (vault 활성): frontmatter 추가 → 빌더 정리 (vault 열기 단계 skip)
+              - 그 외: vault 열기 → frontmatter → 빌더 (3 step) */}
           {treeResult.roots.length === 0 && treeResult.orphans.length === 0 ? (
             <div className="mt-4 rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-5 py-5">
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                 Get started
               </p>
               <h2 className="mt-1.5 break-keep text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                문서가 자라면 트리도 자라요
+                {dataSourceMode === 'local'
+                  ? 'vault 가 비어있어요 — frontmatter 를 적으면 즉시 자라요'
+                  : '문서가 자라면 트리도 자라요'}
               </h2>
               <p className="mt-2 break-keep text-sm leading-6 text-[color:var(--color-text-secondary)]">
-                온톨로지는 vault frontmatter 의 개념·관계가 모인 그래프예요. 다음 3 단계로 첫 트리를 만들어 봐요.
+                {dataSourceMode === 'local'
+                  ? '활성 vault 에 ontology frontmatter 가 있는 .md 파일이 0 개. 다음 2 단계로 첫 노드를 만들어요.'
+                  : '온톨로지는 vault frontmatter 의 개념·관계가 모인 그래프예요. 다음 3 단계로 첫 트리를 만들어 봐요.'}
               </p>
               <ol className="mt-4 space-y-2 text-sm text-[color:var(--color-text-secondary)]">
-                {[
-                  ["1", "vault 열기", "/docs 에서 마크다운 폴더를 선택해 vault 를 활성화해요."],
-                  ["2", "frontmatter 추가", "문서에 kind / capabilities / elements / relates 를 적으면 자동으로 stub 노드가 만들어져요."],
-                  ["3", "빌더에서 정리", "/ontology/edit 캔버스에서 노드와 관계를 다듬으면 여기 트리에 그대로 자라요."],
-                ].map(([step, title, desc]) => (
+                {(dataSourceMode === 'local'
+                  ? [
+                      ["1", "frontmatter 적기", "vault 안 아무 .md 파일에 `kind: capability` 같은 frontmatter 추가하면 즉시 stub 노드로 등장."],
+                      ["2", "빌더에서 정리", "/ontology/edit 캔버스에서 시각적으로 노드·관계 다듬으면 그대로 vault 에 저장 + 트리 갱신."],
+                    ]
+                  : [
+                      ["1", "vault 열기", "/docs 에서 마크다운 폴더를 선택해 vault 를 활성화해요."],
+                      ["2", "frontmatter 추가", "문서에 kind / capabilities / elements / relates 를 적으면 자동으로 stub 노드가 만들어져요."],
+                      ["3", "빌더에서 정리", "/ontology/edit 캔버스에서 노드와 관계를 다듬으면 여기 트리에 그대로 자라요."],
+                    ]
+                ).map(([step, title, desc]) => (
                   <li key={step} className="flex gap-3">
                     <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] font-mono text-[10px] text-[color:rgba(159,170,235,0.95)]">
                       {step}
@@ -420,18 +432,37 @@ export function OntologyViewPage() {
                 ))}
               </ol>
               <div className="mt-5 flex flex-wrap gap-2">
-                <Link
-                  href={"/docs/"}
-                  className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] px-4 py-2 text-sm text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
-                >
-                  vault 열기 →
-                </Link>
-                <Link
-                  href={"/ontology/edit/"}
-                  className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 py-2 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
-                >
-                  빌더 열기
-                </Link>
+                {dataSourceMode === 'local' ? (
+                  <>
+                    <Link
+                      href={"/ontology/edit/"}
+                      className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] px-4 py-2 text-sm text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
+                    >
+                      빌더 열기 →
+                    </Link>
+                    <Link
+                      href={"/docs/"}
+                      className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 py-2 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      vault 살펴보기
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link
+                      href={"/docs/"}
+                      className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] px-4 py-2 text-sm text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
+                    >
+                      vault 열기 →
+                    </Link>
+                    <Link
+                      href={"/ontology/edit/"}
+                      className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-4 py-2 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      빌더 열기
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           ) : null}
