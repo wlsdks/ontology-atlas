@@ -150,6 +150,121 @@ export function updateDoc(rootPath, slug, { frontmatter: patch, body }) {
 }
 
 /**
+ * vault 의 kind 분포 통계 (T31). 각 kind 별 노드 수 + 전체 수.
+ * AI agent 가 "이 vault 에 capability 가 몇 개?" 같은 census 질문에
+ * O(1) 응답 가능 (load → 1 pass count).
+ */
+export function listKinds(rootPath) {
+  const docs = loadVaultDocs(rootPath);
+  const byKind = {};
+  let total = 0;
+  for (const doc of docs) {
+    const kind = doc.frontmatter.kind;
+    if (typeof kind !== 'string' || !kind) continue;
+    byKind[kind] = (byKind[kind] || 0) + 1;
+    total += 1;
+  }
+  return { total, byKind };
+}
+
+/**
+ * 두 slug 사이 그래프 최단 경로 (T30, BFS). edge 는 frontmatter array
+ * 키 (capabilities, elements, dependencies, relates, contains, describes)
+ * 의 항목 + 양방향 (backlink) 으로 구성된 무방향 그래프.
+ *
+ * 항목 string 이 절대 slug 또는 slug 의 마지막 segment 둘 다 매칭
+ * 가능하도록 — findBacklinks 와 같은 정책.
+ *
+ * 경로 못 찾으면 null. maxHops (기본 5) 초과면 cutoff.
+ */
+export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
+  if (fromSlug === toSlug) return { from: fromSlug, to: toSlug, hops: [fromSlug] };
+  const docs = loadVaultDocs(rootPath);
+  // slug → Set<neighbor slug>. 마지막 segment 매칭은 alias 로.
+  const slugs = new Set(docs.map((d) => d.slug));
+  const tailToFull = new Map();
+  for (const slug of slugs) {
+    const tail = slug.split('/').pop();
+    if (tail && tail !== slug && !tailToFull.has(tail)) {
+      tailToFull.set(tail, slug);
+    }
+  }
+  function resolveRef(ref) {
+    if (typeof ref !== 'string') return null;
+    if (slugs.has(ref)) return ref;
+    if (tailToFull.has(ref)) return tailToFull.get(ref);
+    // try matching by tail
+    for (const slug of slugs) {
+      if (slug.endsWith(`/${ref}`)) return slug;
+    }
+    return null;
+  }
+  const NEIGHBOR_KEYS = [
+    'capabilities',
+    'elements',
+    'dependencies',
+    'relates',
+    'contains',
+    'describes',
+  ];
+  const adj = new Map();
+  function addEdge(a, b) {
+    if (!adj.has(a)) adj.set(a, new Set());
+    if (!adj.has(b)) adj.set(b, new Set());
+    adj.get(a).add(b);
+    adj.get(b).add(a);
+  }
+  for (const doc of docs) {
+    for (const key of NEIGHBOR_KEYS) {
+      const value = doc.frontmatter[key];
+      if (!Array.isArray(value)) continue;
+      for (const ref of value) {
+        const resolved = resolveRef(ref);
+        if (resolved && resolved !== doc.slug) {
+          addEdge(doc.slug, resolved);
+        }
+      }
+    }
+  }
+  if (!slugs.has(fromSlug) || !slugs.has(toSlug)) return null;
+  // BFS
+  const queue = [fromSlug];
+  const visited = new Set([fromSlug]);
+  const parent = new Map();
+  while (queue.length > 0) {
+    const cur = queue.shift();
+    const depth = (() => {
+      let d = 0;
+      let p = cur;
+      while (parent.has(p)) {
+        p = parent.get(p);
+        d += 1;
+      }
+      return d;
+    })();
+    if (depth >= maxHops) continue;
+    const neighbors = adj.get(cur) || new Set();
+    for (const n of neighbors) {
+      if (visited.has(n)) continue;
+      visited.add(n);
+      parent.set(n, cur);
+      if (n === toSlug) {
+        // build path
+        const hops = [n];
+        let p = n;
+        while (parent.has(p)) {
+          p = parent.get(p);
+          hops.unshift(p);
+        }
+        return { from: fromSlug, to: toSlug, hops };
+      }
+      queue.push(n);
+    }
+  }
+  return null;
+}
+
+/**
  * 어느 vault doc 이 `targetSlug` 를 가리키는지 스캔. frontmatter 의 array
  * 키 (capabilities, elements, dependencies, relates, contains, describes)
  * 와 body 의 wikilink/markdown link 까지 본다.

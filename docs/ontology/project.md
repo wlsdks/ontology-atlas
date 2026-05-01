@@ -11,6 +11,7 @@ capabilities:
   - ai-agent-partner
   - tbox-versioning
   - v1-1-qualifiers-rank
+  - v1-5-cardinality
   - builder-vault-write
 elements:
   - vault-local-first

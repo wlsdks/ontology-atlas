@@ -1,6 +1,6 @@
 {
   "name": "oh-my-ontology-mcp",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "MCP server — sample/사람과 AI agent 가 같이 vault ontology 를 read/write",
   "type": "module",
   "bin": {

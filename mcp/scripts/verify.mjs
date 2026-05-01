@@ -32,6 +32,8 @@ const EXPECTED_TOOLS = [
   'get_concept',
   'find_evidence',
   'find_backlinks',
+  'find_path',
+  'list_kinds',
   'add_concept',
   'add_relation',
   'patch_concept',
@@ -139,7 +141,7 @@ async function step2BootAndCall() {
         log('fail', `tools 불일치 — missing: ${missing.join(',') || '(없음)'}, extra: ${extra.join(',') || '(없음)'}`);
         return res(false);
       }
-      log('ok', `tools/list ${toolNames.length}/7 — ${toolNames.join(' · ')}`);
+      log('ok', `tools/list ${toolNames.length}/${EXPECTED_TOOLS.length} — ${toolNames.join(' · ')}`);
 
       if (!callRes || !callRes.result) {
         log('fail', 'list_concepts 호출 응답 없음');

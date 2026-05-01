@@ -29,6 +29,8 @@ import { resolve } from 'node:path';
 import {
   ensureVaultRoot,
   findBacklinks,
+  findPath,
+  listKinds,
   loadVaultDocs,
   readDoc,
   slugToPath,
@@ -41,7 +43,7 @@ const VAULT_ROOT = resolve(process.env.OMOT_VAULT || process.cwd());
 ensureVaultRoot(VAULT_ROOT);
 
 const server = new Server(
-  { name: 'oh-my-ontology-mcp', version: '0.2.0' },
+  { name: 'oh-my-ontology-mcp', version: '0.3.0' },
   { capabilities: { tools: {} } },
 );
 
@@ -194,6 +196,36 @@ const TOOLS = [
       required: ['slug'],
     },
   },
+  {
+    name: 'find_path',
+    description:
+      '두 노드 (slug) 사이 그래프 최단 경로 (BFS, 무방향). 경로 못 ' +
+      '찾으면 null. AI agent 가 transitive 의존 chain 추적 시 사용. ' +
+      'maxHops 기본 5.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        from: { type: 'string', description: 'from slug.' },
+        to: { type: 'string', description: 'to slug.' },
+        maxHops: {
+          type: 'number',
+          description: '최대 hop 수 (기본 5).',
+        },
+      },
+      required: ['from', 'to'],
+    },
+  },
+  {
+    name: 'list_kinds',
+    description:
+      'vault 의 kind 분포 통계 — { total, byKind: { capability: N, ... } }. ' +
+      'AI agent 가 vault 의 census 를 빠르게 파악할 때 사용 (list_concepts 후 ' +
+      'count 보다 효율).',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
 ];
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOLS }));
@@ -218,6 +250,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(patchConcept(args));
       case 'find_backlinks':
         return ok(findBacklinksTool(args));
+      case 'find_path':
+        return ok(findPathTool(args));
+      case 'list_kinds':
+        return ok(listKindsTool());
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -351,6 +387,21 @@ function findBacklinksTool({ slug }) {
   }
   const matches = findBacklinks(VAULT_ROOT, slug);
   return { target: slug, total: matches.length, matches };
+}
+
+function findPathTool({ from, to, maxHops }) {
+  if (!from || !to) {
+    throw new Error('from, to 모두 필요합니다.');
+  }
+  const result = findPath(VAULT_ROOT, from, to, typeof maxHops === 'number' ? maxHops : 5);
+  if (!result) {
+    return { from, to, found: false, reason: '경로 없음 (또는 maxHops 초과)' };
+  }
+  return { ...result, found: true, hopCount: result.hops.length - 1 };
+}
+
+function listKindsTool() {
+  return listKinds(VAULT_ROOT);
 }
 
 // ── 부팅 ──────────────────────────────────────────────────────────────────

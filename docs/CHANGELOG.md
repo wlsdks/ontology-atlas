@@ -6,6 +6,73 @@
 
 ---
 
+## 2026-05-01 (밤) — UX 1원리 batch + Phase 4 비개발자 친화 + V1.5 cardinality
+
+이전 entry 의 7 PR 외에 추가로 12 PR 머지 (#15-#23). 전 세션 누적 19 PR.
+
+### 사용자 가시 변화
+
+- **`/`** 빈 vault empty-state — local 모드일 때 inline `frontmatter snippet` 추가 (사용자가 빌더 진입 없이 직접 `.md` 만들 수 있게, copy-paste 가능). 외부 mode 는 기존 3-step 안내.
+- **`/docs/`** dogfood vault hint — LocalVaultPicker 의 idle 상태에 "처음이세요? 이 repo 의 `docs/ontology/` 를 선택해 보세요" 안내. 비전 검증의 가장 빠른 path.
+- **OperationsNav mode badge** (UX-2 신규) — 데스크톱 + 모바일 nav 의 우측에 현재 모드 chip 항상 표시 (`vault · NN docs` / `cloud sync` / `데모`). 사용자가 데이터가 어디로 가는지 한눈에.
+- **빌더 (`/ontology/edit`) onboarding 카피** — "ERD 이상 — 도메인 지도" 비개발자 친화. mission v2 의 *AI agent partner* 도 명시.
+- **빌더 vault md write** (P1-1 / UX-4) — 빌더에서 노드 저장 시 mode 분기: local 모드면 `vault/${kind}s/${slug}.md` 직접 작성, cloud 모드면 Firestore upsert. mission v2 의 *사람 + AI agent 양립* 약속의 핵심 missing piece 해소.
+- **kind 별 lucide 아이콘** — Tree / Builder palette 에 직관적 metaphor (project=Folder, domain=Layers, capability=Cog, element=Box, …). 색은 단일 인디고 + 무채색 헌장 그대로.
+- **검색 PM 친화 분류** (`⇧⌘K`) — group heading "Ontology / Documents / Projects" → "개념 / 글 / 프로젝트". placeholder + aria-label 도 한국어.
+- **UI 영문 transliteration 정리** — "edge type 분포" → "관계 종류 분포", "evidence 풍부" → "근거 문서 많은" 등. 코드 식별자 (`kind` / `node` / `edge`) 는 그대로.
+- **데모 데이터 mission v2 정렬** — `Demo Knowledge` 컨테이너 capabilities 가 mission v1 잔재 ("검수 큐", "frontmatter 추출") → mission v2 ("vault frontmatter 진실원", "AI agent partner") 로 교체.
+
+### 새 entity / feature / module
+
+- `mcp/scripts/verify.mjs` — 1줄 verify CLI. parser smoke + server boot + tools/list + list_concepts 통합 검증. 실패 시 어느 step 인지 진단.
+- `mcp/src` v0.2 → **v0.3** — `find_path(from, to, maxHops?)` BFS + `list_kinds()` census 추가. 7 → 9 도구.
+- `src/entities/ontology-class/model/icons.ts` — `getOntologyKindIcon(kind)` shared helper.
+- `src/widgets/operations-nav` 의 `ModeBadge` 컴포넌트.
+- `docs/ATOMIC-AUDIT-2026-05-01.md` — 13 도메인 1원리 audit 결과 (438 줄).
+- `docs/UX-FIRST-PRINCIPLES.md` — 7-step user journey 마찰 분석 + P0/P1/P2 매트릭스.
+
+### 제거
+
+- `src/widgets/ontology-output-badges/` 통째 (-425 줄, 0 imports — extraction review-queue 의존 잔재).
+
+### Ontology 모델 진화 (V1.x)
+
+- **V1.1** ✅ qualifiers + rank 머지 (이전 entry 에 기록, 본 entry 에는 후속 dogfood 만)
+- **V1.5** ✅ Relation Cardinality 머지 — `OntologyRelation` 에 `sourceCardinality?` + `targetCardinality?` 옵셔널 (additive, breakage 0). 5 새 단위 test.
+
+### Documentation
+
+- `README.md` + `AGENTS.md` mission v2 동기화 (이전 entry).
+- `docs/FEATURES.md` 전면 재작성, `docs/ARCHITECTURE.md` / `docs/DATA-MODEL.md` / `docs/MODE-AWARE-CRUD.md` mission v2 정렬.
+- `docs/BACKLOG.md` mission v2 phase 후 next-work 통합 (T28-T38 + UX-1/2/3/4).
+- `docs/MISSION-CLEANUP-CANDIDATES.md` 압축 (4 stage 모두 ✅, archived analysis).
+- `docs/PRODUCT-DIRECTION.md` Phase 1-4 status 표시 (1 ✅ / 2 ⏸ / 3 ✅ / 4 ⏳).
+- `docs/ONTOLOGY-MODEL-V2-DRAFT.md` 진행 상황 표 — V1.1 + V1.5 ✅, V1.2/V1.3/V1.4 대기.
+- `mcp/README.md` v0.3 (9 도구) 갱신 + sample LLM prompt + verify CLI 안내.
+- `docs/ontology/` dogfood vault — `capabilities/builder-vault-write` + `capabilities/v1-5-cardinality` 추가, `capabilities/mcp-server` 9 도구로 갱신. 22 노드.
+
+### 검증 통과 상태
+
+- **117 test files / 839 tests passing** (V1.5 +5)
+- tsc 0 errors
+- lint 0 errors (warnings 79 pre-existing)
+- `node --check functions/index.js` syntax OK
+- MCP `npm run verify` end-to-end 9 도구 + 22 노드 dogfood vault 정상
+- Playwright MCP browser-level QA (15 라우트) — mission v2 surface 정상, console error 0, mode badge "데모" 노출, stale "Demo" title 0
+
+### Open questions
+
+- **Q1, Q2** — ✅ 답완료
+- **Q3-Q8 (V2 spec)** — V1.2 (Q6+Q7), V1.3 (Q5), V1.4 (Q4) 차단
+
+### 누적 통계 (이번 세션 19 PR)
+
+- 약 -5,833 줄 mission cleanup (PR #5-#11)
+- +438 줄 audit / +210 줄 UX 분석 / +245 줄 BACKLOG · FEATURES 동기화
+- +574 줄 신기능 (MCP v0.3 / mode badge / vault md write / V1.5 / kind icons / frontmatter snippet / verify CLI)
+
+---
+
 ## 2026-05-01 (저녁) — Phase 3 (AI agent partner) + mission v2 cleanup
 
 PRODUCT-DIRECTION v2 의 mission "사람과 AI agent 가 같이 저작하는 codebase ontology" 를 코드 + functions + dogfood vault 까지 일관시킨 큰 cleanup. 누적 PR #5 / #6 / #7 머지.
