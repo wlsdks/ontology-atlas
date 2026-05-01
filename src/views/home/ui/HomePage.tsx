@@ -30,11 +30,6 @@ import { SearchHint } from "@/widgets/search-hint";
 import { PublicAccountMenu } from "@/widgets/account-menu";
 import { WorkspaceOntologyStrip } from "@/widgets/workspace-ontology-strip";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
-import { hasDemoSession } from "@/shared/lib/demo-session";
-import {
-  getDemoContainerStats,
-  type DemoContainerStats,
-} from "@/shared/mocks/demo-data";
 import { useTaxonomy } from "@/features/taxonomy";
 import { useGlobalAdmin } from "@/features/permissions";
 
@@ -108,10 +103,6 @@ import {
   type KnowledgeProjectInsight,
 } from "@/entities/knowledge-graph";
 import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
-import {
-  deriveWorkspaceProjectContainers,
-  inferWorkspaceProjectGroup,
-} from "../model/workspace-container-fallback";
 import { useHomeRouteState } from "../model/use-home-route-state";
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
@@ -244,7 +235,6 @@ export function HomePage() {
     selectedSlug,
     focusedHubSlug,
     impactMode,
-    projectId: activeProjectId,
   } = routeState;
   const resetSigmaFilters = useCallback(() => {
     setSigmaControls((current) => ({
@@ -254,113 +244,8 @@ export function HomePage() {
       hubsOnly: false,
     }));
   }, []);
-  // 컨테이너 zoom-in (Layer 0 → Layer 1) 전환 시 sigma 가 graph 재구성 +
-  // re-init 동안 잠깐 빈 캔버스로 보여 "멈춤" 느낌이 남. 짧은 transient
-  // 스피너로 "지금 들어가는 중" 시각 단서 제공.
-  const [containerSwitching, setContainerSwitching] = useState(false);
-  const handleSelectWorkspaceProject = useCallback(
-    (projectId: string) => {
-      resetSigmaFilters();
-      setContainerSwitching(true);
-      setRouteState((current) => ({ ...current, projectId }));
-      // Layer 1 진입 = onboarding 완료 의미 (이미 Layer 0 에서 클릭으로 진입).
-      dismissSigmaHint();
-      // sigma graph rebuild + re-init 이 끝나는 정확한 신호는 sigma side
-      // 에 없어 RAF 두 번 + 350ms 의 보수적 타이머. 빠른 환경에선 그 전에
-      // 사라진 것처럼 자연스럽고, 느린 환경에선 사용자가 진행 중임을 인지.
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setTimeout(() => setContainerSwitching(false), 350);
-        });
-      });
-    },
-    [setRouteState, dismissSigmaHint, resetSigmaFilters],
-  );
   const [selectorOpen, setSelectorOpen] = useState(false);
-  // single-user 모드: workspace 컨테이너 fetch 비활성. flat projects 에서
-  // derive 한 fallback 만 사용. **identity stability 중요** — deps 에 매 렌더
-  // 마다 새 배열을 넣으면 useMemo 가 매번 invalidate 되어 SigmaTopology 의
-  // graph 가 매 render 마다 재빌드 + sigma 인스턴스 tear-down 까지 cascade
-  // 되며 화면이 멈춰 보인다 (drag / click 직후 freeze 의 root cause).
-  const effectiveWorkspaceProjectContainers = useMemo(
-    () => deriveWorkspaceProjectContainers(projects, scopedAccountId),
-    [projects, scopedAccountId],
-  );
-  const activeContainerName =
-    activeProjectId && effectiveWorkspaceProjectContainers.length > 0
-      ? (effectiveWorkspaceProjectContainers.find((c) => c.id === activeProjectId)?.name ?? null)
-      : null;
-  // 컨테이너 zoom-out view: ?pj 미설정 + 컨테이너 1개 이상이면 컨테이너 자체
-  // 를 토폴로지 노드로 보여줌 (4-layer 의 "Workspace 지도" 단계). 컨테이너
-  // 클릭 → setActiveProjectId 로 zoom-in. 컨테이너가 0개면 기존 flat view.
-  const showContainerView =
-    !activeProjectId && effectiveWorkspaceProjectContainers.length > 0;
-  // 사용자 요구 "Project > Hub > Node 3계층 구조" 반영:
-  // Layer 0 에서는 프로젝트 컨테이너만 보여주고, Hub/Node 는 Layer 1
-  // (`?pj=`) zoom-in 에서만 노출한다.
-  const containerProjects = useMemo<Project[]>(() => {
-    if (!showContainerView) return [];
-    const stats: Map<string, DemoContainerStats> = hasDemoSession()
-      ? getDemoContainerStats(scopedAccountId)
-      : new Map();
-    // 컨테이너 사이 cross-edge 계산: flat `accounts/{aid}/projects/*` 의
-    // dependencies 를 컨테이너 id 와 매칭. flat slug 와 컨테이너 id 가 1:1 인
-    // 시드 규약 (예: "reactor", "demo-iam") 을 따른다.
-    const containerIdSet = new Set(
-      effectiveWorkspaceProjectContainers.map((c) => c.id),
-    );
-    const flatBySlug = new Map(projects.map((p) => [p.slug, p]));
-    return effectiveWorkspaceProjectContainers.map((container) => {
-      const stat = stats.get(container.id);
-      let crossDeps: string[] = [];
-      if (stat) {
-        const sortedDeps = Array.from(stat.depsToContainers.entries()).sort(
-          (a, b) => b[1] - a[1],
-        );
-        for (const [targetContainerId] of sortedDeps) {
-          crossDeps.push(targetContainerId);
-        }
-      } else {
-        const flat = flatBySlug.get(container.id);
-        if (flat?.dependencies?.length) {
-          crossDeps = flat.dependencies.filter(
-            (dep) => containerIdSet.has(dep) && dep !== container.id,
-          );
-        }
-      }
-      const fallbackCounts =
-        "hubCount" in container && "nodeCount" in container
-          ? ` · ${container.hubCount} hubs · ${container.nodeCount} nodes`
-          : "";
-      const countLabel = stat
-        ? ` · ${stat.hubs} hubs · ${stat.nodes} nodes`
-        : fallbackCounts;
-      return {
-        slug: container.id,
-        name: container.name,
-        category: "__container__",
-        status: "developing",
-        description: (container.description ?? "프로젝트 컨테이너") + countLabel,
-        tags: [],
-        stack: [],
-        links: [],
-        dependencies: crossDeps,
-        screenshots: [],
-        timeline: {},
-        isHub: true,
-        position: { x: 0, y: 0 },
-        accountId: scopedAccountId ?? container.accountId ?? undefined,
-        createdAt: container.createdAt,
-        updatedAt: container.updatedAt,
-      };
-    });
-  }, [
-    showContainerView,
-    effectiveWorkspaceProjectContainers,
-    scopedAccountId,
-    projects,
-  ]);
-  const renderProjects = showContainerView ? containerProjects : projects;
+  const renderProjects = projects;
   const selectedProject = useMemo(
     () =>
       selectedSlug
@@ -368,26 +253,14 @@ export function HomePage() {
         : null,
     [selectedSlug, renderProjects],
   );
-  // 컨테이너 view ↔ zoom-in 전환 시 카메라 자동 fit. 노드 set 이 통째로 바뀌면
-  // viewport 가 빈 영역에 머물 위험 큼. derived hash 로 fitViewToken 에 합산.
-  const viewModeHash = useMemo(() => {
-    const key = showContainerView ? "out" : `in:${activeProjectId ?? "flat"}`;
-    let h = 0;
-    for (let i = 0; i < key.length; i += 1) {
-      h = (h * 31 + key.charCodeAt(i)) | 0;
-    }
-    return Math.abs(h);
-  }, [showContainerView, activeProjectId]);
-  const combinedFitToken = fitViewToken + viewModeHash;
-  // P1-5 — 클라이언트 사이드 동적 타이틀. 컨테이너/선택 프로젝트 컨텍스트
-  // 를 탭·검색바에 노출 (정적 export 환경의 page metadata 한계 보완).
-  // 브랜드·컨테이너·계정 이름이 같으면 (예: 컨테이너명이 "Demo") 중복 제거.
+  const combinedFitToken = fitViewToken;
+  // P1-5 — 클라이언트 사이드 동적 타이틀. 선택 프로젝트 컨텍스트를 탭·검색바에
+  // 노출 (정적 export 환경의 page metadata 한계 보완).
   useDocumentTitle(
     Array.from(
       new Set(
         [
           "Demo",
-          activeContainerName,
           selectedProject?.name ?? scopedAccountName,
         ].filter((value): value is string => Boolean(value)),
       ),
@@ -470,22 +343,11 @@ export function HomePage() {
     };
     const unsub = subscribeProjects(
       scopedAccountId,
-      (next) => {
-        if (!activeProjectId) {
-          onNext(next);
-          return;
-        }
-        onNext(
-          next.filter(
-            (project) =>
-              inferWorkspaceProjectGroup(project).id === activeProjectId,
-          ),
-        );
-      },
+      (next) => onNext(next),
       onError,
     );
     return () => unsub();
-  }, [scopedAccountId, activeProjectId, projectsRetryToken]);
+  }, [scopedAccountId, projectsRetryToken]);
   // Local graph 모드: 선택 노드 + 2-hop 이웃만 Sigma에 넘김. 전체 지도에서
   // 벗어나 해당 노드 주변만 집중해서 볼 수 있게 한다. Esc 또는 닫기 버튼으로
   // 전체 맵 복귀.
@@ -540,18 +402,18 @@ export function HomePage() {
       slug: string,
       options?: { preserveImpact?: boolean },
     ) => {
-      // Layer 0 컨테이너 클릭 = drawer 열기 (설명 · 지표 · "토폴로지 열기"
-      // CTA). 허브를 선택하면 포커스 모드 자동 활성, 일반 노드는 포커스 해제.
+      // 노드 선택 = drawer 열기. 허브를 선택하면 포커스 모드 자동 활성,
+      // 일반 노드는 포커스 해제.
       const project = renderProjects.find((p) => p.slug === slug);
       setRouteState((current) => ({
         ...current,
         selectedSlug: slug,
-        focusedHubSlug: project?.isHub && !showContainerView ? slug : null,
+        focusedHubSlug: project?.isHub ? slug : null,
         impactMode: options?.preserveImpact ? current.impactMode : "none",
       }));
       dismissSigmaHint();
     },
-    [renderProjects, setRouteState, showContainerView, dismissSigmaHint],
+    [renderProjects, setRouteState, dismissSigmaHint],
   );
 
   const handleClose = useCallback(() => {
@@ -829,27 +691,13 @@ export function HomePage() {
               </div>
             </div>
             {(() => {
-              // Workspace context 라벨 — "여기는 전체 지도" 라는 시그널을 hero
-              // subtitle 에 태워서 hero 펼침·접힘 상태 무관 항상 보이게.
-              const containerPrefix = activeContainerName
-                ? `Project · ${activeContainerName}`
-                : "Workspace";
               // 성장 시그널 — 지난 7일 내 updatedAt 된 프로젝트 수.
               // "지식이 자라고 있다" 를 2초 안에 느끼게 하는 카운터. 0 이면 숨김.
               const growthLabel = recentlyUpdatedCount > 0
                 ? ` · 이번 주 +${recentlyUpdatedCount}`
                 : "";
-              // 라벨 카피는 랜딩 CTA "데모 지도 열기 · N 컨테이너" 와 같은 단어로
-              // 일치시킨다. 진입 직후 "여기 N 컨테이너 안에 1,979 프로젝트가 있다"
-              // 가 한 줄로 잡혀야, 첫 인상에서 약속·실제가 어긋나지 않는다.
-              const containerCount = effectiveWorkspaceProjectContainers.length;
-              const totalProjectCount = projects.length;
-              const workspaceSubtitle = showContainerView
-                ? `Workspace 지도 · ${containerCount} 컨테이너 · ${totalProjectCount.toLocaleString("en-US")} 프로젝트${growthLabel}`
-                : `${containerPrefix} · ${renderProjects.length} 프로젝트 · ${hubs.length} 허브${growthLabel}`;
-              const workspaceEyebrow = showContainerView
-                ? `Workspace · ${containerCount} 컨테이너`
-                : `${containerPrefix} · ${renderProjects.length} 프로젝트`;
+              const workspaceSubtitle = `Workspace · ${renderProjects.length} 프로젝트 · ${hubs.length} 허브${growthLabel}`;
+              const workspaceEyebrow = `Workspace · ${renderProjects.length} 프로젝트`;
               return hydrated && (leftPanelCollapsed || drawerOpen) ? (
                 <div className="pointer-events-none absolute left-4 top-4 z-10 hidden md:flex md:flex-col md:items-start md:gap-2 md:left-6 md:top-6 xl:left-8 xl:top-8">
                   <HeroCollapsed
@@ -875,17 +723,6 @@ export function HomePage() {
                         ? "선택한 프로젝트 닫기"
                         : "좌측 패널 펼치기"
                     }
-                    // Layer 1 zoomed-in + hero 접힌 상태에서도 한 번에
-                    // Workspace 지도로 drill-out 할 수 있게. drawer open
-                    // 상태엔 drawer close 가 우선이라 생략.
-                    workspaceMapHref={
-                      activeProjectId && !drawerOpen
-                        ? scopedAccountId
-                          ? `/?${ACCOUNT_QUERY_KEY}=${encodeURIComponent(scopedAccountId)}`
-                          : "/"
-                        : undefined
-                    }
-                    onWorkspaceMapClick={resetSigmaFilters}
                     docsVaultHref={"/docs/"}
                     ontologyHref={"/ontology/"}
                   />
@@ -909,34 +746,18 @@ export function HomePage() {
                     description={
                       selectedProject?.description ||
                       (projects.length > 0
-                        ? showContainerView
-                          ? `프로젝트 ${effectiveWorkspaceProjectContainers.length}개가 각자 허브를 품고 있습니다. 덩어리 위에 마우스를 올리면 안에 뭐가 있는지 살짝 미리 보여요.`
-                          : `${hubs.length}개 허브를 중심으로 ${projects.length}개 프로젝트가 엮여 있습니다. 노드를 클릭해 상세를 열어 볼 수 있어요.`
+                        ? `${hubs.length}개 허브를 중심으로 ${projects.length}개 프로젝트가 엮여 있습니다. 노드를 클릭해 상세를 열어 볼 수 있어요.`
                         : undefined)
                     }
                     icon={selectedProject?.icon ?? null}
                     projectsListHref={projectsOverviewHref}
                     docsVaultHref={"/docs/"}
                     ontologyHref={"/ontology/"}
-                    // activeProjectId 가 있으면 컨테이너 zoom-in 상태.
-                    // 버튼으로 Layer 0 (워크스페이스 지도) 복귀.
-                    // ⚠️ 과거 helper 가 `?pj=` 를 자동 상속해 Layer 0 복귀
-                    //    href 에 pj 가 도로 붙어 no-op 되는 버그 있었음.
-                    //    account query 만 명시적으로 붙이고 pj 는 생략.
-                    workspaceMapHref={
-                      activeProjectId
-                        ? scopedAccountId
-                          ? `/?${ACCOUNT_QUERY_KEY}=${encodeURIComponent(scopedAccountId)}`
-                          : "/"
-                        : undefined
-                    }
-                    onWorkspaceMapClick={resetSigmaFilters}
                   />
-                  {/* O-9 — 워크스페이스 전체 보기 (selectedProject 없음 + 컨테이너
-                      zoom-in 도 아닐 때) 에 ontology summary strip. 사용자 첫
-                      인상에 "내 ontology 가 자라고 있다" 즉각 인지. 매치 0 자동
-                      숨김 (widget 자체 처리). */}
-                  {!selectedProject && !activeProjectId ? (
+                  {/* O-9 — 워크스페이스 전체 보기 (selectedProject 없음) 에
+                      ontology summary strip. 사용자 첫 인상에 "내 ontology 가
+                      자라고 있다" 즉각 인지. 매치 0 자동 숨김. */}
+                  {!selectedProject ? (
                     <div className="pointer-events-auto self-start">
                       <WorkspaceOntologyStrip accountId={scopedAccountId} />
                     </div>
@@ -1094,22 +915,9 @@ export function HomePage() {
                   activeCategory={activeCategory}
                   depthLimit={sigmaControls.depthLimit}
                   searchQuery={sigmaControls.searchQuery}
-                  forces={
-                    // Layer 0 은 Workspace 지도: 프로젝트 컨테이너 21개만
-                    // 보여준다. Hub/Node 는 컨테이너 내부 Layer 1 에서 노출.
-                    showContainerView
-                      ? {
-                          repel: -900,
-                          linkDistance: 260,
-                          collideMultiplier: 2.2,
-                        }
-                      : sigmaControls.forces
-                  }
+                  forces={sigmaControls.forces}
                   hubsOnly={sigmaControls.hubsOnly}
                   overlays={sigmaControls.overlays}
-                  // Layer 1 에서 hub 라벨의 container 이름 prefix 단축.
-                  // Layer 0 (activeContainerName null) 이면 원본 이름 유지.
-                  stripNamePrefix={activeContainerName ?? undefined}
                 />
               </div>
               <style jsx>{`
@@ -1147,7 +955,6 @@ export function HomePage() {
                 // selector dropdown 이 열린 동안에도 같은 좌상단 영역과 겹쳐
                 // 보이므로 함께 suppress.
                 suppressed={(!leftPanelCollapsed && !drawerOpen) || selectorOpen}
-                stripNamePrefix={activeContainerName ?? undefined}
               />
               {localGraphStack.length > 0 ? (
                 <div className="pointer-events-auto absolute left-1/2 top-[96px] z-30 flex max-w-[70vw] -translate-x-1/2 items-center gap-2 rounded-full border border-[color:rgba(139,151,255,0.32)] bg-[color:var(--color-panel)] px-3 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.35)]">
@@ -1263,24 +1070,12 @@ export function HomePage() {
                     </button>
                   </div>
                   <p className="leading-5">
-                    {showContainerView
-                      ? "프로젝트 덩어리 위에 올리면 내부 구성이 보이고, 클릭하면 안으로 들어갑니다."
-                      : "노드는 프로젝트, 선은 의존 관계입니다. 클릭해서 상세를 열고 검색으로 좁혀보세요."}
+                    노드는 프로젝트, 선은 의존 관계입니다. 클릭해서 상세를 열고 검색으로 좁혀보세요.
                   </p>
                   <ul className="flex flex-col gap-1 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-                    {showContainerView ? (
-                      <li>
-                        <span className="text-[color:var(--color-text-secondary)]">올리기</span>
-                        <span className="text-[color:var(--color-text-quaternary)]"> · 내부 허브 미리보기</span>
-                      </li>
-                    ) : null}
                     <li>
                       <span className="text-[color:var(--color-text-secondary)]">클릭</span>
-                      <span className="text-[color:var(--color-text-quaternary)]">
-                        {showContainerView
-                          ? " · 프로젝트 안으로 들어가기"
-                          : " · 상세 패널 열기"}
-                      </span>
+                      <span className="text-[color:var(--color-text-quaternary)]"> · 상세 패널 열기</span>
                     </li>
                     <li>
                       <span className="text-[color:var(--color-text-secondary)]">드래그</span>
@@ -1317,12 +1112,8 @@ export function HomePage() {
             </button>
           </div>
         ) : null}
-        {/* 로딩 스켈레톤 — (a) 구독 첫 콜백 전, empty state 오인 방지.
-            (b) 컨테이너 zoom-in 직후 sigma 재구성 중 빈 캔버스 인지 차단. */}
-        {(scopedAccountId &&
-          !projectsLoaded &&
-          !projectsError) ||
-        containerSwitching ? (
+        {/* 로딩 스켈레톤 — 구독 첫 콜백 전, empty state 오인 방지. */}
+        {scopedAccountId && !projectsLoaded && !projectsError ? (
           <div
             className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center"
             role="status"
@@ -1335,7 +1126,7 @@ export function HomePage() {
                 <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-[color:rgba(139,151,255,0.8)] [animation-delay:300ms]" />
               </span>
               <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-tertiary)]">
-                {containerSwitching ? "토폴로지 다시 그리는 중" : "워크스페이스 지도 불러오는 중"}
+                워크스페이스 지도 불러오는 중
               </span>
             </div>
           </div>
@@ -1344,51 +1135,35 @@ export function HomePage() {
           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-4">
             <section className="pointer-events-auto w-full max-w-xl rounded-[28px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-6 py-6 text-center shadow-[0_28px_64px_rgba(0,0,0,0.34)]">
               <p className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
-                {activeContainerName
-                  ? `Project · ${activeContainerName}`
-                  : "워크스페이스 지도"}
+                워크스페이스 지도
               </p>
               <h2 className="mt-3 text-2xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                {activeContainerName
-                  ? `"${activeContainerName}" 컨테이너에 노드가 없습니다`
-                  : "아직 이 공간에 프로젝트가 없습니다"}
+                아직 이 공간에 프로젝트가 없습니다
               </h2>
               {isAdmin ? (
                 <>
                   <p className="mt-4 text-sm leading-7 text-[color:var(--color-text-secondary)]">
-                    {activeContainerName
-                      ? "이 컨테이너에 아직 프로젝트가 없습니다. 새 프로젝트를 추가해 시작하세요."
-                      : "첫 프로젝트 하나만 있으면 지도가 살아납니다. 어떤 방식으로 시작할지 고르세요."}
+                    첫 프로젝트 하나만 있으면 지도가 살아납니다. 어떤 방식으로 시작할지 고르세요.
                   </p>
                   <div className="mt-5 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center">
-                    <Link
-                      href={"/project/new/"}
-                      className="inline-flex"
-                    >
+                    <Link href={"/project/new/"} className="inline-flex">
                       <Button type="button" size="sm" className="w-full sm:w-auto">
-                        {activeContainerName ? "프로젝트 추가" : "첫 프로젝트 만들기"}
+                        첫 프로젝트 만들기
                       </Button>
                     </Link>
-                    <Link
-                      href={"/settings/import/"}
-                      className="inline-flex"
-                    >
+                    <Link href={"/settings/import/"} className="inline-flex">
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
                         className="w-full sm:w-auto"
                       >
-                        {activeContainerName
-                          ? "CSV 로 한 번에 올리기"
-                          : "샘플 5개로 바로 체험"}
+                        샘플 5개로 바로 체험
                       </Button>
                     </Link>
                   </div>
                   <p className="mt-4 text-xs leading-5 text-[color:var(--color-text-tertiary)]">
-                    {activeContainerName
-                      ? "다른 컨테이너로 전환하려면 좌상단 셀렉터를 사용하세요."
-                      : "샘플은 인증·결제·알림 같은 실제 서비스 5개로 감을 먼저 잡아주고, CSV 는 이미 정리된 프로젝트를 한 번에 올립니다."}
+                    샘플은 인증·결제·알림 같은 실제 서비스 5개로 감을 먼저 잡아주고, CSV 는 이미 정리된 프로젝트를 한 번에 올립니다.
                   </p>
                 </>
               ) : (
@@ -1412,49 +1187,20 @@ export function HomePage() {
           project={showProjectTopologyScene ? null : drawerProject}
           allProjects={renderProjects}
           accountId={scopedAccountId}
-          activeProjectId={activeProjectId}
+          activeProjectId={null}
           impactMode={impactMode}
           onChangeImpactMode={handleSelectImpactMode}
           onClose={handleClose}
           onSelectProject={(slug) =>
             handleSelect(slug, { preserveImpact: impactMode !== "none" })
           }
-          containerLabel={activeContainerName}
+          containerLabel={null}
           knowledgeInsight={
             selectedKnowledgeInsight.projectSlug === drawerProject?.slug
               ? selectedKnowledgeInsight.insight
               : null
           }
           onOpenKnowledgeScene={(slug) => setKnowledgeSceneProjectSlug(slug)}
-          onEnterContainer={(slug) => {
-            // Drawer 의 "토폴로지 열기" CTA 에서 넘어오는 slug:
-            // - container (Layer 0 주인공): 그 컨테이너로 zoom-in
-            // - hub (Layer 0 보조): 이 허브가 속한 컨테이너로 zoom-in + 허브
-            //   slug 는 selectedSlug 로 유지해 Layer 1 에서 자동 focus.
-            const proj = renderProjects.find((p) => p.slug === slug);
-            if (!proj) return;
-            if (proj.category === "__container__") {
-              handleSelectWorkspaceProject(slug);
-              return;
-            }
-            // Hub/Node slug 로 들어온 경우 → 소속 컨테이너 찾기.
-            // 실제 workspaceProjects 가 없으면 legacy name/slug prefix 로 추론한
-            // 컨테이너 목록을 사용한다.
-            const containerIds = effectiveWorkspaceProjectContainers
-              .map((c) => c.id)
-              .sort((a, b) => b.length - a.length);
-            const containerId = containerIds.find(
-              (id) => slug === id || slug.startsWith(`${id}-`),
-            );
-            if (containerId) {
-              handleSelectWorkspaceProject(containerId);
-              // 허브 slug 는 selectedSlug 로 남겨 Layer 1 에서 자동 포커스.
-              setRouteState((current) => ({
-                ...current,
-                selectedSlug: slug,
-              }));
-            }
-          }}
         />
         <SearchPalette
           open={searchOpen}
@@ -1463,7 +1209,7 @@ export function HomePage() {
           onSelect={(slug) => {
             handleSelect(slug);
           }}
-          containerLabel={activeContainerName}
+          containerLabel={null}
           accountId={scopedAccountId}
         />
         {/* Fire 2 — ⇧⌘K 로 열리는 ontology / 문서 통합 검색. project 전용

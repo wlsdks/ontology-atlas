@@ -1,6 +1,5 @@
 import type { ProjectCategory } from "@/entities/project";
 import type { ProjectImpactMode } from "@/entities/project";
-import { WORKSPACE_PROJECT_QUERY_KEY } from "@/shared/lib/account-scope";
 
 export type HomePulseMode = "all" | "7d" | "30d";
 
@@ -10,8 +9,6 @@ export interface HomeRouteState {
   focusedHubSlug: string | null;
   impactMode: ProjectImpactMode;
   pulseMode: HomePulseMode;
-  /** 활성 workspaceProject 컨테이너 id. null 이면 selector 가 첫 컨테이너. */
-  projectId: string | null;
 }
 
 const HOME_QUERY_KEYS = {
@@ -20,8 +17,6 @@ const HOME_QUERY_KEYS = {
   hub: "hub",
   impact: "impact",
   pulse: "pulse",
-  /** workspaceProject container id. `p` 가 이미 selectedSlug 라서 `pj`. */
-  projectId: WORKSPACE_PROJECT_QUERY_KEY,
 } as const;
 
 const VALID_IMPACT: ProjectImpactMode[] = [
@@ -38,7 +33,6 @@ export const DEFAULT_HOME_ROUTE_STATE: HomeRouteState = {
   focusedHubSlug: null,
   impactMode: "none",
   pulseMode: "all",
-  projectId: null,
 };
 
 export function parseHomeRouteState(
@@ -57,7 +51,6 @@ export function parseHomeRouteState(
     pulseMode: VALID_PULSE.includes(pulseParam as HomePulseMode)
       ? (pulseParam as HomePulseMode)
       : DEFAULT_HOME_ROUTE_STATE.pulseMode,
-    projectId: searchParams.get(HOME_QUERY_KEYS.projectId),
   };
 }
 
@@ -80,7 +73,6 @@ export function applyHomeRouteState(
     HOME_QUERY_KEYS.pulse,
     state.pulseMode === "all" ? null : state.pulseMode,
   );
-  setOrDelete(next, HOME_QUERY_KEYS.projectId, state.projectId);
 
   return next;
 }

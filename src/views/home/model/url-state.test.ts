@@ -8,7 +8,7 @@ import {
 describe("parseHomeRouteState", () => {
   it("reads supported home query params", () => {
     const params = new URLSearchParams(
-      "p=iam&c=in-progress&hub=iam&impact=downstream&pulse=30d&pj=demo",
+      "p=iam&c=in-progress&hub=iam&impact=downstream&pulse=30d",
     );
 
     expect(parseHomeRouteState(params)).toEqual({
@@ -17,7 +17,6 @@ describe("parseHomeRouteState", () => {
       focusedHubSlug: "iam",
       impactMode: "downstream",
       pulseMode: "30d",
-      projectId: "demo",
     });
   });
 
@@ -36,17 +35,16 @@ describe("applyHomeRouteState", () => {
       focusedHubSlug: "reactor",
       impactMode: "network",
       pulseMode: "7d",
-      projectId: "demo",
     });
 
     expect(params.toString()).toBe(
-      "p=pick&c=planned&hub=reactor&impact=network&pulse=7d&pj=demo",
+      "p=pick&c=planned&hub=reactor&impact=network&pulse=7d",
     );
   });
 
   it("drops params when values match defaults", () => {
     const params = applyHomeRouteState(
-      new URLSearchParams("p=pick&impact=network&pulse=7d&pj=foo"),
+      new URLSearchParams("p=pick&impact=network&pulse=7d"),
       DEFAULT_HOME_ROUTE_STATE,
     );
 
