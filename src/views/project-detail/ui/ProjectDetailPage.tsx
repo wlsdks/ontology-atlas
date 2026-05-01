@@ -25,9 +25,6 @@ import {
 import { useScopedAccountAccess } from "@/features/account-scope";
 import { buildServiceEntryHref } from "@/features/user-auth";
 import {
-  WORKSPACE_PROJECT_QUERY_KEY,
-} from "@/shared/lib/account-scope";
-import {
   formatProjectIntegrityIssue,
   getProject,
   getProjectDetailHref,
@@ -44,7 +41,6 @@ import {
 import { resolveSubscribeUpdate } from "../model/resolve-subscribe-update";
 import { DependencyPicker } from "@/features/project-edit/ui/DependencyPicker";
 import { CopyProjectLinkButton } from "@/features/project-share";
-import { useWorkspaceProjects } from "@/widgets/workspace-project-selector";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useTaxonomy } from "@/features/taxonomy";
 import { PublicAccountMenu } from "@/widgets/account-menu";
@@ -354,20 +350,12 @@ export function ProjectDetailPage({
     [accountId, currentPath],
   );
 
-  // single-user 모드에서는 flat `projects` 만 read. activeProjectId 는
-  // 헤더 / 제목 표시용 (컨테이너 이름 lookup) 으로만 보존.
-  const activeProjectId = searchParams.get(WORKSPACE_PROJECT_QUERY_KEY);
-  const { projects: workspaceProjectContainers } = useWorkspaceProjects(accountId);
-  const activeContainerName =
-    activeProjectId && workspaceProjectContainers.length > 0
-      ? (workspaceProjectContainers.find((c) => c.id === activeProjectId)?.name ?? null)
-      : null;
   // P1-5 — 클라이언트 사이드 동적 타이틀. 정적 export metadata 가 slug
-  // 단위까지 미리 빌드되지만 컨테이너 컨텍스트는 빌드 시 모름.
+  // 단위까지 미리 빌드되지만 동적 컨텍스트는 빌드 시 모름.
   useDocumentTitle(
     Array.from(
       new Set(
-        [project?.name, activeContainerName, "Demo"].filter(
+        [project?.name, "Demo"].filter(
           (value): value is string => Boolean(value),
         ),
       ),
@@ -717,16 +705,8 @@ export function ProjectDetailPage({
             {heroMonogram}
           </div>
           <div className="relative z-10 flex items-center gap-3">
-            {activeContainerName ? (
-              <span
-                className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]"
-                title={`workspaceProjects/${activeProjectId}`}
-              >
-                Project · {activeContainerName}
-              </span>
-            ) : null}
             <span className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
-              {activeContainerName ? "·" : ""} 개별 프로젝트
+              개별 프로젝트
             </span>
             {heroMeta ? (
               <span className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
@@ -1298,7 +1278,7 @@ export function ProjectDetailPage({
         onClose={() => setSearchOpen(false)}
         projects={related}
         onSelect={handleSearchSelect}
-        containerLabel={activeContainerName}
+        containerLabel={null}
         accountId={accountId}
       />
       <ShortcutSheet
