@@ -16,9 +16,7 @@ export {
   fromFirestoreKnowledgeDocument,
   toFirestoreKnowledgeDocument,
   toKnowledgeDocumentMetadataInput,
-  computeFrontmatterGrade,
 } from "./model";
-export type { FrontmatterGrade, FrontmatterGradeResult } from "./model";
 export {
   listKnowledgeDocuments,
   getKnowledgeDocument,

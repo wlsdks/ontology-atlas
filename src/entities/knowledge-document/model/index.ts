@@ -19,6 +19,4 @@ export {
   toFirestoreKnowledgeDocument,
   toKnowledgeDocumentMetadataInput,
 } from "./mapper";
-export type { FrontmatterGrade, FrontmatterGradeResult } from "./frontmatter-grade";
-export { computeFrontmatterGrade } from "./frontmatter-grade";
 

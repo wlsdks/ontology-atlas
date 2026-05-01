@@ -17,9 +17,8 @@ import {
 import { type Project } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, buttonVariants, useToast } from "@/shared/ui";
-import { DocumentNewOntologyHints, FrontmatterGradeBadge } from "@/widgets/document-new-ontology-hints";
+import { DocumentNewOntologyHints } from "@/widgets/document-new-ontology-hints";
 import { OperationsNav } from "@/widgets/operations-nav";
-import { FrontmatterOnboarding } from "@/widgets/frontmatter-onboarding";
 import { recommendDocumentSlug } from "@/shared/lib/ontology-tree";
 import { } from "@/shared/lib/account-scope";
 import { cn } from "@/shared/lib/cn";
@@ -295,7 +294,7 @@ function NewDocumentContent() {
   return (
     <main className="min-h-screen bg-[color:var(--color-canvas)]">
       <OperationsNav accountId={null} />
-      <div className="mx-auto grid max-w-6xl gap-6 px-5 py-6 md:px-12 md:py-10 lg:grid-cols-[minmax(0,1.16fr)_360px]">
+      <div className="mx-auto max-w-3xl px-5 py-6 md:px-12 md:py-10">
         <div>
           <h1 className="text-2xl font-[var(--font-weight-signature)] tracking-[var(--tracking-section)] text-[color:var(--color-text-primary)] md:text-4xl">
             {pageTitle}
@@ -478,12 +477,6 @@ function NewDocumentContent() {
                     </p>
                   );
                 })()}
-                <FrontmatterGradeBadge
-                  frontmatter={parsed.frontmatter}
-                  pageTitle={title}
-                  pageKind={kind}
-                  pageProjectIds={projectIds}
-                />
                 <DocumentNewOntologyHints accountId={null} title={title} kind={kind} />
               </Field>
               <Field
@@ -759,13 +752,6 @@ function NewDocumentContent() {
               ) : null}
             </CardContent>
           </Card>
-        </div>
-        {/* Fire 3 — O-10 한국어 frontmatter 인라인 onboarding. 신규 사용자가
-            처음 문서 작성 시 등급 A/B/C + 필수/권장 필드 + 예시 markdown 을
-            바로 옆에서 볼 수 있게. lg+ 에서만 우측 360px 컬럼 노출, 모바일은
-            본문 아래로 stack. */}
-        <div className="lg:sticky lg:top-6 lg:self-start">
-          <FrontmatterOnboarding />
         </div>
       </div>
     </main>
