@@ -20,6 +20,8 @@ import {
   type KnowledgePublicMeta,
 } from "@/entities/knowledge-graph";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Tooltip } from "@/shared/ui";
+import { useDataSourceMode } from "@/features/data-source-mode";
+import { useLocalVault } from "@/features/docs-vault-local";
 import { DashboardOntologySummary } from "@/widgets/dashboard-ontology-summary";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
@@ -29,6 +31,8 @@ function DashboardContent() {
   const { user } = useGlobalAdmin();
   const searchParams = useSearchParams();
   const accountId = null;
+  const dataSourceMode = useDataSourceMode();
+  const localVault = useLocalVault();
   // ?account= 가 비었으면 인증 사용자의 owned membership 첫 번째로 자동 보강.
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [publicMeta, setPublicMeta] = useState<KnowledgePublicMeta | null>(null);
@@ -135,6 +139,41 @@ function DashboardContent() {
             </p>
           </div>
         </header>
+
+        {dataSourceMode === "local" && localVault.manifest ? (
+          <section
+            aria-labelledby="vault-summary-heading"
+            className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.06)] px-4 py-3"
+          >
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]">
+                Local vault
+              </span>
+              <h2
+                id="vault-summary-heading"
+                className="text-[13px] text-[color:var(--color-text-primary)]"
+              >
+                {localVault.handle?.name ?? "vault"}
+              </h2>
+            </div>
+            <span className="font-mono text-[11px] tracking-[0.06em] text-[color:var(--color-text-tertiary)]">
+              {localVault.manifest.docs.length} md
+              {localVault.lastLoadedAt ? (
+                <>
+                  {" · "}
+                  방금 스캔
+                </>
+              ) : null}
+            </span>
+            <Link
+              href="/docs/"
+              className="ml-auto inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-3 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)]"
+            >
+              vault 열기
+              <ArrowRight size={11} aria-hidden />
+            </Link>
+          </section>
+        ) : null}
 
         <section className="mt-10 grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
           {!documentsLoaded ? (

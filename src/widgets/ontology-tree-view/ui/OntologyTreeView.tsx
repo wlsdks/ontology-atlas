@@ -79,6 +79,26 @@ function KindChip({ kind }: { kind: string }) {
   );
 }
 
+/**
+ * 노드의 evidence 수 chip — V1.0 모델의 강점 가시화 (기획자 audit F6).
+ * evidence 0 일 때는 미렌더 (chip 노이즈 차단). hover 시 "이 노드의 출처 N개"
+ * 라는 native title 툴팁.
+ */
+function EvidenceCountChip({ count }: { count: number | undefined }) {
+  if (!count || count <= 0) return null;
+  return (
+    <span
+      data-testid="ontology-tree-evidence-chip"
+      data-evidence-count={count}
+      title={`이 노드의 근거 (evidence) ${count}개 — 클릭해서 상세 보기`}
+      className="inline-flex shrink-0 items-center gap-0.5 rounded-full border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-[1px] font-mono text-[9px] tracking-[0.04em] text-[color:var(--color-indigo-accent)]"
+    >
+      <span aria-hidden>◆</span>
+      {count}
+    </span>
+  );
+}
+
 function TreeRow({
   treeNode,
   expanded,
@@ -133,6 +153,7 @@ function TreeRow({
         <KindChip kind={treeNode.node.kind} />
         <span className="truncate">{treeNode.node.title}</span>
         <ManualSourceChip source={treeNode.node.source} size="compact" />
+        <EvidenceCountChip count={treeNode.node.evidenceCount} />
         {/* UX-16: 첫 번째 projectIds 를 quaternary mono chip 으로 — 외부
             visitor 가 어느 프로젝트에 속하는지 즉시 인지. 다중 project
             은 truncate, project / document kind 자체는 자기참조라 제외

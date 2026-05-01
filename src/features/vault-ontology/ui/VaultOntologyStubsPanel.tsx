@@ -1,6 +1,7 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, Sparkles } from 'lucide-react';
 import { useVaultOntology } from '../model/use-vault-ontology';
 
 /**
@@ -68,6 +69,33 @@ export function VaultOntologyStubsPanel() {
       <p className="mt-2 text-[12px] text-[color:var(--color-text-tertiary)]">
         AI 추출 거치지 않은 fast-path stub. evidence 가 붙으면 정식 ontology fact 로 승격됩니다.
       </p>
+
+      {/* 다음 단계 안내 — vault stub 을 영구 fact 로 만드는 두 path 안내.
+          IndexedDB 기반 promote 큐는 후속 (Phase 7+) 으로 미루고, 현재 가능한
+          두 우회 경로 (빌더 + cloud 검수) 를 명시. */}
+      <details className="mt-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] px-3 py-2 text-[12px] text-[color:var(--color-text-secondary)]">
+        <summary className="cursor-pointer font-[var(--font-weight-signature)]">
+          이 stub 을 어떻게 영구 fact 로 만들까요?
+        </summary>
+        <div className="mt-2 space-y-2 text-[color:var(--color-text-tertiary)]">
+          <p>
+            <strong>(1) 빌더에서 직접 그리기</strong> — `/ontology/edit/` 빌더
+            캔버스에서 노드와 관계를 직접 추가하면 즉시 영구 저장 (cloud 모드).
+          </p>
+          <p>
+            <strong>(2) cloud 검수 큐</strong> — 추후 도입 예정 (Phase 7+). 현재는
+            local stub → cloud 검수 큐 promote path 가 wiring 안 되어 있어, 빌더
+            에서 직접 그리는 (1) 경로 추천.
+          </p>
+          <Link
+            href="/ontology/edit/"
+            className="inline-flex h-7 items-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-3 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)]"
+          >
+            빌더 열기 <ArrowRight size={11} aria-hidden />
+          </Link>
+        </div>
+      </details>
+
       <div className="mt-4 space-y-4">
         {kinds.map((kind) => {
           const group = byKind.get(kind)!;
