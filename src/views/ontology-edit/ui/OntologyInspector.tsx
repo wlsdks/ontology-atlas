@@ -28,10 +28,15 @@ export type VaultArrayKey =
   | "dependencies"
   | "relates";
 
+export type VaultLiteralKey = "description" | "domain";
+
 export interface VaultSelected {
   slug: string;
   kind: string;
   title: string;
+  /** V1.2 vault-adaptation — frontmatter scalar literals. */
+  description: string;
+  domain: string;
   capabilities: string[];
   elements: string[];
   dependencies: string[];
@@ -49,6 +54,11 @@ export interface OntologyInspectorProps {
     slug: string,
     key: VaultArrayKey,
     next: string[],
+  ) => Promise<void> | void;
+  onEditVaultLiteral?: (
+    slug: string,
+    key: VaultLiteralKey,
+    next: string,
   ) => Promise<void> | void;
   onDeleteVault?: (slug: string) => Promise<void> | void;
   onClearSelection: () => void;
@@ -71,6 +81,7 @@ export function OntologyInspector({
   onSaveEphemeral,
   onSaveVaultRename,
   onEditVaultArrayKey,
+  onEditVaultLiteral,
   onDeleteVault,
   onClearSelection,
   saving,
@@ -116,6 +127,7 @@ export function OntologyInspector({
               node={vaultSelected}
               onSaveRename={onSaveVaultRename}
               onEditArrayKey={onEditVaultArrayKey}
+              onEditLiteral={onEditVaultLiteral}
               onDelete={onDeleteVault}
               saving={Boolean(saving)}
               onDeselect={onClearSelection}
@@ -237,6 +249,7 @@ function VaultDetail({
   node,
   onSaveRename,
   onEditArrayKey,
+  onEditLiteral,
   onDelete,
   saving,
   onDeselect,
@@ -247,6 +260,11 @@ function VaultDetail({
     slug: string,
     key: VaultArrayKey,
     next: string[],
+  ) => Promise<void> | void;
+  onEditLiteral?: (
+    slug: string,
+    key: VaultLiteralKey,
+    next: string,
   ) => Promise<void> | void;
   onDelete?: (slug: string) => Promise<void> | void;
   saving: boolean;
@@ -309,6 +327,26 @@ function VaultDetail({
         제목만 frontmatter `title:` 에 patch 됩니다. 본문이나 다른 키는 그대로
         유지돼요. AI agent (MCP) 도 동일 vault 를 보고 있어 즉시 반영됩니다.
       </p>
+      {onEditLiteral ? (
+        <div className="flex flex-col gap-2">
+          <LiteralEditor
+            fieldKey="domain"
+            value={node.domain}
+            onCommit={(next) => onEditLiteral(node.slug, "domain", next)}
+            disabled={saving}
+            placeholder="예: workbench"
+            multiline={false}
+          />
+          <LiteralEditor
+            fieldKey="description"
+            value={node.description}
+            onCommit={(next) => onEditLiteral(node.slug, "description", next)}
+            disabled={saving}
+            placeholder="이 노드를 한 줄로 설명"
+            multiline
+          />
+        </div>
+      ) : null}
       {onEditArrayKey ? (
         <div className="flex flex-col gap-3">
           {(["capabilities", "elements", "dependencies", "relates"] as const).map(
@@ -335,6 +373,82 @@ function VaultDetail({
           ⚠ vault 에서 삭제
         </button>
       ) : null}
+    </div>
+  );
+}
+
+const LITERAL_LABELS: Record<VaultLiteralKey, string> = {
+  description: "설명 (description)",
+  domain: "도메인 (domain)",
+};
+
+function LiteralEditor({
+  fieldKey,
+  value,
+  onCommit,
+  disabled,
+  placeholder,
+  multiline,
+}: {
+  fieldKey: VaultLiteralKey;
+  value: string;
+  onCommit: (next: string) => void;
+  disabled: boolean;
+  placeholder?: string;
+  multiline?: boolean;
+}) {
+  // local draft — 입력 중엔 vault 에 patch 안 함. blur 또는 Enter (single-line)
+  // 시 commit. 사용자 변경이 file write 빈도를 결정 — 너무 자주 쓰면 IDE/editor
+  // 가 잡고 있을 때 race.
+  const [draft, setDraft] = useState(value);
+  useEffect(() => {
+    setDraft(value);
+  }, [fieldKey, value]);
+  const dirty = draft !== value;
+  const commit = () => {
+    if (!dirty || disabled) return;
+    onCommit(draft);
+  };
+  const sharedClass =
+    "w-full rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2 py-1 text-[12px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)] disabled:opacity-50";
+  return (
+    <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
+      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        {LITERAL_LABELS[fieldKey]}
+      </p>
+      {multiline ? (
+        <textarea
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          disabled={disabled}
+          placeholder={placeholder}
+          rows={2}
+          className={`mt-1.5 ${sharedClass} resize-y leading-snug`}
+        />
+      ) : (
+        <input
+          type="text"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit();
+              (e.target as HTMLInputElement).blur();
+            }
+          }}
+          disabled={disabled}
+          placeholder={placeholder}
+          className={`mt-1.5 ${sharedClass}`}
+        />
+      )}
+      <p className="mt-1 text-[10px] text-[color:var(--color-text-quaternary)]">
+        {dirty
+          ? "포커스 해제 시 vault 에 자동 저장."
+          : "비우고 저장하면 frontmatter 키 자체가 삭제됩니다."}
+      </p>
     </div>
   );
 }

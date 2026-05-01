@@ -177,10 +177,15 @@ export function OntologyEditPage() {
       Array.isArray(v)
         ? v.filter((x): x is string => typeof x === "string")
         : [];
+    const asString = (v: unknown): string =>
+      typeof v === "string" ? v : "";
     return {
       slug: doc.slug,
       kind: String(doc.frontmatter.kind),
       title: doc.title || doc.slug,
+      // V1.2 vault-adaptation — frontmatter scalar literals.
+      description: asString(fm.description),
+      domain: asString(fm.domain),
       capabilities: asStrings(fm.capabilities),
       elements: asStrings(fm.elements),
       dependencies: asStrings(fm.dependencies),
@@ -228,6 +233,25 @@ export function OntologyEditPage() {
       try {
         await vault.updateFrontmatter(slug, {
           [key]: next.length === 0 ? null : next,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "저장 실패";
+        toast.show(message, "error");
+      }
+    },
+    [toast, vault],
+  );
+
+  // V1.2 vault-adaptation — frontmatter scalar literals (description / domain).
+  // 빈 string 은 키 자체 제거 (null) — frontmatter 깨끗 유지. trim 후 빈 값이면
+  // 명시적 삭제로 처리해 사용자가 의도적으로 비웠을 때 frontmatter 에 빈 문자열
+  // 잔존 안 함.
+  const editVaultLiteral = useCallback(
+    async (slug: string, key: "description" | "domain", next: string) => {
+      const trimmed = next.trim();
+      try {
+        await vault.updateFrontmatter(slug, {
+          [key]: trimmed === "" ? null : trimmed,
         });
       } catch (err) {
         const message = err instanceof Error ? err.message : "저장 실패";
@@ -474,6 +498,7 @@ export function OntologyEditPage() {
             onSaveEphemeral={saveEphemeral}
             onSaveVaultRename={renameVaultDoc}
             onEditVaultArrayKey={editVaultArrayKey}
+            onEditVaultLiteral={editVaultLiteral}
             onDeleteVault={deleteVaultDoc}
             saving={savingId !== null || renamingId !== null}
             onClearSelection={() => setSelectedId(null)}
