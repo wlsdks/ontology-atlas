@@ -293,7 +293,7 @@ function NewDocumentContent() {
 
   return (
     <main className="min-h-screen bg-[color:var(--color-canvas)]">
-      <OperationsNav accountId={null} />
+      <OperationsNav />
       <div className="mx-auto max-w-3xl px-5 py-6 md:px-12 md:py-10">
         <div>
           <h1 className="text-2xl font-[var(--font-weight-signature)] tracking-[var(--tracking-section)] text-[color:var(--color-text-primary)] md:text-4xl">

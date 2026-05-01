@@ -409,7 +409,7 @@ function StatusesContent() {
   return (
     <main className="min-h-screen bg-[color:var(--color-canvas)]">
       <h1 className="sr-only">상태 관리</h1>
-      <OperationsNav accountId={accountId} />
+      <OperationsNav />
       <div className="mx-auto max-w-5xl px-5 py-6 md:px-12 md:py-10">
         <Link
           href={safeReturnTo}

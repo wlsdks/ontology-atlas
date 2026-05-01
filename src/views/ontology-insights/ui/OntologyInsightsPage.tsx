@@ -127,7 +127,7 @@ export function OntologyInsightsPage() {
 
   return (
     <div>
-      <OperationsNav accountId={accountId} />
+      <OperationsNav />
       <div className="mx-auto max-w-5xl px-5 py-8 md:px-8 md:py-12">
       <MountedGlobalSearch accountId={accountId} returnTo="/ontology/insights/" />
 

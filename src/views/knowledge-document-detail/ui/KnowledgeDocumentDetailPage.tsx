@@ -471,7 +471,7 @@ function DetailContent({ documentId, returnTo }: Props) {
 
   return (
     <main className="min-h-screen bg-[color:var(--color-canvas)]">
-      <OperationsNav accountId={accountId} />
+      <OperationsNav />
       {/* ⌘K 글로벌 검색 — 문서 보다가 ontology · 다른 문서 빠르게 점프. */}
       <MountedGlobalSearch
         accountId={accountId}

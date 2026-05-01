@@ -102,7 +102,7 @@ function InsightsContent() {
   return (
     <main className="min-h-screen bg-[color:var(--color-canvas)]">
       <h1 className="sr-only">오늘 챙길 곳</h1>
-      <OperationsNav accountId={accountId} />
+      <OperationsNav />
       <div className="mx-auto max-w-5xl px-5 py-6 md:px-12 md:py-10">
         <header className="flex flex-col gap-2">
           <h1 className="break-keep text-[28px] font-[var(--font-weight-signature)] tracking-[var(--tracking-section)] text-[color:var(--color-text-primary)] md:text-3xl">

@@ -63,7 +63,7 @@ function SettingsOntologyHistoryContent() {
   return (
     <main className="min-h-screen bg-[color:var(--color-canvas)]">
       <h1 className="sr-only">온톨로지 schema 히스토리</h1>
-      <OperationsNav accountId={accountId} />
+      <OperationsNav />
 
       <div className="mx-auto w-full max-w-3xl px-5 py-6 md:px-10 md:py-10">
         <header className="mb-6">

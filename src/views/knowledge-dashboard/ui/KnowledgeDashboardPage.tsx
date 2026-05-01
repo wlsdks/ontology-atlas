@@ -121,7 +121,7 @@ function DashboardContent() {
   return (
     <main className="min-h-screen bg-[color:var(--color-canvas)]">
       <h1 className="sr-only">문서</h1>
-      <OperationsNav accountId={accountId} />
+      <OperationsNav />
       {/* ⌘K 글로벌 검색 — 대시보드에서도 ontology · 문서 빠르게 점프. */}
       <MountedGlobalSearch accountId={accountId} returnTo="/knowledge/" />
       <div className="mx-auto max-w-6xl px-5 py-6 md:px-12 md:py-10">

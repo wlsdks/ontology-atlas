@@ -189,7 +189,7 @@ function DocumentsContent() {
   return (
     <main className="min-h-screen bg-[color:var(--color-canvas)]">
       <h1 className="sr-only">문서 목록</h1>
-      <OperationsNav accountId={accountId} />
+      <OperationsNav />
       {/* ⌘K 글로벌 검색 — accountId 만 받고 ontology + documents 자체 구독.
           기본 동작 = ontology 노드는 /ontology 점프, document 는 view 페이지 점프. */}
       <MountedGlobalSearch accountId={accountId} returnTo="/knowledge/documents/" />

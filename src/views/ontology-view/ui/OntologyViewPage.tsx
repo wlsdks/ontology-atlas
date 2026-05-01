@@ -168,7 +168,7 @@ export function OntologyViewPage() {
       {/* OperationsNav 는 풀폭으로 (다른 운영 페이지 — /knowledge 등 — 과
           동일 정렬). 이전엔 본문 max-w 안에 같이 갇혀 좌우 여백이 크게 잡혀
           가운데로 몰려 보이는 회귀가 있었음. */}
-      <OperationsNav accountId={accountId} />
+      <OperationsNav />
       <div className="mx-auto max-w-5xl px-5 py-8 md:px-8 md:py-12">
       <section className="mb-8 space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">

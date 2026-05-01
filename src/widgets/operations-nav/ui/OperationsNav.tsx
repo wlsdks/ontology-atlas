@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { signOut } from '@/features/user-auth';
 import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
@@ -9,8 +9,6 @@ import { ThemeToggle } from '@/features/theme-toggle';
 import { Button, Tooltip } from '@/shared/ui';
 
 interface OperationsNavProps {
-  /** 명시 accountId. 미지정 시 ?account 쿼리에서 자동 해석. */
-  accountId?: string | null;
   /** 우측 보조 컨트롤 (예: 워크스페이스 selector). 미지정 시 생략. */
   rightSlot?: React.ReactNode;
 }
@@ -145,16 +143,11 @@ function ModeBadge({ mode }: { mode: 'static' | 'local' | 'cloud' }) {
   );
 }
 
-export function OperationsNav({ accountId, rightSlot }: OperationsNavProps) {
+export function OperationsNav({ rightSlot }: OperationsNavProps) {
   const pathname = usePathname() ?? '';
-  const searchParams = useSearchParams();
   const router = useRouter();
   const dataSourceMode = useDataSourceMode();
   const items = buildItems(dataSourceMode);
-  // hook 은 조건부 호출 금지 — prop 우선 분기는 호출 후에 적용.
-  const queryAccountId = null;
-  const resolvedAccountId =
-    accountId !== undefined ? accountId : queryAccountId;
 
   // 로그아웃 후 /login/ 으로 명시 redirect — 이전엔 같은 페이지에 머물러 데이터가
   // 조용히 사라지는 회귀. PermissionGate 가 있는 페이지는 자동 fallback
