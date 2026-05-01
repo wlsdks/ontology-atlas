@@ -68,7 +68,7 @@ function EditorContent({
   const projectMutations = useProjectMutations();
   const targetSlug = mode === "edit" ? slug : duplicateFromSlug;
   useDocumentTitle(
-    (mode === "edit" ? "프로젝트 편집 · Demo" : "새 프로젝트 · Demo"),
+    (mode === "edit" ? "프로젝트 편집 · oh-my-ontology" : "새 프로젝트 · oh-my-ontology"),
   );
   const safeReturnTo = normalizeReturnTo(returnTo);
   const safeReturnLabel = resolveReturnLabel(normalizeReturnTo(returnTo));

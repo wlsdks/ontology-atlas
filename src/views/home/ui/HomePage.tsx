@@ -262,8 +262,9 @@ export function HomePage() {
     Array.from(
       new Set(
         [
-          "Demo",
           selectedProject?.name ?? scopedAccountName,
+          "토폴로지",
+          "oh-my-ontology",
         ].filter((value): value is string => Boolean(value)),
       ),
     ).join(" · ") || null,
@@ -605,7 +606,7 @@ export function HomePage() {
         visible h1 을 두기 어려워 sr-only 로 문서 구조 only 에 보이게 한다.
       */}
       <h1 className="sr-only">
-        {scopedAccountName ?? "Demo"} 프로젝트 토폴로지 지도
+        {scopedAccountName ?? "토폴로지"} 프로젝트 토폴로지 지도
       </h1>
       <GestureHint
         disabled={presentationMode || drawerOpen}
@@ -662,7 +663,7 @@ export function HomePage() {
                     onExpand={
                       drawerOpen ? handleClose : toggleLeftPanel
                     }
-                    title={selectedProject?.name ?? scopedAccountName ?? "Demo"}
+                    title={selectedProject?.name ?? scopedAccountName ?? "토폴로지"}
                     subtitle={
                       selectedProject
                         ? "선택한 프로젝트"
@@ -693,7 +694,7 @@ export function HomePage() {
                     activePathLabel={null}
                     onOpenSearch={() => setSearchOpen(true)}
                     onCollapse={toggleLeftPanel}
-                    title={selectedProject?.name ?? scopedAccountName ?? "Demo"}
+                    title={selectedProject?.name ?? scopedAccountName ?? "토폴로지"}
                     eyebrow={
                       selectedProject
                         ? "선택한 프로젝트"

@@ -34,7 +34,7 @@ export function HeroHeader({
   activePathLabel,
   onOpenSearch,
   onCollapse,
-  title = "Demo",
+  title = "토폴로지",
   eyebrow = "워크스페이스 지도",
   description,
   icon,
@@ -122,7 +122,7 @@ export function HeroHeader({
               className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.14)] px-4 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
             >
               <Search size={14} />
-              {title === "Demo" ? "프로젝트 찾기" : "다른 프로젝트 찾기"}
+              {title === "토폴로지" ? "프로젝트 찾기" : "다른 프로젝트 찾기"}
             </button>
             {projectsListHref ? (
               <Link

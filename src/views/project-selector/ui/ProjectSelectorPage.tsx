@@ -87,12 +87,12 @@ export function ProjectSelectorPage() {
     searchParams.get(PROJECT_LIST_LIMIT_QUERY_KEY),
   );
   // P1-5 — 탭·검색 컨텍스트. 컨테이너·계정 이름이 겹치면 Set dedup.
-  // 페이지 메타 타이틀("프로젝트 · Demo")과 동일한 첫 어휘를 사용해
+  // 페이지 메타 타이틀("프로젝트 · oh-my-ontology")과 동일한 첫 어휘를 사용해
   // 정적 메타와 동적 갱신 사이에 flicker 가 보이지 않게 한다.
   useDocumentTitle(
     Array.from(
       new Set(
-        ["프로젝트", activeContainerName, accountName, "Demo"].filter(
+        ["프로젝트", activeContainerName, accountName, "oh-my-ontology"].filter(
           (value): value is string => Boolean(value),
         ),
       ),

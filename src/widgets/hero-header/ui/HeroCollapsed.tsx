@@ -26,7 +26,7 @@ interface Props {
 export function HeroCollapsed({
   className,
   onExpand,
-  title = "Demo",
+  title = "토폴로지",
   subtitle = "워크스페이스 지도 펼치기",
   icon,
   ariaLabel = "좌측 패널 펼치기",
