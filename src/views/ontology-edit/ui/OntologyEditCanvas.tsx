@@ -12,13 +12,15 @@ import {
   type Node,
   type OnSelectionChangeParams,
 } from "@xyflow/react";
+import type { VaultManifest } from "@/entities/docs-vault";
 import { useApprovedGraphFlow } from "../lib/use-approved-graph-flow";
+import { useVaultGraphFlow } from "../lib/use-vault-graph-flow";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 import type { EphemeralEdge } from "../lib/use-ephemeral-edges";
 import { ATLAS_NODE_TYPES } from "./AtlasNode";
 
 /**
- * ERD canvas — v1 C-1~C-3 누적.
+ * ERD canvas — v1 C-1~C-3 누적, C-5 vault 통합.
  *
  * 디자인 헌장 §11 호환:
  * - scale hover 없음 (xyflow 기본 X)
@@ -27,24 +29,34 @@ import { ATLAS_NODE_TYPES } from "./AtlasNode";
  * - edge animation 비활성
  *
  * 노드 합산:
- * - approved (Firestore read-only) — drag X
- * - ephemeral (palette 클릭으로 추가) — drag O, persist 는 C-4/C-5 에서
+ * - vault (local 모드) — manifest 기반 read-only display + 인스펙터에서 rename
+ * - approved (cloud 모드 — legacy) — Firestore read-only, drag X
+ * - ephemeral (palette 클릭으로 추가) — drag O, save 시 vault 또는 cloud 로
  */
 export function OntologyEditCanvas({
   accountId,
+  vaultManifest,
   ephemeralNodes,
   ephemeralEdges,
   onSelectionChange,
   onConnect,
 }: {
   accountId: string | null;
+  vaultManifest: VaultManifest | null;
   ephemeralNodes: EphemeralNode[];
   ephemeralEdges: EphemeralEdge[];
   onSelectionChange?: (selectedId: string | null) => void;
   onConnect?: (connection: Connection) => void;
 }) {
-  const { nodes: approvedNodes, edges: approvedEdges, error, loaded } =
-    useApprovedGraphFlow(accountId);
+  // mode 분기: vault.manifest 가 있으면 vault flow 우선 (local 모드 진실원).
+  // 둘 다 동시에 띄우지 않는다 — 두 진실원 혼합은 사용자 mental model 깨뜨림.
+  const vaultFlow = useVaultGraphFlow(vaultManifest);
+  const approvedFlow = useApprovedGraphFlow(vaultManifest ? null : accountId);
+  const useVaultMode = vaultManifest !== null;
+  const approvedNodes = useVaultMode ? vaultFlow.nodes : approvedFlow.nodes;
+  const approvedEdges = useVaultMode ? vaultFlow.edges : approvedFlow.edges;
+  const error = useVaultMode ? null : approvedFlow.error;
+  const loaded = useVaultMode ? true : approvedFlow.loaded;
 
   const handleSelectionChange = useCallback(
     (params: OnSelectionChangeParams) => {

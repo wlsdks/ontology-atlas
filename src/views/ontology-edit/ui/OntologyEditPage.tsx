@@ -59,6 +59,7 @@ import { BuilderOnboarding } from "./BuilderOnboarding";
  */
 const OntologyEditCanvas = dynamic<{
   accountId: string | null;
+  vaultManifest: import("@/entities/docs-vault").VaultManifest | null;
   ephemeralNodes: ReturnType<typeof useEphemeralNodes>["nodes"];
   ephemeralEdges: ReturnType<typeof useEphemeralEdges>["edges"];
   onSelectionChange?: (selectedId: string | null) => void;
@@ -162,12 +163,47 @@ export function OntologyEditPage() {
     [accountId, dataSourceMode, findById, removeNode, toast, vault],
   );
   const ephemeralSelected = findById(selectedId);
-  // approved 노드 detail 은 useApprovedGraphFlow 가 캔버스 내부에 있어 page 에선
-  // id 만 알 수 있음. 임시로 ephemeral 외 선택 = approved 가정.
+  // C-5 — vault 모드에서는 selectedId 가 vault slug. manifest 에서 lookup
+  // 해 인스펙터에 frontmatter 와 함께 전달 (in-canvas rename 가능).
+  const vaultSelected = (() => {
+    if (!selectedId || ephemeralSelected) return null;
+    const doc = vault.manifest?.docs.find((d) => d.slug === selectedId);
+    if (!doc || typeof doc.frontmatter.kind !== "string") return null;
+    return {
+      slug: doc.slug,
+      kind: String(doc.frontmatter.kind),
+      title: doc.title || doc.slug,
+    };
+  })();
+  // cloud approved 모드 fallback — vault 매니페스트 없을 때만. 현재 사용자
+  // 흐름에서는 vault 모드가 default 라 사실상 dead 지만 cloud 모드 잔존
+  // 사용자 보호용으로 placeholder 유지.
   const approvedSelected =
-    selectedId && !ephemeralSelected
+    selectedId && !ephemeralSelected && !vaultSelected && !vault.manifest
       ? { id: selectedId, kind: "(승인)", title: selectedId }
       : null;
+
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const renameVaultDoc = useCallback(
+    async (slug: string, nextTitle: string) => {
+      const trimmed = nextTitle.trim();
+      if (!trimmed) {
+        toast.show("제목이 비어 있어 저장할 수 없어요.", "error");
+        return;
+      }
+      setRenamingId(slug);
+      try {
+        await vault.updateFrontmatter(slug, { title: trimmed });
+        toast.show(`"${trimmed}" 제목 저장`, "success");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "제목 저장 실패";
+        toast.show(message, "error");
+      } finally {
+        setRenamingId(null);
+      }
+    },
+    [toast, vault],
+  );
 
   const treeHref = accountId
     ? `/ontology/?${ACCOUNT_QUERY_KEY}=${encodeURIComponent(accountId)}`
@@ -331,6 +367,7 @@ export function OntologyEditPage() {
           <div className="relative flex-1">
             <OntologyEditCanvas
               accountId={accountId ?? null}
+              vaultManifest={vault.manifest ?? null}
               ephemeralNodes={ephemeralNodes}
               ephemeralEdges={ephemeralEdges}
               onSelectionChange={setSelectedId}
@@ -343,9 +380,11 @@ export function OntologyEditPage() {
           <OntologyInspector
             ephemeralSelected={ephemeralSelected}
             approvedSelected={approvedSelected}
+            vaultSelected={vaultSelected}
             onRenameEphemeral={(id, title) => updateNode(id, { title })}
             onSaveEphemeral={saveEphemeral}
-            saving={savingId !== null}
+            onSaveVaultRename={renameVaultDoc}
+            saving={savingId !== null || renamingId !== null}
             onClearSelection={() => setSelectedId(null)}
           />
         </section>
