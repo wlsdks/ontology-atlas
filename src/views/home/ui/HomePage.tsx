@@ -13,7 +13,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { BookOpen, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
-import { subscribeProjects } from "@/entities/project";
+import { useProjects } from "@/features/project-data-source";
 // 타입/기본값은 Sigma(WebGL) 의존성 없는 별도 모듈에서 직접 import해서
 // SSR 평가 경로에 WebGL 참조가 끼지 않도록 한다.
 import {
@@ -111,7 +111,6 @@ export function HomePage() {
   const { showCategoryRegions, categories: taxonomyCategories } = useTaxonomy();
   const adminAuth = useGlobalAdmin();
   const isAdmin = adminAuth.status === "authenticated";
-  const [projects, setProjects] = useState<Project[]>([]);
   const [sigmaControls, setSigmaControls] = useState<SigmaControlsState>(
     DEFAULT_SIGMA_CONTROLS,
   );
@@ -139,6 +138,12 @@ export function HomePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const scopedAccountId = null;
+  // mode-aware projects read — local 모드는 vault 매니페스트 sync, cloud 는
+  // Firestore onSnapshot. mission T7 — vault 의 .md 가 즉시 list/topology 에 반영.
+  const projectsQuery = useProjects(scopedAccountId);
+  const projects = projectsQuery.projects;
+  const projectsLoaded = projectsQuery.loaded;
+  const projectsError = projectsQuery.error;
   // 로그인 사용자가 ?account= 없이 진입하면 owned membership 첫 번째로 URL 보강 —
   // legacy 전역 collection 이 아닌 본인 워크스페이스 데이터로 즉시 스코프.
   const [scopedAccountName, setScopedAccountName] = useState<string | null>(null);
@@ -203,9 +208,7 @@ export function HomePage() {
   // subscribeProjects 실패 시 UI 가 빈 채로 영구 고착되는 걸 막기 위한 에러
   // 상태. 네트워크·auth·quota 문제 등으로 Firestore 구독이 실패하면 배너
   // 노출 + "다시 시도" 버튼으로 복구.
-  const [projectsError, setProjectsError] = useState<string | null>(null);
   const [projectsRetryToken, setProjectsRetryToken] = useState(0);
-  const [projectsLoaded, setProjectsLoaded] = useState(false);
   const toast = useToast();
   const hydrated = useSyncExternalStore(
     () => () => undefined,
@@ -307,47 +310,7 @@ export function HomePage() {
   );
 
   // single-user 모드: account 이름 fetch 안 함. scopedAccountName 항상 null.
-
-  // Sigma 홈 토폴로지는 projects 구독을 HomePage가 직접 관리한다.
-  // single-user 모드에서는 flat `projects` 컬렉션만 읽고, activeProjectId
-  // 가 지정된 경우 client-side 로 그 컨테이너에 속한 프로젝트만 추려낸다.
-  useEffect(() => {
-    // 에러 상태 초기화는 일부러 안 함 (setState-in-effect 금지 룰) — 재구독
-    // 직후 callback 이 fresh data 혹은 fresh error 로 덮어쓴다.
-    const onNext = (next: Project[]) => {
-      setProjects(next);
-      setProjectsError(null);
-      setProjectsLoaded(true);
-    };
-    const onError = (error: Error) => {
-      // Firestore 원시 영어 메시지 ("Missing or insufficient permissions.")
-      // 대신 code 매핑으로 사용자에게 actionable 한 한글 문구 제공.
-      const code = (error as Error & { code?: string }).code;
-      let friendly: string;
-      switch (code) {
-        case 'permission-denied':
-          friendly = '이 공간을 열 권한이 없습니다. 공간 소유자에게 초대를 요청하거나 다른 계정으로 로그인하세요.';
-          break;
-        case 'unauthenticated':
-          friendly = '로그인 세션이 만료됐습니다. 다시 로그인해 주세요.';
-          break;
-        case 'unavailable':
-        case 'deadline-exceeded':
-          friendly = '네트워크가 일시적으로 불안정합니다. 잠시 후 다시 시도해 주세요.';
-          break;
-        default:
-          friendly = error.message?.trim() || '프로젝트 목록을 불러오지 못했습니다.';
-      }
-      setProjectsError(friendly);
-      setProjectsLoaded(true);
-    };
-    const unsub = subscribeProjects(
-      scopedAccountId,
-      (next) => onNext(next),
-      onError,
-    );
-    return () => unsub();
-  }, [scopedAccountId, projectsRetryToken]);
+  void projectsRetryToken; // local 모드는 retry 무의미. cloud 재시도는 차후 hook 단에 포함.
   // Local graph 모드: 선택 노드 + 2-hop 이웃만 Sigma에 넘김. 전체 지도에서
   // 벗어나 해당 노드 주변만 집중해서 볼 수 있게 한다. Esc 또는 닫기 버튼으로
   // 전체 맵 복귀.

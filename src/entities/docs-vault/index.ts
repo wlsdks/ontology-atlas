@@ -19,6 +19,7 @@ export {
   projectToFrontmatter,
 } from './lib/project-frontmatter';
 export { deriveOntologyFromVault } from './lib/derive-ontology-from-vault';
+export { deriveProjectsFromVault } from './lib/derive-projects-from-vault';
 export type {
   OntologyStubEdge,
   OntologyStubNode,

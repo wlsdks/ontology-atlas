@@ -14,11 +14,10 @@ import {
 import {
   getProjectDetailHref,
   getTopologyProjectHref,
-  subscribeProjects,
   type Project,
 } from "@/entities/project";
 import { ProjectQuickCreatePanel } from "@/features/project-quick-create";
-import { useProjectMutations } from "@/features/project-data-source";
+import { useProjectMutations, useProjects } from "@/features/project-data-source";
 import { downloadProjectsCsv } from "@/features/project-export";
 import { useKnowledgePublicNodes } from "@/entities/knowledge-graph";
 import { PublicAccountMenu } from "@/widgets/account-menu";
@@ -80,7 +79,7 @@ export function ProjectSelectorPage() {
   // 비로그인이라도 mutation 가능. static 만 read-only.
   const projectMutations = useProjectMutations();
   const canMutateProjects = projectMutations.canCreate;
-  const [projects, setProjects] = useState<Project[]>([]);
+  const { projects } = useProjects(accountId);
   const [accountName, setAccountName] = useState<string | null>(null);
   const query = searchParams.get(PROJECT_LIST_QUERY_KEY) ?? "";
   const selectedCategory = searchParams.get(PROJECT_LIST_CATEGORY_QUERY_KEY);
@@ -100,13 +99,6 @@ export function ProjectSelectorPage() {
       ),
     ).join(" · ") || null,
   );
-
-  useEffect(() => {
-    const onNext = (nextProjects: Project[]) => setProjects(nextProjects);
-    const onError = () => setProjects([]);
-    const unsubscribe = subscribeProjects(accountId, onNext, onError);
-    return () => unsubscribe();
-  }, [accountId]);
 
   // ontology nodes — 카드별 count badge 데이터. 부모 한 번 hook + count map
   // (1994 카드 각자 subscribe 회피). 권한 없으면 빈 배열, badge 자동 숨김.
