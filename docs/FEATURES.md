@@ -433,7 +433,7 @@ md 파일 (vault 또는 cloud)              MCP 서버 (AI agent)
 ### 의도된 부재
 - **Multi-account**: 없음 — `accountId = null` 고정 (v2 협업 단계로 보류)
 - **외부 IAM**: 없음 — Firebase Auth (email/password + Google OAuth) 만
-- **firebase deploy**: user 정책상 안 함 — functions/ 는 코드만 정리, deploy 안 됨
+- **firebase deploy**: user 정책상 안 함. mission v2 추가 cleanup 으로 `functions/` 폴더 자체 폐기 (vault 자기-승인이라 publish/promote/dismiss 게이트 불필요)
 
 ---
 

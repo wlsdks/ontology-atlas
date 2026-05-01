@@ -28,28 +28,21 @@ tags: [architecture, infra, overview]
 └───────────────────────────────────────────────────────┘
                     ↓ Firebase Web SDK
 ┌───────────────────────────────────────────────────────┐
-│ Firebase                                              │
+│ Firebase (옵션 — cloud sync 필요할 때만)              │
 │ ├─ Firestore  (global + account scoped data)          │
 │ ├─ Storage    (screenshots, knowledge markdown)       │
 │ ├─ Auth       (email/password, Google, admin Google)  │
 │ └─ Hosting    (정적 사이트 배포)                      │
 └───────────────────────────────────────────────────────┘
-                    ↓ trusted execution boundary
-┌───────────────────────────────────────────────────────┐
-│ Cloud Functions for Firebase (옵션 — cloud 모드만)    │
-│ ├─ promoteStubNode (stub → 정식 노드 승격)            │
-│ ├─ dismissStubNode (stub 폐기)                        │
-│ └─ publishKnowledgeProjection (private → public)      │
-└───────────────────────────────────────────────────────┘
                     ↑ 별도 trusted boundary
 ┌───────────────────────────────────────────────────────┐
 │ MCP 서버 (mcp/) — AI agent partner                    │
 │ ├─ stdin/stdout JSON-RPC                              │
-│ └─ vault frontmatter read/write (7 도구)              │
+│ └─ vault frontmatter read/write (10 도구)             │
 └───────────────────────────────────────────────────────┘
 ```
 
-> **mission v2 정렬 (2026-05-01)**: Cloud LLM extraction 흐름 (`enqueueExtractionJob` / `processExtractionJob` / `applyReviewAction` 등) 은 제거됨. AI 추출은 user-side AI agent (Claude Code 등) 가 MCP 서버로 직접 vault 갱신.
+> **mission v2 정렬**: Cloud LLM extraction 흐름 (`enqueueExtractionJob` / `processExtractionJob` / `applyReviewAction` 등) 은 제거됨. AI 추출은 user-side AI agent (Claude Code 등) 가 MCP 서버로 직접 vault 갱신. Cloud Functions 폴더 (`functions/`) 도 폐기 — firebase 배포 안 함 정책 + mission v2 가 vault 자기-승인이라 publish/promote/dismiss 서버 사이드 게이트 불필요.
 
 ## 2. 도메인 모델
 
@@ -96,19 +89,20 @@ tags: [architecture, infra, overview]
 - canonical approved graph 저장
 - public projection 저장
 
-### Cloud Functions 2nd gen (mission v2 cleanup 후 슬림)
+### Cloud Functions
 
-- promote stub node (kind 부여)
-- dismiss stub node (폐기)
-- publish public projection (private canonical → public)
+폐기됨. 이유:
+- firebase 배포 안 함 정책
+- mission v2 의 vault 자기-승인 (publish projection 게이트 불필요)
+- stub 흐름은 cloud LLM 추출의 산물 — 그게 사라지며 promote/dismiss 도 dead
 
-> 이전: chunking / extraction provider 호출 / extraction output 저장 / review seed / approval audit / stale lease reclaim 등은 mission v2 cleanup 으로 모두 제거됨 (PR #5/#6). 자세히: `docs/MISSION-CLEANUP-CANDIDATES.md`.
+이전 cleanup 단계 (PR #5/#6) 에 chunking / extraction / review seed / approval audit 가 제거됐고, 마지막으로 `functions/` 폴더 자체와 `firebase.json` 의 functions 키도 제거됨. 클라이언트 측 `httpsCallable` 코드는 남아있을 수 있으나 deploy 안 된 환경에서 호출 시 fail — 사용자 흐름 영향 0 (cloud 모드 사용 안 함).
 
 ### MCP 서버 (mission v2 신설)
 
 - **`mcp/` 패키지** — `@modelcontextprotocol/sdk` 의존, stdin/stdout JSON-RPC
 - AI agent (Claude Code 등) 가 직접 vault `.md` read/write
-- 7 도구: list_concepts / get_concept / find_evidence / find_backlinks / add_concept / add_relation / patch_concept
+- 10 도구 (read 6 + write 4): list_concepts · get_concept · find_evidence · find_backlinks · find_path · list_kinds · add_concept · add_relation · patch_concept · delete_concept
 - 등록: `.mcp.json.example` 또는 `mcp/README.md` 참고
 
 ## 5. 데이터 경계
@@ -270,5 +264,4 @@ src/
 
 - 컨테이너 수 증가 시 단일 캔버스 → 탭 분리 재검토
 - vault 문서 수 증가 시 fingerprint diff + worker 분리 검토
-- extraction volume 증가 시 Functions → Cloud Run 분리 검토
 - 이미지 / 문서 업로드 증가 시 Storage lifecycle 및 리전 재검토

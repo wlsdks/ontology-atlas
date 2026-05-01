@@ -3,9 +3,6 @@
     "rules": "firestore.rules",
     "indexes": "firestore.indexes.json"
   },
-  "functions": {
-    "source": "functions"
-  },
   "storage": {
     "rules": "storage.rules"
   },
@@ -106,10 +103,6 @@
     "firestore": {
       "host": "127.0.0.1",
       "port": 18080
-    },
-    "functions": {
-      "host": "127.0.0.1",
-      "port": 15001
     },
     "storage": {
       "host": "127.0.0.1",

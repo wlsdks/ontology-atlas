@@ -38,7 +38,7 @@ pnpm build                        # 정적 export → out/
 - **Visualization** Sigma.js (WebGL) · Graphology · ForceAtlas2 · xyflow
 - **Local-first** File System Access API + IndexedDB (vault handle 영속)
 - **AI agent** `@modelcontextprotocol/sdk` (stdin/stdout JSON-RPC server, `mcp/` 패키지)
-- **Backend** Firebase (Firestore · Storage · Auth · Hosting · Functions) — **옵션**. local-first 가 default
+- **Backend** Firebase (Firestore · Storage · Auth · Hosting) — **옵션**. local-first 가 default
 - **State** Firestore `onSnapshot` (cloud) 또는 in-memory + IndexedDB (local) · React local state · URL state
 - **Architecture** Feature-Sliced Design (ESLint boundaries 로 import 방향 강제)
 - **Test** Vitest + Testing Library + jsdom · Playwright (E2E)
@@ -58,8 +58,7 @@ src/                       FSD 레이어
   └── shared/              UI · lib · config · api 재사용 기반
 mcp/                       MCP 서버 (AI agent partner surface)
 docs/                      장기 문서 (architecture / data-model / design / deployment)
-docs/ontology/             이 프로젝트 자기 ontology vault (dogfood, 20 노드)
-functions/                 Cloud Functions — 옵션 (mission v2 후 cold storage)
+docs/ontology/             이 프로젝트 자기 ontology vault (dogfood, 23 노드)
 tests/                     Vitest 단위 + Playwright E2E
 scripts/                   시드 / 배포 / 검증 보조
 .claude/rules/             세부 작업 규율 (자동 로드)
@@ -84,7 +83,7 @@ scripts/                   시드 / 배포 / 검증 보조
 /login · /signup · /reset-password · /account   Firebase Auth surface (옵션)
 ```
 
-> mission v2 정렬: `/review/knowledge` 검수 큐 라우트 + `/admin/*` 네임스페이스는 폐기됨 (vault frontmatter 가 자기-승인). cloud LLM 추출 흐름 (`enqueueExtractionJob` 등) 도 functions/ 와 entity layer 모두에서 제거됨 — 자세히 `docs/MISSION-CLEANUP-CANDIDATES.md`.
+> mission v2 정렬: `/review/knowledge` 검수 큐 라우트 + `/admin/*` 네임스페이스는 폐기됨 (vault frontmatter 가 자기-승인). cloud LLM 추출 흐름 (`enqueueExtractionJob` 등) 도 entity layer 에서 제거됐고, `functions/` 폴더 자체도 폐기됨 (firebase 배포 안 함) — 자세히 `docs/MISSION-CLEANUP-CANDIDATES.md`.
 
 ## Working principles
 

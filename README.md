@@ -146,7 +146,7 @@ pnpm seed:emulator            # 시드 주입
 | Visualization | Sigma.js (WebGL) · Graphology · ForceAtlas2 · xyflow                  |
 | Local-first   | File System Access API + IndexedDB                                    |
 | AI agent      | `@modelcontextprotocol/sdk` (stdin/stdout JSON-RPC server)            |
-| Backend       | Firebase (Firestore · Storage · Auth · Hosting · Functions) — 옵션    |
+| Backend       | Firebase (Firestore · Storage · Auth · Hosting) — 옵션                |
 | Architecture  | Feature-Sliced Design (ESLint boundaries 강제)                        |
 | Test          | Vitest + Testing Library + jsdom · Playwright (E2E)                   |
 | Lint          | ESLint 9 flat config                                                  |
@@ -193,7 +193,6 @@ src/                       FSD 레이어
 mcp/                       MCP 서버 패키지 (AI agent partner surface)
 docs/                      장기 문서 (architecture / data-model / design / deployment)
 docs/ontology/             이 프로젝트 자기 ontology vault (dogfood)
-functions/                 Cloud Functions — 옵션 (mission v2 후 cold storage)
 tests/                     Vitest 단위 + Playwright E2E
 scripts/                   시드 / 배포 / 검증 스크립트
 .claude/rules/             세부 작업 규율 (Claude Code 자동 로드)
