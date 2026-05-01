@@ -1,19 +1,26 @@
 # Mission Cleanup Candidates — mission v2 와 코드 정렬
 
 > 작성: 2026-05-01 (Phase 3 MCP partner 머지 후)
+> ✅ **Stage 1 + 2 + 3 + 4 코드 cleanup 모두 머지 완료** (2026-05-01 저녁, PR #5 / #6 / #7).
 > mission v2: "사람과 AI agent 가 같이 저작하는 codebase ontology" — `docs/PRODUCT-DIRECTION.md`
 > 본 문서는 *어떤 surface 가 mission 모순인지* 1원칙 분석 + *제거/단순화 staging plan*.
 
 ---
 
-## TL;DR — 4 stage
+## TL;DR — 4 stage 현황
 
-| Stage | 위험 | 가치 | 단일 atomic 가능? |
+| Stage | 위험 | 가치 | 상태 |
 |---|---|---|---|
-| **1. UI mention 제거** ("분석 시작" 버튼 + 안내 문구) | 낮음 | 높음 | YES — files 4-5, ~80 lines |
-| **2. client httpsCallable 호출 제거** (`enqueueExtractionJob` etc.) | 중 | 높음 | YES — entities/knowledge-job + entities/knowledge-graph |
-| **3. functions/ extraction code 제거** | 중 | 중 | YES — 1295+224 lines (단, Stage 1+2 soak 후) |
-| **4. Firestore 컬렉션 사후 정리** (`knowledgeJobs`, `knowledgeOutputs` 등) | 높음 | 낮음 | NO — 데이터 마이그레이션. 별도 RFC |
+| **1. UI mention 제거** ("분석 시작" 버튼 + 안내 문구) | 낮음 | 높음 | ✅ PR #5 머지 (commit 6208387) |
+| **2. client httpsCallable 호출 제거** (`enqueueExtractionJob` etc.) | 중 | 높음 | ✅ PR #5 머지 (commit 958cc34) |
+| **3. functions/ extraction code 제거** | 중 | 중 | ✅ PR #5 머지 (commit 7203af2) — code 만, deploy 안 함 |
+| **4. review queue 페이지 + Firestore 컬렉션 정리** | 높음 | 낮음 | 부분 ✅ — 페이지 + entity + functions handler 제거 (PR #6 dd09c59), Firestore 컬렉션 데이터는 cold storage 로 보존 (read-only) |
+
+추가 cleanup (본 문서 작성 후 발견):
+- ✅ Stage 4 light (advertising) — PR #5 commit 5905da7
+- ✅ Stage 5 (Q1=(a) 답) — useOntologyInsight, PR #6 commit b6b4edd
+- ✅ MCP v0.2 (patch_concept + find_backlinks) — PR #7 commit 5b6a371
+- ✅ docs/ontology dogfood vault sync — PR #7 commit 6ae9c06
 
 ---
 
