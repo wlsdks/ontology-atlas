@@ -15,7 +15,6 @@ import { Button, DetailCard, EmptyState, useToast } from "@/shared/ui";
 import {
   ACCOUNT_QUERY_KEY,
 } from "@/shared/lib/account-scope";
-import { useWorkspaceProjectQuery } from "@/shared/lib/use-workspace-project-query";
 import { OperationsNav } from "@/widgets/operations-nav";
 
 const CSV_PLACEHOLDER = [
@@ -34,7 +33,6 @@ interface ImportOutcome {
 function ImportContent() {
   const searchParams = useSearchParams();
   const accountId = null;
-  const [activeProjectId, setActiveProjectId] = useWorkspaceProjectQuery();
   const [csvText, setCsvText] = useState("");
   const [status, setStatus] = useState<ImportStatus>("idle");
   const [outcome, setOutcome] = useState<ImportOutcome | null>(null);

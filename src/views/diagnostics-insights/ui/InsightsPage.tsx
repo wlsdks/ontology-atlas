@@ -23,7 +23,6 @@ import { formatDate } from "@/shared/lib/format-date";
 import {
   ACCOUNT_QUERY_KEY,
 } from "@/shared/lib/account-scope";
-import { useWorkspaceProjectQuery } from "@/shared/lib/use-workspace-project-query";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { cn } from "@/shared/lib/cn";
 
@@ -59,7 +58,6 @@ function InsightsContent() {
   const searchParams = useSearchParams();
   const accountId = null;
   // ?account= 가 비었으면 인증 사용자의 owned membership 첫 번째로 자동 보강.
-  const [activeProjectId, setActiveProjectId] = useWorkspaceProjectQuery();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);

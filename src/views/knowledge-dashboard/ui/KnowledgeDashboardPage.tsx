@@ -20,7 +20,6 @@ import {
   type KnowledgePublicMeta,
 } from "@/entities/knowledge-graph";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Tooltip } from "@/shared/ui";
-import { useWorkspaceProjectQuery } from "@/shared/lib/use-workspace-project-query";
 import { DashboardOntologySummary } from "@/widgets/dashboard-ontology-summary";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
@@ -31,7 +30,6 @@ function DashboardContent() {
   const searchParams = useSearchParams();
   const accountId = null;
   // ?account= 가 비었으면 인증 사용자의 owned membership 첫 번째로 자동 보강.
-  const [activeProjectId, setActiveProjectId] = useWorkspaceProjectQuery();
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [publicMeta, setPublicMeta] = useState<KnowledgePublicMeta | null>(null);
   // audit A3 — 첫 subscribe 콜백 도달 전엔 빈 배열이 default 라 "첫 문서부터" 카드가
