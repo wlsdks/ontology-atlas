@@ -8,12 +8,45 @@ import { Info, Maximize2, Minimize2 } from "lucide-react";
 import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
 import { useUserAuth } from "@/features/user-auth";
 import { addManualKnowledgeNode } from "@/entities/knowledge-graph";
+import { useDataSourceMode } from "@/features/data-source-mode";
+import { useLocalVault } from "@/features/docs-vault-local";
 import { slugify } from "@/shared/lib/slugify";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { Tooltip, useToast } from "@/shared/ui";
 import { useEphemeralNodes } from "../lib/use-ephemeral-nodes";
 import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
 import { downloadAtlasFrontmatter } from "../lib/export-frontmatter";
+
+/**
+ * P1-1 (UX-4) — local 모드 vault `.md` write path.
+ *
+ * 빌더 ephemeral 노드 → `${kind}/${slug}.md` 로 vault 직접 작성.
+ * frontmatter 는 mission v2 V1.x 호환 — kind / title / domain. 본문은
+ * `# {title}` 한 줄. 사용자가 그 후 vault 에서 직접 편집 가능.
+ *
+ * mission v2 의 *사람 + AI agent 양립* 약속의 코드 구현 — 빌더로 만든
+ * 노드를 AI agent (MCP) 가 같은 vault 에서 즉시 본다.
+ */
+function buildVaultMarkdown(args: {
+  kind: string;
+  title: string;
+  slug: string;
+}): string {
+  const lines = ["---"];
+  lines.push(`slug: ${args.slug}`);
+  lines.push(`kind: ${args.kind}`);
+  // title 에 콜론 / 따옴표 들어갈 수 있으니 안전하게 quote.
+  const safeTitle =
+    /[:#\[\]{}"',&|*!%@`]/.test(args.title)
+      ? `"${args.title.replace(/"/g, '\\"')}"`
+      : args.title;
+  lines.push(`title: ${safeTitle}`);
+  lines.push("---");
+  lines.push("");
+  lines.push(`# ${args.title}`);
+  lines.push("");
+  return lines.join("\n");
+}
 import { OntologyKindPalette } from "./OntologyKindPalette";
 import { OntologyInspector } from "./OntologyInspector";
 import { BuilderOnboarding } from "./BuilderOnboarding";
@@ -49,6 +82,8 @@ export function OntologyEditPage() {
   // 캔버스 자체를 볼 수 있지만 manual node 저장 시 toast 로 막힌다.
   const { user } = useUserAuth();
   const accountId = user?.uid ?? null;
+  const dataSourceMode = useDataSourceMode();
+  const vault = useLocalVault();
 
   const { nodes: ephemeralNodes, addNode, clearAll, updateNode, findById, removeNode } =
     useEphemeralNodes();
@@ -61,10 +96,6 @@ export function OntologyEditPage() {
 
   const saveEphemeral = useCallback(
     async (nodeId: string) => {
-      if (!accountId) {
-        toast.show("계정이 확인되지 않았어요.", "error");
-        return;
-      }
       const node = findById(nodeId);
       if (!node) return;
       const slug = slugify(node.title);
@@ -72,18 +103,55 @@ export function OntologyEditPage() {
         toast.show("이름이 비어 있어 저장할 수 없어요.", "error");
         return;
       }
-      const id = `${node.kind}.${slug}`;
       setSavingId(nodeId);
       try {
-        await addManualKnowledgeNode({
-          accountId,
-          id,
-          title: node.title,
-          kind: node.kind,
-        });
-        toast.show(`"${node.title}" 저장 완료`, "success");
-        removeNode(nodeId);
-        setSelectedId(null);
+        if (dataSourceMode === "local") {
+          // P1-1: vault `.md` 직접 작성. 경로 = `${kind}s/${slug}.md`
+          // (capabilities/auth-platform 같은 형식 — dogfood vault 와 일치).
+          // kind 의 복수형: capability→capabilities, element→elements,
+          // domain→domains, project→projects. 그 외는 kind 그대로 +s.
+          const folder =
+            node.kind === "capability"
+              ? "capabilities"
+              : node.kind === "element"
+                ? "elements"
+                : node.kind === "domain"
+                  ? "domains"
+                  : node.kind === "project"
+                    ? "projects"
+                    : `${node.kind}s`;
+          const vaultSlug = `${folder}/${slug}`;
+          const md = buildVaultMarkdown({
+            kind: node.kind,
+            title: node.title,
+            slug: vaultSlug,
+          });
+          await vault.createDoc(vaultSlug, md);
+          toast.show(`"${node.title}" → vault/${vaultSlug}.md 저장`, "success");
+          removeNode(nodeId);
+          setSelectedId(null);
+        } else if (dataSourceMode === "cloud") {
+          if (!accountId) {
+            toast.show("계정이 확인되지 않았어요. 로그인하세요.", "error");
+            return;
+          }
+          const id = `${node.kind}.${slug}`;
+          await addManualKnowledgeNode({
+            accountId,
+            id,
+            title: node.title,
+            kind: node.kind,
+          });
+          toast.show(`"${node.title}" 저장 완료`, "success");
+          removeNode(nodeId);
+          setSelectedId(null);
+        } else {
+          // static — vault 미선택 + 비로그인. 둘 중 하나 활성화 안내.
+          toast.show(
+            "데모 모드라 저장할 수 없어요. /docs 에서 vault 폴더를 열거나 로그인하세요.",
+            "error",
+          );
+        }
       } catch (err) {
         const message = err instanceof Error ? err.message : "저장 실패";
         toast.show(message, "error");
@@ -91,7 +159,7 @@ export function OntologyEditPage() {
         setSavingId(null);
       }
     },
-    [accountId, findById, removeNode, toast],
+    [accountId, dataSourceMode, findById, removeNode, toast, vault],
   );
   const ephemeralSelected = findById(selectedId);
   // approved 노드 detail 은 useApprovedGraphFlow 가 캔버스 내부에 있어 page 에선
