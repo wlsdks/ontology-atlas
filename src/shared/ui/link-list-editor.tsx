@@ -122,7 +122,7 @@ export function LinkListEditor({
       ))}
       {editable ? (
         adding ? (
-          <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-[color:rgba(139,151,255,0.35)] bg-[color:rgba(18,20,26,0.5)] px-3 py-3 md:flex-row md:items-center">
+          <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-[color:rgba(94,106,210,0.32)] bg-[color:var(--color-overlay-1)] px-3 py-3 md:flex-row md:items-center">
             <input
               ref={labelRef}
               type="text"
@@ -130,7 +130,7 @@ export function LinkListEditor({
               onChange={(e) => setDraftLabel(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="라벨 (예: 운영 대시보드)"
-              className="flex-1 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(11,12,14,0.6)] px-2 py-1.5 text-xs text-[color:var(--color-text-primary)] outline-none focus:border-[color:rgba(139,151,255,0.5)]"
+              className="flex-1 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 text-xs text-[color:var(--color-text-primary)] outline-none focus:border-[color:var(--color-indigo-brand)]"
             />
             <input
               type="url"
@@ -138,7 +138,7 @@ export function LinkListEditor({
               onChange={(e) => setDraftUrl(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="https://..."
-              className="flex-1 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(11,12,14,0.6)] px-2 py-1.5 text-xs text-[color:var(--color-text-primary)] outline-none focus:border-[color:rgba(139,151,255,0.5)]"
+              className="flex-1 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-2 py-1.5 text-xs text-[color:var(--color-text-primary)] outline-none focus:border-[color:var(--color-indigo-brand)]"
             />
             <div className="flex shrink-0 items-center gap-1">
               <button
@@ -161,7 +161,7 @@ export function LinkListEditor({
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex items-center justify-center gap-1 self-start rounded-2xl border border-dashed border-[color:var(--color-border-strong)] bg-transparent px-3 py-2 text-xs text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex items-center justify-center gap-1 self-start rounded-2xl border border-dashed border-[color:var(--color-border-strong)] bg-transparent px-3 py-2 text-xs text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
             aria-label="링크 추가"
           >
             <Plus size={11} />
