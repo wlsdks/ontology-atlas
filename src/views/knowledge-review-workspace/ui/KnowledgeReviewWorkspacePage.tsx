@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { PermissionGate, useGlobalAdmin } from "@/features/permissions";
+import { useDataSourceMode } from "@/features/data-source-mode";
 import { getProjectDetailHref } from "@/entities/project";
 import {
   getKnowledgeDocumentDetailHref,
@@ -62,6 +63,7 @@ function WorkspaceContent() {
   const searchParams = useSearchParams();
   const accountId = null;
   const { user } = useGlobalAdmin();
+  const dataSourceMode = useDataSourceMode();
   const requestedDocumentId = searchParams.get("id");
   const scopedProjectId = searchParams.get("project")?.trim() || "";
   const returnTo = searchParams.get("returnTo")?.trim() || "";
@@ -487,6 +489,40 @@ function WorkspaceContent() {
       {/* ⌘K 글로벌 검색 — 검수 중에도 ontology · 다른 문서 빠르게 점프. */}
       <MountedGlobalSearch accountId={accountId} returnTo="/review/knowledge/" />
       <div className="mx-auto max-w-7xl px-5 py-6 md:px-12 md:py-10">
+        {dataSourceMode === 'local' ? (
+          <section
+            aria-labelledby="review-local-banner"
+            className="mb-6 rounded-2xl border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.06)] px-5 py-4"
+          >
+            <p
+              id="review-local-banner"
+              className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-indigo-accent)]"
+            >
+              local 모드
+            </p>
+            <p className="mt-2 break-keep text-[13px] leading-6 text-[color:var(--color-text-secondary)]">
+              vault 의 frontmatter <strong className="text-[color:var(--color-text-primary)]">자체가 자기-승인</strong>입니다.
+              여기 (cloud 검수 큐) 는 AI 추출 결과를 사람이 골라내는 단계라
+              local 모드에서는 의미 없습니다. 노드를 늘리려면 vault 문서 상단에{" "}
+              <code className="rounded bg-[color:var(--color-overlay-2)] px-1 font-mono text-[11.5px]">kind:</code>
+              {" "}추가하거나 빌더에서 직접 그리세요.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Link
+                href="/docs/"
+                className="inline-flex h-8 items-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-3 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)]"
+              >
+                vault 열기 →
+              </Link>
+              <Link
+                href="/ontology/edit/"
+                className="inline-flex h-8 items-center gap-1 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+              >
+                빌더에서 직접 그리기 →
+              </Link>
+            </div>
+          </section>
+        ) : null}
         <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h1 className="break-keep text-[28px] font-[var(--font-weight-signature)] tracking-[var(--tracking-section)] text-[color:var(--color-text-primary)] md:text-4xl">
