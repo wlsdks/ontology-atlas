@@ -262,12 +262,12 @@ function NewDocumentContent() {
         sourceType: "manual",
         createdBy: user?.email ?? "unknown-admin",
       });
-      // 문서 등록 직후 추출 작업을 자동으로 큐에 올린다. "업로드 → 수동 시작"을
-      // 한 단계 없애 사용자 약속 "등록하면 노드로 쪼개진다"를 이행한다.
-      // 추출 실행은 document-detail 페이지의 autostart effect가 담당.
-      // 라우터 이동 전에 성공 toast 로 "등록됐구나" 확신 제공 — 페이지 전환
-      // 후 auto-extract 가 시작되기까지 몇 초는 blank 로 보일 수 있어 UX 중요.
-      toast.show(`"${title.trim()}" 등록 완료 · 자동 추출 시작합니다`, "success");
+      // 등록 후 detail 라우팅. jobStatus=autostart 는 detail 페이지의 activePanel
+      // 을 result 탭으로 자동 전환만 한다 (mission v2 에서 cloud LLM 추출 큐
+      // enqueueExtractionJob 흐름 제거 — 추출 자체가 사라진 자리에 결과 탭 자동
+      // 노출만 남음). ontology 노드 자체는 vault frontmatter 또는 빌더에서 직접
+      // 추가.
+      toast.show(`"${title.trim()}" 등록 완료`, "success");
       router.push(
         getKnowledgeDocumentDetailHref(documentId, null, {
           projectId: seededProjectId || projectIds[0] || undefined,
