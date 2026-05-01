@@ -29,6 +29,7 @@ export interface OntologyInspectorProps {
   onRenameEphemeral: (id: string, title: string) => void;
   onSaveEphemeral?: (id: string) => Promise<void> | void;
   onSaveVaultRename?: (slug: string, nextTitle: string) => Promise<void> | void;
+  onDeleteVault?: (slug: string) => Promise<void> | void;
   onClearSelection: () => void;
   saving?: boolean;
 }
@@ -48,6 +49,7 @@ export function OntologyInspector({
   onRenameEphemeral,
   onSaveEphemeral,
   onSaveVaultRename,
+  onDeleteVault,
   onClearSelection,
   saving,
 }: OntologyInspectorProps) {
@@ -91,6 +93,7 @@ export function OntologyInspector({
             <VaultDetail
               node={vaultSelected}
               onSaveRename={onSaveVaultRename}
+              onDelete={onDeleteVault}
               saving={Boolean(saving)}
               onDeselect={onClearSelection}
             />
@@ -203,11 +206,13 @@ function EphemeralDetail({
 function VaultDetail({
   node,
   onSaveRename,
+  onDelete,
   saving,
   onDeselect,
 }: {
   node: { slug: string; kind: string; title: string };
   onSaveRename?: (slug: string, nextTitle: string) => Promise<void> | void;
+  onDelete?: (slug: string) => Promise<void> | void;
   saving: boolean;
   onDeselect: () => void;
 }) {
@@ -268,6 +273,17 @@ function VaultDetail({
         제목만 frontmatter `title:` 에 patch 됩니다. 본문이나 다른 키는 그대로
         유지돼요. AI agent (MCP) 도 동일 vault 를 보고 있어 즉시 반영됩니다.
       </p>
+      {onDelete ? (
+        <button
+          type="button"
+          onClick={() => onDelete(node.slug)}
+          disabled={saving}
+          aria-label="이 vault 노드 삭제"
+          className="inline-flex h-8 items-center justify-center rounded-md border border-[color:rgba(229,72,77,0.32)] bg-transparent px-3 text-[11px] text-[color:rgba(236,116,116,0.92)] transition-colors hover:border-[color:rgba(229,72,77,0.5)] hover:bg-[color:rgba(229,72,77,0.08)] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          ⚠ vault 에서 삭제
+        </button>
+      ) : null}
     </div>
   );
 }

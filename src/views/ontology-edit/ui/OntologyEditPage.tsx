@@ -16,6 +16,7 @@ import { Tooltip, useToast } from "@/shared/ui";
 import { useEphemeralNodes } from "../lib/use-ephemeral-nodes";
 import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
 import { downloadAtlasFrontmatter } from "../lib/export-frontmatter";
+import { findVaultBacklinks } from "../lib/find-vault-backlinks";
 
 /**
  * P1-1 (UX-4) — local 모드 vault `.md` write path.
@@ -205,6 +206,42 @@ export function OntologyEditPage() {
     [toast, vault],
   );
 
+  // C-5 vault delete — MCP delete_concept 와 같은 정책: backlinks 가 있으면
+  // confirm 단계에서 list 보여주고 사용자가 의식적으로 진행하게. force 플래그
+  // 는 별도 UI 없이 confirm 한 번 — UI 자체가 사용자 의도 게이트.
+  const deleteVaultDoc = useCallback(
+    async (slug: string) => {
+      if (!vault.manifest) return;
+      const backlinks = findVaultBacklinks(vault.manifest, slug);
+      const message =
+        backlinks.length > 0
+          ? `"${slug}" 를 삭제하면 ${backlinks.length} 개 노드가 dangling 됩니다 (` +
+            backlinks
+              .slice(0, 3)
+              .map((b) => b.slug)
+              .join(", ") +
+            (backlinks.length > 3 ? ` 외 ${backlinks.length - 3}개` : "") +
+            ").\n\n그래도 삭제할까요?"
+          : `"${slug}" 를 vault 에서 삭제할까요? 되돌릴 수 없습니다.`;
+      // 정적 export + WebGL 캔버스 환경 — 가장 단순한 confirm dialog 가
+      // SSR/hydration 위험 없음. modal UI 는 후속 PR 에서 OntologyEditPage 자체
+      // dialog 컴포넌트로 통합 가능.
+      if (typeof window !== "undefined" && !window.confirm(message)) return;
+      setRenamingId(slug);
+      try {
+        await vault.deleteDoc(slug);
+        toast.show(`"${slug}" 삭제`, "success");
+        setSelectedId(null);
+      } catch (err) {
+        const m = err instanceof Error ? err.message : "삭제 실패";
+        toast.show(m, "error");
+      } finally {
+        setRenamingId(null);
+      }
+    },
+    [toast, vault],
+  );
+
   const treeHref = accountId
     ? `/ontology/?${ACCOUNT_QUERY_KEY}=${encodeURIComponent(accountId)}`
     : "/ontology/";
@@ -384,6 +421,7 @@ export function OntologyEditPage() {
             onRenameEphemeral={(id, title) => updateNode(id, { title })}
             onSaveEphemeral={saveEphemeral}
             onSaveVaultRename={renameVaultDoc}
+            onDeleteVault={deleteVaultDoc}
             saving={savingId !== null || renamingId !== null}
             onClearSelection={() => setSelectedId(null)}
           />
