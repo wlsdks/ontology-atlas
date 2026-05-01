@@ -464,6 +464,35 @@ export function OntologyViewPage() {
                   </>
                 )}
               </div>
+              {/* UX-1 — local 모드 빈 vault 사용자에게 *복사·붙여넣기*
+                  가능한 frontmatter snippet inline 노출. 사용자가 빌더
+                  진입 없이도 vault 에 직접 `.md` 만들 수 있게. AI agent
+                  (MCP) 도 이 형식 그대로 add_concept 호출. */}
+              {dataSourceMode === 'local' ? (
+                <details className="mt-4 rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-canvas)] px-4 py-3">
+                  <summary className="cursor-pointer list-none text-[12px] text-[color:var(--color-text-secondary)]">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">snippet</span>
+                    <span className="ml-2">vault 의 첫 노드 — 이 frontmatter 를 `.md` 파일에 붙여넣으면 즉시 트리에 등장</span>
+                  </summary>
+                  <pre className="mt-3 overflow-x-auto rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3 font-mono text-[11.5px] leading-5 text-[color:var(--color-text-secondary)]">{`---
+slug: capabilities/auth
+kind: capability
+title: 인증
+domain: auth
+relates:
+  - elements/jwt
+  - elements/refresh-token
+---
+
+# 인증
+
+토큰 발급, 권한 검증, 세션 추적 등 사용자 인증 흐름.
+`}</pre>
+                  <p className="mt-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                    위 내용을 vault 안 어떤 디렉토리에든 <code className="font-mono">capabilities/auth.md</code> 같은 이름으로 저장하세요. 더 자세한 frontmatter 키: <code className="font-mono">domain</code> · <code className="font-mono">capabilities</code> · <code className="font-mono">elements</code> · <code className="font-mono">relates</code> · <code className="font-mono">dependencies</code>.
+                  </p>
+                </details>
+              ) : null}
             </div>
           ) : null}
         </>
