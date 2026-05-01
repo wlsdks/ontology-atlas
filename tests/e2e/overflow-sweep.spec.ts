@@ -20,10 +20,15 @@ const ROUTES = [
   "/account",
   "/projects/",
   "/project/sample/",
-  // admin namespace 폐기 (PR #195~ 이후) — 신 경로로 교체.
+  // mission v2 정렬: admin + /review/knowledge 폐기 (PR #5/#6).
+  // 살아있는 mission v2 surface 추가 — /topology · /ontology · /ontology/edit
+  // · /docs · /settings/*.
   "/knowledge/",
   "/knowledge/documents/",
-  "/review/knowledge/",
+  "/topology/",
+  "/ontology/",
+  "/ontology/edit/",
+  "/docs/",
 ];
 
 for (const vp of VIEWPORTS) {

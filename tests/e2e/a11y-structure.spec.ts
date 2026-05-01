@@ -13,9 +13,12 @@ const ROUTES = [
   "/signup",
   "/reset-password",
   "/project/sample/",
-  // admin namespace 폐기 — 운영 surface 는 /knowledge/ + /review/ + /settings/
+  // mission v2 정렬: admin namespace + /review/knowledge 폐기 (PR #5/#6).
+  // 살아있는 운영 surface 는 /knowledge/ · /settings/* · /diagnostics/*.
   "/knowledge/",
-  "/review/knowledge/",
+  "/topology/",
+  "/ontology/",
+  "/ontology/edit/",
 ];
 
 interface Finding {

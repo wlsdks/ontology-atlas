@@ -91,34 +91,18 @@ test.describe("PR #190 회귀 — /ontology 워크스페이스 복귀", () => {
 });
 
 /**
- * Fire 1 — useAutoResolveAccountId 7 surface 확장.
+ * Fire 1 — useAutoResolveAccountId surface.
  *
- * PR #190 의 4 surface (/, /projects/, /project/[slug]/, /docs/) 에 누락된
- * 운영 surface 3 개 추가:
- *   - /knowledge/ (대시보드)
- *   - /review/knowledge/ (검수 큐)
- *   - /diagnostics/insights/ (운영 인사이트)
+ * mission v2 정렬: /review/knowledge/ 폐기 (PR #5/#6 cleanup) 으로 인해
+ * 이 그룹은 /knowledge/ + /diagnostics/insights/ 만 검증.
  *
  * 회귀 시나리오: 진안 본인 계정으로 OperationsNav 의 탭 클릭 시 ?account=
- * 가 다음 페이지에도 흘러야 한다. 이전엔 위 3 surface 가 hook 미적용이라
- * legacy 전역 collection 으로 새었다.
+ * 가 다음 페이지에도 흘러야 한다. legacy 전역 collection 으로 새는 것 방지.
  */
-test.describe("Fire 1 회귀 — useAutoResolveAccountId 7 surface 확장", () => {
+test.describe("Fire 1 회귀 — useAutoResolveAccountId surface", () => {
   test("/knowledge/ 진입 시 URL 에 ?account= 자동 추가", async ({ page }) => {
     await loginAsDemo(page);
     await page.goto("/knowledge/");
-    await page.waitForURL(
-      new RegExp(`account=${DEMO_ACCOUNT_ID}`),
-      { timeout: 10_000 },
-    );
-    expect(page.url()).toContain(`account=${DEMO_ACCOUNT_ID}`);
-  });
-
-  test("/review/knowledge/ 진입 시 URL 에 ?account= 자동 추가", async ({
-    page,
-  }) => {
-    await loginAsDemo(page);
-    await page.goto("/review/knowledge/");
     await page.waitForURL(
       new RegExp(`account=${DEMO_ACCOUNT_ID}`),
       { timeout: 10_000 },
