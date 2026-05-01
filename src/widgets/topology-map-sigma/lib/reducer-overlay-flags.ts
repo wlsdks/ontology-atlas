@@ -20,7 +20,6 @@ export const HUB_BOOST_MAX_SCALE = 2.5;
 export const HUB_BOOST_BASE_BOOST_RATE = 3.5;
 export const HUB_SMALL_SIZE_THRESHOLD = 5;
 export const PULSE_AMPLITUDE = 0.1;
-export const CONTAINER_CATEGORY_ID = '__container__';
 
 export interface OverlayFlagsContext {
   hubsOnly: boolean;
@@ -53,7 +52,7 @@ export function shouldHideNode(
  * 건드림). caller 가 결과를 그대로 다음 분기로 넘김.
  *
  * 적용 순서:
- *   1. recent pulse (container 제외) — recentlyUpdated 노드 sine 변조
+ *   1. recent pulse — recentlyUpdated 노드 sine 변조
  *   2. hub boost — 작은 허브 줌인 시 최대 2.5x
  */
 export function applyOverlaySize(
@@ -65,13 +64,8 @@ export function applyOverlaySize(
 ): SigmaNodeAttrs {
   let next = attrs;
 
-  // 1) recent pulse — container 제외
-  const isContainerNode = next.categoryId === CONTAINER_CATEGORY_ID;
-  if (
-    ctx.recentPulseEnabled &&
-    next.recentlyUpdated &&
-    !isContainerNode
-  ) {
+  // 1) recent pulse
+  if (ctx.recentPulseEnabled && next.recentlyUpdated) {
     next = {
       ...next,
       size: next.size * (1 + PULSE_AMPLITUDE * Math.sin(ctx.pulsePhase)),

@@ -136,10 +136,7 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   const sampleStep = Math.max(1, Math.floor(totalNodes / 40));
   let idx = 0;
   let hubCount = 0;
-  let containerCount = 0;
   graph.forEachNode((id, attrs) => {
-    const isContainer = attrs.categoryId === '__container__';
-    if (isContainer) containerCount += 1;
     if (attrs.isHub) {
       hubCount += 1;
       hubPositions.set(id, {
@@ -158,8 +155,8 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
     }
     idx += 1;
   });
-  const primaryCount = containerCount > 0 ? containerCount : hubCount;
-  const primaryLabel = containerCount > 0 ? 'projects' : 'hubs';
+  const primaryCount = hubCount;
+  const primaryLabel = 'hubs';
 
   // 허브-허브 엣지 — 미니맵에서 전체 구조 힌트. 엣지 수가 많지 않아 렌더
   // 부하 경미. 방향성은 무시하고 연결 여부만 표기.

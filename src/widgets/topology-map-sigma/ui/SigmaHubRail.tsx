@@ -83,22 +83,16 @@ export function SigmaHubRail({
       degreeBySlug.set(dep, (degreeBySlug.get(dep) ?? 0) + 1);
     }
   }
-  // Layer 0 (Workspace map) 에선 "hub" 가 아니라 Container 가 주요 정거장.
-  // 21 container 만 rail 에 깔끔하게 노출해 사용자가 스캔하기 쉽게. Layer 1
-  // (project 내부) 에선 containers 가 안 섞여 들어오므로 fallthrough 동작.
-  const hasContainers = projects.some(
-    (p) => p.category === '__container__',
-  );
+  // mission v2 후 Layer 0 컨테이너 시스템 폐기 (PR #41/#42). hub 만 rail 에
+  // 노출.
   const hubs = projects
-    .filter((p) =>
-      hasContainers ? p.category === '__container__' : p.isHub,
-    )
+    .filter((p) => p.isHub)
     .slice()
     .sort(
       (a, b) => (degreeBySlug.get(b.slug) ?? 0) - (degreeBySlug.get(a.slug) ?? 0),
     );
   if (hubs.length === 0) return null;
-  const railLabel = hasContainers ? '프로젝트' : '허브';
+  const railLabel = '허브';
 
   if (!open) {
     return (
@@ -145,12 +139,9 @@ export function SigmaHubRail({
       {hubs.map((hub, idx) => {
         const active = selectedSlug === hub.slug;
         const degree = degreeBySlug.get(hub.slug) ?? 0;
-        const isContainer = hub.category === '__container__';
-        // Rail dot 색도 토폴로지 색 체계 맞춤: Container 앰버 · Hub 인디고.
-        // active 시 채도를 더 올려 선택 상태 시각 강조.
-        const dotColor = isContainer
-          ? active ? 'rgba(224,196,140,0.95)' : 'rgba(224,196,140,0.62)'
-          : active ? 'var(--color-indigo-accent)' : 'rgba(139,151,255,0.5)';
+        const dotColor = active
+          ? 'var(--color-indigo-accent)'
+          : 'rgba(139,151,255,0.5)';
         return (
           <button
             key={hub.slug}
@@ -190,12 +181,7 @@ export function SigmaHubRail({
             {active ? (
               <span
                 aria-hidden
-                className="pointer-events-none absolute inset-y-1 left-0 w-[2px] rounded-full"
-                style={{
-                  backgroundColor: isContainer
-                    ? 'rgba(224,196,140,0.95)'
-                    : 'var(--color-indigo-accent)',
-                }}
+                className="pointer-events-none absolute inset-y-1 left-0 w-[2px] rounded-full bg-[color:var(--color-indigo-accent)]"
               />
             ) : null}
             <span

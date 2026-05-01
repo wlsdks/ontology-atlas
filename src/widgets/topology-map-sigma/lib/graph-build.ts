@@ -67,12 +67,6 @@ export interface SigmaEdgeAttrs {
 const HUB_COLOR = INDIGO_HUB;
 const NODE_OUTER_HALO = 'rgba(0, 0, 0, 0)'; // 비허브는 halo 없음 (투명)
 
-// 워크스페이스 맵(Layer 0) 의 컨테이너 노드 — 인디고 hub 와 명확히 구분되는
-// 웜 앰버/샌드. 디자인 시스템의 "단일 인디고" 원칙을 Layer 1(프로젝트 내부)
-// 에서 유지하되, Layer 0 에서는 계층 구분을 위해 보조 강조 한 색 허용.
-const CONTAINER_CATEGORY_SENTINEL = '__container__';
-const CONTAINER_COLOR = '#d4b478';                         // 웜 앰버
-
 /**
  * 디자인 시스템이 색 추가를 금지(무채색 + 단일 인디고)하므로 도메인 구분은
  * 회색 luminance + 아주 옅은 tint 로 표현. 채도는 최대 ~6% 로 유지해 "무채색
@@ -136,21 +130,6 @@ function jitter(seed: number) {
   return x - Math.floor(x);
 }
 
-/**
- * names 배열에서 모두가 공유하는 "첫 단어" brand prefix 를 감지.
- * 예: ["Demo IAM", "Demo Knowledge", "Demo Observability"] → "Demo".
- * 안 맞는 게 하나라도 있으면 '' 반환.
- */
-function detectBrandPrefix(names: string[]): string {
-  if (names.length < 2) return '';
-  const firstWord = names[0].split(' ')[0];
-  if (!firstWord) return '';
-  for (const name of names) {
-    if (!name.startsWith(firstWord + ' ') && name !== firstWord) return '';
-  }
-  return firstWord;
-}
-
 export function buildGraph(
   projects: Project[],
   categories: Category[],
@@ -183,36 +162,12 @@ export function buildGraph(
     return rest.length > 0 ? rest : name;
   };
 
-  // Layer 감지 — Container 가 있으면 Layer 0 (Workspace 지도), 없으면
-  // Layer 1 (컨테이너 내부). Layer 0 에선 Container 만 forceLabel 로 고정
-  // 노출, Hub/Node 는 hover/선택/근접 줌에서만 라벨 노출 (사용자 요청:
-  // "각 프로젝트만 이름이 나오고 나머지는 확장했을 때랑 마우스 올렸을 때만").
-  // Layer 1 에선 containers 가 없으므로 Hub 가 primary anchor → Hub
-  // forceLabel 유지.
-  const hasContainers = projects.some(
-    (p) => p.category === CONTAINER_CATEGORY_SENTINEL,
-  );
+  // mission v2 후 Layer 0 컨테이너 시스템 폐기 (PR #41/#42). 이제 모든
+  // 토폴로지가 단일 layer — Hub 가 primary anchor 로 forceLabel 노출.
 
   // build 시점 테마 팔레트. 토글 후엔 SigmaTopology 의 mutation observer 가
   // 그래프 attr 을 새 팔레트 값으로 다시 바르고 sigma.refresh() 한다.
   const palette = resolveTopologyPalette();
-
-  // Container 공통 brand prefix 감지 — 모든 container 이름이 같은 접두어 +
-  // 공백 으로 시작하면 해당 접두어를 label 에서 제거해 공간 절약 ("Demo
-  // Observability" → "Observability"). tooltip/drawer/검색 은 full name
-  // 유지. 3개 미만 이면 축약 의미 없으므로 skip.
-  const containerNames = projects
-    .filter((p) => p.category === CONTAINER_CATEGORY_SENTINEL)
-    .map((p) => p.name);
-  const brandPrefix =
-    containerNames.length >= 3 ? detectBrandPrefix(containerNames) : '';
-  const stripContainerBrand = (name: string): string => {
-    if (!brandPrefix) return name;
-    const brandWithSpace = `${brandPrefix} `;
-    if (!name.startsWith(brandWithSpace)) return name;
-    const rest = name.slice(brandWithSpace.length).trim();
-    return rest.length > 0 ? rest : name;
-  };
 
   // 고립 노드가 카테고리 앵커에 남아 튕겨 나오지 않도록 모든 seed를 작은
   // 원반 안에서 시작. 카테고리별 분리는 edge + gravity가 만들어 낸다.
@@ -220,17 +175,11 @@ export function buildGraph(
     const theta = jitter(index) * Math.PI * 2;
     const r = jitter(index + 7) * 40;
     const recent = isProjectRecentlyUpdated(project, 7);
-    const isContainer = project.category === CONTAINER_CATEGORY_SENTINEL;
-    // Layer 0 에서 hub 는 "컨테이너 주변 위성" 으로 축소 — 수백개가 동시에
-    // 큰 원으로 찍혀 환공포증 유발하던 문제 해소. 크기 3, alpha 0.3 로
-    // 존재감만 남기고 시선은 container 쪽에 쏠리게. focus/hover 시엔
-    // nodeReducer 가 size·color 를 원복해 다시 보인다.
-    const isLayer0Hub = hasContainers && project.isHub;
 
-    // O-9b: 일반 project 노드 (container / hub / Layer 0 satellite hub 제외)
-    // 만 ontology 도미넌트 kind 에 따라 borderColor 분기. fill 은 분기 안 함
-    // — 헌장 "허브만 유일한 채색" + "size 변동 최소" 정책.
-    const isPlainProject = !isContainer && !project.isHub;
+    // O-9b: 일반 project 노드 (hub 제외) 만 ontology 도미넌트 kind 에 따라
+    // borderColor 분기. fill 은 분기 안 함 — 헌장 "허브만 유일한 채색" +
+    // "size 변동 최소" 정책.
+    const isPlainProject = !project.isHub;
     const ontologyCounts = isPlainProject
       ? options?.ontologyCountsBySlug?.get(project.slug)
       : undefined;
@@ -240,46 +189,18 @@ export function buildGraph(
     graph.addNode(project.slug, {
       x: Math.cos(theta) * r,
       y: Math.sin(theta) * r,
-      // 크기 위계: Container 10 → Hub 10 → Node 5.5. 2nd pass 에서
-      // degree 스케일로 미세 조정. 이전엔 container 20 으로 과도하게 커
-      // 노란 원이 화면을 지배했고, satellite hub (3) 와 비율도 ~7:1 로
-      // 과함 (사용자 피드백). container 를 절반 (10~13) 으로 축소해
-      // 전체 균형 개선 — hub 와 같은 사이즈 범위에서 amber 색으로 위계 구분.
-      size: isContainer ? 10 : isLayer0Hub ? 3 : project.isHub ? 10 : 5.5,
-      // Container 는 brand prefix 축약 ("Demo Observability" → "Observability")
-      // 으로 라벨 공간 절약. project.name 은 attrs 의 label 만 단축하므로
-      // drawer/tooltip/검색 등은 여전히 full name 으로 조회됨.
-      label: isContainer
-        ? stripContainerBrand(project.name)
-        : shortenName(project.name),
-      // Layer 0 (hasContainers=true): Container 만 forceLabel, Hub 는 hover/
-      //   선택/확대 시에만 라벨 (labelRenderedSizeThreshold 보조).
-      // Layer 1 (hasContainers=false): 기존대로 Hub 가 forceLabel.
-      // Node 는 어느 Layer 에서도 threshold 로 점진 노출 (forceLabel false).
-      forceLabel: isContainer || (!hasContainers && project.isHub),
+      // 크기 위계: Hub 10 → Node 5.5. 2nd pass 에서 degree 스케일 미세 조정.
+      size: project.isHub ? 10 : 5.5,
+      label: shortenName(project.name),
+      // Hub 는 forceLabel — 토폴로지 상시 노출 anchor. Node 는 threshold 로
+      // 점진 노출.
+      forceLabel: project.isHub,
       recentlyUpdated: recent,
-      color:
-        project.category === CONTAINER_CATEGORY_SENTINEL
-          ? CONTAINER_COLOR
-          : isLayer0Hub
-            ? 'rgba(139, 151, 255, 0.32)'
-            : project.isHub
-              ? HUB_COLOR
-              : toneForSlug(project.slug),
-      borderColor:
-        project.category === CONTAINER_CATEGORY_SENTINEL
-          ? palette.containerBorder
-          : isLayer0Hub
-            ? 'rgba(139, 151, 255, 0.18)'
-            : project.isHub
-              ? palette.hubBorder
-              : ontologyTone?.borderColor ?? palette.nodeBorder,
-      outerBorderColor:
-        project.category === CONTAINER_CATEGORY_SENTINEL
-          ? palette.containerOuterHalo
-          : project.isHub
-            ? palette.hubOuterHalo
-            : NODE_OUTER_HALO,
+      color: project.isHub ? HUB_COLOR : toneForSlug(project.slug),
+      borderColor: project.isHub
+        ? palette.hubBorder
+        : ontologyTone?.borderColor ?? palette.nodeBorder,
+      outerBorderColor: project.isHub ? palette.hubOuterHalo : NODE_OUTER_HALO,
       projectSlug: project.slug,
       categoryId: project.category,
       isHub: project.isHub,
@@ -299,11 +220,9 @@ export function buildGraph(
       if (graph.hasNode(dep) && dep !== project.slug && !graph.hasEdge(project.slug, dep)) {
         const depProject = projects.find((p) => p.slug === dep);
         const hubToHub = project.isHub && depProject?.isHub === true;
-        // 대상이 container 카테고리면 "소속" 관계 (hub → container, node → hub).
-        // 그 외는 같은 레벨 엔티티 간 cross-project 의존성 (depends-on).
+        // node → hub 는 "소속" 관계 (contains). 그 외는 같은 레벨 의존성.
         const isContainsRelation =
-          depProject?.category === CONTAINER_CATEGORY_SENTINEL ||
-          (project.isHub === false && depProject?.isHub === true);
+          project.isHub === false && depProject?.isHub === true;
         graph.addEdge(project.slug, dep, {
           // 두께 기본값 — degree 가중은 아래 2nd pass에서 적용
           size: hubToHub ? 0.9 : 0.5,
@@ -316,29 +235,10 @@ export function buildGraph(
   }
 
   // degree 기반 크기 재계산 — 연결이 많을수록 커진다.
-  // Container: 20 → 26 (고정 ~20 에 degree 부스트), Hub: 10 → 13, Node: 4.5 → 7.5.
-  // 화면 픽셀 기준 Container > Hub > Node 가 ~2x, ~2x 의 일관된 비율이 되도록.
+  // Hub: 10 → 13, Node: 4.5 → 7.5. 화면 픽셀 기준 ~2x 일관 비율.
   graph.forEachNode((id, attrs) => {
     const degree = graph.degree(id);
-    const isContainer = attrs.categoryId === CONTAINER_CATEGORY_SENTINEL;
-    const isLayer0Hub = hasContainers && attrs.isHub;
-    if (isContainer) {
-      // 절반 축소: 10 → 13 (degree 가중). hub 와 거의 같은 사이즈
-      // 범위지만 amber 색 + 중앙 위치로 충분히 구분.
-      graph.setNodeAttribute(
-        id,
-        'size',
-        10 + Math.min(3, Math.log2(Math.max(1, degree)) * 0.9),
-      );
-    } else if (isLayer0Hub) {
-      // Layer 0 위성 — degree 스케일 최소만. 3 ~ 4.5 사이 유지해 환공포증
-      // 재현 없이도 "연결 많은 허브는 살짝 커 보임" 이라는 시그널만.
-      graph.setNodeAttribute(
-        id,
-        'size',
-        3 + Math.min(1.5, Math.log2(Math.max(1, degree)) * 0.35),
-      );
-    } else if (attrs.isHub) {
+    if (attrs.isHub) {
       graph.setNodeAttribute(
         id,
         'size',

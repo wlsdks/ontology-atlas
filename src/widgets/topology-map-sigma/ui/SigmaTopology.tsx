@@ -612,14 +612,7 @@ export function SigmaTopology({
       });
     };
     renderer.setSetting('nodeReducer', (node, attrs) => {
-      const result = baseNodeReducer(node, attrs);
-      // Container 노드는 라벨 폰트도 한 단계 키워 위계 강조. Sigma per-node
-      // labelSize 지원. Hub 는 글로벌 11px 유지, Container 만 14px.
-      const isContainer = attrs.categoryId === '__container__';
-      // Container 라벨: 700 (heavy) → 600 (semibold). 700 은 브랜드 강조
-      // 뉘앙스가 강해 "topology map 읽기" 의 차분함과 어울리지 않음.
-      // Apple SF Pro Display semibold 감성 + Inter 600 의 실제 가독성.
-      const base = isContainer ? { ...result, labelSize: 14, labelWeight: '600' as const } : result;
+      const base = baseNodeReducer(node, attrs);
       // minimal 모드: 솎아내기 없이 모든 노드에 이름 고정 노출.
       // hidden 된 노드는 건드리지 않음 (허브 전용 모드 등).
       const hidden = (base as { hidden?: boolean }).hidden;
@@ -627,7 +620,6 @@ export function SigmaTopology({
         return { ...base, label: attrs.label, forceLabel: true };
       }
       // Label strategy — 라벨 밀집 방지:
-      // - Container 는 Workspace 지도에서 항상 라벨 노출.
       // - Hub/Node 는 줌아웃 상태에서 label 자체를 제거한다. forceLabel 만
       //   끄면 Sigma size threshold 때문에 큰 hub 라벨이 계속 남아 화면을
       //   덮는다.
@@ -637,7 +629,7 @@ export function SigmaTopology({
         focus === node || (focus !== null && neighbors.has(node));
       const ratio = cameraRatioRef.current;
 
-      if (!hidden && !isContainer && !isFocusOrNeighbor) {
+      if (!hidden && !isFocusOrNeighbor) {
         if (attrs.isHub) {
           const HUB_LABEL_RATIO = 0.55;
           if (ratio > HUB_LABEL_RATIO) {
@@ -934,8 +926,6 @@ export function SigmaTopology({
         statusId: attrs.statusId,
         tags: attrs.tags,
         isHub: attrs.isHub,
-        // Container(__container__) 는 tooltip 에서 앰버 identity + statusId 숨김.
-        isContainer: attrs.categoryId === '__container__',
         degree: graph.degree(node),
         x: event.x,
         y: event.y,
@@ -1022,10 +1012,7 @@ export function SigmaTopology({
       appliedPalette = palette;
       paletteRefLocal.current = palette;
       graph.forEachNode((id, attrs) => {
-        if (attrs.categoryId === '__container__') {
-          graph.setNodeAttribute(id, 'borderColor', palette.containerBorder);
-          graph.setNodeAttribute(id, 'outerBorderColor', palette.containerOuterHalo);
-        } else if (attrs.isHub) {
+        if (attrs.isHub) {
           graph.setNodeAttribute(id, 'borderColor', palette.hubBorder);
           graph.setNodeAttribute(id, 'outerBorderColor', palette.hubOuterHalo);
         } else {
@@ -1341,19 +1328,15 @@ export function SigmaTopology({
 
   const stats = useMemo(() => {
     let hubs = 0;
-    let containers = 0;
     graph.forEachNode((_, attrs) => {
-      if (attrs.categoryId === '__container__') containers += 1;
       if (attrs.isHub) hubs += 1;
     });
     return {
       nodes: graph.order,
       hubs,
-      containers,
       edges: graph.size,
     };
   }, [graph]);
-  const isWorkspaceLayer = stats.containers > 0;
 
   return (
     <div className={`relative h-full w-full overflow-hidden ${className ?? ''}`}>
@@ -1528,10 +1511,7 @@ export function SigmaTopology({
         </span>
         <span className="h-2 w-px bg-[color:var(--color-overlay-3)]" />
         <span>
-          <span className="text-[color:var(--color-indigo-accent)]">
-            {isWorkspaceLayer ? stats.containers : stats.hubs}
-          </span>{' '}
-          {isWorkspaceLayer ? '프로젝트' : '허브'}
+          <span className="text-[color:var(--color-indigo-accent)]">{stats.hubs}</span> 허브
         </span>
         <span className="h-2 w-px bg-[color:var(--color-overlay-3)]" />
         <span>

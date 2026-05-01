@@ -140,7 +140,7 @@ interface DialogProps {
   accountId?: string | null;
 }
 
-type LayerFilter = 'all' | 'container' | 'hub' | 'node';
+type LayerFilter = 'all' | 'hub' | 'node';
 type ProjectSearchResult = ReturnType<typeof searchProjects>[number];
 type PaletteRow =
   | { kind: 'doc'; doc: VaultDoc }
@@ -148,17 +148,14 @@ type PaletteRow =
 
 const LAYER_FILTERS: { value: LayerFilter; label: string }[] = [
   { value: 'all', label: '전체' },
-  { value: 'container', label: '컨테이너' },
   { value: 'hub', label: '허브' },
   { value: 'node', label: '노드' },
 ];
 
 function matchesLayerFilter(project: Project, filter: LayerFilter): boolean {
   if (filter === 'all') return true;
-  const isContainer = project.category === '__container__';
-  if (filter === 'container') return isContainer;
-  if (filter === 'hub') return !isContainer && project.isHub;
-  return !isContainer && !project.isHub; // 'node'
+  if (filter === 'hub') return project.isHub;
+  return !project.isHub; // 'node'
 }
 
 function SearchPaletteDialog({
@@ -604,29 +601,18 @@ function SearchPaletteDialog({
                         )}
                       />
                       <div className="min-w-0 flex-1">
-                        {(() => {
-                          const isContainer =
-                            r.project.category === '__container__';
-                          return (
-                        <>
                         <div className="flex items-center gap-2">
                           <span
                             className={cn(
                               'truncate text-sm font-[var(--font-weight-signature)]',
-                              isContainer
-                                ? 'text-[color:rgba(224,196,140,0.95)]'
-                                : r.project.isHub
-                                  ? 'text-[color:var(--color-indigo-accent)]'
-                                  : 'text-[color:var(--color-text-primary)]',
+                              r.project.isHub
+                                ? 'text-[color:var(--color-indigo-accent)]'
+                                : 'text-[color:var(--color-text-primary)]',
                             )}
                           >
                             {highlightMatch(r.project.name, query)}
                           </span>
-                          {isContainer ? (
-                            <span className="rounded-full border border-[color:rgba(224,196,140,0.45)] bg-[color:rgba(224,196,140,0.12)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-[color:rgba(224,196,140,0.95)]">
-                              컨테이너
-                            </span>
-                          ) : r.project.isHub ? (
+                          {r.project.isHub ? (
                             <span className="rounded-full bg-[color:var(--color-indigo-brand)] px-1.5 py-0.5 font-mono text-[8px] uppercase tracking-[0.1em] text-[color:var(--color-text-primary)]">
                               허브
                             </span>
@@ -636,28 +622,18 @@ function SearchPaletteDialog({
                           {r.project.description}
                         </p>
                         <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                          {/* Container 의 category=__container__ · status=
-                              developing 은 lifecycle 의미 없는 sentinel.
-                              Container 일 때 두 chip 다 숨김. */}
-                          {!isContainer && (
-                            <>
-                              <span className="rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                                {categoryLabel(r.project.category)}
-                              </span>
-                              <span className="rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                                {statusLabel(r.project.status)}
-                              </span>
-                            </>
-                          )}
+                          <span className="rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                            {categoryLabel(r.project.category)}
+                          </span>
+                          <span className="rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                            {statusLabel(r.project.status)}
+                          </span>
                           {query.trim() && (
                             <span className="rounded-full border border-[color:rgba(94,106,210,0.3)] bg-[color:rgba(94,106,210,0.08)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]">
                               {MATCH_FIELD_LABELS[r.matchedField]}
                             </span>
                           )}
                         </div>
-                        </>
-                          );
-                        })()}
                       </div>
                       <div className="hidden shrink-0 self-center text-right sm:block">
                         <div className="font-mono text-[9px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">

@@ -19,18 +19,12 @@ export interface TopologyPalette {
   hubBorder: string;
   /** 허브 노드 외곽 halo. 선택 / hover 시 reducer 가 강화. */
   hubOuterHalo: string;
-  /** 컨테이너 노드 테두리 (웜 앰버 톤). */
-  containerBorder: string;
-  /** 컨테이너 노드 외곽 halo. */
-  containerOuterHalo: string;
   /** 기본 엣지 색 (graph build 시 모든 엣지에 적용). */
   edge: string;
   /** `kind: contains` 엣지 — 계층 표현용 옅은 neutral. */
   edgeContains: string;
   /** `kind: depends-on` 엣지 — cross-project 의존 인디고 톤. */
   edgeDependsOn: string;
-  /** focus 없을 때 cross-hub depends-on 엣지를 거의 투명으로 dim. */
-  edgeDependsOnIdle: string;
   /** 검색/depth/category 필터로 가려진 엣지. */
   edgeDim: string;
   /** 카드/툴팁 배경 톤 (텍스트 라벨이 sigma label 영역과 어울리게). */
@@ -41,12 +35,9 @@ const DARK: TopologyPalette = {
   nodeBorder: 'rgba(200, 210, 230, 0.3)',
   hubBorder: 'rgba(139, 151, 255, 0.55)',
   hubOuterHalo: 'rgba(139, 151, 255, 0.08)',
-  containerBorder: 'rgba(224, 196, 140, 0.62)',
-  containerOuterHalo: 'rgba(224, 196, 140, 0.10)',
   edge: 'rgba(170, 185, 210, 0.08)',
   edgeContains: 'rgba(170, 185, 210, 0.10)',
   edgeDependsOn: 'rgba(139, 151, 255, 0.16)',
-  edgeDependsOnIdle: 'rgba(139, 151, 255, 0.04)',
   edgeDim: 'rgba(255, 255, 255, 0.005)',
   labelText: 'rgba(235, 240, 250, 0.95)',
 };
@@ -56,13 +47,10 @@ const LIGHT: TopologyPalette = {
   nodeBorder: 'rgba(60, 72, 96, 0.6)',
   hubBorder: 'rgba(70, 86, 200, 0.85)',
   hubOuterHalo: 'rgba(70, 86, 200, 0.18)',
-  containerBorder: 'rgba(150, 110, 50, 0.85)',
-  containerOuterHalo: 'rgba(150, 110, 50, 0.18)',
   // 다크는 0.08 인데 그건 검은 배경에서 작동. 라이트 흰 배경엔 0.55+ 필요.
   edge: 'rgba(60, 72, 96, 0.55)',
   edgeContains: 'rgba(60, 72, 96, 0.6)',
   edgeDependsOn: 'rgba(70, 86, 200, 0.7)',
-  edgeDependsOnIdle: 'rgba(70, 86, 200, 0.42)',
   // dim 은 "거의 안 보임" 의미를 유지하되 흰 배경에서 노이즈 없게 어두운 톤 +
   // 낮은 알파.
   edgeDim: 'rgba(20, 30, 50, 0.06)',

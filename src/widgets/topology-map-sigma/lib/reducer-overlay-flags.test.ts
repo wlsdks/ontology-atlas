@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CONTAINER_CATEGORY_ID,
   HUB_BOOST_MAX_SCALE,
   HUB_BOOST_RATIO_THRESHOLD,
   HUB_SMALL_SIZE_THRESHOLD,
@@ -106,19 +105,7 @@ describe('applyOverlaySize — recent pulse', () => {
     expect(out.size).toBe(4);
   });
 
-  it('container 노드는 pulse 제외', () => {
-    const out = applyOverlaySize(
-      attrs({
-        size: 4,
-        recentlyUpdated: true,
-        categoryId: CONTAINER_CATEGORY_ID,
-      }),
-      { cameraRatio: 1, recentPulseEnabled: true, pulsePhase: Math.PI / 2 },
-    );
-    expect(out.size).toBe(4);
-  });
-
-  it('비-container + recentlyUpdated + pulse on → sin(phase) * amplitude 만큼 변조', () => {
+  it('recentlyUpdated + pulse on → sin(phase) * amplitude 만큼 변조', () => {
     const out = applyOverlaySize(
       attrs({ size: 4, recentlyUpdated: true }),
       { cameraRatio: 1, recentPulseEnabled: true, pulsePhase: Math.PI / 2 },

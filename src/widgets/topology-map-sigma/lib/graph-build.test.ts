@@ -100,20 +100,6 @@ describe("buildGraph — ontologyCountsBySlug", () => {
     expect(graph.getNodeAttribute("h-1", "ontologyTopKind")).toBeUndefined();
   });
 
-  it("container 노드는 ontology 분기 적용 안 함 (CONTAINER_BORDER 유지)", () => {
-    const projects = [
-      project({ slug: "c-1", category: "__container__", isHub: false }),
-    ];
-    const ontologyCountsBySlug = new Map<string, OntologyCountsForProject>([
-      ["c-1", counts({ capability: 50 })],
-    ]);
-    const graph = buildGraph(projects, [], { ontologyCountsBySlug });
-    expect(graph.getNodeAttribute("c-1", "borderColor")).toBe(
-      "rgba(224, 196, 140, 0.62)",
-    );
-    expect(graph.getNodeAttribute("c-1", "ontologyTopKind")).toBeUndefined();
-  });
-
   it("ontologyCountsBySlug 미제공 시 모든 노드 NODE_BORDER (현행 유지)", () => {
     const projects = [project({ slug: "p-1", isHub: false })];
     const graph = buildGraph(projects, []);
