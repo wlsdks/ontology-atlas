@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-01T08:44:17.944Z",
+  "generatedAt": "2026-05-01T09:55:33.615Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -148,8 +148,13 @@
         },
         {
           "depth": 2,
-          "text": "결정 필요 (P0 — 답 주면 즉시 unblock)",
-          "slug": "결정-필요-p0-답-주면-즉시-unblock"
+          "text": "✅ 완료 (refactor/first-principles-slim-1 PR #1, main 머지 완료, 23 commits)",
+          "slug": "완료-refactorfirst-principles-slim-1-pr-1-main-머지-완료-23-commits"
+        },
+        {
+          "depth": 2,
+          "text": "결정 필요 (P0 — answer 후 즉시 unblock)",
+          "slug": "결정-필요-p0-answer-후-즉시-unblock"
         },
         {
           "depth": 3,
@@ -158,28 +163,13 @@
         },
         {
           "depth": 3,
-          "text": "T2. `/` 자동 vault 전환 구현 (T1 답 = a 일 때만)",
-          "slug": "t2-자동-vault-전환-구현-t1-답-a-일-때만"
+          "text": "T13. OperationsNav 온톨로지 탭 분기 결정",
+          "slug": "t13-operationsnav-온톨로지-탭-분기-결정"
         },
         {
           "depth": 3,
-          "text": "T3. share-doc 시스템 제거 결정",
-          "slug": "t3-share-doc-시스템-제거-결정"
-        },
-        {
-          "depth": 3,
-          "text": "T4. share-doc cascade 정리 (T3 답 = b 일 때만)",
-          "slug": "t4-share-doc-cascade-정리-t3-답-b-일-때만"
-        },
-        {
-          "depth": 3,
-          "text": "T5. AI 추출 cloud path (functions/) 제거 결정",
-          "slug": "t5-ai-추출-cloud-path-functions-제거-결정"
-        },
-        {
-          "depth": 3,
-          "text": "T6. AI 추출 cloud path cascade 제거 (T5 답 = b 일 때만)",
-          "slug": "t6-ai-추출-cloud-path-cascade-제거-t5-답-b-일-때만"
+          "text": "AI 추출 cloud Functions 잔재 (T5+T6 마무리)",
+          "slug": "ai-추출-cloud-functions-잔재-t5t6-마무리"
         },
         {
           "depth": 2,
@@ -187,69 +177,14 @@
           "slug": "mission-inconsistency-마무리"
         },
         {
-          "depth": 3,
-          "text": "T7. read 측 mode-aware (`useProjects` hook)",
-          "slug": "t7-read-측-mode-aware-useprojects-hook"
-        },
-        {
-          "depth": 3,
-          "text": "T8. ProjectDrawer / DependencyPicker / 다른 inline 편집 mode-aware",
-          "slug": "t8-projectdrawer-dependencypicker-다른-inline-편집-mode-aware"
-        },
-        {
-          "depth": 3,
-          "text": "T9. 검수 큐 mode-aware 안내",
-          "slug": "t9-검수-큐-mode-aware-안내"
-        },
-        {
           "depth": 2,
-          "text": "UX 다듬기 (small wins)",
-          "slug": "ux-다듬기-small-wins"
-        },
-        {
-          "depth": 3,
-          "text": "T10. 빌더 fullscreen 토글",
-          "slug": "t10-빌더-fullscreen-토글"
-        },
-        {
-          "depth": 3,
-          "text": "T11. 빌더 \"트리로 보기\" 버튼 시각 위계 정리",
-          "slug": "t11-빌더-트리로-보기-버튼-시각-위계-정리"
+          "text": "UX 다듬기 (small wins, additive)",
+          "slug": "ux-다듬기-small-wins-additive"
         },
         {
           "depth": 3,
           "text": "T12. NodeDetailPanel evidence excerpt modal",
           "slug": "t12-nodedetailpanel-evidence-excerpt-modal"
-        },
-        {
-          "depth": 3,
-          "text": "T13. OperationsNav \"온톨로지\" 탭 분기 결정 + 구현",
-          "slug": "t13-operationsnav-온톨로지-탭-분기-결정-구현"
-        },
-        {
-          "depth": 3,
-          "text": "T14. account-settings 369줄 단순화",
-          "slug": "t14-account-settings-369줄-단순화"
-        },
-        {
-          "depth": 3,
-          "text": "T15. dev-admin-bypass 단순화 / `/settings/api-keys` 통합",
-          "slug": "t15-dev-admin-bypass-단순화-settingsapi-keys-통합"
-        },
-        {
-          "depth": 3,
-          "text": "T16. frontmatter parser 강화",
-          "slug": "t16-frontmatter-parser-강화"
-        },
-        {
-          "depth": 3,
-          "text": "T17. 빌더 onboarding 카피 다듬기",
-          "slug": "t17-빌더-onboarding-카피-다듬기"
-        },
-        {
-          "depth": 2,
-          "text": "V1.x 점진 도입 (V2 spec — V1.4 ActionType 은 AI 의존이라 defer)",
-          "slug": "v1x-점진-도입-v2-spec-v14-actiontype-은-ai-의존이라-defer"
         },
         {
           "depth": 3,
@@ -273,8 +208,8 @@
         },
         {
           "depth": 3,
-          "text": "T22. V2 통합 KnowledgeStatement (5-phase migration)",
-          "slug": "t22-v2-통합-knowledgestatement-5-phase-migration"
+          "text": "T22. V2 통합 KnowledgeStatement (5-phase)",
+          "slug": "t22-v2-통합-knowledgestatement-5-phase"
         },
         {
           "depth": 2,
@@ -288,18 +223,8 @@
         },
         {
           "depth": 3,
-          "text": "T24. B8 — knowledge-version / knowledge-job / knowledge-output 컬렉션 통합 검토",
-          "slug": "t24-b8-knowledge-version-knowledge-job-knowledge-output-컬렉션-통합-검토"
-        },
-        {
-          "depth": 3,
-          "text": "T25. B10 — client-error entity 검토",
-          "slug": "t25-b10-client-error-entity-검토"
-        },
-        {
-          "depth": 3,
-          "text": "T26. OntologyEditCanvas 의 dagre layout 단순화",
-          "slug": "t26-ontologyeditcanvas-의-dagre-layout-단순화"
+          "text": "T24. knowledge-* 컬렉션 통합 검토",
+          "slug": "t24-knowledge--컬렉션-통합-검토"
         },
         {
           "depth": 3,
@@ -307,14 +232,19 @@
           "slug": "t27-knowledgedocumentdetailpage-knowledgereviewworkspacepage-정리"
         },
         {
+          "depth": 3,
+          "text": "Review backlog (이미 처리 일부)",
+          "slug": "review-backlog-이미-처리-일부"
+        },
+        {
           "depth": 2,
           "text": "추천 진행 순서",
           "slug": "추천-진행-순서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T3 진행해\" 하면 그것만 분해해서 실행. 이미 끝난 것은 docs/CHANGELOG.md 참고. 의존 (needs:) 이 있는 항목은 그게 풀리기 전 시작 X. 선택지: (a) YES (mission ideal — vault active 면 / 가 자동으로 vault 데이터) / (b) NO (현재 동작 유지) / (c) v0.x = b, v1.0 부터 a 답 후 작업: (a) 면 T2 즉시 시작. (b)/(c) 면 T2 skip 표시. useDataSourceMode (이미 있음) + RootEntryPage 분기 변경 + 5step",
-      "wordCount": 921,
-      "updatedAt": "2026-05-01T06:52:02.091Z",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. | | 항목 | 결과 | |||| | T3+T4 | sharedoc 시스템 제거 | ✅ entity + view + Firestore rules cascade 정리 | | T5+T6 (부분) | AI 추출 클라이언트 path 제거 | ✅ apikeys + ontologyextraction client + receivedoc. functions/extractgemini · ontologyextract 는 보존 (user 비용 우려로",
+      "wordCount": 797,
+      "updatedAt": "2026-05-01T09:34:42.966Z",
       "mode": "both",
       "linksOut": []
     },
@@ -378,7 +308,7 @@
       ],
       "excerpt": "주요 변경 이력. 코드 commit 메시지가 왜 를 답하고, 이 파일은 언제 / 어떤 surface 가 바뀌었는지 를 답한다. PR 단위가 아닌 사용자 가시 변화 위주. 최신이 위. semver 도입 전 v0.x 단계라 날짜 기반. / Landing — 정적 미니 토폴로지 SVG (14 노드 / 21 relations) + 3step rail (markdown → 추출 → 토폴로지·트리·ERD) + Obsidian/Notion 비교 카피 + footer (MIT licensed · GitHub · 기술 스택). Marketing 섹션 (Why / Coming soon",
       "wordCount": 798,
-      "updatedAt": "2026-05-01T06:33:16.571Z",
+      "updatedAt": "2026-05-01T09:34:42.966Z",
       "mode": "both",
       "linksOut": []
     },
@@ -568,7 +498,7 @@
       ],
       "excerpt": "이 문서는 현재 공개 제품과 설계 승인된 knowledge subsystem v2의 저장 계약을 함께 다룬다. 컬렉션 스키마 변경 시 반드시 이 문서를 먼저 갱신한다. 변경 프로세스는 rules/firestoreschema.md를 따른다. singleuser 모드 (현재): 1 명의 로그인 사용자가 자기 워크스페이스의 owner. account / membership 개념 없음. 모든 컬렉션은 root path. v2 협업 단계에서 multiaccount 가 필요해지면 별도 ADR 로 도입. 1. 현재 공개 제품의 canonical 데이터는 여전히 projects다.",
       "wordCount": 4742,
-      "updatedAt": "2026-05-01T07:54:50.318Z",
+      "updatedAt": "2026-05-01T08:57:06.831Z",
       "mode": "engineer",
       "linksOut": [
         "rules/firestore-schema"
@@ -1002,6 +932,289 @@
       ]
     },
     {
+      "slug": "FEATURES",
+      "path": "docs/FEATURES.md",
+      "title": "FEATURES — oh-my-ontology",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "FEATURES — oh-my-ontology",
+          "slug": "features-oh-my-ontology"
+        },
+        {
+          "depth": 2,
+          "text": "0. 한눈에",
+          "slug": "0-한눈에"
+        },
+        {
+          "depth": 2,
+          "text": "1. 모드 분기 (data source)",
+          "slug": "1-모드-분기-data-source"
+        },
+        {
+          "depth": 2,
+          "text": "2. 라우트별 기능",
+          "slug": "2-라우트별-기능"
+        },
+        {
+          "depth": 3,
+          "text": "토폴로지 + 검색",
+          "slug": "토폴로지-검색"
+        },
+        {
+          "depth": 4,
+          "text": "`/` — 토폴로지 홈 (Sigma WebGL)",
+          "slug": "토폴로지-홈-sigma-webgl"
+        },
+        {
+          "depth": 4,
+          "text": "`/docs` — Vault Picker / Doc Vault",
+          "slug": "docs-vault-picker-doc-vault"
+        },
+        {
+          "depth": 3,
+          "text": "프로젝트",
+          "slug": "프로젝트"
+        },
+        {
+          "depth": 4,
+          "text": "`/projects` — 프로젝트 목록",
+          "slug": "projects-프로젝트-목록"
+        },
+        {
+          "depth": 4,
+          "text": "`/project/[slug]` — 프로젝트 상세",
+          "slug": "projectslug-프로젝트-상세"
+        },
+        {
+          "depth": 4,
+          "text": "`/project/new` · `/project/[slug]/edit` — 에디터",
+          "slug": "projectnew-projectslugedit-에디터"
+        },
+        {
+          "depth": 4,
+          "text": "`/project/fallback` — 정적 export 폴백",
+          "slug": "projectfallback-정적-export-폴백"
+        },
+        {
+          "depth": 3,
+          "text": "온톨로지 3-view",
+          "slug": "온톨로지-3-view"
+        },
+        {
+          "depth": 4,
+          "text": "`/ontology` — Tree (read-only)",
+          "slug": "ontology-tree-read-only"
+        },
+        {
+          "depth": 4,
+          "text": "`/ontology/edit` — Builder (xyflow ERD)",
+          "slug": "ontologyedit-builder-xyflow-erd"
+        },
+        {
+          "depth": 4,
+          "text": "`/ontology/insights` — 인사이트",
+          "slug": "ontologyinsights-인사이트"
+        },
+        {
+          "depth": 4,
+          "text": "`/ontology/relations` — 관계 분포",
+          "slug": "ontologyrelations-관계-분포"
+        },
+        {
+          "depth": 3,
+          "text": "지식 (Cloud — AI 영역 부분 비활성)",
+          "slug": "지식-cloud-ai-영역-부분-비활성"
+        },
+        {
+          "depth": 4,
+          "text": "`/knowledge` — 대시보드",
+          "slug": "knowledge-대시보드"
+        },
+        {
+          "depth": 4,
+          "text": "`/knowledge/documents`",
+          "slug": "knowledgedocuments"
+        },
+        {
+          "depth": 4,
+          "text": "`/knowledge/documents/new`",
+          "slug": "knowledgedocumentsnew"
+        },
+        {
+          "depth": 4,
+          "text": "`/knowledge/documents/view?id=...`",
+          "slug": "knowledgedocumentsviewid"
+        },
+        {
+          "depth": 4,
+          "text": "`/review/knowledge` — 검수 워크스페이스",
+          "slug": "reviewknowledge-검수-워크스페이스"
+        },
+        {
+          "depth": 3,
+          "text": "인증 / 계정",
+          "slug": "인증-계정"
+        },
+        {
+          "depth": 4,
+          "text": "`/login`",
+          "slug": "login"
+        },
+        {
+          "depth": 4,
+          "text": "`/signup`",
+          "slug": "signup"
+        },
+        {
+          "depth": 4,
+          "text": "`/reset-password`",
+          "slug": "reset-password"
+        },
+        {
+          "depth": 4,
+          "text": "`/account` (게스트는 `/login?next=/account` 로 redirect)",
+          "slug": "account-게스트는-loginnextaccount-로-redirect"
+        },
+        {
+          "depth": 3,
+          "text": "운영 / 설정",
+          "slug": "운영-설정"
+        },
+        {
+          "depth": 4,
+          "text": "`/diagnostics/insights` — 오늘 챙길 곳",
+          "slug": "diagnosticsinsights-오늘-챙길-곳"
+        },
+        {
+          "depth": 4,
+          "text": "`/settings` — 정리 허브",
+          "slug": "settings-정리-허브"
+        },
+        {
+          "depth": 4,
+          "text": "`/settings/categories` — 카테고리",
+          "slug": "settingscategories-카테고리"
+        },
+        {
+          "depth": 4,
+          "text": "`/settings/statuses` — 상태",
+          "slug": "settingsstatuses-상태"
+        },
+        {
+          "depth": 4,
+          "text": "`/settings/import` — 프로젝트 가져오기",
+          "slug": "settingsimport-프로젝트-가져오기"
+        },
+        {
+          "depth": 4,
+          "text": "`/settings/ontology` — TBox 보기",
+          "slug": "settingsontology-tbox-보기"
+        },
+        {
+          "depth": 4,
+          "text": "`/settings/ontology/history` — TBox 버전 이력",
+          "slug": "settingsontologyhistory-tbox-버전-이력"
+        },
+        {
+          "depth": 2,
+          "text": "3. 기능 그룹별 정리",
+          "slug": "3-기능-그룹별-정리"
+        },
+        {
+          "depth": 3,
+          "text": "3.1 Vault Local-First",
+          "slug": "31-vault-local-first"
+        },
+        {
+          "depth": 3,
+          "text": "3.2 Mode-Aware Adapters",
+          "slug": "32-mode-aware-adapters"
+        },
+        {
+          "depth": 3,
+          "text": "3.3 검색",
+          "slug": "33-검색"
+        },
+        {
+          "depth": 3,
+          "text": "3.4 Frontmatter 파서 (T16 으로 강화)",
+          "slug": "34-frontmatter-파서-t16-으로-강화"
+        },
+        {
+          "depth": 3,
+          "text": "3.5 Vault Frontmatter → Ontology Stub",
+          "slug": "35-vault-frontmatter-ontology-stub"
+        },
+        {
+          "depth": 3,
+          "text": "3.6 권한",
+          "slug": "36-권한"
+        },
+        {
+          "depth": 3,
+          "text": "3.7 모바일 / 반응형",
+          "slug": "37-모바일-반응형"
+        },
+        {
+          "depth": 3,
+          "text": "3.8 테마 / 접근성 / 알림",
+          "slug": "38-테마-접근성-알림"
+        },
+        {
+          "depth": 3,
+          "text": "3.9 부가 위젯 (홈 / 빌더 보조)",
+          "slug": "39-부가-위젯-홈-빌더-보조"
+        },
+        {
+          "depth": 3,
+          "text": "3.10 단축키",
+          "slug": "310-단축키"
+        },
+        {
+          "depth": 2,
+          "text": "4. 데이터 흐름 (Single source 원칙)",
+          "slug": "4-데이터-흐름-single-source-원칙"
+        },
+        {
+          "depth": 2,
+          "text": "4-B. 프레임워크 / 빌드타임 surface",
+          "slug": "4-b-프레임워크-빌드타임-surface"
+        },
+        {
+          "depth": 2,
+          "text": "4-A. demo 데이터 구조 (현재)",
+          "slug": "4-a-demo-데이터-구조-현재"
+        },
+        {
+          "depth": 2,
+          "text": "5. 제약 / 의도된 부재",
+          "slug": "5-제약-의도된-부재"
+        },
+        {
+          "depth": 2,
+          "text": "6. 검증 (refactor/first-principles-slim-1 머지 시점)",
+          "slug": "6-검증-refactorfirst-principles-slim-1-머지-시점"
+        },
+        {
+          "depth": 2,
+          "text": "7. 어디서부터 손대야 할지 — 사용자 워크플로",
+          "slug": "7-어디서부터-손대야-할지-사용자-워크플로"
+        }
+      ],
+      "excerpt": "사용자가 지금 실제로 사용 가능한 기능 전수 인벤토리. 작성일: 20260501 (refactor/firstprinciplesslim1 main 머지 직후) 출처: routes audit · vault/modeaware audit · ontology+search audit · auth/project/knowledge/settings audit (4 haiku agents 병렬 점검) mission: \"사용자가 글을 쓰면 시스템이 개념·관계·근거를 자라게 한다. 토폴로지·트리·ERD 세 view 로 본다.\" 운영 모델: 1인 도구. localfirst vault. 로그",
+      "wordCount": 2905,
+      "updatedAt": "2026-05-01T09:34:42.966Z",
+      "mode": "both",
+      "linksOut": [
+        "old",
+        "PRODUCT-DIRECTION",
+        "oldSlug"
+      ]
+    },
+    {
       "slug": "LOCAL-FIRST-SYNC",
       "path": "docs/LOCAL-FIRST-SYNC.md",
       "title": "Local-first / Firebase Sync 정책",
@@ -1091,7 +1304,7 @@
       ],
       "excerpt": "Status: 제안 단계 (DRAFT). 자율 루프 iter22 (20260501) 작성. main merge 전 user 승인 필요. 이 문서는 로컬 디스크의 markdown 폴더 와 Firebase (Firestore + Storage) 사이의 데이터 흐름·sync·충돌 정책을 명시한다. .claude/rules/localfirst.md 의 \"Notion 처럼 폴더만 선택해도 사용\" 헌장을 데이터 레이어에서 어떻게 구현하는지 정의. 관련 문서: .claude/rules/localfirst.md — 헌장 (이 문서가 따른다) docs/DATAMODEL.md — Fi",
       "wordCount": 1154,
-      "updatedAt": "2026-04-30T23:03:19.213Z",
+      "updatedAt": "2026-05-01T09:34:42.967Z",
       "mode": "both",
       "linksOut": []
     },
@@ -1185,7 +1398,7 @@
       ],
       "excerpt": "Status: 도입 완료 (Phase 23, 20260501). Why: 기획자 audit 의 root cause 1 — 모드 인지 hook 부재로 모든 게이트가 auth role 만 봄. local vault 활성 비로그인 사용자가 mutation 불가. Spec 의 위치: .claude/rules/localfirst.md 헌장 + docs/LOCALFIRSTSYNC.md § \"운영 모드\" 의 코드 레이어 implementation. 이 문서는 어떤 entity 가 mutation 을 받는지가 사용자의 진실원 모드에 따라 다른 흐름 을 갖도록 하는 패턴이다. 새 e",
       "wordCount": 903,
-      "updatedAt": "2026-05-01T05:48:10.189Z",
+      "updatedAt": "2026-05-01T09:34:42.967Z",
       "mode": "both",
       "linksOut": []
     },
@@ -1309,7 +1522,7 @@
       ],
       "excerpt": "Status: 제안 단계 (DRAFT). 자율 루프 iter25 (20260501) 작성. main merge 전 user 승인 필요. 특히 Open question 1 (HomePage 자동 vault 전환) 답이 정해진 후 §3 의 진입점 분기 확정. 이 문서는 비로그인 사용자가 첫 화면에서 0 마찰로 사용 시작 하도록 라우트별 진입 동작·권한 게이트·온보딩 단계를 명시한다. .claude/rules/localfirst.md 의 헌장 (\"Notion 처럼 폴더만 선택해도 사용\") 을 UI 레이어에서 어떻게 구현하는지 정의. 관련: .claude/rules/loca",
       "wordCount": 1575,
-      "updatedAt": "2026-04-30T23:48:51.909Z",
+      "updatedAt": "2026-05-01T09:34:42.967Z",
       "mode": "both",
       "linksOut": []
     },
@@ -1618,13 +1831,177 @@
       ],
       "excerpt": "Status: 제안 단계. main 머지 전 user 승인 필요. Author: 자율 루프 iter12 (20260501). Inputs: C0 (현재 모델 캡처) · C1 (Wikidata 학습) · C2 (Palantir 학습). Goal: 현재 4layer class + 7relation TBox + evidencegrounded ABox 위에 qualifiers · rank · literal properties · rich references · cardinality · action type 을 점진 도입해 RDFstar + Foundryclass 표현력에 도",
       "wordCount": 7768,
-      "updatedAt": "2026-05-01T06:48:25.686Z",
+      "updatedAt": "2026-05-01T09:34:42.967Z",
       "mode": "both",
       "linksOut": [
         "other-doc",
         "doc:payment-spec",
         "capability:tax"
       ]
+    },
+    {
+      "slug": "PRODUCT-DIRECTION",
+      "path": "docs/PRODUCT-DIRECTION.md",
+      "title": "PRODUCT DIRECTION — 온톨로지 워크벤치 (사람 + AI agent 공동 저작)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "PRODUCT DIRECTION — 온톨로지 워크벤치 (사람 + AI agent 공동 저작)",
+          "slug": "product-direction-온톨로지-워크벤치-사람-ai-agent-공동-저작"
+        },
+        {
+          "depth": 2,
+          "text": "TL;DR — 1원리 한 줄 (v2)",
+          "slug": "tldr-1원리-한-줄-v2"
+        },
+        {
+          "depth": 2,
+          "text": "1. user 결정 요약",
+          "slug": "1-user-결정-요약"
+        },
+        {
+          "depth": 3,
+          "text": "결정 1 — Direction A (온톨로지 first)",
+          "slug": "결정-1-direction-a-온톨로지-first"
+        },
+        {
+          "depth": 3,
+          "text": "결정 2 — Self-hosting + AI agent 협업",
+          "slug": "결정-2-self-hosting-ai-agent-협업"
+        },
+        {
+          "depth": 2,
+          "text": "2. 두 청중, 한 ontology",
+          "slug": "2-두-청중-한-ontology"
+        },
+        {
+          "depth": 2,
+          "text": "3. AI agent 협업 — 구체적으로 무엇",
+          "slug": "3-ai-agent-협업-구체적으로-무엇"
+        },
+        {
+          "depth": 3,
+          "text": "3-A. 읽기 path (이미 가능)",
+          "slug": "3-a-읽기-path-이미-가능"
+        },
+        {
+          "depth": 3,
+          "text": "3-B. 쓰기 path (필요)",
+          "slug": "3-b-쓰기-path-필요"
+        },
+        {
+          "depth": 3,
+          "text": "3-C. 양방향 sync",
+          "slug": "3-c-양방향-sync"
+        },
+        {
+          "depth": 2,
+          "text": "4. 로컬 패키지 — 어떻게 distribute",
+          "slug": "4-로컬-패키지-어떻게-distribute"
+        },
+        {
+          "depth": 3,
+          "text": "옵션 A — npm 패키지 + CLI",
+          "slug": "옵션-a-npm-패키지-cli"
+        },
+        {
+          "depth": 3,
+          "text": "옵션 B — Electron 데스크톱 앱",
+          "slug": "옵션-b-electron-데스크톱-앱"
+        },
+        {
+          "depth": 3,
+          "text": "옵션 C — 그대로 Next.js 정적 export + 가이드만",
+          "slug": "옵션-c-그대로-nextjs-정적-export-가이드만"
+        },
+        {
+          "depth": 3,
+          "text": "권장: A 옵션 (CLI + npx)",
+          "slug": "권장-a-옵션-cli-npx"
+        },
+        {
+          "depth": 2,
+          "text": "5. AI agent 가 partner 가 되는 surface",
+          "slug": "5-ai-agent-가-partner-가-되는-surface"
+        },
+        {
+          "depth": 3,
+          "text": "5-A. MCP 서버",
+          "slug": "5-a-mcp-서버"
+        },
+        {
+          "depth": 3,
+          "text": "5-B. AGENTS.md / CLAUDE.md 에 ontology 인덱스 자동 생성",
+          "slug": "5-b-agentsmd-claudemd-에-ontology-인덱스-자동-생성"
+        },
+        {
+          "depth": 2,
+          "text": "6. 단계 — 실행 가능 하게 분해",
+          "slug": "6-단계-실행-가능-하게-분해"
+        },
+        {
+          "depth": 3,
+          "text": "Phase 1 — 정체성 정렬 (UI)",
+          "slug": "phase-1-정체성-정렬-ui"
+        },
+        {
+          "depth": 3,
+          "text": "Phase 2 — Self-hosting",
+          "slug": "phase-2-self-hosting"
+        },
+        {
+          "depth": 3,
+          "text": "Phase 3 — AI agent partner",
+          "slug": "phase-3-ai-agent-partner"
+        },
+        {
+          "depth": 3,
+          "text": "Phase 4 — 비개발자 surface 다듬기",
+          "slug": "phase-4-비개발자-surface-다듬기"
+        },
+        {
+          "depth": 2,
+          "text": "7. 신구 mission 비교",
+          "slug": "7-신구-mission-비교"
+        },
+        {
+          "depth": 3,
+          "text": "구 mission (AGENTS.md, 현재)",
+          "slug": "구-mission-agentsmd-현재"
+        },
+        {
+          "depth": 3,
+          "text": "신 mission (이 문서로 제안)",
+          "slug": "신-mission-이-문서로-제안"
+        },
+        {
+          "depth": 2,
+          "text": "8. 즉시 다음 액션 (user 명령 대기 중)",
+          "slug": "8-즉시-다음-액션-user-명령-대기-중"
+        },
+        {
+          "depth": 3,
+          "text": "옵션 A — Phase 1 즉시 시작 (UI 정체성 정렬)",
+          "slug": "옵션-a-phase-1-즉시-시작-ui-정체성-정렬"
+        },
+        {
+          "depth": 3,
+          "text": "옵션 B — Phase 2 먼저 (self-hosting)",
+          "slug": "옵션-b-phase-2-먼저-self-hosting"
+        },
+        {
+          "depth": 3,
+          "text": "옵션 C — 이 문서 review + 추가 결정",
+          "slug": "옵션-c-이-문서-review-추가-결정"
+        }
+      ],
+      "excerpt": "작성일 (v2): 20260501 결정 반영: user 가 Direction A (온톨로지 first) 확정 + dogfooding + AI agent 협업 방향 추가 본 문서는 PRODUCTDIRECTION.md v1 의 strategic 진단을 그대로 두고, 결정 + 새 방향을 v2 로 덮음. 이 프로젝트는 온톨로지 워크벤치다 — 비개발자와 AI agent 가 같이 한 codebase 의 mental model 을 함께 저작한다. 토폴로지 = 출구 (view) 중 하나 척추 = md 문서 → 자라는 ontology 비개발자 (PM · 디자이너 · 운영) 도 ERD",
+      "wordCount": 1454,
+      "updatedAt": "2026-05-01T09:34:42.967Z",
+      "mode": "both",
+      "linksOut": []
     }
   ],
   "backlinksDetail": {
@@ -1682,6 +2059,27 @@
         "fromSlug": "DESIGN-SYSTEM",
         "context": "# Design System > 이 문서는 설계 문서 섹션 3을 기반으로 유지된다. Linear 원본 사양은 **[`design-references/DESIGN-linear.md`]**를 참고. ## 선택 이유 Linear의 \"어둠에서 떠오르는 별빛\" 미학이 토폴로지의 별자리 메타포와 정확히 일치. 흑백 + 단일 인디고 악센트라는 극단적 제약이 **AI 생성 클리셰를 배제하는 최상의 방어책**",
         "linkText": "`design-references/DESIGN-linear.md`"
+      }
+    ],
+    "old": [
+      {
+        "fromSlug": "FEATURES",
+        "context": "| useProjectMutations | 본문 보존 + frontmatter 패치 | | Backlink rewrite | renameDoc 시 best-effort | 다른 파일의 `[[oldSlug]]`, `**[text]**` 자동 치환 | | Scaffold | 명령 팔레트 | 빈 vault 에 README + projects/ + 샘플 | ### 3.2 Mode-Aware Adapters | Hook | 책임 | |---|---",
+        "linkText": "text"
+      }
+    ],
+    "PRODUCT-DIRECTION": [
+      {
+        "fromSlug": "FEATURES",
+        "context": "orceAtlas2 가 dense 하게 그려서 결과적으로 **고-degree 허브만 시각적으로 도드라져 보임**. `/ontology` 는 비어있어서 사용자에게 \"토폴로지 서비스\" 인상 만드는 원인. → 별도 문서 **[`PRODUCT-DIRECTION.md`]** 참고. --- ## 5. 제약 / 의도된 부재 - **Multi-account**: 없음 — `accountId = null` 고정 (v2 협업 단계로 보류) - **외부 IAM**: 없음 — Firebase",
+        "linkText": "`PRODUCT-DIRECTION.md`"
+      }
+    ],
+    "oldSlug": [
+      {
+        "fromSlug": "FEATURES",
+        "context": "ateFrontmatter` | useProjectMutations | 본문 보존 + frontmatter 패치 | | Backlink rewrite | renameDoc 시 best-effort | 다른 파일의 `**[oldSlug]**`, `[text](old.md)` 자동 치환 | | Scaffold | 명령 팔레트 | 빈 vault 에 README + projects/ + 샘플 | ### 3.2 Mode-Aware Adapters | Ho",
+        "linkText": "oldSlug"
       }
     ],
     "other-doc": [
@@ -1798,6 +2196,13 @@
         "title": "Design System"
       },
       {
+        "name": "FEATURES",
+        "path": "FEATURES",
+        "type": "doc",
+        "slug": "FEATURES",
+        "title": "FEATURES — oh-my-ontology"
+      },
+      {
         "name": "LOCAL-FIRST-SYNC",
         "path": "LOCAL-FIRST-SYNC",
         "type": "doc",
@@ -1824,6 +2229,13 @@
         "type": "doc",
         "slug": "ONTOLOGY-MODEL-V2-DRAFT",
         "title": "Ontology Model V2 — DRAFT (제안)"
+      },
+      {
+        "name": "PRODUCT-DIRECTION",
+        "path": "PRODUCT-DIRECTION",
+        "type": "doc",
+        "slug": "PRODUCT-DIRECTION",
+        "title": "PRODUCT DIRECTION — 온톨로지 워크벤치 (사람 + AI agent 공동 저작)"
       }
     ]
   }

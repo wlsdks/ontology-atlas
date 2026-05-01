@@ -1,9 +1,13 @@
 /**
  * DEMO 데모 blueprint 생성기.
  *
- * 20 개 컨테이너 · 컨테이너당 10~20 허브 · 허브당 4~8 노드.
- * 일관된 deterministic random (seed) 로 매 빌드마다 같은 결과.
- * 각 허브·노드 slug 는 컨테이너 id 를 prefix 로 가져 charge 충돌 회피.
+ * Phase 1.5 슬림 (PRODUCT-DIRECTION v2): 21 → 6 컨테이너, hub/node count 도
+ * 축소. mission "온톨로지 first" 정렬 — 토폴로지가 dense 노드 자랑이 아니라
+ * 비개발자가 인식 가능한 도메인 6 개로.
+ *
+ * 6 컨테이너 × 평균 3 hub × 평균 3 node ≈ ~50 프로젝트 + ~18 hub.
+ * 각 컨테이너에는 ontology metadata (capabilities · elements) 가 명시되어
+ * `/ontology` 페이지에서 의미 있는 트리가 보이도록.
  */
 
 interface BlueprintNode {
@@ -30,34 +34,72 @@ interface BlueprintContainer {
 }
 
 // 각 컨테이너 테마 — 실제 플랫폼 도메인으로 felt-real 유지.
-const CONTAINER_THEMES: ReadonlyArray<{
+// `capabilities` / `elements` 는 `/ontology` 의 ontology 노드로 렌더되어
+// 토폴로지 (의존도 그래프) 와 ontology (개념 트리) 두 시각이 모두 살아 보임.
+export interface ContainerTheme {
   id: string;
   name: string;
   description: string;
   hubCount: number;
-  crossDepFrom?: string; // 이 컨테이너 첫 hub 가 다른 컨테이너 hub 에 의존 (system boundary)
-}> = [
-  { id: 'demo', name: 'Demo', description: '메인 제품 — 토폴로지 지도, 컨테이너/허브/노드 4-layer, 실시간 협업.', hubCount: 14 },
-  { id: 'demo-iam', name: 'Demo IAM', description: '인증·세션·권한 인프라.', hubCount: 12 },
-  { id: 'demo-reactor', name: 'Demo Reactor', description: 'Spring AI 기반 엔터프라이즈 AI Agent 런타임.', hubCount: 20, crossDepFrom: 'demo-iam' },
-  { id: 'demo-knowledge', name: 'Demo Knowledge', description: '문서 파이프라인 + 온톨로지 빌더 + 공개 그래프.', hubCount: 12, crossDepFrom: 'demo' },
-  { id: 'demo-billing', name: 'Demo Billing', description: '구독·사용량·청구서 발행.', hubCount: 10, crossDepFrom: 'demo-iam' },
-  { id: 'demo-analytics', name: 'Demo Analytics', description: '사용 지표·대시보드·리포트 파이프라인.', hubCount: 12 },
-  { id: 'demo-notify', name: 'Demo Notify', description: '이메일·Slack·웹훅 다채널 알림 허브.', hubCount: 10 },
-  { id: 'demo-storage', name: 'Demo Storage', description: 'Blob·메타·권한 통합 스토리지.', hubCount: 11, crossDepFrom: 'demo-iam' },
-  { id: 'demo-search', name: 'Demo Search', description: '벡터·키워드·하이브리드 검색 서비스.', hubCount: 10, crossDepFrom: 'demo-knowledge' },
-  { id: 'demo-workflow', name: 'Demo Workflow', description: '휴먼-인-더-루프 승인 + 스케줄 워크플로.', hubCount: 13 },
-  { id: 'demo-audit', name: 'Demo Audit', description: '조작 로그·보안 이벤트 감사.', hubCount: 10, crossDepFrom: 'demo-iam' },
-  { id: 'demo-ingest', name: 'Demo Ingest', description: '외부 소스 → 내부 지식으로 ETL.', hubCount: 11, crossDepFrom: 'demo-knowledge' },
-  { id: 'demo-sdk', name: 'Demo SDK', description: '외부 클라이언트용 SDK · CLI · MCP 서버.', hubCount: 10 },
-  { id: 'demo-presence', name: 'Demo Presence', description: 'WebSocket 기반 실시간 협업 상태.', hubCount: 10, crossDepFrom: 'demo' },
-  { id: 'demo-billing-gateway', name: 'Payment Gateway', description: '다중 PG 결제 추상화 레이어.', hubCount: 10, crossDepFrom: 'demo-billing' },
-  { id: 'demo-email', name: 'Demo Email', description: '트랜잭션 · 캠페인 이메일 라우팅.', hubCount: 10, crossDepFrom: 'demo-notify' },
-  { id: 'demo-scheduler', name: 'Demo Scheduler', description: 'Cron · 분산 큐 · 리트라이 스케줄러.', hubCount: 10, crossDepFrom: 'demo-workflow' },
-  { id: 'demo-observability', name: 'Demo Observability', description: 'Trace · Metric · Log 수집 + 알람.', hubCount: 11, crossDepFrom: 'demo-analytics' },
-  { id: 'demo-featureflag', name: 'Demo FeatureFlag', description: '롤아웃·AB 테스트·동적 토글.', hubCount: 10 },
-  { id: 'demo-onboarding', name: 'Demo Onboarding', description: '신규 사용자 가입·투어·샘플 데이터.', hubCount: 10, crossDepFrom: 'demo-iam' },
-  { id: 'demo-support', name: 'Demo Support', description: '고객지원·티켓·지식베이스 연동.', hubCount: 10, crossDepFrom: 'demo-knowledge' },
+  /** 이 컨테이너 첫 hub 가 다른 컨테이너 hub 에 의존 (system boundary). */
+  crossDepFrom?: string;
+  /** ontology — 이 도메인이 다루는 capabilities (사용자 가치). */
+  capabilities: ReadonlyArray<string>;
+  /** ontology — 이 도메인이 사용하는 elements (구체 element/component). */
+  elements: ReadonlyArray<string>;
+}
+
+export const CONTAINER_THEMES: ReadonlyArray<ContainerTheme> = [
+  {
+    id: 'demo',
+    name: 'Demo Workbench',
+    description: 'oh-my-ontology 본 제품 — 토폴로지 + 트리 + ERD 빌더.',
+    hubCount: 4,
+    capabilities: ['ontology 시각화', 'vault 동기', '검색', '빌더 캔버스'],
+    elements: ['Sigma.js', 'xyflow', 'IndexedDB', 'Next.js'],
+  },
+  {
+    id: 'demo-iam',
+    name: 'Demo IAM',
+    description: '인증·세션·권한 인프라.',
+    hubCount: 3,
+    capabilities: ['이메일 로그인', 'Google OAuth', '비밀번호 재설정', '세션 추적'],
+    elements: ['Firebase Auth', 'JWT', 'refresh token'],
+  },
+  {
+    id: 'demo-knowledge',
+    name: 'Demo Knowledge',
+    description: '문서 파이프라인 + 온톨로지 빌더 + 공개 그래프.',
+    hubCount: 3,
+    crossDepFrom: 'demo',
+    capabilities: ['문서 등록', 'frontmatter 추출', 'stub 승격', '검수 큐'],
+    elements: ['markdown parser', 'Firestore', 'Cloud Functions'],
+  },
+  {
+    id: 'demo-vault',
+    name: 'Demo Vault',
+    description: 'File System Access API 기반 로컬 폴더 동기.',
+    hubCount: 3,
+    capabilities: ['폴더 선택', 'manifest 빌드', '파일 변경 감지', 'frontmatter 패치'],
+    elements: ['File System Access API', 'IndexedDB', 'Web Worker'],
+  },
+  {
+    id: 'demo-search',
+    name: 'Demo Search',
+    description: '글로벌 검색 + 명령 팔레트.',
+    hubCount: 2,
+    crossDepFrom: 'demo-knowledge',
+    capabilities: ['fuzzy 매칭', 'kind 필터', '명령 팔레트', '단축키'],
+    elements: ['cmdk', 'Radix Dialog', '한·영 fuzzy matcher'],
+  },
+  {
+    id: 'demo-design',
+    name: 'Demo Design',
+    description: '디자인 시스템 — 토큰 · 컴포넌트 · 헌장.',
+    hubCount: 2,
+    capabilities: ['디자인 토큰', '다크/라이트 테마', '접근성', '모션 정책'],
+    elements: ['Tailwind CSS 4', 'CSS 변수', 'Radix UI', 'lucide-react'],
+  },
 ];
 
 // 허브 이름 풀 — container 와 조합해 "{Container Short} · {Hub Role}" 형식.
@@ -114,7 +156,7 @@ export function generateDemoBlueprint(): ReadonlyArray<BlueprintContainer> {
       const role = HUB_ROLE_POOL[(hashSeed(theme.id) + h) % HUB_ROLE_POOL.length];
       const hubSlug = `${theme.id}-${toSlugSuffix(role)}${h === 0 ? '' : `-${h}`}`;
       const hubName = `${theme.name} · ${role}`;
-      const nodeCount = pickInRange(rng, 5, 10);
+      const nodeCount = pickInRange(rng, 2, 4);
       const nodes: BlueprintNode[] = [];
       for (let n = 0; n < nodeCount; n += 1) {
         const nodeRole = NODE_ROLE_POOL[(n + h * 3) % NODE_ROLE_POOL.length];
