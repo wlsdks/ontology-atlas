@@ -65,6 +65,7 @@ const OntologyEditCanvas = dynamic<{
   ephemeralEdges: ReturnType<typeof useEphemeralEdges>["edges"];
   onSelectionChange?: (selectedId: string | null) => void;
   onConnect?: (connection: import("@xyflow/react").Connection) => void;
+  onVaultNodeDragStop?: (slug: string, position: { x: number; y: number }) => void;
 }>(
   () => import("./OntologyEditCanvas").then((m) => m.OntologyEditCanvas),
   { ssr: false, loading: () => <CanvasSkeleton /> },
@@ -201,6 +202,26 @@ export function OntologyEditPage() {
         toast.show(message, "error");
       } finally {
         setRenamingId(null);
+      }
+    },
+    [toast, vault],
+  );
+
+  // C-5 fire — vault 노드 drag 좌표를 frontmatter.canvasPosition 으로 patch.
+  // 같은 사용자가 재방문 시 + AI agent (MCP) 가 같은 vault read 시 동일 좌표.
+  // skipRefresh 로 manifest 재빌드 생략 — drag 직후 사용자 시각엔 캔버스 위치
+  // 그대로라 깜빡임 없게. 다음 cold load 부터 canvasPosition 반영.
+  const persistVaultPosition = useCallback(
+    async (slug: string, position: { x: number; y: number }) => {
+      try {
+        await vault.updateFrontmatter(
+          slug,
+          { canvasPosition: { x: position.x, y: position.y } },
+          { skipRefresh: true },
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "좌표 저장 실패";
+        toast.show(message, "error");
       }
     },
     [toast, vault],
@@ -409,6 +430,7 @@ export function OntologyEditPage() {
               ephemeralEdges={ephemeralEdges}
               onSelectionChange={setSelectedId}
               onConnect={addEphemeralEdge}
+              onVaultNodeDragStop={persistVaultPosition}
             />
             <BuilderOnboarding
               empty={ephemeralNodes.length === 0 && ephemeralEdges.length === 0}

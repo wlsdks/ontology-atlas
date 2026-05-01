@@ -60,14 +60,23 @@ function emptyState(status: Status = 'idle'): State {
  *  - string/number/boolean → `key: value` 로 직렬화 (문자열은 따옴표 없이,
  *    공백 포함이면 따옴표)
  *  - string[] → `key: [a, b, c]` inline 배열
+ *  - { primitive: ... } → `key: { k1: v1, k2: v2 }` inline 1-depth 객체
  *  - null → 해당 key 제거
  *
- * 한계: 기존에 없는 복잡한 nested object 는 무시. value serialization 은
- * 우리 간단 frontmatter 파서와 정확히 round-trip.
+ * 한계: nested 2-depth 이상 객체는 지원 안 함. value serialization 은 우리
+ * 간단 frontmatter 파서와 정확히 round-trip.
  */
+export type FrontmatterUpdateValue =
+  | string
+  | number
+  | boolean
+  | string[]
+  | Record<string, string | number | boolean>
+  | null;
+
 export function applyFrontmatterUpdates(
   raw: string,
-  updates: Record<string, string | number | boolean | string[] | null>,
+  updates: Record<string, FrontmatterUpdateValue>,
 ): string {
   let fmLines: string[] = [];
   let body = raw;
@@ -112,13 +121,25 @@ export function applyFrontmatterUpdates(
 }
 
 function serializeFrontmatterValue(
-  v: string | number | boolean | string[],
+  v: Exclude<FrontmatterUpdateValue, null>,
 ): string {
   if (Array.isArray(v)) {
     return `[${v.map((s) => (needsQuote(s) ? `"${s.replace(/"/g, '\\"')}"` : s)).join(', ')}]`;
   }
   if (typeof v === 'boolean') return v ? 'true' : 'false';
   if (typeof v === 'number') return String(v);
+  if (typeof v === 'object') {
+    // inline 1-depth object — `{ x: 100, y: 200 }`. parseFrontmatter 가 같은
+    // 형식 round-trip 인식 (parser.test.mjs 'inline object' case).
+    const entries = Object.entries(v).map(([k, val]) => {
+      let serialized: string;
+      if (typeof val === 'boolean') serialized = val ? 'true' : 'false';
+      else if (typeof val === 'number') serialized = String(val);
+      else serialized = needsQuote(val) ? `"${val.replace(/"/g, '\\"')}"` : val;
+      return `${k}: ${serialized}`;
+    });
+    return `{ ${entries.join(', ')} }`;
+  }
   return needsQuote(v) ? `"${v.replace(/"/g, '\\"')}"` : v;
 }
 
@@ -432,7 +453,7 @@ export function useLocalVault() {
   const updateFrontmatter = useCallback(
     async (
       slug: string,
-      updates: Record<string, string | number | boolean | string[] | null>,
+      updates: Record<string, FrontmatterUpdateValue>,
       opts: { skipRefresh?: boolean } = {},
     ) => {
       const fh = state.fileHandles.get(slug);

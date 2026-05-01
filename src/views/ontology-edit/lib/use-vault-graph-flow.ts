@@ -64,9 +64,24 @@ export function buildVaultGraphFlow(manifest: VaultManifest) {
     return null;
   }
 
-  const positions = computeGridLayout(ontologyDocs);
+  const fallbackPositions = computeGridLayout(ontologyDocs);
   const nodes: Node[] = ontologyDocs.map((doc) => {
-    const pos = positions.get(doc.slug) ?? { x: 0, y: 0 };
+    // frontmatter.canvasPosition: { x, y } 가 있으면 우선. 없으면 grid fallback.
+    // 사용자가 빌더에서 drag-stop 시 canvasPosition patch — 다음 mount 부터
+    // 같은 좌표 복원. AI agent (MCP) 도 같은 frontmatter 키 read 가능.
+    const fm = doc.frontmatter as Record<string, unknown>;
+    const cp = fm.canvasPosition;
+    const persistedPos =
+      cp && typeof cp === "object" && cp !== null
+        ? (() => {
+            const x = (cp as Record<string, unknown>).x;
+            const y = (cp as Record<string, unknown>).y;
+            return typeof x === "number" && typeof y === "number"
+              ? { x, y }
+              : null;
+          })()
+        : null;
+    const pos = persistedPos ?? fallbackPositions.get(doc.slug) ?? { x: 0, y: 0 };
     const kind = String(doc.frontmatter.kind);
     const title = doc.title || doc.slug;
     return {
@@ -81,10 +96,9 @@ export function buildVaultGraphFlow(manifest: VaultManifest) {
       },
       width: NODE_WIDTH,
       height: NODE_HEIGHT,
-      // C-5 — vault 노드도 drag 허용 (좌표 patch 는 후속 — 위치는 frontmatter
-      // canvasPosition 에 보낼 수 있으나 첫 단계는 read+rename 만).
-      draggable: false,
-      // edge 재생성 X (vault 가 진실원). 인스펙터에서 수정.
+      // C-5 fire — drag 활성. drag-stop 시 page 가 frontmatter.canvasPosition patch.
+      draggable: true,
+      // edge 재생성은 vault 진실원 보호 위해 비활성. 인스펙터/frontmatter 수정.
       connectable: false,
       selectable: true,
     };

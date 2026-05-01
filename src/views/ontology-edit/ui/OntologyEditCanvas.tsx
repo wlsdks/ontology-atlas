@@ -40,6 +40,7 @@ export function OntologyEditCanvas({
   ephemeralEdges,
   onSelectionChange,
   onConnect,
+  onVaultNodeDragStop,
 }: {
   accountId: string | null;
   vaultManifest: VaultManifest | null;
@@ -47,6 +48,8 @@ export function OntologyEditCanvas({
   ephemeralEdges: EphemeralEdge[];
   onSelectionChange?: (selectedId: string | null) => void;
   onConnect?: (connection: Connection) => void;
+  /** vault 노드 drag-stop 시 호출 — 좌표를 frontmatter.canvasPosition 으로 patch. */
+  onVaultNodeDragStop?: (slug: string, position: { x: number; y: number }) => void;
 }) {
   // mode 분기: vault.manifest 가 있으면 vault flow 우선 (local 모드 진실원).
   // 둘 다 동시에 띄우지 않는다 — 두 진실원 혼합은 사용자 mental model 깨뜨림.
@@ -139,6 +142,19 @@ export function OntologyEditCanvas({
     [onConnect],
   );
 
+  const handleNodeDragStop = useCallback(
+    (_event: unknown, node: Node) => {
+      // vault 노드만 patch — ephemeral 은 in-memory 가 진실원이라 무관.
+      const data = node.data as { vault?: boolean } | undefined;
+      if (!data?.vault || !useVaultMode) return;
+      onVaultNodeDragStop?.(node.id, {
+        x: Math.round(node.position.x),
+        y: Math.round(node.position.y),
+      });
+    },
+    [onVaultNodeDragStop, useVaultMode],
+  );
+
   // kind 추출 — '{kindLabel} · {title}' 형식에서 kindLabel → kind enum 매핑.
   function inferKindFromLabel(
     label: string,
@@ -179,6 +195,7 @@ export function OntologyEditCanvas({
         nodesConnectable
         onConnect={handleConnect}
         onSelectionChange={handleSelectionChange}
+        onNodeDragStop={handleNodeDragStop}
         fitView
         fitViewOptions={{ padding: 0.2 }}
       >
