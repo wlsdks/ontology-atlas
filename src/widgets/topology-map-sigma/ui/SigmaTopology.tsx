@@ -469,6 +469,27 @@ export function SigmaTopology({
   useEffect(() => {
     if (!containerRef.current) return;
     const renderer = createSigma(graph, containerRef.current, minimal);
+    // 카메라 URL 복원을 첫 paint 이전에 시행 — Sigma 가 default cam (0.5/0.5/1)
+    // 으로 frame 1 그린 뒤 useCameraUrlSync effect 가 늦게 setState 하면
+    // "default → 저장된 cam" 점프 깜빡임이 보인다. 여기서 동기적으로 미리
+    // 적용하면 첫 RAF 가 곧장 saved cam 으로 그린다.
+    if (!minimal && typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const cam = params.get('cam');
+        if (cam) {
+          const [xs, ys, rs] = cam.split(',');
+          const x = Number(xs);
+          const y = Number(ys);
+          const r = Number(rs);
+          if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(r)) {
+            renderer.getCamera().setState({ x, y, ratio: r, angle: 0 });
+          }
+        }
+      } catch {
+        /* URL 파싱 실패 무시 */
+      }
+    }
     // d3-force 기반 스프링-질량 물리. 옵시디언과 동일한 엔진이라 충돌 반사 +
     // velocity damping이 자연스럽게 나온다. 평소엔 alphaTarget=0이라 멈춰 있고
     // 드래그 시 pin으로 시뮬레이션을 깨워 주변이 물리적으로 반응한다.
@@ -1069,15 +1090,19 @@ export function SigmaTopology({
   // attributeFilter 한정. 노드/엣지 attr 을 새 팔레트로 다시 바른 뒤
   // setting 변경 + sigma.refresh 한 번 호출.
   //
-  // mount 시 한 번 즉시 sync — graph-build 가 SSR fallback (다크) 로 baked
-  // 됐을 수 있고 theme provider 가 attribute 를 설정한 시점이 observer attach
-  // 보다 빨랐을 수 있어, 초기 한 번 강제 동기화로 light 모드 첫 paint 차단.
+  // 첫 paint 가 build 시점 팔레트와 일치하면 (정상 케이스) repaint 안 함 —
+  // 무조건 RAF repaint 가 깜빡임 1 회 추가하던 문제 해결.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const repaint = () => {
+    let appliedPalette = paletteRefLocal.current;
+    const repaint = (force = false) => {
       const sigma = sigmaRef.current;
       if (!sigma) return;
       const palette = resolveTopologyPalette();
+      // 팔레트가 정확히 동일하면 attr 재페인트 + sigma.refresh 모두 skip.
+      // build 시점 baked 팔레트와 같다면 깜빡임 추가 없음.
+      if (!force && palette === appliedPalette) return;
+      appliedPalette = palette;
       paletteRefLocal.current = palette;
       graph.forEachNode((id, attrs) => {
         if (attrs.categoryId === '__container__') {
@@ -1102,13 +1127,10 @@ export function SigmaTopology({
       sigma.setSetting('labelColor', { color: resolveSigmaLabelColor() });
       sigma.refresh();
     };
-    // sigma 가 아직 안 만들어졌을 수 있음 — RAF 한 번 미뤄서 mount 후 paint.
-    const rafId = window.requestAnimationFrame(repaint);
     const target = document.documentElement;
-    const observer = new MutationObserver(repaint);
+    const observer = new MutationObserver(() => repaint());
     observer.observe(target, { attributes: true, attributeFilter: ['data-theme'] });
     return () => {
-      window.cancelAnimationFrame(rafId);
       observer.disconnect();
     };
   }, [graph]);

@@ -277,14 +277,14 @@ export function HomePage() {
     [setRouteState, dismissSigmaHint, resetSigmaFilters],
   );
   const [selectorOpen, setSelectorOpen] = useState(false);
-  // single-user 모드: workspace 컨테이너 fetch 비활성. derive fallback 만 사용.
-  const workspaceProjectContainers: import("../model/workspace-container-fallback").WorkspaceProjectContainerFallback[] = [];
+  // single-user 모드: workspace 컨테이너 fetch 비활성. flat projects 에서
+  // derive 한 fallback 만 사용. **identity stability 중요** — deps 에 매 렌더
+  // 마다 새 배열을 넣으면 useMemo 가 매번 invalidate 되어 SigmaTopology 의
+  // graph 가 매 render 마다 재빌드 + sigma 인스턴스 tear-down 까지 cascade
+  // 되며 화면이 멈춰 보인다 (drag / click 직후 freeze 의 root cause).
   const effectiveWorkspaceProjectContainers = useMemo(
-    () =>
-      workspaceProjectContainers.length > 0
-        ? workspaceProjectContainers
-        : deriveWorkspaceProjectContainers(projects, scopedAccountId),
-    [projects, scopedAccountId, workspaceProjectContainers],
+    () => deriveWorkspaceProjectContainers(projects, scopedAccountId),
+    [projects, scopedAccountId],
   );
   const activeContainerName =
     activeProjectId && effectiveWorkspaceProjectContainers.length > 0
