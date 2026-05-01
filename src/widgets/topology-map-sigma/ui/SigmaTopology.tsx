@@ -35,7 +35,6 @@ import { extractDomainLabel } from '../lib/labels';
 import {
   BOUNCE_AMPLITUDE,
   BOUNCE_DURATION_MS,
-  CONTAINER_HOVER_REVEAL_MS,
   computeBounceFactor,
 } from '../lib/reducer-anim';
 import {
@@ -55,7 +54,6 @@ import {
   applyOverlaySize,
   shouldHideNode,
 } from '../lib/reducer-overlay-flags';
-import { applyContainerHoverPreview } from '../lib/reducer-container-hover';
 import { SigmaContextMenu, type SigmaContextMenuData } from './SigmaContextMenu';
 import { SigmaFocusLabel } from './SigmaFocusLabel';
 import { SigmaEdgeTooltip, type SigmaEdgeTooltipData } from './SigmaEdgeTooltip';
@@ -343,19 +341,11 @@ export function SigmaTopology({
   // skip 조건에 사용. 매 interval 마다 graph 순회하면 O(N) × 매 120ms 라
   // 비쌈 → graph 빌드 시 한 번 계산.
   const hasAnyRecentRef = useRef(false);
-  // Layer 0 판정 (container 노드 존재) — edgeReducer 가 cross-hub deps 를
-  // baseline dim 하는 조건에 사용.
-  const hasContainersRef = useRef(false);
   // Selection bounce — selectedSlug 변경 순간 performance.now() 저장,
   // BOUNCE_DURATION_MS 경과 후 null. nodeReducer 가 이 값으로 phase 계산해
   // focus 노드 size 를 1 → 1.2 → 1 sine 으로 변조.
   const bounceStartRef = useRef<number | null>(null);
   const bounceRafRef = useRef<number | null>(null);
-  // Container hover reveal — enterNode 순간 performance.now() 저장.
-  // reducer 가 elapsed / CONTAINER_HOVER_REVEAL_MS 로 progress 계산해
-  // hub size 1 → 2.6 easeOutCubic 로 부드럽게. 해제 시 null.
-  const containerHoverStartRef = useRef<number | null>(null);
-  const containerHoverRafRef = useRef<number | null>(null);
   // 테마 (light/dark) 별 토폴로지 색 팔레트. 토글 시 mutation observer 가
   // 새 팔레트로 교체 + graph attr 재페인트 + sigma.refresh().
   const paletteRefLocal = useRef(resolveTopologyPalette());
@@ -457,13 +447,10 @@ export function SigmaTopology({
 
   useEffect(() => {
     let anyRecent = false;
-    let hasContainers = false;
     graph.forEachNode((_, attrs) => {
       if (attrs.recentlyUpdated) anyRecent = true;
-      if (attrs.categoryId === '__container__') hasContainers = true;
     });
     hasAnyRecentRef.current = anyRecent;
-    hasContainersRef.current = hasContainers;
   }, [graph]);
 
   useEffect(() => {
@@ -502,10 +489,6 @@ export function SigmaTopology({
     // hover/선택 시 이웃만 강조하고 나머지는 dim. 옵시디언 그래프 뷰 동작과 동일.
     // 1-hop 은 강조, 2-hop 은 subtle, 나머지는 깊게 dim — 발견성↑.
     let hoveredNode: string | null = null;
-    // Layer 0 에서 container 위에 마우스 올라갈 때 그 container 의 자식
-    // hub slug 집합 — nodeReducer 가 이 hub 들을 size·alpha 부스트해 부드럽게
-    // reveal. "preview before commit" 토스 감성. 선택 (drill-in) 과는 별개.
-    let hoveredContainerChildren = new Set<string>();
     const neighbors = new Set<string>();
     const secondHop = new Set<string>();
     // backref overlay 전용: 현재 focus 를 dependency 로 가진 프로젝트 slug 집합.
@@ -536,7 +519,6 @@ export function SigmaTopology({
     // ref 로 두고 theme 토글 observer 가 갱신.
     const paletteRef = paletteRefLocal;
     const DIM_EDGE = () => paletteRef.current.edgeDim;
-    const IDLE_DEPENDS_ON = () => paletteRef.current.edgeDependsOnIdle;
 
     // 경로 찾기 상태: pathAnchor 는 shift+클릭 대기 중인 시작 노드. pathNodes
     // 는 하이라이트할 경로 노드 set. 둘 다 비어 있으면 일반 상호작용.
@@ -584,24 +566,6 @@ export function SigmaTopology({
         recentPulseEnabled: overlayState.recentPulse,
         pulsePhase: pulsePhaseRef.current,
       });
-      // Layer 0 container hover preview — 해당 container 의 자식 hub 들만
-      // size·alpha 부스트해 "이 안에 뭐가 있나" 를 미리 훑게. focus 상태가
-      // 아닐 때만 (focus 우선). 환공포증 완화로 작아진 hub 를 hover 시점에만
-      // 선명하게 드러내는 전략. M-22: 250ms easeOutCubic 으로 size/alpha
-      // 점진 확대 → "뿅" 튀지 않고 sheet preview 처럼 부드럽게.
-      // Layer 0 container hover preview — applyContainerHoverPreview
-      // (../lib/reducer-container-hover, A4-2 추출) 가 250ms easeOutCubic
-      // size + alpha lerp + 60% forceLabel 한 번에 결정.
-      if (
-        hoveredContainerChildren.has(node) &&
-        !selectedSlugRef.current &&
-        attrs.isHub
-      ) {
-        return applyContainerHoverPreview(attrs, {
-          hoverStart: containerHoverStartRef.current,
-          now: performance.now(),
-        });
-      }
       // Owner tint overlay — 허브(인디고)는 허브 정체성을 유지하기 위해 건너뛰고
       // 비허브 노드만 owner 해시 색으로 덮어씌운다. focus/neighbor dim 보다 먼저
       // 적용해야 "dim 된 색" 이 아닌 "owner 색 기반 dim" 이 된다.
@@ -763,13 +727,6 @@ export function SigmaTopology({
 
       const focus = activeNode();
       if (!focus) {
-        // Layer 0 baseline: 1757 엣지가 한꺼번에 보이면 원형 노드 군집 +
-        // 선들이 교차하는 트립오포비아 패턴. focus 없을 때 cross-hub
-        // `depends-on` 엣지는 거의 투명으로 dim — 구조만 (contains) 남긴다.
-        // focus 가 생기면 (hover 포함) 복원돼 관계망 보임.
-        if (hasContainersRef.current && attrs.kind === 'depends-on') {
-          return { ...attrs, color: IDLE_DEPENDS_ON() };
-        }
         return attrs;
       }
       if (src === focus || tgt === focus) {
@@ -967,40 +924,6 @@ export function SigmaTopology({
       if (containerRef.current) {
         containerRef.current.style.cursor = 'pointer';
       }
-      // Layer 0 container hover 시 그 container 의 자식 hub slug 수집.
-      // hub → container 방향 `contains` 엣지 를 역으로 탐색 (inNeighbors).
-      if (attrs.categoryId === '__container__') {
-        hoveredContainerChildren = new Set(
-          graph.inNeighbors(node).filter((sibling) => {
-            const sAttrs = graph.getNodeAttributes(sibling);
-            return sAttrs.isHub;
-          }),
-        );
-        // Reveal 애니메이션 kick-off — reduceMotion 은 즉시 최대값.
-        containerHoverStartRef.current = reduceMotionRef.current
-          ? performance.now() - CONTAINER_HOVER_REVEAL_MS
-          : performance.now();
-        if (!reduceMotionRef.current) {
-          const animate = () => {
-            const start = containerHoverStartRef.current;
-            if (start === null) return;
-            const elapsed = performance.now() - start;
-            if (elapsed >= CONTAINER_HOVER_REVEAL_MS) {
-              renderer.refresh();
-              return; // reducer 가 이후엔 full scale 안정
-            }
-            renderer.refresh();
-            containerHoverRafRef.current = requestAnimationFrame(animate);
-          };
-          if (containerHoverRafRef.current !== null) {
-            cancelAnimationFrame(containerHoverRafRef.current);
-          }
-          containerHoverRafRef.current = requestAnimationFrame(animate);
-        }
-      } else {
-        hoveredContainerChildren.clear();
-        containerHoverStartRef.current = null;
-      }
       refreshNeighbors();
       renderer.refresh();
       setHoveredSlug(node);
@@ -1022,12 +945,6 @@ export function SigmaTopology({
       hoveredNode = null;
       if (containerRef.current) {
         containerRef.current.style.cursor = '';
-      }
-      hoveredContainerChildren.clear();
-      containerHoverStartRef.current = null;
-      if (containerHoverRafRef.current !== null) {
-        cancelAnimationFrame(containerHoverRafRef.current);
-        containerHoverRafRef.current = null;
       }
       refreshNeighbors();
       renderer.refresh();
