@@ -105,7 +105,7 @@ export function ProjectOntologyOverview({
       ) : null}
 
       <p className="mt-3 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-        문서로부터 추출 → 검수 → 승인된 개념·역량·요소. 이 프로젝트의 두 번째 척추.
+        vault frontmatter (또는 빌더) 가 키워낸 개념·역량·요소. 이 프로젝트의 두 번째 척추.
       </p>
     </section>
   );

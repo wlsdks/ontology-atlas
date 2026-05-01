@@ -81,7 +81,7 @@ export function DocumentOntologyEvidenceSection({
         </p>
       ) : null}
       <p className="mt-3 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-        검수 → 승인 흐름의 결과 — 이 문서가 어떤 개념·역량·요소의 evidence 로 반영되었는지 보여줍니다.
+        이 문서가 어떤 개념·역량·요소의 evidence 로 frontmatter 에서 참조되는지 보여줍니다.
       </p>
     </section>
   );
