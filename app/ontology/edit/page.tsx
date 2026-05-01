@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { OntologyEditPage } from "@/views/ontology-edit";
 
 export const metadata: Metadata = {
-  title: "온톨로지 아틀라스",
+  title: "온톨로지 빌더",
 };
 
 /**

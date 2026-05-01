@@ -4,12 +4,13 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Info } from "lucide-react";
 import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
 import { useUserAuth } from "@/features/user-auth";
 import { addManualKnowledgeNode } from "@/entities/knowledge-graph";
 import { slugify } from "@/shared/lib/slugify";
 import { OperationsNav } from "@/widgets/operations-nav";
-import { useToast } from "@/shared/ui";
+import { Tooltip, useToast } from "@/shared/ui";
 import { useEphemeralNodes } from "../lib/use-ephemeral-nodes";
 import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
 import { downloadAtlasFrontmatter } from "../lib/export-frontmatter";
@@ -147,32 +148,43 @@ export function OntologyEditPage() {
     return () => window.removeEventListener("keydown", handler);
   }, [selectedId, addNode, removeNode, findById]);
 
+  const helpTooltip = (
+    <div className="max-w-xs space-y-2 text-[12px] leading-5">
+      <p>
+        지식 그래프를 끌어다 그려서 만드는 워크스페이스.
+      </p>
+      <ul className="space-y-1 pl-3 text-[color:var(--color-text-tertiary)]">
+        <li>· 왼쪽 palette 에서 종류를 골라 <strong>클릭</strong> → 새 노드 추가</li>
+        <li>· 노드의 <strong>핸들에서 drag</strong> → 다른 노드로 drop → 관계 추가</li>
+        <li>· 임시 노드는 인디고 <strong>dashed</strong> → 인스펙터에서 이름 입력 + 저장</li>
+      </ul>
+      <p className="font-mono text-[10px] tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
+        N · 새 노드  /  Del · 선택 삭제  /  Esc · 선택 해제
+      </p>
+    </div>
+  );
+
   return (
     <div className="min-h-dvh bg-[color:var(--color-canvas)] text-[color:var(--color-text-primary)]">
       <OperationsNav />
-      <main className="mx-auto flex h-[calc(100dvh-3.5rem)] max-w-[1400px] flex-col px-4 py-4 md:px-6">
-        <header className="mb-3 flex flex-wrap items-baseline justify-between gap-3">
-          <div>
+      <main className="mx-auto flex h-[calc(100dvh-3.5rem)] w-full max-w-[1800px] flex-col px-3 py-3 md:px-5 md:py-4">
+        <header className="mb-2 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]">
-              Ontology Atlas
+              Ontology Builder
             </p>
-            <h1 className="mt-1 text-2xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-              온톨로지 아틀라스
+            <h1 className="text-xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              온톨로지 빌더
             </h1>
-            <p className="mt-1 max-w-xl text-xs leading-5 text-[color:var(--color-text-tertiary)]">
-              지식 그래프를 끌어다 그려서 만드는 워크스페이스. 왼쪽 palette 에서 종류를 골라 클릭하면 새 노드가 생기고,
-              핸들에서 drag 해 다른 노드로 drop 하면 관계가 추가돼요. 임시 노드는 인디고 dashed 표시 → 인스펙터에서 저장.
-            </p>
-            <p className="mt-2 flex flex-wrap items-center gap-1.5 font-mono text-[10px] tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              <kbd className="rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-1.5 py-0.5">N</kbd>
-              <span>새 노드</span>
-              <span aria-hidden>·</span>
-              <kbd className="rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-1.5 py-0.5">Del</kbd>
-              <span>선택 노드 삭제</span>
-              <span aria-hidden>·</span>
-              <kbd className="rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-1.5 py-0.5">Esc</kbd>
-              <span>선택 해제</span>
-            </p>
+            <Tooltip content={helpTooltip} withProvider={false}>
+              <span
+                role="img"
+                aria-label="빌더 사용법 안내"
+                className="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-indigo-accent)]"
+              >
+                <Info size={13} />
+              </span>
+            </Tooltip>
           </div>
           <div className="flex items-center gap-2">
             {ephemeralNodes.length > 0 || ephemeralEdges.length > 0 ? (

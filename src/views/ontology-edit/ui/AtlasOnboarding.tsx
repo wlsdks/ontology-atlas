@@ -57,13 +57,13 @@ export function AtlasOnboarding({ empty }: AtlasOnboardingProps) {
           exit={{ opacity: 0, y: 12 }}
           transition={{ duration: 0.22, ease: [0.42, 0, 0.58, 1] }}
           role="dialog"
-          aria-label="Atlas 시작 안내"
+          aria-label="빌더 시작 안내"
           className="pointer-events-auto absolute left-1/2 top-1/2 z-20 w-[min(440px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[color:rgba(94,106,210,0.32)] bg-[color:var(--color-panel)] p-5 shadow-[0_24px_48px_rgba(0,0,0,0.42)]"
         >
           <header className="mb-4 flex items-start justify-between gap-3">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]">
-                Ontology Atlas — 시작
+                Ontology Builder — 시작
               </p>
               <h2 className="mt-1 text-[15px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 3 단계로 첫 그래프를 그려요

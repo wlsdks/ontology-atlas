@@ -226,10 +226,17 @@ export function OntologyViewPage() {
             온톨로지 트리
             <Tooltip
               content={
-                <div className="max-w-[280px] text-left">
-                  <p className="font-medium">온톨로지란?</p>
-                  <p className="mt-1 text-[color:var(--color-text-tertiary)]">
-                    문서에서 추출한 개념(노드)과 관계(엣지)의 묶음이에요. 프로젝트의 도메인·역량·요소를 계층 그래프로 정리한 결과로, 검수에서 승인한 노드만 여기 보입니다.
+                <div className="max-w-[320px] space-y-2 text-left">
+                  <p className="font-medium text-[color:var(--color-text-primary)]">
+                    승인된 ontology 노드의 계층 뷰
+                  </p>
+                  <p className="text-[color:var(--color-text-tertiary)]">
+                    문서에서 추출한 개념·관계 중 <strong>검수에서 승인된 것</strong>을{" "}
+                    <span className="font-mono text-xs">project → domain → capability → element</span>{" "}
+                    순서로 펼쳐서 보여줍니다.
+                  </p>
+                  <p className="text-[color:var(--color-text-tertiary)]">
+                    문서 노드는 근거 역할이라 트리에서 제외돼요. <strong>그래프를 직접 그리려면 우측 &lsquo;빌더 열기&rsquo;</strong> 버튼을 눌러보세요.
                   </p>
                 </div>
               }
@@ -237,7 +244,7 @@ export function OntologyViewPage() {
             >
               <button
                 type="button"
-                aria-label="온톨로지가 무엇인지 설명"
+                aria-label="온톨로지 트리가 무엇인지 설명"
                 className="inline-flex items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
               >
                 <Info size={15} aria-hidden />
@@ -276,13 +283,19 @@ export function OntologyViewPage() {
                 <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline">⌘K</kbd>
               </button>
             </Tooltip>
-            <Tooltip content="ERD 캔버스 편집기 — 노드를 끌어다 놓고 관계 그리기 (v1)" withProvider={false}>
+            <Tooltip content="빌더 캔버스 — 왼쪽 palette 에서 종류 골라 클릭, 핸들 drag 로 관계 추가" withProvider={false}>
               <Link
                 href={"/ontology/edit/"}
-                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.12)] px-3 text-xs text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)]"
-                aria-label="ontology ERD 캔버스 편집기 열기"
+                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-brand)] px-4 text-xs font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-opacity hover:opacity-90"
+                aria-label="온톨로지 빌더 — 캔버스에서 직접 그리기"
               >
-                편집기
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="7" height="7" rx="1" />
+                  <path d="M10 6.5h4M17.5 10v4M10 17.5h4" />
+                </svg>
+                빌더 열기 →
               </Link>
             </Tooltip>
             <Tooltip content="ontology 인사이트 — kind 분포 · 허브 노드 · 최근 활동 · 미연결" withProvider={false}>
@@ -314,13 +327,6 @@ export function OntologyViewPage() {
             </Tooltip>
           </div>
         </div>
-        <p className="break-keep text-sm leading-7 text-[color:var(--color-text-secondary)]">
-          승인된 노드와 관계를{" "}
-          <span className="font-mono text-xs whitespace-nowrap">
-            project → domain → capability → element
-          </span>{" "}
-          계층으로 펼쳐서 봅니다. 문서 노드는 근거 역할이라 트리에서 제외되어 있어요.
-        </p>
       </section>
 
       <section className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-5">

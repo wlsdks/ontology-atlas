@@ -23,6 +23,14 @@ export function useApprovedGraphFlow(accountId: string | null) {
 
   useEffect(() => {
     setError(null);
+    // 비로그인 사용자는 cloud canonical 컬렉션 권한이 없으므로 raw Firestore
+    // 'Missing or insufficient permissions' 에러가 사용자에게 노출됐다. 비로그인
+    // 은 *예상된 상태* 라 구독 자체를 건너뛰고 빈 그래프 + loaded:true 로
+    // 처리해 ephemeral 캔버스만 사용 가능하게.
+    if (!accountId) {
+      setInsight({ nodes: [], edges: [], meta: null });
+      return;
+    }
     const unsubscribe = subscribeKnowledgeApprovedGraph(
       accountId,
       (next) => setInsight(next),
