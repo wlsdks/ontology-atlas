@@ -64,13 +64,13 @@ export function BuilderOnboarding({ empty }: BuilderOnboardingProps) {
           <header className="mb-4 flex items-start justify-between gap-3">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]">
-                온톨로지 빌더
+                도메인 지도 빌더
               </p>
               <h2 className="mt-1 text-[15px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                세 번 클릭이면 내 첫 노드가 생겨요
+                ERD 이상 — 우리 도메인의 *지도* 를 만들어요
               </h2>
               <p className="mt-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-                AI 가 따로 추출해주는 게 아니라 — 내가 직접 그리는 캔버스예요.
+                코드/DB 스키마가 아니라 *기능·관계·역할* 의 시각 지도. 비개발자 (PM·디자이너·운영) 도 직접 그릴 수 있어요. AI agent (Claude Code 등) 도 같은 지도에 노드 추가.
               </p>
             </div>
             <button
@@ -89,9 +89,9 @@ export function BuilderOnboarding({ empty }: BuilderOnboardingProps) {
               </span>
               <p>
                 <strong className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                  왼쪽 종류 한 개를 클릭
+                  왼쪽 종류 클릭
                 </strong>{" "}
-                — 프로젝트 · 도메인 · 역량 · 요소 중 하나. 가운데에 노드가 떠요.
+                — 프로젝트 · 도메인 · 역량 · 요소 4 종류. 가운데에 임시 노드가 떠요. (코드 식별자: project / domain / capability / element)
               </p>
             </li>
             <li className="flex gap-2.5">
@@ -102,7 +102,7 @@ export function BuilderOnboarding({ empty }: BuilderOnboardingProps) {
                 <strong className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                   노드 가장자리 점을 끌어
                 </strong>{" "}
-                다른 노드 위에 놓으면 — 둘 사이에 관계가 그려져요.
+                다른 노드 위에 놓으면 — 둘 사이에 *관계 (의존 / 포함 / 묘사)* 가 그려져요.
               </p>
             </li>
             <li className="flex gap-2.5">
@@ -110,11 +110,10 @@ export function BuilderOnboarding({ empty }: BuilderOnboardingProps) {
                 <Save size={12} />
               </span>
               <p>
-                노드를 다시 한 번 클릭하면 오른쪽 패널이 열려요. 이름 적고{" "}
                 <strong className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                   저장
                 </strong>{" "}
-                — 영구 그래프에 박혀요.
+                — vault 모드면 `.md` 로 디스크에 직접, cloud 모드면 Firestore 에. 같은 지도를 AI agent 도 MCP 로 read/write.
               </p>
             </li>
           </ol>

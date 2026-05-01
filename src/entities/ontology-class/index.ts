@@ -7,6 +7,7 @@ export {
   DEFAULT_ONTOLOGY_CLASSES,
   isOntologyClassId,
   getOntologyKindLabel,
+  getOntologyKindIcon,
   fromFirestore,
   toFirestore,
 } from './model';

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Search, X } from "lucide-react";
-import { getOntologyKindLabel } from "@/entities/ontology-class";
+import { getOntologyKindIcon, getOntologyKindLabel } from "@/entities/ontology-class";
 import { ManualSourceChip } from "@/entities/knowledge-graph";
 import {
   filterTreeByQuery,
@@ -69,11 +69,15 @@ const KIND_TONE: Record<
 
 function KindChip({ kind }: { kind: string }) {
   const tone = KIND_TONE[kind] ?? KIND_TONE.element!;
+  // T35 — kind 별 lucide icon. Phase 4 (비개발자 친화) — 시각 직관 보강.
+  // 색은 chip tone 의 text color 이미 currentColor — 추가 색 도입 0.
+  const Icon = getOntologyKindIcon(kind);
   return (
     <span
-      className="inline-flex items-center break-keep rounded-full border px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em]"
+      className="inline-flex items-center gap-1 break-keep rounded-full border px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em]"
       style={{ backgroundColor: tone.bg, color: tone.text, borderColor: tone.border }}
     >
+      <Icon size={10} aria-hidden />
       {getOntologyKindLabel(kind)}
     </span>
   );
