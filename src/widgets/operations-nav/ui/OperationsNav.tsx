@@ -36,17 +36,17 @@ function buildItems(mode: 'static' | 'local' | 'cloud'): ReadonlyArray<NavItem> 
       label: '문서',
       description:
         mode === 'local'
-          ? '내 vault 의 .md 들 — 직접 편집하면 즉시 ontology stub 으로 자람'
+          ? '내 vault 의 .md 들 — frontmatter `kind:` 만 적으면 즉시 ontology 노드'
           : '문서 등록 + frontmatter 또는 빌더에서 ontology 노드 추가',
       basePath: docsBase,
       prefixes: ['/knowledge', '/docs'],
     },
-    // ontology view — 승인된 노드/관계의 트리. mission 의 척추.
+    // ontology view — vault frontmatter 노드/관계의 트리. mission 의 척추.
     // / 도 OntologyViewPage 를 렌더하므로 prefix 에 양쪽 포함.
     {
       id: 'ontology',
       label: '온톨로지',
-      description: '승인된 노드·관계의 계층 그래프 (project → domain → capability → element)',
+      description: 'vault frontmatter 의 노드·관계 계층 그래프 (project → domain → capability → element)',
       basePath: '/',
       prefixes: ['/ontology'],
     },
@@ -63,7 +63,7 @@ function buildItems(mode: 'static' | 'local' | 'cloud'): ReadonlyArray<NavItem> 
     {
       id: 'settings',
       label: '정리',
-      description: '카테고리 / 상태 / API 키 / 프로젝트 import 같은 공간 설정',
+      description: '카테고리 / 상태 / 프로젝트 import 같은 공간 설정',
       basePath: '/settings/categories/',
       prefixes: ['/settings'],
     },
