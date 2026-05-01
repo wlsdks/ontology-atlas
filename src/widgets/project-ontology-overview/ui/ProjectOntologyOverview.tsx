@@ -2,13 +2,14 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { ManualSourceChip, useKnowledgePublicNodes } from "@/entities/knowledge-graph";
+import { ManualSourceChip } from "@/entities/knowledge-graph";
 import { getOntologyKindLabel } from "@/entities/ontology-class";
+import { useOntologyInsight } from "@/features/vault-ontology";
 import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
 import { buildMeaningfulOntologyStats } from "@/shared/lib/ontology-tree";
 
 export interface ProjectOntologyOverviewProps {
-  /** 공개 surface — accountId 는 보통 null (projection 은 accountId 없으면 demo). */
+  /** 공개 surface — accountId 는 보통 null (vault/static 사용자는 항상 null). */
   accountId: string | null;
   projectSlug: string;
   /** 옵션 — sample 노드 표시 limit. 기본 6. */
@@ -18,9 +19,10 @@ export interface ProjectOntologyOverviewProps {
 /**
  * 프로젝트 상세 페이지 inline 카드 — "이 프로젝트에 자란 ontology 노드 N".
  *
- * `knowledgePublicNodes` 자체 구독 + `projectIds.includes(projectSlug)` 필터.
- * project / document kind 는 메타라 sample 에서 제외 (capability / element / domain
- * 위주). 매치 0 은 자체 숨김.
+ * `useOntologyInsight` (vault > 빌드타임 dogfood > Firestore 진실원 우선순위)
+ * 의 nodes 를 `projectIds.includes(projectSlug)` 로 필터. project / document
+ * kind 는 메타라 sample 에서 제외 (capability / element / domain 위주). 매치
+ * 0 은 자체 숨김 — vault / dogfood / cloud 어느 모드든 매치만 있으면 surface.
  *
  * 클릭 시 `/ontology/?account=...` 점프 — 트리에서 해당 프로젝트 root 로 진입.
  */
@@ -29,7 +31,8 @@ export function ProjectOntologyOverview({
   projectSlug,
   limit = 6,
 }: ProjectOntologyOverviewProps) {
-  const nodes = useKnowledgePublicNodes(accountId);
+  const { insight } = useOntologyInsight(accountId);
+  const nodes = insight?.nodes ?? [];
 
   const matched = useMemo(
     () => nodes.filter((n) => n.projectIds.includes(projectSlug)),
