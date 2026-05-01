@@ -56,15 +56,17 @@
 → mcp__oh-my-ontology__get_concept({ slug: 'capabilities/mcp-server' })
 ```
 
-## 도구 5종
+## 도구 7종 (v0.2.0)
 
 | 도구 | 동작 |
 |---|---|
 | `list_concepts` | vault 의 모든 노드 (`kind:` frontmatter 가진 .md). 옵션 `kind`, `limit`. |
 | `get_concept` | 단일 `slug` (확장자 제외) 의 frontmatter + body excerpt + 이웃 (dependencies / relates) |
 | `find_evidence` | `title` 부분매칭 — frontmatter title/capabilities/elements + body 본문 검색 |
+| `find_backlinks` | 특정 `slug` 를 가리키는 다른 노드들. frontmatter array 키 (capabilities / elements / dependencies / relates / …) + body wikilink/mdlink 모두 검사. |
 | `add_concept` | 새 `.md` 노드 작성. 필수: `slug` `kind` `title`. 옵션: `domain` `capabilities` `elements` `body`. 기존 slug 면 throw. |
 | `add_relation` | 두 slug 사이 edge. `type`: `depends_on` (→ dependencies), `relates` (→ relates), `contains` (→ contains), `describes` (→ describes). frontmatter 배열에 append. |
+| `patch_concept` | 기존 노드 frontmatter (key 단위 patch — null = 삭제) + body 갱신. `add_concept` 가 throw 한 기존 slug 를 *수정* 할 때 사용. |
 
 ## 로컬 검증
 
@@ -92,8 +94,9 @@ printf '%s\n' \
 
 ## 상태
 
-- 0.1.0 — 5 도구 (read 3 + write 2). 단일 파일 노드. 의존: `@modelcontextprotocol/sdk@^1.0.0`.
-- 이후: `patch_concept` (기존 노드 frontmatter 패치), `delete_concept` (위험 — confirmation 필요), `find_path` (graph traversal).
+- 0.2.0 — 7 도구 (read 4 + write 3). 단일 파일 노드. 의존: `@modelcontextprotocol/sdk@^1.0.0`.
+- 0.1.0 — 5 도구 (read 3 + write 2).
+- 이후: `delete_concept` (위험 — confirmation 필요), `find_path` (graph traversal), `list_kinds` (kind 분포 요약).
 
 ## 문제 해결
 
