@@ -3,10 +3,8 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import {
-  KNOWLEDGE_EDGE_TYPES,
-  useKnowledgePublicInsight,
-} from "@/entities/knowledge-graph";
+import { KNOWLEDGE_EDGE_TYPES } from "@/entities/knowledge-graph";
+import { useOntologyInsight } from "@/features/vault-ontology";
 import {
   computeEdgeTypeDistribution,
   selectStrongEdges,
@@ -35,7 +33,7 @@ export function OntologyRelationsPage() {
   const searchParams = useSearchParams();
   const accountId = null;
 
-  const { insight, error } = useKnowledgePublicInsight(accountId);
+  const { insight, error } = useOntologyInsight(accountId);
 
   // type 필터 — null 이면 전체. 분포 panel 의 행 클릭으로 toggle.
   const [selectedType, setSelectedType] = useState<string | null>(null);

@@ -6,8 +6,8 @@ import { useSearchParams } from "next/navigation";
 import {
   KNOWLEDGE_EDGE_TYPES,
   ManualSourceChip,
-  useKnowledgePublicInsight,
 } from "@/entities/knowledge-graph";
+import { useOntologyInsight } from "@/features/vault-ontology";
 import { getOntologyKindLabel } from "@/entities/ontology-class";
 import {
   buildActivityTimeline,
@@ -44,7 +44,7 @@ export function OntologyInsightsPage() {
   const searchParams = useSearchParams();
   const accountId = null;
 
-  const { insight, error } = useKnowledgePublicInsight(accountId);
+  const { insight, error } = useOntologyInsight(accountId);
 
   const kindDist = useMemo(
     () => (insight ? computeKindDistribution(insight.nodes) : new Map<string, number>()),
