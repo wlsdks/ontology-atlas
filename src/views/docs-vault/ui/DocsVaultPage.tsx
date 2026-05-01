@@ -47,7 +47,6 @@ import {
   type VaultManifest,
   type VaultMode,
 } from '@/entities/docs-vault';
-import { createSharedDoc } from '@/entities/shared-doc';
 import { DocsVaultAudienceMismatchNotice } from '@/widgets/docs-vault/ui/DocsVaultAudienceMismatchNotice';
 import { DocsVaultEditor } from '@/widgets/docs-vault/ui/DocsVaultEditor';
 import { DocsVaultProjectDepsBar } from '@/widgets/docs-vault/ui/DocsVaultProjectDepsBar';
@@ -693,81 +692,6 @@ function AdminDocsContent() {
     }
   }, [canEditCurrent, selectedSlug, manifest, localVault]);
 
-  /**
-   * 선택 문서를 /share?t={token} 임시 공개 URL 로 변환. 사용자에게
-   * 만료일(일) 과 최대 조회 수를 prompt 로 받는다. 둘 다 empty 면 영구·
-   * 무제한.
-   */
-  const handleShareDoc = useCallback(async () => {
-    if (!selectedSlug || typeof window === 'undefined') return;
-    const doc = manifest.docs.find((d) => d.slug === selectedSlug);
-    if (!doc) return;
-    // 제한 입력
-    const expiresRaw = window.prompt(
-      '며칠 후 만료? (공란 = 영구)',
-      '7',
-    );
-    if (expiresRaw === null) return; // 취소
-    const expiresInDays =
-      expiresRaw.trim() === ''
-        ? null
-        : Math.max(1, Math.floor(Number(expiresRaw)));
-    if (expiresInDays !== null && !Number.isFinite(expiresInDays)) {
-      window.alert('유효한 숫자를 입력하세요.');
-      return;
-    }
-    const maxViewsRaw = window.prompt(
-      '최대 조회 수? (공란 = 무제한)',
-      '',
-    );
-    if (maxViewsRaw === null) return;
-    const maxViews =
-      maxViewsRaw.trim() === ''
-        ? null
-        : Math.max(1, Math.floor(Number(maxViewsRaw)));
-    if (maxViews !== null && !Number.isFinite(maxViews)) {
-      window.alert('유효한 숫자를 입력하세요.');
-      return;
-    }
-    // md 본문 취득 (서버·로컬 공용 resolver)
-    let content: string;
-    try {
-      if (getDocContent) {
-        content = await getDocContent(selectedSlug);
-      } else {
-        const res = await fetch(`/docs-vault/${selectedSlug}.md`, {
-          cache: 'no-cache',
-        });
-        content = res.ok ? await res.text() : '';
-      }
-    } catch (err) {
-      window.alert(
-        `본문 로드 실패: ${err instanceof Error ? err.message : String(err)}`,
-      );
-      return;
-    }
-    try {
-      const { url } = await createSharedDoc({
-        slug: selectedSlug,
-        title: doc.title,
-        content,
-        expiresInDays,
-        maxViews,
-      });
-      // URL 복사 + 사용자에게 모달 alert 로 노출
-      try {
-        await navigator.clipboard.writeText(url);
-      } catch {
-        /* 권한 없으면 그냥 alert 에만 표시 */
-      }
-      window.alert(`공유 URL 이 클립보드에 복사됐어요.\n\n${url}`);
-    } catch (err) {
-      window.alert(
-        `공유 링크 생성 실패: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-  }, [selectedSlug, manifest, getDocContent]);
-
   const handleExportDocHtml = useCallback(() => {
     if (!selectedSlug || typeof window === 'undefined') return;
     const doc = manifest.docs.find((d) => d.slug === selectedSlug);
@@ -1373,13 +1297,6 @@ function AdminDocsContent() {
         onRun: () => handleExportDocHtml(),
       },
       {
-        id: 'share-doc',
-        label: '공유 링크 만들기 (/share/?t=…)',
-        icon: '🔗',
-        visible: selectedDocExists,
-        onRun: () => void handleShareDoc(),
-      },
-      {
         id: 'export',
         label: '볼트 백업 내보내기 (JSON)',
         icon: '⬇',
@@ -1447,7 +1364,6 @@ function AdminDocsContent() {
     handleViewChange,
     handleRenameCurrent,
     handleScaffoldTopology,
-    handleShareDoc,
     handleSourceChange,
     handleTogglePin,
   ]);

@@ -15,7 +15,6 @@ rules_version = '2';
 // - knowledgeJobs / knowledgeChunks / knowledgeEvidence / knowledgeOutputs /
 //   knowledgeReviews / knowledgeApprovalEvents / knowledgePublishes :
 //   trusted server (Cloud Function Admin SDK) 만 write. client 는 read.
-// - sharedDocs : token 기반 1회성 공개 링크.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -246,29 +245,6 @@ service cloud.firestore {
                            && request.resource.data.versionId is string
                            && request.resource.data.activatedBy == request.auth.uid;
       allow delete: if false;
-    }
-
-    // Share URL (S-1) — Docs Vault 의 임시 공개 링크. token 자체가 credential.
-    match /sharedDocs/{token} {
-      allow read: if true;
-      allow create:
-        if isAuthed()
-        && request.resource.data.createdBy == request.auth.uid
-        && request.resource.data.content is string
-        && request.resource.data.slug is string
-        && request.resource.data.title is string
-        && request.resource.data.viewCount == 0;
-      allow update:
-        if isAuthed()
-        && resource.data.createdBy == request.auth.uid;
-      // viewCount 는 누구나 +1 가능 — 조회수 증가용.
-      allow update:
-        if request.resource.data.diff(resource.data).affectedKeys()
-            .hasOnly(['viewCount'])
-        && request.resource.data.viewCount == resource.data.viewCount + 1;
-      allow delete:
-        if isAuthed()
-        && resource.data.createdBy == request.auth.uid;
     }
 
     match /{document=**} {
