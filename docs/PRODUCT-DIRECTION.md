@@ -209,36 +209,33 @@ AI agent 가 codebase 진입 시 첫 페이지에서 이걸 보면 mental model 
 
 ## 6. 단계 — 실행 가능 하게 분해
 
-### Phase 1 — 정체성 정렬 (UI)
+### ✅ Phase 1 — 정체성 정렬 (UI) — 머지 완료
 
-1. `/` 를 ontology hub 로 (현 `/ontology` 콘텐츠 끌어올림)
-2. `/topology` 신규 라우트 (현 `/` 콘텐츠 이전)
-3. 랜딩 카피 — "AI 와 함께 자라는 codebase ontology"
-4. WorkspaceOntologyStrip → 삭제 또는 메인 콘텐츠로 격상
-5. demo 슬림 — 21 컨테이너 → 4-6, 2250 노드 → 50, ontology 노드 60+ 채움
+1. ✅ `/` 를 ontology hub 로
+2. ✅ `/topology` 신규 라우트
+3. ✅ 랜딩 카피 — "AI 와 함께 자라는 codebase ontology"
+4. ✅ demo 슬림 — 21 → 6 컨테이너, ~50 flat projects, ontology 노드 ~42
 
-### Phase 2 — Self-hosting
+### ⏸ Phase 2 — Self-hosting — DEFERRED
 
-1. `package.json` 에 `bin` 추가, CLI entrypoint
-2. 정적 export 산출 + 미니 Express/Fastify 서버 또는 standalone Next.js 모드
-3. `OMOT_VAULT` 환경 변수로 vault 위치 지정
-4. `npx oh-my-ontology` 로 즉시 실행 가능
-5. README / 설치 가이드 정리
+`bin` + CLI 패키지화. **user 정책상 firebase 배포 안 함** + `pnpm dev` 로 충분히 검증 가능 → DEFERRED. 추후 재검토.
 
-### Phase 3 — AI agent partner
+### ✅ Phase 3 — AI agent partner — 머지 완료
 
-1. `oh-my-ontology-mcp` 패키지 — MCP 서버 구현
-2. 도구: list/get/add concept · add_relation · find_evidence
-3. CLI 명령 (`ohmy`) — frontmatter 직접 조작
-4. AGENTS.md 자동 생성 (빌드 시 ontology 인덱스)
-5. 이 프로젝트의 `docs/` 자체로 dogfooding — 우리가 만들면서 우리 코드의 ontology 도 자라게
+1. ✅ `mcp/` 패키지 — MCP 서버 v0.2.0 (PR #5/#7)
+2. ✅ 7 도구: `list_concepts` / `get_concept` / `find_evidence` / `find_backlinks` / `add_concept` / `add_relation` / `patch_concept`
+3. ⏸ CLI 명령 (`ohmy`) — DEFERRED (MCP 가 충분, CLI 는 Phase 2 의존)
+4. ⏸ AGENTS.md 자동 생성 — DEFERRED (수동 갱신 + dogfood vault 가 대체)
+5. ✅ `docs/ontology/` dogfood vault — 21 노드, 자기 mental model 표현
 
-### Phase 4 — 비개발자 surface 다듬기
+### ⏳ Phase 4 — 비개발자 surface 다듬기 — 진행 예정
 
-1. 빌더 onboarding "ERD 이상 — 도메인 지도" 카피 정렬
-2. 기술 용어 ↔ 한국어 일반 용어 매핑 layer
-3. 노드 색 / 아이콘 — kind 별 친숙
-4. 검색 시 "코드 / 문서 / 사람" 분류 (PM 친화)
+자세히: `docs/BACKLOG.md` T33-T36.
+
+1. ⏳ 빌더 onboarding "ERD 이상 — 도메인 지도" 카피 정렬
+2. ⏳ 기술 용어 ↔ 한국어 일반 용어 매핑 layer
+3. ⏳ 노드 색 / 아이콘 — kind 별 친숙
+4. ⏳ 검색 시 "코드 / 문서 / 사람" 분류 (PM 친화)
 
 ---
 

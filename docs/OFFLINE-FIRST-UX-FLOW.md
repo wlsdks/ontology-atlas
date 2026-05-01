@@ -1,6 +1,6 @@
 # Offline-first UX Flow
 
-> **Status**: 제안 단계 (DRAFT). 자율 루프 iter#25 (2026-05-01) 작성. main merge 전 user 승인 필요. 특히 *Open question #1 (HomePage 자동 vault 전환)* 답이 정해진 후 §3 의 진입점 분기 확정.
+> **Status**: 활성 가이드 (Q1=(a) 답 + `useOntologyInsight` 머지 완료, PR #6). 진입점 분기 확정됨 — vault 활성 시 `/` ontology hub 가 자동 vault 모드, vault 미활성 시 cloud / static fallback.
 
 이 문서는 *비로그인 사용자가 첫 화면에서 0 마찰로 사용 시작* 하도록 라우트별 진입 동작·권한 게이트·온보딩 단계를 명시한다. `.claude/rules/local-first.md` 의 헌장 ("Notion 처럼 폴더만 선택해도 사용") 을 UI 레이어에서 어떻게 구현하는지 정의.
 

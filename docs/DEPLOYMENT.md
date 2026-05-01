@@ -1,8 +1,10 @@
 # Deployment Guide
 
-> Firebase Hosting 기반 정적 배포. **Live**: https://
+> Firebase Hosting 기반 정적 배포 가이드. **Live**: https://
 >
 > 이 문서는 Firebase에 배포할 때 필요한 모든 단계를 한 곳에 모아놓은 체크리스트다. 처음 세팅하는 경우부터 일상 배포, 롤백, 커스텀 도메인까지 커버한다.
+>
+> **운영 정책 (2026-05-01)**: 현재 user 정책상 firebase 배포 안 함. local-first vault + AI agent partner (MCP) 가 default 사용 흐름. 본 문서는 future-ref 로 보관 + emulator 로컬 테스트는 여전히 유효.
 
 ## 목차
 

@@ -1,9 +1,22 @@
-# Ontology Model V2 — DRAFT (제안)
+# Ontology Model V2 — DRAFT (V1.1 ✅ 머지 완료)
 
-> **Status**: 제안 단계. main 머지 전 user 승인 필요.
-> **Author**: 자율 루프 iter#12 (2026-05-01).
+> **Status**: V1.1 머지 완료 (PR #10, 2026-05-01). V1.2-V1.5 + V2 통합은 여전히 user 승인 대기 + Q3-Q8 답 필요.
+> **Author**: 자율 루프 iter#12 (2026-05-01) + 이후 update.
 > **Inputs**: C0 (현재 모델 캡처) · C1 (Wikidata 학습) · C2 (Palantir 학습).
 > **Goal**: 현재 *4-layer class + 7-relation TBox + evidence-grounded ABox* 위에 *qualifiers · rank · literal properties · rich references · cardinality · action type* 을 점진 도입해 RDF-star + Foundry-class 표현력에 도달.
+
+## 진행 상황
+
+| 단계 | 상태 |
+|---|---|
+| V1.1 — Statement Qualifiers + Rank | ✅ 머지 완료 (PR #10, additive, breakage 0) |
+| V1.2 — Literal Properties | ⏳ Q6+Q7 답 후 진행 |
+| V1.3 — Rich References | ⏳ Q5 답 후 진행 |
+| V1.4 — Action Type | ⏸ DEFERRED (Q4 + 보안 sub-spec 필요) |
+| V1.5 — Relation Cardinality | ⏳ 즉시 가능 (Q 답 무관) |
+| V2 — 통합 KnowledgeStatement | ⏳ V1.x 완료 + 90일 dual-read soak 후 |
+
+Open question 진행: Q1=(a) ✅ · Q2 ✅ (share-doc 이미 제거) · Q3-Q8 + multi-vault 시점 대기.
 
 ---
 
@@ -280,7 +293,9 @@ interface KnowledgePublish {
 
 ---
 
-## 2. V1.1 — Statement Qualifiers + Rank (Wikidata 영감)
+## 2. V1.1 — Statement Qualifiers + Rank (Wikidata 영감) — ✅ 머지 완료 (PR #10)
+
+> ✅ 2026-05-01 머지. `KnowledgeGraphEdge` 에 옵셔널 필드 2개 추가됨. 5 단위 test 추가, additive, breakage 0. 자세히: `src/entities/knowledge-graph/model/types.ts` + `qualifier.test.ts`.
 
 **컬렉션 변경**: `knowledgeApprovedEdges` 에 **옵셔널** 필드 2개 추가.
 

@@ -1,6 +1,6 @@
 # Local-first / Firebase Sync 정책
 
-> **Status**: 제안 단계 (DRAFT). 자율 루프 iter#22 (2026-05-01) 작성. main merge 전 user 승인 필요.
+> **Status**: 부분 구현 + 활성 가이드. mode-aware adapters (PR #5/#6) + useOntologyInsight (Q1=(a)) 머지로 Static / Local / Cloud 3 모드는 코드 구현 완료. Hybrid (양방향 sync) 는 v2 협업 단계.
 
 이 문서는 *로컬 디스크의 markdown 폴더* 와 *Firebase (Firestore + Storage)* 사이의 데이터 흐름·sync·충돌 정책을 명시한다. `.claude/rules/local-first.md` 의 "Notion 처럼 폴더만 선택해도 사용" 헌장을 데이터 레이어에서 어떻게 구현하는지 정의.
 
