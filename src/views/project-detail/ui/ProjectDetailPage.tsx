@@ -44,11 +44,6 @@ import {
 import { resolveSubscribeUpdate } from "../model/resolve-subscribe-update";
 import { DependencyPicker } from "@/features/project-edit/ui/DependencyPicker";
 import { CopyProjectLinkButton } from "@/features/project-share";
-import {
-  getProjectFromContainer,
-  listProjectsForContainer,
-  persistProjectAdaptive,
-} from "@/features/workspace-project-bridge";
 import { useWorkspaceProjects } from "@/widgets/workspace-project-selector";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useTaxonomy } from "@/features/taxonomy";
@@ -359,7 +354,8 @@ export function ProjectDetailPage({
     [accountId, currentPath],
   );
 
-  // P0-B Phase 6 점진 전환: ?pj 가 있으면 컨테이너 read, 없으면 flat.
+  // single-user 모드에서는 flat `projects` 만 read. activeProjectId 는
+  // 헤더 / 제목 표시용 (컨테이너 이름 lookup) 으로만 보존.
   const activeProjectId = searchParams.get(WORKSPACE_PROJECT_QUERY_KEY);
   const { projects: workspaceProjectContainers } = useWorkspaceProjects(accountId);
   const activeContainerName =
@@ -383,12 +379,10 @@ export function ProjectDetailPage({
 
     let cancelled = false;
 
-    const fetchPair = activeProjectId
-      ? Promise.all([
-          getProjectFromContainer(accountId, activeProjectId, slug),
-          listProjectsForContainer(accountId, activeProjectId),
-        ])
-      : Promise.all([getProject(slug, accountId), listProjects(accountId)]);
+    const fetchPair = Promise.all([
+      getProject(slug, accountId),
+      listProjects(accountId),
+    ]);
 
     void fetchPair
       .then(([fetchedProject, fetchedProjects]) => {
@@ -414,7 +408,7 @@ export function ProjectDetailPage({
     return () => {
       cancelled = true;
     };
-  }, [accountId, activeProjectId, fallbackProject, slug]);
+  }, [accountId, fallbackProject, slug]);
 
   // 클라이언트에서 실시간 구독으로 최신 데이터 유지. subscribe 가 현재 slug
   // 를 못 찾은 경우 initialProject/fallback 을 null 로 덮지 않는 invariant 는
@@ -594,12 +588,10 @@ export function ProjectDetailPage({
           : "아직 공개된 문서가 충분하지 않아, 문서가 더 쌓이면 이 프로젝트가 왜 연결되는지 이곳에서 읽을 수 있습니다.");
   const canManageProject = scopedAccess.canManage;
   // owner/editor 가 자기 공간 프로젝트를 보면 h1·description 등을 inline 에서
-  // 바로 고친다. 저장은 컨테이너 컨텍스트(?pj=) 가 있으면 컨테이너의
-  // hubs/nodes 서브컬렉션, 없으면 기존 flat projects 로 분기.
-  // subscribeProjects 가 snapshot 으로 로컬 project state 를 갱신해 optimistic
-  // update 는 불필요.
+  // 바로 고친다. subscribeProjects 가 snapshot 으로 로컬 project state 를
+  // 갱신해 optimistic update 는 불필요.
   const persistProject = (input: Parameters<typeof upsertProject>[0]) =>
-    persistProjectAdaptive(input, { workspaceProjectId: activeProjectId });
+    upsertProject(input);
   const saveProjectField = async (
     field: "name" | "description",
     next: string,
