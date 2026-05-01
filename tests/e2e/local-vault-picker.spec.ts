@@ -48,6 +48,10 @@ const PRESET_LOCAL_SOURCE = `
   catch (_) { /* private mode */ }
 `;
 
+const REMOVE_SHOW_DIRECTORY_PICKER = `
+  try { delete window.showDirectoryPicker; } catch (_) { /* ignore */ }
+`;
+
 test.describe("로컬 볼트 picker", () => {
   test("폴더 선택 후 매니페스트가 빌드되어 문서 1개 표시", async ({ page }) => {
     await page.addInitScript(MOCK_PICKER_SCRIPT);
@@ -64,5 +68,37 @@ test.describe("로컬 볼트 picker", () => {
     // loaded 헤더 — vault 이름 + 문서 수 배지가 함께 떠야 한다.
     await expect(page.getByText("TestVault")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("1 문서")).toBeVisible();
+  });
+
+  test("loaded 상태에서 닫기 클릭 시 idle 로 복귀", async ({ page }) => {
+    await page.addInitScript(MOCK_PICKER_SCRIPT);
+    await page.addInitScript(PRESET_LOCAL_SOURCE);
+
+    await page.goto("/docs/");
+
+    const openButton = page.getByRole("button", {
+      name: /내 PC 의 마크다운 폴더 열기/,
+    });
+    await openButton.click();
+    await expect(page.getByText("TestVault")).toBeVisible({ timeout: 15_000 });
+
+    // 닫기 버튼 (aria-label) 클릭 → 다시 idle 의 폴더 열기 버튼이 나타나야.
+    await page.getByRole("button", { name: "로컬 볼트 닫기" }).click();
+    await expect(openButton).toBeVisible();
+    await expect(page.getByText("TestVault")).not.toBeVisible();
+  });
+
+  test("File System Access API 미지원 브라우저는 안내 메시지", async ({ page }) => {
+    await page.addInitScript(REMOVE_SHOW_DIRECTORY_PICKER);
+    await page.addInitScript(PRESET_LOCAL_SOURCE);
+
+    await page.goto("/docs/");
+
+    // unsupported 상태 — Shield 아이콘 + Chrome/Edge/Safari 18.2+ 안내 텍스트.
+    await expect(
+      page.getByText(
+        /이 브라우저는 File System Access API 를 지원하지 않아/,
+      ),
+    ).toBeVisible({ timeout: 15_000 });
   });
 });
