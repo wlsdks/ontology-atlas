@@ -64,11 +64,14 @@ export function BuilderOnboarding({ empty }: BuilderOnboardingProps) {
           <header className="mb-4 flex items-start justify-between gap-3">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]">
-                Ontology Builder — 시작
+                온톨로지 빌더
               </p>
               <h2 className="mt-1 text-[15px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                3 단계로 첫 그래프를 그려요
+                세 번 클릭이면 내 첫 노드가 생겨요
               </h2>
+              <p className="mt-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                AI 가 따로 추출해주는 게 아니라 — 내가 직접 그리는 캔버스예요.
+              </p>
             </div>
             <button
               type="button"
@@ -86,9 +89,9 @@ export function BuilderOnboarding({ empty }: BuilderOnboardingProps) {
               </span>
               <p>
                 <strong className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                  왼쪽 palette
+                  왼쪽 종류 한 개를 클릭
                 </strong>{" "}
-                에서 종류 (프로젝트 / 도메인 / 역량 / 요소) 를 클릭하면 캔버스 가운데에 새 노드가 생겨요.
+                — 프로젝트 · 도메인 · 역량 · 요소 중 하나. 가운데에 노드가 떠요.
               </p>
             </li>
             <li className="flex gap-2.5">
@@ -96,11 +99,10 @@ export function BuilderOnboarding({ empty }: BuilderOnboardingProps) {
                 <Plug size={12} />
               </span>
               <p>
-                노드 위·아래의{" "}
                 <strong className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                  핸들에서 drag
+                  노드 가장자리 점을 끌어
                 </strong>{" "}
-                해 다른 노드로 drop 하면 관계가 그려져요.
+                다른 노드 위에 놓으면 — 둘 사이에 관계가 그려져요.
               </p>
             </li>
             <li className="flex gap-2.5">
@@ -108,17 +110,17 @@ export function BuilderOnboarding({ empty }: BuilderOnboardingProps) {
                 <Save size={12} />
               </span>
               <p>
-                노드를 클릭해 인스펙터에서{" "}
+                노드를 다시 한 번 클릭하면 오른쪽 패널이 열려요. 이름 적고{" "}
                 <strong className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                  이름 입력 → 저장
+                  저장
                 </strong>{" "}
-                하면 영구 그래프에 추가돼요.
+                — 영구 그래프에 박혀요.
               </p>
             </li>
           </ol>
           <footer className="mt-5 flex items-center justify-between gap-3 border-t border-[color:var(--color-border-soft)] pt-3">
             <p className="font-mono text-[10px] tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              단축키 N · Del · Esc
+              빠른 키 — N 새 노드 · Del 지우기 · Esc 취소
             </p>
             <div className="flex items-center gap-2">
               <button
@@ -133,7 +135,7 @@ export function BuilderOnboarding({ empty }: BuilderOnboardingProps) {
                 onClick={() => dismiss(false)}
                 className="rounded-md border border-[color:var(--color-indigo-brand)] bg-[color:rgba(94,106,210,0.18)] px-3 py-1.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:rgba(94,106,210,0.26)]"
               >
-                시작
+                시작하기
               </button>
             </div>
           </footer>
