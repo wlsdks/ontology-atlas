@@ -6,7 +6,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, FolderKanban, Shield } from "lucide-react";
 import { useScopedAccountAccess } from "@/features/account-scope";
 import { useTaxonomy } from "@/features/taxonomy";
-import { buildServiceEntryHref } from "@/features/user-auth";
 import {
   getKnowledgeDocumentListHref,
   getKnowledgeDocumentNewHref,
@@ -165,10 +164,6 @@ export function ProjectSelectorPage() {
   const overviewHref = "/";
   const knowledgeDocumentsHref = getKnowledgeDocumentListHref(accountId);
   const knowledgeReviewHref = getKnowledgeReviewWorkspaceHref(undefined, accountId);
-  const currentPath = useMemo(() => {
-    const search = searchParams.toString();
-    return `${pathname}${search ? `?${search}` : ""}`;
-  }, [pathname, searchParams]);
   const replaceVisibleLimit = useCallback(
     (nextLimit: number | null) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -228,10 +223,6 @@ export function ProjectSelectorPage() {
       scroll: false,
     });
   }, [pathname, router, searchParams]);
-  const landingHref = useMemo(
-    () => buildServiceEntryHref({ accountId, next: currentPath }),
-    [accountId, currentPath],
-  );
   const getPostCreateHref = (project: { slug: string; name: string }) =>
     getKnowledgeDocumentNewHref(accountId, {
       projectId: project.slug,
@@ -239,13 +230,7 @@ export function ProjectSelectorPage() {
       title: `${project.name} 명세`,
     });
 
-  useEffect(() => {
-    if (scopedAccess.kind === "guest") {
-      router.replace(landingHref);
-    }
-  }, [landingHref, router, scopedAccess.kind]);
-
-  if (scopedAccess.kind === "loading" || scopedAccess.kind === "guest") {
+  if (scopedAccess.kind === "loading") {
     // audit A4 — 이전엔 빈 main + aria-hidden="true" 라 스크린 리더가 페이지를
     // 통째 무시. role=status + sr-only 텍스트로 로딩 안내를 명시.
     return (
