@@ -18,19 +18,19 @@ const PALETTE_KINDS: Array<{
 }> = [
   {
     kind: "project",
-    hint: "최상위 단위 — 전체 워크스페이스의 한 prj",
+    hint: "최상위 단위 — 전체 워크스페이스의 한 프로젝트",
   },
   {
     kind: "domain",
-    hint: "프로젝트 안의 큰 영역 — auth / billing / ingest 등",
+    hint: "프로젝트 안의 큰 영역 — 인증 / 결제 / 알림 등",
   },
   {
     kind: "capability",
-    hint: "도메인 안의 한 기능 — 'JWT 발급' 같은 동사형",
+    hint: "도메인 안의 한 기능 — '사용자 로그인' 같은 동사형",
   },
   {
     kind: "element",
-    hint: "역량 안의 작은 구성 — 클래스 / 함수 / API endpoint",
+    hint: "역량 안의 작은 구성 — 화면 / 버튼 / API 등 구체 단위",
   },
 ];
 
