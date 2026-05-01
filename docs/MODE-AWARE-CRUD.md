@@ -39,8 +39,15 @@
 
 ### 2.4 vault → ontology fast path
 
-- `src/entities/docs-vault/lib/derive-ontology-from-vault.ts` — frontmatter `kind / capabilities / elements / relates / dependencies / domain` 에서 stub 노드/엣지 추출. 검수 큐 거치지 않은 *fast path*.
+- `src/entities/docs-vault/lib/derive-ontology-from-vault.ts` — frontmatter `kind / capabilities / elements / relates / dependencies / domain` 에서 stub 노드/엣지 추출. 검수 큐 거치지 않은 *fast path* (mission v2 = frontmatter 자체가 자기-승인).
 - `src/features/vault-ontology/model/use-vault-ontology.ts` — useLocalVault + derive 합성 hook.
+- `src/features/vault-ontology/model/use-ontology-insight.ts` — **mission v2 신설** mode-aware ontology insight. local: vault frontmatter stub 변환, cloud: knowledgePublic projection. `/` ontology hub 가 vault 활성 시 자동 vault 모드.
+
+### 2.5 AI agent partner (mission v2 신설)
+
+- `mcp/` 패키지 — `@modelcontextprotocol/sdk` 기반 stdin/stdout JSON-RPC 서버. AI agent (Claude Code 등) 가 vault `.md` 직접 read/write
+- 7 도구: `list_concepts` / `get_concept` / `find_evidence` / `find_backlinks` / `add_concept` / `add_relation` / `patch_concept`
+- 등록: `.mcp.json.example` 또는 `mcp/README.md`
 
 ---
 

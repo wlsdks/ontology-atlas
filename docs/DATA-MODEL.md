@@ -34,19 +34,19 @@ firestore/
 │   └── {documentId}/
 ├── knowledgeDocumentVersions/       private 원문 버전
 │   └── {versionId}/
-├── knowledgeDocumentChunks/         backend-owned, authed readable
+├── knowledgeDocumentChunks/         ⚠️ cold storage (mission v2 cleanup 후 read-only)
 │   └── {chunkId}/
-├── knowledgeEvidence/               backend-owned, authed readable
+├── knowledgeEvidence/               ⚠️ cold storage (mission v2 cleanup)
 │   └── {evidenceId}/
-├── knowledgeExtractionJobs/         enqueue via backend, execute by backend
+├── knowledgeExtractionJobs/         ⚠️ cold storage (extraction handler 제거됨, PR #5)
 │   └── {jobId}/
-├── knowledgeExtractionOutputs/      backend-owned, authed readable
+├── knowledgeExtractionOutputs/      ⚠️ cold storage (extraction handler 제거됨)
 │   └── {outputId}/
-├── knowledgeReviews/                authed read/write
+├── knowledgeReviews/                ⚠️ cold storage (applyReviewAction 제거됨, PR #6)
 │   └── {reviewId}/
-├── knowledgeReviewEvents/           backend-owned, authed readable
+├── knowledgeReviewEvents/           ⚠️ cold storage
 │   └── {eventId}/
-├── knowledgeApprovalEvents/         backend-owned, authed readable
+├── knowledgeApprovalEvents/         ⚠️ cold storage
 │   └── {eventId}/
 ├── knowledgeApprovedNodes/          private canonical graph
 │   └── {nodeId}/
@@ -383,6 +383,8 @@ knowledge canonical edge store. admin-private이며 publish의 입력이다.
 | `manualAuthor` | string |  | `source === "manual"` 시 작성자 uid |
 | `manualNote` | string |  | `source === "manual"` 시 작성자 자유 메모 |
 | `tboxVersionId` | string |  | (P1 Phase 1) 이 엣지 생성·검수 시점의 활성 TBox version ID. legacy = undefined |
+| `qualifiers` | `Array<{propertyId: string; value: QualifierValue}>` |  | **V1.1 (PR #10)** Wikidata 영감 statement 한정자. additive, breakage 0. legacy = undefined. `QualifierValue` union: `{kind:'string', raw}` / `{kind:'time', iso, precision}` / `{kind:'quantity', value, unit?}` / `{kind:'nodeRef', nodeId}`. |
+| `rank` | `"preferred" \| "normal" \| "deprecated"` |  | **V1.1 (PR #10)** 같은 (from, to, type) 의 다중 statement 우선순위. legacy = undefined → `rank ?? 'normal'` 폴백. |
 
 ### `knowledgePublishes/{publishId}`
 
