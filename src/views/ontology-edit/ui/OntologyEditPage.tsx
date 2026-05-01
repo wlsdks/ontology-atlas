@@ -16,7 +16,7 @@ import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
 import { downloadAtlasFrontmatter } from "../lib/export-frontmatter";
 import { OntologyKindPalette } from "./OntologyKindPalette";
 import { OntologyInspector } from "./OntologyInspector";
-import { AtlasOnboarding } from "./AtlasOnboarding";
+import { BuilderOnboarding } from "./BuilderOnboarding";
 
 /**
  * `/ontology/edit` — ERD canvas editor v1 (Track C-1~C-3).
@@ -241,7 +241,7 @@ export function OntologyEditPage() {
               onSelectionChange={setSelectedId}
               onConnect={addEphemeralEdge}
             />
-            <AtlasOnboarding
+            <BuilderOnboarding
               empty={ephemeralNodes.length === 0 && ephemeralEdges.length === 0}
             />
           </div>

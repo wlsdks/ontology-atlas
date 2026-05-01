@@ -4,12 +4,13 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { MousePointerClick, Plug, Save, X } from "lucide-react";
 
+// 기존 사용자의 dismissed 상태 보존 — key 는 그대로 ("atlas" 단어가 들어있어도
+// 동작 무관, 호환만 유지). 새 사용자는 onboarding 다시 보임.
 const STORAGE_KEY = "demo:atlas-onboarding:dismissed:v1";
 
 /**
- * Atlas onboarding coach mark — C-17.
+ * Builder onboarding coach mark — 첫 진입 + 빈 캔버스일 때 3-step 안내 노출.
  *
- * 첫 진입 + 빈 캔버스 (approved 0 + ephemeral 0) 일 때 3-step 안내 노출.
  * localStorage 로 dismissed 추적. '다시 보지 않기' 또는 첫 노드 추가 후 자동 닫힘.
  *
  * 헌장 §11 호환:
@@ -17,12 +18,12 @@ const STORAGE_KEY = "demo:atlas-onboarding:dismissed:v1";
  * - 인디고 alpha + 무채색 alpha
  * - motion-reduce 자동 존중 (framer-motion)
  */
-export interface AtlasOnboardingProps {
+export interface BuilderOnboardingProps {
   /** 캔버스가 비어 있는지 — true 일 때만 노출 검토. */
   empty: boolean;
 }
 
-export function AtlasOnboarding({ empty }: AtlasOnboardingProps) {
+export function BuilderOnboarding({ empty }: BuilderOnboardingProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
