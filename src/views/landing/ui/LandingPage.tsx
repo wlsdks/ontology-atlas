@@ -103,10 +103,10 @@ export function LandingPage({ next }: Props) {
           ) : (
             <>
               <Link
-                href="/"
+                href="/ontology/"
                 className={cn(buttonVariants({ size: "lg" }), "rounded-full min-w-[14rem]")}
               >
-                내 ontology 둘러보기
+                ontology 둘러보기
                 <ArrowRight size={16} />
               </Link>
               <Link
@@ -142,7 +142,7 @@ export function LandingPage({ next }: Props) {
           GitHub
         </a>
         <span aria-hidden>·</span>
-        <span className="font-mono">Next.js · TypeScript · Sigma.js · Firebase</span>
+        <span className="font-mono">Local-first · Next.js · TypeScript · Sigma.js · MCP</span>
       </footer>
     </main>
   );
