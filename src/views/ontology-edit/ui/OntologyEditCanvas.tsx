@@ -12,15 +12,19 @@ import {
   type Node,
   type OnSelectionChangeParams,
 } from "@xyflow/react";
-import type { VaultManifest } from "@/entities/docs-vault";
-import { useApprovedGraphFlow } from "../lib/use-approved-graph-flow";
+import {
+  vaultManifest as staticVaultManifestRaw,
+  type VaultManifest,
+} from "@/entities/docs-vault";
 import { useVaultGraphFlow } from "../lib/use-vault-graph-flow";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 import type { EphemeralEdge } from "../lib/use-ephemeral-edges";
 import { ATLAS_NODE_TYPES } from "./AtlasNode";
 
+const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
+
 /**
- * ERD canvas — v1 C-1~C-3 누적, C-5 vault 통합.
+ * ERD canvas — vault frontmatter 가 진실원.
  *
  * 디자인 헌장 §11 호환:
  * - scale hover 없음 (xyflow 기본 X)
@@ -29,12 +33,12 @@ import { ATLAS_NODE_TYPES } from "./AtlasNode";
  * - edge animation 비활성
  *
  * 노드 합산:
- * - vault (local 모드) — manifest 기반 read-only display + 인스펙터에서 rename
- * - approved (cloud 모드 — legacy) — Firestore read-only, drag X
- * - ephemeral (palette 클릭으로 추가) — drag O, save 시 vault 또는 cloud 로
+ * - vault — live `vault.manifest` (선택됨) 또는 빌드타임 dogfood 매니페스트
+ *   (선택 전). PR #33/#34 의 "vault > dogfood" 진실원 우선순위와 일치.
+ * - ephemeral (palette 클릭으로 추가) — drag O, save 시 vault md 작성
+ *   (cloud 모드는 dataSourceMode 분기로 별도 처리)
  */
 export function OntologyEditCanvas({
-  accountId,
   vaultManifest,
   ephemeralNodes,
   ephemeralEdges,
@@ -42,7 +46,6 @@ export function OntologyEditCanvas({
   onConnect,
   onVaultNodeDragStop,
 }: {
-  accountId: string | null;
   vaultManifest: VaultManifest | null;
   ephemeralNodes: EphemeralNode[];
   ephemeralEdges: EphemeralEdge[];
@@ -51,15 +54,13 @@ export function OntologyEditCanvas({
   /** vault 노드 drag-stop 시 호출 — 좌표를 frontmatter.canvasPosition 으로 patch. */
   onVaultNodeDragStop?: (slug: string, position: { x: number; y: number }) => void;
 }) {
-  // mode 분기: vault.manifest 가 있으면 vault flow 우선 (local 모드 진실원).
-  // 둘 다 동시에 띄우지 않는다 — 두 진실원 혼합은 사용자 mental model 깨뜨림.
-  const vaultFlow = useVaultGraphFlow(vaultManifest);
-  const approvedFlow = useApprovedGraphFlow(vaultManifest ? null : accountId);
-  const useVaultMode = vaultManifest !== null;
-  const approvedNodes = useVaultMode ? vaultFlow.nodes : approvedFlow.nodes;
-  const approvedEdges = useVaultMode ? vaultFlow.edges : approvedFlow.edges;
-  const error = useVaultMode ? null : approvedFlow.error;
-  const loaded = useVaultMode ? true : approvedFlow.loaded;
+  // 진실원: live vault.manifest 우선, 없으면 빌드타임 dogfood 매니페스트.
+  // 빌더에 진입한 사용자는 vault 폴더 안 골랐어도 oh-my-ontology 자체 ontology
+  // 23 노드를 즉시 본다 — "0 마찰 진입" 약속의 캔버스 측 구현.
+  const effectiveManifest = vaultManifest ?? staticVaultManifest;
+  const vaultFlow = useVaultGraphFlow(effectiveManifest);
+  const approvedNodes = vaultFlow.nodes;
+  const approvedEdges = vaultFlow.edges;
 
   const handleSelectionChange = useCallback(
     (params: OnSelectionChangeParams) => {
@@ -142,17 +143,19 @@ export function OntologyEditCanvas({
     [onConnect],
   );
 
+  const hasLiveVault = vaultManifest !== null;
   const handleNodeDragStop = useCallback(
     (_event: unknown, node: Node) => {
       // vault 노드만 patch — ephemeral 은 in-memory 가 진실원이라 무관.
+      // 빌드타임 dogfood 매니페스트로 보고 있을 땐 사용자가 disk 권한 없으니 skip.
       const data = node.data as { vault?: boolean } | undefined;
-      if (!data?.vault || !useVaultMode) return;
+      if (!data?.vault || !hasLiveVault) return;
       onVaultNodeDragStop?.(node.id, {
         x: Math.round(node.position.x),
         y: Math.round(node.position.y),
       });
     },
-    [onVaultNodeDragStop, useVaultMode],
+    [onVaultNodeDragStop, hasLiveVault],
   );
 
   // kind 추출 — '{kindLabel} · {title}' 형식에서 kindLabel → kind enum 매핑.
@@ -202,16 +205,11 @@ export function OntologyEditCanvas({
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} />
         <Controls position="bottom-right" showInteractive={false} />
       </ReactFlow>
-      {loaded && allNodes.length === 0 && !error ? (
+      {allNodes.length === 0 ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <p className="text-sm text-[color:var(--color-text-tertiary)]">
             왼쪽 palette 에서 종류를 골라 클릭하면 첫 노드가 생겨요.
           </p>
-        </div>
-      ) : null}
-      {error ? (
-        <div className="pointer-events-none absolute inset-x-0 bottom-3 mx-auto w-fit rounded-md border border-[color:rgba(229,72,77,0.46)] bg-[color:rgba(229,72,77,0.12)] px-3 py-1.5 text-xs text-[color:var(--color-text-primary)]">
-          그래프 로딩 실패: {error.message}
         </div>
       ) : null}
     </div>

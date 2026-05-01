@@ -59,7 +59,6 @@ import { BuilderOnboarding } from "./BuilderOnboarding";
  * + `ssr: false` 로 client-only mount. Next.js 16 정적 export 와 호환.
  */
 const OntologyEditCanvas = dynamic<{
-  accountId: string | null;
   vaultManifest: import("@/entities/docs-vault").VaultManifest | null;
   ephemeralNodes: ReturnType<typeof useEphemeralNodes>["nodes"];
   ephemeralEdges: ReturnType<typeof useEphemeralEdges>["edges"];
@@ -478,7 +477,6 @@ export function OntologyEditPage() {
           />
           <div className="relative flex-1">
             <OntologyEditCanvas
-              accountId={accountId ?? null}
               vaultManifest={vault.manifest ?? null}
               ephemeralNodes={ephemeralNodes}
               ephemeralEdges={ephemeralEdges}
