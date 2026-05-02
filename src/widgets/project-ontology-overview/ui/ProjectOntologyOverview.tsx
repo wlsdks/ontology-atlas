@@ -16,12 +16,12 @@ export interface ProjectOntologyOverviewProps {
 /**
  * 프로젝트 상세 페이지 inline 카드 — "이 프로젝트에 자란 ontology 노드 N".
  *
- * `useOntologyInsight` (vault > 빌드타임 dogfood > Firestore 진실원 우선순위)
- * 의 nodes 를 `projectIds.includes(projectSlug)` 로 필터. project / document
+ * `useOntologyInsight` (vault > 빌드타임 dogfood 진실원 우선순위) 의
+ * nodes 를 `projectIds.includes(projectSlug)` 로 필터. project / document
  * kind 는 메타라 sample 에서 제외 (capability / element / domain 위주). 매치
- * 0 은 자체 숨김 — vault / dogfood / cloud 어느 모드든 매치만 있으면 surface.
+ * 0 은 자체 숨김 — vault / dogfood 어느 모드든 매치만 있으면 surface.
  *
- * 클릭 시 `/ontology/?account=...` 점프 — 트리에서 해당 프로젝트 root 로 진입.
+ * 클릭 시 `/ontology/` 트리로 점프 — 해당 프로젝트 root 진입.
  */
 export function ProjectOntologyOverview({
   projectSlug,

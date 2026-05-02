@@ -530,7 +530,7 @@ export function ProjectForm({
     setSubmitting(true);
     try {
       // 슬롯 배치 겹침 방지용 최신 프로젝트 목록. allProjects 가 mode-aware
-      // hook(useProjects) 의 출력이라 vault / Firestore 양쪽에서 sync.
+      // hook (useProjects) 의 출력이라 vault / 빌드타임 dogfood 진실원과 sync.
       const latestProjects = allProjects;
       const position = initialProject
         ? initialProject.category !== parsed.data.category ||

@@ -182,9 +182,9 @@ export function HomePage() {
     return saved === null ? true : saved === "1";
   });
   const [topologyRelayoutToken, setTopologyRelayoutToken] = useState(0);
-  // subscribeProjects 실패 시 UI 가 빈 채로 영구 고착되는 걸 막기 위한 에러
-  // 상태. 네트워크·auth·quota 문제 등으로 Firestore 구독이 실패하면 배너
-  // 노출 + "다시 시도" 버튼으로 복구.
+  // useProjects 실패 시 UI 가 빈 채로 영구 고착되는 걸 막기 위한 에러
+  // 상태. 사용자 vault 디스크 read 실패 / 권한 만료 등의 경우 배너 노출
+  // + "다시 시도" 버튼으로 복구.
   const toast = useToast();
   const hydrated = useSyncExternalStore(
     () => () => undefined,

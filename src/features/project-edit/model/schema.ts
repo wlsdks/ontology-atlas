@@ -80,8 +80,9 @@ export const projectFormSchema = z
       .regex(/^[\p{L}\p{N}-]+$/u, "문자, 숫자, 하이픈만 허용"),
     name: z.string().min(1, "이름 필수"),
     nameEn: z.string().optional(),
-    // 동적 카테고리/상태 — runtime에 Firestore에서 로드되므로 free string.
-    // 존재 여부 검증은 호출자(ProjectForm)가 taxonomy와 대조해 수행.
+    // 동적 카테고리/상태 — taxonomy default 또는 미래 vault frontmatter 기반
+    // taxonomy 로 확장될 수 있어 free string. 존재 여부 검증은 호출자
+    // (ProjectForm) 가 taxonomy 와 대조해 수행.
     category: z.string().min(1, "카테고리 필수"),
     status: z.string().min(1, "상태 필수"),
     description: z.string().min(1, "설명 필수"),

@@ -11,9 +11,9 @@ import { buildMeaningfulOntologyStats } from "@/shared/lib/ontology-tree";
  * 워크스페이스 전반 ontology 한 줄 stat strip.
  *
  * 프로젝트 목록·대시보드 헤더 등에서 ontology 의 가벼운 가시.
- * `useOntologyInsight` 의 진실원 우선순위 (vault > 빌드타임 dogfood >
- * Firestore) 그대로 따라간다 — vault 안 골랐어도 dogfood 23 노드가 즉시
- * surface. 매치 0 일 때만 자동 숨김.
+ * `useOntologyInsight` 의 진실원 우선순위 (vault > 빌드타임 dogfood) 그대로
+ * 따라간다 — vault 안 골랐어도 dogfood 노드가 즉시 surface. 매치 0 일 때만
+ * 자동 숨김.
  *
  * 표시: 총 노드 / 도메인 / 역량 / 요소 카운트 + stub 강조 (있을 때만 amber) +
  * "트리 →" 링크. 최소 노이즈.

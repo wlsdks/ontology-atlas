@@ -297,9 +297,8 @@ export function ProjectDetailPage({
     ).join(" · ") || null,
   );
 
-  // mode-aware projects read — vault 또는 Firestore. 단일 hook 으로 단발 fetch
-  // + 실시간 구독을 통합. (이전엔 listProjects + subscribeProjects 두 effect 가
-  // race 했지만 hook 이 항상 최신 snapshot 을 들고 있어 race 자체가 사라짐.)
+  // mode-aware projects read — vault (local) 또는 빌드타임 dogfood (static).
+  // 단일 hook 이 항상 최신 snapshot 을 들고 있어 list/subscribe race 없음.
   const projectsQuery = useProjects();
   const projectMutations = useProjectMutations();
   useEffect(() => {
