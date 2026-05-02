@@ -33,9 +33,6 @@
     "vaultLabel": "vault",
     "vaultDocs": "{count} docs",
     "vaultTooltip": "Vault mode — {name} ({count} docs). Every change is saved to your local disk.",
-    "cloudLabel": "cloud sync",
-    "cloudAriaLabel": "Cloud mode",
-    "cloudTooltip": "Cloud mode — Firestore real-time sync. Changes are saved to the cloud.",
     "demoLabel": "demo",
     "demoAriaLabel": "Demo mode",
     "demoTooltip": "Demo mode — no vault picked, signed out. Build-time demo manifest only; changes are not saved."

@@ -33,9 +33,6 @@
     "vaultLabel": "vault",
     "vaultDocs": "{count} docs",
     "vaultTooltip": "vault 모드 — {name} ({count} docs). 모든 변경이 로컬 디스크에 저장됨.",
-    "cloudLabel": "cloud sync",
-    "cloudAriaLabel": "cloud 모드",
-    "cloudTooltip": "cloud 모드 — Firestore 실시간 동기. 변경이 cloud 저장.",
     "demoLabel": "데모",
     "demoAriaLabel": "데모 모드",
     "demoTooltip": "데모 모드 — vault 미선택 + 비로그인. 빌드 타임 demo manifest 만 노출, 변경 저장 안 됨."
