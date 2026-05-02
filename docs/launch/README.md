@@ -7,10 +7,10 @@
 
 1. **사전 준비**
    - [ ] CLI npm 배포 — `cli/` 와 `mcp/` 둘 다 `npm publish`
-   - [ ] Vercel 배포 — `docs/DEPLOY-VERCEL.md` 따라 1회 setup
-   - [ ] hosted demo URL 이 README + CLI 안내 문구와 일치하는지 재확인
+   - [ ] Firebase Hosting 배포 — `firebase deploy --only hosting` (`firebase.json` 의 `hosting` 블록 이미 설정 완료, project: `oh-my-ontology` → `https://oh-my-ontology.web.app`)
+   - [ ] hosted demo URL 이 README + CLI 안내 문구와 일치하는지 재확인 (`oh-my-ontology.web.app`)
    - [ ] 30s demo gif 녹화 + `docs/launch/demo.gif` 로 commit (storyboard: `docs/launch/DEMO-GIF-STORYBOARD.md`)
-   - [ ] GitHub Discussions 활성화 + `.github/DISCUSSIONS-CATEGORIES.md` 의 카테고리 7 개 setup
+   - [x] GitHub Discussions 활성화 + 카테고리 setup (이 PR 에서 자동 활성화됨)
 
 2. **launch day**
    - [ ] X thread 게시 (`docs/launch/X-THREAD.md`)

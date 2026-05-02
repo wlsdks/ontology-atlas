@@ -14,7 +14,7 @@ body:
       label: Where did you start?
       options:
         - "npx oh-my-ontology init"
-        - "Hosted demo (oh-my-ontology.vercel.app)"
+        - "Hosted demo (oh-my-ontology.web.app)"
         - "Cloned the repo and ran pnpm dev"
         - "MCP server registered into my AI agent"
     validations:

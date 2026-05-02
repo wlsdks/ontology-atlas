@@ -42,7 +42,7 @@ paint chunk (verified by a CI script).
   # then copy .mcp.json.example to your AI agent's MCP config
 
 Hosted demo (read-only, our own dogfood vault — ~130 nodes, 165
-relations): https://oh-my-ontology.vercel.app
+relations): https://oh-my-ontology.web.app
 
 What I'd love feedback on:
 

@@ -29,7 +29,7 @@ capabilities / elements / domain) 입니다.
    ```
 3. capability / element 도 같은 패턴 — `capabilities/` 와 `elements/`.
 4. AI agent (Claude Code 등) 를 등록하면 같은 vault 를 읽고 쓰며 같이 키워갑니다.
-5. 그래프로 보고 싶으면 `https://oh-my-ontology.vercel.app` 또는 직접 클론한
+5. 그래프로 보고 싶으면 `https://oh-my-ontology.web.app` 또는 직접 클론한
    workbench 의 `/docs` picker.
 
 ## 관계 (frontmatter 키)

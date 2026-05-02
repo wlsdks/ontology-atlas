@@ -54,7 +54,7 @@ body:
         - "/settings/*"
         - MCP server (oh-my-ontology-mcp)
         - CLI (oh-my-ontology init)
-        - Hosted demo (vercel)
+        - Hosted demo (Firebase)
         - Other
     validations:
       required: true

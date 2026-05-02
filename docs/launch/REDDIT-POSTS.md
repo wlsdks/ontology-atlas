@@ -87,7 +87,7 @@ cd my-vault
 $EDITOR project.md
 ```
 
-Hosted demo (read-only, dogfood vault): https://oh-my-ontology.vercel.app
+Hosted demo (read-only, dogfood vault): https://oh-my-ontology.web.app
 Repo: https://github.com/wlsdks/oh-my-ontology
 MIT licensed.
 

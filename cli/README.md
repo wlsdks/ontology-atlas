@@ -53,7 +53,7 @@ A web workbench visualizes the vault as a tree, topology (Sigma WebGL),
 and ERD (xyflow):
 
 - **Hosted demo** (read-only, our own dogfood vault):
-  https://oh-my-ontology.vercel.app
+  https://oh-my-ontology.web.app
 - **Local workbench** (read/write your vault):
   ```bash
   git clone https://github.com/wlsdks/oh-my-ontology

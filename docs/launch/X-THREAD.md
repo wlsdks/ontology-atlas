@@ -10,7 +10,7 @@ shipped: oh-my-ontology — your codebase's mental model lives as
 markdown frontmatter. humans + AI agents author the same vault.
 
 `npx oh-my-ontology init` ⤵️ 30 second start
-oh-my-ontology.vercel.app · MIT
+oh-my-ontology.web.app · MIT
 [demo gif: 8s loop of editing frontmatter → graph updates]
 ```
 
@@ -86,7 +86,7 @@ ontology authoring as a team sport.
 ```
 try it:
 - npx oh-my-ontology init my-vault
-- demo: oh-my-ontology.vercel.app
+- demo: oh-my-ontology.web.app
 - repo: github.com/wlsdks/oh-my-ontology
 
 solo project, MIT, korean+english docs. would love criticism — what

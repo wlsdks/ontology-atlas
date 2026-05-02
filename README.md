@@ -16,7 +16,7 @@ $EDITOR project.md
 That's it. You now have a frontmatter-based ontology vault that humans
 and AI agents (Claude Code, Cursor, etc.) can read and write together.
 
-**Hosted demo (read-only, our own dogfood vault):** https://oh-my-ontology.vercel.app
+**Hosted demo (read-only, our own dogfood vault):** https://oh-my-ontology.web.app
 
 > 한국어 안내는 아래 [README (한국어)](#한국어-가이드) 섹션 참조.
 

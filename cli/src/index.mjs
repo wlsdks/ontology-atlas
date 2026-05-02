@@ -156,7 +156,7 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        see the ${COLORS.bold}oh-my-ontology${COLORS.reset} namespace with read/write tools.
 
   ${COLORS.dim}4.${COLORS.reset} See the graph (optional):
-       Visit ${COLORS.bold}https://oh-my-ontology.vercel.app${COLORS.reset} (read-only static demo)
+       Visit ${COLORS.bold}https://oh-my-ontology.web.app${COLORS.reset} (read-only static demo)
        OR clone the workbench: ${COLORS.cyan}git clone https://github.com/wlsdks/oh-my-ontology${COLORS.reset}
        and point its ${COLORS.bold}/docs${COLORS.reset} picker at this folder.
 
