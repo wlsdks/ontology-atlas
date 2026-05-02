@@ -16,5 +16,6 @@ element (`elements/jwt-token.md`) and set `domain:` to the right parent.
 - One or two paragraphs in the body covering *what / why / which interface*.
 - Frontmatter keys:
   - `domain: <slug>` — the single parent domain
+  - `path: <src/...>` — code path this element corresponds to (optional)
   - `depends_on: [...]` — other elements / capabilities this depends on
-  - `evidenceIds: [...]` — library docs or decision document IDs (optional)
+  - `relates: [...]` — loose related-to references (optional)

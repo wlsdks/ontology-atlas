@@ -21,7 +21,7 @@ the capabilities it owns under `capabilities:` in the frontmatter above.
 - Frontmatter keys:
   - `capabilities: [...]` — slugs of capabilities this domain owns
   - `depends_on: [...]` — other domains or external systems this depends on
-  - `evidenceIds: [...]` — evidence document IDs backing this node (optional)
+  - `relates: [...]` — loose related-to references (optional)
 
 ## Keep it or delete it?
 

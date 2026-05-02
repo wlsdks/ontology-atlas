@@ -23,4 +23,4 @@ keys above accordingly.
   - `domain: <slug>` — the single parent domain
   - `elements: [...]` — slugs of elements this capability uses
   - `depends_on: [...]` — other capabilities this depends on
-  - `evidenceIds: [...]` — spec / decision document IDs (optional)
+  - `relates: [...]` — loose related-to references (optional)
