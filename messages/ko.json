@@ -185,7 +185,8 @@
       "directionOutgoing": "outgoing",
       "directionIncoming": "incoming",
       "centerAria": "중심: {title}"
-    }
+    },
+    "manualSourceChipTitle": "사람 / AI agent 가 vault frontmatter · 빌더 · MCP 로 직접 작성한 노드"
   },
   "searchWidgets": {
     "globalSearch": {

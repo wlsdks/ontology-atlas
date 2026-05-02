@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import type { KnowledgeGraphSource } from "../model";
 
 export interface ManualSourceChipProps {
@@ -14,12 +17,13 @@ export interface ManualSourceChipProps {
  * 기본값이라 chip 표시 안 함 (signal-to-noise 보호).
  */
 export function ManualSourceChip({ source, size = "default" }: ManualSourceChipProps) {
+  const t = useTranslations('ontologyWidgets');
   if (source !== "manual") return null;
   const padding = size === "compact" ? "px-1.5 py-0" : "px-2 py-0.5";
   const fontSize = size === "compact" ? "text-[9px]" : "text-[10px]";
   return (
     <span
-      title="사람 / AI agent 가 vault frontmatter · 빌더 · MCP 로 직접 작성한 노드"
+      title={t('manualSourceChipTitle')}
       className={`inline-flex items-center rounded-full border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] font-mono ${fontSize} uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)] ${padding}`}
     >
       manual

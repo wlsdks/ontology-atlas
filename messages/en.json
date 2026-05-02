@@ -185,7 +185,8 @@
       "directionOutgoing": "outgoing",
       "directionIncoming": "incoming",
       "centerAria": "Center: {title}"
-    }
+    },
+    "manualSourceChipTitle": "Node authored directly by a person or AI agent (vault frontmatter / builder / MCP)"
   },
   "searchWidgets": {
     "globalSearch": {
