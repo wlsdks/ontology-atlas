@@ -65,7 +65,7 @@ const SURFACE_HINTS: ReadonlyArray<{
     unauthenticated: {
       eyebrow: '카테고리',
       title: '카테고리를 정리하려면 로그인이 필요해요',
-      body: '지도의 카테고리·상태·API 키를 정리합니다. 로그인하면 바로 이 화면으로 돌아옵니다.',
+      body: '지도의 카테고리·상태·프로젝트 import 를 정리합니다. 로그인하면 바로 이 화면으로 돌아옵니다.',
     },
     denied: {
       eyebrow: '카테고리',
