@@ -608,7 +608,7 @@ export function HomePage() {
                     Demo
                   </span>
                   <p className="mt-0.5 max-w-[180px] text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-                    제품·인증·에이전트.
+                    프로젝트 의존도 지도.
                   </p>
                 </div>
               </div>
