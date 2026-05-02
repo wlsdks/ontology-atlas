@@ -11,17 +11,13 @@ import {
   useReducedMotion,
 } from "framer-motion";
 import { MOTION, SPRING } from "@/shared/motion";
-import { ArrowUpRight, BookOpen, ChevronDown, Network, X } from "lucide-react";
+import { ArrowUpRight, BookOpen, ChevronDown, X } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import {
   findRelatedDocs,
   vaultManifest,
   type VaultManifest,
 } from "@/entities/docs-vault";
-import {
-  buildKnowledgeProjectEvidenceSummary,
-  type KnowledgeProjectInsight,
-} from "@/entities/knowledge-graph";
 import { formatDate } from "@/shared/lib/format-date";
 import {
   formatProjectIntegrityIssue,
@@ -59,10 +55,6 @@ interface Props {
    * drawer 안에서 2-step 으로 진입시키기 위한 explicit step.
    */
   onEnterContainer?: (slug: string) => void;
-  /** 공개 문서 근거를 별도 topology scene 으로 열기. */
-  onOpenKnowledgeScene?: (slug: string) => void;
-  /** 공개 projection 기반 문서 근거. raw/review 데이터는 포함하지 않는다. */
-  knowledgeInsight?: KnowledgeProjectInsight | null;
 }
 
 export function ProjectDrawer({
@@ -75,8 +67,6 @@ export function ProjectDrawer({
   onSelectProject,
   containerLabel,
   onEnterContainer,
-  onOpenKnowledgeScene,
-  knowledgeInsight,
 }: Props) {
   const t = useTranslations("vaultWidgets.projectDrawer");
   const isContainerNode = project?.category === "__container__";
@@ -289,15 +279,6 @@ export function ProjectDrawer({
       5,
     );
   }, [project]);
-  const evidenceSummary = useMemo(
-    () =>
-      knowledgeInsight
-        ? buildKnowledgeProjectEvidenceSummary(knowledgeInsight, {
-            subjectName: displayName,
-          })
-        : null,
-    [displayName, knowledgeInsight],
-  );
   const relationshipSummary = project
     ? (() => {
         if (project.isHub && referencedBy.length > 0) {
@@ -586,103 +567,6 @@ export function ProjectDrawer({
               </div>
               </motion.section>
 
-              {!isContainerNode && evidenceSummary?.hasEvidence ? (
-                <motion.section
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ ...MOTION.medium, delay: 0.02 }}
-                  className="mt-5 rounded-lg border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.07)] px-4 py-4 md:mt-6"
-                  aria-label={t("evidenceSectionAria")}
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
-                        <BookOpen size={11} aria-hidden />
-                        {t("evidenceTitle")}
-                      </h3>
-                      <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-secondary)]">
-                        {evidenceSummary.summaryText || t("evidenceFallback")}
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      {project && onOpenKnowledgeScene ? (
-                        <button
-                          type="button"
-                          onClick={() => onOpenKnowledgeScene(project.slug)}
-                          className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.42)] bg-[color:rgba(94,106,210,0.13)] px-3 text-xs font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(139,151,255,0.68)] hover:bg-[color:rgba(94,106,210,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
-                        >
-                          <Network size={12} aria-hidden />
-                          {t("evidenceMap")}
-                        </button>
-                      ) : null}
-                      <Link
-                        href={`${detailHref}#project-detail-insight`}
-                        className="inline-flex h-8 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.32)] px-3 text-xs text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.58)] hover:bg-[color:rgba(94,106,210,0.1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
-                      >
-                        {t("evidenceReadMore")}
-                      </Link>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 grid grid-cols-3 gap-2">
-                    {[
-                      { label: t("evidenceCountDocuments"), value: evidenceSummary.counts.documents },
-                      { label: t("evidenceCountConcepts"), value: evidenceSummary.counts.concepts },
-                      { label: t("evidenceCountEdges"), value: evidenceSummary.counts.edges },
-                    ].map((item) => (
-                      <div
-                        key={item.label}
-                        className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-backdrop-soft)] px-3 py-2"
-                      >
-                        <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                          {item.label}
-                        </p>
-                        <p className="mt-1 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                          {item.value}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {evidenceSummary.featuredDocument ? (
-                    <div className="mt-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-backdrop-soft)] px-3.5 py-3">
-                      <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-                        {t("evidenceFeaturedLabel")}
-                      </p>
-                      <p className="mt-1 line-clamp-1 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                        {evidenceSummary.featuredDocument.title}
-                      </p>
-                      {evidenceSummary.featuredDocument.summary ? (
-                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-[color:var(--color-text-tertiary)]">
-                          {evidenceSummary.featuredDocument.summary}
-                        </p>
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  {evidenceSummary.edgeLabels.length > 0 ||
-                  evidenceSummary.conceptNodes.length > 0 ? (
-                    <div className="mt-3 flex flex-wrap gap-1.5">
-                      {evidenceSummary.edgeLabels.map((label) => (
-                        <span
-                          key={`edge-${label}`}
-                          className="rounded-full border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2.5 py-1 text-[10px] text-[color:var(--color-text-secondary)]"
-                        >
-                          {label}
-                        </span>
-                      ))}
-                      {evidenceSummary.conceptNodes.map((node) => (
-                        <span
-                          key={node.id}
-                          className="rounded-full border border-[color:var(--color-divider)] px-2.5 py-1 text-[10px] text-[color:var(--color-text-tertiary)]"
-                        >
-                          {node.title}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                </motion.section>
-              ) : null}
 
               {/* Container 는 "어디와 연결돼 있나" 섹션이 의미 mismatch.
                   Container 는 Hub 집합이지 다른 Project 와의 edge 를 갖는
