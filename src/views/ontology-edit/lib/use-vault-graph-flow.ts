@@ -22,11 +22,24 @@ import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
  * slug 또는 마지막 segment 와 매칭되면 edge 추가. unresolved 항목은
  * 무시 — vault 외부 reference 는 dangling 으로 두고 노출 안 함.
  */
-export function useVaultGraphFlow(manifest: VaultManifest | null) {
+export interface UseVaultGraphFlowOptions {
+  /**
+   * true 면 \`frontmatter.canvasPosition\` 을 무시하고 dagre layered 결과만
+   * 사용. "자동 정렬" 버튼이 사용자 drag 결과를 reset (in-memory only —
+   * frontmatter 자체는 안 건드림) 할 때 활용.
+   */
+  ignorePersistedPosition?: boolean;
+}
+
+export function useVaultGraphFlow(
+  manifest: VaultManifest | null,
+  options?: UseVaultGraphFlowOptions,
+) {
+  const ignorePersistedPosition = options?.ignorePersistedPosition ?? false;
   return useMemo(() => {
     if (!manifest) return { nodes: [] as Node[], edges: [] as Edge[] };
-    return buildVaultGraphFlow(manifest);
-  }, [manifest]);
+    return buildVaultGraphFlow(manifest, { ignorePersistedPosition });
+  }, [manifest, ignorePersistedPosition]);
 }
 
 const NODE_WIDTH = 200;
@@ -43,8 +56,15 @@ const NEIGHBOR_KEYS = [
 
 /**
  * 순수 함수 — manifest → xyflow Node[] / Edge[]. 테스트용 export.
+ *
+ * options.ignorePersistedPosition: true 면 frontmatter.canvasPosition 무시
+ * 하고 모든 노드를 dagre 자동 layout 결과로. "자동 정렬" 버튼 용도.
  */
-export function buildVaultGraphFlow(manifest: VaultManifest) {
+export function buildVaultGraphFlow(
+  manifest: VaultManifest,
+  options?: { ignorePersistedPosition?: boolean },
+) {
+  const ignorePersistedPosition = options?.ignorePersistedPosition ?? false;
   const ontologyDocs = manifest.docs.filter(
     (doc) => typeof doc.frontmatter.kind === "string" && doc.frontmatter.kind,
   );
@@ -91,13 +111,15 @@ export function buildVaultGraphFlow(manifest: VaultManifest) {
   // 우선 (수동 배치 보존). grid fallback 보다 가독성 큰 차이.
   const fallbackPositions = computeDagreLayout(ontologyDocs, rawEdgePairs);
   const nodes: Node[] = ontologyDocs.map((doc) => {
-    // frontmatter.canvasPosition: { x, y } 가 있으면 우선. 없으면 grid fallback.
+    // frontmatter.canvasPosition: { x, y } 가 있으면 우선. 없으면 dagre fallback.
     // 사용자가 빌더에서 drag-stop 시 canvasPosition patch — 다음 mount 부터
     // 같은 좌표 복원. AI agent (MCP) 도 같은 frontmatter 키 read 가능.
+    // \`ignorePersistedPosition\` 이 true 면 강제로 dagre 결과 사용 — "자동
+    // 정렬" 버튼이 in-memory 만 reset 할 때 활용 (frontmatter 자체는 그대로).
     const fm = doc.frontmatter as Record<string, unknown>;
     const cp = fm.canvasPosition;
     const persistedPos =
-      cp && typeof cp === "object" && cp !== null
+      !ignorePersistedPosition && cp && typeof cp === "object" && cp !== null
         ? (() => {
             const x = (cp as Record<string, unknown>).x;
             const y = (cp as Record<string, unknown>).y;

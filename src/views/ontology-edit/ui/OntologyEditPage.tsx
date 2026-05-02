@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Info, Maximize2, Minimize2 } from "lucide-react";
+import { Info, Maximize2, Minimize2, Wand2 } from "lucide-react";
 import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
 import { useUserAuth } from "@/features/user-auth";
 import { addManualKnowledgeNode } from "@/entities/knowledge-graph";
@@ -69,6 +69,7 @@ const OntologyEditCanvas = dynamic<{
   onSelectionChange?: (selectedId: string | null) => void;
   onConnect?: (connection: import("@xyflow/react").Connection) => void;
   onVaultNodeDragStop?: (slug: string, position: { x: number; y: number }) => void;
+  autoLayoutToken?: number;
 }>(
   () => import("./OntologyEditCanvas").then((m) => m.OntologyEditCanvas),
   { ssr: false, loading: () => <CanvasSkeleton /> },
@@ -98,6 +99,11 @@ export function OntologyEditPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
+  // 자동 정렬 토큰 — increment 마다 캔버스가 frontmatter.canvasPosition
+  // 무시하고 dagre layout 으로 노드 위치 reset (in-memory only). frontmatter
+  // 자체는 그대로라 다음 mount 부터 다시 사용자 좌표 복원 (선호 보존). 사용자가
+  // 다시 drag-stop 하면 그때부터 새 frontmatter 좌표로 갱신.
+  const [autoLayoutToken, setAutoLayoutToken] = useState(0);
   const toast = useToast();
 
   const saveEphemeral = useCallback(
@@ -452,6 +458,20 @@ export function OntologyEditPage() {
                 </button>
               </>
             ) : null}
+            <Tooltip
+              content="모든 노드 위치를 dagre 자동 레이아웃으로 초기화 (frontmatter 의 canvasPosition 은 그대로 — 다음 진입 시 사용자 좌표 복원)"
+              withProvider={false}
+            >
+              <button
+                type="button"
+                onClick={() => setAutoLayoutToken((n) => n + 1)}
+                aria-label="캔버스 노드 자동 정렬"
+                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+              >
+                <Wand2 size={12} />
+                자동 정렬
+              </button>
+            </Tooltip>
             <Link
               href={treeHref}
               className="inline-flex h-8 shrink-0 items-center gap-1 px-2 text-[11px] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
@@ -490,6 +510,7 @@ export function OntologyEditPage() {
               onSelectionChange={setSelectedId}
               onConnect={addEphemeralEdge}
               onVaultNodeDragStop={persistVaultPosition}
+              autoLayoutToken={autoLayoutToken}
             />
             <BuilderOnboarding
               empty={ephemeralNodes.length === 0 && ephemeralEdges.length === 0}
