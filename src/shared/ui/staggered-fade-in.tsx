@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { cloneElement, isValidElement, useEffect, useRef, useState } from 'react';
 import { cn } from '@/shared/lib/cn';
 
 interface StaggeredFadeInProps {
@@ -65,28 +65,14 @@ export function StaggeredFadeIn({
 
   return (
     <Tag className={className}>
-      {items.map((child, i) => (
-        <span
-          // eslint-disable-next-line react/no-array-index-key -- stable order, no reorder semantics
-          key={i}
-          // motion-safe: prefers-reduced-motion 사용자는 transition 0,
-          // initial 상태도 즉시 visible.
-          style={{
-            display: 'contents',
-            // 자식 `<li>` 등이 own block 이라 inline-block 으로 wrapping
-            // 안 함 — 대신 child 자체에 inline style 주입을 위해 React.cloneElement
-            // 처럼 동작하려면 cloneElement 사용. 여기선 자식이 inline style
-            // 받게 children 을 cloneElement 로 감싼다.
-          }}
-        >
-          {applyTransitionStyle(child, {
-            mounted: reduced || mounted,
-            duration: reduced ? 0 : duration,
-            delay: reduced ? 0 : i * stagger,
-            translateY,
-          })}
-        </span>
-      ))}
+      {items.map((child, i) =>
+        applyTransitionStyle(child, i, {
+          mounted: reduced || mounted,
+          duration: reduced ? 0 : duration,
+          delay: reduced ? 0 : i * stagger,
+          translateY,
+        }),
+      )}
     </Tag>
   );
 }
@@ -98,11 +84,25 @@ interface ApplyOptions {
   translateY: number;
 }
 
+/**
+ * 자식 element 에 inline transition style 을 직접 주입한다.
+ *
+ * 이전엔 `<span style={display: contents}>` 로 감쌌으나 부모가 `<ol>` / `<ul>`
+ * 일 때 `<span>` 이 `<li>` 사이에 삽입돼 HTML invalid + 스크린 리더가 list
+ * semantics 를 잃었음. `React.cloneElement` 로 child 자체에 style 을 주입하면
+ * DOM 트리는 `<ol><li/><li/></ol>` 그대로 유지된다.
+ *
+ * 비-element child (string / number / null) 는 그대로 통과 — 호출자는
+ * Tag 를 적절히 골라 사용 (ul / ol / div 등).
+ */
 function applyTransitionStyle(
   child: React.ReactNode,
+  index: number,
   { mounted, duration, delay, translateY }: ApplyOptions,
 ): React.ReactNode {
-  if (!isReactElement(child)) return child;
+  if (!isValidElement<{ style?: React.CSSProperties; className?: string }>(child)) {
+    return child;
+  }
   const existing = child.props.style ?? {};
   const inlineTransition: React.CSSProperties = {
     opacity: mounted ? 1 : 0,
@@ -110,28 +110,14 @@ function applyTransitionStyle(
     transition: `opacity ${duration}ms ease-out ${delay}ms, transform ${duration}ms ease-out ${delay}ms`,
     willChange: mounted ? undefined : 'opacity, transform',
   };
-  return cloneWithStyle(child, { ...existing, ...inlineTransition });
-}
-
-function isReactElement(node: React.ReactNode): node is React.ReactElement<{ style?: React.CSSProperties; className?: string }> {
-  return (
-    node !== null &&
-    typeof node === 'object' &&
-    'props' in (node as object)
-  );
-}
-
-function cloneWithStyle(
-  el: React.ReactElement<{ style?: React.CSSProperties; className?: string }>,
-  style: React.CSSProperties,
-) {
-  return {
-    ...el,
-    props: {
-      ...el.props,
-      style,
-      // motion-reduce: 클래스 보존 (prefers-reduced-motion CSS rules 와 호환).
-      className: cn(el.props.className, 'motion-reduce:!transform-none motion-reduce:!opacity-100 motion-reduce:!transition-none'),
-    },
-  };
+  return cloneElement(child, {
+    // eslint-disable-next-line react/no-array-index-key -- stable order, no reorder semantics
+    key: child.key ?? index,
+    style: { ...existing, ...inlineTransition },
+    // motion-reduce: 클래스 보존 (prefers-reduced-motion CSS rules 와 호환).
+    className: cn(
+      child.props.className,
+      'motion-reduce:!transform-none motion-reduce:!opacity-100 motion-reduce:!transition-none',
+    ),
+  });
 }
