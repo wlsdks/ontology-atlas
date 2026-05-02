@@ -15,6 +15,21 @@ import { join, relative, dirname } from 'node:path';
 import { parseFrontmatter, buildMarkdown } from './parser.mjs';
 
 /**
+ * frontmatter 의 array 키 중 *그래프 엣지로 해석되는* 6 개. 새 edge 타입을
+ * 추가하면 (e.g. 'aggregates', 'implements') 여기만 갱신하면 findOrphans /
+ * findPath 등 모두 자동 cover. 예전에 두 함수가 각자 로컬로 같은 배열을
+ * 들고 있어 drift 위험.
+ */
+const NEIGHBOR_KEYS = Object.freeze([
+  'capabilities',
+  'elements',
+  'dependencies',
+  'relates',
+  'contains',
+  'describes',
+]);
+
+/**
  * vault root 안의 모든 `.md` 파일 walk. dotfile / node_modules 등 제외.
  * 반환: 각 파일의 절대 경로.
  */
@@ -211,14 +226,6 @@ export function findOrphans(rootPath, options = {}) {
       ? options.excludeKinds
       : ['vault-readme'],
   );
-  const NEIGHBOR_KEYS = [
-    'capabilities',
-    'elements',
-    'dependencies',
-    'relates',
-    'contains',
-    'describes',
-  ];
   const slugs = new Set(docs.map((d) => d.slug));
   const tailToFull = new Map();
   for (const slug of slugs) {
@@ -300,14 +307,6 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
     }
     return null;
   }
-  const NEIGHBOR_KEYS = [
-    'capabilities',
-    'elements',
-    'dependencies',
-    'relates',
-    'contains',
-    'describes',
-  ];
   const adj = new Map();
   function addEdge(a, b) {
     if (!adj.has(a)) adj.set(a, new Set());
