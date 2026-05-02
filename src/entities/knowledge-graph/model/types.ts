@@ -46,21 +46,14 @@ export function isKnowledgeEdgeType(value: unknown): value is KnowledgeEdgeType 
 export type ManualNodeKind = 'project' | 'domain' | 'capability' | 'element' | 'document';
 
 /**
- * 노드/엣지의 출처.
- *
- * - `manual` — mission v2 의 표준 값. vault frontmatter 자체 + 빌더 추가 +
- *   MCP write 모두 사람/AI agent 의 *직접 작성* 이라 동일 출처로 분류.
- * - `extraction` — v1 cloud LLM 추출 워커의 결과 표식. mission v2 에서
- *   추출 큐 (\`enqueueExtractionJob\` 등) 가 폐기되어 신규 할당은 일어나지
- *   않으나, Firestore legacy 데이터에 남은 값을 호환 위해 enum 에 보존.
- *
- * 옵션 필드 — legacy 데이터는 \`undefined\`, UI 가 \`extraction\` 기본값으로 처리.
+ * 노드/엣지의 출처. R10b cloud LLM 추출 워커가 영구 제거된 후 `manual` 만
+ * 남음 — vault frontmatter 자체 + 빌더 추가 + MCP write 모두 사람 / AI agent
+ * 의 *직접 작성* 이라 동일 출처로 분류.
  */
-export type KnowledgeGraphSource = 'manual' | 'extraction';
+export type KnowledgeGraphSource = 'manual';
 
 export const KNOWLEDGE_GRAPH_SOURCES: readonly KnowledgeGraphSource[] = [
   'manual',
-  'extraction',
 ] as const;
 
 export function isKnowledgeGraphSource(value: unknown): value is KnowledgeGraphSource {
@@ -84,13 +77,11 @@ export interface KnowledgeGraphNode {
   publishId?: string;
   projectionVersion?: string;
   publishedAt?: Date;
-  /** Manual editor v0 — `manual` 이면 사용자 직접 작성, `extraction` 이면 추출
-   *  워커 산물. legacy 데이터는 `undefined` (UI 가 extraction 으로 간주). */
+  /** R10b 후 항상 `'manual'` (사람 / AI agent 직접 작성). */
   source?: KnowledgeGraphSource;
-  /** `source === 'manual'` 시 작성자 uid. Firestore rules 가 author 본인만
-   *  update/delete 허용. */
+  /** 작성자 uid (옵션). */
   manualAuthor?: string;
-  /** `source === 'manual'` 시 사용자가 남긴 자유 메모 (옵션). */
+  /** 사용자가 남긴 자유 메모 (옵션). */
   manualNote?: string;
   /** P1 Phase 1 — 이 노드 생성/검수 시점의 활성 TBox version ID. fact 와
    *  schema 가 시간상 일치 추적용. legacy 데이터는 `undefined` 또는
