@@ -2,6 +2,7 @@
   "name": "oh-my-ontology",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "sideEffects": [
     "*.css",
     "**/firestore-noise-patch*",

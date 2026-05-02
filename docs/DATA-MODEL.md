@@ -140,6 +140,8 @@ firestore/
 
 ## 4. Knowledge subsystem collections
 
+> **Mission v2 status (2026-05-01)**: Most collections in this section are **cold storage** — they are documented for historical accuracy and any rows that already exist remain queryable, but no UI surface or callable currently writes them. The collections that are still live (post-mission-v2) are the ones backing the manual builder + public projection: `knowledgeApprovedNodes` / `knowledgeApprovedEdges` / `knowledgePublishes` / `knowledgePublicNodes` / `knowledgePublicEdges` / `knowledgePublicMeta`. Everything else (`knowledgeDocuments`, `knowledgeDocumentVersions`, `knowledgeDocumentChunks`, `knowledgeExtractionJobs/Outputs`, `knowledgeEvidence`, `knowledgeReviews/ReviewEvents/ApprovalEvents`) is read-only after the mission v2 cleanup that retired the `/knowledge/*` route surface, the cloud LLM extraction flow, and the `/review/*` queue.
+
 ### `knowledgeDocuments/{documentId}`
 
 Admin-private entry that holds the document header and current state.
@@ -554,24 +556,16 @@ storage/
 
 `knowledge-documents/*` is used as an append-only path for source-text storage (see `storage.rules`).
 
-## 6. Trusted backend contract
+## 6. Trusted backend contract (historical)
 
-Within the knowledge subsystem, the following data is owned by the trusted backend.
+> **Mission v2 status (2026-05-01)**: The `functions/` folder itself was retired in mission v2 cleanup, and `firebase.json` no longer deploys Functions. The collections below were originally owned by Cloud Functions; today they are either **live as static-export-friendly direct writes** from the manual builder (manual editor → `knowledgeApprovedNodes/Edges`) or **cold storage** with no current writer. The trusted-backend boundary is preserved in Firestore Security Rules so re-introducing a backend in the future is a config flip, not a rewrite.
 
-- `knowledgeDocumentChunks`
-- `knowledgeEvidence`
-- `knowledgeExtractionOutputs`
-- `knowledgeReviewEvents`
-- `knowledgeApprovalEvents`
-- `knowledgeApprovedNodes`
-- `knowledgeApprovedEdges`
-- `knowledgePublishes`
-- `knowledgePublicNodes`
-- `knowledgePublicEdges`
+Originally backend-owned:
 
-The execution boundary is **Cloud Functions for Firebase (2nd gen)** or an equivalent Firebase Admin SDK–based executor.
+- Cold storage (no current writer): `knowledgeDocumentChunks`, `knowledgeEvidence`, `knowledgeExtractionOutputs`, `knowledgeReviewEvents`, `knowledgeApprovalEvents`
+- Still live (manual builder writes through the same client SDK that backend used to use): `knowledgeApprovedNodes`, `knowledgeApprovedEdges`, `knowledgePublishes`, `knowledgePublicNodes`, `knowledgePublicEdges`
 
-Browser clients do not write to these collections directly.
+Browser clients still don't write to the cold-storage collections.
 
 ## 7. Security summary
 

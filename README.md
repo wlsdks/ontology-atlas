@@ -98,7 +98,7 @@ API). The workbench reads/writes the same `.md` files the AI does.
 | **vault frontmatter = the graph** (no review queue, no LLM extraction) | `grep -r "extractionJob" src/ → 0` |
 | **AI agent partner via MCP** | `mcp/` package, 11 tools, `mcp/scripts/verify.mjs` smoke test |
 | **Local-first first paint** (firebase JS not in critical path) | `pnpm bundle:check` — local-first routes 0 KB firebase |
-| **Dogfooding** | `docs/ontology/` is the project's own mental model in frontmatter (~130 nodes / 165 relations) |
+| **Dogfooding** | `docs/ontology/` is the project's own curated mental model (~23 nodes). Combined with the broader `docs/` tree the static demo shows ~130 nodes / 165 relations on `/ontology/insights`. |
 
 ## Architecture
 
