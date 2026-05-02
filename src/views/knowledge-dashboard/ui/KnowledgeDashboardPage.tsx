@@ -134,7 +134,7 @@ function DashboardContent() {
               {user?.email}
             </p>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-[color:var(--color-text-secondary)]">
-              문서를 올리고, 분석 결과를 골라내고, 공개 화면에 보입니다.
+              cloud 모드 문서 surface — 마크다운 등록 + 프로젝트 연결. 로컬 vault 우선이라면 /docs 에서 폴더 선택.
             </p>
           </div>
         </header>

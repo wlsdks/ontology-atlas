@@ -54,9 +54,9 @@ export function useScopedAccountAccess(): UseScopedAccountAccessResult {
         canEditDocuments: false,
         canReviewAndPublish: false,
         hasWorkspaceAccess: true,
-        roleLabel: "게스트",
+        roleLabel: "로컬",
         description:
-          "로컬 폴더는 자유롭게 사용할 수 있고, 서버 발행은 로그인 후 가능합니다.",
+          "로컬 vault 는 자유롭게 사용할 수 있고, cloud 동기화는 로그인 후 가능합니다.",
         membership: null,
         user: null,
       };

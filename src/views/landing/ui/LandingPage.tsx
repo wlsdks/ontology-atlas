@@ -79,7 +79,7 @@ export function LandingPage({ next }: Props) {
             <p className="max-w-xl text-base leading-7 text-[color:var(--color-text-secondary)]">
               {hasReturnTarget
                 ? "요청한 화면은 로그인이 필요합니다. 로그인하면 방금 열려던 화면으로 바로 돌아갑니다."
-                : "사람과 AI agent 가 같이 자라게 하는 codebase ontology. 마크다운 문서가 곧 개념·관계·근거 — *트리·토폴로지·ERD* 세 시각으로 본다. Obsidian/Notion 처럼 폴더만 가리키면 시작."}
+                : "사람과 AI agent 가 같이 자라게 하는 codebase ontology. 마크다운 frontmatter 가 곧 노드와 관계 — *트리·토폴로지·ERD* 세 시각으로 본다. Obsidian/Notion 처럼 폴더만 가리키면 시작."}
             </p>
           </div>
 

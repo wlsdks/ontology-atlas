@@ -29,7 +29,11 @@ import { ManualNodeCreateModal } from "@/widgets/manual-node-create-modal";
 import { OntologyEgoGraph } from "@/widgets/ontology-ego-graph";
 import { OntologyTreeView } from "@/widgets/ontology-tree-view";
 import { useDataSourceMode } from "@/features/data-source-mode";
-import { VaultOntologyStubsPanel, useOntologyInsight } from "@/features/vault-ontology";
+import {
+  VaultOntologyStubsPanel,
+  useOntologyInsight,
+  isVaultSentinelDate,
+} from "@/features/vault-ontology";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { Tooltip, useToast } from "@/shared/ui";
 
@@ -48,6 +52,12 @@ export function OntologyViewPage() {
   // ?account= 가 비었으면 인증 사용자의 owned membership 첫 번째로 자동 보강.
 
   const { insight, error } = useOntologyInsight(accountId);
+  // vault / dogfood 모드는 노드 lastApprovedAt 이 sentinel — "근거 문서" /
+  // "발행 시점" stat 도 의미 0. mode 감지해서 stat strip / search 안내 hide.
+  const isVaultSentinelMode =
+    insight !== null &&
+    insight.nodes.length > 0 &&
+    insight.nodes.every((n) => isVaultSentinelDate(n.lastApprovedAt));
   // documents 는 글로벌 검색 두 번째 source — 권한 게이팅은 Firestore rules 가
   // 처리. 권한 없으면 빈 배열, 검색 결과에서도 자동 제외.
   const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
@@ -274,31 +284,39 @@ export function OntologyViewPage() {
         </div>
       </section>
 
-      <section className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
+      {/* vault / dogfood 모드는 "근거 문서" + "발행 시점" stat 의미 0 (cloud LLM
+          추출/publish flow 의존) — 2 col grid. cloud 모드만 4 col stat strip. */}
+      <section
+        className={`mb-6 grid gap-3 ${isVaultSentinelMode ? "grid-cols-2" : "grid-cols-2 md:grid-cols-4"}`}
+      >
         <Stat label="트리 노드" value={String(totalNodes)} />
         <Stat label="총 관계" value={insight ? String(insight.edges.length) : "—"} />
-        <Stat
-          label="근거 문서"
-          value={String(docCount)}
-          hint={docCount > 0 ? "문서 목록 열기" : undefined}
-          href={
-            docCount > 0
-              ? getKnowledgeDocumentListHref(accountId)
-              : undefined
-          }
-        />
-        <Stat
-          label="발행 시점"
-          value={
-            insight?.meta?.publishedAt
-              ? insight.meta.publishedAt.toLocaleDateString("ko-KR", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })
-              : "아직 없음"
-          }
-        />
+        {isVaultSentinelMode ? null : (
+          <>
+            <Stat
+              label="근거 문서"
+              value={String(docCount)}
+              hint={docCount > 0 ? "문서 목록 열기" : undefined}
+              href={
+                docCount > 0
+                  ? getKnowledgeDocumentListHref(accountId)
+                  : undefined
+              }
+            />
+            <Stat
+              label="발행 시점"
+              value={
+                insight?.meta?.publishedAt
+                  ? insight.meta.publishedAt.toLocaleDateString("ko-KR", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                    })
+                  : "아직 없음"
+              }
+            />
+          </>
+        )}
       </section>
 
       {error ? (
@@ -310,7 +328,9 @@ export function OntologyViewPage() {
         </div>
       ) : null}
 
-      {documentsAccessError ? (
+      {/* vault / dogfood 모드는 cloud Firestore 문서 검색 자체가 비활성 —
+          "권한 없음" 안내는 cloud 모드 전용 (vault 사용자에게 어색). */}
+      {documentsAccessError && !isVaultSentinelMode ? (
         <p className="mb-4 break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
           문서에 접근 권한이 없어 글로벌 검색에 문서가 포함되지 않아요. ontology 노드 검색만 가능해요.
         </p>

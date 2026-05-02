@@ -39,7 +39,7 @@ const SURFACE_HINTS: ReadonlyArray<{
     unauthenticated: {
       eyebrow: '문서',
       title: '문서를 다루려면 로그인이 필요해요',
-      body: '문서를 올리고, 분석 결과를 골라내고, 공개 지도에 보입니다. 로그인하면 바로 이 화면으로 돌아옵니다.',
+      body: 'cloud 모드 문서 surface 입니다. 로그인하면 바로 이 화면으로 돌아옵니다. (로그인 없이 vault 만 쓰려면 /docs 에서 폴더 선택)',
     },
     denied: {
       eyebrow: '문서',
