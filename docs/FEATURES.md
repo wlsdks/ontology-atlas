@@ -314,9 +314,7 @@ The `PermissionGate` component branches on own-space / membership / admin.
 |---|---|---|
 | **DocsQuickDrawer** | `/topology` topology (folder icon) | a vault document quick-preview drawer — pinned docs / recent / inline tree |
 | **WorkspaceOntologyStrip** | `/` `/projects` header | a strip with current ontology stats — auto-hidden when there are zero matches. The unresolved-stub chip jumps to `/ontology` (the tree's stub list) |
-| **ProjectKnowledgeTopologyScene** | shown when a node is selected on `/topology` | a detailed scene of the project's knowledge graph |
-| **OntologyStubList** | `/` (bottom of the tree) | list of unresolved stub nodes + promote / dismiss actions (cloud-mode callable) |
-| **VaultOntologyStubsPanel** | `/` (above the tree when vault mode is active) | visualizes stub nodes/edges extracted from vault frontmatter alone |
+| **VaultOntologyStubsPanel** | `/` (above the tree when vault mode is active) | visualizes unresolved stub references from vault frontmatter — fix by adding the slug as a real node in the builder or removing the reference |
 
 ### 3.12 Shortcuts
 
@@ -336,26 +334,28 @@ The `PermissionGate` component branches on own-space / membership / admin.
 ## 4. Data flow (mission v2 single-source)
 
 ```
-md files (vault or cloud)               MCP server (AI agents)
+md files (vault on user's disk)         MCP server (AI agents)
   │                                          │
-  ├─→ manifest (vault) / Firestore (cloud)   │
-  │                                          │ (read/write)
+  ├─→ manifest (File System Access API)      │ (read/write)
+  │                                          │
   ├─→ Project[] ← useProjects (mode-aware)   │
   │                                          ▼
-  ├─→ frontmatter → derive-ontology-from-vault → OntologyStub[] (local)
+  ├─→ frontmatter → derive-ontology-from-vault → OntologyStub[]
   │                       or
-  │   manual editor / builder → knowledgeApprovedNodes/Edges (cloud)
+  │   builder canvas → vault .md (write)
   │                       or
-  │   AI agent (Claude Code) → MCP add_concept / patch_concept → vault .md (local)
+  │   AI agent (Claude Code) → MCP add_concept / patch_concept → vault .md
   │
   └─→ tree (`/`) / topology (`/topology` Sigma) / builder (`/ontology/edit` xyflow)
 ```
 
-**Paths removed by mission v2 cleanup**:
-- ❌ AI extraction (cloud LLM Gemini/Claude) → knowledgeExtractionJobs/Outputs
-- ❌ Review queue (`/review/knowledge`) → knowledgeReviews/ApprovalEvents
+**Paths permanently removed (R10b — auth + cloud surface)**:
+- ❌ AI extraction (cloud LLM) → `knowledgeExtractionJobs/Outputs`
+- ❌ Review queue (`/review/knowledge`) → `knowledgeReviews/ApprovalEvents`
+- ❌ Manual node/edge add modal (cloud Firestore)
+- ❌ Login / signup / settings surfaces
 
-Earlier data is preserved in cold storage but is read-only since the callables are gone.
+Future cloud collab will be re-designed when sponsorship / collaboration requests come.
 
 ---
 
