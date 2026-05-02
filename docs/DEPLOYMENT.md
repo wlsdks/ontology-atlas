@@ -1,10 +1,8 @@
 # Deployment Guide
 
-> Static deployment guide based on Firebase Hosting. **Live**: https://
+> Static deployment guide based on Firebase Hosting. **Live**: https://oh-my-ontology.web.app
 >
-> This document is a single-place checklist of every step you need when deploying to Firebase. It covers everything from first-time setup to daily deploys, rollbacks, and custom domains.
->
-> **Operating policy (2026-05-01)**: Per current user policy, we do not deploy to Firebase. The local-first vault + AI agent partner (MCP) is the default usage flow. This document is kept for future reference, and emulator-based local testing remains valid.
+> This document is a single-place checklist of every step you need when deploying to Firebase. It covers everything from first-time setup to daily deploys, rollbacks, and custom domains. For the lightweight quickstart, see [`DEPLOY-FIREBASE.md`](./DEPLOY-FIREBASE.md).
 
 ## Table of contents
 
@@ -45,7 +43,7 @@ cp .env.example .env.local
 
 **Allow Google sign-in domains** — Firebase Console → Authentication → Settings → Authorized domains:
 - `localhost` (development)
-- `` (default)
+- `oh-my-ontology.web.app` (default)
 - `oh-my-ontology.firebaseapp.com` (alternate domain)
 - Custom domain (if any)
 
@@ -109,7 +107,7 @@ Every entry below must be filled in `.env.local`:
 | `NEXT_PUBLIC_FIREBASE_API_KEY` | Web API Key |
 | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | `xxx.firebaseapp.com` |
 | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | `oh-my-ontology` |
-| `ASLAN_BUILD_PROJECT_SOURCE` | Optional. Leave empty by default. When set to `firestore`, the static build reads the project list from the Firestore REST API. |
+| `OMOT_BUILD_PROJECT_SOURCE` | Optional. Leave empty by default. When set to `firestore`, the static build reads the project list from the Firestore REST API. |
 | `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | `xxx.appspot.com` |
 | `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | numeric |
 | `NEXT_PUBLIC_FIREBASE_APP_ID` | `1:xxx:web:xxx` |
@@ -233,7 +231,7 @@ Firestore and Storage rules are not subject to rollback — check out the previo
 - In `output: 'export'` mode, server components that use server-only APIs will fail.
 - `shared/api/firebase.ts` uses a lazy getter pattern, so it is not initialized at build time (intended behavior).
 - The default `pnpm build` uses seed/demo data in `entities/project/api/build-time-fetch.ts` and does not depend on the network.
-- If a production build needs Firestore as the source for static pages, set `ASLAN_BUILD_PROJECT_SOURCE=firestore` explicitly. In that case, verify Firestore public read permissions and that `NEXT_PUBLIC_FIREBASE_PROJECT_ID` is correct.
+- If a production build needs Firestore as the source for static pages, set `OMOT_BUILD_PROJECT_SOURCE=firestore` explicitly. In that case, verify Firestore public read permissions and that `NEXT_PUBLIC_FIREBASE_PROJECT_ID` is correct.
 
 **Q. `firebase deploy` returns "HTTP Error: 403"**
 - Re-authenticate with `firebase login --reauth`.

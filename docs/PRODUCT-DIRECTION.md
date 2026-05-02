@@ -185,13 +185,10 @@ Separate package, `oh-my-ontology-mcp`. Claude Code-compatible:
 }
 ```
 
-Tools:
+Tools (11 — read 7 + write 4):
 
-- `list_concepts` — every node in the vault (filter by kind)
-- `get_concept` — a single node + its neighbors
-- `add_concept` — new node (writes frontmatter)
-- `add_relation` — edge between two nodes
-- `find_evidence` — which code grounds this concept
+- read: `list_concepts` (every node, filter by kind), `get_concept` (single node + neighbors), `find_evidence` (which code grounds this concept), `find_backlinks`, `find_path` (shortest-path BFS), `list_kinds` (kind distribution), `find_orphans` (no-edge nodes)
+- write: `add_concept`, `add_relation`, `patch_concept`, `delete_concept`
 
 With this in place, the agent can answer **"which concept is this file an element of?"** directly during code exploration. No re-inferring every conversation.
 
@@ -230,11 +227,11 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 
 ### ✅ Phase 3 — AI agent partner — merged
 
-1. ✅ `mcp/` package — MCP server v0.2.0 (PR #5/#7)
-2. ✅ 7 tools: `list_concepts` / `get_concept` / `find_evidence` / `find_backlinks` / `add_concept` / `add_relation` / `patch_concept`
-3. ⏸ CLI command (`ohmy`) — DEFERRED (MCP suffices; CLI depends on Phase 2)
+1. ✅ `mcp/` package — MCP server v0.5.0 (`oh-my-ontology-mcp`)
+2. ✅ 11 tools (read 7 + write 4): `list_concepts` / `get_concept` / `find_evidence` / `find_backlinks` / `find_path` / `list_kinds` / `find_orphans` / `add_concept` / `add_relation` / `patch_concept` / `delete_concept`
+3. ✅ CLI command (`oh-my-ontology`) — `npx oh-my-ontology init <folder>` scaffolds the vault. The web `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 21 nodes describing our own mental model
+5. ✅ `docs/ontology/` dogfood vault — ~23 nodes describing our own mental model
 
 ### ⏳ Phase 4 — Polish for non-developers — upcoming
 

@@ -120,9 +120,9 @@ Example: `/ontology` page
 
 ### Surfaces where this applies (current)
 
-`/ontology`, `/ontology/insights`, `/ontology/relations`, `/knowledge`, `/knowledge/documents`, `/knowledge/documents/new`, `/review/knowledge`, `/settings/*`, `/diagnostics/insights`, `/account` — all follow the same pattern.
+`/ontology/edit`, `/ontology/insights`, `/ontology/relations`, `/settings/*`, `/account` — all follow the same pattern.
 
-The public surfaces `/`, `/projects`, `/project/[slug]` are browsed by users in Korean — Korean h1 alone, without an English caption.
+The public surfaces `/`, `/topology`, `/docs`, `/projects`, `/project/[slug]` use the standalone Korean h1 pattern (without an English eyebrow caption) — these are the browse surfaces, not the operations surfaces.
 
 ## Changelog
 

@@ -17,28 +17,26 @@ tags: [architecture, infra, overview]
 │ ├─ /projects             project list (mode-aware)    │
 │ ├─ /project/[slug]       project detail (inline edit) │
 │ ├─ /docs                 vault picker / docs surface  │
-│ ├─ /knowledge/*          cloud-mode doc register/list │
 │ ├─ /ontology/edit        xyflow ERD builder           │
 │ ├─ /ontology/insights    graph insights               │
 │ ├─ /ontology/relations   relation distribution        │
 │ ├─ /settings/*           categories / statuses / import│
-│ ├─ /diagnostics/insights operations insights          │
 │ ├─ /account              user account settings        │
 │ └─ /login, /signup       Firebase Auth (optional)     │
 └───────────────────────────────────────────────────────┘
-                    ↓ Firebase Web SDK
+                    ↓ Firebase Web SDK (optional)
 ┌───────────────────────────────────────────────────────┐
 │ Firebase (optional — only when cloud sync is needed)  │
 │ ├─ Firestore  (global + account scoped data)          │
-│ ├─ Storage    (screenshots, knowledge markdown)       │
-│ ├─ Auth       (email/password, Google, admin Google)  │
+│ ├─ Storage    (screenshots only)                      │
+│ ├─ Auth       (email/password, Google)                │
 │ └─ Hosting    (static site deployment)                │
 └───────────────────────────────────────────────────────┘
                     ↑ separate trusted boundary
 ┌───────────────────────────────────────────────────────┐
 │ MCP server (mcp/) — AI agent partner                  │
 │ ├─ stdin/stdout JSON-RPC                              │
-│ └─ vault frontmatter read/write (10 tools)            │
+│ └─ vault frontmatter read/write (11 tools)            │
 └───────────────────────────────────────────────────────┘
 ```
 
@@ -72,22 +70,22 @@ The essentials are:
 ### Next.js app
 
 - Renders the global map, project list, and project detail
-- Handles login/sign-up and workspace selection
+- Handles login/sign-up and workspace selection (cloud mode only — local-first works without auth)
 - Provides inline editing on public surfaces for the owner/members (actions are revealed by permission on the same URL)
 - Project detail (`/project/[slug]`) is the hub for all related work — jumping into the topology, viewing/editing related documents, and editing the project itself all happen on a single screen
-- Document registration, version upload, and extraction requests live under `/knowledge/*`; review under `/review`; system settings under `/settings/*`; diagnostics under `/diagnostics/*` — split by feature
-- Public surfaces read the `knowledgePublic*` projection; the user's account surfaces read private documents/extractions/review state
-- The "admin" namespace no longer exists. There is no separate "operator / administrator" role either. Permissions are determined by Firestore rules plus client-side capability hooks.
+- System settings under `/settings/*` (categories / statuses / import). The `/knowledge/*` document subsystem, `/review/*` review queue, `/diagnostics/*` operations panel, `/admin/*` namespace, and TBox surfaces (`/settings/ontology[/history]`) were all retired in mission v2 — vault frontmatter is the schema and is self-approving
+- Public surfaces read the `knowledgePublic*` projection (cloud mode only); local-first surfaces read directly from the vault manifest
+- Permissions are determined by Firestore rules plus client-side capability hooks. There is no separate "operator / administrator" role.
 
-### Firestore / Storage
+### Firestore / Storage (cloud mode only)
 
-- Stores the canonical public-product data
-- Stores account-scoped projects and documents
-- Stores knowledge document/version metadata
-- Stores the raw markdown source
-- Stores the evidence / audit / publish log
-- Stores the canonical approved graph
-- Stores the public projection
+- Stores the canonical public-product data (projects, categories, statuses)
+- Stores account-scoped projects
+- Stores the canonical approved graph (`knowledgeApprovedNodes/Edges`)
+- Stores the public projection (`knowledgePublicNodes/Edges`)
+- Stores the publish event log (`knowledgePublishes`)
+- Stores screenshots in Storage
+- Cold storage only: legacy knowledge document / extraction / review collections retained but no longer written by any callable
 
 ### Cloud Functions
 
@@ -100,9 +98,11 @@ In earlier cleanup stages (PR #5/#6) the chunking / extraction / review seed / a
 
 ### MCP server (introduced in mission v2)
 
-- **`mcp/` package** — depends on `@modelcontextprotocol/sdk`, stdin/stdout JSON-RPC
-- AI agents (Claude Code, etc.) read/write vault `.md` directly
-- 10 tools (read 6 + write 4): list_concepts · get_concept · find_evidence · find_backlinks · find_path · list_kinds · add_concept · add_relation · patch_concept · delete_concept
+- **`mcp/` package** — `oh-my-ontology-mcp`, depends on `@modelcontextprotocol/sdk`, stdin/stdout JSON-RPC
+- AI agents (Claude Code, Cursor, …) read/write vault `.md` directly
+- 11 tools (read 7 + write 4):
+  - read: `list_concepts` · `get_concept` · `find_evidence` · `find_backlinks` · `find_path` · `list_kinds` · `find_orphans`
+  - write: `add_concept` · `add_relation` · `patch_concept` · `delete_concept`
 - Registration: see `.mcp.json.example` or `mcp/README.md`
 
 ## 5. Data boundaries
@@ -118,22 +118,15 @@ The data below is publicly readable.
 - `meta`
 - `knowledgePublicNodes`
 - `knowledgePublicEdges`
-- `accounts/{accountId}/knowledgeDocuments` **conditional** — unauthenticated
-  reads are allowed only when the account has `isPublic == true` and the
-  document has `status == 'published'`. This path is what the public detail
-  page uses to render the "documents that describe this project" section.
 
 ### Self-account private model (account owner / members only)
 
 The data below is readable only by the account owner or a member of that account.
 
-- `knowledgeDocuments` (global canonical)
-- `knowledgeDocumentVersions`
-- `knowledgeReviews`
-- Storage `knowledge-documents/*`
-- `accounts/{accountId}/knowledgeDocuments/*` — owner/members only when
-  the status is not `published` or the account is private
-- `accounts/{accountId}/knowledgeDocumentVersions/*`
+- `accounts/{accountId}/projects` — account-scoped project list
+- Storage `screenshots/*` — uploaded project screenshots
+
+> The legacy knowledge document collections (`knowledgeDocuments`, `knowledgeDocumentVersions`, `knowledgeReviews`, Storage `knowledge-documents/*`) were retired in mission v2 along with the `/knowledge/*` route surface. Existing rows remain in cold storage but no UI surface reads or writes them.
 
 ### Backend-owned model
 
@@ -166,7 +159,7 @@ This product follows the Notion / Obsidian model. The owner of an account does e
 - **Viewer of another account**: a read-only member of that account
 - **Global admin (`admins/{email}`)**: access to system-level data (global categories/statuses) and diagnostics tooling. Largely irrelevant for everyday use — within their own account, every user has full control of their own assets
 
-The permission model no longer depends on URL namespaces (the old `/admin/*`). Inline actions are revealed by permission on the same public surface, while system settings/review/diagnostics are split into feature routes (`/settings`, `/review`, `/diagnostics`). The real permission gate is Firestore Security Rules.
+The permission model no longer depends on URL namespaces (the old `/admin/*` is gone). Inline actions are revealed by permission on the same public surface; system settings live under `/settings/*`. The review-queue (`/review/*`) and diagnostics (`/diagnostics/*`) routes were retired in mission v2. The real permission gate is Firestore Security Rules.
 
 ## 7. FSD layer layout
 
@@ -195,21 +188,14 @@ Detailed rules: [`rules/architecture-fsd.md`](rules/architecture-fsd.md)
 | `/project/[slug]` | canonical route for a single project (inline editing when permitted) | fully public |
 | `/project/new` · `/project/[slug]/edit` | project editor | editor or above |
 | `/docs` | vault picker / docs surface when the vault is active | fully public (vault lives on the user's disk) |
-| `/login` · `/signup` · `/reset-password` | Firebase Auth surface | fully public |
+| `/login` · `/signup` · `/reset-password` | Firebase Auth surface (cloud mode only) | fully public |
 | `/account` | user's own account settings | logged-in user |
-| `/knowledge` | document dashboard | viewer or above |
-| `/knowledge/documents` | document list | viewer or above |
-| `/knowledge/documents/new` | register a new document (mode-aware) | editor or above |
-| `/knowledge/documents/view?id=...` | document detail (2-step stepper: upload → publish) | editor or above |
 | `/ontology/edit` | xyflow ERD builder + frontmatter md export | editor or above |
-| `/ontology/insights` | 4 panels — hubs / recent activity / 30-day timeline / unconnected | viewer or above |
+| `/ontology/insights` | kind distribution / hub nodes / recent activity / orphans | viewer or above |
 | `/ontology/relations` | edge-level view — filter and distribution by relation type | viewer or above |
 | `/settings/categories` · `/settings/statuses` · `/settings/import` | categories / statuses / CSV import | editor or above |
-| `/settings/ontology` · `/settings/ontology/history` | TBox read-only + version history | viewer or above |
-| `/diagnostics/insights` | operational metrics (stale / orphan / promote candidates) | editor or above |
 
-> Retired after mission v2 cleanup: `/review` / `/review/knowledge` / `/settings/api-keys` / `/diagnostics/migrate` / `/admin/*` / `/project/topology` / `/project/view`, etc. — all removed.
-| `/dev/login` | bypass login limited to dev builds | dev only |
+> Retired after mission v2 cleanup (no UI, no callable, no rules): `/knowledge/*` (entire document subsystem), `/review/*` (review queue), `/diagnostics/*` (operations panel), `/admin/*`, `/settings/ontology[/history]` (TBox surface), `/settings/api-keys`, `/project/topology`, `/project/view`. The cloud LLM extraction flow (`enqueueExtractionJob` etc.) and the `functions/` folder itself are also gone.
 
 > The permission model is decided by Firestore Security Rules and capability hooks rather than URL namespaces. Inline actions are revealed by permission on the same public surface.
 
@@ -226,7 +212,7 @@ Detailed rules: [`rules/architecture-fsd.md`](rules/architecture-fsd.md)
 - vault frontmatter → ontology stub fast-path (mission v2)
 - ontology v0: TBox seed (5 classes + 7 relations), `/` tree + ego graph, the `/ontology/edit` builder, `/ontology/insights` + `/ontology/relations`, manual editor direct writes
 - V1.1 — Wikidata statement qualifiers + rank (optional fields, additive)
-- AI agent partner (MCP server) — vault read/write through 7 tools
+- AI agent partner (MCP server) — vault read/write through 11 tools (read 7 + write 4)
 - dogfood vault (`docs/ontology/`) — our own mental model
 - global admin whitelist
 
@@ -256,7 +242,7 @@ If a path appears in the docs but does not exist in the actual code, treat it as
 - [`DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md) — design tokens / motion / forbidden patterns
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md) — Firebase deployment / rollback / domains
 - [`CHANGELOG.md`](./CHANGELOG.md) — chronological user-visible changes
-- [`../mcp/README.md`](../mcp/README.md) — MCP server 7 tools + registration
+- [`../mcp/README.md`](../mcp/README.md) — MCP server 11 tools + registration
 - [`../AGENTS.md`](../AGENTS.md) / [`../CLAUDE.md`](../CLAUDE.md) — agent / contributor guide
 - [`../.claude/rules/`](../.claude/rules/) — granular working rules
 
