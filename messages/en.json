@@ -695,7 +695,7 @@
         "mobileTopologyCta": "Open topology",
         "toastEmptyName": "Name is empty — can't save.",
         "toastSaveSuccess": "Saved \"{title}\" → vault/{path}.md",
-        "toastDemoMode": "Demo mode — can't save. Open a vault folder under /docs or sign in.",
+        "toastDemoMode": "Demo mode — can't save. Open a markdown folder under /docs and try again.",
         "toastSaveFailed": "Save failed",
         "toastTitleEmpty": "Title is empty — can't save.",
         "toastTitleSaved": "Title saved: \"{title}\"",

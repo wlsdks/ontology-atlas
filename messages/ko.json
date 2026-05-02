@@ -695,7 +695,7 @@
         "mobileTopologyCta": "토폴로지로",
         "toastEmptyName": "이름이 비어 있어 저장할 수 없어요.",
         "toastSaveSuccess": "\"{title}\" → vault/{path}.md 저장",
-        "toastDemoMode": "데모 모드라 저장할 수 없어요. /docs 에서 vault 폴더를 열거나 로그인하세요.",
+        "toastDemoMode": "데모 모드라 저장할 수 없어요. /docs 에서 마크다운 폴더를 열고 다시 시도하세요.",
         "toastSaveFailed": "저장 실패",
         "toastTitleEmpty": "제목이 비어 있어 저장할 수 없어요.",
         "toastTitleSaved": "\"{title}\" 제목 저장",

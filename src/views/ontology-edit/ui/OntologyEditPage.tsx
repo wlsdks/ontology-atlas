@@ -168,7 +168,7 @@ export function OntologyEditPage() {
           removeNode(nodeId);
           setSelectedId(null);
         } else {
-          // R10b — vault 미선택 (static) 시 vault picker 안내. cloud 분기 제거.
+          // vault 미선택 (static) 시 vault picker 안내 — static 은 read-only.
           toast.show(t("toastDemoMode"), "error");
         }
       } catch (err) {
