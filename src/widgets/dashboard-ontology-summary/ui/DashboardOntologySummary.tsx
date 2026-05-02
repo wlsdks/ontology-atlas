@@ -3,8 +3,9 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { Network } from "lucide-react";
-import { ManualSourceChip, useKnowledgePublicNodes } from "@/entities/knowledge-graph";
+import { ManualSourceChip } from "@/entities/knowledge-graph";
 import { getOntologyKindLabel } from "@/entities/ontology-class";
+import { useOntologyInsight } from "@/features/vault-ontology";
 import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
 import {
   buildMeaningfulOntologyStats,
@@ -18,14 +19,16 @@ export interface DashboardOntologySummaryProps {
 /**
  * `/knowledge` 대시보드 inline 카드 — ontology 의 큰 요약.
  *
- * 자체 `subscribeKnowledgePublicGraph` 구독. kind 분포 grid + 최근 활동 5 +
- * "전체 트리 →" / "인사이트 →" 두 진입점. 권한 없거나 빈 ontology 면 자동 숨김.
+ * `useOntologyInsight` (vault > 빌드타임 dogfood > Firestore 진실원
+ * 우선순위) 구독. kind 분포 grid + 최근 활동 5 + "전체 트리 →" / "인사이트 →"
+ * 두 진입점. 빈 ontology 면 자동 숨김.
  *
- * `WorkspaceOntologyStrip` (한 줄 stat) 와 다르게 — 이 카드는 dashboard 의
- * 큰 panel 단위, 사용자가 ontology 상태를 dashboard 에서 깊게 본다.
+ * `WorkspaceOntologyStrip` (한 줄 stat) 와 다르게 — 이 카드는 dashboard
+ * 의 큰 panel 단위, 사용자가 ontology 상태를 dashboard 에서 깊게 본다.
  */
 export function DashboardOntologySummary({ accountId }: DashboardOntologySummaryProps) {
-  const nodes = useKnowledgePublicNodes(accountId);
+  const { insight } = useOntologyInsight(accountId);
+  const nodes = insight?.nodes ?? [];
 
   const stats = useMemo(() => buildMeaningfulOntologyStats(nodes), [nodes]);
   const recent = useMemo(() => selectRecentNodes(nodes, 5), [nodes]);
