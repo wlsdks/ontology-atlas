@@ -57,9 +57,11 @@ function getEdgeTypeLabel(
 export function OntologyInsightsPage() {
   const t = useTranslations("ontologyPages.insights");
   const kindLabel = useOntologyKindLabel();
-  const accountId = null;
+  // R10 — accountId 항상 null. backward-compat 으로 child 컴포넌트가 prop 으로
+  // 받는 곳만 명시적으로 null 전달.
+  const accountId: string | null = null;
 
-  const { insight, error } = useOntologyInsight(accountId);
+  const { insight, error } = useOntologyInsight();
 
   const kindDist = useMemo(
     () => (insight ? computeKindDistribution(insight.nodes) : new Map<string, number>()),
@@ -394,7 +396,7 @@ export function OntologyInsightsPage() {
                 {topHubs.map(({ node, degree }, idx) => (
                   <li key={node.id}>
                     <Link
-                      href={`${"/ontology/"}${accountId ? "&" : "?"}node=${encodeURIComponent(node.id)}`}
+                      href={`/ontology/?node=${encodeURIComponent(node.id)}`}
                       className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[12px] transition-colors hover:border-[color:rgba(94,106,210,0.32)]"
                     >
                       <span className="w-5 shrink-0 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
@@ -430,7 +432,7 @@ export function OntologyInsightsPage() {
               {recent.map((node) => (
                 <li key={node.id}>
                   <Link
-                    href={`${"/ontology/"}${accountId ? "&" : "?"}node=${encodeURIComponent(node.id)}`}
+                    href={`/ontology/?node=${encodeURIComponent(node.id)}`}
                     className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[12px] transition-colors hover:border-[color:rgba(94,106,210,0.32)]"
                   >
                     <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">

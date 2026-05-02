@@ -45,9 +45,10 @@ function getTypeLabel(
  */
 export function OntologyRelationsPage() {
   const t = useTranslations("ontologyPages.relations");
-  const accountId = null;
+  // R10 — accountId 항상 null.
+  const accountId: string | null = null;
 
-  const { insight, error } = useOntologyInsight(accountId);
+  const { insight, error } = useOntologyInsight();
 
   // type 필터 — null 이면 전체. 분포 panel 의 행 클릭으로 toggle.
   const [selectedType, setSelectedType] = useState<string | null>(null);
@@ -254,8 +255,8 @@ export function OntologyRelationsPage() {
             </header>
             <ol className="space-y-1">
               {strongEdges.map(({ edge, evidence, fromTitle, toTitle, isCrossProject }) => {
-                const fromHref = `${"/ontology/"}${accountId ? "&" : "?"}node=${encodeURIComponent(edge.from)}`;
-                const toHref = `${"/ontology/"}${accountId ? "&" : "?"}node=${encodeURIComponent(edge.to)}`;
+                const fromHref = `/ontology/?node=${encodeURIComponent(edge.from)}`;
+                const toHref = `/ontology/?node=${encodeURIComponent(edge.to)}`;
                 return (
                   <li
                     key={edge.id}
