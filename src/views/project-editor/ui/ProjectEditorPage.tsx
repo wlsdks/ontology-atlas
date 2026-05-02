@@ -74,8 +74,8 @@ function EditorContent({
   const safeReturnLabel = t(resolveReturnLabelKey(normalizeReturnTo(returnTo)));
   const publicProjectHref = slug ? getProjectDetailHref(slug) : null;
   const [project, setProject] = useState<Project | null>(null);
-  // R10b — `useProjects` (mode-aware: vault manifest 또는 정적 dogfood) 가
-  // allProjects 의 단일 source. 이전 cloud `subscribeProjects` 직접 호출 제거.
+  // mode-aware (vault manifest 또는 빌드타임 dogfood) — useProjects 가
+  // allProjects 의 단일 source.
   const { projects: allProjects } = useProjects();
   const [isDirty, setIsDirty] = useState(false);
   const [loading, setLoading] = useState(Boolean(targetSlug));
@@ -89,8 +89,8 @@ function EditorContent({
   useEffect(() => {
     if (!targetSlug) return;
 
-    // R10b: cloud `getProject` 호출 제거 — `useProjects` 결과에서 slug 매칭으로
-    // 동기 lookup. fallback 으로 빈 객체가 반환될 수 있어 `loadError` 분기 유지.
+    // useProjects 결과에서 slug 매칭으로 동기 lookup. 매칭 실패 시
+    // loadError 로 빈 상세 카드 노출 (slug 가 manifest 에 없는 경우).
     const found = allProjects.find((p) => p.slug === targetSlug);
     if (found) {
       setProject(found);
@@ -383,9 +383,8 @@ function EditorContent({
 }
 
 export function ProjectEditorPage(props: Props) {
-  // local-first 헌장: 진입 자체는 차단하지 않음. local 모드 사용자는 vault 에
-  // 직접 쓸 수 있고, cloud 모드 mutation 은 useProjectMutations 안에서 모드
-  // 분기 + 거절 처리. (이전에는 PermissionGate 가 비로그인 통째 차단했다.)
+  // local-first 헌장: 진입 자체는 차단하지 않음. local 모드는 vault 에
+  // 직접 쓰고, static 모드는 useProjectMutations 안에서 mutation 거절.
   return (
     <EditorContent
       key={`${props.slug ?? `new-${props.mode}`}:${props.duplicateFromSlug ?? ""}`}
