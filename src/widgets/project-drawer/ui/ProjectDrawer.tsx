@@ -22,7 +22,6 @@ import {
   buildKnowledgeProjectEvidenceSummary,
   type KnowledgeProjectInsight,
 } from "@/entities/knowledge-graph";
-import { useDocsVaultCapabilities } from "@/features/docs-vault-access";
 import { formatDate } from "@/shared/lib/format-date";
 import {
   formatProjectIntegrityIssue,
@@ -39,7 +38,6 @@ import {
   type ProjectImpactMode,
 } from "@/entities/project";
 import { CopyProjectLinkButton } from "@/features/project-share";
-import { useScopedAccountAccess } from "@/features/account-scope";
 import { useTaxonomy } from "@/features/taxonomy";
 import { useBodyScrollLock } from "@/shared/lib/use-body-scroll-lock";
 import { PublicQuickActions } from "@/widgets/public-quick-actions";
@@ -100,7 +98,6 @@ export function ProjectDrawer({
   const asideRef = useRef<HTMLElement | null>(null);
   const router = useRouter();
   const reducedMotion = useReducedMotion();
-  const access = useScopedAccountAccess();
   const { categories, statuses, categoryLabel, statusLabel } = useTaxonomy();
   // 모바일 bottom-sheet 스타일: 드래그 핸들 바에서만 아래로 스와이프하면 닫힘.
   // 컨텐츠 영역의 수직 스크롤과 충돌하지 않도록 dragListener=false 로 통제.
@@ -282,10 +279,8 @@ export function ProjectDrawer({
   // 관련 문서 — Docs Vault 에서 이 프로젝트를 인용하는 md top 5.
   // 권한 없으면 섹션 자체 숨김 (게스트/로그인 안 된 사용자에게 admin 문서
   // 링크 새는 것 방지).
-  const docsCaps = useDocsVaultCapabilities();
   const relatedDocs = useMemo(() => {
     if (!project) return [];
-    if (!docsCaps.canRead) return [];
     const manifest = vaultManifest as VaultManifest;
     return findRelatedDocs(
       manifest.docs,
@@ -295,7 +290,7 @@ export function ProjectDrawer({
       },
       5,
     );
-  }, [project, docsCaps.canRead]);
+  }, [project]);
   const evidenceSummary = useMemo(
     () =>
       knowledgeInsight
@@ -1096,16 +1091,13 @@ export function ProjectDrawer({
               </details>
               )}
 
-              {access.canManage ? (
-                <div className="mt-5">
-                  <PublicQuickActions
-                    accountId={accountId}
-                    projectSlug={project.slug}
-                    label={t("manageLabel")}
-                    className="w-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] shadow-none"
-                  />
-                </div>
-              ) : null}
+              <div className="mt-5">
+                <PublicQuickActions
+                  projectSlug={project.slug}
+                  label={t("manageLabel")}
+                  className="w-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] shadow-none"
+                />
+              </div>
 
               <footer className="mt-6 border-t border-[color:var(--color-overlay-2)] pt-4 md:mt-8">
                 <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">

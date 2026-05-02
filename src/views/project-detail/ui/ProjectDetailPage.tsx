@@ -24,7 +24,6 @@ import {
   type LinkItem,
   useToast,
 } from "@/shared/ui";
-import { useScopedAccountAccess } from "@/features/account-scope";
 import {
   formatProjectIntegrityIssue,
   getProjectDetailHref,
@@ -299,10 +298,6 @@ export function ProjectDetailPage({
   // 보강 — prop 이 명시되면 그 값을 우선.
   const accountId =
     accountIdProp ?? searchParams.get("account")?.trim() ?? null;
-  // 로그인 사용자가 ?account= 없이 진입하면 본인 워크스페이스로 자동 스코프 —
-  // 그렇지 않으면 legacy 전역 collection 의 빈/잘못된 프로젝트 데이터가 노출되고
-  // 편집 권한도 게스트로 떨어짐.
-  const scopedAccess = useScopedAccountAccess();
   const { show: showToast } = useToast();
   const fallbackProjects = useMemo(() => resolveFallbackProjects(), []);
   const fallbackProject = fallbackProjects.find((item) => item.slug === slug) ?? null;
@@ -352,9 +347,6 @@ export function ProjectDetailPage({
     const search = searchParams.toString();
     return `${pathname}${search ? `?${search}` : ""}`;
   }, [pathname, searchParams]);
-  // R10 (auth 영구 제거) 후엔 redirect 시 항상 landing 으로. ?account= scope 로
-  // 떨어진 비로그인 사용자가 있던 시절의 next= 보존 흐름은 사라짐.
-  const landingHref = "/";
 
   // P1-5 — 클라이언트 사이드 동적 타이틀. 정적 export metadata 가 slug
   // 단위까지 미리 빌드되지만 동적 컨텍스트는 빌드 시 모름.
@@ -436,26 +428,6 @@ export function ProjectDetailPage({
       unsubscribe?.();
     };
   }, [accountId, slug, dataSourceMode]);
-
-  // 공개 상세(/project/[slug]/)는 누구나 읽을 수 있어야 한다. CLAUDE.md에도
-  // "공개 상세"로 명시된 계약. 단 account 파라미터가 붙은 scoped URL
-  // (/project/[slug]/?account=...)은 비공개 데이터일 수 있으므로 비로그인 시
-  // landing으로 돌려보내 로그인을 유도한다.
-  const hasScopedAccount = Boolean(accountId);
-  useEffect(() => {
-    if (scopedAccess.kind === "guest" && hasScopedAccount) {
-      router.replace(landingHref);
-    }
-  }, [hasScopedAccount, landingHref, router, scopedAccess.kind]);
-
-  if (
-    scopedAccess.kind === "loading" ||
-    (scopedAccess.kind === "guest" && hasScopedAccount)
-  ) {
-    return (
-      <main className="min-h-screen bg-[color:var(--color-canvas)]" aria-hidden="true" />
-    );
-  }
 
   if (!slug) {
     return (
@@ -561,7 +533,7 @@ export function ProjectDetailPage({
         : insightDocumentNodes.length > 0
           ? t("ontologyReasonDocs", { count: insightDocumentNodes.length })
           : t("ontologyReasonEmpty"));
-  const canManageProject = scopedAccess.canManage && projectMutations.canEdit;
+  const canManageProject = projectMutations.canEdit;
   // mode-aware persistence (Round 9a T0-1). 이전엔 cloud-only `upsertProject`
   // 을 직접 호출해 vault 모드에서 인라인 편집이 firestore 로 silently 흘러갔다
   // (편집 후 새로고침하면 사라지는 회귀). useProjectMutations 가 mode 에 따라

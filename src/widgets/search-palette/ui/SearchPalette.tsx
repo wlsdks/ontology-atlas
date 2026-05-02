@@ -9,7 +9,6 @@ import { cn } from '@/shared/lib/cn';
 import { useBodyScrollLock } from '@/shared/lib/use-body-scroll-lock';
 import type { Project } from '@/entities/project';
 import { useTaxonomy } from '@/features/taxonomy';
-import { useDocsVaultCapabilities } from '@/features/docs-vault-access';
 import {
   buildDocsVaultHref,
   vaultManifest,
@@ -203,14 +202,12 @@ function SearchPaletteDialog({
     return searchProjects(filteredProjects, query).slice(0, 20);
   }, [filteredProjects, query]);
 
-  // Vault 문서 매칭 — 권한 있을 때만. 쿼리 있을 때 top 3.
-  const docsCaps = useDocsVaultCapabilities();
+  // Vault 문서 매칭 — 쿼리 있을 때 top 3.
   const docResults = useMemo(() => {
-    if (!docsCaps.canRead) return [];
     if (!query.trim()) return [];
     const manifest = vaultManifest as VaultManifest;
     return matchVaultDocs(query, manifest.docs);
-  }, [docsCaps.canRead, query]);
+  }, [query]);
   const rows = useMemo<PaletteRow[]>(
     () => [
       ...docResults.map((doc) => ({ kind: 'doc' as const, doc })),

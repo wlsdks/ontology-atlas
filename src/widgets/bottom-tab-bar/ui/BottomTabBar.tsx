@@ -2,12 +2,12 @@
 
 import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { Network, FolderKanban, FileText, ListTodo } from 'lucide-react';
+import { Network, FolderKanban, FileText } from 'lucide-react';
 
 interface TabItem {
   href: string;
   /** Translation key under `nav.*` for the visible tab label. */
-  labelKey: 'ontology' | 'projects' | 'docs' | 'settings';
+  labelKey: 'ontology' | 'projects' | 'docs';
   icon: typeof Network;
   /** pathname 이 이 prefix 들 중 하나로 시작하면 활성 탭. 빈 배열이면 정확히 href 와 일치할 때만. */
   matchPrefixes: ReadonlyArray<string>;
@@ -24,7 +24,6 @@ const TABS: ReadonlyArray<TabItem> = [
   // "문서" tab — vault picker. mission v2 가 cloud markdown 호스팅 surface
   // (`/knowledge/*`) 를 폐기한 후 모든 모드에서 docs vault 가 진입점.
   { href: '/docs/', labelKey: 'docs', icon: FileText, matchPrefixes: ['/docs'] },
-  { href: '/settings/', labelKey: 'settings', icon: ListTodo, matchPrefixes: ['/settings'] },
 ];
 
 // 탭바를 노출하지 않을 surface — 인증·온보딩·에러 화면처럼 사용자가

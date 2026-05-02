@@ -28,7 +28,6 @@ import {
   Settings2,
   X,
 } from 'lucide-react';
-import { useDocsVaultCapabilities } from '@/features/docs-vault-access';
 import {
   LocalVaultPicker,
   OntologyStarterCta,
@@ -182,7 +181,6 @@ function AdminDocsContent() {
   const [radarDismissedKeys, setRadarDismissedKeys] = useState<Set<string>>(
     () => new Set(),
   );
-  const caps = useDocsVaultCapabilities();
   const localVault = useLocalVault();
 
   const replaceUrlState = useCallback(
@@ -377,8 +375,8 @@ function AdminDocsContent() {
     };
   }, [source, localVault.imageHandles]);
 
-  // 편집은 로컬 볼트 + 캐이퍼빌리티 canEdit 조건에서만. 서버는 git PR 기반.
-  const canEditCurrent = source === 'local' && caps.canEdit;
+  // 편집은 로컬 볼트일 때만. R10 (auth 영구 제거) 후 cap 체크 제거.
+  const canEditCurrent = source === 'local';
   const editResolver = useMemo<
     ((slug: string) => Promise<string>) | undefined
   >(() => {
@@ -1415,14 +1413,6 @@ function AdminDocsContent() {
             <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t('header.docCount', { count: manifest.docs.length })}
             </span>
-            {caps.kind !== 'loading' && !caps.canEdit ? (
-              <span
-                className="inline-flex items-center rounded-sm border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)]"
-                title={t('header.roleTooltip', { role: caps.roleLabel })}
-              >
-                {caps.roleLabel}
-              </span>
-            ) : null}
           </div>
           {source === 'local' ? (
             <span className="inline-flex items-center gap-1 rounded-sm border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(200,210,255,0.86)]">

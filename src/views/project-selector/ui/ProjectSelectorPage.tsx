@@ -5,7 +5,6 @@ import { useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, ArrowRight, FolderKanban, Shield } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useScopedAccountAccess } from "@/features/account-scope";
 import { useTaxonomy } from "@/features/taxonomy";
 import {
   getProjectDetailHref,
@@ -67,9 +66,7 @@ export function ProjectSelectorPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
-  const scopedAccess = useScopedAccountAccess();
   const { categoryLabel, statusLabel, categories, statuses } = useTaxonomy();
-  const isSignedIn = scopedAccess.kind !== "guest" && scopedAccess.kind !== "loading";
   // 진실원 모드 (local/cloud/static) — local 모드는 vault 가 활성화돼 있어
   // 비로그인이라도 mutation 가능. static 만 read-only.
   const projectMutations = useProjectMutations();
@@ -141,8 +138,6 @@ export function ProjectSelectorPage() {
     return counts;
   }, [projects, query, selectedCategory]);
 
-  const loginHref = "/login";
-  const signupHref = "/signup";
   const overviewHref = "/";
   const replaceVisibleLimit = useCallback(
     (nextLimit: number | null) => {
@@ -207,18 +202,6 @@ export function ProjectSelectorPage() {
   // 그냥 프로젝트 상세로 보낸다.
   const getPostCreateHref = (project: { slug: string; name: string }) =>
     returnTo || getProjectDetailHref(project.slug);
-
-  if (scopedAccess.kind === "loading") {
-    // audit A4 — 이전엔 빈 main + aria-hidden="true" 라 스크린 리더가 페이지를
-    // 통째 무시. role=status + sr-only 텍스트로 로딩 안내를 명시.
-    return (
-      <main className="min-h-screen bg-[color:var(--color-canvas)]">
-        <div role="status" aria-live="polite" className="sr-only">
-          {t("loadingWorkspace")}
-        </div>
-      </main>
-    );
-  }
 
   return (
     <main id="main" className="min-h-screen bg-[color:var(--color-canvas)]">
@@ -385,19 +368,6 @@ export function ProjectSelectorPage() {
                   >
                     {t("clearSearch")}
                   </Button>
-                ) : !isSignedIn ? (
-                  <>
-                    <Link href={loginHref} className="inline-flex">
-                      <Button type="button" variant="outline">
-                        {t("loginButton")}
-                      </Button>
-                    </Link>
-                    <Link href={signupHref} className="inline-flex">
-                      <Button type="button">
-                        {t("signUpButton")}
-                      </Button>
-                    </Link>
-                  </>
                 ) : !canMutateProjects ? (
                   // 로그인 + 멤버이지만 편집 권한 없음 + 0 프로젝트 = dead-end 회피.
                   // overview (전체 토폴로지) 로 회귀 동선 노출.

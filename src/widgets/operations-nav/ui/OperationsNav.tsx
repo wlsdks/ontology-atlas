@@ -14,19 +14,21 @@ interface OperationsNavProps {
 }
 
 interface NavItem {
-  id: 'knowledge' | 'ontology' | 'topology' | 'settings';
+  id: 'knowledge' | 'ontology' | 'topology';
   /** Translation key under `nav.*` for the visible label. */
-  labelKey: 'docs' | 'ontology' | 'topology' | 'settings';
+  labelKey: 'docs' | 'ontology' | 'topology';
   /** Translation key under `nav.*` for the tooltip body. */
-  tooltipKey: 'tooltipDocs' | 'tooltipOntology' | 'tooltipTopology' | 'tooltipSettings';
+  tooltipKey: 'tooltipDocs' | 'tooltipOntology' | 'tooltipTopology';
   basePath: string;
   /** Current pathname starts with this prefix → active. */
   prefixes: ReadonlyArray<string>;
 }
 
 const NAV_ITEMS: ReadonlyArray<NavItem> = [
-  // mission v2 정렬: cloud markdown 호스팅 (`/knowledge/*`) 제거 후 모든
-  // 모드에서 "문서" 진입점은 /docs/ (vault). vault 안 골랐으면 picker.
+  // R10c (auth + cloud surface 정리) 이후 진입점 3개 — docs (vault picker /
+  // editor), ontology (frontmatter 트리·ego graph), topology (Sigma WebGL).
+  // settings (/categories|statuses|import) 는 cloud-only 였고 mission v2 의
+  // "frontmatter = schema" 와 모순돼 R10c 에서 제거.
   {
     id: 'knowledge',
     labelKey: 'docs',
@@ -34,8 +36,6 @@ const NAV_ITEMS: ReadonlyArray<NavItem> = [
     basePath: '/docs/',
     prefixes: ['/docs'],
   },
-  // ontology view — vault frontmatter 노드/관계의 트리. mission 의 척추.
-  // / 도 OntologyViewPage 를 렌더하므로 prefix 에 양쪽 포함.
   {
     id: 'ontology',
     labelKey: 'ontology',
@@ -43,22 +43,12 @@ const NAV_ITEMS: ReadonlyArray<NavItem> = [
     basePath: '/',
     prefixes: ['/ontology'],
   },
-  // topology — 출구 view 중 하나 (Sigma WebGL 의존도 지도).
   {
     id: 'topology',
     labelKey: 'topology',
     tooltipKey: 'tooltipTopology',
     basePath: '/topology/',
     prefixes: ['/topology'],
-  },
-  // BottomTabBar 의 '정리' 와 라벨 일치 — 같은 destination 인데 데스크톱 /
-  // 모바일 라벨이 달라 사용자 혼란 (audit A1 회귀 차단).
-  {
-    id: 'settings',
-    labelKey: 'settings',
-    tooltipKey: 'tooltipSettings',
-    basePath: '/settings/categories/',
-    prefixes: ['/settings'],
   },
 ];
 

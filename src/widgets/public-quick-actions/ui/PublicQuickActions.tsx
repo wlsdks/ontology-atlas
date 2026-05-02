@@ -4,24 +4,20 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { CopyPlus, PencilLine } from "lucide-react";
-import { useScopedAccountAccess } from "@/features/account-scope";
 import { Button, InfoHint } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
 
 interface Props {
-  accountId?: string | null;
   projectSlug?: string | null;
   className?: string;
   label?: string;
 }
 
 export function PublicQuickActions({
-  accountId,
   projectSlug,
   className,
   label = "프로젝트 관리",
 }: Props) {
-  const access = useScopedAccountAccess();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -48,10 +44,6 @@ export function PublicQuickActions({
     url.searchParams.set("returnTo", returnTo);
     return `${url.pathname}?${url.searchParams.toString()}`;
   }, [projectSlug, returnTo]);
-
-  if (!access.canManage) {
-    return null;
-  }
 
   const shouldShowCreateAction = !projectSlug;
 

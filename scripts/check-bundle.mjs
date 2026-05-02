@@ -54,7 +54,9 @@ const LOCAL_FIRST_BASE_ROUTES = [
   'ontology/relations',
   'projects',
 ];
-const CLOUD_ADMIN_BASE_ROUTES = ['settings/categories', 'settings/statuses', 'settings/import'];
+// R10c (settings cloud-only surface 제거) 이후 cloud-admin 라우트 0.
+// 미래에 새 cloud-mode 라우트가 추가되면 여기에 등록.
+const CLOUD_ADMIN_BASE_ROUTES = [];
 
 function expandRoutes(baseRoutes) {
   const out = [];
