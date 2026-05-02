@@ -277,7 +277,7 @@ function SearchPaletteDialog({
       if (e.key === 'Enter') {
         e.preventDefault();
         if (activeRow?.kind === 'doc') {
-          router.push(buildDocsVaultHref({ accountId, slug: activeRow.doc.slug }));
+          router.push(buildDocsVaultHref({ slug: activeRow.doc.slug }));
           onClose();
           return;
         }
@@ -290,7 +290,7 @@ function SearchPaletteDialog({
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [accountId, activeRow, rows.length, onClose, onSelect, router]);
+  }, [activeRow, rows.length, onClose, onSelect, router]);
 
   // query 변경 시 activeIndex 리셋 — onChange 핸들러에서 처리(effect 불필요)
   const handleQueryChange = (next: string) => {
@@ -487,7 +487,7 @@ function SearchPaletteDialog({
                         role="option"
                         aria-selected={isActive}
                         data-index={idx}
-                        href={buildDocsVaultHref({ accountId, slug: d.slug })}
+                        href={buildDocsVaultHref({ slug: d.slug })}
                         onClick={onClose}
                         onMouseEnter={() => setActiveIndex(idx)}
                         className={cn(

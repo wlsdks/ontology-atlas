@@ -2,22 +2,31 @@ import { describe, expect, it } from 'vitest';
 import { buildDocsVaultHref } from './href';
 
 describe('buildDocsVaultHref', () => {
-  it('keeps account scope when building doc links', () => {
-    expect(
-      buildDocsVaultHref({
-        accountId: 'demo-workspace',
-        slug: 'ARCHITECTURE',
-      }),
-    ).toBe('/docs/?account=demo-workspace&slug=ARCHITECTURE');
+  it('builds slug-only href', () => {
+    expect(buildDocsVaultHref({ slug: 'ARCHITECTURE' })).toBe(
+      '/docs/?slug=ARCHITECTURE',
+    );
+  });
+
+  it('encodes special characters in slug', () => {
+    expect(buildDocsVaultHref({ slug: 'foo bar' })).toBe(
+      '/docs/?slug=foo%20bar',
+    );
   });
 
   it('appends hash after query params', () => {
     expect(
-      buildDocsVaultHref({
-        accountId: 'demo-workspace',
-        slug: 'ARCHITECTURE',
-        hash: '#section',
-      }),
-    ).toBe('/docs/?account=demo-workspace&slug=ARCHITECTURE#section');
+      buildDocsVaultHref({ slug: 'ARCHITECTURE', hash: '#section' }),
+    ).toBe('/docs/?slug=ARCHITECTURE#section');
+  });
+
+  it('handles empty input — returns root /docs/', () => {
+    expect(buildDocsVaultHref()).toBe('/docs/');
+  });
+
+  it('strips leading # from hash', () => {
+    expect(buildDocsVaultHref({ slug: 'a', hash: '##frag' })).toBe(
+      '/docs/?slug=a##frag',
+    );
   });
 });

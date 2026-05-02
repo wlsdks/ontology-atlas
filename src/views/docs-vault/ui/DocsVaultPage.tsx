@@ -135,9 +135,8 @@ function AdminDocsContent() {
     [accountId],
   );
   const getDocHref = useCallback(
-    (slug: string, hash?: string) =>
-      buildDocsVaultHref({ accountId, slug, hash }),
-    [accountId],
+    (slug: string, hash?: string) => buildDocsVaultHref({ slug, hash }),
+    [],
   );
   const getProjectHref = useCallback(
     (slug: string) => `/?p=${encodeURIComponent(slug)}`,
