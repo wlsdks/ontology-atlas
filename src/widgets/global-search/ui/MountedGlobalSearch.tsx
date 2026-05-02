@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { type Project, getProjectDetailHref } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
+import { useDataSourceMode } from "@/features/data-source-mode";
 import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
 import { useGlobalSearchHotkey } from "../lib/use-global-search-hotkey";
 import { GlobalSearch } from "./GlobalSearch";
@@ -61,6 +62,7 @@ export function MountedGlobalSearch({
   };
   const [nodes, setNodes] = useState<KnowledgeGraphNode[]>([]);
   const { projects } = useProjects(accountId);
+  const dataSourceMode = useDataSourceMode();
 
   // controlled mount 시 hotkey 비활성 — caller 가 다른 hotkey 로 open 관리.
   useGlobalSearchHotkey(open, setOpen, {
@@ -69,8 +71,12 @@ export function MountedGlobalSearch({
   });
 
   // ontology approved nodes — public projection. 권한 없으면 빈 배열.
+  // mode-gate: cloud 모드가 아닐 때 Firestore subscribe 자체를 skip — 매 라우트
+  // 마다 마운트되는 palette 가 무조건 4 outbound Listen 요청을 내던 회귀를
+  // 제거 (2026-05-02 perf audit). local/static 에선 projects 만으로 검색 동작.
   useEffect(() => {
     setNodes([]);
+    if (dataSourceMode !== 'cloud') return;
     let unsubscribe: (() => void) | null = null;
     let cancelled = false;
     void import("@/entities/knowledge-graph/api").then(({ subscribeKnowledgePublicGraph }) => {
@@ -85,7 +91,7 @@ export function MountedGlobalSearch({
       cancelled = true;
       unsubscribe?.();
     };
-  }, [accountId]);
+  }, [accountId, dataSourceMode]);
 
   return (
     <GlobalSearch

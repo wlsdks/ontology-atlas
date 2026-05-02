@@ -68,6 +68,7 @@ describe('InfoHint', () => {
       <InfoHint label="x">
         <>
           <p>설명</p>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- test fixture */}
           <a href="/docs">자세히 →</a>
         </>
       </InfoHint>,

@@ -18,6 +18,7 @@ export const size = { width: 1200, height: 630 };
 export const alt = 'Project preview card for Demo';
 
 interface Params {
+  locale: string;
   slug: string;
 }
 
@@ -27,8 +28,14 @@ export async function generateStaticParams(): Promise<Params[]> {
   const slugs = new Set<string>();
   for (const p of cloudProjects) slugs.add(p.slug);
   for (const p of vaultProjects) slugs.add(p.slug);
-  if (slugs.size === 0) return [{ slug: 'iam' }];
-  return Array.from(slugs).map((slug) => ({ slug }));
+  if (slugs.size === 0) slugs.add('iam');
+  // OG image is locale-independent so we generate one per (locale, slug)
+  // pair to satisfy the static export contract; the rendered PNG is identical.
+  const out: Params[] = [];
+  for (const locale of ['en', 'ko']) {
+    for (const slug of slugs) out.push({ locale, slug });
+  }
+  return out;
 }
 
 export default async function ProjectOgImage({

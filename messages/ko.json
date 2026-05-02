@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "siteName": "oh-my-ontology",
+    "siteTagline": "오픈소스 온톨로지 워크벤치",
+    "pages": {
+      "home": "oh-my-ontology",
+      "topology": "토폴로지",
+      "docs": "Docs Vault",
+      "projects": "프로젝트",
+      "ontology": "온톨로지",
+      "ontologyEdit": "온톨로지 빌더",
+      "ontologyInsights": "온톨로지 인사이트",
+      "ontologyRelations": "관계 분포",
+      "settings": "정리",
+      "categories": "카테고리",
+      "statuses": "상태",
+      "import": "가져오기",
+      "login": "로그인",
+      "signup": "가입",
+      "resetPassword": "비밀번호 재설정",
+      "account": "내 정보"
+    }
+  },
+  "nav": {
+    "skipToContent": "메인 콘텐츠로 건너뛰기",
+    "workspace": "WORKSPACE",
+    "search": "검색",
+    "shortcuts": "단축키",
+    "ontology": "온톨로지",
+    "topology": "토폴로지",
+    "settings": "정리",
+    "docs": "문서",
+    "projects": "프로젝트",
+    "account": "내 정보",
+    "myInfo": "내 정보",
+    "signOut": "로그아웃",
+    "signIn": "로그인",
+    "back": "돌아가기",
+    "demo": "데모",
+    "local": "로컬",
+    "cloud": "클라우드"
+  },
+  "locale": {
+    "switcher": "언어",
+    "english": "English",
+    "korean": "한국어"
+  },
+  "footer": {
+    "license": "MIT licensed",
+    "github": "GitHub",
+    "stack": "Local-first · Next.js · TypeScript · Sigma.js · MCP"
+  },
+  "landing": {
+    "eyebrow": "ONTOLOGY WORKBENCH · 사람 + AI AGENT 협업",
+    "title": "AI 와 함께 자라는 codebase ontology",
+    "subtitle": "사람과 AI agent 가 같이 자라게 하는 codebase ontology. 마크다운 frontmatter 가 곧 노드와 관계 — *트리·토폴로지·ERD* 세 시각으로 본다. Obsidian/Notion 처럼 폴더만 가리키면 시작.",
+    "topologyCaption": "TOPOLOGY · {nodes} NODES · {relations} RELATIONS",
+    "step1Title": "마크다운 한 곳에 적기",
+    "step1Body": "frontmatter 키만 넣으면 노드/관계가 자동으로. AI agent (MCP) 도 같은 vault 에 read/write.",
+    "step2Title": "역추적 + 의존 분석 즉시",
+    "step2Body": "'이 기능 누가 쓰나?' '이거 바꾸면 뭐 깨지나?' — 마크다운에선 grep 인데, ontology 면 0 클릭에 답.",
+    "step3Title": "한눈 탐색 — 트리·토폴로지·ERD",
+    "step3Body": "같은 ontology 를 세 시각으로. 도메인 census, 영향 범위, 의존 chain 한 화면.",
+    "exploreCta": "ontology 둘러보기",
+    "openVaultCta": "내 마크다운 폴더 열기",
+    "privacyNote": "로컬 폴더는 디스크에만 저장되고 외부로 전송되지 않아요. 데이터는 사용자 디스크가 진실원."
+  }
+}

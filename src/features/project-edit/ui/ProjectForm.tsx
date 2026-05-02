@@ -13,6 +13,7 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ChevronDown, Sparkles } from "lucide-react";
+import { Link } from "@/i18n/navigation";
 import { cn } from "@/shared/lib/cn";
 import { slugify } from "@/shared/lib/slugify";
 import { Button } from "@/shared/ui";
@@ -909,9 +910,9 @@ export function ProjectForm({
                 </Hint>
               )}
               <Hint>
-                <a href="/settings/categories/" className="underline">
+                <Link href="/settings/categories" className="underline">
                   카테고리 관리
-                </a>
+                </Link>
                 에서 추가·편집 가능
               </Hint>
             </FieldRow>
@@ -939,9 +940,9 @@ export function ProjectForm({
                 </Hint>
               )}
               <Hint>
-                <a href="/settings/statuses/" className="underline">
+                <Link href="/settings/statuses" className="underline">
                   상태 관리
-                </a>
+                </Link>
                 에서 추가·편집 가능
               </Hint>
             </FieldRow>

@@ -44,6 +44,7 @@
     "graphology-layout-forceatlas2": "^0.10.1",
     "lucide-react": "^1.8.0",
     "next": "16.2.4",
+    "next-intl": "^4.11.0",
     "react": "19.2.5",
     "react-dom": "19.2.5",
     "react-hook-form": "^7.74.0",

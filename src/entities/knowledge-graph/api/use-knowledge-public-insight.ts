@@ -18,6 +18,7 @@ export interface UseKnowledgePublicInsightResult {
 
 export function useKnowledgePublicInsight(
   accountId: string | null,
+  enabled: boolean = true,
 ): UseKnowledgePublicInsightResult {
   const [insight, setInsight] = useState<KnowledgeProjectInsight | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -25,9 +26,13 @@ export function useKnowledgePublicInsight(
   useEffect(() => {
     setInsight(null);
     setError(null);
-    // Firestore SDK 는 dynamic import — vault/local 모드에선 cloud 구독을
-    // 호출하지 않아도 (mode-gate) 정적 import 만으로 firebase JS 가
-    // 청크에 박히는 걸 막는다.
+    // mode-gate: when caller is on local/static, opening the cloud
+    // subscription is a local-first contract violation (4 outbound Firestore
+    // Listen requests at runtime). Caller passes `mode === 'cloud'` from
+    // `useDataSourceMode()` so the dynamic import + Firestore listener never
+    // run outside cloud mode. The dynamic import boundary alone keeps the
+    // *static* chunk firebase-clean; this gate keeps the *runtime* clean too.
+    if (!enabled) return;
     let unsubscribe: (() => void) | null = null;
     let cancelled = false;
     void import("./knowledge-graph-api").then(({ subscribeKnowledgePublicGraph }) => {
@@ -42,7 +47,7 @@ export function useKnowledgePublicInsight(
       cancelled = true;
       unsubscribe?.();
     };
-  }, [accountId]);
+  }, [accountId, enabled]);
 
   return { insight, error };
 }

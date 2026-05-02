@@ -13,6 +13,7 @@ describe('EmptyState — base', () => {
     render(
       <EmptyState
         title="비어 있어요"
+        // eslint-disable-next-line @next/next/no-html-link-for-pages -- test fixture, no real navigation
         description={<>첫 <a href="/start">항목</a> 을 추가해 보세요.</>}
       />,
     );

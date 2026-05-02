@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-02T09:47:49.811Z",
+  "generatedAt": "2026-05-02T11:15:34.817Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -52,8 +52,8 @@
         },
         {
           "depth": 3,
-          "text": "Firestore / Storage",
-          "slug": "firestore-storage"
+          "text": "Firestore / Storage (cloud mode only)",
+          "slug": "firestore-storage-cloud-mode-only"
         },
         {
           "depth": 3,
@@ -132,8 +132,8 @@
         }
       ],
       "excerpt": "This document describes the current product's domain model and its public/operational structure. The service is no longer a simple public portfolio — it is now built around growing a documentbased ontology inside a workspace and reading/editing it from public surfaces. mission v2 alignment: The cloud LLM extraction flo",
-      "wordCount": 2035,
-      "updatedAt": "2026-05-02T09:34:08.145Z",
+      "wordCount": 1987,
+      "updatedAt": "2026-05-02T10:11:16.212Z",
       "mode": "engineer",
       "linksOut": [
         "rules/architecture-fsd",
@@ -1783,8 +1783,8 @@
         },
         {
           "depth": 2,
-          "text": "6. Trusted backend contract",
-          "slug": "6-trusted-backend-contract"
+          "text": "6. Trusted backend contract (historical)",
+          "slug": "6-trusted-backend-contract-historical"
         },
         {
           "depth": 2,
@@ -1803,8 +1803,8 @@
         }
       ],
       "excerpt": "This document covers the storage contracts of both the current public product and the designapproved knowledge subsystem v2. Whenever a collection schema changes, update this document first. The change process follows rules/firestoreschema.md. Singleuser mode (current): A single loggedin user is the owner of their own ",
-      "wordCount": 5202,
-      "updatedAt": "2026-05-02T09:34:08.145Z",
+      "wordCount": 5359,
+      "updatedAt": "2026-05-02T10:11:16.212Z",
       "mode": "engineer",
       "linksOut": [
         "rules/firestore-schema"
@@ -1957,11 +1957,13 @@
           "slug": "change-log"
         }
       ],
-      "excerpt": "Static deployment guide based on Firebase Hosting. Live: https:// This document is a singleplace checklist of every step you need when deploying to Firebase. It covers everything from firsttime setup to daily deploys, rollbacks, and custom domains. Operating policy (20260501): Per current user policy, we do not deploy ",
-      "wordCount": 1665,
-      "updatedAt": "2026-05-02T09:34:08.146Z",
+      "excerpt": "Static deployment guide based on Firebase Hosting. Live: https://ohmyontology.web.app This document is a singleplace checklist of every step you need when deploying to Firebase. It covers everything from firsttime setup to daily deploys, rollbacks, and custom domains. For the lightweight quickstart, see DEPLOYFIREBASE.",
+      "wordCount": 1630,
+      "updatedAt": "2026-05-02T10:11:16.212Z",
       "mode": "engineer",
-      "linksOut": []
+      "linksOut": [
+        "DEPLOY-FIREBASE"
+      ]
     },
     {
       "slug": "design-references/DESIGN-linear",
@@ -2284,8 +2286,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. Linear's \"starlight rising from darkness\" aesthetic aligns precisely with the constellation metaphor of the topology. The extreme constraint of blackandwhite plus a single indi",
-      "wordCount": 702,
-      "updatedAt": "2026-05-02T09:34:08.146Z",
+      "wordCount": 706,
+      "updatedAt": "2026-05-02T10:11:16.212Z",
       "mode": "both",
       "linksOut": [
         "design-references/DESIGN-linear"
@@ -2976,8 +2978,8 @@
         }
       ],
       "excerpt": "Status: Adopted (Phase 23, 20260501). Why: Root cause 1 from the planner audit — no modeaware hook existed, so every gate looked only at auth role. Nonloggedin users with an active local vault could not perform mutations. Spec location: Codelayer implementation of the .claude/rules/localfirst.md charter and docs/LOCALF",
-      "wordCount": 1086,
-      "updatedAt": "2026-05-02T09:34:08.146Z",
+      "wordCount": 1099,
+      "updatedAt": "2026-05-02T10:11:16.213Z",
       "mode": "both",
       "linksOut": []
     },
@@ -3995,8 +3997,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. This project is an ontology wor",
-      "wordCount": 1540,
-      "updatedAt": "2026-05-02T09:34:08.147Z",
+      "wordCount": 1562,
+      "updatedAt": "2026-05-02T10:11:16.213Z",
       "mode": "both",
       "linksOut": []
     },
@@ -4323,28 +4325,28 @@
     "CHANGELOG": [
       {
         "fromSlug": "ARCHITECTURE",
-        "context": "tokens / motion / forbidden patterns - [`DEPLOYMENT.md`](./DEPLOYMENT.md) — Firebase deployment / rollback / domains - **[`CHANGELOG.md`]** — chronological user-visible changes - [`../mcp/README.md`](../mcp/README.md) — MCP server 7 tools + registration - [`.",
+        "context": "tokens / motion / forbidden patterns - [`DEPLOYMENT.md`](./DEPLOYMENT.md) — Firebase deployment / rollback / domains - **[`CHANGELOG.md`]** — chronological user-visible changes - [`../mcp/README.md`](../mcp/README.md) — MCP server 11 tools + registration - [`",
         "linkText": "`CHANGELOG.md`"
       }
     ],
     "../mcp/README": [
       {
         "fromSlug": "ARCHITECTURE",
-        "context": "d) — Firebase deployment / rollback / domains - [`CHANGELOG.md`](./CHANGELOG.md) — chronological user-visible changes - **[`../mcp/README.md`]** — MCP server 7 tools + registration - [`../AGENTS.md`](../AGENTS.md) / [`../CLAUDE.md`](../CLAUDE.md) — agent / contrib",
+        "context": "d) — Firebase deployment / rollback / domains - [`CHANGELOG.md`](./CHANGELOG.md) — chronological user-visible changes - **[`../mcp/README.md`]** — MCP server 11 tools + registration - [`../AGENTS.md`](../AGENTS.md) / [`../CLAUDE.md`](../CLAUDE.md) — agent / contri",
         "linkText": "`../mcp/README.md`"
       }
     ],
     "../AGENTS": [
       {
         "fromSlug": "ARCHITECTURE",
-        "context": "md) — chronological user-visible changes - [`../mcp/README.md`](../mcp/README.md) — MCP server 7 tools + registration - **[`../AGENTS.md`]** / [`../CLAUDE.md`](../CLAUDE.md) — agent / contributor guide - [`../.claude/rules/`](../.claude/rules/) — granular work",
+        "context": "d) — chronological user-visible changes - [`../mcp/README.md`](../mcp/README.md) — MCP server 11 tools + registration - **[`../AGENTS.md`]** / [`../CLAUDE.md`](../CLAUDE.md) — agent / contributor guide - [`../.claude/rules/`](../.claude/rules/) — granular work",
         "linkText": "`../AGENTS.md`"
       }
     ],
     "../CLAUDE": [
       {
         "fromSlug": "ARCHITECTURE",
-        "context": "changes - [`../mcp/README.md`](../mcp/README.md) — MCP server 7 tools + registration - [`../AGENTS.md`](../AGENTS.md) / **[`../CLAUDE.md`]** — agent / contributor guide - [`../.claude/rules/`](../.claude/rules/) — granular working rules ## 11. Scaling trigger",
+        "context": "hanges - [`../mcp/README.md`](../mcp/README.md) — MCP server 11 tools + registration - [`../AGENTS.md`](../AGENTS.md) / **[`../CLAUDE.md`]** — agent / contributor guide - [`../.claude/rules/`](../.claude/rules/) — granular working rules ## 11. Scaling trigger",
         "linkText": "`../CLAUDE.md`"
       }
     ],
@@ -4353,6 +4355,13 @@
         "fromSlug": "DATA-MODEL",
         "context": "`knowledge subsystem v2`. Whenever a collection schema changes, update this document first. The change process follows **[`rules/firestore-schema.md`]**. > > **Single-user mode (current):** A single logged-in user is the owner of their own workspace. There is no account /",
         "linkText": "`rules/firestore-schema.md`"
+      }
+    ],
+    "DEPLOY-FIREBASE": [
+      {
+        "fromSlug": "DEPLOYMENT",
+        "context": "s everything from first-time setup to daily deploys, rollbacks, and custom domains. For the lightweight quickstart, see **[`DEPLOY-FIREBASE.md`]**. ## Table of contents 1. [Initial setup (one-time)](#1-initial-setup-one-time) 2. [Daily deploy flow](#2-daily-deploy",
+        "linkText": "`DEPLOY-FIREBASE.md`"
       }
     ],
     "design-references/DESIGN-linear": [

@@ -26,7 +26,8 @@
       "@/widgets/*": ["./src/widgets/*"],
       "@/features/*": ["./src/features/*"],
       "@/entities/*": ["./src/entities/*"],
-      "@/shared/*": ["./src/shared/*"]
+      "@/shared/*": ["./src/shared/*"],
+      "@/i18n/*": ["./src/i18n/*"]
     }
   },
   "include": [

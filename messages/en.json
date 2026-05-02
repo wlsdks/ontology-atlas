@@ -1,0 +1,68 @@
+{
+  "metadata": {
+    "siteName": "oh-my-ontology",
+    "siteTagline": "Open-source ontology workbench",
+    "pages": {
+      "home": "oh-my-ontology",
+      "topology": "Topology",
+      "docs": "Docs Vault",
+      "projects": "Projects",
+      "ontology": "Ontology",
+      "ontologyEdit": "Ontology Builder",
+      "ontologyInsights": "Ontology Insights",
+      "ontologyRelations": "Ontology Relations",
+      "settings": "Settings",
+      "categories": "Categories",
+      "statuses": "Statuses",
+      "import": "Import",
+      "login": "Sign in",
+      "signup": "Sign up",
+      "resetPassword": "Reset password",
+      "account": "Account"
+    }
+  },
+  "nav": {
+    "skipToContent": "Skip to main content",
+    "workspace": "Workspace",
+    "search": "Search",
+    "shortcuts": "Shortcuts",
+    "ontology": "Ontology",
+    "topology": "Topology",
+    "settings": "Settings",
+    "docs": "Docs",
+    "projects": "Projects",
+    "account": "Account",
+    "myInfo": "My account",
+    "signOut": "Sign out",
+    "signIn": "Sign in",
+    "back": "Back",
+    "demo": "Demo",
+    "local": "Local",
+    "cloud": "Cloud"
+  },
+  "locale": {
+    "switcher": "Language",
+    "english": "English",
+    "korean": "한국어"
+  },
+  "footer": {
+    "license": "MIT licensed",
+    "github": "GitHub",
+    "stack": "Local-first · Next.js · TypeScript · Sigma.js · MCP"
+  },
+  "landing": {
+    "eyebrow": "Ontology workbench · humans + AI agents",
+    "title": "Codebase ontology that grows with AI",
+    "subtitle": "A codebase ontology that humans and AI agents author together. Markdown frontmatter is the graph — view it as tree, topology, or ERD. Like Obsidian or Notion, just point at a folder and start.",
+    "topologyCaption": "Topology · {nodes} nodes · {relations} relations",
+    "step1Title": "Write in markdown",
+    "step1Body": "Frontmatter keys alone create nodes and relations. AI agents (via MCP) read and write the same vault.",
+    "step2Title": "Backlinks + dependencies, instant",
+    "step2Body": "\"Who uses this capability?\" \"What breaks if I change it?\" — answers in 0 clicks instead of grepping markdown.",
+    "step3Title": "One graph, three views",
+    "step3Body": "The same ontology as tree, topology, and ERD. Domain census, blast radius, dependency chains, all on one screen.",
+    "exploreCta": "Explore the ontology",
+    "openVaultCta": "Open my markdown folder",
+    "privacyNote": "Local folders stay on your disk and are never sent anywhere. Your data, your truth source."
+  }
+}

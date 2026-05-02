@@ -23,6 +23,7 @@ import {
   type SigmaNodeAttrs,
 } from '../lib/graph-build';
 import { useKnowledgePublicNodes } from '@/entities/knowledge-graph';
+import { useDataSourceMode } from '@/features/data-source-mode';
 import { buildProjectOntologyCounts } from '@/shared/lib/ontology-tree';
 import { useSyncedCallbackRef } from '@/shared/lib/use-synced-callback-ref';
 import { computeDepthMap, shortestPath } from '../lib/depth';
@@ -410,7 +411,11 @@ export function SigmaTopology({
   // O-9b: 일반 project 노드의 ontology 도미넌트 kind 별 borderColor 분기.
   // accountId 미제공 또는 권한 없을 시 hook 이 빈 배열을 emit → counts map 도
   // 빈 map → 모든 노드가 현행 무채색 (NODE_BORDER) 으로 fallback. 깜빡임 없음.
-  const ontologyNodes = useKnowledgePublicNodes(accountId ?? null);
+  // mode-gate: cloud 가 아닐 때 Firestore listener 안 열고 빈 배열 fallback —
+  // local/static 에선 어차피 vault 데이터로 borderColor 분기가 작동하므로 운영
+  // 차이 0 (local-first 약속 유지).
+  const dataSourceMode = useDataSourceMode();
+  const ontologyNodes = useKnowledgePublicNodes(accountId ?? null, dataSourceMode === 'cloud');
   const ontologyCountsBySlug = useMemo(
     () => buildProjectOntologyCounts(ontologyNodes),
     [ontologyNodes],

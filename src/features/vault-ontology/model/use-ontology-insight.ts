@@ -87,7 +87,11 @@ export function useOntologyInsight(
   accountId: string | null,
 ): { insight: KnowledgeProjectInsight | null; error: Error | null } {
   const mode = useDataSourceMode();
-  const cloud = useKnowledgePublicInsight(accountId);
+  // Only open the Firestore subscription on cloud mode. Without this gate
+  // the hook would dynamic-import firebase + open 4 outbound Listen channel
+  // requests even when the caller is on static / local — a local-first
+  // contract violation surfaced by the 2026-05-02 perf audit.
+  const cloud = useKnowledgePublicInsight(accountId, mode === 'cloud');
   const vault = useVaultOntology();
 
   return useMemo(() => {

@@ -6,6 +6,7 @@ import { signOut } from '@/features/user-auth';
 import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { ThemeToggle } from '@/features/theme-toggle';
+import { LocaleSwitch } from '@/features/locale-switch';
 import { Button, Tooltip } from '@/shared/ui';
 
 interface OperationsNavProps {
@@ -203,6 +204,7 @@ export function OperationsNav({ rightSlot }: OperationsNavProps) {
         <div className="flex items-center gap-2">
           {rightSlot}
           <ModeBadge mode={dataSourceMode} />
+          <LocaleSwitch />
           <ThemeToggle />
           <Link href={'/projects/'} className="inline-flex">
             {/* '↗' 는 외부 링크 의미로 오해 가능 — 내부 라우트라

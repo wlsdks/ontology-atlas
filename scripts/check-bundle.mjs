@@ -40,26 +40,40 @@ const FIREBASE_SDK_TOKENS = [
 ];
 const SDK_MIN_TOKEN_HITS = 4;
 
-const LOCAL_FIRST_ROUTES = [
-  '/',
-  '/topology',
-  '/docs',
-  '/ontology',
-  '/ontology/edit',
-  '/ontology/insights',
-  '/ontology/relations',
-  '/projects',
-  '/login',
-  '/signup',
-  '/account',
-  '/reset-password',
+// next-intl migration: 모든 user-facing 라우트가 /[locale] 아래로 이동했다.
+// 가드도 locale 별로 검사 — `/topology` 만 보던 시절엔 i18n 후 false green
+// 으로 통과해 미래 firebase 청크 leak 회귀를 못 잡았다 (eval 결과로 발견).
+const LOCALES = ['en', 'ko'];
+const LOCAL_FIRST_BASE_ROUTES = [
+  '',
+  'topology',
+  'docs',
+  'ontology',
+  'ontology/edit',
+  'ontology/insights',
+  'ontology/relations',
+  'projects',
+  'login',
+  'signup',
+  'account',
+  'reset-password',
 ];
+const CLOUD_ADMIN_BASE_ROUTES = ['settings/categories', 'settings/statuses', 'settings/import'];
 
-const CLOUD_ADMIN_ROUTES = [
-  '/settings/categories',
-  '/settings/statuses',
-  '/settings/import',
-];
+function expandRoutes(baseRoutes) {
+  const out = [];
+  for (const locale of LOCALES) {
+    for (const base of baseRoutes) {
+      out.push(base ? `/${locale}/${base}` : `/${locale}`);
+    }
+  }
+  return out;
+}
+
+// Root `/` (locale-redirect page) 는 그 자체가 firebase 호출을 하면 안 되니
+// 별도로 추가.
+const LOCAL_FIRST_ROUTES = ['/', ...expandRoutes(LOCAL_FIRST_BASE_ROUTES)];
+const CLOUD_ADMIN_ROUTES = expandRoutes(CLOUD_ADMIN_BASE_ROUTES);
 
 function listFirebaseChunks() {
   const out = [];

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, FolderOpen, Orbit } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { buttonVariants } from "@/shared/ui";
+import { LocaleSwitch } from "@/features/locale-switch";
 
 interface Props {
   next?: string | null;
@@ -142,6 +143,9 @@ export function LandingPage({ next }: Props) {
         </a>
         <span aria-hidden>·</span>
         <span className="font-mono">Local-first · Next.js · TypeScript · Sigma.js · MCP</span>
+        <span className="ml-auto">
+          <LocaleSwitch />
+        </span>
       </footer>
     </main>
   );

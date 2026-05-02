@@ -17,10 +17,18 @@ import type { KnowledgeGraphNode } from "../model/types";
  * 굳이 React Query 같은 무거운 cache 안 쓰는 이유 — Firestore onSnapshot 이
  * 이미 incremental update streaming 함. 단순 wrapper 로 충분.
  */
-export function useKnowledgePublicNodes(accountId: string | null): KnowledgeGraphNode[] {
+export function useKnowledgePublicNodes(
+  accountId: string | null,
+  enabled: boolean = true,
+): KnowledgeGraphNode[] {
   const [nodes, setNodes] = useState<KnowledgeGraphNode[]>([]);
   useEffect(() => {
     setNodes([]);
+    // mode-gate: caller passes `mode === 'cloud'` from `useDataSourceMode()`
+    // to keep the runtime firebase-clean on local/static (the dynamic
+    // import boundary alone keeps the *static chunk* clean; this gate keeps
+    // the *runtime* clean too — surfaced by the 2026-05-02 perf audit).
+    if (!enabled) return;
     let unsubscribe: (() => void) | null = null;
     let cancelled = false;
     void import("./knowledge-graph-api").then(({ subscribeKnowledgePublicGraph }) => {
@@ -35,6 +43,6 @@ export function useKnowledgePublicNodes(accountId: string | null): KnowledgeGrap
       cancelled = true;
       unsubscribe?.();
     };
-  }, [accountId]);
+  }, [accountId, enabled]);
   return nodes;
 }
