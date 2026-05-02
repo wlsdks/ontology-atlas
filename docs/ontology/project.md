@@ -1,5 +1,5 @@
 ---
-slug: project
+slug: oh-my-ontology
 kind: project
 title: oh-my-ontology
 domain: workbench
