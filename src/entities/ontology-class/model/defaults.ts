@@ -1,22 +1,19 @@
 import type { OntologyClass, OntologyClassInput } from './types';
 
 /**
- * C-1 시드 — 6 노드 클래스 (5 정식 + unknown placeholder).
+ * 6 노드 클래스 시드 (5 정식 + unknown placeholder).
  *
- * 보류 스펙 §3.1 의 4-layer (Project → Domain → Capability → Element) +
- * §3.4 의 Document 근거 노드. 모두 root 클래스 (parentClassId 없음) —
- * 클래스 자체의 계층은 단순화하고, 데이터 인스턴스 사이 관계는 ontologyRelations
- * (예: contains / belongs_to) 으로 표현한다.
+ * 4-layer (Project → Domain → Capability → Element) + Document 근거 노드.
+ * 클래스 자체의 계층은 단순하고, 데이터 인스턴스 사이 관계는
+ * `KNOWLEDGE_EDGE_TYPES` (contains / belongs_to / depends_on / implements /
+ * uses / describes / related_to) 로 표현한다.
  *
- * `unknown` 은 frontmatter relates.target 이 미존재 노드를 가리킬 때 server
- * 만 자동 생성하는 stub placeholder — manual create 화이트리스트 (5 정식)
- * 에는 포함되지 않는다.
+ * `unknown` 은 vault frontmatter 가 미존재 slug 를 참조할 때 derivation 이
+ * 자동 생성하는 stub placeholder — UI 가 stub 을 amber 톤으로 surface.
  *
- * **단일 진실원**: 이 배열은 `scripts/seed-ontology-tbox.mjs` 의
- * `ONTOLOGY_CLASSES` 와 `firestore.rules` 의 manual create 화이트리스트가
- * 모두 동기화되어야 한다. `defaults.sync.test.ts` 가 빌드 타임에 검증.
- *
- * version=1 — 첫 TBox 버전. schema 변경 시 +1.
+ * **단일 진실원**: 이 배열은 \`scripts/build-docs-vault.mjs\` 의 빌드타임
+ * 매니페스트와 \`derive-ontology-from-vault\` 의 runtime derivation 모두에
+ * 동일 5 정식 + 1 stub 으로 사용된다. \`mcp/add_concept\` 의 enum 도 정합.
  */
 export const DEFAULT_ONTOLOGY_CLASSES: OntologyClassInput[] = [
   {
