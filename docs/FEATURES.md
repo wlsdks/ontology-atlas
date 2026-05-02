@@ -422,14 +422,13 @@ the project expresses its own mental model as frontmatter markdown. At build tim
 
 ---
 
-## 6. Verification (post-OSS-launch readiness, 2026-05-02)
+## 6. Verification (post-OSS-launch readiness, 2026-05-03)
 
 - tsc 0 errors
-- eslint 0 errors (62 warnings — all pre-existing)
-- vitest **100 files / 721 tests pass**
+- eslint 0 errors (~14 pre-existing warnings — see lint output)
+- vitest **84 files / 608 tests pass**
 - MCP server stdin/stdout JSON-RPC: initialize → tools/list (12 tools) → tools/call all healthy
-- MCP parser smoke pass
-- Playwright MCP browser-level QA (current routes): zero console errors on every mission v2 surface
+- MCP parser + query unit tests pass
 - CLI smoke (`node cli/src/index.mjs init test-vault`) writes 5 starter `.md` + `.mcp.json.example`
 - `npm pack --dry-run` audit: 0 secrets / 0 PII / 0 absolute paths in either tarball
 
