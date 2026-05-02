@@ -3,7 +3,12 @@
 import { type CSSProperties, useMemo } from "react";
 import type { Edge, Node } from "@xyflow/react";
 import dagre from "@dagrejs/dagre";
+import Graph from "graphology";
+import forceAtlas2 from "graphology-layout-forceatlas2";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
+
+/** 자동 레이아웃 알고리즘 — 빌더 헤더 dropdown 으로 사용자가 토글. */
+export type VaultGraphLayoutMode = "dagre" | "force";
 
 /**
  * mission v2 빌더 — 로컬 vault 의 .md 노드를 캔버스 background 로 노출.
@@ -24,11 +29,17 @@ import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
  */
 export interface UseVaultGraphFlowOptions {
   /**
-   * true 면 \`frontmatter.canvasPosition\` 을 무시하고 dagre layered 결과만
+   * true 면 \`frontmatter.canvasPosition\` 을 무시하고 자동 layout 결과만
    * 사용. "자동 정렬" 버튼이 사용자 drag 결과를 reset (in-memory only —
    * frontmatter 자체는 안 건드림) 할 때 활용.
    */
   ignorePersistedPosition?: boolean;
+  /**
+   * 자동 레이아웃 알고리즘. \`dagre\` (기본 — kind 계층 LR) 또는 \`force\`
+   * (graphology + ForceAtlas2 — 노드 사이 인력/척력 시뮬레이션, 토폴로지
+   * 와 같은 organic 분포). 사용자 선호 토글.
+   */
+  layoutMode?: VaultGraphLayoutMode;
 }
 
 export function useVaultGraphFlow(
@@ -36,10 +47,14 @@ export function useVaultGraphFlow(
   options?: UseVaultGraphFlowOptions,
 ) {
   const ignorePersistedPosition = options?.ignorePersistedPosition ?? false;
+  const layoutMode = options?.layoutMode ?? "dagre";
   return useMemo(() => {
     if (!manifest) return { nodes: [] as Node[], edges: [] as Edge[] };
-    return buildVaultGraphFlow(manifest, { ignorePersistedPosition });
-  }, [manifest, ignorePersistedPosition]);
+    return buildVaultGraphFlow(manifest, {
+      ignorePersistedPosition,
+      layoutMode,
+    });
+  }, [manifest, ignorePersistedPosition, layoutMode]);
 }
 
 const NODE_WIDTH = 200;
@@ -57,14 +72,19 @@ const NEIGHBOR_KEYS = [
 /**
  * 순수 함수 — manifest → xyflow Node[] / Edge[]. 테스트용 export.
  *
- * options.ignorePersistedPosition: true 면 frontmatter.canvasPosition 무시
- * 하고 모든 노드를 dagre 자동 layout 결과로. "자동 정렬" 버튼 용도.
+ * options:
+ * - ignorePersistedPosition: true 면 frontmatter.canvasPosition 무시 (자동 정렬)
+ * - layoutMode: 'dagre' (default, kind 계층 LR) | 'force' (FA2 organic)
  */
 export function buildVaultGraphFlow(
   manifest: VaultManifest,
-  options?: { ignorePersistedPosition?: boolean },
+  options?: {
+    ignorePersistedPosition?: boolean;
+    layoutMode?: VaultGraphLayoutMode;
+  },
 ) {
   const ignorePersistedPosition = options?.ignorePersistedPosition ?? false;
+  const layoutMode = options?.layoutMode ?? "dagre";
   const ontologyDocs = manifest.docs.filter(
     (doc) => typeof doc.frontmatter.kind === "string" && doc.frontmatter.kind,
   );
@@ -105,11 +125,15 @@ export function buildVaultGraphFlow(
     }
   }
 
-  // 자동 layout — dagre 의 layered LR 그래프. ontology 의 project → domain →
-  // capability → element 흐름이 자연스럽게 좌→우 계층으로 정렬되어 엣지 겹침
-  // 최소화. 사용자가 drag 로 frontmatter.canvasPosition 지정한 노드는 그것
-  // 우선 (수동 배치 보존). grid fallback 보다 가독성 큰 차이.
-  const fallbackPositions = computeDagreLayout(ontologyDocs, rawEdgePairs);
+  // 자동 layout — 사용자 선호에 따라 dagre (default, kind 계층 LR) 또는
+  // force (FA2 organic 분포) 두 가지. dagre 는 ontology 의 project → domain
+  // → capability → element 흐름이 자연스럽게 좌→우 계층, force 는 토폴로지
+  // 와 같이 노드 사이 인력/척력 시뮬레이션. 사용자가 drag 한 노드는 그대로
+  // 우선 (수동 배치 보존).
+  const fallbackPositions =
+    layoutMode === "force"
+      ? computeForceLayout(ontologyDocs, rawEdgePairs)
+      : computeDagreLayout(ontologyDocs, rawEdgePairs);
   const nodes: Node[] = ontologyDocs.map((doc) => {
     // frontmatter.canvasPosition: { x, y } 가 있으면 우선. 없으면 dagre fallback.
     // 사용자가 빌더에서 drag-stop 시 canvasPosition patch — 다음 mount 부터
@@ -218,6 +242,62 @@ function computeDagreLayout(
     map.set(doc.slug, {
       x: node.x - NODE_WIDTH / 2,
       y: node.y - NODE_HEIGHT / 2,
+    });
+  }
+  return map;
+}
+
+/**
+ * graphology + ForceAtlas2 organic 레이아웃. 노드 사이 인력 (edge 가 있으면
+ * 가까이) + 모든 노드 척력 (서로 밀어내기) 의 시뮬레이션. 토폴로지
+ * (\`/topology\`) 와 같은 알고리즘 — 빌더에서도 같은 시각 언어 선택 가능.
+ *
+ * 동기 — \`forceAtlas2.assign\` 이 nodeIters 만큼 iteration 후 graphology
+ * 노드의 x/y attribute 갱신. 노드 60개 / iteration 200 가량 ~수십 ms.
+ */
+function computeForceLayout(
+  docs: VaultDoc[],
+  edges: ReadonlyArray<readonly [string, string]>,
+): Map<string, { x: number; y: number }> {
+  const map = new Map<string, { x: number; y: number }>();
+  if (docs.length === 0) return map;
+  const g = new Graph({ multi: false, type: "undirected" });
+  // 초기 좌표 — 작은 spiral 로 띄워두면 FA2 가 빠르게 settle.
+  // ForceAtlas2 는 (0,0) 다중 중첩 입력이면 NaN 반환할 수 있어 round-robin
+  // 으로 perturbation.
+  const RADIUS_STEP = 60;
+  docs.forEach((doc, i) => {
+    const angle = (i / Math.max(docs.length, 1)) * Math.PI * 2;
+    const r = RADIUS_STEP * (1 + Math.floor(i / 8));
+    g.addNode(doc.slug, {
+      x: Math.cos(angle) * r,
+      y: Math.sin(angle) * r,
+    });
+  });
+  for (const [from, to] of edges) {
+    if (g.hasNode(from) && g.hasNode(to) && !g.hasEdge(from, to)) {
+      g.addEdge(from, to);
+    }
+  }
+  forceAtlas2.assign(g, {
+    iterations: 250,
+    settings: {
+      gravity: 1.5,
+      scalingRatio: 4,
+      strongGravityMode: false,
+      barnesHutOptimize: docs.length > 80,
+      slowDown: 2,
+    },
+  });
+  // graphology 의 좌표는 노드 중심. xyflow 좌상단 변환. FA2 결과 좌표가
+  // 작아 노드 박스 (200x56) 가 겹치지 않도록 적당히 spread (× 60).
+  const SPREAD = 60;
+  for (const doc of docs) {
+    const attrs = g.getNodeAttributes(doc.slug);
+    if (typeof attrs.x !== "number" || typeof attrs.y !== "number") continue;
+    map.set(doc.slug, {
+      x: attrs.x * SPREAD - NODE_WIDTH / 2,
+      y: attrs.y * SPREAD - NODE_HEIGHT / 2,
     });
   }
   return map;

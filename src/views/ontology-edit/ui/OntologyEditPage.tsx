@@ -70,6 +70,7 @@ const OntologyEditCanvas = dynamic<{
   onConnect?: (connection: import("@xyflow/react").Connection) => void;
   onVaultNodeDragStop?: (slug: string, position: { x: number; y: number }) => void;
   autoLayoutToken?: number;
+  layoutMode?: "dagre" | "force";
 }>(
   () => import("./OntologyEditCanvas").then((m) => m.OntologyEditCanvas),
   { ssr: false, loading: () => <CanvasSkeleton /> },
@@ -100,10 +101,13 @@ export function OntologyEditPage() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
   // 자동 정렬 토큰 — increment 마다 캔버스가 frontmatter.canvasPosition
-  // 무시하고 dagre layout 으로 노드 위치 reset (in-memory only). frontmatter
+  // 무시하고 자동 layout 으로 노드 위치 reset (in-memory only). frontmatter
   // 자체는 그대로라 다음 mount 부터 다시 사용자 좌표 복원 (선호 보존). 사용자가
   // 다시 drag-stop 하면 그때부터 새 frontmatter 좌표로 갱신.
   const [autoLayoutToken, setAutoLayoutToken] = useState(0);
+  // layout 알고리즘 — dagre (default, kind 계층 LR) 또는 force (organic).
+  // 헤더 토글로 사용자가 선택. 변경 시 in-memory layout 만 재계산 (frontmatter 그대로).
+  const [layoutMode, setLayoutMode] = useState<"dagre" | "force">("dagre");
   const toast = useToast();
 
   const saveEphemeral = useCallback(
@@ -458,8 +462,43 @@ export function OntologyEditPage() {
                 </button>
               </>
             ) : null}
+            {/* 레이아웃 알고리즘 토글 — dagre (계층 LR) ↔ force (organic) */}
+            <div
+              role="radiogroup"
+              aria-label="자동 레이아웃 알고리즘"
+              className="inline-flex h-8 shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] p-0.5"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={layoutMode === "dagre"}
+                onClick={() => setLayoutMode("dagre")}
+                title="kind 계층 LR (project → domain → capability → element)"
+                className={`rounded-full px-2 text-[10px] tracking-[0.04em] transition-colors ${
+                  layoutMode === "dagre"
+                    ? "bg-[color:rgba(94,106,210,0.18)] text-[color:rgba(159,170,235,0.95)]"
+                    : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
+                }`}
+              >
+                계층
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={layoutMode === "force"}
+                onClick={() => setLayoutMode("force")}
+                title="ForceAtlas2 organic (토폴로지 와 같은 인력/척력 시뮬레이션)"
+                className={`rounded-full px-2 text-[10px] tracking-[0.04em] transition-colors ${
+                  layoutMode === "force"
+                    ? "bg-[color:rgba(94,106,210,0.18)] text-[color:rgba(159,170,235,0.95)]"
+                    : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
+                }`}
+              >
+                Force
+              </button>
+            </div>
             <Tooltip
-              content="모든 노드 위치를 dagre 자동 레이아웃으로 초기화 (frontmatter 의 canvasPosition 은 그대로 — 다음 진입 시 사용자 좌표 복원)"
+              content="모든 노드 위치를 자동 레이아웃 결과로 초기화 (frontmatter 의 canvasPosition 은 그대로 — 다음 진입 시 사용자 좌표 복원)"
               withProvider={false}
             >
               <button
@@ -511,6 +550,7 @@ export function OntologyEditPage() {
               onConnect={addEphemeralEdge}
               onVaultNodeDragStop={persistVaultPosition}
               autoLayoutToken={autoLayoutToken}
+              layoutMode={layoutMode}
             />
             <BuilderOnboarding
               empty={ephemeralNodes.length === 0 && ephemeralEdges.length === 0}

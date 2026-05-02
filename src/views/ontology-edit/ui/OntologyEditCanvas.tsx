@@ -46,6 +46,7 @@ export function OntologyEditCanvas({
   onConnect,
   onVaultNodeDragStop,
   autoLayoutToken = 0,
+  layoutMode = "dagre",
 }: {
   vaultManifest: VaultManifest | null;
   ephemeralNodes: EphemeralNode[];
@@ -56,10 +57,15 @@ export function OntologyEditCanvas({
   onVaultNodeDragStop?: (slug: string, position: { x: number; y: number }) => void;
   /**
    * 헤더의 "자동 정렬" 버튼이 눌릴 때마다 increment 되는 token.
-   * 0 보다 크면 \`frontmatter.canvasPosition\` 무시하고 dagre 결과로 reset.
+   * 0 보다 크면 \`frontmatter.canvasPosition\` 무시하고 자동 layout 결과로 reset.
    * frontmatter 자체는 안 건드리는 in-memory only 동작.
    */
   autoLayoutToken?: number;
+  /**
+   * 자동 레이아웃 알고리즘 — \`dagre\` (default, kind 계층 LR) 또는
+   * \`force\` (FA2 organic 분포). 헤더 토글로 사용자가 선택.
+   */
+  layoutMode?: "dagre" | "force";
 }) {
   // 진실원: live vault.manifest 우선, 없으면 빌드타임 dogfood 매니페스트.
   // 빌더에 진입한 사용자는 vault 폴더 안 골랐어도 oh-my-ontology 자체 ontology
@@ -67,6 +73,7 @@ export function OntologyEditCanvas({
   const effectiveManifest = vaultManifest ?? staticVaultManifest;
   const vaultFlow = useVaultGraphFlow(effectiveManifest, {
     ignorePersistedPosition: autoLayoutToken > 0,
+    layoutMode,
   });
   const approvedNodes = vaultFlow.nodes;
   const approvedEdges = vaultFlow.edges;
