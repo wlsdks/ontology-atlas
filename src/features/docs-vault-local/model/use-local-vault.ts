@@ -15,6 +15,10 @@ import {
   touchLocalFsHandle,
   verifyHandlePermission,
 } from '@/entities/local-fs-handle';
+import {
+  ONTOLOGY_STARTER_FILES,
+  buildMcpConfigJson,
+} from '../lib/ontology-starter';
 /** 탭 포커스 복귀 시 자동 refresh 의 최소 간격 (ms). 너무 자주 돌면
  *  사용자가 IDE 로 짧게 오갈 때마다 번쩍이므로 2초 간격으로 throttle. */
 const AUTO_REFRESH_DEBOUNCE_MS = 2000;
@@ -668,6 +672,59 @@ export function useLocalVault() {
     return { created, skipped };
   }, [state.fileHandles, state.handle, getParentAndName, load]);
 
+  /**
+   * mission v2 ontology starter — `npx oh-my-ontology init` 과 동일한
+   * 5 md + .mcp.json.example 시드를 vault 에 작성. 비개발자가 터미널 없이
+   * web workbench 의 picker → "starter 만들기" 버튼만으로 시작 가능하게.
+   *
+   * 이미 존재하는 파일은 덮어쓰지 않고 skip. 사용자가 기존 vault 에 호출해도
+   * 안전.
+   */
+  const scaffoldOntology = useCallback(async () => {
+    if (!state.handle) {
+      throw new Error('볼트가 열려있지 않습니다');
+    }
+    await ensureReadWrite(state.handle);
+    let created = 0;
+    let skipped = 0;
+    for (const { relPath, content } of ONTOLOGY_STARTER_FILES) {
+      // slug 는 .md 확장자 제거한 경로로. createDoc / saveDoc 의 규칙 따름.
+      const slug = relPath.replace(/\.md$/, '');
+      if (state.fileHandles.has(slug)) {
+        skipped += 1;
+        continue;
+      }
+      try {
+        const resolved = await getParentAndName(slug, true);
+        if (!resolved) continue;
+        const fh = await resolved.parent.getFileHandle(resolved.fileName, {
+          create: true,
+        });
+        const writable = await fh.createWritable();
+        await writable.write(content);
+        await writable.close();
+        created += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+    // .mcp.json.example — 사용자가 AI agent 설정으로 복사. vault 폴더의
+    // 절대경로는 브라우저가 모르니 placeholder 로 두고 안내.
+    try {
+      const fh = await state.handle.getFileHandle('.mcp.json.example', {
+        create: true,
+      });
+      const writable = await fh.createWritable();
+      await writable.write(buildMcpConfigJson(state.handle.name));
+      await writable.close();
+      created += 1;
+    } catch {
+      skipped += 1;
+    }
+    if (state.handle) await load(state.handle);
+    return { created, skipped };
+  }, [state.fileHandles, state.handle, getParentAndName, load]);
+
   return {
     status: state.status,
     handle: state.handle,
@@ -686,6 +743,7 @@ export function useLocalVault() {
     deleteDoc,
     renameDoc,
     scaffoldTopology,
+    scaffoldOntology,
     updateFrontmatter,
   };
 }

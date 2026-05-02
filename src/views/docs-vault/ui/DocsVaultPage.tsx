@@ -28,7 +28,11 @@ import {
   X,
 } from 'lucide-react';
 import { useDocsVaultCapabilities } from '@/features/docs-vault-access';
-import { LocalVaultPicker, useLocalVault } from '@/features/docs-vault-local';
+import {
+  LocalVaultPicker,
+  OntologyStarterCta,
+  useLocalVault,
+} from '@/features/docs-vault-local';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
 import { Tooltip } from '@/shared/ui';
@@ -1597,10 +1601,10 @@ function AdminDocsContent() {
                       onRefresh={localVault.refresh}
                       onRequestPermission={localVault.requestPermission}
                     />
-                    {/* T29 dogfood hint — vault 미활성 사용자에게 *어떤
-                        폴더를 골라야 하는지* 답. 이 repo 자체의 ontology 가
-                        `docs/ontology/` 에 21 노드로 표현돼 있어 첫 시도
-                        path 로 적합. */}
+                    {/* dogfood hint + ontology starter CTA — vault 가 *비어 있으면*
+                        scaffold 버튼 prominent 노출 (Option D), 기존 vault 면 작은
+                        보조 버튼. 사용자 비전 ("비개발자도 같이") 의 핵심 진입점 —
+                        터미널 / npm 없이 5 md + .mcp.json.example 시드 작성. */}
                     {localVault.status === 'idle' ? (
                       <p className="text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
                         처음이세요? 이 repo 의{' '}
@@ -1609,6 +1613,12 @@ function AdminDocsContent() {
                         </code>
                         를 선택해 보세요 — 이 도구 자체의 ontology (21 노드) 가 즉시 트리에 등장합니다.
                       </p>
+                    ) : null}
+                    {localVault.status === 'loaded' && canEditCurrent ? (
+                      <OntologyStarterCta
+                        onScaffold={localVault.scaffoldOntology}
+                        docCount={localVault.manifest?.docs.length ?? 0}
+                      />
                     ) : null}
                     {canEditCurrent ? (
                       <button

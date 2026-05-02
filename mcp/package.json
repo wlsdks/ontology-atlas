@@ -1,12 +1,29 @@
 {
   "name": "oh-my-ontology-mcp",
   "version": "0.5.0",
-  "description": "MCP server — sample/사람과 AI agent 가 같이 vault ontology 를 read/write",
+  "description": "MCP server — humans and AI agents read/write the same codebase ontology vault.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ontology",
+    "codebase",
+    "ai-agent",
+    "claude-code",
+    "cursor",
+    "knowledge-graph",
+    "markdown",
+    "frontmatter"
+  ],
   "type": "module",
   "bin": {
     "oh-my-ontology-mcp": "./src/index.js"
   },
   "main": "./src/index.js",
+  "files": [
+    "src",
+    "scripts/verify.mjs",
+    "README.md"
+  ],
   "scripts": {
     "start": "node src/index.js",
     "test:smoke": "node src/parser.test.mjs",
@@ -17,6 +34,11 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wlsdks/oh-my-ontology.git",
+    "directory": "mcp"
   },
   "license": "MIT",
   "private": false
