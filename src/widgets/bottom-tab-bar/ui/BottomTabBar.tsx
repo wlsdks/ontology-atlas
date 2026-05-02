@@ -20,10 +20,10 @@ interface TabItem {
 const TABS: ReadonlyArray<TabItem> = [
   { href: '/', label: '온톨로지', icon: Network, matchPrefixes: ['/ontology', '/topology'] },
   { href: '/projects/', label: '프로젝트', icon: FolderKanban, matchPrefixes: ['/projects', '/project'] },
-  // "문서" tab 은 docs / knowledge / review 모두 active. /docs 는 진안 일상
-  // vault — 같은 "문서" 탭 활성으로 위치 손실 없게 (Fire 1 회귀).
-  { href: '/knowledge/', label: '문서', icon: FileText, matchPrefixes: ['/knowledge', '/review', '/docs'] },
-  { href: '/settings/', label: '정리', icon: ListTodo, matchPrefixes: ['/diagnostics', '/settings'] },
+  // "문서" tab — vault picker. mission v2 가 cloud markdown 호스팅 surface
+  // (`/knowledge/*`) 를 폐기한 후 모든 모드에서 docs vault 가 진입점.
+  { href: '/docs/', label: '문서', icon: FileText, matchPrefixes: ['/docs'] },
+  { href: '/settings/', label: '정리', icon: ListTodo, matchPrefixes: ['/settings'] },
 ];
 
 // 탭바를 노출하지 않을 surface — 인증·온보딩·에러 화면처럼 사용자가

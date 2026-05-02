@@ -17,9 +17,9 @@ describe("permission guard navigation", () => {
     expect(
       buildGuardLoginHref({
         accountId: null,
-        currentPath: "/knowledge/documents/new/",
+        currentPath: "/settings/categories/",
       }),
-    ).toBe("/login/?next=%2Fknowledge%2Fdocuments%2Fnew%2F");
+    ).toBe("/login/?next=%2Fsettings%2Fcategories%2F");
   });
 
   it("builds account scoped home fallback when an account is present", () => {

@@ -23,21 +23,16 @@ interface NavItem {
   prefixes: ReadonlyArray<string>;
 }
 
-function buildItems(mode: 'static' | 'local' | 'cloud'): ReadonlyArray<NavItem> {
-  // local 모드는 vault 가 진실원이라 "문서" 진입점이 /docs/ — Firestore 의
-  // /knowledge 가 아니라 사용자 디스크 surface. cloud / static 은 기존 /knowledge.
-  // prefixes 는 양쪽 활성 표시 인식.
-  const docsBase = mode === 'local' ? '/docs/' : '/knowledge/';
+function buildItems(_mode: 'static' | 'local' | 'cloud'): ReadonlyArray<NavItem> {
+  // mission v2 정렬: cloud markdown 호스팅 (`/knowledge/*`) 통째 제거 후
+  // "문서" 진입점은 모든 모드에서 /docs/ (vault). vault 안 골랐으면 picker.
   return [
     {
       id: 'knowledge',
       label: '문서',
-      description:
-        mode === 'local'
-          ? '내 vault 의 .md 들 — frontmatter `kind:` 만 적으면 즉시 ontology 노드'
-          : '문서 등록 + frontmatter 또는 빌더에서 ontology 노드 추가',
-      basePath: docsBase,
-      prefixes: ['/knowledge', '/docs'],
+      description: '내 vault 의 .md 들 — frontmatter `kind:` 만 적으면 즉시 ontology 노드',
+      basePath: '/docs/',
+      prefixes: ['/docs'],
     },
     // ontology view — vault frontmatter 노드/관계의 트리. mission 의 척추.
     // / 도 OntologyViewPage 를 렌더하므로 prefix 에 양쪽 포함.

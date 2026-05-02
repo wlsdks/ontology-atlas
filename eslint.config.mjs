@@ -189,27 +189,6 @@ const eslintConfig = defineConfig([
                 "firestore api 는 '@/entities/ontology-relation/api' 로 직접 import 하세요.",
             },
             {
-              name: '@/entities/knowledge-document',
-              importNames: [
-                'listKnowledgeDocuments',
-                'getKnowledgeDocument',
-                'subscribeKnowledgeDocuments',
-                'subscribeKnowledgeDocumentsByProject',
-                'getPublicDocumentsForProject',
-                'createKnowledgeDocumentWithInitialVersion',
-                'createKnowledgeDocumentVersion',
-                'setKnowledgeDocumentCurrentVersion',
-                'listKnowledgeVersionsByDocument',
-                'subscribeKnowledgeVersionsByDocument',
-                'buildKnowledgeDocumentStoragePath',
-                'downloadKnowledgeMarkdown',
-                'uploadKnowledgeMarkdown',
-                'deleteKnowledgeMarkdown',
-              ],
-              message:
-                "firestore api 는 '@/entities/knowledge-document/api' 로 직접 import 하세요.",
-            },
-            {
               name: '@/entities/knowledge-graph',
               importNames: [
                 'listKnowledgeProjectInsight',

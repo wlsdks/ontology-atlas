@@ -6,7 +6,6 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search } from "lucide-react";
-import type { KnowledgeDocument } from "@/entities/knowledge-document";
 import { ManualSourceChip, type KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { getOntologyKindLabel } from "@/entities/ontology-class";
 import type { Project } from "@/entities/project";
@@ -14,7 +13,7 @@ import {
   MEANINGFUL_ONTOLOGY_KINDS,
   type MeaningfulOntologyKind,
 } from "@/shared/lib/ontology-tree";
-import { matchKnowledgeDocuments, matchOntologyNodes, matchProjects } from "../lib/match";
+import { matchOntologyNodes, matchProjects } from "../lib/match";
 
 export interface GlobalSearchProps {
   open: boolean;
@@ -24,14 +23,8 @@ export interface GlobalSearchProps {
   /** ontology 노드 선택 콜백. */
   onSelectNode: (node: KnowledgeGraphNode) => void;
   /**
-   * knowledge documents — 옵션. 전달되면 별도 카테고리로 검색 결과 노출.
-   * `onSelectDocument` 와 함께 와야 함.
-   */
-  documents?: readonly KnowledgeDocument[];
-  onSelectDocument?: (document: KnowledgeDocument) => void;
-  /**
-   * projects — 옵션. A0-4: S4 closure. ⌘K 한 번에 ontology/문서/프로젝트
-   * 통합 검색. `onSelectProject` 와 함께 와야 함.
+   * projects — 옵션. ⌘K 한 번에 ontology/프로젝트 통합 검색.
+   * `onSelectProject` 와 함께 와야 함.
    */
   projects?: readonly Project[];
   onSelectProject?: (project: Project) => void;
@@ -40,20 +33,18 @@ export interface GlobalSearchProps {
 /**
  * 글로벌 검색 (cmdk 기반).
  *
- * 우리 자체 매처 (`matchOntologyNodes`, `matchKnowledgeDocuments`) 로 score / 정렬
+ * 우리 자체 매처 (`matchOntologyNodes`, `matchProjects`) 로 score / 정렬
  * → cmdk 는 `shouldFilter={false}` 로 표시·키보드 nav 만 담당. 한·영 혼합 매치 의도.
  *
- * Source 두 개 (ontology + documents) 를 별도 그룹으로 노출. cmdk Item value 는
+ * Source 두 개 (ontology + projects) 를 별도 그룹으로 노출. cmdk Item value 는
  * `<source>:<id>` 로 prefix 충돌 회피. 빈 query 일 때는 두 source 모두 sample 표시
- * (ontology = title localeCompare 순 / documents = updatedAt desc).
+ * (ontology = lastApprovedAt desc / projects = updatedAt desc).
  */
 export function GlobalSearch({
   open,
   onOpenChange,
   nodes,
   onSelectNode,
-  documents,
-  onSelectDocument,
   projects,
   onSelectProject,
 }: GlobalSearchProps) {
@@ -93,10 +84,6 @@ export function GlobalSearch({
       }),
     [query, nodes, selectedKinds, selectedProjectIds],
   );
-  const documentResults = useMemo(
-    () => (documents ? matchKnowledgeDocuments(query, documents, 20) : []),
-    [query, documents],
-  );
   const projectResults = useMemo(
     () => (projects ? matchProjects(query, projects, 20) : []),
     [query, projects],
@@ -104,10 +91,9 @@ export function GlobalSearch({
 
   const isEmptyQuery = query.trim() === "";
   const ontologySize = nodes.length;
-  const documentSize = documents?.length ?? 0;
   const projectSize = projects?.length ?? 0;
-  const totalCorpus = ontologySize + documentSize + projectSize;
-  const totalMatches = ontologyResults.length + documentResults.length + projectResults.length;
+  const totalCorpus = ontologySize + projectSize;
+  const totalMatches = ontologyResults.length + projectResults.length;
   const hasFilter = selectedKinds.size > 0 || selectedProjectIds.size > 0;
 
   // workspace project chip row 의 source — projects prop 이 있으면 그대로
@@ -198,8 +184,8 @@ export function GlobalSearch({
             value={query}
             onValueChange={setQuery}
             placeholder={
-              documents && documents.length > 0
-                ? "개념 · 글 검색 — 한·영 혼합 OK"
+              projects && projects.length > 0
+                ? "개념 · 프로젝트 검색 — 한·영 혼합 OK"
                 : "개념 검색 — 한·영 혼합 OK"
             }
             className="flex-1 bg-transparent text-sm text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
@@ -366,44 +352,6 @@ export function GlobalSearch({
                   </Command.Item>
                 );
               })}
-            </Command.Group>
-          ) : null}
-
-          {documents && documentResults.length > 0 && onSelectDocument ? (
-            <Command.Group
-              heading={
-                <span className="px-2 pb-1 pt-2 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                  {isEmptyQuery ? "글 · 최근" : "글 · 매치"} · {documentResults.length}
-                  {isEmptyQuery && documentSize > documentResults.length ? ` / ${documentSize}` : ""}
-                </span>
-              }
-            >
-              {documentResults.map(({ document }) => (
-                <Command.Item
-                  key={`document:${document.id}`}
-                  value={`document:${document.id}`}
-                  onSelect={() => {
-                    onSelectDocument(document);
-                    closeAndClear();
-                  }}
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-[color:var(--color-text-secondary)] aria-selected:bg-[color:rgba(94,106,210,0.14)] aria-selected:text-[color:var(--color-text-primary)]"
-                >
-                  <span className="inline-flex shrink-0 items-center rounded-full border border-[color:rgba(255,242,224,0.12)] bg-[color:rgba(255,242,224,0.04)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
-                    {document.kind}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
-                    {document.title}
-                  </span>
-                  {document.projectIds[0] ? (
-                    <span className="hidden shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)] md:inline">
-                      {document.projectIds[0]}
-                    </span>
-                  ) : null}
-                  <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                    {document.status}
-                  </span>
-                </Command.Item>
-              ))}
             </Command.Group>
           ) : null}
 

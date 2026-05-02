@@ -42,7 +42,6 @@ import { CopyProjectLinkButton } from "@/features/project-share";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useTaxonomy } from "@/features/taxonomy";
 import { PublicAccountMenu } from "@/widgets/account-menu";
-import { ProjectDocumentsList } from "@/widgets/project-documents-list";
 import { ProjectKnowledgeTopology } from "@/widgets/project-knowledge-topology";
 import { ProjectOntologyOverview } from "@/widgets/project-ontology-overview";
 
@@ -62,10 +61,6 @@ const ShortcutSheet = dynamic(
   () => import("@/widgets/shortcut-sheet").then((m) => m.ShortcutSheet),
   { ssr: false },
 );
-import {
-  getKnowledgeDocumentListHref,
-  getKnowledgeDocumentNewHref,
-} from "@/entities/knowledge-document";
 import {
   buildKnowledgeProjectEvidenceSummary,
   type KnowledgeProjectInsight,
@@ -623,15 +618,6 @@ export function ProjectDetailPage({
   const storyMarkdownClassName =
     "mt-5 break-words text-[color:var(--color-text-secondary)] [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_code]:rounded [&_code]:bg-[color:var(--color-elevated)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_h1]:mt-8 [&_h1]:text-2xl [&_h1]:font-[var(--font-weight-signature)] [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-[var(--font-weight-signature)] [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:text-[color:var(--color-text-primary)] [&_li]:ml-5 [&_li]:list-disc [&_p]:mt-4 [&_p]:leading-8 [&_strong]:text-[color:var(--color-text-primary)] [&_ul]:mt-4";
   const projectPublicHref = getProjectDetailHref(project.slug, accountId);
-  const knowledgeReturnTo = projectPublicHref;
-  const projectKnowledgeDocumentsHref = getKnowledgeDocumentListHref(accountId, {
-    projectId: project.slug,
-    returnTo: knowledgeReturnTo,
-  });
-  const projectKnowledgeNewHref = getKnowledgeDocumentNewHref(accountId, {
-    projectId: project.slug,
-    returnTo: knowledgeReturnTo,
-  });
   const projectFullEditHref = `/project/${encodeURIComponent(project.slug)}/edit/?returnTo=${encodeURIComponent(
     projectPublicHref,
   )}`;
@@ -646,7 +632,6 @@ export function ProjectDetailPage({
           canManageProject ? (
             <ProjectQuickEditPanel
               project={project}
-              documentNewHref={projectKnowledgeNewHref}
               settingsHref={projectFullEditHref}
             />
           ) : null
@@ -797,18 +782,6 @@ export function ProjectDetailPage({
 
       <section className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1.12fr)_312px]">
         <div className="flex flex-col gap-6">
-          <ProjectDocumentsList
-            projectSlug={project.slug}
-            accountId={accountId}
-            canManageProject={canManageProject}
-            documentNewHref={projectKnowledgeNewHref}
-            returnTo={knowledgeReturnTo}
-            // 게스트는 Firestore rule 상 published 만 읽을 수 있어 별도 경로.
-            // 계정 멤버/admin 은 기존 realtime subscribe 유지.
-            publicOnly={scopedAccess.kind === 'guest'}
-            hideEmptyForPublic
-          />
-
           {/* 연결 지도 — 이 프로젝트 + 1-hop 이웃 만 담은 미니 Sigma 토폴로지.
               메인 워크스페이스 지도와 동일한 physics · 드래그 · hover · 라벨
               동작. minimal=true 로 minimap · aurora · stats pill · URL sync ·
@@ -859,7 +832,6 @@ export function ProjectDetailPage({
             <ProjectKnowledgeTopology
               nodes={knowledgeInsight.nodes}
               edges={knowledgeInsight.edges}
-              documentNewHref={projectKnowledgeNewHref}
               canManageProject={canManageProject}
               heading={`${project.name} · 문서 토폴로지`}
               description={`이 프로젝트에 등록된 md 문서에서 분해된 개념·연결을 그래프로 보여줍니다. 홈의 "워크스페이스 지도" (프로젝트 간 의존) 와 달리, 한 프로젝트 안의 내용만 담깁니다.`}
@@ -923,14 +895,6 @@ export function ProjectDetailPage({
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
-                  {canManageProject ? (
-                    <Link
-                      href={projectKnowledgeDocumentsHref}
-                      className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-divider)] px-3 text-xs text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.22)] hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
-                    >
-                      문서 목록
-                    </Link>
-                  ) : null}
                   {knowledgeInsight.meta?.publishedAt && (
                     <span className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
                       {formatDate(knowledgeInsight.meta.publishedAt)}

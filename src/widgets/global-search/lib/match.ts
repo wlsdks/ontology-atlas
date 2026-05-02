@@ -1,4 +1,3 @@
-import type { KnowledgeDocument } from "@/entities/knowledge-document";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
 
@@ -7,15 +6,6 @@ import type { Project } from "@/entities/project";
  */
 export interface OntologySearchResult {
   node: KnowledgeGraphNode;
-  /** 매치 점수 — 호출자가 정렬에 사용. 높을수록 우선. */
-  score: number;
-}
-
-/**
- * 검색 결과 항목 — knowledge document source.
- */
-export interface KnowledgeDocumentSearchResult {
-  document: KnowledgeDocument;
   /** 매치 점수 — 호출자가 정렬에 사용. 높을수록 우선. */
   score: number;
 }
@@ -115,59 +105,6 @@ export function matchOntologyNodes(
     if (b.score !== a.score) return b.score - a.score;
     // 같은 점수 안에서 최신 (lastApprovedAt desc) 우선 — documents 매처와 통일.
     return b.node.lastApprovedAt.getTime() - a.node.lastApprovedAt.getTime();
-  });
-
-  return matches.slice(0, limit);
-}
-
-/**
- * knowledge document 검색.
- *
- * 점수 (낮을수록 약한 매치):
- *   4 — title prefix 매치
- *   3 — title substring 매치
- *   2 — kind 또는 projectId 토큰 매치 (예: "spec" / "sample")
- *   1 — id substring 매치 (Firestore ID 직접 검색)
- *   0 — 매치 없음 (결과 제외)
- *
- * 빈 query 는 전체 리턴 (limit 적용). 정렬: score desc, 같은 점수면 updatedAt desc
- * (최신 우선) — ontology 매처도 같은 통일 정렬.
- *
- * 한·영 혼합 매치 (lower-case substring).
- */
-export function matchKnowledgeDocuments(
-  query: string,
-  documents: readonly KnowledgeDocument[],
-  limit = 30,
-): KnowledgeDocumentSearchResult[] {
-  const trimmed = query.trim().toLowerCase();
-  if (trimmed === "") {
-    return documents
-      .slice()
-      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
-      .slice(0, limit)
-      .map((document) => ({ document, score: 0 }));
-  }
-
-  const matches: KnowledgeDocumentSearchResult[] = [];
-  for (const document of documents) {
-    const title = document.title.toLowerCase();
-    const id = document.id.toLowerCase();
-    const kind = document.kind.toLowerCase();
-    const projects = document.projectIds.join(" ").toLowerCase();
-
-    let score = 0;
-    if (title.startsWith(trimmed)) score = 4;
-    else if (title.includes(trimmed)) score = 3;
-    else if (kind.includes(trimmed) || projects.includes(trimmed)) score = 2;
-    else if (id.includes(trimmed)) score = 1;
-
-    if (score > 0) matches.push({ document, score });
-  }
-
-  matches.sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score;
-    return b.document.updatedAt.getTime() - a.document.updatedAt.getTime();
   });
 
   return matches.slice(0, limit);
