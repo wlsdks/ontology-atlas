@@ -6,15 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { PermissionGate, useGlobalAdmin } from "@/features/permissions";
 import { getProjectDetailHref, type Project } from "@/entities/project";
 import { subscribeProjects } from "@/entities/project/api";
-import type { KnowledgeEvidence } from "@/entities/knowledge-evidence";
-import { subscribeKnowledgeEvidenceByDocument } from "@/entities/knowledge-evidence/api";
-import {
-  resolveKnowledgeJobActionState,
-  type KnowledgeJob,
-} from "@/entities/knowledge-job";
-import { subscribeKnowledgeJobsByDocument } from "@/entities/knowledge-job/api";
-import type { KnowledgeOutput } from "@/entities/knowledge-output";
-import { subscribeKnowledgeOutputsByDocument } from "@/entities/knowledge-output/api";
 import {
   getKnowledgeDocumentDetailHref,
   getKnowledgeDocumentListHref,
@@ -43,16 +34,21 @@ import { DocumentOntologyEvidenceSection } from "@/widgets/document-ontology-evi
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { Info } from "./parts/Info";
-import { JobStatusBadge } from "./parts/JobStatusBadge";
 import { PanelButton } from "./parts/PanelButton";
-import { resolveNodeKindLabel, resolveOutputNodeTitle } from "./parts/labels";
 
 interface Props {
   documentId?: string;
   returnTo?: string;
 }
 
-type DetailPanel = "overview" | "compare" | "result";
+/**
+ * mission v2 정렬: cloud LLM 추출 워커 / 검수 큐 / candidate viewer 제거.
+ * 이 화면은 raw markdown 호스팅 + version diff + project link 만 담당.
+ *
+ * 노드 추출은 vault frontmatter (`/docs`) 또는 빌더 (`/ontology/edit`) 가
+ * 진실원. 이 페이지는 markdown 자체를 cloud 에 보존하고 싶은 사용자 경로.
+ */
+type DetailPanel = "overview" | "compare";
 
 function DetailContent({ documentId, returnTo }: Props) {
   const router = useRouter();
@@ -60,16 +56,12 @@ function DetailContent({ documentId, returnTo }: Props) {
   const accountId = null;
   const scopedProjectId = searchParams.get("project")?.trim() || "";
   const returnToParam = searchParams.get("returnTo")?.trim() || returnTo || "";
-  const autoStartJob = searchParams.get("jobStatus") === "autostart";
   const { user } = useGlobalAdmin();
   const [document, setDocument] = useState<KnowledgeDocument | null>(null);
   useDocumentTitle(
     document?.title ? `${document.title} · oh-my-ontology` : "문서 상세 · oh-my-ontology",
   );
   const [versions, setVersions] = useState<KnowledgeVersion[]>([]);
-  const [jobs, setJobs] = useState<KnowledgeJob[]>([]);
-  const [outputs, setOutputs] = useState<KnowledgeOutput[]>([]);
-  const [evidence, setEvidence] = useState<KnowledgeEvidence[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [blockingError, setBlockingError] = useState<string | null>(null);
   const [connectionIssue, setConnectionIssue] = useState<string | null>(null);
@@ -134,115 +126,19 @@ function DetailContent({ documentId, returnTo }: Props) {
     return () => unsubscribe();
   }, [accountId]);
 
-  useEffect(() => {
-    if (!documentId) return;
-    const unsubscribe = subscribeKnowledgeJobsByDocument(
-      accountId,
-      documentId,
-      (nextJobs) => {
-        setJobs(nextJobs);
-        handleStreamRecovered();
-      },
-      (error) => handleStreamIssue(error, "분석 상태를 불러오지 못했습니다."),
-    );
-    return () => unsubscribe();
-  }, [accountId, documentId, handleStreamIssue, handleStreamRecovered]);
-
-  useEffect(() => {
-    if (!documentId) return;
-    const unsubscribe = subscribeKnowledgeOutputsByDocument(
-      accountId,
-      documentId,
-      (nextOutputs) => {
-        setOutputs(nextOutputs);
-        handleStreamRecovered();
-      },
-      (error) => handleStreamIssue(error, "분석 결과를 불러오지 못했습니다."),
-    );
-    return () => unsubscribe();
-  }, [accountId, documentId, handleStreamIssue, handleStreamRecovered]);
-
-  useEffect(() => {
-    if (!documentId) return;
-    const unsubscribe = subscribeKnowledgeEvidenceByDocument(
-      accountId,
-      documentId,
-      (nextEvidence) => {
-        setEvidence(nextEvidence);
-        handleStreamRecovered();
-      },
-      (error) => handleStreamIssue(error, "근거 목록을 불러오지 못했습니다."),
-    );
-    return () => unsubscribe();
-  }, [accountId, documentId, handleStreamIssue, handleStreamRecovered]);
-
   const selectedVersionId =
     searchParams.get("version") ?? document?.currentVersionId ?? versions[0]?.id;
   const selectedVersion =
     versions.find((version) => version.id === selectedVersionId) ?? versions[0] ?? null;
   const currentVersion =
     versions.find((version) => version.id === document?.currentVersionId) ?? versions[0] ?? null;
-  const selectedVersionJob =
-    (selectedVersion
-      ? jobs.find((job) => job.documentVersionId === selectedVersion.id)
-      : null) ?? null;
-  const latestJob = selectedVersionJob ?? jobs[0] ?? null;
-  const selectedVersionJobs = selectedVersion
-    ? jobs.filter((job) => job.documentVersionId === selectedVersion.id)
-    : [];
-  const selectedVersionOutputs = selectedVersion
-    ? outputs.filter((output) => output.documentVersionId === selectedVersion.id)
-    : [];
-  const latestOutput =
-    (latestJob
-      ? selectedVersionOutputs.find((output) => output.jobId === latestJob.id)
-      : null) ??
-    selectedVersionOutputs[0] ??
-    null;
-  const selectedVersionEvidence = selectedVersion
-    ? evidence.filter((entry) => entry.documentVersionId === selectedVersion.id)
-    : [];
   const hasComparePanel = versions.length > 1;
-  const hasResultPanel = Boolean(
-    latestJob || latestOutput || selectedVersionEvidence.length > 0,
-  );
-  const candidateProjectNodes = latestOutput?.nodes.filter(
-    (node) => node.kind === "project",
-  ) ?? [];
-  const candidateDomainNodes = latestOutput?.nodes.filter(
-    (node) => node.kind === "domain",
-  ) ?? [];
-  const candidateCapabilityNodes = latestOutput?.nodes.filter(
-    (node) => node.kind === "capability",
-  ) ?? [];
-  const candidateElementNodes = latestOutput?.nodes.filter(
-    (node) => node.kind === "element",
-  ) ?? [];
-  const candidateRelatedNodes = latestOutput?.nodes.filter(
-    (node) => node.kind === "concept",
-  ) ?? [];
 
   useEffect(() => {
-    queueMicrotask(() => {
-      setActivePanel((current) => {
-        if (current === "compare" && !hasComparePanel) {
-          return hasResultPanel ? "result" : "overview";
-        }
-        if (current === "result" && !hasResultPanel) {
-          return "overview";
-        }
-        if (
-          autoStartJob &&
-          current === "overview" &&
-          hasResultPanel &&
-          Boolean(latestOutput)
-        ) {
-          return "result";
-        }
-        return current;
-      });
-    });
-  }, [autoStartJob, hasComparePanel, hasResultPanel, latestOutput]);
+    if (activePanel === "compare" && !hasComparePanel) {
+      queueMicrotask(() => setActivePanel("overview"));
+    }
+  }, [activePanel, hasComparePanel]);
 
   const metadataDiff =
     currentVersion && selectedVersion
@@ -260,9 +156,6 @@ function DetailContent({ documentId, returnTo }: Props) {
           selectedMarkdown: markdownByVersionId[selectedVersion.id] ?? "",
         })
       : null;
-  const jobActionState = latestJob
-    ? resolveKnowledgeJobActionState(latestJob.status)
-    : null;
   const primaryProjectId =
     (scopedProjectId && document?.projectIds.includes(scopedProjectId)
       ? scopedProjectId
@@ -324,28 +217,13 @@ function DetailContent({ documentId, returnTo }: Props) {
     { key: "upload", label: "올리기" },
     { key: "publish", label: "공개" },
   ] as const;
-  const currentStepIndex =
-    document?.status === "published"
-      ? 1
-      : !selectedVersionIsCurrent
-        ? 0
-        : 0;
+  const currentStepIndex = document?.status === "published" ? 1 : 0;
   const stepSummary =
     document?.status === "published"
       ? "모두 끝났어요 — 공개 화면에서 보입니다."
       : selectedVersionIsCurrent
         ? "이 문서엔 ontology 노드가 없어요. vault frontmatter 또는 빌더에서 직접 추가하세요."
         : "먼저 작업할 기준 버전을 정해 주세요.";
-
-  useEffect(() => {
-    if (activePanel === "compare" && !hasComparePanel) {
-      queueMicrotask(() => setActivePanel(hasResultPanel ? "result" : "overview"));
-      return;
-    }
-    if (activePanel === "result" && !hasResultPanel) {
-      queueMicrotask(() => setActivePanel(hasComparePanel ? "compare" : "overview"));
-    }
-  }, [activePanel, hasComparePanel, hasResultPanel]);
 
   useEffect(() => {
     const targets = [currentVersion, selectedVersion].filter(
@@ -538,13 +416,10 @@ function DetailContent({ documentId, returnTo }: Props) {
               </div>
             )}
           </div>
-          <div className="flex flex-wrap items-end gap-2 md:justify-end">
-          </div>
         </header>
 
-        {/* 업로드 → 분해 → 리뷰 → 공개 4단계 progress stepper. 현재 단계는 인디고
-            dot + 굵은 텍스트로, 지나온 단계는 체크, 앞으로의 단계는 dim 처리.
-            document.status + latestJob 기반 단일 currentStepIndex 로 일관된 표시. */}
+        {/* 2단계 progress stepper. 현재 단계는 인디고 dot + 굵은 텍스트로,
+            지나온 단계는 체크, 앞으로의 단계는 dim 처리. */}
         {document ? (
           <section
             aria-label="문서 진행 상태"
@@ -598,9 +473,7 @@ function DetailContent({ documentId, returnTo }: Props) {
               <p className="text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
                 {stepSummary}
               </p>
-              {/* 현재 단계에 맞는 다음 액션 CTA를 stepper 안에 바로 노출. 이전엔
-                  탭 안 "지금 할 일"까지 스크롤해야 발견 가능했던 버튼들을 여기로
-                  올려 한 눈에 "다음에 뭐 누르지" 해결. */}
+              {/* 현재 단계에 맞는 다음 액션 CTA를 stepper 안에 바로 노출. */}
               {currentStepIndex === 1 && primaryProjectPublicHref ? (
                 <Link
                   href={primaryProjectPublicHref}
@@ -632,16 +505,11 @@ function DetailContent({ documentId, returnTo }: Props) {
         <Card className="mt-8">
           <CardHeader>
             <CardTitle>현재 상태</CardTitle>
-            <CardDescription>지금 기준 버전과 분석 상태만 먼저 봅니다.</CardDescription>
+            <CardDescription>지금 기준 버전만 먼저 봅니다.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-2 text-sm text-[color:var(--color-text-secondary)]">
             <Badge variant="indigo">{flowStep.label}</Badge>
             <Badge>기준 {document?.currentVersionId ?? "없음"}</Badge>
-            {latestJob ? (
-              <JobStatusBadge status={latestJob.status} />
-            ) : (
-              <Badge>분석 없음</Badge>
-            )}
             <p className="w-full text-xs text-[color:var(--color-text-tertiary)]">{flowStep.helper}</p>
           </CardContent>
         </Card>
@@ -663,16 +531,6 @@ function DetailContent({ documentId, returnTo }: Props) {
               onClick={() => setActivePanel("compare")}
             >
               변경 비교
-            </PanelButton>
-          ) : null}
-          {hasResultPanel ? (
-            <PanelButton
-              id="knowledge-detail-tab-result"
-              active={activePanel === "result"}
-              controls="knowledge-detail-panel-result"
-              onClick={() => setActivePanel("result")}
-            >
-              분석 결과
             </PanelButton>
           ) : null}
         </section>
@@ -746,16 +604,6 @@ function DetailContent({ documentId, returnTo }: Props) {
                         <Info label="등록 시각">{formatDate(selectedVersion.createdAt)}</Info>
                         <Info label="연결 프로젝트">{selectedVersion.projectIds.join(", ") || "—"}</Info>
                       </div>
-                      {latestOutput ? (
-                        <div className="rounded-lg border border-[color:var(--color-border-soft)] px-4 py-4">
-                          <p className="text-sm text-[color:var(--color-text-primary)]">
-                            {latestOutput.summary}
-                          </p>
-                          <p className="mt-3 text-xs text-[color:var(--color-text-tertiary)]">
-                            항목 {latestOutput.nodeCount}개 · 연결 {latestOutput.edgeCount}개
-                          </p>
-                        </div>
-                      ) : null}
                       <div className="flex flex-wrap items-center gap-2">
                         {shouldPromotePublic && primaryProjectPublicHref && primaryActionLabel ? (
                           <Link
@@ -846,6 +694,16 @@ function DetailContent({ documentId, returnTo }: Props) {
             </div>
           </section>
         )}
+
+        {/* "이 문서가 ontology 노드의 evidence 로 참조되는가" 역방향 lookup.
+            frontmatter `evidenceIds` 의 reverse — 사용자 vault 의 node 가
+            이 doc 을 evidence 로 적었다면 여기 표시. 매치 0 이면 자체 숨김. */}
+        {documentId ? (
+          <DocumentOntologyEvidenceSection
+            accountId={accountId}
+            documentId={documentId}
+          />
+        ) : null}
 
         {activePanel === "compare" && hasComparePanel && (
           <section
@@ -952,268 +810,10 @@ function DetailContent({ documentId, returnTo }: Props) {
             </Card>
           </section>
         )}
-
-        {activePanel === "result" && hasResultPanel && (
-          <section
-            id="knowledge-detail-panel-result"
-            role="tabpanel"
-            aria-labelledby="knowledge-detail-tab-result"
-            className="mt-6 grid gap-6 xl:grid-cols-[0.82fr_1.18fr]"
-          >
-            <Card>
-              <CardHeader>
-                <CardTitle>분석 상태</CardTitle>
-                <CardDescription>
-                  현재 상태와 다음 행동 하나만 먼저 보여줍니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {!latestJob ? (
-                  <>
-                    <p className="text-sm text-[color:var(--color-text-tertiary)]">
-                      이 문서에 매달린 ontology 노드가 없어요. vault frontmatter (`/docs`) 또는 빌더 (`/ontology/edit`) 에서 노드를 직접 추가하세요.
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Link href="/docs/" className="inline-flex">
-                        <Button type="button" size="sm" variant="outline">
-                          vault 열기
-                        </Button>
-                      </Link>
-                      <Link href="/ontology/edit/" className="inline-flex">
-                        <Button type="button" size="sm" variant="ghost">
-                          빌더 열기
-                        </Button>
-                      </Link>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <JobStatusBadge status={latestJob.status} />
-                      <span className="text-xs text-[color:var(--color-text-tertiary)]">
-                        시도 {latestJob.attemptCount}/{latestJob.maxAttempts}
-                      </span>
-                    </div>
-                    <p className="text-sm text-[color:var(--color-text-secondary)]">
-                      {jobActionState?.helperText}
-                    </p>
-                    {latestJob.errorCode && (
-                      <div className="rounded-lg border border-[color:var(--color-border-soft)] px-3 py-3 text-sm text-[color:var(--color-text-secondary)]">
-                        <p>오류 코드: {latestJob.errorCode}</p>
-                        <p className="mt-1">오류 메시지: {latestJob.errorMessage || "—"}</p>
-                        <p className="mt-1">최근 갱신: {formatDate(latestJob.updatedAt)}</p>
-                      </div>
-                    )}
-                    <details className="rounded-lg border border-[color:var(--color-border-soft)] px-3 py-3">
-                      <summary className="cursor-pointer list-none text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                        작업 이력 보기
-                      </summary>
-                      {selectedVersionJobs.length === 0 ? (
-                        <p className="mt-3 text-sm text-[color:var(--color-text-tertiary)]">
-                          이 버전에 연결된 분석이 아직 없어요.
-                        </p>
-                      ) : (
-                        <div className="mt-3 space-y-2 border-t border-[color:var(--color-border-soft)] pt-3">
-                          {selectedVersionJobs.slice(0, 4).map((job) => (
-                            <div
-                              key={job.id}
-                              className="rounded-lg border border-[color:var(--color-border-soft)] px-3 py-3 text-sm"
-                            >
-                              <div className="flex items-center justify-between gap-3">
-                                <p className="font-mono text-[11px] text-[color:var(--color-text-primary)]">
-                                  {job.id}
-                                </p>
-                                <JobStatusBadge status={job.status} />
-                              </div>
-                              <p className="mt-2 text-xs text-[color:var(--color-text-tertiary)]">
-                                시도 {job.attemptCount}/{job.maxAttempts} · {formatDate(job.updatedAt)}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </details>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>분석 결과와 근거</CardTitle>
-                <CardDescription>
-                  결과 요약만 먼저 보고, 필요할 때만 펼칩니다.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {latestOutput ? (
-                  <>
-                    <div className="rounded-lg border border-[color:var(--color-border-soft)] px-3 py-3">
-                      <p className="text-sm text-[color:var(--color-text-primary)]">
-                        {latestOutput.summary}
-                      </p>
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[color:var(--color-text-tertiary)]">
-                        <Badge>{latestOutput.provider === "stub" ? "임시 분석기" : latestOutput.provider}</Badge>
-                        <Badge>항목 {latestOutput.nodeCount}</Badge>
-                        <Badge>연결 {latestOutput.edgeCount}</Badge>
-                        <Badge>경고 {latestOutput.warningCount}</Badge>
-                      </div>
-                    </div>
-
-                    <details className="rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.08)] px-4 py-4">
-                      <summary className="cursor-pointer list-none text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                        후보와 근거 펼치기
-                      </summary>
-                      <div className="mt-4">
-                        <div className="grid gap-3 md:grid-cols-2">
-                          <Info label="요약">{latestOutput.summary}</Info>
-                          <Info label="생성 시각">{formatDate(latestOutput.createdAt)}</Info>
-                          <Info label="분석기">
-                            {latestOutput.provider === "stub" ? "임시 분석기" : latestOutput.provider}
-                          </Info>
-                          <Info label="분석 버전">{latestOutput.extractorVersion}</Info>
-                        </div>
-                        <div className="mt-4">
-                          <p className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
-                            연결 후보
-                          </p>
-                          <div className="mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                            <Info label="프로젝트 후보 수">
-                              {String(candidateProjectNodes.length)}
-                            </Info>
-                            <Info label="도메인 후보 수">
-                              {String(candidateDomainNodes.length)}
-                            </Info>
-                            <Info label="기능 후보 수">
-                              {String(candidateCapabilityNodes.length)}
-                            </Info>
-                            <Info label="요소 후보 수">
-                              {String(candidateElementNodes.length)}
-                            </Info>
-                          </div>
-                          {candidateRelatedNodes.length > 0 && (
-                            <div className="mt-3">
-                              <p className="text-[11px] text-[color:var(--color-text-quaternary)]">
-                                관련 개념
-                              </p>
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                {candidateRelatedNodes.map((node) => (
-                                  <Badge key={node.tempId}>{node.title}</Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          <div className="mt-3 space-y-3">
-                            {latestOutput.edges.length === 0 ? (
-                              <p className="text-sm text-[color:var(--color-text-tertiary)]">
-                                아직 연결 후보가 없습니다.
-                              </p>
-                            ) : (
-                              latestOutput.edges.slice(0, 6).map((edge) => (
-                                <div
-                                  key={edge.tempId}
-                                  className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
-                                >
-                                  <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--color-text-tertiary)]">
-                                    <Badge>{edge.label || edge.type}</Badge>
-                                    <Badge>신뢰도 {Math.round(edge.confidence * 100)}%</Badge>
-                                  </div>
-                                  <p className="mt-3 text-sm text-[color:var(--color-text-primary)]">
-                                    {resolveOutputNodeTitle(latestOutput, edge.fromTempId)} →{" "}
-                                    {resolveOutputNodeTitle(latestOutput, edge.toTempId)}
-                                  </p>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                        <div className="mt-4">
-                          <p className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
-                            항목 후보
-                          </p>
-                          <div className="mt-3 space-y-3">
-                            {latestOutput.nodes.slice(0, 8).map((node) => (
-                              <div
-                                key={node.tempId}
-                                className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
-                              >
-                                <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--color-text-tertiary)]">
-                                  <Badge>{resolveNodeKindLabel(node.kind)}</Badge>
-                                  <Badge>신뢰도 {Math.round(node.confidence * 100)}%</Badge>
-                                  {node.projectIds.map((projectId) => (
-                                    <Badge key={`${node.tempId}-${projectId}`}>{projectId}</Badge>
-                                  ))}
-                                </div>
-                                <p className="mt-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                                  {node.title}
-                                </p>
-                                <p className="mt-1 text-sm leading-6 text-[color:var(--color-text-secondary)]">
-                                  {node.summary || "요약 없음"}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="mt-4">
-                          <p className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
-                            근거 발췌
-                          </p>
-                          <div className="mt-3 space-y-3">
-                            {selectedVersionEvidence.length === 0 ? (
-                              <p className="text-sm text-[color:var(--color-text-tertiary)]">
-                                표시할 근거가 없습니다.
-                              </p>
-                            ) : (
-                              selectedVersionEvidence.slice(0, 6).map((entry) => (
-                                <div
-                                  key={entry.id}
-                                  className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
-                                >
-                                  <div className="flex flex-wrap items-center gap-2 text-xs text-[color:var(--color-text-tertiary)]">
-                                    <Badge>근거 {entry.id}</Badge>
-                                    <Badge>범위 {entry.charStart}-{entry.charEnd}</Badge>
-                                  </div>
-                                  <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[color:var(--color-text-primary)]">
-                                    {entry.excerpt || "발췌 텍스트가 없습니다."}
-                                  </p>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </details>
-                  </>
-                ) : (
-                  <p className="text-sm text-[color:var(--color-text-tertiary)]">
-                    이 문서에 매달린 ontology 노드가 없습니다.
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </section>
-        )}
-
-        {/* 검수 → 결과 흐름 closure — 이 문서가 어떤 ontology 노드의 evidence
-            로 반영되었는지. 매치 0 이면 자체 숨김. */}
-        {documentId ? (
-          <DocumentOntologyEvidenceSection
-            accountId={accountId}
-            documentId={documentId}
-          />
-        ) : null}
       </div>
     </main>
   );
 }
-
-// Fire 4 — Info / PanelButton 분리:
-//   src/views/knowledge-document-detail/ui/parts/Info.tsx
-//   src/views/knowledge-document-detail/ui/parts/PanelButton.tsx
-
-// Fire 4 — JobStatusBadge 분리: src/views/knowledge-document-detail/ui/parts/JobStatusBadge.tsx
-
-// Fire 4 — labels 분리: src/views/knowledge-document-detail/ui/parts/labels.ts
 
 export function KnowledgeDocumentDetailPage(props: Props) {
   return (

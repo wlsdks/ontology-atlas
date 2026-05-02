@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertCircle, ArrowLeft, FilePlus2, Search, SlidersHorizontal } from "lucide-react";
+import { ArrowLeft, FilePlus2, Search, SlidersHorizontal } from "lucide-react";
 import { PermissionGate } from "@/features/permissions";
 import { useGlobalAdmin } from "@/features/permissions";
 import {
@@ -16,10 +16,6 @@ import {
   type KnowledgeDocument,
 } from "@/entities/knowledge-document";
 import { subscribeKnowledgeDocuments } from "@/entities/knowledge-document/api";
-import {
-  getKnowledgeJobStatusLabel,
-  KNOWLEDGE_JOB_STATUS_OPTIONS,
-} from "@/entities/knowledge-job";
 import {
   Badge,
   Button,
@@ -41,7 +37,6 @@ type KnowledgeDocumentFilters = {
   project: string;
   kind: string;
   docStatus: string;
-  jobStatus: string;
   query: string;
 };
 
@@ -77,7 +72,6 @@ function DocumentsContent() {
       project: searchParams.get("project") ?? "",
       kind: searchParams.get("kind") ?? "",
       docStatus: searchParams.get("docStatus") ?? "",
-      jobStatus: searchParams.get("jobStatus") ?? "",
       query: searchParams.get("q") ?? "",
     }),
     [searchParams],
@@ -86,7 +80,6 @@ function DocumentsContent() {
     filters.project ||
       filters.kind ||
       filters.docStatus ||
-      filters.jobStatus ||
       filters.query,
   );
   const [filtersOpen, setFiltersOpen] = useState(hasActiveFilters);
@@ -99,12 +92,6 @@ function DocumentsContent() {
       if (filters.kind && document.kind !== filters.kind) return false;
       if (filters.docStatus && document.status !== filters.docStatus)
         return false;
-      if (
-        filters.jobStatus &&
-        (document.latestJobStatus ?? "none") !== filters.jobStatus
-      ) {
-        return false;
-      }
       if (filters.query) {
         const haystack =
           `${document.title} ${document.kind} ${document.projectIds.join(" ")}`.toLowerCase();
@@ -130,15 +117,11 @@ function DocumentsContent() {
     return map;
   }, [ontologyNodes]);
 
+  // mission v2: cloud LLM 추출 워커 폐기 → success/failed 카운터 의미 없음.
+  // 단순 total + draft (사용자가 publish 안 한 문서) 만.
   const summary = useMemo(
     () => ({
       total: documents.length,
-      success: documents.filter(
-        (document) => document.latestJobStatus === "succeeded",
-      ).length,
-      failed: documents.filter(
-        (document) => document.latestJobStatus === "failed",
-      ).length,
       draft: documents.filter((document) => document.status === "draft").length,
     }),
     [documents],
@@ -255,12 +238,7 @@ function DocumentsContent() {
                   </p>
                   <div className="mt-3 flex flex-wrap gap-2">
                     <OverviewPill label="전체" value={summary.total} />
-                    <OverviewPill
-                      label="확인 필요"
-                      value={summary.failed}
-                      tone="indigo"
-                      icon={<AlertCircle size={13} />}
-                    />
+                    <OverviewPill label="작성 중" value={summary.draft} />
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -280,7 +258,7 @@ function DocumentsContent() {
               <div className="flex flex-wrap gap-2 border-t border-[color:var(--color-border-soft)] pt-4 text-xs text-[color:var(--color-text-tertiary)]">
                 <Badge>결과 {visibleDocuments.length}건</Badge>
                 <Badge>프로젝트 {filters.project || "전체"}</Badge>
-                {(filters.kind || filters.docStatus || filters.jobStatus || filters.query) && (
+                {(filters.kind || filters.docStatus || filters.query) && (
                   <Badge>필터 적용됨</Badge>
                 )}
               </div>
@@ -328,24 +306,6 @@ function DocumentsContent() {
                     >
                       <option value="">전체 문서 상태</option>
                       {KNOWLEDGE_DOCUMENT_STATUS_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field id="knowledge-documents-job-filter" label="분석 상태">
-                    <select
-                      id="knowledge-documents-job-filter"
-                      name="jobStatus"
-                      value={filters.jobStatus}
-                      onChange={(event) =>
-                        updateFilter({ jobStatus: event.target.value })
-                      }
-                      className={inputClassName}
-                    >
-                      <option value="">전체 분석 상태</option>
-                      {KNOWLEDGE_JOB_STATUS_OPTIONS.map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
                         </option>
@@ -468,13 +428,6 @@ function DocumentsContent() {
                           </Link>
                         </div>
                         <div className="flex shrink-0 flex-col items-end gap-1">
-                          <Badge
-                            variant={
-                              document.latestJobStatus === "failed" ? "indigo" : "default"
-                            }
-                          >
-                            {getKnowledgeJobStatusLabel(document.latestJobStatus)}
-                          </Badge>
                           {(() => {
                             const c = ontologyCountByDocId.get(document.id) ?? 0;
                             if (c === 0) return null;
@@ -525,7 +478,6 @@ function DocumentsContent() {
                     <th className="px-4 py-3">문서</th>
                     <th className="px-4 py-3">프로젝트</th>
                     <th className="px-4 py-3">상태</th>
-                    <th className="px-4 py-3">최근 분석 상태</th>
                     <th className="px-4 py-3">Ontology</th>
                     <th className="px-4 py-3">업데이트</th>
                   </tr>
@@ -556,17 +508,6 @@ function DocumentsContent() {
                       <td className="px-4 py-4">
                         <Badge variant="default">
                           {getKnowledgeDocumentStatusLabel(document.status)}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-4">
-                        <Badge
-                          variant={
-                            document.latestJobStatus === "failed"
-                              ? "indigo"
-                              : "default"
-                          }
-                        >
-                          {getKnowledgeJobStatusLabel(document.latestJobStatus)}
                         </Badge>
                       </td>
                       <td className="px-4 py-4">

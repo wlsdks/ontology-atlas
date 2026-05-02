@@ -66,55 +66,26 @@ function DashboardContent() {
     };
   }, [accountId]);
 
+  // mission v2 정렬: cloud LLM 추출 워커 폐기 → `latestJobStatus` 가 항상
+  // undefined. `failed` / `pending` 분기 제거. 사용자는 vault frontmatter
+  // 또는 빌더에서 ontology 를 직접 작성한다.
   const summary = useMemo(() => {
-    const failed = documents.filter((document) => document.latestJobStatus === "failed").length;
-    const pending = documents.filter((document) =>
-      document.latestJobStatus === "queued" ||
-      document.latestJobStatus === "leased" ||
-      document.latestJobStatus === "processing",
-    ).length;
-
     return {
       total: documents.length,
-      failed,
-      pending,
       recent: documents.slice(0, 3),
     };
   }, [documents]);
 
   const focusAction = useMemo(() => {
-    if (summary.failed > 0) {
-      return {
-        eyebrow: "지금 할 일",
-        title: `다시 봐야 할 문서 ${summary.failed}개`,
-        description:
-          "분석이 막힌 문서예요. 먼저 보고, 필요하면 다시 분석을 돌리거나 문서 확인으로 넘깁니다.",
-        href: `${getKnowledgeDocumentListHref(accountId)}?jobStatus=failed`,
-        cta: "다시 봐야 할 문서 보기",
-      };
-    }
-
-    if (summary.pending > 0) {
-      return {
-        eyebrow: "지금 할 일",
-        title: `챙길 문서 ${summary.pending}개`,
-        description:
-          "frontmatter 또는 빌더에서 ontology 노드를 직접 추가해 보세요.",
-        href: "/docs/",
-        cta: "vault 열기",
-      };
-    }
-
-    // 문서 0 인데 publicMeta 가 살아 있으면 (예: fixture 시드 / 외부 발행) 단순
-    // onboarding empty state 가 아니라 "이미 발행된 그래프 사용 가능 + 더
-    // 추가하려면" 메시지로. 발행 상태 카드가 같은 페이지에 같이 떠 사용자
-    // 혼란을 주던 문제.
+    // 문서 0 인데 publicMeta 가 살아 있으면 (예: 외부 발행) 단순 onboarding
+    // empty state 가 아니라 "이미 발행된 그래프 사용 가능 + 더 추가하려면"
+    // 메시지로. 발행 상태 카드가 같은 페이지에 같이 떠 사용자 혼란을 주던 문제.
     if (summary.total === 0 && publicMeta) {
       return {
         eyebrow: "공개 그래프 살아 있어요",
         title: "원본 문서를 추가로 올려 두세요",
         description:
-          "이미 공개된 ontology 가 있지만 raw 문서가 비어 있어요. md 를 한 장 올리면 새 분석 후보가 만들어지고, 다음 발행 때 기존 그래프 위에 누적됩니다.",
+          "이미 공개된 ontology 가 있지만 raw 문서가 비어 있어요. md 를 한 장 올려 두세요.",
         href: getKnowledgeDocumentNewHref(accountId),
         cta: "새 문서 올리기",
       };
@@ -124,11 +95,11 @@ function DashboardContent() {
       eyebrow: "첫 문서부터",
       title: "첫 md 문서를 올려 보세요",
       description:
-        "오늘은 기다리는 문서가 없어요. md 한 장을 올리면 AI가 프로젝트·허브·연결 후보를 뽑아 보여줍니다.",
+        "오늘은 기다리는 문서가 없어요. md 한 장을 올리고 vault frontmatter 또는 빌더에서 ontology 노드를 직접 만드세요.",
       href: getKnowledgeDocumentNewHref(accountId),
       cta: "첫 문서 올리기",
     };
-  }, [accountId, summary.failed, summary.pending, summary.total, publicMeta]);
+  }, [accountId, summary.total, publicMeta]);
 
   return (
     <main className="min-h-screen bg-[color:var(--color-canvas)]">
@@ -207,8 +178,6 @@ function DashboardContent() {
             cta={focusAction.cta}
             stats={[
               { label: "전체 문서", value: `${summary.total}` },
-              { label: "챙길 문서", value: `${summary.pending}` },
-              { label: "다시 보기", value: `${summary.failed}` },
             ]}
           />
           )}
