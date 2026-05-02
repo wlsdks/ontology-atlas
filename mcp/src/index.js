@@ -54,10 +54,9 @@ import {
 import { parseFilter } from './query.mjs';
 
 const VAULT_ROOT = resolve(process.env.OMOT_VAULT || process.cwd());
-// Round 9b T1-8: 이전엔 ensureVaultRoot 가 import-time 동기 throw 라
-// stdio transport 가 붙기 전 stack trace 가 stderr 로 새고 클라이언트 (Claude
-// Code 등) 에선 silent crash 처럼 보였다. 이제 친절한 한 줄 메시지 + non-zero
-// exit — Claude Code 가 server log 에 명확하게 보여주도록.
+// import-time throw 면 stdio transport 가 붙기 전 stack trace 가 stderr 로
+// 새고 클라이언트 (Claude Code 등) 에선 silent crash 로 보인다. 친절한 한
+// 줄 메시지 + non-zero exit 로 server log 에 명확히 노출.
 try {
   ensureVaultRoot(VAULT_ROOT);
 } catch (err) {

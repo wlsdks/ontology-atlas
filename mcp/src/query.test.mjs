@@ -90,7 +90,7 @@ test('OR widens the result', () => {
   }
 });
 
-console.log('parseFilter — Round 9b T1-6: precedence + parens');
+console.log('parseFilter — operator precedence + parens');
 test('AND binds tighter than OR (NOT > AND > OR)', () => {
   // a OR b AND c  →  a OR (b AND c).  Pre-fix would have grouped as (a OR b) AND c.
   // With our docs: kind=domain OR kind=capability AND domain=auth

@@ -24,9 +24,6 @@
  *
  * Operator precedence (highest → lowest): NOT > AND > OR. Use parens
  * to override: `(kind=domain OR kind=capability) AND has(elements)`.
- * Round 9b T1-6 fix: 이전엔 left-associative same-precedence 라
- * `a AND b OR c` 가 `(a AND b) OR c` 가 아니라 `((a OR b) AND c)` 로
- * 파싱되는 doc 와 구현 mismatch + 괄호 미지원이었음.
  *
  * Examples:
  *   kind=capability AND domain=auth AND NOT has(elements)
@@ -132,9 +129,9 @@ function tokenize(input) {
 
 // ── parser ────────────────────────────────────────────────────────────────
 //
-// Round 9b T1-6: precedence 분리. 이전 단일 `parseExpr` 가 AND / OR 를
-// 동급 left-associative 로 처리해 문서 (`NOT > AND > OR`) 와 mismatch.
-// 새 구조: parseExpr → parseOr → parseAnd → parseAtom → parsePrimary.
+// precedence 분리: parseExpr → parseOr → parseAnd → parseAtom → parsePrimary.
+// 이전 단일-함수 구현은 AND / OR 를 동급 left-associative 로 처리해 문서가
+// 광고하던 `NOT > AND > OR` 와 mismatch 였음.
 
 function parseExpr(tokens, pos) {
   return parseOr(tokens, pos);
@@ -177,7 +174,7 @@ function parseAtom(tokens, pos) {
 function parsePrimary(tokens, pos) {
   const t = tokens[pos];
   if (!t) throw new Error('unexpected end of filter');
-  // Round 9b T1-6: parenthesized sub-expression.
+  // parenthesized sub-expression — operator precedence override.
   if (t.type === 'paren' && t.value === '(') {
     const { node, next } = parseExpr(tokens, pos + 1);
     const closing = tokens[next];
