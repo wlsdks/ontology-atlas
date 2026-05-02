@@ -1,6 +1,6 @@
 'use client';
 
-import { cloneElement, isValidElement, useEffect, useRef, useState } from 'react';
+import { cloneElement, isValidElement, useEffect, useState } from 'react';
 import { cn } from '@/shared/lib/cn';
 
 interface StaggeredFadeInProps {
@@ -48,28 +48,26 @@ export function StaggeredFadeIn({
   translateY = 8,
 }: StaggeredFadeInProps) {
   const [mounted, setMounted] = useState(false);
-  const reducedMotionRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    reducedMotionRef.current =
-      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
-    // 0ms timeout — first paint 에 hidden 상태가 박혀야 transition 이 의미
-    // 있게 동작. requestAnimationFrame 으로 guarantee.
+    // first paint 에 hidden 상태가 박혀야 transition 이 의미 있게 동작.
+    // requestAnimationFrame 으로 다음 frame 에 mounted=true.
+    // prefers-reduced-motion 사용자는 child 의 motion-reduce:! 클래스가
+    // !important 로 inline style 을 override 하므로 별도 JS 분기 불필요.
     const handle = window.requestAnimationFrame(() => setMounted(true));
     return () => window.cancelAnimationFrame(handle);
   }, []);
 
   const items = Array.isArray(children) ? children : [children];
-  const reduced = reducedMotionRef.current;
 
   return (
     <Tag className={className}>
       {items.map((child, i) =>
         applyTransitionStyle(child, i, {
-          mounted: reduced || mounted,
-          duration: reduced ? 0 : duration,
-          delay: reduced ? 0 : i * stagger,
+          mounted,
+          duration,
+          delay: i * stagger,
           translateY,
         }),
       )}
