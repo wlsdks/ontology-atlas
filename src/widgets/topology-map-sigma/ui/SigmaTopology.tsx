@@ -23,7 +23,7 @@ import {
   type SigmaEdgeAttrs,
   type SigmaNodeAttrs,
 } from '../lib/graph-build';
-import { buildProjectOntologyCounts } from '@/shared/lib/ontology-tree';
+import type { OntologyCountsForProject } from '@/shared/lib/ontology-tree';
 import { useSyncedCallbackRef } from '@/shared/lib/use-synced-callback-ref';
 import { computeDepthMap, shortestPath } from '../lib/depth';
 import { useCameraUrlSync } from '../lib/use-camera-url-sync';
@@ -74,6 +74,10 @@ const AUDIT_PROMOTION_MIN_FAN_IN = 4;
 // 토스·애플 감성의 "빠르게 출발해서 부드럽게 안착" — 기존 cubicInOut 의
 // 양 끝 대칭 감 대신 arrival 쪽을 더 길게 풀어 준다. easeOutQuart.
 const CAMERA_EASING = (k: number) => 1 - Math.pow(1 - k, 4);
+
+// R10b — ontology kind counts 가 cloud 의존이라 영구 빈 맵. module-scope 상수로
+// referential stability 보장 — 매 render 새 Map 생성 회피.
+const EMPTY_ONTOLOGY_COUNTS: Map<string, OntologyCountsForProject> = new Map();
 
 // 선택 bounce — 토스 버튼 / 애플 아이콘 탭 탄성. 280ms sine curve 로
 // 1.0 → 1.2 → 1.0. 너무 길면 요란, 너무 짧으면 안 느껴짐. 280 이 체감 스윗스팟.
@@ -408,15 +412,11 @@ export function SigmaTopology({
   const [contextMenu, setContextMenu] = useState<SigmaContextMenuData | null>(null);
   const [edgeHover, setEdgeHover] = useState<SigmaEdgeTooltipData | null>(null);
 
-  // O-9b: 일반 project 노드의 ontology 도미넌트 kind 별 borderColor 분기.
-  // accountId 미제공 또는 권한 없을 시 hook 이 빈 배열을 emit → counts map 도
-  // 빈 map → 모든 노드가 현행 무채색 (NODE_BORDER) 으로 fallback. 깜빡임 없음.
-  // R10b (cloud surface 영구 제거) 이후 — 프로젝트 borderColor 의 ontology
-  // badge 카운트는 vault frontmatter 기반으로 미래에 다시 도입. 지금은 빈 맵.
-  const ontologyCountsBySlug = useMemo(
-    () => buildProjectOntologyCounts([]),
-    [],
-  );
+  // R10b — ontology kind 별 borderColor 카운트 cloud 의존이라 영구 제거.
+  // 미래에 vault frontmatter 기반으로 다시 도입할 때 새 hook 으로 대체.
+  // 그동안 항상 빈 맵 — module-scope EMPTY_MAP 으로 referential stability 보장
+  // (이전엔 useMemo + helper 호출이 reference 유지하긴 했지만 필요 없는 호출).
+  const ontologyCountsBySlug = EMPTY_ONTOLOGY_COUNTS;
 
   const graph = useMemo(() => {
     const g = buildGraph(projects, categories, {
