@@ -62,8 +62,6 @@ const CLOUD_ADMIN_ROUTES = [
   '/settings/categories',
   '/settings/statuses',
   '/settings/import',
-  '/settings/ontology',
-  '/settings/ontology/history',
   '/diagnostics/insights',
 ];
 
