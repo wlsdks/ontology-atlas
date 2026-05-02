@@ -3,6 +3,11 @@
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+
+// R10b (cloud surface 영구 제거) 이후 — 프로젝트 카드의 ontology badge 카운트
+// 가 vault frontmatter 기반 derivation 으로 다시 들어올 때까지 빈 맵.
+// module-scope 상수로 referential stability 보장 (매 mount 새 Map 생성 회피).
+const EMPTY_ONTOLOGY_COUNT_BY_SLUG: Map<string, number> = new Map();
 import { ArrowLeft, ArrowRight, FolderKanban, Shield } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTaxonomy } from "@/features/taxonomy";
@@ -82,10 +87,9 @@ export function ProjectSelectorPage() {
   useDocumentTitle(t("documentTitle"));
 
   // ontology nodes — 카드별 count badge 데이터. 부모 한 번 hook + count map
-  // R10b (cloud surface 영구 제거) 이후 — 프로젝트 카드의 ontology badge 는
-  // vault frontmatter 기반으로 미래에 다시 도입할 때 새 derivation 으로.
-  // 지금은 빈 맵으로 단순화.
-  const ontologyCountBySlug = useMemo(() => new Map<string, number>(), []);
+  // R10b — vault frontmatter 기반 ontology 카운트 derivation 이 다시 들어올
+  // 때까지 module-scope EMPTY_ONTOLOGY_COUNT_BY_SLUG 로 fallback.
+  const ontologyCountBySlug = EMPTY_ONTOLOGY_COUNT_BY_SLUG;
 
   const filteredProjects = useMemo(
     () =>
