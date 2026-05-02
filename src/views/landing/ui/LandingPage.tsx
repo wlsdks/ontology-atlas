@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { ArrowRight, FolderOpen, Orbit } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { buttonVariants } from "@/shared/ui";
@@ -31,6 +32,9 @@ function buildAuthHref(
  * 안전.
  */
 export function LandingPage({ next }: Props) {
+  const t = useTranslations('landing');
+  const tNav = useTranslations('nav');
+  const tFooter = useTranslations('footer');
   const loginHref = buildAuthHref("/login", next);
   const hasReturnTarget = Boolean(next?.trim());
 
@@ -50,14 +54,14 @@ export function LandingPage({ next }: Props) {
             oh-my-ontology
           </span>
           <span className="hidden font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] md:inline">
-            open-source ontology workbench
+            {t('headerKicker')}
           </span>
         </div>
         <Link
           href={loginHref}
           className="text-[13px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
         >
-          로그인
+          {tNav('signIn')}
         </Link>
       </header>
 
@@ -65,33 +69,40 @@ export function LandingPage({ next }: Props) {
         <div className="grid gap-10 md:grid-cols-[minmax(0,1fr)_22rem] md:items-center md:gap-12">
           <div className="space-y-5">
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-[color:var(--color-text-quaternary)]">
-              {hasReturnTarget ? "권한이 필요한 화면" : "ontology workbench · 사람 + AI agent 협업"}
+              {hasReturnTarget ? t('returnTargetEyebrow') : t('eyebrow')}
             </p>
             <h1 className="text-[clamp(2.4rem,5vw,4rem)] leading-[1.04] font-[var(--font-weight-signature)] tracking-[var(--tracking-display)] text-[color:var(--color-text-primary)]">
               {hasReturnTarget ? (
                 <>
-                  로그인 후 <span className="text-[color:var(--color-indigo-accent)]">이어보기</span>
+                  {t('returnTargetTitleLine1')}{' '}
+                  <span className="text-[color:var(--color-indigo-accent)]">{t('returnTargetTitleEmphasis')}</span>
                 </>
               ) : (
                 <>
-                  AI 와 함께 자라는<br />
-                  <span className="text-[color:var(--color-indigo-accent)]">codebase ontology</span>
+                  {t('titleLine1')}<br />
+                  <span className="text-[color:var(--color-indigo-accent)]">{t('titleEmphasis')}</span>
                 </>
               )}
             </h1>
             <p className="max-w-xl text-base leading-7 text-[color:var(--color-text-secondary)]">
-              {hasReturnTarget
-                ? "요청한 화면은 로그인이 필요합니다. 로그인하면 방금 열려던 화면으로 바로 돌아갑니다."
-                : "사람과 AI agent 가 같이 자라게 하는 codebase ontology. 마크다운 frontmatter 가 곧 노드와 관계 — *트리·토폴로지·ERD* 세 시각으로 본다. Obsidian/Notion 처럼 폴더만 가리키면 시작."}
+              {hasReturnTarget ? t('returnTargetSubtitle') : t('subtitle')}
             </p>
           </div>
 
           {!hasReturnTarget && (
-            <MiniTopology />
+            <MiniTopology caption={t('topologyCaption', { nodes: 14, relations: 21 })} />
           )}
         </div>
 
-        {!hasReturnTarget && <ValueChainRail />}
+        {!hasReturnTarget && (
+          <ValueChainRail
+            steps={[
+              { index: '01', title: t('step1Title'), sub: t('step1Body') },
+              { index: '02', title: t('step2Title'), sub: t('step2Body') },
+              { index: '03', title: t('step3Title'), sub: t('step3Body') },
+            ]}
+          />
+        )}
 
         <div className="flex flex-wrap items-center gap-3">
           {hasReturnTarget ? (
@@ -99,7 +110,7 @@ export function LandingPage({ next }: Props) {
               href={loginHref}
               className={cn(buttonVariants({ size: "lg" }), "rounded-full")}
             >
-              로그인하고 계속
+              {t('returnTargetCta')}
               <ArrowRight size={16} />
             </Link>
           ) : (
@@ -108,7 +119,7 @@ export function LandingPage({ next }: Props) {
                 href="/ontology/"
                 className={cn(buttonVariants({ size: "lg" }), "rounded-full min-w-[14rem]")}
               >
-                ontology 둘러보기
+                {t('exploreCta')}
                 <ArrowRight size={16} />
               </Link>
               <Link
@@ -119,7 +130,7 @@ export function LandingPage({ next }: Props) {
                 )}
               >
                 <FolderOpen size={16} />
-                내 마크다운 폴더 열기
+                {t('openVaultCta')}
               </Link>
             </>
           )}
@@ -127,13 +138,13 @@ export function LandingPage({ next }: Props) {
 
         {!hasReturnTarget && (
           <p className="text-[12px] text-[color:var(--color-text-quaternary)]">
-            로컬 폴더는 디스크에만 저장되고 외부로 전송되지 않아요. 데이터는 사용자 디스크가 진실원.
+            {t('privacyNote')}
           </p>
         )}
       </section>
 
       <footer className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-[color:var(--color-divider)] pt-4 text-[11px] text-[color:var(--color-text-quaternary)]">
-        <span className="font-mono uppercase tracking-[0.14em]">MIT licensed</span>
+        <span className="font-mono uppercase tracking-[0.14em]">{tFooter('license')}</span>
         <span aria-hidden>·</span>
         <a
           href="https://github.com/wlsdks/oh-my-ontology"
@@ -141,10 +152,10 @@ export function LandingPage({ next }: Props) {
           rel="noopener noreferrer"
           className="transition-colors hover:text-[color:var(--color-text-tertiary)]"
         >
-          GitHub
+          {tFooter('github')}
         </a>
         <span aria-hidden>·</span>
-        <span className="font-mono">Local-first · Next.js · TypeScript · Sigma.js · MCP</span>
+        <span className="font-mono">{tFooter('stack')}</span>
         <span className="ml-auto">
           <LocaleSwitch />
         </span>
@@ -160,7 +171,7 @@ export function LandingPage({ next }: Props) {
  * 14 노드 + 21 엣지의 미니 그래프. 3 hub (Project / Capability / Element 격)
  * + 11 leaf (구체 fact). 단일 인디고만, 두께·반지름으로 위계 표현.
  */
-function MiniTopology() {
+function MiniTopology({ caption }: { caption: string }) {
   // 미리 계산된 force-atlas 풍 좌표 — 노드끼리 겹치지 않으면서 밀집/분산.
   const hubs: Array<{ id: string; cx: number; cy: number; r: number }> = [
     { id: "h1", cx: 158, cy: 110, r: 9 },
@@ -242,7 +253,7 @@ function MiniTopology() {
         ))}
       </svg>
       <span className="pointer-events-none absolute bottom-3 left-4 font-mono text-[9.5px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
-        topology · 14 nodes · 21 relations
+        {caption}
       </span>
     </div>
   );
@@ -252,27 +263,11 @@ function MiniTopology() {
  * Mission 의 3-step 가치사슬 — markdown → 추출 → 3 view. 수직선 + dot 패턴.
  * 디자인 헌장 안 (보더 + 단일 인디고 + 무채색 텍스트).
  */
-function ValueChainRail() {
-  // 효과 (사용자가 얻는 것) 중심 copy. 단순 flow 가 아닌 "ontology 가
-  // 마크다운만으로는 못 하는 것" 의 3 가지 답.
-  const steps: Array<{ index: string; title: string; sub: string }> = [
-    {
-      index: "01",
-      title: "마크다운 한 곳에 적기",
-      sub: "frontmatter 키만 넣으면 노드/관계가 자동으로. AI agent (MCP) 도 같은 vault 에 read/write.",
-    },
-    {
-      index: "02",
-      title: "역추적 + 의존 분석 즉시",
-      sub: "'이 기능 누가 쓰나?' '이거 바꾸면 뭐 깨지나?' — 마크다운에선 grep 인데, ontology 면 0 클릭에 답.",
-    },
-    {
-      index: "03",
-      title: "한눈 탐색 — 트리·토폴로지·ERD",
-      sub: "같은 ontology 를 세 시각으로. 도메인 census, 영향 범위, 의존 chain 한 화면.",
-    },
-  ];
-
+function ValueChainRail({
+  steps,
+}: {
+  steps: ReadonlyArray<{ index: string; title: string; sub: string }>;
+}) {
   return (
     <ol className="grid gap-3 md:grid-cols-3 md:gap-4">
       {steps.map((s, i) => (

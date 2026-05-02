@@ -54,9 +54,19 @@ export default async function LocaleLayout({
 
   const messages = await getMessages();
 
+  const tNav = await getTranslations({ locale, namespace: 'nav' });
+
   return (
     <NextIntlClientProvider locale={locale} messages={messages}>
       <LocaleHtmlLang locale={locale} />
+      {/* Skip-to-content link — locale-aware copy. Originally lived in
+          app/layout.tsx as hardcoded Korean; moved here so it's translated. */}
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:border focus:border-[color:rgba(113,112,255,0.5)] focus:bg-[color:var(--color-panel)] focus:px-3 focus:py-2 focus:text-[13px] focus:text-[color:var(--color-text-primary)] focus:outline-none focus:ring-2 focus:ring-[color:rgba(94,106,210,0.46)]"
+      >
+        {tNav('skipToContent')}
+      </a>
       <MotionProvider>
         <TaxonomyProvider>
           <ToastProvider>

@@ -38,7 +38,27 @@
     "back": "Back",
     "demo": "Demo",
     "local": "Local",
-    "cloud": "Cloud"
+    "cloud": "Cloud",
+    "ariaLabel": "Operations menu",
+    "ariaLabelMobile": "Operations menu (mobile)",
+    "backToWorkspace": "Back to the workspace map",
+    "projectsCta": "Projects →",
+    "tooltipDocs": "The .md files in your vault — add `kind:` to frontmatter and they become ontology nodes",
+    "tooltipOntology": "Hierarchical view of frontmatter nodes (project → domain → capability → element)",
+    "tooltipTopology": "Project dependency map — one of the ontology's exit views",
+    "tooltipSettings": "Categories / statuses / project import — workspace setup",
+    "primaryAriaLabel": "Primary menu"
+  },
+  "modeBadge": {
+    "vaultLabel": "vault",
+    "vaultDocs": "{count} docs",
+    "vaultTooltip": "Vault mode — {name} ({count} docs). Every change is saved to your local disk.",
+    "cloudLabel": "cloud sync",
+    "cloudAriaLabel": "Cloud mode",
+    "cloudTooltip": "Cloud mode — Firestore real-time sync. Changes are saved to the cloud.",
+    "demoLabel": "demo",
+    "demoAriaLabel": "Demo mode",
+    "demoTooltip": "Demo mode — no vault picked, signed out. Build-time demo manifest only; changes are not saved."
   },
   "locale": {
     "switcher": "Language",
@@ -52,9 +72,11 @@
   },
   "landing": {
     "eyebrow": "Ontology workbench · humans + AI agents",
-    "title": "Codebase ontology that grows with AI",
+    "headerKicker": "open-source ontology workbench",
+    "titleLine1": "Codebase ontology",
+    "titleEmphasis": "that grows with AI",
     "subtitle": "A codebase ontology that humans and AI agents author together. Markdown frontmatter is the graph — view it as tree, topology, or ERD. Like Obsidian or Notion, just point at a folder and start.",
-    "topologyCaption": "Topology · {nodes} nodes · {relations} relations",
+    "topologyCaption": "TOPOLOGY · {nodes} NODES · {relations} RELATIONS",
     "step1Title": "Write in markdown",
     "step1Body": "Frontmatter keys alone create nodes and relations. AI agents (via MCP) read and write the same vault.",
     "step2Title": "Backlinks + dependencies, instant",
@@ -63,6 +85,11 @@
     "step3Body": "The same ontology as tree, topology, and ERD. Domain census, blast radius, dependency chains, all on one screen.",
     "exploreCta": "Explore the ontology",
     "openVaultCta": "Open my markdown folder",
-    "privacyNote": "Local folders stay on your disk and are never sent anywhere. Your data, your truth source."
+    "privacyNote": "Local folders stay on your disk and are never sent anywhere. Your data, your truth source.",
+    "returnTargetEyebrow": "Sign-in required",
+    "returnTargetTitleLine1": "Sign in to",
+    "returnTargetTitleEmphasis": "continue",
+    "returnTargetSubtitle": "The screen you requested needs sign-in. After you sign in we'll take you straight back.",
+    "returnTargetCta": "Sign in and continue"
   }
 }

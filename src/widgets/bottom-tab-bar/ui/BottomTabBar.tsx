@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Network, FolderKanban, FileText, ListTodo } from 'lucide-react';
 
 interface TabItem {
   href: string;
-  label: string;
+  /** Translation key under `nav.*` for the visible tab label. */
+  labelKey: 'ontology' | 'projects' | 'docs' | 'settings';
   icon: typeof Network;
   /** pathname 이 이 prefix 들 중 하나로 시작하면 활성 탭. 빈 배열이면 정확히 href 와 일치할 때만. */
   matchPrefixes: ReadonlyArray<string>;
@@ -18,12 +20,12 @@ interface TabItem {
 // 노출. 토폴로지는 온톨로지의 출구 view 라 별도 탭이 아닌 OntologyView /
 // OperationsNav 안의 sub-link 로 진입.
 const TABS: ReadonlyArray<TabItem> = [
-  { href: '/', label: '온톨로지', icon: Network, matchPrefixes: ['/ontology', '/topology'] },
-  { href: '/projects/', label: '프로젝트', icon: FolderKanban, matchPrefixes: ['/projects', '/project'] },
+  { href: '/', labelKey: 'ontology', icon: Network, matchPrefixes: ['/ontology', '/topology'] },
+  { href: '/projects/', labelKey: 'projects', icon: FolderKanban, matchPrefixes: ['/projects', '/project'] },
   // "문서" tab — vault picker. mission v2 가 cloud markdown 호스팅 surface
   // (`/knowledge/*`) 를 폐기한 후 모든 모드에서 docs vault 가 진입점.
-  { href: '/docs/', label: '문서', icon: FileText, matchPrefixes: ['/docs'] },
-  { href: '/settings/', label: '정리', icon: ListTodo, matchPrefixes: ['/settings'] },
+  { href: '/docs/', labelKey: 'docs', icon: FileText, matchPrefixes: ['/docs'] },
+  { href: '/settings/', labelKey: 'settings', icon: ListTodo, matchPrefixes: ['/settings'] },
 ];
 
 // 탭바를 노출하지 않을 surface — 인증·온보딩·에러 화면처럼 사용자가
@@ -38,12 +40,13 @@ const HIDDEN_PREFIXES: ReadonlyArray<string> = [
 
 export function BottomTabBar() {
   const pathname = usePathname() ?? '/';
+  const t = useTranslations('nav');
   const shouldHide = HIDDEN_PREFIXES.some((p) => pathname.startsWith(p));
   if (shouldHide) return null;
 
   return (
     <nav
-      aria-label="주요 메뉴"
+      aria-label={t('primaryAriaLabel')}
       className="pointer-events-auto fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-around border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-nav-surface)] pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       {TABS.map((tab) => {
@@ -61,7 +64,7 @@ export function BottomTabBar() {
             }
           >
             <Icon size={20} aria-hidden />
-            <span className="text-[10px] font-[var(--font-weight-signature)] leading-none">{tab.label}</span>
+            <span className="text-[10px] font-[var(--font-weight-signature)] leading-none">{t(tab.labelKey)}</span>
           </Link>
         );
       })}

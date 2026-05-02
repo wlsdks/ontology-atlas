@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { signOut } from '@/features/user-auth';
 import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
@@ -16,53 +17,52 @@ interface OperationsNavProps {
 
 interface NavItem {
   id: 'knowledge' | 'ontology' | 'topology' | 'settings';
-  label: string;
-  /** Tooltip 본문 — 라벨이 짧아 첫 사용자에게 의미 약할 때 보조 안내. */
-  description: string;
+  /** Translation key under `nav.*` for the visible label. */
+  labelKey: 'docs' | 'ontology' | 'topology' | 'settings';
+  /** Translation key under `nav.*` for the tooltip body. */
+  tooltipKey: 'tooltipDocs' | 'tooltipOntology' | 'tooltipTopology' | 'tooltipSettings';
   basePath: string;
-  /** 현재 pathname 이 이 prefix 로 시작하면 활성. */
+  /** Current pathname starts with this prefix → active. */
   prefixes: ReadonlyArray<string>;
 }
 
-function buildItems(_mode: 'static' | 'local' | 'cloud'): ReadonlyArray<NavItem> {
-  // mission v2 정렬: cloud markdown 호스팅 (`/knowledge/*`) 통째 제거 후
-  // "문서" 진입점은 모든 모드에서 /docs/ (vault). vault 안 골랐으면 picker.
-  return [
-    {
-      id: 'knowledge',
-      label: '문서',
-      description: '내 vault 의 .md 들 — frontmatter `kind:` 만 적으면 즉시 ontology 노드',
-      basePath: '/docs/',
-      prefixes: ['/docs'],
-    },
-    // ontology view — vault frontmatter 노드/관계의 트리. mission 의 척추.
-    // / 도 OntologyViewPage 를 렌더하므로 prefix 에 양쪽 포함.
-    {
-      id: 'ontology',
-      label: '온톨로지',
-      description: 'vault frontmatter 의 노드·관계 계층 그래프 (project → domain → capability → element)',
-      basePath: '/',
-      prefixes: ['/ontology'],
-    },
-    // topology — 출구 view 중 하나 (Sigma WebGL 의존도 지도).
-    {
-      id: 'topology',
-      label: '토폴로지',
-      description: '프로젝트 의존도 지도 — 온톨로지의 한 출구 view',
-      basePath: '/topology/',
-      prefixes: ['/topology'],
-    },
-    // BottomTabBar 의 '정리' 와 라벨 일치 — 같은 destination 인데 데스크톱 / 모바일
-    // 라벨이 달라 사용자 혼란 (audit A1 회귀 차단).
-    {
-      id: 'settings',
-      label: '정리',
-      description: '카테고리 / 상태 / 프로젝트 import 같은 공간 설정',
-      basePath: '/settings/categories/',
-      prefixes: ['/settings'],
-    },
-  ];
-}
+const NAV_ITEMS: ReadonlyArray<NavItem> = [
+  // mission v2 정렬: cloud markdown 호스팅 (`/knowledge/*`) 제거 후 모든
+  // 모드에서 "문서" 진입점은 /docs/ (vault). vault 안 골랐으면 picker.
+  {
+    id: 'knowledge',
+    labelKey: 'docs',
+    tooltipKey: 'tooltipDocs',
+    basePath: '/docs/',
+    prefixes: ['/docs'],
+  },
+  // ontology view — vault frontmatter 노드/관계의 트리. mission 의 척추.
+  // / 도 OntologyViewPage 를 렌더하므로 prefix 에 양쪽 포함.
+  {
+    id: 'ontology',
+    labelKey: 'ontology',
+    tooltipKey: 'tooltipOntology',
+    basePath: '/',
+    prefixes: ['/ontology'],
+  },
+  // topology — 출구 view 중 하나 (Sigma WebGL 의존도 지도).
+  {
+    id: 'topology',
+    labelKey: 'topology',
+    tooltipKey: 'tooltipTopology',
+    basePath: '/topology/',
+    prefixes: ['/topology'],
+  },
+  // BottomTabBar 의 '정리' 와 라벨 일치 — 같은 destination 인데 데스크톱 /
+  // 모바일 라벨이 달라 사용자 혼란 (audit A1 회귀 차단).
+  {
+    id: 'settings',
+    labelKey: 'settings',
+    tooltipKey: 'tooltipSettings',
+    basePath: '/settings/categories/',
+    prefixes: ['/settings'],
+  },
+];
 
 /**
  * 운영 메뉴 공통 nav. /knowledge ↔ /settings ↔ ontology 사이 전환이
@@ -88,10 +88,11 @@ function ModeBadge({ mode }: { mode: 'static' | 'local' | 'cloud' }) {
   // local 모드일 때만 vault 메타 가져오기. cloud/static 은 그냥 chip.
   // useLocalVault 자체는 SSR-safe (window 가드).
   const vault = useLocalVault();
+  const t = useTranslations('modeBadge');
   if (mode === 'local') {
     const docCount = vault.manifest?.docs.length ?? 0;
     const handleName = vault.handle?.name ?? 'vault';
-    const tooltip = `vault 모드 — ${handleName} (${docCount} docs). 모든 변경이 로컬 디스크에 저장됨.`;
+    const tooltip = t('vaultTooltip', { name: handleName, count: docCount });
     return (
       <Tooltip content={tooltip}>
         <span
@@ -99,34 +100,34 @@ function ModeBadge({ mode }: { mode: 'static' | 'local' | 'cloud' }) {
           className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
         >
           <span aria-hidden>●</span>
-          <span>vault</span>
+          <span>{t('vaultLabel')}</span>
           <span className="text-[color:var(--color-text-tertiary)]">·</span>
-          <span>{docCount} docs</span>
+          <span>{t('vaultDocs', { count: docCount })}</span>
         </span>
       </Tooltip>
     );
   }
   if (mode === 'cloud') {
     return (
-      <Tooltip content="cloud 모드 — Firestore 실시간 동기. 변경이 cloud 저장.">
+      <Tooltip content={t('cloudTooltip')}>
         <span
-          aria-label="cloud 모드"
+          aria-label={t('cloudAriaLabel')}
           className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
         >
           <span aria-hidden>●</span>
-          <span>cloud sync</span>
+          <span>{t('cloudLabel')}</span>
         </span>
       </Tooltip>
     );
   }
   return (
-    <Tooltip content="데모 모드 — vault 미선택 + 비로그인. 빌드 타임 demo manifest 만 노출, 변경 저장 안 됨.">
+    <Tooltip content={t('demoTooltip')}>
       <span
-        aria-label="데모 모드"
+        aria-label={t('demoAriaLabel')}
         className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.08)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)]"
       >
         <span aria-hidden>●</span>
-        <span>데모</span>
+        <span>{t('demoLabel')}</span>
       </span>
     </Tooltip>
   );
@@ -136,7 +137,7 @@ export function OperationsNav({ rightSlot }: OperationsNavProps) {
   const pathname = usePathname() ?? '';
   const router = useRouter();
   const dataSourceMode = useDataSourceMode();
-  const items = buildItems(dataSourceMode);
+  const t = useTranslations('nav');
 
   // 로그아웃 후 /login/ 으로 명시 redirect — 이전엔 같은 페이지에 머물러 데이터가
   // 조용히 사라지는 회귀. PermissionGate 가 있는 페이지는 자동 fallback
@@ -161,7 +162,7 @@ export function OperationsNav({ rightSlot }: OperationsNavProps) {
         {/* audit A6 — role='tab'/'tablist' 는 panel 페어링이 있어야 의미 있음.
             여기 항목들은 별도 라우트로 navigate 하는 plain link 라 정직하게
             link 시맨틱 만 유지. aria-current='page' 로 활성 항목 표시. */}
-        <Tooltip content={item.description}>
+        <Tooltip content={t(item.tooltipKey)}>
           <Link
             href={href}
             aria-current={active ? 'page' : undefined}
@@ -172,7 +173,7 @@ export function OperationsNav({ rightSlot }: OperationsNavProps) {
                 : `inline-flex items-center whitespace-nowrap break-keep rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] ${sizeClass}`
             }
           >
-            {item.label}
+            {t(item.labelKey)}
           </Link>
         </Tooltip>
       </li>
@@ -181,7 +182,7 @@ export function OperationsNav({ rightSlot }: OperationsNavProps) {
 
   return (
     <nav
-      aria-label="운영 메뉴"
+      aria-label={t('ariaLabel')}
       className="sticky top-0 z-30 border-b border-[color:var(--color-border-soft)] bg-[color:var(--color-nav-surface)]"
     >
       {/* 데스크톱 — 워크스페이스 복귀 + 5 탭 + 우측 보조 버튼들. DOM
@@ -191,14 +192,14 @@ export function OperationsNav({ rightSlot }: OperationsNavProps) {
         <div className="flex items-center gap-3">
           <Link
             href={'/'}
-            aria-label="워크스페이스 지도로 돌아가기"
+            aria-label={t('backToWorkspace')}
             className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] px-2.5 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
           >
             <span aria-hidden>←</span>
-            <span>돌아가기</span>
+            <span>{t('back')}</span>
           </Link>
           <ul className="flex items-center gap-1 overflow-x-auto">
-            {items.map((item) => renderTab(item, 'desktop'))}
+            {NAV_ITEMS.map((item) => renderTab(item, 'desktop'))}
           </ul>
         </div>
         <div className="flex items-center gap-2">
@@ -210,11 +211,11 @@ export function OperationsNav({ rightSlot }: OperationsNavProps) {
             {/* '↗' 는 외부 링크 의미로 오해 가능 — 내부 라우트라
                 '→' 로 명확화. */}
             <Button variant="ghost" size="sm" type="button">
-              프로젝트 →
+              {t('projectsCta')}
             </Button>
           </Link>
           <Button variant="ghost" size="sm" type="button" onClick={() => void handleSignOut()}>
-            로그아웃
+            {t('signOut')}
           </Button>
         </div>
       </div>
@@ -226,16 +227,16 @@ export function OperationsNav({ rightSlot }: OperationsNavProps) {
       <div className="flex items-center gap-2 overflow-x-auto px-4 py-2 md:hidden">
         <Link
           href={'/'}
-          aria-label="워크스페이스 지도로 돌아가기"
+          aria-label={t('backToWorkspace')}
           className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
         >
           <span aria-hidden>←</span>
         </Link>
         <ul
           className="flex items-center gap-1"
-          aria-label="운영 메뉴 (모바일)"
+          aria-label={t('ariaLabelMobile')}
         >
-          {items.map((item) => renderTab(item, 'mobile'))}
+          {NAV_ITEMS.map((item) => renderTab(item, 'mobile'))}
         </ul>
         <div className="ml-auto shrink-0">
           <ModeBadge mode={dataSourceMode} />

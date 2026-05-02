@@ -38,7 +38,27 @@
     "back": "돌아가기",
     "demo": "데모",
     "local": "로컬",
-    "cloud": "클라우드"
+    "cloud": "클라우드",
+    "ariaLabel": "운영 메뉴",
+    "ariaLabelMobile": "운영 메뉴 (모바일)",
+    "backToWorkspace": "워크스페이스 지도로 돌아가기",
+    "projectsCta": "프로젝트 →",
+    "tooltipDocs": "내 vault 의 .md 들 — frontmatter `kind:` 만 적으면 즉시 ontology 노드",
+    "tooltipOntology": "vault frontmatter 의 노드·관계 계층 그래프 (project → domain → capability → element)",
+    "tooltipTopology": "프로젝트 의존도 지도 — 온톨로지의 한 출구 view",
+    "tooltipSettings": "카테고리 / 상태 / 프로젝트 import 같은 공간 설정",
+    "primaryAriaLabel": "주요 메뉴"
+  },
+  "modeBadge": {
+    "vaultLabel": "vault",
+    "vaultDocs": "{count} docs",
+    "vaultTooltip": "vault 모드 — {name} ({count} docs). 모든 변경이 로컬 디스크에 저장됨.",
+    "cloudLabel": "cloud sync",
+    "cloudAriaLabel": "cloud 모드",
+    "cloudTooltip": "cloud 모드 — Firestore 실시간 동기. 변경이 cloud 저장.",
+    "demoLabel": "데모",
+    "demoAriaLabel": "데모 모드",
+    "demoTooltip": "데모 모드 — vault 미선택 + 비로그인. 빌드 타임 demo manifest 만 노출, 변경 저장 안 됨."
   },
   "locale": {
     "switcher": "언어",
@@ -52,7 +72,9 @@
   },
   "landing": {
     "eyebrow": "ONTOLOGY WORKBENCH · 사람 + AI AGENT 협업",
-    "title": "AI 와 함께 자라는 codebase ontology",
+    "headerKicker": "open-source ontology workbench",
+    "titleLine1": "AI 와 함께 자라는",
+    "titleEmphasis": "codebase ontology",
     "subtitle": "사람과 AI agent 가 같이 자라게 하는 codebase ontology. 마크다운 frontmatter 가 곧 노드와 관계 — *트리·토폴로지·ERD* 세 시각으로 본다. Obsidian/Notion 처럼 폴더만 가리키면 시작.",
     "topologyCaption": "TOPOLOGY · {nodes} NODES · {relations} RELATIONS",
     "step1Title": "마크다운 한 곳에 적기",
@@ -63,6 +85,11 @@
     "step3Body": "같은 ontology 를 세 시각으로. 도메인 census, 영향 범위, 의존 chain 한 화면.",
     "exploreCta": "ontology 둘러보기",
     "openVaultCta": "내 마크다운 폴더 열기",
-    "privacyNote": "로컬 폴더는 디스크에만 저장되고 외부로 전송되지 않아요. 데이터는 사용자 디스크가 진실원."
+    "privacyNote": "로컬 폴더는 디스크에만 저장되고 외부로 전송되지 않아요. 데이터는 사용자 디스크가 진실원.",
+    "returnTargetEyebrow": "권한이 필요한 화면",
+    "returnTargetTitleLine1": "로그인 후",
+    "returnTargetTitleEmphasis": "이어보기",
+    "returnTargetSubtitle": "요청한 화면은 로그인이 필요합니다. 로그인하면 방금 열려던 화면으로 바로 돌아갑니다.",
+    "returnTargetCta": "로그인하고 계속"
   }
 }
