@@ -27,10 +27,7 @@ import {
   Settings2,
   X,
 } from 'lucide-react';
-import {
-  DocsVaultAccessGuard,
-  useDocsVaultCapabilities,
-} from '@/features/docs-vault-access';
+import { useDocsVaultCapabilities } from '@/features/docs-vault-access';
 import { LocalVaultPicker, useLocalVault } from '@/features/docs-vault-local';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
@@ -1941,11 +1938,12 @@ function AdminDocsContent() {
 //   src/views/docs-vault/ui/parts/EmptyState.tsx
 
 export function DocsVaultPage() {
+  // local-first 핵심 (`.claude/rules/local-first.md` §1) — vault picker 진입은
+  // 인증 게이트 없음. Guard 폐기 (mission v2: 사용자 로컬 디스크가 진실원이라
+  // cloud-side multi-account workspace 권한 체크 불필요).
   return (
-    <DocsVaultAccessGuard>
-      <Suspense fallback={null}>
-        <AdminDocsContent />
-      </Suspense>
-    </DocsVaultAccessGuard>
+    <Suspense fallback={null}>
+      <AdminDocsContent />
+    </Suspense>
   );
 }
