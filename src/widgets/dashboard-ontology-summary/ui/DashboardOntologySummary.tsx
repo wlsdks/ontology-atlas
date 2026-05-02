@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import Link from "next/link";
 import { Network } from "lucide-react";
 import { ManualSourceChip } from "@/entities/knowledge-graph";
-import { getOntologyKindLabel } from "@/entities/ontology-class";
+import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
 import {
@@ -28,6 +28,7 @@ export interface DashboardOntologySummaryProps {
  */
 export function DashboardOntologySummary({ accountId }: DashboardOntologySummaryProps) {
   const { insight } = useOntologyInsight(accountId);
+  const kindLabel = useOntologyKindLabel();
   const nodes = insight?.nodes ?? [];
 
   const stats = useMemo(() => buildMeaningfulOntologyStats(nodes), [nodes]);
@@ -91,7 +92,7 @@ export function DashboardOntologySummary({ accountId }: DashboardOntologySummary
                     : "text-[color:var(--color-text-quaternary)]"
                 }`}
               >
-                {getOntologyKindLabel(kind)}
+                {kindLabel(kind)}
               </p>
               <p className="mt-1 break-keep text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                 {count}
@@ -114,7 +115,7 @@ export function DashboardOntologySummary({ accountId }: DashboardOntologySummary
                   className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[12px] transition-colors hover:border-[color:rgba(94,106,210,0.32)]"
                 >
                   <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                    {getOntologyKindLabel(node.kind)}
+                    {kindLabel(node.kind)}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
                     {node.title}

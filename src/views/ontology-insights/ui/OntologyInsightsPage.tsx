@@ -9,7 +9,7 @@ import {
   ManualSourceChip,
 } from "@/entities/knowledge-graph";
 import { useOntologyInsight, isVaultSentinelDate } from "@/features/vault-ontology";
-import { getOntologyKindLabel } from "@/entities/ontology-class";
+import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   buildActivityTimeline,
   buildOntologyTree,
@@ -57,6 +57,7 @@ function getEdgeTypeLabel(
  */
 export function OntologyInsightsPage() {
   const t = useTranslations("ontologyPages.insights");
+  const kindLabel = useOntologyKindLabel();
   const searchParams = useSearchParams();
   const accountId = null;
 
@@ -233,7 +234,7 @@ export function OntologyInsightsPage() {
                   <li key={kind} className="text-[12px]">
                     <div className="flex items-baseline justify-between gap-2">
                       <span className="text-[color:var(--color-text-secondary)]">
-                        {getOntologyKindLabel(kind)}
+                        {kindLabel(kind)}
                       </span>
                       <span className="font-mono text-[10px] tabular-nums text-[color:var(--color-text-quaternary)]">
                         {count}
@@ -402,7 +403,7 @@ export function OntologyInsightsPage() {
                         {idx + 1}
                       </span>
                       <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                        {getOntologyKindLabel(node.kind)}
+                        {kindLabel(node.kind)}
                       </span>
                       <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
                         {node.title}
@@ -435,7 +436,7 @@ export function OntologyInsightsPage() {
                     className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[12px] transition-colors hover:border-[color:rgba(94,106,210,0.32)]"
                   >
                     <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                      {getOntologyKindLabel(node.kind)}
+                      {kindLabel(node.kind)}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
                       {node.title}
@@ -511,7 +512,7 @@ export function OntologyInsightsPage() {
                     className="flex items-center gap-2 rounded-md border border-[color:rgba(255,179,71,0.18)] bg-[color:rgba(255,179,71,0.04)] px-2.5 py-1.5 text-[12px]"
                   >
                     <span className="inline-flex shrink-0 items-center rounded-full border border-[color:rgba(255,179,71,0.30)] bg-[color:rgba(255,179,71,0.08)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.95)]">
-                      {getOntologyKindLabel(node.kind)}
+                      {kindLabel(node.kind)}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
                       {node.title}

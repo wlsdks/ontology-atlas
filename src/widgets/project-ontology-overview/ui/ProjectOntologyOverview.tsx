@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import Link from "next/link";
 import { ManualSourceChip } from "@/entities/knowledge-graph";
-import { getOntologyKindLabel } from "@/entities/ontology-class";
+import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
 import { buildMeaningfulOntologyStats } from "@/shared/lib/ontology-tree";
@@ -32,6 +32,7 @@ export function ProjectOntologyOverview({
   limit = 6,
 }: ProjectOntologyOverviewProps) {
   const { insight } = useOntologyInsight(accountId);
+  const kindLabel = useOntologyKindLabel();
   const nodes = insight?.nodes ?? [];
 
   const matched = useMemo(
@@ -79,7 +80,7 @@ export function ProjectOntologyOverview({
               key={kind}
               className="inline-flex items-center gap-1 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]"
             >
-              {getOntologyKindLabel(kind)} {count}
+              {kindLabel(kind)} {count}
             </span>
           ))}
         </div>
@@ -93,7 +94,7 @@ export function ProjectOntologyOverview({
               className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[12px]"
             >
               <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {getOntologyKindLabel(node.kind)}
+                {kindLabel(node.kind)}
               </span>
               <span
                 className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]"

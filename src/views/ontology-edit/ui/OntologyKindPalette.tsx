@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { getOntologyKindIcon, getOntologyKindLabel } from "@/entities/ontology-class";
+import { getOntologyKindIcon, useOntologyKindLabel } from "@/entities/ontology-class";
 import type { ManualNodeKind } from "@/entities/knowledge-graph";
 
 /**
@@ -28,6 +28,7 @@ export interface OntologyKindPaletteProps {
 
 export function OntologyKindPalette({ onAddNode }: OntologyKindPaletteProps) {
   const t = useTranslations("ontologyPages.edit.palette");
+  const kindLabel = useOntologyKindLabel();
   return (
     <aside
       aria-label={t("ariaLabel")}
@@ -44,7 +45,7 @@ export function OntologyKindPalette({ onAddNode }: OntologyKindPaletteProps) {
       <ul className="flex flex-col gap-1.5">
         {PALETTE_KINDS.map((entry) => {
           const Icon = getOntologyKindIcon(entry.kind);
-          const label = getOntologyKindLabel(entry.kind);
+          const label = kindLabel(entry.kind);
           const hint = t(entry.hintKey);
           return (
             <li key={entry.kind}>

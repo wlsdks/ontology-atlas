@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { getOntologyKindLabel } from "@/entities/ontology-class";
+import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   buildRadialEgoLayout,
   UNKNOWN_TONE,
@@ -47,6 +47,7 @@ export function OntologyEgoGraph({
   height = 200,
 }: OntologyEgoGraphProps) {
   const t = useTranslations('ontologyWidgets');
+  const kindLabel = useOntologyKindLabel();
   const layout = useMemo(
     () => buildRadialEgoLayout(ego, width, height, { padding: 36 }),
     [ego, width, height],
@@ -117,7 +118,7 @@ export function OntologyEgoGraph({
         const neighbor = ego.neighbors[i]!;
         const node = neighbor.node;
         const title = node?.title ?? neighbor.neighborId;
-        const kindLabel = node ? getOntologyKindLabel(node.kind) : t('egoGraph.neighborMissingKind');
+        const neighborKindLabel = node ? kindLabel(node.kind) : t('egoGraph.neighborMissingKind');
         const truncated = title.length > LABEL_MAX_CHARS ? `${title.slice(0, LABEL_MAX_CHARS - 1)}…` : title;
         const isHop2 = neighbor.hop === 2;
         const showLabel = shouldShowEgoLabel(neighbor.hop, i, density, hoveredIndex);
@@ -153,7 +154,7 @@ export function OntologyEgoGraph({
             tabIndex={clickable ? 0 : undefined}
             aria-label={t('egoGraph.neighborTitleAria', {
               title,
-              kind: kindLabel,
+              kind: neighborKindLabel,
               direction:
                 neighbor.direction === "outgoing"
                   ? t('egoGraph.directionOutgoing')
@@ -179,7 +180,7 @@ export function OntologyEgoGraph({
           >
             {/* native SVG <title> — dense ring 에서 라벨 숨겨도 hover/focus
                 툴팁으로 노드 정체 인지 가능. 스크린리더도 읽음. */}
-            <title>{`${title} (${kindLabel})`}</title>
+            <title>{`${title} (${neighborKindLabel})`}</title>
             <circle
               cx={point.x}
               cy={point.y}

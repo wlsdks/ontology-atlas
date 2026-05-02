@@ -9,7 +9,7 @@ import {
   ManualSourceChip,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { getOntologyKindLabel } from "@/entities/ontology-class";
+import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
 import {
   buildOntologyEgoSubgraph,
@@ -638,7 +638,8 @@ function NodeDetailPanel({
   onAddEdge: (fromNode: KnowledgeGraphNode) => void;
 }) {
   const t = useTranslations('ontologyView.detail');
-  const kindLabel = getOntologyKindLabel(node.kind);
+  const getKindLabel = useOntologyKindLabel();
+  const kindLabel = getKindLabel(node.kind);
   const isProject = node.kind === "project";
   const isStub = node.kind === "unknown";
   const isDocument = node.kind === "document";
@@ -819,7 +820,7 @@ function NodeDetailPanel({
               const arrow = isOutgoing ? "→" : "←";
               const relationLabel = neighbor.edge.label ?? neighbor.edge.type;
               const neighborTitle = neighbor.node?.title ?? neighbor.neighborId;
-              const neighborKindLabel = neighbor.node ? getOntologyKindLabel(neighbor.node.kind) : t('neighborMissingKind');
+              const neighborKindLabel = neighbor.node ? getKindLabel(neighbor.node.kind) : t('neighborMissingKind');
               const ariaLabel = isOutgoing
                 ? `${node.title} → ${relationLabel} → ${neighborTitle}`
                 : `${neighborTitle} → ${relationLabel} → ${node.title}`;

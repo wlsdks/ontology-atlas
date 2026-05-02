@@ -92,6 +92,14 @@
     "returnTargetSubtitle": "The screen you requested needs sign-in. After you sign in we'll take you straight back.",
     "returnTargetCta": "Sign in and continue"
   },
+  "kinds": {
+    "project": "Project",
+    "domain": "Domain",
+    "capability": "Capability",
+    "element": "Element",
+    "document": "Document",
+    "unknown": "Unresolved"
+  },
   "topologyWidgets": {
     "sigma": {
       "ariaLabel": "Project topology map — jump to individual projects from the hub bar on the left",
@@ -1626,6 +1634,17 @@
     }
   },
   "featuresMisc": {
+    "authLoading": {
+      "label": "Verifying"
+    },
+    "accountScope": {
+      "loadingRole": "Verifying",
+      "loadingDescription": "Checking what you can do right now.",
+      "guestRole": "Local",
+      "guestDescription": "Use the local vault freely; sign in for cloud sync.",
+      "ownerRole": "Owner",
+      "ownerDescription": "You own this space — every action runs against your data."
+    },
     "permissionGate": {
       "loadingTitle": "Checking…",
       "loadingBody": "Verifying your account status.",

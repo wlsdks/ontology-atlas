@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useUserAuth } from "@/features/user-auth";
 import {
   type ScopedAccountAccess,
@@ -22,9 +23,13 @@ export interface UseScopedAccountAccessResult extends ScopedAccountAccess {
  *
  * 로그인 안 한 사용자는 게스트 — local-first 흐름에서 폴더 선택만으로
  * 사용 가능하지만, 서버와 동기화하는 액션 (publish 등) 은 로그인 후에만.
+ *
+ * Round 4 polish: roleLabel / description 이 t() 에서 와 locale 인식.
+ * 이전엔 Korean hardcode 라 /en/ 진입에도 "로컬" / "주인" 으로 노출.
  */
 export function useScopedAccountAccess(): UseScopedAccountAccessResult {
   const { status, user } = useUserAuth();
+  const t = useTranslations("featuresMisc.accountScope");
 
   return useMemo<UseScopedAccountAccessResult>(() => {
     const profile = user
@@ -39,8 +44,8 @@ export function useScopedAccountAccess(): UseScopedAccountAccessResult {
         canEditDocuments: false,
         canReviewAndPublish: false,
         hasWorkspaceAccess: false,
-        roleLabel: "확인 중",
-        description: "지금 어떤 작업을 할 수 있는지 확인하고 있습니다.",
+        roleLabel: t("loadingRole"),
+        description: t("loadingDescription"),
         membership: null,
         user: profile,
       };
@@ -54,9 +59,8 @@ export function useScopedAccountAccess(): UseScopedAccountAccessResult {
         canEditDocuments: false,
         canReviewAndPublish: false,
         hasWorkspaceAccess: true,
-        roleLabel: "로컬",
-        description:
-          "로컬 vault 는 자유롭게 사용할 수 있고, cloud 동기화는 로그인 후 가능합니다.",
+        roleLabel: t("guestRole"),
+        description: t("guestDescription"),
         membership: null,
         user: null,
       };
@@ -69,10 +73,10 @@ export function useScopedAccountAccess(): UseScopedAccountAccessResult {
       canEditDocuments: true,
       canReviewAndPublish: true,
       hasWorkspaceAccess: true,
-      roleLabel: "주인",
-      description: "이 공간의 주인으로 모든 작업을 직접 수행합니다.",
+      roleLabel: t("ownerRole"),
+      description: t("ownerDescription"),
       membership: null,
       user: profile,
     };
-  }, [status, user]);
+  }, [status, user, t]);
 }

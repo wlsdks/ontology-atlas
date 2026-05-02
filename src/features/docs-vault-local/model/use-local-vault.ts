@@ -710,14 +710,30 @@ export function useLocalVault() {
     }
     // .mcp.json.example — 사용자가 AI agent 설정으로 복사. vault 폴더의
     // 절대경로는 브라우저가 모르니 placeholder 로 두고 안내.
+    //
+    // overwrite guard (eval round 4 — perf agent finding):
+    // 사용자가 .mcp.json.example 을 customize 했을 수도 있으니 기존 파일이
+    // 있으면 skip. 처음 scaffold 일 때만 생성.
     try {
-      const fh = await state.handle.getFileHandle('.mcp.json.example', {
-        create: true,
-      });
-      const writable = await fh.createWritable();
-      await writable.write(buildMcpConfigJson(state.handle.name));
-      await writable.close();
-      created += 1;
+      let alreadyExists = false;
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- existence probe
+        const _existing = await state.handle.getFileHandle('.mcp.json.example');
+        alreadyExists = true;
+      } catch {
+        // NotFoundError — 파일 없음, 정상.
+      }
+      if (alreadyExists) {
+        skipped += 1;
+      } else {
+        const fh = await state.handle.getFileHandle('.mcp.json.example', {
+          create: true,
+        });
+        const writable = await fh.createWritable();
+        await writable.write(buildMcpConfigJson(state.handle.name));
+        await writable.close();
+        created += 1;
+      }
     } catch {
       skipped += 1;
     }

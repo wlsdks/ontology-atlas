@@ -92,6 +92,14 @@
     "returnTargetSubtitle": "요청한 화면은 로그인이 필요합니다. 로그인하면 방금 열려던 화면으로 바로 돌아갑니다.",
     "returnTargetCta": "로그인하고 계속"
   },
+  "kinds": {
+    "project": "프로젝트",
+    "domain": "도메인",
+    "capability": "역량",
+    "element": "요소",
+    "document": "문서",
+    "unknown": "미지"
+  },
   "topologyWidgets": {
     "sigma": {
       "ariaLabel": "프로젝트 토폴로지 지도 — 좌측 허브 바에서 개별 프로젝트 바로가기",
@@ -1626,6 +1634,17 @@
     }
   },
   "featuresMisc": {
+    "authLoading": {
+      "label": "확인 중"
+    },
+    "accountScope": {
+      "loadingRole": "확인 중",
+      "loadingDescription": "지금 어떤 작업을 할 수 있는지 확인하고 있습니다.",
+      "guestRole": "로컬",
+      "guestDescription": "로컬 vault 는 자유롭게 사용할 수 있고, cloud 동기화는 로그인 후 가능합니다.",
+      "ownerRole": "주인",
+      "ownerDescription": "이 공간의 주인으로 모든 작업을 직접 수행합니다."
+    },
     "permissionGate": {
       "loadingTitle": "확인 중입니다…",
       "loadingBody": "계정 상태를 확인하고 있습니다.",

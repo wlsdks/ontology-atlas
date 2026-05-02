@@ -11,7 +11,7 @@ import {
   type ManualNodeKind,
 } from "@/entities/knowledge-graph";
 import { findSimilarOntologyNodes, recommendDocumentSlug } from "@/shared/lib/ontology-tree";
-import { getOntologyKindLabel } from "@/entities/ontology-class";
+import { useOntologyKindLabel } from "@/entities/ontology-class";
 
 export interface ManualNodeCreateModalProps {
   open: boolean;
@@ -57,6 +57,7 @@ export function ManualNodeCreateModal({
   onCreated,
 }: ManualNodeCreateModalProps) {
   const t = useTranslations('ontologyWidgets');
+  const kindLabel = useOntologyKindLabel();
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -213,7 +214,7 @@ export function ManualNodeCreateModal({
             >
               {MANUAL_NODE_KINDS.map((kind) => (
                 <option key={kind} value={kind}>
-                  {kind} · {getOntologyKindLabel(kind)}
+                  {kind} · {kindLabel(kind)}
                 </option>
               ))}
             </select>

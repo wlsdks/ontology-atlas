@@ -8,7 +8,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ManualSourceChip, type KnowledgeGraphNode } from "@/entities/knowledge-graph";
-import { getOntologyKindLabel } from "@/entities/ontology-class";
+import { useOntologyKindLabel } from "@/entities/ontology-class";
 import type { Project } from "@/entities/project";
 import {
   MEANINGFUL_ONTOLOGY_KINDS,
@@ -50,6 +50,7 @@ export function GlobalSearch({
   onSelectProject,
 }: GlobalSearchProps) {
   const t = useTranslations("searchWidgets.globalSearch");
+  const kindLabel = useOntologyKindLabel();
   const [query, setQuery] = useState("");
   // Fire 2 — kind / project filter chip 으로 ontology 결과 좁히기. set 으로
   // 다중 선택 (toggle) 모델. 닫을 때 query 와 함께 초기화.
@@ -224,7 +225,7 @@ export function GlobalSearch({
                       : "shrink-0 rounded-full border border-[color:var(--color-divider)] bg-transparent px-2 py-0.5 text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-secondary)]"
                   }
                 >
-                  {getOntologyKindLabel(kind)}
+                  {kindLabel(kind)}
                 </button>
               );
             })}
@@ -331,7 +332,7 @@ export function GlobalSearch({
                     className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-[color:var(--color-text-secondary)] aria-selected:bg-[color:rgba(94,106,210,0.14)] aria-selected:text-[color:var(--color-text-primary)]"
                   >
                     <span className="inline-flex shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                      {getOntologyKindLabel(node.kind)}
+                      {kindLabel(node.kind)}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
                       {node.title}

@@ -3,7 +3,7 @@
 import { createElement, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Search, X } from "lucide-react";
-import { getOntologyKindIcon, getOntologyKindLabel } from "@/entities/ontology-class";
+import { getOntologyKindIcon, useOntologyKindLabel } from "@/entities/ontology-class";
 import { ManualSourceChip } from "@/entities/knowledge-graph";
 import {
   filterTreeByQuery,
@@ -75,6 +75,7 @@ const KIND_TONE: Record<
 
 function KindChip({ kind }: { kind: string }) {
   const tone = KIND_TONE[kind] ?? KIND_TONE.element!;
+  const kindLabel = useOntologyKindLabel();
   // kind → 정적 lucide 컴포넌트 매핑. createElement 로 직접 호출해서
   // local alias (`const Icon = …; <Icon />`) 가 react-hooks/static-components
   // 룰을 트리거하는 패턴 회피. KIND_ICON 자체가 정적 record 라 element type
@@ -85,7 +86,7 @@ function KindChip({ kind }: { kind: string }) {
       style={{ backgroundColor: tone.bg, color: tone.text, borderColor: tone.border }}
     >
       {createElement(getOntologyKindIcon(kind), { size: 10, "aria-hidden": true })}
-      {getOntologyKindLabel(kind)}
+      {kindLabel(kind)}
     </span>
   );
 }
