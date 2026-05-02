@@ -5,7 +5,6 @@ import { useRouter } from "@/i18n/navigation";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { type Project, getProjectDetailHref } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
-import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
 import { useGlobalSearchHotkey } from "../lib/use-global-search-hotkey";
 import { GlobalSearch } from "./GlobalSearch";
 
@@ -83,8 +82,8 @@ export function MountedGlobalSearch({
         }
         // default — /ontology 페이지로 점프 + deeplink ?node=<id>. 페이지가
         // insight 로드 후 해당 노드를 selectedNode 로 자동 설정.
-        const accountQuery = accountId ? `&${ACCOUNT_QUERY_KEY}=${encodeURIComponent(accountId)}` : "";
-        router.push(`/ontology/?node=${encodeURIComponent(node.id)}${accountQuery}`);
+        // R10 — accountId 항상 null 이라 account query 무의미. 단순화.
+        router.push(`/ontology/?node=${encodeURIComponent(node.id)}`);
       }}
       onSelectProject={(project) => {
         if (onSelectProject) {
