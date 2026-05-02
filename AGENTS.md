@@ -124,7 +124,7 @@ Long-form docs:
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
 - Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
-- ~21 nodes (domains / capabilities / elements / project / vault-readme)
+- ~18 nodes (domains / capabilities / elements / project / vault-readme)
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 
@@ -182,6 +182,6 @@ pnpm build                        # 정적 export → out/
 이 프로젝트 자신의 mental model 은 `docs/ontology/` 에 frontmatter md 로 표현되어 있다 (dogfooding — 우리 데이터 형식으로 우리 자신을 기술).
 
 - 진입점: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 약 21 노드 (도메인 · capability · element · project · vault-readme)
+- 약 18 노드 (도메인 6 · capability 6 · element 4 · project 1 · vault-readme 1)
 - AI agent 는 `mcp/` MCP 서버로 query 가능 — 등록 가이드 `mcp/README.md` · 예시 `.mcp.json.example`
 - 새 도메인/capability/element 가 생기면 같은 디렉토리에 추가 (`add_concept` 도구로 또는 직접 작성)

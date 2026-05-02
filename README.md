@@ -98,7 +98,7 @@ No `.env`, no Firebase, no auth provider, no cloud account needed.
 | **vault frontmatter = the graph** (no review queue, no LLM extraction) | `grep -r "extractionJob" src/ → 0` |
 | **AI agent partner via MCP** | `mcp/` package, 12 tools, `mcp/scripts/verify.mjs` smoke |
 | **No backend** (Firebase / DB / auth) | `pnpm bundle:check` — firebase SDK chunk 0 (deps removed in R10) |
-| **Dogfooding** | `docs/ontology/` is the project's own curated mental model (~21 nodes). Combined with the broader `docs/` tree the static demo shows the project's own ontology on `/ontology/insights`. |
+| **Dogfooding** | `docs/ontology/` is the project's own curated mental model (~18 nodes — domains 6 · capabilities 6 · elements 4 · project 1 · vault-readme 1). |
 
 ## Architecture
 
