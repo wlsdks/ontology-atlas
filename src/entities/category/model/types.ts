@@ -23,7 +23,7 @@ export interface CategorySize {
 }
 
 export interface Category {
-  /** Firestore 문서 ID. 소문자·숫자·하이픈. 예: 'in-progress'. */
+  /** Stable ID. 소문자·숫자·하이픈. 예: 'in-progress'. */
   id: string;
   /** 한국어 라벨 (UI 기본 표시). */
   label: string;

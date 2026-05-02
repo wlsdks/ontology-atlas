@@ -9,7 +9,7 @@
 export type StatusDotColor = 'success' | 'warning' | 'paused' | 'neutral';
 
 export interface Status {
-  /** Firestore 문서 ID. 소문자·숫자·하이픈. 예: 'live'. */
+  /** Stable ID. 소문자·숫자·하이픈. 예: 'live'. */
   id: string;
   label: string;
   labelEn?: string;
