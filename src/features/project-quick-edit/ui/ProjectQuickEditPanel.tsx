@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { PencilLine, X } from "lucide-react";
@@ -64,6 +64,7 @@ export function ProjectQuickEditPanel({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const { updateProject } = useProjectMutations();
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const next = toQuickEditValues(project);
@@ -72,6 +73,17 @@ export function ProjectQuickEditPanel({
       setBaseline(next);
     });
   }, [project]);
+
+  // 다른 modal 과 동일한 a11y 패턴 — 열릴 때 trigger 캡처, 닫힐 때 복원.
+  // 키보드 사용자가 toggle button → drawer 안에서 작업 → Esc/저장으로 닫을
+  // 때 원래 trigger 로 focus 가 돌아가도록.
+  useEffect(() => {
+    if (!open) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    return () => {
+      previousFocusRef.current?.focus?.();
+    };
+  }, [open]);
 
   const hasChanges = useMemo(
     () =>
