@@ -300,8 +300,13 @@ function computeForceLayout(
       g.addEdge(from, to);
     }
   }
+  // iteration 수를 docs 수에 따라 graceful degrade — 큰 vault (200+) 에서
+  // 메인 스레드 hang 회피. 작은 vault 는 어차피 250 도 수십 ms 라 무영향.
+  // 50 미만 → 250, 50-150 → 180, 150+ → 120 (barnesHut 가 보강).
+  const iterations =
+    docs.length < 50 ? 250 : docs.length < 150 ? 180 : 120;
   forceAtlas2.assign(g, {
-    iterations: 250,
+    iterations,
     settings: {
       gravity: 1.5,
       scalingRatio: 4,
