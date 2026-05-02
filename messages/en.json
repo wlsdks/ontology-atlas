@@ -1589,5 +1589,17 @@
     "labelCopied": "Link copied",
     "labelError": "Copy failed",
     "labelIdle": "Copy link"
+  },
+  "publicQuickActions": {
+    "sectionAriaDefault": "Manage project",
+    "sectionTitle": "Manage project",
+    "infoHintLabel": "Manage project — help",
+    "infoHintBody": "Attach docs that explain this project, or edit project info in detail.",
+    "infoNewTitle": "New project",
+    "infoNewBody": "Add a new project to the workspace you are in.",
+    "infoEditTitle": "Full edit",
+    "infoEditBody": "Edit project details — status, tags, links, and more.",
+    "buttonNew": "New project",
+    "buttonEdit": "Full edit"
   }
 }

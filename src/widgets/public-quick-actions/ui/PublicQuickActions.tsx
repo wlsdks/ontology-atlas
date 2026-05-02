@@ -3,6 +3,7 @@
 import { Link, usePathname } from "@/i18n/navigation";
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { CopyPlus, PencilLine } from "lucide-react";
 import { Button, InfoHint } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
@@ -10,14 +11,16 @@ import { cn } from "@/shared/lib/cn";
 interface Props {
   projectSlug?: string | null;
   className?: string;
+  /** 섹션의 aria-label override. 미지정 시 i18n default. */
   label?: string;
 }
 
 export function PublicQuickActions({
   projectSlug,
   className,
-  label = "프로젝트 관리",
+  label,
 }: Props) {
+  const t = useTranslations("publicQuickActions");
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -49,7 +52,7 @@ export function PublicQuickActions({
 
   return (
     <section
-      aria-label={label}
+      aria-label={label ?? t("sectionAriaDefault")}
       className={cn(
         "rounded-[18px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-3 py-3 shadow-[0_22px_44px_rgba(0,0,0,0.22)]",
         className,
@@ -57,31 +60,31 @@ export function PublicQuickActions({
     >
       <div className="mb-3 flex items-center justify-between gap-3">
         <p className="text-[11px] text-[color:var(--color-text-quaternary)]">
-          프로젝트 관리
+          {t("sectionTitle")}
         </p>
-        <InfoHint label="프로젝트 관리 도움말">
+        <InfoHint label={t("infoHintLabel")}>
           <div className="space-y-3">
             <p className="text-sm leading-6 text-[color:var(--color-text-secondary)]">
-              이 프로젝트를 설명하는 문서를 붙이거나, 프로젝트 정보를 자세히 바꾸는 곳입니다.
+              {t("infoHintBody")}
             </p>
             <dl className="space-y-2 text-sm">
               {shouldShowCreateAction ? (
                 <div>
                   <dt className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                    새 프로젝트
+                    {t("infoNewTitle")}
                   </dt>
                   <dd className="mt-1 leading-6 text-[color:var(--color-text-tertiary)]">
-                    지금 작업 중인 공간에 새 프로젝트를 만듭니다.
+                    {t("infoNewBody")}
                   </dd>
                 </div>
               ) : null}
               {editProjectHref ? (
                 <div>
                   <dt className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                    전체 편집
+                    {t("infoEditTitle")}
                   </dt>
                   <dd className="mt-1 leading-6 text-[color:var(--color-text-tertiary)]">
-                    상태, 태그, 링크처럼 프로젝트 정보를 자세히 바꿉니다.
+                    {t("infoEditBody")}
                   </dd>
                 </div>
               ) : null}
@@ -94,7 +97,7 @@ export function PublicQuickActions({
           <Link href={newProjectHref} className="inline-flex">
             <Button type="button" size="sm">
               <CopyPlus size={14} aria-hidden="true" />
-              새 프로젝트
+              {t("buttonNew")}
             </Button>
           </Link>
         ) : null}
@@ -102,7 +105,7 @@ export function PublicQuickActions({
           <Link href={editProjectHref} className="inline-flex">
             <Button type="button" variant="ghost" size="sm">
               <PencilLine size={14} aria-hidden="true" />
-              전체 편집
+              {t("buttonEdit")}
             </Button>
           </Link>
         ) : null}
