@@ -109,6 +109,158 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // local-first 첫 paint firebase 0 약속 회귀 방지 (PR #99 이후).
+  //
+  // `@/entities/<x>` 메인 barrel 은 firebase 의존이 없어야 한다 (type / lib /
+  // pure helper 만). firestore 구독·mutation 함수는 `@/entities/<x>/api` 로
+  // 직접 import 해서 cloud-mode 진입 시점에만 chunk 가 다운로드되게.
+  //
+  // 메인 barrel 에서 아래 names 를 import 하면 "api 경로 사용해" 메시지로
+  // 막는다. 새 api 함수 추가 시 메인 barrel 에 export 도 절대 X — 추가하면
+  // 이 룰에 names 도 같이 추가해 회귀 차단.
+  //
+  // 자세히: `@.claude/rules/architecture.md`.
+  {
+    files: ['src/**/*.{ts,tsx}', 'app/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@/entities/project',
+              importNames: [
+                'listProjects',
+                'getProject',
+                'upsertProject',
+                'upsertProjectPositions',
+                'deleteProject',
+                'deleteProjects',
+                'subscribeProjects',
+                'fetchAllProjectsAtBuild',
+                'uploadScreenshot',
+                'deleteScreenshot',
+              ],
+              message:
+                "firestore api 는 '@/entities/project/api' 로 직접 import 하세요 (local-first 첫 paint 청크 firebase 0 보장).",
+            },
+            {
+              name: '@/entities/category',
+              importNames: [
+                'subscribeCategories',
+                'upsertCategory',
+                'deleteCategory',
+                'seedDefaultCategoriesIfEmpty',
+              ],
+              message: "firestore api 는 '@/entities/category/api' 로 직접 import 하세요.",
+            },
+            {
+              name: '@/entities/status',
+              importNames: [
+                'subscribeStatuses',
+                'upsertStatus',
+                'deleteStatus',
+                'seedDefaultStatusesIfEmpty',
+              ],
+              message: "firestore api 는 '@/entities/status/api' 로 직접 import 하세요.",
+            },
+            {
+              name: '@/entities/admin',
+              importNames: ['isAdmin'],
+              message: "firestore api 는 '@/entities/admin/api' 로 직접 import 하세요.",
+            },
+            {
+              name: '@/entities/ontology-class',
+              importNames: [
+                'subscribeOntologyClasses',
+                'upsertOntologyClass',
+                'seedDefaultOntologyClassesIfEmpty',
+              ],
+              message: "firestore api 는 '@/entities/ontology-class/api' 로 직접 import 하세요.",
+            },
+            {
+              name: '@/entities/ontology-relation',
+              importNames: [
+                'subscribeOntologyRelations',
+                'upsertOntologyRelation',
+                'seedDefaultOntologyRelationsIfEmpty',
+              ],
+              message:
+                "firestore api 는 '@/entities/ontology-relation/api' 로 직접 import 하세요.",
+            },
+            {
+              name: '@/entities/ontology-tbox',
+              importNames: [
+                'loadActiveTBox',
+                'createTBoxVersion',
+                'activateTBoxVersion',
+                'listTBoxVersions',
+                'getActiveTBoxState',
+                'generateTBoxVersionId',
+                'appendClassAndActivate',
+                'appendRelationAndActivate',
+                'updateClassMetadataAndActivate',
+                'ActiveTBox',
+              ],
+              message: "firestore api 는 '@/entities/ontology-tbox/api' 로 직접 import 하세요.",
+            },
+            {
+              name: '@/entities/knowledge-document',
+              importNames: [
+                'listKnowledgeDocuments',
+                'getKnowledgeDocument',
+                'subscribeKnowledgeDocuments',
+                'subscribeKnowledgeDocumentsByProject',
+                'getPublicDocumentsForProject',
+                'createKnowledgeDocumentWithInitialVersion',
+                'createKnowledgeDocumentVersion',
+                'setKnowledgeDocumentCurrentVersion',
+                'listKnowledgeVersionsByDocument',
+                'subscribeKnowledgeVersionsByDocument',
+                'buildKnowledgeDocumentStoragePath',
+                'downloadKnowledgeMarkdown',
+                'uploadKnowledgeMarkdown',
+                'deleteKnowledgeMarkdown',
+              ],
+              message:
+                "firestore api 는 '@/entities/knowledge-document/api' 로 직접 import 하세요.",
+            },
+            {
+              name: '@/entities/knowledge-evidence',
+              importNames: ['subscribeKnowledgeEvidenceByDocument'],
+              message:
+                "firestore api 는 '@/entities/knowledge-evidence/api' 로 직접 import 하세요.",
+            },
+            {
+              name: '@/entities/knowledge-job',
+              importNames: ['subscribeKnowledgeJobsByDocument'],
+              message: "firestore api 는 '@/entities/knowledge-job/api' 로 직접 import 하세요.",
+            },
+            {
+              name: '@/entities/knowledge-output',
+              importNames: ['subscribeKnowledgeOutputsByDocument'],
+              message:
+                "firestore api 는 '@/entities/knowledge-output/api' 로 직접 import 하세요.",
+            },
+            {
+              name: '@/entities/knowledge-graph',
+              importNames: [
+                'listKnowledgeProjectInsight',
+                'subscribeKnowledgeProjectInsight',
+                'subscribeKnowledgePublicGraph',
+                'subscribeKnowledgeApprovedGraph',
+                'subscribeKnowledgePublicMeta',
+                'addManualKnowledgeNode',
+                'addManualKnowledgeEdge',
+              ],
+              message:
+                "firestore api 는 '@/entities/knowledge-graph/api' 로 직접 import 하세요. (lazy hook `useKnowledgePublic*` 은 메인 barrel 그대로 OK.)",
+            },
+          ],
+        },
+      ],
+    },
+  },
   // 디자인 헌장 §11 (CLAUDE.md) 자동 차단 — Track E-13 (자율 루프).
   // - scale hover 금지 (`hover:scale-*` `active:scale-*` etc)
   // - 보라핑크 그라디언트 금지 (`from-purple-*` `to-pink-*` 조합)

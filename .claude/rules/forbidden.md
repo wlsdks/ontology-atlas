@@ -31,6 +31,8 @@
 
 - FSD import 방향 위반 (`entities` 에서 `widgets` import 등). ESLint 가 잡지만 사람이 우회하면 거절.
 - 동일 개념을 두 컬렉션 / 두 진입 경로에서 동시에 진실원으로 두기.
+- **`@/entities/<x>` 메인 barrel 에서 firestore api 함수 export 추가** — local-first 첫 paint 청크에 firebase JS 가 leak. api 는 `@/entities/<x>/api` 로만 진입. 자세히 `@.claude/rules/architecture.md`.
+- **mapper 에서 `instanceof Timestamp` 사용** — firebase/firestore 정적 import 가 entity model 까지 끌고 와 청크 회귀. `@/shared/lib/firestore-timestamp-coerce` 의 `coerceFirestoreDate` 사용.
 - `--no-verify` 로 git hook 우회.
 - `git push --force` 를 main 에.
 

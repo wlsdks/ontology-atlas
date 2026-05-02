@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-05-02 — local-first 첫 paint firebase 0 (PR #99)
+
+### 사용자 가시 변화
+
+- **첫 페이지 로드 가벼워짐** — `/`, `/topology`, `/docs`, `/ontology/edit`, `/projects`, `/knowledge`, `/login`, `/account` 등 user-facing 진입점이 firebase JS (~773kb chunks) 를 정적으로 로드하지 않는다. cloud 모드 명시 진입 (signin / cloud entity mutation) 시점에만 lazy 로드.
+- **모바일 / 느린 네트워크 LCP 개선** — firebase SDK parse 비용 0.
+- **호스팅 비용 측면**: vault picked 사용자는 firebase 계정 자체가 안 만들어짐. 정적 export 라 origin server 비용은 어차피 0 이고, 이제는 firebase 트래픽도 cloud 모드 진입 전엔 0.
+- **동작은 그대로** — cloud 모드 사용자도 모든 기능 동일 작동 (함수 호출 시점에 firebase chunk 가 다운로드).
+
+### 아키텍처 변화 (개발자 가시)
+
+- **entity barrel 분리 패턴** — `@/entities/<x>` 는 type / lib / pure helper 만. firestore api 는 `@/entities/<x>/api` 로 직접 import. 새 contributor 는 mode-aware feature 작성 시 cloud branch 만 `import('@/entities/<x>/api')` 로 dynamic import.
+- **mapper Timestamp duck-typing** — `instanceof Timestamp` 체크 대신 `coerceFirestoreDate(value)` 헬퍼 (`@/shared/lib/firestore-timestamp-coerce`). entity model 이 firebase 의존 0.
+- **`package.json sideEffects` allowlist** — `*.css` + `firestore-noise-patch` 만 side-effectful 로 표시. 나머지는 webpack tree-shake.
+
+### 새 module
+
+- `src/shared/lib/firestore-noise-patch.ts` — 기존 `FirebaseProvider` 의 console 노이즈 패치를 firebase-deps-free 모듈로 분리. layout 에서 side-effect import 만으로 install.
+- `src/shared/lib/firestore-timestamp-coerce.ts` — Timestamp duck-typing 헬퍼 + 8 케이스 단위 테스트.
+- `src/entities/knowledge-graph/api/index.ts` — knowledge-graph api barrel (전엔 main barrel 에 섞여 있었음).
+
+### 제거
+
+- `src/app/providers/FirebaseProvider.tsx` (-91 줄) — 하던 일이 console 패치 + 불필요한 `getFirebaseApp()` warmup 두 가지였는데, 패치는 pure 모듈로 분리하고 warmup 은 `<link rel="preconnect">` 가 이미 함.
+
+---
+
 ## 2026-05-01 (밤) — UX 1원리 batch + Phase 4 비개발자 친화 + V1.5 cardinality
 
 이전 entry 의 7 PR 외에 추가로 12 PR 머지 (#15-#23). 전 세션 누적 19 PR.

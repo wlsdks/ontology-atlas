@@ -15,6 +15,7 @@
     "build": "pnpm docs-vault:build && next build",
     "docs-vault:build": "node scripts/build-docs-vault.mjs",
     "lint": "eslint",
+    "bundle:check": "node scripts/check-bundle.mjs",
     "seed": "node scripts/seed-via-rest.mjs",
     "seed:emulator": "node scripts/seed-emulator.mjs",
     "test": "vitest",
