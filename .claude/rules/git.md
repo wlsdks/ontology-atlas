@@ -11,7 +11,7 @@
   - `feat: 검색 팔레트 모바일 시트로 분리`
   - `fix: 다크 모드 alpha 토큰 :root emit 회귀 정정`
   - `docs: 라이트 모드 토글 가이드 추가`
-  - `refactor: account-scope 를 SSR-safe hook 으로 마이그레이션`
+  - `refactor: vault-ontology 를 mode-aware 어댑터 hook 으로 통합`
 
 본문은 변경의 **왜** 를 적는다. 무엇은 diff 가 알려준다. 줄당 80자 안.
 
