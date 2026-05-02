@@ -2,13 +2,6 @@
 slug: domains/vault-local-first
 kind: domain
 title: Vault — Local-First
-capabilities:
-  - folder-pick-fsa
-  - manifest-build
-  - fingerprint-watch
-  - handle-persist
-  - backlink-rewrite
-  - vault-scaffold
 elements:
   - src/features/docs-vault-local
   - src/entities/local-fs-handle
