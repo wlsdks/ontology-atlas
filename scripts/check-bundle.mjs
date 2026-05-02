@@ -49,7 +49,6 @@ const LOCAL_FIRST_ROUTES = [
   '/ontology/insights',
   '/ontology/relations',
   '/projects',
-  '/knowledge',
   '/login',
   '/signup',
   '/account',
@@ -57,8 +56,6 @@ const LOCAL_FIRST_ROUTES = [
 ];
 
 const CLOUD_ADMIN_ROUTES = [
-  '/knowledge/documents',
-  '/knowledge/documents/new',
   '/settings/categories',
   '/settings/statuses',
   '/settings/import',

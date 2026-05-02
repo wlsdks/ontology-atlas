@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { KnowledgeDocument } from "@/entities/knowledge-document";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { Project } from "@/entities/project";
-import { matchKnowledgeDocuments, matchOntologyNodes, matchProjects } from "./match";
+import { matchOntologyNodes, matchProjects } from "./match";
 
 const APPROVED_AT = new Date("2026-04-27T00:00:00Z");
 
@@ -146,64 +145,6 @@ describe("matchOntologyNodes", () => {
       expect(all).toHaveLength(filterCorpus.length);
       expect(emptySets).toHaveLength(filterCorpus.length);
     });
-  });
-});
-
-function doc(input: Partial<KnowledgeDocument> & { id: string; title: string; updatedAt: Date }): KnowledgeDocument {
-  return {
-    kind: "spec",
-    projectIds: ["sample"],
-    sourceType: "manual" as KnowledgeDocument["sourceType"],
-    currentVersionId: "v1",
-    status: "draft" as KnowledgeDocument["status"],
-    createdAt: input.updatedAt,
-    createdBy: "test",
-    ...input,
-  };
-}
-
-describe("matchKnowledgeDocuments", () => {
-  const D1 = new Date("2026-04-20T00:00:00Z");
-  const D2 = new Date("2026-04-25T00:00:00Z");
-  const D3 = new Date("2026-04-27T00:00:00Z");
-
-  const corpus: KnowledgeDocument[] = [
-    doc({ id: "doc-1", title: "온톨로지 설계", updatedAt: D1, kind: "spec" }),
-    doc({ id: "doc-2", title: "인증 흐름", updatedAt: D2, kind: "runbook", projectIds: ["iam"] }),
-    doc({ id: "doc-3", title: "토폴로지 가이드", updatedAt: D3, kind: "spec" }),
-  ];
-
-  it("빈 query — updatedAt desc 정렬 (최신 먼저)", () => {
-    const r = matchKnowledgeDocuments("", corpus, 10);
-    expect(r).toHaveLength(3);
-    expect(r[0]?.document.id).toBe("doc-3"); // 가장 최신
-    expect(r[2]?.document.id).toBe("doc-1");
-  });
-
-  it("title prefix > substring > kind/project > id", () => {
-    expect(matchKnowledgeDocuments("온톨로지", corpus)[0]?.score).toBe(4);
-    expect(matchKnowledgeDocuments("흐름", corpus)[0]?.score).toBe(3); // title substring
-    expect(matchKnowledgeDocuments("runbook", corpus)[0]?.score).toBe(2); // kind
-    expect(matchKnowledgeDocuments("iam", corpus)[0]?.score).toBe(2); // projectId
-    expect(matchKnowledgeDocuments("doc-1", corpus)[0]?.score).toBe(1); // id fallback
-  });
-
-  it("같은 점수 — updatedAt desc 정렬", () => {
-    const r = matchKnowledgeDocuments("spec", corpus); // doc-1, doc-3 둘 다 spec kind score 2
-    expect(r).toHaveLength(2);
-    expect(r[0]?.document.id).toBe("doc-3"); // 더 최신
-    expect(r[1]?.document.id).toBe("doc-1");
-  });
-
-  it("매치 없음 — 빈 결과", () => {
-    expect(matchKnowledgeDocuments("xyzqwerty", corpus)).toHaveLength(0);
-  });
-
-  it("limit 적용 + 빈 query 의 정렬도 limit 안에서 유지", () => {
-    const r = matchKnowledgeDocuments("", corpus, 2);
-    expect(r).toHaveLength(2);
-    expect(r[0]?.document.id).toBe("doc-3");
-    expect(r[1]?.document.id).toBe("doc-2");
   });
 });
 

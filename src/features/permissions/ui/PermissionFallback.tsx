@@ -35,19 +35,6 @@ const SURFACE_HINTS: ReadonlyArray<{
   denied: SurfaceCopy;
 }> = [
   {
-    match: (p) => p.startsWith('/knowledge'),
-    unauthenticated: {
-      eyebrow: '문서',
-      title: '문서를 다루려면 로그인이 필요해요',
-      body: 'cloud 모드 문서 surface 입니다. 로그인하면 바로 이 화면으로 돌아옵니다. (로그인 없이 vault 만 쓰려면 /docs 에서 폴더 선택)',
-    },
-    denied: {
-      eyebrow: '문서',
-      title: '이 공간의 문서를 다룰 수 없어요',
-      body: '이 공간의 문서 작업은 owner/editor 권한이 필요합니다. 다른 계정으로 로그인하거나 권한을 요청하세요.',
-    },
-  },
-  {
     match: (p) => p.startsWith('/review'),
     unauthenticated: {
       eyebrow: '문서 확인',

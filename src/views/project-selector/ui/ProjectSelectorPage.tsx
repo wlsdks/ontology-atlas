@@ -7,10 +7,6 @@ import { ArrowLeft, ArrowRight, FolderKanban, Shield } from "lucide-react";
 import { useScopedAccountAccess } from "@/features/account-scope";
 import { useTaxonomy } from "@/features/taxonomy";
 import {
-  getKnowledgeDocumentListHref,
-  getKnowledgeDocumentNewHref,
-} from "@/entities/knowledge-document";
-import {
   getProjectDetailHref,
   getTopologyProjectHref,
   type Project,
@@ -142,7 +138,6 @@ export function ProjectSelectorPage() {
   const loginHref = "/login";
   const signupHref = "/signup";
   const overviewHref = "/";
-  const knowledgeDocumentsHref = getKnowledgeDocumentListHref(null);
   const replaceVisibleLimit = useCallback(
     (nextLimit: number | null) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -202,12 +197,10 @@ export function ProjectSelectorPage() {
       scroll: false,
     });
   }, [pathname, router, searchParams]);
+  // mission v2: cloud markdown 호스팅 surface 제거 후 새 프로젝트 생성 직후엔
+  // 그냥 프로젝트 상세로 보낸다.
   const getPostCreateHref = (project: { slug: string; name: string }) =>
-    getKnowledgeDocumentNewHref(null, {
-      projectId: project.slug,
-      returnTo: returnTo || getProjectDetailHref(project.slug),
-      title: `${project.name} 명세`,
-    });
+    returnTo || getProjectDetailHref(project.slug);
 
   if (scopedAccess.kind === "loading") {
     // audit A4 — 이전엔 빈 main + aria-hidden="true" 라 스크린 리더가 페이지를
@@ -582,11 +575,6 @@ export function ProjectSelectorPage() {
                   </span>
                 </summary>
                 <div className="mt-4 flex flex-wrap gap-2 border-t border-[color:var(--color-divider)] pt-4">
-                  <Link href={knowledgeDocumentsHref} className="inline-flex">
-                    <Button type="button" variant="primary">
-                      문서 목록
-                    </Button>
-                  </Link>
                   {/* CSV 백업 — 현재 목록(검색 필터 적용 전 전체) 을 다운로드.
                       import 과 동일 스키마라 round-trip 가능. */}
                   <Button

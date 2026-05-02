@@ -5,11 +5,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Info, Link2, X } from "lucide-react";
 import {
-  getKnowledgeDocumentDetailHref,
-  getKnowledgeDocumentListHref,
-  type KnowledgeDocument,
-} from "@/entities/knowledge-document";
-import {
   ManualSourceChip,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
@@ -57,9 +52,6 @@ export function OntologyViewPage() {
     insight !== null &&
     insight.nodes.length > 0 &&
     insight.nodes.every((n) => isVaultSentinelDate(n.lastApprovedAt));
-  // documents 는 글로벌 검색 두 번째 source — 권한 게이팅은 Firestore rules 가
-  // 처리. 권한 없으면 빈 배열, 검색 결과에서도 자동 제외.
-  const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   // 트리 row 클릭 시 우측 (mobile bottom) 패널에 노드 상세 노출.
   const [selectedNode, setSelectedNode] = useState<KnowledgeGraphNode | null>(null);
   // 글로벌 검색 — ⌘K / Ctrl+K 로 토글, 결과 선택 시 selectedNode 로 점프 / 문서 라우트로 점프.
@@ -117,34 +109,6 @@ export function OntologyViewPage() {
     if (found) setSelectedNode(found);
   }, [deeplinkNodeId, insight, selectedNode]);
 
-  // 글로벌 검색 두 번째 source. permission 없는 사용자는 빈 배열로 받음.
-  // 에러는 검색 가용성에만 영향 — 페이지 자체 에러로 승격하지 않음. 다만
-  // 사용자가 "데이터 0" 인지 "권한 X" 인지 헷갈리지 않도록 한 줄 안내.
-  const [documentsAccessError, setDocumentsAccessError] = useState<Error | null>(null);
-  useEffect(() => {
-    setDocuments([]);
-    setDocumentsAccessError(null);
-    let unsubscribe: (() => void) | null = null;
-    let cancelled = false;
-    void import("@/entities/knowledge-document/api").then(({ subscribeKnowledgeDocuments }) => {
-      if (cancelled) return;
-      unsubscribe = subscribeKnowledgeDocuments(
-        accountId,
-        (next) => {
-          setDocuments(next);
-          setDocumentsAccessError(null);
-        },
-        (err) => {
-          setDocuments([]);
-          setDocumentsAccessError(err);
-        },
-      );
-    });
-    return () => {
-      cancelled = true;
-      unsubscribe?.();
-    };
-  }, [accountId]);
 
   const treeResult: OntologyTreeBuildResult | null = useMemo(() => {
     if (!insight) return null;
@@ -303,12 +267,6 @@ export function OntologyViewPage() {
             <Stat
               label="근거 문서"
               value={String(docCount)}
-              hint={docCount > 0 ? "문서 목록 열기" : undefined}
-              href={
-                docCount > 0
-                  ? getKnowledgeDocumentListHref(accountId)
-                  : undefined
-              }
             />
             <Stat
               label="발행 시점"
@@ -333,14 +291,6 @@ export function OntologyViewPage() {
         >
           ontology 데이터를 불러오는 중 오류가 났어요. {error.message}
         </div>
-      ) : null}
-
-      {/* vault / dogfood 모드는 cloud Firestore 문서 검색 자체가 비활성 —
-          "권한 없음" 안내는 cloud 모드 전용 (vault 사용자에게 어색). */}
-      {documentsAccessError && !isVaultSentinelMode ? (
-        <p className="mb-4 break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
-          문서에 접근 권한이 없어 글로벌 검색에 문서가 포함되지 않아요. ontology 노드 검색만 가능해요.
-        </p>
       ) : null}
 
       {!treeResult ? (
@@ -491,15 +441,6 @@ relates:
         onOpenChange={setSearchOpen}
         nodes={insight?.nodes ?? []}
         onSelectNode={(node) => selectNode(node)}
-        documents={documents}
-        onSelectDocument={(document) => {
-          // /knowledge/documents/view 라우트로 점프 — returnTo 로 검색 후 복귀 가능.
-          router.push(
-            getKnowledgeDocumentDetailHref(document.id, accountId, {
-              returnTo: "/ontology/",
-            }),
-          );
-        }}
       />
 
       <ManualNodeCreateModal
@@ -698,10 +639,9 @@ function NodeDetailPanel({
     ? evidenceList
     : evidenceList.slice(0, EVIDENCE_PREVIEW);
   const hiddenEvidenceCount = Math.max(0, evidenceList.length - visibleEvidence.length);
-  const buildDocumentHref = (evidenceId: string) =>
-    getKnowledgeDocumentDetailHref(evidenceId, accountId, {
-      returnTo: "/ontology/",
-    });
+  // mission v2: cloud markdown 호스팅 (`/knowledge/documents`) 제거 후
+  // evidenceId 는 vault `.md` slug 거나 manual node id. 별도 detail
+  // 라우트 없음 — 클릭 안 되는 chip 으로 표시.
 
   return (
     <aside
@@ -922,14 +862,12 @@ function NodeDetailPanel({
             {visibleEvidence.map((evidenceId) => {
               const title = documentTitleByEvidenceId.get(evidenceId) ?? evidenceId;
               return (
-                <li key={evidenceId}>
-                  <Link
-                    href={buildDocumentHref(evidenceId)}
-                    className="block truncate rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:rgba(159,170,235,0.95)]"
-                    title={title}
-                  >
-                    {title}
-                  </Link>
+                <li
+                  key={evidenceId}
+                  className="block truncate rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[11px] text-[color:var(--color-text-secondary)]"
+                  title={title}
+                >
+                  {title}
                 </li>
               );
             })}
@@ -947,15 +885,6 @@ function NodeDetailPanel({
             </button>
           ) : null}
         </div>
-      ) : null}
-
-      {isDocument && ownDocumentId ? (
-        <Link
-          href={buildDocumentHref(ownDocumentId)}
-          className="mt-4 inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] px-3.5 py-1.5 text-xs text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
-        >
-          문서 열기 →
-        </Link>
       ) : null}
 
       {isProject && projectSlug ? (

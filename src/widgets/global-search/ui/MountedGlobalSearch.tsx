@@ -2,10 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  getKnowledgeDocumentDetailHref,
-  type KnowledgeDocument,
-} from "@/entities/knowledge-document";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { type Project, getProjectDetailHref } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
@@ -21,14 +17,10 @@ export interface MountedGlobalSearchProps {
    */
   onSelectNode?: (node: KnowledgeGraphNode) => void;
   /**
-   * document 선택 시 — 미제공이면 default = `/knowledge/documents/view/?id=...` 로 push.
-   */
-  onSelectDocument?: (document: KnowledgeDocument) => void;
-  /**
-   * project 선택 시 — 미제공이면 default = `/project/[slug]/` 로 push (S4 closure).
+   * project 선택 시 — 미제공이면 default = `/project/[slug]/` 로 push.
    */
   onSelectProject?: (project: Project) => void;
-  /** document view 점프 시 returnTo 파라미터. 기본 = 현재 path 추론은 호출자가 결정. */
+  /** legacy returnTo prop — KnowledgeDocument 호스팅 제거 후 미사용. 호환을 위해 유지. */
   returnTo?: string;
   /**
    * Fire 2 — 홈 토폴로지의 SearchPalette (⌘K) 와 동거. 기본 hotkey 를 ⇧⌘K
@@ -44,19 +36,17 @@ export interface MountedGlobalSearchProps {
 }
 
 /**
- * 글로벌 검색 단일 mount — accountId 만 받으면 자체 ontology + documents 구독,
- * ⌘K hotkey 등록, GlobalSearch 렌더 모두 처리. 각 surface 가 똑같은 boilerplate
- * 반복하지 않도록.
+ * 글로벌 검색 단일 mount — accountId 만 받으면 자체 ontology + projects 구독,
+ * ⌘K hotkey 등록, GlobalSearch 렌더 모두 처리.
  *
- * 페이지가 검색 결과 처리를 inline 화 하고 싶으면 onSelectNode / onSelectDocument
- * 로 override. default 는 라우팅 점프.
+ * mission v2 정렬: cloud markdown 호스팅 (`/knowledge/documents/*`) 제거 후
+ * 검색 source 는 ontology nodes + projects 두 개. raw markdown 검색은 vault
+ * 가 진실원이라 `/docs` 의 자체 검색이 담당.
  */
 export function MountedGlobalSearch({
   accountId,
   onSelectNode,
-  onSelectDocument,
   onSelectProject,
-  returnTo,
   hotkeyShift = false,
   open: controlledOpen,
   onOpenChange,
@@ -70,7 +60,6 @@ export function MountedGlobalSearch({
     else setInternalOpen(next);
   };
   const [nodes, setNodes] = useState<KnowledgeGraphNode[]>([]);
-  const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const { projects } = useProjects(accountId);
 
   // controlled mount 시 hotkey 비활성 — caller 가 다른 hotkey 로 open 관리.
@@ -98,31 +87,11 @@ export function MountedGlobalSearch({
     };
   }, [accountId]);
 
-  // knowledge documents — 권한 게이팅은 Firestore rules. 권한 없으면 빈 배열.
-  useEffect(() => {
-    setDocuments([]);
-    let unsubscribe: (() => void) | null = null;
-    let cancelled = false;
-    void import("@/entities/knowledge-document/api").then(({ subscribeKnowledgeDocuments }) => {
-      if (cancelled) return;
-      unsubscribe = subscribeKnowledgeDocuments(
-        accountId,
-        (next) => setDocuments(next),
-        () => setDocuments([]),
-      );
-    });
-    return () => {
-      cancelled = true;
-      unsubscribe?.();
-    };
-  }, [accountId]);
-
   return (
     <GlobalSearch
       open={open}
       onOpenChange={setOpen}
       nodes={nodes}
-      documents={documents}
       projects={projects}
       onSelectNode={(node) => {
         if (onSelectNode) {
@@ -133,15 +102,6 @@ export function MountedGlobalSearch({
         // insight 로드 후 해당 노드를 selectedNode 로 자동 설정.
         const accountQuery = accountId ? `&${ACCOUNT_QUERY_KEY}=${encodeURIComponent(accountId)}` : "";
         router.push(`/ontology/?node=${encodeURIComponent(node.id)}${accountQuery}`);
-      }}
-      onSelectDocument={(document) => {
-        if (onSelectDocument) {
-          onSelectDocument(document);
-          return;
-        }
-        router.push(
-          getKnowledgeDocumentDetailHref(document.id, accountId, { returnTo }),
-        );
       }}
       onSelectProject={(project) => {
         if (onSelectProject) {

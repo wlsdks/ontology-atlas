@@ -3,10 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { CopyPlus, FilePlus2, PencilLine } from "lucide-react";
-import {
-  getKnowledgeDocumentNewHref,
-} from "@/entities/knowledge-document";
+import { CopyPlus, PencilLine } from "lucide-react";
 import { useScopedAccountAccess } from "@/features/account-scope";
 import { Button, InfoHint } from "@/shared/ui";
 import { cn } from "@/shared/lib/cn";
@@ -52,15 +49,6 @@ export function PublicQuickActions({
     return `${url.pathname}?${url.searchParams.toString()}`;
   }, [projectSlug, returnTo]);
 
-  const newDocumentHref = useMemo(
-    () =>
-      getKnowledgeDocumentNewHref(accountId, {
-        projectId: projectSlug ?? undefined,
-        returnTo,
-      }),
-    [accountId, projectSlug, returnTo],
-  );
-
   if (!access.canManage) {
     return null;
   }
@@ -95,14 +83,6 @@ export function PublicQuickActions({
                   </dd>
                 </div>
               ) : null}
-              <div>
-                <dt className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                  문서 등록
-                </dt>
-                <dd className="mt-1 leading-6 text-[color:var(--color-text-tertiary)]">
-                  이 프로젝트를 설명하는 문서나 메모를 추가합니다. 등록한 문서는 연결 후보와 공개 문서의 시작점이 됩니다.
-                </dd>
-              </div>
               {editProjectHref ? (
                 <div>
                   <dt className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -126,12 +106,6 @@ export function PublicQuickActions({
             </Button>
           </Link>
         ) : null}
-        <Link href={newDocumentHref} className="inline-flex">
-            <Button type="button" variant="outline" size="sm">
-              <FilePlus2 size={14} aria-hidden="true" />
-              문서 등록
-            </Button>
-          </Link>
         {editProjectHref ? (
           <Link href={editProjectHref} className="inline-flex">
             <Button type="button" variant="ghost" size="sm">

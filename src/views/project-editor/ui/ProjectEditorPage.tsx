@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState, type MouseEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowUpRight, CopyPlus, FileText } from "lucide-react";
+import { ArrowLeft, ArrowUpRight, CopyPlus } from "lucide-react";
 import { ProjectForm } from "@/features/project-edit";
 import { useProjectMutations } from "@/features/project-data-source";
 import {
@@ -12,10 +12,6 @@ import {
   type ProjectInput,
 } from "@/entities/project";
 import { getProject, subscribeProjects } from "@/entities/project/api";
-import {
-  getKnowledgeDocumentListHref,
-  getKnowledgeDocumentNewHref,
-} from "@/entities/knowledge-document";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useToast } from "@/shared/ui";
 
@@ -72,18 +68,6 @@ function EditorContent({
   const safeReturnTo = normalizeReturnTo(returnTo);
   const safeReturnLabel = resolveReturnLabel(normalizeReturnTo(returnTo));
   const publicProjectHref = slug ? getProjectDetailHref(slug, accountId) : null;
-  const projectDocumentsHref = slug
-    ? getKnowledgeDocumentListHref(accountId, {
-        projectId: slug,
-        returnTo: publicProjectHref ?? safeReturnTo,
-      })
-    : null;
-  const projectNewDocumentHref = slug
-    ? getKnowledgeDocumentNewHref(accountId, {
-        projectId: slug,
-        returnTo: publicProjectHref ?? safeReturnTo,
-      })
-    : null;
   const [project, setProject] = useState<Project | null>(null);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [isDirty, setIsDirty] = useState(false);
@@ -316,24 +300,6 @@ function EditorContent({
                 >
                   <ArrowUpRight size={14} />
                   공개 화면 보기
-                </Link>
-              )}
-              {mode === "edit" && slug && projectDocumentsHref && (
-                <Link
-                  href={projectDocumentsHref}
-                  className="inline-flex h-9 items-center gap-2 rounded-md border border-[color:var(--color-divider)] px-3 text-sm text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-1)]"
-                >
-                  <FileText size={14} />
-                  문서 목록
-                </Link>
-              )}
-              {mode === "edit" && slug && projectNewDocumentHref && (
-                <Link
-                  href={projectNewDocumentHref}
-                  className="inline-flex h-9 items-center gap-2 rounded-md border border-[color:var(--color-divider)] px-3 text-sm text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:var(--color-overlay-1)]"
-                >
-                  <CopyPlus size={14} />
-                  문서 등록
                 </Link>
               )}
               {mode === "edit" && slug && (
