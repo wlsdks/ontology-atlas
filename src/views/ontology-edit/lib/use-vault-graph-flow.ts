@@ -2,6 +2,7 @@
 
 import { type CSSProperties, useMemo } from "react";
 import type { Edge, Node } from "@xyflow/react";
+import dagre from "@dagrejs/dagre";
 import type { VaultDoc, VaultManifest } from "@/entities/docs-vault";
 
 /**
@@ -64,7 +65,31 @@ export function buildVaultGraphFlow(manifest: VaultManifest) {
     return null;
   }
 
-  const fallbackPositions = computeGridLayout(ontologyDocs);
+  // Edge 페어 (sourceSlug → targetSlug) 를 layout 전에 한 번 모은다.
+  // dagre / 미래의 다른 layout 알고리즘 모두 이 raw 페어 list 가 필요.
+  const rawEdgePairs: Array<[string, string]> = [];
+  const seenPair = new Set<string>();
+  for (const doc of ontologyDocs) {
+    for (const key of NEIGHBOR_KEYS) {
+      const value = doc.frontmatter[key];
+      if (!Array.isArray(value)) continue;
+      for (const ref of value) {
+        if (typeof ref !== "string") continue;
+        const resolved = resolveRef(ref);
+        if (!resolved || resolved === doc.slug) continue;
+        const pairKey = `${doc.slug}->${resolved}`;
+        if (seenPair.has(pairKey)) continue;
+        seenPair.add(pairKey);
+        rawEdgePairs.push([doc.slug, resolved]);
+      }
+    }
+  }
+
+  // 자동 layout — dagre 의 layered LR 그래프. ontology 의 project → domain →
+  // capability → element 흐름이 자연스럽게 좌→우 계층으로 정렬되어 엣지 겹침
+  // 최소화. 사용자가 drag 로 frontmatter.canvasPosition 지정한 노드는 그것
+  // 우선 (수동 배치 보존). grid fallback 보다 가독성 큰 차이.
+  const fallbackPositions = computeDagreLayout(ontologyDocs, rawEdgePairs);
   const nodes: Node[] = ontologyDocs.map((doc) => {
     // frontmatter.canvasPosition: { x, y } 가 있으면 우선. 없으면 grid fallback.
     // 사용자가 빌더에서 drag-stop 시 canvasPosition patch — 다음 mount 부터
@@ -104,6 +129,9 @@ export function buildVaultGraphFlow(manifest: VaultManifest) {
     };
   });
 
+  // edge style / label 풍부 결정 — frontmatter array 키별 톤. raw pair 는
+  // 이미 위에서 dedup 됐고, 여기서 같은 (source,target) 에 대해 처음 매칭된
+  // key 의 style 적용. 같은 페어가 두 키에 있으면 첫 번째만.
   const seenEdges = new Set<string>();
   const edges: Edge[] = [];
   for (const doc of ontologyDocs) {
@@ -137,18 +165,39 @@ export function buildVaultGraphFlow(manifest: VaultManifest) {
   return { nodes, edges };
 }
 
-function computeGridLayout(
+/**
+ * dagre 로 layered LR 자동 레이아웃. ontology 의 project → domain →
+ * capability → element 계층이 좌→우 흐름. 노드 ID = vault slug. edges
+ * 는 (source, target) 페어. dagre 는 동기 함수, 수십 ms.
+ */
+function computeDagreLayout(
   docs: VaultDoc[],
+  edges: ReadonlyArray<readonly [string, string]>,
 ): Map<string, { x: number; y: number }> {
-  const COLS = Math.max(1, Math.ceil(Math.sqrt(docs.length)));
-  const COL_GAP = NODE_WIDTH + 40;
-  const ROW_GAP = NODE_HEIGHT + 40;
   const map = new Map<string, { x: number; y: number }>();
-  docs.forEach((d, idx) => {
-    const col = idx % COLS;
-    const row = Math.floor(idx / COLS);
-    map.set(d.slug, { x: col * COL_GAP, y: row * ROW_GAP });
-  });
+  if (docs.length === 0) return map;
+  const g = new dagre.graphlib.Graph();
+  g.setDefaultEdgeLabel(() => ({}));
+  // rankdir LR — 좌→우 계층 흐름. nodesep / ranksep 은 노드 간 여백 +
+  // 계층 간 여백. NODE_WIDTH/HEIGHT 보다 약간 크게 잡아 라벨 chip 이
+  // 다른 노드 가려지지 않도록.
+  g.setGraph({ rankdir: "LR", nodesep: 32, ranksep: 80, marginx: 24, marginy: 24 });
+  for (const doc of docs) {
+    g.setNode(doc.slug, { width: NODE_WIDTH, height: NODE_HEIGHT });
+  }
+  for (const [from, to] of edges) {
+    if (g.hasNode(from) && g.hasNode(to)) g.setEdge(from, to);
+  }
+  dagre.layout(g);
+  for (const doc of docs) {
+    const node = g.node(doc.slug);
+    if (!node) continue;
+    // dagre 는 노드 *중심* 좌표를 반환. xyflow position 은 좌상단이라 변환.
+    map.set(doc.slug, {
+      x: node.x - NODE_WIDTH / 2,
+      y: node.y - NODE_HEIGHT / 2,
+    });
+  }
   return map;
 }
 
