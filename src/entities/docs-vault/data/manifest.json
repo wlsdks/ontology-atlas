@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-02T02:15:24.174Z",
+  "generatedAt": "2026-05-02T03:23:33.724Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -3178,7 +3178,7 @@
       "title": "oh-my-ontology",
       "tags": [],
       "frontmatter": {
-        "slug": "project",
+        "slug": "oh-my-ontology",
         "kind": "project",
         "title": "oh-my-ontology",
         "domain": "workbench",
@@ -3222,7 +3222,7 @@
       ],
       "excerpt": "마크다운에서 자라는 오픈소스 온톨로지 워크벤치. 사람과 AI agent 가 같이 codebase 의 mental model 을 저작한다. md 가 진실원: vault 의 frontmatter 가 ontology 그대로 modeaware: local / cloud / static — 데이터 source 만 다르고 UX 동일 AI agent partner: MCP 서버를 통해 Claude Code 등이 ontology 를 read/write 3 view: topology (Sigma), tree (/ontology), builder (xyflow ERD)",
       "wordCount": 68,
-      "updatedAt": "2026-05-01T14:46:02.186Z",
+      "updatedAt": "2026-05-02T03:23:23.693Z",
       "mode": "both",
       "linksOut": []
     },
