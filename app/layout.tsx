@@ -1,6 +1,10 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
-import { FirebaseProvider, MotionProvider } from '@/app-providers/providers';
+import { MotionProvider } from '@/app-providers/providers';
+// 콘솔 노이즈 패치 — firebase 의존 0. side-effect import 로 install.
+// Firebase JS 자체는 cloud 모드 진입 시점에 dynamic import 경로로만 들어와
+// local-first 첫 paint 를 firebase 청크 없이 유지한다.
+import '@/shared/lib/firestore-noise-patch';
 import { TaxonomyProvider } from '@/features/taxonomy';
 import { BottomTabBar } from '@/widgets/bottom-tab-bar';
 import { ToastProvider, TooltipProvider } from '@/shared/ui';
@@ -153,18 +157,16 @@ export default function RootLayout({
           메인 콘텐츠로 건너뛰기
         </a>
         <MotionProvider>
-          <FirebaseProvider>
-            <TaxonomyProvider>
-              <ToastProvider>
-                {/* Fire 5b — Tooltip Provider 전역 1회. 하위 모든
-                    `<Tooltip withProvider={false}>` 가 이 Context 를 공유. */}
-                <TooltipProvider delayDuration={300}>
-                  {children}
-                  <BottomTabBar />
-                </TooltipProvider>
-              </ToastProvider>
-            </TaxonomyProvider>
-          </FirebaseProvider>
+          <TaxonomyProvider>
+            <ToastProvider>
+              {/* Fire 5b — Tooltip Provider 전역 1회. 하위 모든
+                  `<Tooltip withProvider={false}>` 가 이 Context 를 공유. */}
+              <TooltipProvider delayDuration={300}>
+                {children}
+                <BottomTabBar />
+              </TooltipProvider>
+            </ToastProvider>
+          </TaxonomyProvider>
         </MotionProvider>
       </body>
     </html>
