@@ -7,8 +7,8 @@ capabilities:
   - frontmatter-to-ontology
   - mode-aware-adapter
   - ontology-hub-mode-aware
-  - 3-view-rendering
-  - ai-agent-partner
+  - topology-sigma-render
+  - mcp-server
   - builder-vault-write
 elements:
   - vault-local-first
