@@ -1,10 +1,17 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { OntologyEditPage } from "@/views/ontology-edit";
 
-export const metadata: Metadata = {
-  title: "온톨로지 빌더",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "metadata" });
+  return { title: t("pages.ontologyEdit") };
+}
 
 /**
  * /ontology/edit — ERD canvas editor v1 (spec

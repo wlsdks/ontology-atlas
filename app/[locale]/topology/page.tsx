@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { HomePage } from "@/views/home";
 import { absoluteUrl } from "@/shared/config";
 
@@ -12,13 +13,21 @@ import { absoluteUrl } from "@/shared/config";
  * 현재는 `/` 와 동일한 HomePage 렌더 (alias). `/` 가 ontology hub 로 교체된
  * 다음 sub-step 이후엔 토폴로지 전용 surface 가 됨.
  */
-export const metadata: Metadata = {
-  title: "토폴로지",
-  description: "프로젝트 의존도 지도. 온톨로지의 한 출구 view.",
-  alternates: {
-    canonical: absoluteUrl("/topology/"),
-  },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "metadata" });
+  return {
+    title: t("pages.topology"),
+    description: "프로젝트 의존도 지도. 온톨로지의 한 출구 view.",
+    alternates: {
+      canonical: absoluteUrl("/topology/"),
+    },
+  };
+}
 
 export default function Page() {
   return (

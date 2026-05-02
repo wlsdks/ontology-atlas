@@ -1,10 +1,17 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
+import { getTranslations } from "next-intl/server";
 import { OntologyInsightsPage } from "@/views/ontology-insights";
 
-export const metadata: Metadata = {
-  title: "온톨로지 인사이트",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "metadata" });
+  return { title: t("pages.ontologyInsights") };
+}
 
 /**
  * /ontology/insights — ontology 의 활동·구조를 한눈에.
