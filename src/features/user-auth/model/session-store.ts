@@ -1,7 +1,6 @@
 'use client';
 
-import { onAuthStateChanged, signOut as firebaseSignOut, type User as FirebaseUser } from 'firebase/auth';
-import { getFirebaseAuth } from '@/shared/api';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 export type AuthProviderKind = 'firebase';
 export type UserAuthStatus = 'loading' | 'unauthenticated' | 'authenticated';
@@ -70,10 +69,22 @@ export function getUserAuthState() {
   return state;
 }
 
-export function initializeUserAuthStore() {
+/**
+ * Firebase Auth 모듈은 dynamic import 로만 진입한다 — local-first 첫 paint
+ * 에서 auth SDK 청크 (~150kb gzipped) 가 다운로드되지 않게.
+ *
+ * 호출자 (`useUserAuth`) 는 fire-and-forget 으로 호출. 초기화 완료 전엔
+ * `state.status === 'loading'` 으로 시작하며, onAuthStateChanged 또는 2.5s
+ * 타임아웃이 도달하면 unauthenticated/authenticated 로 전환된다.
+ */
+export async function initializeUserAuthStore() {
   if (initialized || typeof window === 'undefined') return;
   initialized = true;
 
+  const [{ onAuthStateChanged }, { getFirebaseAuth }] = await Promise.all([
+    import('firebase/auth'),
+    import('@/shared/api'),
+  ]);
   const auth = getFirebaseAuth();
   // onAuthStateChanged 가 네트워크 지연으로 영원히 fire 안 될 수 있어 2.5 초
   // 안에 콜 안 오면 unauthenticated 로 낙관 결정. 이후 실제 세션이 도착하면
@@ -98,6 +109,10 @@ export function initializeUserAuthStore() {
 }
 
 export async function signOutCombined() {
+  const [{ signOut: firebaseSignOut }, { getFirebaseAuth }] = await Promise.all([
+    import('firebase/auth'),
+    import('@/shared/api'),
+  ]);
   const auth = getFirebaseAuth();
   await firebaseSignOut(auth);
   firebaseResolved = true;

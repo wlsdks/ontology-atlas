@@ -17,7 +17,7 @@ function getServerSnapshot(): UserAuthState {
 
 export function useUserAuth(): UserAuthState {
   useEffect(() => {
-    initializeUserAuthStore();
+    void initializeUserAuthStore();
   }, []);
 
   return useSyncExternalStore(subscribeUserAuth, getUserAuthState, getServerSnapshot);

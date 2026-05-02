@@ -1,18 +1,6 @@
 'use client';
 
-import {
-  EmailAuthProvider,
-  GoogleAuthProvider,
-  createUserWithEmailAndPassword,
-  reauthenticateWithCredential,
-  sendPasswordResetEmail,
-  signInWithEmailAndPassword,
-  signInWithPopup,
-  updatePassword,
-  updateProfile,
-} from 'firebase/auth';
-import { getFirebaseAuth } from '@/shared/api';
-import { env } from '@/shared/config/env';
+import type { Auth, UserCredential } from 'firebase/auth';
 import {
   fetchSessionProfile,
   signOutCombined,
@@ -35,7 +23,19 @@ export interface PasswordSupportState {
   reason?: string;
 }
 
-const provider = new GoogleAuthProvider();
+/**
+ * Firebase Auth SDK 는 cloud 모드 진입 (login / signup / account / 비밀번호
+ * 재설정) 시점에만 dynamic import 된다. 정적 import 를 두지 않아 local-first
+ * 페이지 (vault, ontology-edit, topology, …) 의 첫 paint 청크에는 firebase
+ * /auth (~150kb gzipped) 가 포함되지 않는다.
+ */
+async function loadFirebaseAuth() {
+  const [authMod, sharedApi] = await Promise.all([
+    import('firebase/auth'),
+    import('@/shared/api'),
+  ]);
+  return { authMod, auth: sharedApi.getFirebaseAuth() };
+}
 
 function mapAuthError(error: unknown) {
   const code =
@@ -76,7 +76,7 @@ function mapAuthError(error: unknown) {
   }
 }
 
-function mapFirebaseUser(user: Awaited<ReturnType<typeof signInWithPopup>>['user']): AuthSessionUser {
+function mapFirebaseUser(user: UserCredential['user']): AuthSessionUser {
   return {
     uid: user.uid,
     email: user.email ?? null,
@@ -86,9 +86,10 @@ function mapFirebaseUser(user: Awaited<ReturnType<typeof signInWithPopup>>['user
 }
 
 export async function signInWithGoogle(): Promise<AuthSessionUser> {
-  const auth = getFirebaseAuth();
+  const { authMod, auth } = await loadFirebaseAuth();
   try {
-    const result = await signInWithPopup(auth, provider);
+    const provider = new authMod.GoogleAuthProvider();
+    const result = await authMod.signInWithPopup(auth, provider);
     const user = mapFirebaseUser(result.user);
     bootstrapWorkspace(user);
     return user;
@@ -101,9 +102,9 @@ export async function signInWithEmail(input: {
   email: string;
   password: string;
 }): Promise<AuthSessionUser> {
-  const auth = getFirebaseAuth();
+  const { authMod, auth } = await loadFirebaseAuth();
   try {
-    const result = await signInWithEmailAndPassword(
+    const result = await authMod.signInWithEmailAndPassword(
       auth,
       input.email.trim(),
       input.password,
@@ -121,15 +122,15 @@ export async function signUpWithEmail(input: {
   password: string;
   displayName: string;
 }): Promise<AuthSessionUser> {
-  const auth = getFirebaseAuth();
+  const { authMod, auth } = await loadFirebaseAuth();
   try {
-    const result = await createUserWithEmailAndPassword(
+    const result = await authMod.createUserWithEmailAndPassword(
       auth,
       input.email.trim(),
       input.password,
     );
     if (input.displayName.trim()) {
-      await updateProfile(result.user, {
+      await authMod.updateProfile(result.user, {
         displayName: input.displayName.trim(),
       });
       await result.user.reload();
@@ -150,10 +151,7 @@ export async function getCurrentAuthProfile(): Promise<AuthSessionUser | null> {
   return fetchSessionProfile();
 }
 
-export function getPasswordSupportState(): PasswordSupportState {
-  const auth = getFirebaseAuth();
-  const currentUser = auth.currentUser;
-
+function inspectPasswordSupport(currentUser: Auth['currentUser']): PasswordSupportState {
   if (!currentUser) {
     return {
       canChangePassword: false,
@@ -183,6 +181,11 @@ export function getPasswordSupportState(): PasswordSupportState {
   };
 }
 
+export async function getPasswordSupportState(): Promise<PasswordSupportState> {
+  const { auth } = await loadFirebaseAuth();
+  return inspectPasswordSupport(auth.currentUser);
+}
+
 export async function changePassword(input: {
   currentPassword: string;
   newPassword: string;
@@ -191,7 +194,7 @@ export async function changePassword(input: {
     throw new Error('비밀번호는 8자 이상으로 입력해주세요.');
   }
 
-  const auth = getFirebaseAuth();
+  const { authMod, auth } = await loadFirebaseAuth();
   const currentUser = auth.currentUser;
 
   if (!currentUser || !currentUser.email) {
@@ -207,12 +210,12 @@ export async function changePassword(input: {
   }
 
   try {
-    const credential = EmailAuthProvider.credential(
+    const credential = authMod.EmailAuthProvider.credential(
       currentUser.email,
       input.currentPassword,
     );
-    await reauthenticateWithCredential(currentUser, credential);
-    await updatePassword(currentUser, input.newPassword);
+    await authMod.reauthenticateWithCredential(currentUser, credential);
+    await authMod.updatePassword(currentUser, input.newPassword);
   } catch (error) {
     throw new Error(mapAuthError(error));
   }
@@ -226,8 +229,8 @@ export async function sendPasswordReset(input: { email: string }): Promise<void>
   }
 
   try {
-    const auth = getFirebaseAuth();
-    await sendPasswordResetEmail(auth, email);
+    const { authMod, auth } = await loadFirebaseAuth();
+    await authMod.sendPasswordResetEmail(auth, email);
   } catch (error) {
     throw new Error(mapAuthError(error));
   }

@@ -30,7 +30,13 @@ export function AccountSettingsPage() {
     PASSWORD_SUPPORT_PLACEHOLDER,
   );
   useEffect(() => {
-    setPasswordSupport(getPasswordSupportState());
+    let cancelled = false;
+    void getPasswordSupportState().then((support) => {
+      if (!cancelled) setPasswordSupport(support);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -50,11 +56,12 @@ export function AccountSettingsPage() {
   useEffect(() => {
     if (status !== 'authenticated') return;
     let cancelled = false;
-    void getCurrentAuthProfile().then((profile) => {
+    void getCurrentAuthProfile().then(async (profile) => {
       if (cancelled || !profile) return;
       setProfileEmail(profile.email ?? '');
       setResetEmail(profile.email ?? '');
-      setPasswordSupport(getPasswordSupportState());
+      const support = await getPasswordSupportState();
+      if (!cancelled) setPasswordSupport(support);
     });
     return () => {
       cancelled = true;
