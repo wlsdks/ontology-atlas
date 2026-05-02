@@ -5,6 +5,7 @@ import { useRouter } from "@/i18n/navigation";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { type Project, getProjectDetailHref } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
+import { useOntologyInsight } from "@/features/vault-ontology";
 import { useGlobalSearchHotkey } from "../lib/use-global-search-hotkey";
 import { GlobalSearch } from "./GlobalSearch";
 
@@ -32,8 +33,9 @@ export interface MountedGlobalSearchProps {
 }
 
 /**
- * 글로벌 검색 단일 mount — accountId 만 받으면 자체 ontology + projects 구독,
- * ⌘K hotkey 등록, GlobalSearch 렌더 모두 처리.
+ * 글로벌 검색 단일 mount — vault frontmatter (또는 빌드타임 dogfood) 의
+ * ontology nodes + 사용자 projects 구독, ⌘K hotkey 등록, GlobalSearch 렌더
+ * 모두 처리.
  *
  * mission v2 정렬: cloud markdown 호스팅 (`/knowledge/documents/*`) 제거 후
  * 검색 source 는 ontology nodes + projects 두 개. raw markdown 검색은 vault
@@ -54,9 +56,11 @@ export function MountedGlobalSearch({
     if (isControlled) onOpenChange?.(next);
     else setInternalOpen(next);
   };
-  // R10b — ontology nodes 검색은 vault frontmatter 기반으로 미래 재구성. 지금은
-  // projects 만 검색.
-  const nodes: KnowledgeGraphNode[] = [];
+  // ontology nodes — vault frontmatter (또는 빌드타임 dogfood) 진실원에서
+  // 직접 가져옴. useOntologyInsight 가 mode-aware 우선순위 (vault > static)
+  // 로 알아서 결정. cloud markdown 시대의 빈 배열 placeholder 정리.
+  const { insight } = useOntologyInsight();
+  const nodes: KnowledgeGraphNode[] = insight?.nodes ?? [];
   const { projects } = useProjects();
 
   // controlled mount 시 hotkey 비활성 — caller 가 다른 hotkey 로 open 관리.
