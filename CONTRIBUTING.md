@@ -80,13 +80,13 @@ We use [Feature-Sliced Design](https://feature-sliced.design/) with
 ESLint boundaries. Import direction: `app → views → widgets → features →
 entities → shared`. Reverse direction is blocked at lint time.
 
-PR #99 introduced a stricter rule: **`@/entities/<x>` barrel must not
-re-export firestore api functions.** API functions live at
-`@/entities/<x>/api`. The lint rule `no-restricted-imports` blocks the
-violation. Why? See
-[`.claude/rules/architecture.md`](.claude/rules/architecture.md) "Entity
-barrel vs api 분리" section — the goal is keeping firebase JS out of
-local-first routes' first-paint chunks.
+**`@/entities/<x>` barrel must not re-export server / cloud API
+functions.** R10b removed all `entities/<x>/api/` folders (cloud Firestore
+clients), but the lint rule remains as a precaution — if a future
+cloud-collab phase reintroduces server APIs, the barrel must stay clean
+so first-paint chunks of local-first routes don't pull them in. See
+[`.claude/rules/architecture.md`](.claude/rules/architecture.md) for the
+full rule.
 
 ## Mission v2 alignment
 
