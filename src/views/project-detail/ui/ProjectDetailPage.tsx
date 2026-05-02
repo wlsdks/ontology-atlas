@@ -112,7 +112,7 @@ function ProjectDetailBreadcrumb({
         aria-label={t("topBarBackToWorkspaceAria")}
       >
         <ArrowLeft size={14} />
-        {accountId ?? t("topBarWorkspaceFallback")}
+        {t("topBarWorkspaceFallback")}
       </Link>
       <span aria-hidden className="text-[color:var(--color-text-quaternary)]">
         ▸
@@ -494,7 +494,7 @@ export function ProjectDetailPage({
       await persistProject({
         ...projectToInput(project),
         [field]: next,
-        accountId: accountId ?? project.accountId ?? undefined,
+        accountId: project.accountId ?? undefined,
       });
       showToast(field === "name" ? t("saveSuccessName") : t("saveSuccessDescription"), "success");
     } catch (err) {
@@ -511,7 +511,7 @@ export function ProjectDetailPage({
       await persistProject({
         ...projectToInput(project),
         dependencies: next,
-        accountId: accountId ?? project.accountId ?? undefined,
+        accountId: project.accountId ?? undefined,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : t("saveErrorGeneric");
@@ -525,7 +525,7 @@ export function ProjectDetailPage({
       await persistProject({
         ...projectToInput(project),
         links: next,
-        accountId: accountId ?? project.accountId ?? undefined,
+        accountId: project.accountId ?? undefined,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : t("saveErrorGeneric");
@@ -539,7 +539,7 @@ export function ProjectDetailPage({
       await persistProject({
         ...projectToInput(project),
         [field]: next,
-        accountId: accountId ?? project.accountId ?? undefined,
+        accountId: project.accountId ?? undefined,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : t("saveErrorGeneric");
