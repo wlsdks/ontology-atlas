@@ -1,11 +1,12 @@
 /**
- * 프로젝트 카테고리 ID — Firestore `categories/{id}` 문서 참조.
- * 정의는 runtime에 entities/category에서 관리되므로 여기선 free string.
+ * 프로젝트 카테고리 ID — `entities/category` 의 default 또는 미래 vault
+ * frontmatter taxonomy 와 매칭되는 free string.
  */
 export type ProjectCategory = string;
 
 /**
- * 프로젝트 상태 ID — Firestore `statuses/{id}` 문서 참조.
+ * 프로젝트 상태 ID — `entities/status` 의 default 또는 미래 vault
+ * frontmatter taxonomy 와 매칭되는 free string.
  */
 export type ProjectStatus = string;
 
@@ -26,7 +27,10 @@ export interface ProjectPosition {
 
 /**
  * 프로젝트 도메인 모델 (앱 내부에서 사용).
- * Firestore 문서와 일대일 대응되지만 Timestamp → Date 변환이 적용된다.
+ *
+ * 진실원: vault 의 `projects/<slug>.md` frontmatter (local 모드) 또는
+ * 빌드타임 dogfood 매니페스트 (static 모드). createdAt / updatedAt 는
+ * 파일 mtime 또는 frontmatter `createdAt:` / `updatedAt:` 에서 derive.
  */
 export interface Project {
   slug: string;
