@@ -38,6 +38,11 @@ interface Props {
   dense?: boolean;
   /** 프리뷰 모드: pointer cursor 제거, motion 전환 스킵. */
   preview?: boolean;
+  /** isHub 가 true 일 때 카드 상단 eyebrow 텍스트. caller 가 i18n 결과를
+   *  넘긴다. 미지정 시 영문 'Core hub' (primitive 영문 default 패턴). */
+  hubEyebrow?: string;
+  /** shared 가 true 일 때 eyebrow 텍스트. 미지정 시 영문 'Shared system'. */
+  sharedEyebrow?: string;
   /** 공개 지도 보기 방식. */
   viewMode?: ProjectCardViewMode;
 }
@@ -90,12 +95,14 @@ export function ProjectCard({
   dense = false,
   preview = false,
   viewMode = 'card',
+  hubEyebrow = 'Core hub',
+  sharedEyebrow = 'Shared system',
 }: Props) {
   const { name, description, isHub, owner, tags } = project;
   const borderStyle = category?.borderStyle ?? 'solid';
   const sideLabelText = category?.sideLabelText;
   const visibleTags = tags.slice(0, 3);
-  const eyebrow = isHub ? '핵심 허브' : shared ? '공유 시스템' : null;
+  const eyebrow = isHub ? hubEyebrow : shared ? sharedEyebrow : null;
   const fallbackMeta = owner ?? project.slug;
   if (viewMode === 'compact') {
     return (

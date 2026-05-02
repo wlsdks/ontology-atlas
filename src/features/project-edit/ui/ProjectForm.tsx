@@ -1319,6 +1319,8 @@ export function ProjectForm({
                   computeHubSlugs(allProjects),
                 )
               }
+              hubEyebrow={t("preview.cardHubEyebrow")}
+              sharedEyebrow={t("preview.cardSharedEyebrow")}
               preview
             />
           </div>

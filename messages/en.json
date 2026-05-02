@@ -1512,7 +1512,9 @@
         "changeDependencies": "Connection count changes from {from} to {to}.",
         "changeScreenshots": "Screenshot count changes from {from} to {to}.",
         "changeDetailFilled": "Detail body will be shown on the public detail page.",
-        "changeDetailEmpty": "Detail body is empty, so the public detail page is simplified."
+        "changeDetailEmpty": "Detail body is empty, so the public detail page is simplified.",
+        "cardHubEyebrow": "Core hub",
+        "cardSharedEyebrow": "Shared system"
       }
     },
     "dependencyPicker": {

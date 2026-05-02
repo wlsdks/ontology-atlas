@@ -1512,7 +1512,9 @@
         "changeDependencies": "연결 프로젝트 수가 {from}개에서 {to}개로 바뀝니다.",
         "changeScreenshots": "대표 화면 자료가 {from}개에서 {to}개로 바뀝니다.",
         "changeDetailFilled": "상세 문서 본문이 공개 상세 화면에 반영됩니다.",
-        "changeDetailEmpty": "상세 문서 본문이 비어 있어 공개 상세 본문이 간단해집니다."
+        "changeDetailEmpty": "상세 문서 본문이 비어 있어 공개 상세 본문이 간단해집니다.",
+        "cardHubEyebrow": "핵심 허브",
+        "cardSharedEyebrow": "공유 시스템"
       }
     },
     "dependencyPicker": {
