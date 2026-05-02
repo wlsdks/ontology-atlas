@@ -66,7 +66,6 @@ import {
 
 interface Props {
   slug: string;
-  accountId?: string | null;
   initialProject?: Project | null;
   initialRelated?: Project[];
 }
@@ -141,12 +140,10 @@ function ProjectDetailBreadcrumb({
 
 function ProjectDetailTopBar({
   slug,
-  accountId,
   projectName,
   rightActions,
 }: {
   slug?: string;
-  accountId?: string | null;
   projectName?: string | null;
   rightActions?: React.ReactNode;
 }) {
@@ -188,18 +185,16 @@ function ProjectDetailState({
   description,
   testId,
   slug,
-  accountId,
 }: {
   title: string;
   description: string;
   testId: string;
   slug?: string;
-  accountId?: string | null;
 }) {
   const t = useTranslations("projectPages.detail");
   return (
     <ProjectDetailShell>
-      <ProjectDetailTopBar slug={slug} accountId={accountId} />
+      <ProjectDetailTopBar slug={slug} />
       <section className="mt-16 rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-8 py-10">
         <p
           data-testid={testId}
@@ -269,7 +264,6 @@ function resolveProjectConnectionSummary(
 
 export function ProjectDetailPage({
   slug,
-  accountId: accountIdProp,
   initialProject = null,
   initialRelated = [],
 }: Props) {
@@ -277,11 +271,6 @@ export function ProjectDetailPage({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  // 정적 export 에선 server component page.tsx 가 ?account 쿼리를 읽지 못해
-  // prop 으로 accountId 를 넘기지 못한다. 클라이언트에서 URL 을 직접 읽어
-  // 보강 — prop 이 명시되면 그 값을 우선.
-  const accountId =
-    accountIdProp ?? searchParams.get("account")?.trim() ?? null;
   const { show: showToast } = useToast();
   const fallbackProjects = useMemo(() => resolveFallbackProjects(), []);
   const fallbackProject = fallbackProjects.find((item) => item.slug === slug) ?? null;
@@ -319,7 +308,7 @@ export function ProjectDetailPage({
       // P0-B Phase 6: getProjectDetailHref 가 ?account/?pj 자동 propagation.
       router.push(getProjectDetailHref(nextSlug));
     },
-    [accountId, router, slug],
+    [router, slug],
   );
 
   // R10b — knowledge insight 패널 (project-doc evidence 카드 / 노드 그래프) 은
@@ -374,7 +363,6 @@ export function ProjectDetailPage({
         title={t("stateInvalidTitle")}
         description={t("stateInvalidDesc")}
         slug={slug}
-        accountId={accountId}
       />
     );
   }
@@ -387,7 +375,6 @@ export function ProjectDetailPage({
           title={t("stateLoadingTitle")}
           description={t("stateLoadingDesc")}
           slug={slug}
-          accountId={accountId}
         />
       );
     }
@@ -398,7 +385,6 @@ export function ProjectDetailPage({
           title={t("stateNotFoundTitle")}
           description={t("stateNotFoundDesc")}
           slug={slug}
-          accountId={accountId}
         />
       );
   }
@@ -487,7 +473,6 @@ export function ProjectDetailPage({
       await persistProject({
         ...projectToInput(project),
         [field]: next,
-        accountId: project.accountId ?? undefined,
       });
       showToast(field === "name" ? t("saveSuccessName") : t("saveSuccessDescription"), "success");
     } catch (err) {
@@ -504,7 +489,6 @@ export function ProjectDetailPage({
       await persistProject({
         ...projectToInput(project),
         dependencies: next,
-        accountId: project.accountId ?? undefined,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : t("saveErrorGeneric");
@@ -518,7 +502,6 @@ export function ProjectDetailPage({
       await persistProject({
         ...projectToInput(project),
         links: next,
-        accountId: project.accountId ?? undefined,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : t("saveErrorGeneric");
@@ -532,7 +515,6 @@ export function ProjectDetailPage({
       await persistProject({
         ...projectToInput(project),
         [field]: next,
-        accountId: project.accountId ?? undefined,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : t("saveErrorGeneric");
@@ -562,7 +544,6 @@ export function ProjectDetailPage({
     <ProjectDetailShell>
       <ProjectDetailTopBar
         slug={slug}
-        accountId={accountId}
         projectName={project.name}
         rightActions={
           canManageProject ? (
