@@ -8,10 +8,8 @@ import { ThemeToggle } from '@/features/theme-toggle';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { Button, Tooltip } from '@/shared/ui';
 
-interface OperationsNavProps {
-  /** 우측 보조 컨트롤 (예: 워크스페이스 selector). 미지정 시 생략. */
-  rightSlot?: React.ReactNode;
-}
+// (R10 — workspace selector 같은 외부 rightSlot 자리는 모두 사라져 prop 자체
+// 제거. 미래에 다시 필요하면 그때 type 다시 정의.)
 
 interface NavItem {
   id: 'knowledge' | 'ontology' | 'topology';
@@ -57,7 +55,7 @@ const NAV_ITEMS: ReadonlyArray<NavItem> = [
  * 각 페이지 nav 안에 묻혀 있어 사용자가 메뉴 사이 점프 못 하던 문제
  * 해소. 모든 운영 페이지 상단에 동일하게 배치.
  *
- * 데스크톱 (md+): 탭 + 우측 보조 (rightSlot / 프로젝트 / 로그아웃).
+ * 데스크톱 (md+): 탭 + 우측 보조 (mode badge · LocaleSwitch · ThemeToggle · Projects).
  *
  * 모바일 (<md, A2-6): 탭만 horizontal scroll chip row 로 노출. 보조
  * 버튼은 BottomTabBar (지도 / 프로젝트 / 문서 / 정리) 와 사용자 메뉴가
@@ -108,7 +106,7 @@ function ModeBadge({ mode }: { mode: 'static' | 'local' }) {
   );
 }
 
-export function OperationsNav({ rightSlot }: OperationsNavProps) {
+export function OperationsNav() {
   const pathname = usePathname() ?? '';
   const dataSourceMode = useDataSourceMode();
   const t = useTranslations('nav');
@@ -166,7 +164,6 @@ export function OperationsNav({ rightSlot }: OperationsNavProps) {
           </ul>
         </div>
         <div className="flex items-center gap-2">
-          {rightSlot}
           <ModeBadge mode={dataSourceMode} />
           <LocaleSwitch />
           <ThemeToggle />
