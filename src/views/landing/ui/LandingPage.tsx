@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowRight, FolderOpen, Orbit } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
@@ -164,45 +165,111 @@ export function LandingPage({ next }: Props) {
   );
 }
 
+// 미리 계산된 force-atlas 풍 좌표 — 노드끼리 겹치지 않으면서 밀집/분산.
+// 14 노드 + 21 엣지. 3 hub (Project / Capability / Element 격) + 11 leaf
+// (구체 fact). 단일 인디고만, 두께·반지름으로 위계 표현.
+const MINI_HUBS: ReadonlyArray<{ id: string; cx: number; cy: number; r: number }> = [
+  { id: "h1", cx: 158, cy: 110, r: 9 },
+  { id: "h2", cx: 80, cy: 60, r: 7 },
+  { id: "h3", cx: 240, cy: 160, r: 7 },
+];
+const MINI_LEAVES: ReadonlyArray<{ id: string; cx: number; cy: number; r: number }> = [
+  { id: "l1", cx: 50, cy: 105, r: 4 },
+  { id: "l2", cx: 110, cy: 30, r: 4 },
+  { id: "l3", cx: 50, cy: 165, r: 4 },
+  { id: "l4", cx: 200, cy: 50, r: 4 },
+  { id: "l5", cx: 270, cy: 90, r: 4 },
+  { id: "l6", cx: 290, cy: 195, r: 4 },
+  { id: "l7", cx: 100, cy: 175, r: 4 },
+  { id: "l8", cx: 175, cy: 195, r: 4 },
+  { id: "l9", cx: 215, cy: 110, r: 4 },
+  { id: "l10", cx: 30, cy: 60, r: 4 },
+  { id: "l11", cx: 130, cy: 130, r: 4 },
+];
+const MINI_EDGES: ReadonlyArray<[string, string]> = [
+  ["h1", "h2"], ["h1", "h3"], ["h2", "h3"],
+  ["h2", "l1"], ["h2", "l2"], ["h2", "l10"],
+  ["h1", "l4"], ["h1", "l9"], ["h1", "l11"],
+  ["h3", "l5"], ["h3", "l6"], ["h3", "l9"],
+  ["h1", "l8"], ["h2", "l3"], ["l3", "l7"],
+  ["l7", "l11"], ["l4", "l5"], ["l9", "l8"],
+  ["l1", "l3"], ["l1", "l10"], ["l11", "h3"],
+];
+
+const SETTLE_DURATION_MS = 1800;
+const CENTER_X = 160;
+const CENTER_Y = 110;
+
+// Deterministic offset hash — SSR / hydration 같은 결과 보장. id 의 char
+// code 합으로 angle + radius 결정. crypto / Math.random 안 쓴 이유.
+function initialOffset(id: string): { dx: number; dy: number } {
+  const seed = id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const angle = (seed % 360) * (Math.PI / 180);
+  const radius = 60 + ((seed * 7) % 40);
+  return { dx: Math.cos(angle) * radius, dy: Math.sin(angle) * radius };
+}
+
+// Cubic ease-out — start fast, settle slow.
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
+}
+
 /**
- * 정적 미니 토폴로지 — frozen SVG. mission 의 *결과물 = 그래프* 를 시각 증명.
- * 사용자 인터랙션 없음, 애니메이션 없음 (`prefers-reduced-motion` 안전).
+ * Live 미니 토폴로지 — 14 노드가 중앙 부근에서 force-atlas 식으로 settle
+ * 하는 1.8s entrance animation. 끝나면 RAF 종료, 정적 SVG 와 동일한 GPU
+ * 부하 (= 0). prefers-reduced-motion 사용자는 즉시 settled 상태.
  *
- * 14 노드 + 21 엣지의 미니 그래프. 3 hub (Project / Capability / Element 격)
- * + 11 leaf (구체 fact). 단일 인디고만, 두께·반지름으로 위계 표현.
+ * 디자인 헌장 안: 단일 인디고, 짧은 motion, glow 0. 번들 영향 0 (외부 lib
+ * 안 씀, RAF + SVG transform 만).
+ *
+ * mission 의 *결과물 = 그래프* 를 시각 증명. 정적 SVG 는 "broken" 처럼
+ * 보일 위험을 (eval Aesthetic agent finding P2) 동적으로 살림.
  */
 function MiniTopology({ caption }: { caption: string }) {
-  // 미리 계산된 force-atlas 풍 좌표 — 노드끼리 겹치지 않으면서 밀집/분산.
-  const hubs: Array<{ id: string; cx: number; cy: number; r: number }> = [
-    { id: "h1", cx: 158, cy: 110, r: 9 },
-    { id: "h2", cx: 80, cy: 60, r: 7 },
-    { id: "h3", cx: 240, cy: 160, r: 7 },
-  ];
-  const leaves: Array<{ id: string; cx: number; cy: number; r: number }> = [
-    { id: "l1", cx: 50, cy: 105, r: 4 },
-    { id: "l2", cx: 110, cy: 30, r: 4 },
-    { id: "l3", cx: 50, cy: 165, r: 4 },
-    { id: "l4", cx: 200, cy: 50, r: 4 },
-    { id: "l5", cx: 270, cy: 90, r: 4 },
-    { id: "l6", cx: 290, cy: 195, r: 4 },
-    { id: "l7", cx: 100, cy: 175, r: 4 },
-    { id: "l8", cx: 175, cy: 195, r: 4 },
-    { id: "l9", cx: 215, cy: 110, r: 4 },
-    { id: "l10", cx: 30, cy: 60, r: 4 },
-    { id: "l11", cx: 130, cy: 130, r: 4 },
-  ];
-  const edges: Array<[string, string]> = [
-    ["h1", "h2"], ["h1", "h3"], ["h2", "h3"],
-    ["h2", "l1"], ["h2", "l2"], ["h2", "l10"],
-    ["h1", "l4"], ["h1", "l9"], ["h1", "l11"],
-    ["h3", "l5"], ["h3", "l6"], ["h3", "l9"],
-    ["h1", "l8"], ["h2", "l3"], ["l3", "l7"],
-    ["l7", "l11"], ["l4", "l5"], ["l9", "l8"],
-    ["l1", "l3"], ["l1", "l10"], ["l11", "h3"],
-  ];
-  const idToPoint: Record<string, { cx: number; cy: number }> = Object.fromEntries(
-    [...hubs, ...leaves].map((n) => [n.id, { cx: n.cx, cy: n.cy }]),
-  );
+  const reducedMotionRef = useRef(false);
+  const [progress, setProgress] = useState(0); // 0..1
+  const startRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const reducedMotion =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    reducedMotionRef.current = reducedMotion;
+    if (reducedMotion) {
+      setProgress(1);
+      return;
+    }
+    const tick = (now: number) => {
+      if (startRef.current === null) startRef.current = now;
+      const elapsed = now - startRef.current;
+      const raw = Math.min(1, elapsed / SETTLE_DURATION_MS);
+      setProgress(easeOutCubic(raw));
+      if (raw < 1) {
+        rafRef.current = window.requestAnimationFrame(tick);
+      } else {
+        rafRef.current = null;
+      }
+    };
+    rafRef.current = window.requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current !== null) window.cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  // 모든 노드의 현재 좌표 — progress 0 = 중앙 부근 (목적지에서 offset 빼서),
+  // progress 1 = 정확히 목적지. opacity 도 progress 에 비례 (0.1 → 1).
+  const positions = useMemo(() => {
+    const map = new Map<string, { x: number; y: number; opacity: number }>();
+    for (const n of [...MINI_HUBS, ...MINI_LEAVES]) {
+      const { dx, dy } = initialOffset(n.id);
+      const x = n.cx + (1 - progress) * (CENTER_X + dx - n.cx) * 0.3;
+      const y = n.cy + (1 - progress) * (CENTER_Y + dy - n.cy) * 0.3;
+      const opacity = 0.15 + 0.85 * progress;
+      map.set(n.id, { x, y, opacity });
+    }
+    return map;
+  }, [progress]);
 
   return (
     <div
@@ -214,43 +281,60 @@ function MiniTopology({ caption }: { caption: string }) {
         className="h-full w-full"
         preserveAspectRatio="xMidYMid meet"
       >
-        {edges.map(([a, b], i) => {
-          const pa = idToPoint[a];
-          const pb = idToPoint[b];
+        {MINI_EDGES.map(([a, b], i) => {
+          const pa = positions.get(a);
+          const pb = positions.get(b);
+          if (!pa || !pb) return null;
+          // 엣지는 양 끝 노드 opacity 의 평균. 노드가 settle 되기 전엔
+          // 흐릿, settle 후 정상 톤.
+          const avgOpacity = (pa.opacity + pb.opacity) / 2;
           return (
             <line
               key={i}
-              x1={pa.cx}
-              y1={pa.cy}
-              x2={pb.cx}
-              y2={pb.cy}
+              x1={pa.x}
+              y1={pa.y}
+              x2={pb.x}
+              y2={pb.y}
               stroke="rgba(94,106,210,0.28)"
+              strokeOpacity={avgOpacity}
               strokeWidth={1}
             />
           );
         })}
-        {leaves.map((n) => (
-          <circle
-            key={n.id}
-            cx={n.cx}
-            cy={n.cy}
-            r={n.r}
-            fill="rgba(94,106,210,0.55)"
-            stroke="rgba(94,106,210,0.6)"
-            strokeWidth={0.8}
-          />
-        ))}
-        {hubs.map((n) => (
-          <circle
-            key={n.id}
-            cx={n.cx}
-            cy={n.cy}
-            r={n.r}
-            fill="var(--color-indigo-brand)"
-            stroke="var(--color-indigo-accent)"
-            strokeWidth={1.5}
-          />
-        ))}
+        {MINI_LEAVES.map((n) => {
+          const p = positions.get(n.id);
+          if (!p) return null;
+          return (
+            <circle
+              key={n.id}
+              cx={p.x}
+              cy={p.y}
+              r={n.r}
+              fill="rgba(94,106,210,0.55)"
+              fillOpacity={p.opacity}
+              stroke="rgba(94,106,210,0.6)"
+              strokeOpacity={p.opacity}
+              strokeWidth={0.8}
+            />
+          );
+        })}
+        {MINI_HUBS.map((n) => {
+          const p = positions.get(n.id);
+          if (!p) return null;
+          return (
+            <circle
+              key={n.id}
+              cx={p.x}
+              cy={p.y}
+              r={n.r}
+              fill="var(--color-indigo-brand)"
+              fillOpacity={p.opacity}
+              stroke="var(--color-indigo-accent)"
+              strokeOpacity={p.opacity}
+              strokeWidth={1.5}
+            />
+          );
+        })}
       </svg>
       <span className="pointer-events-none absolute bottom-3 left-4 font-mono text-[9.5px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
         {caption}

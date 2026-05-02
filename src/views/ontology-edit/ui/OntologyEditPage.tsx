@@ -21,6 +21,8 @@ import { useEphemeralNodes } from "../lib/use-ephemeral-nodes";
 import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
 import { downloadAtlasFrontmatter } from "../lib/export-frontmatter";
 import { downloadGraphML, downloadJsonLd } from "../lib/export-graph";
+import { BlastRadiusConfirm } from "./BlastRadiusConfirm";
+import type { VaultBacklinkMatch } from "../lib/find-vault-backlinks";
 import { findVaultBacklinks } from "../lib/find-vault-backlinks";
 
 /**
@@ -111,6 +113,14 @@ export function OntologyEditPage() {
   // layout 알고리즘 — dagre (default, kind 계층 LR) 또는 force (organic).
   // 헤더 토글로 사용자가 선택. 변경 시 in-memory layout 만 재계산 (frontmatter 그대로).
   const [layoutMode, setLayoutMode] = useState<"dagre" | "force">("dagre");
+  // Blast-radius modal state — driven by deleteVaultDoc requesting a
+  // confirmation. Stays null when the user is not actively confirming a
+  // delete; opens when delete is clicked and resolves on cancel/confirm.
+  const [pendingDelete, setPendingDelete] = useState<{
+    slug: string;
+    title?: string;
+    backlinks: VaultBacklinkMatch[];
+  } | null>(null);
   const toast = useToast();
 
   const saveEphemeral = useCallback(
@@ -297,48 +307,37 @@ export function OntologyEditPage() {
     [t, toast, vault],
   );
 
-  // vault delete — MCP delete_concept 와 같은 정책: backlinks 가 있으면
-  // confirm 단계에서 list 보여주고 사용자가 의식적으로 진행하게. force 플래그
-  // 는 별도 UI 없이 confirm 한 번 — UI 자체가 사용자 의도 게이트.
+  // vault delete — Round 6: window.confirm() → BlastRadiusConfirm modal.
+  // backlinks 를 visual 카드로 보여주고 의식적인 confirm 받음. 데이터는
+  // 이전과 동일 (findVaultBacklinks) — surface 만 풍부한 다이얼로그로 승격
+  // (eval Feature power F5, "launch demo's hero moment").
   const deleteVaultDoc = useCallback(
-    async (slug: string) => {
+    (slug: string) => {
       if (!vault.manifest) return;
       const backlinks = findVaultBacklinks(vault.manifest, slug);
-      const preview = backlinks
-        .slice(0, 3)
-        .map((b) => b.slug)
-        .join(", ");
-      const rest =
-        backlinks.length > 3
-          ? t("confirmDeleteWithBacklinksRest", { count: backlinks.length - 3 })
-          : "";
-      const message =
-        backlinks.length > 0
-          ? t("confirmDeleteWithBacklinks", {
-              slug,
-              count: backlinks.length,
-              preview,
-              rest,
-            })
-          : t("confirmDelete", { slug });
-      // 정적 export + WebGL 캔버스 환경 — 가장 단순한 confirm dialog 가
-      // SSR/hydration 위험 없음. modal UI 는 후속 PR 에서 OntologyEditPage 자체
-      // dialog 컴포넌트로 통합 가능.
-      if (typeof window !== "undefined" && !window.confirm(message)) return;
-      setRenamingId(slug);
-      try {
-        await vault.deleteDoc(slug);
-        toast.show(t("toastDeleteSuccess", { slug }), "success");
-        setSelectedId(null);
-      } catch (err) {
-        const m = err instanceof Error ? err.message : t("toastDeleteFailed");
-        toast.show(m, "error");
-      } finally {
-        setRenamingId(null);
-      }
+      const doc = vault.manifest.docs.find((d) => d.slug === slug);
+      setPendingDelete({ slug, title: doc?.title, backlinks });
     },
-    [t, toast, vault],
+    [vault],
   );
+
+  // Modal 의 confirm 버튼이 눌린 후 실제 delete 수행.
+  const confirmPendingDelete = useCallback(async () => {
+    if (!pendingDelete) return;
+    const { slug } = pendingDelete;
+    setPendingDelete(null);
+    setRenamingId(slug);
+    try {
+      await vault.deleteDoc(slug);
+      toast.show(t("toastDeleteSuccess", { slug }), "success");
+      setSelectedId(null);
+    } catch (err) {
+      const m = err instanceof Error ? err.message : t("toastDeleteFailed");
+      toast.show(m, "error");
+    } finally {
+      setRenamingId(null);
+    }
+  }, [pendingDelete, t, toast, vault]);
 
   const treeHref = accountId
     ? `/ontology/?${ACCOUNT_QUERY_KEY}=${encodeURIComponent(accountId)}`
@@ -640,6 +639,14 @@ export function OntologyEditPage() {
           </div>
         </section>
       </main>
+      <BlastRadiusConfirm
+        open={pendingDelete !== null}
+        slug={pendingDelete?.slug ?? ""}
+        title={pendingDelete?.title}
+        backlinks={pendingDelete?.backlinks ?? []}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={() => void confirmPendingDelete()}
+      />
     </div>
   );
 }

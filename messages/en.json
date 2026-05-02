@@ -840,7 +840,20 @@
         "toastDeleteFailed": "Delete failed",
         "confirmDeleteWithBacklinks": "Deleting \"{slug}\" will leave {count} nodes dangling ({preview}{rest}).\n\nDelete anyway?",
         "confirmDeleteWithBacklinksRest": " plus {count} more",
-        "confirmDelete": "Delete \"{slug}\" from the vault? This cannot be undone."
+        "confirmDelete": "Delete \"{slug}\" from the vault? This cannot be undone.",
+        "blastRadius": {
+          "titleClean": "Delete this node?",
+          "titleWithBacklinks": "{count} nodes depend on this — delete anyway?",
+          "bodyClean": "The node and its frontmatter will be removed from the vault. This cannot be undone.",
+          "bodyWithBacklinks": "These nodes reference the one you're about to delete. Their links will become dangling — you can fix them after, but plan a cleanup pass.",
+          "hintClean": "Tip: builder edits write straight to disk. Re-create the node any time.",
+          "hintWithBacklinks": "Tip: open the listed nodes after delete to remove the dangling reference, or rename instead of deleting.",
+          "moreCount": "and {count} more",
+          "cancel": "Cancel",
+          "confirmClean": "Delete",
+          "confirmWithBacklinks": "Delete anyway",
+          "closeAriaLabel": "Close blast-radius dialog"
+        }
       },
       "canvas": {
         "ephemeralEdgeLabel": "related (ephemeral)",

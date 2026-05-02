@@ -840,7 +840,20 @@
         "toastDeleteFailed": "삭제 실패",
         "confirmDeleteWithBacklinks": "\"{slug}\" 를 삭제하면 {count} 개 노드가 dangling 됩니다 ({preview}{rest}).\n\n그래도 삭제할까요?",
         "confirmDeleteWithBacklinksRest": " 외 {count}개",
-        "confirmDelete": "\"{slug}\" 를 vault 에서 삭제할까요? 되돌릴 수 없습니다."
+        "confirmDelete": "\"{slug}\" 를 vault 에서 삭제할까요? 되돌릴 수 없습니다.",
+        "blastRadius": {
+          "titleClean": "이 노드를 삭제할까요?",
+          "titleWithBacklinks": "{count} 개 노드가 이 노드를 참조하는데, 그래도 삭제?",
+          "bodyClean": "노드와 frontmatter 가 vault 에서 제거됩니다. 되돌릴 수 없어요.",
+          "bodyWithBacklinks": "아래 노드들이 지금 삭제하는 노드를 참조하고 있어요. 링크가 dangling 상태가 됩니다 — 나중에 고칠 수 있지만, cleanup 한 번 계획하세요.",
+          "hintClean": "Tip: 빌더 편집은 디스크로 바로 저장. 언제든 다시 만들 수 있어요.",
+          "hintWithBacklinks": "Tip: 삭제 후 위 노드들을 열어 dangling 참조를 빼거나, 삭제 대신 rename 을 고려해보세요.",
+          "moreCount": "외 {count} 개",
+          "cancel": "취소",
+          "confirmClean": "삭제",
+          "confirmWithBacklinks": "그래도 삭제",
+          "closeAriaLabel": "blast-radius 다이얼로그 닫기"
+        }
       },
       "canvas": {
         "ephemeralEdgeLabel": "관련 (임시)",
