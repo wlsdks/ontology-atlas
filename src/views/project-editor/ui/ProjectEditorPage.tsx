@@ -74,7 +74,7 @@ function EditorContent({
   );
   const safeReturnTo = normalizeReturnTo(returnTo);
   const safeReturnLabel = t(resolveReturnLabelKey(normalizeReturnTo(returnTo)));
-  const publicProjectHref = slug ? getProjectDetailHref(slug, accountId) : null;
+  const publicProjectHref = slug ? getProjectDetailHref(slug) : null;
   const [project, setProject] = useState<Project | null>(null);
   // R10b — `useProjects` (mode-aware: vault manifest 또는 정적 dogfood) 가
   // allProjects 의 단일 source. 이전 cloud `subscribeProjects` 직접 호출 제거.

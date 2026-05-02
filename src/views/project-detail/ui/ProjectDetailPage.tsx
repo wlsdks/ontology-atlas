@@ -324,7 +324,7 @@ export function ProjectDetailPage({
       setSearchOpen(false);
       if (nextSlug === slug) return;
       // P0-B Phase 6: getProjectDetailHref 가 ?account/?pj 자동 propagation.
-      router.push(getProjectDetailHref(nextSlug, accountId));
+      router.push(getProjectDetailHref(nextSlug));
     },
     [accountId, router, slug],
   );
@@ -560,7 +560,7 @@ export function ProjectDetailPage({
     .join(" · ");
   const storyMarkdownClassName =
     "mt-5 break-words text-[color:var(--color-text-secondary)] [&_a]:text-[color:var(--color-indigo-accent)] [&_a]:underline-offset-2 [&_a:hover]:text-[color:var(--color-indigo-hover)] [&_code]:rounded [&_code]:bg-[color:var(--color-elevated)] [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-xs [&_h1]:mt-8 [&_h1]:text-2xl [&_h1]:font-[var(--font-weight-signature)] [&_h1]:text-[color:var(--color-text-primary)] [&_h2]:mt-8 [&_h2]:text-xl [&_h2]:font-[var(--font-weight-signature)] [&_h2]:text-[color:var(--color-text-primary)] [&_h3]:mt-6 [&_h3]:text-lg [&_h3]:text-[color:var(--color-text-primary)] [&_li]:ml-5 [&_li]:list-disc [&_p]:mt-4 [&_p]:leading-8 [&_strong]:text-[color:var(--color-text-primary)] [&_ul]:mt-4";
-  const projectPublicHref = getProjectDetailHref(project.slug, accountId);
+  const projectPublicHref = getProjectDetailHref(project.slug);
   const projectFullEditHref = `/project/${encodeURIComponent(project.slug)}/edit/?returnTo=${encodeURIComponent(
     projectPublicHref,
   )}`;
@@ -756,7 +756,7 @@ export function ProjectDetailPage({
                   // 자신(slug) 클릭은 무시. account 쿼리 보존.
                   onSelectProject={(slug) => {
                     if (slug === project.slug) return;
-                    router.push(getProjectDetailHref(slug, accountId));
+                    router.push(getProjectDetailHref(slug));
                   }}
                   // 50 내외의 이웃이 작은 영역에 몰리지 않도록 repel 과
                   // linkDistance 를 메인 홈보다 크게. 라벨 충돌도 완화.
@@ -1016,7 +1016,7 @@ export function ProjectDetailPage({
                 {nextProjectCandidates.slice(0, 1).map((candidate) => (
                   <Link
                     key={candidate.slug}
-                    href={getProjectDetailHref(candidate.slug, accountId)}
+                    href={getProjectDetailHref(candidate.slug)}
                     className="group flex items-center justify-between gap-3 rounded-2xl border border-[color:var(--color-border-soft)] px-3 py-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.28)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                   >
                     <div className="min-w-0">

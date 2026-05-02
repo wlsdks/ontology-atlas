@@ -339,7 +339,7 @@ export function ProjectDrawer({
   // 상세 페이지 URL — 컨테이너 컨텍스트(`?pj=`) 까지 유지해 zoom-in 에서
   // 온 사용자가 뒤로 갈 때도 같은 컨테이너 뷰로 돌아올 수 있게.
   const detailHref = project
-    ? getProjectDetailHref(project.slug, accountId, activeProjectId)
+    ? getProjectDetailHref(project.slug)
     : "#";
   // 관련 문서 top 1 slug — 있으면 문서 볼트가 그 문서를 바로 열게 딥링크.
   // 없으면 볼트 홈 ('/docs/') 로.
@@ -843,7 +843,7 @@ export function ProjectDrawer({
                     <div className="mt-3">
                       <CopyProjectLinkButton
                         slug={project.slug}
-                        href={getProjectDetailHref(project.slug, accountId)}
+                        href={getProjectDetailHref(project.slug)}
                         testId="project-drawer-copy-link"
                         className="h-10 w-full justify-center"
                       />
