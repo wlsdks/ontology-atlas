@@ -258,8 +258,7 @@ export function OntologyViewPage() {
         </div>
       </section>
 
-      {/* tree node + relation stat strip. R10b 후 insight.meta 는 항상 null
-          이라 "발행 시점" stat 영구 제거. 사용자가 vault 에 document kind
+      {/* tree node + relation stat strip. 사용자가 vault 에 document kind
           노드를 만들면 추가 카운트만 surface (docCount > 0 일 때만). */}
       <section
         className={`mb-6 grid gap-3 ${docCount > 0 ? "grid-cols-3" : "grid-cols-2"}`}

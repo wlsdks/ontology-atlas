@@ -60,7 +60,7 @@ function derivationToInsight(
     lastApprovedBy: VAULT_SENTINEL_AUTHOR,
     source: 'manual',
   }));
-  return { nodes, edges, meta: null };
+  return { nodes, edges };
 }
 
 const STATIC_INSIGHT: { insight: KnowledgeProjectInsight; error: null } = {

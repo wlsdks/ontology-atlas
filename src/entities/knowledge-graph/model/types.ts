@@ -155,16 +155,8 @@ export interface KnowledgeGraphEdge {
   rank?: EdgeRank;
 }
 
-export interface KnowledgePublicMeta {
-  id: string;
-  currentPublishId: string;
-  projectionVersion: string;
-  publishedAt: Date;
-}
-
 export interface KnowledgeProjectInsight {
   nodes: KnowledgeGraphNode[];
   edges: KnowledgeGraphEdge[];
-  meta: KnowledgePublicMeta | null;
 }
 

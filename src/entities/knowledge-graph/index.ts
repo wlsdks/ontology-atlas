@@ -5,7 +5,6 @@ export type {
   KnowledgeGraphSource,
   KnowledgeGraphNode,
   KnowledgeGraphEdge,
-  KnowledgePublicMeta,
   KnowledgeProjectInsight,
   ManualNodeKind,
   QualifierValue,
