@@ -47,8 +47,9 @@ depends_on: [capabilities/signup]
 ## Tweet 4 (AI fits in)
 
 ```
-AI agents (Claude Code, Cursor, etc.) read it via MCP — 11 tools:
-list_concepts, find_path, find_orphans, add_concept, patch_concept …
+AI agents (Claude Code, Cursor, etc.) read it via MCP — 12 tools:
+list_concepts, find_path, find_orphans, query_concepts, add_concept,
+patch_concept …
 
 ask "what breaks if I refactor auth/login?" → agent calls find_backlinks
 and gives a real answer. the dependency graph is in the repo, not a silo.
@@ -63,9 +64,9 @@ and gives a real answer. the dependency graph is in the repo, not a silo.
 - tree (drill-down)
 - ERD builder (xyflow)
 
-all 3 read+write the same .md files. local-first by default. firebase
-JS doesn't even load on the static export's first paint (CI guard
-verifies).
+all 3 read+write the same .md files. pure local-first — no backend,
+no auth, no DB. CI guard verifies the static export bundle stays
+firebase-free.
 [screenshot: 3-up of the views]
 ```
 
