@@ -76,8 +76,11 @@ export function selectTopByDegree(
 }
 
 /**
- * 가장 최근 승인된 N 노드 — `lastApprovedAt` 내림차순. 활동 feed 에 사용.
+ * 가장 최근 갱신된 N 노드 — `lastApprovedAt` 내림차순. 활동 feed 에 사용.
  * 같은 시각이면 title asc. document / project 도 포함 (활동의 한 면).
+ *
+ * 필드 이름은 v1 cloud LLM 워커 시점의 명명이지만, mission v2 에서는 단순
+ * "마지막 쓰기 / 갱신 시각" — vault 모드는 sentinel 값이라 vault 노드끼리는 동률.
  */
 export function selectRecentNodes(
   nodes: readonly KnowledgeGraphNode[],
@@ -100,12 +103,13 @@ export interface ActivityTimelineDay {
 }
 
 /**
- * 일별 노드 승인 카운트 — 지난 N 일 (default 30, including 오늘) 활동 타임라인.
+ * 일별 노드 갱신 카운트 — 지난 N 일 (default 30, including 오늘) 활동 타임라인.
  *
  * 빈 날도 count=0 으로 포함 — UI bar chart 가 gap 없이 그릴 수 있게.
  * 정렬: date asc (오래된 → 최신, 좌→우 시각화).
  *
- * `now` 인자로 테스트 시간 고정 가능.
+ * `now` 인자로 테스트 시간 고정 가능. vault 모드는 \`lastApprovedAt\` 이
+ * sentinel 값이라 모든 vault 노드가 sentinel 날짜 한 칸에 모임.
  */
 export function buildActivityTimeline(
   nodes: readonly KnowledgeGraphNode[],
