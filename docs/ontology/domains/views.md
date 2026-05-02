@@ -4,16 +4,13 @@ kind: domain
 title: Views (Topology · Tree · Builder)
 capabilities:
   - topology-sigma-render
-  - tree-ego-graph
-  - builder-xyflow-canvas
-  - md-export-from-builder
-  - search-palette
-  - global-search
+  - ontology-hub-mode-aware
+  - builder-vault-write
 elements:
   - src/views/home
   - src/views/ontology-view
   - src/views/ontology-edit
-  - src/widgets/sigma-topology
+  - src/widgets/topology-map-sigma
   - src/widgets/global-search
 relates:
   - domains/ontology-core
