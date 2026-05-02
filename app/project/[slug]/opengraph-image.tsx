@@ -1,6 +1,13 @@
 import { ImageResponse } from 'next/og';
 import { fetchAllProjectsAtBuild } from '@/entities/project';
+import {
+  deriveProjectsFromVault,
+  vaultManifest as staticVaultManifestRaw,
+  type VaultManifest,
+} from '@/entities/docs-vault';
 import { INDIGO_BRAND, INDIGO_HIGHLIGHT } from '@/shared/config/indigo-tokens';
+
+const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
 
 // 정적 export 환경: sitemap.ts 처럼 force-static 으로 고정해 빌드 타임 1회만
 // 실행 후 PNG 를 out/ 에 박히게 한다.
@@ -15,9 +22,13 @@ interface Params {
 }
 
 export async function generateStaticParams(): Promise<Params[]> {
-  const projects = await fetchAllProjectsAtBuild();
-  if (projects.length === 0) return [{ slug: 'iam' }];
-  return projects.map((p) => ({ slug: p.slug }));
+  const cloudProjects = await fetchAllProjectsAtBuild();
+  const vaultProjects = deriveProjectsFromVault(staticVaultManifest);
+  const slugs = new Set<string>();
+  for (const p of cloudProjects) slugs.add(p.slug);
+  for (const p of vaultProjects) slugs.add(p.slug);
+  if (slugs.size === 0) return [{ slug: 'iam' }];
+  return Array.from(slugs).map((slug) => ({ slug }));
 }
 
 export default async function ProjectOgImage({

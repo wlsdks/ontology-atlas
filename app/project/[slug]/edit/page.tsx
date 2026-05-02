@@ -8,8 +8,18 @@ interface Params {
 
 export async function generateStaticParams(): Promise<Params[]> {
   const { fetchAllProjectsAtBuild } = await import('@/entities/project');
-  const projects = await fetchAllProjectsAtBuild();
-  return projects.map((p) => ({ slug: p.slug }));
+  const {
+    deriveProjectsFromVault,
+    vaultManifest: staticVaultManifestRaw,
+  } = await import('@/entities/docs-vault');
+  const cloudProjects = await fetchAllProjectsAtBuild();
+  const vaultProjects = deriveProjectsFromVault(
+    staticVaultManifestRaw as import('@/entities/docs-vault').VaultManifest,
+  );
+  const slugs = new Set<string>();
+  for (const p of cloudProjects) slugs.add(p.slug);
+  for (const p of vaultProjects) slugs.add(p.slug);
+  return Array.from(slugs).map((slug) => ({ slug }));
 }
 
 export async function generateMetadata({

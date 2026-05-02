@@ -2,24 +2,43 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { fetchAllProjectsAtBuild } from '@/entities/project';
+import {
+  deriveProjectsFromVault,
+  vaultManifest as staticVaultManifestRaw,
+  type VaultManifest,
+} from '@/entities/docs-vault';
 import { ProjectDetailPage } from '@/views/project-detail';
 import { absoluteUrl } from '@/shared/config';
+
+const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
 
 interface Params {
   slug: string;
 }
 
 /**
- * 빌드 시점에 모든 프로젝트 slug를 수집해 정적 페이지 생성.
- * Firestore REST API 공개 읽기로 인증 없이 fetch.
+ * 빌드 시점에 모든 프로젝트 slug 를 수집해 정적 페이지 생성.
+ *
+ * 두 source 합집합:
+ *   1. Firestore 공개 read (\`fetchAllProjectsAtBuild\`) — cloud 모드 사용자
+ *      가 만든 프로젝트
+ *   2. 빌드타임 vault 매니페스트 의 \`kind: project\` doc — mission v2 dogfood
+ *      자체 project (\`docs/ontology/project.md\`) 도 정적 페이지로 빌드해야
+ *      vault/static 모드 사용자가 \`/project/oh-my-ontology/\` 등 직접 진입 가능.
+ *
+ * dedup 으로 같은 slug 중복 제거. 둘 다 비면 fallback (빌드 실패 방지).
  */
 export async function generateStaticParams(): Promise<Params[]> {
-  const projects = await fetchAllProjectsAtBuild();
-  if (projects.length === 0) {
-    // 빌드 타임에 Firestore 접근 실패 시 최소한의 파라미터 반환 (빌드 실패 방지)
+  const cloudProjects = await fetchAllProjectsAtBuild();
+  const vaultProjects = deriveProjectsFromVault(staticVaultManifest);
+  const slugs = new Set<string>();
+  for (const p of cloudProjects) slugs.add(p.slug);
+  for (const p of vaultProjects) slugs.add(p.slug);
+  if (slugs.size === 0) {
+    // 양쪽 source 다 비면 최소 한 개 라도 있어야 빌드 통과
     return [{ slug: 'iam' }];
   }
-  return projects.map((p) => ({ slug: p.slug }));
+  return Array.from(slugs).map((slug) => ({ slug }));
 }
 
 /**
