@@ -39,6 +39,13 @@ export function isKnowledgeEdgeType(value: unknown): value is KnowledgeEdgeType 
 }
 
 /**
+ * 빌더 (`/ontology/edit`) 가 손으로 만들 수 있는 ontology 노드 kind. document
+ * 는 캔버스에서 직접 만들지 않지만 (frontmatter 진실원에서 derive), Exclude
+ * 로 narrow 해 쓰는 곳이 있어 union 에 포함.
+ */
+export type ManualNodeKind = 'project' | 'domain' | 'capability' | 'element' | 'document';
+
+/**
  * 노드/엣지의 출처.
  *
  * - `manual` — mission v2 의 표준 값. vault frontmatter 자체 + 빌더 추가 +

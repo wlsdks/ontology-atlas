@@ -8,13 +8,7 @@ export type {
   KnowledgePublicMeta,
   KnowledgeProjectInsight,
   KnowledgeProjectEvidenceSummary,
-  AddManualKnowledgeNodeInput,
   ManualNodeKind,
-  ManualNodeInputError,
-  ManualNodeInputValidation,
-  AddManualKnowledgeEdgeInput,
-  ManualEdgeInputError,
-  ManualEdgeInputValidation,
   QualifierValue,
 } from "./model";
 export {
@@ -23,12 +17,6 @@ export {
   KNOWLEDGE_GRAPH_SOURCES,
   isKnowledgeGraphSource,
   buildKnowledgeProjectEvidenceSummary,
-  MANUAL_NODE_KINDS,
-  MANUAL_NODE_ERROR_MESSAGE,
-  validateManualKnowledgeNodeInput,
-  MANUAL_EDGE_ERROR_MESSAGE,
-  validateManualKnowledgeEdgeInput,
-  composeManualEdgeId,
 } from "./model";
 // R10b — cloud Firestore 의존 hook (`useKnowledgePublic*`) 및 mutation 함수
 // (`addManualKnowledgeNode/Edge`, `subscribeKnowledgeProjectInsight` 등) 영구
