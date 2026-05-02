@@ -15,8 +15,6 @@
   },
   "nav": {
     "skipToContent": "메인 콘텐츠로 건너뛰기",
-    "search": "검색",
-    "shortcuts": "단축키",
     "ontology": "온톨로지",
     "topology": "토폴로지",
     "docs": "문서",
