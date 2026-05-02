@@ -40,7 +40,6 @@ import { DependencyPicker } from "@/features/project-edit/ui/DependencyPicker";
 import { CopyProjectLinkButton } from "@/features/project-share";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 import { useTaxonomy } from "@/features/taxonomy";
-import { ProjectKnowledgeTopology } from "@/widgets/project-knowledge-topology";
 import { ProjectOntologyOverview } from "@/widgets/project-ontology-overview";
 
 // Sigma 기반 로컬 토폴로지 — detail 페이지에서 1-hop 이웃 네트워크 를 역동적
@@ -59,11 +58,6 @@ const ShortcutSheet = dynamic(
   () => import("@/widgets/shortcut-sheet").then((m) => m.ShortcutSheet),
   { ssr: false },
 );
-import {
-  buildKnowledgeProjectEvidenceSummary,
-  type KnowledgeProjectInsight,
-} from "@/entities/knowledge-graph";
-
 interface Props {
   slug: string;
   initialProject?: Project | null;
@@ -237,31 +231,6 @@ function resolveProjectMonogram(project: Project) {
     .join("");
 }
 
-type DetailTranslator = ReturnType<typeof useTranslations<"projectPages.detail">>;
-
-function resolveProjectConnectionSummary(
-  project: Project,
-  dependencyProjects: Project[],
-  t: DetailTranslator,
-) {
-  if (dependencyProjects.length === 0) {
-    return t("connectionSummaryStandalone", { name: project.name });
-  }
-
-  const visibleDependencies = dependencyProjects.slice(0, 2).map((item) => item.name);
-  const remainder = dependencyProjects.length - visibleDependencies.length;
-  const deps = visibleDependencies.join(", ");
-
-  if (remainder > 0) {
-    return t("connectionSummaryWithDepsRemainder", {
-      name: project.name,
-      deps,
-      remainder,
-    });
-  }
-  return t("connectionSummaryWithDeps", { name: project.name, deps });
-}
-
 export function ProjectDetailPage({
   slug,
   initialProject = null,
@@ -311,13 +280,6 @@ export function ProjectDetailPage({
     [router, slug],
   );
 
-  // R10b — knowledge insight 패널 (project-doc evidence 카드 / 노드 그래프) 은
-  // cloud surface 제거 이후 항상 빈 상태. 미래에 vault frontmatter 기반으로
-  // 재구성할 때 setter 다시 활성화. 지금은 const 로 단순화.
-  const knowledgeInsight: KnowledgeProjectInsight = useMemo(
-    () => ({ nodes: [], edges: [], meta: null }),
-    [],
-  );
   const currentPath = useMemo(() => {
     const search = searchParams.toString();
     return `${pathname}${search ? `?${search}` : ""}`;
@@ -422,15 +384,6 @@ export function ProjectDetailPage({
     { label: t("metaDependencies"), value: t("countSuffix", { count: dependencyProjects.length }), dot: null },
     { label: t("metaConnections"), value: t("countSuffix", { count: referencedBy.length }), dot: null },
   ];
-  const heroSignals = [
-    project.owner ? t("ownerWithName", { name: project.owner }) : t("ownerFallback"),
-    project.progress !== undefined ? t("progressLabel", { value: project.progress }) : null,
-    project.tags[0] ? t("tagLabel", { value: project.tags[0] }) : null,
-    project.stack[0] ? t("stackLabel", { value: project.stack[0] }) : null,
-  ]
-    .filter(Boolean)
-    .slice(0, 3);
-  const connectionNote = resolveProjectConnectionSummary(project, dependencyProjects, t);
   const nextProjectCandidates = [...dependencyProjects, ...referencedBy].filter(
     (candidate, index, array) =>
       candidate.slug !== project.slug &&
@@ -440,23 +393,6 @@ export function ProjectDetailPage({
   // projects 배열은 dep 관계 그래프로 해석되므로 의존/참조 양방향 이웃을 모두
   // 포함해야 중앙 노드 주변에 선이 이어짐.
   const neighborsTopologyProjects = [project, ...nextProjectCandidates];
-  const evidenceSummary = buildKnowledgeProjectEvidenceSummary(knowledgeInsight, {
-    subjectName: project.name,
-  });
-  const insightDocumentNodes = evidenceSummary.documentNodes;
-  const insightConceptNodes = evidenceSummary.conceptNodes;
-  const insightEdgeLabels = evidenceSummary.edgeLabels;
-  const ontologyReasonNote =
-    evidenceSummary.summaryText ||
-    (insightEdgeLabels.length > 0
-      ? t("ontologyReasonEdges", { labels: insightEdgeLabels.slice(0, 2).join(" · ") })
-      : insightConceptNodes.length > 0
-        ? t("ontologyReasonConcepts", {
-            names: insightConceptNodes.slice(0, 3).map((node) => node.title).join(" · "),
-          })
-        : insightDocumentNodes.length > 0
-          ? t("ontologyReasonDocs", { count: insightDocumentNodes.length })
-          : t("ontologyReasonEmpty"));
   const canManageProject = projectMutations.canEdit;
   // 모든 인라인 편집은 useProjectMutations 한 진입점으로. R10b 후 mode 는
   // local (vault patch) 만 mutate 가능하고 static 은 read-only 라 mutation
@@ -742,19 +678,6 @@ export function ProjectDetailPage({
             </article>
           ) : null}
 
-          {/* "문서 토폴로지" 는 분해·공개된 개념 지도가 실제로 있을 때만 노출.
-              게스트에게 빈 문서 목록을 먼저 보여주면 프로젝트 핵심 흐름을 가리므로
-              공개 문서가 없을 땐 ProjectDocumentsList 자체를 숨긴다. */}
-          {knowledgeInsight.nodes.length > 0 ? (
-            <ProjectKnowledgeTopology
-              nodes={knowledgeInsight.nodes}
-              edges={knowledgeInsight.edges}
-              canManageProject={canManageProject}
-              heading={t("knowledgeTopologyHeading", { name: project.name })}
-              description={t("knowledgeTopologyDescription")}
-            />
-          ) : null}
-
           {/* "프로젝트 정보" 카드는 project.detail 마크다운이 있을 때만 렌더.
               예전엔 detail 없을 때 fallback으로 이름/설명을 다시 노출해서 Hero와
               중복됐고 "왜 또 있지?" 혼란이 있었음. 기본 정보(상태/담당 등) 칩은
@@ -792,140 +715,6 @@ export function ProjectDetailPage({
                 ))}
               </ul>
             </div>
-          ) : null}
-
-          {/* "프로젝트 설명 문서" 카드는 knowledgeInsight 데이터가 있을 때만 렌더.
-              비어 있을 땐 문서 카드와 토폴로지 카드 모두 숨겨서 같은 empty state가
-              반복되지 않게 한다. */}
-          {knowledgeInsight.nodes.length > 0 ? (
-            <article
-              id="project-detail-insight"
-              className="order-1 rounded-[28px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-6 py-6 md:px-8"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <h2 className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
-                    {t("evidenceTitle")}
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-tertiary)]">
-                    {t("evidenceDescription")}
-                  </p>
-                </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  {knowledgeInsight.meta?.publishedAt && (
-                    <span className="break-keep text-[11px] text-[color:var(--color-text-quaternary)]">
-                      {formatDate(knowledgeInsight.meta.publishedAt)}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <>
-                <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.12fr)_minmax(240px,0.88fr)]">
-                  <div className="space-y-3">
-                    <p className="text-[11px] text-[color:var(--color-text-quaternary)]">
-                      {t("evidenceRepDoc")}
-                    </p>
-                    {insightDocumentNodes.slice(0, 1).map((node) => (
-                      <div
-                        key={node.id}
-                        className="rounded-[20px] border border-[color:var(--color-border-soft)] px-4 py-4"
-                      >
-                        <p className="text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                          {node.title}
-                        </p>
-                        <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-secondary)]">
-                          {node.summary || t("evidenceDocSummaryFallback")}
-                        </p>
-                      </div>
-                    ))}
-                    {insightDocumentNodes.length > 1 ? (
-                      <p className="text-xs text-[color:var(--color-text-tertiary)]">
-                        {t("evidenceMoreDocs", { count: insightDocumentNodes.length - 1 })}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-[11px] text-[color:var(--color-text-quaternary)]">
-                        {t("evidenceConnectionsTitle")}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-[color:var(--color-text-secondary)]">
-                        {ontologyReasonNote}
-                      </p>
-                    </div>
-
-                    <details className="rounded-[20px] border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3">
-                      <summary className="cursor-pointer list-none text-[11px] text-[color:var(--color-text-quaternary)]">
-                        {t("evidenceMoreReadCta")}
-                      </summary>
-                      {insightConceptNodes.length > 0 ? (
-                        <div className="mt-3">
-                          <p className="text-[11px] text-[color:var(--color-text-quaternary)]">
-                            {t("evidenceCoOccurringTitle")}
-                          </p>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {insightConceptNodes.slice(0, 4).map((node) => (
-                              <span
-                                key={node.id}
-                                className="inline-flex rounded-full border border-[color:var(--color-divider)] px-3 py-1.5 text-xs text-[color:var(--color-text-secondary)]"
-                              >
-                                {node.title}
-                              </span>
-                            ))}
-                          </div>
-                          {evidenceSummary.counts.concepts > insightConceptNodes.length ? (
-                            <p className="mt-2 text-xs text-[color:var(--color-text-tertiary)]">
-                              {t("evidenceMoreConcepts")}
-                            </p>
-                          ) : null}
-                        </div>
-                      ) : null}
-                      {insightEdgeLabels.length > 0 ? (
-                        <div className="mt-4">
-                          <p className="text-[11px] text-[color:var(--color-text-quaternary)]">
-                            {t("evidenceConnectionReasonsTitle")}
-                          </p>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            {insightEdgeLabels.map((label, index) => (
-                              <span
-                                key={`${label}-${index}`}
-                                className="inline-flex rounded-full border border-[color:var(--color-divider)] px-3 py-1.5 text-xs text-[color:var(--color-text-secondary)]"
-                              >
-                                {label}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      ) : null}
-                      <p className="mt-3 text-sm leading-6 text-[color:var(--color-text-tertiary)]">
-                        {connectionNote}
-                      </p>
-                      {heroSignals.length > 0 ? (
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {heroSignals.map((signal) => (
-                            <span
-                              key={signal}
-                              className="inline-flex rounded-full border border-[color:var(--color-divider)] px-3 py-1.5 text-xs text-[color:var(--color-text-secondary)]"
-                            >
-                              {signal}
-                            </span>
-                          ))}
-                        </div>
-                      ) : null}
-                      <p className="mt-4 text-sm leading-6 text-[color:var(--color-text-tertiary)]">
-                        {t("evidenceCounts", {
-                          documents: evidenceSummary.counts.documents,
-                          concepts: evidenceSummary.counts.concepts,
-                          edges: evidenceSummary.counts.edges,
-                        })}
-                      </p>
-                    </details>
-                  </div>
-                </div>
-              </>
-            </article>
           ) : null}
 
           {project.screenshots.length > 0 && (
