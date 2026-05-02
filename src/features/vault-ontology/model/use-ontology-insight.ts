@@ -16,8 +16,19 @@ import {
 } from '@/entities/docs-vault';
 import { useVaultOntology } from './use-vault-ontology';
 
-const VAULT_SENTINEL_DATE = new Date(0);
+export const VAULT_SENTINEL_DATE = new Date(0);
 const VAULT_SENTINEL_AUTHOR = 'vault-frontmatter';
+
+/**
+ * 한 노드의 \`lastApprovedAt\` 이 vault sentinel 값 (epoch 0 = 1970-01-01) 인지.
+ *
+ * vault / dogfood 모드 노드는 frontmatter 가 진실원이라 시간 정보를 갖지 않아
+ * sentinel 로 채움. UI 가 sentinel 을 감지하면 timestamp / timeline 패널을 mode
+ * 기반 hide / 변형 가능 (1970-01-01 같은 어색한 표시 회피).
+ */
+export function isVaultSentinelDate(d: Date | null | undefined): boolean {
+  return d instanceof Date && d.getTime() === 0;
+}
 
 // 빌드타임 dogfood 매니페스트 — JSON import. mode === 'static' 일 때
 // 진실원. local/cloud 와는 별 path.

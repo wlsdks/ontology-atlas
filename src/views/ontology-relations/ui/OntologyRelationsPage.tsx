@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { KNOWLEDGE_EDGE_TYPES } from "@/entities/knowledge-graph";
-import { useOntologyInsight } from "@/features/vault-ontology";
+import { useOntologyInsight, isVaultSentinelDate } from "@/features/vault-ontology";
 import {
   computeEdgeTypeDistribution,
   selectStrongEdges,
@@ -62,6 +62,15 @@ export function OntologyRelationsPage() {
   }, [typeDist]);
   const typeMax = typeRows.reduce((m, r) => Math.max(m, r.count), 0);
   const totalEdges = insight?.edges.length ?? 0;
+  // vault / dogfood 모드는 노드 evidenceCount 0 → "강한 관계" 정렬 의미 0.
+  // sentinel 모드면 panel 자체 hide.
+  const isVaultSentinelMode = useMemo(
+    () =>
+      insight !== null &&
+      insight.nodes.length > 0 &&
+      insight.nodes.every((n) => isVaultSentinelDate(n.lastApprovedAt)),
+    [insight],
+  );
 
   return (
     <div>
@@ -103,7 +112,7 @@ export function OntologyRelationsPage() {
           </div>
         </div>
         <p className="break-keep text-sm leading-7 text-[color:var(--color-text-secondary)]">
-          노드는 트리, 통계는 인사이트. 관계는 *의미 관계 종류* 의 분포와 근거 풍부한 관계를 보여줍니다.
+          노드는 트리, 통계는 인사이트. 관계는 *의미 관계 종류* 의 분포를 보여줍니다.
         </p>
       </section>
 
@@ -205,7 +214,9 @@ export function OntologyRelationsPage() {
             ) : null}
           </section>
 
-          {/* 강한 관계 top */}
+          {/* 강한 관계 top — vault sentinel mode 는 노드 evidenceCount 0 이라
+              "강한" 정렬 의미 0 → panel 자체 hide. cloud 모드에서만 노출. */}
+          {isVaultSentinelMode ? null : (
           <section className="rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-5 py-4">
             <header className="mb-3">
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
@@ -261,6 +272,7 @@ export function OntologyRelationsPage() {
               })}
             </ol>
           </section>
+          )}
         </div>
       )}
       </div>

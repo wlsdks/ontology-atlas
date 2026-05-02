@@ -7,7 +7,7 @@ import {
   KNOWLEDGE_EDGE_TYPES,
   ManualSourceChip,
 } from "@/entities/knowledge-graph";
-import { useOntologyInsight } from "@/features/vault-ontology";
+import { useOntologyInsight, isVaultSentinelDate } from "@/features/vault-ontology";
 import { getOntologyKindLabel } from "@/entities/ontology-class";
 import {
   buildActivityTimeline,
@@ -71,6 +71,15 @@ export function OntologyInsightsPage() {
 
   const totalNodes = insight?.nodes.length ?? 0;
   const totalEdges = insight?.edges.length ?? 0;
+  // vault / dogfood 모드는 lastApprovedAt 이 sentinel (epoch 0 = 1970-01-01).
+  // 30일 활동 timeline + 노드별 timestamp 표시는 의미 0 이라 mode-aware hide.
+  const isVaultSentinelMode = useMemo(
+    () =>
+      insight !== null &&
+      insight.nodes.length > 0 &&
+      insight.nodes.every((n) => isVaultSentinelDate(n.lastApprovedAt)),
+    [insight],
+  );
 
   // kind 분포 — sorted desc + 시각용 합계.
   const kindRows = useMemo(() => {
@@ -380,8 +389,15 @@ export function OntologyInsightsPage() {
             )}
           </Panel>
 
-          {/* 최근 활동 */}
-          <Panel title="최근 활동" subtitle="가장 최근 승인된 노드 10">
+          {/* 최근 노드 (vault sentinel mode 면 timestamp 의미 0 — chip / 제목만) */}
+          <Panel
+            title={isVaultSentinelMode ? "노드 미리보기" : "최근 활동"}
+            subtitle={
+              isVaultSentinelMode
+                ? `vault frontmatter 노드 ${recent.length}`
+                : "가장 최근 갱신된 노드 10"
+            }
+          >
             <ol className="space-y-1">
               {recent.map((node) => (
                 <li key={node.id}>
@@ -396,21 +412,24 @@ export function OntologyInsightsPage() {
                       {node.title}
                     </span>
                     <ManualSourceChip source={node.source} size="compact" />
-                    <span className="shrink-0 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                      {formatRelativeDate(node.lastApprovedAt)}
-                    </span>
+                    {isVaultSentinelMode ? null : (
+                      <span className="shrink-0 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                        {formatRelativeDate(node.lastApprovedAt)}
+                      </span>
+                    )}
                   </Link>
                 </li>
               ))}
             </ol>
           </Panel>
 
-          {/* 30일 활동 타임라인 — full width (col-span-2 데스크톱) */}
+          {/* 30일 활동 타임라인 — vault sentinel mode 에서는 timeline 의미 0 이라 hide */}
+          {isVaultSentinelMode ? null : (
           <div className="md:col-span-2">
-            <Panel title="30일 활동" subtitle={`지난 30일 동안 승인된 노드 ${activityTotal}`}>
+            <Panel title="30일 활동" subtitle={`지난 30일 동안 갱신된 노드 ${activityTotal}`}>
               {activityTotal === 0 ? (
                 <p className="text-[12px] text-[color:var(--color-text-tertiary)]">
-                  지난 30일에 승인된 노드가 없어요.
+                  지난 30일에 갱신된 노드가 없어요.
                 </p>
               ) : (
                 <div>
@@ -438,6 +457,7 @@ export function OntologyInsightsPage() {
               )}
             </Panel>
           </div>
+          )}
 
           {/* 미연결 노드 */}
           <Panel
