@@ -141,7 +141,7 @@ function EditorContent({
     if (mode === "create") {
       await projectMutations.createProject(payload);
       if (options.behavior === "stay") {
-        toast.show(`"${input.name}" 만들었습니다 · 이제 보강하세요`, "success");
+        toast.show(`"${input.name}" 생성 · 편집 화면에서 세부 정보 채우기`, "success");
         router.replace(buildEditHref(input.slug));
         return;
       }
@@ -158,7 +158,7 @@ function EditorContent({
   const handleDelete = async () => {
     if (!slug) return;
     await projectMutations.deleteProject(slug);
-    toast.show("프로젝트를 삭제했습니다", "success");
+    toast.show("프로젝트 삭제", "success");
     router.push(safeReturnTo);
   };
 
