@@ -19,7 +19,7 @@ import { matchOntologyNodes, matchProjects } from "../lib/match";
 export interface GlobalSearchProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** ontology 노드 — 첫 검색 source (vault frontmatter / 빌더 / cloud 모두 통합). */
+  /** ontology 노드 — 첫 검색 source (vault frontmatter / 빌드타임 dogfood 통합). */
   nodes: readonly KnowledgeGraphNode[];
   /** ontology 노드 선택 콜백. */
   onSelectNode: (node: KnowledgeGraphNode) => void;

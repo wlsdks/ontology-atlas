@@ -9,6 +9,10 @@ import { useOntologyInsight } from "@/features/vault-ontology";
 import { useGlobalSearchHotkey } from "../lib/use-global-search-hotkey";
 import { GlobalSearch } from "./GlobalSearch";
 
+// insight 가 아직 로드 안 된 경우 동일 reference 로 fallback — 매 render
+// 새 [] 할당하면 GlobalSearch 의 useMemo 가 매번 invalidate.
+const EMPTY_NODES: readonly KnowledgeGraphNode[] = Object.freeze([]);
+
 export interface MountedGlobalSearchProps {
   /**
    * ontology 노드 선택 시 — 미제공이면 default = `/ontology/` 라우트로 push.
@@ -58,9 +62,9 @@ export function MountedGlobalSearch({
   };
   // ontology nodes — vault frontmatter (또는 빌드타임 dogfood) 진실원에서
   // 직접 가져옴. useOntologyInsight 가 mode-aware 우선순위 (vault > static)
-  // 로 알아서 결정. cloud markdown 시대의 빈 배열 placeholder 정리.
+  // 로 알아서 결정.
   const { insight } = useOntologyInsight();
-  const nodes: KnowledgeGraphNode[] = insight?.nodes ?? [];
+  const nodes = insight?.nodes ?? EMPTY_NODES;
   const { projects } = useProjects();
 
   // controlled mount 시 hotkey 비활성 — caller 가 다른 hotkey 로 open 관리.
@@ -82,7 +86,6 @@ export function MountedGlobalSearch({
         }
         // default — /ontology 페이지로 점프 + deeplink ?node=<id>. 페이지가
         // insight 로드 후 해당 노드를 selectedNode 로 자동 설정.
-        // R10 — accountId 항상 null 이라 account query 무의미. 단순화.
         router.push(`/ontology/?node=${encodeURIComponent(node.id)}`);
       }}
       onSelectProject={(project) => {
