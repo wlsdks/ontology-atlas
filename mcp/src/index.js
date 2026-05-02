@@ -36,6 +36,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { resolve } from 'node:path';
 
+import { existsSync } from 'node:fs';
 import {
   deleteDoc,
   ensureVaultRoot,
@@ -578,9 +579,13 @@ function deleteConcept({ slug, confirm = false, force = false }) {
   if (!slug) {
     throw new Error('slug 가 필요합니다.');
   }
-  // 존재 확인 — readDoc 이 실패하면 명확한 에러로 surface.
+  // 존재 검사 — dry-run 이 \"삭제 가능\" 이라고 거짓 안내 안 하도록.
+  // (실제 삭제 단계의 deleteDoc 도 다시 throw 하지만, dry-run path 는
+  // deleteDoc 까지 가지 않으므로 별도 확인.)
   const filePath = slugToPath(VAULT_ROOT, slug);
-  const target = readDoc(VAULT_ROOT, filePath);
+  if (!existsSync(filePath)) {
+    throw new Error(`Doc not found: ${slug}`);
+  }
   const backlinks = findBacklinks(VAULT_ROOT, slug);
 
   if (!confirm) {
