@@ -23,7 +23,11 @@ import {
   type SigmaEdgeAttrs,
   type SigmaNodeAttrs,
 } from '../lib/graph-build';
-import type { OntologyCountsForProject } from '@/shared/lib/ontology-tree';
+import {
+  buildProjectOntologyCounts,
+  type OntologyCountsForProject,
+} from '@/shared/lib/ontology-tree';
+import { useOntologyInsight } from '@/features/vault-ontology';
 import { useSyncedCallbackRef } from '@/shared/lib/use-synced-callback-ref';
 import { computeDepthMap, shortestPath } from '../lib/depth';
 import { useCameraUrlSync } from '../lib/use-camera-url-sync';
@@ -75,8 +79,8 @@ const AUDIT_PROMOTION_MIN_FAN_IN = 4;
 // 양 끝 대칭 감 대신 arrival 쪽을 더 길게 풀어 준다. easeOutQuart.
 const CAMERA_EASING = (k: number) => 1 - Math.pow(1 - k, 4);
 
-// R10b — ontology kind counts 가 cloud 의존이라 영구 빈 맵. module-scope 상수로
-// referential stability 보장 — 매 render 새 Map 생성 회피.
+// vault / 빌드타임 dogfood 진실원에 ontology 노드가 0 인 경우 fallback —
+// referential stability 보장 (매 render 새 Map 생성 회피).
 const EMPTY_ONTOLOGY_COUNTS: Map<string, OntologyCountsForProject> = new Map();
 
 // 선택 bounce — 토스 버튼 / 애플 아이콘 탭 탄성. 280ms sine curve 로
@@ -404,11 +408,18 @@ export function SigmaTopology({
   const [contextMenu, setContextMenu] = useState<SigmaContextMenuData | null>(null);
   const [edgeHover, setEdgeHover] = useState<SigmaEdgeTooltipData | null>(null);
 
-  // R10b — ontology kind 별 borderColor 카운트 cloud 의존이라 영구 제거.
-  // 미래에 vault frontmatter 기반으로 다시 도입할 때 새 hook 으로 대체.
-  // 그동안 항상 빈 맵 — module-scope EMPTY_MAP 으로 referential stability 보장
-  // (이전엔 useMemo + helper 호출이 reference 유지하긴 했지만 필요 없는 호출).
-  const ontologyCountsBySlug = EMPTY_ONTOLOGY_COUNTS;
+  // ontology kind 별 borderColor — vault frontmatter (또는 빌드타임 dogfood)
+  // 의 노드를 buildProjectOntologyCounts 로 slug 별 집계. project / document
+  // 메타 kind 제외 (4 kind: domain / capability / element / unknown).
+  // ontology 노드 0 인 경우 module-scope EMPTY 로 짧게 short-circuit — 매 render
+  // 새 Map 생성 회피.
+  const { insight: ontologyInsight } = useOntologyInsight();
+  const ontologyCountsBySlug = useMemo(() => {
+    if (!ontologyInsight || ontologyInsight.nodes.length === 0) {
+      return EMPTY_ONTOLOGY_COUNTS;
+    }
+    return buildProjectOntologyCounts(ontologyInsight.nodes);
+  }, [ontologyInsight]);
 
   const graph = useMemo(() => {
     const g = buildGraph(projects, categories, {
