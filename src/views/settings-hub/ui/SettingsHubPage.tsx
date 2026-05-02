@@ -7,7 +7,6 @@ import {
   Compass,
   Database,
   Layers,
-  Network,
   Tag,
 } from 'lucide-react';
 import { PermissionGate } from '@/features/permissions';
@@ -63,12 +62,6 @@ function SettingsHubContent() {
           helper: '샘플로 시작하거나 CSV 로 한 번에 올리기',
           href: '/settings/import/',
           icon: Database,
-        },
-        {
-          label: '온톨로지 schema',
-          helper: '활성 TBox 클래스·관계 보기 (곧 직접 추가 가능)',
-          href: '/settings/ontology/',
-          icon: Network,
         },
       ],
     },

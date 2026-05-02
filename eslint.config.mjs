@@ -189,22 +189,6 @@ const eslintConfig = defineConfig([
                 "firestore api 는 '@/entities/ontology-relation/api' 로 직접 import 하세요.",
             },
             {
-              name: '@/entities/ontology-tbox',
-              importNames: [
-                'loadActiveTBox',
-                'createTBoxVersion',
-                'activateTBoxVersion',
-                'listTBoxVersions',
-                'getActiveTBoxState',
-                'generateTBoxVersionId',
-                'appendClassAndActivate',
-                'appendRelationAndActivate',
-                'updateClassMetadataAndActivate',
-                'ActiveTBox',
-              ],
-              message: "firestore api 는 '@/entities/ontology-tbox/api' 로 직접 import 하세요.",
-            },
-            {
               name: '@/entities/knowledge-document',
               importNames: [
                 'listKnowledgeDocuments',
