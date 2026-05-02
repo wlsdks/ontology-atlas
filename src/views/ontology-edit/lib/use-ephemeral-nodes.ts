@@ -4,10 +4,11 @@ import { useCallback, useState } from "react";
 import type { ManualNodeKind } from "@/entities/knowledge-graph";
 
 /**
- * Track C-3 — palette 클릭으로 추가하는 임시 노드 상태.
+ * palette 클릭으로 추가하는 임시 노드 상태.
  *
- * Firestore persist 는 C-4/C-5 fire 에서. 새로고침 시 사라짐 (의도).
- * id 충돌 회피 위해 timestamp + random suffix.
+ * 캔버스 안 in-memory 상태 — 새로고침 시 사라짐 (의도). 영구화는 인스펙터에서
+ * 이름 입력 + 저장 시 vault 의 \`{kind}s/{slug}.md\` 작성 (mission v2: vault
+ * frontmatter 가 진실원). id 충돌 회피 위해 timestamp + random suffix.
  */
 export interface EphemeralNode {
   id: string;

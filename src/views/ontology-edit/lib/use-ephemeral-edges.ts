@@ -4,9 +4,11 @@ import { useCallback, useState } from "react";
 import type { Connection } from "@xyflow/react";
 
 /**
- * Track C-6 — palette 노드 핸들에서 drag 해 만드는 임시 edge.
+ * palette 노드 핸들에서 drag 해 만드는 임시 edge.
  *
- * Firestore persist 는 C-7 fire 에서. 새로고침 시 사라짐 (의도).
+ * 캔버스 안 in-memory 상태 — 새로고침 시 사라짐 (의도). 영구화는 인스펙터에서
+ * 저장 시 vault 의 .md frontmatter 배열 키 (capabilities / elements /
+ * dependencies / relates) 에 직접 append.
  */
 export interface EphemeralEdge {
   id: string;

@@ -96,7 +96,7 @@ export function buildVaultGraphFlow(manifest: VaultManifest) {
       },
       width: NODE_WIDTH,
       height: NODE_HEIGHT,
-      // C-5 fire — drag 활성. drag-stop 시 page 가 frontmatter.canvasPosition patch.
+      // drag 활성. drag-stop 시 page 가 frontmatter.canvasPosition patch.
       draggable: true,
       // edge 재생성은 vault 진실원 보호 위해 비활성. 인스펙터/frontmatter 수정.
       connectable: false,
