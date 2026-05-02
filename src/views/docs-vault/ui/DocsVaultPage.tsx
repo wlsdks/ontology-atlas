@@ -124,16 +124,8 @@ function AdminDocsContent() {
   const querySlug = searchParams?.get('slug') ?? null;
   const queryView = parseView(searchParams?.get('view'));
   const queryAudience = parseAudience(searchParams?.get('audience'));
-  const accountId = searchParams?.get('account')?.trim() || null;
-  // 로그인 사용자가 ?account= 없이 진입하면 본인 워크스페이스로 자동 스코프.
-  const adminDashboardHref = useMemo(
-    () => '/projects/',
-    [accountId],
-  );
-  const workspaceHref = useMemo(
-    () => '/',
-    [accountId],
-  );
+  const adminDashboardHref = '/projects/';
+  const workspaceHref = '/';
   const getDocHref = useCallback(
     (slug: string, hash?: string) => buildDocsVaultHref({ slug, hash }),
     [],
