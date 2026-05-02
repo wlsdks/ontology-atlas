@@ -667,6 +667,10 @@
       "audiencePlanner": "기획자",
       "audienceEngineer": "개발자",
       "audienceBoth": "공용"
+    },
+    "tags": {
+      "sectionLabel": "태그",
+      "rowTitle": "{tag} · {count}건"
     }
   },
   "ontologyPages": {

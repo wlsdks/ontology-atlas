@@ -667,6 +667,10 @@
       "audiencePlanner": "planner",
       "audienceEngineer": "engineer",
       "audienceBoth": "shared"
+    },
+    "tags": {
+      "sectionLabel": "Tags",
+      "rowTitle": "{tag} · {count} items"
     }
   },
   "ontologyPages": {

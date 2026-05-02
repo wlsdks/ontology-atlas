@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { ChevronDown, Hash, X } from 'lucide-react';
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
  * 클릭 = 필터 on/off. 활성 태그에는 인디고 배경, 해제 × 버튼 표기.
  */
 export function DocsVaultTags({ tags, activeTag, onSelect }: Props) {
+  const t = useTranslations('vaultWidgets.tags');
   const entries = Object.entries(tags);
   if (entries.length === 0) return null;
   entries.sort((a, b) => b[1].length - a[1].length);
@@ -35,7 +37,7 @@ export function DocsVaultTags({ tags, activeTag, onSelect }: Props) {
     >
       <summary className="flex cursor-pointer list-none items-center gap-1.5 rounded-sm px-2 py-1 font-mono text-[9.5px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]">
         <Hash size={10} aria-hidden />
-        <span>태그</span>
+        <span>{t('sectionLabel')}</span>
         <span className="text-[color:var(--color-text-quaternary)]">
           {activeTag ? `#${activeTag}` : entries.length}
         </span>
@@ -59,7 +61,7 @@ export function DocsVaultTags({ tags, activeTag, onSelect }: Props) {
                   ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:rgba(200,210,255,0.95)]'
                   : 'border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(139,151,255,0.3)] hover:text-[color:var(--color-text-primary)]'
               }`}
-              title={`${tag} · ${slugs.length}건`}
+              title={t('rowTitle', { tag, count: slugs.length })}
             >
               {active ? <X size={9} aria-hidden /> : null}
               {tag}
