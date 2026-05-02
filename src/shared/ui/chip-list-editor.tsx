@@ -139,13 +139,13 @@ export function ChipListEditor({
             onBlur={commit}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
-            className="rounded-full border border-[color:rgba(139,151,255,0.35)] bg-[color:var(--color-elevated)] px-3 py-1.5 text-xs text-[color:var(--color-text-primary)] outline-none focus:border-[color:rgba(139,151,255,0.6)]"
+            className="rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:var(--color-elevated)] px-3 py-1.5 text-xs text-[color:var(--color-text-primary)] outline-none focus:border-[color:var(--color-indigo-brand)]"
           />
         ) : (
           <button
             type="button"
             onClick={() => setAdding(true)}
-            className="inline-flex items-center gap-1 rounded-full border border-dashed border-[color:var(--color-border-strong)] bg-transparent px-3 py-1.5 text-xs text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex items-center gap-1 rounded-full border border-dashed border-[color:var(--color-border-strong)] bg-transparent px-3 py-1.5 text-xs text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
             aria-label="새 항목 추가"
           >
             <Plus size={11} />
