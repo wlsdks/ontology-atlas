@@ -133,7 +133,7 @@ function ProjectDetailBreadcrumb({
           데스크톱(md+)에서만 breadcrumb 옆에 작은 액션으로 노출. */}
       <Link
         data-testid="project-detail-topology-link"
-        href={slug ? getTopologyProjectHref(slug, accountId) : '/'}
+        href={slug ? getTopologyProjectHref(slug) : '/'}
         className="hidden md:inline-flex"
       >
         <Button type="button" variant="outline" size="sm">
@@ -712,7 +712,7 @@ export function ProjectDetailPage({
                 className="h-10 justify-center"
               />
               <Link
-                href={getTopologyProjectHref(project.slug, accountId)}
+                href={getTopologyProjectHref(project.slug)}
                 className="inline-flex h-10 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.38)] bg-[color:rgba(94,106,210,0.12)] px-4 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.16)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)]"
               >
                 {t("topBarTopologyView")}

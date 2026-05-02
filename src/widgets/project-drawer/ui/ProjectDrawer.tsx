@@ -577,7 +577,7 @@ export function ProjectDrawer({
                         {t("openDocsVault")}
                       </Link>
                       <Link
-                        href={getTopologyProjectHref(project.slug, accountId)}
+                        href={getTopologyProjectHref(project.slug)}
                         className="inline-flex h-10 items-center justify-center rounded-md border border-[color:var(--color-divider)] px-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                       >
                         {t("openTopology")}
