@@ -17,6 +17,12 @@ export interface SigmaNodeTooltipData {
 
 interface Props {
   data: SigmaNodeTooltipData;
+  /** "허브" / "Hub" 배지 라벨. */
+  hubLabel: string;
+  /** degree chip 의 native title (마우스 hover 시 보조 설명). */
+  degreeTitle: string;
+  /** degree chip 의 visible 텍스트. \`{count}\` placeholder 를 호출자가 채워서 전달. */
+  degreeLabel: string;
 }
 
 const TOOLTIP_W = 260;
@@ -26,7 +32,12 @@ const TOOLTIP_H = 180;
  * 노드 hover 시 나타나는 리치 툴팁. viewport 우·하단 잘림 방지를 위해
  * 커서 반대 방향으로 auto-flip. window.inner{Width,Height} 로 경계 계산.
  */
-export function SigmaNodeTooltip({ data }: Props) {
+export function SigmaNodeTooltip({
+  data,
+  hubLabel,
+  degreeTitle,
+  degreeLabel,
+}: Props) {
   const vpW = typeof window !== 'undefined' ? window.innerWidth : 1440;
   const vpH = typeof window !== 'undefined' ? window.innerHeight : 900;
   const flipX = data.x + 16 + TOOLTIP_W > vpW;
@@ -64,7 +75,7 @@ export function SigmaNodeTooltip({ data }: Props) {
         </span>
         {data.isHub ? (
           <span className="ml-auto rounded-sm border border-[color:rgba(139,151,255,0.35)] px-1 py-0.5 font-mono text-[8px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.9)]">
-            허브
+            {hubLabel}
           </span>
         ) : null}
       </div>
@@ -82,9 +93,9 @@ export function SigmaNodeTooltip({ data }: Props) {
         {typeof data.degree === 'number' && data.degree > 0 ? (
           <span
             className="ml-auto font-mono text-[9px] tabular-nums tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
-            title="연결된 프로젝트 수"
+            title={degreeTitle}
           >
-            연결 {data.degree}
+            {degreeLabel}
           </span>
         ) : null}
       </div>

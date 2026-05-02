@@ -1578,7 +1578,14 @@ export function SigmaTopology({
           임베드 (minimal) 에선 우측 drawer 가 같은 정보를 이미 주고 있고,
           작은 영역에 260x180 카드가 뜨면 시야가 가려 오히려 역효과. 인디고
           hover pill 만 표시. */}
-      {!minimal && hoverLabel ? <SigmaNodeTooltip data={hoverLabel} /> : null}
+      {!minimal && hoverLabel ? (
+        <SigmaNodeTooltip
+          data={hoverLabel}
+          hubLabel={t('tooltipHubBadge')}
+          degreeTitle={t('tooltipDegreeTitle')}
+          degreeLabel={t('tooltipDegreeLabel', { count: hoverLabel.degree ?? 0 })}
+        />
+      ) : null}
     </div>
   );
 }

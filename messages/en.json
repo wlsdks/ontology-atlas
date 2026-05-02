@@ -88,7 +88,10 @@
       "auditLegendTitle": "Things to look at",
       "auditLegendStale": "Stale · {threshold} day+ untouched ({count})",
       "auditLegendOrphan": "Orphan · 0 connections ({count})",
-      "auditLegendPromotion": "Hub candidate · referenced by {threshold}+ ({count})"
+      "auditLegendPromotion": "Hub candidate · referenced by {threshold}+ ({count})",
+      "tooltipHubBadge": "Hub",
+      "tooltipDegreeTitle": "Number of connected projects",
+      "tooltipDegreeLabel": "{count} links"
     },
     "controls": {
       "fitViewTooltip": "Fit map to view",

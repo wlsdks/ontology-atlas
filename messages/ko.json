@@ -88,7 +88,10 @@
       "auditLegendTitle": "챙길 곳 표시",
       "auditLegendStale": "오래된 · {threshold}일+ 안 건드림 ({count})",
       "auditLegendOrphan": "외톨이 · 연결 0 ({count})",
-      "auditLegendPromotion": "허브 후보 · {threshold}개 이상 부름 ({count})"
+      "auditLegendPromotion": "허브 후보 · {threshold}개 이상 부름 ({count})",
+      "tooltipHubBadge": "허브",
+      "tooltipDegreeTitle": "연결된 프로젝트 수",
+      "tooltipDegreeLabel": "연결 {count}"
     },
     "controls": {
       "fitViewTooltip": "지도 전체 맞추기",
