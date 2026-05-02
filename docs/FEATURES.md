@@ -501,10 +501,8 @@ Both go through `npm pack --dry-run` audit before any publish — 0 secrets / 0 
 
 ### 8.2 Hosting
 
-- **Firebase Hosting** at `https://oh-my-ontology.web.app` (free Spark plan)
-- Static export only (`output: 'export'` → `out/`); no Firebase Functions runtime needed
-- `firebase.json` defines the deploy with `predeploy: pnpm build` and a `/project/[slug]` rewrite to `/project/fallback`
-- `docs/DEPLOY-FIREBASE.md` — step-by-step deploy guide (English)
+- Static export only (`output: 'export'` → `out/`); deploy to any static host (GitHub Pages, Netlify, Vercel, Cloudflare Pages, etc.)
+- `docs/DEPLOYMENT.md` — step-by-step deploy guide
 
 ### 8.3 GitHub OSS surfaces
 
@@ -530,10 +528,9 @@ All English unless noted:
 | `docs/PRODUCT-DIRECTION.md` | mission v2 direction |
 | `docs/FEATURES.md` | this file |
 | `docs/ARCHITECTURE.md` | architecture and FSD boundaries |
-| `docs/DATA-MODEL.md` | Firestore schema + Storage layout |
 | `docs/DESIGN-SYSTEM.md` | tokens / motion / forbidden visual patterns |
-| `docs/MODE-AWARE-CRUD.md` | local / cloud / static branching guide |
-| `docs/DEPLOY-FIREBASE.md` | hosting deploy |
+| `docs/DEPLOYMENT.md` | static export deploy guide |
+| `docs/CHANGELOG.md` | chronological user-visible changes |
 | `docs/launch/*.md` | HN / Reddit / X drafts (Korean — internal launch material; published only after maintainer review) |
 
 ### 8.5 npm publish guard (3 layers)
