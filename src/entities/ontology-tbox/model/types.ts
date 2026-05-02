@@ -43,7 +43,7 @@ export type OntologyTBoxVersionInput = Omit<OntologyTBoxVersion, 'createdAt'>;
  * 활성 TBox version 포인터. account 당 한 doc.
  *
  * Firestore 구조: `ontologyTBoxState/{accountId}` → 이 객체.
- * fact node 생성 / 추출 워커는 이 포인터를 읽어 활성 versionId 식별.
+ * fact node 생성 시 이 포인터를 읽어 활성 versionId 식별 (cloud 모드).
  */
 export interface OntologyTBoxActiveState {
   accountId: string;

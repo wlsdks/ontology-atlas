@@ -15,9 +15,10 @@ import type { VaultDoc, VaultManifest } from '../model/types';
  * - `relates` — string[] (related_to edge 후보)
  * - `dependencies` — string[] (depends_on edge 후보)
  *
- * 출력은 evidence-ungrounded *stub* — 사용자가 검수 큐 또는 ontology view 에서
- * promote 하면 정식 fact 가 된다. 현재는 in-memory 데이터 (Phase 4.2 가 UI 에
- * 노출, IndexedDB 영속화는 후속).
+ * mission v2: vault frontmatter 자체가 진실원이라 별도 promote / 승격 단계
+ * 없음. 출력 stub 은 즉시 ontology 그래프로 surface (\`/ontology\` 트리,
+ * 빌더 캔버스, /insights / /relations 등). cloud Firestore 와의 sync 는
+ * 옵션 — \`useDataSourceMode\` 가 cloud 일 때만 mutation 이 cloud 로.
  */
 
 export type OntologyStubSource = 'frontmatter';
