@@ -62,12 +62,7 @@
     "step3Body": "The same ontology as tree, topology, and ERD. Domain census, blast radius, dependency chains, all on one screen.",
     "exploreCta": "Explore the ontology",
     "openVaultCta": "Open my markdown folder",
-    "privacyNote": "Local folders stay on your disk and are never sent anywhere. Your data, your truth source.",
-    "returnTargetEyebrow": "Sign-in required",
-    "returnTargetTitleLine1": "Sign in to",
-    "returnTargetTitleEmphasis": "continue",
-    "returnTargetSubtitle": "The screen you requested needs sign-in. After you sign in we'll take you straight back.",
-    "returnTargetCta": "Sign in and continue"
+    "privacyNote": "Local folders stay on your disk and are never sent anywhere. Your data, your truth source."
   },
   "kinds": {
     "project": "Project",
