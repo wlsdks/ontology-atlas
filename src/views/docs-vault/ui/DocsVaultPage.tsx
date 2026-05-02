@@ -36,7 +36,7 @@ import {
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
 import { Tooltip } from '@/shared/ui';
-// Fire 4-d-1 — 추출된 헬퍼들.
+// 추출된 page-local helpers.
 import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
 import { useDocsVaultScrollSpy } from '../lib/use-scroll-spy';
 import {
@@ -97,10 +97,8 @@ const DocsVaultGraph = dynamic(
 
 const serverManifest = vaultManifest as VaultManifest;
 
-// Fire 4-b — persistence helpers 분리: src/views/docs-vault/lib/persistence.ts
-//
-// parseView → parseDocsVaultView, parseAudience → parseDocsVaultAudience 로
-// 이름 정확화 (다른 view 도메인 과 collision 회피).
+// view 파싱 / persistence helpers — 다른 도메인의 view 와 collision 회피용
+// `DocsVault*` 네임스페이스. 본 파일 안에선 짧은 별칭으로 alias.
 import { DocMetaBar } from "./parts/DocMetaBar";
 import { DocsSidebarBody } from "./parts/DocsSidebarBody";
 import { DocsVaultDocOutlinePanel } from "./parts/DocsVaultDocOutlinePanel";
@@ -304,7 +302,7 @@ function AdminDocsContent() {
     [],
   );
 
-  // Fire 4-d-1 — 스크롤 스파이 hook 추출 (lib/use-scroll-spy.ts).
+  // 스크롤 스파이 — 본문 스크롤 따라 outline 의 active heading 추적.
   const { articleScrollRef, activeHeadingSlug, setActiveHeadingSlug } =
     useDocsVaultScrollSpy(selectedSlug, source);
 
@@ -1363,8 +1361,7 @@ function AdminDocsContent() {
   ]);
 
   // 좌측 사이드바 내부 내용 — aside 와 mobile drawer 양쪽에서 재사용.
-  // Fire 4-d-2 — sidebarBody JSX 변수를 컴포넌트 (parts/DocsSidebarBody) 로
-  // 승격. onSelect 는 caller 가 mobile drawer 닫기와 wrapping.
+  // onSelect 는 caller 가 mobile drawer 닫기와 wrapping.
   const handleSelectFromSidebar = useCallback(
     (slug: string) => {
       handleSelect(slug);
@@ -1862,8 +1859,7 @@ function AdminDocsContent() {
                 )}
               </div>
               {/* 우측 사이드: heading outline + backlinks. 편집 중엔 숨김 —
-                  Editor 가 자체 툴바/액션을 가지고 공간도 쓰므로. Fire 4-d-3
-                  에서 컴포넌트 추출 (parts/DocsVaultDocOutlinePanel). */}
+                  Editor 가 자체 툴바/액션을 가지고 공간도 쓰므로. */}
               {!editing ? (
                 <DocsVaultDocOutlinePanel
                   selectedDoc={selectedDoc}
@@ -1922,10 +1918,6 @@ function AdminDocsContent() {
     </div>
   );
 }
-
-// Fire 4-c — DocMetaBar / EmptyState 분리:
-//   src/views/docs-vault/ui/parts/DocMetaBar.tsx
-//   src/views/docs-vault/ui/parts/EmptyState.tsx
 
 export function DocsVaultPage() {
   // local-first 핵심 (`.claude/rules/local-first.md` §1) — vault picker 진입은
