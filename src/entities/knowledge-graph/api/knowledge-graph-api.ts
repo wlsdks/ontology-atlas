@@ -318,17 +318,17 @@ export function subscribeKnowledgeApprovedGraph(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Manual editor v0 (B 라인) — 사용자가 추출 워커 거치지 않고 직접 노드 작성.
+// Manual editor — 사용자가 직접 ontology 노드 작성하는 cloud-mode 경로.
+// (mission v2 default 흐름은 vault frontmatter 직접 작성 — vault.createDoc.
+// 이 함수는 cloud 모드에서 동등 동작.)
 //
 // 동작:
 // - runTransaction 으로 같은 ID 노드 존재 여부 확인 → 있으면 alreadyExists=true
-//   반환 (§6.3.2 케이스 B). UI 가 "기존 보기 / 다른 ID" 두 옵션 제시.
+//   반환. UI 가 "기존 보기 / 다른 ID" 두 옵션 제시.
 // - 없으면 setDoc with source="manual" + manualAuthor=auth.uid + serverTimestamp.
-// - Firestore rules (firestore.rules `knowledgeApprovedNodes` create) 가 같은
-//   제약을 서버에서도 강제 — kind 화이트리스트, manualAuthor==auth.uid,
-//   account member, title 비어있지 않음.
-//
-// 참조: 2026-04-27-ontology-manual-editor-v0.md §3 / §6.3
+// - Firestore rules (`knowledgeApprovedNodes` create) 가 같은 제약을 서버에서도
+//   강제 — kind 화이트리스트, manualAuthor==auth.uid, account member, title
+//   비어있지 않음.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface AddManualKnowledgeNodeResult {

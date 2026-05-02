@@ -83,7 +83,7 @@ export function OntologyViewPage() {
     const qs = params.toString();
     router.replace(qs ? `/ontology/?${qs}` : "/ontology/", { scroll: false });
   };
-  // manual node create — 추출 워커 거치지 않고 사용자가 직접 노드 작성 (B 라인).
+  // manual node create — 사용자가 트리 surface 에서 직접 노드 추가하는 modal.
   const [manualOpen, setManualOpen] = useState(false);
   // manual edge create — 노드 상세 패널 "+ 관계 추가" 진입.
   const [edgeOpen, setEdgeOpen] = useState(false);
@@ -215,9 +215,9 @@ export function OntologyViewPage() {
               </button>
             </Tooltip>
           </h1>
-          {/* UX-3: 모바일에서 5 pill row 가 375 폭에 안 들어가 "검수 큐" 가
-              잘렸음. flex-wrap + horizontal scroll 보조로 안전하게. md+ 는
-              한 줄 유지. -mr/-ml 음수 마진 + px padding 으로 우측 잘림 방지. */}
+          {/* 모바일에서 pill row 가 375 폭에 안 들어가 잘릴 때를 위해
+              flex-wrap + horizontal scroll 보조. md+ 는 한 줄 유지. -mr/-ml
+              음수 마진 + px padding 으로 우측 잘림 방지. */}
           <div className="-mx-1 flex w-full items-center gap-2 overflow-x-auto px-1 pb-1 md:w-auto md:flex-wrap md:overflow-visible md:pb-0">
             <Tooltip content="새 노드 직접 추가" withProvider={false}>
               <button

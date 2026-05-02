@@ -302,8 +302,10 @@ function NewDocumentContent() {
           <p className="mt-3 max-w-xl text-sm leading-6 text-[color:var(--color-text-secondary)]">
             제목, 프로젝트, 원문만 넣고 먼저 등록할 수 있습니다.
           </p>
-          {/* 워크플로 컨텍스트 — 첫 사용자가 등록 후 무엇이 일어나는지 알 수 있게.
-              검수 큐 stepper (B-2) 와 동일한 4단계 모델. 현재는 1단계 ('올리기'). */}
+          {/* 워크플로 컨텍스트 — 첫 사용자가 등록 후 무엇이 일어나는지 알 수
+              있게. cloud 모드 4단계 (올리기 → 분류 → 표현 → 발행) 의 "1.
+              올리기" 단계. mission v2 의 default 흐름은 vault frontmatter 라
+              이 cloud 4단계는 cloud-mode 사용자에게만 의미. */}
           <ol
             aria-label="문서 라이프사이클 4단계 — 현재 1. 올리기"
             className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"

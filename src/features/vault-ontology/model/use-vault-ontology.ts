@@ -8,11 +8,11 @@ import {
 } from '@/entities/docs-vault';
 
 /**
- * 활성 로컬 vault 의 frontmatter 에서 추출한 ontology stub 을 라이브로 노출.
+ * 활성 로컬 vault 의 frontmatter 에서 derive 한 ontology 노드/엣지를 라이브로 노출.
  *
  * vault 가 활성화 ('loaded') 되어 있어야 실제 derivation 을 반환. 그 외에는
- * 빈 결과 + warning 한 줄. UI 는 이 결과를 *AI 추출 거치지 않은 fast path*
- * stub 으로 인지하고, 검수 큐로 promote 가능한 후보로 표시.
+ * 빈 결과 + warning 한 줄. mission v2: frontmatter 자체가 진실원이라 별도
+ * promote / 승격 단계 없이 그대로 ontology 그래프로 surface.
  */
 export function useVaultOntology(): VaultOntologyDerivation {
   const vault = useLocalVault();

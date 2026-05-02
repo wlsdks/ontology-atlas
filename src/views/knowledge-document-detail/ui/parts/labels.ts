@@ -25,7 +25,8 @@ export function resolveNodeKindLabel(kind: string): string {
  * `KnowledgeOutput.edges[].sourceTempId / targetTempId` 가 가리키는 노드의 사람
  * 친화 title 을 lookup. 매치되는 노드가 없으면 tempId 를 그대로 반환 (fallback).
  *
- * Output 의 edge 표시 / 검수 큐 후보 라인 / 알림 toast 등에서 ID 대신 title 표시.
+ * Output 의 edge 표시 / 알림 toast 등에서 ID 대신 title 표시 (legacy cloud
+ * extraction output viewer 잔존 헬퍼 — mission v2 에서 추출 자체 폐기).
  */
 export function resolveOutputNodeTitle(
   output: KnowledgeOutput,
