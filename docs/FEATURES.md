@@ -134,10 +134,10 @@ The `useDataSourceMode()` hook resolves to one of three modes:
 
 > Phase 3 — LLM agents like Claude Code read/write the ontology over stdin/stdout JSON-RPC.
 
-- **package**: `oh-my-ontology-mcp` v0.5.0 (in `mcp/`), depends on `@modelcontextprotocol/sdk@^1.0.0`
+- **package**: `oh-my-ontology-mcp` v0.6.0 (in `mcp/`), depends on `@modelcontextprotocol/sdk@^1.0.0`
 - **registration**: copy `.mcp.json.example` and set `OMOT_VAULT=<absolute path to your vault>` (or `./docs/ontology` for our dogfood vault)
 - **distribution**: `npx -y oh-my-ontology-mcp` (after publish), zero install
-- **11 tools** (read 7 + write 4):
+- **12 tools** (read 8 + write 4):
 
 | Tool | Read/write | Behavior |
 |---|---|---|
@@ -148,6 +148,7 @@ The `useDataSourceMode()` hook resolves to one of three modes:
 | `find_path` | read | shortest-path BFS between two slugs |
 | `list_kinds` | read | distribution of node kinds in the vault |
 | `find_orphans` | read | nodes with zero in/out edges |
+| `query_concepts` | read | Typed filter DSL — `kind=X AND has(Y) AND NOT ...` |
 | `add_concept` | write | write a new `.md` node — throws if the slug already exists |
 | `add_relation` | write | create an edge between two slugs (depends_on / relates / contains / describes) |
 | `patch_concept` | write | patch an existing node's frontmatter (per-key patch) + body |
@@ -225,7 +226,7 @@ The `useDataSourceMode()` hook resolves to one of three modes:
 
 | Item | Description |
 |---|---|
-| MCP server | `oh-my-ontology-mcp` package (`mcp/`), stdin/stdout JSON-RPC, 11 tools (read 7 + write 4) |
+| MCP server | `oh-my-ontology-mcp` package (`mcp/`), stdin/stdout JSON-RPC, 12 tools (read 8 + write 4) |
 | Registration | copy `.mcp.json.example` → restart Claude Code |
 | Vault | `OMOT_VAULT` env (default cwd) — the user's vault or `docs/ontology/` (dogfood) |
 | Compatibility | works on any vault; only `.md` files with a `kind:` frontmatter become nodes. Existing ontology format is preserved as-is |
@@ -427,7 +428,7 @@ the project expresses its own mental model as frontmatter markdown. At build tim
 - tsc 0 errors
 - eslint 0 errors (62 warnings — all pre-existing)
 - vitest **100 files / 721 tests pass**
-- MCP server stdin/stdout JSON-RPC: initialize → tools/list (11 tools) → tools/call all healthy
+- MCP server stdin/stdout JSON-RPC: initialize → tools/list (12 tools) → tools/call all healthy
 - MCP parser smoke pass
 - Playwright MCP browser-level QA (current routes): zero console errors on every mission v2 surface
 - CLI smoke (`node cli/src/index.mjs init test-vault`) writes 5 starter `.md` + `.mcp.json.example`
@@ -444,7 +445,7 @@ the project expresses its own mental model as frontmatter markdown. At build tim
 
 2. Register an AI agent (Claude Code) (optional):
    copy .mcp.json.example → set OMOT_VAULT → restart Claude Code
-   → mcp__oh-my-ontology__* 11 tools become available
+   → mcp__oh-my-ontology__* 12 tools become available
 
 3. Add a new project:
    (a) directly in the vault:

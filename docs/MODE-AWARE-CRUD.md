@@ -46,7 +46,7 @@ Of the four modes defined in `docs/LOCAL-FIRST-SYNC.md` §2, this pattern covers
 ### 2.5 AI agent partner (new in mission v2)
 
 - The `mcp/` package — a stdin/stdout JSON-RPC server based on `@modelcontextprotocol/sdk`. Lets AI agents (Claude Code, etc.) read/write vault `.md` files directly.
-- 11 tools (read 7 + write 4): `list_concepts` / `get_concept` / `find_evidence` / `find_backlinks` / `find_path` / `list_kinds` / `find_orphans` / `add_concept` / `add_relation` / `patch_concept` / `delete_concept`
+- 12 tools (read 8 + write 4): `list_concepts` / `get_concept` / `find_evidence` / `find_backlinks` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `add_concept` / `add_relation` / `patch_concept` / `delete_concept`
 - Registration: `.mcp.json.example` or `mcp/README.md`
 
 ---

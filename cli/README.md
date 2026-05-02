@@ -27,7 +27,7 @@ The vault is a plain folder of `.md` files. Frontmatter is the graph.
 ## How AI agents fit in
 
 Register the included `.mcp.json.example` with your AI agent (Claude Code,
-Cursor, Continue, etc.). The agent gets 11 tools to read and write the
+Cursor, Continue, etc.). The agent gets 12 tools to read and write the
 vault — same data the humans see.
 
 ```jsonc
@@ -43,8 +43,9 @@ vault — same data the humans see.
 }
 ```
 
-11 tools: `list_concepts` / `get_concept` / `find_evidence` /
-`find_backlinks` / `find_path` / `list_kinds` / `find_orphans` (read 7) +
+12 tools: `list_concepts` / `get_concept` / `find_evidence` /
+`find_backlinks` / `find_path` / `list_kinds` / `find_orphans` /
+`query_concepts` (read 8) +
 `add_concept` / `add_relation` / `patch_concept` / `delete_concept` (write 4).
 
 ## See the graph

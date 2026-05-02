@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * oh-my-ontology-mcp — MCP 서버 v0.5.0 (도구 11종 = read 7 + write 4).
+ * oh-my-ontology-mcp — MCP 서버 v0.6.0 (도구 12종 = read 8 + write 4).
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
  *
- * read 7:
+ * read 8:
  *   - list_concepts     — vault 의 노드 목록 (kind / project_filter)
  *   - get_concept       — 단일 노드 + 이웃 (dependencies / relates)
  *   - find_evidence     — title / capabilities / elements / body 부분매칭
@@ -12,6 +12,7 @@
  *   - find_path         — 두 slug 사이 그래프 최단 경로 (BFS, 무방향)
  *   - list_kinds        — vault kind 분포 census
  *   - find_orphans      — 어느 다른 노드도 frontmatter 에서 가리키지 않는 doc
+ *   - query_concepts    — typed filter DSL (kind=X AND has(Y) AND NOT ...)
  *
  * write 4:
  *   - add_concept       — 새 노드 (.md 파일 작성, 기존 slug 면 throw)
@@ -49,12 +50,13 @@ import {
   updateDoc,
   writeDoc,
 } from './vault.mjs';
+import { parseFilter } from './query.mjs';
 
 const VAULT_ROOT = resolve(process.env.OMOT_VAULT || process.cwd());
 ensureVaultRoot(VAULT_ROOT);
 
 const server = new Server(
-  { name: 'oh-my-ontology-mcp', version: '0.5.0' },
+  { name: 'oh-my-ontology-mcp', version: '0.6.0' },
   { capabilities: { tools: {} } },
 );
 
@@ -262,6 +264,36 @@ const TOOLS = [
     },
   },
   {
+    name: 'query_concepts',
+    description:
+      'Typed filter DSL — vault 노드를 조건으로 검색. saved-filter / smart-list ' +
+      '용도. find_path (BFS) 가 못 답하는 "어느 capability 가 element 가 0?" / ' +
+      '"domain=auth 의 stub 만" / "vault-readme 빼고 has(depends_on)" 같은 질문.\n\n' +
+      'Grammar (대소문자 무시, 공백 자유):\n' +
+      '  filter   := atom (AND|OR atom)*\n' +
+      '  atom     := NOT? predicate\n' +
+      '  predicate := key=value | key!=value | has(key)\n\n' +
+      'Keys: kind / domain / slug / title (= 비교) + 임의 frontmatter 배열 키 (has).\n' +
+      '예: `kind=capability AND domain=auth AND NOT has(elements)` ' +
+      '— auth 도메인의 cap 중 element 가 0 인 곳 (= 미완성된 cap).',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filter: {
+          type: 'string',
+          description:
+            '필터 식. 예: kind=capability AND has(elements). NOT / AND / OR 지원, ' +
+            '값에 공백 / 특수문자 있으면 "..." 또는 \'...\' 로 quote.',
+        },
+        limit: {
+          type: 'number',
+          description: '최대 반환 수. 기본 100.',
+        },
+      },
+      required: ['filter'],
+    },
+  },
+  {
     name: 'delete_concept',
     description:
       '⚠ DESTRUCTIVE — vault 의 .md 파일 영구 삭제. 안전 가드 2단:\n' +
@@ -321,6 +353,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(listKindsTool());
       case 'find_orphans':
         return ok(findOrphansTool(args));
+      case 'query_concepts':
+        return ok(queryConceptsTool(args));
       case 'delete_concept':
         return ok(deleteConcept(args));
       default:
@@ -478,6 +512,35 @@ function findOrphansTool({ kind, excludeKinds } = {}) {
     kind: typeof kind === 'string' ? kind : undefined,
     excludeKinds: Array.isArray(excludeKinds) ? excludeKinds : undefined,
   });
+}
+
+function queryConceptsTool({ filter, limit }) {
+  if (typeof filter !== 'string' || !filter.trim()) {
+    throw new Error('filter (string) 가 필요합니다.');
+  }
+  const parsed = parseFilter(filter);
+  const cap = typeof limit === 'number' && limit > 0 ? limit : 100;
+  const docs = loadVaultDocs(VAULT_ROOT).filter((d) => Boolean(d.frontmatter?.kind));
+  const matches = [];
+  for (const doc of docs) {
+    if (matches.length >= cap) break;
+    if (!parsed.match(doc)) continue;
+    matches.push({
+      slug: doc.slug,
+      kind: doc.frontmatter.kind,
+      title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
+      domain: doc.frontmatter.domain,
+      capabilities: doc.frontmatter.capabilities,
+      elements: doc.frontmatter.elements,
+    });
+  }
+  return {
+    filter,
+    parsedAs: parsed.repr,
+    total: matches.length,
+    matches,
+    limited: matches.length >= cap,
+  };
 }
 
 function deleteConcept({ slug, confirm = false, force = false }) {

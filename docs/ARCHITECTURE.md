@@ -36,7 +36,7 @@ tags: [architecture, infra, overview]
 ┌───────────────────────────────────────────────────────┐
 │ MCP server (mcp/) — AI agent partner                  │
 │ ├─ stdin/stdout JSON-RPC                              │
-│ └─ vault frontmatter read/write (11 tools)            │
+│ └─ vault frontmatter read/write (12 tools)            │
 └───────────────────────────────────────────────────────┘
 ```
 
@@ -100,8 +100,8 @@ In earlier cleanup stages (PR #5/#6) the chunking / extraction / review seed / a
 
 - **`mcp/` package** — `oh-my-ontology-mcp`, depends on `@modelcontextprotocol/sdk`, stdin/stdout JSON-RPC
 - AI agents (Claude Code, Cursor, …) read/write vault `.md` directly
-- 11 tools (read 7 + write 4):
-  - read: `list_concepts` · `get_concept` · `find_evidence` · `find_backlinks` · `find_path` · `list_kinds` · `find_orphans`
+- 12 tools (read 8 + write 4):
+  - read: `list_concepts` · `get_concept` · `find_evidence` · `find_backlinks` · `find_path` · `list_kinds` · `find_orphans` · `query_concepts` (typed filter DSL)
   - write: `add_concept` · `add_relation` · `patch_concept` · `delete_concept`
 - Registration: see `.mcp.json.example` or `mcp/README.md`
 
@@ -212,7 +212,7 @@ Detailed rules: [`rules/architecture-fsd.md`](rules/architecture-fsd.md)
 - vault frontmatter → ontology stub fast-path (mission v2)
 - ontology v0: TBox seed (5 classes + 7 relations), `/` tree + ego graph, the `/ontology/edit` builder, `/ontology/insights` + `/ontology/relations`, manual editor direct writes
 - V1.1 — Wikidata statement qualifiers + rank (optional fields, additive)
-- AI agent partner (MCP server) — vault read/write through 11 tools (read 7 + write 4)
+- AI agent partner (MCP server) — vault read/write through 12 tools (read 8 + write 4)
 - dogfood vault (`docs/ontology/`) — our own mental model
 - global admin whitelist
 
@@ -242,7 +242,7 @@ If a path appears in the docs but does not exist in the actual code, treat it as
 - [`DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md) — design tokens / motion / forbidden patterns
 - [`DEPLOYMENT.md`](./DEPLOYMENT.md) — Firebase deployment / rollback / domains
 - [`CHANGELOG.md`](./CHANGELOG.md) — chronological user-visible changes
-- [`../mcp/README.md`](../mcp/README.md) — MCP server 11 tools + registration
+- [`../mcp/README.md`](../mcp/README.md) — MCP server 12 tools + registration
 - [`../AGENTS.md`](../AGENTS.md) / [`../CLAUDE.md`](../CLAUDE.md) — agent / contributor guide
 - [`../.claude/rules/`](../.claude/rules/) — granular working rules
 

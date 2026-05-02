@@ -1,6 +1,6 @@
 {
   "name": "oh-my-ontology-mcp",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "MCP server — humans and AI agents read/write the same codebase ontology vault.",
   "keywords": [
     "mcp",

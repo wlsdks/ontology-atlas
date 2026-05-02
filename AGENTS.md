@@ -119,7 +119,7 @@ Long-form docs (mission v2 priority):
 - `@docs/MODE-AWARE-CRUD.md` — local/cloud/static contributor guide
 - `@docs/ARCHITECTURE.md` · `@docs/DATA-MODEL.md` · `@docs/DESIGN-SYSTEM.md` · `@docs/DEPLOYMENT.md`
 - `@docs/CHANGELOG.md` — chronological user-visible changes
-- `@mcp/README.md` — AI agent partner (MCP 11 tools — read 7 + write 4) registration + usage
+- `@mcp/README.md` — AI agent partner (MCP 12 tools — read 8 + write 4) registration + usage
 - `@docs/archive/README.md` — archived analysis docs (no longer the source of truth for current rules)
 
 ## This project's own ontology

@@ -228,7 +228,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 ### ✅ Phase 3 — AI agent partner — merged
 
 1. ✅ `mcp/` package — MCP server v0.5.0 (`oh-my-ontology-mcp`)
-2. ✅ 11 tools (read 7 + write 4): `list_concepts` / `get_concept` / `find_evidence` / `find_backlinks` / `find_path` / `list_kinds` / `find_orphans` / `add_concept` / `add_relation` / `patch_concept` / `delete_concept`
+2. ✅ 12 tools (read 8 + write 4): `list_concepts` / `get_concept` / `find_evidence` / `find_backlinks` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `add_concept` / `add_relation` / `patch_concept` / `delete_concept`
 3. ✅ CLI command (`oh-my-ontology`) — `npx oh-my-ontology init <folder>` scaffolds the vault. The web `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
 5. ✅ `docs/ontology/` dogfood vault — ~23 nodes describing our own mental model

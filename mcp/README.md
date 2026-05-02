@@ -44,7 +44,7 @@ If `OMOT_VAULT` is not set, the current working directory is used as the vault r
 
 ### 2. Restart Claude Code
 
-The server connects over stdio. You should now see 11 tools under the `oh-my-ontology` namespace.
+The server connects over stdio. You should now see 12 tools under the `oh-my-ontology` namespace.
 
 ### 3. Call the tools
 
@@ -56,7 +56,7 @@ The server connects over stdio. You should now see 11 tools under the `oh-my-ont
 → mcp__oh-my-ontology__get_concept({ slug: 'capabilities/mcp-server' })
 ```
 
-## The 11 tools (v0.5.0)
+## The 12 tools (v0.6.0)
 
 | Tool | What it does |
 |---|---|
@@ -67,6 +67,7 @@ The server connects over stdio. You should now see 11 tools under the `oh-my-ont
 | `find_path` | Shortest path between two slugs (BFS, undirected). Option: `maxHops` (default 5). |
 | `list_kinds` | Vault kind census: `{ total, byKind: { capability: N, ... } }`. |
 | `find_orphans` | **v0.5** Finds isolated nodes — docs that no other node references in its frontmatter. Options: `kind` (filter), `excludeKinds` (skip, default `['vault-readme']`). Useful as a starting point for cleanup or auditing unused nodes. |
+| `query_concepts` | **v0.6** Typed filter DSL — `kind=X AND has(Y) AND NOT ...`. Saved-filter / smart-list use case. |
 | `add_concept` | Creates a new `.md` node. Required: `slug`, `kind`, `title`. Optional: `domain`, `capabilities`, `elements`, `body`. Throws if the slug already exists. |
 | `add_relation` | Adds an edge between two slugs. `type`: `depends_on` (→ dependencies), `relates` (→ relates), `contains` (→ contains), `describes` (→ describes). Appends to the appropriate frontmatter array. |
 | `patch_concept` | Updates an existing node's frontmatter (per-key patch — `null` deletes a key) and/or body. Use this when you need to *modify* a slug that `add_concept` would reject as duplicate. |
@@ -88,11 +89,11 @@ A successful run looks like this:
 · step 1 — parser smoke test
 ✓ result: 7 passed, 0 failed
 · step 2 — server boot + tools/list + list_concepts
-✓ initialize OK — server oh-my-ontology-mcp@0.5.0
-✓ tools/list 11/11 — add_concept · add_relation · delete_concept · find_backlinks · find_evidence · find_orphans · find_path · get_concept · list_concepts · list_kinds · patch_concept
+✓ initialize OK — server oh-my-ontology-mcp@0.6.0
+✓ tools/list 12/12 — add_concept · add_relation · delete_concept · find_backlinks · find_evidence · find_orphans · find_path · get_concept · list_concepts · list_kinds · patch_concept · query_concepts
 ✓ list_concepts — vault total 23 nodes
 
-All checks passed — register .mcp.json with Claude Code, restart, and the 11 tools are ready.
+All checks passed — register .mcp.json with Claude Code, restart, and the 12 tools are ready.
 ```
 
 On failure, it tells you which step blocked progress and prints a diagnostic message.
@@ -121,7 +122,7 @@ After you add `.mcp.json` and restart Claude Code, try the following with your L
 > 3. Call `find_backlinks({ slug: "capabilities/mcp-server" })` to find what depends on that capability.
 > 4. (Optional) Call `add_concept` to create a new capability node — `slug`, `kind`, and `title` are required.
 
-If those four tools respond cleanly, your read/write round-trip against the vault is working. Once an agent starts *committing* its analysis of your codebase to the ontology through these 11 tools (7 read + 4 write), the human + AI co-authoring loop is officially open.
+If those four tools respond cleanly, your read/write round-trip against the vault is working. Once an agent starts *committing* its analysis of your codebase to the ontology through these 12 tools (8 read + 4 write), the human + AI co-authoring loop is officially open.
 
 ## Design principles
 
@@ -132,7 +133,8 @@ If those four tools respond cleanly, your read/write round-trip against the vaul
 
 ## Status
 
-- 0.5.0 — 11 tools (7 read + 4 write). Added `find_orphans`.
+- 0.6.0 — 12 tools (8 read + 4 write). Added `query_concepts` (typed filter DSL).
+- 0.5.0 — 7 read + 4 write. Added `find_orphans`.
 - 0.4.0 — 10 tools (6 read + 4 write). Added `delete_concept` (dry-run + backlinks guard).
 - 0.3.0 — 9 tools. Added `find_path` (BFS) and `list_kinds` (census).
 - 0.2.0 — 7 tools.
