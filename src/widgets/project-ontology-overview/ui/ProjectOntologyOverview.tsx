@@ -8,8 +8,6 @@ import { useOntologyInsight } from "@/features/vault-ontology";
 import { buildMeaningfulOntologyStats } from "@/shared/lib/ontology-tree";
 
 export interface ProjectOntologyOverviewProps {
-  /** 공개 surface — accountId 는 보통 null (vault/static 사용자는 항상 null). */
-  accountId: string | null;
   projectSlug: string;
   /** 옵션 — sample 노드 표시 limit. 기본 6. */
   limit?: number;
@@ -26,7 +24,6 @@ export interface ProjectOntologyOverviewProps {
  * 클릭 시 `/ontology/?account=...` 점프 — 트리에서 해당 프로젝트 root 로 진입.
  */
 export function ProjectOntologyOverview({
-  accountId: _accountId,
   projectSlug,
   limit = 6,
 }: ProjectOntologyOverviewProps) {

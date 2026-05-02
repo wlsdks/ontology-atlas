@@ -1139,7 +1139,7 @@ export function ProjectDetailPage({
       {/* 이 프로젝트의 ontology 노드 — 매치 0 자동 숨김. 가벼운 client-only
           fetch 라 SSG payload 영향 없음. "공개 surface 무거운 작업 금지" 정신
           준수: 토폴로지 sigma 는 그대로, 새 카드만 추가. */}
-      <ProjectOntologyOverview accountId={accountId} projectSlug={project.slug} />
+      <ProjectOntologyOverview projectSlug={project.slug} />
 
       <footer className="mt-12 border-t border-[color:var(--color-overlay-2)] pt-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.1em] text-[color:var(--color-text-quaternary)]">
