@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import {
   appendClassAndActivate,
   type ActiveTBox,
-} from '@/entities/ontology-tbox';
+} from '@/entities/ontology-tbox/api';
 import type { OntologyClass } from '@/entities/ontology-class';
 import { getFirebaseAuth } from '@/shared/api';
 

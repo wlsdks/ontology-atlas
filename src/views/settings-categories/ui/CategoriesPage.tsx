@@ -11,19 +11,18 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Plus, SquareArrowOutUpRight, Trash2 } from "lucide-react";
 import { PermissionGate } from "@/features/permissions";
+import type { Category } from "@/entities/category";
 import {
   deleteCategory,
   subscribeCategories,
   upsertCategory,
-  type Category,
-} from "@/entities/category";
+} from "@/entities/category/api";
+import { projectToInput, type Project } from "@/entities/project";
 import {
-  projectToInput,
   subscribeProjects,
   upsertProject,
   upsertProjectPositions,
-  type Project,
-} from "@/entities/project";
+} from "@/entities/project/api";
 import { findProjectPlacement } from "@/features/project-edit/model";
 import { computeInitialLayout } from "@/features/topology-layout";
 import { Button } from "@/shared/ui";

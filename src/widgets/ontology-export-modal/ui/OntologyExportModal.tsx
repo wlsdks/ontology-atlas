@@ -2,15 +2,15 @@
 
 import { useEffect, useState } from 'react';
 import { Download, X } from 'lucide-react';
+import type { KnowledgeProjectInsight } from '@/entities/knowledge-graph';
 import {
   subscribeKnowledgeApprovedGraph,
   subscribeKnowledgePublicGraph,
-  type KnowledgeProjectInsight,
-} from '@/entities/knowledge-graph';
+} from '@/entities/knowledge-graph/api';
 import {
   loadActiveTBox,
   type ActiveTBox,
-} from '@/entities/ontology-tbox';
+} from '@/entities/ontology-tbox/api';
 import { getFirebaseAuth } from '@/shared/api';
 import {
   exportPayloadToJson,

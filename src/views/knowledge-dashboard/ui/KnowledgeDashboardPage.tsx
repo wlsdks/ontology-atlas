@@ -11,13 +11,9 @@ import {
   getKnowledgeDocumentListHref,
   getKnowledgeDocumentNewHref,
   getKnowledgeDocumentStatusLabel,
-  subscribeKnowledgeDocuments,
   type KnowledgeDocument,
 } from "@/entities/knowledge-document";
-import {
-  subscribeKnowledgePublicMeta,
-  type KnowledgePublicMeta,
-} from "@/entities/knowledge-graph";
+import type { KnowledgePublicMeta } from "@/entities/knowledge-graph";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, EmptyState, Tooltip } from "@/shared/ui";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { useLocalVault } from "@/features/docs-vault-local";
@@ -42,16 +38,32 @@ function DashboardContent() {
 
   useEffect(() => {
     setDocumentsLoaded(false);
-    const unsubscribe = subscribeKnowledgeDocuments(accountId, (next) => {
-      setDocuments(next);
-      setDocumentsLoaded(true);
+    let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
+    void import("@/entities/knowledge-document/api").then(({ subscribeKnowledgeDocuments }) => {
+      if (cancelled) return;
+      unsubscribe = subscribeKnowledgeDocuments(accountId, (next) => {
+        setDocuments(next);
+        setDocumentsLoaded(true);
+      });
     });
-    return () => unsubscribe();
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [accountId]);
 
   useEffect(() => {
-    const unsubscribe = subscribeKnowledgePublicMeta(accountId, setPublicMeta);
-    return () => unsubscribe();
+    let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
+    void import("@/entities/knowledge-graph/api").then(({ subscribeKnowledgePublicMeta }) => {
+      if (cancelled) return;
+      unsubscribe = subscribeKnowledgePublicMeta(accountId, setPublicMeta);
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [accountId]);
 
   const summary = useMemo(() => {

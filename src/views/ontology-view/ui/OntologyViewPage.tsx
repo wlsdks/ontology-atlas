@@ -7,7 +7,6 @@ import { Info, Link2, X } from "lucide-react";
 import {
   getKnowledgeDocumentDetailHref,
   getKnowledgeDocumentListHref,
-  subscribeKnowledgeDocuments,
   type KnowledgeDocument,
 } from "@/entities/knowledge-document";
 import {
@@ -125,18 +124,26 @@ export function OntologyViewPage() {
   useEffect(() => {
     setDocuments([]);
     setDocumentsAccessError(null);
-    const unsubscribe = subscribeKnowledgeDocuments(
-      accountId,
-      (next) => {
-        setDocuments(next);
-        setDocumentsAccessError(null);
-      },
-      (err) => {
-        setDocuments([]);
-        setDocumentsAccessError(err);
-      },
-    );
-    return () => unsubscribe();
+    let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
+    void import("@/entities/knowledge-document/api").then(({ subscribeKnowledgeDocuments }) => {
+      if (cancelled) return;
+      unsubscribe = subscribeKnowledgeDocuments(
+        accountId,
+        (next) => {
+          setDocuments(next);
+          setDocumentsAccessError(null);
+        },
+        (err) => {
+          setDocuments([]);
+          setDocumentsAccessError(err);
+        },
+      );
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [accountId]);
 
   const treeResult: OntologyTreeBuildResult | null = useMemo(() => {

@@ -10,8 +10,4 @@ export {
   fromFirestore,
   toFirestore,
 } from './model';
-export {
-  subscribeOntologyRelations,
-  upsertOntologyRelation,
-  seedDefaultOntologyRelationsIfEmpty,
-} from './api';
+// API 는 `@/entities/ontology-relation/api` 로 분리.

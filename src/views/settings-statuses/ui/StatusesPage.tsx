@@ -11,20 +11,14 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Plus, SquareArrowOutUpRight, Trash2 } from "lucide-react";
 import { PermissionGate } from "@/features/permissions";
+import type { Status, StatusDotColor, StatusInput } from "@/entities/status";
 import {
   deleteStatus,
   subscribeStatuses,
   upsertStatus,
-  type Status,
-  type StatusDotColor,
-  type StatusInput,
-} from "@/entities/status";
-import {
-  projectToInput,
-  subscribeProjects,
-  upsertProject,
-  type Project,
-} from "@/entities/project";
+} from "@/entities/status/api";
+import { projectToInput, type Project } from "@/entities/project";
+import { subscribeProjects, upsertProject } from "@/entities/project/api";
 import { Button } from "@/shared/ui";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { cn } from "@/shared/lib/cn";

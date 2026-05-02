@@ -5,7 +5,7 @@ import { X } from 'lucide-react';
 import {
   appendRelationAndActivate,
   type ActiveTBox,
-} from '@/entities/ontology-tbox';
+} from '@/entities/ontology-tbox/api';
 import type {
   OntologyRelation,
   OntologyRelationCategory,

@@ -7,13 +7,13 @@ import { PermissionGate, useGlobalAdmin } from "@/features/permissions";
 import {
   KNOWLEDGE_DOCUMENT_KIND_OPTIONS,
   buildKnowledgeMetadataPreview,
-  createKnowledgeDocumentWithInitialVersion,
   getKnowledgeDocumentDetailHref,
   getKnowledgeDocumentListHref,
   getKnowledgeMetadataFieldLabel,
   getKnowledgeDocumentKindLabel,
   parseKnowledgeFrontmatter,
 } from "@/entities/knowledge-document";
+import { createKnowledgeDocumentWithInitialVersion } from "@/entities/knowledge-document/api";
 import { type Project } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, buttonVariants, useToast } from "@/shared/ui";

@@ -10,10 +10,10 @@ import {
   detectPromotionCandidates,
   detectStaleProjects,
   getProjectDetailHref,
-  subscribeProjects,
   type Project,
   type PromotionCandidate,
 } from "@/entities/project";
+import { subscribeProjects } from "@/entities/project/api";
 import { DetailCard, EmptyState } from "@/shared/ui";
 import { formatDate } from "@/shared/lib/format-date";
 import {

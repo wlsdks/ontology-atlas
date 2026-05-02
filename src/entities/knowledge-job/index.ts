@@ -7,9 +7,7 @@ export {
   fromFirestoreKnowledgeJob,
   resolveKnowledgeJobActionState,
 } from "./model";
-export {
-  subscribeKnowledgeJobsByDocument,
-} from "./api";
+// API 는 `@/entities/knowledge-job/api` 로 분리.
 export {
   KNOWLEDGE_JOB_STATUS_OPTIONS,
   getKnowledgeJobStatusLabel,

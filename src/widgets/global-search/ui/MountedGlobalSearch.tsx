@@ -4,13 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   getKnowledgeDocumentDetailHref,
-  subscribeKnowledgeDocuments,
   type KnowledgeDocument,
 } from "@/entities/knowledge-document";
-import {
-  subscribeKnowledgePublicGraph,
-  type KnowledgeGraphNode,
-} from "@/entities/knowledge-graph";
+import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { type Project, getProjectDetailHref } from "@/entities/project";
 import { useProjects } from "@/features/project-data-source";
 import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
@@ -86,23 +82,39 @@ export function MountedGlobalSearch({
   // ontology approved nodes — public projection. 권한 없으면 빈 배열.
   useEffect(() => {
     setNodes([]);
-    const unsubscribe = subscribeKnowledgePublicGraph(
-      accountId,
-      (insight) => setNodes(insight.nodes),
-      () => setNodes([]),
-    );
-    return () => unsubscribe();
+    let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
+    void import("@/entities/knowledge-graph/api").then(({ subscribeKnowledgePublicGraph }) => {
+      if (cancelled) return;
+      unsubscribe = subscribeKnowledgePublicGraph(
+        accountId,
+        (insight) => setNodes(insight.nodes),
+        () => setNodes([]),
+      );
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [accountId]);
 
   // knowledge documents — 권한 게이팅은 Firestore rules. 권한 없으면 빈 배열.
   useEffect(() => {
     setDocuments([]);
-    const unsubscribe = subscribeKnowledgeDocuments(
-      accountId,
-      (next) => setDocuments(next),
-      () => setDocuments([]),
-    );
-    return () => unsubscribe();
+    let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
+    void import("@/entities/knowledge-document/api").then(({ subscribeKnowledgeDocuments }) => {
+      if (cancelled) return;
+      unsubscribe = subscribeKnowledgeDocuments(
+        accountId,
+        (next) => setDocuments(next),
+        () => setDocuments([]),
+      );
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [accountId]);
 
   return (

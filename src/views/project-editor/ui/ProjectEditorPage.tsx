@@ -8,11 +8,10 @@ import { ProjectForm } from "@/features/project-edit";
 import { useProjectMutations } from "@/features/project-data-source";
 import {
   getProjectDetailHref,
-  getProject,
-  subscribeProjects,
   type Project,
   type ProjectInput,
 } from "@/entities/project";
+import { getProject, subscribeProjects } from "@/entities/project/api";
 import {
   getKnowledgeDocumentListHref,
   getKnowledgeDocumentNewHref,

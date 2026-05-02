@@ -4,7 +4,7 @@ import { useRef, useState } from 'react';
 import Image from 'next/image';
 import { Upload, Trash2 } from 'lucide-react';
 import { cn } from '@/shared/lib/cn';
-import { uploadScreenshot, deleteScreenshot } from '@/entities/project';
+import { uploadScreenshot, deleteScreenshot } from '@/entities/project/api';
 
 interface Props {
   slug: string;

@@ -8,7 +8,7 @@ import { PermissionGate } from '@/features/permissions';
 import {
   loadActiveTBox,
   type ActiveTBox,
-} from '@/entities/ontology-tbox';
+} from '@/entities/ontology-tbox/api';
 import { getOntologyKindLabel } from '@/entities/ontology-class';
 import {
   ACCOUNT_QUERY_KEY,

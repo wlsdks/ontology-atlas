@@ -7,12 +7,19 @@ import {
   buildProjectMarkdown,
   projectToFrontmatter,
 } from '@/entities/docs-vault';
-import {
-  deleteProject as cloudDeleteProject,
-  getProject,
-  upsertProject as cloudUpsertProject,
-  type ProjectInput,
-} from '@/entities/project';
+import type { ProjectInput } from '@/entities/project';
+
+// Cloud entity api 는 cloud-mode 분기에서만 호출된다. dynamic import 로
+// 분리해 local-first 페이지 (ProjectSelectorPage 등) 의 정적 청크에 firebase
+// 가 박히는 것을 막는다.
+async function loadCloudProjectApi() {
+  const mod = await import('@/entities/project/api');
+  return {
+    cloudDeleteProject: mod.deleteProject,
+    cloudUpsertProject: mod.upsertProject,
+    getProject: mod.getProject,
+  };
+}
 
 /**
  * mode 별로 분기되는 project mutation hook.
@@ -61,6 +68,7 @@ export function useProjectMutations(): ProjectMutations {
         return;
       }
       // cloud
+      const { getProject, cloudUpsertProject } = await loadCloudProjectApi();
       const existing = await getProject(input.slug, input.accountId);
       if (existing) throw new Error('이미 존재하는 slug입니다.');
       await cloudUpsertProject(input);
@@ -86,6 +94,7 @@ export function useProjectMutations(): ProjectMutations {
         return;
       }
       // cloud
+      const { cloudUpsertProject } = await loadCloudProjectApi();
       await cloudUpsertProject(input);
     },
     [mode, vault],
@@ -101,6 +110,7 @@ export function useProjectMutations(): ProjectMutations {
         return;
       }
       // cloud — entity 가 accountId optional, 호출자 책임이 단일 단순 케이스.
+      const { cloudDeleteProject } = await loadCloudProjectApi();
       await cloudDeleteProject(slug);
     },
     [mode, vault],

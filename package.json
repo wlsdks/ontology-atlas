@@ -2,6 +2,11 @@
   "name": "oh-my-ontology",
   "version": "0.1.0",
   "private": true,
+  "sideEffects": [
+    "*.css",
+    "**/firestore-noise-patch*",
+    "**/globals.css"
+  ],
   "scripts": {
     "predev": "pnpm docs-vault:build",
     "dev": "next dev",

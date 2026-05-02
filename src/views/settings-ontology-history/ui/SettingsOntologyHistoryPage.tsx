@@ -5,12 +5,14 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { PermissionGate } from '@/features/permissions';
+import type {
+  OntologyTBoxActiveState,
+  OntologyTBoxVersion,
+} from '@/entities/ontology-tbox';
 import {
   getActiveTBoxState,
   listTBoxVersions,
-  type OntologyTBoxActiveState,
-  type OntologyTBoxVersion,
-} from '@/entities/ontology-tbox';
+} from '@/entities/ontology-tbox/api';
 import {
   ACCOUNT_QUERY_KEY,
 } from '@/shared/lib/account-scope';

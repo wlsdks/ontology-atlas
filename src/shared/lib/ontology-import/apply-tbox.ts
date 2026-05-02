@@ -10,15 +10,15 @@
  *   3. 새 versionId 반환
  */
 
-import type { ActiveTBox } from '@/entities/ontology-tbox';
 // shared → entities helper (firestore write) 재사용. P3 Phase 4 cloud function 도입 시
 // features/ 로 옮길 예정. 임시 boundaries 예외.
 /* eslint-disable boundaries/dependencies */
+import type { ActiveTBox } from '@/entities/ontology-tbox/api';
 import {
   createTBoxVersion,
   activateTBoxVersion,
   generateTBoxVersionId,
-} from '@/entities/ontology-tbox';
+} from '@/entities/ontology-tbox/api';
 /* eslint-enable boundaries/dependencies */
 import type { OntologyClass } from '@/entities/ontology-class';
 import type { OntologyRelation } from '@/entities/ontology-relation';

@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { fetchAllProjectsAtBuild } from '@/entities/project';
+import { fetchAllProjectsAtBuild } from '@/entities/project/api';
 import {
   deriveProjectsFromVault,
   vaultManifest as staticVaultManifestRaw,

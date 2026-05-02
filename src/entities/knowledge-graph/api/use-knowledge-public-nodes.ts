@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import type { KnowledgeGraphNode } from "../model/types";
-import { subscribeKnowledgePublicGraph } from "./knowledge-graph-api";
 
 /**
  * `knowledgePublic*` projection 의 nodes 만 client-side 구독.
@@ -22,12 +21,20 @@ export function useKnowledgePublicNodes(accountId: string | null): KnowledgeGrap
   const [nodes, setNodes] = useState<KnowledgeGraphNode[]>([]);
   useEffect(() => {
     setNodes([]);
-    const unsubscribe = subscribeKnowledgePublicGraph(
-      accountId,
-      (insight) => setNodes(insight.nodes),
-      () => setNodes([]),
-    );
-    return () => unsubscribe();
+    let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
+    void import("./knowledge-graph-api").then(({ subscribeKnowledgePublicGraph }) => {
+      if (cancelled) return;
+      unsubscribe = subscribeKnowledgePublicGraph(
+        accountId,
+        (insight) => setNodes(insight.nodes),
+        () => setNodes([]),
+      );
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [accountId]);
   return nodes;
 }

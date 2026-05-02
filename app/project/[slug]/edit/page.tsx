@@ -7,7 +7,7 @@ interface Params {
 }
 
 export async function generateStaticParams(): Promise<Params[]> {
-  const { fetchAllProjectsAtBuild } = await import('@/entities/project');
+  const { fetchAllProjectsAtBuild } = await import('@/entities/project/api');
   const {
     deriveProjectsFromVault,
     vaultManifest: staticVaultManifestRaw,
@@ -28,7 +28,7 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const { fetchAllProjectsAtBuild } = await import('@/entities/project');
+  const { fetchAllProjectsAtBuild } = await import('@/entities/project/api');
   const projects = await fetchAllProjectsAtBuild();
   const project = projects.find((p) => p.slug === slug);
   return {

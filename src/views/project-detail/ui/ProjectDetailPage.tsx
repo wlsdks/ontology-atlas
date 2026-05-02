@@ -26,16 +26,15 @@ import { useScopedAccountAccess } from "@/features/account-scope";
 import { buildServiceEntryHref } from "@/features/user-auth";
 import {
   formatProjectIntegrityIssue,
-  getProject,
   getProjectDetailHref,
   getProjectIntegrityIssues,
   getTopologyProjectHref,
   projectToInput,
   resolveFallbackProjects,
-  upsertProject,
   wouldCreateDependencyCycle,
   type Project,
 } from "@/entities/project";
+import { getProject, upsertProject } from "@/entities/project/api";
 import { useProjects } from "@/features/project-data-source";
 import { resolveSubscribeUpdate } from "../model/resolve-subscribe-update";
 import { DependencyPicker } from "@/features/project-edit/ui/DependencyPicker";
@@ -69,9 +68,9 @@ import {
 } from "@/entities/knowledge-document";
 import {
   buildKnowledgeProjectEvidenceSummary,
-  subscribeKnowledgeProjectInsight,
   type KnowledgeProjectInsight,
 } from "@/entities/knowledge-graph";
+import { subscribeKnowledgeProjectInsight } from "@/entities/knowledge-graph/api";
 
 interface Props {
   slug: string;

@@ -4,33 +4,32 @@ import { type ChangeEvent, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PermissionGate, useGlobalAdmin } from "@/features/permissions";
-import { getProjectDetailHref, subscribeProjects, type Project } from "@/entities/project";
-import {
-  subscribeKnowledgeEvidenceByDocument,
-  type KnowledgeEvidence,
-} from "@/entities/knowledge-evidence";
+import { getProjectDetailHref, type Project } from "@/entities/project";
+import { subscribeProjects } from "@/entities/project/api";
+import type { KnowledgeEvidence } from "@/entities/knowledge-evidence";
+import { subscribeKnowledgeEvidenceByDocument } from "@/entities/knowledge-evidence/api";
 import {
   resolveKnowledgeJobActionState,
-  subscribeKnowledgeJobsByDocument,
   type KnowledgeJob,
 } from "@/entities/knowledge-job";
+import { subscribeKnowledgeJobsByDocument } from "@/entities/knowledge-job/api";
+import type { KnowledgeOutput } from "@/entities/knowledge-output";
+import { subscribeKnowledgeOutputsByDocument } from "@/entities/knowledge-output/api";
 import {
-  subscribeKnowledgeOutputsByDocument,
-  type KnowledgeOutput,
-} from "@/entities/knowledge-output";
-import {
-  createKnowledgeDocumentVersion,
   getKnowledgeDocumentDetailHref,
   getKnowledgeDocumentListHref,
-  downloadKnowledgeMarkdown,
   getKnowledgeDocumentKindLabel,
   getKnowledgeDocumentStatusLabel,
   getKnowledgeMetadataFieldLabel,
+  type KnowledgeDocument,
+} from "@/entities/knowledge-document";
+import {
+  createKnowledgeDocumentVersion,
+  downloadKnowledgeMarkdown,
   subscribeKnowledgeDocuments,
   subscribeKnowledgeVersionsByDocument,
   setKnowledgeDocumentCurrentVersion,
-  type KnowledgeDocument,
-} from "@/entities/knowledge-document";
+} from "@/entities/knowledge-document/api";
 import {
   buildKnowledgeVersionMarkdownDiff,
   buildKnowledgeVersionMetadataDiff,

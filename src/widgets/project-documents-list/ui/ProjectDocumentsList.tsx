@@ -7,10 +7,12 @@ import {
   getKnowledgeDocumentDetailHref,
   getKnowledgeDocumentKindLabel,
   getKnowledgeDocumentStatusLabel,
-  getPublicDocumentsForProject,
-  subscribeKnowledgeDocumentsByProject,
   type KnowledgeDocument,
 } from '@/entities/knowledge-document';
+import {
+  getPublicDocumentsForProject,
+  subscribeKnowledgeDocumentsByProject,
+} from '@/entities/knowledge-document/api';
 import { DetailCard, EmptyState } from '@/shared/ui';
 
 interface ProjectDocumentsListProps {

@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { fetchAllProjectsAtBuild } from '@/entities/project';
+import { fetchAllProjectsAtBuild } from '@/entities/project/api';
 import {
   deriveProjectsFromVault,
   vaultManifest as staticVaultManifestRaw,

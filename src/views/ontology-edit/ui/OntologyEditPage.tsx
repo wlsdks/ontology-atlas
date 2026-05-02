@@ -7,7 +7,6 @@ import { useSearchParams } from "next/navigation";
 import { Info, Maximize2, Minimize2, Wand2 } from "lucide-react";
 import { ACCOUNT_QUERY_KEY } from "@/shared/lib/account-scope";
 import { useUserAuth } from "@/features/user-auth";
-import { addManualKnowledgeNode } from "@/entities/knowledge-graph";
 import {
   vaultManifest as staticVaultManifestRaw,
   type VaultManifest,
@@ -152,6 +151,7 @@ export function OntologyEditPage() {
             return;
           }
           const id = `${node.kind}.${slug}`;
+          const { addManualKnowledgeNode } = await import("@/entities/knowledge-graph/api");
           await addManualKnowledgeNode({
             accountId,
             id,

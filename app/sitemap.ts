@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next';
-import { fetchAllProjectsAtBuild } from '@/entities/project';
+import { fetchAllProjectsAtBuild } from '@/entities/project/api';
 import { SITE_URL } from '@/shared/config';
 
 // 정적 export 모드에선 빌드 타임에 확정되어야 한다.

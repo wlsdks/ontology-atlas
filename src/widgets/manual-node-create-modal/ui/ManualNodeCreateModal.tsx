@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { X } from "lucide-react";
 import {
-  addManualKnowledgeNode,
   MANUAL_NODE_KINDS,
   validateManualKnowledgeNodeInput,
   type AddManualKnowledgeNodeInput,
@@ -133,6 +132,7 @@ export function ManualNodeCreateModal({
         summary: form.summary.trim() ? form.summary.trim() : undefined,
         manualNote: form.manualNote.trim() ? form.manualNote.trim() : undefined,
       };
+      const { addManualKnowledgeNode } = await import("@/entities/knowledge-graph/api");
       const result = await addManualKnowledgeNode(input);
       if (result.alreadyExists) {
         setAlreadyExistsId(result.id);

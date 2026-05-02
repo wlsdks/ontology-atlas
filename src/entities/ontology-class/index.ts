@@ -11,8 +11,5 @@ export {
   fromFirestore,
   toFirestore,
 } from './model';
-export {
-  subscribeOntologyClasses,
-  upsertOntologyClass,
-  seedDefaultOntologyClassesIfEmpty,
-} from './api';
+// API 함수는 barrel 에서 제외 — `@/entities/ontology-class/api` 로 직접
+// import. 정적 그래프에 firebase/firestore 가 박히지 않게.

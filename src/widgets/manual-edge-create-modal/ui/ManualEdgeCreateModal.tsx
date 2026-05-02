@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import {
-  addManualKnowledgeEdge,
   composeManualEdgeId,
   KNOWLEDGE_EDGE_TYPES,
   validateManualKnowledgeEdgeInput,
@@ -145,6 +144,7 @@ export function ManualEdgeCreateModal({
         // 프로젝트 그래프에 묶임. 둘 다 합집합 하는 게 더 정확하지만 v0 단순화.
         projectIds: fromNode?.projectIds ?? [],
       };
+      const { addManualKnowledgeEdge } = await import("@/entities/knowledge-graph/api");
       const result = await addManualKnowledgeEdge(input);
       if (result.alreadyExists) {
         setAlreadyExistsId(result.id);

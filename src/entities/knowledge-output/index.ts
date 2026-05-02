@@ -15,4 +15,4 @@ export {
   isAutoApprovable,
   requiresExplicitReview,
 } from "./model";
-export { subscribeKnowledgeOutputsByDocument } from "./api";
+// API 는 `@/entities/knowledge-output/api` 로 분리.

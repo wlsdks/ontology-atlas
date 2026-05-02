@@ -13,9 +13,9 @@ import {
   getKnowledgeDocumentKindLabel,
   getKnowledgeDocumentNewHref,
   getKnowledgeDocumentStatusLabel,
-  subscribeKnowledgeDocuments,
   type KnowledgeDocument,
 } from "@/entities/knowledge-document";
+import { subscribeKnowledgeDocuments } from "@/entities/knowledge-document/api";
 import {
   getKnowledgeJobStatusLabel,
   KNOWLEDGE_JOB_STATUS_OPTIONS,

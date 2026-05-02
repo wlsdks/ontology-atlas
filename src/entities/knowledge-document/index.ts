@@ -17,21 +17,7 @@ export {
   toFirestoreKnowledgeDocument,
   toKnowledgeDocumentMetadataInput,
 } from "./model";
-export {
-  listKnowledgeDocuments,
-  getKnowledgeDocument,
-  subscribeKnowledgeDocuments,
-  subscribeKnowledgeDocumentsByProject,
-  getPublicDocumentsForProject,
-  createKnowledgeDocumentWithInitialVersion,
-  createKnowledgeDocumentVersion,
-  setKnowledgeDocumentCurrentVersion,
-  listKnowledgeVersionsByDocument,
-  subscribeKnowledgeVersionsByDocument,
-  buildKnowledgeDocumentStoragePath,
-  downloadKnowledgeMarkdown,
-  uploadKnowledgeMarkdown,
-} from "./api";
+// API 는 `@/entities/knowledge-document/api` 로 분리.
 export {
   getKnowledgeDocumentDetailHref,
   getKnowledgeDocumentListHref,

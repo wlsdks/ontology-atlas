@@ -1,3 +1,3 @@
 export type { KnowledgeEvidence } from "./model";
 export { fromFirestoreKnowledgeEvidence } from "./model";
-export { subscribeKnowledgeEvidenceByDocument } from "./api";
+// API 함수는 `@/entities/knowledge-evidence/api` 로 분리.

@@ -9,19 +9,14 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import {
-  subscribeCategories,
-  DEFAULT_CATEGORIES,
-  hasRegisteredCategoryRegions,
-  seedDefaultCategoriesIfEmpty,
-  type Category,
-} from '@/entities/category';
-import {
-  subscribeStatuses,
-  DEFAULT_STATUSES,
-  seedDefaultStatusesIfEmpty,
-  type Status,
-} from '@/entities/status';
+// firebase 의존이 0 인 파일에서만 정적 import — barrel (`@/entities/category`)
+// 을 거치면 mapper.ts (Timestamp 사용) → firebase/firestore 가 따라온다.
+// API 함수 (subscribe*, seed*) 는 cloud 모드 진입 시점 dynamic import 로 분리.
+import { DEFAULT_CATEGORIES } from '@/entities/category/model/defaults';
+import { hasRegisteredCategoryRegions } from '@/entities/category/model/presence';
+import type { Category } from '@/entities/category/model/types';
+import { DEFAULT_STATUSES } from '@/entities/status/model/defaults';
+import type { Status } from '@/entities/status/model/types';
 import { useDataSourceMode } from '@/features/data-source-mode';
 
 export interface TaxonomyContextValue {
@@ -69,35 +64,51 @@ export function TaxonomyProvider({ children }: Props) {
 
   useEffect(() => {
     if (!subscribeCloud) return;
-    const unsubCat = subscribeCategories(
-      (list) => {
-        setCategories(list.length > 0 ? list : defaultCategories);
-        setCategoriesHydrated(true);
-        if (!seededCategoriesRef.current && list.length === 0) {
-          seededCategoriesRef.current = true;
-          void seedDefaultCategoriesIfEmpty().catch((err) => {
-            console.warn('[TaxonomyProvider] categories seed error', err);
-          });
-        }
+    let unsubCat: (() => void) | null = null;
+    let unsubStat: (() => void) | null = null;
+    let cancelled = false;
+
+    void Promise.all([
+      import('@/entities/category/api'),
+      import('@/entities/status/api'),
+    ]).then(
+      ([
+        { subscribeCategories, seedDefaultCategoriesIfEmpty },
+        { subscribeStatuses, seedDefaultStatusesIfEmpty },
+      ]) => {
+        if (cancelled) return;
+        unsubCat = subscribeCategories(
+          (list) => {
+            setCategories(list.length > 0 ? list : defaultCategories);
+            setCategoriesHydrated(true);
+            if (!seededCategoriesRef.current && list.length === 0) {
+              seededCategoriesRef.current = true;
+              void seedDefaultCategoriesIfEmpty().catch((err) => {
+                console.warn('[TaxonomyProvider] categories seed error', err);
+              });
+            }
+          },
+          (err) => console.warn('[TaxonomyProvider] categories subscribe error', err),
+        );
+        unsubStat = subscribeStatuses(
+          (list) => {
+            setStatuses(list.length > 0 ? list : defaultStatuses);
+            setStatusesHydrated(true);
+            if (!seededStatusesRef.current && list.length === 0) {
+              seededStatusesRef.current = true;
+              void seedDefaultStatusesIfEmpty().catch((err) => {
+                console.warn('[TaxonomyProvider] statuses seed error', err);
+              });
+            }
+          },
+          (err) => console.warn('[TaxonomyProvider] statuses subscribe error', err),
+        );
       },
-      (err) => console.warn('[TaxonomyProvider] categories subscribe error', err),
-    );
-    const unsubStat = subscribeStatuses(
-      (list) => {
-        setStatuses(list.length > 0 ? list : defaultStatuses);
-        setStatusesHydrated(true);
-        if (!seededStatusesRef.current && list.length === 0) {
-          seededStatusesRef.current = true;
-          void seedDefaultStatusesIfEmpty().catch((err) => {
-            console.warn('[TaxonomyProvider] statuses seed error', err);
-          });
-        }
-      },
-      (err) => console.warn('[TaxonomyProvider] statuses subscribe error', err),
     );
     return () => {
-      unsubCat();
-      unsubStat();
+      cancelled = true;
+      unsubCat?.();
+      unsubStat?.();
     };
   }, [subscribeCloud]);
 

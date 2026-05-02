@@ -87,17 +87,18 @@ const MountedGlobalSearch = dynamic(
 );
 import { GestureHint } from "@/widgets/gesture-hint";
 import { LiveAnnouncer, Tooltip, useToast } from "@/shared/ui";
-import {
-  getProjectDetailHref,
-  type Project,
-  type ProjectImpactMode,
-} from "@/entities/project";
+// Barrel (`@/entities/project`) 은 api/index.ts → firebase/firestore 를 끌어
+// 들이므로 lib/types 만 쓰는 import 는 직접 파일 경로로 우회. Project /
+// ProjectImpactMode 는 type 이라 erase 됐다.
+import { getProjectDetailHref } from "@/entities/project/lib/detail-href";
+import type { Project } from "@/entities/project/model/types";
+import type { ProjectImpactMode } from "@/entities/project/model/insights";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
-import {
-  buildKnowledgeProjectEvidenceSummary,
-  subscribeKnowledgeProjectInsight,
-  type KnowledgeProjectInsight,
-} from "@/entities/knowledge-graph";
+// `buildKnowledgeProjectEvidenceSummary` + 타입은 firebase 의존 0 인 model
+// 경로로 직접. `subscribeKnowledgeProjectInsight` (Firestore 구독) 는
+// useEffect 안 dynamic import 로 분리.
+import { buildKnowledgeProjectEvidenceSummary } from "@/entities/knowledge-graph/model/evidence-summary";
+import type { KnowledgeProjectInsight } from "@/entities/knowledge-graph/model/types";
 import { useHomeRouteState } from "../model/use-home-route-state";
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
@@ -545,22 +546,33 @@ export function HomePage() {
 
   useEffect(() => {
     if (!selectedProject) return;
-
-    const unsubscribe = subscribeKnowledgeProjectInsight(
-      selectedProject.slug,
-      null,
-      (nextInsight) => {
-        setSelectedKnowledgeInsight({
-          projectSlug: selectedProject.slug,
-          insight: nextInsight,
-        });
-      },
-      (error) => {
-        console.warn("[HomePage] knowledge insight subscribe failed", error);
+    // Firestore 구독 — entity api 는 dynamic import 로 first paint 청크에서
+    // 분리. 선택된 project 가 바뀔 때마다 다시 구독한다.
+    let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
+    void import("@/entities/knowledge-graph/api").then(
+      ({ subscribeKnowledgeProjectInsight }) => {
+        if (cancelled) return;
+        unsubscribe = subscribeKnowledgeProjectInsight(
+          selectedProject.slug,
+          null,
+          (nextInsight) => {
+            setSelectedKnowledgeInsight({
+              projectSlug: selectedProject.slug,
+              insight: nextInsight,
+            });
+          },
+          (error) => {
+            console.warn("[HomePage] knowledge insight subscribe failed", error);
+          },
+        );
       },
     );
 
-    return () => unsubscribe();
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [selectedProject]);
 
   return (

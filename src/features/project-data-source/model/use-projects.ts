@@ -12,7 +12,7 @@ import {
 // JSON import 가 mode 같은 union 필드를 string 으로 추론. 빌드 시점에 schema
 // 가 안정적이라 runtime 검증 대신 cast.
 const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
-import { subscribeProjects, type Project } from '@/entities/project';
+import type { Project } from '@/entities/project';
 
 /**
  * mode-aware read 어댑터.
@@ -56,22 +56,31 @@ export function useProjects(accountId?: string | null): UseProjectsState {
     return deriveProjectsFromVault(staticVaultManifest);
   }, [mode]);
 
-  // cloud — Firestore 구독.
+  // cloud — Firestore 구독. local-first 첫 paint 청크에 firebase 가 들어가지
+  // 않게 entity api 는 dynamic import (cloud 모드 진입 시점에만 다운로드).
   useEffect(() => {
     if (mode !== 'cloud') return;
     setCloudError(null);
-    const unsubscribe = subscribeProjects(
-      accountId ?? null,
-      (next) => {
-        setCloudProjects(next);
-        setCloudLoaded(true);
-      },
-      (error) => {
-        setCloudError(error.message?.trim() || '프로젝트를 불러오지 못했습니다.');
-        setCloudLoaded(true);
-      },
-    );
-    return () => unsubscribe();
+    let unsubscribe: (() => void) | null = null;
+    let cancelled = false;
+    void import('@/entities/project/api').then(({ subscribeProjects }) => {
+      if (cancelled) return;
+      unsubscribe = subscribeProjects(
+        accountId ?? null,
+        (next) => {
+          setCloudProjects(next);
+          setCloudLoaded(true);
+        },
+        (error) => {
+          setCloudError(error.message?.trim() || '프로젝트를 불러오지 못했습니다.');
+          setCloudLoaded(true);
+        },
+      );
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
   }, [mode, accountId]);
 
   if (mode === 'local') {

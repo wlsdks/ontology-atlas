@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Upload, X } from 'lucide-react';
-import { type ActiveTBox } from '@/entities/ontology-tbox';
+import { type ActiveTBox } from '@/entities/ontology-tbox/api';
 import {
   applyTBoxImport,
   detectImportConflicts,

@@ -9,7 +9,8 @@ import {
   parseProjectsCsv,
   type CsvParseError,
 } from "@/features/project-import";
-import { getProject, upsertProject, type ProjectInput } from "@/entities/project";
+import type { ProjectInput } from "@/entities/project";
+import { getProject, upsertProject } from "@/entities/project/api";
 import { STARTER_SAMPLE_PROJECTS } from "@/shared/config/starter-samples";
 import { Button, DetailCard, EmptyState, useToast } from "@/shared/ui";
 import {
