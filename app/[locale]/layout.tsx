@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { MotionProvider } from '@/app-providers/providers';
 import { TaxonomyProvider } from '@/features/taxonomy';
+import { LocalVaultProvider } from '@/features/docs-vault-local';
 import { BottomTabBar } from '@/widgets/bottom-tab-bar';
 import { ToastProvider, TooltipProvider } from '@/shared/ui';
 import { routing } from '@/i18n/routing';
@@ -68,12 +69,17 @@ export default async function LocaleLayout({
       </a>
       <MotionProvider>
         <TaxonomyProvider>
-          <ToastProvider>
-            <TooltipProvider delayDuration={300}>
-              {children}
-              <BottomTabBar />
-            </TooltipProvider>
-          </ToastProvider>
+          {/* LocalVaultProvider 가 single source of truth.
+              consumer 는 useLocalVault() 로 동일 instance 공유 — Round 7
+              에서 발견한 8 곳 독립 호출 → 2-3 인스턴스 중복 fix. */}
+          <LocalVaultProvider>
+            <ToastProvider>
+              <TooltipProvider delayDuration={300}>
+                {children}
+                <BottomTabBar />
+              </TooltipProvider>
+            </ToastProvider>
+          </LocalVaultProvider>
         </TaxonomyProvider>
       </MotionProvider>
     </NextIntlClientProvider>

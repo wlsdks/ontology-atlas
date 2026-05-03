@@ -179,6 +179,16 @@ async function ensureReadWrite(
 }
 
 /**
+ * @internal — 직접 호출 금지. `useLocalVault()` (LocalVaultProvider 의
+ * consumer) 를 통해서만 접근. 본 훅은 LocalVaultProvider 가 1 회 mount
+ * 해 단일 인스턴스 (state / IDB rehydrate / fingerprint rescan / FS read)
+ * 만 유지하기 위한 internal API.
+ *
+ * 이전 (Round 7 발견): 8 곳에서 직접 useLocalVault() 호출 → 한 페이지
+ * mount 에 2-3 인스턴스 → 같은 IDB 키 N 번 rehydrate + N 번
+ * buildLocalManifest (전체 FS walk). Round 8 에서 provider 패턴으로
+ * 단일 진실원 화.
+ *
  * 로컬 (PC) 폴더를 볼트로 쓰는 훅. File System Access API 지원 브라우저
  * (Chrome/Edge/Safari 18.2+/Opera) 에서만 동작.
  *
@@ -190,7 +200,7 @@ async function ensureReadWrite(
  * 최초 mount 에서 IDB 에 저장된 핸들을 복원 시도. query 결과가
  * 'granted' 면 자동 manifest 빌드, 'prompt' 면 permission-needed 로 대기.
  */
-export function useLocalVault() {
+export function useLocalVaultInternal() {
   const [state, setState] = useState<State>(() =>
     emptyState(isSupported() ? 'idle' : 'unsupported'),
   );
