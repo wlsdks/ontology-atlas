@@ -36,7 +36,7 @@ export interface ProjectMutations {
 }
 
 const STATIC_REJECTION =
-  '정적 demo 모드에서는 프로젝트 변경이 불가합니다. 먼저 markdown 폴더를 열어 주세요.';
+  'Cannot mutate projects in static demo mode. Open a markdown folder first.';
 
 export function useProjectMutations(): ProjectMutations {
   const mode = useDataSourceMode();
@@ -47,7 +47,7 @@ export function useProjectMutations(): ProjectMutations {
       if (mode === 'static') throw new Error(STATIC_REJECTION);
       const slug = `projects/${input.slug}`;
       if (vault.fileHandles.has(slug)) {
-        throw new Error('이미 존재하는 slug입니다.');
+        throw new Error(`Project slug already exists: "${input.slug}"`);
       }
       const md = buildProjectMarkdown(input);
       await vault.createDoc(slug, md);
