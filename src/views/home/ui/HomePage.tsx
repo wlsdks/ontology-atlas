@@ -326,7 +326,9 @@ export function HomePage() {
     ) => {
       // 노드 선택 = drawer 열기. 허브를 선택하면 포커스 모드 자동 활성,
       // 일반 노드는 포커스 해제.
-      const project = renderProjects.find((p) => p.slug === slug);
+      // projectBySlug Map 으로 O(1) lookup — 이전엔 매 클릭마다
+      // renderProjects.find 로 O(N) 스캔.
+      const project = projectBySlug.get(slug);
       setRouteState((current) => ({
         ...current,
         selectedSlug: slug,
@@ -335,7 +337,7 @@ export function HomePage() {
       }));
       dismissSigmaHint();
     },
-    [renderProjects, setRouteState, dismissSigmaHint],
+    [projectBySlug, setRouteState, dismissSigmaHint],
   );
 
   const handleClose = useCallback(() => {
