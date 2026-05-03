@@ -14,7 +14,6 @@ relates:
 # Topology — Sigma WebGL Render
 
 Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer,
-hover → 1-hop 이웃 강조, 좌측 Legend, 우측 SigmaHubRail (degree 상위), 하단
-RegionNavigator (minimap). `⌘K` 검색.
-
-Mission v2 후 `/topology` 라우트로 이동 — `/` 는 ontology hub 가 됨.
+hover → 1-hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap.
+`⌘K` 검색. `/` (홈 hub) 와 `/topology` (alias) 양쪽에서 동일 컴포넌트 (HomePage)
+가 mount.

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-03T02:46:53.183Z",
+  "generatedAt": "2026-05-03T03:11:58.278Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -3096,9 +3096,9 @@
           "slug": "topology-sigma-webgl-render"
         }
       ],
-      "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1hop 이웃 강조, 좌측 Legend, 우측 SigmaHubRail (degree 상위), 하단 RegionNavigator (minimap). ⌘K 검색. Mission v2 후 /topology 라우트로 이동 — / 는 ontology hub 가 됨.",
-      "wordCount": 46,
-      "updatedAt": "2026-05-02T20:20:04.707Z",
+      "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount.",
+      "wordCount": 42,
+      "updatedAt": "2026-05-03T03:11:33.466Z",
       "mode": "both",
       "linksOut": []
     },
