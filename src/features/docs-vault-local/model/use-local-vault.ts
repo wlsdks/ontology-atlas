@@ -188,9 +188,12 @@ function verifyRead(
  * 'granted' 면 자동 manifest 빌드, 'prompt' 면 permission-needed 로 대기.
  */
 export function useLocalVaultInternal() {
-  const [state, setState] = useState<State>(() =>
-    emptyState(isSupported() ? 'idle' : 'unsupported'),
-  );
+  // SSR 일치성: lazy initializer 가 isSupported() 를 호출하면 SSR (window
+  // 없음 → 'unsupported') 와 client 첫 hydration (window 있음 → 'idle')
+  // 사이에 mismatch. 항상 'idle' 로 시작하고 mount 후 useEffect 가
+  // FSA 미지원 시 'unsupported' 로 전환 — 첫 paint 1 frame 동안 잠깐
+  // supported 로 보이지만 hydration 에러는 사라짐.
+  const [state, setState] = useState<State>(() => emptyState('idle'));
 
   /** 마지막 성공 빌드의 fingerprint — auto-refresh 시 변경 없으면 skip 의 비교 기준. */
   const lastFingerprintRef = useRef<string | null>(null);
@@ -580,9 +583,13 @@ export function useLocalVaultInternal() {
     [state.fileHandles, state.handle, state.manifest, getParentAndName, load],
   );
 
-  // 최초 1회 — IDB 에서 핸들 복원 시도
+  // 최초 1회 — IDB 에서 핸들 복원 시도. 동시에 FSA 미지원 브라우저면
+  // 'unsupported' state 로 전환 (initial 'idle' 에서 — SSR 일치 fix).
   useEffect(() => {
-    if (!isSupported()) return;
+    if (!isSupported()) {
+      setState((s) => ({ ...s, status: 'unsupported' }));
+      return;
+    }
     let cancelled = false;
     (async () => {
       const record = await getLocalFsHandle();
@@ -772,7 +779,9 @@ export function useLocalVaultInternal() {
     imageHandles: state.imageHandles,
     errorMessage: state.errorMessage,
     lastLoadedAt: state.lastLoadedAt,
-    isSupported: isSupported(),
+    // state-derived — SSR 일치 (lazy initializer 의 isSupported() 호출
+    // 회피). 'unsupported' 로 전환되는 시점은 mount 후 useEffect.
+    isSupported: state.status !== 'unsupported',
     open,
     close,
     refresh,
