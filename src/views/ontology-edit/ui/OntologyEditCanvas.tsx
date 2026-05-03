@@ -283,6 +283,16 @@ export function OntologyEditCanvas({
         onNodeDragStop={handleNodeDragStop}
         fitView
         fitViewOptions={{ padding: 0.2 }}
+        // viewport 밖 노드는 render 스킵 — vault 가 50+ 노드로 자라도
+        // pan/zoom 부드럽게 유지 (xyflow 권장 perf 옵션).
+        onlyRenderVisibleElements
+        // 더블클릭 줌 disable — 사용자가 노드 inline rename 등 다른
+        // 더블클릭 인터랙션 추가했을 때 viewport 줌과 충돌 회피.
+        zoomOnDoubleClick={false}
+        // panel 토글 / 자동정렬 등 stateful 변화를 부드럽게 — viewport
+        // transition 200ms 이내라 사용자 의도와 충돌 없음.
+        minZoom={0.2}
+        maxZoom={2}
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} />
         <Controls position="bottom-right" showInteractive={false} />
