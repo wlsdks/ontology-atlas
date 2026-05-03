@@ -13,34 +13,21 @@ interface TabItem {
   matchPrefixes: ReadonlyArray<string>;
 }
 
-// 모바일 한정 하단 탭바. 메인 4개 destination만 노출 — 미니멀 모바일 결.
-// "온톨로지 · 프로젝트 · 문서 · 정리" 4분할.
-// Direction A 적용 후 / 가 ontology hub — 첫 탭 라벨/아이콘이 그 정체성을
-// 노출. 토폴로지는 온톨로지의 출구 view 라 별도 탭이 아닌 OntologyView /
-// OperationsNav 안의 sub-link 로 진입.
+// 모바일 한정 하단 탭바. 메인 3 개 destination 만 노출 — 미니멀 모바일 결.
+// "온톨로지 · 프로젝트 · 문서". / 가 ontology hub — 첫 탭 라벨/아이콘이 그
+// 정체성을 노출. 토폴로지는 온톨로지의 출구 view 라 별도 탭이 아닌
+// OntologyView / OperationsNav 안의 sub-link 로 진입.
 const TABS: ReadonlyArray<TabItem> = [
   { href: '/', labelKey: 'ontology', icon: Network, matchPrefixes: ['/ontology', '/topology'] },
   { href: '/projects/', labelKey: 'projects', icon: FolderKanban, matchPrefixes: ['/projects', '/project'] },
-  // "문서" tab — vault picker. mission v2 가 cloud markdown 호스팅 surface
-  // (`/knowledge/*`) 를 폐기한 후 모든 모드에서 docs vault 가 진입점.
+  // "문서" tab — vault picker / 편집기. mission v2 후 모든 모드에서 docs
+  // vault 가 진입점.
   { href: '/docs/', labelKey: 'docs', icon: FileText, matchPrefixes: ['/docs'] },
-];
-
-// 탭바를 노출하지 않을 surface — 인증·온보딩·에러 화면처럼 사용자가
-// "이동" 보다 "지금 이 화면 끝내기" 에 집중해야 하는 곳. pathname prefix 매칭.
-const HIDDEN_PREFIXES: ReadonlyArray<string> = [
-  '/login',
-  '/signup',
-  '/reset-password',
-  '/dev',
-  '/api',
 ];
 
 export function BottomTabBar() {
   const pathname = usePathname() ?? '/';
   const t = useTranslations('nav');
-  const shouldHide = HIDDEN_PREFIXES.some((p) => pathname.startsWith(p));
-  if (shouldHide) return null;
 
   return (
     <nav
