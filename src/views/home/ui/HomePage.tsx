@@ -219,7 +219,7 @@ export function HomePage() {
     [selectedSlug, renderProjects],
   );
   const combinedFitToken = fitViewToken;
-  // P1-5 — 클라이언트 사이드 동적 타이틀. 선택 프로젝트 컨텍스트를 탭·검색바에
+  // 클라이언트 사이드 동적 타이틀 — 선택 프로젝트 컨텍스트를 브라우저 탭에
   // 노출 (정적 export 환경의 page metadata 한계 보완).
   useDocumentTitle(
     Array.from(

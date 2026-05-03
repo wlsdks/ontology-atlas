@@ -32,8 +32,6 @@ export function SigmaContextMenu({
   const t = useTranslations('topologyWidgets.contextMenu');
   const copyDetailUrl = () => {
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      // P0-B Phase 6: getProjectDetailUrl 가 현재 URL 의 ?account / ?pj 를
-      // 자동 상속하므로 컨테이너·계정 컨텍스트가 복사된 링크에 그대로 따라감.
       const url = getProjectDetailUrl(window.location.origin, data.slug);
       void navigator.clipboard
         .writeText(url)

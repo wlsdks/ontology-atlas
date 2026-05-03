@@ -43,7 +43,7 @@ interface Props {
   onClose: () => void;
   projects: Project[];
   onSelect: (slug: string) => void;
-  /** P0-B Phase 6 — 활성 컨테이너 이름. truthy 면 헤더에 "Project · {name}" 배지 노출. */
+  /** 활성 컨테이너 이름. truthy 면 헤더에 "Project · {name}" 배지 노출. */
   containerLabel?: string | null;
 }
 

@@ -47,7 +47,7 @@ interface Props {
   onChangeImpactMode: (mode: ProjectImpactMode) => void;
   onClose: () => void;
   onSelectProject: (slug: string) => void;
-  /** P0-B Phase 6 — 활성 컨테이너 이름. 헤더에 "Project · {label}" 배지. */
+  /** 활성 컨테이너 이름. 헤더에 "Project · {label}" 배지. */
   containerLabel?: string | null;
   /**
    * Layer 0 컨테이너 synthetic project 가 선택됐을 때, "토폴로지 열기" CTA

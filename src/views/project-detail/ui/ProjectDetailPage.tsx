@@ -269,7 +269,6 @@ export function ProjectDetailPage({
     (nextSlug: string) => {
       setSearchOpen(false);
       if (nextSlug === slug) return;
-      // P0-B Phase 6: getProjectDetailHref 가 ?account/?pj 자동 propagation.
       router.push(getProjectDetailHref(nextSlug));
     },
     [router, slug],
