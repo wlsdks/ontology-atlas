@@ -302,7 +302,6 @@
         "openProjectPalette": "Open the project search palette",
         "openGlobalPalette": "Search ontology, docs, and projects together",
         "toggleDocsDrawer": "Toggle the docs vault preview drawer (with edit access)",
-        "togglePresentation": "Toggle presentation mode",
         "showShortcuts": "Show or hide keyboard shortcuts",
         "stepCloseOverlays": "Close drawers and overlays one step at a time",
         "dragNode": "Move node position (spring rebound)",
@@ -1180,7 +1179,6 @@
     "loadingEngine": "Loading topology engine",
     "documentTitle": "Topology",
     "srHeading": "Topology project topology map",
-    "presentationStarted": "Presentation mode started",
     "selectionAnnouncement": "{name} selected. {deps, plural, one {# dependency} other {# dependencies}}, {referenced, plural, one {# reference} other {# references}}.",
     "mobileTagline": "Project dependency map.",
     "workspace": {
@@ -1203,8 +1201,6 @@
       "docsAriaLabel": "Open docs vault quick look (D)",
       "docsLabel": "Docs",
       "pinnedDocsCount": "{count} pinned docs",
-      "exitPresentationTooltip": "Exit presentation mode (F)",
-      "exitPresentationAriaLabel": "Exit presentation mode",
       "close": "Close",
       "shortcutsTooltip": "Keyboard shortcuts (?)",
       "shortcutsAriaLabel": "View keyboard shortcuts"

@@ -33,7 +33,6 @@ const SECTIONS: ShortcutSection[] = [
       { keys: ["⌘", "K"], labelKey: "openProjectPalette" },
       { keys: ["⇧", "⌘", "K"], labelKey: "openGlobalPalette" },
       { keys: ["D"], labelKey: "toggleDocsDrawer" },
-      { keys: ["F"], labelKey: "togglePresentation" },
       { keys: ["?"], labelKey: "showShortcuts" },
       { keys: ["Esc"], labelKey: "stepCloseOverlays" },
     ],

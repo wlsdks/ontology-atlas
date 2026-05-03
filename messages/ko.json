@@ -302,7 +302,6 @@
         "openProjectPalette": "프로젝트 검색 팔레트 열기",
         "openGlobalPalette": "ontology / 문서 / 프로젝트 통합 검색",
         "toggleDocsDrawer": "문서 볼트 빠른 보기 드로어 토글 (편집 권한 시)",
-        "togglePresentation": "프레젠테이션 모드 토글",
         "showShortcuts": "키보드 단축키 보기·닫기",
         "stepCloseOverlays": "드로어·오버레이 단계적 닫기",
         "dragNode": "노드 위치 이동 (스프링 반사)",
@@ -1180,7 +1179,6 @@
     "loadingEngine": "토폴로지 엔진 불러오는 중",
     "documentTitle": "토폴로지",
     "srHeading": "토폴로지 프로젝트 토폴로지 지도",
-    "presentationStarted": "프레젠테이션 모드 시작",
     "selectionAnnouncement": "{name} 선택됨. 의존 {deps}개, 연결 {referenced}개.",
     "mobileTagline": "프로젝트 의존도 지도.",
     "workspace": {
@@ -1203,8 +1201,6 @@
       "docsAriaLabel": "문서 볼트 빠른 보기 열기 (D)",
       "docsLabel": "문서",
       "pinnedDocsCount": "고정된 문서 {count}개",
-      "exitPresentationTooltip": "프레젠테이션 모드 종료 (F)",
-      "exitPresentationAriaLabel": "프레젠테이션 모드 종료",
       "close": "닫기",
       "shortcutsTooltip": "키보드 단축키 (?)",
       "shortcutsAriaLabel": "키보드 단축키 보기"

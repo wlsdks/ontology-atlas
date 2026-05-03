@@ -161,7 +161,6 @@ export function HomePage() {
   // SearchPalette 와 별 슬롯). MountedGlobalSearch 가 controlled mode 로
   // 이 open state 를 받아 동작.
   const [ontologySearchOpen, setOntologySearchOpen] = useState(false);
-  const [presentationMode, setPresentationMode] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -396,10 +395,6 @@ export function HomePage() {
       onFire: () => setSearchOpen((v) => !v),
     },
     {
-      combo: { key: "f" },
-      onFire: () => setPresentationMode((v) => !v),
-    },
-    {
       combo: { key: "?" },
       onFire: () => setShortcutsOpen((v) => !v),
     },
@@ -408,33 +403,6 @@ export function HomePage() {
       onFire: () => setDocsDrawerOpen((v) => !v),
     },
   ]);
-
-  // presentationMode 진입/해제 시 브라우저 fullscreen API 연동
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    if (presentationMode) {
-      if (
-        !document.fullscreenElement &&
-        document.documentElement.requestFullscreen
-      ) {
-        document.documentElement.requestFullscreen().catch(() => {});
-      }
-    } else {
-      if (document.fullscreenElement && document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
-      }
-    }
-  }, [presentationMode]);
-
-  // 사용자가 ESC 등으로 브라우저 fullscreen 빠져나가면 상태 동기화
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const handler = () => {
-      if (!document.fullscreenElement) setPresentationMode(false);
-    };
-    document.addEventListener("fullscreenchange", handler);
-    return () => document.removeEventListener("fullscreenchange", handler);
-  }, []);
 
   const drawerOpen = drawerProject !== null;
 
@@ -496,11 +464,10 @@ export function HomePage() {
         {t('srHeading')}
       </h1>
       <GestureHint
-        disabled={presentationMode || drawerOpen}
+        disabled={drawerOpen}
       />
       <LiveAnnouncer
         message={(() => {
-          if (presentationMode) return t('presentationStarted');
           if (!selectedProject) return "";
           const deps = selectedProject.dependencies.length;
           // reverseDeps 는 위 useMemo 결과 — projects 전체 재filter 안 해도
@@ -513,8 +480,7 @@ export function HomePage() {
           });
         })()}
       />
-      {!presentationMode && (
-          <>
+      <>
             {/* 모바일 전용 미니 브랜드 라벨 */}
             <div className="pointer-events-none absolute left-4 top-[22px] z-10 -translate-y-1/2 md:hidden">
               <div className="flex items-center gap-2">
@@ -660,25 +626,6 @@ export function HomePage() {
               </Tooltip>
             </div>
           </>
-      )}
-      {presentationMode && (
-          <>
-            <Tooltip content={t('controls.exitPresentationTooltip')} side="bottom" withProvider={false}>
-            <button
-              type="button"
-              onClick={() => setPresentationMode(false)}
-              className="pointer-events-auto absolute right-4 top-4 z-10 flex h-11 items-center gap-2 rounded-full border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-4 font-[var(--font-weight-signature)] text-[13px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-1)] md:right-10 md:top-10"
-              aria-label={t('controls.exitPresentationAriaLabel')}
-            >
-              <X size={14} />
-              <span className="hidden md:inline">{t('controls.close')}</span>
-              <span className="flex items-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                F
-              </span>
-            </button>
-            </Tooltip>
-          </>
-        )}
         <div className="absolute inset-0">
           <>
               <div
