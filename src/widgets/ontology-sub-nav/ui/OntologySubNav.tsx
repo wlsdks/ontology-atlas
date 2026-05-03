@@ -21,23 +21,25 @@ interface SubItem {
   href: string;
   labelKey: 'tree' | 'builder' | 'insights' | 'relations';
   icon: typeof Network;
-  /** pathname 매칭 — exact (tree) 또는 prefix (sub-route). */
-  match: 'exact' | 'prefix';
-  matchPath: string;
+  /** pathname 정규화 (끝 / 제거) 후 정확히 일치하는 경로들. tree 는
+   *  '' (루트) + '/ontology' 모두 — vault 선택 시 RootEntryPage 가 같은
+   *  OntologyViewPage 를 / 와 /ontology 두 곳에서 렌더하므로. */
+  exactMatches: ReadonlyArray<string>;
+  /** 정규화 pathname 이 이 prefix 들 중 하나로 시작하면 active. */
+  prefixMatches: ReadonlyArray<string>;
 }
 
 const SUB_ITEMS: ReadonlyArray<SubItem> = [
-  { href: '/ontology/', labelKey: 'tree', icon: Network, match: 'exact', matchPath: '/ontology' },
-  { href: '/ontology/edit/', labelKey: 'builder', icon: GitBranch, match: 'prefix', matchPath: '/ontology/edit' },
-  { href: '/ontology/insights/', labelKey: 'insights', icon: BarChart3, match: 'prefix', matchPath: '/ontology/insights' },
-  { href: '/ontology/relations/', labelKey: 'relations', icon: Share2, match: 'prefix', matchPath: '/ontology/relations' },
+  { href: '/ontology/', labelKey: 'tree', icon: Network, exactMatches: ['', '/ontology'], prefixMatches: [] },
+  { href: '/ontology/edit/', labelKey: 'builder', icon: GitBranch, exactMatches: [], prefixMatches: ['/ontology/edit'] },
+  { href: '/ontology/insights/', labelKey: 'insights', icon: BarChart3, exactMatches: [], prefixMatches: ['/ontology/insights'] },
+  { href: '/ontology/relations/', labelKey: 'relations', icon: Share2, exactMatches: [], prefixMatches: ['/ontology/relations'] },
 ];
 
 function isItemActive(pathname: string, item: SubItem): boolean {
-  // pathname 정규화 — 끝 / 제거.
   const normalized = pathname.replace(/\/$/, '');
-  if (item.match === 'exact') return normalized === item.matchPath;
-  return normalized.startsWith(item.matchPath);
+  if (item.exactMatches.includes(normalized)) return true;
+  return item.prefixMatches.some((p) => normalized.startsWith(p));
 }
 
 export function OntologySubNav() {
