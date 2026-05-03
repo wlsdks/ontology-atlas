@@ -106,10 +106,9 @@ export function OntologyInsightsPage() {
   }, [kindDist]);
   const kindMax = kindRows[0]?.count ?? 0;
 
-  // UX-13: 프로젝트별 ontology 분포 — 외부 visitor 가 12 외부 프로젝트 별
-  // 노드 분포를 한 카드에서 보고 어느 프로젝트가 큰지 즉시 인지.
-  // buildProjectOntologyCounts 는 project / document 메타 kind 제외하고
-  // 4 kind (domain / capability / element / unknown) 만 집계.
+  // 프로젝트별 ontology 분포 — 어느 프로젝트가 ontology 측면에서 큰지
+  // 한 카드로 보여준다. project / document 메타 kind 는 집계 제외하고
+  // 4 kind (domain / capability / element / unknown) 만 합산.
   const projectRows = useMemo(() => {
     if (!insight) return [] as Array<{ project: string; total: number }>;
     const counts = buildProjectOntologyCounts(insight.nodes);
@@ -119,10 +118,9 @@ export function OntologyInsightsPage() {
   }, [insight]);
   const projectMax = projectRows[0]?.total ?? 0;
 
-  // UX-14: edge type 분포 — 운영 1185 엣지에서 어떤 관계 type 이 우세한지
-  // 즉시 인지 (belongs_to / implements / contains / uses 등). 트리는
-  // hierarchy, 인사이트는 통계 — relations 페이지는 edge 단위 view 라
-  // 별도 surface. 여기는 mini bar 표시.
+  // edge type 분포 — 어떤 관계 type 이 우세한지 즉시 인지 (belongs_to /
+  // implements / contains / uses 등). 트리는 hierarchy, 인사이트는
+  // 통계, relations 페이지는 edge 단위 view — 여기는 mini bar 만.
   const edgeTypeDist = useMemo(
     () => (insight ? computeEdgeTypeDistribution(insight.edges) : new Map<string, number>()),
     [insight],
@@ -142,9 +140,9 @@ export function OntologyInsightsPage() {
   }, [edgeTypeDist]);
   const edgeTypeMax = edgeTypeRows[0]?.count ?? 0;
 
-  // UX-17: cross-project edge 카운트 — 운영 D-cont-1 시드된 7 cross-project
-  // 의존을 인사이트에서 별도 인지. 전체 edge 의 비율로 보여 사용자가
-  // "내 ontology 가 얼마나 분산됐나" 인지.
+  // cross-project edge 카운트 — 양 끝 노드의 projectIds 가 disjoint 인 edge
+  // 만 셈. 전체 edge 의 비율로 사용자에게 \"ontology 가 얼마나 분산됐나\"
+  // 신호 노출.
   const crossProjectEdgeCount = useMemo(
     () => (insight ? countCrossProjectEdges(insight.edges, insight.nodes) : 0),
     [insight],
@@ -157,8 +155,8 @@ export function OntologyInsightsPage() {
       <MountedGlobalSearch />
 
       <section className="mb-8 space-y-3">
-        {/* UX-8: 모바일 한정 좌상단 back chevron — 한 손 도달 가능 위치
-            (iOS 표준 패턴). md+ 데스크톱은 기존 우상단 link 유지. */}
+        {/* 모바일 한정 좌상단 back chevron — 한 손 도달 가능 위치 (iOS
+            표준 패턴). md+ 데스크톱은 우상단 link 유지. */}
         <Link
           href={"/ontology/"}
           aria-label={t("backTreeMobileAriaLabel")}
