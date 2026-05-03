@@ -444,7 +444,7 @@ export function ProjectForm({
       for (const issue of parsed.error.issues) {
         const k =
           (issue.path[0] as keyof ProjectFormValues | undefined) ??
-          (issue.message.startsWith("링크 ")
+          (issue.message.startsWith("Link ")
             ? "linksText"
             : undefined);
         if (!k) continue;

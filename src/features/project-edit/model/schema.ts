@@ -28,7 +28,7 @@ function parseLinkLine(line: string) {
   if (rest.length > 0 || !label || !url) {
     return {
       ok: false as const,
-      message: "각 링크는 `label|https://...` 형식이어야 합니다.",
+      message: "Each link must be in the form `label|https://...`",
     };
   }
 
@@ -37,13 +37,13 @@ function parseLinkLine(line: string) {
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
       return {
         ok: false as const,
-        message: "링크 URL은 http:// 또는 https:// 로 시작해야 합니다.",
+        message: "Link URL must start with http:// or https://",
       };
     }
   } catch {
     return {
       ok: false as const,
-      message: "유효한 URL을 입력하세요.",
+      message: "Enter a valid URL",
     };
   }
 
@@ -76,16 +76,16 @@ export const projectFormSchema = z
   .object({
     slug: z
       .string()
-      .min(1, "slug은 필수")
-      .regex(/^[\p{L}\p{N}-]+$/u, "문자, 숫자, 하이픈만 허용"),
-    name: z.string().min(1, "이름 필수"),
+      .min(1, "Slug is required")
+      .regex(/^[\p{L}\p{N}-]+$/u, "Letters, numbers, and hyphens only"),
+    name: z.string().min(1, "Name is required"),
     nameEn: z.string().optional(),
     // 동적 카테고리/상태 — taxonomy default 또는 미래 vault frontmatter 기반
     // taxonomy 로 확장될 수 있어 free string. 존재 여부 검증은 호출자
     // (ProjectForm) 가 taxonomy 와 대조해 수행.
-    category: z.string().min(1, "카테고리 필수"),
-    status: z.string().min(1, "상태 필수"),
-    description: z.string().min(1, "설명 필수"),
+    category: z.string().min(1, "Category is required"),
+    status: z.string().min(1, "Status is required"),
+    description: z.string().min(1, "Description is required"),
     detail: z.string().optional(),
     tagsCsv: z.string().optional(),
     stackCsv: z.string().optional(),
@@ -110,7 +110,7 @@ export const projectFormSchema = z
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: ["linksText"],
-            message: `링크 ${index + 1}: ${parsed.message}`,
+            message: `Link ${index + 1}: ${parsed.message}`,
           });
           return;
         }
@@ -121,7 +121,7 @@ export const projectFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["startedAt"],
-        message: "시작일 형식이 올바르지 않습니다.",
+        message: "Invalid start date format",
       });
     }
 
@@ -129,7 +129,7 @@ export const projectFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["launchedAt"],
-        message: "출시일 형식이 올바르지 않습니다.",
+        message: "Invalid launch date format",
       });
     }
 
@@ -144,7 +144,7 @@ export const projectFormSchema = z
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["launchedAt"],
-        message: "출시일은 시작일보다 빠를 수 없습니다.",
+        message: "Launch date cannot be earlier than start date",
       });
     }
   });

@@ -51,7 +51,7 @@ describe("projectFormSchema", () => {
     );
 
     expect(result.success).toBe(false);
-    expect(result.error?.issues[0]?.message).toContain("링크 1:");
+    expect(result.error?.issues[0]?.message).toContain("Link 1:");
   });
 
   it("rejects non-http links", () => {
@@ -60,7 +60,7 @@ describe("projectFormSchema", () => {
     );
 
     expect(result.success).toBe(false);
-    expect(result.error?.issues[0]?.message).toContain("http:// 또는 https://");
+    expect(result.error?.issues[0]?.message).toContain("http:// or https://");
   });
 
   it("rejects launch dates earlier than start dates", () => {
@@ -73,7 +73,7 @@ describe("projectFormSchema", () => {
 
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.message).toContain(
-      "출시일은 시작일보다 빠를 수 없습니다.",
+      "Launch date cannot be earlier than start date",
     );
   });
 });
