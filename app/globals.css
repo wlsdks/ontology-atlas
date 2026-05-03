@@ -333,6 +333,20 @@ html[data-theme="light"] [class*="text-[color:rgba(200,210,255"] {
 }
 
 /*
+ * 라이트 모드 — 마크다운 코드 블록 dark island fix. DocsVaultViewer 의
+ * <pre> 가 \`bg-[color:rgba(12,14,20,0.8)]\` (거의 black) 로 hardcoded.
+ * 다크에선 캔버스보다 약간 짙은 코드 영역이라 자연스럽지만 라이트에선
+ * 흰 페이지 안에 black box 가 떠 있어 시각 충격.
+ *
+ * GitHub / Linear / Notion 라이트 모드 패턴 차용 — 코드 블록 bg 는 매우
+ * 연한 grey (#f1f3f8). text 는 이미 위 셀렉터가 deep indigo 로 시프트하니
+ * 자동 readable.
+ */
+html[data-theme="light"] [class*="bg-[color:rgba(12,14,20,0.8)]"] {
+  background-color: #eef0f6;
+}
+
+/*
  * 라이트 모드 hover affordance — chrome buttons / 텍스트 링크 처럼 명시
  * hover bg 가 없는 인터랙티브 요소에 subtle bg overlay. 다크에선 텍스트
  * tertiary → primary 색 차이가 크지만 라이트에선 같은 차이가 시야적으로
