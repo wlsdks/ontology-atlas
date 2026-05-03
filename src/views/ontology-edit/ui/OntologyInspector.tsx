@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion } from "framer-motion";
+import { useOntologyKindLabel } from "@/entities/ontology-class";
 import type { EphemeralNode } from "../lib/use-ephemeral-nodes";
 
 // 헌장 §11 + a11y — motion-reduce 사용자 보호. 짧은 fade 만 (transform 없음).
@@ -72,23 +73,7 @@ export interface OntologyInspectorProps {
 }
 
 type InspectorTranslator = ReturnType<typeof useTranslations>;
-
-function localizeKind(t: InspectorTranslator, kind: string): string {
-  switch (kind) {
-    case "project":
-      return t("kindLabelProject");
-    case "domain":
-      return t("kindLabelDomain");
-    case "capability":
-      return t("kindLabelCapability");
-    case "element":
-      return t("kindLabelElement");
-    case "document":
-      return t("kindLabelDocument");
-    default:
-      return kind;
-  }
-}
+type KindLabelResolver = (kind: string) => string;
 
 export function OntologyInspector({
   ephemeralSelected,
@@ -105,6 +90,9 @@ export function OntologyInspector({
   saving,
 }: OntologyInspectorProps) {
   const t = useTranslations("ontologyPages.edit.inspector");
+  // canonical kind 라벨 — kinds.* i18n namespace 기반. 이전엔 inspector 자체
+  // 의 kindLabel* 키로 중복 정의했으나 동일 값이라 정리.
+  const kindLabel = useOntologyKindLabel();
   const selected = ephemeralSelected ?? vaultSelected;
   return (
     <aside
@@ -134,6 +122,7 @@ export function OntologyInspector({
           <motion.div key={`eph-${ephemeralSelected.id}`} {...FADE_MOTION}>
             <EphemeralDetail
               t={t}
+              kindLabel={kindLabel}
               node={ephemeralSelected}
               untitledPlaceholder={untitledPlaceholder}
               onRename={onRenameEphemeral}
@@ -146,6 +135,7 @@ export function OntologyInspector({
           <motion.div key={`vault-${vaultSelected.slug}`} {...FADE_MOTION}>
             <VaultDetail
               t={t}
+              kindLabel={kindLabel}
               node={vaultSelected}
               readOnly={vaultReadOnly}
               onSaveRename={onSaveVaultRename}
@@ -182,6 +172,7 @@ function previewSlug(
 
 function EphemeralDetail({
   t,
+  kindLabel,
   node,
   untitledPlaceholder,
   onRename,
@@ -190,6 +181,7 @@ function EphemeralDetail({
   onDeselect,
 }: {
   t: InspectorTranslator;
+  kindLabel: KindLabelResolver;
   node: EphemeralNode;
   untitledPlaceholder?: string;
   onRename: (id: string, title: string) => void;
@@ -206,7 +198,7 @@ function EphemeralDetail({
     <div className="flex flex-col gap-3 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.06)] p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="inline-flex items-center rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.18)] px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-primary)]">
-          {t("ephemeralBadge")} · {localizeKind(t, node.kind)}
+          {t("ephemeralBadge")} · {kindLabel(node.kind)}
         </span>
         <button
           type="button"
@@ -268,6 +260,7 @@ function EphemeralDetail({
 
 function VaultDetail({
   t,
+  kindLabel,
   node,
   readOnly,
   onSaveRename,
@@ -278,6 +271,7 @@ function VaultDetail({
   onDeselect,
 }: {
   t: InspectorTranslator;
+  kindLabel: KindLabelResolver;
   node: VaultSelected;
   readOnly: boolean;
   onSaveRename?: (slug: string, nextTitle: string) => Promise<void> | void;
@@ -307,7 +301,7 @@ function VaultDetail({
     <div className="flex flex-col gap-3 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] p-3">
       <div className="flex items-center justify-between gap-2">
         <span className="inline-flex items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-2 py-0.5 text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)]">
-          {readOnly ? t("dogfoodBadge") : t("vaultBadge")} · {localizeKind(t, node.kind)}
+          {readOnly ? t("dogfoodBadge") : t("vaultBadge")} · {kindLabel(node.kind)}
         </span>
         <button
           type="button"

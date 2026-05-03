@@ -791,12 +791,7 @@
         "arrayRelates": "관련 (relates)",
         "arrayInputPlaceholder": "slug 입력 + Enter",
         "arrayAddAriaLabel": "추가",
-        "arrayRemoveAriaLabel": "{slug} 제거",
-        "kindLabelProject": "프로젝트",
-        "kindLabelDomain": "도메인",
-        "kindLabelCapability": "역량",
-        "kindLabelElement": "요소",
-        "kindLabelDocument": "문서"
+        "arrayRemoveAriaLabel": "{slug} 제거"
       },
       "onboarding": {
         "dialogAriaLabel": "빌더 시작 안내",

@@ -791,12 +791,7 @@
         "arrayRelates": "Relates (relates)",
         "arrayInputPlaceholder": "Type a slug + Enter",
         "arrayAddAriaLabel": "Add",
-        "arrayRemoveAriaLabel": "Remove {slug}",
-        "kindLabelProject": "Project",
-        "kindLabelDomain": "Domain",
-        "kindLabelCapability": "Capability",
-        "kindLabelElement": "Element",
-        "kindLabelDocument": "Document"
+        "arrayRemoveAriaLabel": "Remove {slug}"
       },
       "onboarding": {
         "dialogAriaLabel": "Builder onboarding",
