@@ -278,7 +278,13 @@ export function OntologyTreeView({
     return ids;
   }, [result.roots]);
 
-  const expandedCount = collapsibleIds.size - collapsed.size;
+  // \`collapsed\` Set 의미가 \`defaultExpanded\` 에 따라 뒤집힌다:
+  // - true (default): collapsed Set = 접힌 노드 → expanded = total - collapsed
+  // - false: collapsed Set = 펼친 노드 → expanded = collapsed.size
+  // 둘 다 동일 변수 이름을 쓰는 v0 구현 단순화에 따른 quirk.
+  const expandedCount = defaultExpanded
+    ? collapsibleIds.size - collapsed.size
+    : collapsed.size;
   const canExpandMore = expandedCount < collapsibleIds.size;
   const canCollapseMore = expandedCount > 0;
 
