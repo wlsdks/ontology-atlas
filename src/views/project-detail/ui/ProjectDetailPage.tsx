@@ -300,6 +300,14 @@ export function ProjectDetailPage({
     if (projectsQuery.loaded || projectsQuery.error !== null) setResolved(true);
   }, [projectsQuery.projects, projectsQuery.loaded, projectsQuery.error, slug, fallbackProjects]);
 
+  // related slug → project Map 한 번 — 아래 dependencyProjects 가 매 dep 마다
+  // related.find 로 O(N) 스캔하던 회귀 차단. dependencies 가 D 개일 때
+  // O(D × N) → O(N + D). 모든 early return 위에서 호출해 hooks 순서 안정.
+  const relatedBySlug = useMemo(
+    () => new Map(related.map((p) => [p.slug, p])),
+    [related],
+  );
+
   if (!slug) {
     return (
       <ProjectDetailState
@@ -334,7 +342,7 @@ export function ProjectDetailPage({
   }
 
   const dependencyProjects = project.dependencies
-    .map((dep) => related.find((p) => p.slug === dep))
+    .map((dep) => relatedBySlug.get(dep))
     .filter((p): p is Project => !!p);
   const integrityIssues = getProjectIntegrityIssues(project, {
     allProjects: related,
