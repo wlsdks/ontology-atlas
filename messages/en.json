@@ -273,7 +273,7 @@
       "dialogAriaLabel": "Keyboard shortcuts",
       "title": "Keyboard shortcuts",
       "subtitle": "Navigate the map without a mouse.",
-      "help": "List of keyboard shortcuts available for navigation, the guided tour, and portfolio mode.",
+      "help": "List of keyboard shortcuts available for navigation.",
       "closeAriaLabel": "Close shortcuts",
       "footer": "Press again to close",
       "sections": {
@@ -284,9 +284,7 @@
         "docsPalette": "Docs Vault · unified palette (/docs)",
         "docsGraph": "Docs Vault · graph view",
         "docsSource": "Docs Vault · source / vault",
-        "docsActions": "Docs Vault · document actions",
-        "tour": "Guided tour",
-        "portfolio": "Portfolio mode"
+        "docsActions": "Docs Vault · document actions"
       },
       "rows": {
         "openProjectPalette": "Open the project search palette",
@@ -330,13 +328,7 @@
         "pinDoc": "Pin / unpin (pinned section stays on top)",
         "copyDocUrl": "Copy current document URL to clipboard",
         "tagFilter": "Click a tag chip to filter the tree",
-        "modeToggle": "Mode toggle — show only that mode's docs",
-        "tourNext": "Next step",
-        "tourPrev": "Previous step",
-        "tourClose": "Close the tour",
-        "portfolioNext": "Next scene",
-        "portfolioPrev": "Previous scene",
-        "portfolioClose": "Close portfolio"
+        "modeToggle": "Mode toggle — show only that mode's docs"
       },
       "keys": {
         "drag": "Drag",

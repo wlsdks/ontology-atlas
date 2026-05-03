@@ -382,7 +382,6 @@ export function HomePage() {
   }, [docsDrawerOpen]);
 
   // 공용 useTypingShortcuts로 글로벌 키 단축키 통합.
-  // portfolio 오버레이가 열려 있으면 모두 비활성.
   useTypingShortcuts([
     // ⇧⌘K (ontology / 문서 통합 검색) — useTypingShortcuts 는 첫 일치 후
     // return 하므로 ⌘K 보다 먼저 정의해야 한다.

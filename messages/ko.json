@@ -273,7 +273,7 @@
       "dialogAriaLabel": "키보드 단축키",
       "title": "키보드 단축키",
       "subtitle": "마우스 없이도 맵을 훑을 수 있습니다.",
-      "help": "탐색, 가이드 투어, 포트폴리오 모드에서 사용할 수 있는 키보드 단축키 목록입니다.",
+      "help": "탐색에 사용할 수 있는 키보드 단축키 목록입니다.",
       "closeAriaLabel": "단축키 안내 닫기",
       "footer": "를 다시 눌러도 닫힙니다",
       "sections": {
@@ -284,9 +284,7 @@
         "docsPalette": "Docs Vault · 통합 팔레트 (/docs)",
         "docsGraph": "Docs Vault · 그래프 뷰",
         "docsSource": "Docs Vault · 소스·볼트",
-        "docsActions": "Docs Vault · 문서 액션",
-        "tour": "가이드 투어",
-        "portfolio": "포트폴리오 모드"
+        "docsActions": "Docs Vault · 문서 액션"
       },
       "rows": {
         "openProjectPalette": "프로젝트 검색 팔레트 열기",
@@ -330,13 +328,7 @@
         "pinDoc": "고정 / 고정 해제 (고정 섹션 상단 고정)",
         "copyDocUrl": "현재 문서 URL 클립보드 복사",
         "tagFilter": "태그 칩 클릭 → 트리 필터",
-        "modeToggle": "모드 토글 — 해당 모드 문서만",
-        "tourNext": "다음 단계",
-        "tourPrev": "이전 단계",
-        "tourClose": "투어 닫기",
-        "portfolioNext": "다음 장면",
-        "portfolioPrev": "이전 장면",
-        "portfolioClose": "포트폴리오 닫기"
+        "modeToggle": "모드 토글 — 해당 모드 문서만"
       },
       "keys": {
         "drag": "드래그",

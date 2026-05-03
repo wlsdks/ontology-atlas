@@ -110,22 +110,9 @@ const SECTIONS: ShortcutSection[] = [
       { keys: [k("modeToggle")], labelKey: "modeToggle" },
     ],
   },
-  {
-    titleKey: "tour",
-    rows: [
-      { keys: ["→"], labelKey: "tourNext" },
-      { keys: ["←"], labelKey: "tourPrev" },
-      { keys: ["Esc"], labelKey: "tourClose" },
-    ],
-  },
-  {
-    titleKey: "portfolio",
-    rows: [
-      { keys: ["→"], labelKey: "portfolioNext" },
-      { keys: ["←"], labelKey: "portfolioPrev" },
-      { keys: ["Esc"], labelKey: "portfolioClose" },
-    ],
-  },
+  // 'tour' / 'portfolio' 섹션은 R10 정리에서 해당 오버레이가 제거되며
+  // 단축키도 함께 사라졌으나 ShortcutSheet 항목과 i18n 키가 stale 로
+  // 남아 있어 cycle 22 에서 정리.
 ];
 
 export function ShortcutSheet({ open, onClose }: Props) {
