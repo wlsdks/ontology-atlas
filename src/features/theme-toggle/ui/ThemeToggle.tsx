@@ -12,7 +12,7 @@ interface Props {
 
 /**
  * 라이트/다크 모드 토글 버튼. 한 글자짜리 icon 토글이라 상단 nav 의
- * "프로젝트 →" / "로그아웃" 옆에 자연스럽게 들어간다.
+ * locale switch / projects link 같은 보조 액션 옆에 자연스럽게 들어간다.
  *
  * SSR/CSR 시 \`useTheme\` 의 첫 paint 값이 다를 수 있어 (서버 = 'dark',
  * 클라이언트 = localStorage 값) icon / aria-label 의 hydration mismatch 가
