@@ -196,6 +196,7 @@ function renderView({
   interactive,
   onClick,
   onKeyDown,
+  ariaLabel,
   dataTestId,
 }: {
   as: NonNullable<Props["as"]>;
@@ -208,16 +209,19 @@ function renderView({
   ariaLabel?: string;
   dataTestId?: string;
 }) {
+  // ariaLabel 은 view 모드에서도 surface — interactive role=button 일 때
+  // 스크린리더가 "이게 뭘 편집하는 버튼" 인지 알아야 한다. 이전엔 destructure
+  // 만 하고 spread 누락이라 view 모드 a11y 가 비었음.
   const commonProps = {
     className,
     "data-testid": dataTestId,
+    ...(ariaLabel ? { "aria-label": ariaLabel } : {}),
     ...(interactive
       ? {
           role: "button" as const,
           tabIndex: 0,
           onClick,
           onKeyDown,
-          title: "클릭해서 편집",
         }
       : {}),
   };
