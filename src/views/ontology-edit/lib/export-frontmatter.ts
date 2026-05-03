@@ -6,7 +6,7 @@ import type { EphemeralEdge } from "./use-ephemeral-edges";
  * 변환:
  *
  * - 노드별 yaml frontmatter + 빈 본문 (사용자가 채울 수 있게)
- * - 엣지는 별도 \`## 관계\` 섹션에 list 로
+ * - 엣지는 별도 \`## Relations\` 섹션에 list 로
  */
 export interface AtlasExportInput {
   ephemeralNodes: EphemeralNode[];
@@ -21,12 +21,12 @@ export function buildAtlasFrontmatterMarkdown(input: AtlasExportInput): string {
   lines.push(`# Atlas export`);
   lines.push("");
   lines.push(
-    `> 생성 시각: \`${exportedAt}\` · 임시 노드 ${ephemeralNodes.length}개 · 임시 관계 ${ephemeralEdges.length}개`,
+    `> Generated at \`${exportedAt}\` · ${ephemeralNodes.length} ephemeral nodes · ${ephemeralEdges.length} ephemeral relations`,
   );
   lines.push("");
 
   if (ephemeralNodes.length > 0) {
-    lines.push("## 노드");
+    lines.push("## Nodes");
     lines.push("");
     for (const node of ephemeralNodes) {
       const slug = simpleSlug(node.title);
@@ -41,13 +41,13 @@ export function buildAtlasFrontmatterMarkdown(input: AtlasExportInput): string {
       lines.push("");
       lines.push(`## ${node.title}`);
       lines.push("");
-      lines.push("(요약 / 설명을 채워주세요)");
+      lines.push("(Add a 1-2 line summary or description here.)");
       lines.push("");
     }
   }
 
   if (ephemeralEdges.length > 0) {
-    lines.push("## 관계");
+    lines.push("## Relations");
     lines.push("");
     for (const edge of ephemeralEdges) {
       lines.push(`- ${edge.source} → ${edge.target} (${edge.edgeType})`);
@@ -56,7 +56,9 @@ export function buildAtlasFrontmatterMarkdown(input: AtlasExportInput): string {
   }
 
   if (ephemeralNodes.length === 0 && ephemeralEdges.length === 0) {
-    lines.push("> 아직 임시 노드/관계가 없어요. palette 로 노드를 추가한 뒤 export 해주세요.");
+    lines.push(
+      "> No ephemeral nodes or relations yet. Add nodes via the palette before exporting.",
+    );
     lines.push("");
   }
 
