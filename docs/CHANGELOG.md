@@ -6,6 +6,55 @@
 
 ---
 
+## 2026-05-03 — Round 8: useLocalVault provider 리팩터 (Round 7 deferred 항목)
+
+Round 7 의 codex finding (8 callsite 독립 호출 → 한 페이지 mount 에 2-3
+인스턴스) 를 perf 측정 없이도 architectural 가치가 명확한 well-scoped
+리팩터로 ship. 코드 dedup + source-of-truth 명확화 + 큰 vault 의 cold-load
+N× 감소.
+
+### Architectural change
+
+- 새 `LocalVaultProvider` (`src/features/docs-vault-local/model/LocalVaultProvider.tsx`)
+  가 layout 에서 1 회 mount → 단일 state 인스턴스 보유.
+- 기존 `useLocalVault` → `useLocalVaultInternal` rename (`@internal` 로
+  마킹). 로직 변경 0.
+- 새 `useLocalVault` 는 context consumer — 시그니처 이전과 동일이라 8
+  callsite (RootEntryPage / OperationsNav / OntologyEditPage /
+  DocsVaultPage / useDataSourceMode / useProjects / useProjectMutations /
+  useVaultOntology) 코드 변경 0.
+- Provider 외부 호출 시 explicit error (silent stub 위험 회피).
+
+### User-visible change
+
+없음. 순수 internal architectural — 사용자 시각엔 동일. 큰 vault (100+
+파일) 사용자가 cold-load 가 빨라진 걸 느낄 수 있지만 18-node dogfood
+에선 측정 한계.
+
+### 코드 / 아키텍처
+
+- 1 commit · 5 파일 · 신파일 1 (`LocalVaultProvider.tsx`, ~50 LOC).
+- 기존 `use-local-vault.ts` 767 LOC 변경 = function rename + JSDoc 만
+  (로직 0 줄 변경).
+- `index.ts` barrel: `useLocalVault` export source 변경.
+- `layout.tsx`: ToastProvider 바깥 (TaxonomyProvider 안) 에
+  `<LocalVaultProvider>` mount.
+
+### Test
+
+- pnpm exec tsc: clean.
+- pnpm test:run: 579 pass.
+- pnpm build: green (static export).
+- pnpm lint: 18 warnings (was 19, -1).
+
+### Round 7 의 다른 deferred 후보들 — 여전히 wait-for-signal
+
+- **`/ontology/edit` reconsideration** — UX persona walkthrough finding.
+  cut vs re-design 결정은 사용자 사용 데이터 또는 명시 product call 후.
+- **Phase 4 PM polish** — vocabulary 번역 spike. 별도 design 라운드.
+
+---
+
 ## 2026-05-03 — Surface diet Round 7: 1원리 메타 검토 (1 ship · 3 defer)
 
 3 에이전트 1원리 분석 — codex MVP audit · Plan 4 architectural axes

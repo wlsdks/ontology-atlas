@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-03T13:33:16.934Z",
+  "generatedAt": "2026-05-03T13:34:57.988Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -1737,6 +1737,36 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-03 — Round 8: useLocalVault provider 리팩터 (Round 7 deferred 항목)",
+          "slug": "2026-05-03-round-8-uselocalvault-provider-리팩터-round-7-deferred-항목"
+        },
+        {
+          "depth": 3,
+          "text": "Architectural change",
+          "slug": "architectural-change"
+        },
+        {
+          "depth": 3,
+          "text": "User-visible change",
+          "slug": "user-visible-change"
+        },
+        {
+          "depth": 3,
+          "text": "코드 / 아키텍처",
+          "slug": "코드-아키텍처"
+        },
+        {
+          "depth": 3,
+          "text": "Test",
+          "slug": "test"
+        },
+        {
+          "depth": 3,
+          "text": "Round 7 의 다른 deferred 후보들 — 여전히 wait-for-signal",
+          "slug": "round-7-의-다른-deferred-후보들-여전히-wait-for-signal"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-03 — Surface diet Round 7: 1원리 메타 검토 (1 ship · 3 defer)",
           "slug": "2026-05-03-surface-diet-round-7-1원리-메타-검토-1-ship-3-defer"
         },
@@ -1768,12 +1798,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처"
+          "slug": "코드-아키텍처-2"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test"
+          "slug": "test-2"
         },
         {
           "depth": 3,
@@ -1808,12 +1838,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-2"
+          "slug": "코드-아키텍처-3"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-2"
+          "slug": "test-3"
         },
         {
           "depth": 3,
@@ -1843,12 +1873,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-3"
+          "slug": "코드-아키텍처-4"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-3"
+          "slug": "test-4"
         },
         {
           "depth": 3,
@@ -1878,12 +1908,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-4"
+          "slug": "코드-아키텍처-5"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-4"
+          "slug": "test-5"
         },
         {
           "depth": 3,
@@ -1908,12 +1938,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-5"
+          "slug": "코드-아키텍처-6"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-5"
+          "slug": "test-6"
         },
         {
           "depth": 3,
@@ -1938,12 +1968,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-6"
+          "slug": "코드-아키텍처-7"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-6"
+          "slug": "test-7"
         },
         {
           "depth": 3,
@@ -1968,12 +1998,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-7"
+          "slug": "코드-아키텍처-8"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-7"
+          "slug": "test-8"
         },
         {
           "depth": 3,
@@ -2191,9 +2221,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 3 에이전트 1원리 분석 — codex MVP audit · Plan 4 architectural axes audit · generalpurpose 3 perso",
-      "wordCount": 6959,
-      "updatedAt": "2026-05-03T13:25:19.871Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. Round 7 의 codex finding (8 callsite 독립 호출 → 한 페이지 mount 에 23 인스턴스) 를 perf 측정 없이도 architect",
+      "wordCount": 7225,
+      "updatedAt": "2026-05-03T13:34:50.130Z",
       "linksOut": []
     },
     {
