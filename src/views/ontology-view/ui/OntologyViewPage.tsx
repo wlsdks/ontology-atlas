@@ -605,7 +605,7 @@ function NodeDetailPanel({
         </p>
       ) : null}
 
-      {node.source === "manual" && node.manualNote ? (
+      {node.manualNote ? (
         <div className="mb-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2">
           <p className="mb-1 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
             {t('manualNote')}

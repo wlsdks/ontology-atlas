@@ -1,6 +1,5 @@
 export type {
   KnowledgeEdgeType,
-  KnowledgeGraphSource,
   KnowledgeGraphNode,
   KnowledgeGraphEdge,
   KnowledgeProjectInsight,
@@ -9,8 +8,6 @@ export type {
 export {
   KNOWLEDGE_EDGE_TYPES,
   isKnowledgeEdgeType,
-  KNOWLEDGE_GRAPH_SOURCES,
-  isKnowledgeGraphSource,
 } from "./types";
 export { useEdgeTypeLabel } from "./use-edge-type-label";
 export type { EdgeTypeRow } from "./build-edge-type-rows";

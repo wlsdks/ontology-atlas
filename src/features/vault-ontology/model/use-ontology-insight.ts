@@ -51,7 +51,6 @@ function derivationToInsight(
     lastApprovedAt: VAULT_SENTINEL_DATE,
     lastApprovedBy: VAULT_SENTINEL_AUTHOR,
     summary: stub.summary,
-    source: 'manual',
   }));
   const edges: KnowledgeGraphEdge[] = d.edges.map((stub) => ({
     id: stub.id,
@@ -62,7 +61,6 @@ function derivationToInsight(
     evidenceIds: [],
     lastApprovedAt: VAULT_SENTINEL_DATE,
     lastApprovedBy: VAULT_SENTINEL_AUTHOR,
-    source: 'manual',
   }));
   return { nodes, edges };
 }

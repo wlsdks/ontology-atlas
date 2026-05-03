@@ -45,22 +45,6 @@ export function isKnowledgeEdgeType(value: unknown): value is KnowledgeEdgeType 
  */
 export type ManualNodeKind = 'project' | 'domain' | 'capability' | 'element' | 'document';
 
-/**
- * 노드/엣지의 출처. R10b cloud LLM 추출 워커가 영구 제거된 후 `manual` 만
- * 남음 — vault frontmatter 자체 + 빌더 추가 + MCP write 모두 사람 / AI agent
- * 의 *직접 작성* 이라 동일 출처로 분류.
- */
-export type KnowledgeGraphSource = 'manual';
-
-export const KNOWLEDGE_GRAPH_SOURCES: readonly KnowledgeGraphSource[] = [
-  'manual',
-] as const;
-
-export function isKnowledgeGraphSource(value: unknown): value is KnowledgeGraphSource {
-  return typeof value === 'string'
-    && (KNOWLEDGE_GRAPH_SOURCES as readonly string[]).includes(value);
-}
-
 export interface KnowledgeGraphNode {
   id: string;
   title: string;
@@ -70,10 +54,6 @@ export interface KnowledgeGraphNode {
   evidenceIds: string[];
   lastApprovedAt: Date;
   lastApprovedBy: string;
-  /** R10b 이후 항상 \`'manual'\` (cloud LLM 추출 워커 영구 제거됨). 호환성
-   *  목적으로 필드는 유지하되 UI 노출은 cycle 19 에서 제거 — 단일 값이라
-   *  chip 의 정보 가치 0. */
-  source?: KnowledgeGraphSource;
   /** 사용자 / AI agent 가 남긴 자유 메모 (옵션) — NodeDetailPanel 의 \"메모\" 섹션. */
   manualNote?: string;
 }
@@ -88,8 +68,6 @@ export interface KnowledgeGraphEdge {
   evidenceIds: string[];
   lastApprovedAt: Date;
   lastApprovedBy: string;
-  /** node 와 동일 — \`'manual'\` */
-  source?: KnowledgeGraphSource;
 }
 
 export interface KnowledgeProjectInsight {

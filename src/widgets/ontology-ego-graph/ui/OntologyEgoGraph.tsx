@@ -96,8 +96,8 @@ export function OntologyEgoGraph({
             ? "rgba(140,148,168,0.28)"
             : "rgba(140,148,168,0.45)";
         const marker = isOut ? "url(#ego-arrow-out)" : "url(#ego-arrow-in)";
-        // manual edge — strokeDasharray 점선 표시. 사용자가 직접 그린 관계.
-        const isManual = ego.neighbors.find((n) => n.edge.id === edge.edgeId)?.edge.source === "manual";
+        // R10b 후 모든 edge 가 'manual' (cloud LLM 추출 워커 영구 제거됨)
+        // 이라 manual ↔ system 시각 구분이 의미 0 — strokeDasharray 제거.
         return (
           <line
             key={`${edge.edgeId}-${edge.hop}`}
@@ -107,7 +107,6 @@ export function OntologyEgoGraph({
             y2={edge.to.y}
             stroke={stroke}
             strokeWidth={isHop2 ? 0.9 : 1.2}
-            strokeDasharray={isManual ? "4 3" : undefined}
             markerEnd={marker}
           />
         );
@@ -188,7 +187,6 @@ export function OntologyEgoGraph({
               fill={fill}
               stroke={stroke}
               strokeWidth={1}
-              strokeDasharray={node?.source === "manual" ? "3 2" : undefined}
             />
             {showLabel ? (
               <text
@@ -215,7 +213,6 @@ export function OntologyEgoGraph({
           fill="rgba(94,106,210,0.55)"
           stroke="rgba(159,170,235,0.95)"
           strokeWidth={1.4}
-          strokeDasharray={centerNode.source === "manual" ? "3 2" : undefined}
         />
       </g>
     </svg>
