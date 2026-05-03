@@ -6,6 +6,68 @@
 
 ---
 
+## 2026-05-03 — Surface diet: 5 dead UI cuts
+
+First-principles audit of every UI surface — does each toggle / mode /
+widget serve the user's 3 jobs (그래프 본다 / 그래프 쓴다 / 개념 찾는다)?
+어드바이저 (codex) second opinion 으로 합의된 5 곳을 컷.
+
+### User-visible changes
+
+- **`/` 홈** — 상단 우측의 "프레젠테이션 모드" (F 키) 진입 / fullscreen
+  토글 + ESC 종료 버튼 제거. OSS local 도구에서 fullscreen 발표 use case 가
+  검증된 적 없음.
+- **`/docs` 헤더** — "전체 / 기획자 / 엔지니어" audience 토글 제거. dogfood
+  vault 18 노드 어디에도 `mode: planner|engineer` frontmatter 가 없어 토글
+  결과가 항상 동일했음 (사용자에게 무엇을 거른지 모호).
+- **`/docs` 우측 advanced 메뉴** — view: graph (vault mini Sigma) /
+  view: stats (단어수·태그·orphans 통계) 두 모드 제거. 그래프는 `/topology`,
+  메트릭은 `/ontology/insights` 가 이미 전담.
+- **`/docs` 문서 내부** — Relationship Radar 사이드 패널 제거 (확인 / 무시 /
+  리셋 / 무시한 거 비우기 4-state). 이 위젯의 "확인" 액션이 vault 의 실제
+  edge 를 만들지 않고 localStorage review state 만 남기던 검증 안 된 추천
+  휴리스틱.
+- **`/docs` 본문 위 메타바** — 문서마다 표시되던 "Planner / Engineer /
+  Shared" 관점 chip 제거 (audience 토글이 사라졌으므로 의미 없음).
+
+### 단축키 변경
+
+- F 키 (presentation 토글) 사라짐. `?` (단축키 도움말) / `D` (문서 드로어)
+  / `⌘K` (검색) / `⇧⌘K` (글로벌 검색) 는 그대로.
+
+### 코드 / 아키텍처
+
+- 5 commit, 약 ~2400 LOC 삭제.
+- 위젯 4 개 파일 통째 삭제: `DocsVaultRelationshipRadar`, `DocsVaultGraph`,
+  `DocsVaultStats`, `DocsVaultAudienceMismatchNotice`.
+- 엔티티 `relationship-radar` 스코어러 + `radar-review-state` 라이브러리 +
+  `classifyMode` (parse-frontmatter / scripts) 삭제.
+- `VaultDoc.mode` 필드 + `VaultMode` 타입 제거 — vault 매니페스트 스키마
+  단순화. `pnpm docs-vault:build` 재실행 → manifest.json 의 `mode` 필드
+  43 → 0.
+- 41 개 i18n 번역 키 제거 (audience\* / mode\* / radar\* / stats\* /
+  graph.\* / presentation\*).
+- `DocsVaultPage.tsx` 1950 → 1700 LOC.
+
+### Test
+
+- 593 → 571 tests pass. 22 test 가 함께 삭제됨 (deleted widget 들의 자체
+  test).
+
+### Deferred / kept (codex second opinion)
+
+- `/topology` 라우트 — keep (permalink / SEO canonical 가치).
+- `/project/[slug]/edit` 라우트 — keep (인라인 편집은 일부 필드만 커버,
+  full editor 만 가지는 12 필드 — slug / category / status / dates / owner
+  / icon / progress / isHub / nameEn / detail / 등).
+- `/docs view: folder-topology` — keep (project 스캐폴드 + 포지션 저장
+  capability 가 아직 다른 surface 에 없음).
+- `/ontology/insights` + `/ontology/relations` 통합 → 별도 PR.
+- `/` (vault 있을 때) ↔ `/ontology` 중복 (둘 다 `OntologyViewPage` 렌더) →
+  별도 결정.
+
+---
+
 ## 2026-05-03 — Round 10: permanent removal of auth + cloud surface
 
 `oh-my-ontology` is now a pure local-first OSS. All optional Firebase /
