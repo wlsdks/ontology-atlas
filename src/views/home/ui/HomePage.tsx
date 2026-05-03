@@ -501,9 +501,9 @@ export function HomePage() {
           if (presentationMode) return t('presentationStarted');
           if (!selectedProject) return "";
           const deps = selectedProject.dependencies.length;
-          const referenced = projects.filter((p) =>
-            p.dependencies.includes(selectedProject.slug),
-          ).length;
+          // reverseDeps 는 위 useMemo 결과 — projects 전체 재filter 안 해도
+          // O(1) lookup. 이전엔 매 render 마다 projects.filter 로 O(N*D).
+          const referenced = reverseDeps.get(selectedProject.slug)?.length ?? 0;
           return t('selectionAnnouncement', {
             name: selectedProject.name,
             deps,
