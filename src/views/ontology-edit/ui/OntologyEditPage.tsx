@@ -174,14 +174,14 @@ export function OntologyEditPage() {
     [dataSourceMode, findById, removeNode, t, toast, vault],
   );
   const ephemeralSelected = findById(selectedId);
-  // vault 모드에서는 selectedId 가 vault slug. manifest 에서 lookup
-  // 해 인스펙터에 frontmatter + array 키 (capabilities/elements/...) 까지
+  // vault 모드에서는 selectedId 가 vault slug. manifest 에서 lookup 해
+  // 인스펙터에 frontmatter + array 키 (capabilities/elements/...) 까지
   // 함께 전달 (in-canvas rename + array 편집 가능).
-  // 빌더 진실원 우선순위 (PR #43): live vault.manifest > 빌드타임 dogfood
-  // 매니페스트. 인스펙터 lookup 도 같은 우선순위 — vault 안 고른 사용자가
-  // dogfood 노드 클릭 시 정확한 frontmatter 를 본다 (PR #45 fix 의 인스펙터
-  // 측 보완). hasLiveVault 가 false 면 인스펙터는 read-only — patch 시도하면
-  // disk 권한 없어 어차피 fail.
+  //
+  // 빌더 진실원 우선순위: live vault.manifest > 빌드타임 dogfood 매니페스트.
+  // 인스펙터 lookup 도 같은 우선순위 — vault 안 고른 사용자가 dogfood 노드
+  // 클릭 시 정확한 frontmatter 를 본다. hasLiveVault 가 false 면 인스펙터는
+  // read-only — patch 시도하면 disk 권한 없어 어차피 fail.
   const hasLiveVault = vault.manifest !== null;
   const effectiveManifest = vault.manifest ?? (staticVaultManifestRaw as VaultManifest);
   const vaultSelected = (() => {

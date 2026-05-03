@@ -35,9 +35,8 @@ const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
  *
  * 노드 합산:
  * - vault — live `vault.manifest` (선택됨) 또는 빌드타임 dogfood 매니페스트
- *   (선택 전). PR #33/#34 의 "vault > dogfood" 진실원 우선순위와 일치.
- * - ephemeral (palette 클릭으로 추가) — drag O, save 시 vault md 작성
- *   (cloud 모드는 dataSourceMode 분기로 별도 처리)
+ *   (선택 전). 진실원 우선순위는 항상 vault > dogfood.
+ * - ephemeral (palette 클릭으로 추가) — drag O, save 시 vault md 작성.
  */
 export function OntologyEditCanvas({
   vaultManifest,

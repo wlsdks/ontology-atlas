@@ -1,7 +1,7 @@
 /**
  * SigmaTopology nodeReducer 안에서 매 프레임 호출되는 애니메이션 phase
- * 계산. PR #38 후속 cleanup: container hover 관련 헬퍼는 demo-only feature
- * 라 mission v2 에서 invisible — 제거됨. bounce 만 유지 (선택 노드 탄성).
+ * 계산. 선택 노드의 탄성 bounce 만 유지 — container hover 같은 데모 시절
+ * 헬퍼는 mission v2 에서 invisible 이라 제거됨.
  */
 
 export const BOUNCE_DURATION_MS = 280;

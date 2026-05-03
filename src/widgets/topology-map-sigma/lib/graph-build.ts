@@ -162,8 +162,8 @@ export function buildGraph(
     return rest.length > 0 ? rest : name;
   };
 
-  // mission v2 후 Layer 0 컨테이너 시스템 폐기 (PR #41/#42). 이제 모든
-  // 토폴로지가 단일 layer — Hub 가 primary anchor 로 forceLabel 노출.
+  // Layer 0 컨테이너 시스템 폐기 후 모든 토폴로지가 단일 layer —
+  // Hub 가 primary anchor 로 forceLabel 노출.
 
   // build 시점 테마 팔레트. 토글 후엔 SigmaTopology 의 mutation observer 가
   // 그래프 attr 을 새 팔레트 값으로 다시 바르고 sigma.refresh() 한다.

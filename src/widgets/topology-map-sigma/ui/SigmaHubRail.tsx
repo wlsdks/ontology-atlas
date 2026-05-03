@@ -85,8 +85,7 @@ export function SigmaHubRail({
       degreeBySlug.set(dep, (degreeBySlug.get(dep) ?? 0) + 1);
     }
   }
-  // mission v2 후 Layer 0 컨테이너 시스템 폐기 (PR #41/#42). hub 만 rail 에
-  // 노출.
+  // Layer 0 컨테이너 시스템 폐기 후 hub 만 rail 에 노출.
   const hubs = projects
     .filter((p) => p.isHub)
     .slice()
