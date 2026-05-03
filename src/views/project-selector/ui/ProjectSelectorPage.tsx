@@ -3,7 +3,7 @@
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, FolderKanban, Shield } from "lucide-react";
+import { ArrowRight, FolderKanban, Shield } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTaxonomy } from "@/features/taxonomy";
 import {
@@ -201,15 +201,8 @@ export function ProjectSelectorPage() {
           /projects 만 빼면 cross-surface 점프가 끊긴다. */}
       <OperationsNav />
       <div className="mx-auto max-w-6xl px-5 py-6 md:px-10 md:py-14">
-        <div className="mb-5 flex items-center justify-end gap-3">
-          <Link
-            href={overviewHref}
-            className="inline-flex h-9 items-center gap-2 rounded-full border border-[color:rgba(224,196,140,0.4)] bg-[color:rgba(224,196,140,0.08)] px-4 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(224,196,140,0.6)] hover:bg-[color:rgba(224,196,140,0.14)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(224,196,140,0.5)]"
-          >
-            <ArrowLeft size={14} aria-hidden="true" />
-            {t("workspaceMap")}
-          </Link>
-        </div>
+        {/* 우상단 '← 워크스페이스 지도' pill 은 OperationsNav 의 '← 홈' 과
+            destination 동일 + 디자인 헌장의 amber 룰 (hub 전용) 위반이라 제거. */}
 
         {/* 헤더 압축 — 큰 rounded panel 의 280px 빈공간 제거. eyebrow + 작은
             제목 + 카운트 + 컨테이너 selector 를 한 줄로 정렬해 위 공간을
