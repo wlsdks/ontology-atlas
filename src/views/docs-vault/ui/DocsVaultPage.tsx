@@ -16,7 +16,6 @@ import { AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   BarChart3,
-  Cloud,
   FileText,
   FilePlus,
   FolderCog,
@@ -24,6 +23,7 @@ import {
   Layers,
   Menu,
   Network,
+  Package,
   Search,
   Settings2,
   X,
@@ -1204,7 +1204,7 @@ function DocsVaultContent() {
       {
         id: 'source-server',
         label: t('commands.sourceServer'),
-        icon: '☁️',
+        icon: '📦',
         visible: source !== 'server',
         onRun: () => handleSourceChange('server'),
       },
@@ -1548,7 +1548,7 @@ function DocsVaultContent() {
                         : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
                     }`}
                   >
-                    <Cloud size={12} aria-hidden />
+                    <Package size={12} aria-hidden />
                     {t('advanced.sourceServer')}
                   </button>
                   <button
