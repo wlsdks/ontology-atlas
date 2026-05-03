@@ -247,7 +247,18 @@ export function ProjectDetailPage({
   const [resolved, setResolved] = useState(
     !slug || Boolean(initialProject) || Boolean(fallbackProject),
   );
-  const { categories, statuses, categoryLabel, statusLabel } = useTaxonomy();
+  const {
+    categories,
+    statuses,
+    categoryLabel: rawCategoryLabel,
+    statusLabel: rawStatusLabel,
+  } = useTaxonomy();
+  // deriveProjectsFromVault 의 silent fallback ('uncategorized' / 'active')
+  // 은 DEFAULT_CATEGORIES/STATUSES 에 없어 raw id 가 그대로 노출 → 친화 라벨.
+  const categoryLabel = (id: string): string =>
+    id === "uncategorized" ? t("categoryUncategorized") : rawCategoryLabel(id);
+  const statusLabel = (id: string): string =>
+    id === "active" ? t("statusActive") : rawStatusLabel(id);
 
   // 상세에서 Cmd+K · ? 는 모두 현재 페이지 내 오버레이로 열린다 — 홈으로
   // 튕기면 오버레이가 사라져 \"지금 여기\" 맥락을 잃기 때문.
