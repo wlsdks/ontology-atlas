@@ -17,10 +17,9 @@ const FADE_MOTION = {
  * 우측 inspector 패널.
  *
  * 선택된 노드의 상세를 보여주고 편집 가능한 필드는 inline 편집.
- * v1 범위:
+ *
  * - ephemeral 노드: 이름 inline 편집 (local state, 저장 시 vault.md 작성)
  * - vault 노드: 이름 inline 편집, 저장 시 vault.updateFrontmatter
- * - approved 노드: read-only (cloud 모드 legacy)
  * - 미선택: 안내 placeholder
  */
 export type VaultArrayKey =
