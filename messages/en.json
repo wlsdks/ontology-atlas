@@ -457,7 +457,7 @@
       "openHubTopology": "Open this hub's topology",
       "openProjectDetail": "View project",
       "openDocsVault": "Document vault",
-      "openTopology": "View topology",
+      "openOntology": "Open in ontology tree",
       "openDocsVaultTitleWithDoc": "Open the top related document for {name}",
       "openDocsVaultTitleEmpty": "Go to document vault home",
       "connectionsTitle": "Where it connects",

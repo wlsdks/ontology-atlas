@@ -457,7 +457,7 @@
       "openHubTopology": "이 허브 토폴로지 열기",
       "openProjectDetail": "프로젝트 보기",
       "openDocsVault": "문서 볼트",
-      "openTopology": "토폴로지 보기",
+      "openOntology": "온톨로지 트리에서 보기",
       "openDocsVaultTitleWithDoc": "{name} 관련 최상위 문서 바로 열기",
       "openDocsVaultTitleEmpty": "문서 볼트 홈으로",
       "connectionsTitle": "어디와 연결돼 있나",

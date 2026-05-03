@@ -24,7 +24,6 @@ import {
   getProjectRelationshipMeta,
   getProjectDetailHref,
   getProjectIntegrityIssues,
-  getTopologyProjectHref,
   ProjectMetaGrid,
   resolveProjectCompletenessInsight,
   resolveProjectFreshnessInsight,
@@ -555,11 +554,18 @@ export function ProjectDrawer({
                         <BookOpen size={13} />
                         {t("openDocsVault")}
                       </Link>
+                      {/* drawer 는 topology view 안에서만 마운트되어
+                          openTopology 가 self-link no-op 이었다. 1원칙:
+                          ontology / topology / docs 셋 다 같은 vault doc
+                          의 다른 투영 → 여기서 missing 한 cross-link 은
+                          ontology 트리. project:<slug> deeplink 로 NodeDetailPanel
+                          이 자동 열린다 (fm.slug 가 filename 과 다른 경우엔
+                          매칭 실패해도 페이지는 graceful 로드). */}
                       <Link
-                        href={getTopologyProjectHref(project.slug)}
+                        href={`/ontology/?node=${encodeURIComponent(`project:${project.slug}`)}`}
                         className="inline-flex h-10 items-center justify-center rounded-md border border-[color:var(--color-divider)] px-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                       >
-                        {t("openTopology")}
+                        {t("openOntology")}
                       </Link>
                     </div>
                   )}
