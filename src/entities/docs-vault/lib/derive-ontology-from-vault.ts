@@ -84,6 +84,49 @@ function asStringArray(value: unknown): string[] {
   return [];
 }
 
+// vault folder 이름 → kind 매핑. \`relates: [capabilities/mcp-server]\` 같은
+// folder-prefixed 슬러그를 단수 kind 로 정확히 변환할 때 사용.
+const FOLDER_TO_KIND: Record<string, string> = {
+  projects: 'project',
+  domains: 'domain',
+  capabilities: 'capability',
+  elements: 'element',
+  documents: 'document',
+};
+
+/**
+ * \`relates: ['capabilities/mcp-server', 'auth-platform']\` 같은 ref 를 기존
+ * 노드 ID 로 resolve. 형식:
+ * - \`folder/slug\` → \`${kind}:${slug}\` (folder 가 알려진 vault 폴더면)
+ * - 그 외 → \`unknown:${slugified}\` fallback
+ */
+function resolveRelatesRef(
+  rel: string,
+  existingNodes: Map<string, OntologyStubNode>,
+): string | null {
+  const trimmed = rel.trim();
+  if (!trimmed) return null;
+  const slashIdx = trimmed.indexOf('/');
+  if (slashIdx > 0) {
+    const folder = trimmed.slice(0, slashIdx);
+    const tailSlug = slugifyName(trimmed.slice(slashIdx + 1));
+    if (!tailSlug) return null;
+    const kind = FOLDER_TO_KIND[folder];
+    if (kind) {
+      const candidate = `${kind}:${tailSlug}`;
+      // existing 노드가 있으면 그대로, 없어도 같은 ID 반환 (caller 가
+      // unknown stub 으로 잠시 등록 — 미래에 같은 vault doc 가 생기면
+      // overwrite 으로 정확한 kind 를 잡는다).
+      return existingNodes.has(candidate)
+        ? candidate
+        : `unknown:${tailSlug}`;
+    }
+  }
+  const slug = slugifyName(trimmed);
+  if (!slug) return null;
+  return `unknown:${slug}`;
+}
+
 function deriveDocNode(doc: VaultDoc): OntologyStubNode | null {
   const fm = doc.frontmatter;
   const rawKind = typeof fm.kind === 'string' ? fm.kind.trim() : '';
@@ -107,10 +150,19 @@ export function deriveOntologyFromVault(
   const edges: OntologyStubEdge[] = [];
   const warnings: string[] = [];
 
+  // Pass 1: 모든 docNode 를 먼저 등록 — relates 처리 시 (Pass 2 안 inline)
+  // 다른 doc 의 noderef 를 정확히 resolve 할 수 있게 한다 (\`relates:
+  // [capabilities/mcp-server]\` → \`capability:mcp-server\` 정확 매칭).
+  for (const doc of manifest.docs) {
+    const docNode = deriveDocNode(doc);
+    if (docNode) nodes.set(docNode.id, docNode);
+  }
+
+  // Pass 2: 각 doc 의 frontmatter array/relation 키를 순회하며 edge / 합성
+  // 노드 추가.
   for (const doc of manifest.docs) {
     const docNode = deriveDocNode(doc);
     if (!docNode) continue;
-    nodes.set(docNode.id, docNode);
 
     const fm = doc.frontmatter;
 
@@ -217,11 +269,14 @@ export function deriveOntologyFromVault(
       });
     }
 
-    // relates[] — related_to edge (대상 노드는 별도 stub; promote 시 resolve)
+    // relates[] — related_to edge. \`folder/slug\` 형태 (예:
+    // \`capabilities/mcp-server\`) 면 기존 docNode (\`capability:mcp-server\`)
+    // 와 연결하려고 시도하고, 실패하면 \`unknown:slug\` stub. 단순 slugify
+    // 만 하면 \`/\` 가 사라져 \`capabilitiesmcp-server\` 같은 mangled ID 가
+    // 됐던 회귀 차단.
     for (const rel of asStringArray(fm.relates)) {
-      const relSlug = slugifyName(rel);
-      if (!relSlug) continue;
-      const relId = `unknown:${relSlug}`;
+      const relId = resolveRelatesRef(rel, nodes);
+      if (!relId) continue;
       if (!nodes.has(relId)) {
         nodes.set(relId, {
           id: relId,

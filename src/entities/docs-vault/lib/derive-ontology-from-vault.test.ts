@@ -92,6 +92,37 @@ describe('deriveOntologyFromVault', () => {
     expect(domainContainsEdge).toBeDefined();
   });
 
+  it('relates[] — `capabilities/foo` 형식 ref 가 기존 capability 노드로 resolve', () => {
+    const result = deriveOntologyFromVault(
+      makeManifest([
+        makeDoc({
+          slug: 'capabilities/mcp-server',
+          frontmatter: { kind: 'capability', title: 'MCP server' },
+        }),
+        makeDoc({
+          slug: 'elements/mcp-sdk',
+          frontmatter: {
+            kind: 'element',
+            title: '@modelcontextprotocol/sdk',
+            relates: ['capabilities/mcp-server'],
+          },
+        }),
+      ]),
+    );
+    // \`unknown:capabilitiesmcp-server\` 같은 mangled stub 이 만들어지면 안 된다.
+    expect(
+      result.nodes.find((n) => n.id.startsWith('unknown:capabilities')),
+    ).toBeUndefined();
+    // 대신 기존 capability 노드를 가리키는 related_to edge 가 있어야 한다.
+    const resolvedEdge = result.edges.find(
+      (e) =>
+        e.type === 'related_to' &&
+        e.from === 'element:mcp-sdk' &&
+        e.to === 'capability:mcp-server',
+    );
+    expect(resolvedEdge).toBeDefined();
+  });
+
   it('domains[] (plural) — project → 자식 도메인 contains edge', () => {
     const result = deriveOntologyFromVault(
       makeManifest([
