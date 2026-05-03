@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-03T02:28:44.143Z",
+  "generatedAt": "2026-05-03T02:40:12.367Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -3267,9 +3267,9 @@
           "slug": "vault-local-first"
         }
       ],
-      "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 shortcircuit. 자세한 정책: docs/LOCALFIRSTSYNC.md, docs/OFFLINEFIRSTUXFLOW.md.",
-      "wordCount": 29,
-      "updatedAt": "2026-05-02T20:02:58.822Z",
+      "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 shortcircuit. 자세한 원칙: .claude/rules/localfirst.md. 사용자 surface: docs/FEATURES.md.",
+      "wordCount": 31,
+      "updatedAt": "2026-05-03T02:40:10.707Z",
       "mode": "both",
       "linksOut": []
     },

@@ -17,4 +17,4 @@ relates:
 사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속.
 focus / visibility 시 fingerprint 비교로 재스캔 short-circuit.
 
-자세한 정책: `docs/LOCAL-FIRST-SYNC.md`, `docs/OFFLINE-FIRST-UX-FLOW.md`.
+자세한 원칙: `.claude/rules/local-first.md`. 사용자 surface: `docs/FEATURES.md`.
