@@ -366,11 +366,18 @@ export function ProjectDetailPage({
     { label: t("metaDependencies"), value: t("countSuffix", { count: dependencyProjects.length }), dot: null },
     { label: t("metaConnections"), value: t("countSuffix", { count: referencedBy.length }), dot: null },
   ];
-  const nextProjectCandidates = [...dependencyProjects, ...referencedBy].filter(
-    (candidate, index, array) =>
-      candidate.slug !== project.slug &&
-      array.findIndex((item) => item.slug === candidate.slug) === index,
-  );
+  // dependencies + referencedBy 합본 → slug 단위 dedup. Set 으로 O(N) 라
+  // 큰 hub (수십 ↔ 수백) 에서도 안정적. 이전엔 findIndex 가 O(N²) 였음.
+  const nextProjectCandidates = (() => {
+    const seen = new Set<string>([project.slug]);
+    const out: Project[] = [];
+    for (const candidate of [...dependencyProjects, ...referencedBy]) {
+      if (seen.has(candidate.slug)) continue;
+      seen.add(candidate.slug);
+      out.push(candidate);
+    }
+    return out;
+  })();
   // 로컬 토폴로지용 프로젝트 집합 — 현재 프로젝트 + 1-hop 이웃. Sigma 가 받는
   // projects 배열은 dep 관계 그래프로 해석되므로 의존/참조 양방향 이웃을 모두
   // 포함해야 중앙 노드 주변에 선이 이어짐.
