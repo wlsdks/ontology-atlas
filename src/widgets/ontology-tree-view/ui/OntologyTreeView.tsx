@@ -1,6 +1,6 @@
 "use client";
 
-import { createElement, useMemo, useState } from "react";
+import { createElement, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Search, X } from "lucide-react";
 import { getOntologyKindIcon, useOntologyKindLabel } from "@/entities/ontology-class";
@@ -229,6 +229,49 @@ export function OntologyTreeView({
     }
     return ids;
   }, [result.roots]);
+
+  // 외부 selectedId 가 변하면 그 노드의 조상 chain 을 모두 펼쳐
+  // 트리에서 시각적으로 보이게 한다 (cycle 26 의 highlight 가 collapsed
+  // 안에 묻히면 안 보이는 문제). defaultExpanded 의 inverse 의미를
+  // 그대로 따라가며 변경이 있을 때만 setState (불필요 re-render 회피).
+  useEffect(() => {
+    if (!selectedId) return;
+    const ancestors: string[] = [];
+    function walk(nodes: OntologyTreeNode[], path: string[]): boolean {
+      for (const n of nodes) {
+        if (n.node.id === selectedId) {
+          ancestors.push(...path);
+          return true;
+        }
+        if (walk(n.children, [...path, n.node.id])) return true;
+      }
+      return false;
+    }
+    walk(result.roots, []);
+    if (ancestors.length === 0) return;
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (defaultExpanded) {
+        // collapsed Set = 접힌 노드. 모든 ancestor 가 빠져야 펼침.
+        for (const id of ancestors) next.delete(id);
+      } else {
+        // collapsed Set = 펼친 노드. 모든 ancestor 가 들어가야 펼침.
+        for (const id of ancestors) next.add(id);
+      }
+      // 변화 없으면 동일 ref 반환 (re-render 회피).
+      if (next.size === prev.size) {
+        let changed = false;
+        for (const id of next) {
+          if (!prev.has(id)) {
+            changed = true;
+            break;
+          }
+        }
+        if (!changed) return prev;
+      }
+      return next;
+    });
+  }, [selectedId, result.roots, defaultExpanded]);
 
   // \`collapsed\` Set 의미가 \`defaultExpanded\` 에 따라 뒤집힌다:
   // - true (default): collapsed Set = 접힌 노드 → expanded = total - collapsed
