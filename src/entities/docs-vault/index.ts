@@ -25,6 +25,7 @@ export type {
 export { findRelatedDocs } from './lib/related-docs';
 export type { RelatedDocMatch } from './lib/related-docs';
 export { buildDocsVaultHref } from './lib/href';
+export { buildOntologyDeeplinkForDoc } from './lib/ontology-deeplink';
 export { buildTopologyFromVault } from './lib/build-topology-from-vault';
 export type {
   FolderTopologyBuild,

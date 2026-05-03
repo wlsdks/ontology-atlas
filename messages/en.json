@@ -584,7 +584,8 @@
     "parts": {
       "meta": {
         "wordsUnit": "{count} words",
-        "readingMinutes": "≈ {minutes} min read"
+        "readingMinutes": "≈ {minutes} min read",
+        "ontologyKindTitle": "Open {kind} node in ontology tree"
       },
       "sidebar": {
         "pinnedHeader": "Pinned · {count}",

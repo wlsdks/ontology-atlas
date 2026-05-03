@@ -1,19 +1,15 @@
 import { useLocale, useTranslations } from "next-intl";
-import type { VaultDoc } from "@/entities/docs-vault";
+import { buildOntologyDeeplinkForDoc, type VaultDoc } from "@/entities/docs-vault";
+import { Link } from "@/i18n/navigation";
+import { estimateReadingMinutes } from "./reading-minutes";
+
+// 후방 호환 — 기존 호출자가 DocMetaBar 모듈에서 직접 import 하던 것을
+// 깨지 않도록 re-export. 실제 정의는 ./reading-minutes.ts (test 측이
+// `@/i18n/navigation` 같은 React 의존을 끌어오지 않게 분리).
+export { estimateReadingMinutes };
 
 /**
- * 읽는 시간 추정 — ≈200 단어/분 기준. 한글은 글자당 평균이 다르지만
- * 영·한 혼합 대략 감만 표시. 1분 미만은 "1분" 으로 floor.
- *
- * 추출 사유: 본 함수는 순수 — DocsVaultPage 본체에서 분리해 단위 test
- * 용이하게.
- */
-export function estimateReadingMinutes(wordCount: number): number {
-  return Math.max(1, Math.round(wordCount / 200));
-}
-
-/**
- * 문서 본문 위 메타 바 — 단어 수 / 읽기 시간 / 태그 / 갱신일.
+ * 문서 본문 위 메타 바 — 단어 수 / 읽기 시간 / kind 점프 / 태그 / 갱신일.
  *
  * 호출자: `DocsVaultContent` 안 viewer 영역 헤더.
  */
@@ -23,6 +19,10 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
   const numberLocale = locale === "ko" ? "ko-KR" : "en-US";
   const readingMinutes = estimateReadingMinutes(doc.wordCount);
   const updated = new Date(doc.updatedAt);
+  const ontologyHref = buildOntologyDeeplinkForDoc(doc);
+  const kindValue = ontologyHref
+    ? String(doc.frontmatter?.kind ?? "").trim()
+    : "";
   return (
     <div className="mx-auto flex max-w-[760px] flex-wrap items-center gap-3 border-b border-[color:var(--color-overlay-2)] px-6 py-3 text-[11px] text-[color:var(--color-text-quaternary)] md:px-10">
       <span className="font-mono tabular-nums">
@@ -31,6 +31,15 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
       <span className="font-mono tabular-nums">
         {t("readingMinutes", { minutes: readingMinutes })}
       </span>
+      {ontologyHref ? (
+        <Link
+          href={ontologyHref}
+          title={t("ontologyKindTitle", { kind: kindValue })}
+          className="font-mono underline-offset-2 transition-colors hover:text-[color:var(--color-indigo-accent)] hover:underline"
+        >
+          kind:{kindValue}
+        </Link>
+      ) : null}
       {doc.tags.length > 0 ? (
         <span className="font-mono">
           {doc.tags.map((tag) => `#${tag}`).join(" ")}

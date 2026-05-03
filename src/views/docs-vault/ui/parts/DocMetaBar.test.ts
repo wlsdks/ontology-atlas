@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estimateReadingMinutes } from "./DocMetaBar";
+import { estimateReadingMinutes } from "./reading-minutes";
 
 describe("estimateReadingMinutes", () => {
   it("1 분 미만 (단어 ≤ 200) 도 최소 1분", () => {
