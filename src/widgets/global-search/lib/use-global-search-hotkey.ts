@@ -4,8 +4,8 @@ export interface GlobalSearchHotkeyOptions {
   /**
    * shift 도 함께 눌려야 fire. 기본 false (= 단순 ⌘K).
    *
-   * Fire 2 — 홈 토폴로지의 SearchPalette (project 전용 ⌘K) 와 동거 시 충돌
-   * 회피용. ontology 검색은 ⇧⌘K 로 분리.
+   * 홈 토폴로지의 SearchPalette (project 전용 ⌘K) 와 동거 시 충돌 회피용 —
+   * ontology 검색은 ⇧⌘K 로 분리.
    */
   shift?: boolean;
   /**

@@ -80,7 +80,7 @@ describe("matchOntologyNodes", () => {
     expect(r).toHaveLength(7);
   });
 
-  describe("kind / project 필터 (Fire 2)", () => {
+  describe("kind / project 필터", () => {
     const filterCorpus: KnowledgeGraphNode[] = [
       node({ id: "cap-1", title: "능력 1", kind: "capability", projectIds: ["demo-iam"] }),
       node({ id: "cap-2", title: "능력 2", kind: "capability", projectIds: ["demo-knowledge"] }),
