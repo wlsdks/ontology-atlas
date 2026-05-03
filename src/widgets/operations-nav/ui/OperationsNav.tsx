@@ -125,6 +125,10 @@ export function OperationsNav() {
     }
   }, []);
   const showSubNavToggle = shouldShowOntologySubNav(pathname);
+  // '← 홈' 링크는 destination = / 인데 사용자가 이미 / 면 자가-링크라 의미 0.
+  // pathname 정규화 후 빈 문자열 (즉 /) 일 때 숨김. RootEntryPage 가
+  // OntologyView 를 / 에서 렌더하는 경우에도 방향 일관 유지.
+  const isAtHome = pathname.replace(/\/$/, '') === '';
   const toggleSubNav = () => {
     setSubNavOpen((current) => {
       const next = !current;
@@ -177,14 +181,16 @@ export function OperationsNav() {
           visible desktop 을 잡게 함. */}
       <div className="hidden items-center justify-between gap-3 px-4 py-2.5 md:flex md:px-6">
         <div className="flex items-center gap-3">
-          <Link
-            href={'/'}
-            aria-label={t('backToWorkspace')}
-            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] px-2.5 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
-          >
-            <span aria-hidden>←</span>
-            <span>{t('back')}</span>
-          </Link>
+          {isAtHome ? null : (
+            <Link
+              href={'/'}
+              aria-label={t('backToWorkspace')}
+              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] px-2.5 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <span aria-hidden>←</span>
+              <span>{t('back')}</span>
+            </Link>
+          )}
           <ul className="flex items-center gap-1 overflow-x-auto">
             {NAV_ITEMS.map((item) => renderTab(item, 'desktop'))}
           </ul>
@@ -220,13 +226,15 @@ export function OperationsNav() {
           숨김. fade mask 안 줌 (디자인 헌장: glow / 움직이는 그라디언트
           금지). */}
       <div className="flex items-center gap-2 overflow-x-auto px-4 py-2 md:hidden">
-        <Link
-          href={'/'}
-          aria-label={t('backToWorkspace')}
-          className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
-        >
-          <span aria-hidden>←</span>
-        </Link>
+        {isAtHome ? null : (
+          <Link
+            href={'/'}
+            aria-label={t('backToWorkspace')}
+            className="inline-flex h-8 shrink-0 items-center gap-1 rounded-md border border-[color:var(--color-overlay-3)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
+          >
+            <span aria-hidden>←</span>
+          </Link>
+        )}
         <ul
           className="flex items-center gap-1"
           aria-label={t('ariaLabelMobile')}
