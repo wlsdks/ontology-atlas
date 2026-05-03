@@ -52,6 +52,7 @@ import {
   writeDoc,
 } from './vault.mjs';
 import { parseFilter } from './query.mjs';
+import { isValidVaultTitle } from './validate.mjs';
 
 const VAULT_ROOT = resolve(process.env.OMOT_VAULT || process.cwd());
 // import-time throw 면 stdio transport 가 붙기 전 stack trace 가 stderr 로
@@ -465,6 +466,11 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, body })
   if (!slug || !kind || !title) {
     throw new Error('slug, kind, and title are all required.');
   }
+  // 공백-only title 도 silent pollution 위험. UI 의 isUntitledTitle 가
+  // 같은 가드를 한다 — MCP 도 parity 유지.
+  if (!isValidVaultTitle(title)) {
+    throw new Error('title must be a non-empty string.');
+  }
   if (!ADD_CONCEPT_KINDS.has(kind)) {
     throw new Error(
       `Unknown kind: ${kind}. project / domain / capability / element / document 중 하나여야 합니다.`,
@@ -512,6 +518,19 @@ function patchConcept({ slug, frontmatter, body }) {
   }
   if (frontmatter === undefined && body === undefined) {
     throw new Error('At least one of `frontmatter` or `body` is required.');
+  }
+  // title 을 포함한 patch 라면 비-빈 문자열 강제. UI 의 renameVaultDoc 은
+  // blank reject 하는데 MCP 가 무방비면 AI agent 실수로 vault 에 untitled
+  // 노드가 생겨 ontology drift. null 은 키 삭제 의도라 별도 — title 자체
+  // 삭제는 frontmatter 깨짐이라 막는다.
+  if (frontmatter !== undefined && Object.prototype.hasOwnProperty.call(frontmatter, 'title')) {
+    const t = frontmatter.title;
+    if (t === null) {
+      throw new Error('title cannot be deleted from a vault node — pass a new non-empty string instead.');
+    }
+    if (!isValidVaultTitle(t)) {
+      throw new Error('title must be a non-empty string.');
+    }
   }
   const filePath = updateDoc(VAULT_ROOT, slug, { frontmatter, body });
   return { ok: true, slug, filePath };

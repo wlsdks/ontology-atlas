@@ -26,7 +26,7 @@
   ],
   "scripts": {
     "start": "node src/index.js",
-    "test": "node --test src/parser.test.mjs src/query.test.mjs",
+    "test": "node --test src/parser.test.mjs src/query.test.mjs src/validate.test.mjs",
     "test:smoke": "node src/parser.test.mjs",
     "verify": "node scripts/verify.mjs"
   },
