@@ -7,9 +7,11 @@ import {
   applyNodeChanges,
   Background,
   BackgroundVariant,
+  ConnectionLineType,
   Controls,
   MiniMap,
   ReactFlow,
+  useReactFlow,
   type Connection,
   type Edge,
   type Node,
@@ -26,6 +28,28 @@ import type { EphemeralEdge } from "../lib/use-ephemeral-edges";
 import { ATLAS_NODE_TYPES } from "./AtlasNode";
 
 const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
+
+/**
+ * autoLayoutToken 변할 때 viewport fitView 를 부드럽게 (duration: 400ms)
+ * 애니메이션. ReactFlow 의 자식이라 useReactFlow 가 store 에 접근 가능.
+ * 자동정렬 후 viewport 가 새 layout 에 맞춰 부드럽게 fit — Sigma 류
+ * 부드러움 (이전엔 즉시 jump).
+ */
+function FitViewOnAutoLayout({ token }: { token: number }) {
+  const reactFlow = useReactFlow();
+  const prevTokenRef = useRef(token);
+  useEffect(() => {
+    if (prevTokenRef.current === token) return;
+    prevTokenRef.current = token;
+    if (token <= 0) return;
+    // 자동 layout 결과가 baseNodes → localNodes 로 propagate 된 후 fit.
+    const t = setTimeout(() => {
+      reactFlow.fitView({ duration: 400, padding: 0.2 });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [token, reactFlow]);
+  return null;
+}
 
 /**
  * ERD canvas — vault frontmatter 가 진실원.
@@ -314,6 +338,14 @@ export function OntologyEditCanvas({
         proOptions={{ hideAttribution: true }}
         nodesConnectable
         nodesDraggable
+        // 사용자가 핸들에서 끌어 connection 그릴 때 미리보기 line — 인디고
+        // alpha bezier 로 테마 일관 + 곡선이라 부드러움.
+        connectionLineType={ConnectionLineType.Bezier}
+        connectionLineStyle={{
+          stroke: "rgba(139, 151, 255, 0.78)",
+          strokeWidth: 1.5,
+          strokeDasharray: "6 4",
+        }}
         onNodesChange={onNodesChange}
         onConnect={handleConnect}
         onSelectionChange={handleSelectionChange}
@@ -344,6 +376,7 @@ export function OntologyEditCanvas({
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} />
         <Controls position="bottom-right" showInteractive={false} />
+        <FitViewOnAutoLayout token={autoLayoutToken} />
         {/* MiniMap — 노드 많아질 때 빠른 navigation. 헌장 §11 호환:
             인디고 alpha + 무채색 alpha mask. ephemeral 은 amber 로 vault
             와 차별. 좌하단 — Controls (우하단) 와 분리. */}
