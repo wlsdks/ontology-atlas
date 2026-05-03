@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-03T01:51:04.813Z",
+  "generatedAt": "2026-05-03T02:07:23.407Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -3390,9 +3390,9 @@
           "slug": "sigma-graphology-forceatlas2"
         }
       ],
-      "excerpt": "WebGL spatial network 라이브러리 스택. Sigma 가 render, Graphology 가 그래프 자료구조, ForceAtlas2 가 layout 알고리즘. / (구) 또는 /topology (신) 의 토폴로지 view 가 의존.",
-      "wordCount": 32,
-      "updatedAt": "2026-05-01T11:24:50.326Z",
+      "excerpt": "WebGL spatial network 라이브러리 스택. Sigma 가 render, Graphology 가 그래프 자료구조, ForceAtlas2 가 layout 알고리즘. / (홈 hub) 와 /topology (alias) 의 토폴로지 view 가 의존.",
+      "wordCount": 33,
+      "updatedAt": "2026-05-03T02:07:09.125Z",
       "mode": "both",
       "linksOut": []
     },
