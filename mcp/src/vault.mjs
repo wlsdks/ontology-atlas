@@ -105,6 +105,26 @@ export function slugToPath(rootPath, slug) {
 }
 
 /**
+ * vault 안에 주어진 slug 의 .md 파일이 실재하는지. add_relation 같은
+ * AI agent 입력 검증에 사용 — typo / hallucinated slug 가 frontmatter
+ * array 에 dangling reference 로 silently 추가되는 걸 차단.
+ *
+ * slug 자체가 잘못된 형태 (빈 문자열 / null byte / vault 외부) 면 false
+ * 반환 (slugToPath 가 throw 하는 대신 — caller 가 boolean 만 보고
+ * 분기 가능). 진짜 fs 오류는 caller 가 후속 read 에서 자연스럽게 잡음.
+ */
+export function vaultSlugExists(rootPath, slug) {
+  if (typeof slug !== 'string' || slug.length === 0) return false;
+  let candidate;
+  try {
+    candidate = slugToPath(rootPath, slug);
+  } catch {
+    return false;
+  }
+  return existsSync(candidate);
+}
+
+/**
  * 한 .md 파일을 읽어 { slug, frontmatter, body, raw }.
  */
 export function readDoc(rootPath, filePath) {

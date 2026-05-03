@@ -6,6 +6,101 @@
 
 ---
 
+## 2026-05-03 — Surface diet Round 7: 1원리 메타 검토 (1 ship · 3 defer)
+
+3 에이전트 1원리 분석 — codex MVP audit · Plan 4 architectural axes
+audit · general-purpose 3 personas walkthrough. 사용자 directive: "정말
+하는게 좋다고 판단되는것만". 결과: 4 발견 중 1 ship, 3 개는 architectural
+의미 있지만 user-signal 또는 design phase 필요로 명시적 DEFER.
+
+### Bug fix #1 — MCP add_relation slug 존재 검증 (Cut Q)
+
+Plan 발견: `mcp/src/index.js:497` `addRelation` 이 `from`/`to` slug 가
+실재하는지 확인 안 함. AI agent typo / hallucinated slug 가 frontmatter
+array 에 dangling reference 로 silently 추가됨. Round 5 (UI placeholder)
++ Round 6 (MCP blank title) 의 validation parity 확장.
+
+→ `vault.mjs` 에 `vaultSlugExists(rootPath, slug)` helper 추가 — slug
+형식 검사 + existsSync. throw 안 하고 boolean (caller-friendly). 6 단위
+테스트 (top-level / subdir / 없음 / 빈/null/undefined / vault escape /
+null byte injection). `addRelation` 가 양쪽 slug 검증, 친화적 에러.
+
+### Architectural finding (defer to Round 8) — useLocalVault duplication
+
+codex 발견: `useLocalVault()` 가 8 곳에서 독립 호출됨 — `RootEntryPage`,
+`OperationsNav`, `OntologyEditPage`, `DocsVaultPage`, `useDataSourceMode`,
+`useProjects`, `useProjectMutations`, `useVaultOntology`. 각 호출이 자체
+`useState` + `useRef` + IDB rehydrate effect. 한 페이지 mount 에 2-3 개
+인스턴스 동시 존재 → 같은 IDB 키에서 N 번 rehydrate, N 번
+`buildLocalManifest` (FS 전체 walk), N 개의 fileHandles Map.
+
+**왜 Round 7 에서 ship 안 함**: ~150 LOC 리팩터 + 8 파일 + provider
+패턴 도입. 18-node dogfood 에선 perf 영향 측정 안 됨. 사용자 perf 보고
+또는 큰 vault (100+ files) 데이터 driven 로 비용 정당화 후 Round 8.
+
+**Round 8 구체 plan**:
+1. 새 `LocalVaultProvider` 컴포넌트 (Context.Provider) — `app/[locale]/layout.tsx`
+   에 mount. 내부에서 `useLocalVault` 의 현재 로직 1 회 실행.
+2. 기존 `useLocalVault` 를 `useContext(LocalVaultContext)` consumer 로
+   변경. throw if outside provider.
+3. 8 callsite 변경 없음 (hook signature 동일).
+4. cold-load perf benchmark (puppeteer / playwright trace) 로 검증 —
+   build 횟수 N → 1 확인.
+
+### Defer #2 — `/ontology/edit` 빌더 reconsideration
+
+general-purpose persona walkthrough 발견: 3 personas (solo dev / PM /
+AI agent) 모두 `/ontology/edit` 를 안 씀. dev 는 .md 직편, PM 은 모델
+이해 못 함, AI agent 는 MCP. "most-built, least-justified" 평가. Round 4
+의 ephemeral edge save chip 도 이 surface 만의 문제를 푼 것.
+
+**왜 Round 7 에서 ship 안 함**: 빌더 자체 cut 은 product-direction 결정
+. 시각적 inspection 가치는 분명 있고, dogfood 사용자 (Korean maintainer
+본인) 가 어떻게 쓰는지 데이터 없음. 단순 cut 보단 "어떤 페르소나에게
+어떻게 의미 있게 만들지" 별도 design 라운드 가치.
+
+### Defer #3 — Phase 4 PM 친화 polish
+
+PM persona walkthrough 발견: "frontmatter / slug / kind / ephemeral /
+ego graph / ERD / MCP / vault" 같은 dev jargon 이 PM 진입 벽. PRODUCT-
+DIRECTION 의 Phase 4 가 ⏳ 표시된 상태. dev+agent slice 는 v1.0
+근접하지만 PM slice 는 vocabulary 번역/숨김 작업 필요.
+
+**왜 Round 7 에서 ship 안 함**: 한 vocabulary 번역이 단일 page 변경이
+아니라 시스템 wide 디자인. 별도 라운드 + 디자인 spike 필요.
+
+### Codex 의 다른 발견들 — clean
+
+- `next-themes` 는 `package.json` 에 없음 (custom impl 사용). codex 의
+  잘못된 가정 정정.
+- `/ontology/relations` 이미 제거 (Round 2). 추가 vestigial 없음.
+- VaultDoc schema 에 dead field 없음 (Plan 검증).
+- localStorage 에 vault data leakage 없음 (Plan 검증). Round 1 의
+  radar-review-state 제거가 마지막 offender.
+- 3 view 가 단일 projection root (`useOntologyInsight`) 공유 (Plan).
+- Write 경로 `vault.{createDoc,updateFrontmatter,...}` 로 수렴 (Plan).
+
+### 코드 / 아키텍처
+
+- 1 commit · 4 파일 · `vault.mjs` (+22) · `index.js` (+15) · `vault.test.mjs` (+50 신파일) · `package.json` (+1).
+- 새 helper 1 (`vaultSlugExists`) + 6 단위 테스트.
+- mcp/ 테스트 5 → 11 pass.
+
+### Test
+
+- pnpm test:run: 579 pass · pnpm exec tsc: clean ·  mcp/ pnpm test: 11 pass · MCP verify.mjs: 12/12 도구 OK.
+
+### Round 8 자연 후보 (우선순위)
+
+1. **useLocalVault provider 리팩터** (codex finding) — perf 측정 후
+   진행. ~150 LOC, 8 callsite, provider 패턴.
+2. **`/ontology/edit` design review** (UX persona finding) — cut vs
+   re-design 결정. 별도 spike.
+3. **Phase 4 PM polish** (UX + PRODUCT-DIRECTION) — vocabulary 번역
+   디자인 라운드.
+
+---
+
 ## 2026-05-03 — Surface diet Round 6: MCP parity + vault drift (2 fix · 2 skip)
 
 2 에이전트 좁은 회의 (Explore — dogfood vault drift · codex — validation

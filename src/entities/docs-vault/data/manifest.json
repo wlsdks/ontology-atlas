@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-03T13:14:14.174Z",
+  "generatedAt": "2026-05-03T13:25:45.733Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -1737,6 +1737,91 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-03 — Surface diet Round 7: 1원리 메타 검토 (1 ship · 3 defer)",
+          "slug": "2026-05-03-surface-diet-round-7-1원리-메타-검토-1-ship-3-defer"
+        },
+        {
+          "depth": 3,
+          "text": "Bug fix #1 — MCP add_relation slug 존재 검증 (Cut Q)",
+          "slug": "bug-fix-1-mcp-add_relation-slug-존재-검증-cut-q"
+        },
+        {
+          "depth": 3,
+          "text": "Architectural finding (defer to Round 8) — useLocalVault duplication",
+          "slug": "architectural-finding-defer-to-round-8-uselocalvault-duplication"
+        },
+        {
+          "depth": 3,
+          "text": "Defer #2 — `/ontology/edit` 빌더 reconsideration",
+          "slug": "defer-2-ontologyedit-빌더-reconsideration"
+        },
+        {
+          "depth": 3,
+          "text": "Defer #3 — Phase 4 PM 친화 polish",
+          "slug": "defer-3-phase-4-pm-친화-polish"
+        },
+        {
+          "depth": 3,
+          "text": "Codex 의 다른 발견들 — clean",
+          "slug": "codex-의-다른-발견들-clean"
+        },
+        {
+          "depth": 3,
+          "text": "코드 / 아키텍처",
+          "slug": "코드-아키텍처"
+        },
+        {
+          "depth": 3,
+          "text": "Test",
+          "slug": "test"
+        },
+        {
+          "depth": 3,
+          "text": "Round 8 자연 후보 (우선순위)",
+          "slug": "round-8-자연-후보-우선순위"
+        },
+        {
+          "depth": 2,
+          "text": "2026-05-03 — Surface diet Round 6: MCP parity + vault drift (2 fix · 2 skip)",
+          "slug": "2026-05-03-surface-diet-round-6-mcp-parity-vault-drift-2-fix-2-skip"
+        },
+        {
+          "depth": 3,
+          "text": "Bug fix #1 — MCP patch_concept blank title 차단 (Cut O)",
+          "slug": "bug-fix-1-mcp-patch_concept-blank-title-차단-cut-o"
+        },
+        {
+          "depth": 3,
+          "text": "Doc fix #2 — dogfood vault label drift (Cut P)",
+          "slug": "doc-fix-2-dogfood-vault-label-drift-cut-p"
+        },
+        {
+          "depth": 3,
+          "text": "Skip decisions (codex 자체가 \"maybe\")",
+          "slug": "skip-decisions-codex-자체가-maybe"
+        },
+        {
+          "depth": 3,
+          "text": "Other findings — clean",
+          "slug": "other-findings-clean"
+        },
+        {
+          "depth": 3,
+          "text": "코드 / 아키텍처",
+          "slug": "코드-아키텍처-2"
+        },
+        {
+          "depth": 3,
+          "text": "Test",
+          "slug": "test-2"
+        },
+        {
+          "depth": 3,
+          "text": "Round 7 자연 후보 (만약 진행 시)",
+          "slug": "round-7-자연-후보-만약-진행-시"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-03 — Surface diet Round 5: skeptic round (1 fix · 3 skip)",
           "slug": "2026-05-03-surface-diet-round-5-skeptic-round-1-fix-3-skip"
         },
@@ -1758,12 +1843,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처"
+          "slug": "코드-아키텍처-3"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test"
+          "slug": "test-3"
         },
         {
           "depth": 3,
@@ -1793,12 +1878,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-2"
+          "slug": "코드-아키텍처-4"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-2"
+          "slug": "test-4"
         },
         {
           "depth": 3,
@@ -1823,12 +1908,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-3"
+          "slug": "코드-아키텍처-5"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-3"
+          "slug": "test-5"
         },
         {
           "depth": 3,
@@ -1853,12 +1938,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-4"
+          "slug": "코드-아키텍처-6"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-4"
+          "slug": "test-6"
         },
         {
           "depth": 3,
@@ -1883,12 +1968,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-5"
+          "slug": "코드-아키텍처-7"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-5"
+          "slug": "test-7"
         },
         {
           "depth": 3,
@@ -2106,9 +2191,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 3 에이전트 회의주의 회의 (codex skeptic · Explore polish hunt · Plan test design). 사용자 directive: \"정",
-      "wordCount": 5750,
-      "updatedAt": "2026-05-03T13:04:26.882Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 3 에이전트 1원리 분석 — codex MVP audit · Plan 4 architectural axes audit · generalpurpose 3 perso",
+      "wordCount": 6959,
+      "updatedAt": "2026-05-03T13:25:19.871Z",
       "linksOut": []
     },
     {

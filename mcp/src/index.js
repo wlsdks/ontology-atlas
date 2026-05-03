@@ -49,6 +49,7 @@ import {
   slugToPath,
   patchFrontmatter,
   updateDoc,
+  vaultSlugExists,
   writeDoc,
 } from './vault.mjs';
 import { parseFilter } from './query.mjs';
@@ -501,6 +502,17 @@ function addRelation({ from, to, type }) {
   const key = RELATION_KEY[type];
   if (!key) {
     throw new Error(`Unknown relation type: ${type}`);
+  }
+  // vault 에 실재하는 slug 인지 양쪽 검증. 누락 시 frontmatter array 에
+  // dangling reference 가 silently 추가되는 걸 차단 (AI agent 가 typo /
+  // hallucinated slug 보낼 때 깔끔한 에러로 노출). from 은 readDoc 이
+  // 후속에서 어차피 throw 하지만 메시지가 ENOENT raw 라 사용자 친화적
+  // 에러로 선검증.
+  if (!vaultSlugExists(VAULT_ROOT, from)) {
+    throw new Error(`Source slug does not exist in vault: "${from}"`);
+  }
+  if (!vaultSlugExists(VAULT_ROOT, to)) {
+    throw new Error(`Target slug does not exist in vault: "${to}"`);
   }
   const doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, from));
   const existing = Array.isArray(doc.frontmatter[key]) ? doc.frontmatter[key] : [];
