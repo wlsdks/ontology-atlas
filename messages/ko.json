@@ -1192,7 +1192,6 @@
     "detail": {
       "ariaLabel": "노드 상세: {title}",
       "close": "닫기",
-      "manualNote": "작성 메모",
       "relations": "관계 {count}",
       "relationsHopBreakdown": "· 1-hop {one} · 2-hop {two}",
       "egoDepthAria": "ego 그래프 깊이",

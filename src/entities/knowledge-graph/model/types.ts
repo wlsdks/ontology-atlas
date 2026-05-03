@@ -48,8 +48,6 @@ export interface KnowledgeGraphNode {
   evidenceIds: string[];
   lastApprovedAt: Date;
   lastApprovedBy: string;
-  /** 사용자 / AI agent 가 남긴 자유 메모 (옵션) — NodeDetailPanel 의 \"메모\" 섹션. */
-  manualNote?: string;
 }
 
 export interface KnowledgeGraphEdge {

@@ -1192,7 +1192,6 @@
     "detail": {
       "ariaLabel": "Node detail: {title}",
       "close": "Close",
-      "manualNote": "Author note",
       "relations": "Relations {count}",
       "relationsHopBreakdown": "· 1-hop {one} · 2-hop {two}",
       "egoDepthAria": "Ego graph depth",

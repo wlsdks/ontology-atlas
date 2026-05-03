@@ -605,17 +605,6 @@ function NodeDetailPanel({
         </p>
       ) : null}
 
-      {node.manualNote ? (
-        <div className="mb-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2">
-          <p className="mb-1 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-            {t('manualNote')}
-          </p>
-          <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-secondary)]">
-            {node.manualNote}
-          </p>
-        </div>
-      ) : null}
-
       {/* R10 이후 vault 가 유일 모드 — node.projectIds 는 항상 [],
           node.evidenceCount 는 항상 undefined. cycle 10 에서 vault dead
           row 두 개를 가리는 가드만 추가했지만 실제 노출 케이스가 영구
