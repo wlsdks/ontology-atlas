@@ -32,7 +32,6 @@ export type { MeaningfulOntologyKind, OntologyKindStats } from "./kind-stats";
 export {
   MEANINGFUL_ONTOLOGY_KINDS,
   isMeaningfulOntologyKind,
-  countMeaningfulOntologyNodes,
   buildMeaningfulOntologyStats,
 } from "./kind-stats";
 export type { OntologyCountsForProject } from "./project-ontology-counts";

@@ -3,7 +3,6 @@ import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
   MEANINGFUL_ONTOLOGY_KINDS,
   buildMeaningfulOntologyStats,
-  countMeaningfulOntologyNodes,
   isMeaningfulOntologyKind,
 } from "./kind-stats";
 
@@ -34,28 +33,6 @@ describe("isMeaningfulOntologyKind", () => {
     expect(isMeaningfulOntologyKind("")).toBe(false);
     expect(isMeaningfulOntologyKind(null)).toBe(false);
     expect(isMeaningfulOntologyKind(undefined)).toBe(false);
-  });
-});
-
-describe("countMeaningfulOntologyNodes", () => {
-  it("excludes project and document, counts the rest", () => {
-    const nodes = [
-      n("p1", "project"),
-      n("d1", "document"),
-      n("dom1", "domain"),
-      n("cap1", "capability"),
-      n("cap2", "capability"),
-      n("el1", "element"),
-      n("u1", "unknown"),
-    ];
-    expect(countMeaningfulOntologyNodes(nodes)).toBe(5);
-  });
-
-  it("returns 0 for empty input or only-meta nodes", () => {
-    expect(countMeaningfulOntologyNodes([])).toBe(0);
-    expect(
-      countMeaningfulOntologyNodes([n("p1", "project"), n("d1", "document")]),
-    ).toBe(0);
   });
 });
 

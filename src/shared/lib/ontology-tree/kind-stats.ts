@@ -31,20 +31,6 @@ export function isMeaningfulOntologyKind(
   return (MEANINGFUL_ONTOLOGY_KINDS as readonly string[]).includes(kind);
 }
 
-/**
- * 노드 list 에서 "사용자 관심 단위" 만 카운트. 4 surface 가 같은 정의를
- * 공유 — 헤더의 N 이 surface 마다 다르게 보이는 결함 제거.
- */
-export function countMeaningfulOntologyNodes(
-  nodes: readonly KnowledgeGraphNode[],
-): number {
-  let count = 0;
-  for (const n of nodes) {
-    if (isMeaningfulOntologyKind(n.kind)) count += 1;
-  }
-  return count;
-}
-
 export interface OntologyKindStats {
   total: number;
   byKind: Record<MeaningfulOntologyKind, number>;
