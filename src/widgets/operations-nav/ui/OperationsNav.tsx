@@ -1,7 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
 import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { useDataSourceMode } from '@/features/data-source-mode';
@@ -10,8 +8,6 @@ import { ThemeToggle } from '@/features/theme-toggle';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { Tooltip } from '@/shared/ui';
 import { OntologySubNav, shouldShowOntologySubNav } from '@/widgets/ontology-sub-nav';
-
-const SUBNAV_OPEN_KEY = 'demo:ontology-subnav:open:v1';
 
 interface NavItem {
   id: 'docs' | 'ontology' | 'topology';
@@ -111,35 +107,15 @@ export function OperationsNav() {
   const pathname = usePathname() ?? '';
   const dataSourceMode = useDataSourceMode();
   const t = useTranslations('nav');
-  // SubNav 토글 — default 접힘으로 vertical chrome 최소화. 사용자 명시
-  // 클릭으로만 펼침 → 선호 localStorage 저장. SSR 안전 (window 가드).
-  const [subNavOpen, setSubNavOpen] = useState(false);
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      if (window.localStorage.getItem(SUBNAV_OPEN_KEY) === '1') {
-        setSubNavOpen(true);
-      }
-    } catch {
-      /* private mode — keep default */
-    }
-  }, []);
-  const showSubNavToggle = shouldShowOntologySubNav(pathname);
+  // SubNav 는 ontology surface 에서 항상 노출 — 이전엔 접힘 default + 토글
+  // 패턴이었지만 codex IA 의견: 3 탭이 hidden 상태로 묻히면 발견성 0,
+  // 실제 vertical chrome 부담도 1 줄밖에 안 돼 trade-off 어색. 항상
+  // 노출로 단순화 (localStorage / 토글 / chevron / aria 모두 제거).
+  const showSubNav = shouldShowOntologySubNav(pathname);
   // '← 홈' 링크는 destination = / 인데 사용자가 이미 / 면 자가-링크라 의미 0.
   // pathname 정규화 후 빈 문자열 (즉 /) 일 때 숨김. RootEntryPage 가
   // OntologyView 를 / 에서 렌더하는 경우에도 방향 일관 유지.
   const isAtHome = pathname.replace(/\/$/, '') === '';
-  const toggleSubNav = () => {
-    setSubNavOpen((current) => {
-      const next = !current;
-      try {
-        window.localStorage.setItem(SUBNAV_OPEN_KEY, next ? '1' : '0');
-      } catch {
-        /* private mode */
-      }
-      return next;
-    });
-  };
 
   const renderTab = (item: NavItem, variant: 'desktop' | 'mobile') => {
     const active = item.prefixes.some((p) => pathname.startsWith(p));
@@ -196,25 +172,6 @@ export function OperationsNav() {
           </ul>
         </div>
         <div className="flex items-center gap-2">
-          {showSubNavToggle ? (
-            <Tooltip content={t(subNavOpen ? 'subNavCollapseTooltip' : 'subNavExpandTooltip')}>
-              <button
-                type="button"
-                onClick={toggleSubNav}
-                aria-expanded={subNavOpen}
-                aria-controls="ontology-sub-nav"
-                aria-label={t(subNavOpen ? 'subNavCollapseAria' : 'subNavExpandAria')}
-                className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
-              >
-                <span>{t('subNavToggleLabel')}</span>
-                <ChevronDown
-                  size={12}
-                  aria-hidden
-                  className={`transition-transform ${subNavOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
-            </Tooltip>
-          ) : null}
           <ModeBadge mode={dataSourceMode} />
           <LocaleSwitch />
           <ThemeToggle />
@@ -248,9 +205,8 @@ export function OperationsNav() {
 
       {/* ontology surface (/, /ontology*) 에서만 sub-nav 행 추가. 같은
           <nav> 안에 inline 렌더링되어 한 nav block 으로 시각 융합 —
-          이전엔 분리된 두 bar 가 stack 돼 vertical chrome 과대였다.
-          default 접힘 — 우측 chevron 토글로 펼침. 사용자 선호 localStorage 저장. */}
-      {showSubNavToggle && subNavOpen ? <OntologySubNav /> : null}
+          항상 노출 (3 탭이 hidden 이면 발견성 0). */}
+      {showSubNav ? <OntologySubNav /> : null}
     </nav>
   );
 }

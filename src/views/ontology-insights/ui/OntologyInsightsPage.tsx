@@ -199,56 +199,31 @@ export function OntologyInsightsPage() {
             </ul>
           </Panel>
 
-          {/* 프로젝트별 분포 — 어느 프로젝트가 가장 많은 도메인/기능/
-              요소를 가진지 시각 확인. document / project 메타 kind 제외
-              (4 kind 합계). */}
-          {projectRows.length > 0 ? (
-            <Panel
-              title={t("projectPanelTitle")}
-              subtitle={t("projectPanelSubtitle", { count: projectRows.length })}
-            >
-              <ul className="space-y-1.5" data-testid="insights-project-rows">
-                {projectRows.slice(0, 12).map(({ project, total }) => {
-                  const pct = projectMax > 0 ? Math.round((total / projectMax) * 100) : 0;
-                  return (
-                    <li
-                      key={project}
-                      className="text-[12px]"
-                      data-testid="insights-project-row"
-                      data-project={project}
-                    >
-                      <div className="flex items-baseline justify-between gap-2 px-1">
-                        <span className="min-w-0 truncate font-mono text-[11px] text-[color:var(--color-text-secondary)]">
-                          {project}
-                        </span>
-                        <span className="font-mono text-[10px] tabular-nums text-[color:var(--color-text-quaternary)]">
-                          {total}
-                        </span>
-                      </div>
-                      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
-                        <div
-                          className="h-full rounded-full"
-                          style={{
-                            width: `${pct}%`,
-                            backgroundColor: "rgba(159,170,235,0.55)",
-                          }}
-                        />
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </Panel>
-          ) : null}
-
-          {/* edge type 분포 — 의미 관계 type 비율 (belongs_to / implements
-              / contains / uses / depends_on 등). relations 페이지의 분포
-              패널과 같은 helper 사용. */}
+          {/* edge type 분포 — Cut A 후 /ontology/relations 의 분포 패널을
+              여기로 흡수. 의미 관계 type 비율 (belongs_to / implements /
+              contains / uses / depends_on 등). cross-project edge 비율은
+              별도 카드 대신 이 패널 상단 caption 으로 fold — kind 분포
+              다음 자리로 이동 (구조 진단 = core).  */}
           {edgeTypeRows.length > 0 ? (
             <Panel
               title={t("edgeTypePanelTitle")}
               subtitle={t("edgeTypePanelSubtitle", { count: totalEdges })}
             >
+              {crossProjectEdgeCount > 0 ? (
+                <p
+                  className="mb-3 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]"
+                  data-testid="insights-cross-project-inline"
+                >
+                  {t("edgeTypeCrossProjectInline", {
+                    count: crossProjectEdgeCount,
+                    total: totalEdges,
+                    pct:
+                      totalEdges > 0
+                        ? Math.round((crossProjectEdgeCount / totalEdges) * 1000) / 10
+                        : 0,
+                  })}
+                </p>
+              ) : null}
               <ul className="space-y-1.5" data-testid="insights-edge-type-rows">
                 {edgeTypeRows.map(({ type, count }) => {
                   const pct = edgeTypeMax > 0 ? Math.round((count / edgeTypeMax) * 100) : 0;
@@ -285,30 +260,45 @@ export function OntologyInsightsPage() {
             </Panel>
           ) : null}
 
-          {/* cross-project edge 카운트 — 전체 edge 대비 비율로 ontology
-              분산도 인지. crossProjectEdgeCount 가 0 이면 카드 자체 hide
-              (조건부 surface). */}
-          {crossProjectEdgeCount > 0 ? (
+          {/* 프로젝트별 분포 — 어느 프로젝트가 가장 많은 도메인/기능/요소를
+              가진지 시각 확인. document / project 메타 kind 제외 (4 kind
+              합계). */}
+          {projectRows.length > 0 ? (
             <Panel
-              title={t("crossProjectPanelTitle")}
-              subtitle={t("crossProjectPanelSubtitle")}
+              title={t("projectPanelTitle")}
+              subtitle={t("projectPanelSubtitle", { count: projectRows.length })}
             >
-              <div
-                className="flex items-baseline gap-3"
-                data-testid="insights-cross-project-card"
-              >
-                <span className="text-[28px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] tabular-nums">
-                  {crossProjectEdgeCount}
-                </span>
-                <span className="text-[12px] text-[color:var(--color-text-tertiary)]">
-                  / {totalEdges}
-                </span>
-                <span className="ml-auto font-mono text-[10px] tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
-                  {totalEdges > 0
-                    ? `${Math.round((crossProjectEdgeCount / totalEdges) * 1000) / 10}%`
-                    : "—"}
-                </span>
-              </div>
+              <ul className="space-y-1.5" data-testid="insights-project-rows">
+                {projectRows.slice(0, 12).map(({ project, total }) => {
+                  const pct = projectMax > 0 ? Math.round((total / projectMax) * 100) : 0;
+                  return (
+                    <li
+                      key={project}
+                      className="text-[12px]"
+                      data-testid="insights-project-row"
+                      data-project={project}
+                    >
+                      <div className="flex items-baseline justify-between gap-2 px-1">
+                        <span className="min-w-0 truncate font-mono text-[11px] text-[color:var(--color-text-secondary)]">
+                          {project}
+                        </span>
+                        <span className="font-mono text-[10px] tabular-nums text-[color:var(--color-text-quaternary)]">
+                          {total}
+                        </span>
+                      </div>
+                      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${pct}%`,
+                            backgroundColor: "rgba(159,170,235,0.55)",
+                          }}
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </Panel>
           ) : null}
 
@@ -379,17 +369,19 @@ export function OntologyInsightsPage() {
             >
               <ul className="space-y-1">
                 {orphans.slice(0, 10).map((node) => (
-                  <li
-                    key={node.id}
-                    className="flex items-center gap-2 rounded-md border border-[color:rgba(255,179,71,0.18)] bg-[color:rgba(255,179,71,0.04)] px-2.5 py-1.5 text-[12px]"
-                  >
-                    <span className="inline-flex shrink-0 items-center rounded-full border border-[color:rgba(255,179,71,0.30)] bg-[color:rgba(255,179,71,0.08)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.95)]">
-                      {kindLabel(node.kind)}
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
-                      {node.title}
-                    </span>
-                    <ManualSourceChip source={node.source} size="compact" />
+                  <li key={node.id}>
+                    <Link
+                      href={`/ontology/?node=${encodeURIComponent(node.id)}`}
+                      className="flex items-center gap-2 rounded-md border border-[color:rgba(255,179,71,0.18)] bg-[color:rgba(255,179,71,0.04)] px-2.5 py-1.5 text-[12px] transition-colors hover:border-[color:rgba(255,179,71,0.40)] hover:bg-[color:rgba(255,179,71,0.08)]"
+                    >
+                      <span className="inline-flex shrink-0 items-center rounded-full border border-[color:rgba(255,179,71,0.30)] bg-[color:rgba(255,179,71,0.08)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.95)]">
+                        {kindLabel(node.kind)}
+                      </span>
+                      <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
+                        {node.title}
+                      </span>
+                      <ManualSourceChip source={node.source} size="compact" />
+                    </Link>
                   </li>
                 ))}
                 {orphans.length > 10 ? (

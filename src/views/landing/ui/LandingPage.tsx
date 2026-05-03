@@ -74,23 +74,28 @@ export function LandingPage() {
           ]}
         />
 
+        {/* Local-first 활성화 = 이 도구의 핵심 가치 → primary CTA. 데모
+            트리 둘러보기는 secondary (위험 0 진입 — 폴더 권한 없이 dogfood
+            18 노드 즉시 확인). 이전엔 데모가 primary, 폴더 열기가 secondary
+            였는데 PM 이 첫 클릭에서 dead-end (자기 vault 활성화 경로 못
+            찾음) 로 빠지던 문제 fix. */}
         <div className="flex flex-wrap items-center gap-3">
           <Link
-            href="/ontology/"
+            href="/docs/?intent=local"
             className={cn(buttonVariants({ size: "lg" }), "rounded-full min-w-[14rem]")}
           >
-            {t('exploreCta')}
-            <ArrowRight size={16} />
+            <FolderOpen size={16} />
+            {t('openVaultCta')}
           </Link>
           <Link
-            href="/docs/?intent=local"
+            href="/ontology/"
             className={cn(
               buttonVariants({ variant: "outline", size: "lg" }),
               "rounded-full",
             )}
           >
-            <FolderOpen size={16} />
-            {t('openVaultCta')}
+            {t('exploreCta')}
+            <ArrowRight size={16} />
           </Link>
         </div>
 

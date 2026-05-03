@@ -6,11 +6,13 @@ import { BarChart3, GitBranch, Network } from 'lucide-react';
 import { useOntologyInsight } from '@/features/vault-ontology';
 
 /**
- * `/ontology/*` 4 surface 공통 sub-nav.
+ * `/ontology/*` 3 surface 공통 sub-nav (R2 cut A 후 4 → 3 — relations
+ * 라우트 제거).
  *
- * 사용자 피드백: 트리 / 빌더 / 인사이트 / 관계 가 같은 vault 데이터를 보지만
- * 사이의 점프 affordance 가 없어 "단절된 시스템" 으로 느껴짐. 본 위젯이
- * - 4 surface 에 동일 pill row 노출
+ * 사용자 피드백: 둘러보기 (Browse) / 빌더 / 인사이트가 같은 vault
+ * 데이터를 보지만 사이의 점프 affordance 가 없어 "단절된 시스템" 으로
+ * 느껴짐. 본 위젯이
+ * - 3 surface 에 동일 pill row 노출
  * - 좌측에 "ONTOLOGY · {N} 노드 · {E} 관계" caption — 모든 view 가 같은
  *   데이터를 보고 있다는 시각 cue
  * 로 일관성을 회복한다.
