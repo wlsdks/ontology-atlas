@@ -6,17 +6,18 @@ import {
   isMeaningfulOntologyKind,
 } from "./kind-stats";
 
+const APPROVED_AT = new Date(0);
+
 function n(id: string, kind: string): KnowledgeGraphNode {
   return {
     id,
     title: id,
     kind,
     projectIds: [],
-    parentId: null,
-    summary: "",
-    accountId: null,
-    source: "extraction",
-  } as unknown as KnowledgeGraphNode;
+    evidenceIds: [],
+    lastApprovedAt: APPROVED_AT,
+    lastApprovedBy: "test",
+  };
 }
 
 describe("isMeaningfulOntologyKind", () => {
