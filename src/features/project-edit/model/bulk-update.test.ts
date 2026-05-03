@@ -132,6 +132,6 @@ describe("buildBulkCategoryUpdateInputs", () => {
         nextCategoryId: "missing",
         categories,
       }),
-    ).toThrowError("대상 카테고리를 찾지 못했습니다.");
+    ).toThrowError(`Target category not found: "missing"`);
   });
 });

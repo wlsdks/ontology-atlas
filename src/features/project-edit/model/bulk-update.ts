@@ -36,7 +36,7 @@ export function buildBulkCategoryUpdateInputs(params: {
   );
 
   if (!targetCategory) {
-    throw new Error("대상 카테고리를 찾지 못했습니다.");
+    throw new Error(`Target category not found: "${params.nextCategoryId}"`);
   }
 
   const nextProjects = [...params.projects];
