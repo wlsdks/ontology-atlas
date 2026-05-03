@@ -1,14 +1,11 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { KNOWLEDGE_EDGE_TYPES } from "@/entities/knowledge-graph";
-import { useOntologyInsight, isVaultSentinelDate } from "@/features/vault-ontology";
-import {
-  computeEdgeTypeDistribution,
-  selectStrongEdges,
-} from "@/shared/lib/ontology-tree";
+import { useOntologyInsight } from "@/features/vault-ontology";
+import { computeEdgeTypeDistribution } from "@/shared/lib/ontology-tree";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { EmptyState } from "@/shared/ui";
@@ -41,40 +38,16 @@ function getTypeLabel(
  * `/ontology/relations` — edge 단위 view.
  *
  * 트리 (노드 hierarchy) · 인사이트 (노드 통계) 와 다른 시각 — 의미 관계
- * (edge type) 의 분포 + 강한 관계 (evidence 풍부) 가 무엇인지.
+ * (edge type) 의 분포.
  */
 export function OntologyRelationsPage() {
   const t = useTranslations("ontologyPages.relations");
 
   const { insight, error } = useOntologyInsight();
 
-  // type 필터 — null 이면 전체. 분포 panel 의 행 클릭으로 toggle.
-  const [selectedType, setSelectedType] = useState<string | null>(null);
-
   const typeDist = useMemo(
     () => (insight ? computeEdgeTypeDistribution(insight.edges) : new Map<string, number>()),
     [insight],
-  );
-  // vault / dogfood 모드는 노드 evidenceCount 0 → "강한 관계" 정렬 의미 0.
-  // sentinel 모드면 panel 자체 hide + 무거운 selectStrongEdges 호출도 skip.
-  const isVaultSentinelMode = useMemo(
-    () =>
-      insight !== null &&
-      insight.nodes.length > 0 &&
-      insight.nodes.every((n) => isVaultSentinelDate(n.lastApprovedAt)),
-    [insight],
-  );
-  const filteredEdges = useMemo(() => {
-    if (!insight || isVaultSentinelMode) return [];
-    if (!selectedType) return insight.edges;
-    return insight.edges.filter((e) => e.type === selectedType);
-  }, [insight, isVaultSentinelMode, selectedType]);
-  const strongEdges = useMemo(
-    () =>
-      insight && !isVaultSentinelMode
-        ? selectStrongEdges(filteredEdges, insight.nodes, 12)
-        : [],
-    [insight, isVaultSentinelMode, filteredEdges],
   );
 
   // KNOWLEDGE_EDGE_TYPES 순서로 정렬 + 외래 type 은 끝에 추가.
@@ -163,146 +136,45 @@ export function OntologyRelationsPage() {
           }
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* edge type 분포 */}
-          <section className="rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-5 py-4">
-            <header className="mb-3">
-              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                {t("typePanelTitle")}
-              </p>
-              <p className="mt-0.5 text-[11px] text-[color:var(--color-text-tertiary)]">
-                {t("typePanelSubtitle", { count: totalEdges })}
-              </p>
-            </header>
-            <ul className="space-y-2">
-              {typeRows
-                .filter((r) => r.count > 0)
-                .map(({ type, count }) => {
-                  const pct = typeMax > 0 ? Math.round((count / typeMax) * 100) : 0;
-                  const active = selectedType === type;
-                  return (
-                    <li key={type} className="text-[12px]">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedType(active ? null : type)}
-                        aria-pressed={active}
-                        title={
-                          active
-                            ? t("typeRowTitleClear")
-                            : t("typeRowTitleSelect", { label: getTypeLabel(t, type) })
-                        }
-                        className={`block w-full rounded-md px-2 py-1 text-left transition-colors ${
-                          active
-                            ? "bg-[color:rgba(94,106,210,0.10)]"
-                            : "hover:bg-[color:var(--color-overlay-1)]"
-                        }`}
-                      >
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span
-                            className={
-                              active
-                                ? "text-[color:rgba(159,170,235,0.95)]"
-                                : "text-[color:var(--color-text-secondary)]"
-                            }
-                          >
-                            {getTypeLabel(t, type)}
-                            <span className="ml-1 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">{type}</span>
-                          </span>
-                          <span className="font-mono text-[10px] tabular-nums text-[color:var(--color-text-quaternary)]">
-                            {count}
-                          </span>
-                        </div>
-                        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
-                          <div
-                            className="h-full rounded-full"
-                            style={{
-                              width: `${pct}%`,
-                              backgroundColor: active ? "rgba(159,170,235,0.85)" : "rgba(159,170,235,0.45)",
-                            }}
-                          />
-                        </div>
-                      </button>
-                    </li>
-                  );
-                })}
-            </ul>
-            {selectedType ? (
-              <button
-                type="button"
-                onClick={() => setSelectedType(null)}
-                className="mt-3 inline-flex items-center gap-1 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 py-1 text-[10px] font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
-              >
-                {t("typeFilterClear")}
-              </button>
-            ) : null}
-          </section>
-
-          {/* 강한 관계 top — vault sentinel mode 는 노드 evidenceCount 0 이라
-              "강한" 정렬 의미 0 → panel 자체 hide. cloud 모드에서만 노출. */}
-          {isVaultSentinelMode ? null : (
-          <section className="rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-5 py-4">
-            <header className="mb-3">
-              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                {t("strongPanelTitle")}
-                {selectedType ? (
-                  <span className="ml-1.5 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-[1px] text-[9px] tracking-[0.10em] text-[color:rgba(159,170,235,0.95)]">
-                    {getTypeLabel(t, selectedType)}
-                  </span>
-                ) : null}
-              </p>
-              <p className="mt-0.5 text-[11px] text-[color:var(--color-text-tertiary)]">
-                {t("strongPanelSubtitleBase")}
-                {selectedType
-                  ? t("strongPanelSubtitleFiltered", { count: filteredEdges.length })
-                  : ""}
-              </p>
-            </header>
-            <ol className="space-y-1">
-              {strongEdges.map(({ edge, evidence, fromTitle, toTitle, isCrossProject }) => {
-                const fromHref = `/ontology/?node=${encodeURIComponent(edge.from)}`;
-                const toHref = `/ontology/?node=${encodeURIComponent(edge.to)}`;
+        <section className="rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-5 py-4">
+          <header className="mb-3">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              {t("typePanelTitle")}
+            </p>
+            <p className="mt-0.5 text-[11px] text-[color:var(--color-text-tertiary)]">
+              {t("typePanelSubtitle", { count: totalEdges })}
+            </p>
+          </header>
+          <ul className="space-y-2">
+            {typeRows
+              .filter((r) => r.count > 0)
+              .map(({ type, count }) => {
+                const pct = typeMax > 0 ? Math.round((count / typeMax) * 100) : 0;
                 return (
-                  <li
-                    key={edge.id}
-                    data-cross-project={isCrossProject ? "true" : "false"}
-                    className={
-                      isCrossProject
-                        ? "flex items-center gap-2 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.06)] px-2.5 py-1.5 text-[12px]"
-                        : "flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[12px]"
-                    }
-                  >
-                    <Link href={fromHref} className="min-w-0 max-w-[8rem] truncate text-[color:var(--color-text-primary)] hover:underline">
-                      {fromTitle ?? edge.from}
-                    </Link>
-                    <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(159,170,235,0.95)]">
-                      {getTypeLabel(t, edge.type)}
-                    </span>
-                    <Link href={toHref} className="min-w-0 max-w-[8rem] flex-1 truncate text-[color:var(--color-text-primary)] hover:underline">
-                      {toTitle ?? edge.to}
-                    </Link>
-                    {/* cross-project edge 인지용 chip + 인디고 border —
-                        같은 edge type 안에서 시각 분기. */}
-                    {isCrossProject ? (
-                      <span
-                        className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(159,170,235,0.95)]"
-                        title={t("crossChipTitle")}
-                      >
-                        {t("crossChip")}
+                  <li key={type} className="px-2 py-1 text-[12px]">
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-[color:var(--color-text-secondary)]">
+                        {getTypeLabel(t, type)}
+                        <span className="ml-1 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">{type}</span>
                       </span>
-                    ) : null}
-                    <span
-                      className="shrink-0 font-mono text-[10px] tabular-nums text-[color:var(--color-text-quaternary)]"
-                      title={t("evidenceTooltip", { count: evidence })}
-                    >
-                      {evidence}
-                    </span>
+                      <span className="font-mono text-[10px] tabular-nums text-[color:var(--color-text-quaternary)]">
+                        {count}
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: `${pct}%`,
+                          backgroundColor: "rgba(159,170,235,0.45)",
+                        }}
+                      />
+                    </div>
                   </li>
                 );
               })}
-            </ol>
-          </section>
-          )}
-        </div>
+          </ul>
+        </section>
       )}
       </div>
     </div>

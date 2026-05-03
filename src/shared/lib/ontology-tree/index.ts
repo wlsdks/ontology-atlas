@@ -15,12 +15,10 @@ export { buildOntologyTree, countTreeNodes, flattenTree } from "./build-tree";
 export { buildOntologyEgoSubgraph } from "./build-ego";
 export { buildRadialEgoLayout } from "./ego-layout";
 export { filterTreeByQuery } from "./filter-tree";
-export type { StrongEdgeRow } from "./relations";
 export {
   computeEdgeTypeDistribution,
   countCrossProjectEdges,
   isCrossProjectEdgeProjects,
-  selectStrongEdges,
 } from "./relations";
 export { recommendDocumentSlug } from "./recommend-slug";
 export {
