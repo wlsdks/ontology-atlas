@@ -1,7 +1,7 @@
 # FEATURES — oh-my-ontology
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-05-02 (post-OSS-launch readiness — CLI scaffold, web scaffold button, npm publish guard)
+> Last updated: 2026-05-03 (post-Round-9 — surface diet 8 rounds + LocalVaultProvider + robustness audit)
 > Update trigger: reflect immediately when surfaces are added or removed. Update alongside the PR body and CHANGELOG.
 
 ---
@@ -9,534 +9,499 @@
 ## 0. At a glance
 
 > **Mission v2**: "an ontology of the codebase, authored together by humans and AI agents."
-> **Operating model**: single-user tool. Local-first vault. Login is optional. AI agents (Claude Code, etc.) read/write directly through the MCP server.
+> **Operating model**: single-user tool. Local-first vault. No login, no backend. AI agents (Claude Code, etc.) read/write directly through the MCP server.
 
 ```
 input (humans + AI agents)     parse           store              output
         │                       │                │                │
         ▼                       ▼                ▼                ▼
-  .md in vault  →          frontmatter   →  user disk      →  tree (/) [hub]
-  (frontmatter)                              (vault)           topology (/topology Sigma)
-  + AI agent (MCP)                                            builder (/ontology/edit xyflow)
+  .md in vault  →          frontmatter   →  user disk      →  Browse (/, /ontology) tree+ego
+  (frontmatter)                              (vault)           Topology (/, /topology) Sigma WebGL
+  + AI agent (MCP)                                            Builder (/ontology/edit) xyflow ERD
+                                                              Insights (/ontology/insights) census
 ```
 
 ---
 
 ## 1. Mode branching (data source)
 
-The `useDataSourceMode()` hook resolves to one of two modes (R10b: cloud / auth surface permanently removed):
+`useDataSourceMode()` resolves to one of two modes (R10b: cloud / auth surface permanently removed):
 
 | Mode | Condition | Behavior |
 |---|---|---|
 | **local** | vault folder active | vault manifest is the source of truth |
 | **static** | no active vault | build-time dogfood manifest (this project's own ontology) |
 
-**Effect**: when a user opens a vault folder, `/` (ontology hub), `/topology`, `/projects`, and `/project/[slug]` all switch to vault data instantly. Mutations (create / edit / delete) are mode-aware: local → write to vault `.md`; static → rejected (read-only).
+**Effect**: when a user opens a vault folder, `/`, `/topology`, `/projects`, `/project/[slug]`, `/ontology`, `/ontology/insights`, and `/ontology/edit` all switch to vault data instantly. Mutations (create / edit / delete / connect) are mode-aware: local → write to vault `.md`; static → rejected with toast (read-only).
+
+**Single source of truth (R8)**: `LocalVaultProvider` mounts once in `app/[locale]/layout.tsx`. All 8 consumers (`useLocalVault()` callsites: RootEntryPage / OperationsNav / OntologyEditPage / DocsVaultPage / useDataSourceMode / useProjects / useProjectMutations / useVaultOntology) share one state instance, one IDB rehydrate, one filesystem walk.
 
 ---
 
-## 2. Features per route
+## 2. Routes (8 surfaces)
 
-### Ontology hub + visualization
+### `/` — Smart entry
 
-#### `/` — Ontology Tree Hub (the spine of mission v2)
+- **No vault** → `LandingPage`
+- **Vault loaded** → `HomePage` (Sigma topology hub) — same component as `/topology`
 
-- **mode-aware** (`useOntologyInsight`):
-  - local: vault frontmatter stub nodes/edges surface immediately in tree, ego graph, and search
-  - static: build-time dogfood manifest (this project's own ontology)
-- **hierarchy tree**: project → domain → capability → element (document nodes contribute as evidence only and are excluded from the tree)
-- **node click** → right-side detail panel: kind / title / summary / project link / evidence documents / **ego graph** (1-hop / 2-hop SVG) / neighbor list / "copy node link"
-- **top toolbar pills**: search (⌘K / ⇧⌘K) / open builder → / insights / relations
-- **stat cards**: tree nodes / relations / evidence documents
-- **stub handling**: unresolved references → `OntologyStubList` widget at the bottom of the tree shows them; resolve by adding the missing slug as a real node in the builder or by removing the dangling reference from frontmatter
-- **empty-vault empty-state** (mode-aware): when a vault is active, a 2-step "write frontmatter → tidy in builder". Otherwise, a 3-step "open vault → frontmatter → builder".
-- **shortcuts**: `⌘K` search · `⇧⌘K` global search · `?` shortcut sheet
+### `/` — Landing (no vault)
 
-#### `/topology` — Sigma WebGL topology (the mission v2 exit view)
+- **Hero**: title + subtitle + 3-step value chain rail (01 / 02 / 03)
+- **Mini topology** animation (14 nodes, 21 edges, SVG ForceAtlas2 — respects `prefers-reduced-motion`)
+- **Primary CTA** (R3 cut D): "Open my markdown folder" → `/docs/?intent=local` (auto-opens vault picker)
+- **Secondary CTA**: "See the demo first" → `/ontology/`
+- **Privacy note**: "Local folders stay on disk, never sent anywhere"
+- **Footer**: license · GitHub · stack chips · `LocaleSwitch`
 
-- **render**: Sigma.js + Graphology + ForceAtlas2 — lays the entire project out as a spatial network
-- **interaction**: node click → ProjectDrawer · hover → tooltip + 1-hop neighbor highlight · drag / wheel → pan/zoom
-- **side widgets**: left-side Legend (kind color legend) · right-side SigmaHubRail (quick jump to top-degree hubs) · bottom RegionNavigator (minimap)
-- **shortcuts**: `⌘K` search · `?` shortcut sheet
-- **modes**: works in every mode — only the data source differs
+### `/` and `/topology` — Sigma WebGL hub
 
-#### `/ontology/edit` — Builder (xyflow ERD)
+Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-link target, `/topology` = explicit deep-link namespace).
 
-- **palette (left)**: click one of the 4 kinds → a new ephemeral node (indigo dashed) appears at the canvas center
-- **connect**: drag from the dot at a node's edge → drop on another node → ephemeral relation edge
-- **Inspector (right)**: when an ephemeral node is selected, name it + save → writes a vault `.md` (local mode) or shows a "open vault folder first" toast (static mode)
-- **md export**: download ephemeral nodes/edges as frontmatter markdown
-- **fullscreen toggle**: F key or the Maximize button at the top right — hides OperationsNav + uses the full viewport
-- **shortcuts**: N (new project node) · F (fullscreen) · Del (delete selection) · Esc (clear selection / exit fullscreen)
-- **builder onboarding**: a 3-step coach mark on first entry with an empty canvas (with a "don't show again" toggle)
-- **layout**: simple grid
+#### Canvas (Sigma + Graphology + ForceAtlas2)
+- **Click node** → right-side `ProjectDrawer` opens
+- **Drag node** → reposition (releases back to physics)
+- **Double-click node** → "local graph" mode (2-hop neighbors only, breadcrumb: `Local · Root · slugA · slugB`, click to backtrack, Esc to exit)
+- **Right-click node** → context menu (Focus / Local graph / Copy detail URL)
+- **Shift-click 2 nodes** → highlight shortest path
+- **Tab** → keyboard cycle to neighbor hub
+- **Empty state** (0–1 nodes) → `TopologyEmptyState` card with 3 CTAs (tree / builder / open vault)
+- **Filter active** → bottom-left "filter · N / TOTAL" badge
 
-#### `/ontology/insights` — Insights
-- **kind distribution** (bars), **distribution per project** (sorted)
-- **edge type distribution** — full per-relation-type bar list (canonical order)
-- **cross-project relation** ratio / absolute count
-- **top 10 hub nodes** (by degree, excluding documents and projects)
-- **node preview** (vault frontmatter sample)
-- **disconnected nodes** (orphans, highlighted in amber)
-- every entry click → jumps to `/ontology/?node=<id>`
+#### `SigmaControls` (top-right, collapsed default)
+- Fit Map button · Open Controls button
+- Expanded panel: search input · "Hubs only" toggle · Overlay section (recent-update pulse, backref highlight) · Advanced section (owner color, audit highlight, depth slider 1–7, force sliders, Reset layout)
+- Shortcuts inside controls: `/` focus search · `0`–`6` set depth · `?` shortcuts sheet
 
-### Vault Local-First
+#### `SigmaHubRail` (left, collapsed default)
+- Hub list sorted by degree, click to select
+- Keyboard: `↑/↓` cycle hubs · `Home/End` jump to first/last
+- Suppressed when hero panel expanded (avoid overlap)
 
-#### `/docs` — Vault Picker / Doc Vault
-- **local folder picker** (File System Access API):
-  - pick a folder → auto-scan all `.md` → build manifest
-  - file count + last scan time ("just now / 5s ago / 3m ago")
-  - refresh / close / re-authorize buttons
-  - friendly messages for unsupported browsers, denied permissions, and access errors
-- **surfaces when a vault is active**:
-  - folder tree + sidebar (pinned · recent · tags)
-  - body viewer (markdown + frontmatter metabar)
-  - folder topology view (Sigma) — link graph between documents
-  - "vault frontmatter ontology" panel — stub nodes/edges extracted from frontmatter alone
-  - backlinks / related documents / relation radar
-  - command palette (vault-only — Daily Note, Scaffold Topology, exports, etc.)
-- **scaffoldTopology()**: in an empty vault, auto-generates `projects/`, `README.md`, `categories.md`, `statuses.md`, and a sample project hub/leaf
-- **OntologyStarterCta** (mission v2): when the picked vault has read+write permission, a top-of-page "Create starter seed" button writes 5 starter `.md` files (`README.md`, `project.md`, `domains/example.md`, `capabilities/example.md`, `elements/example.md`) plus `.mcp.json.example` — same template that `npx oh-my-ontology init` writes from the CLI. **Designed for non-developers** so they don't need a terminal to begin.
+#### Top-right buttons
+- **Docs button** (`D`) → `DocsQuickDrawer` overlay with pinned/recent docs preview
+- **Shortcuts button** (`?`) → `ShortcutSheet`
 
-### Projects
+#### Left workspace info panel
+- Expanded: workspace title + project/hub counts + 3 nav links (Projects / Docs / Ontology) + collapse button
+- Collapsed: pill with selected project name or workspace summary
 
-#### `/projects` — Project list
-- **mode-aware**: local mode reads `projects/*.md` from the vault; static mode reads the build-time dogfood manifest
-- **search / filter**: query · category · status · displayed count
-- **per card**: ontology node count badge, quick actions (edit)
-- **ProjectQuickCreatePanel** — inline quick creation directly in the page (mode-aware)
-- **CSV export** — full download
-- **WorkspaceOntologyStrip** — top-of-page ontology summary strip
+#### Right-side `ProjectDrawer` (when a node is selected)
+- Project name + icon + category badge · description · tags · stack
+- "View project" → `/project/[slug]/`
+- "Open docs vault" → `/docs/?slug=...`
+- Connections summary (dependencies / referencedBy)
+- Impact mode toggle (Default · Upstream · Downstream · Network)
+- Integrity checks · screenshots (lazy top 2) · timeline · links
+- Footer: "slug · updated DATE"
 
-#### `/project/[slug]` — Project detail
-- **render**: metadata (name · description · tags · stack · status · category · start/end date · progress · owner · icon) + dependency graph + topology preview
-- **inline edit** (when permitted): edit description / status etc. on the spot
-- **DependencyPicker**: dependency chip multi-select + search + cycle/missing warnings
-- **CopyProjectLinkButton**: simple URL copy (mission v2 alignment, distinct from the share-doc system)
-- **Mission 7 atomic alignment**: every piece of information maps automatically from the vault's `projects/<slug>.md`
+#### Mobile-only
+- `BottomTabBar` (3 tabs: Ontology / Projects / Docs) at safe-area bottom
+- `GestureHint` overlay (dismissible, not persisted)
 
-#### `/project/new` · `/project/[slug]/edit` — Editor
-- **full form**: name · slug · description · detail (markdown) · tags · stack · links · dependencies · icon · status · category · progress · timeline · screenshots
-- **auto-suggest**: when other project names appear in the description, a dependency suggestion chip is offered
-- **mode-aware mutations**: local → write/patch vault `.md`; static → rejected (read-only)
-- **post-save action choice**: "save and keep viewing" / "save and back to list" / "save and go to public view"
-
-#### `/project/fallback` — Static export fallback
-- For dynamic slugs unknown at build time. The fallback page reads the URL on the client and renders ProjectDetailPage from the active vault manifest (or returns null in static mode).
-
-### AI agent partner (`mcp/`)
-
-> Phase 3 — LLM agents like Claude Code read/write the ontology over stdin/stdout JSON-RPC.
-
-- **package**: `oh-my-ontology-mcp` v0.6.0 (in `mcp/`), depends on `@modelcontextprotocol/sdk@^1.0.0`
-- **registration**: copy `.mcp.json.example` and set `OMOT_VAULT=<absolute path to your vault>` (or `./docs/ontology` for our dogfood vault)
-- **distribution**: `npx -y oh-my-ontology-mcp` (after publish), zero install
-- **12 tools** (read 8 + write 4):
-
-| Tool | Read/write | Behavior |
-|---|---|---|
-| `list_concepts` | read | every node in the vault (kind filter + limit) |
-| `get_concept` | read | a single slug's frontmatter + body excerpt + neighbors |
-| `find_evidence` | read | partial title match — searches frontmatter + body |
-| `find_backlinks` | read | nodes that point to a given slug (frontmatter array keys + body wikilink/mdlink) |
-| `find_path` | read | shortest-path BFS between two slugs |
-| `list_kinds` | read | distribution of node kinds in the vault |
-| `find_orphans` | read | nodes with zero in/out edges |
-| `query_concepts` | read | Typed filter DSL — `kind=X AND has(Y) AND NOT ...` |
-| `add_concept` | write | write a new `.md` node — throws if the slug already exists |
-| `add_relation` | write | create an edge between two slugs (depends_on / relates / contains / describes) |
-| `patch_concept` | write | patch an existing node's frontmatter (per-key patch) + body |
-| `delete_concept` | write | remove a node and its inbound/outbound references |
-
-- **Dogfood vault**: `docs/ontology/` — this project's own mental model. 1 project + 6 domains + 6 capabilities + 4 elements + 1 vault-readme ≈ 18 nodes.
-
-### Auth / account
-
-#### `/login`
-- email + password
-- Google OAuth (popup)
-- password reset link
-
-#### `/signup`
-- displayName + email + password (8+ chars) + confirmation
-- automatic login after signup
-
-#### `/reset-password`
-- email → sends a Firebase password reset email
-
-#### `/account` (guests are redirected to `/login?next=/account`)
-- **my info**: name · email · login provider
-- **change password**: current + new + confirm (Firebase email/password users only)
-- **resend password reset** email
-- sign-out lives in the PublicAccountMenu
-
-### Operations / settings
-
-#### `/settings` — Tidy hub
-- iOS-Settings-style grouped list with drill-in
-- groups: map maintenance (categories · statuses · import)
-
-#### `/settings/categories` · `/settings/statuses` · `/settings/import`
-- edit category label / description / tone (indigo · amber · neutral) / canvas region
-- edit status lifecycle label / dot color / sort order
-- bulk CSV upload (mode-aware)
-
-> Mission v2 alignment: TBox surfaces (`/settings/ontology[/history]`) have been removed —
-> frontmatter `kind:` *is* the schema. `/diagnostics/insights` was removed too —
-> user-visible insights are now owned by `/ontology/insights`.
-
----
-
-## 3. By feature group
-
-### 3.1 Vault Local-First
-
-| Feature | Entry point | Effect |
-|---|---|---|
-| Folder picker (FSA) | `/docs` LocalVaultPicker | OS folder → manifest |
-| Manifest build | automatic (on selection) | frontmatter · backlinks · headings · excerpt |
-| Fingerprint change detection | automatic (on tab focus) | rescans (debounced 2s) when you return after editing in an IDE |
-| Handle persistence | IndexedDB (`local-fs-handle`) | restore after refresh by clicking re-authorize |
-| createDoc / saveDoc / deleteDoc / renameDoc | command palette / inline edit | mode-aware mutation |
-| `updateFrontmatter` | useProjectMutations | preserves the body and patches frontmatter |
-| Backlink rewrite | best-effort on renameDoc | auto-replaces `[[oldSlug]]` and `[text](old.md)` in other files |
-| Scaffold | command palette | seeds an empty vault with README + projects/ + samples |
-
-### 3.2 Mode-Aware Adapters
-
-| Hook | Responsibility |
+#### Global keyboard shortcuts (all `useTypingShortcuts`-gated)
+| Key | Action |
 |---|---|
-| `useDataSourceMode()` | resolves local / static |
-| `useProjects()` | mode-specific project read (vault manifest / build-time dogfood) |
-| `useProjectMutations()` | mode-specific CRUD (vault file write — static rejects) |
-| `useOntologyInsight()` | local: converts vault frontmatter stubs; static: build-time dogfood manifest |
-| `TaxonomyProvider` | both modes use built-in defaults |
-| `useLocalVault()` | manifest + handle + commands |
-| `useVaultOntology()` | converts a vault manifest → OntologyStubNode/Edge |
+| `⌘K` | Project search palette (`SearchPalette`) |
+| `⇧⌘K` | Global search (`MountedGlobalSearch` — nodes + projects) |
+| `D` | Toggle docs drawer |
+| `?` | Toggle shortcut sheet |
+| `Esc` | Layered: exit local graph → close drawer → clear search |
 
-**Surfaces using these**: HomePage / OntologyViewPage (`/`) / ProjectSelectorPage / ProjectDetailPage / ProjectForm / MountedGlobalSearch / DependencyPicker / TaxonomyProvider
+---
 
-### 3.3 AI Agent Partner (new in mission v2)
+### `/docs` — Docs Vault (reader + editor + palette)
 
-| Item | Description |
+#### Header (always visible)
+- Back button · title + doc count · `Local` badge (when source=local)
+- **Source toggle** (R3 cut C — radio: Sample / Local). Round 4 J: clicking Local auto-opens vault tools dropdown if no vault loaded yet
+- **Palette button** (`⌘K`)
+- **Vault tools dropdown** (gear icon, only when source=local + supported):
+  - Folder-topology view toggle (button)
+  - `LocalVaultPicker` (open / close / refresh / re-authorize / status display)
+  - `OntologyStarterCta` (when vault is empty)
+  - "New doc" button (when canEdit)
+
+#### Status banner (R9 cut, below header)
+- Visible when `source=local && (status='error' || status='permission-needed')`
+- Shows error message · "Open picker" button to reauth/re-pick
+- Stops the silent server-fallback that was confusing users
+
+#### Sidebar (md+)
+- **Pinned docs** (when count > 0): pin/unpin via hover button
+- **Recent docs** (when count > 0): chronological
+- **Tree** (`DocsVaultTree`): folder hierarchy, click to select, tag-filter auto-expands folders
+- **Tags** (`DocsVaultTags`): `<details>` collapsible, top 12 tags + active even if > 12, click to toggle filter
+
+#### Mobile drawer (<md)
+- Hamburger button → overlay drawer with sidebar contents
+
+#### Content area
+- **view=doc** (default): editor (when editing) or viewer + `DocMetaBar` (word count, reading minutes, tags, updated date) + `DocsVaultBacklinks` + `DocsVaultProjectDepsBar` (in `projects/*` + local)
+- **view=folder-topology** (local only): mini Sigma over `projects/*.md`, drag positions saved to frontmatter, `+ Project` button (canEdit)
+
+#### Unified palette (`⌘K`, `DocsVaultUnifiedPalette`)
+- **Empty query**: pinned → recent → top 5 commands
+- **`>` prefix**: command fuzzy match
+- **`#` prefix**: tag fuzzy match
+- **General query**: doc title/slug/tags/excerpt search (15 results) + command substring (5)
+- Keyboard: `↑↓` move · `↵` execute · `Tab` cycles mode (`""` → `>` → `#`) · `Esc` close
+- Doc rows are `<Link>` (⌘-click → new tab)
+
+#### Editor mode (`DocsVaultEditor`, local only)
+- Top bar: slug eyebrow · dirty indicator · saved flash · Preview toggle · Save · Cancel
+- Format toolbar: Bold / Italic / Code / H1-3 / Bullet / Numbered / Checkbox / Quote / Link
+- Editor: textarea, monospace, optional 50/50 live preview (200 ms debounce)
+- Wikilink autocomplete (`[[…`): top 8 matching docs, `↑↓ Tab Enter`
+- Inline error red banner on save failure
+- Keyboard: `⌘S` save · `⌘B` bold · `⌘I` italic · `⌘K` insert link · `Esc` close (with discard confirm)
+- `beforeunload` blocks navigation when dirty
+
+#### Commands (~20 in palette)
+view-doc · view-folder-topology · pin · unpin · copy URL · print · edit · new doc · daily note · rename · delete · insert TOC · export doc HTML · export vault · import vault · scaffold topology · source-server · source-local · create project · find tags
+
+#### Visual / behavioral details
+- Indigo accent (`rgba(139,151,255,…)`) for active, gold star for pinned
+- Markdown: GFM tables/lists/blockquotes/code · callout blocks (`> [!tip]` etc.) · wikilinks (`[[slug]]`, `[[slug|label]]`, `[[slug#anchor]]`, `[[project:slug]]`) · heading anchor copy buttons
+- Local images: relative paths resolved to blob URLs via `resolveImage` callback
+- Recent + pinned per-vault localStorage (key prefix includes vault folder name)
+- Sample/Local source toggle persisted to localStorage; folder-topology view forced back to `doc` when switching to server
+
+---
+
+### `/ontology` — Browse (tree + ego + detail)
+
+#### Sub-nav (R3 cut F — always visible, no toggle)
+- **Browse** (`/ontology/`) — exact-match `''` and `/ontology`
+- **Builder** (`/ontology/edit/`)
+- **Insights** (`/ontology/insights/`)
+- Caption: "ONTOLOGY · {N} nodes · {E} relations" (visual cue same data)
+
+#### Page header
+- Title + info tooltip · counts
+- **Search button** (`⌘K`) — node-only `OntologyGlobalSearchAdapter`
+- **All / 전체 button** (R4 cut H, `⇧⌘K`) — `MountedGlobalSearch`, nodes + projects unified
+- **Builder CTA** (indigo solid) → `/ontology/edit/`
+- Stats strip: tree nodes · total relations · evidence documents
+
+#### Left: tree view (`OntologyTreeView`)
+- Hierarchical project → domain → capability → element (document kind excluded as evidence)
+- Click row → select node (also updates URL `?node=…`)
+
+#### Right: detail panel (`NodeDetailPanel`)
+- Kind badge + title · `ManualSourceChip` (currently no-op — all sources `manual`)
+- Copy node link button
+- Stats: linked projects, evidence count
+- Ego graph (1-hop default, 2-hop toggle radio), circular SVG
+- Neighbors list (6 preview, expandable; missing stubs amber)
+- Related docs list (6 preview, expandable)
+- CTAs: link to `/project/<slug>` if project, amber stub warning if unknown kind
+
+#### Empty state (no nodes)
+- Mode-aware copy (local 2-step / static 3-step)
+- Local: copyable frontmatter YAML snippet
+- Buttons: Open Vault / Go to Builder
+
+#### Keyboard
+- `⌘K` toggle node search · `⇧⌘K` toggle global search · `Esc` close detail · `?` shortcut sheet
+
+---
+
+### `/ontology/insights` — Insights
+
+6 panels (R3 cut E reordered + folded cross-project):
+
+1. **Kind distribution** (kind → count bars)
+2. **Edge type distribution** (canonical order — contains, belongs_to, depends_on, …) + inline caption with cross-project edge count + ratio (folded from removed Cross-project Panel)
+3. **Per-project distribution** (top 12 by total nodes)
+4. **Hub nodes** (top 10 by degree, click → `/ontology/?node=…`)
+5. **Recent nodes** (vault sentinel preview, click → deeplink)
+6. **Orphans** (R3 cut E made clickable Links, amber accent, top 10 + "+N more")
+
+Empty state: blue link to `/docs` (open vault).
+
+---
+
+### `/ontology/edit` — Builder (xyflow ERD canvas)
+
+#### Layout (md+)
+- Left palette (280 px, collapsible) · Center canvas (flex-1) · Right inspector (360 px, collapsible)
+- Mobile (<md): fallback alert + links to `/ontology` and `/topology`
+
+#### Left palette (`OntologyKindPalette`)
+- 4 kind buttons: Project / Domain / Capability / Element
+- Click or `P` `D` `C` `E` → add ephemeral node
+- Collapsed state: 44 px, icon-only (localStorage)
+
+#### Center canvas (`ReactFlow` + dagre/force layout)
+- Layout modes: Hierarchy (dagre LR, default) / Force (FA2)
+- Auto-layout button (Wand2 icon) ignores frontmatter `canvasPosition` (in-memory only)
+- Vault nodes: draggable, drag-stop patches `canvasPosition`
+- Ephemeral nodes: in-memory until save
+- MiniMap (bottom-right)
+- Connection preview: indigo dashed bezier
+- **Edge persistence**:
+  - vault↔vault drag → auto-persist to source frontmatter array (R4 verified)
+  - ephemeral endpoint drag → amber dashed `EphemeralEdge` with center "Save" chip (R4 cut I, R5 cut N validates title before persist to prevent `untitled.md` pollution)
+
+#### Right inspector
+- **Ephemeral node**: name input (auto-focus + select) · slug preview · coordinate display · Save button (`Enter`, disabled if title empty/placeholder)
+- **Vault node**: title rename (Enter to commit) · slug (read-only) · vault/dogfood badge · backlinks chips
+- Editable (when canEdit + live vault):
+  - Literal editors: domain (single-line, blur to commit), description (multiline)
+  - Array editors: capabilities / elements / dependencies / relates — chip list with `✕` to remove, input + Add to append, newly added items 1.2 s amber highlight
+- Delete button (vault node only) → `BlastRadiusConfirm` modal (backlinks shown)
+
+#### Header toolbar
+- Help tooltip (palette + drag-to-connect + Save chip onboarding)
+- Export buttons (only if nodes/edges exist): Markdown · JSON-LD · GraphML
+- Layout toggle: Hierarchy / Force radio
+- Auto-layout button
+- Fullscreen toggle (`F`)
+- Clear ephemeral button (two-step confirm, 3 s timeout)
+
+#### `BuilderOnboarding` (when canvas empty)
+- 3-step coach mark: Palette → Connect → Save chip
+- "Don't show again" toggle (localStorage)
+
+#### Keyboard shortcuts
+| Key | Action |
 |---|---|
-| MCP server | `oh-my-ontology-mcp` package (`mcp/`), stdin/stdout JSON-RPC, 12 tools (read 8 + write 4) |
-| Registration | copy `.mcp.json.example` → restart Claude Code |
-| Vault | `OMOT_VAULT` env (default cwd) — the user's vault or `docs/ontology/` (dogfood) |
-| Compatibility | works on any vault; only `.md` files with a `kind:` frontmatter become nodes. Existing ontology format is preserved as-is |
-| **CLI** (`oh-my-ontology`) | `cli/` package — `npx oh-my-ontology init my-vault` scaffolds 5 starter `.md` + `.mcp.json.example`. Identical templates to the web `/docs` scaffold button so CLI and web converge on the same starter |
-| **Web scaffold** (`OntologyStarterCta`) | `/docs` button — same 5 starter files, no terminal required (non-developer entry) |
-| **npm publish guard** | 3 layers (`CLAUDE.md` rule + `.claude/rules/forbidden.md` + PreToolUse Bash hook in `.claude/settings.json`). AI agents cannot run `npm publish` without explicit user approval — protects the maintainer's npm account from accidental releases |
-
-### 3.4 Search
-
-| Kind | Shortcut | Entry point |
-|---|---|---|
-| Project SearchPalette | `⌘K` (home) | topology / project screens |
-| Global search (ontology + docs + projects) | `⇧⌘K` | every page |
-
-**Capabilities**: Korean/English fuzzy match · kind filter chips · project filter chips · keyboard nav (↑↓ Enter Esc) · sample entries per source when the query is empty.
-
-### 3.5 Frontmatter parser
-
-| Form | Example |
-|---|---|
-| Scalar | `name: foo` / `count: 42` / `active: true` |
-| Quoted | `desc: "hello: world"` |
-| Inline list | `tags: [a, b, c]` |
-| Block list | `items:\n  - a\n  - b` |
-| **Inline object** | `pos: { x: 1, y: 2 }` |
-| **Block object** | `pos:\n  x: 1\n  y: 2` |
-
-Inside an object value, `'true'/'false'/numbers` are typed automatically. `applyFrontmatterUpdates()` patches frontmatter while preserving the body (null = delete the key).
-
-scripts/build-docs-vault.mjs, src/shared/lib/parse-frontmatter.ts, and mcp/src/parser.mjs keep this capability in sync.
-
-### 3.6 Vault frontmatter → Ontology stub
-
-frontmatter keys:
-- `kind:` (project / capability / element / domain / decision / workflow / ...)
-- `title:` (or the first `#` heading / filename fallback)
-- `domain:` (single-domain node candidate)
-- `capabilities: []` / `elements: []` (array node candidates)
-- `relates: []` / `dependencies: []` (edge candidates)
-
-→ output: `OntologyStubNode[]` + `OntologyStubEdge[]` + warnings. A fast path that bypasses AI extraction. Visible immediately on `/`, `/docs`, and `/ontology/edit`.
-
-### 3.7 V1.1 Wikidata Statement Annotation (new in mission v2)
-
-Optional fields added to `KnowledgeGraphEdge` (additive, zero breakage):
-
-- `qualifiers?: Array<{ propertyId: string; value: QualifierValue }>`
-- `rank?: 'preferred' | 'normal' | 'deprecated'`
-
-`QualifierValue` union: string / time (precision year-month-day) / quantity (value+unit) / nodeRef.
-
-Legacy edges leave both fields undefined → the code falls back to `rank ?? 'normal'`. `publishKnowledgeProjectionCore` passes the fields through during the approved → public projection. Details: `docs/ONTOLOGY-MODEL-V2-DRAFT.md` §2.
-
-### 3.8 Permissions
-
-| Role | Behavior |
-|---|---|
-| Anonymous / guest | public surfaces (read the home tree) + full vault-mode usage |
-| Demo session | `/login` demo button → read-only demo data |
-| Firebase-authenticated user | full rights over their own data (single-user tool) |
-| `admins/{email}` allowlist | reserved for future global operations — the TBox / diagnostics operations it used to gate were retired in mission v2 |
-
-The `PermissionGate` component branches on own-space / membership / admin.
-
-### 3.9 Mobile / responsive
-
-| Feature | Location | Behavior |
-|---|---|---|
-| **BottomTabBar** | `src/widgets/bottom-tab-bar/` | a fixed bottom tab bar on mobile (below md) — map · projects · docs · settings. On desktop, OperationsNav exposes the same destinations |
-| **GestureHint** | `src/widgets/gesture-hint/` | shows swipe-gesture guidance the first time touch devices land on the topology |
-| **safe-area** | OperationsNav mobile mode | avoids collisions with the iOS notch + BottomTabBar |
-| Mobile detail sheet | `/` tree | desktop uses the right-side panel; mobile uses a bottom-fixed sheet |
-
-### 3.10 Theme / accessibility / notifications
-
-| Feature | Location | Behavior |
-|---|---|---|
-| **ThemeToggle (Light/Dark)** | right side of OperationsNav + `src/features/theme-toggle/` | toggles `html[data-theme="light"]`. Defaults to dark. Persisted in localStorage |
-| **Toast** | `useToast()` (`src/shared/ui/toast.tsx`, sonner-based) | 50+ call sites. `show(message, tone)` API. success / error / warning / info |
-| **LiveAnnouncer** | `src/shared/ui/live-announcer.tsx` | aria-live region — announces topology node selection / search result changes etc. to screen readers |
-| **Tooltip** | `src/shared/ui` (Radix-based) | every icon / shortcut hint |
-| **prefers-reduced-motion** | globals.css base layer | automatically respected — for both Sigma pulses and framer-motion |
-
-### 3.11 Auxiliary widgets
-
-| Widget | Entry point | Role |
-|---|---|---|
-| **DocsQuickDrawer** | `/topology` topology (folder icon) | a vault document quick-preview drawer — pinned docs / recent / inline tree |
-| **WorkspaceOntologyStrip** | `/` `/projects` header | a strip with current ontology stats — auto-hidden when there are zero matches. The unresolved-stub chip jumps to `/ontology` (the tree's stub list) |
-| **VaultOntologyStubsPanel** | `/` (above the tree when vault mode is active) | visualizes unresolved stub references from vault frontmatter — fix by adding the slug as a real node in the builder or removing the reference |
-
-### 3.12 Shortcuts
-
-| Key | Where | Effect |
-|---|---|---|
-| `⌘K` / `Ctrl+K` | anywhere | search palette (projects) |
-| `⇧⌘K` | anywhere | global search (ontology + docs + projects) |
-| `?` | anywhere | shortcut sheet |
-| `Esc` | modal / builder | close / clear selection |
-| `N` | `/ontology/edit` | new project node |
-| `F` | `/ontology/edit` | toggle fullscreen |
-| `Del` / `Backspace` | `/ontology/edit` | delete selected node |
-| `↑` / `↓` | search / tree | move between items |
+| `P` / `N` | Add Project |
+| `D` | Add Domain |
+| `C` | Add Capability |
+| `E` | Add Element |
+| `F` | Toggle fullscreen |
+| `Del` / `Backspace` | Delete selected ephemeral (vault nodes protected) |
+| `Esc` | Clear selection or exit fullscreen |
+| `Enter` (inspector input) | Save ephemeral node / commit vault rename |
 
 ---
 
-## 4. Data flow (mission v2 single-source)
+### `/projects` — Project list
 
-```
-md files (vault on user's disk)         MCP server (AI agents)
-  │                                          │
-  ├─→ manifest (File System Access API)      │ (read/write)
-  │                                          │
-  ├─→ Project[] ← useProjects (mode-aware)   │
-  │                                          ▼
-  ├─→ frontmatter → derive-ontology-from-vault → OntologyStub[]
-  │                       or
-  │   builder canvas → vault .md (write)
-  │                       or
-  │   AI agent (Claude Code) → MCP add_concept / patch_concept → vault .md
-  │
-  └─→ tree (`/`) / topology (`/topology` Sigma) / builder (`/ontology/edit` xyflow)
-```
+#### Header
+- Eyebrow + H1 with dynamic count badge `{filtered}/{total}`
 
-**Paths permanently removed (R10b — auth + cloud surface)**:
-- ❌ AI extraction (cloud LLM) → `knowledgeExtractionJobs/Outputs`
-- ❌ Review queue (`/review/knowledge`) → `knowledgeReviews/ApprovalEvents`
-- ❌ Manual node/edge add modal (cloud Firestore)
-- ❌ Login / signup / settings surfaces
+#### Filters (URL-synced: `?q`, `?cat`, `?st`, `?limit`)
+- Full-text search (name / slug / description / tags / stack), Esc clears
+- Phase chips (category, with live counts) — toggle
+- Status chips (with live counts) — toggle
+- "Clear all filters" button
 
-Future cloud collab will be re-designed when sponsorship / collaboration requests come.
+#### Cards (3 col lg / 2 col md / 1 col sm, sorted by `updatedAt` desc, 60-page paginated)
+- Title + 2-line description clamp · 3 quick facts (Phase / Status / Dependency count) · slug · ontology count badge (when > 0)
+- "See details" + "View topology" buttons (overlay over stretched card link)
+
+#### Empty states
+- No projects at all → `ProjectQuickCreatePanel` inline + fallback buttons
+- No results after filter → "Clear search" + "View full topology" link
+- Static mode (no vault) → "To workspace map" instead of create
 
 ---
 
-## 4-A. Static data (mission v2)
+### `/project/[slug]` — Project detail (with inline edit)
 
-In mission v2, the source of truth for `static` mode is the `docs/ontology/` dogfood vault —
-the project expresses its own mental model as frontmatter markdown. At build time,
-`scripts/build-docs-vault.mjs` scans the vault and bakes it into
-`src/entities/docs-vault/data/manifest.json`.
+#### Header
+- Breadcrumb: Home → Projects → `{Name|Slug}`
+- Right actions: docs vault link · copy link · quick-edit menu (mobile)
 
-- **1 project + 6 domains + 6 capabilities + 4 elements + 1 README ≈ 18 nodes**
-- When a user has not selected a vault and is anonymous (static) mode, this manifest
-  immediately renders topology / ontology / projects — zero-friction entry.
-- The v1 `src/shared/mocks/demo-blueprint.ts` (6 containers, ~50 projects) was
-  retired in PR #33/#34 (2026-04 to 2026-05). The new source of truth is the dogfood vault.
+#### Inline-editable fields (when `canManageProject`)
+- name · description · dependencies (picker with cycle check) · tags · stack · links (label|URL multiline)
 
-## 4-B. Framework / build-time surfaces
+#### Read-only display
+- nameEn · status (with dot color) · category · owner (fallback "Shared internal system") · progress % · slug · updatedAt
+- "uncategorized" / "active" fallback labels via taxonomy
 
-| Item | Location | Behavior |
+#### Featured sections
+- **Local topology** — Sigma 1-hop neighbors graph (520 px, minimal mode)
+- **Project info card** (when `project.detail` markdown exists)
+- **Integrity issues** card (yellow border, only when issues > 0)
+- **Screenshots** collapsible (only when count > 0)
+- **Linked projects** card (next-project + neighbors map, dedup'd)
+- **Ontology overview** card (client-only fetch)
+
+#### "More info" collapsible
+- Links · Tags · Stack · Basic info (category / slug / updatedAt)
+
+#### Mobile
+- Quick-edit panel (`ProjectQuickEditPanel`, hamburger menu)
+- Copy link + topology view buttons in bottom bar
+
+#### Empty / not-found
+- Invalid slug → "Project not found" panel + back-to-workspace button
+- Loading → "Loading project data" gray panel
+
+---
+
+### `/project/[slug]/edit` and `/project/new` — Full editor
+
+`ProjectForm` (4 collapsible sections + sticky save bar):
+
+1. **Basics** (always open) — slug (disabled in edit, auto-slugify in create) · name · nameEn · category (taxonomy select) · status (taxonomy select)
+2. **Story** (collapsible) — description (required) · detail (markdown) · tags CSV · stack CSV · linksText (multiline `label|URL`)
+3. **Network** (collapsible, collapsed in create) — dependencies picker with cycle check (suggestions from description/detail text)
+4. **Operations** (collapsible, collapsed in create) — startedAt · launchedAt (date order validated) · owner · icon · progress · `isHub` checkbox
+
+#### Validation (`schema.ts`)
+- slug: `/^[\p{L}\p{N}-]+$/u` (Unicode letters/numbers/hyphen)
+- name + description required (min 1)
+- linksText: each line `label|https://…`, http(s) only
+- dates: ISO 8601 YYYY-MM-DD, `launchedAt >= startedAt`
+
+#### Actions
+- Save & continue · Save & return · Cancel (with dirty-state guard via `beforeunload` + router intercept)
+- Delete (edit-only, bottom-left)
+- Form nav pills jump to sections
+- Top + bottom sticky save bar
+
+#### Mobile preview panel (sidebar, collapsible <lg)
+- Live preview `ProjectCard` · completeness % · public status · change summary (max 4 items)
+
+#### Note
+- `screenshots` field exists in schema but no uploader UI (markdown/vault assets only — codex Round 6 finding)
+- Folder-topology scaffold path (`/docs view: folder-topology`) creates `projects/{slug}.md` without `description` (different contract from this canonical form, by-design — Round 6 skip)
+
+---
+
+### `/project/new` — Create
+
+Same `ProjectForm` minus existing-project context.
+- Submit buttons: "Create & continue" / "Create & return"
+- Tips panel (easiest path: name → category/status → description, then save)
+- Quick-create modal also available in `/projects` list (`ProjectQuickCreatePanel`, reused)
+
+### `/project/fallback` — Static-export fallback
+
+Used when a non-existent slug is hit in static export. Redirects or shows "not found" panel.
+
+---
+
+## 3. MCP server (12 tools)
+
+Run via `pnpm exec node mcp/src/index.js` (registered in user's `.mcp.json`). AI agents read/write the same vault as humans.
+
+#### Read tools (8)
+1. **list_concepts** `{ kind?, limit? }` — every node, optional kind + limit (default 100)
+2. **get_concept** `{ slug }` — full detail: frontmatter + body excerpt + neighbors
+3. **find_evidence** `{ title }` — partial-match across title / capabilities / elements / body
+4. **find_backlinks** `{ slug }` — every node referencing target (frontmatter arrays + wikilinks/markdown)
+5. **find_path** `{ from, to, maxHops? }` — shortest undirected BFS (default 5 hops, returns null if not found)
+6. **list_kinds** — vault kind census `{ total, byKind: { capability: N, … } }`
+7. **find_orphans** `{ kind?, excludeKinds? }` — isolated nodes (defaults exclude `vault-readme`)
+8. **query_concepts** `{ filter, limit? }` — typed filter DSL with AND/OR/NOT on `kind` / `domain` / `slug` / `title` / `has(arrayKey)`
+
+#### Write tools (4)
+9. **add_concept** `{ slug, kind, title, domain?, capabilities?, elements?, body? }` — create new `.md` (throws on existing slug)
+   - **R6 validation**: title must be non-empty trimmed string (`isValidVaultTitle`)
+10. **patch_concept** `{ slug, frontmatter?, body? }` — update existing (`null` value deletes key)
+    - **R6 validation**: rejects `title: null` and `title: ""`
+11. **add_relation** `{ from, to, type }` — append to source frontmatter array
+    - type enum: `depends_on` (→ `dependencies`) / `relates` / `contains` / `describes`
+    - **R7 validation**: both `from` AND `to` slug must exist in vault (`vaultSlugExists`)
+    - Idempotent: duplicate returns `{ alreadyExists: true }`
+12. **delete_concept** `{ slug, confirm?, force? }` — permanent delete
+    - `confirm: false` (dry-run with backlinks preview) / `true` (actual)
+    - `force: false` (throw if backlinks exist) / `true` (delete anyway)
+
+---
+
+## 4. Cross-cutting UI
+
+### `OperationsNav` (top, always visible)
+- Sticky header: 3 nav items (Docs / Ontology / Topology)
+- Right: `ModeBadge` (vault folder name + doc count chip OR demo chip with picker link) · `LocaleSwitch` · `ThemeToggle`
+- Active detection by pathname prefix
+- Sub-nav row appears on `/ontology/*` (R3 always visible)
+
+### `BottomTabBar` (mobile only, `md:` hidden)
+- 3 tabs: Ontology (matches `/ontology` or `/topology`) · Projects (`/projects` or `/project`) · Docs (`/docs`)
+- Min height 56 px (safe-area)
+
+### Search palettes (separate by design — R5 skip merge)
+- **`⌘K` `SearchPalette`** — projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)
+- **`⇧⌘K` `MountedGlobalSearch`** — ontology nodes + projects unified (`cmdk`-based, kind/project filter chips, virtualized)
+- Both palettes share keyboard: `↑↓` navigate · `↵` select · `Esc` close
+
+### `ShortcutSheet` (`?` to open)
+- 10 sections grouped: navigation · topology · search palette · hub rail · docs palette · docs graph · docs source · docs actions · tour · portfolio
+- 2-column grid on sm+, focus trap, `Esc` closes
+
+### `LocaleSwitch`
+- Two-button toggle EN / KO
+- Replaces locale prefix in pathname; preserves rest (NOT query params — Scenario 9 finding, R9 deferred)
+- localStorage `omot:locale`
+
+### `ThemeToggle`
+- Moon / Sun icon toggle
+- SSR-safe (mount-state placeholder until first useEffect)
+- `html[data-theme]` attribute
+
+---
+
+## 5. Keyboard shortcuts (consolidated)
+
+| Key | Surface | Action |
 |---|---|---|
-| **app/layout.tsx** | root layout | TaxonomyProvider + ToastProvider + global styles. Title template `'%s · oh-my-ontology'` |
-| **app/page.tsx** | `/` entry | RootEntryPage — anonymous users see the LandingPage; otherwise the OntologyViewPage |
-| **app/topology/page.tsx** | `/topology` entry | HomePage (Sigma topology) |
-| **app/manifest.ts** | `/manifest.webmanifest` | PWA manifest |
-| **app/sitemap.ts** | `/sitemap.xml` | exposes static-export routes |
-| **app/robots.ts** | `/robots.txt` | search engine crawl policy |
-| **app/not-found.tsx** | 404 page | "lost your way" copy + home CTA |
-| **app/error.tsx** | route-level error boundary | "unexpected error" + retry / topology home |
-| **app/global-error.tsx** | layout-level error boundary | last line of defense |
-| **app/project/[slug]/opengraph-image.tsx** | OG image | dynamic share card on the project detail |
-| **app/project/fallback/** | static-export fallback | unknown slug → client-side URL parse + active vault manifest lookup |
+| `⌘K` | Home / Topology / Ontology / Projects / Docs | Project / node search palette |
+| `⇧⌘K` | Home / Topology / Ontology | Global search (nodes + projects) |
+| `D` | Home / Topology | Toggle docs drawer |
+| `?` | Home / Topology / Builder | Toggle shortcut sheet |
+| `/` | Sigma controls (when controls expanded) | Focus search input |
+| `0`–`6` | Sigma controls | Set depth filter |
+| `Esc` | All | Layered close (drawer / palette / local graph) |
+| `P` / `N` | Builder | Add Project node |
+| `D` | Builder | Add Domain node |
+| `C` | Builder | Add Capability node |
+| `E` | Builder | Add Element node |
+| `F` | Builder | Toggle fullscreen |
+| `Del` / `Backspace` | Builder | Delete selected ephemeral |
+| `Enter` | Builder inspector | Save ephemeral / commit vault rename |
+| `↑↓` | Hub rail | Cycle hubs |
+| `Home` / `End` | Hub rail | First / last hub |
+| `Tab` (in palette) | Docs palette | Cycle mode (`""` → `>` → `#`) |
+| `⌘S` | Docs editor | Save |
+| `⌘B` / `⌘I` | Docs editor | Bold / italic wrap |
+| `⌘K` (in editor, no `Shift`) | Docs editor | Insert link |
 
 ---
 
-## 5. Constraints / intentional absences
+## 6. What was removed (Rounds 1–9)
 
-### Removed in the mission v1 era (already done)
-- **share link** (commit "share-doc cascade removed" — pushed to v2 collaboration)
-- **GitHub webhook activity history** (commit "docs-vault-activity removed")
-- **AI extraction client** (commit "ontology-extraction client removed")
-- **HTTP push API** (commit "api-keys + receive-doc cascade removed")
-- **dev-admin-bypass** (commit "dev-admin-bypass infra + 41 callsites cleaned up")
-- **/admin/*** routes (deprecated)
-- **legacy redirects** (/project/topology, /project/view)
+For full reasoning see `docs/CHANGELOG.md`. High-level:
 
-### Removed by mission v2 cleanup
-- **AI Cloud LLM extraction flow** — `extract-gemini.js` / `ontology-extract.js` Cloud Functions + `enqueueExtractionJob` / `processExtractionJob` / `reclaimStaleExtractionJobs` callables (vault frontmatter is self-approving)
-- **Review queue (`/review/knowledge`)** — page + route + `applyReviewAction` / `approveKnowledgeOutput` / `rejectKnowledgeOutput` callables
-- **`/knowledge/*` routes + `KnowledgeDocument` entities** — vault is the single source of truth
-- **`/diagnostics/*` routes + Firestore seed scripts** — operations insights now owned by `/ontology/insights`
-- **TBox surface (`/settings/ontology[/history]`)** — `kind:` in frontmatter *is* the schema
-- **`functions/` folder** — Cloud Functions deploy retired; pure static export
+- **Round 1** — presentation mode (F fullscreen on home) · Relationship Radar widget · `/docs view: graph` · `/docs view: stats` · audience toggle (전체/기획자/엔지니어) + `VaultMode` schema
+- **Round 2** — `/ontology/relations` route (folded into `/ontology/insights`) · `/docs` advanced gear simplified (source toggle hoisted to header)
+- **Round 3** — Landing primary CTA swap (local-first activation primary) · landing copy de-jargoned · insights panel reorder + cross-project Panel folded · sub-nav "Tree" → "Browse" + always visible
+- **Round 4** — `/docs` Local picker auto-open · `/ontology` `⇧⌘K` button visible · ephemeral edge "Save" chip
+- **Round 5** — ephemeral placeholder pollution fix (`isUntitledTitle`)
+- **Round 6** — MCP `patch_concept` blank title parity (`isValidVaultTitle`) · vault label drift fix
+- **Round 7** — MCP `add_relation` slug existence check (`vaultSlugExists`)
+- **Round 8** — `LocalVaultProvider` SSoT refactor (8 callsites → 1 instance)
+- **Round 9** — `saveDoc` permission state sync · vault error banner · unsupported browser tooltip
 
-### Removed by R10 (auth + cloud surface permanent removal, 2026-05)
-- **Auth surfaces** — `/login`, `/signup`, `/account`, `/reset-password`, `/settings/*`
-- **Cloud entity API + Firestore subscribers** — `useKnowledgePublic*` / `subscribe*` hooks, all Firestore upsert paths
-- **Manual node/edge add modals** — cloud Firestore writers
-- **Project knowledge topology widget** — orphan after manual modals removed (~875 LOC)
-- **`KnowledgePublicMeta` / `evidence-summary` lib / `ontology-frontmatter` lib / `ontology-relation` entity / `topology-layout` / `project-import`** — orphan dead-code cascades
-
-### Intentional absences (R10b)
-- **Auth surface**: none — login / signup / settings / account routes permanently removed
-- **Multi-account**: none — single-user OSS tool. v2 cloud collab phase will reintroduce
-- **Cloud sync / Firestore**: none — vault frontmatter on user disk is the single source of truth
-- **Cloud Functions**: none — pure static export
+Permanently removed earlier (R10): `/login`, `/signup`, `/account`, `/reset-password`, `/settings/*`, `/admin/*`, `/review/*`, `/diagnostics/*`, `/knowledge/*`, Firebase / Firestore / Auth / Storage SDKs, screenshot uploader, manual node/edge cloud modal, cloud-mode badge.
 
 ---
 
-## 6. Verification (post-OSS-launch readiness, 2026-05-03)
+## 7. Deferred (future rounds — wait-for-signal)
 
-- tsc 0 errors
-- eslint 0 errors (~14 pre-existing warnings — see lint output)
-- vitest **84 files / 608 tests pass**
-- MCP server stdin/stdout JSON-RPC: initialize → tools/list (12 tools) → tools/call all healthy
-- MCP parser + query unit tests pass
-- CLI smoke (`node cli/src/index.mjs init test-vault`) writes 5 starter `.md` + `.mcp.json.example`
-- `npm pack --dry-run` audit: 0 secrets / 0 PII / 0 absolute paths in either tarball
-
----
-
-## 7. Where to start — user workflows
-
-```
-1. New user (no login):
-   /docs → "open a markdown folder on my PC"
-   → vault active → /, /topology, /projects all auto-recognize it
-
-2. Register an AI agent (Claude Code) (optional):
-   copy .mcp.json.example → set OMOT_VAULT → restart Claude Code
-   → mcp__oh-my-ontology__* 12 tools become available
-
-3. Add a new project:
-   (a) directly in the vault:
-       write projects/my-project.md
-       ---
-       kind: project
-       title: my project
-       category: in-progress
-       status: developing
-       dependencies: [auth, billing]
-       ---
-       → automatically appears on /, /topology, /projects
-
-   (b) UI quick create:
-       /projects → click "new project" → ProjectQuickCreatePanel
-       → vault `.md` is auto-generated (mode-aware)
-
-   (c) AI agent (MCP):
-       the agent analyzes the code and calls mcp__oh-my-ontology__add_concept
-       → writes the vault `.md` directly
-
-4. Add an ontology concept:
-   (a) frontmatter-based (human):
-       add kind: capability + relates: [...] to a document
-       → appears in the / tree as a stub automatically
-
-   (b) directly in the builder (human):
-       /ontology/edit → palette → click a node → drag a handle → save
-
-   (c) AI agent (MCP):
-       mcp__oh-my-ontology__add_concept / add_relation / patch_concept
-       → vault frontmatter updates → / tree updates automatically
-
-5. Explore:
-   ⇧⌘K (global search) → kind filter → jump
-   / → tree + ego graph exploration
-   /topology → Sigma visual network
-   /ontology/insights → activity / hubs / orphans
-```
+- `/ontology/edit` builder reconsideration — UX persona walkthrough (R3) found dev/PM/AI all skip. design call needed.
+- Phase 4 PM polish — vocabulary translation/hiding (frontmatter / slug / kind / ephemeral / ego / MCP / vault). PRODUCT-DIRECTION ⏳.
+- Search palette unification (`⌘K` + `⇧⌘K`) — R5 skip: not duplicates, would require ranking/section redesign.
+- LocalVaultPicker hoist out of dropdown — R5 skip: dead-end already closed by R4 J.
+- WebGL context-loss `ErrorBoundary` (Scenario 10) — R9 defer: theoretical, no reports.
+- Locale switch query-param preservation (Scenario 9) — R9 defer: low frequency.
+- MCP `add_concept` project minimal-input parity with `ProjectForm` — R6 skip: AI agent incremental stub by-design.
+- folder-topology project scaffold without description — R6 skip: scaffold ≠ canonical authoring (different contract).
 
 ---
 
-## 8. OSS distribution surfaces (post-launch readiness)
+## 8. Source-of-truth files
 
-What ships outside the running app — designed so global users can adopt the project without reading Korean.
+When this doc and code disagree, code wins. Trust:
+- `package.json`
+- `next.config.ts`
+- `app/[locale]/layout.tsx`
 
-### 8.1 npm packages
-
-| Package | Path | Required for | Distribution |
-|---|---|---|---|
-| `oh-my-ontology-mcp` | `mcp/` | AI agent integration (Claude Code, Cursor, …) | Public, MIT, free; install via `npx -y oh-my-ontology-mcp` |
-| `oh-my-ontology` | `cli/` | CLI vault scaffold (`init` subcommand) | Optional — the web `/docs` scaffold button is the alternative |
-
-Both go through `npm pack --dry-run` audit before any publish — 0 secrets / 0 PII / 0 absolute paths verified.
-
-### 8.2 Hosting
-
-- Static export only (`output: 'export'` → `out/`); deploy to any static host (GitHub Pages, Netlify, Vercel, Cloudflare Pages, etc.)
-- `docs/DEPLOYMENT.md` — step-by-step deploy guide
-
-### 8.3 GitHub OSS surfaces
-
-| Surface | What |
-|---|---|
-| `README.md` | English first + Korean sub-section, hero hosted-demo link, MCP / CLI / scaffold quickstart |
-| `AGENTS.md` | English first + Korean sub-section — canonical contributor guide for every AI tool |
-| `CONTRIBUTING.md` | English — branch naming, conventional commits, FSD boundaries reminder |
-| `LICENSE` | MIT |
-| `.github/ISSUE_TEMPLATE/*.yml` | 3 bilingual issue forms (bug report / feature request / question) + config disabling blank issues |
-| `.github/PULL_REQUEST_TEMPLATE.md` | Bilingual PR template (Summary / Test plan / Screenshots) |
-| `.github/DISCUSSIONS-CATEGORIES.md` | Discussion category taxonomy (Korean — internal admin reference) |
-| GitHub Discussions | Activated programmatically via `gh api PATCH ... has_discussions=true`; welcome post #108 created |
-
-### 8.4 OSS docs
-
-All English unless noted:
-
-| Doc | Purpose |
-|---|---|
-| `docs/PUBLISH-NPM.md` | step-by-step npm publish guide for maintainers, includes the publish-guard explanation |
-| `docs/TROUBLESHOOTING.md` | common issues for end users — vault scaffold / MCP / build·test / publish |
-| `docs/PRODUCT-DIRECTION.md` | mission v2 direction |
-| `docs/FEATURES.md` | this file |
-| `docs/ARCHITECTURE.md` | architecture and FSD boundaries |
-| `docs/DESIGN-SYSTEM.md` | tokens / motion / forbidden visual patterns |
-| `docs/DEPLOYMENT.md` | static export deploy guide |
-| `docs/CHANGELOG.md` | chronological user-visible changes |
-| `docs/launch/*.md` | HN / Reddit / X drafts (Korean — internal launch material; published only after maintainer review) |
-
-### 8.5 npm publish guard (3 layers)
-
-A defense-in-depth block against accidental `npm publish` by AI agents:
-
-1. **`CLAUDE.md` rule** (Claude-specific guidance): never run publish without explicit user approval
-2. **`.claude/rules/forbidden.md`**: same rule in the auto-loaded forbidden-patterns file
-3. **`.claude/settings.json` PreToolUse hook** + `.claude/hooks/block-npm-publish.sh`: actually intercepts Bash commands matching `npm/pnpm/yarn publish` (and `npm pack` without `--dry-run`) and returns `permissionDecision: "deny"`
-
-Tested against 7 input shapes (publish variants blocked; `npm whoami` / `npm pack --dry-run` / regular commands allowed).
+For per-route truth: open the corresponding `src/views/*` file. Each route has comments explaining mode-aware fallbacks, deep-link sync, and edge cases.

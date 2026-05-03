@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-03T13:53:17.936Z",
+  "generatedAt": "2026-05-03T14:01:35.842Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -2681,266 +2681,371 @@
         },
         {
           "depth": 2,
-          "text": "2. Features per route",
-          "slug": "2-features-per-route"
+          "text": "2. Routes (8 surfaces)",
+          "slug": "2-routes-8-surfaces"
         },
         {
           "depth": 3,
-          "text": "Ontology hub + visualization",
-          "slug": "ontology-hub-visualization"
+          "text": "`/` — Smart entry",
+          "slug": "smart-entry"
+        },
+        {
+          "depth": 3,
+          "text": "`/` — Landing (no vault)",
+          "slug": "landing-no-vault"
+        },
+        {
+          "depth": 3,
+          "text": "`/` and `/topology` — Sigma WebGL hub",
+          "slug": "and-topology-sigma-webgl-hub"
         },
         {
           "depth": 4,
-          "text": "`/` — Ontology Tree Hub (the spine of mission v2)",
-          "slug": "ontology-tree-hub-the-spine-of-mission-v2"
+          "text": "Canvas (Sigma + Graphology + ForceAtlas2)",
+          "slug": "canvas-sigma-graphology-forceatlas2"
         },
         {
           "depth": 4,
-          "text": "`/topology` — Sigma WebGL topology (the mission v2 exit view)",
-          "slug": "topology-sigma-webgl-topology-the-mission-v2-exit-view"
+          "text": "`SigmaControls` (top-right, collapsed default)",
+          "slug": "sigmacontrols-top-right-collapsed-default"
         },
         {
           "depth": 4,
-          "text": "`/ontology/edit` — Builder (xyflow ERD)",
-          "slug": "ontologyedit-builder-xyflow-erd"
+          "text": "`SigmaHubRail` (left, collapsed default)",
+          "slug": "sigmahubrail-left-collapsed-default"
         },
         {
           "depth": 4,
+          "text": "Top-right buttons",
+          "slug": "top-right-buttons"
+        },
+        {
+          "depth": 4,
+          "text": "Left workspace info panel",
+          "slug": "left-workspace-info-panel"
+        },
+        {
+          "depth": 4,
+          "text": "Right-side `ProjectDrawer` (when a node is selected)",
+          "slug": "right-side-projectdrawer-when-a-node-is-selected"
+        },
+        {
+          "depth": 4,
+          "text": "Mobile-only",
+          "slug": "mobile-only"
+        },
+        {
+          "depth": 4,
+          "text": "Global keyboard shortcuts (all `useTypingShortcuts`-gated)",
+          "slug": "global-keyboard-shortcuts-all-usetypingshortcuts-gated"
+        },
+        {
+          "depth": 3,
+          "text": "`/docs` — Docs Vault (reader + editor + palette)",
+          "slug": "docs-docs-vault-reader-editor-palette"
+        },
+        {
+          "depth": 4,
+          "text": "Header (always visible)",
+          "slug": "header-always-visible"
+        },
+        {
+          "depth": 4,
+          "text": "Status banner (R9 cut, below header)",
+          "slug": "status-banner-r9-cut-below-header"
+        },
+        {
+          "depth": 4,
+          "text": "Sidebar (md+)",
+          "slug": "sidebar-md"
+        },
+        {
+          "depth": 4,
+          "text": "Mobile drawer (<md)",
+          "slug": "mobile-drawer-md"
+        },
+        {
+          "depth": 4,
+          "text": "Content area",
+          "slug": "content-area"
+        },
+        {
+          "depth": 4,
+          "text": "Unified palette (`⌘K`, `DocsVaultUnifiedPalette`)",
+          "slug": "unified-palette-k-docsvaultunifiedpalette"
+        },
+        {
+          "depth": 4,
+          "text": "Editor mode (`DocsVaultEditor`, local only)",
+          "slug": "editor-mode-docsvaulteditor-local-only"
+        },
+        {
+          "depth": 4,
+          "text": "Commands (~20 in palette)",
+          "slug": "commands-20-in-palette"
+        },
+        {
+          "depth": 4,
+          "text": "Visual / behavioral details",
+          "slug": "visual-behavioral-details"
+        },
+        {
+          "depth": 3,
+          "text": "`/ontology` — Browse (tree + ego + detail)",
+          "slug": "ontology-browse-tree-ego-detail"
+        },
+        {
+          "depth": 4,
+          "text": "Sub-nav (R3 cut F — always visible, no toggle)",
+          "slug": "sub-nav-r3-cut-f-always-visible-no-toggle"
+        },
+        {
+          "depth": 4,
+          "text": "Page header",
+          "slug": "page-header"
+        },
+        {
+          "depth": 4,
+          "text": "Left: tree view (`OntologyTreeView`)",
+          "slug": "left-tree-view-ontologytreeview"
+        },
+        {
+          "depth": 4,
+          "text": "Right: detail panel (`NodeDetailPanel`)",
+          "slug": "right-detail-panel-nodedetailpanel"
+        },
+        {
+          "depth": 4,
+          "text": "Empty state (no nodes)",
+          "slug": "empty-state-no-nodes"
+        },
+        {
+          "depth": 4,
+          "text": "Keyboard",
+          "slug": "keyboard"
+        },
+        {
+          "depth": 3,
           "text": "`/ontology/insights` — Insights",
           "slug": "ontologyinsights-insights"
         },
         {
           "depth": 3,
-          "text": "Vault Local-First",
-          "slug": "vault-local-first"
+          "text": "`/ontology/edit` — Builder (xyflow ERD canvas)",
+          "slug": "ontologyedit-builder-xyflow-erd-canvas"
         },
         {
           "depth": 4,
-          "text": "`/docs` — Vault Picker / Doc Vault",
-          "slug": "docs-vault-picker-doc-vault"
+          "text": "Layout (md+)",
+          "slug": "layout-md"
+        },
+        {
+          "depth": 4,
+          "text": "Left palette (`OntologyKindPalette`)",
+          "slug": "left-palette-ontologykindpalette"
+        },
+        {
+          "depth": 4,
+          "text": "Center canvas (`ReactFlow` + dagre/force layout)",
+          "slug": "center-canvas-reactflow-dagreforce-layout"
+        },
+        {
+          "depth": 4,
+          "text": "Right inspector",
+          "slug": "right-inspector"
+        },
+        {
+          "depth": 4,
+          "text": "Header toolbar",
+          "slug": "header-toolbar"
+        },
+        {
+          "depth": 4,
+          "text": "`BuilderOnboarding` (when canvas empty)",
+          "slug": "builderonboarding-when-canvas-empty"
+        },
+        {
+          "depth": 4,
+          "text": "Keyboard shortcuts",
+          "slug": "keyboard-shortcuts"
         },
         {
           "depth": 3,
-          "text": "Projects",
-          "slug": "projects"
-        },
-        {
-          "depth": 4,
           "text": "`/projects` — Project list",
           "slug": "projects-project-list"
         },
         {
           "depth": 4,
-          "text": "`/project/[slug]` — Project detail",
-          "slug": "projectslug-project-detail"
+          "text": "Header",
+          "slug": "header"
         },
         {
           "depth": 4,
-          "text": "`/project/new` · `/project/[slug]/edit` — Editor",
-          "slug": "projectnew-projectslugedit-editor"
+          "text": "Filters (URL-synced: `?q`, `?cat`, `?st`, `?limit`)",
+          "slug": "filters-url-synced-q-cat-st-limit"
         },
         {
           "depth": 4,
-          "text": "`/project/fallback` — Static export fallback",
+          "text": "Cards (3 col lg / 2 col md / 1 col sm, sorted by `updatedAt` desc, 60-page paginated)",
+          "slug": "cards-3-col-lg-2-col-md-1-col-sm-sorted-by-updatedat-desc-60-page-paginated"
+        },
+        {
+          "depth": 4,
+          "text": "Empty states",
+          "slug": "empty-states"
+        },
+        {
+          "depth": 3,
+          "text": "`/project/[slug]` — Project detail (with inline edit)",
+          "slug": "projectslug-project-detail-with-inline-edit"
+        },
+        {
+          "depth": 4,
+          "text": "Header",
+          "slug": "header-2"
+        },
+        {
+          "depth": 4,
+          "text": "Inline-editable fields (when `canManageProject`)",
+          "slug": "inline-editable-fields-when-canmanageproject"
+        },
+        {
+          "depth": 4,
+          "text": "Read-only display",
+          "slug": "read-only-display"
+        },
+        {
+          "depth": 4,
+          "text": "Featured sections",
+          "slug": "featured-sections"
+        },
+        {
+          "depth": 4,
+          "text": "\"More info\" collapsible",
+          "slug": "more-info-collapsible"
+        },
+        {
+          "depth": 4,
+          "text": "Mobile",
+          "slug": "mobile"
+        },
+        {
+          "depth": 4,
+          "text": "Empty / not-found",
+          "slug": "empty-not-found"
+        },
+        {
+          "depth": 3,
+          "text": "`/project/[slug]/edit` and `/project/new` — Full editor",
+          "slug": "projectslugedit-and-projectnew-full-editor"
+        },
+        {
+          "depth": 4,
+          "text": "Validation (`schema.ts`)",
+          "slug": "validation-schemats"
+        },
+        {
+          "depth": 4,
+          "text": "Actions",
+          "slug": "actions"
+        },
+        {
+          "depth": 4,
+          "text": "Mobile preview panel (sidebar, collapsible <lg)",
+          "slug": "mobile-preview-panel-sidebar-collapsible-lg"
+        },
+        {
+          "depth": 4,
+          "text": "Note",
+          "slug": "note"
+        },
+        {
+          "depth": 3,
+          "text": "`/project/new` — Create",
+          "slug": "projectnew-create"
+        },
+        {
+          "depth": 3,
+          "text": "`/project/fallback` — Static-export fallback",
           "slug": "projectfallback-static-export-fallback"
         },
         {
-          "depth": 3,
-          "text": "AI agent partner (`mcp/`)",
-          "slug": "ai-agent-partner-mcp"
-        },
-        {
-          "depth": 3,
-          "text": "Auth / account",
-          "slug": "auth-account"
+          "depth": 2,
+          "text": "3. MCP server (12 tools)",
+          "slug": "3-mcp-server-12-tools"
         },
         {
           "depth": 4,
-          "text": "`/login`",
-          "slug": "login"
+          "text": "Read tools (8)",
+          "slug": "read-tools-8"
         },
         {
           "depth": 4,
-          "text": "`/signup`",
-          "slug": "signup"
-        },
-        {
-          "depth": 4,
-          "text": "`/reset-password`",
-          "slug": "reset-password"
-        },
-        {
-          "depth": 4,
-          "text": "`/account` (guests are redirected to `/login?next=/account`)",
-          "slug": "account-guests-are-redirected-to-loginnextaccount"
-        },
-        {
-          "depth": 3,
-          "text": "Operations / settings",
-          "slug": "operations-settings"
-        },
-        {
-          "depth": 4,
-          "text": "`/settings` — Tidy hub",
-          "slug": "settings-tidy-hub"
-        },
-        {
-          "depth": 4,
-          "text": "`/settings/categories` · `/settings/statuses` · `/settings/import`",
-          "slug": "settingscategories-settingsstatuses-settingsimport"
+          "text": "Write tools (4)",
+          "slug": "write-tools-4"
         },
         {
           "depth": 2,
-          "text": "3. By feature group",
-          "slug": "3-by-feature-group"
+          "text": "4. Cross-cutting UI",
+          "slug": "4-cross-cutting-ui"
         },
         {
           "depth": 3,
-          "text": "3.1 Vault Local-First",
-          "slug": "31-vault-local-first"
+          "text": "`OperationsNav` (top, always visible)",
+          "slug": "operationsnav-top-always-visible"
         },
         {
           "depth": 3,
-          "text": "3.2 Mode-Aware Adapters",
-          "slug": "32-mode-aware-adapters"
+          "text": "`BottomTabBar` (mobile only, `md:` hidden)",
+          "slug": "bottomtabbar-mobile-only-md-hidden"
         },
         {
           "depth": 3,
-          "text": "3.3 AI Agent Partner (new in mission v2)",
-          "slug": "33-ai-agent-partner-new-in-mission-v2"
+          "text": "Search palettes (separate by design — R5 skip merge)",
+          "slug": "search-palettes-separate-by-design-r5-skip-merge"
         },
         {
           "depth": 3,
-          "text": "3.4 Search",
-          "slug": "34-search"
+          "text": "`ShortcutSheet` (`?` to open)",
+          "slug": "shortcutsheet-to-open"
         },
         {
           "depth": 3,
-          "text": "3.5 Frontmatter parser",
-          "slug": "35-frontmatter-parser"
+          "text": "`LocaleSwitch`",
+          "slug": "localeswitch"
         },
         {
           "depth": 3,
-          "text": "3.6 Vault frontmatter → Ontology stub",
-          "slug": "36-vault-frontmatter-ontology-stub"
-        },
-        {
-          "depth": 3,
-          "text": "3.7 V1.1 Wikidata Statement Annotation (new in mission v2)",
-          "slug": "37-v11-wikidata-statement-annotation-new-in-mission-v2"
-        },
-        {
-          "depth": 3,
-          "text": "3.8 Permissions",
-          "slug": "38-permissions"
-        },
-        {
-          "depth": 3,
-          "text": "3.9 Mobile / responsive",
-          "slug": "39-mobile-responsive"
-        },
-        {
-          "depth": 3,
-          "text": "3.10 Theme / accessibility / notifications",
-          "slug": "310-theme-accessibility-notifications"
-        },
-        {
-          "depth": 3,
-          "text": "3.11 Auxiliary widgets",
-          "slug": "311-auxiliary-widgets"
-        },
-        {
-          "depth": 3,
-          "text": "3.12 Shortcuts",
-          "slug": "312-shortcuts"
+          "text": "`ThemeToggle`",
+          "slug": "themetoggle"
         },
         {
           "depth": 2,
-          "text": "4. Data flow (mission v2 single-source)",
-          "slug": "4-data-flow-mission-v2-single-source"
+          "text": "5. Keyboard shortcuts (consolidated)",
+          "slug": "5-keyboard-shortcuts-consolidated"
         },
         {
           "depth": 2,
-          "text": "4-A. Static data (mission v2)",
-          "slug": "4-a-static-data-mission-v2"
+          "text": "6. What was removed (Rounds 1–9)",
+          "slug": "6-what-was-removed-rounds-19"
         },
         {
           "depth": 2,
-          "text": "4-B. Framework / build-time surfaces",
-          "slug": "4-b-framework-build-time-surfaces"
+          "text": "7. Deferred (future rounds — wait-for-signal)",
+          "slug": "7-deferred-future-rounds-wait-for-signal"
         },
         {
           "depth": 2,
-          "text": "5. Constraints / intentional absences",
-          "slug": "5-constraints-intentional-absences"
-        },
-        {
-          "depth": 3,
-          "text": "Removed in the mission v1 era (already done)",
-          "slug": "removed-in-the-mission-v1-era-already-done"
-        },
-        {
-          "depth": 3,
-          "text": "Removed by mission v2 cleanup",
-          "slug": "removed-by-mission-v2-cleanup"
-        },
-        {
-          "depth": 3,
-          "text": "Removed by R10 (auth + cloud surface permanent removal, 2026-05)",
-          "slug": "removed-by-r10-auth-cloud-surface-permanent-removal-2026-05"
-        },
-        {
-          "depth": 3,
-          "text": "Intentional absences (R10b)",
-          "slug": "intentional-absences-r10b"
-        },
-        {
-          "depth": 2,
-          "text": "6. Verification (post-OSS-launch readiness, 2026-05-03)",
-          "slug": "6-verification-post-oss-launch-readiness-2026-05-03"
-        },
-        {
-          "depth": 2,
-          "text": "7. Where to start — user workflows",
-          "slug": "7-where-to-start-user-workflows"
-        },
-        {
-          "depth": 2,
-          "text": "8. OSS distribution surfaces (post-launch readiness)",
-          "slug": "8-oss-distribution-surfaces-post-launch-readiness"
-        },
-        {
-          "depth": 3,
-          "text": "8.1 npm packages",
-          "slug": "81-npm-packages"
-        },
-        {
-          "depth": 3,
-          "text": "8.2 Hosting",
-          "slug": "82-hosting"
-        },
-        {
-          "depth": 3,
-          "text": "8.3 GitHub OSS surfaces",
-          "slug": "83-github-oss-surfaces"
-        },
-        {
-          "depth": 3,
-          "text": "8.4 OSS docs",
-          "slug": "84-oss-docs"
-        },
-        {
-          "depth": 3,
-          "text": "8.5 npm publish guard (3 layers)",
-          "slug": "85-npm-publish-guard-3-layers"
+          "text": "8. Source-of-truth files",
+          "slug": "8-source-of-truth-files"
         }
       ],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260502 (postOSSlaunch readiness — CLI scaffold, web scaffold button, npm publish guard) Update trigger: reflect immediately when surfaces are added or removed. Update alongside the PR body and CHANGELOG. Mission v2: \"an ontology of the cod",
-      "wordCount": 4345,
-      "updatedAt": "2026-05-03T11:54:01.717Z",
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260503 (postRound9 — surface diet 8 rounds + LocalVaultProvider + robustness audit) Update trigger: reflect immediately when surfaces are added or removed. Update alongside the PR body and CHANGELOG. Mission v2: \"an ontology of the codebas",
+      "wordCount": 3891,
+      "updatedAt": "2026-05-03T14:01:30.037Z",
       "linksOut": [
-        "old",
-        "oldSlug"
+        "slug",
+        "project:slug"
       ]
     },
     {
@@ -4239,18 +4344,18 @@
         "linkText": "`design-references/DESIGN-linear.md`"
       }
     ],
-    "old": [
+    "slug": [
       {
         "fromSlug": "FEATURES",
-        "context": "ves the body and patches frontmatter | | Backlink rewrite | best-effort on renameDoc | auto-replaces `[[oldSlug]]` and `**[text]**` in other files | | Scaffold | command palette | seeds an empty vault with README + projects/ + samples | ### 3.2 Mode",
-        "linkText": "text"
+        "context": "ve, gold star for pinned - Markdown: GFM tables/lists/blockquotes/code · callout blocks (`> [!tip]` etc.) · wikilinks (`**[slug]**`, `[[slug|label]]`, `[[slug#anchor]]`, `[[project:slug]]`) · heading anchor copy buttons - Local images: relative paths",
+        "linkText": "slug"
       }
     ],
-    "oldSlug": [
+    "project:slug": [
       {
         "fromSlug": "FEATURES",
-        "context": "Mutations | preserves the body and patches frontmatter | | Backlink rewrite | best-effort on renameDoc | auto-replaces `**[oldSlug]**` and `[text](old.md)` in other files | | Scaffold | command palette | seeds an empty vault with README + projects/ + sa",
-        "linkText": "oldSlug"
+        "context": "ists/blockquotes/code · callout blocks (`> [!tip]` etc.) · wikilinks (`[[slug]]`, `[[slug|label]]`, `[[slug#anchor]]`, `**[project:slug]**`) · heading anchor copy buttons - Local images: relative paths resolved to blob URLs via `resolveImage` callback - Rece",
+        "linkText": "project:slug"
       }
     ],
     "archive/rules/firestore-schema": [
