@@ -143,17 +143,10 @@ function TreeRow({
       >
         <KindChip kind={treeNode.node.kind} />
         <span className="truncate">{treeNode.node.title}</span>
-        {/* EvidenceCountChip 은 R10 후 evidenceCount 가 항상 undefined 라
-            영구 미렌더 dead chip 이라 cycle 15 에서 제거. 미래 collab
-            단계에서 외부 evidenceCount 가 다시 채워지면 재도입. */}
-        {/* UX-16: 첫 번째 projectIds 를 quaternary mono chip 으로 — 외부
-            visitor 가 어느 프로젝트에 속하는지 즉시 인지. 다중 project
-            은 truncate, project / document kind 자체는 자기참조라 제외
-            (chip 노이즈 차단). 색은 무채색 — 헌장 단일 인디고 정책 보존. */}
-        <ProjectIdChip
-          kind={treeNode.node.kind}
-          projectIds={treeNode.node.projectIds}
-        />
+        {/* EvidenceCountChip / ProjectIdChip 모두 R10 후 vault 모드에서
+            evidenceCount / projectIds 가 영구 빈 값이라 미렌더되어 cycle
+            15 / 24 에서 제거. 미래에 vault 측에서 해당 값을 derive 해
+            populating 하면 재도입. */}
       </button>
     </div>
   );
@@ -169,35 +162,6 @@ function TreeRow({
  * - 다중 project 면 첫 1 개 표시 + `+N` suffix.
  * - 색은 무채색 quaternary — 헌장 단일 인디고 보존.
  */
-function ProjectIdChip({
-  kind,
-  projectIds,
-}: {
-  kind: string;
-  projectIds: ReadonlyArray<string> | undefined;
-}) {
-  const t = useTranslations('ontologyWidgets');
-  if (kind === "project" || kind === "document") return null;
-  if (!projectIds || projectIds.length === 0) return null;
-  const first = projectIds[0]!;
-  const extra = projectIds.length - 1;
-  return (
-    <span
-      data-testid="ontology-tree-project-chip"
-      data-project-id={first}
-      className="ml-auto shrink-0 rounded-full border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-1.5 py-[1px] font-mono text-[9px] tracking-[0.04em] text-[color:var(--color-text-quaternary)]"
-      title={extra > 0 ? t('tree.projectChipMoreTitle', { first, extra }) : first}
-    >
-      <span className="truncate">{first}</span>
-      {extra > 0 ? (
-        <span className="ml-0.5 text-[color:var(--color-text-quaternary)]">
-          +{extra}
-        </span>
-      ) : null}
-    </span>
-  );
-}
-
 export function OntologyTreeView({
   result,
   emptyHint,

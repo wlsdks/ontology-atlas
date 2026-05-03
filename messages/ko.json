@@ -190,8 +190,7 @@
       "orphansHeading": "연결되지 않은 노드 {count}",
       "orphansHeadingFiltered": "연결되지 않은 노드 {filtered} / {total}",
       "orphansMore": "…외 {count} 건",
-      "warningsSummary": "데이터 경고 {count} 건",
-      "projectChipMoreTitle": "{first} (+{extra} 다른 프로젝트)"
+      "warningsSummary": "데이터 경고 {count} 건"
     },
     "egoGraph": {
       "ariaLabelOneHop": "{title} 의 관계 그래프 (1-hop)",

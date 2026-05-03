@@ -190,8 +190,7 @@
       "orphansHeading": "Unconnected nodes {count}",
       "orphansHeadingFiltered": "Unconnected nodes {filtered} / {total}",
       "orphansMore": "…and {count} more",
-      "warningsSummary": "Data warnings — {count}",
-      "projectChipMoreTitle": "{first} (+{extra} other projects)"
+      "warningsSummary": "Data warnings — {count}"
     },
     "egoGraph": {
       "ariaLabelOneHop": "Relation graph for {title} (1-hop)",
