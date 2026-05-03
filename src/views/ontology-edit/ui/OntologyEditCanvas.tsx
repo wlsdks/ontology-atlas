@@ -258,6 +258,9 @@ export function OntologyEditCanvas({
   // 안 움직였다. 이제 local nodes state + applyNodeChanges 패턴으로
   // ReactFlow 의 drag 이벤트를 받아 즉시 위치 업데이트한다.
   const [localNodes, setLocalNodes] = useState<Node[]>(baseNodes);
+  // 자동정렬 / layoutMode 변경 시 일시적으로 transition 활성 → 노드들이
+  // 부드럽게 슬라이드. 드래그 중엔 false 라 즉각 반응 (transition 없음).
+  const [isLayoutAnimating, setIsLayoutAnimating] = useState(false);
   // 외부 데이터 (vault/ephemeral) 가 변하면 *구조* (추가/삭제/data 변경)
   // 만 갱신하고, 기존 노드의 위치는 보존 — 사용자가 드래그한 결과가
   // 부모 re-render 로 reset 되는 회귀 방지.
@@ -283,6 +286,13 @@ export function OntologyEditCanvas({
         return b;
       });
     });
+    // 자동정렬 / layoutMode 변경 시 transition 활성화 — 노드들이 새 위치로
+    // 부드럽게 슬라이드. fitView duration (400ms) 와 매칭되게 500ms 유지.
+    if (isAutoLayoutTrigger || isLayoutModeChange) {
+      setIsLayoutAnimating(true);
+      const timer = setTimeout(() => setIsLayoutAnimating(false), 500);
+      return () => clearTimeout(timer);
+    }
   }, [baseNodes, autoLayoutToken, layoutMode]);
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setLocalNodes((current) => applyNodeChanges(changes, current));
@@ -371,7 +381,7 @@ export function OntologyEditCanvas({
 
   return (
     <div
-      className="relative h-full w-full"
+      className={`relative h-full w-full ${isLayoutAnimating ? "rf-layout-animating" : ""}`}
       style={
         {
           "--xy-node-background-color-default": "rgba(14, 16, 22, 0.96)",
@@ -487,6 +497,20 @@ export function OntologyEditCanvas({
         }
         .react-flow__edge:hover .react-flow__edge-path {
           stroke-width: 2.5px;
+        }
+        /* layout 변경 시 일시적 슬라이드 애니메이션 — fitView duration
+           (400ms) 와 매칭. 드래그 중엔 클래스 비활성이라 즉각 반응. */
+        .rf-layout-animating .react-flow__node {
+          transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .rf-layout-animating .react-flow__edge {
+          transition: opacity 400ms ease-out;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .rf-layout-animating .react-flow__node,
+          .rf-layout-animating .react-flow__edge {
+            transition: none;
+          }
         }
       `}</style>
     </div>
