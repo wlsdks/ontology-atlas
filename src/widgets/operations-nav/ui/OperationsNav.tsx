@@ -84,15 +84,20 @@ function ModeBadge({ mode }: { mode: 'static' | 'local' }) {
       </Tooltip>
     );
   }
+  // demo (vault 미선택) chip 은 클릭 가능 — vault picker (/docs/) 로 직행.
+  // 이전엔 단순 정보 chip 이라 사용자가 "벗어나려면 어디" 헤매는 dead-end
+  // 였다. onboarding step 3 카피 ('오른쪽 위 마크다운 폴더 열기') 와 일치.
   return (
-    <Tooltip content={t('demoTooltip')}>
-      <span
-        aria-label={t('demoAriaLabel')}
-        className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.08)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)]"
+    <Tooltip content={t('demoTooltipClickable')}>
+      <Link
+        href="/docs/?intent=local"
+        aria-label={t('demoAriaLabelClickable')}
+        className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.08)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(244,183,49,0.55)] hover:bg-[color:rgba(244,183,49,0.14)]"
       >
         <span aria-hidden>●</span>
         <span>{t('demoLabel')}</span>
-      </span>
+        <span aria-hidden className="text-[color:rgba(238,198,128,0.7)]">→</span>
+      </Link>
     </Tooltip>
   );
 }

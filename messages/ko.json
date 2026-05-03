@@ -45,7 +45,9 @@
     "vaultTooltip": "vault 모드 — {name} ({count} docs). 모든 변경이 로컬 디스크에 저장됨.",
     "demoLabel": "데모",
     "demoAriaLabel": "데모 모드",
-    "demoTooltip": "데모 모드 — vault 미선택. 빌드 타임 demo manifest 만 노출, 변경 저장 안 됨."
+    "demoAriaLabelClickable": "데모 모드 — 클릭하면 내 마크다운 폴더 열기로",
+    "demoTooltip": "데모 모드 — vault 미선택. 빌드 타임 demo manifest 만 노출, 변경 저장 안 됨.",
+    "demoTooltipClickable": "데모 모드 — 클릭하면 내 마크다운 폴더 열기 (저장 가능 모드)"
   },
   "locale": {
     "switcher": "언어",
