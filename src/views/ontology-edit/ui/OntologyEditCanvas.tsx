@@ -373,6 +373,24 @@ export function OntologyEditCanvas({
           </p>
         </div>
       ) : null}
+      {/* hover affordance — 노드 위에 마우스 올렸을 때 subtle 인디고 outline.
+          xyflow 기본은 selected 만 표시하고 hover 는 시각 신호 0 → '클릭
+          가능' affordance 약함. outline 1px + offset 으로 inner border 와
+          중복 안 돼 두께 늘어 보이지 않음. 헌장 §11: scale / glow 없음. */}
+      <style jsx global>{`
+        .react-flow__node-atlas {
+          transition: filter 180ms ease-out;
+        }
+        .react-flow__node-atlas:hover {
+          filter: brightness(1.06);
+        }
+        .react-flow__edge-path {
+          transition: stroke-width 180ms ease-out;
+        }
+        .react-flow__edge:hover .react-flow__edge-path {
+          stroke-width: 2.5px;
+        }
+      `}</style>
     </div>
   );
 }
