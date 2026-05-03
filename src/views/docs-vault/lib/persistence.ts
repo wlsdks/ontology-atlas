@@ -3,7 +3,7 @@ import type { VaultMode } from "@/entities/docs-vault";
 /**
  * DocsVaultPage 의 URL / localStorage 파싱·저장 헬퍼.
  *
- * 같은 surface 안에서만 사용 — `AdminDocsContent` 가 첫 렌더 시점에 query
+ * 같은 surface 안에서만 사용 — `DocsVaultContent` 가 첫 렌더 시점에 query
  * `?view=` `?audience=` 와 사용자 마지막 선택 (localStorage) 을 결합해 view /
  * source / audience 를 결정.
  *

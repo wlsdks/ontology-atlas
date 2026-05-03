@@ -26,7 +26,7 @@ function resolveModeKey(mode: VaultDoc["mode"]): VaultMode | "both" {
 /**
  * 문서 본문 위 메타 바 — 관점 chip / 단어 수 / 읽기 시간 / 태그 / 갱신일.
  *
- * 호출자: `AdminDocsContent` 안 viewer 영역 헤더.
+ * 호출자: `DocsVaultContent` 안 viewer 영역 헤더.
  */
 export function DocMetaBar({ doc }: { doc: VaultDoc }) {
   const t = useTranslations("vaultWidgets.parts.meta");

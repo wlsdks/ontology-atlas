@@ -116,7 +116,7 @@ import {
   type DocsVaultView,
 } from "../lib/persistence";
 
-function AdminDocsContent() {
+function DocsVaultContent() {
   const t = useTranslations('docsVault');
   const searchParams = useSearchParams();
   const querySlug = searchParams?.get('slug') ?? null;
@@ -1924,7 +1924,7 @@ export function DocsVaultPage() {
   // 인증 게이트 없음. 사용자 로컬 디스크가 진실원.
   return (
     <Suspense fallback={null}>
-      <AdminDocsContent />
+      <DocsVaultContent />
     </Suspense>
   );
 }

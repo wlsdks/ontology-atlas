@@ -4,7 +4,7 @@ import type { VaultMode } from "@/entities/docs-vault";
 /**
  * 문서 미선택 상태 — 트리에서 문서를 선택하라는 안내 + 현재 관점 라벨.
  *
- * 호출자: `AdminDocsContent` 의 viewer 영역 (selectedSlug 없을 때).
+ * 호출자: `DocsVaultContent` 의 viewer 영역 (selectedSlug 없을 때).
  */
 export function EmptyState({ audience }: { audience: VaultMode | "all" }) {
   const t = useTranslations("vaultWidgets.parts.empty");

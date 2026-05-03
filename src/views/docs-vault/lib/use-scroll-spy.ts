@@ -20,7 +20,7 @@ import { scheduleStateSync } from "./persistence";
  * - `setActiveHeadingSlug` — 외부 click 으로 즉시 active 갱신 (스크롤 애니메
  *   이션 시작 시 IntersectionObserver 도착 전에 indicator 를 미리 옮길 때)
  *
- * 호출자: `AdminDocsContent` 의 우측 outline panel.
+ * 호출자: `DocsVaultContent` 의 우측 outline panel.
  */
 export function useDocsVaultScrollSpy(
   selectedSlug: string | null,
