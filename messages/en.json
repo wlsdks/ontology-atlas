@@ -723,8 +723,6 @@
         "autoLayoutTooltip": "Reset every node's position to the auto-layout result (frontmatter canvasPosition is preserved — your coordinates return on next visit)",
         "autoLayoutButton": "Auto layout",
         "autoLayoutAriaLabel": "Auto-arrange canvas nodes",
-        "treeLink": "Open tree ↗",
-        "treeLinkAriaLabel": "View as ontology tree (read-only)",
         "fullscreenEnter": "Fullscreen (F)",
         "fullscreenExit": "Exit fullscreen (F)",
         "mobileEyebrow": "Desktop recommended",

@@ -723,8 +723,6 @@
         "autoLayoutTooltip": "모든 노드 위치를 자동 레이아웃 결과로 초기화 (frontmatter 의 canvasPosition 은 그대로 — 다음 진입 시 사용자 좌표 복원)",
         "autoLayoutButton": "자동 정렬",
         "autoLayoutAriaLabel": "캔버스 노드 자동 정렬",
-        "treeLink": "트리로 보기 ↗",
-        "treeLinkAriaLabel": "ontology 트리로 보기 (read-only)",
         "fullscreenEnter": "전체 화면 (F)",
         "fullscreenExit": "전체 화면 종료 (F)",
         "mobileEyebrow": "데스크톱 권장",

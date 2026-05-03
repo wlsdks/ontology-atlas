@@ -547,13 +547,9 @@ export function OntologyEditPage() {
                 {t("autoLayoutButton")}
               </button>
             </Tooltip>
-            <Link
-              href={treeHref}
-              className="inline-flex h-8 shrink-0 items-center gap-1 px-2 text-[11px] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-              aria-label={t("treeLinkAriaLabel")}
-            >
-              {t("treeLink")}
-            </Link>
+            {/* 헤더 '트리로 보기 ↗' link 는 OntologySubNav 의 [트리] 탭과
+                중복이라 제거. 모바일 fallback CTA 는 별도 — SubNav 가 mount
+                안 되는 풀폭 안내 화면에서만 노출. */}
             <button
               type="button"
               onClick={() => setFullscreen((current) => !current)}
