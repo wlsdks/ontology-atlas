@@ -684,9 +684,9 @@ export function HomePage() {
                 className="absolute inset-0 animate-[sigmaFade_220ms_ease-out]"
               >
                 {/* Empty-state overlay when the visible Sigma graph has 0–1
-                    nodes (eval B3 finding) — the lone Sigma dot reads as
-                    broken. sigmaVisibleCount 은 Sigma 가 첫 mount 후 reports.
-                    null 일 땐 가짠 카드 깜빡임 회피 위해 mount 만 기다림. */}
+                    nodes — the lone Sigma dot otherwise reads as a broken
+                    canvas. sigmaVisibleCount 은 Sigma 가 첫 mount 후 reports.
+                    null 일 땐 가짜 카드 깜빡임 회피 위해 mount 만 기다림. */}
                 {sigmaVisibleCount !== null && sigmaVisibleCount <= 1 ? (
                   <TopologyEmptyState projectCount={sigmaVisibleCount} />
                 ) : null}
@@ -723,8 +723,9 @@ export function HomePage() {
                 totalCount={localGraphProjects.length}
               />
               {/* 단축키 도움말 진입점 — 우상단 SigmaControls 아래 36×36 아이콘.
-                  ? 키로도 열리지만 시각적 affordance 가 없어 발견성 낮았음. */}
-              {/* 키보드 단축키 도움말 — 모바일에서는 키보드가 없어 의미 없음. 데스크톱(md+) 에서만 노출. */}
+                  ? 키 단축키도 같은 sheet 를 열지만 시각적 affordance 가 없으면
+                  발견성 낮음. 모바일은 키보드가 없어 의미 0 → 데스크톱(md+)
+                  에서만 노출. */}
               <Tooltip content={t('controls.shortcutsTooltip')} side="left" withProvider={false}>
               <button
                 type="button"
