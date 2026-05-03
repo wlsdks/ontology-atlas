@@ -214,14 +214,17 @@ export function useLocalVault() {
         lastLoadedAt: Date.now(),
       });
     } catch (err) {
+      // err.message 가 없을 땐 null 로 두고 LocalVaultPicker 의
+      // \`t('errorFallback')\` 가 locale-aware 메시지를 채우게 — 이전엔 한국어
+      // 하드코딩 fallback "매니페스트 빌드 실패" 가 en locale 사용자에게도
+      // 노출되는 회귀가 있었다.
       setState({
         status: 'error',
         handle,
         manifest: null,
         fileHandles: new Map(),
         imageHandles: new Map(),
-        errorMessage:
-          err instanceof Error ? err.message : '매니페스트 빌드 실패',
+        errorMessage: err instanceof Error ? err.message : null,
         lastLoadedAt: null,
       });
     }
@@ -256,11 +259,12 @@ export function useLocalVault() {
         setState((s) => ({ ...s, status: s.handle ? 'loaded' : 'idle' }));
         return;
       }
+      // 같은 이유로 ko 하드코딩 "폴더를 열지 못했습니다" 제거 — null 이면
+      // LocalVaultPicker 가 t('errorFallback') 으로 fallback.
       setState((s) => ({
         ...s,
         status: 'error',
-        errorMessage:
-          err instanceof Error ? err.message : '폴더를 열지 못했습니다',
+        errorMessage: err instanceof Error ? err.message : null,
       }));
     }
   }, [load]);
