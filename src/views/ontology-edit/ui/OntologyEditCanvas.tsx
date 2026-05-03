@@ -112,6 +112,7 @@ export function OntologyEditCanvas({
   layoutMode = "dagre",
   focusNodeId = null,
   focusToken = 0,
+  selectedId = null,
 }: {
   vaultManifest: VaultManifest | null;
   ephemeralNodes: EphemeralNode[];
@@ -133,6 +134,9 @@ export function OntologyEditCanvas({
    *  토큰이 증가할 때마다 focusNodeId 노드로 부드럽게 setCenter. */
   focusNodeId?: string | null;
   focusToken?: number;
+  /** 부모 (page) 의 selectedId — ReactFlow 내부 selection 과 sync.
+   *  page 가 단축키로 setSelectedId 호출 시 race 회피. */
+  selectedId?: string | null;
   /**
    * 헤더의 "자동 정렬" 버튼이 눌릴 때마다 increment 되는 token.
    * 0 보다 크면 \`frontmatter.canvasPosition\` 무시하고 자동 layout 결과로 reset.
@@ -193,7 +197,7 @@ export function OntologyEditCanvas({
 
   // 외부 데이터 (vault + ephemeral) 로부터 빌드한 "기준 노드" — 위치는
   // positionOverrides 가 있으면 그걸 우선 적용. 외부 데이터가 변하거나
-  // override 가 변할 때만 재계산.
+  // override 가 변할 때만 재계산. selected 는 부모 selectedId 와 sync.
   const baseNodes: Node[] = useMemo(() => {
     // vault 노드도 atlas custom type 으로 변환 (kind 별 시각 톤).
     // \`useVaultGraphFlow\` 가 \`data.kind\` 를 enum 으로 직접 채워주므로
@@ -214,6 +218,7 @@ export function OntologyEditCanvas({
         // vault 노드 명시적 draggable. 이전엔 spread 만 의존했는데 일부 케이스에서
         // ReactFlow 가 nodesDraggable + 노드 자체 flag 둘 다 봐야 정상 드래그 활성.
         draggable: true,
+        selected: n.id === selectedId,
       };
     });
     const ephemeralFlow: Node[] = ephemeralNodes.map((n) => ({
@@ -231,9 +236,10 @@ export function OntologyEditCanvas({
       // ephemeral 노드는 핸들 drag 로 edge 생성 가능
       connectable: true,
       selectable: true,
+      selected: n.id === selectedId,
     }));
     return [...vaultAtlas, ...ephemeralFlow];
-  }, [vaultNodes, ephemeralNodes]);
+  }, [vaultNodes, ephemeralNodes, selectedId]);
 
   // ReactFlow 가 controlled 모드에서 드래그를 반영하려면 nodes prop 이
   // 매 frame 갱신돼야 함. 이전 구현은 useMemo 결과만 전달하고 onNodesChange

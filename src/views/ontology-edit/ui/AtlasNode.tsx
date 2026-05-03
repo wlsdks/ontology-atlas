@@ -66,9 +66,9 @@ export function AtlasNode({ data, selected }: NodeProps) {
   return (
     <div
       style={{
-        minWidth: 200,
-        minHeight: 56,
-        padding: "10px 14px",
+        minWidth: 220,
+        minHeight: 60,
+        padding: "12px 16px",
         borderRadius: 12,
         border: `${borderWidth}px ${borderStyle} ${borderColor}`,
         background: isEphemeral
@@ -76,7 +76,7 @@ export function AtlasNode({ data, selected }: NodeProps) {
           : tone.bg,
         color: "var(--color-text-primary)",
         boxShadow: selected
-          ? `0 0 0 2px ${isEphemeral ? "rgba(255, 179, 71, 0.55)" : tone.accent}, 0 8px 18px rgba(0, 0, 0, 0.32)`
+          ? `0 0 0 2px ${isEphemeral ? "rgba(255, 179, 71, 0.6)" : tone.accent}, 0 10px 22px rgba(0, 0, 0, 0.36)`
           : "0 4px 12px rgba(0, 0, 0, 0.22)",
         transition: "box-shadow 180ms ease-out, border-color 180ms ease-out",
         fontSize: 13,

@@ -76,6 +76,7 @@ const OntologyEditCanvas = dynamic<{
   layoutMode?: "dagre" | "force";
   focusNodeId?: string | null;
   focusToken?: number;
+  selectedId?: string | null;
 }>(
   () => import("./OntologyEditCanvas").then((m) => m.OntologyEditCanvas),
   { ssr: false, loading: () => <CanvasSkeleton /> },
@@ -706,6 +707,7 @@ export function OntologyEditPage() {
               layoutMode={layoutMode}
               focusNodeId={focusNodeId}
               focusToken={focusToken}
+              selectedId={selectedId}
             />
             <BuilderOnboarding
               empty={ephemeralNodes.length === 0 && ephemeralEdges.length === 0}

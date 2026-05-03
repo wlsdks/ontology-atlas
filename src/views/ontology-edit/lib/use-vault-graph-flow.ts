@@ -71,8 +71,8 @@ export function useVaultGraphFlow(
   }, [manifest, ignorePersistedPosition, layoutMode, kindLabelOf, edgeLabelOf]);
 }
 
-const NODE_WIDTH = 200;
-const NODE_HEIGHT = 56;
+const NODE_WIDTH = 220;
+const NODE_HEIGHT = 60;
 
 const NEIGHBOR_KEYS = [
   "capabilities",
