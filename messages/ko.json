@@ -989,13 +989,12 @@
       "localBadge": "로컬",
       "paletteTooltip": "검색 · 명령 · 태그",
       "paletteAriaLabel": "팔레트 열기 (검색 · 명령 · 태그)",
-      "advancedTooltip": "고급",
-      "advancedAriaLabel": "고급 메뉴 열기"
+      "sourceAriaLabel": "문서 소스",
+      "vaultToolsTooltip": "Vault 도구",
+      "vaultToolsAriaLabel": "Vault 도구 메뉴 열기"
     },
     "advanced": {
-      "viewSection": "보기",
       "viewTopology": "토폴로지",
-      "sourceSection": "소스",
       "sourceServer": "샘플",
       "sourceLocal": "로컬",
       "ontologyHintPrefix": "처음이세요? 이 repo 의 ",

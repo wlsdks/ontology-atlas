@@ -1255,6 +1255,43 @@ function DocsVaultContent() {
           ) : null}
         </div>
         <div className="ml-auto flex flex-none flex-wrap items-center justify-end gap-2">
+          {/* Source 토글 — 이전엔 advanced dropdown 안 깊숙이 묻혀 있던 가장
+              중요한 결정 (샘플 vs 내 vault) 를 헤더에 직접 노출. */}
+          <div
+            className="flex items-center gap-0.5 rounded-md border border-[color:var(--color-border-soft)] p-0.5 text-[11px]"
+            role="radiogroup"
+            aria-label={t('header.sourceAriaLabel')}
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={source === 'server'}
+              onClick={() => handleSourceChange('server')}
+              className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 transition-colors ${
+                source === 'server'
+                  ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]'
+                  : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
+              }`}
+            >
+              <Package size={11} aria-hidden />
+              {t('advanced.sourceServer')}
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={source === 'local'}
+              disabled={localVault.status === 'unsupported'}
+              onClick={() => handleSourceChange('local')}
+              className={`inline-flex items-center gap-1 rounded-sm px-2 py-1 transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
+                source === 'local'
+                  ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]'
+                  : 'text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]'
+              }`}
+            >
+              <HardDrive size={11} aria-hidden />
+              {t('advanced.sourceLocal')}
+            </button>
+          </div>
           <Tooltip content={t('header.paletteTooltip')} withProvider={false}>
             <button
               type="button"
@@ -1271,94 +1308,50 @@ function DocsVaultContent() {
               </kbd>
             </button>
           </Tooltip>
-          <div className="relative" ref={advancedMenuRef}>
-            <Tooltip content={t('header.advancedTooltip')} withProvider={false}>
-              <button
-                type="button"
-                onClick={() => setAdvancedOpen((open) => !open)}
-                aria-expanded={advancedOpen}
-                aria-haspopup="menu"
-                aria-label={t('header.advancedAriaLabel')}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.28)] hover:text-[color:var(--color-text-primary)]"
-              >
-                <Settings2 size={13} aria-hidden />
-              </button>
-            </Tooltip>
-            {advancedOpen ? (
-              <div
-                role="menu"
-                className="absolute right-0 top-10 z-30 w-[300px] rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(14,15,18,0.98)] p-2 shadow-[0_18px_48px_rgba(0,0,0,0.38)]"
-              >
-                {source === 'local' ? (
-                  <>
-                    <div className="mb-2 px-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                      {t('advanced.viewSection')}
-                    </div>
-                    <button
-                      type="button"
-                      role="menuitemradio"
-                      aria-checked={view === 'folder-topology'}
-                      onClick={() => handleViewChange(view === 'folder-topology' ? 'doc' : 'folder-topology')}
-                      className={`inline-flex w-full items-center justify-center gap-1 rounded-sm px-2 py-1.5 text-[11px] transition-colors ${
-                        view === 'folder-topology'
-                          ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]'
-                          : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
-                      }`}
-                    >
-                      <Layers size={12} aria-hidden />
-                      {t('advanced.viewTopology')}
-                      {folderTopoStatus === 'rebuilding' ? (
-                        <span
-                          aria-hidden
-                          className="h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--color-indigo-accent)]"
-                        />
-                      ) : null}
-                    </button>
-                    <div className="my-2 h-px bg-[color:var(--color-border-soft)]" />
-                  </>
-                ) : null}
-                <div className="mb-2 px-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                  {t('advanced.sourceSection')}
-                </div>
-                <div className="grid grid-cols-2 gap-1">
+          {/* 로컬 vault 도구 패널 — server source 일 땐 dropdown 자체 숨김
+              (보일 컨텐츠 0). local source 일 때만 vault picker / scaffold
+              / new doc / folder-topology 토글 노출. */}
+          {source === 'local' ? (
+            <div className="relative" ref={advancedMenuRef}>
+              <Tooltip content={t('header.vaultToolsTooltip')} withProvider={false}>
+                <button
+                  type="button"
+                  onClick={() => setAdvancedOpen((open) => !open)}
+                  aria-expanded={advancedOpen}
+                  aria-haspopup="menu"
+                  aria-label={t('header.vaultToolsAriaLabel')}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.28)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  <Settings2 size={13} aria-hidden />
+                </button>
+              </Tooltip>
+              {advancedOpen ? (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-10 z-30 w-[300px] rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(14,15,18,0.98)] p-2 shadow-[0_18px_48px_rgba(0,0,0,0.38)]"
+                >
                   <button
                     type="button"
                     role="menuitemradio"
-                    aria-checked={source === 'server'}
-                    onClick={() => {
-                      handleSourceChange('server');
-                      setAdvancedOpen(false);
-                    }}
-                    className={`inline-flex items-center justify-center gap-1 rounded-sm px-2 py-1.5 text-[11px] transition-colors ${
-                      source === 'server'
+                    aria-checked={view === 'folder-topology'}
+                    onClick={() => handleViewChange(view === 'folder-topology' ? 'doc' : 'folder-topology')}
+                    className={`inline-flex w-full items-center justify-center gap-1 rounded-sm px-2 py-1.5 text-[11px] transition-colors ${
+                      view === 'folder-topology'
                         ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]'
                         : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
                     }`}
                   >
-                    <Package size={12} aria-hidden />
-                    {t('advanced.sourceServer')}
+                    <Layers size={12} aria-hidden />
+                    {t('advanced.viewTopology')}
+                    {folderTopoStatus === 'rebuilding' ? (
+                      <span
+                        aria-hidden
+                        className="h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--color-indigo-accent)]"
+                      />
+                    ) : null}
                   </button>
-                  <button
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={source === 'local'}
-                    disabled={localVault.status === 'unsupported'}
-                    onClick={() => {
-                      handleSourceChange('local');
-                      setAdvancedOpen(false);
-                    }}
-                    className={`inline-flex items-center justify-center gap-1 rounded-sm px-2 py-1.5 text-[11px] transition-colors disabled:cursor-not-allowed disabled:opacity-45 ${
-                      source === 'local'
-                        ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]'
-                        : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
-                    }`}
-                  >
-                    <HardDrive size={12} aria-hidden />
-                    {t('advanced.sourceLocal')}
-                  </button>
-                </div>
-                {source === 'local' ? (
-                  <div className="mt-2 space-y-2">
+                  <div className="my-2 h-px bg-[color:var(--color-border-soft)]" />
+                  <div className="space-y-2">
                     <LocalVaultPicker
                       status={localVault.status}
                       handleName={localVault.handle?.name ?? null}
@@ -1400,10 +1393,10 @@ function DocsVaultContent() {
                       </button>
                     ) : null}
                   </div>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </header>
 

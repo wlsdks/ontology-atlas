@@ -989,13 +989,12 @@
       "localBadge": "Local",
       "paletteTooltip": "Search · commands · tags",
       "paletteAriaLabel": "Open palette (search · commands · tags)",
-      "advancedTooltip": "Advanced",
-      "advancedAriaLabel": "Open advanced menu"
+      "sourceAriaLabel": "Document source",
+      "vaultToolsTooltip": "Vault tools",
+      "vaultToolsAriaLabel": "Open vault tools menu"
     },
     "advanced": {
-      "viewSection": "View",
       "viewTopology": "Topology",
-      "sourceSection": "Source",
       "sourceServer": "Sample",
       "sourceLocal": "Local",
       "ontologyHintPrefix": "First time? Try selecting this repo's ",
