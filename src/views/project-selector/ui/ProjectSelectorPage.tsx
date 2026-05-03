@@ -358,7 +358,7 @@ export function ProjectSelectorPage() {
                     {t("clearSearch")}
                   </Button>
                 ) : !canMutateProjects ? (
-                  // 로그인 + 멤버이지만 편집 권한 없음 + 0 프로젝트 = dead-end 회피.
+                  // static 모드 (vault 미선택) + 0 프로젝트 → dead-end 회피.
                   // overview (전체 토폴로지) 로 회귀 동선 노출.
                   <Link href={overviewHref} className="inline-flex">
                     <Button type="button" variant="outline">
