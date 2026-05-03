@@ -32,12 +32,6 @@ export const KNOWLEDGE_EDGE_TYPES: readonly KnowledgeEdgeType[] = [
   'related_to',
 ] as const;
 
-/** Type guard — 임의 string 이 합법 edge type 인지 확인. */
-export function isKnowledgeEdgeType(value: unknown): value is KnowledgeEdgeType {
-  return typeof value === 'string'
-    && (KNOWLEDGE_EDGE_TYPES as readonly string[]).includes(value);
-}
-
 /**
  * 빌더 (`/ontology/edit`) 가 손으로 만들 수 있는 ontology 노드 kind. document
  * 는 캔버스에서 직접 만들지 않지만 (frontmatter 진실원에서 derive), Exclude

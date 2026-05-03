@@ -7,7 +7,6 @@ export type {
 } from "./model";
 export {
   KNOWLEDGE_EDGE_TYPES,
-  isKnowledgeEdgeType,
   useEdgeTypeLabel,
   buildEdgeTypeRows,
 } from "./model";
