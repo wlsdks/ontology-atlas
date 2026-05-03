@@ -4,6 +4,12 @@ import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { BarChart3, GitBranch, Network } from 'lucide-react';
 import { useOntologyInsight } from '@/features/vault-ontology';
+import {
+  isOntologySubItemActive,
+  shouldShowOntologySubNav,
+} from '../lib/active-matchers';
+
+export { shouldShowOntologySubNav };
 
 /**
  * `/ontology/*` 3 surface 공통 sub-nav (R2 cut A 후 4 → 3 — relations
@@ -45,21 +51,7 @@ const SUB_ITEMS: ReadonlyArray<SubItem> = [
 ];
 
 function isItemActive(pathname: string, item: SubItem): boolean {
-  const normalized = pathname.replace(/\/$/, '');
-  if (item.exactMatches.includes(normalized)) return true;
-  return item.prefixMatches.some((p) => normalized.startsWith(p));
-}
-
-/**
- * 현재 pathname 이 ontology surface 인지 — OperationsNav 가 SubNav 행
- * 노출 여부 결정에 사용.
- *
- * - '' (정규화된 /) — RootEntry → OntologyViewPage (vault 선택 시)
- * - '/ontology' / '/ontology/edit' / '/ontology/insights'
- */
-export function shouldShowOntologySubNav(pathname: string): boolean {
-  const normalized = pathname.replace(/\/$/, '');
-  return normalized === '' || normalized.startsWith('/ontology');
+  return isOntologySubItemActive(pathname, item.exactMatches, item.prefixMatches);
 }
 
 export function OntologySubNav() {
