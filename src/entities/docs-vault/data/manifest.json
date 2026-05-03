@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-03T13:52:05.808Z",
+  "generatedAt": "2026-05-03T13:53:17.936Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -1737,6 +1737,46 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-03 — Round 9: robustness audit (3 ship · 2 defer · lint floor)",
+          "slug": "2026-05-03-round-9-robustness-audit-3-ship-2-defer-lint-floor"
+        },
+        {
+          "depth": 3,
+          "text": "Bug fixes",
+          "slug": "bug-fixes"
+        },
+        {
+          "depth": 3,
+          "text": "Skip — defer",
+          "slug": "skip-defer"
+        },
+        {
+          "depth": 3,
+          "text": "Other Scenarios — verified HANDLED",
+          "slug": "other-scenarios-verified-handled"
+        },
+        {
+          "depth": 3,
+          "text": "Lint floor",
+          "slug": "lint-floor"
+        },
+        {
+          "depth": 3,
+          "text": "코드 / 아키텍처",
+          "slug": "코드-아키텍처"
+        },
+        {
+          "depth": 3,
+          "text": "Test",
+          "slug": "test"
+        },
+        {
+          "depth": 3,
+          "text": "Round 10 자연 후보 — 거의 없음 (wait-for-signal 강하게)",
+          "slug": "round-10-자연-후보-거의-없음-wait-for-signal-강하게"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-03 — Round 8: useLocalVault provider 리팩터 (Round 7 deferred 항목)",
           "slug": "2026-05-03-round-8-uselocalvault-provider-리팩터-round-7-deferred-항목"
         },
@@ -1753,12 +1793,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처"
+          "slug": "코드-아키텍처-2"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test"
+          "slug": "test-2"
         },
         {
           "depth": 3,
@@ -1798,12 +1838,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-2"
+          "slug": "코드-아키텍처-3"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-2"
+          "slug": "test-3"
         },
         {
           "depth": 3,
@@ -1838,12 +1878,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-3"
+          "slug": "코드-아키텍처-4"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-3"
+          "slug": "test-4"
         },
         {
           "depth": 3,
@@ -1873,12 +1913,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-4"
+          "slug": "코드-아키텍처-5"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-4"
+          "slug": "test-5"
         },
         {
           "depth": 3,
@@ -1908,12 +1948,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-5"
+          "slug": "코드-아키텍처-6"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-5"
+          "slug": "test-6"
         },
         {
           "depth": 3,
@@ -1938,12 +1978,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-6"
+          "slug": "코드-아키텍처-7"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-6"
+          "slug": "test-7"
         },
         {
           "depth": 3,
@@ -1968,12 +2008,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-7"
+          "slug": "코드-아키텍처-8"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-7"
+          "slug": "test-8"
         },
         {
           "depth": 3,
@@ -1998,12 +2038,12 @@
         {
           "depth": 3,
           "text": "코드 / 아키텍처",
-          "slug": "코드-아키텍처-8"
+          "slug": "코드-아키텍처-9"
         },
         {
           "depth": 3,
           "text": "Test",
-          "slug": "test-8"
+          "slug": "test-9"
         },
         {
           "depth": 3,
@@ -2198,7 +2238,7 @@
         {
           "depth": 3,
           "text": "Bug fixes",
-          "slug": "bug-fixes"
+          "slug": "bug-fixes-2"
         },
         {
           "depth": 3,
@@ -2221,9 +2261,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. Round 7 의 codex finding (8 callsite 독립 호출 → 한 페이지 mount 에 23 인스턴스) 를 perf 측정 없이도 architect",
-      "wordCount": 7225,
-      "updatedAt": "2026-05-03T13:34:50.130Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. codex 의 10시나리오 robustness audit 결과 — DEGRADED 4 + BROKEN 1. 회의주의 적용해 uservisible inconsist",
+      "wordCount": 7647,
+      "updatedAt": "2026-05-03T13:53:08.622Z",
       "linksOut": []
     },
     {

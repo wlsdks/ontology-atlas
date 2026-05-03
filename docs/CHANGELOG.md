@@ -6,6 +6,75 @@
 
 ---
 
+## 2026-05-03 — Round 9: robustness audit (3 ship · 2 defer · lint floor)
+
+codex 의 10-시나리오 robustness audit 결과 — DEGRADED 4 + BROKEN 1.
+회의주의 적용해 user-visible inconsistency 3 개만 ship.
+
+### Bug fixes
+
+- **`saveDoc` permission 거부 시 state sync (Scenario 1)** — 이전: throw
+  만 하고 status 는 'loaded' 로 남아 사용자가 picker 가도 권한 문제
+  모름. → `requireWritePermission` useCallback 으로 추출, 거부 시
+  state→'permission-needed' 동기화 → LocalVaultPicker 의 reauth UI
+  자동 노출.
+- **Local source + vault error/permission-needed banner (Scenario 2)**
+  — 이전: 폴더 rename / 권한 회수 시 silently server (sample) 매니페스트
+  fallback → 사용자가 vault 죽음 모름. → /docs 헤더 아래 명시 banner +
+  "Picker 열기" 버튼.
+- **Local 토글 disabled 시 unsupported tooltip (Scenario 5)** —
+  이전: Firefox / Safari < 18.2 사용자가 disabled opacity 만 보고 *왜*
+  disabled 인지 모름. → Tooltip + sr-only description.
+
+### Skip — defer
+
+- **Scenario 9 — locale 전환 시 query state 손실** — 빈도 낮음 (locale
+  전환 자주 안 함). DEFER.
+- **Scenario 10 — WebGL context loss recovery** — theoretical, 보고 0.
+  ErrorBoundary 설치 비용 vs 실제 영향 미정. 보고 들어오면 진행.
+
+### Other Scenarios — verified HANDLED
+
+- 4 (MCP 타이포 enum), 6 (빈 vault), 7 (cyclic deps), 8 (concurrent
+  delete race) — codex 각각 verified.
+- 3 (malformed YAML) — DEGRADED 이지만 parser 가 lenient by-design,
+  사용자 영향 거의 없음. DEFER.
+
+### Lint floor
+
+이전 18 warnings → trivial 2 fix (`ManualSourceChip` `_props` targeted
+disable + `DocsVaultPage:145` unused eslint-disable 제거) → 16 warnings
+도달. 나머지 16 = categorical noise (15 set-state-in-effect localStorage
+rehydrate, idiom 일치라 큰 architectural 결정 없이 fix 불가) + 1 lib
+incompat (TanStack Virtual). 사실상 floor.
+
+### 코드 / 아키텍처
+
+- 2 commit · `chore: lint trivial 18→16` + `fix: Round 9 robustness`.
+- `requireWritePermission` 신규 (~15 LOC) + 4 callsite + 4 useCallback
+  dep array 갱신.
+- 외부 `ensureReadWrite` 제거 (사용처 0).
+- /docs 헤더 아래 신규 banner block (~25 LOC) — error / permission-needed
+  branch.
+- Local source 토글에 Tooltip wrap + sr-only description.
+- 5 신규 i18n 키 (`vaultStatus.*`).
+
+### Test
+
+- pnpm exec tsc: clean.
+- pnpm test:run: 579 pass.
+- pnpm lint: 16 warnings (floor).
+- pnpm build: green.
+
+### Round 10 자연 후보 — 거의 없음 (wait-for-signal 강하게)
+
+8 라운드 surface 다이어트 + 1 라운드 architectural 리팩터 + 1 라운드
+robustness audit 후 codex / Plan / Explore 모두 큰 개선 영역 surface
+안 함. 다음 라운드는 사용자 보고 (perf / WebGL crash / locale 전환
+사용성) 또는 명시 product call 필요.
+
+---
+
 ## 2026-05-03 — Round 8: useLocalVault provider 리팩터 (Round 7 deferred 항목)
 
 Round 7 의 codex finding (8 callsite 독립 호출 → 한 페이지 mount 에 2-3
