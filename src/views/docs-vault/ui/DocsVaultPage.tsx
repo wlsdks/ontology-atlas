@@ -161,8 +161,20 @@ function DocsVaultContent() {
   // ?intent=local — landing CTA "내 마크다운 폴더 열기" 의 진입 query.
   // source 초기값을 'local' 로 박아 처음부터 picker UI 가 우측 sidebar 에
   // 보이게 (eval B4 finding — 이전엔 picker 가 4-단계 깊숙이 묻혀 있었음).
-  const initialIntentLocal = searchParams?.get('intent') === 'local';
-  const [source, setSource] = useState<Source>(initialIntentLocal ? 'local' : 'server');
+  const [source, setSource] = useState<Source>('server');
+  // ?intent=local 진입 시: source 'local' + advanced panel 펼침. SSR 시점엔
+  // searchParams 가 stale 일 수 있어 mount 후 직접 window.location 에서 read.
+  // landing 의 '내 마크다운 폴더 열기' CTA 가 dead-end 안 되도록.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const intent = new URLSearchParams(window.location.search).get('intent');
+    if (intent === 'local') {
+      setSource('local');
+      setAdvancedOpen(true);
+    }
+    // mount 1회만 — 사용자가 직접 닫은 후 reload 시 다시 안 열리게.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [mobileTreeOpen, setMobileTreeOpen] = useState(false);
   const [radarConfirmedKeys, setRadarConfirmedKeys] = useState<Set<string>>(
     () => new Set(),
@@ -233,6 +245,13 @@ function DocsVaultContent() {
 
   useEffect(() => {
     migrateLegacyRecentDocs();
+    // ?intent=local 진입 사용자는 localStorage 의 stored 'server' 보다 url
+    // intent 가 우선 — 'local' 로 강제 (다른 useEffect 의 source set 와
+    // 충돌 회피).
+    if (typeof window !== 'undefined') {
+      const intent = new URLSearchParams(window.location.search).get('intent');
+      if (intent === 'local') return;
+    }
     scheduleStateSync(() => setSource(readStoredSource()));
   }, []);
 
