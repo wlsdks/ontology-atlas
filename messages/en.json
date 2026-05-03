@@ -1270,6 +1270,8 @@
       "snippetHelp": "Save the content above into your vault as something like <code>capabilities/auth.md</code>. More frontmatter keys: <code>domain</code> · <code>capabilities</code> · <code>elements</code> · <code>relates</code> · <code>dependencies</code>."
     },
     "footer": {
+      "counts": "{nodes} nodes · {edges} relations",
+      "modePrefix": "mode",
       "modeLocal": "Local vault",
       "modeStatic": "Static demo"
     },

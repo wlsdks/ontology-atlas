@@ -1270,6 +1270,8 @@
       "snippetHelp": "위 내용을 vault 안 어떤 디렉토리에든 <code>capabilities/auth.md</code> 같은 이름으로 저장하세요. 더 자세한 frontmatter 키: <code>domain</code> · <code>capabilities</code> · <code>elements</code> · <code>relates</code> · <code>dependencies</code>."
     },
     "footer": {
+      "counts": "노드 {nodes} · 관계 {edges}",
+      "modePrefix": "모드",
       "modeLocal": "로컬 vault",
       "modeStatic": "정적 데모"
     },

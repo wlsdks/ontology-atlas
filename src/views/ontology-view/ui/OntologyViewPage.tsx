@@ -461,11 +461,11 @@ function OntologyMetaFooter({
   return (
     <footer className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-[color:var(--color-divider)] pt-3 text-[11px] text-[color:var(--color-text-quaternary)]">
       <span className="font-mono uppercase tracking-[0.14em]">
-        {nodeCount} nodes · {edgeCount} relations
+        {t('counts', { nodes: nodeCount, edges: edgeCount })}
       </span>
       <span aria-hidden>·</span>
       <span className="font-mono uppercase tracking-[0.14em]">
-        mode: {modeLabel}
+        {t('modePrefix')}: {modeLabel}
       </span>
     </footer>
   );
