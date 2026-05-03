@@ -942,6 +942,7 @@
       "factStatus": "상태",
       "factConnections": "연결",
       "factCount": "{count}개",
+      "categoryUncategorized": "미분류",
       "ontologyBadgeTitle": "이 프로젝트의 ontology 노드 {count}개",
       "ontologyBadgeLabel": "Ontology {count}"
     },

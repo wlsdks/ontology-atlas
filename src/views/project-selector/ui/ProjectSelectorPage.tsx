@@ -63,7 +63,11 @@ export function ProjectSelectorPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
-  const { categoryLabel, statusLabel, categories, statuses } = useTaxonomy();
+  const { categoryLabel: rawCategoryLabel, statusLabel, categories, statuses } = useTaxonomy();
+  // 프로젝트 frontmatter 의 category 가 DEFAULT_CATEGORIES 에 없으면 raw
+  // id 가 그대로 노출 ('uncategorized' 등). 비개발자 친화 fallback.
+  const categoryLabel = (id: string): string =>
+    id === "uncategorized" ? t("categoryUncategorized") : rawCategoryLabel(id);
   // 진실원 모드 (local/static) — local 모드는 vault 가 활성화돼 있어
   // mutation 가능. static (빌드타임 dogfood) 만 read-only.
   const projectMutations = useProjectMutations();

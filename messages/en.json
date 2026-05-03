@@ -942,6 +942,7 @@
       "factStatus": "Status",
       "factConnections": "Links",
       "factCount": "{count}",
+      "categoryUncategorized": "Uncategorized",
       "ontologyBadgeTitle": "{count} ontology nodes for this project",
       "ontologyBadgeLabel": "Ontology {count}"
     },
