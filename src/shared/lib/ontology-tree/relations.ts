@@ -19,8 +19,11 @@ export function computeEdgeTypeDistribution(
 /**
  * 두 노드의 projectIds 가 교집합 0 이면 cross-project. 한 쪽이라도 빈
  * 배열이면 false (정보 부족 시 안전 폴백 — 같은 프로젝트로 가정).
+ *
+ * 외부 호출자 없음 — countCrossProjectEdges 의 내부 helper. 외부 노출
+ * 필요해지면 export 재추가 후 index.ts barrel 도 같이 갱신.
  */
-export function isCrossProjectEdgeProjects(
+function isCrossProjectEdgeProjects(
   fromProjects: ReadonlyArray<string> | undefined,
   toProjects: ReadonlyArray<string> | undefined,
 ): boolean {

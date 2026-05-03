@@ -18,7 +18,6 @@ export { filterTreeByQuery } from "./filter-tree";
 export {
   computeEdgeTypeDistribution,
   countCrossProjectEdges,
-  isCrossProjectEdgeProjects,
 } from "./relations";
 export { recommendDocumentSlug } from "./recommend-slug";
 export {
