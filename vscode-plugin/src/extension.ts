@@ -22,11 +22,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   // R13 #50 — code↔ontology jump: surface the matching node for the active
   // editor in the status bar. Click → open the node's .md.
+  // R13 #61 — informative even when no match (see updateMatchForActiveEditor).
+  // The command is set per-state, not statically.
   const matchStatusBar = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Left,
     100,
   );
-  matchStatusBar.command = 'ohMyOntology.openMatchedNode';
   context.subscriptions.push(matchStatusBar);
 
   let cachedNodes: VaultNode[] = [];
@@ -36,9 +37,33 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const updateMatchForActiveEditor = (): void => {
     const editor = vscode.window.activeTextEditor;
     const folders = vscode.workspace.workspaceFolders;
-    if (!editor || !folders || folders.length === 0 || cachedNodes.length === 0) {
+
+    // R13 #61 — informative status bar even when no node owns the active
+    // file. Three states: (a) no vault picked → "pick a vault" hint,
+    // (b) vault loaded but no match → dim "<N> nodes · no match" so the
+    // developer sees the plugin is alive, (c) match → kind icon + title.
+    if (!folders || folders.length === 0) {
       currentMatch = null;
       matchStatusBar.hide();
+      backlinksProvider.clear();
+      return;
+    }
+    if (cachedNodes.length === 0) {
+      currentMatch = null;
+      matchStatusBar.text = '$(folder-opened) oh-my-ontology';
+      matchStatusBar.tooltip =
+        'oh-my-ontology · no vault loaded.\nClick to pick a vault folder.';
+      matchStatusBar.command = 'ohMyOntology.pickVault';
+      matchStatusBar.show();
+      backlinksProvider.clear();
+      return;
+    }
+    if (!editor) {
+      currentMatch = null;
+      matchStatusBar.text = `$(circle-outline) oh-my-ontology · ${cachedNodes.length} nodes`;
+      matchStatusBar.tooltip = `oh-my-ontology · ${cachedNodes.length} nodes loaded · no editor active.`;
+      matchStatusBar.command = 'ohMyOntology.refresh';
+      matchStatusBar.show();
       backlinksProvider.clear();
       return;
     }
@@ -52,13 +77,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     );
     currentMatch = match;
     if (!match) {
-      matchStatusBar.hide();
+      matchStatusBar.text = `$(circle-outline) oh-my-ontology · ${cachedNodes.length} nodes · no match`;
+      matchStatusBar.tooltip = `oh-my-ontology · this file isn't owned by any ontology node.\n${cachedNodes.length} nodes loaded · click to refresh.`;
+      matchStatusBar.command = 'ohMyOntology.refresh';
+      matchStatusBar.show();
       backlinksProvider.clear();
       return;
     }
     const icon = iconForKind(match.kind);
     matchStatusBar.text = `${icon} ${match.title}`;
     matchStatusBar.tooltip = `oh-my-ontology · ${match.kind} · ${match.slug}\nClick to open ${match.slug}.md`;
+    matchStatusBar.command = 'ohMyOntology.openMatchedNode';
     matchStatusBar.show();
     void loadBacklinksFor(match.slug);
   };
