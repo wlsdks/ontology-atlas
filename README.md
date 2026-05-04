@@ -3,9 +3,10 @@
 > **AI-native, local-first codebase ontology workbench.** Humans and AI agents author the same vault.
 > Markdown frontmatter is the graph. No backend. No login.
 
+[![CI](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml/badge.svg)](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Built with Next.js](https://img.shields.io/badge/Built_with-Next.js-000?logo=next.js)](https://nextjs.org)
-[![MCP server](https://img.shields.io/badge/MCP-12_tools-5e6ad2)](mcp/README.md)
+[![MCP server](https://img.shields.io/badge/MCP-14_tools-5e6ad2)](mcp/README.md)
 
 ```bash
 npx oh-my-ontology init my-vault

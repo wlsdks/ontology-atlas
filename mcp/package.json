@@ -27,6 +27,7 @@
     "src/validate.mjs",
     "src/vault.mjs",
     "scripts/verify.mjs",
+    "CHANGELOG.md",
     "README.md"
   ],
   "scripts": {
