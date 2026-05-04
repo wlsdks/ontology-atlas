@@ -47,6 +47,19 @@ jobs:
       - name: Vault validate (dogfood frontmatter integrity)
         run: pnpm vault:validate
 
+      # vscode-plugin v0.4.0 (R13 #49–#52). Run unit + MCP-integration tests
+      # via npm (its own toolchain — TypeScript compile + node --test).
+      # Then verify it packages cleanly into a .vsix so we catch
+      # marketplace-relevant regressions (manifest issues, missing files,
+      # broken contributes) before publish.
+      - name: VSCode plugin — install + test + package
+        run: |
+          cd vscode-plugin
+          npm install --no-audit --no-fund
+          npm test
+          npx @vscode/vsce package --no-yarn --out /tmp/oh-my-ontology-vscode.vsix
+          ls -lh /tmp/oh-my-ontology-vscode.vsix
+
       # R11 #24 — audit-only e2e CI 게이트 시도했으나 CI 환경 navigation race
       # 빈도 높아 reverted (a11y-structure / aria-audit / overflow-sweep
       # mobile-390 등 회귀). audit spec 은 console dump 의도라 실질 가드 0

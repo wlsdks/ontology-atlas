@@ -15,9 +15,24 @@ This is the **developer-primary IDE entry** the project's mission has
 always promised. Same vault, same `.md` files, same git repo as the CLI
 and MCP — just rendered next to your code.
 
-## Install (development)
+## Install (pre-marketplace verification)
 
-The plugin is not yet on the VSCode Marketplace. To run it locally:
+The plugin is not yet on the VSCode Marketplace. Two ways to try it:
+
+### Option A — install the packaged `.vsix` (recommended for verification)
+
+This is the closest thing to "what the marketplace would deliver":
+
+```bash
+cd vscode-plugin
+npm install
+npx @vscode/vsce package --no-yarn
+code --install-extension oh-my-ontology-vscode-0.4.0.vsix
+```
+
+Restart VSCode. The extension is now installed across **every** VSCode window the same as a marketplace extension would be. Uninstall via Extensions panel or `code --uninstall-extension wlsdks.oh-my-ontology-vscode`.
+
+### Option B — Extension Development Host (faster iteration)
 
 ```bash
 cd vscode-plugin
