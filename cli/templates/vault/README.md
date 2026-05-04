@@ -53,11 +53,12 @@ graph's keys (slug / kind / depends_on / capabilities / elements / domain).
 
 ## What an AI agent can do for you
 
-Once you register the `oh-my-ontology-mcp` server, the agent gets 12
+Once you register the `oh-my-ontology-mcp` server, the agent gets 14
 tools to read/write this vault:
 
 - **read 8**: list_concepts / get_concept / find_evidence / find_backlinks /
   find_path / list_kinds / find_orphans / query_concepts
-- **write 4**: add_concept / add_relation / patch_concept / delete_concept
+- **write 6**: add_concept / add_relation / patch_concept / delete_concept /
+  rename_concept / merge_concepts
 
 Details: https://github.com/wlsdks/oh-my-ontology/tree/main/mcp
