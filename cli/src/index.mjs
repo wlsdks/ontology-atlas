@@ -42,9 +42,13 @@ function printHelp() {
 AI-native codebase ontology workbench — vault scaffold + MCP setup.
 
 ${COLORS.bold}Usage:${COLORS.reset}
-  npx oh-my-ontology init [folder]   Scaffold a new ontology vault (default: ./vault)
-  npx oh-my-ontology --help          Show this help
-  npx oh-my-ontology --version       Print version
+  npx oh-my-ontology init [folder]            Scaffold a new ontology vault (default: ./vault)
+  npx oh-my-ontology list [vault]             List ontology nodes in a vault
+                                              ${COLORS.dim}--kind <kind>     filter by kind${COLORS.reset}
+                                              ${COLORS.dim}--json            JSON output${COLORS.reset}
+  npx oh-my-ontology validate [vault]         Frontmatter integrity check (exit 1 on errors)
+  npx oh-my-ontology --help                   Show this help
+  npx oh-my-ontology --version                Print version
 
 ${COLORS.bold}What 'init' does:${COLORS.reset}
   - Creates project / domain / capability / element starter .md files
@@ -177,6 +181,16 @@ if (SUBCOMMAND === '--version' || SUBCOMMAND === '-v') {
 if (SUBCOMMAND === 'init') {
   runInit(ARGS[1]);
   exit(0);
+}
+
+if (SUBCOMMAND === 'list') {
+  const { runList } = await import('./commands/list.mjs');
+  exit(runList(ARGS.slice(1)));
+}
+
+if (SUBCOMMAND === 'validate') {
+  const { runValidate } = await import('./commands/validate.mjs');
+  exit(runValidate(ARGS.slice(1)));
 }
 
 fail(`unknown command: ${SUBCOMMAND}`);

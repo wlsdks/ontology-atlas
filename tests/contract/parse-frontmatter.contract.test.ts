@@ -3,6 +3,7 @@ import { CASES } from "../fixtures/frontmatter-cases.mjs";
 import { parseFrontmatter as parseTs } from "@/shared/lib/parse-frontmatter";
 import { parseFrontmatter as parseMcp } from "../../mcp/src/parser.mjs";
 import { parseFrontmatter as parseScripts } from "../../scripts/lib/parse-frontmatter.mjs";
+import { parseFrontmatter as parseCli } from "../../cli/src/lib/parse-frontmatter.mjs";
 
 /**
  * 3-way contract — vault frontmatter parser 가 3 곳에 산다 (런타임 ts /
@@ -17,9 +18,10 @@ const PARSERS = {
   ts: parseTs,
   "mcp/parser.mjs": parseMcp as typeof parseTs,
   "scripts/lib/parse-frontmatter.mjs": parseScripts as typeof parseTs,
+  "cli/src/lib/parse-frontmatter.mjs": parseCli as typeof parseTs,
 };
 
-describe("frontmatter parser contract — 3 implementations agree", () => {
+describe("frontmatter parser contract — 4 implementations agree", () => {
   for (const [parserName, parse] of Object.entries(PARSERS)) {
     describe(parserName, () => {
       for (const c of CASES) {

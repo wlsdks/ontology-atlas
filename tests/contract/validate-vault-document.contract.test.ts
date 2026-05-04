@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { VALIDATE_CASES } from '../fixtures/validate-vault-cases.mjs';
 import { validateVaultDocument as validateTs } from '@/shared/lib/validate-vault-document';
 import { validateVaultDocument as validateMcp } from '../../mcp/src/validate.mjs';
+import { validateVaultDocument as validateCli } from '../../cli/src/lib/validate.mjs';
 
 /**
  * R11 #27 — vault validator contract. src/shared/lib (런타임 + UI fast path
@@ -25,9 +26,10 @@ interface ValidatorReport {
 const VALIDATORS: Record<string, (raw: string) => ValidatorReport> = {
   'src/shared/lib (TS)': validateTs,
   'mcp/src/validate.mjs': validateMcp as (raw: string) => ValidatorReport,
+  'cli/src/lib/validate.mjs': validateCli as (raw: string) => ValidatorReport,
 };
 
-describe('validator contract — 2 implementations agree on issue codes', () => {
+describe('validator contract — 3 implementations agree on issue codes', () => {
   for (const [validatorName, validate] of Object.entries(VALIDATORS)) {
     describe(validatorName, () => {
       for (const c of VALIDATE_CASES) {
