@@ -51,3 +51,20 @@ pnpm exec playwright test       # 변경한 영역의 e2e 가 있으면
 
 - 회귀 fix 한 commit 에는 **그 회귀를 잡는 단위 test** 를 같이 추가한다.
 - E2E 는 시각 회귀 (visual regression) 까지 다룰 때만 baseline 갱신 — 운영 환경에서 한 번 캡처 후 commit.
+
+## Cross-package contract test (R11 패턴)
+
+**언제 쓰나**: `mcp/` 같은 *별도 npm package* 와 `src/` 의 모듈이 *같은 동작* 을 보장해야 할 때. mcp 가 publish 의도라 물리적 단일 모듈 통합 불가능 → 같은 fixture 매트릭스 + 양 측 import 후 동일 결과 강제.
+
+**현재 적용 사례**:
+- `tests/contract/parse-frontmatter.contract.test.ts` — `src/shared/lib` (런타임) · `mcp/src/parser.mjs` · `scripts/lib` (빌드+CLI) **3-way** parser drift 차단. 12 fixture × 3 parser = 36 case.
+- `tests/contract/validate-vault-document.contract.test.ts` — `src/shared/lib` (런타임+UI) · `mcp/src/validate.mjs` (AI agent surface) **2-way** validator drift 차단. 8 fixture × 2 validator = 16 case.
+
+**패턴**:
+1. `tests/fixtures/<topic>-cases.mjs` — input/expected 매트릭스. 단일 진실원.
+2. `tests/contract/<topic>.contract.test.ts` — 같은 fixture 를 양 측 함수에 적용해 동일 결과 비교. 정확한 message phrasing 차이는 허용, 핵심 contract (codes/structure) 는 strict.
+3. `vitest.config.ts` 의 `include` 에 `tests/contract/**/*.test.ts` 포함 (이미 등록).
+
+**원칙**:
+- 한 쪽 코드 추가/변경/제거 시 contract test 가 즉시 차단 → 의도적 contract 변경이면 fixture 도 같이 갱신, 의도 안 했으면 drift 회귀.
+- 관련 파일 수정 시 contract test 도 함께 review.
