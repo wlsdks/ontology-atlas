@@ -6,6 +6,7 @@ import { findOntologyMatch } from './code-match';
 import { writeDoc, resolveSlug } from './write-vault';
 import { McpClient } from './mcp-client';
 import { Backlink, BacklinksProvider } from './backlinks-provider';
+import { showGraphView } from './graph-view';
 
 const STORAGE_VAULT_KEY = 'oh-my-ontology.vaultPath';
 
@@ -409,6 +410,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }
       },
     ),
+    vscode.commands.registerCommand('ohMyOntology.openGraph', () => {
+      if (cachedNodes.length === 0) {
+        vscode.window.showWarningMessage(
+          'oh-my-ontology: pick a vault folder first.',
+        );
+        return;
+      }
+      showGraphView(context, cachedNodes);
+    }),
     vscode.commands.registerCommand(
       'ohMyOntology.openBacklink',
       async (b: Backlink) => {

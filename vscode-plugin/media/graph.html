@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src ${CSP_SOURCE}; style-src ${CSP_SOURCE} 'unsafe-inline'; font-src ${CSP_SOURCE};" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: var(--vscode-editor-background);
+        --fg: var(--vscode-editor-foreground);
+        --indigo: #5e6ad2;
+        --indigo-soft: #5e6ad2cc;
+        --node-stroke: var(--vscode-panel-border, #444);
+      }
+      html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font-family: var(--vscode-font-family); }
+      #cy { width: 100vw; height: 100vh; }
+      #toolbar {
+        position: fixed; top: 8px; right: 12px; z-index: 10;
+        display: flex; gap: 8px; align-items: center;
+        font-size: 12px; opacity: 0.85;
+      }
+      button {
+        background: transparent; border: 1px solid var(--node-stroke); color: var(--fg);
+        padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+      }
+      button:hover { border-color: var(--indigo); color: var(--indigo); }
+      #status { font-size: 11px; opacity: 0.7; }
+    </style>
+  </head>
+  <body>
+    <div id="toolbar">
+      <span id="status">loading…</span>
+      <button id="btn-fit">Fit</button>
+      <button id="btn-relayout">Relayout</button>
+    </div>
+    <div id="cy"></div>
+    <script src="${CYTOSCAPE_URI}"></script>
+    <script src="${DAGRE_URI}"></script>
+    <script src="${CY_DAGRE_URI}"></script>
+    <script>
+      const vscode = acquireVsCodeApi();
+      cytoscape.use(cytoscapeDagre);
+
+      const KIND_COLOR = {
+        project: '#d4b478',
+        domain: '#5e6ad2',
+        capability: '#7a87dc',
+        element: '#9aa1b3',
+        document: '#9aa1b3',
+        'vault-readme': '#7a7a7a',
+      };
+
+      const cy = cytoscape({
+        container: document.getElementById('cy'),
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'background-color': (ele) => KIND_COLOR[ele.data('kind')] ?? '#666',
+              'label': 'data(label)',
+              'color': 'var(--vscode-editor-foreground)',
+              'font-size': '11px',
+              'text-valign': 'center',
+              'text-halign': 'center',
+              'text-wrap': 'wrap',
+              'text-max-width': '120px',
+              'width': 'label',
+              'height': 'label',
+              'padding': '8px',
+              'shape': 'round-rectangle',
+              'border-width': 1,
+              'border-color': 'rgba(255,255,255,0.15)',
+            },
+          },
+          {
+            selector: 'node:selected',
+            style: { 'border-width': 2, 'border-color': '#5e6ad2' },
+          },
+          {
+            selector: 'edge',
+            style: {
+              'width': 1,
+              'line-color': 'rgba(150,150,150,0.4)',
+              'target-arrow-color': 'rgba(150,150,150,0.4)',
+              'target-arrow-shape': 'triangle',
+              'curve-style': 'bezier',
+              'font-size': '9px',
+              'label': 'data(label)',
+              'color': 'rgba(150,150,150,0.7)',
+              'text-rotation': 'autorotate',
+              'text-margin-y': -6,
+            },
+          },
+        ],
+        wheelSensitivity: 0.2,
+      });
+
+      cy.on('tap', 'node', (evt) => {
+        vscode.postMessage({ type: 'openNode', slug: evt.target.id() });
+      });
+
+      function relayout() {
+        cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 30, rankSep: 80, padding: 20 }).run();
+      }
+
+      document.getElementById('btn-fit').addEventListener('click', () => cy.fit(undefined, 30));
+      document.getElementById('btn-relayout').addEventListener('click', () => relayout());
+
+      window.addEventListener('message', (event) => {
+        const msg = event.data;
+        if (msg?.type === 'setData') {
+          cy.elements().remove();
+          cy.add(msg.elements);
+          relayout();
+          document.getElementById('status').textContent =
+            `${msg.elements.filter((e) => e.group === 'nodes').length} nodes · ${msg.elements.filter((e) => e.group === 'edges').length} edges`;
+        }
+      });
+
+      vscode.postMessage({ type: 'ready' });
+    </script>
+  </body>
+</html>

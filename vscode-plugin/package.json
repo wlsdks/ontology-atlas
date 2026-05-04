@@ -2,15 +2,25 @@
   "name": "oh-my-ontology-vscode",
   "displayName": "oh-my-ontology",
   "description": "View and navigate the ontology vault from inside VSCode — sibling of the CLI and MCP server.",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "publisher": "wlsdks",
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other"],
-  "keywords": ["ontology", "markdown", "frontmatter", "knowledge-graph", "ai-agent"],
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "ontology",
+    "markdown",
+    "frontmatter",
+    "knowledge-graph",
+    "ai-agent"
+  ],
   "main": "./out/extension.js",
-  "activationEvents": ["onStartupFinished"],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "contributes": {
     "viewsContainers": {
       "activitybar": [
@@ -56,6 +66,11 @@
         "icon": "$(add)"
       },
       {
+        "command": "ohMyOntology.openGraph",
+        "title": "oh-my-ontology: Open graph",
+        "icon": "$(graph)"
+      },
+      {
         "command": "ohMyOntology.renameConcept",
         "title": "oh-my-ontology: Rename concept (atomic backlink redirect)"
       },
@@ -79,19 +94,24 @@
     "menus": {
       "view/title": [
         {
-          "command": "ohMyOntology.addConcept",
+          "command": "ohMyOntology.openGraph",
           "when": "view == ohMyOntology.tree",
           "group": "navigation@1"
         },
         {
-          "command": "ohMyOntology.refresh",
+          "command": "ohMyOntology.addConcept",
           "when": "view == ohMyOntology.tree",
           "group": "navigation@2"
         },
         {
-          "command": "ohMyOntology.pickVault",
+          "command": "ohMyOntology.refresh",
           "when": "view == ohMyOntology.tree",
           "group": "navigation@3"
+        },
+        {
+          "command": "ohMyOntology.pickVault",
+          "when": "view == ohMyOntology.tree",
+          "group": "navigation@4"
         }
       ]
     },
@@ -119,7 +139,7 @@
   "scripts": {
     "compile": "tsc -p .",
     "watch": "tsc -p . --watch",
-    "test": "npm run compile && node --test src/code-match.test.mjs src/write-vault.test.mjs src/backlinks-local.test.mjs src/mcp-client.test.mjs",
+    "test": "npm run compile && node --test src/code-match.test.mjs src/write-vault.test.mjs src/backlinks-local.test.mjs src/mcp-client.test.mjs src/graph-view.test.mjs",
     "test:e2e": "npm run compile && node out/test/runTests.js",
     "vscode:prepublish": "npm run compile"
   },
@@ -139,5 +159,10 @@
     "type": "git",
     "url": "https://github.com/wlsdks/oh-my-ontology.git",
     "directory": "vscode-plugin"
+  },
+  "dependencies": {
+    "cytoscape": "^3.33.3",
+    "cytoscape-dagre": "^2.5.0",
+    "dagre": "^0.8.5"
   }
 }

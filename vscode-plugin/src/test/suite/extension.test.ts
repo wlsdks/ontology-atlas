@@ -47,6 +47,7 @@ suite('oh-my-ontology — VSCode integration', () => {
       'ohMyOntology.addConcept',
       'ohMyOntology.renameConcept',
       'ohMyOntology.mergeConcepts',
+      'ohMyOntology.openGraph',
       'ohMyOntology.openBacklink',
     ];
     const all = await vscode.commands.getCommands(true);
