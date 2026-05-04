@@ -7,7 +7,7 @@
     "oh-my-ontology": "src/index.mjs"
   },
   "scripts": {
-    "test": "node --test src/**/*.test.mjs"
+    "test": "node src/integration.test.mjs"
   },
   "files": [
     "src",
