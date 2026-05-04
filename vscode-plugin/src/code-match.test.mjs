@@ -100,6 +100,35 @@ test('가장 specific 한 매치가 우선 (longer path score 높음)', () => {
   assert.equal(match?.slug, 'elements/specific');
 });
 
+test('R13 #54 self-match — vault .md 자체 열면 그 노드 반환 (최우선)', () => {
+  const match = findOntologyMatch(
+    ROOT,
+    '/abs/repo/docs/ontology/elements/file-system-access-api.md',
+    NODES,
+  );
+  assert.equal(match?.slug, 'elements/file-system-access-api');
+});
+
+test('R13 #54 self-match — node.path 가 매치돼도 self-match 가 우선', () => {
+  // edge: 어떤 element 의 .md 자체가 다른 element 의 path 안에 있어도
+  // self-match 가 항상 이긴다 (loop order independent).
+  const match = findOntologyMatch(
+    ROOT,
+    '/abs/repo/docs/ontology/elements/sigma-graphology.md',
+    NODES,
+  );
+  assert.equal(match?.slug, 'elements/sigma-graphology');
+});
+
+test('R13 #54 self-match — vault 외부의 .md 는 영향 없음', () => {
+  const match = findOntologyMatch(
+    ROOT,
+    '/abs/repo/docs/ARCHITECTURE.md', // not a vault node
+    NODES,
+  );
+  assert.equal(match, null);
+});
+
 test('exact file path 매치가 directory ancestor 보다 우선', () => {
   const mixedNodes = [
     {

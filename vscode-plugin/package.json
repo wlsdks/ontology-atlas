@@ -2,7 +2,7 @@
   "name": "oh-my-ontology-vscode",
   "displayName": "oh-my-ontology",
   "description": "View and navigate the ontology vault from inside VSCode — sibling of the CLI and MCP server.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "wlsdks",
   "engines": {
     "vscode": "^1.85.0"

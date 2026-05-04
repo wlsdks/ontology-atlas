@@ -2,9 +2,14 @@ import * as path from 'path';
 import { VaultNode } from './walk-vault';
 
 /**
- * Find the best vault node match for a given source-file path.
+ * Find the best vault node match for a given file path.
  *
  * Match sources, in priority order:
+ *   0. **Self-match (R13 #54)** — if the active file IS the ontology
+ *      `.md` itself (e.g. `docs/ontology/elements/sigma-graphology.md`),
+ *      return that node directly. Highest priority — when the user is
+ *      reading the ontology directly, that's exactly what the plugin
+ *      should surface (and the Backlinks panel can show who points to it).
  *   1. Element nodes whose `path:` frontmatter exactly equals the file's
  *      workspace-relative path (e.g. `path: package.json` matches
  *      `<workspace>/package.json`).
@@ -27,6 +32,14 @@ export function findOntologyMatch(
   absoluteFilePath: string,
   nodes: ReadonlyArray<VaultNode>,
 ): VaultNode | null {
+  // R13 #54 — self-match: the active file IS an ontology node's .md.
+  // Highest priority because the user is literally looking at the node.
+  for (const node of nodes) {
+    if (samePath(node.filePath, absoluteFilePath)) {
+      return node;
+    }
+  }
+
   const rel = relativeForwardSlash(workspaceRoot, absoluteFilePath);
   if (!rel || rel.startsWith('..')) return null;
 
@@ -58,6 +71,12 @@ export function findOntologyMatch(
   if (candidates.length === 0) return null;
   candidates.sort((a, b) => b.score - a.score);
   return candidates[0].node;
+}
+
+function samePath(a: string, b: string): boolean {
+  // Defensive: VSCode sometimes hands paths with mixed separators or
+  // resolved symlinks. Normalize both before comparison.
+  return path.resolve(a) === path.resolve(b);
 }
 
 function relativeForwardSlash(root: string, abs: string): string {
