@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-04T02:37:51.974Z",
+  "generatedAt": "2026-05-04T04:06:28.207Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -1757,13 +1757,48 @@
         },
         {
           "depth": 3,
-          "text": "MCP conflict 감지 (#8 MVP)",
-          "slug": "mcp-conflict-감지-8-mvp"
+          "text": "MCP conflict 감지 (#8 MVP + #19 closeout)",
+          "slug": "mcp-conflict-감지-8-mvp-19-closeout"
         },
         {
           "depth": 3,
           "text": "Vault 가드 CI 통합",
           "slug": "vault-가드-ci-통합"
+        },
+        {
+          "depth": 3,
+          "text": "Widgets/views audit (#10)",
+          "slug": "widgetsviews-audit-10"
+        },
+        {
+          "depth": 3,
+          "text": "Dogfood vault 갱신",
+          "slug": "dogfood-vault-갱신"
+        },
+        {
+          "depth": 3,
+          "text": "Sigma WebGL fallback (#9)",
+          "slug": "sigma-webgl-fallback-9"
+        },
+        {
+          "depth": 3,
+          "text": "UI 측 mtime 충돌 감지 (#15 MVP)",
+          "slug": "ui-측-mtime-충돌-감지-15-mvp"
+        },
+        {
+          "depth": 3,
+          "text": "Audit 사이클 — onboarding docs sync (#21 후속)",
+          "slug": "audit-사이클-onboarding-docs-sync-21-후속"
+        },
+        {
+          "depth": 3,
+          "text": "vault:migrate 의 git pre-write 안전망 (#21)",
+          "slug": "vaultmigrate-의-git-pre-write-안전망-21"
+        },
+        {
+          "depth": 3,
+          "text": "MCP 도구 핸들러 통합 test (#20)",
+          "slug": "mcp-도구-핸들러-통합-test-20"
         },
         {
           "depth": 3,
@@ -2307,8 +2342,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 분석 기반 1원칙 라운드. silent corruption / parser drift / schema 진화 부재 / AI agent write 비대칭 4 갭을 한",
-      "wordCount": 8232,
-      "updatedAt": "2026-05-04T02:30:05.038Z",
+      "wordCount": 8818,
+      "updatedAt": "2026-05-04T03:39:22.419Z",
       "linksOut": [
         "slug"
       ]

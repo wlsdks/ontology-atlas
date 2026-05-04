@@ -47,6 +47,19 @@ jobs:
       - name: Vault validate (dogfood frontmatter integrity)
         run: pnpm vault:validate
 
+      - name: Install Playwright (chromium only)
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: E2E (audit-only spec — a11y / aria / overflow / mobile)
+        run: |
+          pnpm exec playwright test \
+            tests/e2e/a11y-structure.spec.ts \
+            tests/e2e/aria-audit.spec.ts \
+            tests/e2e/ui-audit-v2.spec.ts \
+            tests/e2e/overflow-sweep.spec.ts \
+            tests/e2e/mobile-overflow-check.spec.ts \
+            tests/e2e/mobile-keyboard-audit.spec.ts
+
       - name: Build (static export)
         run: pnpm build
 
