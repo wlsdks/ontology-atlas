@@ -78,8 +78,11 @@ Click any node to open its `.md` in the editor.
 | `ohMyOntology.pickVault` | Pick vault folder |
 | `ohMyOntology.refresh` | Refresh |
 | `ohMyOntology.addConcept` | **Add concept (v0.3.0)** — kind picker → slug → title → optional domain → writes `<vault>/<auto-prefix>/<slug>.md` |
+| `ohMyOntology.renameConcept` | **Rename concept (v0.7.0)** — slug 변경 + atomic backlink redirect (modal preview + confirm) |
+| `ohMyOntology.mergeConcepts` | **Merge concepts (v0.7.0)** — fold one node into another (destructive, modal preview + confirm) |
 | `ohMyOntology.openNode` | Open node .md (invoked when you click a tree item) |
 | `ohMyOntology.openMatchedNode` | Open the node matching the active editor (status bar click) |
+| `ohMyOntology.openBacklink` | Open backlink .md (invoked when you click a backlink) |
 
 ## Auto-detection
 
@@ -89,7 +92,7 @@ different folder via the Activity Bar header to override.
 
 ## Status
 
-**v0.6.0 — informative status bar.** Working features:
+**v0.7.0 — graph-level write commands.** Working features:
 
 - Activity Bar entry + Ontology TreeView grouped by `kind`
 - **Backlinks panel (v0.4.0)** — second TreeView under Activity Bar, populated by `find_backlinks` against the node matching the current editor.
@@ -102,6 +105,7 @@ different folder via the Activity Bar header to override.
 - **Self-match (v0.5.0)** — when you open an ontology node's `.md` file directly (e.g. `docs/ontology/elements/sigma-graphology.md`), the plugin recognizes that as the node and the **Backlinks panel auto-populates with who points to that node**. Status bar also shows the node title. The natural reading flow now works.
 - **Headless e2e harness (v0.5.0)** — `npm run test:e2e` downloads VSCode (cached in `.vscode-test/`) and runs the plugin in a real extension host. Verifies activation, command registration, configuration schema, and contributes. CI runs the same suite under `xvfb-run` so future PRs that break the integration get caught automatically.
 - **Informative status bar (v0.6.0)** — the status bar is no longer hidden when no node owns the active file. Four states surface the plugin's state: (a) no workspace, (b) no vault picked → click to pick, (c) vault loaded · no editor or no match → dim hint with node count, (d) match → kind icon + title (clickable). The plugin always lets you know it's alive.
+- **Rename + merge concepts (v0.7.0)** — `oh-my-ontology: Rename concept` and `oh-my-ontology: Merge concepts` from the Command Palette. Both invoke MCP write tools (`rename_concept` / `merge_concepts`) with the **dry-run + confirm** pattern: first call shows you exactly which files will change, second call (after modal confirm) commits. Atomic backlink redirect for rename. Merge is destructive (deletes `fromSlug.md`) and requires "Confirm merge (destructive)" in the modal.
 
 **Not yet:**
 

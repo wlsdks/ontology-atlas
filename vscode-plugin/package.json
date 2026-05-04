@@ -2,7 +2,7 @@
   "name": "oh-my-ontology-vscode",
   "displayName": "oh-my-ontology",
   "description": "View and navigate the ontology vault from inside VSCode — sibling of the CLI and MCP server.",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "publisher": "wlsdks",
   "engines": {
     "vscode": "^1.85.0"
@@ -54,6 +54,14 @@
         "command": "ohMyOntology.addConcept",
         "title": "oh-my-ontology: Add concept",
         "icon": "$(add)"
+      },
+      {
+        "command": "ohMyOntology.renameConcept",
+        "title": "oh-my-ontology: Rename concept (atomic backlink redirect)"
+      },
+      {
+        "command": "ohMyOntology.mergeConcepts",
+        "title": "oh-my-ontology: Merge concepts (destructive)"
       },
       {
         "command": "ohMyOntology.openNode",

@@ -287,6 +287,129 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
     vscode.commands.registerCommand(
+      'ohMyOntology.renameConcept',
+      async () => {
+        if (!mcpClient || !mcpClient.isReady()) {
+          vscode.window.showErrorMessage(
+            'oh-my-ontology rename: MCP server not running. Enable `oh-my-ontology.useMcp` and refresh.',
+          );
+          return;
+        }
+        const seedSlug = currentMatch?.slug;
+        const oldSlug = await vscode.window.showInputBox({
+          value: seedSlug,
+          placeHolder: 'old slug — e.g. capabilities/foo',
+          prompt: 'Slug to rename',
+          validateInput: (v) =>
+            !v || !v.trim() ? 'old slug is required' : null,
+        });
+        if (!oldSlug) return;
+        const newSlug = await vscode.window.showInputBox({
+          placeHolder: 'new slug — e.g. capabilities/bar',
+          prompt: `New slug for ${oldSlug}`,
+          validateInput: (v) =>
+            !v || !v.trim() ? 'new slug is required' : null,
+        });
+        if (!newSlug) return;
+        try {
+          const dry = (await mcpClient.callTool('rename_concept', {
+            oldSlug,
+            newSlug,
+          })) as { updates?: Array<{ file: string }>; ok?: boolean };
+          const count = dry.updates?.length ?? 0;
+          const sample =
+            dry.updates?.slice(0, 5).map((u) => u.file).join('\n  ') ?? '(none)';
+          const confirmed = await vscode.window.showWarningMessage(
+            `Rename ${oldSlug} → ${newSlug}?\n\n${count} file(s) affected:\n  ${sample}${count > 5 ? `\n  ...+${count - 5} more` : ''}`,
+            { modal: true },
+            'Confirm rename',
+          );
+          if (confirmed !== 'Confirm rename') return;
+          await mcpClient.callTool('rename_concept', {
+            oldSlug,
+            newSlug,
+            confirm: true,
+          });
+          vscode.window.setStatusBarMessage(
+            `oh-my-ontology: renamed ${oldSlug} → ${newSlug} (${count} files)`,
+            5000,
+          );
+          await refresh();
+          const newNode = cachedNodes.find((n) => n.slug === newSlug);
+          if (newNode) {
+            const doc = await vscode.workspace.openTextDocument(newNode.filePath);
+            await vscode.window.showTextDocument(doc);
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          vscode.window.showErrorMessage(`oh-my-ontology rename: ${msg}`);
+        }
+      },
+    ),
+    vscode.commands.registerCommand(
+      'ohMyOntology.mergeConcepts',
+      async () => {
+        if (!mcpClient || !mcpClient.isReady()) {
+          vscode.window.showErrorMessage(
+            'oh-my-ontology merge: MCP server not running. Enable `oh-my-ontology.useMcp` and refresh.',
+          );
+          return;
+        }
+        const fromSlug = await vscode.window.showInputBox({
+          value: currentMatch?.slug,
+          placeHolder: 'from slug (will be DELETED) — e.g. capabilities/old',
+          prompt: 'Slug to dissolve into another node',
+          validateInput: (v) =>
+            !v || !v.trim() ? 'from slug is required' : null,
+        });
+        if (!fromSlug) return;
+        const intoSlug = await vscode.window.showInputBox({
+          placeHolder: 'into slug (will absorb backlinks) — e.g. capabilities/keep',
+          prompt: `Merge target — ${fromSlug}'s backlinks redirect here, then ${fromSlug}.md is deleted`,
+          validateInput: (v) =>
+            !v || !v.trim()
+              ? 'into slug is required'
+              : v === fromSlug
+                ? 'into slug must differ from from slug'
+                : null,
+        });
+        if (!intoSlug) return;
+        try {
+          const dry = (await mcpClient.callTool('merge_concepts', {
+            fromSlug,
+            intoSlug,
+          })) as { updates?: Array<{ file: string }> };
+          const count = dry.updates?.length ?? 0;
+          const sample =
+            dry.updates?.slice(0, 5).map((u) => u.file).join('\n  ') ?? '(none)';
+          const confirmed = await vscode.window.showWarningMessage(
+            `Merge ${fromSlug} into ${intoSlug}?\n\n⚠ ${fromSlug}.md will be DELETED.\n\n${count} backlink file(s) redirected:\n  ${sample}${count > 5 ? `\n  ...+${count - 5} more` : ''}`,
+            { modal: true },
+            'Confirm merge (destructive)',
+          );
+          if (confirmed !== 'Confirm merge (destructive)') return;
+          await mcpClient.callTool('merge_concepts', {
+            fromSlug,
+            intoSlug,
+            confirm: true,
+          });
+          vscode.window.setStatusBarMessage(
+            `oh-my-ontology: merged ${fromSlug} → ${intoSlug} (${count} backlinks redirected)`,
+            5000,
+          );
+          await refresh();
+          const intoNode = cachedNodes.find((n) => n.slug === intoSlug);
+          if (intoNode) {
+            const doc = await vscode.workspace.openTextDocument(intoNode.filePath);
+            await vscode.window.showTextDocument(doc);
+          }
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          vscode.window.showErrorMessage(`oh-my-ontology merge: ${msg}`);
+        }
+      },
+    ),
+    vscode.commands.registerCommand(
       'ohMyOntology.openBacklink',
       async (b: Backlink) => {
         if (b.filePath) {
