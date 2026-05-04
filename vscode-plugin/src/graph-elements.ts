@@ -18,7 +18,7 @@ import { VaultNode } from "./walk-vault";
 
 export interface CyElement {
   group: "nodes" | "edges";
-  data: Record<string, string | undefined>;
+  data: Record<string, unknown>;
 }
 
 export function buildGraphElements(
@@ -33,6 +33,11 @@ export function buildGraphElements(
         id: node.slug,
         label: node.title,
         kind: node.kind,
+        // R13 #64 — meta for tooltip
+        meta: {
+          domain: node.domain,
+          path: node.path,
+        },
       },
     });
   }

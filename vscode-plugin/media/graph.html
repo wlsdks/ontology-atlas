@@ -11,29 +11,48 @@
         --indigo: #5e6ad2;
         --indigo-soft: #5e6ad2cc;
         --node-stroke: var(--vscode-panel-border, #444);
+        --hover-bg: var(--vscode-editorWidget-background, #2c2c2c);
       }
       html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font-family: var(--vscode-font-family); }
       #cy { width: 100vw; height: 100vh; }
       #toolbar {
         position: fixed; top: 8px; right: 12px; z-index: 10;
-        display: flex; gap: 8px; align-items: center;
-        font-size: 12px; opacity: 0.85;
+        display: flex; gap: 6px; align-items: center;
+        font-size: 12px;
       }
-      button {
+      #toolbar button, #toolbar input {
         background: transparent; border: 1px solid var(--node-stroke); color: var(--fg);
-        padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+        padding: 4px 10px; border-radius: 4px; font-size: 12px;
+        font-family: inherit;
       }
-      button:hover { border-color: var(--indigo); color: var(--indigo); }
-      #status { font-size: 11px; opacity: 0.7; }
+      #toolbar button { cursor: pointer; }
+      #toolbar button:hover { border-color: var(--indigo); color: var(--indigo); }
+      #search { width: 180px; }
+      #search:focus { outline: 1px solid var(--indigo); border-color: var(--indigo); }
+      #status { font-size: 11px; opacity: 0.7; padding: 0 6px; }
+      #tooltip {
+        position: fixed; pointer-events: none; z-index: 20;
+        background: var(--hover-bg); color: var(--fg);
+        border: 1px solid var(--node-stroke); border-radius: 4px;
+        padding: 6px 9px; font-size: 11px; line-height: 1.4;
+        max-width: 320px; opacity: 0;
+        transition: opacity 80ms ease-out;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      }
+      #tooltip.visible { opacity: 1; }
+      #tooltip .tt-title { font-weight: 600; margin-bottom: 2px; }
+      #tooltip .tt-meta { opacity: 0.65; font-family: var(--vscode-editor-font-family, monospace); font-size: 10px; }
     </style>
   </head>
   <body>
     <div id="toolbar">
+      <input id="search" type="text" placeholder="search nodes…" autocomplete="off" spellcheck="false" />
       <span id="status">loading…</span>
-      <button id="btn-fit">Fit</button>
-      <button id="btn-relayout">Relayout</button>
+      <button id="btn-fit" title="Fit graph to viewport">Fit</button>
+      <button id="btn-relayout" title="Recompute layout">Relayout</button>
     </div>
     <div id="cy"></div>
+    <div id="tooltip" role="tooltip"></div>
     <script src="${CYTOSCAPE_URI}"></script>
     <script src="${DAGRE_URI}"></script>
     <script src="${CY_DAGRE_URI}"></script>
@@ -76,6 +95,27 @@
             selector: 'node:selected',
             style: { 'border-width': 2, 'border-color': '#5e6ad2' },
           },
+          // R13 #64 — active editor highlight
+          {
+            selector: 'node.active',
+            style: {
+              'border-width': 3,
+              'border-color': '#5e6ad2',
+              'border-opacity': 1,
+              'shadow-blur': 16,
+              'shadow-color': '#5e6ad2',
+              'shadow-opacity': 0.5,
+            },
+          },
+          // search highlight
+          {
+            selector: 'node.matched',
+            style: { 'border-width': 2, 'border-color': '#d4b478' },
+          },
+          {
+            selector: 'node.dimmed',
+            style: { 'opacity': 0.25 },
+          },
           {
             selector: 'edge',
             style: {
@@ -91,6 +131,10 @@
               'text-margin-y': -6,
             },
           },
+          {
+            selector: 'edge.dimmed',
+            style: { 'opacity': 0.1 },
+          },
         ],
         wheelSensitivity: 0.2,
       });
@@ -99,12 +143,68 @@
         vscode.postMessage({ type: 'openNode', slug: evt.target.id() });
       });
 
+      // R13 #64 — hover tooltip with kind + slug + path
+      const tooltipEl = document.getElementById('tooltip');
+      cy.on('mouseover', 'node', (evt) => {
+        const d = evt.target.data();
+        const meta = d.meta ?? {};
+        tooltipEl.innerHTML =
+          '<div class="tt-title">' + escapeHtml(d.label) + '</div>' +
+          '<div class="tt-meta">' + escapeHtml(d.kind) + ' · ' + escapeHtml(d.id) + '</div>' +
+          (meta.domain ? '<div class="tt-meta">domain: ' + escapeHtml(meta.domain) + '</div>' : '') +
+          (meta.path ? '<div class="tt-meta">path: ' + escapeHtml(meta.path) + '</div>' : '');
+        const pos = evt.renderedPosition;
+        tooltipEl.style.left = (pos.x + 16) + 'px';
+        tooltipEl.style.top = (pos.y + 16) + 'px';
+        tooltipEl.classList.add('visible');
+      });
+      cy.on('mouseout', 'node', () => {
+        tooltipEl.classList.remove('visible');
+      });
+      cy.on('pan zoom', () => {
+        tooltipEl.classList.remove('visible');
+      });
+
       function relayout() {
         cy.layout({ name: 'dagre', rankDir: 'LR', nodeSep: 30, rankSep: 80, padding: 20 }).run();
       }
 
+      function escapeHtml(s) {
+        return String(s ?? '').replace(/[&<>"']/g, (c) => ({
+          '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        }[c]));
+      }
+
       document.getElementById('btn-fit').addEventListener('click', () => cy.fit(undefined, 30));
       document.getElementById('btn-relayout').addEventListener('click', () => relayout());
+
+      // R13 #64 — search box
+      const searchEl = document.getElementById('search');
+      searchEl.addEventListener('input', () => {
+        const q = searchEl.value.trim().toLowerCase();
+        cy.nodes().removeClass('matched dimmed');
+        cy.edges().removeClass('dimmed');
+        if (!q) return;
+        const matched = cy.nodes().filter((n) => {
+          const d = n.data();
+          return (
+            String(d.label ?? '').toLowerCase().includes(q) ||
+            String(d.id ?? '').toLowerCase().includes(q)
+          );
+        });
+        if (matched.length === 0) return;
+        matched.addClass('matched');
+        cy.nodes().difference(matched).addClass('dimmed');
+        cy.edges().addClass('dimmed');
+        if (matched.length === 1) cy.center(matched);
+      });
+      searchEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          searchEl.value = '';
+          searchEl.dispatchEvent(new Event('input'));
+          searchEl.blur();
+        }
+      });
 
       window.addEventListener('message', (event) => {
         const msg = event.data;
@@ -114,6 +214,15 @@
           relayout();
           document.getElementById('status').textContent =
             `${msg.elements.filter((e) => e.group === 'nodes').length} nodes · ${msg.elements.filter((e) => e.group === 'edges').length} edges`;
+        }
+        if (msg?.type === 'highlightActive') {
+          cy.nodes().removeClass('active');
+          if (msg.slug) {
+            const node = cy.getElementById(msg.slug);
+            if (node && node.length) {
+              node.addClass('active');
+            }
+          }
         }
       });
 

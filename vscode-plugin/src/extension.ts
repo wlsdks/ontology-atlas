@@ -6,7 +6,7 @@ import { findOntologyMatch } from './code-match';
 import { writeDoc, resolveSlug } from './write-vault';
 import { McpClient } from './mcp-client';
 import { Backlink, BacklinksProvider } from './backlinks-provider';
-import { showGraphView } from './graph-view';
+import { GraphPanelHandle, showGraphView } from './graph-view';
 
 const STORAGE_VAULT_KEY = 'oh-my-ontology.vaultPath';
 
@@ -34,6 +34,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   let cachedNodes: VaultNode[] = [];
   let currentMatch: VaultNode | null = null;
   let mcpClient: McpClient | null = null;
+  let graphPanel: GraphPanelHandle | null = null;
 
   const updateMatchForActiveEditor = (): void => {
     const editor = vscode.window.activeTextEditor;
@@ -91,6 +92,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     matchStatusBar.command = 'ohMyOntology.openMatchedNode';
     matchStatusBar.show();
     void loadBacklinksFor(match.slug);
+    // R13 #64 — sync graph panel highlight with active editor
+    if (graphPanel?.isAlive()) {
+      graphPanel.setActive(match.slug);
+    }
   };
 
   /**
@@ -176,6 +181,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         4000,
       );
       await ensureMcpClient(vaultPath);
+      // R13 #64 — push refreshed nodes to live graph panel
+      if (graphPanel?.isAlive()) {
+        graphPanel.update(nodes);
+      } else {
+        graphPanel = null;
+      }
       updateMatchForActiveEditor();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -417,7 +428,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         );
         return;
       }
-      showGraphView(context, cachedNodes);
+      // R13 #64 — reveal existing panel if it's still alive (don't double-open).
+      if (graphPanel?.isAlive()) {
+        graphPanel.panel.reveal();
+        graphPanel.update(cachedNodes);
+        if (currentMatch) graphPanel.setActive(currentMatch.slug);
+        return;
+      }
+      graphPanel = showGraphView(context, cachedNodes);
+      graphPanel.panel.onDidDispose(() => {
+        graphPanel = null;
+      });
+      if (currentMatch) graphPanel.setActive(currentMatch.slug);
     }),
     vscode.commands.registerCommand(
       'ohMyOntology.openBacklink',

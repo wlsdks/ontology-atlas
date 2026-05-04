@@ -81,4 +81,30 @@ suite('oh-my-ontology — VSCode integration', () => {
     assert.ok(views.includes('ohMyOntology.tree'));
     assert.ok(views.includes('ohMyOntology.backlinks'));
   });
+
+  test('openGraph command opens a webview panel (R13 #64)', async function () {
+    this.timeout(10000);
+    // Track the active webview before/after
+    const before = countWebviewPanels();
+    await vscode.commands.executeCommand('ohMyOntology.openGraph');
+    // Give VSCode a tick to mount the panel
+    await new Promise((r) => setTimeout(r, 500));
+    const after = countWebviewPanels();
+    assert.ok(after >= before + 1, 'openGraph should create at least one webview panel');
+  });
 });
+
+/**
+ * Count active webview tabs in any tab group. We can't query webview
+ * panel objects directly (they're created by `createWebviewPanel`), but
+ * VSCode does expose tab metadata via `window.tabGroups`.
+ */
+function countWebviewPanels(): number {
+  let count = 0;
+  for (const group of vscode.window.tabGroups.all) {
+    for (const tab of group.tabs) {
+      if (tab.input instanceof vscode.TabInputWebview) count += 1;
+    }
+  }
+  return count;
+}
