@@ -24,6 +24,17 @@ import {
 const AUTO_REFRESH_DEBOUNCE_MS = 2000;
 
 /**
+ * R13 #69 — background fs polling interval (ms). 탭 visible 인 동안
+ * 이 간격으로 fingerprint 비교 → 변경 있으면 reload. 사용자가 IDE / AI agent
+ * 통해 vault 만지면 웹 탭 *focus 안 해도* 자동 반영.
+ *
+ * 5s 가 sweet spot — 사람의 인지 갱신 속도 (~"몇 초 안에 반영") 와 큰 vault
+ * fingerprint 비용 (~수십 ms) 의 균형. 변경 없으면 fingerprint 만 비교하므로
+ * 거의 무료. 변경 있을 때만 full rebuild.
+ */
+const AUTO_REFRESH_INTERVAL_MS = 5000;
+
+/**
  * R11 #15 — vault 의 .md 가 외부 (다른 에디터 / AI MCP) 에 의해 변경된 채
  * 사용자가 GUI 에서 save 하려 할 때 silent overwrite 차단. mcp 측의
  * VaultConflictError 와 같은 의미.
@@ -381,9 +392,37 @@ export function useLocalVaultInternal() {
     };
     window.addEventListener('focus', fire);
     document.addEventListener('visibilitychange', onVisibility);
+
+    // R13 #69 — interval-based polling while visible. focus/visibility
+    // 만으로는 사용자가 다른 탭 / IDE 보고 있을 때 안 갱신됨. 5s 간격으로
+    // fingerprint 비교 — 변경 없으면 거의 무료, 변경 있으면 자동 reload.
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    const startPolling = () => {
+      if (pollTimer) return;
+      pollTimer = setInterval(() => {
+        // 직접 tryReload 호출 (fire 의 debounce 로직은 burst 용. polling 은
+        // 이미 5s 간격이라 debounce 무관).
+        void tryReload();
+      }, AUTO_REFRESH_INTERVAL_MS);
+    };
+    const stopPolling = () => {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+    };
+    if (document.visibilityState === 'visible') startPolling();
+    const onVisibilityForPoll = () => {
+      if (document.visibilityState === 'visible') startPolling();
+      else stopPolling();
+    };
+    document.addEventListener('visibilitychange', onVisibilityForPoll);
+
     return () => {
       window.removeEventListener('focus', fire);
       document.removeEventListener('visibilitychange', onVisibility);
+      document.removeEventListener('visibilitychange', onVisibilityForPoll);
+      stopPolling();
       if (tracker.timer) {
         clearTimeout(tracker.timer);
         tracker.timer = null;
