@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-05-04 — Round 13: AI agent quality 첫 측정 + VSCode plugin MVP
+
+R12 closure 후 *제품 핵심 가설* 첫 측정. 측정 결과 강한 confirming evidence 위에 README 약속의 미완성 surface (VSCode plugin) 첫 구현.
+
+### AI agent quality benchmark (#47, #48)
+
+`docs/benchmark/` 신설 — 7 task × 3 카테고리 (cross-cutting / semantic / negative-control), Claude Code + Codex 양 agent. Claude Code 자동 측정 (mcp/src/index.js spawn JSON-RPC), Codex 자동 측정 (codex exec). Codex 는 사용자 명시 승인 후 `--dangerously-bypass-approvals-and-sandbox` 로 진짜 MCP 실행.
+
+**Cross-agent 결과 (n=2)**:
+- **Claude Code**: MCP 가 hallucination 제거 — Cat A hallucinations 9 → 0, correctness +1.0
+- **Codex (bypass)**: MCP 가 efficiency — Cat A tool calls 7.0 → 1.67 (76% 감소), correctness 이미 saturated
+- **두 agent 모두 negative control (Cat C) 통과** — raw read 적절한 task 에 ontology 도구 over-reach 안 함
+
+→ MCP integration 가치가 *agent 별로 다른 mechanism* 으로 measurable. README "Verifiable promises" 표에 "AI agent quality measurement (cross-agent, n=2)" 행 추가.
+
+### MCP `instructions` field (#45)
+
+mcp v0.7.0 → v0.7.1. Initialize 응답에 시스템-prompt 수준 안내 surface — kind 계층 (project→domain→capability→element), 호출 순서, write 도구 dry-run/confirm 패턴, expected_mtime 충돌 가드. 모든 연결 agent (Claude Code, Cursor) 가 매 세션 시행착오로 학습하던 부분을 단번에 해소.
+
+### VSCode plugin v0.1.0 MVP (#49)
+
+`vscode-plugin/` 신설. README 가 약속해 둔 *(planned) VSCode plugin* 의 first MVP. Activity Bar entry + TreeView (vault 노드 kind 별 그룹화) + 노드 클릭 → .md 열기. workspace 의 `docs/ontology/` 자동 detect 또는 picker. `globalState` 영속.
+
+**5-way parser contract 편입** — `vscode-plugin/src/parse-frontmatter.ts` 가 5번째 진입점. 12 fixture × 5 parser = 60 case 가 매 PR 마다 drift 차단. `tests/contract/parse-frontmatter.contract.test.ts` 가 5-way 로 확장.
+
+dogfood vault 에 `capabilities/vscode-plugin-ide-entry` 추가 (23 노드).
+
+### Scaffold drift 정정 (#46)
+
+`cli/templates/vault/README.md` + `src/features/docs-vault-local/lib/ontology-starter.ts` 의 "12 tools / write 4" stale 표기 → "14 tools / write 6" + rename_concept · merge_concepts 명시. 신규 사용자 첫 README 거짓말 차단.
+
+---
+
 ## 2026-05-04 — Round 12: developer-primary 방향 + CLI 5 명령 + dogfood graph 강화
 
 R11 fire #25 의 사용자 명시 ("의미없는 작업은 하지말고, 그래서 우리 서비스의 핵심 기능이 뭔데? 이게 명확해야해") 후 *제품 본질* 영역으로 전환. 12 task close.

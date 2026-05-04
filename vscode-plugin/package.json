@@ -1,0 +1,95 @@
+{
+  "name": "oh-my-ontology-vscode",
+  "displayName": "oh-my-ontology",
+  "description": "View and navigate the ontology vault from inside VSCode — sibling of the CLI and MCP server.",
+  "version": "0.1.0",
+  "publisher": "wlsdks",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other"],
+  "keywords": ["ontology", "markdown", "frontmatter", "knowledge-graph", "ai-agent"],
+  "main": "./out/extension.js",
+  "activationEvents": ["onStartupFinished"],
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "ohMyOntology",
+          "title": "oh-my-ontology",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "ohMyOntology": [
+        {
+          "id": "ohMyOntology.tree",
+          "name": "Ontology"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "ohMyOntology.tree",
+        "contents": "Pick a vault folder (a directory containing .md files with `kind:` frontmatter).\n\n[Open vault folder](command:ohMyOntology.pickVault)\n\nOr set `oh-my-ontology.vaultPath` in your settings."
+      }
+    ],
+    "commands": [
+      {
+        "command": "ohMyOntology.pickVault",
+        "title": "oh-my-ontology: Pick vault folder",
+        "icon": "$(folder-opened)"
+      },
+      {
+        "command": "ohMyOntology.refresh",
+        "title": "oh-my-ontology: Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "ohMyOntology.openNode",
+        "title": "Open node .md"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "ohMyOntology.refresh",
+          "when": "view == ohMyOntology.tree",
+          "group": "navigation"
+        },
+        {
+          "command": "ohMyOntology.pickVault",
+          "when": "view == ohMyOntology.tree",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "oh-my-ontology",
+      "properties": {
+        "oh-my-ontology.vaultPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the ontology vault folder (markdown files with `kind:` frontmatter). Empty = pick interactively."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p .",
+    "watch": "tsc -p . --watch",
+    "vscode:prepublish": "npm run compile"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wlsdks/oh-my-ontology.git",
+    "directory": "vscode-plugin"
+  }
+}

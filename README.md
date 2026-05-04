@@ -2,7 +2,7 @@
 
 > **One codebase, one ontology, that the developer and their AI agent grow together.**
 >
-> Local-first markdown vault. Developer authors via CLI / web UI / (planned) VSCode plugin.
+> Local-first markdown vault. Developer authors via CLI / web UI / VSCode plugin (v0.1.0 MVP).
 > AI agent (Claude Code, Cursor) reads + writes the same `.md` files via MCP — 14 tools.
 > No backend. No login. The git repo is the source of truth.
 
@@ -147,9 +147,10 @@ src/            Feature-Sliced Design layers
   ├── features/ user interactions
   ├── entities/ domain entities (project, ontology-class, knowledge-graph, …)
   └── shared/   ui primitives, lib, config
-mcp/            MCP server (`oh-my-ontology-mcp`, 14 tools)
-cli/            `npx oh-my-ontology` (vault scaffold + setup)
-docs/           Long-form docs + dogfood vault (docs/ontology/)
+mcp/            MCP server (`oh-my-ontology-mcp`, 14 tools) — AI agent surface
+cli/            `npx oh-my-ontology` (vault scaffold + 5 commands) — developer terminal surface
+vscode-plugin/  VSCode extension (`oh-my-ontology-vscode`) — developer IDE surface (v0.1.0 MVP)
+docs/           Long-form docs + dogfood vault (docs/ontology/) + benchmark results
 docs/archive/   Historical analysis docs
 scripts/        Build helpers
 ```

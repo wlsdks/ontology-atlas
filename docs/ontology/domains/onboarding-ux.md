@@ -4,6 +4,7 @@ kind: domain
 title: Onboarding & UX (theme · toast · a11y · mobile · CLI)
 capabilities:
   - cli-developer-entry
+  - vscode-plugin-ide-entry
 elements:
   - src/features/theme-toggle
   - src/shared/ui/toast
