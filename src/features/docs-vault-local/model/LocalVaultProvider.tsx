@@ -2,6 +2,7 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import { useLocalVaultInternal } from "./use-local-vault";
+import { VaultDiffToaster } from "./VaultDiffToaster";
 
 type LocalVaultValue = ReturnType<typeof useLocalVaultInternal>;
 
@@ -25,6 +26,7 @@ export function LocalVaultProvider({ children }: { children: ReactNode }) {
   const value = useLocalVaultInternal();
   return (
     <LocalVaultContext.Provider value={value}>
+      <VaultDiffToaster />
       {children}
     </LocalVaultContext.Provider>
   );
