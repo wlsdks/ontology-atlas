@@ -10,7 +10,9 @@
     "test": "node src/integration.test.mjs"
   },
   "files": [
-    "src",
+    "src/index.mjs",
+    "src/commands",
+    "src/lib",
     "templates",
     "CHANGELOG.md",
     "README.md"

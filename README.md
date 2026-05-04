@@ -12,13 +12,17 @@
 [![MCP server](https://img.shields.io/badge/MCP-14_tools-5e6ad2)](mcp/README.md)
 
 ```bash
-npx oh-my-ontology init my-vault
+npx oh-my-ontology init my-vault                # scaffold
 cd my-vault
-$EDITOR project.md
+oh-my-ontology list                             # 5 starter nodes
+oh-my-ontology add capability auth/token-issue --title="Token issue" --domain=auth
+oh-my-ontology find token                       # verify it shows up
+oh-my-ontology validate                         # frontmatter integrity (CI gate-friendly)
 ```
 
-That's it. You now have a frontmatter-based ontology vault that humans
-and AI agents (Claude Code, Cursor, etc.) can read and write together.
+That's it. You now have a frontmatter-based ontology vault that the
+developer and their AI agent (Claude Code, Cursor, etc.) can read and
+write together — same `.md` files, same git repo.
 
 > 한국어 안내는 아래 [README (한국어)](#한국어-가이드) 섹션 참조.
 
