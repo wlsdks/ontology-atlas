@@ -497,8 +497,8 @@ Permanently removed earlier (R10): `/login`, `/signup`, `/account`, `/reset-pass
 
 ## 7. Deferred (future rounds — wait-for-signal)
 
-- `/ontology/edit` builder reconsideration — UX persona walkthrough (R3) found dev/PM/AI all skip. design call needed.
-- Phase 4 PM polish — vocabulary translation/hiding (frontmatter / slug / kind / ephemeral / ego / MCP / vault). PRODUCT-DIRECTION ⏳.
+- `/ontology/edit` builder reconsideration — UX persona walkthrough (R3) found dev/PM/AI all skip. design call needed. (R11 #25 PM-drop 후 재평가 — dev 가 frontmatter 직접 편집이 더 빠르면 builder 의 ROI 의문)
+- ~~Phase 4 PM polish~~ — **dropped** (R11 #25, PRODUCT-DIRECTION v3). PM-primary 결정 reverted.
 - Search palette unification (`⌘K` + `⇧⌘K`) — R5 skip: not duplicates, would require ranking/section redesign.
 - LocalVaultPicker hoist out of dropdown — R5 skip: dead-end already closed by R4 J.
 - WebGL context-loss `ErrorBoundary` (Scenario 10) — R9 defer: theoretical, no reports.

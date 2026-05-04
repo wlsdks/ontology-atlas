@@ -1,7 +1,10 @@
 # oh-my-ontology
 
-> **AI-native, local-first codebase ontology workbench.** Humans and AI agents author the same vault.
-> Markdown frontmatter is the graph. No backend. No login.
+> **One codebase, one ontology, that the developer and their AI agent grow together.**
+>
+> Local-first markdown vault. Developer authors via CLI / web UI / (planned) VSCode plugin.
+> AI agent (Claude Code, Cursor) reads + writes the same `.md` files via MCP — 14 tools.
+> No backend. No login. The git repo is the source of truth.
 
 [![CI](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml/badge.svg)](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)

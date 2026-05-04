@@ -6,13 +6,15 @@
 
 ## Project overview
 
-`oh-my-ontology` is **a local-first codebase ontology workbench that humans and AI agents author together**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Humans edit through the builder canvas or directly in `.md` files; AI agents (Claude Code, …) read/write the same graph through the `mcp/` MCP server.
+`oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology list/validate/init`) / web UI (`/ontology`, `/docs`) / planned VSCode plugin; AI agent (Claude Code, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (14 tools).
 
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
-The single guiding principle:
+The single guiding principle (v3, R11 fire #25):
 
-> **Markdown frontmatter is the graph. Humans and AI agents write to the same vault. No backend, no login.**
+> **One codebase, one ontology, that the developer and their AI agent grow together.**
+
+Markdown frontmatter is the graph. The git repo is the source of truth. No backend. No login. PM-primary 결정은 R11 에서 reverted — 비개발자 surface 는 *bonus*, *target 아님*.
 
 ## Quick start
 
@@ -144,11 +146,13 @@ This project describes its own mental model in `docs/ontology/` as frontmatter m
 
 ### 프로젝트 개요
 
-`oh-my-ontology` 는 **사람과 AI agent 가 같이 저작하는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 사람은 빌더 캔버스 또는 직접 `.md` 편집으로, AI agent (Claude Code 등) 는 `mcp/` MCP 서버로 같은 graph 를 read/write.
+`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology list/validate/init`) / 웹 UI (`/ontology`, `/docs`) / 향후 VSCode plugin 으로 편집, AI agent (Claude Code, Cursor) 는 `mcp/` MCP 서버 (14 tools) 로 같은 `.md` 파일을 read/write.
 
-핵심 원칙 한 줄:
+핵심 원칙 한 줄 (v3, R11 fire #25):
 
-> **md frontmatter 가 곧 그래프. 사람도 AI agent 도 같은 vault 에 쓴다. 백엔드 / 로그인 0.**
+> **하나의 codebase, 하나의 ontology, 개발자와 그 AI agent 가 같이 키운다.**
+
+md frontmatter 가 곧 그래프. git repo 가 진실원. 백엔드 / 로그인 0. PM-primary 결정은 R11 에서 reverted — 비개발자 surface 는 *bonus*, *target 아님*.
 
 ### Quick start
 

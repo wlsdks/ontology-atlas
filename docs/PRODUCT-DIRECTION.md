@@ -6,14 +6,19 @@
 
 ---
 
-## TL;DR — first principle in one line (v2)
+## TL;DR — first principle in one line (v3, 2026-05-04)
 
-> **This project is an ontology workbench — non-developers and AI agents co-author the mental model of one codebase.**
+> **One codebase, one ontology, that the developer and their AI agent grow together.**
 
-- Topology = one of the *exits* (a view), not the spine.
-- Spine = `.md` documents → a growing ontology.
-- Non-developers (PM · designer · ops) get a surface that's friendlier than ERDs.
-- AI agents (Claude Code, …) read and write the same ontology — that *partner* angle is what differentiates us from generic ontology tools.
+- Primary audience: **developer + their AI agent**. Developer creates / refines nodes (CLI · web UI · soon VSCode plugin); AI agent (Claude Code, Cursor) reads/writes the same vault via MCP to give better codebase answers.
+- Spine = `.md` documents → a growing ontology. Topology / tree / builder are *views* of that spine.
+- PM / designer / ops are **bonus, not target**. If the surface happens to be friendly to them — good. We don't optimize for them.
+
+### Why developer-primary
+
+- Developer already lives in the codebase — the *cost* of authoring frontmatter (slug / kind / domain / dependencies) is small for them.
+- Developer's AI agent (the *real* daily user of `mcp/` 14 tools) needs ground-truth structure to give better answers. Without a developer maintaining it, the ontology rots.
+- The *differentiator* vs Protégé / Notion / OWL editors = "ontology that lives next to the code, in the same git repo, that the developer + AI agent grow together."
 
 ---
 
@@ -47,15 +52,15 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 
 ---
 
-## 2. Two audiences, one ontology
+## 2. One primary audience (v3 — PM dropped)
 
-| Audience | What they do with this service |
-|---|---|
-| **Developers** | Map code ↔ concepts — "which service implements this capability?" |
-| **PM / designer / ops** | Build a mental model without reading source — "which domain, which elements" |
-| **AI agents** (Claude Code, …) | Codebase prior knowledge — answer "what does 'auth' mean in this project?" |
+| Audience | Role | Primary surface |
+|---|---|---|
+| **Developer** | Author + maintain the ontology as part of normal coding | CLI (`oh-my-ontology list/validate/...`), web UI (`/ontology`, `/docs`), planned VSCode plugin |
+| **AI agent** (Claude Code, Cursor, …) | Read for context · write back new findings | MCP server (14 tools — read 8 + write 6) |
+| ~~PM / designer / ops~~ | ~~Build mental model without reading source~~ | dropped (R11 fire #25 — developer-primary 결정 후) |
 
-The new mission claims one ontology can satisfy all three.
+The two primary audiences are **the developer and their own AI agent**. Both work on the same `.md` files in the same git repo. PM-friendly side effects are bonus, not requirements.
 
 ---
 
@@ -233,14 +238,15 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
 5. ✅ `docs/ontology/` dogfood vault — ~18 nodes describing our own mental model
 
-### ⏳ Phase 4 — Polish for non-developers — upcoming
+### 🚫 Phase 4 — Polish for non-developers — **dropped (R11 fire #25)**
 
-Details: `docs/BACKLOG.md` T33-T36.
+PM-primary 결정 reverted. v3 mission: developer + their AI agent only. T33-T36 의 비개발자 polish 항목들은 *if-bonus* 로 격하 (의도적 우선순위 0). 사용자 요청 들어오면 재평가.
 
-1. ⏳ Builder onboarding copy aligned with "more than an ERD — a domain map"
-2. ⏳ Mapping layer between technical jargon and everyday language
-3. ⏳ Per-kind node colors / icons (more familiar)
-4. ⏳ Search results categorized by "code / doc / person" (PM-friendly)
+### ⏳ Phase 4 (replacement) — Developer + AI agent depth
+
+1. ⏳ VSCode plugin scaffold — IDE 안에서 frontmatter 편집 + ontology 보기
+2. ⏳ CLI 명령 확장 — `add` / `find` / `path` / `query` (현재 `init` / `list` / `validate` 만)
+3. ⏳ AI agent dogfood 사이클 — Claude Code 가 mcp 로 codebase 분석 + add_concept 워크플로 검증
 
 ---
 
