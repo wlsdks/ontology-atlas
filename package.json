@@ -8,10 +8,13 @@
     "**/globals.css"
   ],
   "scripts": {
+    "postinstall": "git config core.hooksPath .githooks 2>/dev/null || true",
     "predev": "pnpm docs-vault:build",
     "dev": "next dev",
     "build": "pnpm docs-vault:build && next build",
     "docs-vault:build": "node scripts/build-docs-vault.mjs",
+    "vault:validate": "node scripts/validate-vault.mjs",
+    "vault:migrate": "node scripts/migrate-vault.mjs",
     "lint": "eslint",
     "bundle:check": "node scripts/check-bundle.mjs",
     "test": "vitest",

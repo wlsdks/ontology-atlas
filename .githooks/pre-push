@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# pre-push: tsc --noEmit 만 빠르게 돌려 main / PR 에 type error 가 새는 것을 차단.
+# 우회하려면 의식적으로 `git push --no-verify` — AGENTS.md 룰: "특별히 사용자가 요청한 경우에만 우회".
+#
+# Round 11 (2026-05-04): adc2abb 이후 main 에 direct push 로 CI failure 4연속 무시된
+# 사례 발견 — 그 회귀를 로컬에서 일찍 잡기 위해 도입.
+
+set -e
+
+remote="$1"
+
+while read local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main)
+      echo "[pre-push] main 으로 push — type check 강제"
+      ;;
+    *)
+      echo "[pre-push] $remote_ref — type check 강제"
+      ;;
+  esac
+done
+
+if ! pnpm exec tsc --noEmit; then
+  echo ""
+  echo "❌ pre-push: TypeScript 컴파일 실패 — push 중단"
+  echo "   우회하려면: git push --no-verify  (의식적 선택일 때만)"
+  exit 1
+fi
+
+echo "✅ pre-push: tsc --noEmit clean"
