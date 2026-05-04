@@ -15,6 +15,7 @@
     "docs-vault:build": "node scripts/build-docs-vault.mjs",
     "vault:validate": "node scripts/validate-vault.mjs",
     "vault:migrate": "node scripts/migrate-vault.mjs",
+    "dogfood:walk": "node scripts/dogfood-mcp-walk.mjs",
     "lint": "eslint",
     "bundle:check": "node scripts/check-bundle.mjs",
     "test": "vitest",

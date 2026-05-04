@@ -1,7 +1,9 @@
 ---
 slug: domains/onboarding-ux
 kind: domain
-title: Onboarding & UX (theme · toast · a11y · mobile)
+title: Onboarding & UX (theme · toast · a11y · mobile · CLI)
+capabilities:
+  - cli-developer-entry
 elements:
   - src/features/theme-toggle
   - src/shared/ui/toast
