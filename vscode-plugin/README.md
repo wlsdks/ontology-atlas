@@ -53,6 +53,8 @@ Click any node to open its `.md` in the editor.
 | Setting | Default | What it does |
 |---|---|---|
 | `oh-my-ontology.vaultPath` | `""` | Absolute path to the vault folder. Leave empty to pick interactively or auto-detect `docs/ontology/` in the workspace. |
+| `oh-my-ontology.useMcp` | `true` | Use the `oh-my-ontology-mcp` server for richer queries (currently: backlinks). When false (or when the server fails to start), the plugin falls back to an in-process filesystem scan. |
+| `oh-my-ontology.mcpServerPath` | `""` | Absolute path to `mcp/src/index.js`. Leave empty to auto-detect `<workspace>/mcp/src/index.js`. |
 
 ## Commands
 
@@ -72,19 +74,20 @@ different folder via the Activity Bar header to override.
 
 ## Status
 
-**v0.3.0 — write surface (Add concept).** Working features:
+**v0.4.0 — MCP server connect.** Working features:
 
-- Activity Bar entry + TreeView grouped by `kind`
+- Activity Bar entry + Ontology TreeView grouped by `kind`
+- **Backlinks panel (v0.4.0)** — second TreeView under Activity Bar, populated by `find_backlinks` against the node matching the current editor.
 - Auto-detect `docs/ontology/` in workspace
 - Pick-vault dialog (persisted across sessions)
 - Click node → open `.md`
 - Status bar match — active editor's file → owning ontology node, click to jump (v0.2.0)
-- **Add concept command (v0.3.0)** — `oh-my-ontology: Add concept` from the Command Palette OR the `+` button at the top of the tree view. QuickPick (kind) → InputBox (slug) → InputBox (title) → optional domain → writes the new `.md` with auto-prefix (`capabilities/foo`, `domains/foo`, `elements/foo`). Refuses duplicate slugs. Tree refreshes and the new `.md` opens in the editor.
+- Add concept command — Command Palette / TreeView `+` button (v0.3.0)
+- **MCP server spawn (v0.4.0)** — plugin spawns `mcp/src/index.js` on activate, sends JSON-RPC over stdio to populate the backlinks panel. **Falls back to in-process scan** when the server is unavailable, so the plugin still works in offline / standalone mode. Same wire protocol as Claude Code uses.
 
 **Not yet:**
 
 - patch-concept / rename-concept / merge-concepts (other write tools)
-- MCP server connection (currently uses direct filesystem write — same contract as the CLI's `add`, gated by `package.json` `files` for tarball, but no dry-run/conflict-mtime path yet)
 - Marketplace publishing
 
 The frontmatter parser is the same lenient one shared across CLI / MCP

@@ -1,14 +1,24 @@
+import * as path from 'path';
 import * as vscode from 'vscode';
 import { walkVault, VaultNode } from './walk-vault';
 import { OntologyTreeProvider } from './tree-provider';
 import { findOntologyMatch } from './code-match';
 import { writeDoc, resolveSlug } from './write-vault';
+import { McpClient } from './mcp-client';
+import { Backlink, BacklinksProvider } from './backlinks-provider';
 
 const STORAGE_VAULT_KEY = 'oh-my-ontology.vaultPath';
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const treeProvider = new OntologyTreeProvider();
   vscode.window.registerTreeDataProvider('ohMyOntology.tree', treeProvider);
+
+  // R13 #52 — Backlinks panel populated via MCP `find_backlinks`.
+  const backlinksProvider = new BacklinksProvider();
+  vscode.window.registerTreeDataProvider(
+    'ohMyOntology.backlinks',
+    backlinksProvider,
+  );
 
   // R13 #50 — code↔ontology jump: surface the matching node for the active
   // editor in the status bar. Click → open the node's .md.
@@ -21,6 +31,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
 
   let cachedNodes: VaultNode[] = [];
   let currentMatch: VaultNode | null = null;
+  let mcpClient: McpClient | null = null;
 
   const updateMatchForActiveEditor = (): void => {
     const editor = vscode.window.activeTextEditor;
@@ -28,6 +39,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     if (!editor || !folders || folders.length === 0 || cachedNodes.length === 0) {
       currentMatch = null;
       matchStatusBar.hide();
+      backlinksProvider.clear();
       return;
     }
     // Pick the workspace folder that owns the active document, fall back to first.
@@ -41,12 +53,80 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     currentMatch = match;
     if (!match) {
       matchStatusBar.hide();
+      backlinksProvider.clear();
       return;
     }
     const icon = iconForKind(match.kind);
     matchStatusBar.text = `${icon} ${match.title}`;
     matchStatusBar.tooltip = `oh-my-ontology · ${match.kind} · ${match.slug}\nClick to open ${match.slug}.md`;
     matchStatusBar.show();
+    void loadBacklinksFor(match.slug);
+  };
+
+  /**
+   * R13 #52 — fetch backlinks via MCP `find_backlinks`, fall back to a
+   * naive in-process scan of cachedNodes if the MCP server is unavailable.
+   */
+  const loadBacklinksFor = async (slug: string): Promise<void> => {
+    backlinksProvider.setLoading(slug);
+    if (mcpClient && mcpClient.isReady()) {
+      try {
+        const result = (await mcpClient.callTool('find_backlinks', { slug })) as {
+          total: number;
+          matches: Array<{
+            slug: string;
+            kind: string;
+            title?: string;
+            matchedKeys?: string[];
+          }>;
+        };
+        const items: Backlink[] = result.matches.map((m) => ({
+          slug: m.slug,
+          kind: m.kind,
+          title: m.title ?? m.slug,
+          matchedKeys: m.matchedKeys ?? [],
+          filePath:
+            cachedNodes.find((n) => n.slug === m.slug)?.filePath ?? '',
+        }));
+        backlinksProvider.setBacklinks(slug, items);
+        return;
+      } catch (err) {
+        // fall through to filesystem fallback
+        const msg = err instanceof Error ? err.message : String(err);
+        console.warn(`[oh-my-ontology] MCP find_backlinks failed: ${msg}`);
+      }
+    }
+    // Fallback: scan cached nodes ourselves (raw match against frontmatter arrays).
+    const items = computeBacklinksLocally(slug, cachedNodes);
+    backlinksProvider.setBacklinks(slug, items);
+  };
+
+  const ensureMcpClient = async (vaultPath: string): Promise<void> => {
+    const config = vscode.workspace.getConfiguration('oh-my-ontology');
+    const useMcp = config.get<boolean>('useMcp', true);
+    if (!useMcp) {
+      if (mcpClient) {
+        mcpClient.dispose();
+        mcpClient = null;
+      }
+      return;
+    }
+    const serverEntry = resolveMcpServerEntry(config, context);
+    if (!serverEntry) return;
+    if (mcpClient) {
+      mcpClient.dispose();
+      mcpClient = null;
+    }
+    const client = new McpClient(serverEntry, vaultPath);
+    try {
+      await client.start(8000);
+      mcpClient = client;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[oh-my-ontology] MCP start failed, fallback active: ${msg}`);
+      client.dispose();
+      mcpClient = null;
+    }
   };
 
   const refresh = async (): Promise<void> => {
@@ -65,6 +145,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         `oh-my-ontology: ${nodes.length} ${nodes.length === 1 ? 'node' : 'nodes'} from ${vaultPath}`,
         4000,
       );
+      await ensureMcpClient(vaultPath);
       updateMatchForActiveEditor();
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -176,12 +257,89 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         void refresh();
       }
     }),
+    vscode.commands.registerCommand(
+      'ohMyOntology.openBacklink',
+      async (b: Backlink) => {
+        if (b.filePath) {
+          const doc = await vscode.workspace.openTextDocument(b.filePath);
+          await vscode.window.showTextDocument(doc);
+          return;
+        }
+        // No filePath cached (rare — backlink slug doesn't match any walked
+        // node, e.g. tail-only frontmatter reference). Surface a hint.
+        vscode.window.showInformationMessage(
+          `oh-my-ontology: ${b.slug} not found on disk; refresh the tree.`,
+        );
+      },
+    ),
     vscode.window.onDidChangeActiveTextEditor(() => {
       updateMatchForActiveEditor();
     }),
+    {
+      dispose: () => {
+        if (mcpClient) {
+          mcpClient.dispose();
+          mcpClient = null;
+        }
+      },
+    },
   );
 
   await refresh();
+}
+
+/**
+ * Resolve the MCP server entry point. Default: `mcp/src/index.js` under
+ * the first workspace folder (so a developer can dogfood without
+ * setting anything). Override via `oh-my-ontology.mcpServerPath`.
+ */
+function resolveMcpServerEntry(
+  config: vscode.WorkspaceConfiguration,
+  _context: vscode.ExtensionContext,
+): string | null {
+  const fromConfig = (config.get<string>('mcpServerPath') ?? '').trim();
+  if (fromConfig) return fromConfig;
+  const folders = vscode.workspace.workspaceFolders;
+  if (!folders || folders.length === 0) return null;
+  return path.join(folders[0].uri.fsPath, 'mcp', 'src', 'index.js');
+}
+
+/**
+ * Naive in-process backlinks computation — used when the MCP server
+ * is unavailable. Scans frontmatter array keys and the `domain:`
+ * inline-string key. Tail-only references (e.g. `mcp-server` for
+ * `capabilities/mcp-server`) are matched too.
+ */
+function computeBacklinksLocally(
+  slug: string,
+  nodes: ReadonlyArray<VaultNode>,
+): Backlink[] {
+  const out: Backlink[] = [];
+  const tail = slug.includes('/') ? slug.split('/').pop() ?? slug : slug;
+  for (const node of nodes) {
+    if (node.slug === slug) continue;
+    const matchedKeys: string[] = [];
+    if (node.domain && (node.domain === slug || node.domain === tail)) {
+      matchedKeys.push('domain');
+    }
+    for (const key of ['capabilities', 'elements'] as const) {
+      const arr = node[key];
+      if (!arr) continue;
+      if (arr.includes(slug) || arr.includes(tail)) {
+        matchedKeys.push(key);
+      }
+    }
+    if (matchedKeys.length > 0) {
+      out.push({
+        slug: node.slug,
+        kind: node.kind,
+        title: node.title,
+        filePath: node.filePath,
+        matchedKeys,
+      });
+    }
+  }
+  return out;
 }
 
 function iconForKind(kind: string): string {

@@ -2,7 +2,7 @@
   "name": "oh-my-ontology-vscode",
   "displayName": "oh-my-ontology",
   "description": "View and navigate the ontology vault from inside VSCode — sibling of the CLI and MCP server.",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "wlsdks",
   "engines": {
     "vscode": "^1.85.0"
@@ -26,6 +26,10 @@
         {
           "id": "ohMyOntology.tree",
           "name": "Ontology"
+        },
+        {
+          "id": "ohMyOntology.backlinks",
+          "name": "Backlinks (current file)"
         }
       ]
     },
@@ -54,6 +58,14 @@
       {
         "command": "ohMyOntology.openNode",
         "title": "Open node .md"
+      },
+      {
+        "command": "ohMyOntology.openBacklink",
+        "title": "Open backlink .md"
+      },
+      {
+        "command": "ohMyOntology.openMatchedNode",
+        "title": "Open matched node .md"
       }
     ],
     "menus": {
@@ -82,6 +94,16 @@
           "type": "string",
           "default": "",
           "description": "Absolute path to the ontology vault folder (markdown files with `kind:` frontmatter). Empty = pick interactively."
+        },
+        "oh-my-ontology.useMcp": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use the oh-my-ontology MCP server (`mcp/src/index.js`) for richer queries (e.g. backlinks). Falls back to in-process filesystem scan when disabled or when the server is unavailable."
+        },
+        "oh-my-ontology.mcpServerPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to `mcp/src/index.js`. Empty = auto-detect `<workspace>/mcp/src/index.js`."
         }
       }
     }
@@ -89,7 +111,7 @@
   "scripts": {
     "compile": "tsc -p .",
     "watch": "tsc -p . --watch",
-    "test": "npm run compile && node --test src/code-match.test.mjs src/write-vault.test.mjs",
+    "test": "npm run compile && node --test src/code-match.test.mjs src/write-vault.test.mjs src/backlinks-local.test.mjs src/mcp-client.test.mjs",
     "vscode:prepublish": "npm run compile"
   },
   "devDependencies": {
