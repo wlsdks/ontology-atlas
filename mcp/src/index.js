@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
-* oh-my-ontology-mcp — MCP 서버 v0.7.0 (도구 14종 = read 8 + write 6).
+* oh-my-ontology-mcp — MCP 서버 v0.7.1 (도구 14종 = read 8 + write 6).
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
  *
@@ -78,9 +78,50 @@ try {
   process.exit(1);
 }
 
+// MCP `instructions` field — initialize 응답에 포함되어 연결된 AI agent
+// (Claude Code, Cursor, …) 가 항상 보는 시스템-prompt 수준 안내. 14 tool
+// description 만으로는 (1) 호출 순서, (2) kind 계층의 의미, (3) write 도구의
+// dry-run/confirm 패턴, (4) mtime 충돌 가드 — 이 4 가지가 누락되어 있어
+// agent UX 가 매번 시행착오로 학습되는 문제를 단번에 해소.
+const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
+
+## Kind hierarchy (top → leaf)
+
+- **project** — top-level deliverable (e.g. "auth-platform"). Owns capabilities and elements.
+- **domain** — functional grouping (e.g. "auth", "billing"). Parent of capabilities.
+- **capability** — a coherent unit of behavior (e.g. "token-issue"). Often realized by elements.
+- **element** — concrete piece (library, API, schema, file). Leaf-level.
+- **document** — narrative or reference doc tied to the graph but not a domain object.
+- (\`vault-readme\` is reserved for the auto-generated README.md — agents should not set this kind.)
+
+## First-time workflow (when you connect to a new vault)
+
+1. \`list_kinds\` — see the kind census (how many projects/domains/capabilities/…).
+2. \`list_concepts\` — see all nodes. Watch \`vaultWarnings\` — if non-zero, the vault has frontmatter integrity issues; surface them to the user before making decisions on stale data.
+3. \`get_concept(slug)\` — for any node of interest. Returns frontmatter + body + neighbors (dependencies/relates) + \`mtime\`.
+4. \`find_backlinks(slug)\` — to understand how a node is referenced.
+5. \`find_path(from, to)\` — for "how does A relate to B" questions (BFS, undirected).
+6. \`find_orphans\` — to spot nodes that no other node points to (often unfinished or deletion candidates).
+7. \`query_concepts(filter)\` — for structured questions like \`kind=capability AND domain=auth AND NOT has(elements)\` (= "unfinished caps under auth").
+
+## Write tools — safety patterns
+
+- **\`add_concept\`** throws on duplicate slug — use \`patch_concept\` to update an existing node, never delete-then-add.
+- **\`rename_concept\` / \`merge_concepts\`** are dry-run by default. The first call returns an \`updates\` preview (every affected file's before/after). To commit, repeat the call with \`confirm: true\`.
+- **\`delete_concept\`** refuses by default if any backlinks remain. Pass \`force: true\` only after confirming with the user.
+- **\`expected_mtime\` (all write tools)** — to guard against concurrent edits by the human or another agent: capture \`mtime\` from \`get_concept\`, pass it as \`expected_mtime\` on the next write. If the file changed in between, the call throws \`VaultConflictError\` instead of silently overwriting.
+- **Prefer graph-level writes** — to rename a slug or fold two nodes, use \`rename_concept\` / \`merge_concepts\` (atomic backlink redirect) rather than \`patch_concept\` + N find_backlinks loops.
+
+## What to write back
+
+When you discover a new capability/element/project from code, call \`add_concept\` so the human sees it appear in their workbench. When you fix or rename code, mirror the change in the graph with \`rename_concept\`. The vault is the shared mental model — keeping it in sync is the entire point.`;
+
 const server = new Server(
-  { name: 'oh-my-ontology-mcp', version: '0.7.0' },
-  { capabilities: { tools: {} } },
+  { name: 'oh-my-ontology-mcp', version: '0.7.1' },
+  {
+    capabilities: { tools: {} },
+    instructions: SERVER_INSTRUCTIONS,
+  },
 );
 
 // ── 도구 정의 ─────────────────────────────────────────────────────────────

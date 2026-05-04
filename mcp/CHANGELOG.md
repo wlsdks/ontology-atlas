@@ -1,5 +1,15 @@
 # Changelog — oh-my-ontology-mcp
 
+## 0.7.1 — 2026-05-04
+
+### Added
+
+- **`instructions` field on initialize response** — 연결된 AI agent (Claude Code, Cursor, …) 가 항상 보는 시스템-prompt 수준 안내 추가. (1) kind 계층 (project → domain → capability → element) 의 의미, (2) 첫 연결 시 권장 호출 순서 (`list_kinds` → `list_concepts` → `get_concept` → `find_backlinks` …), (3) write 도구의 dry-run + `confirm: true` 패턴, (4) `expected_mtime` 충돌 가드 패턴, (5) 새 capability/element 발견 시 `add_concept` 으로 vault 동기화 책임. 14 tool description 만으로는 매 세션 agent 가 시행착오로 학습하던 부분을 단번에 해소. integration test (`initialize — instructions 필드`) 1 케이스 추가 — drift 즉시 회귀.
+
+### Tools count
+
+- 14 (8 read + 6 write) — 변동 없음 (instructions 는 기존 도구 보강).
+
 ## 0.7.0 — 2026-05-04
 
 ### Added (R11 라운드)

@@ -56,7 +56,7 @@ The server connects over stdio. You should now see 14 tools under the `oh-my-ont
 → mcp__oh-my-ontology__get_concept({ slug: 'capabilities/mcp-server' })
 ```
 
-## The 14 tools (v0.7.0)
+## The 14 tools (v0.7.1)
 
 | Tool | What it does |
 |---|---|
@@ -135,6 +135,7 @@ If those four tools respond cleanly, your read/write round-trip against the vaul
 
 ## Status
 
+- 0.7.1 — 14 tools. Added `instructions` field on initialize response — Claude Code / Cursor see kind hierarchy + workflow + write-tool dry-run pattern + `expected_mtime` conflict guard guidance on connect, no per-session trial-and-error.
 - 0.7.0 — 14 tools (8 read + 6 write). Added `rename_concept` and `merge_concepts` (graph-level write — atomic backlink redirect across all referrers).
 - 0.6.0 — 12 tools (8 read + 4 write). Added `query_concepts` (typed filter DSL).
 - 0.5.0 — 7 read + 4 write. Added `find_orphans`.

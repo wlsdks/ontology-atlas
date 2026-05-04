@@ -126,6 +126,30 @@ function isErrorResponse(responses, id) {
 
 console.log("integration");
 
+await test("initialize — instructions 필드 (#45) AI agent 안내 노출", async () => {
+  // initialize 응답에 instructions 가 있어야 연결된 agent (Claude Code 등) 가
+  // kind 계층 / 호출 순서 / write 도구 dry-run 패턴을 즉시 인지. 누락 시
+  // agent 는 매 세션 시행착오로 학습 — 명시 가드.
+  const root = makeVault([]);
+  try {
+    const { responses } = await rpc(root, INIT_REQUESTS);
+    const init = responses.find((r) => r.id === 1);
+    assert.ok(init, "initialize 응답이 와야 함");
+    const instructions = init.result?.instructions;
+    assert.equal(typeof instructions, "string", "instructions 가 string 이어야");
+    assert.ok(
+      instructions.length > 200,
+      `instructions 가 의미 있는 길이여야 (got ${instructions.length})`,
+    );
+    // 핵심 키워드 — drift 시 즉시 깨짐
+    assert.match(instructions, /kind hierarchy/i);
+    assert.match(instructions, /dry-run|confirm/i);
+    assert.match(instructions, /expected_mtime/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("list_concepts — tmp vault 의 노드 수 정확히 보고", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
