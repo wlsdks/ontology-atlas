@@ -6,6 +6,84 @@
 
 ---
 
+## 2026-05-04 — Round 12: developer-primary 방향 + CLI 5 명령 + dogfood graph 강화
+
+R11 fire #25 의 사용자 명시 ("의미없는 작업은 하지말고, 그래서 우리 서비스의 핵심 기능이 뭔데? 이게 명확해야해") 후 *제품 본질* 영역으로 전환. 12 task close.
+
+### Primary audience 결정 (#33)
+
+> **One codebase, one ontology, that the developer and their AI agent grow together.**
+
+PM-primary 결정 reverted. 이유: 비개발자 친화 surface 가 *bonus, not target*. developer 가 자기 codebase 의 *cost-low 작성자*, 그 AI agent 가 *진짜 매일 사용자*. 차별점 = "ontology 가 코드 옆에서, 같은 git repo 에서, 개발자+AI 가 같이 키운다."
+
+PRODUCT-DIRECTION v3, README, AGENTS, FEATURES 모두 sync. Phase 4 PM polish dropped + replacement (VSCode plugin / CLI 확장 / AI dogfood).
+
+### CLI 4 새 명령 (#32 #34 #35) — developer 매일 진입점
+
+기존: `init` 하나만 (init 후 *터미널 진입점 0*). v0.1 → **v0.2.0**.
+
+| 명령 | 동작 |
+|---|---|
+| `list [vault]` | 노드 표 (color + `--kind` filter + `--json`) |
+| `validate [vault]` | frontmatter 5 issue codes (CI gate, exit 1 on errors) |
+| `add <kind> <slug> --title=...` | 새 노드 scaffold (duplicate throw, `--domain --body --vault`) |
+| `find <query> [vault]` | title/slug 부분매칭 + yellow highlight + `--kind` filter + `--json` |
+
+`init` 의 next-steps 흐름도 5 단계로 갱신 — explore → add first node → edit project.md → wire AI agent → see graph (#36 walk-through audit fix).
+
+### Cross-package contract 4-way / 3-way (#32 #27 후속)
+
+cli 별도 npm package 라 cross-import 불가능 → contract test 가 effective 단일화. parser 4-way (src/shared · mcp · scripts/lib · cli) 12 fixture × 4 = 48 case. validator 3-way (src/shared · mcp · cli) 8 fixture × 3 = 24 case.
+
+### AI agent dogfood walk + graph 완전화 (#38 #39)
+
+`scripts/dogfood-mcp-walk.mjs` 신설 — spawn mcp + 5 read tool sequence (list_kinds / list_concepts / find_evidence / find_path / find_backlinks / find_orphans). *AI agent 입장* 정보 quality 측정.
+
+🚨 **진짜 발견**: dogfood vault 21 노드 중 **8 (38%) orphan** — R11 신규 capability 3 모두 parent domain 의 frontmatter 에서 endorse 빠뜨림. *graph 가 아니라 list*.
+
+조치 (2 fire):
+- domains/ai-agent-partner.capabilities: + mcp-conflict-guard
+- domains/vault-local-first.capabilities: + vault-validator + vault-migrator
+- domains/{ai-agent-partner,views,vault-local-first}.elements: + slug 명시 (이전 path 매칭 안 됨)
+- domains/views.relates: + onboarding-ux (양방향 endorse)
+
+**결과**: orphans 8 → **1 (5%)**. 남은 1 = project (top-level meta, 의도적). dogfood graph 사실상 완전.
+
+### 영구 가드 추가 (R11 8 → R12 10)
+
+- 9. `dogfood-mcp-walk.mjs` — 미래 dogfood 추가 시 회귀 차단
+- 10. `cli/src/integration.test.mjs` — 11 case spawn 기반 cli 회귀 가드 (#40)
+
+### Tarball 정밀화
+
+- mcp 28.5 → 28.5 KB / 9 files (R11 #29, R12 변경 0)
+- cli 14.7 → 13.2 KB / 17 files — test 제외 (#42, mcp 패턴 reuse)
+
+### 신규 file (R12)
+
+- scripts/dogfood-mcp-walk.mjs (228 LOC)
+- scripts/perf-vault.mjs (R11 #31, baseline)
+- cli/src/commands/{list,validate,add,find}.mjs
+- cli/src/lib/{parse-frontmatter,validate,walk-vault,write-vault}.mjs
+- cli/src/integration.test.mjs (11 case)
+- cli/CHANGELOG.md
+- tests/contract/validate-vault-document.contract.test.ts (R11 #27, 3-way)
+
+### Test count
+
+- root: 759 (R11 R12 통틀어 +118 from 641)
+- cli: 0 → **11**
+- mcp: ~30+
+
+### 다음 (R13 candidates, 신호 대기)
+
+- VSCode plugin scaffold (developer-primary IDE 통합)
+- xyflow ERD builder ROI 재평가 (PM drop 후)
+- 모바일 / FS Access API lock-in
+- AI agent 의 *진짜 답변 quality* 측정 (LLM 호출 시뮬)
+
+---
+
 ## 2026-05-04 — Round 11: AI partnership 강화 (vault tooling + parser contract + MCP graph-level write)
 
 분석 기반 1원칙 라운드. silent corruption / parser drift / schema 진화 부재 / AI agent
