@@ -37,6 +37,35 @@ dogfood vault 에 `capabilities/vscode-plugin-ide-entry` 추가 (23 노드).
 
 `cli/templates/vault/README.md` + `src/features/docs-vault-local/lib/ontology-starter.ts` 의 "12 tools / write 4" stale 표기 → "14 tools / write 6" + rename_concept · merge_concepts 명시. 신규 사용자 첫 README 거짓말 차단.
 
+### VSCode plugin v0.2.0 → v0.5.0 (#50 #51 #52 #54 #55)
+
+MVP 후 5 PR 으로 v0.5.0 까지 — practically complete + 자동 회귀 가드.
+
+- **v0.2.0 코드 ↔ ontology 점프 (#50)** — 활성 editor 의 파일이 vault 노드와 매치되면 status bar 좌측에 노드 title (kind icon + 제목). 클릭 → `.md` 점프. 매치 우선순위: exact path > directory ancestor > capability.elements 배열, longest-specific 한 매치 우승.
+- **v0.3.0 Add concept (#51)** — Command Palette / TreeView `+` 버튼. kind picker → slug → title → optional domain → vault 에 새 `.md` 작성 + tree refresh + 새 .md 자동 열림. CLI `add` 와 동일 contract (auto-prefix, duplicate throw).
+- **v0.4.0 MCP server connect + Backlinks panel (#52)** — plugin 이 `mcp/src/index.js` 를 child_process 로 spawn, stdio JSON-RPC 로 통신. 두 번째 TreeView 'Backlinks (current file)' 가 매치 노드의 `find_backlinks` 결과 표시. MCP 실패 시 raw filesystem scan (`computeBacklinksLocally`) 으로 graceful fallback. `useMcp` 설정으로 끄기 가능.
+- **v0.5.0 self-match + e2e (#54 #55)** — ontology `.md` 직접 열어도 그 노드를 매치 결과로 surface (status bar + Backlinks 자동). `@vscode/test-electron` 으로 headless VSCode 띄워 5 e2e (activation / commands / config / contributes) 자동 검증. CI 매 PR 마다 `xvfb-run npm run test:e2e`.
+
+### 4-layer 자동 검증 (#53 #55)
+
+| Layer | 검증 |
+|---|---|
+| 단위 logic | `node --test` × 27 case |
+| MCP integration | spawn `mcp/src/index.js` × 3 case |
+| VSCode integration | `@vscode/test-electron` × 5 case |
+| Marketplace 준비 | `vsce package` (CI step) |
+
+총 35+ case 자동 — plugin 깨지면 즉시 fail. 사용자가 vsix 직접 install 해 검증한 후 marketplace publish 결정.
+
+### 4 surface 완성
+
+- **CLI** — `init / list / validate / add / find` (v0.2.0, R12)
+- **MCP** — 14 tools (v0.7.1, R11+R13)
+- **웹 workbench** — `/topology / /docs / /ontology` 등 (R10 surface diet 후)
+- **VSCode plugin** — 4 surface in v0.5.0 (R13)
+
+> "개발자가 어디 있든 같은 vault, 같이 자라남" 미션의 모든 진입점이 처음으로 다 존재.
+
 ---
 
 ## 2026-05-04 — Round 12: developer-primary 방향 + CLI 5 명령 + dogfood graph 강화
