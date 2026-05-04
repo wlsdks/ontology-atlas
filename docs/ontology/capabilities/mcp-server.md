@@ -1,7 +1,7 @@
 ---
 slug: capabilities/mcp-server
 kind: capability
-title: MCP Server (12 tools)
+title: MCP Server (14 tools)
 domain: ai-agent-partner
 elements:
   - mcp/src/index.js
@@ -12,9 +12,9 @@ relates:
   - domains/ai-agent-partner
 ---
 
-# MCP Server (12 tools)
+# MCP Server (14 tools)
 
-`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 12 도구 노출 (read 8 + write 4):
+`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 14 도구 노출 (read 8 + write 6):
 
 | 도구 | 동작 |
 |---|---|
@@ -30,5 +30,7 @@ relates:
 | `add_relation` | depends_on / relates / contains / describes edge 추가 |
 | `patch_concept` | 기존 노드 frontmatter (key 단위 patch) + body 갱신 |
 | `delete_concept` | **⚠ DESTRUCTIVE** — 노드 영구 삭제. 안전 가드 2단: ① `confirm:true` 미지정 시 dry-run, ② backlinks 있으면 throw — `force:true` 만 강행. 응답에 frontmatter+body 캡처. |
+| `rename_concept` | **⚠ MULTI-FILE (R11)** — slug 변경 + 모든 backlink 의 array/body 자동 redirect. dry-run default. tail-only 참조도 새 tail 로 일관 갱신. `find_backlinks` + N 회 `patch_concept` 의 atomic 대체. |
+| `merge_concepts` | **⚠ DESTRUCTIVE MULTI-FILE (R11)** — `fromSlug` 의 backlink 를 `intoSlug` 로 redirect 후 fromSlug.md 삭제. `intoSlug` 의 frontmatter/body 는 자동 합치지 않음 (필요 시 후속 `patch_concept`). dry-run default. |
 
 환경변수 `OMOT_VAULT` 로 vault 위치 지정. 등록 가이드: `mcp/README.md`. 1줄 verify: `npm run verify` (mcp/).

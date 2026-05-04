@@ -24,6 +24,8 @@ pnpm exec tsc --noEmit
 pnpm lint
 pnpm build                        # static export → out/
 pnpm bundle:check                 # local-first chunk leak guard
+pnpm vault:validate               # frontmatter integrity (R11 — runs in CI too)
+pnpm vault:migrate --list         # see registered schema migrations (R11)
 
 # Register an AI agent (Claude Code) — copy .mcp.json.example, follow mcp/README.md
 ```
@@ -116,7 +118,7 @@ Long-form docs:
 - `@docs/FEATURES.md` — features users can use right now
 - `@docs/ARCHITECTURE.md` · `@docs/DESIGN-SYSTEM.md`
 - `@docs/CHANGELOG.md` — chronological user-visible changes
-- `@mcp/README.md` — AI agent partner (MCP 12 tools — read 8 + write 4) registration + usage
+- `@mcp/README.md` — AI agent partner (MCP 14 tools — read 8 + write 6) registration + usage
 - `@docs/archive/` — historical analysis docs (no longer normative)
 
 ## This project's own ontology
@@ -157,6 +159,8 @@ pnpm test:run
 pnpm exec tsc --noEmit
 pnpm lint
 pnpm build                        # 정적 export → out/
+pnpm vault:validate               # frontmatter integrity (R11 — CI 게이트)
+pnpm vault:migrate --list         # 등록된 schema 마이그레이션 (R11)
 ```
 
 `.env` 파일 / 인증 provider / 백엔드 설정 불필요. R10 (2026-05) 에서 옵션이었던 Firebase / Firestore / Auth surface 영구 제거 — OSS 는 순수 local-first.

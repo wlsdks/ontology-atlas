@@ -377,13 +377,13 @@ Used when a non-existent slug is hit in static export. Redirects or shows "not f
 
 ---
 
-## 3. MCP server (12 tools)
+## 3. MCP server (14 tools)
 
 Run via `pnpm exec node mcp/src/index.js` (registered in user's `.mcp.json`). AI agents read/write the same vault as humans.
 
 #### Read tools (8)
 1. **list_concepts** `{ kind?, limit? }` — every node, optional kind + limit (default 100)
-2. **get_concept** `{ slug }` — full detail: frontmatter + body excerpt + neighbors
+2. **get_concept** `{ slug }` — full detail: frontmatter + body excerpt + neighbors + `mtime` (ms; **R11** caller가 후속 patch/delete 의 `expected_mtime` 으로 전달하면 외부 변경 감지)
 3. **find_evidence** `{ title }` — partial-match across title / capabilities / elements / body
 4. **find_backlinks** `{ slug }` — every node referencing target (frontmatter arrays + wikilinks/markdown)
 5. **find_path** `{ from, to, maxHops? }` — shortest undirected BFS (default 5 hops, returns null if not found)
@@ -391,18 +391,29 @@ Run via `pnpm exec node mcp/src/index.js` (registered in user's `.mcp.json`). AI
 7. **find_orphans** `{ kind?, excludeKinds? }` — isolated nodes (defaults exclude `vault-readme`)
 8. **query_concepts** `{ filter, limit? }` — typed filter DSL with AND/OR/NOT on `kind` / `domain` / `slug` / `title` / `has(arrayKey)`
 
-#### Write tools (4)
+#### Write tools (6)
 9. **add_concept** `{ slug, kind, title, domain?, capabilities?, elements?, body? }` — create new `.md` (throws on existing slug)
    - **R6 validation**: title must be non-empty trimmed string (`isValidVaultTitle`)
-10. **patch_concept** `{ slug, frontmatter?, body? }` — update existing (`null` value deletes key)
+10. **patch_concept** `{ slug, frontmatter?, body?, expected_mtime? }` — update existing (`null` value deletes key)
     - **R6 validation**: rejects `title: null` and `title: ""`
+    - **R11 conflict guard**: optional `expected_mtime` (from get_concept response). Throws `VaultConflictError` if file mtime differs at write time — caller re-reads and retries.
 11. **add_relation** `{ from, to, type }` — append to source frontmatter array
     - type enum: `depends_on` (→ `dependencies`) / `relates` / `contains` / `describes`
     - **R7 validation**: both `from` AND `to` slug must exist in vault (`vaultSlugExists`)
     - Idempotent: duplicate returns `{ alreadyExists: true }`
-12. **delete_concept** `{ slug, confirm?, force? }` — permanent delete
+12. **delete_concept** `{ slug, confirm?, force?, expected_mtime? }` — permanent delete
     - `confirm: false` (dry-run with backlinks preview) / `true` (actual)
     - `force: false` (throw if backlinks exist) / `true` (delete anyway)
+    - **R11 conflict guard**: optional `expected_mtime`
+13. **rename_concept** `{ oldSlug, newSlug, confirm?, overwrite? }` — **R11** atomic graph-level rename
+    - Moves the .md file, updates the moved file's `slug:` key, rewrites every backlink (frontmatter array entries, inline string keys like `domain`, body links `[[oldSlug]]` / `(oldSlug.md)`)
+    - Tail-only references (`mcp-server` for `capabilities/mcp-server`) also redirected to the new tail
+    - `confirm: false` (dry-run with full update preview) / `true` (actual)
+    - Replaces the manual `find_backlinks` + N `patch_concept` loop
+14. **merge_concepts** `{ fromSlug, intoSlug, confirm? }` — **R11** atomic graph-level merge
+    - Redirects every backlink `fromSlug` → `intoSlug`, then deletes `fromSlug.md`
+    - `intoSlug` node preserved as-is (frontmatter / body not auto-merged — use `patch_concept` after to combine)
+    - `confirm: false` (dry-run) / `true` (actual)
 
 ---
 

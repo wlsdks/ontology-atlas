@@ -26,9 +26,10 @@ docs/ontology/
 
 ### Claude Code 같은 AI agent 가 읽을 때
 MCP 서버 등록 — `mcp/README.md` 의 `.mcp.json` 예시 참고.
-12 도구 (read 8 + write 4): `list_concepts` · `get_concept` · `find_evidence` ·
+14 도구 (read 8 + write 6): `list_concepts` · `get_concept` · `find_evidence` ·
 `find_backlinks` · `find_path` · `list_kinds` · `find_orphans` · `query_concepts` ·
-`add_concept` · `add_relation` · `patch_concept` · `delete_concept`.
+`add_concept` · `add_relation` · `patch_concept` · `delete_concept` ·
+`rename_concept` · `merge_concepts`.
 
 ## 갱신
 

@@ -6,6 +6,110 @@
 
 ---
 
+## 2026-05-04 — Round 11: AI partnership 강화 (vault tooling + parser contract + MCP graph-level write)
+
+분석 기반 1원칙 라운드. silent corruption / parser drift / schema 진화 부재 / AI agent
+write 비대칭 4 갭을 한 번에 닫음.
+
+### 신규 surface
+
+- **`pnpm vault:validate`** — vault frontmatter silent corruption 가시화. unclosed-frontmatter / empty-kind / missing-kind / unknown-kind / parse-zero-keys 5 종 issue 검출. R9 changelog Scenario 3 (lenient parser, defer 됐던 것) 의 작업자 측 길.
+- **`pnpm vault:migrate`** — schema 진화 마이그레이션 패턴. dry-run default, `--write` 명시 시 디스크 기록. 첫 reference: `2026-05-04-trim-frontmatter-values`. `scripts/migrations/README.md` 가 작성 가이드.
+- **MCP v0.7.0 — 14 tools (8 read + 6 write)**: `rename_concept` + `merge_concepts` 추가. 한 번의 atomic 호출로 slug 변경/노드 합치기 + 모든 backlink (frontmatter array · inline string · body link `[[slug]]` · `(slug.md)`) 자동 redirect. 이전엔 AI agent 가 `find_backlinks` + N 회 `patch_concept` 으로 직접 짜야 했던 graph-level 변형이 1 콜.
+
+### 코드 / 아키텍처
+
+- **3-way frontmatter parser contract** (`tests/contract/parse-frontmatter.contract.test.ts`): `src/shared/lib` (런타임) · `mcp/src/parser.mjs` (별도 npm pkg) · `scripts/lib/parse-frontmatter.mjs` (빌드+CLI) — mcp 가 npm publish 의도라 물리적 단일 모듈 통합 불가능 → 12 fixture × 3 parser = 36 case contract test 가 effective 단일화. drift 즉시 차단.
+- `scripts/lib/parse-frontmatter.mjs` 신설 — `scripts/build-docs-vault.mjs` 와 `scripts/validate-vault.mjs` 가 공유. 빌드 스크립트의 inline parser 105 LOC 제거.
+- `mcp/src/vault.mjs` 의 `redirectBacklinks(rootPath, fromSlug, toSlug, { dryRun })` helper 추가. rename / merge 의 공통 핵심. tail-only 매칭도 새 tail 로 일관 갱신 + dedup. 7 단위 test (`mcp/src/redirect-backlinks.test.mjs`).
+- `.githooks/pre-push` + `package.json` postinstall 자동 wire — `tsc --noEmit` 강제. R10 이후 `adc2abb` 부터 4 commit 연속 main direct push 로 CI failure 무시되던 패턴 방지.
+
+### Bug fixes
+
+- **TS 회귀** `src/entities/project/model/to-input.test.ts:15,20` — 최근 추가된 test 가 `ProjectLink.url` 을 `href` 로 잘못 적었고 `Date` 를 string 으로 줘서 4 commit 연속 CI failure. `--noEmit` clean 으로 정정.
+
+### MCP conflict 감지 (#8 MVP + #19 closeout)
+
+- `get_concept` 응답에 `mtime` (ms) 추가.
+- 모든 write 도구에 `expected_mtime` consistency: `patch_concept` / `delete_concept` (#8) + `add_relation` / `rename_concept` / `merge_concepts` (#19 closeout). read 시점 mtime 과 다르면 `VaultConflictError` throw. 사람 GUI · 외부 에디터 · 다른 AI MCP 가 같은 .md 동시에 만질 때 silent overwrite 차단.
+- 옵션 미지정 시 검증 skip — 기존 호출자 호환.
+- `mcp/src/conflict-detection.test.mjs` 8 단위 케이스. 도구 핸들러 통합 test 는 #20 후속.
+- UI 측 (docs-vault-local) save 흐름의 동일 가드는 #15 후속 task.
+
+### Vault 가드 CI 통합
+
+- `.github/workflows/ci.yml` 에 `pnpm vault:validate` step 추가. dogfood vault 의 frontmatter silent corruption 을 매 PR 마다 차단.
+
+### Widgets/views audit (#10)
+
+- 24K LOC widgets + 11K LOC views 분석. hotspot 식별: `views/docs-vault/ui/DocsVaultPage.tsx` 1712 LOC + 67 hooks (단일 파일 비대), `views/ontology-edit` 2233 LOC (3 파일 합), `widgets/project-drawer` 1058 LOC.
+- 추출 후보 3 신규 task 등록: #16 DocsVaultPage 영역 분리 (P2, 1순위) · #17 ontology-builder feature 추출 (P3) · #18 project-drawer 의 impact/screenshots 분리 (P3).
+- `widgets/topology-map-sigma` 4579 LOC 는 이미 25 파일로 잘 분리 — 추가 추출 가치 작음 (skip).
+
+### Dogfood vault 갱신
+
+- 새 capability 노드 3 개 추가 (R11 surface 반영):
+  - `capabilities/vault-validator` (silent corruption 가시화 도구 — CLI + UI)
+  - `capabilities/vault-migrator` (schema 진화 패턴)
+  - `capabilities/mcp-conflict-guard` (mtime 기반 silent overwrite 차단)
+- 18 → 21 노드. `pnpm vault:validate` clean. 매니페스트 43 → 46 docs.
+
+### Sigma WebGL fallback (#9)
+
+- R9 changelog 의 Scenario 10 (deferred — 사용자 보고 0, 이론적) 재평가 후 진행. 비용 작고 영구 가드. 모바일 / 저사양 / 장시간 사용에서 GPU context lost 가능성 cover.
+- `shared/ui/error-boundary.tsx` 신설 — generic React class ErrorBoundary, fallback render-prop, `resetKey` prop 으로 자동 reset, `onError` 콜백. 5 단위 test.
+- `widgets/topology-map-sigma/ui/SigmaErrorFallback.tsx` 신설 — SigmaTopology 전용 fallback UI: AlertTriangle + reset CTA + "트리 뷰로 전환" link + dev-mode error message.
+- `SigmaTopology` 가 self-wrap (caller 영향 0). `resetKey` 는 `projects.length|selectedSlug|depthLimit` 조합 — props 큰 변화 시 자동 reset.
+- i18n 키 `topology.errorFallback.{title,body,retry,switchToTree}` (en + ko).
+
+### UI 측 mtime 충돌 감지 (#15 MVP)
+
+- mcp #8 의 conflict guard 패턴을 사람 GUI 측에 적용. `VaultDoc` 에 `mtime?: number` 추가, `buildLocalManifest` 가 `file.lastModified` 캡처.
+- `useLocalVault.saveDoc(slug, content, { expectedMtime })` 옵션 — write 직전 fs `file.lastModified` 와 비교, 다르면 `VaultConflictError` throw. 옵션 미지정 시 검증 skip (회귀 회피).
+- `DocsVaultEditor.onSave` 가 `selectedDoc.mtime` 전달 + conflict 감지 시 toast.error "vault 가 외부에서 변경됐습니다" 알림. 사용자가 새로고침 → 재시도.
+- `messages/{ko,en}.json` 의 `dialog.vaultConflict` 키 추가.
+- TOC update / ZIP import 흐름은 후속 적용 (현재는 핵심 user 편집 경로 만 cover). dialog UI (reload/overwrite 선택) 도 후속 — 현재는 toast MVP.
+
+### Audit 사이클 — onboarding docs sync (#21 후속)
+
+- AGENTS.md 의 quick start (영문 + 한국어 양쪽) 에 `pnpm vault:validate` / `pnpm vault:migrate --list` 추가. R11 신규 명령들이 canonical contributor guide 에 등재.
+- `.claude/hooks/block-npm-publish.sh` read-only audit — `(npm|pnpm|yarn) publish` 어디서든 패턴 매칭 차단 (mcp/ 안 cover), `npm pack --dry-run` 만 통과. python3 의존. 정상 작동 확인.
+- 신규 P3 task 등록: dogfood elements/ 에 R11 신규 capability 의 코드 모듈 노드 추가 (#22).
+
+### vault:migrate 의 git pre-write 안전망 (#21)
+
+- `pnpm vault:migrate <id> --write` 가 vault 안의 uncommitted .md 를 감지하면 거부 (`--force` 명시 강행 가능). git 미설치 / non-repo / dry-run 모드 는 검사 skip 무해 통과.
+- 마이그레이션 결과와 사용자 변경이 디스크에서 섞여 rollback 어려워지는 상황 방지. AGENTS.md 의 "rollback 은 git" 정책 강화.
+- `scripts/migrations/README.md` 갱신.
+
+### MCP 도구 핸들러 통합 test (#20)
+
+- 단위 helper test (parser / vault / redirect / conflict-detection — 합 30+ case) 가 cover 안 했던 *도구 핸들러 자체* 의 input → routing → output 흐름 cover.
+- `mcp/src/integration.test.mjs` 신설 — `spawn` + stdio JSON-RPC 라운드트립으로 server boot → `tools/call` → response 검증 → cleanup 패턴. verify.mjs 의 spawn 패턴을 test 로 옮김.
+- 7 case: list_concepts 노드 수 / get_concept mtime / patch_concept stale → conflict error / rename_concept dry-run / rename_concept confirm / merge_concepts confirm / add_relation idempotent.
+- 각 case 가 fresh tmp vault 만들고 server fork → SIGTERM cleanup. 총 ~10s.
+
+### Vault validator UI surface (#14)
+
+- LocalVaultPicker 에 frontmatter validation chip 추가. local 모드에서 manifest 의 parsed frontmatter 만 보고 missing-kind / empty-kind / unknown-kind 검출 (raw 다시 안 읽음 — fast UI path).
+- error 1+ 시 빨강 chip (✗ N), warning 만일 때 amber chip (⚠ N). i18n: `validationChip` / `validationTooltip` (en + ko).
+- docs-only 파일 (frontmatter 0 keys 또는 ontology 시그널 키 없음) 은 skip — noise 회피.
+- `summarizeVaultValidation` collection helper + `validateVaultDocFrontmatter` 신설. 10 단위 test (parsed-only fast path + summarize counts + ok/error 분기).
+
+### Test
+
+- 641 → **695** unit pass (54 case 추가): validator 10 + parser contract 36 + migration 8.
+- mcp/: 11 → **18 pass** (redirect-backlinks 7 추가).
+- mcp/ verify: **14/14 도구** registered + 18 노드 vault 로드 OK.
+- pnpm exec tsc: clean.
+
+### Docs
+
+- AGENTS.md / docs/FEATURES.md / docs/PRODUCT-DIRECTION.md / docs/ontology/README.md / docs/ontology/capabilities/mcp-server.md / docs/ontology/domains/ai-agent-partner.md / mcp/README.md / mcp/scripts/verify.mjs — 모든 도구 카운트 12 → 14 (read 8 + write 4 → 6) 동기화.
+- launch/* (HN/Reddit/X 게시물 초안) 은 *publish 시점 snapshot* 이라 의도적으로 미갱신.
+
+---
+
 ## 2026-05-03 — Round 9: robustness audit (3 ship · 2 defer · lint floor)
 
 codex 의 10-시나리오 robustness audit 결과 — DEGRADED 4 + BROKEN 1.

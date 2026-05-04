@@ -61,7 +61,7 @@ The same frontmatter graph rendered three ways:
 - **Topology** (`/topology`) — Sigma WebGL spatial network of projects
 - **Tree** (`/`, `/ontology`) — hierarchical drill-down (project → domain → capability → element)
 - **ERD builder** (`/ontology/edit`) — xyflow canvas to add nodes and relations visually
-- **MCP** (separate package) — JSON-RPC over stdio, 12 tools
+- **MCP** (separate package) — JSON-RPC over stdio, 14 tools
 
 All four read and write the same `.md` files. Pick whichever view fits
 the moment.
@@ -74,7 +74,7 @@ the moment.
 npx oh-my-ontology init ./vault
 # Open ./vault/.mcp.json.example, copy into your MCP config (Claude Code, Cursor)
 # Set OMOT_VAULT to /absolute/path/to/your/vault
-# Restart the agent — 12 oh-my-ontology tools become available
+# Restart the agent — 14 oh-my-ontology tools become available
 ```
 
 ### With the visual workbench
@@ -91,14 +91,28 @@ API). The workbench reads/writes the same `.md` files the AI does.
 
 No `.env`, no Firebase, no auth provider, no cloud account needed.
 
+### Vault tooling (R11)
+
+```bash
+pnpm vault:validate              # frontmatter integrity audit (CI gate)
+pnpm vault:validate /your/vault  # validate any folder, not just dogfood
+pnpm vault:migrate --list        # see registered schema migrations
+pnpm vault:migrate <id>          # dry-run a migration (default — no disk writes)
+pnpm vault:migrate <id> --write  # apply a migration to disk
+```
+
+CI runs `pnpm vault:validate` on every PR. The `LocalVaultPicker` shows a
+chip when your vault has frontmatter issues so you know which docs aren't
+becoming graph nodes.
+
 ## Verifiable promises
 
 | Promise | Verification |
 |---|---|
 | **vault frontmatter = the graph** (no review queue, no LLM extraction) | `grep -r "extractionJob" src/ → 0` |
-| **AI agent partner via MCP** | `mcp/` package, 12 tools, `mcp/scripts/verify.mjs` smoke |
+| **AI agent partner via MCP** | `mcp/` package, 14 tools, `mcp/scripts/verify.mjs` smoke |
 | **No backend** (Firebase / DB / auth) | `pnpm bundle:check` — firebase SDK chunk 0 (deps removed in R10) |
-| **Dogfooding** | `docs/ontology/` is the project's own curated mental model (~18 nodes — domains 6 · capabilities 6 · elements 4 · project 1 · vault-readme 1). |
+| **Dogfooding** | `docs/ontology/` is the project's own curated mental model (~21 nodes — domains 6 · capabilities 9 · elements 4 · project 1 · vault-readme 1). |
 
 ## Architecture
 
@@ -106,7 +120,7 @@ No `.env`, no Firebase, no auth provider, no cloud account needed.
 - **i18n**: next-intl 4.11 with `/[locale]/` URL prefix (en / ko)
 - **Visualization**: Sigma.js (WebGL) + Graphology + ForceAtlas2 + xyflow + dagre
 - **Local-first**: File System Access API + IndexedDB
-- **AI agent surface**: `mcp/` MCP server, stdio JSON-RPC, 12 tools
+- **AI agent surface**: `mcp/` MCP server, stdio JSON-RPC, 14 tools
 - **Architecture**: Feature-Sliced Design (ESLint boundaries enforced)
 - **Tests**: Vitest unit + Playwright e2e
 
@@ -122,7 +136,7 @@ src/            Feature-Sliced Design layers
   ├── features/ user interactions
   ├── entities/ domain entities (project, ontology-class, knowledge-graph, …)
   └── shared/   ui primitives, lib, config
-mcp/            MCP server (`oh-my-ontology-mcp`, 12 tools)
+mcp/            MCP server (`oh-my-ontology-mcp`, 14 tools)
 cli/            `npx oh-my-ontology` (vault scaffold + setup)
 docs/           Long-form docs + dogfood vault (docs/ontology/)
 docs/archive/   Historical analysis docs
@@ -163,12 +177,12 @@ cd my-vault
 - [`AGENTS.md`](AGENTS.md) — contributor (사람·AI 공통) 가이드
 - [`docs/PRODUCT-DIRECTION.md`](docs/PRODUCT-DIRECTION.md) — mission spec
 - [`docs/FEATURES.md`](docs/FEATURES.md) — 사용자 가시 기능 전수
-- [`mcp/README.md`](mcp/README.md) — MCP 서버 등록 + 12 도구
+- [`mcp/README.md`](mcp/README.md) — MCP 서버 등록 + 14 도구
 
 ### 핵심 약속
 
 1. **vault frontmatter = 그래프** — 검수 큐 / 추출 워커 없음. frontmatter 자기-승인.
-2. **AI agent partner** — MCP 서버 (read 8 + write 4) 로 같은 vault read/write.
+2. **AI agent partner** — MCP 서버 (read 8 + write 6) 로 같은 vault read/write.
 3. **Local-first single-source** — 사용자 디스크 vault 가 진실원. Firebase / 백엔드 / 인증 의존 0 (R10 — 2026-05).
 4. **Dogfooding** — `docs/ontology/` 가 프로젝트 자기 자신의 mental model.
 
