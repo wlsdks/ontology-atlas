@@ -35,6 +35,7 @@ import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
 import { useAdvancedMenu } from '../lib/use-advanced-menu';
 import { useDocsVaultScrollSpy } from '../lib/use-scroll-spy';
 import { useFolderTopo } from '../lib/use-folder-topo';
+import { replaceDocsVaultUrlState } from '../lib/url-state';
 import {
   buildDocsVaultHref,
   vaultManifest,
@@ -160,29 +161,10 @@ function DocsVaultContent() {
     };
   }, [source, localVault.manifest]);
 
-  const replaceUrlState = useCallback(
-    (next: {
-      slug?: string | null;
-      view?: DocsVaultView;
-    }) => {
-      if (typeof window === 'undefined') return;
-      const url = new URL(window.location.href);
-      if ('slug' in next) {
-        if (next.slug) url.searchParams.set('slug', next.slug);
-        else url.searchParams.delete('slug');
-      }
-      if ('view' in next) {
-        if (next.view && next.view !== 'doc') {
-          url.searchParams.set('view', next.view);
-        } else {
-          url.searchParams.delete('view');
-        }
-      }
-      window.history.replaceState({}, '', url.toString());
-      window.dispatchEvent(new Event('app:urlchange'));
-    },
-    [],
-  );
+  // R11 #16 step 4 — replaceUrlState 는 src/views/docs-vault/lib/url-state.ts
+  // 의 module-level 순수 함수로 추출. useCallback wrap 제거 + 호출 사이트
+  // 의 deps 에서도 빠짐 (module reference 는 자동 stable).
+  const replaceUrlState = replaceDocsVaultUrlState;
 
   const handleViewChange = useCallback(
     (next: DocsVaultView) => {
