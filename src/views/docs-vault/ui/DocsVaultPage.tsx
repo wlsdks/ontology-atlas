@@ -18,19 +18,14 @@ import {
   FilePlus,
   FolderCog,
   HardDrive,
-  Layers,
   Menu,
   Package,
   Search,
   Settings2,
   X,
 } from 'lucide-react';
-import {
-  LocalVaultPicker,
-  OntologyStarterCta,
-  VaultConflictError,
-  useLocalVault,
-} from '@/features/docs-vault-local';
+import { VaultConflictError, useLocalVault } from '@/features/docs-vault-local';
+import { VaultToolsMenu } from '@/widgets/docs-vault';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
@@ -1378,75 +1373,15 @@ function DocsVaultContent() {
                 </button>
               </Tooltip>
               {advancedOpen ? (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-10 z-30 w-[300px] rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(14,15,18,0.98)] p-2 shadow-[0_18px_48px_rgba(0,0,0,0.38)]"
-                >
-                  <button
-                    type="button"
-                    role="menuitemradio"
-                    aria-checked={view === 'folder-topology'}
-                    onClick={() => handleViewChange(view === 'folder-topology' ? 'doc' : 'folder-topology')}
-                    className={`inline-flex w-full items-center justify-center gap-1 rounded-sm px-2 py-1.5 text-[11px] transition-colors ${
-                      view === 'folder-topology'
-                        ? 'bg-[color:rgba(94,106,210,0.16)] text-[color:var(--color-text-primary)]'
-                        : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
-                    }`}
-                  >
-                    <Layers size={12} aria-hidden />
-                    {t('advanced.viewTopology')}
-                    {folderTopoStatus === 'rebuilding' ? (
-                      <span
-                        aria-hidden
-                        className="h-1.5 w-1.5 animate-pulse rounded-full bg-[color:var(--color-indigo-accent)]"
-                      />
-                    ) : null}
-                  </button>
-                  <div className="my-2 h-px bg-[color:var(--color-border-soft)]" />
-                  <div className="space-y-2">
-                    <LocalVaultPicker
-                      status={localVault.status}
-                      handleName={localVault.handle?.name ?? null}
-                      docCount={localVault.manifest?.docs.length ?? 0}
-                      errorMessage={localVault.errorMessage}
-                      lastLoadedAt={localVault.lastLoadedAt}
-                      validationSummary={localVaultValidationSummary}
-                      onOpen={localVault.open}
-                      onClose={localVault.close}
-                      onRefresh={localVault.refresh}
-                      onRequestPermission={localVault.requestPermission}
-                    />
-                    {/* dogfood hint + ontology starter CTA — vault 가 *비어 있으면*
-                        scaffold 버튼 prominent 노출 (Option D), 기존 vault 면 작은
-                        보조 버튼. 사용자 비전 ("비개발자도 같이") 의 핵심 진입점 —
-                        터미널 / npm 없이 5 md + .mcp.json.example 시드 작성. */}
-                    {localVault.status === 'idle' ? (
-                      <p className="text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-                        {t('advanced.ontologyHintPrefix')}
-                        <code className="rounded bg-[color:var(--color-overlay-1)] px-1 py-0.5 font-mono text-[10.5px] text-[color:var(--color-indigo-accent)]">
-                          docs/ontology/
-                        </code>
-                        {t('advanced.ontologyHintSuffix')}
-                      </p>
-                    ) : null}
-                    {localVault.status === 'loaded' && canEditCurrent ? (
-                      <OntologyStarterCta
-                        onScaffold={localVault.scaffoldOntology}
-                        docCount={localVault.manifest?.docs.length ?? 0}
-                      />
-                    ) : null}
-                    {canEditCurrent ? (
-                      <button
-                        type="button"
-                        onClick={handleCreateNewDoc}
-                        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.35)] bg-[color:rgba(94,106,210,0.08)] px-2.5 py-1.5 text-[11.5px] text-[color:rgba(200,210,255,0.92)] transition-colors hover:border-[color:rgba(139,151,255,0.55)] hover:bg-[color:rgba(94,106,210,0.14)]"
-                      >
-                        <FilePlus size={12} aria-hidden />
-                        {t('advanced.newDoc')}
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
+                <VaultToolsMenu
+                  view={view}
+                  onViewChange={handleViewChange}
+                  folderTopoStatus={folderTopoStatus}
+                  canEditCurrent={canEditCurrent}
+                  localVault={localVault}
+                  validationSummary={localVaultValidationSummary}
+                  onCreateNewDoc={handleCreateNewDoc}
+                />
               ) : null}
             </div>
           ) : null}

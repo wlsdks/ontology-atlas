@@ -1,4 +1,5 @@
 export { DocsVaultTree } from './ui/DocsVaultTree';
+export { VaultToolsMenu } from './ui/VaultToolsMenu';
 export { DocsVaultViewer } from './ui/DocsVaultViewer';
 export { DocsVaultEditor } from './ui/DocsVaultEditor';
 export { DocsVaultUnifiedPalette } from './ui/DocsVaultUnifiedPalette';
