@@ -11,6 +11,16 @@
           }
         ]
       }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": ".claude/hooks/inject-ontology-summary.sh"
+          }
+        ]
+      }
     ]
   }
 }

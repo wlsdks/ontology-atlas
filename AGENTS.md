@@ -161,6 +161,8 @@ A 30-second read at the top of the task often replaces a 10-minute re-discovery 
 
 For the explicit "I'm done with this task — please sync the ontology now" loop, invoke the **`/ontology-sync`** skill (see `.claude/skills/ontology-sync/SKILL.md`). It bundles the read-then-write pattern with a checklist for when to skip (typos, style nudges).
 
+For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at `.claude/hooks/inject-ontology-summary.sh` runs once when Claude Code attaches to the workspace and injects a short census of the vault (kind counts + first 8 entries) into the agent's system context. The agent then has the ontology in mind from message #1 — no `list_concepts` round trip needed for the first orientation. The hook stays silent in repos without a vault, so it's safe to keep on globally.
+
 **Skip the ontology** for: typo fixes, comment tweaks, single-line style nudges, lint config, test fixtures with no shape change. Anything that changes "what the codebase *is*" goes into the vault; anything that doesn't, stays out.
 
 ## Frontmatter shape per kind (R14)
