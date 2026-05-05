@@ -6,6 +6,107 @@
 
 ---
 
+## 2026-05-05 — Round 14: AI agent ↔ vault 자동 sync + 웹 즉시 반영 + frontmatter schema
+
+R13 closure 후 *"개발자와 AI agent 가 같이 키운다"* 미션의 자동성 강화. 두 갈래 — agent 가 vault 를 알아서 읽고/쓰고, 그 변화가 웹에 즉시 흘러오고. 9 PR 묶음 (#155-#163).
+
+### Web 즉시 반영 — polling → 그래프 pulse → 두 toast (#155 #156 #157 #158)
+
+사용자 명시 *"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때"* 의 4 단계 완성.
+
+| Step | What | Where 인지 |
+|---|---|---|
+| #155 polling | 5s 간격 fingerprint check + visible-only 자동 reload | 백그라운드 |
+| #156 graph diff pulse | 새 노드 amber sine 5s | `/topology` 그래프 |
+| #157 added toast | `Added: <slug>` info toast | 모든 페이지 |
+| #158 modified toast | `Edited: <slug>` success toast (mtime 변화) | 모든 페이지 |
+
+이제 IDE / AI agent / CLI 어느 surface 가 vault 만지면 웹 탭 *focus 안 해도* ~5s 안에 그래프 + toast. `prevSlugsRef Set` → `prevMapRef Map<slug, mtime|null>` 로 확장해 added/modified 분기. static manifest (mtime null) 은 비교 skip 으로 false-positive 차단.
+
+- `use-local-vault.ts` — `setInterval(tryReload, 5000)` visible-only, hidden 시 dispose
+- `widgets/topology-map-sigma` — `runtimeRecentSlugs` 5s set, 기존 `recentPulse` 인프라 재사용
+- `features/docs-vault-local/model/VaultDiffToaster.tsx` 신설 — 첫 mount baseline, 이후 added/modified 분류, PREVIEW 3 + "+N more"
+- 사용자 검증 단계: dev server → IDE 에서 `oh-my-ontology add` 또는 `.md` 편집 → 5s 안 toast + 그래프 pulse
+
+### Walkthrough 검증 + topology↔ontology 회복 (#159)
+
+R14 walkthrough 에서 발견된 4 이슈 + 사용자 약속한 topology↔ontology 연계 회복.
+
+- **i18n 404** — `app/[locale]/not-found.tsx` 추가, client-side locale 감지로 ko/en 분기. 이전엔 정적 export 한계로 `/ko/foo` 가 영문 fallback 만 떴다.
+- **home UX 간격** — 좌하단 hint 카드와 stats bar 가 거의 붙어 있던 것을 `bottom-14` → `bottom-20` 으로 24px gap. 데이터 경고 alert 에 `ChevronRight` affordance.
+- **stale doc** — AGENTS.md / .claude/rules/architecture.md 의 살아있는 라우트 목록에서 `/ontology/relations` 표기 제거 (R12 에서 사라졌고 분포 정보는 `/ontology/insights` 안으로 통합).
+- **🚨 topology↔ontology 연계 회복** — `/topology` 가 dogfood 환경에서 *"1 노드 · 0 엣지"* 빈 화면이었던 회귀를 회복. `buildGraph` 에 `ontologyExtension` 옵션 추가, vault frontmatter 의 도메인 / 역량 / 요소 노드와 그 관계까지 같은 그래프에 그림. `isOntology` 플래그로 size scaling / owner overlay 분기에서 제외 → project 본 골격 보존. 결과 1 노드 → **68 노드 · 112 엣지** 로 회복.
+
+### Frontmatter schema 양식 — three entry points 동기화 (#160)
+
+사용자 질문 *"AI agent 가 같은 양식으로 작성하게 인식 가능한 구조"* 의 1차 답변. 두 진입점 (`add_concept` MCP · `add` CLI) 이 같은 schema 모듈을 통해 .md 만들고, 같은 advisory warnings 노출.
+
+이전: `cli/templates/vault/` 에 kind 별 견본은 있었지만 `cli init` 만 사용. `add_concept` / `cli add` 는 `slug + kind + title` 만 박고 arrayDefaults 미채움 → AI agent 가 만든 capability 가 `elements: []` 슬롯조차 없는 .md 로 disk 에 남았다.
+
+- **`mcp/src/schema.mjs` · `cli/src/lib/schema.mjs`** — single source. kind 별 `arrayDefaults` (project: domains/capabilities/elements, domain: capabilities, capability: elements), `requiredExtras` (capability/element 의 domain), `folder`, kind 별 starter body. 두 파일 lock-step.
+- **3-way validator** 가 새 issue code `missing-expected-field` 동시에 인식. severity=warning (error 아님) → pre-existing vault 호환 보존.
+- **Contract test** `tests/contract/vault-schema.contract.test.ts` — mcp/cli 두 schema 가 같은 결과 + UI 측 `KIND_EXPECTED_EXTRAS` 일치 강제.
+
+### CLI `import` — 외부 .md schema 정규화 후 vault 정착 (#161)
+
+#160 위에 분기, 사용자 약속의 *"우리 양식을 주면 그대로 작성해서 md import"* 답변. 세 진입점 (`add_concept` MCP · `add` CLI · 새 `import` CLI) 이 모두 같은 schema 모듈 통해 .md 만든다.
+
+```bash
+oh-my-ontology import <path...> [options]
+  --vault path          target vault root (default: cwd)
+  --kind K              fallback kind when input has no frontmatter kind:
+  --auto-prefix         kind→folder (capability → capabilities/)
+  --rename              slug clash 시 -2 / -3 ... 자동 회피
+  --dry-run             디스크 변경 0, plan 만 출력
+```
+
+처리: `parseFrontmatter` → kind/slug/title resolve (입력 frontmatter > flag > basename) → `buildFrontmatter` → 충돌 detect → `writeDoc`. 입력의 다른 키 (depends_on / 사용자 정의 …) 보존, 빈 body 면 schema starter. `.git` / `node_modules` / dotfile 디렉토리 walk skip.
+
+cli integration test 13 → **20 case**. cli `init / list / validate / add / find / import` **6 명령** 으로 확장.
+
+### `/ontology-sync` agent skill + AGENTS read-while-coding 룰 (#162)
+
+사용자 의도 *"AI agent 가 작업 중간 ontology 읽어서 도움받고, 끝나면 알아서 vault 에 기록"* 의 자동성 강화.
+
+- **AGENTS.md 의 'Working with the ontology while you code' 섹션** 추가 — Read at start (`list_kinds` / `list_concepts` / `get_concept` / `find_backlinks` / `find_path`) + Write at end (`add_concept` / `add_relation` / `rename_concept` / `merge_concepts` / `patch_concept`) + skip 케이스 (typo, style, fixture). agent 시스템 prompt 수준에 박혀 매 prompt 활성.
+- **`.claude/skills/ontology-sync/SKILL.md`** — `/ontology-sync` slash command. 사용자 명시 invoke 시 git diff + 컨텍스트로 ontology delta 식별 → MCP write 도구로 반영. reply 5 줄 max, failure mode 4 종 (duplicate slug / dangling parent / mtime conflict / backlink rot) cover.
+
+Demo: 자연 prompt — *"password reset 추가하려고 plan"* — 만으로 agent 가 11 → 13 노드, frontmatter R14 양식 정확, validate 0 issue 로 자율 작성. 사용자가 "ontology" 단어 0 회 사용.
+
+### SessionStart hook — vault 요약 자동 inject (#163)
+
+#162 의 후속. 명시 호출 없이 *읽기 면* 활성. Claude Code 가 vault 있는 repo 에 attach 하면 한 번 census 를 system context 에 자동 inject — agent 가 매 prompt message #1 부터 ontology 인지.
+
+vault 결정 우선순위: `OMOT_VAULT` env → `<cwd>/docs/ontology` → `<cwd>/vault` → cwd 의 `kind:` 가진 `.md` → 못 잡으면 silent exit. **vault 없는 repo 에서 noise 0**.
+
+| 진입점 | 시점 | 효과 |
+|---|---|---|
+| **SessionStart hook** (#163) | 새 세션 시작 시 1회 | vault 인지가 message #1 부터 |
+| **`/ontology-sync` skill** (#162) | 사용자 명시 invoke | git diff 기반 변경 추출 + write back |
+
+암시적 + 명시적 두 갈래 활성. 메타 검증: dogfood vault 가 자기 자신의 새 hook 을 자기 ontology 에 자율 박음 — *"방금 추가한 SessionStart hook, ontology 에 sync 해줘"* 한 줄에 24 → 25 노드, dependencies/relates 자동 추론.
+
+### Dogfood vault 갱신
+
+R14 의 새 capability 2 노드 추가:
+- `capabilities/ontology-sync-skill` (`.claude/skills/ontology-sync`)
+- `capabilities/session-start-ontology-context` (`.claude/hooks/inject-ontology-summary.sh`)
+
+23 → **25 노드** (capability 13 · domain 6 · element 4 · project 1 · vault-readme 1). `pnpm vault:validate` clean.
+
+### 4 surface 모두 작동
+
+| Surface | 진입 | 상태 |
+|---|---|---|
+| **CLI** | `oh-my-ontology init / list / validate / add / find / import` | v0.2.x (6 명령) |
+| **MCP** | 14 tools (8 read + 6 write) | v0.7.1 |
+| **Web** | `/`, `/topology`, `/docs`, `/ontology`, `/ontology/edit`, `/ontology/insights`, `/projects`, `/project/[slug]` | R10 surface diet 후 |
+| **VSCode plugin** | status bar match · backlinks · add concept · MCP connect (graph webview R13 #67 에서 제거) | v0.9.0 |
+
+→ "개발자가 어디 있든 같은 vault, 같이 자라남" 의 read 자동 + write 자동 + 즉시 반영 까지 도달.
+
+---
+
 ## 2026-05-04 — Round 13: AI agent quality 첫 측정 + VSCode plugin MVP
 
 R12 closure 후 *제품 핵심 가설* 첫 측정. 측정 결과 강한 confirming evidence 위에 README 약속의 미완성 surface (VSCode plugin) 첫 구현.

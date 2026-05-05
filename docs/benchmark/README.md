@@ -100,3 +100,27 @@ Each of the 7 tasks should be measured 4 times:
 - **Cross-agent consistency** — does the effect hold across Claude Code and Codex, or is it agent-specific?
 
 Results will be summarized in this README and (if signal is strong) in the project's main README under "Verifiable promises".
+
+## Current measurement status
+
+| Run | Vault | Agents (n) | Result file | Headline |
+|---|---|---|---|---|
+| R13 first | 22 nodes | Claude Code self + Codex bypass (n=2) | `results/2026-05-04-claude-code.md` · `results/2026-05-04-codex.md` | CC: hallucination 9→0, +1.0 correctness · Codex: tool calls 7.0→1.67 (-76%), correctness saturated |
+
+R14 (post-2026-05-05) note: vault grew **22 → 25 nodes** (added `capabilities/ontology-sync-skill` + `capabilities/session-start-ontology-context`). Re-measurement is **user-triggered** since Codex bypass requires explicit `--dangerously-bypass-approvals-and-sandbox` and Claude Code self-run requires a manual session.
+
+### Re-measurement triggers (user runs these manually)
+
+```bash
+# Codex 14-cell automated re-measurement (full bypass, ~20 min)
+pnpm benchmark --bypass
+
+# Codex ON-only 7 cells (faster, ~10 min)
+pnpm benchmark --bypass --on-only
+
+# Claude Code self-measurement is manual — open a new session and walk
+# the 7 prompts in tasks.md, recording transcripts into a new
+# results/<date>-claude-code.md.
+```
+
+Aim: when the vault grows another ~25 nodes (≈50 total), re-measure to test whether the MCP advantage **scales** (graph reasoning gain widens) or **saturates** (raw grep also works fine at 50 nodes).
