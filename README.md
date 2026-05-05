@@ -117,13 +117,18 @@ becoming graph nodes.
 
 ## Verifiable promises
 
+> 📊 **Headline measurement** (R13 benchmark, [methodology](docs/benchmark/)):
+> Claude Code with MCP-on **cuts hallucinated answers 9 → 0** on cross-cutting graph tasks.
+> Codex with MCP-on **cuts tool calls 76%** (7.0 → 1.67/task) at saturated correctness.
+> Same MCP tools, two agents, two different value mechanisms.
+
 | Promise | Verification |
 |---|---|
 | **vault frontmatter = the graph** (no review queue, no LLM extraction) | `grep -r "extractionJob" src/ → 0` |
 | **AI agent partner via MCP** | `mcp/` package, 14 tools, `mcp/scripts/verify.mjs` smoke |
 | **No backend** (Firebase / DB / auth) | `pnpm bundle:check` — firebase SDK chunk 0 (deps removed in R10) |
-| **Dogfooding** | `docs/ontology/` is the project's own curated mental model (~21 nodes — domains 6 · capabilities 9 · elements 4 · project 1 · vault-readme 1). |
-| **AI agent quality measurement** *(cross-agent, n=2 measured)* | [`docs/benchmark/`](docs/benchmark/) — 7 tasks × 3 categories × 2 agents. **Claude Code**: MCP-on cuts hallucinations 9 → 0, Cat A correctness +1.0 (quality win) ([results](docs/benchmark/results/2026-05-04-claude-code.md)). **Codex** (bypass-authorized): MCP-on cuts Cat A tool calls 7.0 → 1.67 (76% reduction; efficiency win), correctness already saturated OFF ([results](docs/benchmark/results/2026-05-04-codex.md)). MCP delivers value to both agents through *different mechanisms*. Negative control (Cat C) passes for both — agents correctly defer to Read/Grep on file-read tasks. |
+| **Dogfooding** | `docs/ontology/` is this project's own curated mental model — **25 nodes** (capabilities 12 · domains 6 · elements 4 · project 1 · vault-readme 1). The MCP server you'd run is the one we use to write *this README*. |
+| **AI agent quality measurement** *(cross-agent, n=2)* | [`docs/benchmark/`](docs/benchmark/) — 7 tasks × 3 categories × 2 agents (Claude Code + Codex). [Claude Code results](docs/benchmark/results/2026-05-04-claude-code.md): hallucinations 9 → 0, Cat A correctness +1.0. [Codex results](docs/benchmark/results/2026-05-04-codex.md): Cat A tool calls 7.0 → 1.67. Negative control (Cat C, file-read tasks) passes for both — agents correctly defer to Read/Grep, no over-reach. |
 
 ## Architecture
 
