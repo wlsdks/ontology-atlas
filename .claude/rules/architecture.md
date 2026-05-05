@@ -33,11 +33,12 @@ src/
 
 - 새 라우트는 `app/[locale]/` 아래에만. `src/views/` 의 페이지 컴포넌트가 1:1 대응.
 - 살아있는 라우트: `/`, `/topology/`, `/docs/`, `/ontology/`, `/ontology/edit/`,
-  `/ontology/insights/`, `/ontology/relations/`, `/projects/`, `/project/[slug]/`,
+  `/ontology/insights/`, `/projects/`, `/project/[slug]/`,
   `/project/[slug]/edit/`, `/project/new/`, `/project/fallback/`. R10 (auth +
   cloud surface 영구 제거) 이후 외 namespace (`/login`, `/signup`, `/account`,
   `/reset-password`, `/settings/*`, `/admin/*`, `/review/*`, `/diagnostics/*`,
-  `/knowledge/*`) 부활 금지.
+  `/knowledge/*`) 부활 금지. `/ontology/relations` 도 R12 에서 제거되어 그
+  분포 정보는 `/ontology/insights` 안으로 통합되었다.
 - 모든 라우트는 next-intl `[locale]` prefix 자동 추가 (en / ko 두 locale).
 
 ## 단일 진실원 원칙

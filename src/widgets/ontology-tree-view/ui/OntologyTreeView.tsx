@@ -422,11 +422,12 @@ export function OntologyTreeView({
         </div>
       ) : null}
       {result.warnings.length > 0 ? (
-        <details className="rounded-xl border border-[color:rgba(229,72,77,0.24)] bg-[color:rgba(229,72,77,0.06)] px-4 py-3 text-xs text-[color:var(--color-status-danger)]">
-          <summary className="cursor-pointer font-[var(--font-weight-signature)]">
-            {t('tree.warningsSummary', { count: result.warnings.length })}
+        <details className="group rounded-xl border border-[color:rgba(229,72,77,0.24)] bg-[color:rgba(229,72,77,0.06)] px-4 py-3 text-xs text-[color:var(--color-status-danger)] open:bg-[color:rgba(229,72,77,0.09)]">
+          <summary className="flex cursor-pointer list-none items-center gap-2 font-[var(--font-weight-signature)] [&::-webkit-details-marker]:hidden">
+            <ChevronRight className="h-3 w-3 flex-none transition-transform duration-150 group-open:rotate-90" />
+            <span className="flex-1">{t('tree.warningsSummary', { count: result.warnings.length })}</span>
           </summary>
-          <ul className="mt-2 list-inside list-disc space-y-0.5">
+          <ul className="mt-2 list-inside list-disc space-y-0.5 pl-5">
             {result.warnings.slice(0, 12).map((w, i) => (
               <li key={i}>{w}</li>
             ))}

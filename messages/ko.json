@@ -9,9 +9,16 @@
       "ontology": "온톨로지",
       "ontologyEdit": "온톨로지 빌더",
       "ontologyInsights": "온톨로지 인사이트",
-      "ontologyRelations": "관계 분포",
       "projectNew": "새 프로젝트"
     }
+  },
+  "notFound": {
+    "label": "404",
+    "title": "어디서 길을 잃으셨나요",
+    "body": "이 페이지가 존재하지 않습니다. 링크가 오래되었거나 프로젝트 이름이 바뀌었을 수 있어요. 아래에서 길을 골라보세요.",
+    "findByProject": "프로젝트 검색으로 찾기",
+    "home": "홈으로",
+    "previous": "이전 화면"
   },
   "nav": {
     "skipToContent": "메인 콘텐츠로 건너뛰기",

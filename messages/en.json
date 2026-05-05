@@ -9,9 +9,16 @@
       "ontology": "Ontology",
       "ontologyEdit": "Ontology Builder",
       "ontologyInsights": "Ontology Insights",
-      "ontologyRelations": "Ontology Relations",
       "projectNew": "New project"
     }
+  },
+  "notFound": {
+    "label": "404",
+    "title": "Looks like you're lost.",
+    "body": "This page doesn't exist. The link may be outdated or a project may have been renamed. Pick one of the options below to continue.",
+    "findByProject": "Find by project search",
+    "home": "Home",
+    "previous": "Previous screen"
   },
   "nav": {
     "skipToContent": "Skip to main content",
