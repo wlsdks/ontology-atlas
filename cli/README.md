@@ -17,7 +17,7 @@ and AI agents (Claude Code, Cursor, etc.) can read and write together.
 |---|---|
 | `oh-my-ontology init [folder]` | Scaffold a new vault (project / domain / capability / element starter .md + `.mcp.json.example`) |
 | `oh-my-ontology list [vault]` | List ontology nodes (color table; `--kind X` filter, `--json`) |
-| `oh-my-ontology validate [vault]` | Frontmatter integrity (5 issue codes; `exit 1` on errors — usable as a CI gate) |
+| `oh-my-ontology validate [vault]` | Frontmatter integrity (6 issue codes incl. R14 `missing-expected-field`; `exit 1` on errors — usable as a CI gate) |
 | `oh-my-ontology add <kind> <slug> --title="..."` | Scaffold a new node (`--domain X --body "..." --vault path`); throws on duplicate slug |
 | `oh-my-ontology find <query> [vault]` | Search slug + title (case-insensitive, `--kind X --json`) |
 

@@ -138,6 +138,10 @@ This project describes its own mental model in `docs/ontology/` as frontmatter m
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 
+## Frontmatter shape per kind (R14)
+
+When an AI agent (`add_concept`) or a developer (`oh-my-ontology add`) creates a new node, the frontmatter is normalized per `kind` so external `.md` ingestion stays consistent. See `mcp/README.md` for the full table and `mcp/src/schema.mjs` (mirror at `cli/src/lib/schema.mjs`) for the source. Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator surfaces missing strongly-expected fields (e.g. capability/element without `domain:`) as the `missing-expected-field` warning — advisory only, not a hard error, so pre-existing vaults still pass.
+
 ## CLAUDE.md / AGENTS.md sync
 
 - **AGENTS.md** (this file) is canonical — the cross-tool standard.

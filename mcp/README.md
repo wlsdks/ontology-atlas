@@ -68,12 +68,36 @@ The server connects over stdio. You should now see 14 tools under the `oh-my-ont
 | `list_kinds` | Vault kind census: `{ total, byKind: { capability: N, ... } }`. |
 | `find_orphans` | **v0.5** Finds isolated nodes — docs that no other node references in its frontmatter. Options: `kind` (filter), `excludeKinds` (skip, default `['vault-readme']`). Useful as a starting point for cleanup or auditing unused nodes. |
 | `query_concepts` | **v0.6** Typed filter DSL — `kind=X AND has(Y) AND NOT ...`. Saved-filter / smart-list use case. |
-| `add_concept` | Creates a new `.md` node. Required: `slug`, `kind`, `title`. Optional: `domain`, `capabilities`, `elements`, `body`. Throws if the slug already exists. |
+| `add_concept` | Creates a new `.md` node. Required: `slug`, `kind`, `title`. Optional: `domain`, `capabilities`, `elements`, `body`. **R14**: frontmatter is normalized per kind (project gets `domains/capabilities/elements: []`; capability gets `elements: []`; capability/element should set `domain` — missing extras come back in `warnings`). Body defaults to a kind-specific starter. Throws if the slug already exists. |
 | `add_relation` | Adds an edge between two slugs. `type`: `depends_on` (→ dependencies), `relates` (→ relates), `contains` (→ contains), `describes` (→ describes). Appends to the appropriate frontmatter array. **R11**: optional `expected_mtime` on the source slug for conflict detection. |
 | `patch_concept` | Updates an existing node's frontmatter (per-key patch — `null` deletes a key) and/or body. Use this when you need to *modify* a slug that `add_concept` would reject as duplicate. **R11**: optional `expected_mtime` for conflict detection — pass the `mtime` from `get_concept`; throws `VaultConflictError` if the file has been modified externally since you read it. |
 | `delete_concept` | **v0.4 ⚠ DESTRUCTIVE** Permanently deletes a node. Two-stage safety: ① without `confirm:true`, runs as a dry-run (with a backlinks preview); ② if backlinks exist, throws unless `force:true`. The response captures the deleted frontmatter + body so you can recover from mistakes. **R11**: optional `expected_mtime` for conflict detection. |
 | `rename_concept` | **v0.7 ⚠ MULTI-FILE** Atomically renames a slug — moves the .md file, updates the moved file's `slug:` key, and rewrites every backlink (frontmatter array entries, inline string keys like `domain`, body links `[[oldSlug]]` / `(oldSlug.md)`). Tail-only references (`mcp-server` for `capabilities/mcp-server`) are also redirected. Without `confirm:true`, runs as a dry-run with a full update preview. Replaces the manual loop of `find_backlinks` + N `patch_concept` calls. **R11**: optional `expected_mtime` for the source slug. |
 | `merge_concepts` | **v0.7 ⚠ DESTRUCTIVE MULTI-FILE** Folds `fromSlug` into `intoSlug` — every backlink to `fromSlug` is redirected, then `fromSlug.md` is deleted. The `intoSlug` node is preserved as-is (frontmatter / body are not auto-merged — use `patch_concept` after if you want to combine descriptions). Without `confirm:true`, runs as a dry-run. **R11**: optional `expected_mtime` for `fromSlug`. |
+
+## Frontmatter shape per kind (R14)
+
+When `add_concept` writes a new `.md`, the frontmatter is normalized by
+`mcp/src/schema.mjs` so the AI agent and the CLI always emit the same shape.
+Empty arrays are kept (not stripped) so a human can see the slot and fill it
+later.
+
+| kind | required | always emitted | strongly expected |
+|---|---|---|---|
+| `project` | `slug`, `kind`, `title` | `domains: []`, `capabilities: []`, `elements: []` | — |
+| `domain` | `slug`, `kind`, `title` | `capabilities: []` | — |
+| `capability` | `slug`, `kind`, `title` | `elements: []` | `domain` |
+| `element` | `slug`, `kind`, `title` | — | `domain` |
+| `document` | `slug`, `kind`, `title` | — | — |
+
+“Strongly expected” fields don’t throw — they come back in the response under
+`warnings`, and the validator (`mcp:validate`) flags them with the
+`missing-expected-field` issue code so users see them in the workbench banner
+without breaking pre-existing vaults.
+
+The same schema is mirrored at `cli/src/lib/schema.mjs`. A contract test
+(`tests/contract/vault-schema.contract.test.ts`) keeps the two in lock-step;
+if you change one, mirror the other.
 
 ## Local verification (UX-3)
 
