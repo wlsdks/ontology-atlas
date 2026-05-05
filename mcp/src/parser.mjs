@@ -137,7 +137,14 @@ function needsQuote(s) {
 }
 
 // 본문 + frontmatter 합쳐서 markdown 생성.
+//
+// body 의 leading newlines 는 strip 한다. 외부 .md 를 import 할 때
+// parseFrontmatter 가 closing `---\n` 뒤의 첫 newline 만 strip 하므로,
+// frontmatter 와 body 사이에 빈 줄을 한 줄 둔 일반적인 markdown 입력
+// (`---\n\n# Title`) 의 body 가 `\n# Title` 로 들어와 `---\n\n` 와
+// 합쳐지면 빈 줄 두 개가 된다. 여기서 strip 해서 항상 한 줄만 유지.
 export function buildMarkdown({ frontmatter, body = '' }) {
   const fmBlock = serializeFrontmatter(frontmatter);
-  return `---\n${fmBlock}\n---\n\n${body || ''}`;
+  const cleanBody = body ? body.replace(/^\n+/, '') : '';
+  return `---\n${fmBlock}\n---\n\n${cleanBody}`;
 }

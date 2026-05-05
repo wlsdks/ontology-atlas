@@ -62,7 +62,7 @@ src/                       FSD layers
   └── shared/              UI · lib · config primitives
 mcp/                       MCP server (the AI agent's surface) — npm pkg, 14 tools
 cli/                       CLI binary (developer's daily entry point) — npm pkg, R12 v0.2
-                           init / list / validate / add / find
+                           init / list / validate / add / find / import
 docs/                      long-form docs
 docs/ontology/             this project's own ontology vault (dogfood — 22 nodes)
 tests/                     Vitest unit + Playwright E2E
@@ -139,7 +139,9 @@ This project describes its own mental model in `docs/ontology/` as frontmatter m
 
 ## Frontmatter shape per kind (R14)
 
-When an AI agent (`add_concept`) or a developer (`oh-my-ontology add`) creates a new node, the frontmatter is normalized per `kind` so external `.md` ingestion stays consistent. See `mcp/README.md` for the full table and `mcp/src/schema.mjs` (mirror at `cli/src/lib/schema.mjs`) for the source. Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator surfaces missing strongly-expected fields (e.g. capability/element without `domain:`) as the `missing-expected-field` warning — advisory only, not a hard error, so pre-existing vaults still pass.
+When an AI agent (`add_concept`) or a developer (`oh-my-ontology add` / `oh-my-ontology import`) creates a new node, the frontmatter is normalized per `kind` so external `.md` ingestion stays consistent. See `mcp/README.md` for the full table and `mcp/src/schema.mjs` (mirror at `cli/src/lib/schema.mjs`) for the source. Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator surfaces missing strongly-expected fields (e.g. capability/element without `domain:`) as the `missing-expected-field` warning — advisory only, not a hard error, so pre-existing vaults still pass.
+
+`oh-my-ontology import <path...>` is the bulk path: hand it your own `.md` (single file, directory, or many) and each file is run through the same schema before landing in the vault. Frontmatter `kind`/`slug`/`title` win when present; `--kind` is the fallback, the first `# H1` is the title fallback, `--auto-prefix` / `--rename` / `--dry-run` cover the typical conflict cases. Same shape as `add_concept` / `add` — one schema, three entry points.
 
 ## CLAUDE.md / AGENTS.md sync
 

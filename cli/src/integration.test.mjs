@@ -287,5 +287,198 @@ await test('find --kind 필터', async () => {
   }
 });
 
+// ── R14 import 명령 통합 ─────────────────────────────────────────────────
+
+function withTmpDir() {
+  return mkdtempSync(join(tmpdir(), 'cli-import-src-'));
+}
+
+await test('import — input frontmatter 의 kind 사용, schema arrayDefaults 적용', async () => {
+  const vault = withVault([]);
+  const src = withTmpDir();
+  try {
+    const file = join(src, 'token-issue.md');
+    writeFileSync(
+      file,
+      '---\nkind: capability\ntitle: Token issue\ndomain: domains/auth\n---\n\n# Token issue\n\nbody.\n',
+      'utf-8',
+    );
+    const r = await run(['import', file, '--vault', vault]);
+    assert.equal(r.code, 0);
+    const written = readFileSync(join(vault, 'token-issue.md'), 'utf-8');
+    assert.match(written, /kind: capability/);
+    assert.match(written, /domain: domains\/auth/);
+    // schema arrayDefaults — capability 는 elements: [] 자동 추가.
+    assert.match(written, /elements:/);
+    // body 보존.
+    assert.match(written, /body\./);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+await test('import — frontmatter kind 없으면 --kind fallback', async () => {
+  const vault = withVault([]);
+  const src = withTmpDir();
+  try {
+    const file = join(src, 'foo.md');
+    writeFileSync(file, '# Foo\n\nbare markdown without frontmatter.\n', 'utf-8');
+    const r = await run([
+      'import',
+      file,
+      '--vault',
+      vault,
+      '--kind',
+      'capability',
+    ]);
+    assert.equal(r.code, 0);
+    const written = readFileSync(join(vault, 'foo.md'), 'utf-8');
+    assert.match(written, /kind: capability/);
+    // title 은 첫 H1 'Foo' 추출.
+    assert.match(written, /title: Foo/);
+    // body 보존.
+    assert.match(written, /bare markdown/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+await test('import — kindless skip (kind 도 --kind 도 없음)', async () => {
+  const vault = withVault([]);
+  const src = withTmpDir();
+  try {
+    const file = join(src, 'note.md');
+    writeFileSync(file, '# just a note\n', 'utf-8');
+    const r = await run(['import', file, '--vault', vault]);
+    // 1 입력 모두 kindless → exit 1, 메시지에 kindless 명시.
+    assert.equal(r.code, 1);
+    const clean = stripAnsi(r.stderr + r.stdout);
+    assert.match(clean, /kindless|no kind/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+await test('import --auto-prefix — kind→folder 자동', async () => {
+  const vault = withVault([]);
+  const src = withTmpDir();
+  try {
+    const file = join(src, 'login.md');
+    writeFileSync(
+      file,
+      '---\nkind: capability\ntitle: Login\ndomain: domains/auth\n---\n\nx\n',
+      'utf-8',
+    );
+    const r = await run([
+      'import',
+      file,
+      '--vault',
+      vault,
+      '--auto-prefix',
+    ]);
+    assert.equal(r.code, 0);
+    const written = readFileSync(join(vault, 'capabilities/login.md'), 'utf-8');
+    assert.match(written, /slug: capabilities\/login/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+await test('import — slug 충돌 시 default skip, --rename 시 -2 회피', async () => {
+  // 같은 slug 의 .md 가 vault 에 이미 있는 상태로 시작.
+  const vault = withVault([
+    { slug: 'foo', content: '---\nkind: capability\ntitle: Existing\ndomain: domains/auth\n---\n' },
+  ]);
+  const src = withTmpDir();
+  try {
+    const file = join(src, 'foo.md');
+    writeFileSync(
+      file,
+      '---\nkind: capability\ntitle: Imported\ndomain: domains/auth\n---\n',
+      'utf-8',
+    );
+
+    // default — skip + 종료 1 (모두 conflict 라 imported 0)
+    const r1 = await run(['import', file, '--vault', vault]);
+    assert.equal(r1.code, 1);
+    const c1 = stripAnsi(r1.stderr + r1.stdout);
+    assert.match(c1, /conflict|already exists/);
+
+    // --rename — foo-2.md 로 import 성공
+    const r2 = await run(['import', file, '--vault', vault, '--rename']);
+    assert.equal(r2.code, 0);
+    const written = readFileSync(join(vault, 'foo-2.md'), 'utf-8');
+    assert.match(written, /slug: foo-2/);
+    assert.match(written, /title: Imported/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+await test('import --dry-run — 디스크 변경 0', async () => {
+  const vault = withVault([]);
+  const src = withTmpDir();
+  try {
+    const file = join(src, 'plan.md');
+    writeFileSync(
+      file,
+      '---\nkind: domain\ntitle: Plan\n---\n',
+      'utf-8',
+    );
+    const r = await run(['import', file, '--vault', vault, '--dry-run']);
+    assert.equal(r.code, 0);
+    // vault 안에 파일 안 만들어졌어야.
+    assert.equal(
+      existsSyncTest(join(vault, 'plan.md')),
+      false,
+      'dry-run should not write',
+    );
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /would import|plan/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+await test('import — 디렉토리 재귀 walk', async () => {
+  const vault = withVault([]);
+  const src = withTmpDir();
+  try {
+    mkdirSync(join(src, 'sub'), { recursive: true });
+    writeFileSync(
+      join(src, 'a.md'),
+      '---\nkind: domain\ntitle: A\n---\n',
+      'utf-8',
+    );
+    writeFileSync(
+      join(src, 'sub', 'b.md'),
+      '---\nkind: domain\ntitle: B\n---\n',
+      'utf-8',
+    );
+    const r = await run(['import', src, '--vault', vault]);
+    assert.equal(r.code, 0);
+    assert.equal(existsSyncTest(join(vault, 'a.md')), true);
+    assert.equal(existsSyncTest(join(vault, 'b.md')), true);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(src, { recursive: true, force: true });
+  }
+});
+
+function existsSyncTest(p) {
+  try {
+    readFileSync(p);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 console.log(`\ncli integration: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

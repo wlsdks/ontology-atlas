@@ -53,6 +53,10 @@ ${COLORS.bold}Usage:${COLORS.reset}
        --auto-prefix                          ${COLORS.dim}kind→folder (capability→capabilities/) opt-in${COLORS.reset}
   npx oh-my-ontology find <query> [vault]     Search slug + title (case-insensitive)
        --kind X --json                        ${COLORS.dim}optional${COLORS.reset}
+  npx oh-my-ontology import <path...>         Import external .md into the vault (R14)
+       --vault path                           ${COLORS.dim}target vault root (default: cwd)${COLORS.reset}
+       --kind K                               ${COLORS.dim}fallback kind when input has no kind:${COLORS.reset}
+       --auto-prefix --rename --dry-run       ${COLORS.dim}folder prefix · slug rename · plan-only${COLORS.reset}
   npx oh-my-ontology --help                   Show this help
   npx oh-my-ontology --version                Print version
 
@@ -211,6 +215,11 @@ if (SUBCOMMAND === 'add') {
 if (SUBCOMMAND === 'find') {
   const { runFind } = await import('./commands/find.mjs');
   exit(runFind(ARGS.slice(1)));
+}
+
+if (SUBCOMMAND === 'import') {
+  const { runImport } = await import('./commands/import.mjs');
+  exit(runImport(ARGS.slice(1)));
 }
 
 fail(`unknown command: ${SUBCOMMAND}`);

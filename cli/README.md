@@ -20,6 +20,7 @@ and AI agents (Claude Code, Cursor, etc.) can read and write together.
 | `oh-my-ontology validate [vault]` | Frontmatter integrity (6 issue codes incl. R14 `missing-expected-field`; `exit 1` on errors — usable as a CI gate) |
 | `oh-my-ontology add <kind> <slug> --title="..."` | Scaffold a new node (`--domain X --body "..." --vault path`); throws on duplicate slug |
 | `oh-my-ontology find <query> [vault]` | Search slug + title (case-insensitive, `--kind X --json`) |
+| `oh-my-ontology import <path...>` | **R14** Import external `.md` into the vault. Reads each file's frontmatter, falls back to `--kind` when missing, derives `slug` from the filename and `title` from the first H1, then writes through the same schema as `add` (so projects get `domains/capabilities/elements: []`, capabilities get `elements: []`, etc.). Options: `--vault path`, `--kind K`, `--auto-prefix` (kind→folder), `--rename` (auto `-2`/`-3` on slug clash), `--dry-run` (preview only). Accepts files or directories (recursive, `.git`/`node_modules` skipped). |
 
 The vault is a plain folder of `.md` files. **Frontmatter is the graph.**
 

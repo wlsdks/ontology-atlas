@@ -147,7 +147,13 @@ function needsQuote(s) {
 }
 
 // 본문 + frontmatter 합쳐서 markdown 생성.
+//
+// body 의 leading newlines 는 strip — parser 가 closing `---\n` 뒤의 첫
+// newline 만 떼는 동작 (frontmatter 와 본문 사이 빈 줄을 한 줄 둔 일반
+// markdown 입력) 과 결합돼 `---\n\n` 와 합쳐지면 빈 줄 두 개로 늘어나는
+// 회귀가 났다. 여기서 정규화해 import / add 가 같은 모양 만들도록.
 export function buildMarkdown({ frontmatter, body = "" }) {
   const fmBlock = serializeFrontmatter(frontmatter);
-  return `---\n${fmBlock}\n---\n\n${body || ""}`;
+  const cleanBody = body ? body.replace(/^\n+/, "") : "";
+  return `---\n${fmBlock}\n---\n\n${cleanBody}`;
 }

@@ -20,6 +20,17 @@ export const VAULT_KIND_SCHEMA = {
     arrayDefaults: ['domains', 'capabilities', 'elements'],
     optional: ['dependencies', 'relates', 'description', 'status'],
     requiredExtras: [],
+    preferredOrder: [
+      'slug',
+      'kind',
+      'title',
+      'description',
+      'status',
+      'dependencies',
+      'domains',
+      'capabilities',
+      'elements',
+    ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
       `One- or two-line summary of this project — *what / for whom / why*.\n\n` +
@@ -33,6 +44,14 @@ export const VAULT_KIND_SCHEMA = {
     arrayDefaults: ['capabilities'],
     optional: ['depends_on', 'relates', 'description'],
     requiredExtras: [],
+    preferredOrder: [
+      'slug',
+      'kind',
+      'title',
+      'description',
+      'depends_on',
+      'capabilities',
+    ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
       `A *domain* is a large area of the project (auth, billing, search, …). ` +
@@ -43,6 +62,15 @@ export const VAULT_KIND_SCHEMA = {
     arrayDefaults: ['elements'],
     optional: ['depends_on', 'relates', 'description'],
     requiredExtras: ['domain'],
+    preferredOrder: [
+      'slug',
+      'kind',
+      'title',
+      'description',
+      'domain',
+      'depends_on',
+      'elements',
+    ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
       `A *capability* is one user-visible feature within a domain. Describe what it does and one or two user scenarios.\n`,
@@ -52,6 +80,15 @@ export const VAULT_KIND_SCHEMA = {
     arrayDefaults: [],
     optional: ['path', 'depends_on', 'relates', 'description'],
     requiredExtras: ['domain'],
+    preferredOrder: [
+      'slug',
+      'kind',
+      'title',
+      'description',
+      'domain',
+      'path',
+      'depends_on',
+    ],
     bodyTemplate: (title) =>
       `# ${title}\n\n` +
       `An *element* is a smaller unit a capability uses (jwt-token, indexeddb-adapter, sigma-canvas, …). Cover *what / why / which interface*.\n`,
@@ -61,6 +98,7 @@ export const VAULT_KIND_SCHEMA = {
     arrayDefaults: [],
     optional: ['describes', 'relates'],
     requiredExtras: [],
+    preferredOrder: ['slug', 'kind', 'title', 'describes', 'relates'],
     bodyTemplate: (title) => `# ${title}\n`,
   },
 };
@@ -72,19 +110,27 @@ export function buildFrontmatter({ slug, kind, title, ...extras }) {
     );
   }
   const schema = VAULT_KIND_SCHEMA[kind];
-  const fm = { slug, kind, title };
+  const accumulator = { slug, kind, title };
   for (const key of schema.arrayDefaults) {
-    fm[key] = Array.isArray(extras[key]) ? extras[key] : [];
+    accumulator[key] = Array.isArray(extras[key]) ? extras[key] : [];
   }
   for (const [key, value] of Object.entries(extras)) {
     if (value === undefined || value === null) continue;
-    if (key in fm && Array.isArray(fm[key]) && Array.isArray(value)) {
-      fm[key] = value;
+    if (key in accumulator && Array.isArray(accumulator[key]) && Array.isArray(value)) {
+      accumulator[key] = value;
       continue;
     }
-    fm[key] = value;
+    accumulator[key] = value;
   }
-  return fm;
+  // 사용자 가독성 — preferredOrder 로 키 정렬, 그 외는 뒤에 append.
+  const ordered = {};
+  for (const key of schema.preferredOrder) {
+    if (key in accumulator) ordered[key] = accumulator[key];
+  }
+  for (const [key, value] of Object.entries(accumulator)) {
+    if (!(key in ordered)) ordered[key] = value;
+  }
+  return ordered;
 }
 
 export function defaultBody(kind, title) {
