@@ -1,15 +1,16 @@
 # FEATURES — oh-my-ontology
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-05-03 (post-Round-9 — surface diet 8 rounds + LocalVaultProvider + robustness audit)
+> Last updated: 2026-05-06 (post-Round-15 — VSCode plugin 제거, 3 surface 회복).
+> Body sections below 본문 일부는 R10 시점 snapshot — surface 표기는 정확하지만 UI 디테일은 sweep 대기.
 > Update trigger: reflect immediately when surfaces are added or removed. Update alongside the PR body and CHANGELOG.
 
 ---
 
 ## 0. At a glance
 
-> **Mission v2**: "an ontology of the codebase, authored together by humans and AI agents."
-> **Operating model**: single-user tool. Local-first vault. No login, no backend. AI agents (Claude Code, etc.) read/write directly through the MCP server.
+> **Mission v3**: "One codebase, one ontology, that the developer and their AI agent grow together."
+> **Operating model**: single-user tool. Local-first vault. No login, no backend. **3 surface (CLI · MCP · Web)** — AI agents (Claude Code, Codex, Cursor) read/write directly through the MCP server.
 
 ```
 input (humans + AI agents)     parse           store              output
