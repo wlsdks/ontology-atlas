@@ -1,5 +1,14 @@
 # Changelog — oh-my-ontology (CLI)
 
+## Unreleased — 2026-05-06 (R15)
+
+### Changed — `init` 의 mcp 등록 마찰 1 step 제거
+
+- `init` 이 `.mcp.json.example` 대신 **`.mcp.json` 자체를 직접 생성**. 사용자가 vault 폴더를 AI agent (Claude Code, Cursor) 에서 열면 *cp 단계 없이* 14 tools 즉시 등록.
+- 기존 `.mcp.json` 있으면 보존 + `.mcp.json.example` 별도 작성 (수동 merge 가능).
+- `OMOT_VAULT` 환경변수가 absolute path → **relative `.`** 로 변경. vault 폴더 어디로 옮겨도 그대로 작동 (portability).
+- Next steps step 4 안내 — *"Copy .mcp.json.example to your agent's MCP config"* → *"Open this folder in an AI agent — `.mcp.json` already wired"*.
+
 ## 0.2.0 — 2026-05-04 (R12)
 
 ### Added — 4 new commands (developer-primary daily entry points)

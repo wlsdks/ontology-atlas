@@ -134,22 +134,34 @@ function runInit(targetArg) {
     warn(`${skipped} existing file(s) preserved (not overwritten)`);
   }
 
-  // .mcp.json template — alongside the vault for easy copy.
-  const mcpJson = join(target, '.mcp.json.example');
-  if (!existsSync(mcpJson)) {
-    const mcpConfig = {
-      mcpServers: {
-        'oh-my-ontology': {
-          command: 'npx',
-          args: ['-y', 'oh-my-ontology-mcp'],
-          env: {
-            OMOT_VAULT: target,
-          },
+  // .mcp.json — wired to *this* vault. Open this folder in an AI agent
+  // (Claude Code, Cursor, …) and the 14 MCP tools are auto-registered.
+  // Existing .mcp.json is preserved (user might have other servers wired).
+  const mcpJson = join(target, '.mcp.json');
+  const mcpExample = join(target, '.mcp.json.example');
+  const mcpConfig = {
+    mcpServers: {
+      'oh-my-ontology': {
+        command: 'npx',
+        args: ['-y', 'oh-my-ontology-mcp'],
+        env: {
+          // Relative to the vault folder — portable across machines.
+          OMOT_VAULT: '.',
         },
       },
-    };
-    writeFileSync(mcpJson, JSON.stringify(mcpConfig, null, 2) + '\n');
-    ok(`  .mcp.json.example`);
+    },
+  };
+  const mcpJsonText = JSON.stringify(mcpConfig, null, 2) + '\n';
+  if (!existsSync(mcpJson)) {
+    writeFileSync(mcpJson, mcpJsonText);
+    ok(`  .mcp.json`);
+  } else {
+    warn(`  .mcp.json already exists — preserved (manual merge if needed)`);
+    // Still drop a reference example so the user can diff against it.
+    if (!existsSync(mcpExample)) {
+      writeFileSync(mcpExample, mcpJsonText);
+      ok(`  .mcp.json.example`);
+    }
   }
 
   stdout.write(`
@@ -169,10 +181,11 @@ ${COLORS.bold}Next steps:${COLORS.reset}
   ${COLORS.dim}3.${COLORS.reset} ${COLORS.bold}Edit project.md${COLORS.reset} — set your project's real name + description.
        Then add domains / capabilities / elements as you discover them.
 
-  ${COLORS.dim}4.${COLORS.reset} ${COLORS.bold}Wire it up to an AI agent${COLORS.reset} (Claude Code, Cursor, …):
-       Copy ${COLORS.bold}.mcp.json.example${COLORS.reset} to your agent's MCP config
-       (e.g. \`~/.config/claude-code/mcp.json\`). Restart the agent — you'll
-       see the ${COLORS.bold}oh-my-ontology${COLORS.reset} namespace with 14 tools (8 read + 6 write).
+  ${COLORS.dim}4.${COLORS.reset} ${COLORS.bold}Open this folder in an AI agent${COLORS.reset} (Claude Code, Cursor, …):
+       The vault already includes a wired ${COLORS.bold}.mcp.json${COLORS.reset} — open
+       this folder, restart the agent, and the ${COLORS.bold}oh-my-ontology${COLORS.reset}
+       namespace appears with 14 tools (8 read + 6 write).
+       (For a project-wide setup, copy the same .mcp.json to your codebase root.)
 
   ${COLORS.dim}5.${COLORS.reset} ${COLORS.bold}See the graph${COLORS.reset} (optional, web UI):
        ${COLORS.cyan}git clone https://github.com/wlsdks/oh-my-ontology${COLORS.reset}
