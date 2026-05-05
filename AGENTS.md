@@ -137,6 +137,32 @@ This project describes its own mental model in `docs/ontology/` as frontmatter m
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 
+## Working with the ontology while you code
+
+The vault is the **shared mental model** between the developer and the AI agent. Treat reading and writing the ontology as part of any non-trivial code task — not as a separate chore. Two patterns:
+
+**Read at the start of a task** (cheap, often skipped). Before opening a feature you don't fully know, ask the vault:
+
+- `list_kinds` — what's in the codebase, by kind?
+- `list_concepts` (filter by kind / project) — full node table
+- `get_concept(slug)` — fetch the node + its neighbors before extending it
+- `find_backlinks(slug)` — who depends on this? (run *before* you rename or merge)
+- `find_path(from, to)` — does a relation already exist?
+
+A 30-second read at the top of the task often replaces a 10-minute re-discovery in the code.
+
+**Write at the end of a task** (the part that's easy to skip). When a unit of work introduced a new capability / element / domain, or renamed/folded an existing one, mirror the change in the vault:
+
+- new node → `add_concept(slug, kind, title, domain?, …)` — frontmatter is auto-normalized per kind, body defaults to a kind-specific starter, and missing strongly-expected fields come back as `warnings` so you know what to follow up
+- new edge between existing nodes → `add_relation(from, to, type)`
+- node moved or renamed in code → `rename_concept(oldSlug, newSlug)` (dry-run first, then `confirm: true`) — atomically rewrites every backlink
+- two near-duplicates collapse → `merge_concepts(fromSlug, intoSlug)` (same dry-run pattern)
+- existing node refined → `patch_concept(slug, frontmatter, body, expected_mtime)` — pass `expected_mtime` from a prior `get_concept` so a concurrent human edit isn't silently overwritten
+
+For the explicit "I'm done with this task — please sync the ontology now" loop, invoke the **`/ontology-sync`** skill (see `.claude/skills/ontology-sync/SKILL.md`). It bundles the read-then-write pattern with a checklist for when to skip (typos, style nudges).
+
+**Skip the ontology** for: typo fixes, comment tweaks, single-line style nudges, lint config, test fixtures with no shape change. Anything that changes "what the codebase *is*" goes into the vault; anything that doesn't, stays out.
+
 ## Frontmatter shape per kind (R14)
 
 When an AI agent (`add_concept`) or a developer (`oh-my-ontology add` / `oh-my-ontology import`) creates a new node, the frontmatter is normalized per `kind` so external `.md` ingestion stays consistent. See `mcp/README.md` for the full table and `mcp/src/schema.mjs` (mirror at `cli/src/lib/schema.mjs`) for the source. Contract test: `tests/contract/vault-schema.contract.test.ts`. Validator surfaces missing strongly-expected fields (e.g. capability/element without `domain:`) as the `missing-expected-field` warning — advisory only, not a hard error, so pre-existing vaults still pass.
