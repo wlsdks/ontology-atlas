@@ -217,6 +217,14 @@ interface SigmaTopologyProps {
    * 를 넘기면 "Demo Reactor · Router" → "Router" 로 표시. 미지정이면 원본 유지.
    */
   stripNamePrefix?: string;
+  /**
+   * R14: true 면 vault 의 ontology 도메인/역량/요소 노드와 그 관계를 같은
+   * 그래프에 그린다. project↔project dependencies 는 그대로 살아있고
+   * 그 위에 ontology 골격이 얹힌다. `/topology` 라우트 (HomePage) 에서 켠다.
+   * project mini map 같은 작은 임베드는 끈 채로 두어 시야가 복잡해지지
+   * 않게 한다.
+   */
+  showOntologyNodes?: boolean;
   className?: string;
 }
 
@@ -239,6 +247,7 @@ function SigmaTopologyImpl({
   onFirstInteraction,
   minimal = false,
   stripNamePrefix,
+  showOntologyNodes = false,
   className,
 }: SigmaTopologyProps) {
   const t = useTranslations('topologyWidgets.sigma');
@@ -465,6 +474,15 @@ function SigmaTopologyImpl({
       stripNamePrefix,
       ontologyCountsBySlug,
       runtimeRecentSlugs,
+      // R14: showOntologyNodes 켜진 surface (HomePage / /topology) 에서만
+      // ontology 노드를 그래프에 추가. project mini map 등은 켜지 않음.
+      ontologyExtension:
+        showOntologyNodes && ontologyInsight
+          ? {
+              nodes: ontologyInsight.nodes,
+              edges: ontologyInsight.edges,
+            }
+          : undefined,
     });
     const iterations = g.order > 600 ? 120 : g.order > 200 ? 240 : 360;
     settleLayout(g, iterations);
@@ -488,7 +506,15 @@ function SigmaTopologyImpl({
       }
     }
     return g;
-  }, [projects, categories, stripNamePrefix, ontologyCountsBySlug, runtimeRecentSlugs]);
+  }, [
+    projects,
+    categories,
+    stripNamePrefix,
+    ontologyCountsBySlug,
+    runtimeRecentSlugs,
+    showOntologyNodes,
+    ontologyInsight,
+  ]);
 
   useEffect(() => {
     let anyRecent = false;

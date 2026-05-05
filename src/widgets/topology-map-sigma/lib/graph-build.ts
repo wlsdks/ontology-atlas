@@ -1,9 +1,17 @@
 import Graph from 'graphology';
 import forceAtlas2 from 'graphology-layout-forceatlas2';
 import type { Category } from '@/entities/category';
-import { isProjectRecentlyUpdated, type Project } from '@/entities/project';
+import {
+  isProjectRecentlyUpdated,
+  type Project,
+} from '@/entities/project';
+import type {
+  KnowledgeGraphEdge,
+  KnowledgeGraphNode,
+} from '@/entities/knowledge-graph';
 import { INDIGO_HUB } from '@/shared/config/indigo-tokens';
 import {
+  isMeaningfulOntologyKind,
   pickDominantOntologyKind,
   type MeaningfulOntologyKind,
   type OntologyCountsForProject,
@@ -46,6 +54,13 @@ export interface SigmaNodeAttrs {
    * 비-project 노드 (container / hub).
    */
   ontologyTopKind?: MeaningfulOntologyKind;
+  /**
+   * R14: Topology ↔ Ontology 연계. true 면 이 노드가 project 가 아니라
+   * ontology 의 도메인/역량/요소 노드 (frontmatter `kind: domain | capability
+   * | element` 등). degree-기반 size scaling 과 owner overlay 등 project
+   * 전용 처리에서 제외하기 위한 분기 플래그.
+   */
+  isOntology?: boolean;
 }
 
 export interface SigmaEdgeAttrs {
@@ -156,6 +171,18 @@ export function buildGraph(
      * 방금 .md 를 추가했으면 pulse. 기본 비어있음 = 기존 동작 유지.
      */
     runtimeRecentSlugs?: ReadonlySet<string>;
+    /**
+     * Topology ↔ Ontology 연계. nodes/edges 가 주어지면 project 노드 집합
+     * 에 ontology 의 도메인·역량·요소 노드와 그 사이 관계 (contains /
+     * depends_on / describes / related_to 등) 를 함께 그래프에 넣는다.
+     * `kind === 'project'` 인 ontology 노드는 이미 위에서 추가된 project
+     * 와 중복되므로 skip. project↔ontology containment 도 같은 id 의
+     * project 가 graph 안에 있으면 자연스럽게 엣지가 이어진다.
+     */
+    ontologyExtension?: {
+      nodes: readonly KnowledgeGraphNode[];
+      edges: readonly KnowledgeGraphEdge[];
+    };
   },
 ): Graph<SigmaNodeAttrs, SigmaEdgeAttrs> {
   const graph = new Graph<SigmaNodeAttrs, SigmaEdgeAttrs>({ type: 'directed', multi: false });
@@ -243,8 +270,78 @@ export function buildGraph(
     }
   }
 
+  // R14: Topology ↔ Ontology 연계. project 외의 도메인/역량/요소 노드와
+  // 그 관계를 같은 그래프에 추가해 토폴로지가 "vault 의 ontology 전체 지도"
+  // 가 되도록. project 와 같은 id 가 ontology 안에 또 있으면 (kind:project)
+  // skip. degree-scaling / owner overlay 는 isOntology=true 분기로 제외.
+  const ext = options?.ontologyExtension;
+  if (ext) {
+    ext.nodes.forEach((node, idx) => {
+      // project kind 는 이미 위에서 project 로 추가됐다 — 같은 id 면 skip.
+      if (node.kind === 'project' || graph.hasNode(node.id)) return;
+      // narrow string → MeaningfulOntologyKind. 'document' / 그 외 unknown
+      // string 은 'unknown' 으로 묶어 amber tone 노출.
+      const kind: MeaningfulOntologyKind = isMeaningfulOntologyKind(node.kind)
+        ? node.kind
+        : 'unknown';
+      const tone = ontologyBorderTone(kind);
+      // project 들이 원점 근처 (~r 40) 에 모여있으니 ontology 노드는 외곽
+      // (r 90~140) 에 배치 → settleLayout 이 두 집합을 부드럽게 섞어준다.
+      const theta = jitter(idx + 1000) * Math.PI * 2;
+      const r = 90 + jitter(idx + 2000) * 50;
+      graph.addNode(node.id, {
+        x: Math.cos(theta) * r,
+        y: Math.sin(theta) * r,
+        // ontology 노드는 project leaf (4.5) 보다 작게 — 시각적 위계 보존.
+        size: 3.5,
+        label: node.title,
+        forceLabel: false,
+        recentlyUpdated: false,
+        // 흐린 무채색 fill — 헌장의 "허브만 유일한 채색" 과 충돌 안 함.
+        color: 'rgba(160, 168, 184, 0.55)',
+        borderColor: tone?.borderColor ?? palette.nodeBorder,
+        outerBorderColor: NODE_OUTER_HALO,
+        // SigmaTopology 의 click handler 가 projectSlug 를 키로 drawer 를
+        // 여는데, ontology 노드는 project 가 아니므로 drawer 가 빈 상태가
+        // 된다 — 일단 id 를 그대로 박아두고 후속 단계에서 ontology 전용
+        // 핸들링을 추가한다 (TODO: ontology 노드 클릭 시 vault md 열기).
+        projectSlug: node.id,
+        categoryId: 'ontology',
+        isHub: false,
+        ownerKey: 'unassigned',
+        description: node.summary,
+        ontologyTopKind: kind,
+        isOntology: true,
+      });
+    });
+    for (const edge of ext.edges) {
+      // 양 끝이 모두 그래프에 있어야 — project 만 있고 ontology 노드 추가
+      // 시 skip 된 'project' kind 노드 등이 from/to 에 있으면 자연스럽게
+      // 누락되거나 (없는 경우) project 끼리 이어진다.
+      if (!graph.hasNode(edge.from) || !graph.hasNode(edge.to)) continue;
+      if (edge.from === edge.to) continue;
+      if (graph.hasEdge(edge.from, edge.to)) continue;
+      // KnowledgeEdgeType (7종) → SigmaEdgeAttrs.kind (4종) 매핑.
+      const kind: SigmaEdgeAttrs['kind'] =
+        edge.type === 'contains' || edge.type === 'belongs_to'
+          ? 'contains'
+          : edge.type === 'describes'
+            ? 'knowledge'
+            : 'depends-on';
+      graph.addEdge(edge.from, edge.to, {
+        // ontology 엣지는 project↔project dependencies 보다 가늘게 — 메인
+        // 의존 골격이 시야에서 사라지지 않도록.
+        size: 0.35,
+        color: palette.edge,
+        kind,
+        curvature: 0.06,
+      });
+    }
+  }
+
   // degree 기반 크기 재계산 — 연결이 많을수록 커진다.
   // Hub: 10 → 13, Node: 4.5 → 7.5. 화면 픽셀 기준 ~2x 일관 비율.
+  // ontology 노드는 base 3.5 를 유지하되 degree 영향은 약하게.
   graph.forEachNode((id, attrs) => {
     const degree = graph.degree(id);
     if (attrs.isHub) {
@@ -252,6 +349,12 @@ export function buildGraph(
         id,
         'size',
         10 + Math.min(3, Math.log2(Math.max(1, degree)) * 0.8),
+      );
+    } else if (attrs.isOntology) {
+      graph.setNodeAttribute(
+        id,
+        'size',
+        3.5 + Math.min(2, Math.log2(Math.max(1, degree)) * 0.4),
       );
     } else {
       graph.setNodeAttribute(

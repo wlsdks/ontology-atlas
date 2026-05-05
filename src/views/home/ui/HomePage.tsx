@@ -655,6 +655,13 @@ export function HomePage() {
                   forces={sigmaControls.forces}
                   hubsOnly={sigmaControls.hubsOnly}
                   overlays={sigmaControls.overlays}
+                  // R14: /topology 는 vault ontology 의 도메인/역량/요소
+                  // 노드와 그 관계까지 같은 그래프에 그린다. project 1 개 +
+                  // dependencies 0 인 dogfood 상황에서 빈 화면이었던 회귀를
+                  // 메우면서, 사용자가 "ontology 와 topology 는 연계되어야"
+                  // 라고 약속한 본질을 살린다. local-graph (drawer 의 ego)
+                  // 에서는 project 의존만 보이게 끔 — 좁은 시야 위해.
+                  showOntologyNodes={localGraphRoot === null}
                 />
               </div>
               <style jsx>{`
