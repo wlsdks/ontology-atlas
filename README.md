@@ -2,8 +2,8 @@
 
 > **One codebase, one ontology, that the developer and their AI agent grow together.**
 >
-> Local-first markdown vault. Developer authors via CLI / web UI / VSCode plugin (v0.1.0 MVP).
-> AI agent (Claude Code, Cursor) reads + writes the same `.md` files via MCP — 14 tools.
+> Local-first markdown vault. Developer authors via CLI / web UI.
+> AI agent (Claude Code, Codex, Cursor) reads + writes the same `.md` files via MCP — 14 tools.
 > No backend. No login. The git repo is the source of truth.
 
 [![CI](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml/badge.svg)](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml)
@@ -42,8 +42,8 @@ Three claims:
 1. **Markdown frontmatter is enough** — `kind: capability`, `domain: auth`,
    `depends_on: [...]` is the entire schema. No DB, no backend, no auth.
 2. **Developer + AI agent share one source of truth** — both edit the same
-   `.md` files. The developer authors via CLI / web UI / (planned) VSCode
-   plugin; the AI agent reads + writes via MCP. Same git repo, same diff.
+   `.md` files. The developer authors via CLI / web UI; the AI agent reads
+   + writes via MCP (Claude Code, Codex, Cursor). Same git repo, same diff.
 3. **MCP server gives the AI its only interface** — **14 tools** (8 read +
    6 write) over JSON-RPC. The agent doesn't need to "ingest your codebase";
    it reads the ontology the developer already curates.
@@ -148,8 +148,7 @@ src/            Feature-Sliced Design layers
   ├── entities/ domain entities (project, ontology-class, knowledge-graph, …)
   └── shared/   ui primitives, lib, config
 mcp/            MCP server (`oh-my-ontology-mcp`, 14 tools) — AI agent surface
-cli/            `npx oh-my-ontology` (vault scaffold + 5 commands) — developer terminal surface
-vscode-plugin/  VSCode extension (`oh-my-ontology-vscode`) — developer IDE surface (v0.1.0 MVP)
+cli/            `npx oh-my-ontology` (vault scaffold + 6 commands) — developer terminal surface
 docs/           Long-form docs + dogfood vault (docs/ontology/) + benchmark results
 docs/archive/   Historical analysis docs
 scripts/        Build helpers

@@ -10,7 +10,7 @@
 
 > **One codebase, one ontology, that the developer and their AI agent grow together.**
 
-- Primary audience: **developer + their AI agent**. Developer creates / refines nodes (CLI · web UI · soon VSCode plugin); AI agent (Claude Code, Cursor) reads/writes the same vault via MCP to give better codebase answers.
+- Primary audience: **developer + their AI agent**. Developer creates / refines nodes (CLI · web UI); AI agent (Claude Code, Codex, Cursor) reads/writes the same vault via MCP to give better codebase answers.
 - Spine = `.md` documents → a growing ontology. Topology / tree / builder are *views* of that spine.
 - PM / designer / ops are **bonus, not target**. If the surface happens to be friendly to them — good. We don't optimize for them.
 
@@ -56,7 +56,7 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 
 | Audience | Role | Primary surface |
 |---|---|---|
-| **Developer** | Author + maintain the ontology as part of normal coding | CLI (`oh-my-ontology list/validate/...`), web UI (`/ontology`, `/docs`), planned VSCode plugin |
+| **Developer** | Author + maintain the ontology as part of normal coding | CLI (`oh-my-ontology init/list/validate/add/find/import`), web UI (`/ontology`, `/docs`) |
 | **AI agent** (Claude Code, Cursor, …) | Read for context · write back new findings | MCP server (14 tools — read 8 + write 6) |
 | ~~PM / designer / ops~~ | ~~Build mental model without reading source~~ | dropped (R11 fire #25 — developer-primary 결정 후) |
 
@@ -244,9 +244,9 @@ PM-primary 결정 reverted. v3 mission: developer + their AI agent only. T33-T36
 
 ### ⏳ Phase 4 (replacement) — Developer + AI agent depth
 
-1. ⏳ VSCode plugin scaffold — IDE 안에서 frontmatter 편집 + ontology 보기
-2. ⏳ CLI 명령 확장 — `add` / `find` / `path` / `query` (현재 `init` / `list` / `validate` 만)
-3. ⏳ AI agent dogfood 사이클 — Claude Code 가 mcp 로 codebase 분석 + add_concept 워크플로 검증
+1. ✅ CLI 명령 확장 — `init / list / validate / add / find / import` (R12+R14 wave)
+2. ✅ AI agent dogfood 사이클 — Claude Code 가 mcp 로 codebase 분석 + add_concept 워크플로 검증 (R12 + R14 메타 검증)
+3. ~~VSCode plugin~~ — R15 에서 제거. 이유: daily driver 가 Claude Code / Codex 같은 AI-agent 터미널로 전환되며 VSCode 자체 점유율 감소. 코드↔ontology 점프 / backlinks / write 는 mcp + cli 로 같은 가치 cover.
 
 ---
 

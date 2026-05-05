@@ -50,21 +50,6 @@ jobs:
       - name: Vault paths audit (capability/element 의 path 가 실 코드 일치)
         run: pnpm vault:audit
 
-      # vscode-plugin v0.5.0 (R13 #49–#54). Run unit + MCP-integration
-      # tests, headless e2e via @vscode/test-electron, and verify the
-      # plugin packages cleanly into a .vsix so we catch
-      # marketplace-relevant regressions (manifest issues, missing files,
-      # broken contributes) before publish. xvfb-run gives the test
-      # harness a virtual display on Linux runners.
-      - name: VSCode plugin — install + test + e2e + package
-        run: |
-          cd vscode-plugin
-          npm install --no-audit --no-fund
-          npm test
-          xvfb-run -a npm run test:e2e
-          npx @vscode/vsce package --no-yarn --out /tmp/oh-my-ontology-vscode.vsix
-          ls -lh /tmp/oh-my-ontology-vscode.vsix
-
       # R11 #24 — audit-only e2e CI 게이트 시도했으나 CI 환경 navigation race
       # 빈도 높아 reverted (a11y-structure / aria-audit / overflow-sweep
       # mobile-390 등 회귀). audit spec 은 console dump 의도라 실질 가드 0

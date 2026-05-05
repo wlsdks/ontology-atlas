@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-05T23:07:01.220Z",
+  "generatedAt": "2026-05-05T23:41:13.232Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -1539,18 +1539,28 @@
         },
         {
           "depth": 2,
-          "text": "✅ 완료 (mission v2 phase, 2026-05-01)",
-          "slug": "완료-mission-v2-phase-2026-05-01"
+          "text": "✅ 완료 (R12-R14, 2026-05-04 ~ 2026-05-05)",
+          "slug": "완료-r12-r14-2026-05-04-2026-05-05"
         },
         {
           "depth": 3,
-          "text": "Phase 3 (AI agent partner) + mission v2 cleanup 7 PR 머지",
-          "slug": "phase-3-ai-agent-partner-mission-v2-cleanup-7-pr-머지"
+          "text": "R14 (#155-#163, 2026-05-05) — AI agent ↔ vault 자동 sync + 웹 즉시 반영",
+          "slug": "r14-155-163-2026-05-05-ai-agent-vault-자동-sync-웹-즉시-반영"
         },
         {
           "depth": 3,
-          "text": "그 이전 (refactor/first-principles-slim-1 PR #1, 23 commits)",
-          "slug": "그-이전-refactorfirst-principles-slim-1-pr-1-23-commits"
+          "text": "R13 (#43-#67, 2026-05-04) — AI agent quality 첫 측정 + VSCode plugin",
+          "slug": "r13-43-67-2026-05-04-ai-agent-quality-첫-측정-vscode-plugin"
+        },
+        {
+          "depth": 3,
+          "text": "R12 (#27-#42, 2026-05-04) — developer-primary 결정 + CLI 5 명령 + dogfood graph 완전화",
+          "slug": "r12-27-42-2026-05-04-developer-primary-결정-cli-5-명령-dogfood-graph-완전화"
+        },
+        {
+          "depth": 3,
+          "text": "R11 (2026-05-04) — vault tooling + parser contract + MCP graph-level write",
+          "slug": "r11-2026-05-04-vault-tooling-parser-contract-mcp-graph-level-write"
         },
         {
           "depth": 3,
@@ -1559,28 +1569,18 @@
         },
         {
           "depth": 2,
-          "text": "결정 필요 (user input 후 unblock)",
-          "slug": "결정-필요-user-input-후-unblock"
-        },
-        {
-          "depth": 3,
-          "text": "V2 spec Open questions Q3-Q8",
-          "slug": "v2-spec-open-questions-q3-q8"
-        },
-        {
-          "depth": 3,
-          "text": "T13. OperationsNav 온톨로지 탭 분기 결정",
-          "slug": "t13-operationsnav-온톨로지-탭-분기-결정"
+          "text": "~~결정 필요 (user input 후 unblock)~~ — Q3-Q8 자체 무효",
+          "slug": "결정-필요-user-input-후-unblock-q3-q8-자체-무효"
         },
         {
           "depth": 2,
-          "text": "P0 — 즉시 실행 가능 (mission v2 정렬, 위험 낮음, 가치 큼)",
-          "slug": "p0-즉시-실행-가능-mission-v2-정렬-위험-낮음-가치-큼"
+          "text": "P0 — 즉시 실행 가능 (위험 낮음, 가치 큼)",
+          "slug": "p0-즉시-실행-가능-위험-낮음-가치-큼"
         },
         {
           "depth": 3,
-          "text": "T28. demo blueprint mission v2 정렬",
-          "slug": "t28-demo-blueprint-mission-v2-정렬"
+          "text": "~~T28. demo blueprint mission v2 정렬~~ — VOID",
+          "slug": "t28-demo-blueprint-mission-v2-정렬-void"
         },
         {
           "depth": 3,
@@ -1589,68 +1589,23 @@
         },
         {
           "depth": 3,
-          "text": "~~T30. MCP `find_path(from, to)`~~ — ✅ R11 v0.7.0",
-          "slug": "t30-mcp-find_pathfrom-to-r11-v070"
+          "text": "~~F1. dogfood vscode-plugin capability 갱신~~ — VOID (R15)",
+          "slug": "f1-dogfood-vscode-plugin-capability-갱신-void-r15"
         },
         {
           "depth": 3,
-          "text": "~~T31. MCP `list_kinds` / `list_domains`~~ — ✅ R11 v0.7.0",
-          "slug": "t31-mcp-list_kinds-list_domains-r11-v070"
+          "text": "F2. VaultDiffToaster diff logic 단위 test",
+          "slug": "f2-vaultdifftoaster-diff-logic-단위-test"
+        },
+        {
+          "depth": 3,
+          "text": "C3. AI agent benchmark scale n=2 → n=5+ — *user-triggered*",
+          "slug": "c3-ai-agent-benchmark-scale-n2-n5-user-triggered"
         },
         {
           "depth": 2,
-          "text": "P1 — V1.x 진화 (additive, breakage 0)",
-          "slug": "p1-v1x-진화-additive-breakage-0"
-        },
-        {
-          "depth": 3,
-          "text": "T19. V1.5 — Relation Cardinality",
-          "slug": "t19-v15-relation-cardinality"
-        },
-        {
-          "depth": 3,
-          "text": "T20. V1.3 — Rich References",
-          "slug": "t20-v13-rich-references"
-        },
-        {
-          "depth": 3,
-          "text": "T21. V1.2 — Literal Properties",
-          "slug": "t21-v12-literal-properties"
-        },
-        {
-          "depth": 3,
-          "text": "T32. V1.4 — Action Type — DEFERRED",
-          "slug": "t32-v14-action-type-deferred"
-        },
-        {
-          "depth": 3,
-          "text": "T22. V2 통합 KnowledgeStatement (5-phase)",
-          "slug": "t22-v2-통합-knowledgestatement-5-phase"
-        },
-        {
-          "depth": 2,
-          "text": "~~P2 — Phase 4 (비개발자 surface 다듬기)~~ — DROPPED (R12 #33)",
-          "slug": "p2-phase-4-비개발자-surface-다듬기-dropped-r12-33"
-        },
-        {
-          "depth": 3,
-          "text": "~~T33. 빌더 onboarding \"ERD 이상\" 카피 정렬~~ — dropped",
-          "slug": "t33-빌더-onboarding-erd-이상-카피-정렬-dropped"
-        },
-        {
-          "depth": 3,
-          "text": "~~T34. 기술 용어 ↔ 한국어 일반 용어 매핑 layer~~ — dropped",
-          "slug": "t34-기술-용어-한국어-일반-용어-매핑-layer-dropped"
-        },
-        {
-          "depth": 3,
-          "text": "~~T35. 노드 색 / 아이콘 — kind 별 친숙~~ — dropped",
-          "slug": "t35-노드-색-아이콘-kind-별-친숙-dropped"
-        },
-        {
-          "depth": 3,
-          "text": "~~T36. 검색 시 \"코드 / 문서 / 사람\" 분류~~ — dropped",
-          "slug": "t36-검색-시-코드-문서-사람-분류-dropped"
+          "text": "~~P1 — V1.x 진화 (cloud-first 가정)~~ — 모두 N/A 또는 머지됨",
+          "slug": "p1-v1x-진화-cloud-first-가정-모두-na-또는-머지됨"
         },
         {
           "depth": 2,
@@ -1659,13 +1614,18 @@
         },
         {
           "depth": 3,
-          "text": "T23. mode-aware e2e tests",
-          "slug": "t23-mode-aware-e2e-tests"
+          "text": "T37. Playwright MCP routine QA",
+          "slug": "t37-playwright-mcp-routine-qa"
         },
         {
           "depth": 3,
-          "text": "T37. mode-aware Playwright MCP routine QA",
-          "slug": "t37-mode-aware-playwright-mcp-routine-qa"
+          "text": "F3. .mcp.json git-tracked (✅ 이번 R14 closeout 에서 추가)",
+          "slug": "f3-mcpjson-git-tracked-이번-r14-closeout-에서-추가"
+        },
+        {
+          "depth": 3,
+          "text": "~~T23. mode-aware e2e tests~~ — VOID (R10b)",
+          "slug": "t23-mode-aware-e2e-tests-void-r10b"
         },
         {
           "depth": 3,
@@ -1684,16 +1644,6 @@
         },
         {
           "depth": 3,
-          "text": "~~MCP `delete_concept`~~ — ✅ R11 v0.4 + v0.7",
-          "slug": "mcp-delete_concept-r11-v04-v07"
-        },
-        {
-          "depth": 3,
-          "text": "MCP `rename_concept` / `merge_concepts` — ✅ R11 v0.7.0 (NEW)",
-          "slug": "mcp-rename_concept-merge_concepts-r11-v070-new"
-        },
-        {
-          "depth": 3,
           "text": "CHANGELOG batch cleanup",
           "slug": "changelog-batch-cleanup"
         },
@@ -1708,9 +1658,9 @@
           "slug": "t27-큰-view-파일-정리"
         },
         {
-          "depth": 3,
-          "text": "m4. 비활성화된 e2e 재활성화",
-          "slug": "m4-비활성화된-e2e-재활성화"
+          "depth": 2,
+          "text": "~~P2 — Phase 4 (비개발자 surface 다듬기)~~ — DROPPED (R12 #33)",
+          "slug": "p2-phase-4-비개발자-surface-다듬기-dropped-r12-33"
         },
         {
           "depth": 2,
@@ -1723,9 +1673,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260501 저녁): mission v2 cleanup 7 PR 머지 후 전면 재정렬. | 항목 | 결과 | ||| | Phase 3 — MCP 서버 | ✅ PR 5/7 — mcp/ 패키지 v0.2.0, 7 도구 (listconcepts · getconcept · findevidence · findbacklinks · addconcept · addrelation · patchconcept) | | dogfood vaul",
-      "wordCount": 1360,
-      "updatedAt": "2026-05-04T07:36:28.715Z",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260506): R12/R13/R14 wave 묶음 정리 후 전면 재정렬. 4 surface 완성, dogfood 25 노드, AI agent ↔ vault 자동 sync 도달. | PR | 항목 | 결과 | |||| | 155 | vault polling 5s | ✅ visibleonly setInterval, fingerprint diff | | 156 | graph diff pulse | ✅ 새 노드 amber s",
+      "wordCount": 1361,
+      "updatedAt": "2026-05-05T23:40:34.918Z",
       "linksOut": []
     },
     {
@@ -1789,11 +1739,21 @@
           "depth": 2,
           "text": "What we're hoping to learn",
           "slug": "what-were-hoping-to-learn"
+        },
+        {
+          "depth": 2,
+          "text": "Current measurement status",
+          "slug": "current-measurement-status"
+        },
+        {
+          "depth": 3,
+          "text": "Re-measurement triggers (user runs these manually)",
+          "slug": "re-measurement-triggers-user-runs-these-manually"
         }
       ],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · 14 tools · web workbench all on top of one a",
-      "wordCount": 862,
-      "updatedAt": "2026-05-04T11:40:08.267Z",
+      "wordCount": 1034,
+      "updatedAt": "2026-05-05T23:36:19.129Z",
       "linksOut": [
         "benchmark/tasks",
         "benchmark/rubric",
@@ -2329,6 +2289,76 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-06 — Round 15: VSCode plugin 제거 — AI-agent 터미널 시대로 진입점 단순화",
+          "slug": "2026-05-06-round-15-vscode-plugin-제거-ai-agent-터미널-시대로-진입점-단순화"
+        },
+        {
+          "depth": 3,
+          "text": "왜 제거?",
+          "slug": "왜-제거"
+        },
+        {
+          "depth": 3,
+          "text": "제거 범위",
+          "slug": "제거-범위"
+        },
+        {
+          "depth": 3,
+          "text": "보존 (재도입 시 root)",
+          "slug": "보존-재도입-시-root"
+        },
+        {
+          "depth": 3,
+          "text": "Surface 표 갱신",
+          "slug": "surface-표-갱신"
+        },
+        {
+          "depth": 2,
+          "text": "2026-05-05 — Round 14: AI agent ↔ vault 자동 sync + 웹 즉시 반영 + frontmatter schema",
+          "slug": "2026-05-05-round-14-ai-agent-vault-자동-sync-웹-즉시-반영-frontmatter-schema"
+        },
+        {
+          "depth": 3,
+          "text": "Web 즉시 반영 — polling → 그래프 pulse → 두 toast (#155 #156 #157 #158)",
+          "slug": "web-즉시-반영-polling-그래프-pulse-두-toast-155-156-157-158"
+        },
+        {
+          "depth": 3,
+          "text": "Walkthrough 검증 + topology↔ontology 회복 (#159)",
+          "slug": "walkthrough-검증-topologyontology-회복-159"
+        },
+        {
+          "depth": 3,
+          "text": "Frontmatter schema 양식 — three entry points 동기화 (#160)",
+          "slug": "frontmatter-schema-양식-three-entry-points-동기화-160"
+        },
+        {
+          "depth": 3,
+          "text": "CLI `import` — 외부 .md schema 정규화 후 vault 정착 (#161)",
+          "slug": "cli-import-외부-md-schema-정규화-후-vault-정착-161"
+        },
+        {
+          "depth": 3,
+          "text": "`/ontology-sync` agent skill + AGENTS read-while-coding 룰 (#162)",
+          "slug": "ontology-sync-agent-skill-agents-read-while-coding-룰-162"
+        },
+        {
+          "depth": 3,
+          "text": "SessionStart hook — vault 요약 자동 inject (#163)",
+          "slug": "sessionstart-hook-vault-요약-자동-inject-163"
+        },
+        {
+          "depth": 3,
+          "text": "Dogfood vault 갱신",
+          "slug": "dogfood-vault-갱신"
+        },
+        {
+          "depth": 3,
+          "text": "4 surface 모두 작동",
+          "slug": "4-surface-모두-작동"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-04 — Round 13: AI agent quality 첫 측정 + VSCode plugin MVP",
           "slug": "2026-05-04-round-13-ai-agent-quality-첫-측정-vscode-plugin-mvp"
         },
@@ -2455,7 +2485,7 @@
         {
           "depth": 3,
           "text": "Dogfood vault 갱신",
-          "slug": "dogfood-vault-갱신"
+          "slug": "dogfood-vault-갱신-2"
         },
         {
           "depth": 3,
@@ -3023,9 +3053,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. R12 closure 후 제품 핵심 가설 첫 측정. 측정 결과 강한 confirming evidence 위에 README 약속의 미완성 surface (VSCod",
-      "wordCount": 10022,
-      "updatedAt": "2026-05-04T11:25:09.018Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. R14 closeout (PR 164) 후 사용자 명시 — \"vscode plugin 은 없어도 될 듯. 이제 대부분 vscode 안 쓰고 claude code ",
+      "wordCount": 11606,
+      "updatedAt": "2026-05-05T23:39:41.986Z",
       "linksOut": [
         "slug"
       ]
@@ -4412,6 +4442,61 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/vault-live-updates",
+      "path": "docs/ontology/capabilities/vault-live-updates.md",
+      "title": "Vault Live Updates (5s polling + diff toast + graph pulse)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/vault-live-updates",
+        "kind": "capability",
+        "title": "Vault Live Updates (5s polling + diff toast + graph pulse)",
+        "domain": "vault-local-first",
+        "elements": [
+          "src/features/docs-vault-local/model/use-local-vault.ts",
+          "src/features/docs-vault-local/model/VaultDiffToaster.tsx",
+          "src/features/docs-vault-local/lib/diff-manifest.ts",
+          "src/widgets/topology-map-sigma/lib/graph-build.ts"
+        ],
+        "relates": [
+          "capabilities/builder-vault-write",
+          "capabilities/mcp-conflict-guard",
+          "capabilities/topology-sigma-render",
+          "domains/vault-local-first"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Vault Live Updates (5s polling + diff toast + graph pulse)",
+          "slug": "vault-live-updates-5s-polling-diff-toast-graph-pulse"
+        },
+        {
+          "depth": 2,
+          "text": "4 단계 흐름",
+          "slug": "4-단계-흐름"
+        },
+        {
+          "depth": 2,
+          "text": "핵심 결정",
+          "slug": "핵심-결정"
+        },
+        {
+          "depth": 2,
+          "text": "diff helper 분리",
+          "slug": "diff-helper-분리"
+        },
+        {
+          "depth": 2,
+          "text": "참조 PR",
+          "slug": "참조-pr"
+        }
+      ],
+      "excerpt": "R14 (155158, 20260504 ~ 20260505) 에 도입된 web 즉시 반영 능력. 사용자 명시 \"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때\" 의 4 단계 답. IDE / AI agent / CLI 어느 surface 가 vault .md 만지면 웹 탭이 focus 안 해도 ~5s 안에 반영. | Step | What | Where 인지 | |||| | 155 polling | 5s 간격 fingerprint check + visibleonly 자동 reload | 백그라운드 | | 156 graph diff pulse | 새 노드 amber ",
+      "wordCount": 289,
+      "updatedAt": "2026-05-05T23:36:19.129Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/vault-migrator",
       "path": "docs/ontology/capabilities/vault-migrator.md",
       "title": "Vault Migrator (Schema 진화)",
@@ -4504,85 +4589,6 @@
       "linksOut": []
     },
     {
-      "slug": "ontology/capabilities/vscode-plugin-ide-entry",
-      "path": "docs/ontology/capabilities/vscode-plugin-ide-entry.md",
-      "title": "VSCode Plugin (IDE Entry, v0.5.0)",
-      "tags": [],
-      "frontmatter": {
-        "slug": "capabilities/vscode-plugin-ide-entry",
-        "kind": "capability",
-        "title": "VSCode Plugin (IDE Entry, v0.5.0)",
-        "domain": "onboarding-ux",
-        "elements": [
-          "vscode-plugin/src/extension.ts",
-          "vscode-plugin/src/walk-vault.ts",
-          "vscode-plugin/src/tree-provider.ts",
-          "vscode-plugin/src/parse-frontmatter.ts",
-          "vscode-plugin/src/code-match.ts",
-          "vscode-plugin/src/write-vault.ts",
-          "vscode-plugin/src/mcp-client.ts",
-          "vscode-plugin/src/backlinks-provider.ts"
-        ],
-        "relates": [
-          "capabilities/cli-developer-entry",
-          "capabilities/mcp-server",
-          "capabilities/mcp-conflict-guard",
-          "domains/onboarding-ux"
-        ]
-      },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "VSCode Plugin (IDE Entry, v0.5.0)",
-          "slug": "vscode-plugin-ide-entry-v050"
-        },
-        {
-          "depth": 2,
-          "text": "v0.5.0 의 4 surface",
-          "slug": "v050-의-4-surface"
-        },
-        {
-          "depth": 3,
-          "text": "1. Ontology TreeView (v0.1.0)",
-          "slug": "1-ontology-treeview-v010"
-        },
-        {
-          "depth": 3,
-          "text": "2. 코드 ↔ ontology 점프 (v0.2.0 + v0.5.0 self-match)",
-          "slug": "2-코드-ontology-점프-v020-v050-self-match"
-        },
-        {
-          "depth": 3,
-          "text": "3. Add concept (v0.3.0 — write surface)",
-          "slug": "3-add-concept-v030-write-surface"
-        },
-        {
-          "depth": 3,
-          "text": "4. Backlinks panel (v0.4.0 — MCP server connect)",
-          "slug": "4-backlinks-panel-v040-mcp-server-connect"
-        },
-        {
-          "depth": 2,
-          "text": "5-way parser contract 편입",
-          "slug": "5-way-parser-contract-편입"
-        },
-        {
-          "depth": 2,
-          "text": "4-layer 자동 검증",
-          "slug": "4-layer-자동-검증"
-        },
-        {
-          "depth": 2,
-          "text": "Marketplace 미발행",
-          "slug": "marketplace-미발행"
-        }
-      ],
-      "excerpt": "R13 (20260504) 에 도입된 developerprimary IDE 진입점. README 가 약속해 둔 \"(planned) VSCode plugin\" 의 first MVP 부터 v0.5.0 까지. CLI 가 터미널 진입, MCP 가 AI agent 진입이라면 이 plugin 은 VSCode 안에서 직접 vault 노드 보고, 코드 ↔ ontology 점프하고, 새 노드 생성하고, backlinks 탐색. Activity Bar 좌측 entry — graph 모티브 SVG icon vault 노드 kind 별 그룹화 (project / domain / capab",
-      "wordCount": 460,
-      "updatedAt": "2026-05-04T11:25:09.019Z",
-      "linksOut": []
-    },
-    {
       "slug": "ontology/domains/ai-agent-partner",
       "path": "docs/ontology/domains/ai-agent-partner.md",
       "title": "AI Agent Partner",
@@ -4664,8 +4670,7 @@
         "kind": "domain",
         "title": "Onboarding & UX (theme · toast · a11y · mobile · CLI)",
         "capabilities": [
-          "cli-developer-entry",
-          "vscode-plugin-ide-entry"
+          "cli-developer-entry"
         ],
         "elements": [
           "src/features/theme-toggle",
@@ -4687,7 +4692,7 @@
       ],
       "excerpt": "crosscutting. 라이트/다크 토글 (html[datatheme=\"light\"]), Sonner기반 toast, arialive 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefersreducedmotion 자동 존중. 자세한 디자인 룰: docs/DESIGNSYSTEM.md.",
       "wordCount": 37,
-      "updatedAt": "2026-05-04T11:37:08.799Z",
+      "updatedAt": "2026-05-05T23:37:41.046Z",
       "linksOut": []
     },
     {
@@ -4735,7 +4740,8 @@
         "title": "Vault — Local-First",
         "capabilities": [
           "vault-validator",
-          "vault-migrator"
+          "vault-migrator",
+          "vault-live-updates"
         ],
         "elements": [
           "file-system-access-api",
@@ -4756,9 +4762,9 @@
           "slug": "vault-local-first"
         }
       ],
-      "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 shortcircuit. 자세한 원칙: .claude/rules/localfirst.md. 사용자 surface: docs/FEATURES.md.",
-      "wordCount": 31,
-      "updatedAt": "2026-05-04T11:37:08.800Z",
+      "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 shortcircuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vaultliveupdates). 자세한 원칙: .claude/rules/localfirst.md. 사용자 surface: docs/FEATURES.md.",
+      "wordCount": 45,
+      "updatedAt": "2026-05-05T23:36:19.129Z",
       "linksOut": []
     },
     {
@@ -5161,8 +5167,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 1766,
-      "updatedAt": "2026-05-04T05:38:04.751Z",
+      "wordCount": 1788,
+      "updatedAt": "2026-05-05T23:38:39.906Z",
       "linksOut": []
     },
     {
@@ -5889,6 +5895,13 @@
                 "title": "Topology — Sigma WebGL Render"
               },
               {
+                "name": "vault-live-updates",
+                "path": "ontology/capabilities/vault-live-updates",
+                "type": "doc",
+                "slug": "ontology/capabilities/vault-live-updates",
+                "title": "Vault Live Updates (5s polling + diff toast + graph pulse)"
+              },
+              {
                 "name": "vault-migrator",
                 "path": "ontology/capabilities/vault-migrator",
                 "type": "doc",
@@ -5901,13 +5914,6 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/vault-validator",
                 "title": "Vault Validator (Silent Corruption 가시화)"
-              },
-              {
-                "name": "vscode-plugin-ide-entry",
-                "path": "ontology/capabilities/vscode-plugin-ide-entry",
-                "type": "doc",
-                "slug": "ontology/capabilities/vscode-plugin-ide-entry",
-                "title": "VSCode Plugin (IDE Entry, v0.5.0)"
               }
             ]
           },

@@ -6,6 +6,42 @@
 
 ---
 
+## 2026-05-06 — Round 15: VSCode plugin 제거 — AI-agent 터미널 시대로 진입점 단순화
+
+R14 closeout (PR #164) 후 사용자 명시 — *"vscode plugin 은 없어도 될 듯. 이제 대부분 vscode 안 쓰고 claude code / codex 를 사용하지"*. R13 에서 v0.1.0 → v0.9.0 까지 키운 4번째 surface 통째 제거. 4 surface (CLI · MCP · Web · VSCode) → **3 surface (CLI · MCP · Web)**.
+
+### 왜 제거?
+
+- **daily driver 변화** — 사용자 본인을 포함한 *primary audience (developer)* 가 일상 IDE 를 Claude Code / Codex 같은 AI-agent 터미널로 전환. VSCode 자체 점유율 감소.
+- **가치 중복** — VSCode plugin 의 4 surface (TreeView / 코드↔ontology 점프 / Add concept / Backlinks panel) 가 모두 *MCP (AI agent) + CLI (developer terminal) + Web (그래프 시각화)* 의 조합으로 같은 가치 cover. graph webview 는 R13 #67 (v0.9.0) 에서 이미 *웹의 강점 영역으로 위임* 결정.
+- **유지비 감소** — 매 PR 마다 4-layer 자동 검증 (단위 27 / MCP integration 3 / VSCode integration 5 / vsce package gate) + 5-way parser contract (12 fixture × 5 = 60 case) 부담. 3 surface 로 회복하면 4-way (12 × 4 = 48 case) 로 단순화.
+
+### 제거 범위
+
+- `vscode-plugin/` 폴더 통째 (15+ 파일, ~3000 LOC, v0.9.0 vsix 포함)
+- `tests/contract/parse-frontmatter.contract.test.ts` 5-way → 4-way (vscode parser import 제거)
+- `.github/workflows/ci.yml` 의 "VSCode plugin — install + test + e2e + package" step 제거 (xvfb-run + @vscode/test-electron + vsce package)
+- dogfood vault: `capabilities/vscode-plugin-ide-entry.md` 삭제 + `domains/onboarding-ux.capabilities[]` 에서 endorse 제거 → 26 → 25 노드
+- README / AGENTS.md (영문 + 한국어) / PRODUCT-DIRECTION 의 "(planned) VSCode plugin" / "VSCode plugin v0.1.0 MVP" / "4 surface" 표기 정리
+
+### 보존 (재도입 시 root)
+
+- 코드 자체는 git history 에 보존 (R13 wave PR #49-#67 commits). 미래 VSCode 재도입 결정 시 `git revert` 또는 cherry-pick 가능.
+- `docs/CHANGELOG.md` R13 항목은 그대로 보존 — *역사적 사실* 이고, "한 번 빌드했다가 daily driver 변화로 제거" 결정 자체가 product call 기록.
+
+### Surface 표 갱신
+
+| Surface | 진입 | 상태 |
+|---|---|---|
+| **CLI** | `oh-my-ontology init / list / validate / add / find / import` | v0.2.x (6 명령) |
+| **MCP** | 14 tools (8 read + 6 write) | v0.7.1 |
+| **Web** | `/`, `/topology`, `/docs`, `/ontology`, `/ontology/edit`, `/ontology/insights`, `/projects`, `/project/[slug]` | R10 surface diet 후 |
+| ~~VSCode plugin~~ | ~~status bar match · backlinks · add concept · MCP connect~~ | **제거 (R15)** |
+
+→ "개발자가 어디 있든 같은 vault" 약속은 그대로 — *AI agent 터미널 (Claude Code · Codex · Cursor)* 이 IDE 역할을 흡수하며 VSCode plugin 의 일상 사용 가치가 자연스럽게 0 으로 수렴.
+
+---
+
 ## 2026-05-05 — Round 14: AI agent ↔ vault 자동 sync + 웹 즉시 반영 + frontmatter schema
 
 R13 closure 후 *"개발자와 AI agent 가 같이 키운다"* 미션의 자동성 강화. 두 갈래 — agent 가 vault 를 알아서 읽고/쓰고, 그 변화가 웹에 즉시 흘러오고. 9 PR 묶음 (#155-#163).

@@ -6,7 +6,7 @@
 
 ## Project overview
 
-`oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology list/validate/init`) / web UI (`/ontology`, `/docs`) / planned VSCode plugin; AI agent (Claude Code, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (14 tools).
+`oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology init/list/validate/add/find/import`) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (14 tools).
 
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
@@ -185,7 +185,7 @@ When an AI agent (`add_concept`) or a developer (`oh-my-ontology add` / `oh-my-o
 
 ### 프로젝트 개요
 
-`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology list/validate/init`) / 웹 UI (`/ontology`, `/docs`) / 향후 VSCode plugin 으로 편집, AI agent (Claude Code, Cursor) 는 `mcp/` MCP 서버 (14 tools) 로 같은 `.md` 파일을 read/write.
+`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology init/list/validate/add/find/import`) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (14 tools) 로 같은 `.md` 파일을 read/write.
 
 핵심 원칙 한 줄 (v3, R11 fire #25):
 
