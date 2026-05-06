@@ -58,9 +58,11 @@ ${COLORS.bold}Usage:${COLORS.reset}
        --kind K                               ${COLORS.dim}fallback kind when input has no kind:${COLORS.reset}
        --auto-prefix --rename --dry-run       ${COLORS.dim}folder prefix · slug rename · plan-only${COLORS.reset}
 
-${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16 — autonomous ingest base)${COLORS.reset}
+${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17 — autonomous ingest base)${COLORS.reset}
   npx oh-my-ontology analyze [rootPath]       Walk a repo, propose ontology node candidates (side effect 0)
        --max-depth N --json                   ${COLORS.dim}folder walk depth · machine output${COLORS.reset}
+  npx oh-my-ontology infer-imports [rootPath] TS/JS import graph → depends_on edge candidates (side effect 0)
+       --max-files N --json                   ${COLORS.dim}default 5000 max · machine output${COLORS.reset}
 
 ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps the MCP server, same authority as an AI agent)${COLORS.reset}
   npx oh-my-ontology backlinks <slug>         Every node referencing the slug (--json)
@@ -300,6 +302,11 @@ if (SUBCOMMAND === 'delete') {
 if (SUBCOMMAND === 'analyze') {
   const { runAnalyze } = await import('./commands/analyze.mjs');
   exit(await runAnalyze(ARGS.slice(1)));
+}
+
+if (SUBCOMMAND === 'infer-imports') {
+  const { runInferImports } = await import('./commands/infer-imports.mjs');
+  exit(await runInferImports(ARGS.slice(1)));
 }
 
 fail(`unknown command: ${SUBCOMMAND}`);

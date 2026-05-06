@@ -1,7 +1,7 @@
 {
   "name": "oh-my-ontology-mcp",
-  "version": "0.8.0",
-  "description": "MCP server — humans and AI agents read/write the same codebase ontology vault. R16: 15 tools (analyze_repo_structure for autonomous bootstrap).",
+  "version": "0.9.0",
+  "description": "MCP server — humans and AI agents read/write the same codebase ontology vault. R17: 16 tools (analyze_repo_structure + infer_imports for autonomous bootstrap).",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -27,13 +27,14 @@
     "src/validate.mjs",
     "src/vault.mjs",
     "src/analyze.mjs",
+    "src/infer-imports.mjs",
     "scripts/verify.mjs",
     "CHANGELOG.md",
     "README.md"
   ],
   "scripts": {
     "start": "node src/index.js",
-    "test": "node --test src/parser.test.mjs src/query.test.mjs src/validate.test.mjs src/vault.test.mjs src/redirect-backlinks.test.mjs src/conflict-detection.test.mjs src/analyze.test.mjs src/integration.test.mjs",
+    "test": "node --test src/parser.test.mjs src/query.test.mjs src/validate.test.mjs src/vault.test.mjs src/redirect-backlinks.test.mjs src/conflict-detection.test.mjs src/analyze.test.mjs src/infer-imports.test.mjs src/integration.test.mjs",
     "test:smoke": "node src/parser.test.mjs",
     "verify": "node scripts/verify.mjs"
   },

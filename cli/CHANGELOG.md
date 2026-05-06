@@ -1,5 +1,13 @@
 # Changelog — oh-my-ontology (CLI)
 
+## 0.5.0 — 2026-05-06 (R17 — import graph → depends_on)
+
+### Added — `infer-imports` command (13th, mcp v0.9.0 spawn wrapper)
+
+- `oh-my-ontology infer-imports [rootPath]` — TS/JS import graph → file-level edges + module-level depends_on candidates. `--max-files N` / `--json`.
+- side effect 0 — vault NOT modified. moduleEdges 가 사용자 / AI agent 의 *명시 add_relation depends_on* 후보.
+- 본인 codebase 의 *진짜 의존 관계* 자동 추출. analyze (heuristic) 의 강력한 짝 — 둘 다 *기가막히게* 의 base.
+
 ## 0.4.0 — 2026-05-06 (R16 — autonomous ingest base)
 
 ### Added — `analyze` command (12th, mcp v0.8.0 spawn wrapper)

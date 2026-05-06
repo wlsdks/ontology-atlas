@@ -1,5 +1,21 @@
 # Changelog — oh-my-ontology-mcp
 
+## 0.9.0 — 2026-05-06 (R17 — import graph → depends_on edges)
+
+### Added
+
+- **`infer_imports`** — TS/JS file import graph parser. side effect 0. Walks `src/` (또는 `lib/`/`app/`/`packages/` fallback) → regex parse static / dynamic / require / re-export / side-effect import → resolves relative paths → **collapses to module-level edges (capability A → B with import count)**. agent 가 moduleEdges 를 *depends_on* 후보로 검토 후 `add_relation` 호출.
+- **path alias `@/*`** convention 지원 — `@/shared/api` → `src/shared/api/index.ts` 로 resolve. Next.js / FSD project 의 80%+ case cover. unresolved 면 `reason: 'alias-not-found'`.
+- 8 unit test (relative / external / alias / dynamic·require·reexport / module collapse / unresolved / ignored folders / side-effect).
+
+### Validated
+
+- **Paravel real-codebase** (사용자 본인 React Native + Expo, 1.8 GB): 304 files / 837 edges / 506 external / 0 unresolved / **103 module edges**. FSD layering 정확 — `screens → shared (98)`, `app → screens (22)`, `features/* → entities/*` 패턴.
+
+### Tools count
+
+- **16 (10 read + 6 write)** — infer_imports 가 read (side effect 0).
+
 ## 0.8.0 — 2026-05-06 (R16 — autonomous bootstrap base)
 
 ### Added

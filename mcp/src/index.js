@@ -61,6 +61,7 @@ import { dirname } from 'node:path';
 import { mkdirSync } from 'node:fs';
 import { buildMarkdown } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
+import { inferImports } from './infer-imports.mjs';
 import { parseFilter } from './query.mjs';
 import { isValidVaultTitle, validateVaultDocument } from './validate.mjs';
 import {
@@ -390,6 +391,47 @@ const TOOLS = [
     },
   },
   {
+    name: 'infer_imports',
+    description:
+      'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. ' +
+      'side effect 0 (vault frontmatter NOT modified). The agent reviews moduleEdges (capability A → capability B from import count) and selectively passes accepted edges to add_relation as `depends_on`. ' +
+      'Detects:\n' +
+      '  - relative imports (./, ../) → resolved to file paths\n' +
+      '  - dynamic import() / require() / export ... from\n' +
+      '  - bare side-effect imports (import "X")\n' +
+      '  - external (npm) imports listed separately\n' +
+      '  - tsconfig path aliases (@/) → external (not resolved)\n\n' +
+      'Use after analyze_repo_structure to pull *real* dependency edges from the code, not just suggestedRelations heuristics. ' +
+      'Single source of truth preserved — only the user (via your subsequent add_relation calls) writes to the vault.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        rootPath: {
+          type: 'string',
+          description: 'Repository root to analyze. Defaults to MCP server cwd.',
+        },
+        sourceFolders: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            "Source folders to walk (default: ['src','lib','app','packages']). " +
+            'If none exist, falls back to rootPath.',
+        },
+        ignore: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            "Extra folder names to skip (added to defaults: node_modules, dist, build, …).",
+        },
+        maxFiles: {
+          type: 'number',
+          description:
+            'Cap on files walked (default 5000). Hard stop to avoid pathological monorepos.',
+        },
+      },
+    },
+  },
+  {
     name: 'analyze_repo_structure',
     description:
       'R16 (autonomous ingest base) — analyze a code repository and propose ontology node candidates. ' +
@@ -576,6 +618,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(queryConceptsTool(args));
       case 'analyze_repo_structure':
         return ok(analyzeRepoStructureTool(args));
+      case 'infer_imports':
+        return ok(inferImportsTool(args));
       case 'rename_concept':
         return ok(renameConcept(args));
       case 'merge_concepts':
@@ -875,6 +919,17 @@ function analyzeRepoStructureTool({ rootPath, maxDepth, ignore } = {}) {
   return analyzeRepoStructure(target, {
     maxDepth: typeof maxDepth === 'number' ? maxDepth : undefined,
     ignore: Array.isArray(ignore) ? ignore : undefined,
+  });
+}
+
+// R17 — infer_imports thin wrapper. side effect 0. 결과 moduleEdges 가
+// agent 의 add_relation depends_on 후보.
+function inferImportsTool({ rootPath, sourceFolders, ignore, maxFiles } = {}) {
+  const target = rootPath ? resolve(rootPath) : process.cwd();
+  return inferImports(target, {
+    sourceFolders: Array.isArray(sourceFolders) ? sourceFolders : undefined,
+    ignore: Array.isArray(ignore) ? ignore : undefined,
+    maxFiles: typeof maxFiles === 'number' ? maxFiles : undefined,
   });
 }
 

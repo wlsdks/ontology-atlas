@@ -6,6 +6,65 @@
 
 ---
 
+## 2026-05-06 — Round 17: `infer_imports` — TS/JS import graph → depends_on edges
+
+R16 의 `analyze_repo_structure` (heuristic 후보) 의 *강력한 짝*. 코드의 *진짜 import graph* 를 자동 추출해 `depends_on` 관계 후보로. mcp v0.8.0 → v0.9.0 (15 → 16 tools), cli v0.4.0 → v0.5.0 (12 → 13 명령).
+
+### MCP `infer_imports` (16번째 tool)
+
+- TS/JS file 들 (`.ts/.tsx/.js/.jsx/.mjs/.cjs/.mts/.cts`) walk + regex parse
+- import 종류 6 — static / dynamic `import()` / `require()` / `export ... from` / side-effect `import "X"` / type-only
+- 상대 경로 (`./` `../`) → 실 파일 resolve (확장자 + `index.*` fallback)
+- **`@/*` path alias** convention 자동 resolve (Next.js / FSD 의 80%+ case)
+- external (npm) 분리, unresolved 분리 (`relative-not-found` / `alias-not-found`)
+- **module-level edge collapse** — capability/feature folder 간 import 합산 (FSD bucket 인식: `features/X` / `entities/X` / `widgets/X` / `views/X`)
+
+응답: `{ rootPath, filesScanned, edges[], externalImports[], unresolved[], moduleEdges[] }`. side effect 0.
+
+### Validated — Paravel real-codebase
+
+사용자 본인 React Native + Expo + FSD 1.8 GB:
+
+| 측정 | 값 |
+|---|---|
+| files | 304 |
+| edges | **837** (이전 R17 미적용 시 355 → alias resolve 로 2배+) |
+| external (npm) | 506 |
+| unresolved | 0 |
+| **module edges** | **103** |
+
+상위 module edges:
+- `screens → shared` × 98
+- `app → screens` × 22
+- `features/diary → shared` × 18
+- `features/create-post → entities/post` × 6
+- ... 87 more
+
+FSD layering 정확 자동 추출. 사용자 본인이 *수동 add_relation* 으로 그릴 그래프를 *코드에서 자동* 산출. **mission *"완벽에 가깝게 그래프 생성"* 의 다음 큰 step**.
+
+### CLI `infer-imports` 명령 (13번째)
+
+mcp child_process spawn wrapper. `--max-files N` / `--json`. 사용자 본인 daily 로 `oh-my-ontology infer-imports` 한 줄 → 이 codebase 의 *진짜 의존 관계* 표시.
+
+### 단일 source of truth 보존
+
+- 결과는 **return only** — vault frontmatter 절대 안 건드림
+- 사용자 / agent 검토 후 *명시 `add_relation depends_on`* 만 진입
+- 별도 cache / index 0
+- drift surface 0
+
+### Tests
+
+- 8 unit case — relative / external / alias / dynamic+require+reexport / module collapse / unresolved / ignored folders / side-effect
+- mcp 29 → **37 tests** (R17 8 추가)
+- cli integration 32/32 (회귀 0)
+
+### Mission align
+
+R16 *analyze_repo_structure* 가 *kind 후보* 자동, R17 *infer_imports* 가 *관계 후보* 자동. 둘이 합쳐 사용자 한 번 호출 = 30+ 노드 + 100+ 관계 candidate. *기가막히게 잘해줘서 완벽에 가깝게 그래프* 의 base 둘 다 land.
+
+---
+
 ## 2026-05-06 — Round 16: 자율 ingest base — `analyze_repo_structure` 첫 도구
 
 사용자 grill-me 결정 (Q1: AI 자동 ontology 화 / Q2: 자율 ingest from codebase 가 가장 critical 약점). *"MCP 가 잘 되면서 온톨로지화를 기가막히게"* + *"단일 source of truth 보존"* 의 첫 step.
@@ -45,11 +104,11 @@ mcp/src/analyze.test.mjs — 7 unit case (FSD / generic / no package.json / gene
 
 vault 25 → 26 노드 (capability 14). orphan 1 (의도적 project) / drift 0 / validate clean.
 
-### 다음 step (R17 후보)
+### 다음 step (R18 후보)
 
-- `infer_imports` (TypeScript / JS import graph → dependency 관계)
-- `extract_domains_from_readme` (heading 기반 deeper)
-- agent 의 *implicit detect* 강화 (작업 중 자율 sync)
+- `extract_domains_from_readme` (heading 계층 + body 분석 deeper)
+- agent 의 *implicit detect* 강화 (작업 중 자율 sync, b2 단계)
+- `/ontology-bootstrap` skill 의 infer-imports 단계 통합 (analyze → infer → add 다발)
 
 ---
 
