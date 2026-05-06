@@ -95,6 +95,17 @@ later.
 `missing-expected-field` issue code so users see them in the workbench banner
 without breaking pre-existing vaults.
 
+### Element slug — two valid patterns
+
+`kind: element` allows two natural slug styles, each with different ergonomics:
+
+| Pattern | Example slug | When to use |
+|---|---|---|
+| **flat** | `mcp-sdk`, `file-system-access-api` | The element is an *external library* / *abstract concept* that doesn't sit at a single path |
+| **path-style** | `src/features/auth`, `scripts/build-vault.mjs` | The element is a concrete code module / file inside the codebase. Auto-prefix produces `elements/src/features/auth.md` (4 levels) — deeper but the path is self-documenting |
+
+Both pass `vault:validate`. With `--auto-prefix` (CLI default since R15), path-style slugs nest under `elements/` exactly like flat slugs do — pick the style that matches what the element *is*, not what the file system prefers. Use `--raw-slug` to opt out of the `elements/` prefix entirely.
+
 The same schema is mirrored at `cli/src/lib/schema.mjs`. A contract test
 (`tests/contract/vault-schema.contract.test.ts`) keeps the two in lock-step;
 if you change one, mirror the other.
