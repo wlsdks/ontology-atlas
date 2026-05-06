@@ -262,6 +262,78 @@ await test('add --raw-slug — auto-prefix 명시 opt-out (R15)', async () => {
   }
 });
 
+await test('add element path-style → cyan hint advisory (post-Paravel dogfood)', async () => {
+  const root = withVault([]);
+  try {
+    const r = await run([
+      'add',
+      'element',
+      'src/features/auth',
+      '--title',
+      'Auth module',
+      '--domain',
+      'identity',
+      '--vault',
+      root,
+    ]);
+    assert.equal(r.code, 0);
+    // 4단계 nested 작성 자체는 valid
+    const written = readFileSync(
+      join(root, 'elements/src/features/auth.md'),
+      'utf-8',
+    );
+    assert.match(written, /kind: element/);
+    // stderr 에 path-style hint
+    assert.match(r.stderr, /path-style/);
+    assert.match(r.stderr, /4 levels/);
+    assert.match(r.stderr, /--raw-slug/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('add element flat slug → hint 없음 (정상 case)', async () => {
+  const root = withVault([]);
+  try {
+    const r = await run([
+      'add',
+      'element',
+      'zod',
+      '--title',
+      'Zod library',
+      '--domain',
+      'identity',
+      '--vault',
+      root,
+    ]);
+    assert.equal(r.code, 0);
+    assert.doesNotMatch(r.stderr, /path-style/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('add capability path slug → hint 없음 (element 만 적용)', async () => {
+  const root = withVault([]);
+  try {
+    const r = await run([
+      'add',
+      'capability',
+      'auth/login',
+      '--title',
+      'Login',
+      '--domain',
+      'identity',
+      '--vault',
+      root,
+    ]);
+    assert.equal(r.code, 0);
+    assert.doesNotMatch(r.stderr, /path-style/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('find — title 부분매칭', async () => {
   const root = withVault([
     {

@@ -12,6 +12,7 @@ const COLORS = {
   green: '\x1b[32m',
   red: '\x1b[31m',
   yellow: '\x1b[33m',
+  cyan: '\x1b[36m',
   dim: '\x1b[2m',
   bold: '\x1b[1m',
   reset: '\x1b[0m',
@@ -64,6 +65,17 @@ export function runAdd(args) {
     for (const key of missing) {
       process.stderr.write(
         `${COLORS.yellow}warn${COLORS.reset}  expected field "${key}" missing for kind "${kind}" — add it later with --domain or by editing the file.\n`,
+      );
+    }
+    // R15 (post-Paravel dogfood) — element + path-style slug + auto-prefix
+    // 시 4단계 nested. 의도일 수도 있어 error 아닌 advisory hint.
+    // 두 패턴 (flat / path-style) 모두 valid — mcp/README "Element slug —
+    // two valid patterns" 참조.
+    if (kind === 'element' && autoPrefix && rawSlug.includes('/')) {
+      process.stderr.write(
+        `${COLORS.cyan}hint${COLORS.reset}  element slug "${rawSlug}" is path-style → nested at "${slug}.md" (4 levels). ` +
+          `If the path is intended (concrete code module), keep it. ` +
+          `For a flat element (library / abstract concept), use --raw-slug or a non-path slug.\n`,
       );
     }
     return 0;
