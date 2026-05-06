@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-06T04:25:04.781Z",
+  "generatedAt": "2026-05-06T06:43:57.685Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -2289,6 +2289,36 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-06 — Round 15 follow-up: CLI graph-level 5 명령 (Concern 4 fix)",
+          "slug": "2026-05-06-round-15-follow-up-cli-graph-level-5-명령-concern-4-fix"
+        },
+        {
+          "depth": 3,
+          "text": "CLI 5 graph-level 명령 추가 (cli v0.2.0 → v0.3.0, 6 → **11 명령**)",
+          "slug": "cli-5-graph-level-명령-추가-cli-v020-v030-6-11-명령"
+        },
+        {
+          "depth": 3,
+          "text": "Implementation — `cli/src/lib/mcp-call.mjs` (single source of truth via spawn)",
+          "slug": "implementation-clisrclibmcp-callmjs-single-source-of-truth-via-spawn"
+        },
+        {
+          "depth": 3,
+          "text": "Mission align",
+          "slug": "mission-align"
+        },
+        {
+          "depth": 3,
+          "text": "Tests",
+          "slug": "tests"
+        },
+        {
+          "depth": 3,
+          "text": "Dogfood vault",
+          "slug": "dogfood-vault"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-06 — Round 15: VSCode plugin 제거 — AI-agent 터미널 시대로 진입점 단순화",
           "slug": "2026-05-06-round-15-vscode-plugin-제거-ai-agent-터미널-시대로-진입점-단순화"
         },
@@ -3058,9 +3088,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. R14 closeout (PR 164) 후 사용자 명시 — \"vscode plugin 은 없어도 될 듯. 이제 대부분 vscode 안 쓰고 claude code ",
-      "wordCount": 11707,
-      "updatedAt": "2026-05-06T02:02:33.370Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. postpublish architectural audit (Plan agent advisor) 발견 blocking concern — CLI 6 vs MCP 14",
+      "wordCount": 12000,
+      "updatedAt": "2026-05-06T06:32:01.996Z",
       "linksOut": [
         "slug"
       ]
@@ -4284,19 +4314,26 @@
     {
       "slug": "ontology/capabilities/cli-developer-entry",
       "path": "docs/ontology/capabilities/cli-developer-entry.md",
-      "title": "CLI Developer Entry (init / list / validate / add / find)",
+      "title": "CLI Developer Entry (init / list / validate / add / find / import + graph-level)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
-        "title": "CLI Developer Entry (init / list / validate / add / find)",
+        "title": "CLI Developer Entry (init / list / validate / add / find / import + graph-level)",
         "domain": "onboarding-ux",
         "elements": [
           "cli/src/index.mjs",
           "cli/src/commands/list.mjs",
           "cli/src/commands/validate.mjs",
           "cli/src/commands/add.mjs",
-          "cli/src/commands/find.mjs"
+          "cli/src/commands/find.mjs",
+          "cli/src/commands/import.mjs",
+          "cli/src/commands/backlinks.mjs",
+          "cli/src/commands/query.mjs",
+          "cli/src/commands/rename.mjs",
+          "cli/src/commands/merge.mjs",
+          "cli/src/commands/delete.mjs",
+          "cli/src/lib/mcp-call.mjs"
         ],
         "relates": [
           "capabilities/mcp-server",
@@ -4309,11 +4346,31 @@
           "depth": 1,
           "text": "CLI Developer Entry",
           "slug": "cli-developer-entry"
+        },
+        {
+          "depth": 2,
+          "text": "Local commands (R12 + R14 — vault scaffold + frontmatter)",
+          "slug": "local-commands-r12-r14-vault-scaffold-frontmatter"
+        },
+        {
+          "depth": 2,
+          "text": "Graph-level commands (R15 follow-up — Concern 4 fix)",
+          "slug": "graph-level-commands-r15-follow-up-concern-4-fix"
+        },
+        {
+          "depth": 2,
+          "text": "구현 단일 진실원",
+          "slug": "구현-단일-진실원"
+        },
+        {
+          "depth": 2,
+          "text": "회귀 차단",
+          "slug": "회귀-차단"
         }
       ],
-      "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. 5 명령으로 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP 등록 불필요. | Command | What it does | ||| | ohmyontology init [folder] | Scaffold vault (5 starter .md + .mcp.json.example) | | ohmyontology list [vault] | List ontology nodes (color table, kind X filter, json) | | ohmyont",
-      "wordCount": 181,
-      "updatedAt": "2026-05-04T07:32:33.448Z",
+      "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import (6 명령), R15 followup 에서 graphlevel 5 명령 추가 — 총 11 명령. 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP 등록 불필요. | Command | What it does | ||| | ohmyontology init [folder] | Scaffold vault (5 starter .md + .mcp.json cwd + vault) | | ohmyontology list [vault] | L",
+      "wordCount": 374,
+      "updatedAt": "2026-05-06T06:32:01.996Z",
       "linksOut": []
     },
     {
@@ -5992,7 +6049,7 @@
                 "path": "ontology/capabilities/cli-developer-entry",
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
-                "title": "CLI Developer Entry (init / list / validate / add / find)"
+                "title": "CLI Developer Entry (init / list / validate / add / find / import + graph-level)"
               },
               {
                 "name": "frontmatter-to-ontology",

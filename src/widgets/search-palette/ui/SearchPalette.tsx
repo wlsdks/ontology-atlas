@@ -149,8 +149,10 @@ const LAYER_FILTERS: { value: LayerFilter; labelKey: 'layerAll' | 'layerHub' | '
 
 function matchesLayerFilter(project: Project, filter: LayerFilter): boolean {
   if (filter === 'all') return true;
-  if (filter === 'hub') return project.isHub;
-  return !project.isHub; // 'node'
+  // R15 — isHub undefined 는 hub 아님으로 취급 (vault frontmatter 명시만 hub).
+  const isHub = Boolean(project.isHub);
+  if (filter === 'hub') return isHub;
+  return !isHub;
 }
 
 function SearchPaletteDialog({

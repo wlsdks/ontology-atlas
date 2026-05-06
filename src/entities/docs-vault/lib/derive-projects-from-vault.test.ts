@@ -170,12 +170,12 @@ describe("deriveProjectsFromVault — isHub", () => {
     expect(projects[0]!.isHub).toBe(true);
   });
 
-  it("isHub 없으면 false", () => {
+  it("isHub 없으면 undefined (R15 honest derive — fabricated false 차단)", () => {
     const projects = deriveProjectsFromVault(
       makeManifest([
         makeDoc({ slug: "projects/foo", frontmatter: { kind: "project" } }),
       ]),
     );
-    expect(projects[0]!.isHub).toBe(false);
+    expect(projects[0]!.isHub).toBeUndefined();
   });
 });

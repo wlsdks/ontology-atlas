@@ -528,16 +528,20 @@ export function ProjectForm({
       // 슬롯 배치 겹침 방지용 최신 프로젝트 목록. allProjects 가 mode-aware
       // hook (useProjects) 의 출력이라 vault / 빌드타임 dogfood 진실원과 sync.
       const latestProjects = allProjects;
+      // R15 — initialProject.position 이 undefined (vault 가 명시 안 함) 면
+      // 자동 placement 강제. category 가 바뀌었거나 inside 아니면도 동일.
+      const initialPos = initialProject?.position;
       const position = initialProject
         ? initialProject.category !== parsed.data.category ||
-          !isProjectPositionInsideCategory(nextCategory, initialProject.position)
+          !initialPos ||
+          !isProjectPositionInsideCategory(nextCategory, initialPos)
           ? findProjectPlacement(
               nextCategory,
               latestProjects.filter(
                 (project) => project.slug !== initialProject.slug,
               ),
             )
-          : initialProject.position
+          : initialPos
         : findProjectPlacement(nextCategory, latestProjects);
       const input = formValuesToProjectInput(parsed.data, position);
       await onSubmit(input, { behavior: submitBehavior });

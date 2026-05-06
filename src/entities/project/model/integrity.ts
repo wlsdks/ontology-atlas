@@ -26,7 +26,11 @@ export function getProjectIntegrityIssues(
   const projectSlugs = new Set(options.allProjects.map((item) => item.slug));
   const issues: ProjectIntegrityIssue[] = [];
 
+  // R15 (Concern 1) — vault frontmatter 가 category/status 명시 안 했으면
+  // undefined. 그건 *integrity issue 아님* — 사용자가 의도적으로 선택. 명시
+  // 됐는데 taxonomy 에 없으면 issue (오타 / removed taxonomy).
   if (
+    project.category &&
     !categoryIds.has(project.category) &&
     !SILENT_CATEGORY_FALLBACKS.has(project.category)
   ) {
@@ -37,6 +41,7 @@ export function getProjectIntegrityIssues(
   }
 
   if (
+    project.status &&
     !statusIds.has(project.status) &&
     !SILENT_STATUS_FALLBACKS.has(project.status)
   ) {

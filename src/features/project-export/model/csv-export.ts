@@ -42,8 +42,10 @@ export function projectsToCsv(projects: Project[]): string {
     const row = [
       project.slug,
       project.name,
-      project.category,
-      project.status,
+      // R15 — vault frontmatter 누락 시 빈 셀 (ergonomic export — 사용자가
+      // round-trip import 후 명시적으로 채울 수 있게).
+      project.category ?? "",
+      project.status ?? "",
       project.description,
       project.detail ?? "",
       stringArrayToCell(project.tags),

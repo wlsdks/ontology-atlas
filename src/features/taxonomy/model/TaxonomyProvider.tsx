@@ -7,10 +7,13 @@ import { DEFAULT_STATUSES, type Status } from '@/entities/status';
 export interface TaxonomyContextValue {
   categories: Category[];
   statuses: Status[];
-  getCategory: (id: string) => Category | undefined;
-  getStatus: (id: string) => Status | undefined;
-  categoryLabel: (id: string) => string;
-  statusLabel: (id: string) => string;
+  getCategory: (id: string | undefined) => Category | undefined;
+  getStatus: (id: string | undefined) => Status | undefined;
+  // R15 (Concern 1) — vault frontmatter 가 category/status 명시 안 하면
+  // undefined. taxonomy provider 가 *—* (em-dash) placeholder 로 표시 —
+  // fabricated 'uncategorized' 보다 honest.
+  categoryLabel: (id: string | undefined) => string;
+  statusLabel: (id: string | undefined) => string;
 }
 
 const TaxonomyContext = createContext<TaxonomyContextValue | null>(null);
@@ -31,10 +34,10 @@ export function TaxonomyProvider({ children }: Props) {
     return {
       categories: DEFAULT_CATEGORIES,
       statuses: DEFAULT_STATUSES,
-      getCategory: (id) => categoryMap.get(id),
-      getStatus: (id) => statusMap.get(id),
-      categoryLabel: (id) => categoryMap.get(id)?.label ?? id,
-      statusLabel: (id) => statusMap.get(id)?.label ?? id,
+      getCategory: (id) => (id ? categoryMap.get(id) : undefined),
+      getStatus: (id) => (id ? statusMap.get(id) : undefined),
+      categoryLabel: (id) => (id ? (categoryMap.get(id)?.label ?? id) : '—'),
+      statusLabel: (id) => (id ? (statusMap.get(id)?.label ?? id) : '—'),
     };
   }, []);
 

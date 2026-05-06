@@ -154,7 +154,7 @@ export function matchProjects(
     const nameEn = project.nameEn?.toLowerCase() ?? "";
     const description = project.description?.toLowerCase() ?? "";
     const tags = project.tags.join(" ").toLowerCase();
-    const category = project.category.toLowerCase();
+    const category = (project.category ?? '').toLowerCase();
     const slug = project.slug.toLowerCase();
 
     let score = 0;

@@ -80,19 +80,23 @@ export function DocsVaultFolderTopology({
     const radius = 140;
     build.projects.forEach((p, idx) => {
       const angle = (idx / Math.max(1, build.projects.length)) * Math.PI * 2;
-      const hasPosition = p.position.x !== 0 || p.position.y !== 0;
+      // R15 (Concern 1) — vault frontmatter 가 position 명시 안 했으면 honest
+      // undefined → 원형 배치 fallback (이전엔 fabricated {0,0} → "위치 있음"
+      // 으로 잘못 인식돼 모든 노드가 원점에 겹쳤음).
+      const hasPosition =
+        p.position && (p.position.x !== 0 || p.position.y !== 0);
       graph.addNode(p.slug, {
         x: hasPosition
-          ? p.position.x
+          ? p.position!.x
           : Math.cos(angle) * radius + (Math.random() - 0.5) * 20,
         y: hasPosition
-          ? p.position.y
+          ? p.position!.y
           : Math.sin(angle) * radius + (Math.random() - 0.5) * 20,
         size: p.isHub ? 8 : 4.5,
         label: p.name,
-        color: toneForCategory(p.category, build.categories),
-        originalColor: toneForCategory(p.category, build.categories),
-        isHub: p.isHub,
+        color: toneForCategory(p.category ?? '', build.categories),
+        originalColor: toneForCategory(p.category ?? '', build.categories),
+        isHub: Boolean(p.isHub),
       });
     });
     for (const p of build.projects) {
@@ -110,9 +114,10 @@ export function DocsVaultFolderTopology({
       graph.setNodeAttribute(node, 'size', next);
       graph.setNodeAttribute(node, 'originalSize', next);
     });
-    // 위치가 전부 (0,0) 이거나 일부만 있으면 FA2 한번 돌려서 정돈
+    // 위치가 전부 (0,0) 이거나 일부만 있으면 FA2 한번 돌려서 정돈.
+    // R15 — undefined position 도 unset 으로 간주.
     const unsetCount = build.projects.filter(
-      (p) => p.position.x === 0 && p.position.y === 0,
+      (p) => !p.position || (p.position.x === 0 && p.position.y === 0),
     ).length;
     if (unsetCount / Math.max(1, build.projects.length) > 0.5) {
       forceAtlas2.assign(graph, {

@@ -41,15 +41,30 @@ function mapVaultDocToProject(doc: VaultDoc): Project | null {
     ? doc.slug.replace(/^projects\//, '')
     : doc.slug.split('/').pop() || doc.slug;
   const name = (fm.name as string) || (fm.title as string) || doc.title || fileSlug;
-  const category = (fm.category as string) || 'uncategorized';
-  const status = (fm.status as string) || 'active';
+  // R15 (Concern 1) honest derive — frontmatter 에 명시 없으면 undefined.
+  // 이전엔 'uncategorized' / 'active' / { x:0, y:0 } 등 fabricated default
+  // 박았으나 vault 가 *가지지 않은 정보* 를 web 이 표시 → mission 위반.
+  const category =
+    typeof fm.category === 'string' && fm.category.trim()
+      ? fm.category.trim()
+      : undefined;
+  const status =
+    typeof fm.status === 'string' && fm.status.trim()
+      ? fm.status.trim()
+      : undefined;
   const isHub =
-    fm.isHub === true || String(fm.isHub).toLowerCase() === 'true';
+    fm.isHub === true || String(fm.isHub).toLowerCase() === 'true'
+      ? true
+      : undefined; // false 도 fabrication — frontmatter 에 명시 없으면 undefined
   const description =
     typeof fm.description === 'string' && fm.description.trim()
       ? fm.description.trim()
       : doc.excerpt;
-  const position = parseSplitPosition(fm) ?? parseInlinePosition(fm.position);
+  // position: 명시된 frontmatter 값만. 없으면 undefined (web 측이 placement
+  // hook 에서 layout 결정 — vault 가 가지지 않은 좌표를 fabricate 하지 않음).
+  const position = parseSplitPosition(fm) ?? parseInlinePositionOpt(fm.position);
+  // timeline: 명시된 startedAt / launchedAt 만. 빈 객체 fabricate 안 함.
+  const timeline = deriveTimeline(fm);
   const updatedAt = parseDateFlexible(fm.updatedAt) ?? parseDateFlexible(doc.updatedAt) ?? new Date();
   const createdAt = parseDateFlexible(fm.createdAt) ?? updatedAt;
   return {
@@ -66,7 +81,7 @@ function mapVaultDocToProject(doc: VaultDoc): Project | null {
     owner: typeof fm.owner === 'string' ? fm.owner : undefined,
     icon: typeof fm.icon === 'string' ? fm.icon : undefined,
     screenshots: [],
-    timeline: {},
+    timeline,
     isHub,
     position,
     createdAt,
@@ -84,14 +99,32 @@ function coerceStringArray(v: unknown): string[] {
   return [];
 }
 
-function parseInlinePosition(v: unknown): { x: number; y: number } {
+function parseInlinePositionOpt(
+  v: unknown,
+): { x: number; y: number } | undefined {
   if (v && typeof v === 'object') {
     const p = v as { x?: unknown; y?: unknown };
     const x = typeof p.x === 'number' ? p.x : Number(p.x);
     const y = typeof p.y === 'number' ? p.y : Number(p.y);
     if (Number.isFinite(x) && Number.isFinite(y)) return { x, y };
   }
-  return { x: 0, y: 0 };
+  return undefined;
+}
+
+function deriveTimeline(
+  fm: Record<string, unknown>,
+):
+  | { startedAt?: Date; launchedAt?: Date }
+  | undefined {
+  const started = parseDateFlexible(fm.startedAt);
+  const launched = parseDateFlexible(fm.launchedAt);
+  if (started || launched) {
+    return {
+      ...(started ? { startedAt: started } : {}),
+      ...(launched ? { launchedAt: launched } : {}),
+    };
+  }
+  return undefined;
 }
 
 function parseSplitPosition(

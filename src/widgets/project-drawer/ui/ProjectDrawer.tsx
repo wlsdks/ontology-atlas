@@ -893,8 +893,8 @@ export function ProjectDrawer({
                   )}
 
                   {(project.screenshots[0] ||
-                    project.timeline.startedAt ||
-                    project.timeline.launchedAt ||
+                    project.timeline?.startedAt ||
+                    project.timeline?.launchedAt ||
                     project.links.length > 0) && (
                     <details className="rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3">
                       <summary className="cursor-pointer list-none text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
@@ -920,13 +920,13 @@ export function ProjectDrawer({
                           </section>
                         )}
 
-                        {(project.timeline.startedAt || project.timeline.launchedAt) && (
+                        {(project.timeline?.startedAt || project.timeline?.launchedAt) && (
                           <section>
                             <h3 className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
                               {t("timelineTitle")}
                             </h3>
                             <dl className="mt-3 space-y-2 rounded-2xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-4 text-sm text-[color:var(--color-text-secondary)]">
-                              {project.timeline.startedAt && (
+                              {project.timeline?.startedAt && (
                                 <div className="flex items-baseline justify-between gap-4">
                                   <dt className="text-[color:var(--color-text-tertiary)]">
                                     {t("timelineStarted")}
@@ -936,7 +936,7 @@ export function ProjectDrawer({
                                   </dd>
                                 </div>
                               )}
-                              {project.timeline.launchedAt && (
+                              {project.timeline?.launchedAt && (
                                 <div className="flex items-baseline justify-between gap-4">
                                   <dt className="text-[color:var(--color-text-tertiary)]">
                                     {t("timelineLaunched")}

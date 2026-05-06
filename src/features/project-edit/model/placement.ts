@@ -104,7 +104,10 @@ export function findProjectPlacement(category: Category | undefined, projects: P
 
   const occupied = projects
     .filter((project) => project.category === category.id)
-    .map((project) => expandRect(toRect(project.position), OVERLAP_PADDING));
+    // R15 — position undefined 인 project (vault 가 명시 안 함) 는 placement
+    // 에서 제외 (좌표 없으니 overlap 계산 불가).
+    .filter((project) => project.position !== undefined)
+    .map((project) => expandRect(toRect(project.position!), OVERLAP_PADDING));
 
   for (const candidate of buildCandidatePositions(category)) {
     const rect = toRect(candidate);
@@ -128,15 +131,25 @@ export function buildOutOfBoundsRepairUpdates(
 
   for (const category of [...categories].sort((a, b) => a.order - b.order)) {
     const categoryProjects = projects.filter((project) => project.category === category.id);
-    const placedProjects = categoryProjects.filter((project) =>
-      isProjectPositionInsideCategory(category, project.position),
+    // R15 — position 없는 project 는 inside 판단 불가 → misplaced 로 취급
+    // (placement 강제 적용).
+    const placedProjects = categoryProjects.filter(
+      (project) =>
+        project.position !== undefined &&
+        isProjectPositionInsideCategory(category, project.position),
     );
     const misplacedProjects = categoryProjects
-      .filter((project) => !isProjectPositionInsideCategory(category, project.position))
+      .filter(
+        (project) =>
+          project.position === undefined ||
+          !isProjectPositionInsideCategory(category, project.position),
+      )
       .sort((a, b) => a.name.localeCompare(b.name, 'ko'));
 
     for (const project of misplacedProjects) {
-      const targetCategory = categoryMap.get(project.category);
+      const targetCategory = project.category
+        ? categoryMap.get(project.category)
+        : undefined;
       if (!targetCategory) continue;
 
       const position = findProjectPlacement(targetCategory, placedProjects);

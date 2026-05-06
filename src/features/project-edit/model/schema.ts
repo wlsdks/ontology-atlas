@@ -169,8 +169,9 @@ export function projectToFormValues(project: Project): ProjectFormValues {
     slug: project.slug,
     name: project.name,
     nameEn: project.nameEn ?? "",
-    category: project.category,
-    status: project.status,
+    // R15 — Form 은 사용자 vault frontmatter 작성 도구라 form-local default 적용.
+    category: project.category ?? "uncategorized",
+    status: project.status ?? "active",
     description: project.description,
     detail: project.detail ?? "",
     tagsCsv: project.tags.join(", "),
@@ -180,10 +181,10 @@ export function projectToFormValues(project: Project): ProjectFormValues {
     screenshots: [...project.screenshots],
     owner: project.owner ?? "",
     icon: project.icon ?? "",
-    startedAt: toDateInputValue(project.timeline.startedAt),
-    launchedAt: toDateInputValue(project.timeline.launchedAt),
+    startedAt: toDateInputValue(project.timeline?.startedAt),
+    launchedAt: toDateInputValue(project.timeline?.launchedAt),
     progress: project.progress,
-    isHub: project.isHub,
+    isHub: project.isHub ?? false,
   };
 }
 

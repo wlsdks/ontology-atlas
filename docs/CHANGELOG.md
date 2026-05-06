@@ -6,6 +6,53 @@
 
 ---
 
+## 2026-05-06 — Round 15 follow-up #2: Project type honest (Concern 1 fix)
+
+post-publish architectural audit (Plan agent advisor) 의 *blocking* Concern 1 fix. **`Project` 18 fields silent fabrication** — vault frontmatter 4 fields ↔ web 18 fields *두 source-of-truth*. `deriveProjectsFromVault` 가 fabricated default (`category: 'uncategorized'` / `status: 'active'` / `isHub: false` / `position: { x:0, y:0 }`) 을 박아 web 이 *vault 가 가지지 않은 정보* 를 표시. README *"frontmatter is the graph"* 약속과 충돌.
+
+### 변경 — Project type 정직화
+
+`src/entities/project/model/types.ts`:
+
+| field | before | after |
+|---|---|---|
+| `category` | required | **optional** (vault frontmatter `category:` 명시 시만) |
+| `status` | required | **optional** |
+| `isHub` | required `boolean` | **optional** (vault `isHub: true` 명시 시만 true. false fabrication 차단) |
+| `position` | required `ProjectPosition` | **optional** (vault `position:`/`positionX/Y:` 명시 시만) |
+| `timeline` | required `ProjectTimeline` (often `{}`) | **optional** (`startedAt`/`launchedAt` 명시 시만) |
+
+각 field 에 JSDoc *"vault frontmatter X 에서 derive. 없으면 undefined."* 명시.
+
+### derive 함수 — silent fabrication 제거
+
+`deriveProjectsFromVault` (src/entities/docs-vault/lib/derive-projects-from-vault.ts):
+- `category: fm.category || 'uncategorized'` → frontmatter 명시 시만 string, 없으면 `undefined`
+- 동일 패턴 — `status` / `isHub` / `position` / `timeline` 모두 honest. *empty 가 아니면 undefined*.
+
+### Callsite 정리 (legacy fabrication 명시화)
+
+20+ files 의 callsite 가 fabricated default 가정 — type level 변경으로 ts errors 발생. 일관 전략:
+- *form-local default* (`ProjectInput` / form schema 등 사용자 vault frontmatter 작성 도구) — `?? 'uncategorized'` / `?? 'active'` / `?? { x:0, y:0 }` 적용. form 진입 시 default 채움 → frontmatter 에 기록 → 다음 derive 부터 honest.
+- *integrity check* — frontmatter 가 명시 안 한 건 issue 아님 (사용자 의도). 명시됐는데 taxonomy 에 없으면 issue.
+- *placement / topology* — undefined position 은 *원형 자동 배치* fallback (이전엔 fabricated `{0,0}` 으로 모든 노드 원점에 겹쳤음).
+- *ProjectCard / SearchPalette / graph-build* — `Boolean(project.isHub)` 으로 narrow.
+
+### TaxonomyProvider signature 변경
+
+`categoryLabel: (id: string) => string` → `(id: string | undefined) => string`. undefined 이면 `'—'` (em-dash) placeholder. fabricated `'uncategorized'` 라벨 보다 honest.
+
+### Test
+
+derive test — `isHub 없으면 false` → `isHub 없으면 undefined` (R15 honest 명시). 814/814 unit, 32/32 cli integration, vault 25 nodes clean, 17 lint warnings (17 floor 그대로), build OK.
+
+### Mission align
+
+이전 — vault 4 fields, web 18 fields → README *"frontmatter is the graph"* 약속 violation. AI agent 가 `add_concept(kind:'project')` 해도 web 에선 placeholder taxonomy 로 렌더.
+이후 — vault 가 가진 만큼만 web 에 표시. *honest second-source-of-truth 제거*. AI agent 가 만든 노드와 web 의 표시가 *정확히 일치*.
+
+---
+
 ## 2026-05-06 — Round 15 follow-up: CLI graph-level 5 명령 (Concern 4 fix)
 
 post-publish architectural audit (Plan agent advisor) 발견 *blocking* concern — **CLI 6 vs MCP 14 ergonomic asymmetry**. 개발자가 *위험한-그러나-필수* 작업 (rename / merge / delete / query / backlinks) 을 *AI agent 통해서만* 할 수 있어 mission *"developer + AI agent grow together"* inversion. 이 PR 이 fix.

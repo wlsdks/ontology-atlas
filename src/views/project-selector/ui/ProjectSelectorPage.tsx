@@ -66,7 +66,7 @@ export function ProjectSelectorPage() {
   const { categoryLabel: rawCategoryLabel, statusLabel, categories, statuses } = useTaxonomy();
   // 프로젝트 frontmatter 의 category 가 DEFAULT_CATEGORIES 에 없으면 raw
   // id 가 그대로 노출 ('uncategorized' 등). 비개발자 친화 fallback.
-  const categoryLabel = (id: string): string =>
+  const categoryLabel = (id: string | undefined): string =>
     id === "uncategorized" ? t("categoryUncategorized") : rawCategoryLabel(id);
   // 진실원 모드 (local/static) — local 모드는 vault 가 활성화돼 있어
   // mutation 가능. static (빌드타임 dogfood) 만 read-only.
@@ -121,7 +121,8 @@ export function ProjectSelectorPage() {
     for (const project of projects) {
       if (!matchesProject(project, query)) continue;
       if (!matchesStatus(project, selectedStatus)) continue;
-      counts.set(project.category, (counts.get(project.category) ?? 0) + 1);
+      const categoryKey = project.category ?? '_unset';
+      counts.set(categoryKey, (counts.get(categoryKey) ?? 0) + 1);
     }
     return counts;
   }, [projects, query, selectedStatus]);
@@ -130,7 +131,9 @@ export function ProjectSelectorPage() {
     for (const project of projects) {
       if (!matchesProject(project, query)) continue;
       if (!matchesCategory(project, selectedCategory)) continue;
-      counts.set(project.status, (counts.get(project.status) ?? 0) + 1);
+      // R15 — vault frontmatter status 명시 안 한 project 는 '_unset' bucket
+      const statusKey = project.status ?? '_unset';
+      counts.set(statusKey, (counts.get(statusKey) ?? 0) + 1);
     }
     return counts;
   }, [projects, query, selectedCategory]);

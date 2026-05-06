@@ -98,7 +98,9 @@ export function ProjectCard({
   hubEyebrow = 'Core hub',
   sharedEyebrow = 'Shared system',
 }: Props) {
-  const { name, description, isHub, owner, tags } = project;
+  const { name, description, owner, tags } = project;
+  // R15 — vault frontmatter isHub 명시 안 했으면 undefined → false 로 취급.
+  const isHub = Boolean(project.isHub);
   const borderStyle = category?.borderStyle ?? 'solid';
   const sideLabelText = category?.sideLabelText;
   const visibleTags = tags.slice(0, 3);

@@ -253,11 +253,12 @@ export function ProjectDetailPage({
     categoryLabel: rawCategoryLabel,
     statusLabel: rawStatusLabel,
   } = useTaxonomy();
-  // deriveProjectsFromVault 의 silent fallback ('uncategorized' / 'active')
-  // 은 DEFAULT_CATEGORIES/STATUSES 에 없어 raw id 가 그대로 노출 → 친화 라벨.
-  const categoryLabel = (id: string): string =>
+  // R15 (Concern 1) — derive 가 honest 가 되어 frontmatter 누락 시 undefined.
+  // 그 외 'uncategorized' / 'active' 는 form-local fallback (to-input.ts) 이라
+  // legacy id 그대로 유지 — 친화 라벨로 변환.
+  const categoryLabel = (id: string | undefined): string =>
     id === "uncategorized" ? t("categoryUncategorized") : rawCategoryLabel(id);
-  const statusLabel = (id: string): string =>
+  const statusLabel = (id: string | undefined): string =>
     id === "active" ? t("statusActive") : rawStatusLabel(id);
 
   // 상세에서 Cmd+K · ? 는 모두 현재 페이지 내 오버레이로 열린다 — 홈으로
@@ -474,7 +475,10 @@ export function ProjectDetailPage({
       wouldCreateDependencyCycle(dependencyUniverse, project.slug, candidate.slug),
     )
     .map((candidate) => candidate.slug);
-  const heroMeta = [project.isHub ? t("heroLabelHub") : t("heroLabelService"), statusLabel(project.status)]
+  const heroMeta = [
+    Boolean(project.isHub) ? t("heroLabelHub") : t("heroLabelService"),
+    statusLabel(project.status),
+  ]
     .filter(Boolean)
     .join(" · ");
   const storyMarkdownClassName =

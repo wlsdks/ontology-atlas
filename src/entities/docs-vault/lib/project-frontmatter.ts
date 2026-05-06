@@ -22,7 +22,9 @@ import type { Project, ProjectInput } from '@/entities/project';
 export interface ProjectFrontmatterShape {
   slug: string;
   name: string;
-  category: string;
+  // R15 (Concern 1) — Project type 이 vault-true honest 라 category 도 optional.
+  // ProjectInput 은 form-local required 라 둘 다 통과되도록 optional 로 둠.
+  category?: string;
   status?: string;
   description?: string;
   detail?: string;
@@ -56,7 +58,9 @@ export function projectToFrontmatter(
   const out: Record<string, string | number | boolean | string[]> = {};
   out.name = project.name;
   out.slug = project.slug;
-  out.category = project.category;
+  // R15 — category 가 optional 이라 명시 없으면 frontmatter 에서도 omit
+  // (vault frontmatter 가 진실원이라 *없는 정보 fabricate 하지 않음*).
+  if (project.category) out.category = project.category;
   if (project.status) out.status = project.status;
   if (project.description?.trim()) out.description = project.description;
   if (project.detail?.trim()) out.detail = project.detail;

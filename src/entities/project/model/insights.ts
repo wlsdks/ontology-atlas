@@ -63,7 +63,7 @@ const COMPLETENESS_FIELDS = [
     key: "timeline",
     label: "timeline",
     filled: (project: Project) =>
-      Boolean(project.timeline.startedAt || project.timeline.launchedAt),
+      Boolean(project.timeline?.startedAt || project.timeline?.launchedAt),
     prompt: "시작일이나 출시일을 입력해 시간축 맥락을 보강하세요.",
   },
   {
