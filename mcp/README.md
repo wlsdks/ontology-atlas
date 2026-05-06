@@ -115,9 +115,9 @@ A successful run looks like this:
 · step 1 — parser smoke test
 ✓ result: 7 passed, 0 failed
 · step 2 — server boot + tools/list + list_concepts
-✓ initialize OK — server oh-my-ontology-mcp@0.6.0
+✓ initialize OK — server oh-my-ontology-mcp@0.7.1
 ✓ tools/list 14/14 — add_concept · add_relation · delete_concept · find_backlinks · find_evidence · find_orphans · find_path · get_concept · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · rename_concept
-✓ list_concepts — vault total 21 nodes
+✓ list_concepts — vault total 25 nodes
 
 All checks passed — register .mcp.json with Claude Code, restart, and the 14 tools are ready.
 ```
