@@ -128,6 +128,7 @@ becoming graph nodes.
 | **AI agent partner via MCP** | `mcp/` package, 14 tools, `mcp/scripts/verify.mjs` smoke |
 | **No backend** (Firebase / DB / auth) | `pnpm bundle:check` — firebase SDK chunk 0 (deps removed in R10) |
 | **Dogfooding** | `docs/ontology/` is this project's own curated mental model — **25 nodes** (capabilities 12 · domains 6 · elements 4 · project 1 · vault-readme 1). The MCP server you'd run is the one we use to write *this README*. |
+| **Vault scale** | `node scripts/perf-vault.mjs` measures walk + read + parse on synthetic vaults. **2,000 .md files in 33 ms** (linear, ~17 µs/file). Sub-second up to 1,000 nodes — the ontology will not become the bottleneck. |
 | **AI agent quality measurement** *(cross-agent, n=2)* | [`docs/benchmark/`](docs/benchmark/) — 7 tasks × 3 categories × 2 agents (Claude Code + Codex). [Claude Code results](docs/benchmark/results/2026-05-04-claude-code.md): hallucinations 9 → 0, Cat A correctness +1.0. [Codex results](docs/benchmark/results/2026-05-04-codex.md): Cat A tool calls 7.0 → 1.67. Negative control (Cat C, file-read tasks) passes for both — agents correctly defer to Read/Grep, no over-reach. |
 
 ## Architecture

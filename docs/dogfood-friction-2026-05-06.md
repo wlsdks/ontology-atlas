@@ -133,3 +133,25 @@ npm error 404 Not Found - GET https://registry.npmjs.org/oh-my-ontology-mcp - No
 - `--auto-prefix` flag 같은 cli 디테일 이미 알고 있음 — 진짜 외부 사용자라면 더 막힐 가능성
 
 진짜 측정은 *publish 후 외부 1-2 명 user* 가 보고하는 게 정확. 이 sandbox 시뮬은 *fix 가치 있는 친구션 발견* 의 lower bound.
+
+---
+
+## Perf 측정 — vault scale (R11 #31 baseline 갱신, 2026-05-06)
+
+`scripts/perf-vault.mjs` (R11 #31) 으로 walk + read + parseFrontmatter latency 측정. 사용자 codebase 가 *큰 vault* (수백~수천 노드) 도달 시 acceptable 한지.
+
+| N (노드 수) | walk (ms) | read (ms) | parse (ms) | total (ms) | ms/file |
+|---|---|---|---|---|---|
+| 100 | 0.38 | 1.43 | 0.62 | **2.43** | 0.024 |
+| 500 | 0.83 | 7.29 | 1.40 | **9.53** | 0.019 |
+| 1,000 | 0.98 | 13.37 | 2.40 | **16.75** | 0.017 |
+| 2,000 | 2.35 | 28.00 | 2.93 | **33.27** | 0.017 |
+
+**결과**: linear scaling, **2000 노드까지 33 ms** 안에 모든 vault parse. ms/file 가 N 증가에 따라 *감소* (warm-up + JIT) — 큰 vault 에 *비례적으로 더 효율적*. perf 친구션 0.
+
+**의미**:
+- AI agent 의 `list_concepts` / `find_orphans` / `query_concepts` 같은 *full-scan* 도구가 큰 vault 에서도 sub-second
+- 사용자 codebase 가 *수천 .md* 도달해도 vault scaffold/탐색 부담 0
+- 현재 dogfood (25 노드) 는 *상한 0.5%*. 향후 커져도 안전
+
+**README "Verifiable promises" 추가 후보**: "Vault scale: 2,000 .md files walked + parsed in 33 ms (linear, ~17 µs/file)."
