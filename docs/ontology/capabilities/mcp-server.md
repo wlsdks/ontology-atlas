@@ -1,15 +1,15 @@
 ---
 slug: capabilities/mcp-server
 kind: capability
-title: MCP Server (17 tools)
+title: MCP Server (18 tools)
 domain: ai-agent-partner
 elements: [mcp/src/index.js, mcp/src/parser.mjs, mcp/src/vault.mjs, mcp/src/analyze.mjs, mcp/src/infer-imports.mjs]
 relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 ---
 
-# MCP Server (17 tools)
+# MCP Server (18 tools)
 
-`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 17 도구 노출 (read 11 + write 6):
+`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 18 도구 노출 (read 11 + write 7):
 
 | 도구 | 동작 |
 |---|---|
@@ -25,6 +25,7 @@ relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 | `analyze_repo_structure` | **R16** code repo (default cwd) 분석 → ontology 노드 후보 제안. **side effect 0** — vault 변경 안 함. AI agent 가 빈 vault bootstrap 시 사용 (사용자 한 줄 *"이 codebase 분석해줘"*). FSD vs generic detect. |
 | `infer_imports` | **R17** TS/JS import graph 추출 → file/module-level edge + external (npm) imports 분리. **side effect 0**. analyze_repo_structure 후 *real* dependency edge 를 add_relation 으로 land 하기 위한 입력. |
 | `add_concept` | 새 노드 (.md) 작성 — 기존 slug 면 throw |
+| `add_concepts` | **R+** 배치 writer — 여러 노드 한 호출에 (max 50, 입력 순서 보존, partial result, 입력 내 중복 slug 사전 감지). `/ontology-bootstrap` 흐름이 5~15 노드를 한 번에 land. |
 | `add_relation` | depends_on / relates / contains / describes edge 추가 |
 | `patch_concept` | 기존 노드 frontmatter (key 단위 patch) + body 갱신 |
 | `delete_concept` | **⚠ DESTRUCTIVE** — 노드 영구 삭제. 안전 가드 2단: ① `confirm:true` 미지정 시 dry-run, ② backlinks 있으면 throw — `force:true` 만 강행. 응답에 frontmatter+body 캡처. |

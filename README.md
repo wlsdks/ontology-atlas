@@ -3,7 +3,7 @@
 > **One codebase, one ontology, that the developer and their AI agent grow together.**
 >
 > Local-first markdown vault. Developer authors via CLI / web UI.
-> AI agent (Claude Code, Codex, Cursor) reads + writes the same `.md` files via MCP — 17 tools.
+> AI agent (Claude Code, Codex, Cursor) reads + writes the same `.md` files via MCP — 18 tools.
 > No backend. No login. The git repo is the source of truth.
 
 [![CI](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml/badge.svg)](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml)
@@ -44,7 +44,7 @@ Three claims:
 2. **Developer + AI agent share one source of truth** — both edit the same
    `.md` files. The developer authors via CLI / web UI; the AI agent reads
    + writes via MCP (Claude Code, Codex, Cursor). Same git repo, same diff.
-3. **MCP server gives the AI its only interface** — **17 tools** (11 read +
+3. **MCP server gives the AI its only interface** — **18 tools** (11 read +
    6 write) over JSON-RPC. The agent doesn't need to "ingest your codebase";
    it reads the ontology the developer already curates. R16 / R17 added
    `analyze_repo_structure` and `infer_imports` so the agent can also
@@ -74,7 +74,7 @@ The same frontmatter graph rendered three ways:
 - **Topology** (`/topology`) — Sigma WebGL spatial network of projects
 - **Tree** (`/`, `/ontology`) — hierarchical drill-down (project → domain → capability → element)
 - **ERD builder** (`/ontology/edit`) — xyflow canvas to add nodes and relations visually
-- **MCP** (separate package) — JSON-RPC over stdio, 17 tools
+- **MCP** (separate package) — JSON-RPC over stdio, 18 tools
 
 All four read and write the same `.md` files. Pick whichever view fits
 the moment.
@@ -128,7 +128,7 @@ becoming graph nodes.
 | Promise | Verification |
 |---|---|
 | **vault frontmatter = the graph** (no review queue, no LLM extraction) | `grep -r "extractionJob" src/ → 0` |
-| **AI agent partner via MCP** | `mcp/` package, 17 tools, `mcp/scripts/verify.mjs` smoke |
+| **AI agent partner via MCP** | `mcp/` package, 18 tools, `mcp/scripts/verify.mjs` smoke |
 | **No backend** (Firebase / DB / auth) | `pnpm bundle:check` — firebase SDK chunk 0 (deps removed in R10) |
 | **Dogfooding** | `docs/ontology/` is this project's own curated mental model — **26 nodes** (capabilities 14 · domains 6 · elements 4 · project 1 · vault-readme 1). The MCP server you'd run is the one we use to write *this README*. |
 | **Vault scale** | `node scripts/perf-vault.mjs` measures walk + read + parse on synthetic vaults. **2,000 .md files in 33 ms** (linear, ~17 µs/file). Sub-second up to 1,000 nodes — the ontology will not become the bottleneck. |
@@ -140,7 +140,7 @@ becoming graph nodes.
 - **i18n**: next-intl 4.11 with `/[locale]/` URL prefix (en / ko)
 - **Visualization**: Sigma.js (WebGL) + Graphology + ForceAtlas2 + xyflow + dagre
 - **Local-first**: File System Access API + IndexedDB
-- **AI agent surface**: `mcp/` MCP server, stdio JSON-RPC, 17 tools
+- **AI agent surface**: `mcp/` MCP server, stdio JSON-RPC, 18 tools
 - **Architecture**: Feature-Sliced Design (ESLint boundaries enforced)
 - **Tests**: Vitest unit + Playwright e2e
 
@@ -156,7 +156,7 @@ src/            Feature-Sliced Design layers
   ├── features/ user interactions
   ├── entities/ domain entities (project, ontology-class, knowledge-graph, …)
   └── shared/   ui primitives, lib, config
-mcp/            MCP server (`oh-my-ontology-mcp`, 17 tools) — AI agent surface
+mcp/            MCP server (`oh-my-ontology-mcp`, 18 tools) — AI agent surface
 cli/            `npx oh-my-ontology` (vault scaffold + 6 commands) — developer terminal surface
 docs/           Long-form docs + dogfood vault (docs/ontology/) + benchmark results
 docs/archive/   Historical analysis docs
@@ -202,7 +202,7 @@ cd my-vault
 ### 핵심 약속
 
 1. **vault frontmatter = 그래프** — 검수 큐 / 추출 워커 없음. frontmatter 자기-승인.
-2. **AI agent partner** — MCP 서버 (read 11 + write 6, R16 `analyze_repo_structure` · R17 `infer_imports` 포함) 로 같은 vault read/write + 빈 vault bootstrap.
+2. **AI agent partner** — MCP 서버 (read 11 + write 7, R16 `analyze_repo_structure` · R17 `infer_imports` 포함) 로 같은 vault read/write + 빈 vault bootstrap.
 3. **Local-first single-source** — 사용자 디스크 vault 가 진실원. Firebase / 백엔드 / 인증 의존 0 (R10 — 2026-05).
 4. **Dogfooding** — `docs/ontology/` 가 프로젝트 자기 자신의 mental model.
 

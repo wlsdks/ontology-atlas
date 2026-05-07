@@ -19,6 +19,7 @@
  *
  * write 6:
  *   - add_concept       — 새 노드 (.md 파일 작성, 기존 slug 면 throw)
+ *   - add_concepts      — 배치 write (concepts[] → results[], partial 허용)
  *   - add_relation      — 두 노드 사이 edge (frontmatter 배열 키 append)
  *   - patch_concept     — 기존 노드 frontmatter (key 단위, null = 삭제) + body
  *   - delete_concept    — 노드 영구 삭제 (dry-run + backlinks 가드 + force)
@@ -98,10 +99,10 @@ try {
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
 const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
-## Tool inventory (17 tools = read 11 + write 6)
+## Tool inventory (18 tools = read 11 + write 7)
 
 **read** — \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`analyze_repo_structure\` · \`infer_imports\`.
-**write** — \`add_concept\` · \`add_relation\` · \`patch_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\`.
+**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`patch_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\`.
 
 ## Kind hierarchy (top → leaf)
 
@@ -286,6 +287,44 @@ const TOOLS = [
         },
       },
       required: ['slug', 'kind', 'title'],
+    },
+  },
+  {
+    name: 'add_concepts',
+    description:
+      'Batch-create multiple nodes in one call — same per-row shape as `add_concept`. ' +
+      'Use after `analyze_repo_structure` / `infer_imports` (or any bootstrap flow) ' +
+      'when the agent has K accepted candidates from the user — replaces K×`add_concept` ' +
+      'round-trips. Each row is processed independently: existing-slug / invalid-kind / ' +
+      'missing-required-fields surface as `{ slug, ok: false, error }` rows; the rest ' +
+      'still land. `concepts[]` order in the response matches the input. Cap = 50 per ' +
+      'call (split into multiple batches for larger sets). NO atomic rollback — if you ' +
+      'need all-or-nothing semantics use single `add_concept` calls.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        concepts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              slug: { type: 'string' },
+              kind: {
+                type: 'string',
+                enum: ['project', 'domain', 'capability', 'element', 'document'],
+              },
+              title: { type: 'string' },
+              domain: { type: 'string' },
+              capabilities: { type: 'array', items: { type: 'string' } },
+              elements: { type: 'array', items: { type: 'string' } },
+              body: { type: 'string' },
+            },
+            required: ['slug', 'kind', 'title'],
+          },
+          description: 'Array of concept specs (max 50). Each row uses the same shape as `add_concept` input.',
+        },
+      },
+      required: ['concepts'],
     },
   },
   {
@@ -667,6 +706,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(findEvidence(args));
       case 'add_concept':
         return ok(addConcept(args));
+      case 'add_concepts':
+        return ok(addConceptsBatch(args));
       case 'add_relation':
         return ok(addRelation(args));
       case 'patch_concept':
@@ -909,6 +950,44 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, body })
     filePath,
     ...(missing.length > 0 ? { warnings: missing.map((k) => `expected field "${k}" missing for kind "${kind}"`) } : {}),
   };
+}
+
+// R+ — add_concept 의 batch 변종. /ontology-bootstrap 흐름이 5~15 노드를
+// 단번에 land 할 때 K round-trip → 1. 입력 순서 보존. 각 row 는 독립적으로
+// 처리되어 한 row 의 실패 (existing slug / invalid kind / missing required)
+// 가 나머지를 abort 하지 않음 — 그 row 만 ok:false 로 surface. atomic
+// rollback 없음 (필요하면 single add_concept 직렬 호출).
+function addConceptsBatch({ concepts }) {
+  if (!Array.isArray(concepts)) {
+    throw new Error('concepts must be an array of concept specs');
+  }
+  if (concepts.length === 0) {
+    return { concepts: [] };
+  }
+  if (concepts.length > 50) {
+    throw new Error(
+      `Too many concepts: ${concepts.length}. Max 50 per call — split into multiple add_concepts batches.`
+    );
+  }
+  // 입력 내 중복 slug 사전 감지 — 두번째 row 가 "이미 존재" 로 fail 하는
+  // 혼동을 줄임. 같은 slug 의 첫 row 만 land 시도, 후속 동일 slug 는 input
+  // 단계에서 ok:false.
+  const seenInBatch = new Set();
+  const results = concepts.map((spec) => {
+    const slug = spec && typeof spec.slug === 'string' ? spec.slug : '';
+    if (slug && seenInBatch.has(slug)) {
+      return { slug, ok: false, error: 'duplicate slug in input batch' };
+    }
+    if (slug) seenInBatch.add(slug);
+    try {
+      const result = addConcept(spec || {});
+      return result;
+    } catch (err) {
+      const msg = err && err.message ? err.message : String(err);
+      return { slug: slug || String(slug), ok: false, error: msg };
+    }
+  });
+  return { concepts: results };
 }
 
 const RELATION_KEY = {

@@ -552,6 +552,77 @@ await test("get_concepts — 빈 slugs[] → 빈 concepts[], 51개 → error", a
   }
 });
 
+// R+ — add_concepts 배치 writer. /ontology-bootstrap 흐름이 여러 노드를 한
+// 호출에 land. 입력 순서 보존, partial result (한 row 의 실패가 batch 를
+// abort 하지 않음).
+await test("add_concepts — 배치 write, 순서 보존 + partial result", async () => {
+  const root = makeVault([
+    { slug: "exist", content: "---\nkind: capability\ntitle: Exist\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", {
+        concepts: [
+          { slug: "alpha", kind: "capability", title: "Alpha", domain: "auth" },
+          // existing slug → ok:false
+          { slug: "exist", kind: "capability", title: "Existing" },
+          { slug: "beta", kind: "element", title: "Beta", domain: "auth" },
+          // missing required → ok:false
+          { slug: "gamma", kind: "capability" },
+        ],
+      }),
+      // batch 후 list 로 land 된 row 검증
+      callTool(3, "list_concepts"),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.concepts.length, 4, "concepts row 수 = 입력 길이");
+    // 순서 보존: alpha → exist (fail) → beta → gamma (fail)
+    assert.equal(result.concepts[0].slug, "alpha");
+    assert.equal(result.concepts[0].ok, true);
+    assert.equal(result.concepts[1].slug, "exist");
+    assert.equal(result.concepts[1].ok, false);
+    assert.match(result.concepts[1].error, /already exists|exist/i);
+    assert.equal(result.concepts[2].slug, "beta");
+    assert.equal(result.concepts[2].ok, true);
+    assert.equal(result.concepts[3].slug, "gamma");
+    assert.equal(result.concepts[3].ok, false);
+    assert.match(result.concepts[3].error, /required|title/i);
+    // list 응답에 alpha + beta 가 추가됨, gamma 는 안 됨.
+    const list = getCallParsed(responses, 3);
+    const slugs = list.nodes.map((n) => n.slug).sort();
+    assert.ok(slugs.includes("alpha"), "alpha land");
+    assert.ok(slugs.includes("beta"), "beta land");
+    assert.ok(slugs.includes("exist"), "exist 그대로");
+    assert.ok(!slugs.includes("gamma"), "gamma fail → land 안 됨");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// R+ — add_concepts 입력 내 중복 slug 사전 감지. 두번째 동일 slug row 는
+// "이미 존재" 가 아닌 "duplicate slug in input batch" 로 더 명확한 에러.
+await test("add_concepts — 입력 내 중복 slug 두번째는 ok:false", async () => {
+  const root = makeVault([]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", {
+        concepts: [
+          { slug: "dup", kind: "capability", title: "First", domain: "x" },
+          { slug: "dup", kind: "capability", title: "Second", domain: "y" },
+        ],
+      }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.concepts[0].ok, true, "첫 row land");
+    assert.equal(result.concepts[1].ok, false, "두번째 동일 slug 는 fail");
+    assert.match(result.concepts[1].error, /duplicate slug in input batch/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("patch_concept — expected_mtime stale 면 conflict error response", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: capability\ntitle: Foo\n---\n" },
