@@ -15,7 +15,7 @@ and AI agents (Claude Code, Cursor, etc.) can read and write together.
 
 | Command | What it does |
 |---|---|
-| `oh-my-ontology init [folder]` | Scaffold a new vault (project / domain / capability / element starter .md). **R15**: also drops a wired `.mcp.json` in *both* cwd (codebase root, `OMOT_VAULT='./<vault>'`) and the vault folder (`OMOT_VAULT='.'`) — open either in an AI agent and the 14 MCP tools auto-register. Existing `.mcp.json` is preserved (`.mcp.json.example` falls back instead). |
+| `oh-my-ontology init [folder]` | Scaffold a new vault (project / domain / capability / element starter .md). **R15**: also drops a wired `.mcp.json` in *both* cwd (codebase root, `OMOT_VAULT='./<vault>'`) and the vault folder (`OMOT_VAULT='.'`) — open either in an AI agent and the 16 MCP tools auto-register. Existing `.mcp.json` is preserved (`.mcp.json.example` falls back instead). |
 | `oh-my-ontology list [vault]` | List ontology nodes (color table; `--kind X` filter, `--json`) |
 | `oh-my-ontology validate [vault]` | Frontmatter integrity (6 issue codes incl. R14 `missing-expected-field`; `exit 1` on errors — usable as a CI gate). Same code 가 2+ file 에서 등장하면 끝에 *grouped by code* 요약 섹션이 자동으로 붙어 *어느 종류 경고가 얼마나 많은지* 한눈에 파악. |
 | `oh-my-ontology add <kind> <slug> --title="..."` | Scaffold a new node (`--domain X --body "..." --vault path`); throws on duplicate slug. **R15**: `--auto-prefix` is now **default on** (kind→folder, e.g. `add capability foo` → `capabilities/foo.md`) for consistency with the `init` starter layout. Use `--raw-slug` (or `--no-auto-prefix`) to opt out. |
@@ -42,7 +42,7 @@ The vault is a plain folder of `.md` files. **Frontmatter is the graph.**
 
 `init` (R15) automatically writes a wired `.mcp.json` to both your codebase
 root and the vault folder. Open either in an AI agent (Claude Code, Codex,
-Cursor) and the agent gets **14 tools** (8 read + 6 write) to read and
+Cursor) and the agent gets **16 tools** (10 read + 6 write) to read and
 write the vault — same data the developer sees.
 
 ```jsonc
@@ -58,10 +58,10 @@ write the vault — same data the developer sees.
 }
 ```
 
-14 tools (R11 v0.7.0):
+16 tools (R17):
 `list_concepts` / `get_concept` / `find_evidence` /
 `find_backlinks` / `find_path` / `list_kinds` / `find_orphans` /
-`query_concepts` (read 8) +
+`query_concepts` / `analyze_repo_structure` / `infer_imports` (read 10) +
 `add_concept` / `add_relation` / `patch_concept` / `delete_concept` /
 `rename_concept` / `merge_concepts` (write 6).
 

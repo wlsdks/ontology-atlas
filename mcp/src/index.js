@@ -1,18 +1,20 @@
 #!/usr/bin/env node
 /**
-* oh-my-ontology-mcp — MCP 서버 v0.7.1 (도구 14종 = read 8 + write 6).
+ * oh-my-ontology-mcp — MCP 서버 (도구 16종 = read 10 + write 6).
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
  *
- * read 8:
- *   - list_concepts     — vault 의 노드 목록 (kind / project_filter)
- *   - get_concept       — 단일 노드 + 이웃 (dependencies / relates)
- *   - find_evidence     — title / capabilities / elements / body 부분매칭
- *   - find_backlinks    — 특정 slug 를 가리키는 다른 노드들
- *   - find_path         — 두 slug 사이 그래프 최단 경로 (BFS, 무방향)
- *   - list_kinds        — vault kind 분포 census
- *   - find_orphans      — 어느 다른 노드도 frontmatter 에서 가리키지 않는 doc
- *   - query_concepts    — typed filter DSL (kind=X AND has(Y) AND NOT ...)
+ * read 10:
+ *   - list_concepts          — vault 의 노드 목록 (kind / project_filter)
+ *   - get_concept            — 단일 노드 + 이웃 (dependencies / relates) + mtime
+ *   - find_evidence          — title / capabilities / elements / body 부분매칭
+ *   - find_backlinks         — 특정 slug 를 가리키는 다른 노드들
+ *   - find_path              — 두 slug 사이 BFS 최단 경로 + edges[via] (R+)
+ *   - list_kinds             — vault kind 분포 census
+ *   - find_orphans           — 어느 다른 노드도 frontmatter 에서 가리키지 않는 doc
+ *   - query_concepts         — typed filter DSL (kind=X AND has(Y) AND NOT ...)
+ *   - analyze_repo_structure — R16, code repo 분석 → ontology 후보 (side effect 0)
+ *   - infer_imports          — R17, TS/JS import graph → depends_on 후보 (side effect 0)
  *
  * write 6:
  *   - add_concept       — 새 노드 (.md 파일 작성, 기존 slug 면 throw)
@@ -87,42 +89,66 @@ try {
 }
 
 // MCP `instructions` field — initialize 응답에 포함되어 연결된 AI agent
-// (Claude Code, Cursor, …) 가 항상 보는 시스템-prompt 수준 안내. 14 tool
+// (Claude Code, Cursor, …) 가 항상 보는 시스템-prompt 수준 안내. 16 tool
 // description 만으로는 (1) 호출 순서, (2) kind 계층의 의미, (3) write 도구의
-// dry-run/confirm 패턴, (4) mtime 충돌 가드 — 이 4 가지가 누락되어 있어
-// agent UX 가 매번 시행착오로 학습되는 문제를 단번에 해소.
+// dry-run/confirm 패턴, (4) mtime 충돌 가드, (5) R16/R17 bootstrap workflow,
+// (6) error message 가 다음 tool 을 직접 가리킨다는 사실 — agent UX 가
+// 매번 시행착오로 학습되는 문제를 단번에 해소.
 const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
+
+## Tool inventory (16 tools = read 10 + write 6)
+
+**read** — \`list_concepts\` · \`get_concept\` · \`find_evidence\` · \`find_backlinks\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`analyze_repo_structure\` · \`infer_imports\`.
+**write** — \`add_concept\` · \`add_relation\` · \`patch_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\`.
 
 ## Kind hierarchy (top → leaf)
 
-- **project** — top-level deliverable (e.g. "auth-platform"). Owns capabilities and elements.
+- **project** — top-level deliverable (e.g. "auth-platform"). Owns domains / capabilities / elements.
 - **domain** — functional grouping (e.g. "auth", "billing"). Parent of capabilities.
 - **capability** — a coherent unit of behavior (e.g. "token-issue"). Often realized by elements.
 - **element** — concrete piece (library, API, schema, file). Leaf-level.
 - **document** — narrative or reference doc tied to the graph but not a domain object.
 - (\`vault-readme\` is reserved for the auto-generated README.md — agents should not set this kind.)
 
-## First-time workflow (when you connect to a new vault)
+## Two starting workflows
+
+### A. Vault already has nodes (typical) — orient first
 
 1. \`list_kinds\` — see the kind census (how many projects/domains/capabilities/…).
-2. \`list_concepts\` — see all nodes. Watch \`vaultWarnings\` — if non-zero, the vault has frontmatter integrity issues; surface them to the user before making decisions on stale data.
-3. \`get_concept(slug)\` — for any node of interest. Returns frontmatter + body + neighbors (dependencies/relates) + \`mtime\`.
-4. \`find_backlinks(slug)\` — to understand how a node is referenced.
-5. \`find_path(from, to)\` — for "how does A relate to B" questions (BFS, undirected).
-6. \`find_orphans\` — to spot nodes that no other node points to (often unfinished or deletion candidates).
-7. \`query_concepts(filter)\` — for structured questions like \`kind=capability AND domain=auth AND NOT has(elements)\` (= "unfinished caps under auth").
+2. \`list_concepts\` — full node table. Watch \`vaultWarnings\` — if non-zero, surface it to the user before making decisions on stale data.
+3. \`get_concept(slug)\` — frontmatter + body excerpt + neighbors (dependencies / relates) + \`mtime\`. **Capture the \`mtime\`** if you plan to write later.
+4. \`find_backlinks(slug)\` — understand how a node is referenced (run *before* rename / merge).
+5. \`find_path(from, to)\` — "how does A relate to B?" (BFS, undirected). Returns \`hops: [slug...]\` **and \`edges: [{from, to, via}]\` where \`via\` is the frontmatter key (\`capabilities\` / \`elements\` / \`dependencies\` / \`relates\` / \`contains\` / \`describes\`) that linked the pair** — so you see not just *that* A and B are connected but *why*.
+6. \`find_orphans\` — spot nodes that no other node points to (cleanup or deletion candidates).
+7. \`query_concepts(filter)\` — structured questions like \`kind=capability AND domain=auth AND NOT has(elements)\` (= "unfinished caps under auth").
+
+### B. Vault is empty / cold-start — bootstrap from code (R16 / R17)
+
+When the user says "이 codebase 분석해줘" or you find only the 5 starter nodes:
+
+1. \`analyze_repo_structure\` — walk \`package.json\` / \`README.md\` H2 / \`src/\` (FSD vs generic detect). Returns deterministic candidates (project + domains[] + capabilities[] + elements[] + suggestedRelations[]). **side effect 0 — vault NOT modified.** You review & prune the list with the user.
+2. \`infer_imports\` — walk TS/JS source, collapse to module-level edges with import counts. **side effect 0.** You review \`moduleEdges\` with the user, then convert accepted ones into \`add_relation(..., type: 'depends_on')\` calls.
+3. Land accepted candidates with \`add_concept\` / \`add_relation\`. The user (via your subsequent calls) is the single source of truth — never auto-write the proposals.
 
 ## Write tools — safety patterns
 
-- **\`add_concept\`** throws on duplicate slug — use \`patch_concept\` to update an existing node, never delete-then-add.
-- **\`rename_concept\` / \`merge_concepts\`** are dry-run by default. The first call returns an \`updates\` preview (every affected file's before/after). To commit, repeat the call with \`confirm: true\`.
-- **\`delete_concept\`** refuses by default if any backlinks remain. Pass \`force: true\` only after confirming with the user.
+- **\`add_concept\`** throws on duplicate slug — use \`patch_concept\` to update an existing node, never delete-then-add (that loses backlinks).
+- **\`rename_concept\` / \`merge_concepts\`** are dry-run by default. The first call returns an \`updates\` preview (every affected file's before/after). To commit, repeat the call with \`confirm: true\`. Backlinks are redirected atomically — much safer than \`patch_concept\` + N find_backlinks loops.
+- **\`delete_concept\`** refuses by default if any backlinks remain. The error response captures the deleted frontmatter + body so a mistake is recoverable. Pass \`force: true\` only after confirming with the user.
 - **\`expected_mtime\` (all write tools)** — to guard against concurrent edits by the human or another agent: capture \`mtime\` from \`get_concept\`, pass it as \`expected_mtime\` on the next write. If the file changed in between, the call throws \`VaultConflictError\` instead of silently overwriting.
-- **Prefer graph-level writes** — to rename a slug or fold two nodes, use \`rename_concept\` / \`merge_concepts\` (atomic backlink redirect) rather than \`patch_concept\` + N find_backlinks loops.
+
+## When a tool throws — read the error suffix
+
+Every error message ends with the canonical fix tool. Examples:
+- \`Doc already exists at "X". To update fields, use **patch_concept**(...).\`
+- \`Doc not found: "Y". Use **list_concepts**() to see all slugs, or **find_evidence**(query) to search by title. Similar slugs in this vault: ...\`
+- \`Source slug does not exist in vault: "Z". Did you mean: ...?\`
+
+Don't retry blindly — parse the suffix and pivot to the suggested tool.
 
 ## What to write back
 
-When you discover a new capability/element/project from code, call \`add_concept\` so the human sees it appear in their workbench. When you fix or rename code, mirror the change in the graph with \`rename_concept\`. The vault is the shared mental model — keeping it in sync is the entire point.`;
+When code introduces a new capability / element / domain, mirror it in the vault with \`add_concept\` (and \`add_relation\` to wire it). When code is renamed / refactored, use \`rename_concept\` (one atomic call) instead of patch + manual backlink updates. The vault is the *shared* mental model — keeping it in sync is the point.`;
 
 const server = new Server(
   { name: 'oh-my-ontology-mcp', version: '0.7.1' },

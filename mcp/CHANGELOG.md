@@ -10,6 +10,12 @@
   - `add_relation` 의 source/target 누락 시 비슷한 slug 후보 또는 `add_concept` 안내. AI agent 가 typo / hallucinated slug 를 받았을 때 즉시 자가 수정 가능.
 - 새 export `suggestSimilarSlugs(rootPath, badSlug, limit=3)` — Levenshtein 없이 tail 정확/substring 양방향/prefix 3-tier 매칭. 큰 vault 에서도 가벼움.
 - 7 신규 unit test (suggest 5 + actionable error 2).
+- **`SERVER_INSTRUCTIONS` (initialize 응답) 갱신.** AI agent 가 첫 message 에 보는 system-prompt 수준 안내. stale 항목 (14 tool 표기, R16/R17 누락, find_path edges[via] 미언급) 보정. 추가 섹션:
+  - **Tool inventory** — 16 tools = read 10 (analyze_repo_structure / infer_imports 포함) + write 6.
+  - **Two starting workflows** — A) 기존 vault 오리엔트, B) 빈 vault 부트스트랩 (R16 analyze → R17 infer → review → add_*).
+  - **find_path edges[via] 명시** — agent 가 *왜* 두 노드가 연결됐는지 한 호출에 안다.
+  - **"When a tool throws — read the error suffix"** — actionable 에러 메시지가 다음 tool 을 직접 가리킨다는 사실을 안내.
+- 헤더 코멘트 (도구 14종 → 16종) 동기화.
 
 ## 0.9.0 — 2026-05-06 (R17 — import graph → depends_on edges)
 
