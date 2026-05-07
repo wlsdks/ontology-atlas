@@ -1,6 +1,6 @@
 "use client";
 
-import { createElement, useMemo, useState } from "react";
+import { createElement, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Search, X } from "lucide-react";
 import { getOntologyKindIcon, useOntologyKindLabel } from "@/entities/ontology-class";
@@ -281,23 +281,35 @@ export function OntologyTreeView({
     setCollapsed(defaultExpanded ? new Set(collapsibleIds) : new Set());
   };
 
-  // R+ — 트리 키보드 nav. Tab 으로 트리 진입 후 ↑/↓ 로 visible row 사이 이동
-  // (focus only). ←/→ 로 collapse/expand. Enter 는 button 자체가 처리.
-  // 기존 Tab 흐름은 그대로 — power user 용 추가 layer.
+  // R+ — 트리 키보드 nav. Tab 으로 트리 진입 후 다음 키로 power-user 이동:
   //
-  //   ↓/↑    → 다음/이전 visible row 의 select button 으로 focus 이동.
-  //   →     → focused row 가 children 있고 접혀 있으면 펼침.
-  //   ←     → focused row 가 children 있고 펼쳐져 있으면 접음.
-  //   (parent focus / Home / End 는 미래 확장 — 현재 minimal 셋만.)
+  //   ↓/↑       → 다음/이전 visible row.
+  //   →         → focused row children 있고 접혀 있으면 펼침.
+  //   ←         → focused row children 있고 펼쳐져 있으면 접음.
+  //   Home/End  → 첫/마지막 visible row.
+  //   a-z, 한글 → type-to-search. 600ms 안에 누적된 chars 로 첫 일치 row
+  //              focus (현재 focus 다음부터 wrap-around). 같은 char 반복 시
+  //              일치하는 row 들 사이 advance.
+  //
+  // 기존 Tab 흐름은 그대로 — additive layer.
+  // type-to-search 누적 buffer + 타이머. ref 라 re-render 비유발.
+  const searchBufferRef = useRef<{
+    value: string;
+    timer: ReturnType<typeof setTimeout> | null;
+  }>({ value: "", timer: null });
   const handleTreeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement;
     if (!target?.matches?.('[data-tree-select-button="true"]')) return;
-    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-      const buttons = Array.from(
+
+    const collectButtons = () =>
+      Array.from(
         event.currentTarget.querySelectorAll<HTMLButtonElement>(
           '[data-tree-select-button="true"]',
         ),
       );
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      const buttons = collectButtons();
       const idx = buttons.indexOf(target as HTMLButtonElement);
       if (idx < 0) return;
       event.preventDefault();
@@ -317,6 +329,58 @@ export function OntologyTreeView({
       if (wantExpand === expanded) return;
       event.preventDefault();
       toggle(slug);
+      return;
+    }
+    if (event.key === "Home" || event.key === "End") {
+      // 모디파이어 (Cmd+Home = scroll top 등) 와 충돌 회피.
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const buttons = collectButtons();
+      if (buttons.length === 0) return;
+      event.preventDefault();
+      const target2 =
+        event.key === "Home" ? buttons[0] : buttons[buttons.length - 1];
+      target2?.focus();
+      return;
+    }
+    // type-to-search — 단일 printable char (모디파이어 없음). 공백 / 구두점은
+    // 제외해 button activation (Space) 와 충돌 회피. 한글·숫자·라틴 모두 OK.
+    if (
+      event.key.length === 1
+      && !event.metaKey
+      && !event.ctrlKey
+      && !event.altKey
+      && /[\p{L}\p{N}]/u.test(event.key)
+    ) {
+      const buf = searchBufferRef.current;
+      if (buf.timer) clearTimeout(buf.timer);
+      buf.value += event.key.toLowerCase();
+      buf.timer = setTimeout(() => {
+        buf.value = "";
+        buf.timer = null;
+      }, 600);
+      const buttons = collectButtons();
+      if (buttons.length === 0) return;
+      const fromIdx = buttons.indexOf(target as HTMLButtonElement);
+      // 검색 순서: 현재 focus 다음부터 끝까지 → 처음부터 현재 focus 까지
+      // (현재 row 자체도 포함 — 같은 prefix 재입력 시 거기 머무를 수 있도록).
+      const ordered =
+        fromIdx >= 0
+          ? buttons.slice(fromIdx + 1).concat(buttons.slice(0, fromIdx + 1))
+          : buttons;
+      const matches = (b: HTMLButtonElement) =>
+        (b.title || "").toLowerCase().startsWith(buf.value);
+      let hit = ordered.find(matches);
+      // 누적 buffer 로 일치 없을 때 — 사용자가 같은 char 반복으로 advance
+      // 하려는 경우 (e.g. "ㄱ ㄱ ㄱ" 로 ㄱ 시작 row 들 사이 순회). buffer 를
+      // 마지막 char 만 남기고 재시도.
+      if (!hit && buf.value.length > 1) {
+        buf.value = event.key.toLowerCase();
+        hit = ordered.find(matches);
+      }
+      if (hit) {
+        event.preventDefault();
+        hit.focus();
+      }
     }
   };
 
