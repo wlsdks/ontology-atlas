@@ -1023,5 +1023,141 @@ await test('analyze --apply --json — applied / summary 필드 노출', async (
   }
 });
 
+// ── infer-imports --apply (R+ — agent-less depends_on landing) ──────────
+//
+// analyze --apply 의 짝. moduleEdges 를 depends_on 관계로 batch land.
+
+function makeImportRepo() {
+  // 두 capability (a, b) 가 a → b 로 import. moduleEdges 가 1 개 나옴.
+  const repo = mkdtempSync(join(tmpdir(), 'cli-imp-'));
+  mkdirSync(join(repo, 'src', 'a'), { recursive: true });
+  mkdirSync(join(repo, 'src', 'b'), { recursive: true });
+  writeFileSync(
+    join(repo, 'src', 'a', 'index.ts'),
+    "import { x } from '../b';\nexport const z = x;\n",
+    'utf-8',
+  );
+  writeFileSync(
+    join(repo, 'src', 'b', 'index.ts'),
+    'export const x = 1;\n',
+    'utf-8',
+  );
+  return repo;
+}
+
+await test('infer-imports --apply — depends_on 관계 land (endpoints 존재 시)', async () => {
+  const vault = withVault([
+    {
+      slug: 'a',
+      content: '---\nkind: capability\ntitle: A\ndomain: x\n---\n',
+    },
+    {
+      slug: 'b',
+      content: '---\nkind: capability\ntitle: B\ndomain: x\n---\n',
+    },
+  ]);
+  const repo = makeImportRepo();
+  try {
+    const r = await run([
+      'infer-imports',
+      repo,
+      '--vault',
+      vault,
+      '--apply',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /infer-imports --apply/);
+    assert.match(clean, /landed|already existed/);
+    // a.md 의 frontmatter 에 dependencies (inline 또는 list) 에 b 포함.
+    const aDoc = readFileSync(join(vault, 'a.md'), 'utf-8');
+    assert.match(aDoc, /dependencies:.*\bb\b/s);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('infer-imports (default) — vault 변경 0', async () => {
+  const vault = withVault([
+    {
+      slug: 'a',
+      content: '---\nkind: capability\ntitle: A\ndomain: x\n---\n',
+    },
+  ]);
+  const repo = makeImportRepo();
+  try {
+    const before = readFileSync(join(vault, 'a.md'), 'utf-8');
+    const r = await run(['infer-imports', repo, '--vault', vault]);
+    assert.equal(r.code, 0);
+    const after = readFileSync(join(vault, 'a.md'), 'utf-8');
+    assert.equal(after, before, 'a.md 내용 그대로 (default 모드)');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('infer-imports --apply — endpoint 없으면 row-level error, batch 살아남음', async () => {
+  // vault 에 a 만 있고 b 가 없음 — a → b edge 는 fail 행, batch 자체는 OK.
+  const vault = withVault([
+    {
+      slug: 'a',
+      content: '---\nkind: capability\ntitle: A\ndomain: x\n---\n',
+    },
+  ]);
+  const repo = makeImportRepo();
+  try {
+    const r = await run([
+      'infer-imports',
+      repo,
+      '--vault',
+      vault,
+      '--apply',
+    ]);
+    // 적어도 한 row 가 fail → exit 1.
+    assert.equal(r.code, 1, `expected exit 1; stdout: ${r.stdout}`);
+    const clean = stripAnsi(r.stdout);
+    // 에러 행 노출.
+    assert.match(clean, /✗|does not exist|errors/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('infer-imports --apply --json — applied / summary 필드 노출', async () => {
+  const vault = withVault([
+    {
+      slug: 'a',
+      content: '---\nkind: capability\ntitle: A\ndomain: x\n---\n',
+    },
+    {
+      slug: 'b',
+      content: '---\nkind: capability\ntitle: B\ndomain: x\n---\n',
+    },
+  ]);
+  const repo = makeImportRepo();
+  try {
+    const r = await run([
+      'infer-imports',
+      repo,
+      '--vault',
+      vault,
+      '--apply',
+      '--json',
+    ]);
+    assert.equal(r.code, 0);
+    const data = JSON.parse(r.stdout);
+    assert.ok(data.applied, 'applied 필드');
+    assert.ok(Array.isArray(data.applied.relations), 'applied.relations 배열');
+    assert.ok(data.summary, 'summary 필드');
+    assert.equal(typeof data.summary.errors, 'number');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 console.log(`\ncli integration: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

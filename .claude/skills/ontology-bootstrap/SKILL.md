@@ -109,7 +109,11 @@ Show the kind census diff in the reply (e.g. *"Vault grew 5 → 18 nodes (+3 dom
 - **`missing-expected-field` warning on a per-row `warnings: [...]`** — a capability or element was added without `domain:`. Tolerable for bootstrap (vault still validates), but surface the warnings to the user so they can backfill.
 - **`add_relations` row returns `ok: false` with "does not exist"** — an endpoint was rejected in the `add_concepts` step. Confirm and either drop the relation or add the missing concept first.
 - **`add_relations` row returns `alreadyExists: true`** — that edge was already present (idempotent). Not an error; surface as informational only.
-- **MCP unavailable in this session** — fall back to the CLI: `oh-my-ontology analyze . --apply` lands every candidate via the same `add_concepts` + `add_relations` batch (R+). Or `oh-my-ontology analyze .` first to preview, then re-run with `--apply`. For per-row picking, drop `--apply` and call `oh-my-ontology add <kind> <slug> --title=...` for accepted ones (K round-trips, but only when curating).
+- **MCP unavailable in this session** — fall back to the CLI:
+  - `oh-my-ontology analyze . --apply` lands every node candidate via the same `add_concepts` + `add_relations` batch (R+).
+  - `oh-my-ontology infer-imports . --apply` then lands `depends_on` edges from the TS/JS import graph (50-row chunks).
+  - Together these two commands give agent-less full bootstrap (nodes + import edges) without K-round-trip CLI loops.
+  - For per-row picking, drop `--apply` and call `oh-my-ontology add <kind> <slug> --title=...` for accepted ones (K round-trips, but only when curating).
 - **Repo too deep / monorepo** — pass `rootPath` for the relevant subdirectory, or run `analyze` per package and merge results.
 
 ## Reply discipline
