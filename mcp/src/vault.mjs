@@ -82,6 +82,67 @@ const NEIGHBOR_KEYS = Object.freeze([
 ]);
 
 /**
+ * body 에서 *prose 한 단락* 만 뽑아 excerpt 로. AI agent 가 get_concept 응답
+ * 에서 받는 body 미리보기를 markdown 표 / 코드블록 syntax 가 아니라 *사람이
+ * 의도해서 쓴 첫 설명문* 으로 받게 한다.
+ *
+ * 알고리즘 (단순 line-based):
+ *   1. 빈 줄 / heading / 코드블록 / 표 / 리스트 / 인용은 skip.
+ *   2. 첫 nonempty line 이 prose 면 (= 위 block 아님) 그 paragraph 끝
+ *      (다음 빈 줄 또는 block 시작) 까지 모음.
+ *   3. 어떤 prose 도 못 찾으면 fallback — body.slice(0, maxLen).
+ *   4. cap maxLen (기본 800자) — 넘치면 trim + '…'.
+ *
+ * NEIGHBOR_KEYS 같은 graph schema 와 무관 — 단순 문자열 추출 helper.
+ * 단위 테스트 가능 (export).
+ */
+export function extractSummaryExcerpt(body, maxLen = 800) {
+  if (typeof body !== 'string' || body.length === 0) return '';
+  const lines = body.split('\n');
+  const isBlockStart = (line) => {
+    const trimmed = line.trim();
+    if (trimmed === '') return false;
+    if (trimmed.startsWith('```')) return true; // 코드블록
+    if (trimmed.startsWith('|')) return true; // 표
+    if (trimmed.startsWith('#')) return true; // heading
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) return true; // 리스트
+    if (trimmed.startsWith('> ')) return true; // 인용
+    return false;
+  };
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (trimmed === '' || isBlockStart(line)) {
+      // 코드블록 안쪽도 통째로 skip — 다음 ``` 찾기
+      if (trimmed.startsWith('```')) {
+        i += 1;
+        while (i < lines.length && !lines[i].trim().startsWith('```')) i += 1;
+      }
+      i += 1;
+      continue;
+    }
+    // prose 단락 시작 — 다음 빈 줄 또는 block 시작 까지 모음
+    const para = [];
+    while (i < lines.length) {
+      const cur = lines[i];
+      if (cur.trim() === '' || isBlockStart(cur)) break;
+      para.push(cur.trim());
+      i += 1;
+    }
+    if (para.length > 0) {
+      const text = para.join(' ');
+      return text.length > maxLen ? text.slice(0, maxLen).trimEnd() + '…' : text;
+    }
+  }
+  // prose 한 줄도 못 찾음 — 원본 fallback
+  const trimmedBody = body.trim();
+  return trimmedBody.length > maxLen
+    ? trimmedBody.slice(0, maxLen).trimEnd() + '…'
+    : trimmedBody;
+}
+
+/**
  * vault root 안의 모든 `.md` 파일 walk. dotfile / node_modules 등 제외.
  * 반환: 각 파일의 절대 경로.
  */

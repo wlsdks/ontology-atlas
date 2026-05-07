@@ -2,24 +2,9 @@
 
 ## Unreleased
 
-### Added
-
-- **`list_concepts` 에 `domain` 필터.** 기존엔 `kind` 만 지원해 "auth 도메인 모든 capability" 같은 흔한 query 를 위해 `query_concepts("kind=capability AND domain=auth")` DSL 로 fallback 해야 했다. `domain` 옵션 추가로 한 호출 — `list_concepts({ kind: "capability", domain: "auth" })`. capability/element kind 만 의미 있지만 모든 kind 에 일관 적용 (매칭 없으면 자연스럽게 빈 결과). schema description + tool description 갱신, 신규 integration test 1건 (3 assertion: domain only / domain + kind / 매칭 없음 빈 결과). `mcp/src/integration.test.mjs` 의 `makeVault` helper 도 subdir slug 자동 mkdir 보강.
-
 ### Changed
 
-- **에러 메시지를 actionable 하게.** AI agent 가 다음 액션을 한 호출에 결정 가능:
-  - `add_concept` 가 dup slug 만나면 `patch_concept` (업데이트) / `rename_concept` (이동) 사용 권장 + "delete-then-add 금지 — backlinks 유실" 명시.
-  - 모든 not-found 에러 (deleteDoc / patchFrontmatter / updateDoc) 가 `list_concepts` / `find_evidence` 안내 + 같은 vault 안의 *비슷한 slug 후보* (substring / prefix 매치) 동봉.
-  - `add_relation` 의 source/target 누락 시 비슷한 slug 후보 또는 `add_concept` 안내. AI agent 가 typo / hallucinated slug 를 받았을 때 즉시 자가 수정 가능.
-- 새 export `suggestSimilarSlugs(rootPath, badSlug, limit=3)` — Levenshtein 없이 tail 정확/substring 양방향/prefix 3-tier 매칭. 큰 vault 에서도 가벼움.
-- 7 신규 unit test (suggest 5 + actionable error 2).
-- **`SERVER_INSTRUCTIONS` (initialize 응답) 갱신.** AI agent 가 첫 message 에 보는 system-prompt 수준 안내. stale 항목 (14 tool 표기, R16/R17 누락, find_path edges[via] 미언급) 보정. 추가 섹션:
-  - **Tool inventory** — 16 tools = read 10 (analyze_repo_structure / infer_imports 포함) + write 6.
-  - **Two starting workflows** — A) 기존 vault 오리엔트, B) 빈 vault 부트스트랩 (R16 analyze → R17 infer → review → add_*).
-  - **find_path edges[via] 명시** — agent 가 *왜* 두 노드가 연결됐는지 한 호출에 안다.
-  - **"When a tool throws — read the error suffix"** — actionable 에러 메시지가 다음 tool 을 직접 가리킨다는 사실을 안내.
-- 헤더 코멘트 (도구 14종 → 16종) 동기화.
+- **`get_concept` excerpt 가 prose-aware.** 기존 `body.slice(0, 800)` 은 dogfood `capabilities/mcp-server.md` 같이 H1+표 위주 문서에선 800자 모두 markdown table syntax 만 채워져 agent token budget 낭비. 새 `extractSummaryExcerpt` helper 가 heading / 표 / 코드블록 / 리스트 / 인용을 skip 후 첫 prose 단락만 추출. 측정: dogfood `capabilities/mcp-server.md` excerpt **800 chars (table syntax) → 78 chars (clear prose summary)** — agent 가 받는 의미 밀도 ~10x ↑. block-only body 는 fallback 으로 원본 trim. 9 신규 unit test (prose / H1 skip / 표 skip / 코드블록 skip / multi-line / 빈 body / block-only / maxLen cap / 리스트).
 
 ## 0.9.0 — 2026-05-06 (R17 — import graph → depends_on edges)
 
