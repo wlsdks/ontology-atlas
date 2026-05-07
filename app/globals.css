@@ -359,3 +359,33 @@ html[data-theme="light"] a[class*="transition-colors"]:hover:not([class*="hover:
 html[data-theme="light"] button[class*="transition-colors"]:hover:not([class*="hover:bg-"]):not([class*="bg-[color"]):not(:disabled) {
   background-color: rgba(0, 0, 0, 0.04);
 }
+
+/*
+ * 라이트 모드 — 트리의 element kind 행 dim 보정 (cycle 47).
+ *
+ * OntologyTreeView 의 element 행은 다크 모드 70% element 점유를 시각적
+ * 평탄화하려고 \`opacity-60\` 적용. 다크 캔버스에선 회색-on-검정 으로 자연
+ * 스럽지만 라이트 캔버스에서는 회색-on-흰 → \"읽기 전 거의 사라짐\" 단계
+ * 까지 fade. 라이트 한정 80% 로 끌어올려 readable 유지하되 여전히 다른
+ * kind (project/domain/capability) 보다 한 단계 dim 인 시그널 보존.
+ */
+html[data-theme="light"] [data-tree-row][data-dim="true"],
+html[data-theme="light"] [data-testid="ontology-tree-row"][data-dim="true"] {
+  opacity: 0.82;
+}
+
+/*
+ * 라이트 모드 — uppercase 모노 라벨 (kind chips, section headers,
+ * outline labels) 가독성 보정 (cycle 47).
+ *
+ * 라이트 모드의 \`--color-text-quaternary\` 는 #6f7480. 흰 캔버스 위에서
+ * 0.10em letter-spacing + 9-11px font-size 의 uppercase 모노 텍스트가
+ * 시각적으로 \"공기처럼\" 사라짐 (anti-aliasing 위약 효과). font-weight
+ * 를 한 단계 올려 (var --font-weight-signature ≈ 540) 가독성 회복.
+ *
+ * 다크 모드는 어두운 캔버스 위에서 같은 색이 충분히 떠오르므로 영향
+ * 없음. 라이트 전용 셀렉터.
+ */
+html[data-theme="light"] .font-mono[class*="uppercase"][class*="tracking"] {
+  font-weight: 520;
+}

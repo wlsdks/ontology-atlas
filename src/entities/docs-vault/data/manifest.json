@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-06T07:40:22.486Z",
+  "generatedAt": "2026-05-07T08:38:50.697Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -1675,7 +1675,7 @@
       ],
       "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260506): R12/R13/R14 wave 묶음 정리 후 전면 재정렬. 4 surface 완성, dogfood 25 노드, AI agent ↔ vault 자동 sync 도달. | PR | 항목 | 결과 | |||| | 155 | vault polling 5s | ✅ visibleonly setInterval, fingerprint diff | | 156 | graph diff pulse | ✅ 새 노드 amber s",
       "wordCount": 1361,
-      "updatedAt": "2026-05-06T02:02:33.369Z",
+      "updatedAt": "2026-05-07T08:01:36.195Z",
       "linksOut": []
     },
     {
@@ -2289,6 +2289,121 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-07 — Round 18: AI agent UX 강화 루프 — read shape · batch tools · ARIA tree · CLI --apply",
+          "slug": "2026-05-07-round-18-ai-agent-ux-강화-루프-read-shape-batch-tools-aria-tree-cli---apply"
+        },
+        {
+          "depth": 3,
+          "text": "MCP — read tool 응답 shape 완전 일관 (#176 #180 #183 #186 #189 #191 #194 #195 #196)",
+          "slug": "mcp-read-tool-응답-shape-완전-일관-176-180-183-186-189-191-194-195-196"
+        },
+        {
+          "depth": 3,
+          "text": "MCP — 배치 도구 3개 신규 (R+, 16→19 tools, #197 #198 #199)",
+          "slug": "mcp-배치-도구-3개-신규-r-1619-tools-197-198-199"
+        },
+        {
+          "depth": 3,
+          "text": "Tree — full ARIA tree 키보드 패턴 (#188 #190 #201 #202)",
+          "slug": "tree-full-aria-tree-키보드-패턴-188-190-201-202"
+        },
+        {
+          "depth": 3,
+          "text": "CLI — agent-less full bootstrap (#203 #204)",
+          "slug": "cli-agent-less-full-bootstrap-203-204"
+        },
+        {
+          "depth": 3,
+          "text": "CLI — graph-level 명령 보강 (#182 #192 #193)",
+          "slug": "cli-graph-level-명령-보강-182-192-193"
+        },
+        {
+          "depth": 3,
+          "text": "/topology 사용성 (#173 #174 #185)",
+          "slug": "topology-사용성-173-174-185"
+        },
+        {
+          "depth": 3,
+          "text": "Skill / Docs / Dogfood (#178 #179 #181 #200 #205)",
+          "slug": "skill-docs-dogfood-178-179-181-200-205"
+        },
+        {
+          "depth": 3,
+          "text": "측정",
+          "slug": "측정"
+        },
+        {
+          "depth": 2,
+          "text": "2026-05-06 — Round 17: `infer_imports` — TS/JS import graph → depends_on edges",
+          "slug": "2026-05-06-round-17-infer_imports-tsjs-import-graph-depends_on-edges"
+        },
+        {
+          "depth": 3,
+          "text": "MCP `infer_imports` (16번째 tool)",
+          "slug": "mcp-infer_imports-16번째-tool"
+        },
+        {
+          "depth": 3,
+          "text": "Validated — Paravel real-codebase",
+          "slug": "validated-paravel-real-codebase"
+        },
+        {
+          "depth": 3,
+          "text": "CLI `infer-imports` 명령 (13번째)",
+          "slug": "cli-infer-imports-명령-13번째"
+        },
+        {
+          "depth": 3,
+          "text": "단일 source of truth 보존",
+          "slug": "단일-source-of-truth-보존"
+        },
+        {
+          "depth": 3,
+          "text": "Tests",
+          "slug": "tests"
+        },
+        {
+          "depth": 3,
+          "text": "Mission align",
+          "slug": "mission-align"
+        },
+        {
+          "depth": 2,
+          "text": "2026-05-06 — Round 16: 자율 ingest base — `analyze_repo_structure` 첫 도구",
+          "slug": "2026-05-06-round-16-자율-ingest-base-analyze_repo_structure-첫-도구"
+        },
+        {
+          "depth": 3,
+          "text": "MCP `analyze_repo_structure` (15번째 tool, mcp v0.7.1 → v0.8.0)",
+          "slug": "mcp-analyze_repo_structure-15번째-tool-mcp-v071-v080"
+        },
+        {
+          "depth": 3,
+          "text": "CLI `analyze` 명령 (cli v0.3.0 → v0.4.0, 11 → 12 명령)",
+          "slug": "cli-analyze-명령-cli-v030-v040-11-12-명령"
+        },
+        {
+          "depth": 3,
+          "text": "Tests + dogfood",
+          "slug": "tests-dogfood"
+        },
+        {
+          "depth": 3,
+          "text": "Mission align",
+          "slug": "mission-align-2"
+        },
+        {
+          "depth": 3,
+          "text": "R16 follow-up — `/ontology-bootstrap` skill",
+          "slug": "r16-follow-up-ontology-bootstrap-skill"
+        },
+        {
+          "depth": 3,
+          "text": "다음 step (R18 후보)",
+          "slug": "다음-step-r18-후보"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-06 — Round 15 follow-up #2: Project type honest (Concern 1 fix)",
           "slug": "2026-05-06-round-15-follow-up-2-project-type-honest-concern-1-fix"
         },
@@ -2320,7 +2435,7 @@
         {
           "depth": 3,
           "text": "Mission align",
-          "slug": "mission-align"
+          "slug": "mission-align-3"
         },
         {
           "depth": 2,
@@ -2340,12 +2455,12 @@
         {
           "depth": 3,
           "text": "Mission align",
-          "slug": "mission-align-2"
+          "slug": "mission-align-4"
         },
         {
           "depth": 3,
           "text": "Tests",
-          "slug": "tests"
+          "slug": "tests-2"
         },
         {
           "depth": 3,
@@ -3123,9 +3238,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. postpublish architectural audit (Plan agent advisor) 의 blocking Concern 1 fix. Project 18 ",
-      "wordCount": 12425,
-      "updatedAt": "2026-05-06T06:48:12.698Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 자율 개선 루프 ~30 PR. mcp 16→19 tools (read 10→11, write 6→8), cli 13→15 commands, /ontologyboo",
+      "wordCount": 13963,
+      "updatedAt": "2026-05-07T07:09:56.710Z",
       "linksOut": [
         "slug"
       ]
@@ -3986,8 +4101,8 @@
         },
         {
           "depth": 2,
-          "text": "3. MCP server (14 tools)",
-          "slug": "3-mcp-server-14-tools"
+          "text": "3. MCP server (20 tools)",
+          "slug": "3-mcp-server-20-tools"
         },
         {
           "depth": 4,
@@ -4056,8 +4171,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260506 (postRound15 — VSCode plugin 제거, 3 surface 회복 + R14 자동화/live updates 추가 반영). Routes section UI 디테일은 R10 시점 snapshot — surface 자체와 mode branching 은 R15 까지 정확. routes UI microdetail 은 R10 후 변화 작아 별도 sweep 보다 대부분 정확 가정. Update trigger:",
-      "wordCount": 4485,
-      "updatedAt": "2026-05-06T02:02:33.370Z",
+      "wordCount": 4498,
+      "updatedAt": "2026-05-07T08:29:28.849Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4349,12 +4464,12 @@
     {
       "slug": "ontology/capabilities/cli-developer-entry",
       "path": "docs/ontology/capabilities/cli-developer-entry.md",
-      "title": "CLI Developer Entry (init / list / validate / add / find / import + graph-level)",
+      "title": "CLI Developer Entry (16 commands incl. bootstrap)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
-        "title": "CLI Developer Entry (init / list / validate / add / find / import + graph-level)",
+        "title": "CLI Developer Entry (16 commands incl. bootstrap)",
         "domain": "onboarding-ux",
         "elements": [
           "cli/src/index.mjs",
@@ -4363,11 +4478,16 @@
           "cli/src/commands/add.mjs",
           "cli/src/commands/find.mjs",
           "cli/src/commands/import.mjs",
+          "cli/src/commands/analyze.mjs",
+          "cli/src/commands/infer-imports.mjs",
+          "cli/src/commands/bootstrap.mjs",
           "cli/src/commands/backlinks.mjs",
           "cli/src/commands/query.mjs",
           "cli/src/commands/rename.mjs",
           "cli/src/commands/merge.mjs",
           "cli/src/commands/delete.mjs",
+          "cli/src/commands/path.mjs",
+          "cli/src/commands/orphans.mjs",
           "cli/src/lib/mcp-call.mjs"
         ],
         "relates": [
@@ -4389,8 +4509,13 @@
         },
         {
           "depth": 2,
-          "text": "Graph-level commands (R15 follow-up — Concern 4 fix)",
-          "slug": "graph-level-commands-r15-follow-up-concern-4-fix"
+          "text": "Repo analysis commands (R16-R17 + R+ — codebase → ontology)",
+          "slug": "repo-analysis-commands-r16-r17-r-codebase-ontology"
+        },
+        {
+          "depth": 2,
+          "text": "Graph-level commands (R15 follow-up — Concern 4 fix + R+ extras)",
+          "slug": "graph-level-commands-r15-follow-up-concern-4-fix-r-extras"
         },
         {
           "depth": 2,
@@ -4403,9 +4528,9 @@
           "slug": "회귀-차단"
         }
       ],
-      "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import (6 명령), R15 followup 에서 graphlevel 5 명령 추가 — 총 11 명령. 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP 등록 불필요. | Command | What it does | ||| | ohmyontology init [folder] | Scaffold vault (5 starter .md + .mcp.json cwd + vault) | | ohmyontology list [vault] | L",
-      "wordCount": 374,
-      "updatedAt": "2026-05-06T06:32:01.996Z",
+      "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / orphans + 두 apply 플래그 + bootstrap 합본 명령 추가 — 총 16 명령. 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP 등록 불필요. | Command | What it does | ||| | ohmyontology init [folder] | S",
+      "wordCount": 583,
+      "updatedAt": "2026-05-07T07:25:33.027Z",
       "linksOut": []
     },
     {
@@ -4488,17 +4613,19 @@
     {
       "slug": "ontology/capabilities/mcp-server",
       "path": "docs/ontology/capabilities/mcp-server.md",
-      "title": "MCP Server (14 tools)",
+      "title": "MCP Server (20 tools)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/mcp-server",
         "kind": "capability",
-        "title": "MCP Server (14 tools)",
+        "title": "MCP Server (20 tools)",
         "domain": "ai-agent-partner",
         "elements": [
           "mcp/src/index.js",
           "mcp/src/parser.mjs",
-          "mcp/src/vault.mjs"
+          "mcp/src/vault.mjs",
+          "mcp/src/analyze.mjs",
+          "mcp/src/infer-imports.mjs"
         ],
         "relates": [
           "capabilities/frontmatter-to-ontology",
@@ -4508,13 +4635,13 @@
       "headings": [
         {
           "depth": 1,
-          "text": "MCP Server (14 tools)",
-          "slug": "mcp-server-14-tools"
+          "text": "MCP Server (20 tools)",
+          "slug": "mcp-server-20-tools"
         }
       ],
-      "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 14 도구 노출 (read 8 + write 6): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (kind 필터) | | getconcept | 단일 slug 의 frontmatter + body excerpt + 이웃 | | findevidence | title 부분매칭으로 vault 문서 검색 | | findbacklinks | 특정 slug 를 가리키는 다른 노드들 (frontmatter array 키 + body wikilink/mdlin",
-      "wordCount": 283,
-      "updatedAt": "2026-05-04T02:11:27.044Z",
+      "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 20 도구 노출 (read 12 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (kind 필터) | | getconcept | 단일 slug 의 frontmatter + body excerpt + 이웃 | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서 보존, missing 은 partial result) | | findevidence | title 부분매칭으로 vau",
+      "wordCount": 458,
+      "updatedAt": "2026-05-07T08:29:28.849Z",
       "linksOut": []
     },
     {
@@ -4548,6 +4675,47 @@
       "excerpt": "R10 (auth + cloud surface 영구 제거) 이후 2 mode: local — useLocalVault().status === 'loaded' (사용자 디스크 vault) static — vault 미선택. 빌드타임 dogfood 매니페스트 (docs/ontology/) 가 fallback. useDataSourceMode() 가 두 mode 를 분기. 같은 hook 호출이 mode 별로 다른 source 를 본다 — 호출자 코드는 단일. 적용 surface: useProjects — local: vault manifest 의 kind: project ",
       "wordCount": 107,
       "updatedAt": "2026-05-04T01:27:35.686Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/ontology-bootstrap-skill",
+      "path": "docs/ontology/capabilities/ontology-bootstrap-skill.md",
+      "title": "Ontology-Bootstrap Skill (.claude/skills/ontology-bootstrap)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/ontology-bootstrap-skill",
+        "kind": "capability",
+        "title": "Ontology-Bootstrap Skill (.claude/skills/ontology-bootstrap)",
+        "domain": "ai-agent-partner",
+        "elements": [
+          ".claude/skills/ontology-bootstrap/SKILL.md"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "흐름 (R+, 3 round-trips)",
+          "slug": "흐름-r-3-round-trips"
+        },
+        {
+          "depth": 2,
+          "text": "단일 source of truth",
+          "slug": "단일-source-of-truth"
+        },
+        {
+          "depth": 2,
+          "text": "Mission align",
+          "slug": "mission-align"
+        },
+        {
+          "depth": 2,
+          "text": "참조",
+          "slug": "참조"
+        }
+      ],
+      "excerpt": "R16 followup — /ontologybootstrap slash skill 의 coldstart counterpart. /ontologysync 가 이미 자란 vault 의 incremental sync 라면, 이 skill 은 fresh init 직후 빈 vault 를 codebase 에서 한 번에 채우는 흐름. 1. listkinds — vault 가 진짜 coldstart 인지 (≤ 5 nodes) 확인 2. analyzerepostructure 1 회 호출 (mcp 도구, R16 v0.8.0) — package.json / README.md H2 / s",
+      "wordCount": 241,
+      "updatedAt": "2026-05-07T06:25:25.011Z",
       "linksOut": []
     },
     {
@@ -4849,7 +5017,8 @@
           "mcp-server",
           "mcp-conflict-guard",
           "ontology-sync-skill",
-          "session-start-ontology-context"
+          "session-start-ontology-context",
+          "ontology-bootstrap-skill"
         ],
         "elements": [
           "mcp-sdk",
@@ -4872,7 +5041,7 @@
       ],
       "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 14 도구 (read 8 + write 6) 를 stdin/stdout JSONRPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출.",
       "wordCount": 49,
-      "updatedAt": "2026-05-05T15:29:33.665Z",
+      "updatedAt": "2026-05-06T08:16:21.710Z",
       "linksOut": []
     },
     {
@@ -5241,9 +5410,9 @@
           "slug": "갱신"
         }
       ],
-      "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 파일을 직접 열거나, pnpm dev 후 /docs/ 에서 vault picker 로 이 디렉토리 선택. MCP 서버 등록 — mcp/README.md 의 .mcp.json 예시 참고. 14 도구 (read 8 + write 6): listconcepts · getconcept · findevidence · findbacklinks · findpath · listki",
-      "wordCount": 188,
-      "updatedAt": "2026-05-04T02:11:33.286Z",
+      "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 총 26 노드. 정확한 census 는 ohmyontology list 또는 mcp listkinds 호출. 파일을 직접 열거나, pnpm dev 후 /docs/ 에서 vault picker 로 이 디렉토리 선택. MCP 서버 등록 — mcp/README.md 의 .mcp.json 예시 참고. 19 도구 (read 11 + write 8): read — listcon",
+      "wordCount": 262,
+      "updatedAt": "2026-05-07T08:01:36.196Z",
       "linksOut": []
     },
     {
@@ -5415,8 +5584,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 1788,
-      "updatedAt": "2026-05-06T02:02:33.370Z",
+      "wordCount": 1794,
+      "updatedAt": "2026-05-07T08:01:36.196Z",
       "linksOut": []
     },
     {
@@ -6084,7 +6253,7 @@
                 "path": "ontology/capabilities/cli-developer-entry",
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
-                "title": "CLI Developer Entry (init / list / validate / add / find / import + graph-level)"
+                "title": "CLI Developer Entry (16 commands incl. bootstrap)"
               },
               {
                 "name": "frontmatter-to-ontology",
@@ -6105,7 +6274,7 @@
                 "path": "ontology/capabilities/mcp-server",
                 "type": "doc",
                 "slug": "ontology/capabilities/mcp-server",
-                "title": "MCP Server (14 tools)"
+                "title": "MCP Server (20 tools)"
               },
               {
                 "name": "mode-aware-adapter",
@@ -6113,6 +6282,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/mode-aware-adapter",
                 "title": "Mode-Aware Data Source Adapter"
+              },
+              {
+                "name": "ontology-bootstrap-skill",
+                "path": "ontology/capabilities/ontology-bootstrap-skill",
+                "type": "doc",
+                "slug": "ontology/capabilities/ontology-bootstrap-skill",
+                "title": "Ontology-Bootstrap Skill (.claude/skills/ontology-bootstrap)"
               },
               {
                 "name": "ontology-hub-mode-aware",

@@ -17,7 +17,7 @@ import {
   type OntologyCountsForProject,
 } from '@/shared/lib/ontology-tree';
 import { ontologyBorderTone } from './ontology-tone';
-import { resolveTopologyPalette } from './topology-palette';
+import { resolveTopologyPalette, applyLeafFillSaturate } from './topology-palette';
 
 export interface SigmaNodeAttrs {
   x: number;
@@ -232,14 +232,18 @@ export function buildGraph(
     graph.addNode(project.slug, {
       x: Math.cos(theta) * r,
       y: Math.sin(theta) * r,
-      // 크기 위계: Hub 10 → Node 5.5. 2nd pass 에서 degree 스케일 미세 조정.
-      size: project.isHub ? 10 : 5.5,
+      // 크기 위계: Hub 13 → Node 5.5 (cycle 47 — Obsidian/Logseq 스타일,
+      // hub vs leaf 명확한 시각 차이로 \"별 + 위성\" 메타포 강화). 2nd pass
+      // 에서 degree 스케일 미세 조정.
+      size: project.isHub ? 13 : 5.5,
       label: shortenName(project.name),
       // Hub 는 forceLabel — 토폴로지 상시 노출 anchor. Node 는 threshold 로
       // 점진 노출.
       forceLabel: project.isHub,
       recentlyUpdated: recent,
-      color: project.isHub ? HUB_COLOR : toneForSlug(project.slug),
+      color: project.isHub
+        ? HUB_COLOR
+        : applyLeafFillSaturate(toneForSlug(project.slug), palette.leafFillSaturate),
       borderColor: project.isHub
         ? palette.hubBorder
         : ontologyTone?.borderColor ?? palette.nodeBorder,
@@ -305,7 +309,7 @@ export function buildGraph(
         forceLabel: false,
         recentlyUpdated: false,
         // 흐린 무채색 fill — 헌장의 "허브만 유일한 채색" 과 충돌 안 함.
-        color: 'rgba(160, 168, 184, 0.55)',
+        color: palette.ontologyFill,
         borderColor: tone?.borderColor ?? palette.nodeBorder,
         outerBorderColor: NODE_OUTER_HALO,
         // SigmaTopology 의 click handler 가 projectSlug 를 키로 drawer 를

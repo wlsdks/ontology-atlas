@@ -13,9 +13,9 @@
  */
 
 export interface TopologyPalette {
-  /** 비-허브 노드 테두리. 다크: 회청 30%, 라이트: 진회 28% */
+  /** 비-허브 노드 테두리. 다크: 회청 30%, 라이트: 진회 50% (cycle 47) */
   nodeBorder: string;
-  /** 허브 노드 테두리. 다크: 인디고 55%, 라이트: 인디고 70% */
+  /** 허브 노드 테두리. 다크: 인디고 55%, 라이트: 인디고 92% */
   hubBorder: string;
   /** 허브 노드 외곽 halo. 선택 / hover 시 reducer 가 강화. */
   hubOuterHalo: string;
@@ -29,6 +29,15 @@ export interface TopologyPalette {
   edgeDim: string;
   /** 카드/툴팁 배경 톤 (텍스트 라벨이 sigma label 영역과 어울리게). */
   labelText: string;
+  /**
+   * R+ (cycle 47) — DOMAIN_TONE 의 fill 알파 multiplier 와 base shift.
+   * 다크에선 1 (변경 없음). 라이트에선 흰 캔버스 위에서 pale 한 watercolor
+   * 톤이 \"먼지\" 처럼 보이는 문제 해결 — base lightness 를 감산해 graphite
+   * 톤으로 시프트. resolveLeafFill() 가 DOMAIN_TONE rgba 를 받아 변환.
+   */
+  leafFillSaturate: number;
+  /** R+ ontology 노드 (capability/element) 의 default fill. */
+  ontologyFill: string;
 }
 
 const DARK: TopologyPalette = {
@@ -40,22 +49,59 @@ const DARK: TopologyPalette = {
   edgeDependsOn: 'rgba(139, 151, 255, 0.16)',
   edgeDim: 'rgba(255, 255, 255, 0.005)',
   labelText: 'rgba(235, 240, 250, 0.95)',
+  leafFillSaturate: 1,
+  ontologyFill: 'rgba(160, 168, 184, 0.55)',
 };
 
 const LIGHT: TopologyPalette = {
-  // off-white(#f7f8fa) 배경 위에서 의미 있게 보이게 한참 진한 톤 + 충분한 알파.
-  nodeBorder: 'rgba(60, 72, 96, 0.6)',
-  hubBorder: 'rgba(70, 86, 200, 0.85)',
-  hubOuterHalo: 'rgba(70, 86, 200, 0.18)',
-  // 다크는 0.08 인데 그건 검은 배경에서 작동. 라이트 흰 배경엔 0.55+ 필요.
-  edge: 'rgba(60, 72, 96, 0.55)',
-  edgeContains: 'rgba(60, 72, 96, 0.6)',
-  edgeDependsOn: 'rgba(70, 86, 200, 0.7)',
-  // dim 은 "거의 안 보임" 의미를 유지하되 흰 배경에서 노이즈 없게 어두운 톤 +
-  // 낮은 알파.
+  // R+ (cycle 47): 사용자 피드백 \"화이트모드 토폴로지가 징그럽고 벌레같다\".
+  // 원인 분석 — 이전 nodeBorder 0.78 알파가 leaf 노드의 옅은 fill 을 압도해
+  // 모든 leaf 가 \"링/구멍\" 으로 읽혀 spider-web 효과. Obsidian/Logseq
+  // 패턴: solid filled circle 우세 + 매우 가는 hairline border + edge 알파
+  // 낮춤 으로 깔끔한 \"성좌\" 느낌. 흰 캔버스 한정으로 dramatic 하향:
+  //   nodeBorder 0.78 → 0.28 (border 는 hairline 만, fill 이 dominant)
+  //   edge 0.70 → 0.42 (dense graph 에서 spider-web 노이즈 제거)
+  //   edgeContains 0.72 → 0.32 (계층 edge 는 더 배경으로 — 시각 hierarchy)
+  //   hubOuterHalo 0.22 → 0.34 (hub 는 \"별\" 처럼 더 강한 글로우)
+  // 1st 시도: nodeBorder 0.28 → 노드 자체가 사라짐. 2nd 시도: 균형 — border
+  // 는 hairline-but-visible (0.5), fill 은 saturate (DOMAIN_TONE 자체는
+  // 그대로 두고 default leaf 만 진한 graphite 톤). 결과: 흰 배경 위에서
+  // \"solid filled circle with subtle outline\" — Obsidian/Logseq 톤.
+  nodeBorder: 'rgba(40, 50, 72, 0.5)',
+  hubBorder: 'rgba(60, 76, 200, 0.92)',
+  hubOuterHalo: 'rgba(70, 86, 200, 0.32)',
+  edge: 'rgba(40, 50, 72, 0.38)',
+  edgeContains: 'rgba(40, 50, 72, 0.28)',
+  edgeDependsOn: 'rgba(60, 76, 200, 0.58)',
+  // dim 은 \"거의 안 보임\" 의미 유지.
   edgeDim: 'rgba(20, 30, 50, 0.06)',
   labelText: 'rgba(20, 22, 26, 0.95)',
+  // saturate=1.7: DOMAIN_TONE 의 pale rgb (160-200) 를 60-90 graphite 까지
+  // 끌어내려 흰 배경에서 \"실재하는 dot\" 으로 읽힘. ontology 노드도 동일.
+  leafFillSaturate: 1.7,
+  ontologyFill: 'rgba(70, 84, 110, 0.85)',
 };
+
+/**
+ * DOMAIN_TONE 의 pale rgba 를 light 모드 graphite 으로 시프트.
+ * \`rgba(R, G, B, A)\` 입력. saturate factor 만큼 base lightness 를 감산.
+ */
+export function applyLeafFillSaturate(rgba: string, saturate: number): string {
+  if (saturate === 1) return rgba;
+  const m = rgba.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?\s*\)/);
+  if (!m) return rgba;
+  const r = Number(m[1]);
+  const g = Number(m[2]);
+  const b = Number(m[3]);
+  const a = m[4] !== undefined ? Number(m[4]) : 1;
+  // saturate > 1 이면 darker shift. 단순 multiplicative 로 luminance 감소.
+  // 채도 보존을 위해 rgb 를 같은 factor 로 나눔. clamp 0~255.
+  const f = saturate;
+  const dr = Math.max(0, Math.round(r / f));
+  const dg = Math.max(0, Math.round(g / f));
+  const db = Math.max(0, Math.round(b / f));
+  return `rgba(${dr}, ${dg}, ${db}, ${a})`;
+}
 
 export function resolveTopologyPalette(): TopologyPalette {
   if (typeof document === 'undefined') return DARK;
