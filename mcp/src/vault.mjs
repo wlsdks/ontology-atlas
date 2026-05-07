@@ -652,6 +652,11 @@ export function findBacklinks(rootPath, targetSlug) {
       slug: doc.slug,
       kind: doc.frontmatter.kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
+      // R+ — agent 가 backlinks 받자마자 "어느 도메인 / 언제 변경" 파악 가능.
+      // list_concepts 와 동일 shape 유지 — 같은 mental model 의 두 view 가
+      // 같은 필드 노출하면 agent 가 일관 처리.
+      domain: doc.frontmatter.domain,
+      mtime: doc.mtime,
       matchedKeys: matchedKeys.length > 0 ? matchedKeys : undefined,
       matchedInBody: bodyHit || undefined,
     });

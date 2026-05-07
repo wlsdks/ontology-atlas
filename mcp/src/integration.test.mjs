@@ -371,6 +371,38 @@ await test("list_concepts — 각 노드에 mtime 포함 (R+)", async () => {
   }
 });
 
+await test("find_backlinks — 매치 row 에 domain + mtime 포함 (R+)", async () => {
+  // agent 가 backlinks 받자마자 "어느 도메인 / 언제 변경" 파악. list_concepts
+  // 와 동일 shape — 같은 mental model 의 두 view 가 일관 필드 노출.
+  const root = makeVault([
+    {
+      slug: "capabilities/auth",
+      content: "---\nkind: capability\ntitle: Auth\ndomain: identity\n---\n",
+    },
+    {
+      slug: "capabilities/login",
+      content:
+        "---\nkind: capability\ntitle: Login\ndomain: identity\nrelates: [capabilities/auth]\n---\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "find_backlinks", { slug: "capabilities/auth" }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.total, 1);
+    const m = result.matches[0];
+    assert.equal(m.slug, "capabilities/login");
+    assert.equal(m.kind, "capability");
+    assert.equal(m.domain, "identity");
+    assert.equal(typeof m.mtime, "number");
+    assert.ok(m.mtime > 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("get_concept 응답에 mtime (R11 #8) 포함", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: capability\ntitle: Foo\n---\nbody" },
