@@ -201,7 +201,7 @@ cd my-vault
 ### 핵심 약속
 
 1. **vault frontmatter = 그래프** — 검수 큐 / 추출 워커 없음. frontmatter 자기-승인.
-2. **AI agent partner** — MCP 서버 (read 9 + write 6, R16 `analyze_repo_structure` 포함) 로 같은 vault read/write + 빈 vault bootstrap.
+2. **AI agent partner** — MCP 서버 (read 10 + write 6, R16 `analyze_repo_structure` · R17 `infer_imports` 포함) 로 같은 vault read/write + 빈 vault bootstrap.
 3. **Local-first single-source** — 사용자 디스크 vault 가 진실원. Firebase / 백엔드 / 인증 의존 0 (R10 — 2026-05).
 4. **Dogfooding** — `docs/ontology/` 가 프로젝트 자기 자신의 mental model.
 

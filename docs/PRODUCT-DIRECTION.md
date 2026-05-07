@@ -57,7 +57,7 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 | Audience | Role | Primary surface |
 |---|---|---|
 | **Developer** | Author + maintain the ontology as part of normal coding | CLI (`oh-my-ontology init/list/validate/add/find/import`), web UI (`/ontology`, `/docs`) |
-| **AI agent** (Claude Code, Cursor, …) | Read for context · write back new findings | MCP server (14 tools — read 8 + write 6) |
+| **AI agent** (Claude Code, Cursor, …) | Read for context · write back new findings | MCP server (16 tools — read 10 + write 6) |
 | ~~PM / designer / ops~~ | ~~Build mental model without reading source~~ | dropped (R11 fire #25 — developer-primary 결정 후) |
 
 The two primary audiences are **the developer and their own AI agent**. Both work on the same `.md` files in the same git repo. PM-friendly side effects are bonus, not requirements.
@@ -233,7 +233,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 ### ✅ Phase 3 — AI agent partner — merged
 
 1. ✅ `mcp/` package — MCP server v0.5.0 (`oh-my-ontology-mcp`)
-2. ✅ 14 tools (read 8 + write 6): `list_concepts` / `get_concept` / `find_evidence` / `find_backlinks` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `add_concept` / `add_relation` / `patch_concept` / `delete_concept` / `rename_concept` / `merge_concepts` (R11 — atomic graph-level write)
+2. ✅ 16 tools (read 10 + write 6): `list_concepts` / `get_concept` / `find_evidence` / `find_backlinks` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `analyze_repo_structure` (R16) / `infer_imports` (R17) / `add_concept` / `add_relation` / `patch_concept` / `delete_concept` / `rename_concept` / `merge_concepts` (R11 — atomic graph-level write)
 3. ✅ CLI command (`oh-my-ontology`) — `npx oh-my-ontology init <folder>` scaffolds the vault. The web `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
 5. ✅ `docs/ontology/` dogfood vault — ~18 nodes describing our own mental model

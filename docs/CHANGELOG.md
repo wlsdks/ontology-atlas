@@ -6,6 +6,11 @@
 
 ---
 
+## Unreleased — docs tool count sync
+
+- `AGENTS.md`, `README.md` (root), `docs/FEATURES.md`, `docs/PRODUCT-DIRECTION.md`, `mcp/README.md` 의 stale "14 / 15 tools" / "read 8" / "read 9" 표기를 **R17 후 실제 16 tools (read 10 + write 6)** 로 일괄 동기화. `mcp/scripts/verify.mjs` doc-comment 도 같이.
+- 문서를 처음 보는 개발자 / AI agent 가 *현재 surface* 를 정확히 보게 — round 별 진화 이력은 그대로 보존.
+
 ## 2026-05-06 — Round 17: `infer_imports` — TS/JS import graph → depends_on edges
 
 R16 의 `analyze_repo_structure` (heuristic 후보) 의 *강력한 짝*. 코드의 *진짜 import graph* 를 자동 추출해 `depends_on` 관계 후보로. mcp v0.8.0 → v0.9.0 (15 → 16 tools), cli v0.4.0 → v0.5.0 (12 → 13 명령).

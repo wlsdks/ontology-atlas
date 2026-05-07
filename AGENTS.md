@@ -60,7 +60,7 @@ src/                       FSD layers
   ├── features/            interaction units
   ├── entities/            business entities
   └── shared/              UI · lib · config primitives
-mcp/                       MCP server (the AI agent's surface) — npm pkg, 15 tools
+mcp/                       MCP server (the AI agent's surface) — npm pkg, 16 tools
 cli/                       CLI binary (developer's daily entry point) — npm pkg, R12 v0.2
                            init / list / validate / add / find / import
 docs/                      long-form docs
@@ -125,7 +125,7 @@ Long-form docs:
 - `@docs/FEATURES.md` — features users can use right now
 - `@docs/ARCHITECTURE.md` · `@docs/DESIGN-SYSTEM.md`
 - `@docs/CHANGELOG.md` — chronological user-visible changes
-- `@mcp/README.md` — AI agent partner (MCP 15 tools — read 9 + write 6) registration + usage
+- `@mcp/README.md` — AI agent partner (MCP 16 tools — read 10 + write 6) registration + usage
 - `@docs/archive/` — historical analysis docs (no longer normative)
 
 ## This project's own ontology
@@ -191,7 +191,7 @@ When an AI agent (`add_concept`) or a developer (`oh-my-ontology add` / `oh-my-o
 
 ### 프로젝트 개요
 
-`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology init/list/validate/add/find/import`) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (15 tools) 로 같은 `.md` 파일을 read/write.
+`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology init/list/validate/add/find/import`) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (16 tools) 로 같은 `.md` 파일을 read/write.
 
 핵심 원칙 한 줄 (v3, R11 fire #25):
 
