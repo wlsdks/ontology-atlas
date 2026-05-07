@@ -1,5 +1,11 @@
 # Changelog — oh-my-ontology-mcp
 
+## Unreleased
+
+### Changed
+
+- **`find_path` now returns `edges[]` with `via` (relation type) per hop.** 기존 `hops: [slug, ...]` 는 backward compatible 로 유지하면서 같은 응답에 `edges: [{ from, to, via }]` 추가. `via` 는 두 slug 를 연결한 frontmatter 키 (`capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`) — AI agent 가 path 를 받았을 때 *왜* A 와 B 가 연결됐는지 한 hop 단위로 본다. trivial path (`from === to`) 의 경우 `edges: []`.
+
 ## 0.9.0 — 2026-05-06 (R17 — import graph → depends_on edges)
 
 ### Added

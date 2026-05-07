@@ -403,7 +403,7 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
   // 있을 때만 trivial path 반환 — 존재하지 않는 slug 에 대해 fake path 를
   // 만들지 않도록 (이전 회귀: from===to 인 가짜 slug 도 hops:[slug] 반환했음).
   if (!slugs.has(fromSlug) || !slugs.has(toSlug)) return null;
-  if (fromSlug === toSlug) return { from: fromSlug, to: toSlug, hops: [fromSlug] };
+  if (fromSlug === toSlug) return { from: fromSlug, to: toSlug, hops: [fromSlug], edges: [] };
   // 마지막 segment 매칭은 alias 로.
   const tailToFull = new Map();
   for (const slug of slugs) {
@@ -421,12 +421,18 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
     }
     return null;
   }
+  // adjacency: 무방향, 각 edge 는 frontmatter `via` 키 (capabilities / elements
+  // / dependencies / relates / contains / describes) 를 기록한다. 한 doc 가
+  // 같은 neighbor 를 여러 키에서 참조하면 *첫 키* 를 기억 (가장 구체적인 의미를
+  // 잃지 않게 NEIGHBOR_KEYS 순서가 capabilities → describes 로 의미적 specificity 약화).
+  // AI agent 가 path 를 받았을 때 "왜 이 두 노드가 연결됐는지" 한 hop 단위로
+  // 표현 가능 — 단순 slug 시퀀스보다 mental model 전달력 ↑.
   const adj = new Map();
-  function addEdge(a, b) {
-    if (!adj.has(a)) adj.set(a, new Set());
-    if (!adj.has(b)) adj.set(b, new Set());
-    adj.get(a).add(b);
-    adj.get(b).add(a);
+  function addEdge(a, b, via) {
+    if (!adj.has(a)) adj.set(a, new Map());
+    if (!adj.has(b)) adj.set(b, new Map());
+    if (!adj.get(a).has(b)) adj.get(a).set(b, via);
+    if (!adj.get(b).has(a)) adj.get(b).set(a, via);
   }
   for (const doc of docs) {
     for (const key of NEIGHBOR_KEYS) {
@@ -435,7 +441,7 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
       for (const ref of value) {
         const resolved = resolveRef(ref);
         if (resolved && resolved !== doc.slug) {
-          addEdge(doc.slug, resolved);
+          addEdge(doc.slug, resolved, key);
         }
       }
     }
@@ -446,26 +452,32 @@ export function findPath(rootPath, fromSlug, toSlug, maxHops = 5) {
   const queue = [{ node: fromSlug, depth: 0 }];
   const visited = new Set([fromSlug]);
   const parent = new Map();
+  const parentVia = new Map();
   let head = 0;
   while (head < queue.length) {
     const { node: cur, depth } = queue[head++];
     if (depth >= maxHops) continue;
-    const neighbors = adj.get(cur) || new Set();
-    for (const n of neighbors) {
+    const neighbors = adj.get(cur) || new Map();
+    for (const [n, via] of neighbors) {
       if (visited.has(n)) continue;
       visited.add(n);
       parent.set(n, cur);
+      parentVia.set(n, via);
       if (n === toSlug) {
         // Path reconstruction: push to end + reverse 한 번 (O(D)). 이전엔 매
         // step 마다 \`hops.unshift(p)\` 라 O(D²) — maxHops 가 작아도 안티패턴.
+        // edges[] 는 hops i ↔ i+1 사이 'via' (frontmatter key) 를 노출.
         const hops = [n];
+        const edges = [];
         let p = n;
         while (parent.has(p)) {
-          p = parent.get(p);
+          const prev = parent.get(p);
+          edges.unshift({ from: prev, to: p, via: parentVia.get(p) });
+          p = prev;
           hops.push(p);
         }
         hops.reverse();
-        return { from: fromSlug, to: toSlug, hops };
+        return { from: fromSlug, to: toSlug, hops, edges };
       }
       queue.push({ node: n, depth: depth + 1 });
     }

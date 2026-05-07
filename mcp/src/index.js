@@ -308,9 +308,12 @@ const TOOLS = [
   {
     name: 'find_path',
     description:
-      'Shortest path between two nodes (undirected BFS). Returns null when no ' +
-      'path is found within maxHops. Used by AI agents to trace transitive ' +
-      'dependency chains. maxHops defaults to 5.',
+      'Shortest path between two nodes (undirected BFS). Returns ' +
+      '`{ from, to, hops: [slug...], edges: [{from, to, via}] }` where each ' +
+      '`via` is the frontmatter key (`capabilities` / `elements` / `dependencies` / ' +
+      '`relates` / `contains` / `describes`) that linked the two slugs — so the ' +
+      'agent sees not just *that* A and B are connected but *why*. ' +
+      'Returns `{ found: false }` when no path is found within maxHops. maxHops defaults to 5.',
     inputSchema: {
       type: 'object',
       properties: {
