@@ -265,6 +265,43 @@ await test("find_evidence — 각 match 에 prose excerpt 동봉 (R+)", async ()
   }
 });
 
+await test("list_concepts — since 필터 (R+) — incremental sync", async () => {
+  // agent 가 이전 list 응답에서 캡처한 max mtime 을 since 로 패스 → vault 의
+  // *바뀐 것만* 전송. strict mtime > since 로 같은 max 재전송해도 double-fetch 0.
+  const root = makeVault([
+    { slug: "old", content: "---\nkind: capability\ntitle: Old\n---\n" },
+    { slug: "newer", content: "---\nkind: capability\ntitle: Newer\n---\n" },
+  ]);
+  try {
+    // 1차: 전체 list — 두 노드의 mtime 캡처
+    const { responses: r1 } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "list_concepts"),
+    ]);
+    const out1 = getCallParsed(r1, 2);
+    assert.equal(out1.total, 2);
+    const maxMtime = Math.max(...out1.nodes.map((n) => n.mtime));
+
+    // 2차: since=maxMtime — strict > 라 0건 (모두 stale)
+    const { responses: r2 } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "list_concepts", { since: maxMtime }),
+    ]);
+    const out2 = getCallParsed(r2, 2);
+    assert.equal(out2.total, 0, "since=max → 0건 (재전송 방지)");
+
+    // 3차: since=maxMtime - 1 — 1건 이상 (가장 최근 노드)
+    const { responses: r3 } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "list_concepts", { since: maxMtime - 1 }),
+    ]);
+    const out3 = getCallParsed(r3, 2);
+    assert.ok(out3.total >= 1, "since=max-1 → 1+ 건");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("list_concepts — 각 노드에 mtime 포함 (R+)", async () => {
   // get_concept 의 mtime 과 같은 의미. agent 가 list 한 호출로 "어느 노드가
   // 최근에 변경됐나" 파악 가능 — 후속 get_concept 없이 sort/filter.

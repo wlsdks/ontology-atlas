@@ -166,8 +166,8 @@ const TOOLS = [
     name: 'list_concepts',
     description:
       'List every ontology node in the vault (each .md file with a frontmatter `kind:`). ' +
-      'Filter by `kind` and/or `domain`. AI agents call this first to grasp the ' +
-      "codebase's mental model.",
+      'Filter by `kind`, `domain`, and/or `since` (mtime-based incremental sync). ' +
+      "AI agents call this first to grasp the codebase's mental model.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -180,6 +180,11 @@ const TOOLS = [
           type: 'string',
           description:
             'Filter to nodes whose frontmatter `domain:` matches this slug (e.g. "auth"). Combine with `kind` for "all capabilities under auth" in one call. Use the domain *slug*, not the title.',
+        },
+        since: {
+          type: 'number',
+          description:
+            'Filter to nodes with `mtime > since` (ms). Pair with the `mtime` returned in earlier `list_concepts` / `get_concept` responses for incremental sync — "what changed since I last looked". Strict greater-than (mtime === since 는 제외) so re-passing the max from a previous response does not double-fetch.',
         },
         limit: {
           type: 'number',
@@ -681,7 +686,7 @@ function ok(result) {
 
 // ── 도구 구현 ─────────────────────────────────────────────────────────────
 
-function listConcepts({ kind, domain, limit = 100 }) {
+function listConcepts({ kind, domain, since, limit = 100 }) {
   const docs = loadVaultDocs(VAULT_ROOT);
 
   // R11 #23 — vault-wide validation 카운트. raw 모두 검증해 silent corruption
@@ -697,15 +702,21 @@ function listConcepts({ kind, domain, limit = 100 }) {
     }
   }
 
+  // R+ — `since` (ms) 가 number 면 mtime > since 만 통과. AI agent 의 incremental
+  // sync 시나리오: 이전 list 응답에서 최대 mtime 을 캡처 → 다음 호출에 since 로
+  // 패스 → vault 의 *바뀐 것만* 전송. 같은 mtime 은 strict 으로 제외 (max 를
+  // 재전송해도 double-fetch 안 됨).
+  const sinceMs = typeof since === 'number' && Number.isFinite(since) ? since : null;
   const filtered = docs.filter((doc) => {
     const docKind = doc.frontmatter.kind;
     if (kind && docKind !== kind) return false;
+    if (!docKind) return false; // frontmatter `kind:` 가 있어야 ontology 노드.
     // domain 필터 — frontmatter `domain:` 매칭. "auth 도메인 모든 capability"
-    // 처럼 흔한 query 를 query_concepts DSL 없이 한 호출로. capability /
-    // element kind 만 의미 있지만 (project / domain 자체는 domain 키 없음)
-    // 필터는 모든 kind 에 일관 적용 — 매칭 없으면 자연스럽게 빈 결과.
+    // 처럼 흔한 query 를 query_concepts DSL 없이 한 호출로. 모든 kind 에 일관
+    // 적용 — 매칭 없으면 자연스럽게 빈 결과.
     if (domain && doc.frontmatter.domain !== domain) return false;
-    return Boolean(docKind); // frontmatter `kind:` 가 있어야 ontology 노드.
+    if (sinceMs !== null && (typeof doc.mtime !== 'number' || doc.mtime <= sinceMs)) return false;
+    return true;
   });
   return {
     total: filtered.length,
