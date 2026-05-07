@@ -174,7 +174,7 @@ const TOOLS = [
   {
     name: 'find_evidence',
     description:
-      "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs.",
+      "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, heading/표/코드 skip) so agents see *what the matching doc says* without an extra get_concept call.",
     inputSchema: {
       type: 'object',
       properties: {
@@ -735,6 +735,10 @@ function findEvidence({ title }) {
       kind: doc.frontmatter.kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
       matchedIn: inFrontmatter ? 'frontmatter' : 'body',
+      // R+ — 매치된 doc 의 prose 한 줄 요약 (max 200 chars). agent 가 매치를
+      // 받자마자 "이 doc 이 무슨 내용인가?" 추가 get_concept 없이 파악.
+      // get_concept 의 800자 helper 와 같은 prose-aware 추출 + 더 짧은 cap.
+      excerpt: extractSummaryExcerpt(doc.body, 200),
     });
   }
   return { query: title, matches };

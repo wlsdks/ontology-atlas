@@ -5,6 +5,7 @@
 ### Changed
 
 - **`get_concept` excerpt 가 prose-aware.** 기존 `body.slice(0, 800)` 은 dogfood `capabilities/mcp-server.md` 같이 H1+표 위주 문서에선 800자 모두 markdown table syntax 만 채워져 agent token budget 낭비. 새 `extractSummaryExcerpt` helper 가 heading / 표 / 코드블록 / 리스트 / 인용을 skip 후 첫 prose 단락만 추출. 측정: dogfood `capabilities/mcp-server.md` excerpt **800 chars (table syntax) → 78 chars (clear prose summary)** — agent 가 받는 의미 밀도 ~10x ↑. block-only body 는 fallback 으로 원본 trim. 9 신규 unit test (prose / H1 skip / 표 skip / 코드블록 skip / multi-line / 빈 body / block-only / maxLen cap / 리스트).
+- **`find_evidence` 응답 each match 에 `excerpt` (max 200 chars).** `get_concept` 의 `extractSummaryExcerpt` 와 같은 prose-aware 추출. agent 가 find_evidence 한 호출로 *어느 doc 이 reference 하는지* + *그 doc 자체 무슨 내용인지* 둘 다 받음 — 추가 get_concept 호출 없이. tool description 도 갱신. 1 신규 integration test (subdir fixture 도 함께 — `makeVault` helper 가 subdir slug 자동 mkdir 하도록 보강).
 
 ## 0.9.0 — 2026-05-06 (R17 — import graph → depends_on edges)
 

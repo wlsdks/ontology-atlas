@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,6 +37,9 @@ function makeVault(seed = []) {
   const root = mkdtempSync(join(tmpdir(), "omot-int-"));
   for (const { slug, content } of seed) {
     const fullPath = join(root, `${slug}.md`);
+    // subdir slug ("capabilities/foo") 도 자동 mkdir — fixture writer 가
+    // top-level 외에도 자유롭게 디렉터리 구조 표현 가능.
+    mkdirSync(dirname(fullPath), { recursive: true });
     writeFileSync(fullPath, content, "utf-8");
   }
   return root;
@@ -163,6 +166,45 @@ await test("list_concepts — tmp vault 의 노드 수 정확히 보고", async 
     ]);
     const result = getCallParsed(responses, 2);
     assert.equal(result.total, 2, "kind 있는 노드 2 개만 카운트");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("find_evidence — 각 match 에 prose excerpt 동봉 (R+)", async () => {
+  // agent 가 find_evidence 한 호출로 *어떤 doc 이 reference 하는지* + *그 doc
+  // 이 무슨 내용인지* 둘 다 받음. 추가 get_concept 없이.
+  const root = makeVault([
+    {
+      slug: "capabilities/auth",
+      content:
+        "---\nkind: capability\ntitle: Auth\n---\n\n# Auth\n\n인증 흐름의 핵심 capability — 로그인/로그아웃 일원화.\n",
+    },
+    {
+      slug: "domains/billing",
+      content:
+        "---\nkind: domain\ntitle: Billing\ncapabilities: [auth]\n---\n\n# Billing\n\n결제 도메인 — auth 와 함께 사용자 세션 검증.\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "find_evidence", { title: "auth" }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.ok(Array.isArray(result.matches));
+    assert.ok(result.matches.length >= 1);
+    for (const m of result.matches) {
+      assert.equal(typeof m.excerpt, "string");
+      // markdown table syntax / # heading 은 안 들어가야
+      assert.doesNotMatch(m.excerpt, /^#/);
+      assert.doesNotMatch(m.excerpt, /^\|/);
+    }
+    // domains/billing 매치는 첫 prose 단락 ("결제 도메인 — auth 와 함께...")
+    const billing = result.matches.find((m) => m.slug === "domains/billing");
+    if (billing) {
+      assert.match(billing.excerpt, /결제 도메인/);
+    }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
