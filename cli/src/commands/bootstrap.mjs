@@ -21,6 +21,7 @@
 
 import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
+import { getVaultCensus, writeVaultCensus } from '../lib/vault-census.mjs';
 
 const COLORS = {
   green: '\x1b[32m',
@@ -122,13 +123,8 @@ export async function runBootstrap(args) {
   );
 
   // R+ — 마지막 census. 사용자가 \"방금 뭐 land 됐나?\" 를 1줄로 인지.
-  // 실패해도 bootstrap exit code 영향 안 줌 (informational only).
-  let vaultCensus = null;
-  try {
-    vaultCensus = await callMcpTool(vaultRoot, 'list_kinds', {});
-  } catch {
-    // census 못 받아도 bootstrap 자체 실패 아님 — silent.
-  }
+  // analyze --apply / infer-imports --apply 와 같은 helper 공유 (cycle 38).
+  const vaultCensus = await getVaultCensus(vaultRoot);
 
   if (parsed.json) {
     process.stdout.write(
@@ -229,19 +225,8 @@ export async function runBootstrap(args) {
     );
   }
 
-  // R+ — 마지막 census 한 줄. \"vault now has N nodes (project=A · domain=B · …)\"
-  if (vaultCensus && typeof vaultCensus.total === 'number') {
-    const byKind = vaultCensus.byKind || {};
-    const order = ['project', 'domain', 'capability', 'element', 'document', 'vault-readme'];
-    const parts = order
-      .filter((k) => byKind[k])
-      .map((k) => `${k}=${byKind[k]}`);
-    process.stdout.write(
-      `\n  ${COLORS.dim}→ vault now has ${COLORS.bold}${vaultCensus.total}${COLORS.reset}${COLORS.dim} nodes` +
-        (parts.length > 0 ? ` (${parts.join(' · ')})` : '') +
-        `${COLORS.reset}\n`,
-    );
-  }
+  // R+ — \"vault now has N nodes (...)\" 한 줄 (shared helper).
+  writeVaultCensus(vaultCensus);
 
   return summary.errors === 0 ? 0 : 1;
 }

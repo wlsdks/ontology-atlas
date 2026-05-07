@@ -998,6 +998,44 @@ await test('analyze --apply 두 번째 실행 → "already existed" 카운트, e
   }
 });
 
+await test('analyze --apply — 마지막 vault census 라인 (R+ cycle 38)', async () => {
+  const vault = withVault([]);
+  const repo = makeRepoFixture();
+  try {
+    const r = await run(['analyze', repo, '--vault', vault, '--apply']);
+    assert.equal(r.code, 0);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /vault now has \d+ nodes/);
+    assert.match(clean, /project=1/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('analyze --apply --json — vaultCensus 필드 (R+ cycle 38)', async () => {
+  const vault = withVault([]);
+  const repo = makeRepoFixture();
+  try {
+    const r = await run([
+      'analyze',
+      repo,
+      '--vault',
+      vault,
+      '--apply',
+      '--json',
+    ]);
+    assert.equal(r.code, 0);
+    const data = JSON.parse(r.stdout);
+    assert.ok(data.vaultCensus);
+    assert.equal(typeof data.vaultCensus.total, 'number');
+    assert.ok(data.vaultCensus.total >= 1);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('analyze --apply --json — applied / summary 필드 노출', async () => {
   const vault = withVault([]);
   const repo = makeRepoFixture();
@@ -1120,6 +1158,30 @@ await test('infer-imports --apply — endpoint 없으면 row-level error, batch 
     const clean = stripAnsi(r.stdout);
     // 에러 행 노출.
     assert.match(clean, /✗|does not exist|errors/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('infer-imports --apply — 마지막 vault census 라인 (R+ cycle 38)', async () => {
+  const vault = withVault([
+    { slug: 'a', content: '---\nkind: capability\ntitle: A\ndomain: x\n---\n' },
+    { slug: 'b', content: '---\nkind: capability\ntitle: B\ndomain: x\n---\n' },
+  ]);
+  const repo = makeImportRepo();
+  try {
+    const r = await run([
+      'infer-imports',
+      repo,
+      '--vault',
+      vault,
+      '--apply',
+    ]);
+    assert.equal(r.code, 0);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /vault now has \d+ nodes/);
+    assert.match(clean, /capability=2/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });

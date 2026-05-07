@@ -4,6 +4,7 @@
 
 import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
+import { getVaultCensus, writeVaultCensus } from '../lib/vault-census.mjs';
 
 const COLORS = {
   green: '\x1b[32m',
@@ -168,6 +169,8 @@ async function runApply(vaultRoot, result, json) {
   }
 
   const summary = summarizeRelations(allRows);
+  // R+ — apply 흐름 마무리 census (cycle 38, shared helper).
+  const vaultCensus = await getVaultCensus(vaultRoot);
 
   if (json) {
     process.stdout.write(
@@ -177,6 +180,7 @@ async function runApply(vaultRoot, result, json) {
           filesScanned: result.filesScanned,
           applied: { relations: allRows },
           summary,
+          vaultCensus,
         },
         null,
         2,
@@ -213,6 +217,7 @@ async function runApply(vaultRoot, result, json) {
       `  ${COLORS.dim}… ${errCount - 12} more errors${COLORS.reset}\n`,
     );
   }
+  writeVaultCensus(vaultCensus);
   return summary.errors === 0 ? 0 : 1;
 }
 
