@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- **`list_concepts` 에 `domain` 필터.** 기존엔 `kind` 만 지원해 "auth 도메인 모든 capability" 같은 흔한 query 를 위해 `query_concepts("kind=capability AND domain=auth")` DSL 로 fallback 해야 했다. `domain` 옵션 추가로 한 호출 — `list_concepts({ kind: "capability", domain: "auth" })`. capability/element kind 만 의미 있지만 모든 kind 에 일관 적용 (매칭 없으면 자연스럽게 빈 결과). schema description + tool description 갱신, 신규 integration test 1건 (3 assertion: domain only / domain + kind / 매칭 없음 빈 결과). `mcp/src/integration.test.mjs` 의 `makeVault` helper 도 subdir slug 자동 mkdir 보강.
+
 ### Changed
 
 - **에러 메시지를 actionable 하게.** AI agent 가 다음 액션을 한 호출에 결정 가능:

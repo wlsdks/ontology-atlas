@@ -60,7 +60,7 @@ The server connects over stdio. You should now see 16 tools under the `oh-my-ont
 
 | Tool | What it does |
 |---|---|
-| `list_concepts` | Lists every node in the vault (any `.md` with a `kind:` frontmatter). Options: `kind`, `limit`. **R11**: when the vault has frontmatter corruption, response includes `vaultWarnings: { errorCount, warningCount }` so AI agents can flag it to the user. |
+| `list_concepts` | Lists every node in the vault (any `.md` with a `kind:` frontmatter). Options: `kind`, `domain` (filter by frontmatter `domain:` slug — combine with `kind` for "all capabilities under auth" in one call), `limit`. **R11**: when the vault has frontmatter corruption, response includes `vaultWarnings: { errorCount, warningCount }` so AI agents can flag it to the user. |
 | `get_concept` | Fetches a single node by `slug` (no extension): frontmatter + body excerpt + neighbors (dependencies / relates) + `mtime` (ms — pass to subsequent `patch_concept` / `delete_concept` as `expected_mtime` to detect concurrent external edits). **R11**: response includes `warnings: [...]` when this doc has frontmatter issues (unclosed-frontmatter / empty-kind / missing-kind / unknown-kind / parse-zero-keys). |
 | `find_evidence` | Partial-match search by `title` — scans frontmatter title/capabilities/elements as well as body content. |
 | `find_backlinks` | Finds every node that points to a given `slug`. Inspects all frontmatter array keys (capabilities / elements / dependencies / relates / …) plus body wikilinks/markdown links. |

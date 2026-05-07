@@ -165,7 +165,7 @@ const TOOLS = [
     name: 'list_concepts',
     description:
       'List every ontology node in the vault (each .md file with a frontmatter `kind:`). ' +
-      'Filter by kind / project_filter. AI agents call this first to grasp the ' +
+      'Filter by `kind` and/or `domain`. AI agents call this first to grasp the ' +
       "codebase's mental model.",
     inputSchema: {
       type: 'object',
@@ -174,6 +174,11 @@ const TOOLS = [
           type: 'string',
           description:
             'Filter to one kind (e.g. project, domain, capability, element). Omit to return all.',
+        },
+        domain: {
+          type: 'string',
+          description:
+            'Filter to nodes whose frontmatter `domain:` matches this slug (e.g. "auth"). Combine with `kind` for "all capabilities under auth" in one call. Use the domain *slug*, not the title.',
         },
         limit: {
           type: 'number',
@@ -675,7 +680,7 @@ function ok(result) {
 
 // ── 도구 구현 ─────────────────────────────────────────────────────────────
 
-function listConcepts({ kind, limit = 100 }) {
+function listConcepts({ kind, domain, limit = 100 }) {
   const docs = loadVaultDocs(VAULT_ROOT);
 
   // R11 #23 — vault-wide validation 카운트. raw 모두 검증해 silent corruption
@@ -694,6 +699,11 @@ function listConcepts({ kind, limit = 100 }) {
   const filtered = docs.filter((doc) => {
     const docKind = doc.frontmatter.kind;
     if (kind && docKind !== kind) return false;
+    // domain 필터 — frontmatter `domain:` 매칭. "auth 도메인 모든 capability"
+    // 처럼 흔한 query 를 query_concepts DSL 없이 한 호출로. capability /
+    // element kind 만 의미 있지만 (project / domain 자체는 domain 키 없음)
+    // 필터는 모든 kind 에 일관 적용 — 매칭 없으면 자연스럽게 빈 결과.
+    if (domain && doc.frontmatter.domain !== domain) return false;
     return Boolean(docKind); // frontmatter `kind:` 가 있어야 ontology 노드.
   });
   return {

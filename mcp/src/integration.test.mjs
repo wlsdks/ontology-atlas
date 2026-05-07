@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -37,6 +37,8 @@ function makeVault(seed = []) {
   const root = mkdtempSync(join(tmpdir(), "omot-int-"));
   for (const { slug, content } of seed) {
     const fullPath = join(root, `${slug}.md`);
+    // subdir 가 있는 slug ("capabilities/foo") 는 부모 디렉토리 자동 생성.
+    mkdirSync(dirname(fullPath), { recursive: true });
     writeFileSync(fullPath, content, "utf-8");
   }
   return root;
@@ -163,6 +165,61 @@ await test("list_concepts — tmp vault 의 노드 수 정확히 보고", async 
     ]);
     const result = getCallParsed(responses, 2);
     assert.equal(result.total, 2, "kind 있는 노드 2 개만 카운트");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("list_concepts — domain 필터 (R+)", async () => {
+  // "all capabilities under auth" 같은 흔한 query 를 query_concepts DSL 없이
+  // 한 호출로. capability/element kind 만 의미 있지만 모든 kind 에 일관 적용.
+  const root = makeVault([
+    {
+      slug: "domains/auth",
+      content: "---\nkind: domain\ntitle: Auth\n---\n",
+    },
+    {
+      slug: "capabilities/login",
+      content: "---\nkind: capability\ntitle: Login\ndomain: auth\n---\n",
+    },
+    {
+      slug: "capabilities/logout",
+      content: "---\nkind: capability\ntitle: Logout\ndomain: auth\n---\n",
+    },
+    {
+      slug: "capabilities/billing-charge",
+      content: "---\nkind: capability\ntitle: Charge\ndomain: billing\n---\n",
+    },
+    {
+      slug: "elements/auth-token",
+      content: "---\nkind: element\ntitle: Token\ndomain: auth\n---\n",
+    },
+  ]);
+  try {
+    // domain=auth 만 — capability 2 + element 1 = 3 (domain 자체는 domain: 없음)
+    const { responses: r1 } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "list_concepts", { domain: "auth" }),
+    ]);
+    const out1 = getCallParsed(r1, 2);
+    assert.equal(out1.total, 3, "domain=auth → 3");
+    assert.ok(out1.nodes.every((n) => n.domain === "auth"));
+
+    // domain=auth + kind=capability → 2 (login, logout)
+    const { responses: r2 } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "list_concepts", { domain: "auth", kind: "capability" }),
+    ]);
+    const out2 = getCallParsed(r2, 2);
+    assert.equal(out2.total, 2, "domain=auth + kind=capability → 2");
+
+    // 매칭 없는 domain → 빈 결과 (throw 없이)
+    const { responses: r3 } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "list_concepts", { domain: "totally-unknown" }),
+    ]);
+    const out3 = getCallParsed(r3, 2);
+    assert.equal(out3.total, 0);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
