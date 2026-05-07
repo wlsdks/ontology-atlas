@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Added — `orphans` command (15th, mcp find_orphans wrapper)
+
+- `oh-my-ontology orphans [vault]` — vault 의 *고립 노드* (어디서도 frontmatter 로 reference 안 받는 doc) 한 줄 명령. mcp `find_orphans` thin spawn wrapper.
+- 옵션: `--kind X` (filter), `--exclude-kinds A,B` (skip; default `vault-readme`), `--vault path`, `--json`.
+- 0 orphan 이면 "vault clean ✓" 그린 메시지 → CI gate-friendly.
+- 신규 integration test 3건 (default / --json / --kind 필터).
+- graph-level 명령 set 에 `find_orphans` 만 빠져 있던 일관성 회복.
+
 ### Changed — `validate` 출력 grouped summary
 
 - 같은 issue code 가 2+ file 에서 등장하면 per-file 출력 끝에 *grouped by code* 요약 섹션 자동 부착. `<severity> <code> — <count> occurrences\n     file1, file2, file3 (+N more)` 형식으로 *어느 종류 경고가 얼마나 많은지* 한눈에. error 우선, count 내림차순.
