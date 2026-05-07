@@ -1,15 +1,15 @@
 ---
 slug: capabilities/cli-developer-entry
 kind: capability
-title: CLI Developer Entry (15 commands incl. analyze/infer-imports --apply)
+title: CLI Developer Entry (16 commands incl. bootstrap)
 domain: onboarding-ux
-elements: [cli/src/index.mjs, cli/src/commands/list.mjs, cli/src/commands/validate.mjs, cli/src/commands/add.mjs, cli/src/commands/find.mjs, cli/src/commands/import.mjs, cli/src/commands/analyze.mjs, cli/src/commands/infer-imports.mjs, cli/src/commands/backlinks.mjs, cli/src/commands/query.mjs, cli/src/commands/rename.mjs, cli/src/commands/merge.mjs, cli/src/commands/delete.mjs, cli/src/commands/path.mjs, cli/src/commands/orphans.mjs, cli/src/lib/mcp-call.mjs]
+elements: [cli/src/index.mjs, cli/src/commands/list.mjs, cli/src/commands/validate.mjs, cli/src/commands/add.mjs, cli/src/commands/find.mjs, cli/src/commands/import.mjs, cli/src/commands/analyze.mjs, cli/src/commands/infer-imports.mjs, cli/src/commands/bootstrap.mjs, cli/src/commands/backlinks.mjs, cli/src/commands/query.mjs, cli/src/commands/rename.mjs, cli/src/commands/merge.mjs, cli/src/commands/delete.mjs, cli/src/commands/path.mjs, cli/src/commands/orphans.mjs, cli/src/lib/mcp-call.mjs]
 relates: [capabilities/mcp-server, capabilities/vault-validator, domains/onboarding-ux]
 ---
 
 # CLI Developer Entry
 
-R12 (2026-05-04) 에 도입된 *developer-primary* 진입점. R14 에서 `import`, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 `analyze` / `infer-imports`, R+ cycle 에서 `path` / `orphans` + 두 `--apply` 플래그 추가 — **총 15 명령**. 사용자가 vault 만든 후 *터미널 즉시* ontology 작업 가능 — 웹 UI / MCP 등록 불필요.
+R12 (2026-05-04) 에 도입된 *developer-primary* 진입점. R14 에서 `import`, R15 follow-up 에서 graph-level 5 명령, R16-R17 에서 `analyze` / `infer-imports`, R+ cycle 에서 `path` / `orphans` + 두 `--apply` 플래그 + `bootstrap` 합본 명령 추가 — **총 16 명령**. 사용자가 vault 만든 후 *터미널 즉시* ontology 작업 가능 — 웹 UI / MCP 등록 불필요.
 
 ## Local commands (R12 + R14 — vault scaffold + frontmatter)
 
@@ -22,12 +22,13 @@ R12 (2026-05-04) 에 도입된 *developer-primary* 진입점. R14 에서 `import
 | `oh-my-ontology find <query> [vault]` | Search slug + title with yellow highlight (`--kind --json`) |
 | `oh-my-ontology import <path...>` | **R14** Import external `.md` (frontmatter normalize + `--auto-prefix` / `--rename` / `--dry-run`) |
 
-## Repo analysis commands (R16-R17 — codebase → ontology)
+## Repo analysis commands (R16-R17 + R+ — codebase → ontology)
 
 | Command | What it does |
 |---|---|
-| `oh-my-ontology analyze [rootPath]` | **R16** Walk `package.json` / `README.md` H2 / `src/` → ontology 노드 후보. side effect 0 (default). **R+ `--apply`**: 후보를 `add_concepts` + `add_relations` 배치로 land — agent-less full bootstrap. |
-| `oh-my-ontology infer-imports [rootPath]` | **R17** TS/JS import graph → moduleEdges (capability A → B). side effect 0 (default). **R+ `--apply`**: moduleEdges 를 `depends_on` 관계로 batch land (50-row chunk). analyze 의 짝. |
+| `oh-my-ontology bootstrap [rootPath]` | **R+** 1줄 full bootstrap. analyze --apply (노드 + suggested relations) + infer-imports --apply (depends_on edges) 합본. `--threshold N` (약한 import 차단), `--skip-imports` (1단계만), `--json`. agent-less 흐름의 가장 짧은 path. |
+| `oh-my-ontology analyze [rootPath]` | **R16** Walk `package.json` / `README.md` H2 / `src/` → ontology 노드 후보. side effect 0 (default). **R+ `--apply`**: 후보를 `add_concepts` + `add_relations` 배치로 land. |
+| `oh-my-ontology infer-imports [rootPath]` | **R17** TS/JS import graph → moduleEdges. side effect 0 (default). **R+ `--apply`**: moduleEdges 를 `depends_on` 관계로 batch land (50-row chunk). **R+ `--threshold N`**: count < N 약한 edge 필터. |
 
 ## Graph-level commands (R15 follow-up — Concern 4 fix + R+ extras)
 
@@ -45,10 +46,10 @@ post-publish architectural audit 발견 — *위험한-그러나-필수* 작업 
 
 ## 구현 단일 진실원
 
-local commands 는 *cli 안* 구현 (4-way parser/3-way validator contract). graph-level + analyze/infer-imports + `--apply` 흐름은 *MCP server child_process spawn + JSON-RPC* — `cli/src/lib/mcp-call.mjs` 의 thin wrapper. drift surface 0 (logic 복제 안 함). spawn ~50-100ms per call — 한 번씩 호출이라 acceptable.
+local commands 는 *cli 안* 구현 (4-way parser/3-way validator contract). graph-level + analyze/infer-imports + bootstrap + `--apply` 흐름은 *MCP server child_process spawn + JSON-RPC* — `cli/src/lib/mcp-call.mjs` 의 thin wrapper. drift surface 0 (logic 복제 안 함). spawn ~50-100ms per call — bootstrap 은 3-4 회 호출이라 ~200-400ms 정도.
 
-cli 가 별도 npm package — `oh-my-ontology` binary. cli/package.json 의 `dependencies: oh-my-ontology-mcp` 가 graph-level + apply 흐름 자동 활성.
+cli 가 별도 npm package — `oh-my-ontology` binary. cli/package.json 의 `dependencies: oh-my-ontology-mcp` 가 graph-level + apply + bootstrap 흐름 자동 활성.
 
 ## 회귀 차단
 
-cli/src/integration.test.mjs — **49 spawn-based** integration test (R12 #40 11 + R14 add/import 9 + R15 follow-up 8 + R15 hint 4 + R+ analyze/infer-imports apply 4×2). 매 PR 마다 graph-level 명령의 dry-run/confirm 경로 + backlink redirect 검증.
+cli/src/integration.test.mjs — **58 spawn-based** integration test (R12 #40 11 + R14 add/import 9 + R15 follow-up 8 + R15 hint 4 + R+ analyze/infer-imports apply 4×2 + R+ threshold 4 + R+ bootstrap 5). 매 PR 마다 graph-level 명령의 dry-run/confirm 경로 + backlink redirect 검증.

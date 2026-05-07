@@ -59,10 +59,12 @@ ${COLORS.bold}Usage:${COLORS.reset}
        --auto-prefix --rename --dry-run       ${COLORS.dim}folder prefix · slug rename · plan-only${COLORS.reset}
 
 ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17 — autonomous ingest base)${COLORS.reset}
+  npx oh-my-ontology bootstrap [rootPath]     ${COLORS.green}1줄 full bootstrap${COLORS.reset} — analyze --apply + infer-imports --apply
+       --threshold N --skip-imports --json    ${COLORS.dim}weak edge 차단 · 노드만 · machine output${COLORS.reset}
   npx oh-my-ontology analyze [rootPath]       Walk a repo, propose ontology node candidates (side effect 0)
-       --max-depth N --json                   ${COLORS.dim}folder walk depth · machine output${COLORS.reset}
+       --apply --max-depth N --json           ${COLORS.dim}or land via batch · folder walk depth · machine output${COLORS.reset}
   npx oh-my-ontology infer-imports [rootPath] TS/JS import graph → depends_on edge candidates (side effect 0)
-       --max-files N --json                   ${COLORS.dim}default 5000 max · machine output${COLORS.reset}
+       --apply --threshold N --max-files N    ${COLORS.dim}or land · weak filter · default 5000 max${COLORS.reset}
 
 ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps the MCP server, same authority as an AI agent)${COLORS.reset}
   npx oh-my-ontology backlinks <slug>         Every node referencing the slug (--json)
@@ -321,6 +323,11 @@ if (SUBCOMMAND === 'analyze') {
 if (SUBCOMMAND === 'infer-imports') {
   const { runInferImports } = await import('./commands/infer-imports.mjs');
   exit(await runInferImports(ARGS.slice(1)));
+}
+
+if (SUBCOMMAND === 'bootstrap') {
+  const { runBootstrap } = await import('./commands/bootstrap.mjs');
+  exit(await runBootstrap(ARGS.slice(1)));
 }
 
 fail(`unknown command: ${SUBCOMMAND}`);

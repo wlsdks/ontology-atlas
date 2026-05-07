@@ -1322,5 +1322,136 @@ await test('infer-imports --threshold abc — 잘못된 입력 거부', async ()
   }
 });
 
+// ── bootstrap (R+ — analyze --apply + infer-imports --apply 합본) ───────
+
+function makeFullRepo() {
+  // Generic (non-FSD) layout — analyze 와 infer_imports 의 slug derivation 이
+  // 일치 (둘 다 src/auth → "auth"). FSD layout 은 두 도구의 slug 가 어긋나
+  // import edges 가 "does not exist" 로 fail (다음 cycle 의 known issue).
+  const repo = mkdtempSync(join(tmpdir(), 'cli-bs-'));
+  writeFileSync(
+    join(repo, 'package.json'),
+    JSON.stringify({ name: 'bs-app', description: 'BS app' }, null, 2),
+    'utf-8',
+  );
+  mkdirSync(join(repo, 'src', 'auth'), { recursive: true });
+  mkdirSync(join(repo, 'src', 'billing'), { recursive: true });
+  writeFileSync(
+    join(repo, 'src', 'auth', 'index.ts'),
+    "import { x } from '../billing';\nexport const a = x;\n",
+    'utf-8',
+  );
+  writeFileSync(
+    join(repo, 'src', 'billing', 'index.ts'),
+    'export const x = 1;\n',
+    'utf-8',
+  );
+  return repo;
+}
+
+await test('bootstrap — analyze + infer-imports 한 명령으로 land', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  try {
+    const r = await run(['bootstrap', repo, '--vault', vault]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /1\) analyze/);
+    assert.match(clean, /2\) imports/);
+    // project 노드 + capability 들 land 되어야.
+    assert.equal(existsSyncTest(join(vault, 'bs-app.md')), true, 'project');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('bootstrap --skip-imports — 1단계 (analyze) 만, imports 영역 skipped 표시', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  try {
+    const r = await run([
+      'bootstrap',
+      repo,
+      '--vault',
+      vault,
+      '--skip-imports',
+    ]);
+    assert.equal(r.code, 0);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /1\) analyze/);
+    assert.match(clean, /skipped \(--skip-imports\)/);
+    assert.equal(existsSyncTest(join(vault, 'bs-app.md')), true);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('bootstrap --json — analyze / imports / summary 모두 단일 JSON', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  try {
+    const r = await run(['bootstrap', repo, '--vault', vault, '--json']);
+    assert.equal(r.code, 0);
+    const data = JSON.parse(r.stdout);
+    assert.ok(data.analyze, 'analyze 필드');
+    assert.ok(Array.isArray(data.analyze.concepts));
+    assert.ok(Array.isArray(data.analyze.relations));
+    assert.ok(data.imports, 'imports 필드');
+    assert.ok(Array.isArray(data.imports.relations));
+    assert.ok(data.summary, 'summary 필드');
+    assert.equal(typeof data.summary.errors, 'number');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('bootstrap --threshold 3 — 약한 import (count<3) 안 land', async () => {
+  // billing 는 1번만 import 됨 → threshold 3 면 import edge 안 land.
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  try {
+    const r = await run([
+      'bootstrap',
+      repo,
+      '--vault',
+      vault,
+      '--threshold',
+      '3',
+      '--json',
+    ]);
+    assert.equal(r.code, 0);
+    const data = JSON.parse(r.stdout);
+    // imports 의 thresholdApplied 메타데이터.
+    assert.ok(data.imports.thresholdApplied);
+    assert.equal(data.imports.thresholdApplied.threshold, 3);
+    // import relations 거의 0 (모두 약함).
+    assert.equal(data.imports.relations.length, 0);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('bootstrap 두번째 실행 — idempotent (errors 0)', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  try {
+    const r1 = await run(['bootstrap', repo, '--vault', vault]);
+    assert.equal(r1.code, 0);
+    const r2 = await run(['bootstrap', repo, '--vault', vault]);
+    assert.equal(r2.code, 0, `2nd run failed: ${r2.stdout}`);
+    const clean = stripAnsi(r2.stdout);
+    assert.match(clean, /already existed/);
+    // errors 0 — 모든 행이 already exists / alreadyExists.
+    assert.match(clean, /0 errors/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 console.log(`\ncli integration: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);
