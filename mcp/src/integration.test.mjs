@@ -260,6 +260,11 @@ await test("find_evidence — 각 match 에 prose excerpt 동봉 (R+)", async ()
     if (billing) {
       assert.match(billing.excerpt, /결제 도메인/);
     }
+    // R+ — read tool 5종 응답 shape 일관성: domain + mtime 동봉
+    for (const m of result.matches) {
+      assert.equal(typeof m.mtime, "number", `${m.slug}.mtime number`);
+      assert.ok(m.mtime > 0);
+    }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

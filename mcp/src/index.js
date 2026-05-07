@@ -800,6 +800,11 @@ function findEvidence({ title }) {
       slug: doc.slug,
       kind: doc.frontmatter.kind,
       title: doc.frontmatter.title || doc.frontmatter.name || doc.slug,
+      // R+ — list_concepts / find_backlinks / find_orphans / query_concepts
+      // 와 동일 shape. read tool 5종 응답 일관성 — agent 가 어느 read tool
+      // 결과든 같은 sort/filter 로직 재사용.
+      domain: doc.frontmatter.domain,
+      mtime: doc.mtime,
       matchedIn: inFrontmatter ? 'frontmatter' : 'body',
       // R+ — 매치된 doc 의 prose 한 줄 요약 (max 200 chars). agent 가 매치를
       // 받자마자 "이 doc 이 무슨 내용인가?" 추가 get_concept 없이 파악.
