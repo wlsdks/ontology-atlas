@@ -112,14 +112,16 @@ function createSigma(
   minimal = false,
 ) {
   // 3-layer 노드 렌더링: outer halo → crisp border → fill.
-  //  · outer (2px): 허브는 인디고 α 0.18 로 정적 "중력감", 선택 시 nodeReducer 가
-  //    α 를 올려 선택 halo 역할 겸용. 비허브는 transparent.
-  //  · border (1.5px): 배경 대비 분리감.
+  //  · outer (2.5px): 허브는 인디고 α 글로우 — 정적 "중력감", 선택 시 nodeReducer
+  //    가 α 를 올려 선택 halo 역할 겸용. 비허브는 transparent.
+  //  · border (1.2px): 배경 대비 분리감. cycle 48 — 1.5 → 1.2 로 살짝
+  //    줄여 leaf 가 \"링\" 보다 \"solid disc with hairline\" 으로 읽히도록
+  //    조정 (0.8 까지 줄였더니 leaf 가 사라짐 — 1.2 가 균형점).
   //  · fill: 본체 색.
   const borderNodeProgram = createNodeBorderProgram<SigmaNodeAttrs, SigmaEdgeAttrs>({
     borders: [
-      { size: { value: 2, mode: 'pixels' }, color: { attribute: 'outerBorderColor' } },
-      { size: { value: 1.5, mode: 'pixels' }, color: { attribute: 'borderColor' } },
+      { size: { value: 2.5, mode: 'pixels' }, color: { attribute: 'outerBorderColor' } },
+      { size: { value: 1.2, mode: 'pixels' }, color: { attribute: 'borderColor' } },
       { size: { fill: true }, color: { attribute: 'color' } },
     ],
   });
