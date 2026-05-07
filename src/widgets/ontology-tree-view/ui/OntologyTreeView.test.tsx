@@ -110,6 +110,52 @@ describe("OntologyTreeView — onSelect", () => {
   });
 });
 
+describe("OntologyTreeView — keyboard nav (R+)", () => {
+  it("ArrowDown on focused select button → focus next row", () => {
+    const { container } = render(<OntologyTreeView result={makeResult()} />);
+    const buttons = container.querySelectorAll<HTMLButtonElement>(
+      '[data-tree-select-button="true"]',
+    );
+    expect(buttons.length).toBe(3); // p1 / d1 / c1
+    buttons[0]!.focus();
+    expect(document.activeElement).toBe(buttons[0]);
+    fireEvent.keyDown(buttons[0]!, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(buttons[1]);
+    fireEvent.keyDown(buttons[1]!, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(buttons[2]);
+  });
+
+  it("ArrowUp on focused select button → focus previous row", () => {
+    const { container } = render(<OntologyTreeView result={makeResult()} />);
+    const buttons = container.querySelectorAll<HTMLButtonElement>(
+      '[data-tree-select-button="true"]',
+    );
+    buttons[2]!.focus();
+    fireEvent.keyDown(buttons[2]!, { key: "ArrowUp" });
+    expect(document.activeElement).toBe(buttons[1]);
+  });
+
+  it("ArrowDown at last row — focus 유지 (out-of-bound 무시)", () => {
+    const { container } = render(<OntologyTreeView result={makeResult()} />);
+    const buttons = container.querySelectorAll<HTMLButtonElement>(
+      '[data-tree-select-button="true"]',
+    );
+    buttons[2]!.focus();
+    fireEvent.keyDown(buttons[2]!, { key: "ArrowDown" });
+    expect(document.activeElement).toBe(buttons[2]);
+  });
+
+  it("ArrowUp at first row — focus 유지 (out-of-bound 무시)", () => {
+    const { container } = render(<OntologyTreeView result={makeResult()} />);
+    const buttons = container.querySelectorAll<HTMLButtonElement>(
+      '[data-tree-select-button="true"]',
+    );
+    buttons[0]!.focus();
+    fireEvent.keyDown(buttons[0]!, { key: "ArrowUp" });
+    expect(document.activeElement).toBe(buttons[0]);
+  });
+});
+
 describe("OntologyTreeView — UX-11 element kind dim", () => {
   function withElement(): OntologyTreeBuildResult {
     return {

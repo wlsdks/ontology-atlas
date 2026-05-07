@@ -150,7 +150,8 @@ function TreeRow({
         type="button"
         onClick={() => onSelect?.(treeNode.node)}
         title={treeNode.node.title}
-        className="flex min-w-0 flex-1 items-center gap-2 break-keep text-left text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]"
+        data-tree-select-button="true"
+        className="flex min-w-0 flex-1 items-center gap-2 break-keep text-left text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:rounded-sm"
       >
         <KindChip kind={treeNode.node.kind} />
         <span className="min-w-0 flex-1 truncate">{treeNode.node.title}</span>
@@ -277,6 +278,26 @@ export function OntologyTreeView({
     setCollapsed(defaultExpanded ? new Set(collapsibleIds) : new Set());
   };
 
+  // R+ — 트리 키보드 nav. Tab 으로 트리 진입 후 ↑/↓ 로 visible row 사이 이동.
+  // Enter 는 button 자체가 처리 (browser default), ArrowUp/Down 만 가로챔.
+  // 기존 Tab 흐름은 그대로 — power user 용 추가 layer.
+  const handleTreeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+    const target = event.target as HTMLElement;
+    if (!target?.matches?.('[data-tree-select-button="true"]')) return;
+    const buttons = Array.from(
+      event.currentTarget.querySelectorAll<HTMLButtonElement>(
+        '[data-tree-select-button="true"]',
+      ),
+    );
+    const idx = buttons.indexOf(target as HTMLButtonElement);
+    if (idx < 0) return;
+    event.preventDefault();
+    const next = event.key === "ArrowDown" ? idx + 1 : idx - 1;
+    if (next < 0 || next >= buttons.length) return;
+    buttons[next]?.focus();
+  };
+
   if (
     result.roots.length === 0
     && result.orphans.length === 0
@@ -387,7 +408,12 @@ export function OntologyTreeView({
           </div>
         </div>
       ) : null}
-      <div role="tree" data-testid="ontology-tree" className="space-y-0.5">
+      <div
+        role="tree"
+        data-testid="ontology-tree"
+        className="space-y-0.5"
+        onKeyDown={handleTreeKeyDown}
+      >
         {filteredRoots.map((root) => renderSubtree(root))}
       </div>
       {isFiltering && filteredRoots.length === 0 && filteredOrphans.length === 0 ? (
