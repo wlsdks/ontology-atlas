@@ -68,6 +68,8 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
   npx oh-my-ontology backlinks <slug>         Every node referencing the slug (--json)
   npx oh-my-ontology orphans [vault]          Isolated nodes (어떤 다른 노드도 reference 안 함)
        --kind X --exclude-kinds A,B --json    ${COLORS.dim}filter / skip / machine output${COLORS.reset}
+  npx oh-my-ontology path <from> <to>         Shortest path (BFS) with relation type per hop
+       --max-hops N --json                    ${COLORS.dim}default 5${COLORS.reset}
   npx oh-my-ontology query "<filter>"         Typed filter DSL (kind=X AND has(elements))
        --limit N --json                       ${COLORS.dim}default limit 100${COLORS.reset}
   npx oh-my-ontology rename <old> <new>       Atomic rename — moves .md, redirects every backlink
@@ -284,6 +286,11 @@ if (SUBCOMMAND === 'backlinks') {
 if (SUBCOMMAND === 'orphans') {
   const { runOrphans } = await import('./commands/orphans.mjs');
   exit(await runOrphans(ARGS.slice(1)));
+}
+
+if (SUBCOMMAND === 'path') {
+  const { runPath } = await import('./commands/path.mjs');
+  exit(await runPath(ARGS.slice(1)));
 }
 
 if (SUBCOMMAND === 'query') {

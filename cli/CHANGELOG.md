@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Added — `path` command (16th, mcp find_path wrapper) — 회귀 fix
+
+- `oh-my-ontology path <from> <to> [vault]` — 두 slug 사이 최단 경로 (BFS, 무방향). MCP `find_path` thin wrapper.
+- 각 hop 사이에 `via` (frontmatter 키 = relation type) 를 ↓ 화살표와 함께 한 줄로 표시 — `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`. AI agent 가 path 를 받아 *왜* A 와 B 가 연결됐는지 한 호출에 본다.
+- 옵션: `--max-hops N` (기본 5), `--json` (raw 응답).
+- trivial path (`from === to`) 는 0 hops 안내. 누락 인자 시 usage + exit 1.
+- 신규 integration test 4건.
+- *회귀 fix*: 과거 PR #177 가 머지 안 되고 닫혀 main 에 누락됐던 명령. find_path edges[] (PR #175) 의 CLI 노출 다시 도입.
+
 ### Added — `orphans` command (15th, mcp find_orphans wrapper)
 
 - `oh-my-ontology orphans [vault]` — vault 의 *고립 노드* (어디서도 frontmatter 로 reference 안 받는 doc) 한 줄 명령. mcp `find_orphans` thin spawn wrapper.
