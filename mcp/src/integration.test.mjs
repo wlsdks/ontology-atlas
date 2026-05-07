@@ -129,6 +129,33 @@ function isErrorResponse(responses, id) {
 
 console.log("integration");
 
+// R+ — cycle 39: 단일 도구 (get_concept · add_concept · add_relation) 의
+// description 이 batch 짝 (get_concepts · add_concepts · add_relations) 을
+// 명시 cross-reference. agent 가 tool list 만 보고도 K-round-trip 대안을
+// 인지. drift 시 즉시 회귀.
+await test("tools/list — 단일 도구 description 이 batch 짝을 cross-reference", async () => {
+  const root = makeVault([]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      { jsonrpc: "2.0", id: 99, method: "tools/list", params: {} },
+    ]);
+    const list = responses.find((r) => r.id === 99);
+    assert.ok(list, "tools/list 응답");
+    const tools = list.result?.tools;
+    assert.ok(Array.isArray(tools));
+    const findDesc = (name) => tools.find((t) => t.name === name)?.description;
+    const getC = findDesc("get_concept");
+    const addC = findDesc("add_concept");
+    const addR = findDesc("add_relation");
+    assert.ok(getC && /get_concepts/.test(getC), "get_concept → get_concepts hint");
+    assert.ok(addC && /add_concepts/.test(addC), "add_concept → add_concepts hint");
+    assert.ok(addR && /add_relations/.test(addR), "add_relation → add_relations hint");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("initialize — instructions 필드 (#45) AI agent 안내 노출", async () => {
   // initialize 응답에 instructions 가 있어야 연결된 agent (Claude Code 등) 가
   // kind 계층 / 호출 순서 / write 도구 dry-run 패턴을 즉시 인지. 누락 시

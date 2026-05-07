@@ -209,7 +209,7 @@ const TOOLS = [
   {
     name: 'get_concept',
     description:
-      'Fetch a single node by slug — its frontmatter, a body excerpt, and direct neighbors (dependencies / relates).',
+      'Fetch a single node by slug — its frontmatter, a body excerpt, and direct neighbors (dependencies / relates). **For K specific slugs in one call use `get_concepts({slugs: [...]})` (max 50) instead of K round-trips.**',
     inputSchema: {
       type: 'object',
       properties: {
@@ -261,7 +261,8 @@ const TOOLS = [
       'normalized per kind (project gets `domains/capabilities/elements` empty ' +
       'arrays; capability gets `elements: []`; capability/element should also ' +
       'set `domain:` so the tree has a parent — missing extras come back as ' +
-      '`warnings` in the response, not as an error.',
+      '`warnings` in the response, not as an error. ' +
+      '**For bulk creation (e.g. bootstrap flow with 5+ nodes) use `add_concepts({concepts: [...]})` (batch, max 50, partial result) — saves K-1 round-trips.**',
     inputSchema: {
       type: 'object',
       properties: {
@@ -340,7 +341,8 @@ const TOOLS = [
       'frontmatter array (dependencies / relates / contains / describes); the ' +
       'relation type picks which key receives the entry. **R11**: optional ' +
       '`expected_mtime` — pass the source-side `mtime` from a prior get_concept ' +
-      'so concurrent external edits throw VaultConflictError.',
+      'so concurrent external edits throw VaultConflictError. ' +
+      '**For multiple edges (e.g. all suggestedRelations from analyze, or all moduleEdges from infer_imports) use `add_relations({relations: [...]})` (batch, idempotent, max 50).**',
     inputSchema: {
       type: 'object',
       properties: {
