@@ -154,6 +154,72 @@ describe("OntologyTreeView — keyboard nav (R+)", () => {
     fireEvent.keyDown(buttons[0]!, { key: "ArrowUp" });
     expect(document.activeElement).toBe(buttons[0]);
   });
+
+  it("ArrowLeft on expanded parent → collapse (자식 hide)", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+    expect(screen.queryByText("인증")).toBeInTheDocument();
+    expect(screen.queryByText("로그인")).toBeInTheDocument();
+    const projectBtn = screen
+      .getAllByRole("button")
+      .find(
+        (b) =>
+          b.getAttribute("data-tree-select-button") === "true"
+          && b.getAttribute("data-row-slug") === "p1",
+      )!;
+    projectBtn.focus();
+    fireEvent.keyDown(projectBtn, { key: "ArrowLeft" });
+    expect(screen.queryByText("인증")).not.toBeInTheDocument();
+    expect(screen.queryByText("로그인")).not.toBeInTheDocument();
+  });
+
+  it("ArrowRight on collapsed parent → expand (자식 show)", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+    const projectBtn = screen
+      .getAllByRole("button")
+      .find(
+        (b) =>
+          b.getAttribute("data-tree-select-button") === "true"
+          && b.getAttribute("data-row-slug") === "p1",
+      )!;
+    projectBtn.focus();
+    fireEvent.keyDown(projectBtn, { key: "ArrowLeft" });
+    expect(screen.queryByText("인증")).not.toBeInTheDocument();
+    fireEvent.keyDown(projectBtn, { key: "ArrowRight" });
+    expect(screen.queryByText("인증")).toBeInTheDocument();
+  });
+
+  it("ArrowLeft on already-collapsed → no-op", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+    const projectBtn = screen
+      .getAllByRole("button")
+      .find(
+        (b) =>
+          b.getAttribute("data-tree-select-button") === "true"
+          && b.getAttribute("data-row-slug") === "p1",
+      )!;
+    projectBtn.focus();
+    fireEvent.keyDown(projectBtn, { key: "ArrowLeft" });
+    expect(screen.queryByText("인증")).not.toBeInTheDocument();
+    fireEvent.keyDown(projectBtn, { key: "ArrowLeft" });
+    expect(screen.queryByText("인증")).not.toBeInTheDocument();
+  });
+
+  it("ArrowLeft / ArrowRight on leaf row → no-op", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+    const leafBtn = screen
+      .getAllByRole("button")
+      .find(
+        (b) =>
+          b.getAttribute("data-tree-select-button") === "true"
+          && b.getAttribute("data-row-slug") === "c1",
+      )!;
+    expect(leafBtn.getAttribute("data-row-has-children")).toBe("false");
+    leafBtn.focus();
+    fireEvent.keyDown(leafBtn, { key: "ArrowRight" });
+    fireEvent.keyDown(leafBtn, { key: "ArrowLeft" });
+    expect(screen.queryByText("인증")).toBeInTheDocument();
+    expect(screen.queryByText("로그인")).toBeInTheDocument();
+  });
 });
 
 describe("OntologyTreeView — UX-11 element kind dim", () => {

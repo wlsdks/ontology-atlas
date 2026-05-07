@@ -151,6 +151,9 @@ function TreeRow({
         onClick={() => onSelect?.(treeNode.node)}
         title={treeNode.node.title}
         data-tree-select-button="true"
+        data-row-slug={treeNode.node.id}
+        data-row-has-children={hasChildren ? "true" : "false"}
+        data-row-expanded={hasChildren ? (expanded ? "true" : "false") : ""}
         className="flex min-w-0 flex-1 items-center gap-2 break-keep text-left text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] focus:outline-none focus-visible:ring-1 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:rounded-sm"
       >
         <KindChip kind={treeNode.node.kind} />
@@ -278,24 +281,43 @@ export function OntologyTreeView({
     setCollapsed(defaultExpanded ? new Set(collapsibleIds) : new Set());
   };
 
-  // R+ — 트리 키보드 nav. Tab 으로 트리 진입 후 ↑/↓ 로 visible row 사이 이동.
-  // Enter 는 button 자체가 처리 (browser default), ArrowUp/Down 만 가로챔.
+  // R+ — 트리 키보드 nav. Tab 으로 트리 진입 후 ↑/↓ 로 visible row 사이 이동
+  // (focus only). ←/→ 로 collapse/expand. Enter 는 button 자체가 처리.
   // 기존 Tab 흐름은 그대로 — power user 용 추가 layer.
+  //
+  //   ↓/↑    → 다음/이전 visible row 의 select button 으로 focus 이동.
+  //   →     → focused row 가 children 있고 접혀 있으면 펼침.
+  //   ←     → focused row 가 children 있고 펼쳐져 있으면 접음.
+  //   (parent focus / Home / End 는 미래 확장 — 현재 minimal 셋만.)
   const handleTreeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
     const target = event.target as HTMLElement;
     if (!target?.matches?.('[data-tree-select-button="true"]')) return;
-    const buttons = Array.from(
-      event.currentTarget.querySelectorAll<HTMLButtonElement>(
-        '[data-tree-select-button="true"]',
-      ),
-    );
-    const idx = buttons.indexOf(target as HTMLButtonElement);
-    if (idx < 0) return;
-    event.preventDefault();
-    const next = event.key === "ArrowDown" ? idx + 1 : idx - 1;
-    if (next < 0 || next >= buttons.length) return;
-    buttons[next]?.focus();
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      const buttons = Array.from(
+        event.currentTarget.querySelectorAll<HTMLButtonElement>(
+          '[data-tree-select-button="true"]',
+        ),
+      );
+      const idx = buttons.indexOf(target as HTMLButtonElement);
+      if (idx < 0) return;
+      event.preventDefault();
+      const next = event.key === "ArrowDown" ? idx + 1 : idx - 1;
+      if (next < 0 || next >= buttons.length) return;
+      buttons[next]?.focus();
+      return;
+    }
+    if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
+      const hasChildren = target.dataset.rowHasChildren === "true";
+      if (!hasChildren) return; // leaf → no-op
+      const slug = target.dataset.rowSlug;
+      if (!slug) return;
+      const expanded = target.dataset.rowExpanded === "true";
+      const wantExpand = event.key === "ArrowRight";
+      // 이미 원하는 상태면 no-op (toggle 호출하면 반대 방향으로 가버림).
+      if (wantExpand === expanded) return;
+      event.preventDefault();
+      toggle(slug);
+    }
   };
 
   if (
