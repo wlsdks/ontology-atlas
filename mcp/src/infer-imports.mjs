@@ -280,17 +280,29 @@ function resolveRelativeImport(spec, fromDir) {
 function moduleOf(filePath, sourceFolders) {
   // filePath is relative to rootPath. Find first segment that's a source
   // folder, then take the next segment as the "module" id.
+  //
+  // R+ — slug parity with analyze_repo_structure (cycle 35 fix). analyze
+  // 의 FSD 분기는 features/X · entities/X 의 X 만 capability slug 으로
+  // (bucket 접두 제거) 쓰고, widgets/X · views/X 는 path-style 그대로 유지
+  // (element slug). bootstrap 흐름이 두 도구의 결과를 짝지을 수 있도록
+  // 같은 규칙을 여기서도 적용 — 그래야 add_relations 에서 endpoint 가
+  // 실재 vault 노드로 매치된다.
   const parts = filePath.split(/[\\/]/);
   for (let i = 0; i < parts.length - 1; i += 1) {
     if (sourceFolders.includes(parts[i])) {
-      // for FSD: src/features/auth/x.ts → module = features/auth
-      // generic: src/api/x.ts → module = api
-      // Heuristic: skip 'src/', take first sub-folder unless it's an FSD bucket
       const next = parts[i + 1];
-      const fsdBuckets = new Set(['features', 'entities', 'widgets', 'views']);
-      if (fsdBuckets.has(next) && parts[i + 2]) {
+      // capability 류 bucket — analyze 가 inner name 만 slug 으로 쓰므로
+      // 동일하게 inner name 만.
+      const capabilityBuckets = new Set(['features', 'entities']);
+      if (capabilityBuckets.has(next) && parts[i + 2]) {
+        return parts[i + 2];
+      }
+      // element 류 bucket — analyze 가 path-style 유지하므로 동일하게.
+      const elementBuckets = new Set(['widgets', 'views']);
+      if (elementBuckets.has(next) && parts[i + 2]) {
         return `${next}/${parts[i + 2]}`;
       }
+      // generic — sourceFolder 다음 첫 segment 가 module.
       return next;
     }
   }

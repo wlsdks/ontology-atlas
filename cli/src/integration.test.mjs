@@ -1325,31 +1325,31 @@ await test('infer-imports --threshold abc — 잘못된 입력 거부', async ()
 // ── bootstrap (R+ — analyze --apply + infer-imports --apply 합본) ───────
 
 function makeFullRepo() {
-  // Generic (non-FSD) layout — analyze 와 infer_imports 의 slug derivation 이
-  // 일치 (둘 다 src/auth → "auth"). FSD layout 은 두 도구의 slug 가 어긋나
-  // import edges 가 "does not exist" 로 fail (다음 cycle 의 known issue).
+  // FSD-ish layout — cycle 35 fix 후 analyze 와 infer_imports 가 같은 slug
+  // ("auth" / "billing") 을 만들어 bootstrap 의 imports 단계가 endpoint 매치
+  // 가능. 이전 cycle 34 에선 생성된 generic layout 으로 우회했음.
   const repo = mkdtempSync(join(tmpdir(), 'cli-bs-'));
   writeFileSync(
     join(repo, 'package.json'),
     JSON.stringify({ name: 'bs-app', description: 'BS app' }, null, 2),
     'utf-8',
   );
-  mkdirSync(join(repo, 'src', 'auth'), { recursive: true });
-  mkdirSync(join(repo, 'src', 'billing'), { recursive: true });
+  mkdirSync(join(repo, 'src', 'features', 'auth'), { recursive: true });
+  mkdirSync(join(repo, 'src', 'features', 'billing'), { recursive: true });
   writeFileSync(
-    join(repo, 'src', 'auth', 'index.ts'),
+    join(repo, 'src', 'features', 'auth', 'index.ts'),
     "import { x } from '../billing';\nexport const a = x;\n",
     'utf-8',
   );
   writeFileSync(
-    join(repo, 'src', 'billing', 'index.ts'),
+    join(repo, 'src', 'features', 'billing', 'index.ts'),
     'export const x = 1;\n',
     'utf-8',
   );
   return repo;
 }
 
-await test('bootstrap — analyze + infer-imports 한 명령으로 land', async () => {
+await test('bootstrap — analyze + infer-imports 한 명령으로 land (FSD slug parity, cycle 35)', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
   try {
@@ -1358,8 +1358,23 @@ await test('bootstrap — analyze + infer-imports 한 명령으로 land', async 
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /1\) analyze/);
     assert.match(clean, /2\) imports/);
-    // project 노드 + capability 들 land 되어야.
+    // project + capability 노드 land
     assert.equal(existsSyncTest(join(vault, 'bs-app.md')), true, 'project');
+    assert.equal(existsSyncTest(join(vault, 'auth.md')), true, 'auth capability');
+    assert.equal(
+      existsSyncTest(join(vault, 'billing.md')),
+      true,
+      'billing capability',
+    );
+    // R+ — FSD slug parity 확인. analyze 가 "auth" / "billing" 으로 capability
+    // 만들고, infer_imports 의 module slug 도 "auth" → "billing" 으로 일치해야
+    // depends_on 에지가 진짜 land 됨. cycle 34 known issue 의 회귀 차단.
+    const authDoc = readFileSync(join(vault, 'auth.md'), 'utf-8');
+    assert.match(
+      authDoc,
+      /dependencies:.*\bbilling\b/s,
+      `auth.md should depend_on billing — got: ${authDoc}`,
+    );
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });

@@ -101,7 +101,10 @@ test('dynamic import + require + reexport detected', () => {
   }
 });
 
-test('module-level edge collapse (FSD: features/ 안 module 합산)', () => {
+test('module-level edge collapse (FSD features/ — bucket 접두 stripped, analyze 와 일관)', () => {
+  // R+ — cycle 35: features/X · entities/X 는 inner 이름만 slug.
+  // analyze_repo_structure 가 capability 후보 slug 을 같은 식으로 만들어
+  // bootstrap 의 add_relations 가 endpoint 매치 가능.
   const root = withRepo((r) => {
     mkdirSync(join(r, 'src/features/auth'), { recursive: true });
     mkdirSync(join(r, 'src/features/billing'), { recursive: true });
@@ -115,10 +118,33 @@ test('module-level edge collapse (FSD: features/ 안 module 합산)', () => {
   try {
     const r = inferImports(root);
     const e = r.moduleEdges.find(
-      (x) => x.from === 'features/auth' && x.to === 'features/billing',
+      (x) => x.from === 'auth' && x.to === 'billing',
     );
-    assert.ok(e, `expected module edge features/auth → features/billing, got: ${JSON.stringify(r.moduleEdges)}`);
+    assert.ok(e, `expected module edge auth → billing, got: ${JSON.stringify(r.moduleEdges)}`);
     assert.equal(e.count, 2, '두 import 합산');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('module-level edge collapse (FSD widgets/ — path-style 유지, element slug 와 일관)', () => {
+  // R+ — cycle 35: widgets/X · views/X 는 path-style 유지 (analyze 가 element
+  // 후보 slug 으로 같은 식 — relative path).
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src/widgets/header'), { recursive: true });
+    mkdirSync(join(r, 'src/widgets/footer'), { recursive: true });
+    writeFileSync(
+      join(r, 'src/widgets/header/index.ts'),
+      'import { x } from "../footer";\nexport const h = x;\n',
+    );
+    writeFileSync(join(r, 'src/widgets/footer/index.ts'), 'export const x = 1;');
+  });
+  try {
+    const r = inferImports(root);
+    const e = r.moduleEdges.find(
+      (x) => x.from === 'widgets/header' && x.to === 'widgets/footer',
+    );
+    assert.ok(e, `expected module edge widgets/header → widgets/footer, got: ${JSON.stringify(r.moduleEdges)}`);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
