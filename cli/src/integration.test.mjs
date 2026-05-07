@@ -911,5 +911,117 @@ await test('merge — dry-run preview', async () => {
   }
 });
 
+// ── analyze --apply (R+ — agent-less bootstrap) ─────────────────────────
+//
+// CLI 가 analyze_repo_structure 결과를 add_concepts + add_relations 배치로
+// land. /ontology-bootstrap skill 의 CLI 짝.
+
+function makeRepoFixture() {
+  const repo = mkdtempSync(join(tmpdir(), 'cli-repo-'));
+  writeFileSync(
+    join(repo, 'package.json'),
+    JSON.stringify(
+      { name: 'test-app', description: 'Test app for analyze --apply' },
+      null,
+      2,
+    ),
+    'utf-8',
+  );
+  // FSD-ish layout — features 한 두개 만들어 capability 후보 생성.
+  mkdirSync(join(repo, 'src', 'features', 'auth'), { recursive: true });
+  mkdirSync(join(repo, 'src', 'features', 'billing'), { recursive: true });
+  return repo;
+}
+
+await test('analyze --apply — concepts/relations vault 에 land', async () => {
+  const vault = withVault([]);
+  const repo = makeRepoFixture();
+  try {
+    const r = await run([
+      'analyze',
+      repo,
+      '--vault',
+      vault,
+      '--apply',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /analyze --apply/);
+    assert.match(clean, /concepts/);
+    // project (test-app) 노드가 vault 에 land 됐어야.
+    const projectFile = join(vault, 'test-app.md');
+    assert.equal(existsSyncTest(projectFile), true, 'project file landed');
+    const fm = readFileSync(projectFile, 'utf-8');
+    assert.match(fm, /kind: project/);
+    // analyze 가 pkg.description 을 title 로 사용 (혹은 fallback humanize).
+    assert.match(fm, /title: Test app for analyze --apply/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('analyze (default, no --apply) — vault 변경 0', async () => {
+  const vault = withVault([]);
+  const repo = makeRepoFixture();
+  try {
+    const r = await run(['analyze', repo, '--vault', vault]);
+    assert.equal(r.code, 0);
+    // vault 에 새 .md 파일이 *없어야* 함 (default 는 read-only).
+    assert.equal(
+      existsSyncTest(join(vault, 'test-app.md')),
+      false,
+      'project file 안 만들어짐 (default mode)',
+    );
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('analyze --apply 두 번째 실행 → "already existed" 카운트, errors 0', async () => {
+  const vault = withVault([]);
+  const repo = makeRepoFixture();
+  try {
+    const r1 = await run(['analyze', repo, '--vault', vault, '--apply']);
+    assert.equal(r1.code, 0);
+    const r2 = await run(['analyze', repo, '--vault', vault, '--apply']);
+    assert.equal(r2.code, 0, `2번째 실행 실패: ${r2.stdout}\n${r2.stderr}`);
+    const clean = stripAnsi(r2.stdout);
+    // 모두 already existed (concept side) + 모두 already existed (relation side, idempotent).
+    assert.match(clean, /already existed/);
+    // errors 0
+    assert.match(clean, /0 errors/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('analyze --apply --json — applied / summary 필드 노출', async () => {
+  const vault = withVault([]);
+  const repo = makeRepoFixture();
+  try {
+    const r = await run([
+      'analyze',
+      repo,
+      '--vault',
+      vault,
+      '--apply',
+      '--json',
+    ]);
+    assert.equal(r.code, 0);
+    const data = JSON.parse(r.stdout);
+    assert.ok(data.applied, 'applied 필드 있음');
+    assert.ok(Array.isArray(data.applied.concepts), 'applied.concepts 배열');
+    assert.ok(Array.isArray(data.applied.relations), 'applied.relations 배열');
+    assert.ok(data.summary, 'summary 필드 있음');
+    assert.equal(typeof data.summary.errors, 'number');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 console.log(`\ncli integration: ${passed} passed, ${failed} failed`);
 if (failed > 0) process.exit(1);

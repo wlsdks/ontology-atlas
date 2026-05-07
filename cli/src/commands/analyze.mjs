@@ -26,7 +26,7 @@ const KIND_COLOR = {
 };
 
 export async function runAnalyze(args) {
-  const { rootPath, vault, json, maxDepth, error } = parseArgs(args);
+  const { rootPath, vault, json, maxDepth, apply, error } = parseArgs(args);
   if (error) {
     process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${error}\n`);
     printUsage();
@@ -36,7 +36,8 @@ export async function runAnalyze(args) {
   const target = resolve(process.cwd(), rootPath);
   // analyze 는 *vault 와 무관* 한 도구지만 mcp 통과 시 OMOT_VAULT 가 필요해서
   // 그냥 cwd 또는 사용자 지정. mcp 의 analyze 도 vault 안 만지지만
-  // initialization 흐름에 vault path 가 필요.
+  // initialization 흐름에 vault path 가 필요. --apply 모드는 vault 에
+  // 실제로 쓰므로 vault 위치 정확히 지정 필요.
   const vaultRoot = resolve(process.cwd(), vault);
   let result;
   try {
@@ -49,6 +50,14 @@ export async function runAnalyze(args) {
       `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
     );
     return 2;
+  }
+
+  // --apply 분기 — 후보를 vault 에 batch land. mcp 의 add_concepts +
+  // add_relations 호출. partial result OK (이미 존재하는 노드는 ok:false 로
+  // skip). agent-less 워크플로 (CI · plain CLI) 가 /ontology-bootstrap skill
+  // 의 K round-trip 을 우회.
+  if (apply) {
+    return await runApply(vaultRoot, result, json);
   }
 
   if (json) {
@@ -122,13 +131,14 @@ function printSection(label, items, colors, kindColor) {
 }
 
 function parseArgs(args) {
-  const flags = { vault: '.', json: false };
+  const flags = { vault: '.', json: false, apply: false };
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
     if (a === '--vault') flags.vault = args[++i] || '.';
     else if (a.startsWith('--vault=')) flags.vault = a.slice('--vault='.length);
     else if (a === '--json') flags.json = true;
+    else if (a === '--apply') flags.apply = true;
     else if (a === '--max-depth')
       flags.maxDepth = Number(args[++i]) || undefined;
     else if (a.startsWith('--max-depth='))
@@ -140,21 +150,173 @@ function parseArgs(args) {
     rootPath: positional[0] ?? '.',
     vault: flags.vault,
     json: flags.json,
+    apply: flags.apply,
     maxDepth: flags.maxDepth,
   };
+}
+
+// R+ — analyze 결과를 vault 에 land. add_concepts + add_relations 배치 호출.
+// /ontology-bootstrap skill 의 CLI 짝 — agent-less 흐름 (CI / plain shell)
+// 도 1줄로 vault 부트스트랩.
+async function runApply(vaultRoot, result, json) {
+  // concepts[] 조립 — project 먼저 (capability 의 domain reference 가 의미
+  // 가 있으려면 domain 이 먼저 와야 하고, 그 전에 project 가). add_concepts
+  // 는 cap 50 이라 여기 한 번에 land 가능한 수준이 아니면 chunk 가 필요
+  // 하지만 analyze 의 current heuristic 은 보통 30 이하라 하나로 충분.
+  const concepts = [];
+  if (result.project) {
+    concepts.push({
+      slug: result.project.slug,
+      kind: 'project',
+      title: result.project.title,
+    });
+  }
+  for (const d of result.domains ?? []) {
+    concepts.push({ slug: d.slug, kind: 'domain', title: d.title });
+  }
+  for (const c of result.capabilities ?? []) {
+    concepts.push({
+      slug: c.slug,
+      kind: 'capability',
+      title: c.title,
+      ...(c.domain ? { domain: c.domain } : {}),
+    });
+  }
+  for (const e of result.elements ?? []) {
+    concepts.push({
+      slug: e.slug,
+      kind: 'element',
+      title: e.title,
+      ...(e.domain ? { domain: e.domain } : {}),
+    });
+  }
+
+  let conceptsResult;
+  try {
+    conceptsResult = await callBatch(vaultRoot, 'add_concepts', { concepts });
+  } catch (err) {
+    process.stderr.write(
+      `${COLORS.red}error${COLORS.reset}  add_concepts: ${err instanceof Error ? err.message : String(err)}\n`,
+    );
+    return 2;
+  }
+
+  const relations = result.suggestedRelations ?? [];
+  let relationsResult = { concepts: [] };
+  if (relations.length > 0) {
+    try {
+      relationsResult = await callBatch(vaultRoot, 'add_relations', {
+        relations,
+      });
+    } catch (err) {
+      process.stderr.write(
+        `${COLORS.red}error${COLORS.reset}  add_relations: ${err instanceof Error ? err.message : String(err)}\n`,
+      );
+      return 2;
+    }
+  }
+
+  // mcp 응답 shape — add_concepts 는 { concepts: [...] }, add_relations 는
+  // { relations: [...] }. 두 도구가 다른 키.
+  const conceptRows = conceptsResult.concepts ?? [];
+  const relationRows = relationsResult.relations ?? [];
+
+  const summary = summarize(conceptRows, relationRows);
+
+  if (json) {
+    process.stdout.write(
+      JSON.stringify(
+        {
+          rootPath: result.rootPath,
+          framework: result.framework,
+          applied: { concepts: conceptRows, relations: relationRows },
+          summary,
+        },
+        null,
+        2,
+      ) + '\n',
+    );
+    return summary.errors === 0 ? 0 : 1;
+  }
+
+  process.stdout.write(
+    `${COLORS.bold}analyze --apply${COLORS.reset} ${COLORS.dim}vault=${vaultRoot}${COLORS.reset}\n\n`,
+  );
+  process.stdout.write(
+    `  ${COLORS.bold}concepts${COLORS.reset}   ${COLORS.green}${summary.conceptsLanded}${COLORS.reset} landed · ` +
+      `${COLORS.dim}${summary.conceptsExisting}${COLORS.reset} already existed · ` +
+      `${summary.conceptsErrors > 0 ? COLORS.red : COLORS.dim}${summary.conceptsErrors}${COLORS.reset} errors\n`,
+  );
+  process.stdout.write(
+    `  ${COLORS.bold}relations${COLORS.reset}  ${COLORS.green}${summary.relationsLanded}${COLORS.reset} landed · ` +
+      `${COLORS.dim}${summary.relationsExisting}${COLORS.reset} already existed · ` +
+      `${summary.relationsErrors > 0 ? COLORS.red : COLORS.dim}${summary.relationsErrors}${COLORS.reset} errors\n\n`,
+  );
+  // 에러 행만 사용자에게 노출 (성공/idempotent 는 noise).
+  for (const row of conceptRows) {
+    if (row.ok === false) {
+      process.stdout.write(
+        `  ${COLORS.red}✗${COLORS.reset} ${row.slug} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
+      );
+    }
+  }
+  for (const row of relationRows) {
+    if (row.ok === false) {
+      process.stdout.write(
+        `  ${COLORS.red}✗${COLORS.reset} ${row.from} —${row.type}→ ${row.to} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
+      );
+    }
+  }
+  return summary.errors === 0 ? 0 : 1;
+}
+
+function summarize(conceptRows, relationRows) {
+  let conceptsLanded = 0;
+  let conceptsExisting = 0;
+  let conceptsErrors = 0;
+  for (const r of conceptRows) {
+    if (r.ok === true) conceptsLanded += 1;
+    else if (/already exists/i.test(r.error || '')) conceptsExisting += 1;
+    else conceptsErrors += 1;
+  }
+  let relationsLanded = 0;
+  let relationsExisting = 0;
+  let relationsErrors = 0;
+  for (const r of relationRows) {
+    if (r.ok === true && r.alreadyExists) relationsExisting += 1;
+    else if (r.ok === true) relationsLanded += 1;
+    else relationsErrors += 1;
+  }
+  return {
+    conceptsLanded,
+    conceptsExisting,
+    conceptsErrors,
+    relationsLanded,
+    relationsExisting,
+    relationsErrors,
+    errors: conceptsErrors + relationsErrors,
+  };
+}
+
+// callMcpTool 의 1차 wrapper 가 mcp 호출의 result.content[0].text 를 JSON.parse
+// 해서 그대로 반환 — 우리도 그 shape 가정.
+async function callBatch(vaultRoot, name, args) {
+  return callMcpTool(vaultRoot, name, args);
 }
 
 function printUsage() {
   process.stderr.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology analyze [rootPath] [--vault path] [--json] [--max-depth N]\n\n` +
+      `  oh-my-ontology analyze [rootPath] [--vault path] [--apply] [--json] [--max-depth N]\n\n` +
       `${COLORS.bold}What it does:${COLORS.reset}\n` +
       `  Walk a code repository (default: cwd), detect package.json / README\n` +
       `  H2 sections / src/ folders, propose ontology node candidates.\n` +
-      `  ${COLORS.bold}side effect 0${COLORS.reset} — vault 변경 안 함. 사용자가 후보 검토 후\n` +
-      `  ${COLORS.bold}oh-my-ontology add${COLORS.reset} 또는 AI agent 의 add_concept 로 명시 작성.\n\n` +
-      `${COLORS.bold}Example:${COLORS.reset}\n` +
-      `  oh-my-ontology analyze\n` +
-      `  oh-my-ontology analyze ~/my-app --json\n`,
+      `  Default: ${COLORS.bold}side effect 0${COLORS.reset} — vault 변경 안 함, 후보만 출력.\n` +
+      `  ${COLORS.bold}--apply${COLORS.reset}: 후보를 vault 에 batch land (add_concepts + add_relations).\n` +
+      `  partial result — 이미 존재하는 노드는 skip, 새 노드만 land.\n\n` +
+      `${COLORS.bold}Examples:${COLORS.reset}\n` +
+      `  oh-my-ontology analyze                 # preview only (no writes)\n` +
+      `  oh-my-ontology analyze ~/my-app --json # machine output\n` +
+      `  oh-my-ontology analyze --apply         # bootstrap vault from cwd\n`,
   );
 }
