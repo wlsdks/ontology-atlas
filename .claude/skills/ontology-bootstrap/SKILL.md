@@ -1,6 +1,6 @@
 ---
 name: ontology-bootstrap
-description: Bootstrap an empty (or near-empty) oh-my-ontology vault from the surrounding codebase — call analyze_repo_structure once, show the proposed candidates, and selectively land the accepted ones via add_concept / add_relation. Use when the user says "이 codebase 분석해줘" / "bootstrap the ontology" / "fill the vault from the code", or when you notice the vault has only the 5 starter nodes and the user has asked you to do anything ontology-related. Skip when the vault already has 20+ user-curated nodes — bootstrap is for the cold-start case only.
+description: Bootstrap an empty (or near-empty) oh-my-ontology vault from the surrounding codebase — call analyze_repo_structure once, show the proposed candidates, and selectively land the accepted ones via add_concepts / add_relations (batch writers). Use when the user says "이 codebase 분석해줘" / "bootstrap the ontology" / "fill the vault from the code", or when you notice the vault has only the 5 starter nodes and the user has asked you to do anything ontology-related. Skip when the vault already has 20+ user-curated nodes — bootstrap is for the cold-start case only.
 ---
 
 # /ontology-bootstrap — fill an empty vault from the code
@@ -13,8 +13,10 @@ Two facts make a fresh `oh-my-ontology` vault feel empty:
    onboarding path (measured: ~25 cli `add` calls in the Paravel real-codebase
    dogfood — `docs/dogfood-paravel-2026-05-06.md`).
 
-This skill closes that gap with **one MCP call + selective writes**.
-It is the *cold-start* counterpart to `/ontology-sync` (which keeps an
+This skill closes that gap with **3 MCP calls total** — one read
+(`analyze_repo_structure`) plus two batch writes (`add_concepts` for the
+nodes, `add_relations` for the edges). Down from ~25 round-trips. It is
+the *cold-start* counterpart to `/ontology-sync` (which keeps an
 already-grown vault in step with new code).
 
 ## When to run
@@ -81,13 +83,13 @@ Land all of these as the ontology bootstrap? (yes / pick / refine)
 
 ### 4. Hand control to the user
 
-Three branches:
+Three branches — all use the **batch writers** (R+: `add_concepts` cap 50, `add_relations` cap 50). Each batch is one round-trip; rows fail independently with `{ok: false, error}` so a stale slug or missing target doesn't abort the rest.
 
-- **yes** — call `add_concept` for project, then each domain, capability, element in that order. Each call is 1 line of args. Then call `add_relation` for each suggested relation (`from → to`, `type: 'contains'` for project→capability). Skip relations whose endpoints didn't make it in.
-- **pick** — list the candidates one kind at a time, let the user accept/reject per item, then call `add_concept` only for the accepted ones.
-- **refine** — let the user rename slugs / titles inline before any write. Pass the refined version to `add_concept`.
+- **yes** — assemble one `concepts[]` array containing the project + every domain + every capability + every element. Call `add_concepts({ concepts })` once. Then build `relations[]` from `suggestedRelations` and call `add_relations({ relations })` once. 2 writes total.
+- **pick** — list the candidates one kind at a time, let the user accept/reject per item, then build the filtered `concepts[]` / `relations[]` and run the same two batch calls. Drop relations whose endpoints didn't make the cut.
+- **refine** — let the user rename slugs / titles inline before any write. Apply the rename to the candidate arrays *and* to the relations (`from` / `to`) so they still match. Then 2 batch calls as above.
 
-Whatever path is chosen, **the user (via your `add_concept` / `add_relation` calls) is the only writer**. Single source of truth preserved.
+If a batch exceeds 50 rows (rare but possible in monorepos), split into chunks of 50 — each chunk is still one round-trip. Whatever path is chosen, **the user (via your `add_concepts` / `add_relations` calls) is the only writer**. Single source of truth preserved.
 
 ### 5. Land + verify
 
@@ -102,9 +104,12 @@ Show the kind census diff in the reply (e.g. *"Vault grew 5 → 18 nodes (+3 dom
 
 ## Failure modes
 
-- **`add_concept` throws on existing slug** — the starter `example` nodes (or a previous bootstrap) collided. Use `patch_concept` to overwrite, or pick a different slug.
-- **`missing-expected-field` warning** — a capability or element was added without `domain:`. Tolerable for bootstrap (vault still validates), but flag the warnings to the user so they can backfill.
-- **MCP unavailable in this session** — fall back to the CLI: `oh-my-ontology analyze .` to get the same JSON, then `oh-my-ontology add <kind> <slug> --title=...` for each accepted candidate.
+- **`add_concepts` row returns `ok: false` with "already exists"** — the starter `example` nodes (or a previous bootstrap) collided. Other rows still land (the batch is partial-success, not all-or-nothing). Inspect the failed rows; for each, either skip (already present is fine) or follow up with `patch_concept` to overwrite the body. Do *not* retry the whole batch — that just re-fails the same rows.
+- **`add_concepts` row returns `ok: false` with "duplicate slug in input batch"** — your candidate array had the same slug twice. Pick one occurrence and re-submit only that row.
+- **`missing-expected-field` warning on a per-row `warnings: [...]`** — a capability or element was added without `domain:`. Tolerable for bootstrap (vault still validates), but surface the warnings to the user so they can backfill.
+- **`add_relations` row returns `ok: false` with "does not exist"** — an endpoint was rejected in the `add_concepts` step. Confirm and either drop the relation or add the missing concept first.
+- **`add_relations` row returns `alreadyExists: true`** — that edge was already present (idempotent). Not an error; surface as informational only.
+- **MCP unavailable in this session** — fall back to the CLI: `oh-my-ontology analyze .` to get the same JSON, then `oh-my-ontology add <kind> <slug> --title=...` for each accepted candidate (CLI does not yet have a batch wrapper, so this path is K round-trips).
 - **Repo too deep / monorepo** — pass `rootPath` for the relevant subdirectory, or run `analyze` per package and merge results.
 
 ## Reply discipline
