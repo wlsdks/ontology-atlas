@@ -174,6 +174,54 @@ await test('validate — 1회짜리 code 는 grouped 섹션 안 보임 (per-file
   }
 });
 
+await test('validate --strict — warning 만 있어도 exit 1 (R+ cycle 42)', async () => {
+  // capability 의 domain 누락 → missing-expected-field warning. default 면
+  // exit 0 (errors 만 fail), --strict 면 exit 1.
+  const root = withVault([
+    { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
+  ]);
+  try {
+    const noStrict = await run(['validate', root]);
+    assert.equal(noStrict.code, 0, 'default: warning only → exit 0');
+    const strict = await run(['validate', root, '--strict']);
+    assert.equal(strict.code, 1, '--strict: warning → exit 1');
+    const clean = stripAnsi(strict.stdout);
+    assert.match(clean, /missing-expected-field|warning/);
+    // strict 모드 표시.
+    assert.match(clean, /--strict/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('validate --strict — clean vault 면 strict 여도 exit 0', async () => {
+  const root = withVault([
+    { slug: 'p', content: '---\nkind: project\ntitle: P\n---\n' },
+  ]);
+  try {
+    const r = await run(['validate', root, '--strict']);
+    assert.equal(r.code, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('validate --json --strict — summary.strict=true, warning 시 exit 1', async () => {
+  const root = withVault([
+    { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
+  ]);
+  try {
+    const r = await run(['validate', root, '--json', '--strict']);
+    assert.equal(r.code, 1);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.summary.strict, true);
+    assert.equal(data.summary.errorFiles, 0);
+    assert.ok(data.summary.warningFiles >= 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('validate --json — clean vault: scanned/problems[]/summary 노출, exit 0 (R+ cycle 40)', async () => {
   // capability 는 domain 누락 시 missing-expected-field warning. project 로
   // 정말 깨끗한 vault 만든다.

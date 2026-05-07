@@ -47,7 +47,7 @@ ${COLORS.bold}Usage:${COLORS.reset}
                                               ${COLORS.dim}--kind <kind>     filter by kind${COLORS.reset}
                                               ${COLORS.dim}--json            JSON output${COLORS.reset}
   npx oh-my-ontology validate [vault]         Frontmatter integrity check (exit 1 on errors)
-       --json                                 ${COLORS.dim}structured issue output for CI / scripts${COLORS.reset}
+       --json --strict                        ${COLORS.dim}structured output · warning 도 exit 1 (CI)${COLORS.reset}
   npx oh-my-ontology add <kind> <slug>        Scaffold a new ontology node (.md)
        --title "..."                          ${COLORS.dim}required, non-empty${COLORS.reset}
        --domain X --body "..." --vault path   ${COLORS.dim}optional${COLORS.reset}

@@ -20,9 +20,14 @@ const COLORS = {
  *
  * R+ — \`--json\` 플래그 (cycle 40): 머신 가독 출력. CI / 스크립트 / agent
  * 가 ANSI strip 없이 issue 행을 그대로 파싱.
+ *
+ * R+ — \`--strict\` 플래그 (cycle 42): warning 도 exit 1. CI 가 missing-
+ * expected-field (capability/element 의 domain 누락 등) 도 차단하려 할 때.
+ * default 는 errors 만 fail.
  */
 export function runValidate(args) {
   const json = args.includes('--json');
+  const strict = args.includes('--strict');
   const vaultPath = resolve(args.find((a) => !a.startsWith('--')) || '.');
   const files = walkMd(vaultPath);
   const reports = [];
@@ -76,13 +81,14 @@ export function runValidate(args) {
             errorFiles,
             warningFiles,
             byCode,
+            strict,
           },
         },
         null,
         2,
       ) + '\n',
     );
-    return errorFiles > 0 ? 1 : 0;
+    return decideExit(errorFiles, warningFiles, strict);
   }
 
   if (reports.length === 0) {
@@ -91,6 +97,8 @@ export function runValidate(args) {
     );
     return 0;
   }
+
+  // strict 모드 안내는 마지막 summary 줄에서 처리.
 
   for (const { file, report } of reports) {
     console.log(`\n${file}`);
@@ -121,12 +129,23 @@ export function runValidate(args) {
     }
   }
 
+  const strictTag =
+    strict && warningFiles > 0
+      ? ` ${COLORS.dim}[--strict: warning 도 exit 1]${COLORS.reset}`
+      : '';
   console.log(
     `\n[validate] ${files.length} 파일 / ${reports.length} 문제 ` +
       `(${COLORS.red}error ${errorFiles}${COLORS.reset} · ` +
-      `${COLORS.yellow}warning ${warningFiles}${COLORS.reset})`,
+      `${COLORS.yellow}warning ${warningFiles}${COLORS.reset})${strictTag}`,
   );
-  return errorFiles > 0 ? 1 : 0;
+  return decideExit(errorFiles, warningFiles, strict);
+}
+
+// strict 모드면 warning 도 fail. default 는 errors 만 fail.
+function decideExit(errorFiles, warningFiles, strict) {
+  if (errorFiles > 0) return 1;
+  if (strict && warningFiles > 0) return 1;
+  return 0;
 }
 
 /**
