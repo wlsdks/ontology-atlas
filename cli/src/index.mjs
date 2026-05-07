@@ -219,20 +219,27 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        ${COLORS.cyan}oh-my-ontology list${COLORS.reset}                        ${COLORS.dim}# 5 starter nodes${COLORS.reset}
        ${COLORS.cyan}oh-my-ontology validate${COLORS.reset}                    ${COLORS.dim}# frontmatter integrity${COLORS.reset}
 
-  ${COLORS.dim}2.${COLORS.reset} ${COLORS.bold}Add your first node:${COLORS.reset}
+  ${COLORS.dim}2.${COLORS.reset} ${COLORS.bold}Bootstrap from your codebase${COLORS.reset} (recommended — agent-less, 1 line):
+       ${COLORS.cyan}oh-my-ontology bootstrap /path/to/your/repo${COLORS.reset} ${COLORS.dim}# preview only${COLORS.reset}
+       ${COLORS.cyan}oh-my-ontology bootstrap /path/to/your/repo --apply${COLORS.reset}
+       ${COLORS.dim}analyze (project + domains + capabilities + elements) + infer-imports${COLORS.reset}
+       ${COLORS.dim}(depends_on edges) batch land in 3 round-trips. --threshold N filters${COLORS.reset}
+       ${COLORS.dim}weak imports.${COLORS.reset}
+
+  ${COLORS.dim}3.${COLORS.reset} ${COLORS.bold}Or add your first node by hand:${COLORS.reset}
        ${COLORS.cyan}oh-my-ontology add capability auth/token-issue --title="Token issue" --domain=auth${COLORS.reset}
        ${COLORS.cyan}oh-my-ontology find token${COLORS.reset}                  ${COLORS.dim}# verify it shows up${COLORS.reset}
 
-  ${COLORS.dim}3.${COLORS.reset} ${COLORS.bold}Edit project.md${COLORS.reset} — set your project's real name + description.
+  ${COLORS.dim}4.${COLORS.reset} ${COLORS.bold}Edit project.md${COLORS.reset} — set your project's real name + description.
        Then add domains / capabilities / elements as you discover them.
 
-  ${COLORS.dim}4.${COLORS.reset} ${COLORS.bold}Open this folder in an AI agent${COLORS.reset} (Claude Code, Cursor, …):
+  ${COLORS.dim}5.${COLORS.reset} ${COLORS.bold}Open this folder in an AI agent${COLORS.reset} (Claude Code, Cursor, …):
        Both your codebase root (cwd) and the vault folder now have a wired
        ${COLORS.bold}.mcp.json${COLORS.reset}. Open either folder, restart the agent,
-       and the ${COLORS.bold}oh-my-ontology${COLORS.reset} namespace appears with 14 tools
-       (8 read + 6 write).
+       and the ${COLORS.bold}oh-my-ontology${COLORS.reset} namespace appears with 19 tools
+       (11 read + 8 write).
 
-  ${COLORS.dim}5.${COLORS.reset} ${COLORS.bold}See the graph${COLORS.reset} (optional, web UI):
+  ${COLORS.dim}6.${COLORS.reset} ${COLORS.bold}See the graph${COLORS.reset} (optional, web UI):
        ${COLORS.cyan}git clone https://github.com/wlsdks/oh-my-ontology${COLORS.reset}
        Point its ${COLORS.bold}/docs${COLORS.reset} picker at this vault.
 

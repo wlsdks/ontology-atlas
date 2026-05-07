@@ -17,7 +17,7 @@
 ### Why developer-primary
 
 - Developer already lives in the codebase — the *cost* of authoring frontmatter (slug / kind / domain / dependencies) is small for them.
-- Developer's AI agent (the *real* daily user of `mcp/` 14 tools) needs ground-truth structure to give better answers. Without a developer maintaining it, the ontology rots.
+- Developer's AI agent (the *real* daily user of `mcp/` 19 tools) needs ground-truth structure to give better answers. Without a developer maintaining it, the ontology rots.
 - The *differentiator* vs Protégé / Notion / OWL editors = "ontology that lives next to the code, in the same git repo, that the developer + AI agent grow together."
 
 ---
