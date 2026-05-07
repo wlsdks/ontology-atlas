@@ -17,8 +17,12 @@ const COLORS = {
  * vault 의 frontmatter integrity 검증. 5 issue codes (unclosed-frontmatter
  * / empty-kind / missing-kind / unknown-kind / parse-zero-keys). error 1+
  * 시 exit 1.
+ *
+ * R+ — \`--json\` 플래그 (cycle 40): 머신 가독 출력. CI / 스크립트 / agent
+ * 가 ANSI strip 없이 issue 행을 그대로 파싱.
  */
 export function runValidate(args) {
+  const json = args.includes('--json');
   const vaultPath = resolve(args.find((a) => !a.startsWith('--')) || '.');
   const files = walkMd(vaultPath);
   const reports = [];
@@ -40,6 +44,45 @@ export function runValidate(args) {
     });
     if (report.issues.some((i) => i.severity === 'error')) errorFiles += 1;
     else warningFiles += 1;
+  }
+
+  // R+ — JSON 출력은 항상 같은 shape (clean vault 도 problems: [] 로). caller
+  // 가 .summary.errorFiles 만 보고 분기 가능 — text 모드의 분기 없는 단일
+  // structure.
+  if (json) {
+    const groups = groupIssuesByCode(reports);
+    const byCode = {};
+    for (const g of groups) {
+      byCode[g.code] = {
+        severity: g.severity,
+        count: g.count,
+        files: g.files,
+      };
+    }
+    process.stdout.write(
+      JSON.stringify(
+        {
+          scanned: files.length,
+          problems: reports.map(({ file, report }) => ({
+            file,
+            issues: report.issues.map((i) => ({
+              code: i.code,
+              severity: i.severity,
+              message: i.message,
+            })),
+          })),
+          summary: {
+            problemFiles: reports.length,
+            errorFiles,
+            warningFiles,
+            byCode,
+          },
+        },
+        null,
+        2,
+      ) + '\n',
+    );
+    return errorFiles > 0 ? 1 : 0;
   }
 
   if (reports.length === 0) {

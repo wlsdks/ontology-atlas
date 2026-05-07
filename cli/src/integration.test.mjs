@@ -174,6 +174,46 @@ await test('validate — 1회짜리 code 는 grouped 섹션 안 보임 (per-file
   }
 });
 
+await test('validate --json — clean vault: scanned/problems[]/summary 노출, exit 0 (R+ cycle 40)', async () => {
+  // capability 는 domain 누락 시 missing-expected-field warning. project 로
+  // 정말 깨끗한 vault 만든다.
+  const root = withVault([
+    { slug: 'p', content: '---\nkind: project\ntitle: P\n---\n' },
+  ]);
+  try {
+    const r = await run(['validate', root, '--json']);
+    assert.equal(r.code, 0);
+    const data = JSON.parse(r.stdout);
+    assert.equal(typeof data.scanned, 'number');
+    assert.deepEqual(data.problems, []);
+    assert.equal(data.summary.errorFiles, 0);
+    assert.equal(data.summary.warningFiles, 0);
+    assert.deepEqual(data.summary.byCode, {});
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('validate --json — empty-kind error: problems[] / summary.byCode, exit 1 (R+ cycle 40)', async () => {
+  const root = withVault([
+    { slug: 'broken', content: '---\nkind:\ntitle: X\n---\n' },
+  ]);
+  try {
+    const r = await run(['validate', root, '--json']);
+    assert.equal(r.code, 1);
+    const data = JSON.parse(r.stdout);
+    assert.ok(data.problems.length >= 1);
+    const p = data.problems.find((x) => /broken\.md$/.test(x.file));
+    assert.ok(p, 'broken.md 가 problems 에 있어야');
+    assert.ok(p.issues.some((i) => i.code === 'empty-kind'));
+    assert.ok(data.summary.byCode['empty-kind']);
+    assert.equal(data.summary.byCode['empty-kind'].severity, 'error');
+    assert.ok(data.summary.errorFiles >= 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('add — 새 노드 + duplicate throws', async () => {
   const root = withVault([]);
   try {
