@@ -679,6 +679,52 @@ await test('backlinks --json — JSON 응답 파싱', async () => {
   }
 });
 
+await test('orphans — graph fixture 에서 referenced 노드 0건 보고', async () => {
+  // buildGraphFixture: foo (referenced by bar.relates + auth.capabilities),
+  // bar (referenced by 0 — orphan? but auth domain.capabilities 가 references bar),
+  // auth (root domain — no incoming references → orphan).
+  // 정확한 그래프: foo, bar 둘 다 referenced. auth (domain) 만 orphan.
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['orphans', root]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    // domain auth 는 어디서도 reference 안 받음 → orphan 으로 등장
+    assert.match(clean, /domains\/auth/);
+    // foo / bar 는 referenced — orphan 아님
+    assert.doesNotMatch(clean, /capabilities\/foo/);
+    assert.doesNotMatch(clean, /capabilities\/bar/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('orphans --json — JSON 응답 파싱', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['orphans', root, '--json']);
+    assert.equal(r.code, 0);
+    const data = JSON.parse(r.stdout);
+    assert.ok(Array.isArray(data.orphans));
+    assert.ok(data.orphans.some((o) => o.slug === 'domains/auth'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('orphans --kind capability — 필터 적용', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['orphans', root, '--kind', 'capability']);
+    assert.equal(r.code, 0);
+    const clean = stripAnsi(r.stdout);
+    // capability 인 orphan 0 (foo, bar 둘 다 referenced)
+    assert.match(clean, /vault clean ✓|orphan 0/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('query — kind=capability AND has(elements)', async () => {
   const root = await buildGraphFixture();
   try {
