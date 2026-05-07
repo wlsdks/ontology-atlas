@@ -14,9 +14,12 @@ const COLORS = {
 
 // R+ — cycle 44: validateVaultDocument 가 surface 하는 6 issue codes 의
 // canonical list. --list-codes 출력 + --fail-on 의 unknown code 감지에
-// 사용. cli/src/lib/validate.mjs (3-way contract) 의 코드와 일관 — drift
-// 시 contract test 가 실패하도록 곧 추가 권장.
-const KNOWN_CODES = [
+// 사용. cli/src/lib/validate.mjs (3-way contract) 의 코드와 일관 — cycle
+// 45 의 contract test (tests/contract/known-codes-drift.contract.test.ts)
+// 가 drift 즉시 차단.
+//
+// Exported so the contract test can import the canonical list.
+export const KNOWN_CODES = [
   {
     code: 'unclosed-frontmatter',
     severity: 'error',
