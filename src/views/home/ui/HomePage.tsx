@@ -13,6 +13,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { BookOpen, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
+import { isOntologyNodeId } from "@/shared/lib/ontology-node-id";
 import { useProjects } from "@/features/project-data-source";
 // 타입/기본값은 Sigma(WebGL) 의존성 없는 별도 모듈에서 직접 import해서
 // SSR 평가 경로에 WebGL 참조가 끼지 않도록 한다.
@@ -323,6 +324,18 @@ export function HomePage() {
       slug: string,
       options?: { preserveImpact?: boolean },
     ) => {
+      // R+ — 토폴로지에서 ontology 노드 (frontmatter `kind:` 가 만든
+      // capability/domain/element id, 형식 `kind:tail`) 클릭은 빈 project
+      // drawer 대신 /ontology 의 ego-graph + detail 패널로 라우팅. project
+      // 가 아닌 노드는 projectBySlug 에 없어 drawer 가 빈 상태로 떴던 회귀.
+      // graph-build.ts 의 long-standing TODO ("ontology 노드 클릭 시 vault md
+      // 열기") 해소 — 같은 vault frontmatter 가 두 surface 에서 일관되게
+      // 보이게 한다.
+      if (isOntologyNodeId(slug)) {
+        router.push(`/ontology/?node=${encodeURIComponent(slug)}`);
+        dismissSigmaHint();
+        return;
+      }
       // 노드 선택 = drawer 열기. 허브를 선택하면 포커스 모드 자동 활성,
       // 일반 노드는 포커스 해제.
       // projectBySlug Map 으로 O(1) lookup — 이전엔 매 클릭마다
@@ -336,7 +349,7 @@ export function HomePage() {
       }));
       dismissSigmaHint();
     },
-    [projectBySlug, setRouteState, dismissSigmaHint],
+    [projectBySlug, router, setRouteState, dismissSigmaHint],
   );
 
   const handleClose = useCallback(() => {
