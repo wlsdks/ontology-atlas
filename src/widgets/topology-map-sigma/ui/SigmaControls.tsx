@@ -58,10 +58,9 @@ export function SigmaControls({
         });
         return;
       }
-      if (event.key === '?') {
-        setHelpOpen((v) => !v);
-        return;
-      }
+      // `?` 키는 HomePage 의 글로벌 ShortcutSheet 가 단일 진입점.
+      // 여기서 별도 HelpOverlay 를 같이 열면 dialog 두 개가 동시에 떠 사용자가
+      // 어느 쪽이 진짜 help 인지 헷갈린다. button click (line 366) 은 유지.
       if (event.key === '0') {
         onChange({ ...value, depthLimit: null });
         return;

@@ -328,12 +328,20 @@ export function deriveOntologyFromVault(
     );
   }
 
-  // edge type 화이트리스트 검증 (방어)
-  const validatedEdges = edges.filter((e) => VALID_RELATION_TYPES.has(e.type));
+  // edge type 화이트리스트 검증 (방어) + id 기반 dedup.
+  // vault 가 양방향으로 같은 관계를 표현하면 (예: domain.capabilities[] +
+  // capability.domain:) 같은 edge id 가 두 번 push 된다. 그래프 입장에서는
+  // 같은 edge 라 first-wins 로 합쳐 React duplicate-key 경고와 ego graph 의
+  // silent edge 누락을 차단.
+  const dedupedById = new Map<string, OntologyStubEdge>();
+  for (const e of edges) {
+    if (!VALID_RELATION_TYPES.has(e.type)) continue;
+    if (!dedupedById.has(e.id)) dedupedById.set(e.id, e);
+  }
 
   return {
     nodes: Array.from(nodes.values()),
-    edges: validatedEdges,
+    edges: Array.from(dedupedById.values()),
     warnings,
   };
 }

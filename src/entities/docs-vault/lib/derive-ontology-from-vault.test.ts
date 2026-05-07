@@ -175,6 +175,37 @@ describe('deriveOntologyFromVault', () => {
     expect(result.nodes).toHaveLength(0);
   });
 
+  it('양방향 frontmatter (domain.capabilities[] + capability.domain:) → contains edge dedup', () => {
+    // 같은 contains 관계가 두 진입경로에서 등장:
+    //   domains/auth.md          → capabilities: ['login']
+    //   capabilities/login.md    → domain: auth
+    // 두 doc 모두 \`domain:auth--contains-->capability:login\` edge 를 만들지만
+    // 그래프 입장에서는 같은 edge — id 충돌은 React duplicate-key 경고로 이어지고
+    // ego-graph 가 일부 edge 를 silently 누락한다. 같은 (from, to, type) 은 1 edge.
+    const result = deriveOntologyFromVault(
+      makeManifest([
+        makeDoc({
+          slug: 'domains/auth',
+          frontmatter: { kind: 'domain', title: 'auth', capabilities: ['login'] },
+        }),
+        makeDoc({
+          slug: 'capabilities/login',
+          frontmatter: { kind: 'capability', title: 'login', domain: 'auth' },
+        }),
+      ]),
+    );
+    const containsEdges = result.edges.filter(
+      (e) =>
+        e.type === 'contains' &&
+        e.from === 'domain:auth' &&
+        e.to === 'capability:login',
+    );
+    expect(containsEdges).toHaveLength(1);
+    // 전체 edge id 도 unique 해야 한다.
+    const ids = result.edges.map((e) => e.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+
   it('동일 capability 가 여러 doc 에 등장 → 단일 node 로 dedup', () => {
     const result = deriveOntologyFromVault(
       makeManifest([
