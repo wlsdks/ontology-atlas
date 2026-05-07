@@ -1450,6 +1450,41 @@ await test('bootstrap --threshold 3 — 약한 import (count<3) 안 land', async
   }
 });
 
+await test('bootstrap — 마지막에 vault census 한 줄 (R+ cycle 37)', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  try {
+    const r = await run(['bootstrap', repo, '--vault', vault]);
+    assert.equal(r.code, 0);
+    const clean = stripAnsi(r.stdout);
+    // census 라인 — \"vault now has N nodes (project=1 · capability=2 · ...)\"
+    assert.match(clean, /vault now has \d+ nodes/);
+    // 적어도 project + capability 카운트 표시.
+    assert.match(clean, /project=1/);
+    assert.match(clean, /capability=/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('bootstrap --json — vaultCensus 필드 노출 (R+ cycle 37)', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  try {
+    const r = await run(['bootstrap', repo, '--vault', vault, '--json']);
+    assert.equal(r.code, 0);
+    const data = JSON.parse(r.stdout);
+    assert.ok(data.vaultCensus, 'vaultCensus 필드');
+    assert.equal(typeof data.vaultCensus.total, 'number');
+    assert.ok(data.vaultCensus.byKind, 'byKind 객체');
+    assert.ok(data.vaultCensus.total >= 3, 'project + 2 capability 최소');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('bootstrap 두번째 실행 — idempotent (errors 0)', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();

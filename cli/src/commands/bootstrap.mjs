@@ -121,6 +121,15 @@ export async function runBootstrap(args) {
     importsRows,
   );
 
+  // R+ — 마지막 census. 사용자가 \"방금 뭐 land 됐나?\" 를 1줄로 인지.
+  // 실패해도 bootstrap exit code 영향 안 줌 (informational only).
+  let vaultCensus = null;
+  try {
+    vaultCensus = await callMcpTool(vaultRoot, 'list_kinds', {});
+  } catch {
+    // census 못 받아도 bootstrap 자체 실패 아님 — silent.
+  }
+
   if (parsed.json) {
     process.stdout.write(
       JSON.stringify(
@@ -139,6 +148,7 @@ export async function runBootstrap(args) {
                 relations: importsRows,
               },
           summary,
+          vaultCensus,
         },
         null,
         2,
@@ -216,6 +226,20 @@ export async function runBootstrap(args) {
   if (errCount > 12) {
     process.stdout.write(
       `  ${COLORS.dim}… ${errCount - 12} more errors${COLORS.reset}\n`,
+    );
+  }
+
+  // R+ — 마지막 census 한 줄. \"vault now has N nodes (project=A · domain=B · …)\"
+  if (vaultCensus && typeof vaultCensus.total === 'number') {
+    const byKind = vaultCensus.byKind || {};
+    const order = ['project', 'domain', 'capability', 'element', 'document', 'vault-readme'];
+    const parts = order
+      .filter((k) => byKind[k])
+      .map((k) => `${k}=${byKind[k]}`);
+    process.stdout.write(
+      `\n  ${COLORS.dim}→ vault now has ${COLORS.bold}${vaultCensus.total}${COLORS.reset}${COLORS.dim} nodes` +
+        (parts.length > 0 ? ` (${parts.join(' · ')})` : '') +
+        `${COLORS.reset}\n`,
     );
   }
 
