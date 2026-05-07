@@ -1,15 +1,15 @@
 ---
 slug: capabilities/mcp-server
 kind: capability
-title: MCP Server (18 tools)
+title: MCP Server (19 tools)
 domain: ai-agent-partner
 elements: [mcp/src/index.js, mcp/src/parser.mjs, mcp/src/vault.mjs, mcp/src/analyze.mjs, mcp/src/infer-imports.mjs]
 relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 ---
 
-# MCP Server (18 tools)
+# MCP Server (19 tools)
 
-`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 18 도구 노출 (read 11 + write 7):
+`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 19 도구 노출 (read 11 + write 8):
 
 | 도구 | 동작 |
 |---|---|
@@ -27,6 +27,7 @@ relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 | `add_concept` | 새 노드 (.md) 작성 — 기존 slug 면 throw |
 | `add_concepts` | **R+** 배치 writer — 여러 노드 한 호출에 (max 50, 입력 순서 보존, partial result, 입력 내 중복 slug 사전 감지). `/ontology-bootstrap` 흐름이 5~15 노드를 한 번에 land. |
 | `add_relation` | depends_on / relates / contains / describes edge 추가 |
+| `add_relations` | **R+** 배치 edge writer — 여러 edge 한 호출에 (max 50, 입력 순서 보존, idempotent, partial result). analyze_repo_structure suggestedRelations · infer_imports moduleEdges 수신 직후 적합. |
 | `patch_concept` | 기존 노드 frontmatter (key 단위 patch) + body 갱신 |
 | `delete_concept` | **⚠ DESTRUCTIVE** — 노드 영구 삭제. 안전 가드 2단: ① `confirm:true` 미지정 시 dry-run, ② backlinks 있으면 throw — `force:true` 만 강행. 응답에 frontmatter+body 캡처. |
 | `rename_concept` | **⚠ MULTI-FILE (R11)** — slug 변경 + 모든 backlink 의 array/body 자동 redirect. dry-run default. tail-only 참조도 새 tail 로 일관 갱신. `find_backlinks` + N 회 `patch_concept` 의 atomic 대체. |

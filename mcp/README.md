@@ -44,7 +44,7 @@ If `OMOT_VAULT` is not set, the current working directory is used as the vault r
 
 ### 2. Restart Claude Code
 
-The server connects over stdio. You should now see 18 tools under the `oh-my-ontology` namespace.
+The server connects over stdio. You should now see 19 tools under the `oh-my-ontology` namespace.
 
 ### 3. Call the tools
 
@@ -56,7 +56,7 @@ The server connects over stdio. You should now see 18 tools under the `oh-my-ont
 → mcp__oh-my-ontology__get_concept({ slug: 'capabilities/mcp-server' })
 ```
 
-## The 18 tools (v0.7.1)
+## The 19 tools (v0.7.1)
 
 | Tool | What it does |
 |---|---|
@@ -74,6 +74,7 @@ The server connects over stdio. You should now see 18 tools under the `oh-my-ont
 | `add_concept` | Creates a new `.md` node. Required: `slug`, `kind`, `title`. Optional: `domain`, `capabilities`, `elements`, `body`. **R14**: frontmatter is normalized per kind (project gets `domains/capabilities/elements: []`; capability gets `elements: []`; capability/element should set `domain` — missing extras come back in `warnings`). Body defaults to a kind-specific starter. Throws if the slug already exists. |
 | `add_concepts` | **R+** Batch writer — accepts `{concepts: [{slug, kind, title, ...}, ...]}` (max 50), returns `{concepts: [{slug, ok: true, filePath, warnings?} | {slug, ok: false, error}, ...]}`. Each row processed independently — existing-slug / invalid-kind / missing-required surface as `ok:false` rows; the rest still land. Order preserved. Pre-checks duplicate slugs *within the input batch* and fails the second occurrence with a clear "duplicate slug in input batch" error. **No atomic rollback** — for all-or-nothing semantics use single `add_concept` calls. Use after `analyze_repo_structure` / `infer_imports` (or any bootstrap flow) when the agent has K accepted candidates. |
 | `add_relation` | Adds an edge between two slugs. `type`: `depends_on` (→ dependencies), `relates` (→ relates), `contains` (→ contains), `describes` (→ describes). Appends to the appropriate frontmatter array. **R11**: optional `expected_mtime` on the source slug for conflict detection. |
+| `add_relations` | **R+** Batch edge writer — accepts `{relations: [{from, to, type}, ...]}` (max 50), returns `{relations: [{ok: true, from, to, type, alreadyExists?: bool} | {ok: false, from, to, type, error}, ...]}`. Each row processed independently and idempotently — same edge twice in batch returns `alreadyExists: true` on the second; missing source/target slugs / unknown type surface as `ok:false` rows; the rest still land. Order preserved. Use after `analyze_repo_structure` (suggestedRelations) / `infer_imports` (moduleEdges). Tip: avoid `expected_mtime` in batch when multiple rows share the same `from` slug — the first row mutates that file so the second would see a stale mtime. **No atomic rollback** — for all-or-nothing semantics use single `add_relation` calls. |
 | `patch_concept` | Updates an existing node's frontmatter (per-key patch — `null` deletes a key) and/or body. Use this when you need to *modify* a slug that `add_concept` would reject as duplicate. **R11**: optional `expected_mtime` for conflict detection — pass the `mtime` from `get_concept`; throws `VaultConflictError` if the file has been modified externally since you read it. |
 | `delete_concept` | **v0.4 ⚠ DESTRUCTIVE** Permanently deletes a node. Two-stage safety: ① without `confirm:true`, runs as a dry-run (with a backlinks preview); ② if backlinks exist, throws unless `force:true`. The response captures the deleted frontmatter + body so you can recover from mistakes. **R11**: optional `expected_mtime` for conflict detection. |
 | `rename_concept` | **v0.7 ⚠ MULTI-FILE** Atomically renames a slug — moves the .md file, updates the moved file's `slug:` key, and rewrites every backlink (frontmatter array entries, inline string keys like `domain`, body links `[[oldSlug]]` / `(oldSlug.md)`). Tail-only references (`mcp-server` for `capabilities/mcp-server`) are also redirected. Without `confirm:true`, runs as a dry-run with a full update preview. Replaces the manual loop of `find_backlinks` + N `patch_concept` calls. **R11**: optional `expected_mtime` for the source slug. |
@@ -134,7 +135,7 @@ A successful run looks like this:
 ✓ tools/list 16/16 — add_concept · add_relation · analyze_repo_structure · delete_concept · find_backlinks · find_evidence · find_orphans · find_path · get_concept · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · rename_concept
 ✓ list_concepts — vault total 25 nodes
 
-All checks passed — register .mcp.json with Claude Code, restart, and the 18 tools are ready.
+All checks passed — register .mcp.json with Claude Code, restart, and the 19 tools are ready.
 ```
 
 On failure, it tells you which step blocked progress and prints a diagnostic message.
@@ -163,7 +164,7 @@ After you add `.mcp.json` and restart Claude Code, try the following with your L
 > 3. Call `find_backlinks({ slug: "capabilities/mcp-server" })` to find what depends on that capability.
 > 4. (Optional) Call `add_concept` to create a new capability node — `slug`, `kind`, and `title` are required.
 
-If those four tools respond cleanly, your read/write round-trip against the vault is working. Once an agent starts *committing* its analysis of your codebase to the ontology through these 18 tools (11 read + 7 write), the human + AI co-authoring loop is officially open.
+If those four tools respond cleanly, your read/write round-trip against the vault is working. Once an agent starts *committing* its analysis of your codebase to the ontology through these 19 tools (11 read + 8 write), the human + AI co-authoring loop is officially open.
 
 ## Design principles
 

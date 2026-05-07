@@ -623,6 +623,87 @@ await test("add_concepts — 입력 내 중복 slug 두번째는 ok:false", asyn
   }
 });
 
+// R+ — add_relations 배치 writer. analyze_repo_structure (suggestedRelations)
+// / infer_imports (moduleEdges) 출력을 한 호출에 land. 입력 순서 보존,
+// idempotent (같은 edge 두번 → 두번째는 alreadyExists), missing slug 은
+// row-level fail.
+await test("add_relations — 배치 write, 순서 보존 + idempotent + partial", async () => {
+  const root = makeVault([
+    { slug: "p", content: "---\nkind: project\ntitle: P\n---\n" },
+    { slug: "c1", content: "---\nkind: capability\ntitle: C1\ndomain: x\n---\n" },
+    { slug: "c2", content: "---\nkind: capability\ntitle: C2\ndomain: x\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relations", {
+        relations: [
+          { from: "p", to: "c1", type: "contains" },
+          // 같은 from 으로 누적 — readDoc 이 매번 다시 읽어 누락 없음
+          { from: "p", to: "c2", type: "contains" },
+          // idempotent — 같은 edge 두번
+          { from: "p", to: "c1", type: "contains" },
+          // missing target → ok:false
+          { from: "p", to: "missing", type: "contains" },
+          // unknown type → ok:false
+          { from: "p", to: "c1", type: "weird-type" },
+        ],
+      }),
+      callTool(3, "get_concept", { slug: "p" }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.relations.length, 5, "relations row 수 = 입력 길이");
+    // 순서 보존
+    assert.equal(result.relations[0].ok, true);
+    assert.equal(result.relations[0].to, "c1");
+    assert.equal(result.relations[1].ok, true);
+    assert.equal(result.relations[1].to, "c2");
+    // idempotent — 두번째는 alreadyExists
+    assert.equal(result.relations[2].ok, true);
+    assert.equal(result.relations[2].alreadyExists, true);
+    // missing target
+    assert.equal(result.relations[3].ok, false);
+    assert.match(result.relations[3].error, /does not exist|missing/i);
+    // unknown type
+    assert.equal(result.relations[4].ok, false);
+    assert.match(result.relations[4].error, /Unknown relation type|weird-type/i);
+    // p.contains 에 c1, c2 두 개만 land
+    const p = getCallParsed(responses, 3);
+    assert.deepEqual(p.frontmatter.contains, ["c1", "c2"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// R+ — add_relations 빈 배열 / cap 가드.
+await test("add_relations — 빈 relations[] → 빈 results, 51개 → error", async () => {
+  const root = makeVault([
+    { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
+  ]);
+  try {
+    const { responses: r1 } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relations", { relations: [] }),
+    ]);
+    const empty = getCallParsed(r1, 2);
+    assert.deepEqual(empty.relations, []);
+
+    const tooMany = Array.from({ length: 51 }, () => ({
+      from: "a",
+      to: "a",
+      type: "relates",
+    }));
+    const { responses: r2 } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relations", { relations: tooMany }),
+    ]);
+    const text = JSON.stringify(r2.find((r) => r.id === 2));
+    assert.match(text, /Too many relations|50/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("patch_concept — expected_mtime stale 면 conflict error response", async () => {
   const root = makeVault([
     { slug: "foo", content: "---\nkind: capability\ntitle: Foo\n---\n" },

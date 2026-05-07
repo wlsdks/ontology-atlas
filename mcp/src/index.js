@@ -21,6 +21,7 @@
  *   - add_concept       — 새 노드 (.md 파일 작성, 기존 slug 면 throw)
  *   - add_concepts      — 배치 write (concepts[] → results[], partial 허용)
  *   - add_relation      — 두 노드 사이 edge (frontmatter 배열 키 append)
+ *   - add_relations     — 배치 edge write (relations[] → results[], partial 허용)
  *   - patch_concept     — 기존 노드 frontmatter (key 단위, null = 삭제) + body
  *   - delete_concept    — 노드 영구 삭제 (dry-run + backlinks 가드 + force)
  *   - rename_concept    — slug 변경 + 모든 backlink 의 array/body 자동 redirect
@@ -99,10 +100,10 @@ try {
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
 const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
-## Tool inventory (18 tools = read 11 + write 7)
+## Tool inventory (19 tools = read 11 + write 8)
 
 **read** — \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`analyze_repo_structure\` · \`infer_imports\`.
-**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`patch_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\`.
+**write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`patch_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\`.
 
 ## Kind hierarchy (top → leaf)
 
@@ -352,6 +353,42 @@ const TOOLS = [
         },
       },
       required: ['from', 'to', 'type'],
+    },
+  },
+  {
+    name: 'add_relations',
+    description:
+      'Batch-add multiple relations in one call — same per-row shape as `add_relation`. ' +
+      'Use after `analyze_repo_structure` (suggestedRelations) / `infer_imports` (moduleEdges) ' +
+      'when the agent has K accepted edges from the user — replaces K×`add_relation` round-trips. ' +
+      'Each row is processed independently and idempotently: existing edges return `{ok: true, alreadyExists: true}`; ' +
+      'missing source/target slugs / unknown type surface as `{ok: false, error}`. ' +
+      '`relations[]` order in the response matches the input. Cap = 50 per call. ' +
+      'NO atomic rollback — for all-or-nothing semantics use single `add_relation` calls. ' +
+      'Tip: avoid `expected_mtime` in batch when multiple rows share the same `from` slug — ' +
+      'the first row mutates that file so the second would see a stale mtime.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        relations: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              from: { type: 'string' },
+              to: { type: 'string' },
+              type: {
+                type: 'string',
+                enum: ['depends_on', 'relates', 'contains', 'describes'],
+              },
+              expected_mtime: { type: 'number' },
+            },
+            required: ['from', 'to', 'type'],
+          },
+          description: 'Array of relation specs (max 50). Each row uses the same shape as `add_relation` input.',
+        },
+      },
+      required: ['relations'],
     },
   },
   {
@@ -710,6 +747,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(addConceptsBatch(args));
       case 'add_relation':
         return ok(addRelation(args));
+      case 'add_relations':
+        return ok(addRelationsBatch(args));
       case 'patch_concept':
         return ok(patchConcept(args));
       case 'find_backlinks':
@@ -1035,6 +1074,38 @@ function addRelation({ from, to, type, expected_mtime }) {
       typeof expected_mtime === 'number' ? expected_mtime : undefined,
   });
   return { ok: true, from, to, type, key };
+}
+
+// R+ — add_relation 의 batch 변종. analyze_repo_structure (suggestedRelations)
+// / infer_imports (moduleEdges) 의 출력을 한 호출에 land. 각 row 는
+// addRelation 으로 직렬 호출 — 같은 from 슬러그가 여러 row 에 등장해도
+// readDoc 이 매번 디스크를 다시 읽어 누락 없이 누적 됨 (단, expected_mtime
+// 을 같이 넘기면 첫 row 후 stale 이라 fail — tool description 에 명시).
+// 입력 순서 보존, partial result, atomic rollback 없음.
+function addRelationsBatch({ relations }) {
+  if (!Array.isArray(relations)) {
+    throw new Error('relations must be an array of relation specs');
+  }
+  if (relations.length === 0) {
+    return { relations: [] };
+  }
+  if (relations.length > 50) {
+    throw new Error(
+      `Too many relations: ${relations.length}. Max 50 per call — split into multiple add_relations batches.`
+    );
+  }
+  const results = relations.map((spec) => {
+    try {
+      return addRelation(spec || {});
+    } catch (err) {
+      const msg = err && err.message ? err.message : String(err);
+      const from = spec && typeof spec.from === 'string' ? spec.from : '';
+      const to = spec && typeof spec.to === 'string' ? spec.to : '';
+      const type = spec && typeof spec.type === 'string' ? spec.type : '';
+      return { ok: false, from, to, type, error: msg };
+    }
+  });
+  return { relations: results };
 }
 
 function patchConcept({ slug, frontmatter, body, expected_mtime }) {

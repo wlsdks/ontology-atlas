@@ -15,7 +15,7 @@
 | Surface | Entry | Audience |
 |---|---|---|
 | **CLI** (R12 / R14 / R15) | `oh-my-ontology init / list / validate / add / find / import` | developer terminal — vault scaffold, daily exploration, bulk import |
-| **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 18 tools (11 read · 7 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — read for context · write back findings · bootstrap empty vault (R16 `analyze_repo_structure` · R17 `infer_imports`) |
+| **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 19 tools (11 read · 8 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — read for context · write back findings · bootstrap empty vault (R16 `analyze_repo_structure` · R17 `infer_imports`) |
 | **Web** (8 routes, R10 surface diet) | `pnpm dev` / static export | sigma topology · tree+ego · ERD builder · insights — graph visualization, mobile-friendly |
 
 ```
@@ -384,7 +384,7 @@ Used when a non-existent slug is hit in static export. Redirects or shows "not f
 
 ---
 
-## 3. MCP server (18 tools)
+## 3. MCP server (19 tools)
 
 Run via `pnpm exec node mcp/src/index.js` (registered in user's `.mcp.json`). AI agents read/write the same vault as humans.
 
