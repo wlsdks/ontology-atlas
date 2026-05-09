@@ -1,6 +1,6 @@
 # Changelog — oh-my-ontology-mcp
 
-## Unreleased
+## 0.10.0 — 2026-05-07 (R18/R20 — batch tools + vault health)
 
 ### Added
 

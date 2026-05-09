@@ -103,7 +103,7 @@ describe("filterTreeByQuery", () => {
     // 사용자가 이 트리에 없다고 오해. id 도 매치 대상에 포함.
     const slugNodes = [
       node("root", "프로젝트", "project"),
-      withParent(node("capability:mcp-server", "MCP Server (16 tools)")),
+      withParent(node("capability:mcp-server", "MCP Server (20 tools)")),
     ];
     const slugEdges = [
       {

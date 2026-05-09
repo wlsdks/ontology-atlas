@@ -9,7 +9,7 @@
 [![CI](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml/badge.svg)](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Built with Next.js](https://img.shields.io/badge/Built_with-Next.js-000?logo=next.js)](https://nextjs.org)
-[![MCP server](https://img.shields.io/badge/MCP-16_tools-5e6ad2)](mcp/README.md)
+[![MCP server](https://img.shields.io/badge/MCP-20_tools-5e6ad2)](mcp/README.md)
 
 ```bash
 npx oh-my-ontology init my-vault                # scaffold
@@ -45,7 +45,7 @@ Three claims:
    `.md` files. The developer authors via CLI / web UI; the AI agent reads
    + writes via MCP (Claude Code, Codex, Cursor). Same git repo, same diff.
 3. **MCP server gives the AI its only interface** — **20 tools** (12 read +
-   6 write) over JSON-RPC. The agent doesn't need to "ingest your codebase";
+   8 write) over JSON-RPC. The agent doesn't need to "ingest your codebase";
    it reads the ontology the developer already curates. R16 / R17 added
    `analyze_repo_structure` and `infer_imports` so the agent can also
    bootstrap a fresh repo into the vault from heuristics + real import
@@ -63,7 +63,7 @@ to git, and the AI agent reads via a tiny MCP server.
 The primary audience is the **developer + their AI agent** (R12, 2026-05).
 The developer is already in the codebase — the cost of authoring frontmatter
 is low. Their AI agent (Claude Code, Cursor) is the *real* daily user of
-the 16 MCP tools — it needs ground-truth structure to give better answers,
+the 20 MCP tools — it needs ground-truth structure to give better answers,
 and without a developer maintaining it, the ontology rots. PM/designer
 friendliness is a side effect of plain markdown, not a target.
 
@@ -87,7 +87,7 @@ the moment.
 npx oh-my-ontology init ./vault
 # Open ./vault/.mcp.json.example, copy into your MCP config (Claude Code, Cursor)
 # Set OMOT_VAULT to /absolute/path/to/your/vault
-# Restart the agent — 14 oh-my-ontology tools become available
+# Restart the agent — 20 oh-my-ontology tools become available
 ```
 
 ### With the visual workbench
@@ -197,7 +197,7 @@ cd my-vault
 - [`AGENTS.md`](AGENTS.md) — contributor (사람·AI 공통) 가이드
 - [`docs/PRODUCT-DIRECTION.md`](docs/PRODUCT-DIRECTION.md) — mission spec
 - [`docs/FEATURES.md`](docs/FEATURES.md) — 사용자 가시 기능 전수
-- [`mcp/README.md`](mcp/README.md) — MCP 서버 등록 + 15 도구
+- [`mcp/README.md`](mcp/README.md) — MCP 서버 등록 + 20 도구
 
 ### 핵심 약속
 

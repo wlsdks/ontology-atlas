@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * oh-my-ontology-mcp — MCP 서버 (도구 16종 = read 10 + write 6).
+ * oh-my-ontology-mcp — MCP 서버 (도구 20종 = read 12 + write 8).
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
  *
- * read 10:
+ * read 12:
  *   - list_concepts          — vault 의 노드 목록 (kind / project_filter)
  *   - get_concept            — 단일 노드 + 이웃 (dependencies / relates) + mtime
  *   - get_concepts           — 배치 read (slugs[] → concepts[], partial 허용)
@@ -18,7 +18,7 @@
  *   - analyze_repo_structure — R16, code repo 분석 → ontology 후보 (side effect 0)
  *   - infer_imports          — R17, TS/JS import graph → depends_on 후보 (side effect 0)
  *
- * write 6:
+ * write 8:
  *   - add_concept       — 새 노드 (.md 파일 작성, 기존 slug 면 throw)
  *   - add_concepts      — 배치 write (concepts[] → results[], partial 허용)
  *   - add_relation      — 두 노드 사이 edge (frontmatter 배열 키 append)
@@ -44,7 +44,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { resolve } from 'node:path';
 
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import {
   VaultConflictError,
   deleteDoc,
@@ -79,6 +79,9 @@ import {
 } from './schema.mjs';
 
 const VAULT_ROOT = resolve(process.env.OMOT_VAULT || process.cwd());
+const SERVER_VERSION = JSON.parse(
+  readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+).version;
 // import-time throw 면 stdio transport 가 붙기 전 stack trace 가 stderr 로
 // 새고 클라이언트 (Claude Code 등) 에선 silent crash 로 보인다. 친절한 한
 // 줄 메시지 + non-zero exit 로 server log 에 명확히 노출.
@@ -94,7 +97,7 @@ try {
 }
 
 // MCP `instructions` field — initialize 응답에 포함되어 연결된 AI agent
-// (Claude Code, Cursor, …) 가 항상 보는 시스템-prompt 수준 안내. 16 tool
+// (Claude Code, Cursor, …) 가 항상 보는 시스템-prompt 수준 안내. 20 tool
 // description 만으로는 (1) 호출 순서, (2) kind 계층의 의미, (3) write 도구의
 // dry-run/confirm 패턴, (4) mtime 충돌 가드, (5) R16/R17 bootstrap workflow,
 // (6) error message 가 다음 tool 을 직접 가리킨다는 사실 — agent UX 가
@@ -161,7 +164,7 @@ Don't retry blindly — parse the suffix and pivot to the suggested tool.
 When code introduces a new capability / element / domain, mirror it in the vault with \`add_concept\` (and \`add_relation\` to wire it). When code is renamed / refactored, use \`rename_concept\` (one atomic call) instead of patch + manual backlink updates. The vault is the *shared* mental model — keeping it in sync is the point.`;
 
 const server = new Server(
-  { name: 'oh-my-ontology-mcp', version: '0.7.1' },
+  { name: 'oh-my-ontology-mcp', version: SERVER_VERSION },
   {
     capabilities: { tools: {} },
     instructions: SERVER_INSTRUCTIONS,

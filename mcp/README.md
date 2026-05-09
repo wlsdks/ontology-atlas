@@ -56,7 +56,7 @@ The server connects over stdio. You should now see 20 tools under the `oh-my-ont
 → mcp__oh-my-ontology__get_concept({ slug: 'capabilities/mcp-server' })
 ```
 
-## The 20 tools (v0.7.1)
+## The 20 tools
 
 | Tool | What it does |
 |---|---|
@@ -132,9 +132,9 @@ A successful run looks like this:
 · step 1 — parser smoke test
 ✓ result: 7 passed, 0 failed
 · step 2 — server boot + tools/list + list_concepts
-✓ initialize OK — server oh-my-ontology-mcp@0.7.1
-✓ tools/list 16/16 — add_concept · add_relation · analyze_repo_structure · delete_concept · find_backlinks · find_evidence · find_orphans · find_path · get_concept · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · rename_concept
-✓ list_concepts — vault total 25 nodes
+✓ initialize OK — server oh-my-ontology-mcp@0.10.0
+✓ tools/list 20/20 — add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · delete_concept · find_backlinks · find_evidence · find_orphans · find_path · get_concept · get_concepts · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · rename_concept · validate_vault
+✓ list_concepts — vault total 26 nodes
 
 All checks passed — register .mcp.json with Claude Code, restart, and the 20 tools are ready.
 ```
@@ -176,6 +176,7 @@ If those four tools respond cleanly, your read/write round-trip against the vaul
 
 ## Status
 
+- 0.10.0 — 20 tools. Added `get_concepts`, `add_concepts`, `add_relations`, and `validate_vault`; current split is 12 read + 8 write.
 - 0.7.1 — 16 tools. Added `instructions` field on initialize response — Claude Code / Cursor see kind hierarchy + workflow + write-tool dry-run pattern + `expected_mtime` conflict guard guidance on connect, no per-session trial-and-error.
 - 0.7.0 — 14 tools (8 read + 6 write). Added `rename_concept` and `merge_concepts` (graph-level write — atomic backlink redirect across all referrers).
 - 0.6.0 — 12 tools (8 read + 4 write). Added `query_concepts` (typed filter DSL).

@@ -6,9 +6,9 @@
 
 ---
 
-## 2026-05-07 — Round 18: AI agent UX 강화 루프 — read shape · batch tools · ARIA tree · CLI --apply
+## 2026-05-07 — Round 18: AI agent UX 강화 루프 — read shape · batch tools · vault health · ARIA tree · CLI --apply
 
-자율 개선 루프 ~30 PR. **mcp 16→19 tools (read 10→11, write 6→8), cli 13→15 commands, /ontology-bootstrap round-trip ~25→3**. agent (Claude Code · Cursor · Codex) 가 적은 호출로 더 정확한 vault sync, 사용자가 키보드만으로 tree 완전 항해, agent-less CLI 도 batch parity.
+자율 개선 루프 ~30 PR. **mcp 16→20 tools (read 10→12, write 6→8), cli 13→15 commands, /ontology-bootstrap round-trip ~25→3**. agent (Claude Code · Cursor · Codex) 가 적은 호출로 더 정확한 vault sync, 사용자가 키보드만으로 tree 완전 항해, agent-less CLI 도 batch parity.
 
 ### MCP — read tool 응답 shape 완전 일관 (#176 #180 #183 #186 #189 #191 #194 #195 #196)
 
@@ -19,11 +19,12 @@ read tool 5종 (`list_concepts` · `find_backlinks` · `find_orphans` · `query_
 - 에러 메시지가 *actionable* — "Did you mean: ..." suggestion + 다음 액션 한 호출에 결정.
 - `find_path` 응답에 `edges[via]` 추가 — agent 가 *왜* A↔B 가 연결됐는지 (어느 frontmatter key 가 link 했는지) 한눈에.
 
-### MCP — 배치 도구 3개 신규 (R+, 16→19 tools, #197 #198 #199)
+### MCP — 배치 도구 3개 + vault health 신규 (R+, 16→20 tools, #197 #198 #199 #220)
 
 - **`get_concepts`** (read 11번째) — 입력 `{slugs: string[]}` (max 50), 출력 `{concepts: [...]}`. K round-trip → 1, partial result (missing slug 은 row-level `ok: false`).
 - **`add_concepts`** (write 7번째) — 배치 노드 작성. 입력 *내* 중복 slug 사전 감지로 명료한 에러 ("duplicate slug in input batch"), atomic rollback 없음 (partial 시맨틱).
 - **`add_relations`** (write 8번째) — 배치 edge 작성. idempotent (동일 edge → `alreadyExists: true`), 50-row chunk 분할 가능.
+- **`validate_vault`** (read 12번째) — vault 전체 health 를 한 호출에 반환. agent 가 `list_concepts` 후 K개의 `get_concept` 경고를 모으는 패턴을 1 round-trip 으로 대체.
 
 이로써 `/ontology-bootstrap` 흐름이 `analyze_repo_structure → add_concepts → add_relations` **3 round-trip 으로 완결** (이전 ~25). skill 본문 (`#200`) 도 새 도구 사용 가이드로 갱신.
 
@@ -73,7 +74,7 @@ oh-my-ontology infer-imports . --apply # depends_on edges land (50-row chunk)
 
 | 지표 | R17 끝 | R18 끝 |
 |---|---|---|
-| MCP 도구 | 16 (read 10 + write 6) | **19 (read 11 + write 8)** |
+| MCP 도구 | 16 (read 10 + write 6) | **20 (read 12 + write 8)** |
 | CLI 명령 | 13 | **15** |
 | `/ontology-bootstrap` round-trip | ~25 | **3** |
 | 전체 vitest | ~810 | **839** |

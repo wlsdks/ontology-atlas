@@ -44,7 +44,7 @@ The vault is a plain folder of `.md` files. **Frontmatter is the graph.**
 
 `init` (R15) automatically writes a wired `.mcp.json` to both your codebase
 root and the vault folder. Open either in an AI agent (Claude Code, Codex,
-Cursor) and the agent gets **16 tools** (10 read + 6 write) to read and
+Cursor) and the agent gets **20 tools** (12 read + 8 write) to read and
 write the vault — same data the developer sees.
 
 ```jsonc
@@ -60,12 +60,13 @@ write the vault — same data the developer sees.
 }
 ```
 
-16 tools (R17):
-`list_concepts` / `get_concept` / `find_evidence` /
+20 tools:
+`list_concepts` / `get_concept` / `get_concepts` / `find_evidence` /
 `find_backlinks` / `find_path` / `list_kinds` / `find_orphans` /
-`query_concepts` / `analyze_repo_structure` / `infer_imports` (read 10) +
-`add_concept` / `add_relation` / `patch_concept` / `delete_concept` /
-`rename_concept` / `merge_concepts` (write 6).
+`query_concepts` / `validate_vault` / `analyze_repo_structure` /
+`infer_imports` (read 12) + `add_concept` / `add_concepts` /
+`add_relation` / `add_relations` / `patch_concept` / `delete_concept` /
+`rename_concept` / `merge_concepts` (write 8).
 
 ## See the graph
 

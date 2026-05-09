@@ -38,14 +38,17 @@ tags: [architecture, infra, overview]
        ↑ stdio JSON-RPC
 
 ┌────────────────────────────────────────────────────────┐
-│ MCP server (mcp/, v0.7.0 — R11)                         │
-│ ├─ 8 read tools   list_concepts · get_concept ·        │
-│ │                  find_evidence · find_backlinks ·     │
-│ │                  find_path · list_kinds ·             │
-│ │                  find_orphans · query_concepts        │
-│ └─ 6 write tools  add_concept · add_relation ·         │
+│ MCP server (mcp/, v0.10.0)                              │
+│ ├─ 12 read tools  list_concepts · get_concept ·         │
+│ │                  get_concepts · find_evidence ·       │
+│ │                  find_backlinks · find_path ·         │
+│ │                  list_kinds · find_orphans ·          │
+│ │                  query_concepts · validate_vault ·    │
+│ │                  analyze_repo_structure · infer_imports│
+│ └─ 8 write tools  add_concept · add_concepts ·          │
+│                    add_relation · add_relations ·       │
 │                    patch_concept · delete_concept ·     │
-│                    rename_concept · merge_concepts (R11)│
+│                    rename_concept · merge_concepts      │
 │                                                         │
 │ AI agent (Claude Code, Cursor, …) reads/writes the     │
 │ same vault directory the user picked in /docs.         │

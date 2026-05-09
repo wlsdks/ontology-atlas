@@ -1,7 +1,7 @@
 {
   "name": "oh-my-ontology-mcp",
-  "version": "0.9.0",
-  "description": "MCP server — humans and AI agents read/write the same codebase ontology vault. R17: 16 tools (analyze_repo_structure + infer_imports for autonomous bootstrap).",
+  "version": "0.10.0",
+  "description": "MCP server — humans and AI agents read/write the same codebase ontology vault. Current surface: 20 tools (12 read + 8 write).",
   "keywords": [
     "mcp",
     "model-context-protocol",
