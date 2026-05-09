@@ -10,7 +10,7 @@ import {
   type VaultManifest,
 } from "@/entities/docs-vault";
 import { useDataSourceMode } from "@/features/data-source-mode";
-import { useLocalVault } from "@/features/docs-vault-local";
+import { VaultConflictError, useLocalVault } from "@/features/docs-vault-local";
 import { slugify } from "@/shared/lib/slugify";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { MountedGlobalSearch } from "@/widgets/global-search";
@@ -265,6 +265,21 @@ export function OntologyEditPage() {
     () => new Map(effectiveManifest.docs.map((d) => [d.slug, d])),
     [effectiveManifest],
   );
+  const getExpectedMtime = useCallback(
+    (slug: string) => docsBySlug.get(slug)?.mtime,
+    [docsBySlug],
+  );
+  const showVaultWriteError = useCallback(
+    (err: unknown, fallback: string) => {
+      if (err instanceof VaultConflictError) {
+        toast.show(t("toastVaultConflict"), "error");
+        return;
+      }
+      const message = err instanceof Error ? err.message : fallback;
+      toast.show(message, "error");
+    },
+    [t, toast],
+  );
   const vaultSelected = useMemo(() => {
     if (!selectedId || ephemeralSelected) return null;
     const doc = docsBySlug.get(selectedId);
@@ -307,16 +322,19 @@ export function OntologyEditPage() {
       }
       setRenamingId(slug);
       try {
-        await vault.updateFrontmatter(slug, { title: trimmed });
+        await vault.updateFrontmatter(
+          slug,
+          { title: trimmed },
+          { expectedMtime: getExpectedMtime(slug) },
+        );
         toast.show(t("toastTitleSaved", { title: trimmed }), "success");
       } catch (err) {
-        const message = err instanceof Error ? err.message : t("toastTitleSaveFailed");
-        toast.show(message, "error");
+        showVaultWriteError(err, t("toastTitleSaveFailed"));
       } finally {
         setRenamingId(null);
       }
     },
-    [t, toast, vault],
+    [getExpectedMtime, showVaultWriteError, t, toast, vault],
   );
 
   // vault frontmatter array 키 (capabilities/elements/dependencies/
@@ -328,15 +346,18 @@ export function OntologyEditPage() {
       next: string[],
     ) => {
       try {
-        await vault.updateFrontmatter(slug, {
-          [key]: next.length === 0 ? null : next,
-        });
+        await vault.updateFrontmatter(
+          slug,
+          {
+            [key]: next.length === 0 ? null : next,
+          },
+          { expectedMtime: getExpectedMtime(slug) },
+        );
       } catch (err) {
-        const message = err instanceof Error ? err.message : t("toastSaveFailed");
-        toast.show(message, "error");
+        showVaultWriteError(err, t("toastSaveFailed"));
       }
     },
-    [t, toast, vault],
+    [getExpectedMtime, showVaultWriteError, t, vault],
   );
 
   // 캔버스에서 vault A 핸들 → vault B 드래그 시 호출. source 의
@@ -382,17 +403,20 @@ export function OntologyEditPage() {
       }
       const next = [...currentArray, targetRef];
       try {
-        await vault.updateFrontmatter(sourceSlug, { [key]: next });
+        await vault.updateFrontmatter(
+          sourceSlug,
+          { [key]: next },
+          { expectedMtime: getExpectedMtime(sourceSlug) },
+        );
         toast.show(
           t("toastVaultEdgeAdded", { key, source: sourceSlug, target: targetSlug }),
           "success",
         );
       } catch (err) {
-        const message = err instanceof Error ? err.message : t("toastSaveFailed");
-        toast.show(message, "error");
+        showVaultWriteError(err, t("toastSaveFailed"));
       }
     },
-    [effectiveManifest, hasLiveVault, inferEdgeKey, t, toast, vault],
+    [effectiveManifest, getExpectedMtime, hasLiveVault, inferEdgeKey, showVaultWriteError, t, toast, vault],
   );
   /**
    * Round 4 cut I — ephemeral edge "Save" 칩 클릭 orchestrator.
@@ -507,15 +531,18 @@ export function OntologyEditPage() {
     async (slug: string, key: "description" | "domain", next: string) => {
       const trimmed = next.trim();
       try {
-        await vault.updateFrontmatter(slug, {
-          [key]: trimmed === "" ? null : trimmed,
-        });
+        await vault.updateFrontmatter(
+          slug,
+          {
+            [key]: trimmed === "" ? null : trimmed,
+          },
+          { expectedMtime: getExpectedMtime(slug) },
+        );
       } catch (err) {
-        const message = err instanceof Error ? err.message : t("toastSaveFailed");
-        toast.show(message, "error");
+        showVaultWriteError(err, t("toastSaveFailed"));
       }
     },
-    [t, toast, vault],
+    [getExpectedMtime, showVaultWriteError, t, vault],
   );
 
   // vault 노드 drag 좌표를 frontmatter.canvasPosition 으로 patch.

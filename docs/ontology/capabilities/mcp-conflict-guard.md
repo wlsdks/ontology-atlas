@@ -6,6 +6,8 @@ domain: ai-agent-partner
 elements:
   - mcp/src/vault.mjs
   - mcp/src/index.js
+  - src/features/docs-vault-local/model/use-local-vault.ts
+  - src/views/ontology-edit/ui/OntologyEditPage.tsx
 relates:
   - capabilities/mcp-server
   - domains/ai-agent-partner
@@ -14,7 +16,8 @@ relates:
 # MCP Conflict Guard
 
 같은 .md 가 사람 GUI · 외부 에디터 · 다른 AI MCP 에 의해 동시 편집될 때 silent
-overwrite 차단. R11 #8 에서 mcp 측 도입 (UI 측은 후속 task #15).
+overwrite 차단. R11 #8 에서 MCP 측 도입, R+ 에서 local UI 의 본문 저장과
+frontmatter patch 경로까지 확장.
 
 ## 흐름
 
@@ -29,9 +32,13 @@ overwrite 차단. R11 #8 에서 mcp 측 도입 (UI 측은 후속 task #15).
 - `get_concept` — 응답 `mtime` (ms) 추가
 - `patch_concept` — `expected_mtime` (number, optional)
 - `delete_concept` — `expected_mtime` (number, optional)
-- `expectedMtime` 미지정 시 검증 skip — 기존 호출자 호환
+- local UI `saveDoc` / `updateFrontmatter` — manifest `doc.mtime` 을
+  `expectedMtime` 으로 넘기면 write 직전 같은 검증 수행
+- `expectedMtime` 미지정 시 검증 skip — 기존 호출자 호환 및 drag-position
+  같은 고빈도 best-effort write 허용
 
 ## 호환
 
-mcp v0.7.0 부터. UI 측 동일 가드는 후속 task — 현재 사람 GUI save 흐름은
-silent overwrite 가능.
+mcp v0.7.0 부터. UI 본문 편집기와 ontology editor 의 title/domain/relation
+frontmatter 저장은 같은 conflict guard 를 사용한다. create/delete/rename 과
+drag-position 저장은 아직 best-effort 경로다.

@@ -665,6 +665,7 @@
         "toastTitleEmpty": "제목이 비어 있어 저장할 수 없어요.",
         "toastTitleSaved": "\"{title}\" 제목 저장",
         "toastTitleSaveFailed": "제목 저장 실패",
+        "toastVaultConflict": "이 vault 파일이 외부 편집기나 AI agent에 의해 먼저 변경됐습니다. 새로고침 후 다시 저장해주세요.",
         "toastPositionSaveFailed": "좌표 저장 실패",
         "toastDeleteSuccess": "\"{slug}\" 삭제",
         "toastDeleteFailed": "삭제 실패",

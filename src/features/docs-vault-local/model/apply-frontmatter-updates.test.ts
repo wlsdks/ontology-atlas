@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { applyFrontmatterUpdates } from './use-local-vault';
+import {
+  VaultConflictError,
+  applyFrontmatterUpdates,
+  assertExpectedMtime,
+} from './use-local-vault';
 
 describe('applyFrontmatterUpdates', () => {
   it('기존 key 교체', () => {
@@ -88,5 +92,30 @@ describe('applyFrontmatterUpdates', () => {
     expect(result).toContain('# Title');
     expect(result).toContain('## 섹션');
     expect(result).toContain('내용');
+  });
+});
+
+describe('assertExpectedMtime', () => {
+  it('expectedMtime 이 없으면 기존 호출자 호환을 위해 검증을 건너뛴다', () => {
+    expect(() => assertExpectedMtime('doc', undefined, 2000)).not.toThrow();
+  });
+
+  it('mtime 이 같으면 통과한다', () => {
+    expect(() => assertExpectedMtime('doc', 2000, 2000)).not.toThrow();
+  });
+
+  it('mtime 이 다르면 VaultConflictError 로 silent overwrite 를 막는다', () => {
+    expect(() => assertExpectedMtime('doc', 1000, 2000)).toThrow(
+      VaultConflictError,
+    );
+
+    try {
+      assertExpectedMtime('doc', 1000, 2000);
+    } catch (err) {
+      expect(err).toBeInstanceOf(VaultConflictError);
+      expect((err as VaultConflictError).slug).toBe('doc');
+      expect((err as VaultConflictError).expectedMtime).toBe(1000);
+      expect((err as VaultConflictError).currentMtime).toBe(2000);
+    }
   });
 });

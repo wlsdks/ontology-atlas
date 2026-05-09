@@ -54,6 +54,16 @@ export class VaultConflictError extends Error {
   }
 }
 
+export function assertExpectedMtime(
+  slug: string,
+  expectedMtime: number | undefined,
+  currentMtime: number,
+): void {
+  if (typeof expectedMtime === 'number' && currentMtime !== expectedMtime) {
+    throw new VaultConflictError(slug, expectedMtime, currentMtime);
+  }
+}
+
 type Status =
   | 'idle'
   | 'opening'
@@ -488,13 +498,7 @@ export function useLocalVaultInternal() {
       await requireWritePermission(fh);
       if (typeof options.expectedMtime === 'number') {
         const file = await fh.getFile();
-        if (file.lastModified !== options.expectedMtime) {
-          throw new VaultConflictError(
-            slug,
-            options.expectedMtime,
-            file.lastModified,
-          );
-        }
+        assertExpectedMtime(slug, options.expectedMtime, file.lastModified);
       }
       const writable = await fh.createWritable();
       await writable.write(content);
@@ -551,18 +555,19 @@ export function useLocalVaultInternal() {
    *
    * 원자성 — saveDoc 과 같은 경로로 createWritable → write. refresh 는
    * opts.skipRefresh 가 true 면 건너뛰어 연속 호출 시 스크롤/깜빡임
-   * 방지.
+   * 방지. opts.expectedMtime 은 saveDoc 과 같은 conflict guard.
    */
   const updateFrontmatter = useCallback(
     async (
       slug: string,
       updates: Record<string, FrontmatterUpdateValue>,
-      opts: { skipRefresh?: boolean } = {},
+      opts: { skipRefresh?: boolean; expectedMtime?: number } = {},
     ) => {
       const fh = state.fileHandles.get(slug);
       if (!fh) throw new Error(`Local vault: no file handle for "${slug}"`);
       await requireWritePermission(fh);
       const file = await fh.getFile();
+      assertExpectedMtime(slug, opts.expectedMtime, file.lastModified);
       const raw = await file.text();
       const next = applyFrontmatterUpdates(raw, updates);
       if (next === raw) return; // 변경 없음

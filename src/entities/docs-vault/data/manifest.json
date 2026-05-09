@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-09T06:48:52.302Z",
+  "generatedAt": "2026-05-09T07:06:02.843Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -4576,7 +4576,9 @@
         "domain": "ai-agent-partner",
         "elements": [
           "mcp/src/vault.mjs",
-          "mcp/src/index.js"
+          "mcp/src/index.js",
+          "src/features/docs-vault-local/model/use-local-vault.ts",
+          "src/views/ontology-edit/ui/OntologyEditPage.tsx"
         ],
         "relates": [
           "capabilities/mcp-server",
@@ -4605,9 +4607,9 @@
           "slug": "호환"
         }
       ],
-      "excerpt": "같은 .md 가 사람 GUI · 외부 에디터 · 다른 AI MCP 에 의해 동시 편집될 때 silent overwrite 차단. R11 8 에서 mcp 측 도입 (UI 측은 후속 task 15). 1. AI agent 가 getconcept 호출 → 응답에 mtime (ms) 포함 2. agent 가 분석 / 수정 후 patchconcept({ slug, frontmatter, expectedmtime: <prev mtime }) 호출 3. write 직전 server 가 현재 mtime 과 비교 4. 다르면 VaultConflictError(slug, expecte",
-      "wordCount": 137,
-      "updatedAt": "2026-05-04T10:06:27.439Z",
+      "excerpt": "같은 .md 가 사람 GUI · 외부 에디터 · 다른 AI MCP 에 의해 동시 편집될 때 silent overwrite 차단. R11 8 에서 MCP 측 도입, R+ 에서 local UI 의 본문 저장과 frontmatter patch 경로까지 확장. 1. AI agent 가 getconcept 호출 → 응답에 mtime (ms) 포함 2. agent 가 분석 / 수정 후 patchconcept({ slug, frontmatter, expectedmtime: <prev mtime }) 호출 3. write 직전 server 가 현재 mtime 과 비교 4. 다르면 ",
+      "wordCount": 174,
+      "updatedAt": "2026-05-09T07:04:24.666Z",
       "linksOut": []
     },
     {

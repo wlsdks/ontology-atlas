@@ -547,7 +547,9 @@ function DocsVaultContent() {
       const head = stripped.slice(0, insertAfter);
       const body = stripped.slice(insertAfter);
       const next = `${head}${tocBlock}\n\n${body}`;
-      await localVault.saveDoc(selectedSlug, next);
+      await localVault.saveDoc(selectedSlug, next, {
+        expectedMtime: file.lastModified,
+      });
     } catch (err) {
       window.alert(
         t('dialog.tocFailed', { message: err instanceof Error ? err.message : String(err) }),
@@ -1447,10 +1449,19 @@ function DocsVaultContent() {
                         build={folderTopo}
                         canEdit={canEditCurrent}
                         onChange={async (next) => {
-                          await localVault.updateFrontmatter(
-                            selectedDoc.slug,
-                            { dependencies: next },
-                          );
+                          try {
+                            await localVault.updateFrontmatter(
+                              selectedDoc.slug,
+                              { dependencies: next },
+                              { expectedMtime: selectedDoc.mtime },
+                            );
+                          } catch (err) {
+                            if (err instanceof VaultConflictError) {
+                              toast.show(t('dialog.vaultConflict'), 'error');
+                              return;
+                            }
+                            throw err;
+                          }
                           // manifest refresh 후 folderTopo 도 갱신
                           await buildFolderTopology();
                         }}

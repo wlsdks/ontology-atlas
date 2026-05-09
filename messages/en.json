@@ -665,6 +665,7 @@
         "toastTitleEmpty": "Title is empty — can't save.",
         "toastTitleSaved": "Title saved: \"{title}\"",
         "toastTitleSaveFailed": "Failed to save title",
+        "toastVaultConflict": "This vault file was changed first by another editor or AI agent. Refresh and save again.",
         "toastPositionSaveFailed": "Failed to save position",
         "toastDeleteSuccess": "Deleted \"{slug}\"",
         "toastDeleteFailed": "Delete failed",
