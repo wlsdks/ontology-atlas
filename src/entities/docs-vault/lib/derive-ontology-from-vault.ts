@@ -16,6 +16,7 @@ import type { VaultDoc, VaultManifest } from '../model/types';
  * - `elements` — string[] (element 노드 후보)
  * - `relates` — string[] (related_to edge 후보)
  * - `dependencies` — string[] (depends_on edge 후보)
+ * - `contains` — string[] (contains edge 후보, CLI/MCP add_relation 이 쓰는 키)
  *
  * mission v2: vault frontmatter 자체가 진실원이라 별도 promote / 승격 단계
  * 없음. 출력 stub 은 즉시 ontology 그래프로 surface (\`/ontology\` 트리,
@@ -94,33 +95,35 @@ const FOLDER_TO_KIND: Record<string, string> = {
   documents: 'document',
 };
 
+function resolveFolderPrefixedRef(ref: string): { id: string; kind: string; title: string } | null {
+  const trimmed = ref.trim();
+  const slashIdx = trimmed.indexOf('/');
+  if (slashIdx <= 0) return null;
+  const folder = trimmed.slice(0, slashIdx);
+  const tailRaw = trimmed.slice(slashIdx + 1);
+  const tailSlug = slugifyName(tailRaw);
+  if (!tailSlug) return null;
+  const kind = FOLDER_TO_KIND[folder];
+  if (!kind) return null;
+  return {
+    id: `${kind}:${tailSlug}`,
+    kind,
+    title: tailRaw.trim() || tailSlug,
+  };
+}
+
 /**
  * \`relates: ['capabilities/mcp-server', 'auth-platform']\` 같은 ref 를 기존
  * 노드 ID 로 resolve. 형식:
  * - \`folder/slug\` → \`${kind}:${slug}\` (folder 가 알려진 vault 폴더면)
  * - 그 외 → \`unknown:${slugified}\` fallback
  */
-function resolveRelatesRef(
-  rel: string,
-  existingNodes: Map<string, OntologyStubNode>,
-): string | null {
+function resolveRelatesRef(rel: string): string | null {
   const trimmed = rel.trim();
   if (!trimmed) return null;
-  const slashIdx = trimmed.indexOf('/');
-  if (slashIdx > 0) {
-    const folder = trimmed.slice(0, slashIdx);
-    const tailSlug = slugifyName(trimmed.slice(slashIdx + 1));
-    if (!tailSlug) return null;
-    const kind = FOLDER_TO_KIND[folder];
-    if (kind) {
-      const candidate = `${kind}:${tailSlug}`;
-      // existing 노드가 있으면 그대로, 없어도 같은 ID 반환 (caller 가
-      // unknown stub 으로 잠시 등록 — 미래에 같은 vault doc 가 생기면
-      // overwrite 으로 정확한 kind 를 잡는다).
-      return existingNodes.has(candidate)
-        ? candidate
-        : `unknown:${tailSlug}`;
-    }
+  const folderRef = resolveFolderPrefixedRef(trimmed);
+  if (folderRef) {
+    return folderRef.id;
   }
   const slug = slugifyName(trimmed);
   if (!slug) return null;
@@ -171,13 +174,16 @@ export function deriveOntologyFromVault(
     // edge 는 domain → docNode 방향이어야 트리에서 도메인 아래에 capability /
     // element 가 매달리는 기대 구조가 만들어진다.
     if (typeof fm.domain === 'string' && fm.domain.trim() !== '') {
-      const domainSlug = slugifyName(fm.domain);
+      const folderRef = resolveFolderPrefixedRef(fm.domain);
+      const domainSlug = folderRef?.kind === 'domain'
+        ? folderRef.id.slice('domain:'.length)
+        : slugifyName(fm.domain);
       if (domainSlug) {
         const domainId = `domain:${domainSlug}`;
         if (!nodes.has(domainId)) {
           nodes.set(domainId, {
             id: domainId,
-            title: fm.domain.trim(),
+            title: folderRef?.kind === 'domain' ? folderRef.title : fm.domain.trim(),
             kind: 'domain',
             sourceSlug: doc.slug,
             source: 'frontmatter',
@@ -223,13 +229,16 @@ export function deriveOntologyFromVault(
 
     // capabilities[]
     for (const cap of asStringArray(fm.capabilities)) {
-      const capSlug = slugifyName(cap);
+      const folderRef = resolveFolderPrefixedRef(cap);
+      const capSlug = folderRef?.kind === 'capability'
+        ? folderRef.id.slice('capability:'.length)
+        : slugifyName(cap);
       if (!capSlug) continue;
       const capId = `capability:${capSlug}`;
       if (!nodes.has(capId)) {
         nodes.set(capId, {
           id: capId,
-          title: cap,
+          title: folderRef?.kind === 'capability' ? folderRef.title : cap,
           kind: 'capability',
           sourceSlug: doc.slug,
           source: 'frontmatter',
@@ -247,13 +256,16 @@ export function deriveOntologyFromVault(
 
     // elements[]
     for (const el of asStringArray(fm.elements)) {
-      const elSlug = slugifyName(el);
+      const folderRef = resolveFolderPrefixedRef(el);
+      const elSlug = folderRef?.kind === 'element'
+        ? folderRef.id.slice('element:'.length)
+        : slugifyName(el);
       if (!elSlug) continue;
       const elId = `element:${elSlug}`;
       if (!nodes.has(elId)) {
         nodes.set(elId, {
           id: elId,
-          title: el,
+          title: folderRef?.kind === 'element' ? folderRef.title : el,
           kind: 'element',
           sourceSlug: doc.slug,
           source: 'frontmatter',
@@ -269,13 +281,42 @@ export function deriveOntologyFromVault(
       });
     }
 
+    // contains[] — CLI/MCP add_relation({type:'contains'}) 가 쓰는 direct
+    // parent→child 관계. `capabilities/foo` 같은 folder-prefixed ref 는
+    // 실제 kind 로 resolve 해야 웹이 duplicate unknown 노드를 만들지 않는다.
+    for (const contained of asStringArray(fm.contains)) {
+      const folderRef = resolveFolderPrefixedRef(contained);
+      const containedSlug = folderRef
+        ? folderRef.id.split(':').at(-1)
+        : slugifyName(contained);
+      if (!containedSlug) continue;
+      const containedId = folderRef?.id ?? `unknown:${containedSlug}`;
+      if (!nodes.has(containedId)) {
+        nodes.set(containedId, {
+          id: containedId,
+          title: folderRef?.title ?? contained,
+          kind: folderRef?.kind ?? 'unknown',
+          sourceSlug: doc.slug,
+          source: 'frontmatter',
+        });
+      }
+      edges.push({
+        id: `${docNode.id}--contains-->${containedId}`,
+        from: docNode.id,
+        to: containedId,
+        type: 'contains',
+        source: 'frontmatter',
+        sourceSlug: doc.slug,
+      });
+    }
+
     // relates[] — related_to edge. \`folder/slug\` 형태 (예:
     // \`capabilities/mcp-server\`) 면 기존 docNode (\`capability:mcp-server\`)
     // 와 연결하려고 시도하고, 실패하면 \`unknown:slug\` stub. 단순 slugify
     // 만 하면 \`/\` 가 사라져 \`capabilitiesmcp-server\` 같은 mangled ID 가
     // 됐던 회귀 차단.
     for (const rel of asStringArray(fm.relates)) {
-      const relId = resolveRelatesRef(rel, nodes);
+      const relId = resolveRelatesRef(rel);
       if (!relId) continue;
       if (!nodes.has(relId)) {
         nodes.set(relId, {
@@ -298,15 +339,18 @@ export function deriveOntologyFromVault(
 
     // dependencies[] — depends_on edge
     for (const dep of asStringArray(fm.dependencies)) {
-      const depSlug = slugifyName(dep);
+      const folderRef = resolveFolderPrefixedRef(dep);
+      const depSlug = folderRef
+        ? folderRef.id.split(':').at(-1)
+        : slugifyName(dep);
       if (!depSlug) continue;
       // dependencies 는 같은 종 (project) 사이를 가리키는 게 일반적이라 추측.
-      const depId = `${docNode.kind}:${depSlug}`;
+      const depId = folderRef?.id ?? `${docNode.kind}:${depSlug}`;
       if (!nodes.has(depId)) {
         nodes.set(depId, {
           id: depId,
-          title: dep,
-          kind: docNode.kind,
+          title: folderRef?.title ?? dep,
+          kind: folderRef?.kind ?? docNode.kind,
           sourceSlug: doc.slug,
           source: 'frontmatter',
         });

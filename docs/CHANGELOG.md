@@ -6,6 +6,26 @@
 
 ---
 
+## 2026-05-09 — Large clean-room bootstrap hardening
+
+큰 단일 파일 feature 구조의 clean-room 프로젝트
+`/Users/jinan/side-project/omot-large-demo` 로 `init → bootstrap → validate →
+MCP verify → web /docs + /ontology + /topology`를 실제 수행했다. 발견한 문제:
+`analyze`가 FSD marker만 보고 `src/features/*.js` 파일형 feature를 노드로 만들지
+못했고, `infer-imports`가 만든 edge endpoint가 vault에 없어 bootstrap이 깨질 수
+있었다.
+
+- `bootstrap`이 import graph endpoint를 먼저 capability/domain 노드로 생성한 뒤
+  `depends_on`을 적용한다. 단일 파일 feature slug는 `.js/.ts` 확장자를 제거한다.
+- import로 만든 capability는 project→domain→capability containment로 연결해 웹
+  ontology tree의 다중 부모 warning 없이 프로젝트 아래에 붙는다.
+- 웹 `deriveOntologyFromVault`가 `domain: domains/foo`,
+  `dependencies: [capabilities/bar]`, `contains: [capabilities/bar]` 같은
+  folder-prefixed ref를 CLI/MCP와 같은 node id로 해석한다. 19 docs가 31 nodes로
+  부풀던 중복 unknown/stub 문제가 사라졌다.
+- 회귀 테스트 추가: 단일 파일 layered repo bootstrap, single-file feature import
+  slug, folder-prefixed frontmatter ref 해석.
+
 ## 2026-05-09 — Clean onboarding bootstrap polish
 
 Fresh user setup now covers the full `init → bootstrap → validate → MCP

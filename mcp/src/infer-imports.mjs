@@ -292,16 +292,23 @@ function moduleOf(filePath, sourceFolders) {
       // capabilities/ 아래에 둔다.
       const capabilityBuckets = new Set(['features', 'entities']);
       if (capabilityBuckets.has(next) && parts[i + 2]) {
-        return `capabilities/${parts[i + 2]}`;
+        return `capabilities/${stripSourceExtension(parts[i + 2])}`;
       }
       // element 류 bucket — analyze 가 elements/src/... path-style 을 쓴다.
       const elementBuckets = new Set(['widgets', 'views']);
       if (elementBuckets.has(next) && parts[i + 2]) {
-        return `elements/${parts[i]}/${next}/${parts[i + 2]}`;
+        return `elements/${parts[i]}/${next}/${stripSourceExtension(parts[i + 2])}`;
       }
       // generic — sourceFolder 다음 첫 segment 가 module.
       return `capabilities/${next}`;
     }
   }
   return null;
+}
+
+function stripSourceExtension(segment) {
+  for (const ext of SOURCE_EXT) {
+    if (segment.endsWith(ext)) return segment.slice(0, -ext.length);
+  }
+  return segment;
 }

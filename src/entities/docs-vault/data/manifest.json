@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-09T12:24:42.622Z",
+  "generatedAt": "2026-05-09T13:41:19.499Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -2289,6 +2289,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-09 — Large clean-room bootstrap hardening",
+          "slug": "2026-05-09-large-clean-room-bootstrap-hardening"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-09 — Clean onboarding bootstrap polish",
           "slug": "2026-05-09-clean-onboarding-bootstrap-polish"
         },
@@ -3268,9 +3273,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. Fresh user setup now covers the full init → bootstrap → validate → MCP register journey. a",
-      "wordCount": 14398,
-      "updatedAt": "2026-05-09T12:21:23.505Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 큰 단일 파일 feature 구조의 cleanroom 프로젝트 /Users/jinan/sideproject/omotlargedemo 로 init → bootstr",
+      "wordCount": 14532,
+      "updatedAt": "2026-05-09T13:19:39.326Z",
       "linksOut": [
         "slug"
       ]
@@ -4564,8 +4569,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / orphans + 두 apply 플래그 + bootstrap 합본 명령 추가 — 총 16 명령. 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP 등록 불필요. | Command | What it does | ||| | ohmyontology init [folder] | S",
-      "wordCount": 725,
-      "updatedAt": "2026-05-09T12:24:35.167Z",
+      "wordCount": 760,
+      "updatedAt": "2026-05-09T13:19:51.735Z",
       "linksOut": []
     },
     {
@@ -4595,8 +4600,8 @@
         }
       ],
       "excerpt": "vault 의 .md 파일 frontmatter 를 직접 읽어 OntologyStub (nodes + edges + warnings) 으로 변환. AI 추출 / 검수 큐 거치지 않는 fastpath. 이게 mission \"frontmatter 가 자기승인\" 의 코드 표현. 지원 frontmatter 키: kind: — canonical 5: project / domain / capability / element / document title:, domain: capabilities: [], elements: [] — 배열 노드 relates: [], dependenc",
-      "wordCount": 79,
-      "updatedAt": "2026-05-05T03:30:20.979Z",
+      "wordCount": 129,
+      "updatedAt": "2026-05-09T13:20:00.357Z",
       "linksOut": []
     },
     {

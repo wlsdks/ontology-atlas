@@ -52,6 +52,7 @@ export function SigmaFocusLabel({
   if (!sigma || !slug || !graph.hasNode(slug)) return null;
   const attrs = graph.getNodeAttributes(slug);
   const vp = sigma.graphToViewport({ x: attrs.x, y: attrs.y });
+  const display = sigma.getNodeDisplayData(slug);
   const scale = focused ? (attrs.isHub ? 1.25 : 1.6) : 1;
   const size = attrs.size * scale;
 
@@ -60,6 +61,10 @@ export function SigmaFocusLabel({
       data-testid="sigma-focus-label"
       data-slug={slug}
       data-focused={focused ? 'true' : 'false'}
+      data-node-x={String(Math.round(vp.x))}
+      data-node-y={String(Math.round(vp.y))}
+      data-display-x={display ? String(Math.round(display.x)) : undefined}
+      data-display-y={display ? String(Math.round(display.y)) : undefined}
       className="pointer-events-none absolute z-20"
       style={{
         left: vp.x + size + 10,

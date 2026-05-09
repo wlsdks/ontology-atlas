@@ -126,6 +126,33 @@ test('module-level edge collapse (FSD features/ — capability folder slug, anal
   }
 });
 
+test('module-level edge collapse (single-file feature modules strip source extension)', () => {
+  const root = withRepo((r) => {
+    mkdirSync(join(r, 'src/features'), { recursive: true });
+    mkdirSync(join(r, 'src/domain'), { recursive: true });
+    writeFileSync(
+      join(r, 'src/features/check-in.js'),
+      'import { normalizeHabit } from "../domain/habit.js";\nexport const checkIn = normalizeHabit;\n',
+    );
+    writeFileSync(
+      join(r, 'src/domain/habit.js'),
+      'export const normalizeHabit = (habit) => habit;\n',
+    );
+  });
+  try {
+    const r = inferImports(root);
+    const e = r.moduleEdges.find(
+      (x) => x.from === 'capabilities/check-in' && x.to === 'capabilities/domain',
+    );
+    assert.ok(
+      e,
+      `expected extensionless module edge capabilities/check-in → capabilities/domain, got: ${JSON.stringify(r.moduleEdges)}`,
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('module-level edge collapse (FSD widgets/ — element folder slug, analyze 와 일관)', () => {
   // widgets/X · views/X 는 elements/src/... path-style 로 유지한다.
   const root = withRepo((r) => {

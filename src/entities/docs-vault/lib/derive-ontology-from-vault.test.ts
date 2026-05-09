@@ -122,6 +122,68 @@ describe('deriveOntologyFromVault', () => {
     expect(resolvedEdge).toBeDefined();
   });
 
+  it('folder-prefixed refs — domain / dependencies / contains 가 중복 unknown 노드를 만들지 않는다', () => {
+    const result = deriveOntologyFromVault(
+      makeManifest([
+        makeDoc({
+          slug: 'ops-signal-board',
+          frontmatter: {
+            kind: 'project',
+            title: 'Ops Signal Board',
+            contains: ['capabilities/storage'],
+          },
+        }),
+        makeDoc({
+          slug: 'domains/incident-intake',
+          frontmatter: {
+            kind: 'domain',
+            title: 'Incident Intake',
+          },
+        }),
+        makeDoc({
+          slug: 'capabilities/app',
+          frontmatter: {
+            kind: 'capability',
+            title: 'App',
+            domain: 'domains/incident-intake',
+            dependencies: ['capabilities/storage'],
+          },
+        }),
+        makeDoc({
+          slug: 'capabilities/storage',
+          frontmatter: {
+            kind: 'capability',
+            title: 'Storage',
+            domain: 'domains/incident-intake',
+          },
+        }),
+      ]),
+    );
+
+    expect(result.nodes.find((n) => n.id === 'domain:incident-intake')).toBeDefined();
+    expect(result.nodes.find((n) => n.id === 'domain:domainsincident-intake')).toBeUndefined();
+    expect(result.nodes.find((n) => n.id === 'capability:storage')).toBeDefined();
+    expect(
+      result.nodes.find((n) => n.id === 'capability:capabilitiesstorage'),
+    ).toBeUndefined();
+    expect(
+      result.edges.find(
+        (e) =>
+          e.type === 'contains' &&
+          e.from === 'project:ops-signal-board' &&
+          e.to === 'capability:storage',
+      ),
+    ).toBeDefined();
+    expect(
+      result.edges.find(
+        (e) =>
+          e.type === 'depends_on' &&
+          e.from === 'capability:app' &&
+          e.to === 'capability:storage',
+      ),
+    ).toBeDefined();
+  });
+
   it('domains[] (plural) — project → 자식 도메인 contains edge', () => {
     const result = deriveOntologyFromVault(
       makeManifest([

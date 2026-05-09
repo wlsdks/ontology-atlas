@@ -1749,6 +1749,71 @@ function makeFullRepo() {
   return repo;
 }
 
+function makeSingleFileLayeredRepo() {
+  const repo = mkdtempSync(join(tmpdir(), 'cli-bs-layered-'));
+  writeFileSync(
+    join(repo, 'package.json'),
+    JSON.stringify(
+      { name: 'habit-ledger-pro', description: 'Habit Ledger Pro' },
+      null,
+      2,
+    ),
+    'utf-8',
+  );
+  writeFileSync(
+    join(repo, 'README.md'),
+    '# Habit Ledger Pro\n\n## Writing Habit Tracking\n\n## Local Data Integrity\n',
+    'utf-8',
+  );
+  mkdirSync(join(repo, 'src', 'app'), { recursive: true });
+  mkdirSync(join(repo, 'src', 'features'), { recursive: true });
+  mkdirSync(join(repo, 'src', 'domain'), { recursive: true });
+  mkdirSync(join(repo, 'src', 'storage'), { recursive: true });
+  writeFileSync(
+    join(repo, 'src', 'app', 'main.js'),
+    [
+      'import { checkIn } from "../features/check-in.js";',
+      'import { weeklyReview } from "../features/weekly-review.js";',
+      'export const run = () => [checkIn(), weeklyReview()];',
+    ].join('\n'),
+    'utf-8',
+  );
+  writeFileSync(
+    join(repo, 'src', 'features', 'check-in.js'),
+    [
+      'import { normalizeHabit } from "../domain/habit.js";',
+      'import { appendEntry } from "../storage/json-store.js";',
+      'export const checkIn = () => appendEntry(normalizeHabit("write"));',
+    ].join('\n'),
+    'utf-8',
+  );
+  writeFileSync(
+    join(repo, 'src', 'features', 'weekly-review.js'),
+    [
+      'import { calculateStreak } from "../domain/streak.js";',
+      'import { readEntries } from "../storage/json-store.js";',
+      'export const weeklyReview = () => calculateStreak(readEntries());',
+    ].join('\n'),
+    'utf-8',
+  );
+  writeFileSync(
+    join(repo, 'src', 'domain', 'habit.js'),
+    'export const normalizeHabit = (name) => ({ name });\n',
+    'utf-8',
+  );
+  writeFileSync(
+    join(repo, 'src', 'domain', 'streak.js'),
+    'export const calculateStreak = (entries) => entries.length;\n',
+    'utf-8',
+  );
+  writeFileSync(
+    join(repo, 'src', 'storage', 'json-store.js'),
+    'export const appendEntry = (entry) => entry;\nexport const readEntries = () => [];\n',
+    'utf-8',
+  );
+  return repo;
+}
+
 await test('bootstrap — analyze + infer-imports 한 명령으로 land (FSD slug parity, cycle 35)', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
@@ -1775,6 +1840,68 @@ await test('bootstrap — analyze + infer-imports 한 명령으로 land (FSD slu
       /dependencies:.*\bbilling\b/s,
       `auth.md should depend_on billing — got: ${authDoc}`,
     );
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('bootstrap — single-file layered repo import endpoints 먼저 생성 후 depends_on land', async () => {
+  const vault = withVault([]);
+  const repo = makeSingleFileLayeredRepo();
+  try {
+    const r = await run([
+      'bootstrap',
+      repo,
+      '--vault',
+      vault,
+      '--threshold',
+      '1',
+      '--json',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.summary.errors, 0);
+    assert.ok(Array.isArray(data.imports.endpointConcepts));
+    assert.ok(
+      data.imports.endpointConcepts.some(
+        (row) => row.ok === true && row.slug === 'capabilities/check-in',
+      ),
+      `expected bootstrap-created check-in endpoint, got: ${JSON.stringify(data.imports.endpointConcepts)}`,
+    );
+    assert.ok(
+      data.imports.relations.some(
+        (row) =>
+          row.ok === true &&
+          row.from === 'capabilities/check-in' &&
+          row.to === 'capabilities/storage',
+      ),
+      `expected check-in → storage relation, got: ${JSON.stringify(data.imports.relations)}`,
+    );
+    assert.ok(
+      data.imports.containmentRelations.some(
+        (row) =>
+          row.ok === true &&
+          row.from === 'habit-ledger-pro' &&
+          row.to === 'domains/writing-habit-tracking',
+      ),
+      `expected project → domain containment, got: ${JSON.stringify(data.imports.containmentRelations)}`,
+    );
+    assert.ok(
+      data.imports.containmentRelations.some(
+        (row) =>
+          row.ok === true &&
+          row.from === 'domains/writing-habit-tracking' &&
+          row.to === 'capabilities/check-in',
+      ),
+      `expected domain → check-in containment, got: ${JSON.stringify(data.imports.containmentRelations)}`,
+    );
+    const checkInDoc = readFileSync(
+      join(vault, 'capabilities', 'check-in.md'),
+      'utf-8',
+    );
+    assert.match(checkInDoc, /domain: domains\/writing-habit-tracking/);
+    assert.match(checkInDoc, /dependencies:.*\bstorage\b/s);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });

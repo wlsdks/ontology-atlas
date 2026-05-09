@@ -88,6 +88,8 @@ export async function runBootstrap(args) {
 
   // Stage 2 — infer-imports + apply (--skip-imports 면 생략).
   let importsResult = null;
+  let importEndpointRows = [];
+  let importContainmentRows = [];
   let importsRows = [];
   if (!parsed.skipImports) {
     try {
@@ -119,6 +121,33 @@ export async function runBootstrap(args) {
       to: e.to,
       type: 'depends_on',
     }));
+    const importEndpointConcepts = collectImportEndpointConcepts(
+      edges,
+      concepts,
+      analyzeResult,
+    );
+    if (importEndpointConcepts.length > 0) {
+      try {
+        const r = await callMcpTool(vaultRoot, 'add_concepts', {
+          concepts: importEndpointConcepts,
+        });
+        importEndpointRows = r.concepts ?? [];
+      } catch (err) {
+        process.stderr.write(
+          `${COLORS.red}error${COLORS.reset}  add_concepts(import endpoints): ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+        return 2;
+      }
+    }
+    const importContainmentRelations = collectImportContainmentRelations(
+      analyzeResult,
+      importEndpointConcepts,
+    );
+    importContainmentRows = await applyRelations(
+      vaultRoot,
+      importContainmentRelations,
+    );
+    if (importContainmentRows === null) return 2;
     const rows = await applyRelations(vaultRoot, importRelations);
     if (rows === null) return 2;
     importsRows = rows;
@@ -126,6 +155,8 @@ export async function runBootstrap(args) {
 
   const summary = combineSummary(
     conceptsRows,
+    importEndpointRows,
+    importContainmentRows,
     analyzeRelationsRows,
     importsRows,
   );
@@ -149,6 +180,8 @@ export async function runBootstrap(args) {
             : {
                 filesScanned: importsResult?.filesScanned,
                 thresholdApplied: importsResult?.thresholdApplied,
+                endpointConcepts: importEndpointRows,
+                containmentRelations: importContainmentRows,
                 relations: importsRows,
               },
           prunedStarters: summarizePrunedStarterNodes(prunedStarters),
@@ -173,7 +206,7 @@ export async function runBootstrap(args) {
       `${summary.conceptsErrors > 0 ? COLORS.red : COLORS.dim}${summary.conceptsErrors}${COLORS.reset} errors\n`,
   );
   process.stdout.write(
-    `                relations (suggested): ` +
+      `                relations (suggested): ` +
       `${COLORS.green}${summary.analyzeRelationsLanded}${COLORS.reset} landed · ` +
       `${COLORS.dim}${summary.analyzeRelationsExisting}${COLORS.reset} already existed · ` +
       `${summary.analyzeRelationsErrors > 0 ? COLORS.red : COLORS.dim}${summary.analyzeRelationsErrors}${COLORS.reset} errors\n`,
@@ -185,7 +218,19 @@ export async function runBootstrap(args) {
   } else {
     const thr = importsResult?.thresholdApplied;
     process.stdout.write(
-      `  ${COLORS.bold}2) imports${COLORS.reset}    depends_on: ` +
+      `  ${COLORS.bold}2) imports${COLORS.reset}    endpoints: ` +
+        `${COLORS.green}${summary.importEndpointConceptsLanded}${COLORS.reset} landed · ` +
+        `${COLORS.dim}${summary.importEndpointConceptsExisting}${COLORS.reset} already existed · ` +
+        `${summary.importEndpointConceptsErrors > 0 ? COLORS.red : COLORS.dim}${summary.importEndpointConceptsErrors}${COLORS.reset} errors\n`,
+    );
+    process.stdout.write(
+      `                containment: ` +
+        `${COLORS.green}${summary.importContainmentLanded}${COLORS.reset} landed · ` +
+        `${COLORS.dim}${summary.importContainmentExisting}${COLORS.reset} already existed · ` +
+        `${summary.importContainmentErrors > 0 ? COLORS.red : COLORS.dim}${summary.importContainmentErrors}${COLORS.reset} errors\n`,
+    );
+    process.stdout.write(
+      `                depends_on:  ` +
         `${COLORS.green}${summary.importsLanded}${COLORS.reset} landed · ` +
         `${COLORS.dim}${summary.importsExisting}${COLORS.reset} already existed · ` +
         `${summary.importsErrors > 0 ? COLORS.red : COLORS.dim}${summary.importsErrors}${COLORS.reset} errors` +
@@ -214,6 +259,26 @@ export async function runBootstrap(args) {
       if (errCount < 12) {
         process.stdout.write(
           `  ${COLORS.red}✗${COLORS.reset} suggested ${row.from} —${row.type}→ ${row.to} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
+        );
+      }
+      errCount += 1;
+    }
+  }
+  for (const row of importEndpointRows) {
+    if (row.ok === false) {
+      if (errCount < 12) {
+        process.stdout.write(
+          `  ${COLORS.red}✗${COLORS.reset} import endpoint ${row.slug} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
+        );
+      }
+      errCount += 1;
+    }
+  }
+  for (const row of importContainmentRows) {
+    if (row.ok === false) {
+      if (errCount < 12) {
+        process.stdout.write(
+          `  ${COLORS.red}✗${COLORS.reset} import containment ${row.from} —${row.type}→ ${row.to} ${COLORS.dim}— ${row.error}${COLORS.reset}\n`,
         );
       }
       errCount += 1;
@@ -287,6 +352,117 @@ function collectConcepts(analyzeResult) {
   return out;
 }
 
+function collectImportEndpointConcepts(edges, analyzeConcepts, analyzeResult) {
+  if (!Array.isArray(edges) || edges.length === 0) return [];
+  const known = new Set(analyzeConcepts.map((c) => c.slug));
+  const out = [];
+  const seen = new Set();
+  const missing = [];
+  for (const edge of edges) {
+    for (const slug of [edge.from, edge.to]) {
+      if (!slug || known.has(slug) || seen.has(slug)) continue;
+      const kind = kindFromOntologySlug(slug);
+      if (!kind) continue;
+      missing.push({ slug, kind });
+      seen.add(slug);
+    }
+  }
+  if (missing.length === 0) return [];
+
+  const needsDomain = missing.some(
+    (m) => m.kind === 'capability' || m.kind === 'element',
+  );
+  const fallbackDomain = needsDomain
+    ? firstDomainSlug(analyzeConcepts, analyzeResult) ?? 'domains/codebase-structure'
+    : null;
+
+  if (fallbackDomain && !known.has(fallbackDomain)) {
+    out.push({
+      slug: fallbackDomain,
+      kind: 'domain',
+      title: titleFromSlug(fallbackDomain),
+    });
+    known.add(fallbackDomain);
+  }
+
+  for (const { slug, kind } of missing) {
+    out.push({
+      slug,
+      kind,
+      title: titleFromSlug(slug),
+      ...(fallbackDomain && (kind === 'capability' || kind === 'element')
+        ? { domain: fallbackDomain }
+        : {}),
+    });
+  }
+  return out;
+}
+
+function collectImportContainmentRelations(analyzeResult, importEndpointConcepts) {
+  const projectSlug = analyzeResult.project?.slug;
+  if (!projectSlug || !Array.isArray(importEndpointConcepts)) return [];
+  const relations = [];
+  const seen = new Set();
+  for (const concept of importEndpointConcepts) {
+    if (concept.kind !== 'capability' && concept.kind !== 'element') continue;
+    if (concept.domain) {
+      const projectDomainKey = `${projectSlug}→${concept.domain}`;
+      if (!seen.has(projectDomainKey)) {
+        relations.push({
+          from: projectSlug,
+          to: concept.domain,
+          type: 'contains',
+        });
+        seen.add(projectDomainKey);
+      }
+      const domainConceptKey = `${concept.domain}→${concept.slug}`;
+      if (!seen.has(domainConceptKey)) {
+        relations.push({
+          from: concept.domain,
+          to: concept.slug,
+          type: 'contains',
+        });
+        seen.add(domainConceptKey);
+      }
+      continue;
+    }
+    const projectConceptKey = `${projectSlug}→${concept.slug}`;
+    if (!seen.has(projectConceptKey)) {
+      relations.push({
+        from: projectSlug,
+        to: concept.slug,
+        type: 'contains',
+      });
+      seen.add(projectConceptKey);
+    }
+  }
+  return relations;
+}
+
+function firstDomainSlug(analyzeConcepts, analyzeResult) {
+  const fromConcepts = analyzeConcepts.find((c) => c.kind === 'domain')?.slug;
+  if (fromConcepts) return fromConcepts;
+  return analyzeResult.domains?.[0]?.slug ?? null;
+}
+
+function kindFromOntologySlug(slug) {
+  if (slug.startsWith('projects/')) return 'project';
+  if (slug.startsWith('domains/')) return 'domain';
+  if (slug.startsWith('capabilities/')) return 'capability';
+  if (slug.startsWith('elements/')) return 'element';
+  return null;
+}
+
+function titleFromSlug(slug) {
+  const tail = String(slug).split('/').filter(Boolean).at(-1) ?? slug;
+  return tail
+    .replace(/\.[^.]+$/, '')
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 // add_relations 의 50-row chunk 분할. 호출 실패 (mcp throw) 시 null 리턴.
 async function applyRelations(vaultRoot, relations) {
   if (!Array.isArray(relations) || relations.length === 0) return [];
@@ -307,14 +483,28 @@ async function applyRelations(vaultRoot, relations) {
   return all;
 }
 
-function combineSummary(conceptsRows, analyzeRelRows, importsRows) {
+function combineSummary(
+  conceptsRows,
+  importEndpointRows,
+  importContainmentRows,
+  analyzeRelRows,
+  importsRows,
+) {
   const conceptStats = countConcepts(conceptsRows);
+  const importEndpointStats = countConcepts(importEndpointRows);
+  const importContainmentStats = countRelations(importContainmentRows);
   const analyzeRelStats = countRelations(analyzeRelRows);
   const importStats = countRelations(importsRows);
   return {
     conceptsLanded: conceptStats.landed,
     conceptsExisting: conceptStats.existing,
     conceptsErrors: conceptStats.errors,
+    importEndpointConceptsLanded: importEndpointStats.landed,
+    importEndpointConceptsExisting: importEndpointStats.existing,
+    importEndpointConceptsErrors: importEndpointStats.errors,
+    importContainmentLanded: importContainmentStats.landed,
+    importContainmentExisting: importContainmentStats.existing,
+    importContainmentErrors: importContainmentStats.errors,
     analyzeRelationsLanded: analyzeRelStats.landed,
     analyzeRelationsExisting: analyzeRelStats.existing,
     analyzeRelationsErrors: analyzeRelStats.errors,
@@ -322,7 +512,11 @@ function combineSummary(conceptsRows, analyzeRelRows, importsRows) {
     importsExisting: importStats.existing,
     importsErrors: importStats.errors,
     errors:
-      conceptStats.errors + analyzeRelStats.errors + importStats.errors,
+      conceptStats.errors +
+      importEndpointStats.errors +
+      importContainmentStats.errors +
+      analyzeRelStats.errors +
+      importStats.errors,
   };
 }
 
