@@ -67,7 +67,8 @@ export function useProjectMutations(): ProjectMutations {
       }
       // frontmatter patch — body 는 그대로 둔다.
       const fm = projectToFrontmatter(input);
-      await vault.updateFrontmatter(slug, fm);
+      const expectedMtime = vault.manifest?.docs.find((doc) => doc.slug === slug)?.mtime;
+      await vault.updateFrontmatter(slug, fm, { expectedMtime });
     },
     [mode, vault],
   );

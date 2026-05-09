@@ -8,6 +8,7 @@ elements:
   - mcp/src/index.js
   - src/features/docs-vault-local/model/use-local-vault.ts
   - src/views/ontology-edit/ui/OntologyEditPage.tsx
+  - src/features/project-data-source/model/use-project-mutations.ts
 relates:
   - capabilities/mcp-server
   - domains/ai-agent-partner
@@ -40,5 +41,6 @@ frontmatter patch 경로까지 확장.
 ## 호환
 
 mcp v0.7.0 부터. UI 본문 편집기와 ontology editor 의 title/domain/relation
-frontmatter 저장은 같은 conflict guard 를 사용한다. create/delete/rename 과
+frontmatter 저장은 같은 conflict guard 를 사용한다. Project edit 의
+frontmatter 저장도 manifest mtime 을 넘긴다. create/delete/rename 과
 drag-position 저장은 아직 best-effort 경로다.
