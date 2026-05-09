@@ -37,6 +37,11 @@ export function useHomeRouteState(): [
   ) => void,
 ] {
   const pathname = usePathname();
+  const hydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   // useSearchParams 는 app-router 변화를 구독 — Link/router.push 시 trigger.
   // 값 자체는 window.location 과 동기화되므로 아래 routeState 계산에 직접
   // 사용하지 않고 "re-render 트리거" 용으로만 참조.
@@ -62,12 +67,13 @@ export function useHomeRouteState(): [
   const routeState = useMemo(() => {
     // routerSearchKey 는 re-run trigger 용으로만 dep 에 포함.
     void routerSearchKey;
+    if (!hydrated) return DEFAULT_HOME_ROUTE_STATE;
     const currentSearch =
       typeof window !== 'undefined' ? window.location.search : search;
     return currentSearch.length > 0
       ? parseHomeRouteState(new URLSearchParams(currentSearch))
       : DEFAULT_HOME_ROUTE_STATE;
-  }, [search, routerSearchKey]);
+  }, [hydrated, search, routerSearchKey]);
 
   const updateRouteState = useCallback(
     (

@@ -56,6 +56,10 @@ export function LandingPage() {
             <p className="max-w-xl text-base leading-7 text-[color:var(--color-text-secondary)]">
               {t('subtitle')}
             </p>
+            <LandingActions className="pt-2 md:hidden" />
+            <p className="text-[12px] text-[color:var(--color-text-quaternary)] md:hidden">
+              {t('privacyNote')}
+            </p>
           </div>
 
           <MiniTopology
@@ -79,27 +83,9 @@ export function LandingPage() {
             18 노드 즉시 확인). 이전엔 데모가 primary, 폴더 열기가 secondary
             였는데 PM 이 첫 클릭에서 dead-end (자기 vault 활성화 경로 못
             찾음) 로 빠지던 문제 fix. */}
-        <div className="flex flex-wrap items-center gap-3">
-          <Link
-            href="/docs/?intent=local"
-            className={cn(buttonVariants({ size: "lg" }), "rounded-full min-w-[14rem]")}
-          >
-            <FolderOpen size={16} />
-            {t('openVaultCta')}
-          </Link>
-          <Link
-            href="/ontology/"
-            className={cn(
-              buttonVariants({ variant: "outline", size: "lg" }),
-              "rounded-full",
-            )}
-          >
-            {t('exploreCta')}
-            <ArrowRight size={16} />
-          </Link>
-        </div>
+        <LandingActions className="hidden md:flex" />
 
-        <p className="text-[12px] text-[color:var(--color-text-quaternary)]">
+        <p className="hidden text-[12px] text-[color:var(--color-text-quaternary)] md:block">
           {t('privacyNote')}
         </p>
       </section>
@@ -122,6 +108,32 @@ export function LandingPage() {
         </span>
       </footer>
     </main>
+  );
+}
+
+function LandingActions({ className }: { className?: string }) {
+  const t = useTranslations('landing');
+
+  return (
+    <div className={cn("flex flex-wrap items-center gap-3", className)}>
+      <Link
+        href="/docs/?intent=local"
+        className={cn(buttonVariants({ size: "lg" }), "rounded-full min-w-[14rem]")}
+      >
+        <FolderOpen size={16} />
+        {t('openVaultCta')}
+      </Link>
+      <Link
+        href="/ontology/"
+        className={cn(
+          buttonVariants({ variant: "outline", size: "lg" }),
+          "rounded-full",
+        )}
+      >
+        {t('exploreCta')}
+        <ArrowRight size={16} />
+      </Link>
+    </div>
   );
 }
 

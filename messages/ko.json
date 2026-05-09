@@ -589,7 +589,7 @@
         "unpinTooltip": "고정 해제"
       },
       "empty": {
-        "selectPrompt": "왼쪽 트리에서 문서를 선택하세요"
+        "selectPrompt": "문서 트리에서 문서를 선택하세요"
       },
       "outline": {
         "pinTooltip": "이 문서 고정",

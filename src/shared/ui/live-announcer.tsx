@@ -21,6 +21,7 @@ export function LiveAnnouncer({ message, politeness = "polite" }: Props) {
       role="status"
       aria-live={politeness}
       aria-atomic="true"
+      suppressHydrationWarning
       className="sr-only"
     >
       {message}

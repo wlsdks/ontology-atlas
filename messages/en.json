@@ -589,7 +589,7 @@
         "unpinTooltip": "Unpin"
       },
       "empty": {
-        "selectPrompt": "Pick a document from the tree on the left"
+        "selectPrompt": "Pick a document from the document tree"
       },
       "outline": {
         "pinTooltip": "Pin this document",
