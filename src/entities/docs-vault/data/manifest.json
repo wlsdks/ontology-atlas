@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-09T08:06:12.243Z",
+  "generatedAt": "2026-05-09T11:13:55.096Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -3244,8 +3244,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. Fresh user setup now covers the full init → bootstrap → validate → MCP register journey. a",
-      "wordCount": 14062,
-      "updatedAt": "2026-05-09T08:02:00.573Z",
+      "wordCount": 14092,
+      "updatedAt": "2026-05-09T11:13:01.861Z",
       "linksOut": [
         "slug"
       ]
@@ -4534,8 +4534,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / orphans + 두 apply 플래그 + bootstrap 합본 명령 추가 — 총 16 명령. 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP 등록 불필요. | Command | What it does | ||| | ohmyontology init [folder] | S",
-      "wordCount": 666,
-      "updatedAt": "2026-05-09T08:05:44.339Z",
+      "wordCount": 670,
+      "updatedAt": "2026-05-09T11:12:55.696Z",
       "linksOut": []
     },
     {

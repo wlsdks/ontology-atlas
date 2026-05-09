@@ -65,6 +65,17 @@ async function test(name, fn) {
 
 console.log('cli integration');
 
+await test('help — current setup contract and default slug layout are not stale', async () => {
+  const r = await run(['--help']);
+  assert.equal(r.code, 0);
+  const clean = stripAnsi(r.stdout);
+  assert.match(clean, /--raw-slug/);
+  assert.match(clean, /default kind→folder prefix/);
+  assert.doesNotMatch(clean, /auto-prefix.*opt-in/);
+  assert.match(clean, /Codex 'mcp add'/);
+  assert.match(clean, /Recommends 'bootstrap'/);
+});
+
 await test('list — empty vault: 0 노드 메시지', async () => {
   const root = withVault([]);
   try {

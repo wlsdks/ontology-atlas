@@ -54,13 +54,13 @@ ${COLORS.bold}Usage:${COLORS.reset}
   npx oh-my-ontology add <kind> <slug>        Scaffold a new ontology node (.md)
        --title "..."                          ${COLORS.dim}required, non-empty${COLORS.reset}
        --domain X --body "..." --vault path   ${COLORS.dim}optional${COLORS.reset}
-       --auto-prefix                          ${COLORS.dim}kind→folder (capability→capabilities/) opt-in${COLORS.reset}
+       --raw-slug                             ${COLORS.dim}opt out of default kind→folder prefix${COLORS.reset}
   npx oh-my-ontology find <query> [vault]     Search slug + title (case-insensitive)
        --kind X --json                        ${COLORS.dim}optional${COLORS.reset}
   npx oh-my-ontology import <path...>         Import external .md into the vault (R14)
        --vault path                           ${COLORS.dim}target vault root (default: cwd)${COLORS.reset}
        --kind K                               ${COLORS.dim}fallback kind when input has no kind:${COLORS.reset}
-       --auto-prefix --rename --dry-run       ${COLORS.dim}folder prefix · slug rename · plan-only${COLORS.reset}
+       --raw-slug --rename --dry-run          ${COLORS.dim}no folder prefix · slug rename · plan-only${COLORS.reset}
 
 ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17 — autonomous ingest base)${COLORS.reset}
   npx oh-my-ontology bootstrap [rootPath]     ${COLORS.green}1줄 full bootstrap${COLORS.reset} — analyze --apply + infer-imports --apply
@@ -91,8 +91,9 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
 ${COLORS.bold}What 'init' does:${COLORS.reset}
   - Creates project / domain / capability / element starter .md files
   - Each file has frontmatter (kind / slug / title / depends_on / capabilities / ...)
-  - Adds a .mcp.json template so AI agents (Claude Code, Cursor, etc.) can read/write the vault
-  - Prints next steps to start exploring
+  - Writes wired .mcp.json files for Claude Code / Cursor in both cwd and the vault
+  - Prints the exact Codex 'mcp add' command, because Codex uses its own config
+  - Recommends 'bootstrap' to replace untouched starters with a first real graph
 
 ${COLORS.bold}Mission:${COLORS.reset}
   vault frontmatter = the graph. Humans + AI agents author the same vault.

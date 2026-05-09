@@ -35,7 +35,7 @@ export function runAdd(args) {
   const { kind, slug: rawSlug, title, domain, body, vault, autoPrefix } = opts;
   const vaultPath = resolve(vault);
 
-  // R12 #37 — opt-in folder prefix (capability → capabilities/foo).
+  // R15 — default folder prefix (capability → capabilities/foo).
   // 사용자가 이미 prefix 명시 (`capabilities/foo`) 한 경우 두 번 적용 회피.
   // R14 — folder mapping 은 schema.mjs 의 single source 사용 (mcp 와 일치).
   const folder = folderForKind(kind);
@@ -136,8 +136,9 @@ function parseArgs(args) {
 function printAddUsage() {
   process.stderr.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology add <kind> <slug> --title="..." [--domain X] [--body "..."] [--vault path]\n` +
+      `  oh-my-ontology add <kind> <slug> --title="..." [--domain X] [--body "..."] [--vault path] [--raw-slug]\n` +
       `\n${COLORS.bold}kind:${COLORS.reset} ${VAULT_KINDS.join(' / ')}\n` +
+      `\n${COLORS.bold}slug layout:${COLORS.reset} kind→folder prefix is default (capability foo → capabilities/foo). Use --raw-slug to opt out.\n` +
       `\nExample:\n` +
       `  oh-my-ontology add capability auth/token-issue --title="Token issue" --domain=auth\n`,
   );

@@ -20,7 +20,7 @@ const COLORS = {
 };
 
 /**
- * R14 — `oh-my-ontology import <path...> [--vault X] [--kind K] [--auto-prefix]
+ * R14 — `oh-my-ontology import <path...> [--vault X] [--kind K] [--raw-slug]
  * [--rename] [--dry-run]`
  *
  * 외부 markdown 파일을 vault 안으로 정착. AI agent (`add_concept`) 와 사용자
@@ -309,7 +309,7 @@ function parseArgs(args) {
 function printImportUsage() {
   process.stderr.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology import <path...> [--vault path] [--kind K] [--auto-prefix] [--rename] [--dry-run]\n` +
+      `  oh-my-ontology import <path...> [--vault path] [--kind K] [--raw-slug] [--rename] [--dry-run]\n` +
       `\n` +
       `  외부 .md 파일을 vault 안으로 정착. frontmatter 의 kind/slug/title 을 우선 사용,\n` +
       `  없는 부분만 --kind 또는 파일명/첫 H1 으로 보완. schema 가 kind 별 양식 (project 의\n` +
@@ -317,11 +317,11 @@ function printImportUsage() {
       `\n${COLORS.bold}options:${COLORS.reset}\n` +
       `  --vault path    target vault (default: cwd)\n` +
       `  --kind K        fallback kind when input frontmatter has no kind\n` +
-      `  --auto-prefix   kind 의 folder prefix 자동 (capability → capabilities/)\n` +
+      `  --raw-slug      opt out of default kind folder prefix (capability → capabilities/)\n` +
       `  --rename        slug 가 vault 에 이미 있으면 -2 / -3 ... 으로 자동 회피\n` +
       `  --dry-run       디스크 변경 없이 import 계획만 출력\n` +
       `\n${COLORS.bold}examples:${COLORS.reset}\n` +
-      `  oh-my-ontology import ~/notes/auth.md --vault . --kind capability --auto-prefix\n` +
+      `  oh-my-ontology import ~/notes/auth.md --vault . --kind capability\n` +
       `  oh-my-ontology import ./incoming/ --vault . --rename --dry-run\n`,
   );
 }
