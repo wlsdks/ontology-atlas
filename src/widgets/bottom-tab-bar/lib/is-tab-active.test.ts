@@ -4,19 +4,21 @@ import { isBottomTabActive } from "./is-tab-active";
 describe("isBottomTabActive", () => {
   it("home 탭 ('/') — / 에서 active", () => {
     expect(
-      isBottomTabActive("/", "/", ["/ontology", "/topology"]),
+      isBottomTabActive("/", "/", ["/ontology"]),
     ).toBe(true);
   });
 
-  it("home 탭 — /ontology / /topology sub-surface 에서도 active (라벨 일관성)", () => {
+  it("ontology 탭 — /ontology sub-surface 에서 active", () => {
     expect(
-      isBottomTabActive("/ontology", "/", ["/ontology", "/topology"]),
+      isBottomTabActive("/ontology", "/", ["/ontology"]),
     ).toBe(true);
+    expect(isBottomTabActive("/topology", "/", ["/ontology"])).toBe(false);
+  });
+
+  it("topology 탭 — /topology prefix", () => {
+    expect(isBottomTabActive("/topology", "/topology/", ["/topology"])).toBe(true);
     expect(
-      isBottomTabActive("/topology", "/", ["/ontology", "/topology"]),
-    ).toBe(true);
-    expect(
-      isBottomTabActive("/topology/?p=foo", "/", ["/ontology", "/topology"]),
+      isBottomTabActive("/topology/?p=foo", "/topology/", ["/topology"]),
     ).toBe(true);
   });
 

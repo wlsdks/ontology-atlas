@@ -2,24 +2,24 @@
 
 import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { Network, FolderKanban, FileText } from 'lucide-react';
+import { Network, FolderKanban, FileText, Route } from 'lucide-react';
 import { isBottomTabActive } from '../lib/is-tab-active';
 
 interface TabItem {
   href: string;
   /** Translation key under `nav.*` for the visible tab label. */
-  labelKey: 'ontology' | 'projects' | 'docs';
+  labelKey: 'ontology' | 'topology' | 'projects' | 'docs';
   icon: typeof Network;
   /** pathname 이 이 prefix 들 중 하나로 시작하면 활성 탭. 빈 배열이면 정확히 href 와 일치할 때만. */
   matchPrefixes: ReadonlyArray<string>;
 }
 
-// 모바일 한정 하단 탭바. 메인 3 개 destination 만 노출 — 미니멀 모바일 결.
-// "온톨로지 · 프로젝트 · 문서". / 가 ontology hub — 첫 탭 라벨/아이콘이 그
-// 정체성을 노출. 토폴로지는 온톨로지의 출구 view 라 별도 탭이 아닌
-// OntologyView / OperationsNav 안의 sub-link 로 진입.
+// 모바일 한정 하단 탭바. 반복 작업자가 바로 오가는 4 개 destination 노출:
+// ontology · topology · projects · docs. Topology 는 숨겨진 sub-link 로 두면
+// 실제 폴더 선택 후 그래프 이동을 놓치기 쉬워 별도 탭으로 승격.
 const TABS: ReadonlyArray<TabItem> = [
-  { href: '/', labelKey: 'ontology', icon: Network, matchPrefixes: ['/ontology', '/topology'] },
+  { href: '/', labelKey: 'ontology', icon: Network, matchPrefixes: ['/ontology'] },
+  { href: '/topology/', labelKey: 'topology', icon: Route, matchPrefixes: ['/topology'] },
   { href: '/projects/', labelKey: 'projects', icon: FolderKanban, matchPrefixes: ['/projects', '/project'] },
   // "문서" tab — vault picker / 편집기. mission v2 후 모든 모드에서 docs
   // vault 가 진입점.

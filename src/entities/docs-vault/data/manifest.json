@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-09T13:41:19.499Z",
+  "generatedAt": "2026-05-09T14:38:55.377Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -2289,6 +2289,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-09 — Docs-to-topology navigation visibility",
+          "slug": "2026-05-09-docs-to-topology-navigation-visibility"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-09 — Large clean-room bootstrap hardening",
           "slug": "2026-05-09-large-clean-room-bootstrap-hardening"
         },
@@ -3273,9 +3278,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 큰 단일 파일 feature 구조의 cleanroom 프로젝트 /Users/jinan/sideproject/omotlargedemo 로 init → bootstr",
-      "wordCount": 14532,
-      "updatedAt": "2026-05-09T13:19:39.326Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. Large demo project followup found a real discoverability gap: after loading a local vault ",
+      "wordCount": 14621,
+      "updatedAt": "2026-05-09T14:36:48.219Z",
       "linksOut": [
         "slug"
       ]
@@ -5151,8 +5156,8 @@
         }
       ],
       "excerpt": "crosscutting. 라이트/다크 토글 (html[datatheme=\"light\"]), Sonner기반 toast, arialive 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefersreducedmotion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 web workbench starter 가 같은 5node vault README/setup 내용을 제공하고, Claude Code/Cursor .mc",
-      "wordCount": 68,
-      "updatedAt": "2026-05-09T12:24:35.166Z",
+      "wordCount": 102,
+      "updatedAt": "2026-05-09T14:37:14.394Z",
       "linksOut": []
     },
     {

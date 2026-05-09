@@ -19,6 +19,7 @@ import {
   FolderCog,
   HardDrive,
   Menu,
+  Network,
   Package,
   Search,
   Settings2,
@@ -1163,6 +1164,16 @@ function DocsVaultContent() {
               {t('header.localBadge')}
             </span>
           ) : null}
+          <Tooltip content={t('header.topologyTooltip')} withProvider={false}>
+            <Link
+              href="/topology/"
+              aria-label={t('header.topologyAriaLabel')}
+              className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2.5 text-[12px] text-[color:rgba(200,210,255,0.92)] transition-colors hover:border-[color:rgba(139,151,255,0.5)] hover:bg-[color:rgba(94,106,210,0.14)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <Network size={13} aria-hidden />
+              <span>{t('header.topology')}</span>
+            </Link>
+          </Tooltip>
         </div>
         <div className="ml-auto flex flex-none flex-wrap items-center justify-end gap-2">
           {/* Source 토글 — 이전엔 advanced dropdown 안 깊숙이 묻혀 있던 가장

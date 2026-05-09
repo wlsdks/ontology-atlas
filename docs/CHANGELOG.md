@@ -6,6 +6,19 @@
 
 ---
 
+## 2026-05-09 — Docs-to-topology navigation visibility
+
+Large demo project follow-up found a real discoverability gap: after loading a
+local vault in `/docs`, the Topology entry existed only inside the small vault
+tools menu, and mobile bottom navigation did not expose Topology at all.
+
+- `/docs` header now has a direct Topology link beside the vault title/source
+  controls.
+- Mobile bottom navigation now exposes Topology as its own first-class tab
+  instead of hiding it under Ontology.
+- Browser smoke verified desktop `/docs` and mobile `/docs` can navigate
+  directly to `/topology`.
+
 ## 2026-05-09 — Large clean-room bootstrap hardening
 
 큰 단일 파일 feature 구조의 clean-room 프로젝트
