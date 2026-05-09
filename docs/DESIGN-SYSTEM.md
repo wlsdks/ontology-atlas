@@ -77,7 +77,7 @@ Differentiate by **border style**, not color — the only color (indigo) is rese
 
 ## Page header — English caption + Korean h1
 
-The header on each operations page (ontology / knowledge / review / settings, etc.) follows a **two-line pattern**. The user-facing Korean title is the primary heading, and the English category caption serves as a micro identifier that yields one step in the visual hierarchy.
+The header on each operations page (currently `/ontology/edit` and `/ontology/insights`) follows a **two-line pattern**. The user-facing Korean title is the primary heading, and the English category caption serves as a micro identifier that yields one step in the visual hierarchy.
 
 ### Pattern
 
@@ -109,7 +109,7 @@ Example: `/ontology` page
 
 ### Legitimate English caption examples
 
-- Page categories: `Ontology`, `Knowledge`, `Review`, `Settings`, `Diagnostics`, `Account`, `Workspace`, `Manual node`, `Get started`.
+- Page categories: `Ontology`, `Workspace`, `Manual node`, `Get started`.
 - System metadata: `ID 추천`, `Beta`, etc. — only intentional English identifiers. Sentence-style English is forbidden (translate to Korean).
 
 ### Consistency rules
