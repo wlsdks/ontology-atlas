@@ -38,6 +38,12 @@ export interface TopologyPalette {
   leafFillSaturate: number;
   /** R+ ontology 노드 (capability/element) 의 default fill. */
   ontologyFill: string;
+  /**
+   * 비허브 노드의 outer halo — "별빛 bloom" 효과. dark 에선 푸른 dust,
+   * light 에선 어두운 graphite 톤이라 *흰 배경에서 dot 가 또렷*. graph-build
+   * 의 NODE_OUTER_HALO 상수를 대체해 light/dark 분기.
+   */
+  nodeOuterHalo: string;
 }
 
 const DARK: TopologyPalette = {
@@ -55,6 +61,8 @@ const DARK: TopologyPalette = {
   labelText: 'rgba(235, 240, 250, 0.95)',
   leafFillSaturate: 1,
   ontologyFill: 'rgba(160, 168, 184, 0.55)',
+  // dark: 흐릿한 푸른 별빛 halo — 어두운 캔버스 위에서 dot 의 light bloom.
+  nodeOuterHalo: 'rgba(180, 195, 230, 0.06)',
 };
 
 const LIGHT: TopologyPalette = {
@@ -83,7 +91,14 @@ const LIGHT: TopologyPalette = {
   // saturate=1.7: DOMAIN_TONE 의 pale rgb (160-200) 를 60-90 graphite 까지
   // 끌어내려 흰 배경에서 \"실재하는 dot\" 으로 읽힘. ontology 노드도 동일.
   leafFillSaturate: 1.7,
-  ontologyFill: 'rgba(70, 84, 110, 0.85)',
+  // ontology 노드 fill — 흰 배경 contrast 위해 RGB 50/60/90 graphite +
+  // alpha 0.95 (이전 70/84/110, 0.85 는 작은 dot 가 흐려 invisible 회귀).
+  ontologyFill: 'rgba(50, 60, 90, 0.95)',
+  // light: 어두운 graphite 별빛 halo — 흰 배경 위에서 dot 가 또렷한 *별*
+  // 으로 읽힘. dark 의 푸른 dust 톤 (180/195/230) 그대로 쓰면 흰 배경에
+  // 묻혀 invisible 회귀. alpha 0.18 — fill 보다 약하지만 dot 외곽에
+  // 흐릿한 *light bloom* 으로 시각.
+  nodeOuterHalo: 'rgba(40, 50, 72, 0.18)',
 };
 
 /**
