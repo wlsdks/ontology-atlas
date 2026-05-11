@@ -436,7 +436,11 @@ export function OntologyEditCanvas({
         minZoom={0.2}
         maxZoom={2}
       >
-        <Background variant={BackgroundVariant.Dots} gap={24} size={1} />
+        {/* R+ canvas spacing: gap 24 → 36 (dot 간격 50% ↑). 24 는 NODE_WIDTH
+            (220) 안에 9 줄 의 dot 가 깔려 시각 노이즈 강함. 36 은 ~6 줄로
+            여유 — 노드와 dot 의 시각 위계가 더 자연 (캔버스 = 빈 종이,
+            dot = 약한 그리드 hint). */}
+        <Background variant={BackgroundVariant.Dots} gap={36} size={1} />
         {/* xyflow Controls (zoom +/- / fitView) 는 우하단 MiniMap 과 겹침 +
             기본 스타일이 light theme 이라 dark canvas 와 어색 (Fit View
             아이콘 흰색 등). 사용자 navigation 은 MiniMap (점프) + 자동정렬
