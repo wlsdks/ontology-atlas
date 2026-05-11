@@ -61,5 +61,7 @@ jobs:
         run: pnpm build
 
       - name: Bundle audit (firebase chunk leak guard)
+        # R10 (2026-05) 부터 firebase deps 자체가 package.json 에서 제거되어
+        # chunk 0 이 default 통과 조건. 더 이상 soft-warn 의미 없음 — chunk 가
+        # 검출되면 *진짜 회귀* 라 PR block 이 정상.
         run: pnpm bundle:check
-        continue-on-error: true
