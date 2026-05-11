@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 // R12 #38 — AI agent dogfood 시뮬. 사용자 .mcp.json 등록 후 시나리오와
-// 같은 흐름으로 mcp server 에 5 read tool 호출. *진짜 AI agent 입장* 에서
+// 같은 흐름으로 mcp server 에 6 read tool 호출. *진짜 AI agent 입장* 에서
 // 받는 정보 quality 측정.
 //
-// write 안 함 (dogfood vault 보존). list/get/find_evidence/find_path/
-// find_backlinks/list_kinds 만.
+// write 안 함 (dogfood vault 보존). list_kinds / list_concepts /
+// find_evidence / find_path / find_backlinks / find_orphans 만.
 
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
