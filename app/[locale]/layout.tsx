@@ -31,9 +31,13 @@ export async function generateMetadata({
     },
     description: t('siteTagline'),
     alternates: {
+      // hreflang map — `next.config.ts` 의 `trailingSlash: true` 와 정합되게
+      // 모든 path 에 trailing slash. `x-default` 는 언어 미지정 사용자에게
+      // 어느 locale 을 기본 노출할지 Google 에 hint (en).
       languages: {
-        en: '/en',
-        ko: '/ko',
+        en: '/en/',
+        ko: '/ko/',
+        'x-default': '/en/',
       },
     },
   };
