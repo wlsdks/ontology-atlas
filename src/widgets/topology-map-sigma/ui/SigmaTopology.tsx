@@ -1355,6 +1355,31 @@ function SigmaTopologyImpl({
       );
       return;
     }
+    // hub 가 0 인 vault (예: dogfood 처럼 single-project 인 경우 isHub
+    // 노드 0) 에선 hubCount-centroid 분기 fall-through 후 canvas (0.5, 0.5)
+    // 로 가버려 settle 결과 graph 가 한쪽으로 쏠려 보임. 그 케이스에
+    // *모든 노드의 bounding-box center* 로 fallback — 평균은 isolated
+    // outlier 에 끌리지만 bbox center 는 outlier 양쪽 분포만 잡으면 안정.
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    graph.forEachNode((id) => {
+      const display = renderer.getNodeDisplayData(id);
+      if (!display) return;
+      if (display.x < minX) minX = display.x;
+      if (display.x > maxX) maxX = display.x;
+      if (display.y < minY) minY = display.y;
+      if (display.y > maxY) maxY = display.y;
+    });
+    if (Number.isFinite(minX)) {
+      camera.animate(
+        {
+          x: (minX + maxX) / 2,
+          y: (minY + maxY) / 2,
+          ratio: minimal ? 1.1 : 1,
+        },
+        { duration: 420, easing: CAMERA_EASING },
+      );
+      return;
+    }
     camera.animate(
       { x: 0.5, y: 0.5, ratio: 1 },
       { duration: 420, easing: CAMERA_EASING },
