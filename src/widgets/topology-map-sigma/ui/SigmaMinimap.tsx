@@ -208,7 +208,10 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
             cx={n.x}
             cy={n.y}
             r={n.size}
-            fill={n.isHub ? INDIGO_HUB : 'rgba(168,178,198,0.45)'}
+            // R+ 별자리 톤 (PR #243) 정합 — main graph 의 NODE_OUTER_HALO
+            // 와 같은 푸른 별빛 hue (180/195/230). 이전 회색-블루 168/178/198
+            // 보다 main 의 dust edge 와 자연스럽게 어울림.
+            fill={n.isHub ? INDIGO_HUB : 'rgba(190,205,235,0.5)'}
           />
         ))}
         {showViewportRect ? (
