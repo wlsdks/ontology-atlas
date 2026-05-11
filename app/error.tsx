@@ -21,7 +21,7 @@ export default function RouteError({ error, reset }: Props) {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-[color:var(--color-canvas)] px-6 py-10">
-      <div className="w-full max-w-[440px] rounded-[22px] border border-[color:rgba(255,255,255,0.08)] bg-[color:var(--color-panel)] p-6">
+      <div className="w-full max-w-[440px] rounded-[22px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-6">
         <div className="flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[color:rgba(244,183,49,0.35)] bg-[color:rgba(244,183,49,0.08)] text-[color:var(--color-status-warning)]">
             <AlertTriangle size={16} />
@@ -53,7 +53,7 @@ export default function RouteError({ error, reset }: Props) {
           </button>
           <Link
             href="/"
-            className="inline-flex h-10 items-center rounded-full border border-[color:rgba(255,255,255,0.08)] px-4 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(255,255,255,0.14)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(255,255,255,0.22)]"
+            className="inline-flex h-10 items-center rounded-full border border-[color:var(--color-divider)] px-4 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
           >
             Topology home
           </Link>

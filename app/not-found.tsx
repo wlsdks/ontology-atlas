@@ -72,9 +72,9 @@ export default function NotFound() {
       id="main"
       className="flex min-h-screen items-center justify-center bg-[color:var(--color-canvas)] px-6 py-10"
     >
-      <div className="w-full max-w-[440px] rounded-[22px] border border-[color:rgba(255,255,255,0.08)] bg-[color:var(--color-panel)] p-7 shadow-[0_24px_48px_rgba(0,0,0,0.24)]">
+      <div className="w-full max-w-[440px] rounded-[22px] border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] p-7 shadow-[0_24px_48px_rgba(0,0,0,0.24)]">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[color:rgba(255,255,255,0.08)] text-[color:var(--color-text-tertiary)]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
             <Compass size={16} />
           </span>
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
@@ -98,7 +98,7 @@ export default function NotFound() {
           </button>
           <Link
             href={`/${locale}/`}
-            className="inline-flex h-10 items-center justify-center rounded-full border border-[color:rgba(255,255,255,0.08)] px-4 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-[color:var(--color-divider)] px-4 text-[13px] text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
           >
             {t.home}
           </Link>
