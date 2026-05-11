@@ -69,13 +69,17 @@ const KIND_TONE: Record<
     text: "var(--color-text-secondary)",
     border: "var(--color-border-strong)",
   },
+  // capability / element 의 bg 가 한 단계 옅은 토큰 (overlay-1/-2) 이라
+  // light mode (alpha 2.5–5%) 에서 흰 배경 위 거의 invisible. dark 에선
+  // 차이 미세, light 에선 가독성 큰 개선 — 한 단계 진한 토큰으로 통일
+  // (border 도 같이).
   capability: {
-    bg: "var(--color-overlay-2)",
+    bg: "var(--color-overlay-3)",
     text: "var(--color-text-tertiary)",
-    border: "var(--color-overlay-3)",
+    border: "var(--color-border-soft)",
   },
   element: {
-    bg: "var(--color-overlay-1)",
+    bg: "var(--color-overlay-2)",
     text: "var(--color-text-quaternary)",
     border: "var(--color-divider)",
   },
