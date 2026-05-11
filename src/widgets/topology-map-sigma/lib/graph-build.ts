@@ -80,12 +80,10 @@ export interface SigmaEdgeAttrs {
 }
 
 const HUB_COLOR = INDIGO_HUB;
-// R+ 사용자 비전: "은하계의 별처럼 / 별자리처럼". 비허브 노드에도 매우
-// 흐릿한 푸른 별빛 halo (alpha 0.06). 어두운 캔버스 위에서 작은 dot 가
-// *light bloom* 처럼 보여 stick 시각이 별 collection 으로 전환. hub 의
-// 강한 인디고 halo (palette.hubOuterHalo, alpha 0.08-0.32) 는 그대로 —
-// 별 vs 큰 별 (Sirius 급) 위계 보존.
-const NODE_OUTER_HALO = 'rgba(180, 195, 230, 0.06)';
+// R+ 사용자 비전: "은하계의 별처럼 / 별자리처럼". 비허브 노드에도 outer
+// halo 로 light bloom 효과 → 작은 dot 가 별처럼 빛남. 톤은 light/dark
+// 분기 — palette.nodeOuterHalo. dark: 흐릿한 푸른 dust, light: 어두운
+// graphite (흰 배경 회귀 차단).
 
 /**
  * ontology 노드가 forceLabel = true 로 승격되는 degree 기준.
@@ -252,7 +250,7 @@ export function buildGraph(
       borderColor: project.isHub
         ? palette.hubBorder
         : ontologyTone?.borderColor ?? palette.nodeBorder,
-      outerBorderColor: project.isHub ? palette.hubOuterHalo : NODE_OUTER_HALO,
+      outerBorderColor: project.isHub ? palette.hubOuterHalo : palette.nodeOuterHalo,
       projectSlug: project.slug,
       categoryId: project.category ?? '',
       isHub: Boolean(project.isHub),
@@ -320,7 +318,7 @@ export function buildGraph(
         // 흐린 무채색 fill — 헌장의 "허브만 유일한 채색" 과 충돌 안 함.
         color: palette.ontologyFill,
         borderColor: tone?.borderColor ?? palette.nodeBorder,
-        outerBorderColor: NODE_OUTER_HALO,
+        outerBorderColor: palette.nodeOuterHalo,
         // SigmaTopology 의 click handler 가 projectSlug 를 키로 drawer 를
         // 여는데, ontology 노드는 project 가 아니므로 drawer 가 빈 상태가
         // 된다 — 일단 id 를 그대로 박아두고 후속 단계에서 ontology 전용

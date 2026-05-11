@@ -1104,6 +1104,15 @@ function SigmaTopologyImpl({
           graph.setNodeAttribute(id, 'outerBorderColor', palette.hubOuterHalo);
         } else {
           graph.setNodeAttribute(id, 'borderColor', palette.nodeBorder);
+          // 비허브 노드의 outer halo (별빛 bloom) — light/dark 분기. 누락
+          // 시 dark→light 토글 후 노드가 흰 배경에 묻혀 invisible 회귀.
+          graph.setNodeAttribute(id, 'outerBorderColor', palette.nodeOuterHalo);
+          // ontology 노드 fill 도 theme 의존 — light 는 dark graphite,
+          // dark 는 회색-블루. theme switch 시 fill 갱신 안 하면 light
+          // 모드에서 ontology 노드가 흐릿한 푸른 점으로 invisible.
+          if (attrs.isOntology) {
+            graph.setNodeAttribute(id, 'color', palette.ontologyFill);
+          }
         }
       });
       graph.forEachEdge((edge, attrs) => {
