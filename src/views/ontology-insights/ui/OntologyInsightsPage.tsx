@@ -169,6 +169,12 @@ export function OntologyInsightsPage() {
             <ul className="space-y-2">
               {kindRows.map(({ kind, count }) => {
                 const pct = kindMax > 0 ? Math.round((count / kindMax) * 100) : 0;
+                // share-of-total — bar 의 시각 정보가 *kindMax 대비* 라 사용자
+                // 가 "전체 중 비중" 을 따로 인지 못 함. raw count 옆에 share
+                // (`{count} · {share}%`) 를 monospace 로 같이 노출 — 디자인
+                // 헌장의 무채색 quaternary 톤 유지.
+                const share =
+                  totalNodes > 0 ? Math.round((count / totalNodes) * 100) : 0;
                 return (
                   <li key={kind} className="text-[12px]">
                     <div className="flex items-baseline justify-between gap-2">
@@ -176,7 +182,7 @@ export function OntologyInsightsPage() {
                         {kindLabel(kind)}
                       </span>
                       <span className="font-mono text-[10px] tabular-nums text-[color:var(--color-text-quaternary)]">
-                        {count}
+                        {count} · {share}%
                       </span>
                     </div>
                     <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
@@ -227,6 +233,8 @@ export function OntologyInsightsPage() {
               <ul className="space-y-1.5" data-testid="insights-edge-type-rows">
                 {edgeTypeRows.map(({ type, count }) => {
                   const pct = edgeTypeMax > 0 ? Math.round((count / edgeTypeMax) * 100) : 0;
+                  const share =
+                    totalEdges > 0 ? Math.round((count / totalEdges) * 100) : 0;
                   return (
                     <li
                       key={type}
@@ -241,7 +249,7 @@ export function OntologyInsightsPage() {
                           {edgeTypeLabel(type)}
                         </span>
                         <span className="font-mono text-[10px] tabular-nums text-[color:var(--color-text-quaternary)]">
-                          {count}
+                          {count} · {share}%
                         </span>
                       </div>
                       <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-[color:var(--color-overlay-2)]">
