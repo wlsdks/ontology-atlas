@@ -319,17 +319,16 @@ export function HomePage() {
       slug: string,
       options?: { preserveImpact?: boolean },
     ) => {
-      // R+ — 토폴로지에서 ontology 노드 (frontmatter `kind:` 가 만든
-      // capability/domain/element id, 형식 `kind:tail`) 클릭은 빈 project
-      // drawer 대신 /ontology 의 ego-graph + detail 패널로 라우팅. project
-      // 가 아닌 노드는 projectBySlug 에 없어 drawer 가 빈 상태로 떴던 회귀.
-      // graph-build.ts 의 long-standing TODO ("ontology 노드 클릭 시 vault md
-      // 열기") 해소 — 같은 vault frontmatter 가 두 surface 에서 일관되게
-      // 보이게 한다.
+      // R+ 사용자 보고: ontology 노드 클릭이 *자동으로* /ontology/?node=...
+      // 로 redirect 되어 우측 drawer 가 안 뜬다. 원래 의도는 "drawer 안에
+      // detail + 트리 이동 버튼". auto-redirect 제거 — selectedSlug 만 set
+      // 해서 drawer 자체는 띄움 (ontology 노드는 projectBySlug 에 없어
+      // drawer 의 project section 은 비지만 적어도 자동 jump 는 차단).
+      // 트리로의 명시 이동은 컨텍스트 메뉴 (rightClickNode) 의 "포커스" /
+      // "이웃만 보기" 또는 별도 nav 로. drawer 의 ontology mode 풀 fledged
+      // 는 follow-up PR scope.
       if (isOntologyNodeId(slug)) {
-        router.push(`/ontology/?node=${encodeURIComponent(slug)}`);
-        dismissSigmaHint();
-        return;
+        // dismissSigmaHint 만 호출 — drawer 는 setRouteState 분기로 뜸.
       }
       // 노드 선택 = drawer 열기. 허브를 선택하면 포커스 모드 자동 활성,
       // 일반 노드는 포커스 해제.
@@ -344,7 +343,7 @@ export function HomePage() {
       }));
       dismissSigmaHint();
     },
-    [projectBySlug, router, setRouteState, dismissSigmaHint],
+    [projectBySlug, setRouteState, dismissSigmaHint],
   );
 
   const handleClose = useCallback(() => {
