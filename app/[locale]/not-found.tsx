@@ -1,15 +1,19 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { ArrowLeft, Compass, Search } from "lucide-react";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 
 /**
  * 로케일 segment 안에서 404. NextIntlClientProvider 가 layout.tsx 에 마운트되어
  * 있으므로 useTranslations 사용 가능. root not-found.tsx 는 [locale] 외부 라우트
  * 진입 시 last-resort 영어 fallback 으로 남겨둔다.
+ *
+ * router 는 `@/i18n/navigation` 의 locale-aware 버전을 사용 — `router.push('/')`
+ * 가 자동으로 현재 locale prefix 를 보존해 ko 사용자가 `/` 가 아닌 `/ko/` 로
+ * 라우팅. `next/navigation` 의 raw router 는 cross-locale 이동 (locale-switch)
+ * 처럼 의도적으로 prefix 를 무시할 때만 사용 (`.claude/rules/architecture.md`).
  */
 export default function LocaleNotFound() {
   const router = useRouter();
