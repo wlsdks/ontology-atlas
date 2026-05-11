@@ -9,12 +9,13 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BookOpen, X } from "lucide-react";
+import { ArrowUpRight, BookOpen, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { isOntologyNodeId } from "@/shared/lib/ontology-node-id";
 import { useProjects } from "@/features/project-data-source";
+import { useOntologyInsight } from "@/features/vault-ontology";
 // 타입/기본값은 Sigma(WebGL) 의존성 없는 별도 모듈에서 직접 import해서
 // SSR 평가 경로에 WebGL 참조가 끼지 않도록 한다.
 import {
@@ -214,6 +215,17 @@ export function HomePage() {
         : null,
     [selectedSlug, renderProjects],
   );
+  // R+ ontology 노드 클릭 시 (#259 후속) drawer 가 비지 않게 ontology
+  // insight 에서 노드 정보 찾기. selectedSlug 가 ontology id 인데 project
+  // 매칭이 없을 때만 사용 — 즉 토폴로지에서 domain/capability/element
+  // 노드 클릭한 케이스.
+  const { insight: ontologyInsight } = useOntologyInsight();
+  const selectedOntologyNode = useMemo(() => {
+    if (!selectedSlug || selectedProject) return null;
+    if (!isOntologyNodeId(selectedSlug)) return null;
+    if (!ontologyInsight) return null;
+    return ontologyInsight.nodes.find((n) => n.id === selectedSlug) ?? null;
+  }, [selectedSlug, selectedProject, ontologyInsight]);
   const combinedFitToken = fitViewToken;
   // 클라이언트 사이드 동적 타이틀 — 선택 프로젝트 컨텍스트를 브라우저 탭에
   // 노출 (정적 export 환경의 page metadata 한계 보완).
@@ -857,6 +869,50 @@ export function HomePage() {
           }
           containerLabel={null}
         />
+        {/* R+ ontology 노드 drawer (#259 follow-up) — ProjectDrawer 가
+            domain/capability/element 의 빈 project section 으로 떠 어색하던
+            회귀를 대체. fixed-position panel — title + kind + summary +
+            트리 이동 명시 버튼. */}
+        {selectedOntologyNode ? (
+          <aside
+            role="dialog"
+            aria-label={selectedOntologyNode.title}
+            className="fixed right-0 top-0 z-30 flex h-screen w-full flex-col gap-4 border-l border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[0_24px_48px_rgba(0,0,0,0.24)] sm:w-[380px] md:px-6"
+          >
+            <header className="flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-1.5">
+                <span className="inline-flex w-fit items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
+                  {selectedOntologyNode.kind}
+                </span>
+                <h2 className="break-keep text-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                  {selectedOntologyNode.title}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={handleClose}
+                aria-label={t("controls.close")}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+              >
+                <X size={16} />
+              </button>
+            </header>
+            {selectedOntologyNode.summary ? (
+              <p className="break-keep text-sm leading-6 text-[color:var(--color-text-secondary)]">
+                {selectedOntologyNode.summary}
+              </p>
+            ) : null}
+            <div className="mt-auto flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] pt-4">
+              <Link
+                href={`/ontology/?node=${encodeURIComponent(selectedOntologyNode.id)}`}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.16)]"
+              >
+                {t("ontologyDrawer.viewInTree")}
+                <ArrowUpRight size={14} aria-hidden />
+              </Link>
+            </div>
+          </aside>
+        ) : null}
         <SearchPalette
           open={searchOpen}
           onClose={() => setSearchOpen(false)}

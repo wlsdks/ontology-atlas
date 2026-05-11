@@ -1111,6 +1111,9 @@
       "closeSelected": "Close selected project",
       "expandLeftPanel": "Expand the left panel"
     },
+    "ontologyDrawer": {
+      "viewInTree": "Open in ontology tree"
+    },
     "controls": {
       "relayoutToast": "Relaying out the topology",
       "docsTooltip": "Docs vault quick look (D)",

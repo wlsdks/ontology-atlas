@@ -1111,6 +1111,9 @@
       "closeSelected": "선택한 프로젝트 닫기",
       "expandLeftPanel": "좌측 패널 펼치기"
     },
+    "ontologyDrawer": {
+      "viewInTree": "온톨로지 트리에서 보기"
+    },
     "controls": {
       "relayoutToast": "토폴로지를 다시 정렬합니다",
       "docsTooltip": "문서 볼트 빠른 보기 (D)",
