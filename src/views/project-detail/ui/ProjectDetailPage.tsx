@@ -519,7 +519,7 @@ export function ProjectDetailPage({
 
 
       <section className="mt-8">
-        <div className="relative overflow-hidden rounded-[30px] border border-[color:var(--color-divider)] bg-[linear-gradient(180deg,var(--color-overlay-1)_0%,rgba(255,255,255,0)_100%)] px-5 py-5 md:px-7 md:py-6 xl:px-8 xl:py-7">
+        <div className="relative overflow-hidden rounded-[30px] border border-[color:var(--color-divider)] bg-[linear-gradient(180deg,var(--color-overlay-1)_0%,transparent_100%)] px-5 py-5 md:px-7 md:py-6 xl:px-8 xl:py-7">
           <div
             aria-hidden
             className={cn(

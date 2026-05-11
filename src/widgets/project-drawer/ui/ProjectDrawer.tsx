@@ -426,7 +426,7 @@ export function ProjectDrawer({
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={MOTION.medium}
-                className="overflow-hidden rounded-[20px] border border-[color:var(--color-divider)] bg-[linear-gradient(180deg,var(--color-overlay-1)_0%,rgba(255,255,255,0)_100%)]"
+                className="overflow-hidden rounded-[20px] border border-[color:var(--color-divider)] bg-[linear-gradient(180deg,var(--color-overlay-1)_0%,transparent_100%)]"
               >
               <div className="relative px-5 py-5">
                 <div
