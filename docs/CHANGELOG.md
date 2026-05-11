@@ -6,6 +6,33 @@
 
 ---
 
+## 2026-05-11 — Ontology surface UX pass + 토폴로지 별자리 톤
+
+UI 점검 보고서 (`/`, `/topology`, `/ontology`, `/ontology/insights`,
+`/ontology/edit`, `/docs`, `/projects`) 의 우선순위 항목들을 30+ 작은 PR
+로 풀어낸 세션.
+
+- **`/ontology` 트리** — multi-parent silent drop 을 stat strip 의 amber
+  warning pill 로 표면화 + capability 노드 default 접힘 + 모바일 element
+  파일명 truncate. 트리의 데이터 경고 disclosure 톤도 red→amber 통일.
+- **`/topology` 시각** — 사용자 피드백 *"대벌레 다리"* 해결 시리즈: zoom
+  out 시 edge size 감쇠, edge curvature 직선→곡선, 노드 별빛 halo +
+  푸른 dust edge ("은하계 별자리" 톤), 라이트 모드 회귀 정정, recenter
+  의 bbox center fallback, minimap 톤 정합.
+- **드래그→릴리스 후 detail 드로어 열림 회귀** — `dragMoved`
+  `queueMicrotask` reset 이 `clickNode` 가드 무력화 → 다음 `downNode`
+  까지 reset 유지.
+- **`/projects` 카드 fact strip** — single-project vault 에서 *도메인 6 /
+  역량 14 / 요소 62* 가 hide 되던 회귀 4 단계 fix (UI fallback → BFS 로
+  contains 후손 projectIds 매달림 → project node id 를 frontmatter.slug 로
+  정합).
+- **`/docs` 첫 진입** — default slug `FEATURES` 우선 + `?intent=local` +
+  vault 미선택 케이스 server fetch fallback (영문 에러 노출 회귀 차단).
+- **SEO sweep** — `/ontology/edit` sitemap, hreflang trailing slash +
+  x-default, locale 별 canonical, PWA manifest 의 R12 mission 어휘.
+- **R10 cleanup sweep** — tsconfig stale exclude, CI continue-on-error,
+  .gitignore Firebase section, hardcoded white alpha 14 곳 → 디자인 토큰.
+
 ## 2026-05-10 — Mobile docs responsive polish
 
 Real mobile browser review found the `/docs` header and local-vault tools were
