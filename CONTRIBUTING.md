@@ -88,18 +88,21 @@ so first-paint chunks of local-first routes don't pull them in. See
 [`.claude/rules/architecture.md`](.claude/rules/architecture.md) for the
 full rule.
 
-## Mission v2 alignment
+## Mission v3 alignment
 
-If a feature/route/widget would conflict with mission v2 ("vault
-frontmatter = the graph, AI agent partner via MCP, local-first"), please
-flag it in your PR. We've spent significant effort cleaning up v1 LLM
-extraction / TBox / cloud-only patterns; we want to avoid quietly
-re-introducing them.
+If a feature/route/widget would conflict with mission v3 — **"one
+codebase, one ontology, that the developer and their AI agent grow
+together"** (R12, 2026-05) — please flag it in your PR. We've spent
+significant effort cleaning up v1 LLM extraction / TBox / cloud-only
+patterns; we want to avoid quietly re-introducing them. Earlier mission
+v2 wording ("vault frontmatter = graph, MCP partner, local-first") still
+holds — v3 sharpens *who* the partner is (developer + their AI agent;
+PM/designer surface is bonus, not target).
 
 The 1-line gate question:
-*"Does X contradict the spine (vault frontmatter), partner (MCP), or
-self-approval (no review queue) flow?"* — if yes, please open a discussion
-before code.
+*"Does X contradict the spine (vault frontmatter), partner (developer +
+AI agent via MCP), or self-approval (no review queue) flow?"* — if yes,
+please open a discussion before code.
 
 ## Working with AI agents in this repo
 
