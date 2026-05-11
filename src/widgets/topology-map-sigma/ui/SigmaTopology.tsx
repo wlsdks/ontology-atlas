@@ -792,6 +792,20 @@ function SigmaTopologyImpl({
 
       const focus = activeNode();
       if (!focus) {
+        // R+ 사용자 피드백: zoom out 시 hub-hub edge 가 *대벌레 다리* 처럼
+        // 가늘게 stick 으로 박힌 시각. sigma 가 edge 두께를 camera ratio
+        // 와 별개로 그대로 그려 멀어질수록 노드 대비 line 비중이 커짐.
+        // ratio > 1.0 (zoom out) 부터 size 점진 감쇠 — node 가 시각 우위
+        // 회복. zoom in (ratio ≤ 1.0) 은 그대로 유지해 가까이서의 두꺼운
+        // 선 (1-hop pulse 등) 영향 X.
+        const ratio = cameraRatioRef.current;
+        if (ratio > 1.0) {
+          const fade = Math.max(0.35, 1.0 - (ratio - 1.0) * 0.55);
+          return {
+            ...attrs,
+            size: (attrs.size ?? 0.5) * fade,
+          };
+        }
         return attrs;
       }
       if (src === focus || tgt === focus) {
