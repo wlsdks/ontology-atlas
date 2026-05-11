@@ -275,7 +275,9 @@ export function buildGraph(
           size: hubToHub ? 0.9 : 0.5,
           color: palette.edge,
           kind: isContainsRelation ? 'contains' : 'depends-on',
-          curvature: hubToHub ? 0.28 : 0.08,
+          // R+ stick-bug fix: non-hub 의 0.08 도 거의 직선 → 0.14. hub-hub
+          // 의 0.28 은 그대로 (메인 의존 골격 강조).
+          curvature: hubToHub ? 0.28 : 0.14,
         });
       }
     }
@@ -347,7 +349,11 @@ export function buildGraph(
         size: 0.35,
         color: palette.edge,
         kind,
-        curvature: 0.06,
+        // R+ 사용자 피드백: zoom out 시 거의 직선 (0.06) 이 "대벌레 다리"
+        // 격자 시각의 한 원인. 살짝 더 휘게 (0.14) — 노드 클러스터 사이가
+        // organic 한 흐름. project hub-hub 의 0.28 보다 약함 (메인 의존
+        // 골격이 여전히 두드러지게).
+        curvature: 0.14,
       });
     }
   }
