@@ -28,14 +28,6 @@ next-env.d.ts
 .env.test.local
 .env.production.local
 
-# Firebase
-.firebase/
-firebase-debug.log
-firestore-debug.log
-ui-debug.log
-serviceAccountKey.json
-*-firebase-adminsdk-*.json
-
 # OS
 .DS_Store
 Thumbs.db
