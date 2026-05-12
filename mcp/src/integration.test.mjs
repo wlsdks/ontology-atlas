@@ -261,7 +261,7 @@ await test("compile_ontology — deterministic graph artifact + indexes", async 
   }
 });
 
-await test("query_ontology — compiled graph engine neighbors/path/impact", async () => {
+await test("query_ontology — compiled graph engine neighbors/path/impact/subgraph", async () => {
   const root = makeVault([
     {
       slug: "domains/auth",
@@ -270,7 +270,7 @@ await test("query_ontology — compiled graph engine neighbors/path/impact", asy
     {
       slug: "capabilities/login",
       content:
-        "---\nkind: capability\ntitle: Login\ndepends_on: [auth-domain]\nelements: [src/auth/login.ts]\n---\n",
+        "---\nkind: capability\ntitle: Login\ndomain: auth-domain\ndepends_on: [auth-domain]\nelements: [src/auth/login.ts]\n---\n",
     },
     {
       slug: "capabilities/session",
@@ -297,6 +297,12 @@ await test("query_ontology — compiled graph engine neighbors/path/impact", asy
         slug: "domains/auth",
         depth: 2,
       }),
+      callTool(5, "query_ontology", {
+        operation: "subgraph",
+        slug: "auth-domain",
+        depth: 2,
+        direction: "incoming",
+      }),
     ]);
     const neighbors = getCallParsed(responses, 2);
     assert.deepEqual(neighbors.nodes.map((node) => node.slug), ["capabilities/login"]);
@@ -318,6 +324,15 @@ await test("query_ontology — compiled graph engine neighbors/path/impact", asy
         { slug: "capabilities/session", distance: 2 },
       ],
     );
+
+    const subgraph = getCallParsed(responses, 5);
+    assert.equal(subgraph.seed, "domains/auth");
+    assert.deepEqual(subgraph.nodes.map((row) => row.slug), [
+      "domains/auth",
+      "capabilities/login",
+      "capabilities/session",
+    ]);
+    assert.equal(subgraph.edges.length, 3);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

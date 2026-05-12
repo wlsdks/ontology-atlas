@@ -417,7 +417,7 @@ R14 also unified `add_concept` / CLI `add` / CLI `import` to a single per-kind f
 9. **find_orphans** `{ kind?, excludeKinds? }` — isolated nodes across graph frontmatter, including `domains` / `domain` containment (defaults exclude `vault-readme`)
 10. **query_concepts** `{ filter, limit? }` — typed filter DSL with AND/OR/NOT on `kind` / `domain` / `slug` / `title` / `has(arrayKey)`
 11. **compile_ontology** `{ includeIndexes? }` — deterministic graph artifact with canonical `nodes[]`, `edges[]`, aliases, issues, stable semantic `graphHash`, `maxMtime`, and optional query indexes
-12. **query_ontology** `{ operation, ... }` — graph-engine query over the compiled artifact (`neighbors`, `path`, `impact`) for graph-database-like answers without pulling the full compile payload
+12. **query_ontology** `{ operation, ... }` — graph-engine query over the compiled artifact (`neighbors`, `path`, `impact`, `subgraph`) for graph-database-like answers without pulling the full compile payload
 13. **validate_vault** — whole-vault health check with per-file issues and grouped summary, including non-canonical graph arrays and dangling graph references
 14. **analyze_repo_structure** `{ repoRoot? }` — side-effect-free bootstrap candidates from package / README / source layout
 15. **infer_imports** `{ repoRoot? }` — side-effect-free TS/JS import graph → dependency edge candidates

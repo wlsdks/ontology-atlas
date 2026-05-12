@@ -98,4 +98,39 @@ describe('queryCompiledOntology', () => {
       ],
     );
   });
+
+  it('returns a bounded resolved subgraph around a seed', () => {
+    const result = queryCompiledOntology(artifact(), {
+      operation: 'subgraph',
+      slug: 'auth-domain',
+      depth: 2,
+      direction: 'incoming',
+    });
+
+    assert.equal(result.seed, 'domains/auth');
+    assert.equal(result.totalNodes, 3);
+    assert.deepEqual(
+      result.nodes.map((row) => ({ slug: row.slug, distance: row.distance })),
+      [
+        { slug: 'domains/auth', distance: 0 },
+        { slug: 'capabilities/login', distance: 1 },
+        { slug: 'capabilities/session', distance: 2 },
+      ],
+    );
+    assert.deepEqual(result.edges.map((edge) => edge.via), [
+      'dependencies',
+      'domain',
+      'dependencies',
+    ]);
+
+    const limited = queryCompiledOntology(artifact(), {
+      operation: 'subgraph',
+      slug: 'auth-domain',
+      depth: 2,
+      direction: 'incoming',
+      limit: 2,
+    });
+    assert.equal(limited.totalNodes, 2);
+    assert.equal(limited.limited, true);
+  });
 });

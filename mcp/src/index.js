@@ -16,7 +16,7 @@
  *   - find_orphans           — 어느 다른 노드도 frontmatter 에서 가리키지 않는 doc
  *   - query_concepts         — typed filter DSL (kind=X AND has(Y) AND NOT ...)
  *   - compile_ontology       — vault 를 deterministic graph artifact 로 compile
- *   - query_ontology         — compiled graph engine query (neighbors / path / impact)
+ *   - query_ontology         — compiled graph engine query (neighbors / path / impact / subgraph)
  *   - validate_vault         — vault 전체 health 한 호출 (per-doc + byCode aggregate)
  *   - analyze_repo_structure — R16, code repo 분석 → ontology 후보 (side effect 0)
  *   - infer_imports          — R17, TS/JS import graph → depends_on 후보 (side effect 0)
@@ -138,7 +138,7 @@ const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where ea
 7. \`find_orphans\` — spot nodes that no other node points to (cleanup or deletion candidates).
 8. \`query_concepts(filter)\` — structured questions like \`kind=capability AND domain=auth AND NOT has(elements)\` (= "unfinished caps under auth").
 9. \`compile_ontology({includeIndexes:true})\` — compiler-style graph artifact: canonical nodes, edges, aliases, issues, stable \`graphHash\`, \`maxMtime\`, and query indexes.
-10. \`query_ontology({operation:'neighbors'|'path'|'impact', ...})\` — graph-engine query over the compiled artifact. Use \`neighbors\` for local graph view, \`path\` for relation route, and \`impact\` for "what depends on this?" change analysis.
+10. \`query_ontology({operation:'neighbors'|'path'|'impact'|'subgraph', ...})\` — graph-engine query over the compiled artifact. Use \`neighbors\` for local graph view, \`path\` for relation route, \`impact\` for "what depends on this?" change analysis, and \`subgraph\` for a bounded N-hop graph slice.
 
 All read-tool match rows share the same shape \`{slug, kind, title, domain, mtime, ...}\` — same sort/filter logic works across every read tool.
 
@@ -626,19 +626,23 @@ const TOOLS = [
   {
     name: 'query_ontology',
     description:
-      'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (compiled-edge route between two nodes), and `impact` (incoming by default: what depends on this node). ' +
+      'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (compiled-edge route between two nodes), `impact` (incoming by default: what depends on this node), and `subgraph` (bounded N-hop graph slice for UI/agent views). ' +
       'Accepts canonical slugs or unique aliases. side effect 0. Use this when you need graph-database-like answers without pulling the full compile_ontology payload.',
     inputSchema: {
       type: 'object',
       properties: {
         operation: {
           type: 'string',
-          enum: ['neighbors', 'path', 'impact'],
+          enum: ['neighbors', 'path', 'impact', 'subgraph'],
           description: 'Query operation to run.',
         },
         slug: {
           type: 'string',
-          description: 'Center node slug or unique alias. Required for neighbors and impact.',
+          description: 'Center node slug or unique alias. Required for neighbors, impact, and subgraph.',
+        },
+        seed: {
+          type: 'string',
+          description: 'Alias for slug when operation is subgraph.',
         },
         from: {
           type: 'string',
@@ -652,7 +656,7 @@ const TOOLS = [
           type: 'string',
           enum: ['incoming', 'outgoing', 'both', 'undirected'],
           description:
-            'neighbors/impact: incoming, outgoing, or both. path: outgoing, incoming, or undirected (default).',
+            'neighbors/impact/subgraph: incoming, outgoing, or both. path: outgoing, incoming, or undirected (default).',
         },
         types: {
           type: 'array',
@@ -662,7 +666,7 @@ const TOOLS = [
         },
         depth: {
           type: 'number',
-          description: 'impact traversal depth. Defaults to 2, capped at 20.',
+          description: 'impact/subgraph traversal depth. Defaults to 2, capped at 20.',
         },
         maxHops: {
           type: 'number',

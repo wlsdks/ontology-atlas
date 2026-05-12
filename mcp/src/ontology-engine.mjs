@@ -13,8 +13,11 @@ export function queryCompiledOntology(artifact, query = {}) {
   if (operation === 'impact') {
     return engine.impact(query.slug, query);
   }
+  if (operation === 'subgraph') {
+    return engine.subgraph(query.slug ?? query.seed, query);
+  }
 
-  throw new Error('operation must be one of: neighbors, path, impact.');
+  throw new Error('operation must be one of: neighbors, path, impact, subgraph.');
 }
 
 export function createOntologyEngine(artifact) {
@@ -85,7 +88,11 @@ export function createOntologyEngine(artifact) {
       }
     }
 
-    rows.sort((a, b) => `${a.direction}:${edgeSortKey(a.edge)}`.localeCompare(`${b.direction}:${edgeSortKey(b.edge)}`));
+    rows.sort((a, b) =>
+      `${a.direction}:${edgeSortKey(a.edge)}`.localeCompare(
+        `${b.direction}:${edgeSortKey(b.edge)}`,
+      ),
+    );
     return rows;
   }
 
@@ -193,6 +200,59 @@ export function createOntologyEngine(artifact) {
     };
   }
 
+  function subgraph(slugOrAlias, options = {}) {
+    const seed = resolve(slugOrAlias, 'slug');
+    const direction = normalizeDirection(options.direction, 'both');
+    const depth = normalizeDepth(options.depth, 2);
+    const limit = normalizeLimit(options.limit);
+    const typeSet = normalizeTypes(options.types);
+    const discovered = new Map([[seed, { slug: seed, distance: 0 }]]);
+    const collectedEdges = [];
+    const queue = [{ slug: seed, distance: 0 }];
+    let limited = false;
+
+    while (queue.length > 0 && discovered.size < limit) {
+      const current = queue.shift();
+      if (current.distance >= depth) continue;
+      const candidates = traversalEdges(current.slug, direction, typeSet);
+      for (let i = 0; i < candidates.length; i += 1) {
+        const { next, edge } = candidates[i];
+        collectedEdges.push(formatPathEdge(edge, current.slug, next));
+        if (discovered.has(next)) continue;
+        const item = { slug: next, distance: current.distance + 1 };
+        discovered.set(next, item);
+        queue.push(item);
+        if (discovered.size >= limit) {
+          limited = i < candidates.length - 1 || queue.length > 0;
+          break;
+        }
+      }
+    }
+
+    const nodeRows = [...discovered.values()].sort(
+      (a, b) => a.distance - b.distance || a.slug.localeCompare(b.slug),
+    );
+    const allowedSlugs = new Set(nodeRows.map((row) => row.slug));
+    const internalEdges = uniqueEdges(collectedEdges)
+      .filter((edge) => allowedSlugs.has(edge.from) && allowedSlugs.has(edge.to))
+      .sort((a, b) => edgeSortKey(a).localeCompare(edgeSortKey(b)));
+
+    return {
+      operation: 'subgraph',
+      seed,
+      direction,
+      depth,
+      totalNodes: nodeRows.length,
+      totalEdges: internalEdges.length,
+      limited,
+      nodes: nodeRows.map((row) => ({
+        ...row,
+        node: nodeBySlug.get(row.slug),
+      })),
+      edges: internalEdges,
+    };
+  }
+
   function traversalEdges(slug, direction, typeSet) {
     const candidates = [];
     if (direction === 'outgoing' || direction === 'both' || direction === 'undirected') {
@@ -207,11 +267,13 @@ export function createOntologyEngine(artifact) {
         candidates.push({ next: edge.from, edge });
       }
     }
-    candidates.sort((a, b) => `${a.next}:${edgeSortKey(a.edge)}`.localeCompare(`${b.next}:${edgeSortKey(b.edge)}`));
+    candidates.sort((a, b) =>
+      `${a.next}:${edgeSortKey(a.edge)}`.localeCompare(`${b.next}:${edgeSortKey(b.edge)}`),
+    );
     return candidates;
   }
 
-  return { resolve, neighbors, path, impact };
+  return { resolve, neighbors, path, impact, subgraph };
 }
 
 function edgeAllowed(edge, typeSet, includeExternal, includeUnresolved) {
