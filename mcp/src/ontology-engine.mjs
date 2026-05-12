@@ -24,6 +24,9 @@ export function queryCompiledOntology(artifact, query = {}) {
   if (operation === 'schema') {
     return engine.schema(query);
   }
+  if (operation === 'facets') {
+    return engine.facets(query);
+  }
   if (operation === 'match_nodes') {
     return engine.matchNodes(query);
   }
@@ -53,7 +56,7 @@ export function queryCompiledOntology(artifact, query = {}) {
   }
 
   throw new Error(
-    'operation must be one of: neighbors, path, impact, subgraph, overview, schema, match_nodes, match_edges, relation_check, components, lineage, cycles, topological_order, recommend_relations, health.',
+    'operation must be one of: neighbors, path, impact, subgraph, overview, schema, facets, match_nodes, match_edges, relation_check, components, lineage, cycles, topological_order, recommend_relations, health.',
   );
 }
 
@@ -329,6 +332,51 @@ export function createOntologyEngine(artifact) {
       totalPatterns: patterns.length,
       limited: patterns.length > limit,
       patterns: patterns.slice(0, limit),
+    };
+  }
+
+  function facets(options = {}) {
+    const limit = normalizeLimit(options.limit ?? 10);
+    const resolvedEdges = edges.filter((edge) => edge.resolved);
+    const externalEdges = edges.filter((edge) => edge.external);
+    const unresolvedEdges = edges.filter((edge) => !edge.resolved && !edge.external);
+    const degreeBuckets = new Map([
+      ['0', 0],
+      ['1', 0],
+      ['2-4', 0],
+      ['5-9', 0],
+      ['10+', 0],
+    ]);
+
+    for (const node of nodes) {
+      const degree = (node.inDegree || 0) + (node.outDegree || 0);
+      degreeBuckets.set(degreeBucket(degree), degreeBuckets.get(degreeBucket(degree)) + 1);
+    }
+
+    return {
+      operation: 'facets',
+      graph: {
+        nodes: nodes.length,
+        edges: edges.length,
+        resolvedEdges: resolvedEdges.length,
+        externalEdges: externalEdges.length,
+        unresolvedEdges: unresolvedEdges.length,
+      },
+      nodes: {
+        byKind: countBy(nodes, 'kind'),
+        byDomain: countBy(nodes, 'domain'),
+        byDegreeBucket: Object.fromEntries(degreeBuckets),
+        topByDegree: topHubs(nodes, limit),
+      },
+      edges: {
+        byRelation: countEdges(edges, 'via'),
+        byResolution: {
+          resolved: resolvedEdges.length,
+          external: externalEdges.length,
+          unresolved: unresolvedEdges.length,
+        },
+        topPatterns: schemaPatterns().slice(0, limit),
+      },
     };
   }
 
@@ -1006,6 +1054,7 @@ export function createOntologyEngine(artifact) {
     subgraph,
     overview,
     schema,
+    facets,
     matchNodes,
     matchEdges,
     relationCheck,
@@ -1049,6 +1098,14 @@ function sortedCountObject(counts) {
       return leftKey.localeCompare(rightKey);
     }),
   );
+}
+
+function degreeBucket(degree) {
+  if (degree <= 0) return '0';
+  if (degree === 1) return '1';
+  if (degree <= 4) return '2-4';
+  if (degree <= 9) return '5-9';
+  return '10+';
 }
 
 function topHubs(nodes, limit) {

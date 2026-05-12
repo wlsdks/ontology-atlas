@@ -210,6 +210,67 @@ describe('queryCompiledOntology', () => {
     );
   });
 
+  it('returns graph facets for filter and dashboard use', () => {
+    const result = queryCompiledOntology(artifact(), {
+      operation: 'facets',
+      limit: 2,
+    });
+
+    assert.equal(result.operation, 'facets');
+    assert.deepEqual(result.graph, {
+      nodes: 3,
+      edges: 4,
+      resolvedEdges: 3,
+      externalEdges: 1,
+      unresolvedEdges: 0,
+    });
+    assert.deepEqual(result.nodes.byKind, { capability: 2, domain: 1 });
+    assert.deepEqual(result.nodes.byDomain, { auth: 1 });
+    assert.deepEqual(result.nodes.byDegreeBucket, {
+      '0': 0,
+      '1': 1,
+      '2-4': 2,
+      '5-9': 0,
+      '10+': 0,
+    });
+    assert.deepEqual(result.nodes.topByDegree.map((node) => node.slug), [
+      'capabilities/login',
+      'domains/auth',
+    ]);
+    assert.deepEqual(result.edges.byRelation, {
+      dependencies: 2,
+      domain: 1,
+      elements: 1,
+    });
+    assert.deepEqual(result.edges.byResolution, {
+      resolved: 3,
+      external: 1,
+      unresolved: 0,
+    });
+    assert.deepEqual(
+      result.edges.topPatterns.map(({ fromKind, relation, toKind, count }) => ({
+        fromKind,
+        relation,
+        toKind,
+        count,
+      })),
+      [
+        {
+          fromKind: 'capability',
+          relation: 'dependencies',
+          toKind: 'capability',
+          count: 1,
+        },
+        {
+          fromKind: 'capability',
+          relation: 'dependencies',
+          toKind: 'domain',
+          count: 1,
+        },
+      ],
+    );
+  });
+
   it('checks a proposed relation against existing edges and schema patterns', () => {
     const existing = queryCompiledOntology(artifact(), {
       operation: 'relation_check',
