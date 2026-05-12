@@ -156,4 +156,57 @@ describe('queryCompiledOntology', () => {
       'domains/auth',
     ]);
   });
+
+  it('returns relation schema patterns by node kind', () => {
+    const result = queryCompiledOntology(artifact(), {
+      operation: 'schema',
+    });
+
+    assert.equal(result.operation, 'schema');
+    assert.equal(result.totalPatterns, 4);
+    assert.deepEqual(
+      result.patterns.map(({ fromKind, relation, toKind, count, resolved, external }) => ({
+        fromKind,
+        relation,
+        toKind,
+        count,
+        resolved,
+        external,
+      })),
+      [
+        {
+          fromKind: 'capability',
+          relation: 'dependencies',
+          toKind: 'capability',
+          count: 1,
+          resolved: 1,
+          external: 0,
+        },
+        {
+          fromKind: 'capability',
+          relation: 'dependencies',
+          toKind: 'domain',
+          count: 1,
+          resolved: 1,
+          external: 0,
+        },
+        {
+          fromKind: 'capability',
+          relation: 'domain',
+          toKind: 'domain',
+          count: 1,
+          resolved: 1,
+          external: 0,
+        },
+        {
+          fromKind: 'capability',
+          relation: 'elements',
+          toKind: 'external',
+          count: 1,
+          resolved: 0,
+          external: 1,
+        },
+      ],
+    );
+  });
 });

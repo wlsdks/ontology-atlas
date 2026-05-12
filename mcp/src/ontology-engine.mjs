@@ -19,8 +19,11 @@ export function queryCompiledOntology(artifact, query = {}) {
   if (operation === 'overview') {
     return engine.overview(query);
   }
+  if (operation === 'schema') {
+    return engine.schema(query);
+  }
 
-  throw new Error('operation must be one of: neighbors, path, impact, subgraph, overview.');
+  throw new Error('operation must be one of: neighbors, path, impact, subgraph, overview, schema.');
 }
 
 export function createOntologyEngine(artifact) {
@@ -286,6 +289,60 @@ export function createOntologyEngine(artifact) {
     };
   }
 
+  function schema(options = {}) {
+    const limit = normalizeLimit(options.limit ?? 50);
+    const patternMap = new Map();
+
+    for (const edge of edges) {
+      const fromKind = nodeBySlug.get(edge.from)?.kind || 'unknown';
+      const toKind = edge.resolved
+        ? nodeBySlug.get(edge.to)?.kind || 'unknown'
+        : edge.external
+          ? 'external'
+          : 'unresolved';
+      const key = `${fromKind}\0${edge.via}\0${toKind}`;
+      if (!patternMap.has(key)) {
+        patternMap.set(key, {
+          fromKind,
+          relation: edge.via,
+          toKind,
+          count: 0,
+          resolved: 0,
+          external: 0,
+          unresolved: 0,
+          examples: [],
+        });
+      }
+      const pattern = patternMap.get(key);
+      pattern.count += 1;
+      if (edge.resolved) pattern.resolved += 1;
+      else if (edge.external) pattern.external += 1;
+      else pattern.unresolved += 1;
+      if (pattern.examples.length < 3) {
+        pattern.examples.push({
+          from: edge.from,
+          to: edge.to,
+          ref: edge.ref,
+        });
+      }
+    }
+
+    const patterns = [...patternMap.values()].sort(
+      (a, b) =>
+        b.count - a.count ||
+        a.fromKind.localeCompare(b.fromKind) ||
+        a.relation.localeCompare(b.relation) ||
+        a.toKind.localeCompare(b.toKind),
+    );
+
+    return {
+      operation: 'schema',
+      totalPatterns: patterns.length,
+      limited: patterns.length > limit,
+      patterns: patterns.slice(0, limit),
+    };
+  }
+
   function traversalEdges(slug, direction, typeSet) {
     const candidates = [];
     if (direction === 'outgoing' || direction === 'both' || direction === 'undirected') {
@@ -306,7 +363,7 @@ export function createOntologyEngine(artifact) {
     return candidates;
   }
 
-  return { resolve, neighbors, path, impact, subgraph, overview };
+  return { resolve, neighbors, path, impact, subgraph, overview, schema };
 }
 
 function countBy(items, key) {
