@@ -1,15 +1,15 @@
 ---
 slug: capabilities/mcp-server
 kind: capability
-title: MCP Server (20 tools)
+title: MCP Server (22 tools)
 domain: ai-agent-partner
-elements: [mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/parser.mjs, mcp/src/vault.mjs]
+elements: [mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/ontology-compiler.mjs, mcp/src/parser.mjs, mcp/src/vault.mjs]
 relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 ---
 
-# MCP Server (20 tools)
+# MCP Server (22 tools)
 
-`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 20 도구 노출 (read 12 + write 8):
+`@modelcontextprotocol/sdk` 기반 stdio JSON-RPC 서버. 22 도구 노출 (read 14 + write 8):
 
 | 도구 | 동작 |
 |---|---|
@@ -18,10 +18,12 @@ relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 | `get_concepts` | **R+** 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서 보존, missing 은 partial result) |
 | `find_evidence` | title 부분매칭으로 vault 문서 검색 |
 | `find_backlinks` | 특정 slug 를 가리키는 다른 노드들 (frontmatter array 키 + body wikilink/mdlink) |
+| `find_neighbors` | 특정 slug 주변 one-hop graph subgraph 조회 (incoming/outgoing/both, relation filter, neighbor summary) |
 | `find_path` | 두 slug 사이 그래프 최단 경로 (BFS, 무방향, `domains` / `domain` containment 포함, default maxHops 5) |
 | `list_kinds` | kind 분포 census (`{ total, byKind: { capability: N, ... } }`) |
 | `find_orphans` | 어디서도 graph frontmatter link 안 받는 고립 노드 (`domains` / `domain` containment 포함, kind 필터, vault-readme 자동 제외) |
 | `query_concepts` | DSL 기반 ad-hoc 쿼리 (frontmatter 키 = / contains / exists 조합) |
+| `compile_ontology` | vault 전체를 deterministic graph artifact 로 compile (nodes / canonical edges / aliases / issues / optional adjacency indexes) |
 | `validate_vault` | **R+** vault 전체 health 한 호출 (per-doc + byCode aggregate) — `list_concepts → K×get_concept` K-roundtrip 대체 |
 | `analyze_repo_structure` | **R16** code repo (default cwd) 분석 → ontology 노드 후보 제안. **side effect 0** — vault 변경 안 함. AI agent 가 빈 vault bootstrap 시 사용 (사용자 한 줄 *"이 codebase 분석해줘"*). FSD vs generic detect. 후보 slug 는 `domains/*`, `capabilities/*`, `elements/src/...` 로 starter layout 과 일치. |
 | `infer_imports` | **R17** TS/JS import graph 추출 → file/module-level edge + external (npm) imports 분리. **side effect 0**. moduleEdges 도 analyze 와 같은 folder-prefixed slug 를 사용해 add_relation endpoint mismatch 를 피함. |

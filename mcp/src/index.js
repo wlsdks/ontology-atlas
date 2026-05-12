@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * oh-my-ontology-mcp — MCP 서버 (도구 21종 = read 13 + write 8).
+ * oh-my-ontology-mcp — MCP 서버 (도구 22종 = read 14 + write 8).
  *
  * AI agent (Claude Code 등) 가 vault 의 ontology 를 읽고 쓸 수 있게.
  *
- * read 13:
+ * read 14:
  *   - list_concepts          — vault 의 노드 목록 (kind / project_filter)
  *   - get_concept            — 단일 노드 + graph 이웃 + mtime
  *   - get_concepts           — 배치 read (slugs[] → concepts[], partial 허용)
@@ -15,6 +15,7 @@
  *   - list_kinds             — vault kind 분포 census
  *   - find_orphans           — 어느 다른 노드도 frontmatter 에서 가리키지 않는 doc
  *   - query_concepts         — typed filter DSL (kind=X AND has(Y) AND NOT ...)
+ *   - compile_ontology       — vault 를 deterministic graph artifact 로 compile
  *   - validate_vault         — vault 전체 health 한 호출 (per-doc + byCode aggregate)
  *   - analyze_repo_structure — R16, code repo 분석 → ontology 후보 (side effect 0)
  *   - infer_imports          — R17, TS/JS import graph → depends_on 후보 (side effect 0)
@@ -73,6 +74,7 @@ import { mkdirSync } from 'node:fs';
 import { buildMarkdown } from './parser.mjs';
 import { analyzeRepoStructure } from './analyze.mjs';
 import { inferImports } from './infer-imports.mjs';
+import { compileOntology } from './ontology-compiler.mjs';
 import { parseFilter } from './query.mjs';
 import { isValidVaultTitle, validateVaultDocument } from './validate.mjs';
 import {
@@ -100,16 +102,16 @@ try {
 }
 
 // MCP `instructions` field — initialize 응답에 포함되어 연결된 AI agent
-// (Claude Code, Cursor, …) 가 항상 보는 시스템-prompt 수준 안내. 20 tool
+// (Claude Code, Cursor, …) 가 항상 보는 시스템-prompt 수준 안내. tool
 // description 만으로는 (1) 호출 순서, (2) kind 계층의 의미, (3) write 도구의
 // dry-run/confirm 패턴, (4) mtime 충돌 가드, (5) R16/R17 bootstrap workflow,
 // (6) error message 가 다음 tool 을 직접 가리킨다는 사실 — agent UX 가
 // 매번 시행착오로 학습되는 문제를 단번에 해소.
 const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where each \`.md\` with a frontmatter \`kind:\` is an ontology node. The graph encodes the codebase's mental model and is shared with the human via plain markdown.
 
-## Tool inventory (21 tools = read 13 + write 8)
+## Tool inventory (22 tools = read 14 + write 8)
 
-**read** — \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\`.
+**read** — \`list_concepts\` · \`get_concept\` · \`get_concepts\` · \`find_evidence\` · \`find_backlinks\` · \`find_neighbors\` · \`find_path\` · \`list_kinds\` · \`find_orphans\` · \`query_concepts\` · \`compile_ontology\` · \`validate_vault\` · \`analyze_repo_structure\` · \`infer_imports\`.
 **write** — \`add_concept\` · \`add_concepts\` · \`add_relation\` · \`add_relations\` · \`patch_concept\` · \`delete_concept\` · \`rename_concept\` · \`merge_concepts\`.
 
 ## Kind hierarchy (top → leaf)
@@ -133,6 +135,7 @@ const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where ea
 6. \`find_path(from, to)\` — "how does A relate to B?" (BFS, undirected). Returns \`hops: [slug...]\` **and \`edges: [{from, to, via}]\` where \`via\` is the frontmatter key (\`domains\` / \`domain\` / \`capabilities\` / \`elements\` / \`dependencies\` / \`relates\` / \`contains\` / \`describes\`) that linked the pair** — so you see not just *that* A and B are connected but *why*.
 7. \`find_orphans\` — spot nodes that no other node points to (cleanup or deletion candidates).
 8. \`query_concepts(filter)\` — structured questions like \`kind=capability AND domain=auth AND NOT has(elements)\` (= "unfinished caps under auth").
+9. \`compile_ontology({includeIndexes:true})\` — compiler-style graph artifact: canonical nodes, edges, aliases, issues, and adjacency indexes.
 
 All read-tool match rows share the same shape \`{slug, kind, title, domain, mtime, ...}\` — same sort/filter logic works across every read tool.
 
@@ -602,6 +605,22 @@ const TOOLS = [
     },
   },
   {
+    name: 'compile_ontology',
+    description:
+      'Compile the whole markdown vault into a deterministic graph artifact: canonical nodes, edges, aliases, graph issues, and optional adjacency indexes. ' +
+      'This is the compiler-style read path for graph-database-like use: call it before advanced reasoning, indexing, export, or non-developer-friendly graph views. side effect 0.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        includeIndexes: {
+          type: 'boolean',
+          description:
+            'When true, include adjacency indexes `{out, in}` keyed by canonical slug. Defaults false to keep payload smaller.',
+        },
+      },
+    },
+  },
+  {
     name: 'validate_vault',
     description:
       'R+ (cycle 46) — validate every doc in the vault, return per-doc + per-code aggregate. ' +
@@ -848,6 +867,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return ok(findOrphansTool(args));
       case 'query_concepts':
         return ok(queryConceptsTool(args));
+      case 'compile_ontology':
+        return ok(compileOntologyTool(args));
       case 'validate_vault':
         return ok(validateVaultTool());
       case 'analyze_repo_structure':
@@ -1472,6 +1493,25 @@ function queryConceptsTool({ filter, limit }) {
     total: matches.length,
     matches,
     limited: matches.length >= cap,
+  };
+}
+
+function compileOntologyTool({ includeIndexes } = {}) {
+  const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), {
+    includeIndexes: includeIndexes === true,
+  });
+  return {
+    ...artifact,
+    summary: {
+      nodes: artifact.nodeCount,
+      edges: artifact.edgeCount,
+      resolvedEdges: artifact.resolvedEdgeCount,
+      externalEdges: artifact.externalEdgeCount,
+      unresolvedEdges: artifact.unresolvedEdgeCount,
+      aliases: artifact.aliases.length,
+      ambiguousAliases: artifact.ambiguousAliases.length,
+      issues: artifact.issues.length,
+    },
   };
 }
 

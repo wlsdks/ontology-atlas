@@ -3,13 +3,13 @@
 > **One codebase, one ontology, that the developer and their AI agent grow together.**
 >
 > Local-first markdown vault. Developer authors via CLI / web UI.
-> AI agent (Claude Code, Codex, Cursor) reads + writes the same `.md` files via MCP — 20 tools.
+> AI agent (Claude Code, Codex, Cursor) reads + writes the same `.md` files via MCP — 22 tools.
 > No backend. No login. The git repo is the source of truth.
 
 [![CI](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml/badge.svg)](https://github.com/wlsdks/oh-my-ontology/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Built with Next.js](https://img.shields.io/badge/Built_with-Next.js-000?logo=next.js)](https://nextjs.org)
-[![MCP server](https://img.shields.io/badge/MCP-20_tools-5e6ad2)](mcp/README.md)
+[![MCP server](https://img.shields.io/badge/MCP-22_tools-5e6ad2)](mcp/README.md)
 
 ```bash
 npx oh-my-ontology init my-vault                # scaffold
@@ -44,7 +44,7 @@ Three claims:
 2. **Developer + AI agent share one source of truth** — both edit the same
    `.md` files. The developer authors via CLI / web UI; the AI agent reads
    + writes via MCP (Claude Code, Codex, Cursor). Same git repo, same diff.
-3. **MCP server gives the AI its only interface** — **20 tools** (12 read +
+3. **MCP server gives the AI its only interface** — **22 tools** (14 read +
    8 write) over JSON-RPC. The agent doesn't need to "ingest your codebase";
    it reads the ontology the developer already curates. R16 / R17 added
    `analyze_repo_structure` and `infer_imports` so the agent can also
@@ -63,7 +63,7 @@ to git, and the AI agent reads via a tiny MCP server.
 The primary audience is the **developer + their AI agent** (R12, 2026-05).
 The developer is already in the codebase — the cost of authoring frontmatter
 is low. Their AI agent (Claude Code, Cursor) is the *real* daily user of
-the 20 MCP tools — it needs ground-truth structure to give better answers,
+the 22 MCP tools — it needs ground-truth structure to give better answers,
 and without a developer maintaining it, the ontology rots. PM/designer
 friendliness is a side effect of plain markdown, not a target.
 
@@ -74,7 +74,7 @@ The same frontmatter graph rendered three ways:
 - **Topology** (`/topology`) — Sigma WebGL spatial network of projects
 - **Tree** (`/`, `/ontology`) — hierarchical drill-down (project → domain → capability → element)
 - **ERD builder** (`/ontology/edit`) — xyflow canvas to add nodes and relations visually
-- **MCP** (separate package) — JSON-RPC over stdio, 20 tools
+- **MCP** (separate package) — JSON-RPC over stdio, 22 tools
 
 All four read and write the same `.md` files. Pick whichever view fits
 the moment.
@@ -128,7 +128,7 @@ becoming graph nodes.
 | Promise | Verification |
 |---|---|
 | **vault frontmatter = the graph** (no review queue, no LLM extraction) | `grep -r "extractionJob" src/ → 0` |
-| **AI agent partner via MCP** | `mcp/` package, 20 tools, `mcp/scripts/verify.mjs` smoke |
+| **AI agent partner via MCP** | `mcp/` package, 22 tools, `mcp/scripts/verify.mjs` smoke |
 | **No backend** (Firebase / DB / auth) | `pnpm bundle:check` — firebase SDK chunk 0 (deps removed in R10) |
 | **Dogfooding** | `docs/ontology/` is this project's own curated mental model — **26 nodes** (capabilities 14 · domains 6 · elements 4 · project 1 · vault-readme 1). The MCP server you'd run is the one we use to write *this README*. |
 | **Vault scale** | `node scripts/perf-vault.mjs` measures walk + read + parse on synthetic vaults. **2,000 .md files in 33 ms** (linear, ~17 µs/file). Sub-second up to 1,000 nodes — the ontology will not become the bottleneck. |
@@ -140,7 +140,7 @@ becoming graph nodes.
 - **i18n**: next-intl 4.11 with `/[locale]/` URL prefix (en / ko)
 - **Visualization**: Sigma.js (WebGL) + Graphology + ForceAtlas2 + xyflow + dagre
 - **Local-first**: File System Access API + IndexedDB
-- **AI agent surface**: `mcp/` MCP server, stdio JSON-RPC, 20 tools
+- **AI agent surface**: `mcp/` MCP server, stdio JSON-RPC, 22 tools
 - **Architecture**: Feature-Sliced Design (ESLint boundaries enforced)
 - **Tests**: Vitest unit + Playwright e2e
 
@@ -156,7 +156,7 @@ src/            Feature-Sliced Design layers
   ├── features/ user interactions
   ├── entities/ domain entities (project, ontology-class, knowledge-graph, …)
   └── shared/   ui primitives, lib, config
-mcp/            MCP server (`oh-my-ontology-mcp`, 20 tools) — AI agent surface
+mcp/            MCP server (`oh-my-ontology-mcp`, 22 tools) — AI agent surface
 cli/            `npx oh-my-ontology` (vault scaffold + 6 commands) — developer terminal surface
 docs/           Long-form docs + dogfood vault (docs/ontology/) + benchmark results
 docs/archive/   Historical analysis docs
@@ -198,12 +198,12 @@ cd my-vault
 - [`AGENTS.md`](AGENTS.md) — contributor (사람·AI 공통) 가이드
 - [`docs/PRODUCT-DIRECTION.md`](docs/PRODUCT-DIRECTION.md) — mission spec
 - [`docs/FEATURES.md`](docs/FEATURES.md) — 사용자 가시 기능 전수
-- [`mcp/README.md`](mcp/README.md) — MCP 서버 등록 + 20 도구
+- [`mcp/README.md`](mcp/README.md) — MCP 서버 등록 + 22 도구
 
 ### 핵심 약속
 
 1. **vault frontmatter = 그래프** — 검수 큐 / 추출 워커 없음. frontmatter 자기-승인.
-2. **AI agent partner** — MCP 서버 (read 12 + write 8, R16 `analyze_repo_structure` · R17 `infer_imports` 포함) 로 같은 vault read/write + 빈 vault bootstrap.
+2. **AI agent partner** — MCP 서버 (read 14 + write 8, R16 `analyze_repo_structure` · R17 `infer_imports` · compiler-style `compile_ontology` 포함) 로 같은 vault read/write + 빈 vault bootstrap.
 3. **Local-first single-source** — 사용자 디스크 vault 가 진실원. Firebase / 백엔드 / 인증 의존 0 (R10 — 2026-05).
 4. **Dogfooding** — `docs/ontology/` 가 프로젝트 자기 자신의 mental model.
 

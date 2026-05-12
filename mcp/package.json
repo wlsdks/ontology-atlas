@@ -1,7 +1,7 @@
 {
   "name": "oh-my-ontology-mcp",
   "version": "0.10.0",
-  "description": "MCP server — humans and AI agents read/write the same codebase ontology vault. Current surface: 20 tools (12 read + 8 write).",
+  "description": "MCP server — humans and AI agents read/write the same codebase ontology vault. Current surface: 22 tools (14 read + 8 write).",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -28,13 +28,15 @@
     "src/vault.mjs",
     "src/analyze.mjs",
     "src/infer-imports.mjs",
+    "src/ontology-compiler.mjs",
+    "src/ontology-compiler.test.mjs",
     "scripts/verify.mjs",
     "CHANGELOG.md",
     "README.md"
   ],
   "scripts": {
     "start": "node src/index.js",
-    "test": "node --test src/parser.test.mjs src/query.test.mjs src/validate.test.mjs src/vault.test.mjs src/redirect-backlinks.test.mjs src/conflict-detection.test.mjs src/analyze.test.mjs src/infer-imports.test.mjs src/integration.test.mjs",
+    "test": "node --test src/parser.test.mjs src/query.test.mjs src/validate.test.mjs src/vault.test.mjs src/redirect-backlinks.test.mjs src/conflict-detection.test.mjs src/analyze.test.mjs src/infer-imports.test.mjs src/ontology-compiler.test.mjs src/integration.test.mjs",
     "test:smoke": "node src/parser.test.mjs",
     "verify": "node scripts/verify.mjs"
   },

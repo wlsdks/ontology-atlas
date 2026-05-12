@@ -11,7 +11,7 @@
  * 검증 항목:
  *   1. parser smoke test (parser.test.mjs) 통과
  *   2. server boot — initialize JSON-RPC 응답
- *   3. tools/list — 21 도구 모두 노출
+ *   3. tools/list — 22 도구 모두 노출
  *   4. tools/call list_concepts — vault 노드 수 출력
  *
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
@@ -38,6 +38,7 @@ const EXPECTED_TOOLS = [
   'list_kinds',
   'find_orphans',
   'query_concepts',
+  'compile_ontology',
   'validate_vault',
   'analyze_repo_structure',
   'infer_imports',
