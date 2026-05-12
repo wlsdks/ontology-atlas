@@ -851,9 +851,11 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
       else warningCount += 1;
     }
   }
-  for (const { issue } of findDanglingGraphReferenceIssues(docs)) {
-    if (issue.severity === 'error') errorCount += 1;
-    else warningCount += 1;
+  for (const issues of groupDanglingIssuesBySlug(docs).values()) {
+    for (const issue of issues) {
+      if (issue.severity === 'error') errorCount += 1;
+      else warningCount += 1;
+    }
   }
 
   // R+ — `since` (ms) 가 number 면 mtime > since 만 통과. AI agent 의 incremental
@@ -900,7 +902,7 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
   };
 }
 
-function getConcept({ slug }) {
+function getConcept({ slug }, context = {}) {
   let doc;
   try {
     doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, slug));
@@ -916,9 +918,9 @@ function getConcept({ slug }) {
   // warnings 보고 사용자에게 안내 / vault:validate 권장 가능.
   const validation = doc.raw ? validateVaultDocument(doc.raw) : null;
   const warnings = validation ? [...validation.issues] : [];
-  for (const dangling of findDanglingGraphReferenceIssues(loadVaultDocs(VAULT_ROOT))) {
-    if (dangling.slug === doc.slug) warnings.push(dangling.issue);
-  }
+  const danglingIssuesBySlug =
+    context.danglingIssuesBySlug ?? groupDanglingIssuesBySlug(loadVaultDocs(VAULT_ROOT));
+  warnings.push(...(danglingIssuesBySlug.get(doc.slug) ?? []));
   const outgoingEdges = collectNeighborRefs(doc).map(({ key, ref }) => ({
     to: ref,
     via: key,
@@ -963,12 +965,13 @@ function getConceptsBatch({ slugs }) {
       `Too many slugs: ${slugs.length}. Max 50 per call — split into multiple get_concepts batches.`
     );
   }
+  const danglingIssuesBySlug = groupDanglingIssuesBySlug(loadVaultDocs(VAULT_ROOT));
   const concepts = slugs.map((slug) => {
     if (typeof slug !== 'string' || !slug) {
       return { slug: String(slug), ok: false, error: 'invalid-slug' };
     }
     try {
-      const result = getConcept({ slug });
+      const result = getConcept({ slug }, { danglingIssuesBySlug });
       return { ok: true, ...result };
     } catch (err) {
       const msg = err && err.message ? err.message : String(err);
@@ -1311,10 +1314,10 @@ function validateVaultTool() {
     const result = validateVaultDocument(doc.raw || '');
     docIssues.set(doc.slug, result.issues || []);
   }
-  for (const issue of findDanglingGraphReferenceIssues(docs)) {
-    const issues = docIssues.get(issue.slug) || [];
-    issues.push(issue.issue);
-    docIssues.set(issue.slug, issues);
+  for (const [slug, danglingIssues] of groupDanglingIssuesBySlug(docs)) {
+    const issues = docIssues.get(slug) || [];
+    issues.push(...danglingIssues);
+    docIssues.set(slug, issues);
   }
   const problems = [];
   let errorFiles = 0;
@@ -1419,6 +1422,15 @@ function findDanglingGraphReferenceIssues(docs) {
     }
   }
   return issues;
+}
+
+function groupDanglingIssuesBySlug(docs) {
+  const bySlug = new Map();
+  for (const { slug, issue } of findDanglingGraphReferenceIssues(docs)) {
+    if (!bySlug.has(slug)) bySlug.set(slug, []);
+    bySlug.get(slug).push(issue);
+  }
+  return bySlug;
 }
 
 function isPathLikeGraphRef(ref) {
