@@ -559,6 +559,44 @@ await test("get_concept — graph neighbors 와 outgoingEdges 포함", async () 
   }
 });
 
+await test("get_concept/get_concepts — tail/frontmatter slug alias 를 canonical slug 로 읽음", async () => {
+  const root = makeVault([
+    {
+      slug: "domains/auth",
+      content: "---\nslug: auth-domain\nkind: domain\ntitle: Auth\n---\nbody D",
+    },
+    {
+      slug: "capabilities/login",
+      content: "---\nkind: capability\ntitle: Login\ndomain: domains/auth\n---\nbody L",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "get_concept", { slug: "login" }),
+      callTool(3, "get_concept", { slug: "auth-domain" }),
+      callTool(4, "get_concepts", { slugs: ["login", "auth-domain", "missing"] }),
+    ]);
+    const login = getCallParsed(responses, 2);
+    const domain = getCallParsed(responses, 3);
+    const batch = getCallParsed(responses, 4);
+    assert.equal(login.slug, "capabilities/login");
+    assert.equal(login.frontmatter.title, "Login");
+    assert.equal(domain.slug, "domains/auth");
+    assert.equal(domain.frontmatter.title, "Auth");
+    assert.deepEqual(
+      batch.concepts.map((row) => row.slug),
+      ["capabilities/login", "domains/auth", "missing"],
+    );
+    assert.equal(batch.concepts[0].ok, true);
+    assert.equal(batch.concepts[1].ok, true);
+    assert.equal(batch.concepts[2].ok, false);
+    assert.match(batch.concepts[2].error, /not found/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 // R+ — get_concepts 배치 reader. K개 slug → 1 round trip. 입력 순서 보존,
 // missing slug 는 batch 를 abort 하지 않고 { ok: false, error } 행으로 surface.
 await test("get_concepts — 배치 read, 입력 순서 보존 + partial result", async () => {

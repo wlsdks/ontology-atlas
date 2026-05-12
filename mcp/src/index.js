@@ -215,13 +215,13 @@ const TOOLS = [
   {
     name: 'get_concept',
     description:
-      'Fetch a single node by slug — its frontmatter, a body excerpt, direct graph neighbors, outgoingEdges, and mtime. **For K specific slugs in one call use `get_concepts({slugs: [...]})` (max 50) instead of K round-trips.**',
+      'Fetch a single node by slug or unique alias — its frontmatter, a body excerpt, direct graph neighbors, outgoingEdges, and mtime. Accepts exact vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases; response slug is canonical. **For K specific slugs in one call use `get_concepts({slugs: [...]})` (max 50) instead of K round-trips.**',
     inputSchema: {
       type: 'object',
       properties: {
         slug: {
           type: 'string',
-          description: 'Vault-relative slug (e.g. projects/auth-platform). Omit the .md extension.',
+          description: 'Vault-relative slug (e.g. projects/auth-platform), unique tail slug, or frontmatter `slug` alias. Omit the .md extension.',
         },
       },
       required: ['slug'],
@@ -230,14 +230,14 @@ const TOOLS = [
   {
     name: 'get_concepts',
     description:
-      'Fetch *multiple* nodes in one call — same per-row shape as `get_concept` (frontmatter + excerpt + neighbors + mtime + warnings?), but accepts an array of slugs. Use when you have K specific slugs from `list_concepts` / `find_path` / `find_orphans` etc. and need their full details — saves K-1 round-trips. Order of `concepts[]` matches input `slugs[]`. Missing slugs return `{ slug, ok: false, error }` rather than aborting the batch — agents handle partial results gracefully.',
+      'Fetch *multiple* nodes in one call — same per-row shape as `get_concept` (frontmatter + excerpt + neighbors + mtime + warnings?), but accepts an array of slugs or unique aliases. Use when you have K specific slugs from `list_concepts` / `find_path` / `find_orphans` etc. and need their full details — saves K-1 round-trips. Order of `concepts[]` matches input `slugs[]`; successful rows return canonical `slug`. Missing slugs return `{ slug, ok: false, error }` rather than aborting the batch — agents handle partial results gracefully.',
     inputSchema: {
       type: 'object',
       properties: {
         slugs: {
           type: 'array',
           items: { type: 'string' },
-          description: 'Vault-relative slugs (e.g. ["capabilities/x", "elements/y"]). Omit the .md extension. Max 50 per call.',
+          description: 'Vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases (e.g. ["capabilities/x", "elements/y"]). Omit the .md extension. Max 50 per call.',
         },
       },
       required: ['slugs'],
@@ -903,9 +903,13 @@ function listConcepts({ kind, domain, since, summary, limit = 100 }) {
 }
 
 function getConcept({ slug }, context = {}) {
+  const canonicalSlug = resolveExistingVaultSlug(slug, context.docs);
+  if (!canonicalSlug) {
+    throw new Error(`Doc not found: ${slug}`);
+  }
   let doc;
   try {
-    doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, slug));
+    doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, canonicalSlug));
   } catch (err) {
     // ENOENT 등 fs 오류는 사용자 친화 메시지로 surface — 절대 경로 leak 회피
     // (Panel E audit 2026-05-02 finding).
@@ -919,7 +923,8 @@ function getConcept({ slug }, context = {}) {
   const validation = doc.raw ? validateVaultDocument(doc.raw) : null;
   const warnings = validation ? [...validation.issues] : [];
   const danglingIssuesBySlug =
-    context.danglingIssuesBySlug ?? groupDanglingIssuesBySlug(loadVaultDocs(VAULT_ROOT));
+    context.danglingIssuesBySlug ??
+    groupDanglingIssuesBySlug(context.docs ?? loadVaultDocs(VAULT_ROOT));
   warnings.push(...(danglingIssuesBySlug.get(doc.slug) ?? []));
   const outgoingEdges = collectNeighborRefs(doc).map(({ key, ref }) => ({
     to: ref,
@@ -965,13 +970,14 @@ function getConceptsBatch({ slugs }) {
       `Too many slugs: ${slugs.length}. Max 50 per call — split into multiple get_concepts batches.`
     );
   }
-  const danglingIssuesBySlug = groupDanglingIssuesBySlug(loadVaultDocs(VAULT_ROOT));
+  const docs = loadVaultDocs(VAULT_ROOT);
+  const danglingIssuesBySlug = groupDanglingIssuesBySlug(docs);
   const concepts = slugs.map((slug) => {
     if (typeof slug !== 'string' || !slug) {
       return { slug: String(slug), ok: false, error: 'invalid-slug' };
     }
     try {
-      const result = getConcept({ slug }, { danglingIssuesBySlug });
+      const result = getConcept({ slug }, { docs, danglingIssuesBySlug });
       return { ok: true, ...result };
     } catch (err) {
       const msg = err && err.message ? err.message : String(err);
@@ -1162,13 +1168,13 @@ function addRelation({ from, to, type, expected_mtime }) {
   return { ok: true, from: canonicalFrom, to: canonicalTo, type, key };
 }
 
-function resolveExistingVaultSlug(slug) {
+function resolveExistingVaultSlug(slug, docs = null) {
   if (typeof slug !== 'string' || slug.trim() === '') return null;
   if (vaultSlugExists(VAULT_ROOT, slug)) return slug;
-  const docs = loadVaultDocs(VAULT_ROOT);
+  const vaultDocs = docs ?? loadVaultDocs(VAULT_ROOT);
   const tailMatches = [];
   const frontmatterMatches = [];
-  for (const doc of docs) {
+  for (const doc of vaultDocs) {
     const tail = doc.slug.split('/').pop();
     if (tail === slug) tailMatches.push(doc.slug);
     const fmSlug = doc.frontmatter.slug;
