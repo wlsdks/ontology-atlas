@@ -15,6 +15,9 @@ export function queryCompiledOntology(artifact, query = {}) {
   if (operation === 'impact') {
     return engine.impact(query.slug, query);
   }
+  if (operation === 'blast_radius') {
+    return engine.blastRadius(query.slug, query);
+  }
   if (operation === 'subgraph') {
     return engine.subgraph(query.slug ?? query.seed, query);
   }
@@ -80,7 +83,7 @@ export function queryCompiledOntology(artifact, query = {}) {
   }
 
   throw new Error(
-    'operation must be one of: neighbors, path, impact, subgraph, overview, schema, facets, match_nodes, match_edges, node_profile, domain_profile, domain_matrix, project_scope, project_map, relation_check, components, lineage, containment_tree, cycles, topological_order, recommend_relations, growth_plan, workspace_brief, health.',
+    'operation must be one of: neighbors, path, impact, blast_radius, subgraph, overview, schema, facets, match_nodes, match_edges, node_profile, domain_profile, domain_matrix, project_scope, project_map, relation_check, components, lineage, containment_tree, cycles, topological_order, recommend_relations, growth_plan, workspace_brief, health.',
   );
 }
 
@@ -261,6 +264,91 @@ export function createOntologyEngine(artifact) {
         node: nodeBySlug.get(row.slug),
       })),
       edges: uniqueEdges(collectedEdges).slice(0, limit),
+    };
+  }
+
+  function blastRadius(slugOrAlias, options = {}) {
+    const center = resolve(slugOrAlias, 'slug');
+    const direction = normalizeDirection(options.direction, 'incoming');
+    const depth = normalizeDepth(options.depth, 2);
+    const limit = normalizeLimit(options.limit);
+    const typeSet = normalizeTypes(options.types);
+    const allSlugs = new Set(nodes.map((node) => node.slug));
+    const discovered = new Map([[center, { slug: center, distance: 0 }]]);
+    const collectedEdges = [];
+    const queue = [{ slug: center, distance: 0 }];
+
+    while (queue.length > 0 && discovered.size < limit + 1) {
+      const current = queue.shift();
+      if (current.distance >= depth) continue;
+      for (const { next, edge } of traversalEdges(current.slug, direction, typeSet)) {
+        collectedEdges.push(formatPathEdge(edge, current.slug, next));
+        if (discovered.has(next)) continue;
+        const item = { slug: next, distance: current.distance + 1 };
+        discovered.set(next, item);
+        queue.push(item);
+        if (discovered.size >= limit + 1) break;
+      }
+    }
+
+    const nodeRows = [...discovered.values()]
+      .filter((row) => row.slug !== center)
+      .sort((a, b) => a.distance - b.distance || a.slug.localeCompare(b.slug));
+    const enrichedNodes = nodeRows.map((row) => {
+      const node = nodeBySlug.get(row.slug);
+      const domain = nearestDomainFor(row.slug, allSlugs);
+      return {
+        ...row,
+        domain,
+        node: summarizeNode(node),
+      };
+    });
+    const edgeRows = uniqueEdges(collectedEdges)
+      .map((edge) => {
+        const fromDomain = nearestDomainFor(edge.from, allSlugs);
+        const toDomain = nearestDomainFor(edge.to, allSlugs);
+        return {
+          ...edge,
+          fromDomain,
+          toDomain,
+          crossDomain: Boolean(fromDomain && toDomain && fromDomain !== toDomain),
+        };
+      })
+      .sort((a, b) => edgeSortKey(a).localeCompare(edgeSortKey(b)));
+    const byKind = countBy(
+      enrichedNodes.map((row) => nodeBySlug.get(row.slug)).filter(Boolean),
+      'kind',
+    );
+    const byDomain = countBy(enrichedNodes, 'domain');
+    const crossDomainEdges = edgeRows.filter((edge) => edge.crossDomain).length;
+    const summary = {
+      affectedNodes: nodeRows.length,
+      affectedEdges: edgeRows.length,
+      affectedKinds: Object.keys(byKind).length,
+      affectedDomains: Object.keys(byDomain).length,
+      crossDomainEdges,
+    };
+
+    return {
+      operation: 'blast_radius',
+      center,
+      node: summarizeNode(nodeBySlug.get(center)),
+      direction,
+      depth,
+      risk: blastRadiusRisk(summary),
+      summary,
+      byKind,
+      byDomain,
+      nodes: {
+        total: enrichedNodes.length,
+        limited: enrichedNodes.length >= limit,
+        rows: enrichedNodes.slice(0, limit),
+      },
+      edges: {
+        total: edgeRows.length,
+        limited: edgeRows.length > limit,
+        rows: edgeRows.slice(0, limit),
+      },
     };
   }
 
@@ -1929,6 +2017,7 @@ export function createOntologyEngine(artifact) {
     neighbors,
     path,
     impact,
+    blastRadius,
     subgraph,
     overview,
     schema,
@@ -1955,6 +2044,24 @@ export function createOntologyEngine(artifact) {
 
 function healthCheck({ id, status, count, message }) {
   return { id, status, count, message };
+}
+
+function blastRadiusRisk(summary) {
+  if (
+    summary.affectedNodes >= 10 ||
+    summary.affectedDomains >= 3 ||
+    summary.crossDomainEdges >= 5
+  ) {
+    return 'high';
+  }
+  if (
+    summary.affectedNodes >= 3 ||
+    summary.affectedDomains >= 2 ||
+    summary.crossDomainEdges > 0
+  ) {
+    return 'medium';
+  }
+  return 'low';
 }
 
 function countBy(items, key) {

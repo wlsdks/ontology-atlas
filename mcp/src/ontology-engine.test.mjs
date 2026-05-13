@@ -99,6 +99,88 @@ describe('queryCompiledOntology', () => {
     );
   });
 
+  it('summarizes blast radius by kind, domain, and cross-domain edges', () => {
+    const graph = compileOntology(
+      [
+        doc('domains/auth', { slug: 'auth-domain', kind: 'domain', title: 'Auth' }),
+        doc('domains/billing', { kind: 'domain', title: 'Billing' }),
+        doc('capabilities/invoice', {
+          kind: 'capability',
+          title: 'Invoice',
+          domain: 'domains/billing',
+        }),
+        doc('capabilities/login', {
+          kind: 'capability',
+          title: 'Login',
+          domain: 'auth-domain',
+          depends_on: ['capabilities/invoice'],
+        }),
+        doc('capabilities/session', {
+          kind: 'capability',
+          title: 'Session',
+          domain: 'auth-domain',
+          depends_on: ['capabilities/login'],
+        }),
+      ],
+      { includeIndexes: true },
+    );
+    const result = queryCompiledOntology(graph, {
+      operation: 'blast_radius',
+      slug: 'capabilities/invoice',
+      direction: 'incoming',
+      depth: 2,
+    });
+
+    assert.equal(result.operation, 'blast_radius');
+    assert.equal(result.center, 'capabilities/invoice');
+    assert.equal(result.risk, 'medium');
+    assert.deepEqual(result.summary, {
+      affectedNodes: 2,
+      affectedEdges: 2,
+      affectedKinds: 1,
+      affectedDomains: 1,
+      crossDomainEdges: 1,
+    });
+    assert.deepEqual(result.byKind, { capability: 2 });
+    assert.deepEqual(result.byDomain, { 'domains/auth': 2 });
+    assert.deepEqual(
+      result.nodes.rows.map((row) => ({
+        slug: row.slug,
+        distance: row.distance,
+        domain: row.domain,
+      })),
+      [
+        { slug: 'capabilities/login', distance: 1, domain: 'domains/auth' },
+        { slug: 'capabilities/session', distance: 2, domain: 'domains/auth' },
+      ],
+    );
+    assert.deepEqual(
+      result.edges.rows.map((edge) => ({
+        from: edge.from,
+        to: edge.to,
+        fromDomain: edge.fromDomain,
+        toDomain: edge.toDomain,
+        crossDomain: edge.crossDomain,
+      })),
+      [
+        {
+          from: 'capabilities/login',
+          to: 'capabilities/invoice',
+          fromDomain: 'domains/auth',
+          toDomain: 'domains/billing',
+          crossDomain: true,
+        },
+        {
+          from: 'capabilities/session',
+          to: 'capabilities/login',
+          fromDomain: 'domains/auth',
+          toDomain: 'domains/auth',
+          crossDomain: false,
+        },
+      ],
+    );
+  });
+
   it('returns a bounded resolved subgraph around a seed', () => {
     const result = queryCompiledOntology(artifact(), {
       operation: 'subgraph',

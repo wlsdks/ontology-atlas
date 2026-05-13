@@ -16,7 +16,7 @@
  *   - find_orphans           — 어느 다른 노드도 frontmatter 에서 가리키지 않는 doc
  *   - query_concepts         — typed filter DSL (kind=X AND has(Y) AND NOT ...)
  *   - compile_ontology       — vault 를 deterministic graph artifact 로 compile
- *   - query_ontology         — compiled graph engine query (neighbors / path / impact / subgraph / overview / schema / facets / match_nodes / match_edges / node_profile / domain_profile / domain_matrix / project_scope / project_map / relation_check / components / lineage / containment_tree / cycles / topological_order / recommend_relations / growth_plan / workspace_brief / health)
+ *   - query_ontology         — compiled graph engine query (neighbors / path / impact / blast_radius / subgraph / overview / schema / facets / match_nodes / match_edges / node_profile / domain_profile / domain_matrix / project_scope / project_map / relation_check / components / lineage / containment_tree / cycles / topological_order / recommend_relations / growth_plan / workspace_brief / health)
  *   - validate_vault         — vault 전체 health 한 호출 (per-doc + byCode aggregate)
  *   - analyze_repo_structure — R16, code repo 분석 → ontology 후보 (side effect 0)
  *   - infer_imports          — R17, TS/JS import graph → depends_on 후보 (side effect 0)
@@ -138,7 +138,7 @@ const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where ea
 7. \`find_orphans\` — spot nodes that no other node points to (cleanup or deletion candidates).
 8. \`query_concepts(filter)\` — structured questions like \`kind=capability AND domain=auth AND NOT has(elements)\` (= "unfinished caps under auth").
 9. \`compile_ontology({includeIndexes:true})\` — compiler-style graph artifact: canonical nodes, edges, aliases, issues, stable \`graphHash\`, \`maxMtime\`, and query indexes.
-10. \`query_ontology({operation:'neighbors'|'path'|'impact'|'subgraph'|'overview'|'schema'|'facets'|'match_nodes'|'match_edges'|'node_profile'|'domain_profile'|'domain_matrix'|'project_scope'|'project_map'|'relation_check'|'components'|'lineage'|'containment_tree'|'cycles'|'topological_order'|'recommend_relations'|'growth_plan'|'workspace_brief'|'health', ...})\` — graph-engine query over the compiled artifact. Use \`neighbors\` for local graph view, \`path\` for relation route, \`impact\` for "what depends on this?" change analysis, \`subgraph\` for a bounded N-hop graph slice, \`overview\` for dashboard-style graph aggregates, \`schema\` for \`(:kind)-[:relation]->(:kind)\` patterns, \`facets\` for filter/dashboard aggregates, \`match_nodes\` for graph DB-style node rows with degree filters, \`match_edges\` for graph DB-style edge pattern rows, \`node_profile\` for a single node detail dashboard, \`domain_profile\` for a domain detail dashboard, \`domain_matrix\` for domain-to-domain coupling, \`project_scope\` for a project-contained graph slice, \`project_map\` for a domain-by-domain project map, \`relation_check\` before writes, \`components\` to find disconnected graph islands, \`lineage\` and \`containment_tree\` for project/domain/capability containment, \`cycles\` for directed dependency-cycle checks, \`topological_order\` for prerequisite-first dependency ordering, \`recommend_relations\` for safe domain-containment suggestions, \`growth_plan\` for side-effect-free ontology expansion candidates, \`workspace_brief\` for first-contact status + next actions, and \`health\` for a one-shot graph integrity dashboard.
+10. \`query_ontology({operation:'neighbors'|'path'|'impact'|'blast_radius'|'subgraph'|'overview'|'schema'|'facets'|'match_nodes'|'match_edges'|'node_profile'|'domain_profile'|'domain_matrix'|'project_scope'|'project_map'|'relation_check'|'components'|'lineage'|'containment_tree'|'cycles'|'topological_order'|'recommend_relations'|'growth_plan'|'workspace_brief'|'health', ...})\` — graph-engine query over the compiled artifact. Use \`neighbors\` for local graph view, \`path\` for relation route, \`impact\` for "what depends on this?" change analysis, \`blast_radius\` for impact grouped by kind/domain with cross-domain edge risk, \`subgraph\` for a bounded N-hop graph slice, \`overview\` for dashboard-style graph aggregates, \`schema\` for \`(:kind)-[:relation]->(:kind)\` patterns, \`facets\` for filter/dashboard aggregates, \`match_nodes\` for graph DB-style node rows with degree filters, \`match_edges\` for graph DB-style edge pattern rows, \`node_profile\` for a single node detail dashboard, \`domain_profile\` for a domain detail dashboard, \`domain_matrix\` for domain-to-domain coupling, \`project_scope\` for a project-contained graph slice, \`project_map\` for a domain-by-domain project map, \`relation_check\` before writes, \`components\` to find disconnected graph islands, \`lineage\` and \`containment_tree\` for project/domain/capability containment, \`cycles\` for directed dependency-cycle checks, \`topological_order\` for prerequisite-first dependency ordering, \`recommend_relations\` for safe domain-containment suggestions, \`growth_plan\` for side-effect-free ontology expansion candidates, \`workspace_brief\` for first-contact status + next actions, and \`health\` for a one-shot graph integrity dashboard.
 
 All read-tool match rows share the same shape \`{slug, kind, title, domain, mtime, ...}\` — same sort/filter logic works across every read tool.
 
@@ -626,7 +626,7 @@ const TOOLS = [
   {
     name: 'query_ontology',
     description:
-      'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (compiled-edge route between two nodes), `impact` (incoming by default: what depends on this node), `subgraph` (bounded N-hop graph slice for UI/agent views), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters), `match_edges` (graph DB-style edge pattern rows), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard). ' +
+      'Run graph-engine queries over the freshly compiled ontology artifact. Operations: `neighbors` (local graph neighborhood), `path` (compiled-edge route between two nodes), `impact` (incoming by default: what depends on this node), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice for UI/agent views), `overview` (counts, relation distribution, and hubs), `schema` (kind-relation-kind patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters), `match_edges` (graph DB-style edge pattern rows), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before add_relation), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard). ' +
       'Accepts canonical slugs or unique aliases. side effect 0. Use this when you need graph-database-like answers without pulling the full compile_ontology payload.',
     inputSchema: {
       type: 'object',
@@ -637,6 +637,7 @@ const TOOLS = [
             'neighbors',
             'path',
             'impact',
+            'blast_radius',
             'subgraph',
             'overview',
             'schema',
@@ -663,7 +664,7 @@ const TOOLS = [
         },
         slug: {
           type: 'string',
-          description: 'Center/root node slug or unique alias. Required for neighbors, impact, subgraph, lineage, node_profile, and domain_profile; optional root for containment_tree.',
+          description: 'Center/root node slug or unique alias. Required for neighbors, impact, blast_radius, subgraph, lineage, node_profile, and domain_profile; optional root for containment_tree.',
         },
         seed: {
           type: 'string',
@@ -686,7 +687,7 @@ const TOOLS = [
           type: 'string',
           enum: ['incoming', 'outgoing', 'both', 'undirected'],
           description:
-            'neighbors/impact/subgraph: incoming, outgoing, or both. path: outgoing, incoming, or undirected (default).',
+            'neighbors/impact/blast_radius/subgraph: incoming, outgoing, or both. path: outgoing, incoming, or undirected (default).',
         },
         types: {
           type: 'array',
@@ -758,7 +759,7 @@ const TOOLS = [
         },
         depth: {
           type: 'number',
-          description: 'impact/subgraph/lineage/containment_tree traversal depth. Defaults to 2 for impact/subgraph and 20 for lineage/containment_tree; capped at 20.',
+          description: 'impact/blast_radius/subgraph/lineage/containment_tree traversal depth. Defaults to 2 for impact/blast_radius/subgraph and 20 for lineage/containment_tree; capped at 20.',
         },
         maxHops: {
           type: 'number',
