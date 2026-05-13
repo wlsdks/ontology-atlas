@@ -823,6 +823,23 @@ const TOOLS = [
           description:
             'containment_tree only: include ancestorless nodes not reached from project roots. Defaults false.',
         },
+        executableOnly: {
+          type: 'boolean',
+          description:
+            'maintenance_plan only: when true, return only actions with a proposed tool call.',
+        },
+        phases: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'maintenance_plan only: optional phase filter, e.g. ["repair", "link", "materialize"].',
+        },
+        severities: {
+          type: 'array',
+          items: { type: 'string' },
+          description:
+            'maintenance_plan only: optional severity filter, e.g. ["fail", "warn"].',
+        },
         limit: {
           type: 'number',
           description: 'Max rows/components/order entries to return. Defaults to 100, capped at 500.',

@@ -296,6 +296,9 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.sideEffect, false);
     assert.deepEqual(result.summary, {
       totalActions: 3,
+      filteredActions: 3,
+      executableActions: 2,
+      reviewActions: 1,
       compileIssues: 0,
       dependencyCycles: 0,
       danglingReferences: 0,
@@ -322,6 +325,28 @@ describe('queryCompiledOntology', () => {
         type: 'capabilities',
       },
     });
+  });
+
+  it('filters maintenance actions for executable agent work queues', () => {
+    const result = queryCompiledOntology(artifact(), {
+      operation: 'maintenance_plan',
+      executableOnly: true,
+      phases: ['link'],
+      severities: ['warn'],
+      limit: 10,
+    });
+
+    assert.deepEqual(result.filters, {
+      executableOnly: true,
+      phases: ['link'],
+      severities: ['warn'],
+    });
+    assert.equal(result.summary.totalActions, 3);
+    assert.equal(result.summary.filteredActions, 1);
+    assert.deepEqual(result.byPhase, { link: 1 });
+    assert.deepEqual(result.bySeverity, { warn: 1 });
+    assert.deepEqual(result.actions.map((action) => action.kind), ['add_missing_relation']);
+    assert.equal(result.actions[0].executable, true);
   });
 
   it('explains how two nodes relate through direct edges, paths, and shared neighbors', () => {

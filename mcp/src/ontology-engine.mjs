@@ -2237,6 +2237,8 @@ export function createOntologyEngine(artifact) {
 
   function maintenancePlan(options = {}) {
     const limit = normalizeLimit(options.limit ?? 25);
+    const phaseFilter = normalizeStringSet(options.phases);
+    const severityFilter = normalizeStringSet(options.severities);
     const cycleResult = cycles({ limit, types: options.dependencyTypes ?? ['dependencies'] });
     const relationRecommendations = recommendRelations({ limit });
     const externalElementRefs = externalElementCandidates(limit);
@@ -2321,6 +2323,12 @@ export function createOntologyEngine(artifact) {
 
     actions.sort(compareMaintenanceActions);
     const annotatedActions = actions.map(annotateMaintenanceAction);
+    const filteredActions = annotatedActions.filter((action) => {
+      if (options.executableOnly === true && !action.executable) return false;
+      if (phaseFilter && !phaseFilter.has(action.phase)) return false;
+      if (severityFilter && !severityFilter.has(action.severity)) return false;
+      return true;
+    });
 
     return {
       operation: 'maintenance_plan',
@@ -2328,6 +2336,9 @@ export function createOntologyEngine(artifact) {
       graphHash: artifact?.graphHash,
       summary: {
         totalActions: actions.length,
+        filteredActions: filteredActions.length,
+        executableActions: annotatedActions.filter((action) => action.executable).length,
+        reviewActions: annotatedActions.filter((action) => !action.executable).length,
         compileIssues: Array.isArray(artifact?.issues) ? artifact.issues.length : 0,
         dependencyCycles: cycleResult.totalCycles,
         danglingReferences: danglingReferences.total,
@@ -2336,10 +2347,15 @@ export function createOntologyEngine(artifact) {
         unassignedNodes: unassignedNodes.total,
         emptyDomains: emptyDomains.total,
       },
-      byPhase: countBy(annotatedActions, 'phase'),
-      bySeverity: countBy(annotatedActions, 'severity'),
-      limited: annotatedActions.length > limit,
-      actions: annotatedActions.slice(0, limit),
+      filters: {
+        executableOnly: options.executableOnly === true,
+        phases: phaseFilter ? [...phaseFilter].sort() : [],
+        severities: severityFilter ? [...severityFilter].sort() : [],
+      },
+      byPhase: countBy(filteredActions, 'phase'),
+      bySeverity: countBy(filteredActions, 'severity'),
+      limited: filteredActions.length > limit,
+      actions: filteredActions.slice(0, limit),
     };
   }
 
@@ -3353,6 +3369,14 @@ function normalizeMaintenanceActionNodes(nodesValue) {
     );
   }
   return nodesValue;
+}
+
+function normalizeStringSet(value) {
+  if (!Array.isArray(value)) return null;
+  const items = value
+    .filter((item) => typeof item === 'string' && item.trim())
+    .map((item) => item.trim());
+  return items.length > 0 ? new Set(items) : null;
 }
 
 function hashString(value) {
