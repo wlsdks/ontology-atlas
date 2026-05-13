@@ -66,12 +66,15 @@ export function queryCompiledOntology(artifact, query = {}) {
   if (operation === 'recommend_relations') {
     return engine.recommendRelations(query);
   }
+  if (operation === 'growth_plan') {
+    return engine.growthPlan(query);
+  }
   if (operation === 'health') {
     return engine.health(query);
   }
 
   throw new Error(
-    'operation must be one of: neighbors, path, impact, subgraph, overview, schema, facets, match_nodes, match_edges, node_profile, domain_profile, project_scope, project_map, relation_check, components, lineage, containment_tree, cycles, topological_order, recommend_relations, health.',
+    'operation must be one of: neighbors, path, impact, subgraph, overview, schema, facets, match_nodes, match_edges, node_profile, domain_profile, project_scope, project_map, relation_check, components, lineage, containment_tree, cycles, topological_order, recommend_relations, growth_plan, health.',
   );
 }
 
@@ -985,6 +988,109 @@ export function createOntologyEngine(artifact) {
     };
   }
 
+  function externalElementCandidates(limit) {
+    const rows = edges
+      .filter((edge) => edge.external && edge.via === 'elements')
+      .sort(compareEdges)
+      .map((edge) => {
+        const slug = suggestedSlugForReference(edge.ref, 'element');
+        return {
+          kind: 'materialize_external_element',
+          score: 0.8,
+          from: edge.from,
+          ref: edge.ref,
+          suggestedSlug: slug,
+          reason: `${edge.from} references external element "${edge.ref}". Materialize it if this file should become a first-class ontology node.`,
+          proposedAction: {
+            tool: 'add_concept',
+            args: {
+              slug,
+              kind: 'element',
+              title: titleFromReference(edge.ref),
+            },
+          },
+          node: summarizeNode(nodeBySlug.get(edge.from)),
+        };
+      });
+
+    return limitedCandidateGroup(rows, limit);
+  }
+
+  function danglingReferenceCandidates(limit) {
+    const rows = edges
+      .filter((edge) => !edge.resolved && !edge.external)
+      .sort(compareEdges)
+      .map((edge) => {
+        const kind = inferKindFromRelation(edge.via);
+        return {
+          kind: 'resolve_dangling_reference',
+          score: kind ? 0.7 : 0.4,
+          from: edge.from,
+          ref: edge.ref,
+          relation: edge.via,
+          inferredKind: kind,
+          suggestedSlug: kind ? suggestedSlugForReference(edge.ref, kind) : null,
+          reason: `Graph reference "${edge.ref}" from "${edge.from}" via "${edge.via}" does not resolve to a vault node.`,
+          proposedAction: kind
+            ? {
+                tool: 'add_concept',
+                args: {
+                  slug: suggestedSlugForReference(edge.ref, kind),
+                  kind,
+                  title: titleFromReference(edge.ref),
+                },
+              }
+            : null,
+          node: summarizeNode(nodeBySlug.get(edge.from)),
+        };
+      });
+
+    return limitedCandidateGroup(rows, limit);
+  }
+
+  function unassignedNodeCandidates(limit) {
+    const rows = nodes
+      .filter((node) => (node.kind === 'capability' || node.kind === 'element') && !resolveOptional(node.domain))
+      .filter((node) => containmentParentsFor(node.slug).length === 0)
+      .sort((a, b) => a.slug.localeCompare(b.slug))
+      .map((node) => ({
+        kind: 'unassigned_node',
+        score: 0.5,
+        slug: node.slug,
+        reason: `${node.slug} has no resolved domain and no containment parent. Assign it to a domain or keep it intentionally global.`,
+        node: summarizeNode(node),
+      }));
+
+    return limitedCandidateGroup(rows, limit);
+  }
+
+  function emptyDomainCandidates(limit) {
+    const rows = nodes
+      .filter((node) => node.kind === 'domain')
+      .filter((node) => !containmentChildren(node.slug).some(({ next }) => {
+        const child = nodeBySlug.get(next);
+        return child?.kind === 'capability' || child?.kind === 'element';
+      }))
+      .sort((a, b) => a.slug.localeCompare(b.slug))
+      .map((node) => ({
+        kind: 'empty_domain',
+        score: 0.4,
+        slug: node.slug,
+        reason: `${node.slug} has no contained capability or element nodes yet.`,
+        node: summarizeNode(node),
+      }));
+
+    return limitedCandidateGroup(rows, limit);
+  }
+
+  function limitedCandidateGroup(rows, limit) {
+    return {
+      total: rows.length,
+      limited: rows.length > limit,
+      rows: rows.slice(0, limit),
+    };
+  }
+
   function limitedNodeList(rows, limit) {
     return {
       total: rows.length,
@@ -1207,6 +1313,35 @@ export function createOntologyEngine(artifact) {
       totalRecommendations: recommendations.length,
       limited: recommendations.length > limit,
       recommendations: recommendations.slice(0, limit),
+    };
+  }
+
+  function growthPlan(options = {}) {
+    const limit = normalizeLimit(options.limit ?? 25);
+    const relationRecommendations = recommendRelations({ limit });
+    const externalElementRefs = externalElementCandidates(limit);
+    const danglingReferences = danglingReferenceCandidates(limit);
+    const unassignedNodes = unassignedNodeCandidates(limit);
+    const emptyDomains = emptyDomainCandidates(limit);
+
+    return {
+      operation: 'growth_plan',
+      summary: {
+        relationRecommendations: relationRecommendations.totalRecommendations,
+        externalElementRefs: externalElementRefs.total,
+        danglingReferences: danglingReferences.total,
+        unassignedNodes: unassignedNodes.total,
+        emptyDomains: emptyDomains.total,
+        totalActions:
+          relationRecommendations.totalRecommendations +
+          externalElementRefs.total +
+          danglingReferences.total,
+      },
+      relationRecommendations,
+      externalElementRefs,
+      danglingReferences,
+      unassignedNodes,
+      emptyDomains,
     };
   }
 
@@ -1525,6 +1660,13 @@ export function createOntologyEngine(artifact) {
     };
   }
 
+  function inferKindFromRelation(relation) {
+    if (relation === 'domains' || relation === 'domain') return 'domain';
+    if (relation === 'capabilities' || relation === 'dependencies') return 'capability';
+    if (relation === 'elements') return 'element';
+    return null;
+  }
+
   return {
     resolve,
     neighbors,
@@ -1547,6 +1689,7 @@ export function createOntologyEngine(artifact) {
     cycles,
     topologicalOrder,
     recommendRelations,
+    growthPlan,
     health,
   };
 }
@@ -1605,6 +1748,37 @@ function topHubs(nodes, limit) {
     }))
     .sort((a, b) => b.degree - a.degree || b.inDegree - a.inDegree || a.slug.localeCompare(b.slug))
     .slice(0, limit);
+}
+
+function suggestedSlugForReference(ref, kind) {
+  const prefix = kind === 'domain' ? 'domains' : kind === 'capability' ? 'capabilities' : 'elements';
+  const raw = String(ref || '').trim();
+  const withoutExtension = raw.replace(/\.[^.\/\\]+$/, '');
+  const normalized = withoutExtension
+    .split(/[\/\\]+/)
+    .map(slugSegment)
+    .filter(Boolean)
+    .join('/');
+  if (!normalized) return `${prefix}/unnamed`;
+  if (normalized.startsWith(`${prefix}/`)) return normalized;
+  return `${prefix}/${normalized}`;
+}
+
+function slugSegment(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9._-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function titleFromReference(ref) {
+  const raw = String(ref || '').trim();
+  const base = raw.split(/[\/\\]+/).pop()?.replace(/\.[^.]+$/, '') || raw || 'Untitled';
+  const words = base
+    .replace(/[_-]+/g, ' ')
+    .trim();
+  return words ? words[0].toUpperCase() + words.slice(1) : 'Untitled';
 }
 
 function summarizeNode(node) {

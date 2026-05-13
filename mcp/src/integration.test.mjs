@@ -261,7 +261,7 @@ await test("compile_ontology — deterministic graph artifact + indexes", async 
   }
 });
 
-await test("query_ontology — compiled graph engine neighbors/path/impact/subgraph/overview/schema/facets/match_nodes/match_edges/node_profile/domain_profile/project_scope/project_map/relation_check/components/lineage/containment_tree/cycles/topological_order/recommend_relations/health", async () => {
+await test("query_ontology — compiled graph engine neighbors/path/impact/subgraph/overview/schema/facets/match_nodes/match_edges/node_profile/domain_profile/project_scope/project_map/relation_check/components/lineage/containment_tree/cycles/topological_order/recommend_relations/growth_plan/health", async () => {
   const root = makeVault([
     {
       slug: "project",
@@ -371,6 +371,9 @@ await test("query_ontology — compiled graph engine neighbors/path/impact/subgr
         operation: "recommend_relations",
       }),
       callTool(22, "query_ontology", {
+        operation: "growth_plan",
+      }),
+      callTool(23, "query_ontology", {
         operation: "health",
       }),
     ]);
@@ -536,7 +539,14 @@ await test("query_ontology — compiled graph engine neighbors/path/impact/subgr
       },
     ]);
 
-    const health = getCallParsed(responses, 22);
+    const growthPlan = getCallParsed(responses, 22);
+    assert.equal(growthPlan.operation, "growth_plan");
+    assert.equal(growthPlan.summary.relationRecommendations, 1);
+    assert.equal(growthPlan.summary.externalElementRefs, 1);
+    assert.equal(growthPlan.summary.danglingReferences, 0);
+    assert.equal(growthPlan.summary.totalActions, 2);
+
+    const health = getCallParsed(responses, 23);
     assert.equal(health.operation, "health");
     assert.equal(health.status, "needs_attention");
     assert.equal(health.summary.nodes, 4);

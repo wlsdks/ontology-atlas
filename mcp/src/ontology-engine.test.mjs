@@ -1181,6 +1181,75 @@ describe('queryCompiledOntology', () => {
     ]);
   });
 
+  it('returns a side-effect-free ontology growth plan', () => {
+    const graph = compileOntology(
+      [
+        doc('domains/auth', {
+          slug: 'auth-domain',
+          kind: 'domain',
+          title: 'Auth',
+        }),
+        doc('domains/empty', {
+          kind: 'domain',
+          title: 'Empty',
+        }),
+        doc('capabilities/login', {
+          kind: 'capability',
+          title: 'Login',
+          domain: 'auth-domain',
+          dependencies: ['capabilities/missing'],
+          elements: ['src/auth/login.ts'],
+        }),
+        doc('capabilities/orphan', {
+          kind: 'capability',
+          title: 'Orphan',
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const result = queryCompiledOntology(graph, {
+      operation: 'growth_plan',
+      limit: 10,
+    });
+
+    assert.equal(result.operation, 'growth_plan');
+    assert.deepEqual(result.summary, {
+      relationRecommendations: 1,
+      externalElementRefs: 1,
+      danglingReferences: 1,
+      unassignedNodes: 1,
+      emptyDomains: 1,
+      totalActions: 3,
+    });
+    assert.deepEqual(
+      result.relationRecommendations.recommendations.map((row) => row.proposedAction.args),
+      [
+        {
+          from: 'domains/auth',
+          to: 'capabilities/login',
+          type: 'capabilities',
+        },
+      ],
+    );
+    assert.deepEqual(result.externalElementRefs.rows.map((row) => row.proposedAction.args), [
+      {
+        slug: 'elements/src/auth/login',
+        kind: 'element',
+        title: 'Login',
+      },
+    ]);
+    assert.deepEqual(result.danglingReferences.rows.map((row) => row.proposedAction.args), [
+      {
+        slug: 'capabilities/missing',
+        kind: 'capability',
+        title: 'Missing',
+      },
+    ]);
+    assert.deepEqual(result.unassignedNodes.rows.map((row) => row.slug), ['capabilities/orphan']);
+    assert.deepEqual(result.emptyDomains.rows.map((row) => row.slug), ['domains/empty']);
+  });
+
   it('returns a one-shot health dashboard for clean ontology graphs', () => {
     const clean = compileOntology(
       [
