@@ -99,6 +99,9 @@ export function queryCompiledOntology(artifact, query = {}) {
   if (operation === 'growth_plan') {
     return engine.growthPlan(query);
   }
+  if (operation === 'maintenance_plan') {
+    return engine.maintenancePlan(query);
+  }
   if (operation === 'workspace_brief') {
     return engine.workspaceBrief(query);
   }
@@ -107,7 +110,7 @@ export function queryCompiledOntology(artifact, query = {}) {
   }
 
   throw new Error(
-    'operation must be one of: neighbors, path, all_paths, query_plan, centrality, communities, similar_nodes, explain_relation, reachability, pattern_walk, impact, blast_radius, subgraph, overview, schema, facets, match_nodes, match_edges, node_profile, domain_profile, domain_matrix, project_scope, project_map, relation_check, components, lineage, containment_tree, cycles, topological_order, recommend_relations, growth_plan, workspace_brief, health.',
+    'operation must be one of: neighbors, path, all_paths, query_plan, centrality, communities, similar_nodes, explain_relation, reachability, pattern_walk, impact, blast_radius, subgraph, overview, schema, facets, match_nodes, match_edges, node_profile, domain_profile, domain_matrix, project_scope, project_map, relation_check, components, lineage, containment_tree, cycles, topological_order, recommend_relations, growth_plan, maintenance_plan, workspace_brief, health.',
   );
 }
 
@@ -2232,6 +2235,113 @@ export function createOntologyEngine(artifact) {
     };
   }
 
+  function maintenancePlan(options = {}) {
+    const limit = normalizeLimit(options.limit ?? 25);
+    const cycleResult = cycles({ limit, types: options.dependencyTypes ?? ['dependencies'] });
+    const relationRecommendations = recommendRelations({ limit });
+    const externalElementRefs = externalElementCandidates(limit);
+    const danglingReferences = danglingReferenceCandidates(limit);
+    const unassignedNodes = unassignedNodeCandidates(limit);
+    const emptyDomains = emptyDomainCandidates(limit);
+    const actions = [];
+
+    for (const issue of Array.isArray(artifact?.issues) ? artifact.issues : []) {
+      actions.push({
+        phase: 'validate',
+        kind: 'inspect_compile_issue',
+        severity: 'warn',
+        score: 1,
+        reason: issue.message || issue.code || 'Compiled ontology issue requires inspection.',
+        issue,
+      });
+    }
+    for (const cycle of cycleResult.cycles) {
+      actions.push({
+        phase: 'repair',
+        kind: 'break_dependency_cycle',
+        severity: 'fail',
+        score: 1,
+        reason: `Dependency cycle detected across ${cycle.length} nodes.`,
+        cycle,
+      });
+    }
+    for (const row of danglingReferences.rows) {
+      actions.push({
+        phase: 'repair',
+        kind: row.kind,
+        severity: 'warn',
+        score: row.score,
+        reason: row.reason,
+        proposedAction: row.proposedAction,
+        node: row.node,
+      });
+    }
+    for (const row of relationRecommendations.recommendations) {
+      actions.push({
+        phase: 'link',
+        kind: 'add_missing_relation',
+        severity: 'warn',
+        score: row.score,
+        reason: row.reason,
+        proposedAction: row.proposedAction,
+        nodes: row.nodes,
+      });
+    }
+    for (const row of externalElementRefs.rows) {
+      actions.push({
+        phase: 'materialize',
+        kind: row.kind,
+        severity: 'info',
+        score: row.score,
+        reason: row.reason,
+        proposedAction: row.proposedAction,
+        node: row.node,
+      });
+    }
+    for (const row of unassignedNodes.rows) {
+      actions.push({
+        phase: 'review',
+        kind: row.kind,
+        severity: 'info',
+        score: row.score,
+        reason: row.reason,
+        node: row.node,
+      });
+    }
+    for (const row of emptyDomains.rows) {
+      actions.push({
+        phase: 'review',
+        kind: row.kind,
+        severity: 'info',
+        score: row.score,
+        reason: row.reason,
+        node: row.node,
+      });
+    }
+
+    actions.sort(compareMaintenanceActions);
+
+    return {
+      operation: 'maintenance_plan',
+      sideEffect: false,
+      graphHash: artifact?.graphHash,
+      summary: {
+        totalActions: actions.length,
+        compileIssues: Array.isArray(artifact?.issues) ? artifact.issues.length : 0,
+        dependencyCycles: cycleResult.totalCycles,
+        danglingReferences: danglingReferences.total,
+        relationRecommendations: relationRecommendations.totalRecommendations,
+        externalElementRefs: externalElementRefs.total,
+        unassignedNodes: unassignedNodes.total,
+        emptyDomains: emptyDomains.total,
+      },
+      byPhase: countBy(actions, 'phase'),
+      bySeverity: countBy(actions, 'severity'),
+      limited: actions.length > limit,
+      actions: actions.slice(0, limit),
+    };
+  }
+
   function workspaceBrief(options = {}) {
     const limit = normalizeLimit(options.limit ?? 10);
     const overviewResult = overview({ limit });
@@ -2815,6 +2925,7 @@ export function createOntologyEngine(artifact) {
     topologicalOrder,
     recommendRelations,
     growthPlan,
+    maintenancePlan,
     workspaceBrief,
     health,
   };
@@ -3170,6 +3281,7 @@ function normalizePlanTargetOperation(value) {
     'cycles',
     'topological_order',
     'growth_plan',
+    'maintenance_plan',
     'workspace_brief',
     'health',
   ]);
@@ -3187,6 +3299,17 @@ function queryCostClass(score) {
   if (score >= 1000) return 'high';
   if (score >= 100) return 'medium';
   return 'low';
+}
+
+function compareMaintenanceActions(left, right) {
+  const severityRank = { fail: 0, warn: 1, info: 2 };
+  const phaseRank = { validate: 0, repair: 1, link: 2, materialize: 3, review: 4 };
+  const severityDelta = (severityRank[left.severity] ?? 9) - (severityRank[right.severity] ?? 9);
+  if (severityDelta !== 0) return severityDelta;
+  const phaseDelta = (phaseRank[left.phase] ?? 9) - (phaseRank[right.phase] ?? 9);
+  if (phaseDelta !== 0) return phaseDelta;
+  if ((right.score || 0) !== (left.score || 0)) return (right.score || 0) - (left.score || 0);
+  return `${left.kind}:${left.reason}`.localeCompare(`${right.kind}:${right.reason}`);
 }
 
 function normalizeIterations(value) {

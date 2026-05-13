@@ -286,6 +286,41 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.matches[0].signals.domain, 0.1);
   });
 
+  it('returns an ordered maintenance plan after graph changes', () => {
+    const result = queryCompiledOntology(artifact(), {
+      operation: 'maintenance_plan',
+      limit: 10,
+    });
+
+    assert.equal(result.operation, 'maintenance_plan');
+    assert.equal(result.sideEffect, false);
+    assert.deepEqual(result.summary, {
+      totalActions: 3,
+      compileIssues: 0,
+      dependencyCycles: 0,
+      danglingReferences: 0,
+      relationRecommendations: 1,
+      externalElementRefs: 1,
+      unassignedNodes: 1,
+      emptyDomains: 0,
+    });
+    assert.deepEqual(result.byPhase, { link: 1, materialize: 1, review: 1 });
+    assert.deepEqual(result.bySeverity, { info: 2, warn: 1 });
+    assert.deepEqual(result.actions.map((action) => action.kind), [
+      'add_missing_relation',
+      'materialize_external_element',
+      'unassigned_node',
+    ]);
+    assert.deepEqual(result.actions[0].proposedAction, {
+      tool: 'add_relation',
+      args: {
+        from: 'domains/auth',
+        to: 'capabilities/login',
+        type: 'capabilities',
+      },
+    });
+  });
+
   it('explains how two nodes relate through direct edges, paths, and shared neighbors', () => {
     const result = queryCompiledOntology(artifact(), {
       operation: 'explain_relation',

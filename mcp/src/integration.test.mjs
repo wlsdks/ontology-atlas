@@ -261,7 +261,7 @@ await test("compile_ontology — deterministic graph artifact + indexes", async 
   }
 });
 
-await test("query_ontology — compiled graph engine neighbors/path/all_paths/query_plan/centrality/communities/similar_nodes/explain_relation/reachability/pattern_walk/impact/blast_radius/subgraph/overview/schema/facets/match_nodes/match_edges/node_profile/domain_profile/domain_matrix/project_scope/project_map/relation_check/components/lineage/containment_tree/cycles/topological_order/recommend_relations/growth_plan/workspace_brief/health", async () => {
+await test("query_ontology — compiled graph engine neighbors/path/all_paths/query_plan/centrality/communities/similar_nodes/explain_relation/reachability/pattern_walk/impact/blast_radius/subgraph/overview/schema/facets/match_nodes/match_edges/node_profile/domain_profile/domain_matrix/project_scope/project_map/relation_check/components/lineage/containment_tree/cycles/topological_order/recommend_relations/growth_plan/maintenance_plan/workspace_brief/health", async () => {
   const root = makeVault([
     {
       slug: "project",
@@ -434,6 +434,10 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
         kind: "capability",
         domain: "auth-domain",
         limit: 2,
+      }),
+      callTool(35, "query_ontology", {
+        operation: "maintenance_plan",
+        limit: 5,
       }),
     ]);
     const neighbors = getCallParsed(responses, 2);
@@ -723,6 +727,16 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       "capabilities/session",
     ]);
     assert.equal(similarNodes.matches[0].signals.title, 0.35);
+
+    const maintenancePlan = getCallParsed(responses, 35);
+    assert.equal(maintenancePlan.operation, "maintenance_plan");
+    assert.equal(maintenancePlan.sideEffect, false);
+    assert.equal(maintenancePlan.summary.relationRecommendations, 1);
+    assert.equal(maintenancePlan.summary.externalElementRefs, 1);
+    assert.deepEqual(maintenancePlan.actions.slice(0, 2).map((action) => action.kind), [
+      "add_missing_relation",
+      "materialize_external_element",
+    ]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
