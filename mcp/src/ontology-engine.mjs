@@ -12,6 +12,9 @@ export function queryCompiledOntology(artifact, query = {}) {
   if (operation === 'path') {
     return engine.path(query.from, query.to, query);
   }
+  if (operation === 'all_paths') {
+    return engine.allPaths(query.from, query.to, query);
+  }
   if (operation === 'explain_relation') {
     return engine.explainRelation(query.from, query.to, query);
   }
@@ -92,7 +95,7 @@ export function queryCompiledOntology(artifact, query = {}) {
   }
 
   throw new Error(
-    'operation must be one of: neighbors, path, explain_relation, reachability, pattern_walk, impact, blast_radius, subgraph, overview, schema, facets, match_nodes, match_edges, node_profile, domain_profile, domain_matrix, project_scope, project_map, relation_check, components, lineage, containment_tree, cycles, topological_order, recommend_relations, growth_plan, workspace_brief, health.',
+    'operation must be one of: neighbors, path, all_paths, explain_relation, reachability, pattern_walk, impact, blast_radius, subgraph, overview, schema, facets, match_nodes, match_edges, node_profile, domain_profile, domain_matrix, project_scope, project_map, relation_check, components, lineage, containment_tree, cycles, topological_order, recommend_relations, growth_plan, workspace_brief, health.',
   );
 }
 
@@ -232,6 +235,71 @@ export function createOntologyEngine(artifact) {
     }
 
     return { operation: 'path', from, to, found: false, maxHops, hops: [], edges: [] };
+  }
+
+  function allPaths(fromInput, toInput, options = {}) {
+    const from = resolve(fromInput, 'from');
+    const to = resolve(toInput, 'to');
+    const maxHops = normalizeDepth(options.maxHops, 5);
+    const direction = normalizePathDirection(options.direction);
+    const limit = normalizeLimit(options.limit ?? 25);
+    const typeSet = normalizeTypes(options.types);
+    const matches = [];
+    let limited = false;
+
+    const stack = [{ slug: from, hops: [from], edges: [] }];
+    while (stack.length > 0) {
+      const current = stack.pop();
+      const hopCount = current.hops.length - 1;
+      if (current.slug === to) {
+        matches.push(current);
+        if (matches.length >= limit) {
+          limited = stack.length > 0;
+          break;
+        }
+        continue;
+      }
+      if (hopCount >= maxHops) continue;
+
+      const candidates = traversalEdges(current.slug, direction, typeSet).reverse();
+      for (const { next, edge } of candidates) {
+        if (current.hops.includes(next)) continue;
+        stack.push({
+          slug: next,
+          hops: [...current.hops, next],
+          edges: [...current.edges, formatPathEdge(edge, current.slug, next)],
+        });
+      }
+    }
+
+    const uniqueMatches = uniquePathMatches(matches);
+    const rows = uniqueMatches
+      .map((row) => ({
+        hopCount: row.hops.length - 1,
+        hops: row.hops,
+        edges: row.edges,
+        byRelation: countEdges(row.edges, 'via'),
+      }))
+      .sort((a, b) => a.hopCount - b.hopCount || a.hops.join('\0').localeCompare(b.hops.join('\0')));
+    const lengthCounts = new Map();
+    for (const row of rows) {
+      const key = String(row.hopCount);
+      lengthCounts.set(key, (lengthCounts.get(key) || 0) + 1);
+    }
+
+    return {
+      operation: 'all_paths',
+      from,
+      to,
+      found: rows.length > 0,
+      direction,
+      maxHops,
+      totalPaths: rows.length,
+      limited,
+      shortestHopCount: rows[0]?.hopCount ?? null,
+      byLength: sortedCountObject(lengthCounts),
+      paths: rows,
+    };
   }
 
   function explainRelation(fromInput, toInput, options = {}) {
@@ -2091,6 +2159,19 @@ export function createOntologyEngine(artifact) {
     };
   }
 
+  function uniquePathMatches(matches) {
+    const seen = new Set();
+    const rows = [];
+    for (const row of matches) {
+      const relationKey = row.edges.map((edge) => edge.via).join('>');
+      const key = `${row.hops.join('>')}|${relationKey}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      rows.push(row);
+    }
+    return rows;
+  }
+
   function traversalEdges(slug, direction, typeSet) {
     const candidates = [];
     if (direction === 'outgoing' || direction === 'both' || direction === 'undirected') {
@@ -2299,6 +2380,7 @@ export function createOntologyEngine(artifact) {
     resolve,
     neighbors,
     path,
+    allPaths,
     explainRelation,
     reachability,
     patternWalk,

@@ -81,6 +81,37 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(result.edges.map((edge) => edge.via), ['dependencies', 'dependencies']);
   });
 
+  it('returns all bounded simple paths between two nodes', () => {
+    const result = queryCompiledOntology(artifact(), {
+      operation: 'all_paths',
+      from: 'capabilities/session',
+      to: 'auth-domain',
+      maxHops: 3,
+    });
+
+    assert.equal(result.operation, 'all_paths');
+    assert.equal(result.found, true);
+    assert.equal(result.totalPaths, 2);
+    assert.equal(result.shortestHopCount, 2);
+    assert.deepEqual(result.byLength, { 2: 2 });
+    assert.deepEqual(
+      result.paths.map((row) => ({
+        hops: row.hops,
+        relations: row.edges.map((edge) => edge.via),
+      })),
+      [
+        {
+          hops: ['capabilities/session', 'capabilities/login', 'domains/auth'],
+          relations: ['dependencies', 'dependencies'],
+        },
+        {
+          hops: ['capabilities/session', 'capabilities/login', 'domains/auth'],
+          relations: ['dependencies', 'domain'],
+        },
+      ],
+    );
+  });
+
   it('explains how two nodes relate through direct edges, paths, and shared neighbors', () => {
     const result = queryCompiledOntology(artifact(), {
       operation: 'explain_relation',
