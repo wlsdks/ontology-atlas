@@ -779,6 +779,97 @@ describe('queryCompiledOntology', () => {
     assert.equal(limited.edges.internal.limited, true);
   });
 
+  it('returns a domain-by-domain project map', () => {
+    const mapped = compileOntology(
+      [
+        doc('project', {
+          kind: 'project',
+          title: 'Project',
+          domains: ['domains/auth', 'domains/billing'],
+        }),
+        doc('domains/auth', {
+          kind: 'domain',
+          title: 'Auth',
+          capabilities: ['capabilities/login'],
+        }),
+        doc('domains/billing', {
+          kind: 'domain',
+          title: 'Billing',
+          capabilities: ['capabilities/invoice'],
+        }),
+        doc('capabilities/login', {
+          kind: 'capability',
+          title: 'Login',
+          domain: 'domains/auth',
+          elements: ['elements/token', 'src/auth/session.ts'],
+        }),
+        doc('capabilities/session', {
+          kind: 'capability',
+          title: 'Session',
+          domain: 'domains/auth',
+          depends_on: ['capabilities/login'],
+        }),
+        doc('capabilities/invoice', {
+          kind: 'capability',
+          title: 'Invoice',
+          domain: 'domains/billing',
+        }),
+        doc('elements/token', {
+          kind: 'element',
+          title: 'Token',
+        }),
+        doc('capabilities/orphan', {
+          kind: 'capability',
+          title: 'Orphan',
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const result = queryCompiledOntology(mapped, {
+      operation: 'project_map',
+      itemLimit: 1,
+    });
+
+    assert.equal(result.operation, 'project_map');
+    assert.equal(result.project, 'project');
+    assert.deepEqual(result.summary, {
+      nodes: 7,
+      domains: 2,
+      capabilities: 3,
+      elements: 1,
+      unassignedNodes: 0,
+      internalEdges: 9,
+      boundaryEdges: 0,
+      externalEdges: 1,
+      unresolvedEdges: 0,
+    });
+    assert.deepEqual(result.domains.map((domain) => domain.slug), [
+      'domains/auth',
+      'domains/billing',
+    ]);
+    assert.deepEqual(result.domains[0].summary, {
+      nodes: 4,
+      capabilities: 2,
+      elements: 1,
+      internalEdges: 5,
+      boundaryEdges: 0,
+      externalEdges: 1,
+      unresolvedEdges: 0,
+    });
+    assert.equal(result.domains[0].capabilities.total, 2);
+    assert.equal(result.domains[0].capabilities.limited, true);
+    assert.deepEqual(result.domains[0].capabilities.nodes.map((node) => node.slug), [
+      'capabilities/login',
+    ]);
+    assert.deepEqual(result.domains[0].elements.nodes.map((node) => node.slug), [
+      'elements/token',
+    ]);
+    assert.equal(result.domains[1].summary.capabilities, 1);
+    assert.equal(result.unassigned.total, 0);
+    assert.equal(result.hotspots[0].slug, 'capabilities/login');
+  });
+
   it('detects directed dependency cycles deterministically', () => {
     const cyclic = compileOntology(
       [

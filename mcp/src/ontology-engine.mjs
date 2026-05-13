@@ -39,6 +39,9 @@ export function queryCompiledOntology(artifact, query = {}) {
   if (operation === 'project_scope') {
     return engine.projectScope(query.slug ?? query.project, query);
   }
+  if (operation === 'project_map') {
+    return engine.projectMap(query.slug ?? query.project, query);
+  }
   if (operation === 'relation_check') {
     return engine.relationCheck(query);
   }
@@ -65,7 +68,7 @@ export function queryCompiledOntology(artifact, query = {}) {
   }
 
   throw new Error(
-    'operation must be one of: neighbors, path, impact, subgraph, overview, schema, facets, match_nodes, match_edges, node_profile, project_scope, relation_check, components, lineage, containment_tree, cycles, topological_order, recommend_relations, health.',
+    'operation must be one of: neighbors, path, impact, subgraph, overview, schema, facets, match_nodes, match_edges, node_profile, project_scope, project_map, relation_check, components, lineage, containment_tree, cycles, topological_order, recommend_relations, health.',
   );
 }
 
@@ -616,18 +619,7 @@ export function createOntologyEngine(artifact) {
       .map((slug) => nodeBySlug.get(slug))
       .filter(Boolean)
       .sort((a, b) => a.slug.localeCompare(b.slug));
-    const internalEdges = [];
-    const boundaryEdges = [];
-    const externalEdges = [];
-    const unresolvedEdges = [];
-
-    for (const edge of [...edges].sort(compareEdges)) {
-      if (!included.has(edge.from)) continue;
-      if (edge.resolved && included.has(edge.to)) internalEdges.push(edge);
-      else if (edge.resolved) boundaryEdges.push(edge);
-      else if (edge.external) externalEdges.push(edge);
-      else unresolvedEdges.push(edge);
-    }
+    const edgesByScope = partitionScopeEdges(included);
 
     return {
       operation: 'project_scope',
@@ -635,10 +627,10 @@ export function createOntologyEngine(artifact) {
       node: summarizeNode(nodeBySlug.get(project)),
       summary: {
         nodes: nodeRows.length,
-        internalEdges: internalEdges.length,
-        boundaryEdges: boundaryEdges.length,
-        externalEdges: externalEdges.length,
-        unresolvedEdges: unresolvedEdges.length,
+        internalEdges: edgesByScope.internal.length,
+        boundaryEdges: edgesByScope.boundary.length,
+        externalEdges: edgesByScope.external.length,
+        unresolvedEdges: edgesByScope.unresolved.length,
       },
       byKind: countBy(nodeRows, 'kind'),
       byDomain: countBy(nodeRows, 'domain'),
@@ -648,11 +640,57 @@ export function createOntologyEngine(artifact) {
         rows: nodeRows.slice(0, limit).map(summarizeNode),
       },
       edges: {
-        internal: scopeEdgeGroup(internalEdges, included, limit),
-        boundary: scopeEdgeGroup(boundaryEdges, included, limit),
-        external: scopeEdgeGroup(externalEdges, included, limit),
-        unresolved: scopeEdgeGroup(unresolvedEdges, included, limit),
+        internal: scopeEdgeGroup(edgesByScope.internal, included, limit),
+        boundary: scopeEdgeGroup(edgesByScope.boundary, included, limit),
+        external: scopeEdgeGroup(edgesByScope.external, included, limit),
+        unresolved: scopeEdgeGroup(edgesByScope.unresolved, included, limit),
       },
+    };
+  }
+
+  function projectMap(slugOrAlias, options = {}) {
+    const limit = normalizeLimit(options.limit ?? 50);
+    const itemLimit = normalizeLimit(options.itemLimit ?? 20);
+    const project = resolveProjectRoot(slugOrAlias);
+    const included = collectContainmentScope(project);
+    const scopedNodes = sortedNodesInScope(included);
+    const domainSlugs = scopedNodes
+      .filter((node) => node.kind === 'domain')
+      .map((node) => node.slug);
+    const covered = new Set([project]);
+    const domainRows = domainSlugs.map((domainSlug) => {
+      const domainScope = intersectSlugSets(collectContainmentScope(domainSlug), included);
+      for (const slug of domainScope) covered.add(slug);
+      return domainMapRow(domainSlug, domainScope, itemLimit);
+    });
+    const unassignedNodes = scopedNodes
+      .filter((node) => !covered.has(node.slug))
+      .sort((a, b) => a.slug.localeCompare(b.slug));
+    const edgesByScope = partitionScopeEdges(included);
+
+    return {
+      operation: 'project_map',
+      project,
+      node: summarizeNode(nodeBySlug.get(project)),
+      summary: {
+        nodes: scopedNodes.length,
+        domains: domainRows.length,
+        capabilities: scopedNodes.filter((node) => node.kind === 'capability').length,
+        elements: scopedNodes.filter((node) => node.kind === 'element').length,
+        unassignedNodes: unassignedNodes.length,
+        internalEdges: edgesByScope.internal.length,
+        boundaryEdges: edgesByScope.boundary.length,
+        externalEdges: edgesByScope.external.length,
+        unresolvedEdges: edgesByScope.unresolved.length,
+      },
+      limited: domainRows.length > limit,
+      domains: domainRows.slice(0, limit),
+      unassigned: {
+        total: unassignedNodes.length,
+        limited: unassignedNodes.length > itemLimit,
+        nodes: unassignedNodes.slice(0, itemLimit).map(summarizeNode),
+      },
+      hotspots: topHubs(scopedNodes, itemLimit),
     };
   }
 
@@ -854,6 +892,49 @@ export function createOntologyEngine(artifact) {
       }
     }
     return included;
+  }
+
+  function intersectSlugSets(left, right) {
+    return new Set([...left].filter((slug) => right.has(slug)));
+  }
+
+  function sortedNodesInScope(scopeSlugs) {
+    return [...scopeSlugs]
+      .map((slug) => nodeBySlug.get(slug))
+      .filter(Boolean)
+      .sort((a, b) => a.slug.localeCompare(b.slug));
+  }
+
+  function domainMapRow(domainSlug, domainScope, itemLimit) {
+    const scopedNodes = sortedNodesInScope(domainScope);
+    const edgesByScope = partitionScopeEdges(domainScope);
+    const capabilities = scopedNodes.filter((node) => node.kind === 'capability');
+    const elements = scopedNodes.filter((node) => node.kind === 'element');
+
+    return {
+      slug: domainSlug,
+      node: summarizeNode(nodeBySlug.get(domainSlug)),
+      summary: {
+        nodes: scopedNodes.length,
+        capabilities: capabilities.length,
+        elements: elements.length,
+        internalEdges: edgesByScope.internal.length,
+        boundaryEdges: edgesByScope.boundary.length,
+        externalEdges: edgesByScope.external.length,
+        unresolvedEdges: edgesByScope.unresolved.length,
+      },
+      capabilities: limitedNodeList(capabilities, itemLimit),
+      elements: limitedNodeList(elements, itemLimit),
+      hotspots: topHubs(scopedNodes, Math.min(itemLimit, 5)),
+    };
+  }
+
+  function limitedNodeList(rows, limit) {
+    return {
+      total: rows.length,
+      limited: rows.length > limit,
+      nodes: rows.slice(0, limit).map(summarizeNode),
+    };
   }
 
   function ancestorlessRootSlugs(excluded) {
@@ -1366,6 +1447,28 @@ export function createOntologyEngine(artifact) {
     return 'unresolved';
   }
 
+  function partitionScopeEdges(scopeSlugs) {
+    const internal = [];
+    const boundary = [];
+    const external = [];
+    const unresolved = [];
+
+    for (const edge of edges) {
+      if (!scopeSlugs.has(edge.from)) continue;
+      if (edge.resolved && scopeSlugs.has(edge.to)) internal.push(edge);
+      else if (edge.resolved) boundary.push(edge);
+      else if (edge.external) external.push(edge);
+      else unresolved.push(edge);
+    }
+
+    return {
+      internal: internal.sort(compareEdges),
+      boundary: boundary.sort(compareEdges),
+      external: external.sort(compareEdges),
+      unresolved: unresolved.sort(compareEdges),
+    };
+  }
+
   return {
     resolve,
     neighbors,
@@ -1379,6 +1482,7 @@ export function createOntologyEngine(artifact) {
     matchEdges,
     nodeProfile,
     projectScope,
+    projectMap,
     relationCheck,
     components,
     lineage,
