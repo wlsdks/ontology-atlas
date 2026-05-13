@@ -261,7 +261,7 @@ await test("compile_ontology — deterministic graph artifact + indexes", async 
   }
 });
 
-await test("query_ontology — compiled graph engine neighbors/path/all_paths/query_plan/centrality/explain_relation/reachability/pattern_walk/impact/blast_radius/subgraph/overview/schema/facets/match_nodes/match_edges/node_profile/domain_profile/domain_matrix/project_scope/project_map/relation_check/components/lineage/containment_tree/cycles/topological_order/recommend_relations/growth_plan/workspace_brief/health", async () => {
+await test("query_ontology — compiled graph engine neighbors/path/all_paths/query_plan/centrality/communities/explain_relation/reachability/pattern_walk/impact/blast_radius/subgraph/overview/schema/facets/match_nodes/match_edges/node_profile/domain_profile/domain_matrix/project_scope/project_map/relation_check/components/lineage/containment_tree/cycles/topological_order/recommend_relations/growth_plan/workspace_brief/health", async () => {
   const root = makeVault([
     {
       slug: "project",
@@ -421,6 +421,11 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
         operation: "centrality",
         types: ["depends_on"],
         limit: 2,
+      }),
+      callTool(33, "query_ontology", {
+        operation: "communities",
+        types: ["depends_on"],
+        limit: 3,
       }),
     ]);
     const neighbors = getCallParsed(responses, 2);
@@ -689,6 +694,16 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     ]);
     assert.deepEqual(centrality.rankings.bridges.map((row) => row.slug), [
       "capabilities/login",
+      "domains/auth",
+    ]);
+
+    const communities = getCallParsed(responses, 33);
+    assert.equal(communities.operation, "communities");
+    assert.equal(communities.summary.communities, 2);
+    assert.equal(communities.summary.largestSize, 3);
+    assert.deepEqual(communities.communities[0].nodes.map((node) => node.slug), [
+      "capabilities/login",
+      "capabilities/session",
       "domains/auth",
     ]);
   } finally {

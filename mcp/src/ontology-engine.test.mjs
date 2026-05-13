@@ -179,6 +179,64 @@ describe('queryCompiledOntology', () => {
     ]);
   });
 
+  it('detects deterministic ontology communities', () => {
+    const result = queryCompiledOntology(
+      compileOntology(
+        [
+          doc('domains/auth', {
+            kind: 'domain',
+            title: 'Auth',
+            capabilities: ['capabilities/login'],
+          }),
+          doc('capabilities/login', {
+            kind: 'capability',
+            title: 'Login',
+            depends_on: ['domains/auth'],
+          }),
+          doc('domains/billing', {
+            kind: 'domain',
+            title: 'Billing',
+            capabilities: ['capabilities/charge'],
+          }),
+          doc('capabilities/charge', {
+            kind: 'capability',
+            title: 'Charge',
+            depends_on: ['domains/billing'],
+          }),
+          doc('capabilities/standalone', {
+            kind: 'capability',
+            title: 'Standalone',
+          }),
+        ],
+        { includeIndexes: true },
+      ),
+      {
+        operation: 'communities',
+        types: ['depends_on', 'capabilities'],
+        limit: 10,
+      },
+    );
+
+    assert.equal(result.operation, 'communities');
+    assert.deepEqual(result.summary, {
+      communities: 3,
+      largestSize: 2,
+      singletonCount: 1,
+      crossCommunityEdges: 0,
+    });
+    assert.deepEqual(
+      result.communities.map((community) => ({
+        size: community.size,
+        nodes: community.nodes.map((node) => node.slug),
+      })),
+      [
+        { size: 2, nodes: ['capabilities/charge', 'domains/billing'] },
+        { size: 2, nodes: ['capabilities/login', 'domains/auth'] },
+        { size: 1, nodes: ['capabilities/standalone'] },
+      ],
+    );
+  });
+
   it('explains how two nodes relate through direct edges, paths, and shared neighbors', () => {
     const result = queryCompiledOntology(artifact(), {
       operation: 'explain_relation',

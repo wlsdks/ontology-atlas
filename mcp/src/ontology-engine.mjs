@@ -21,6 +21,9 @@ export function queryCompiledOntology(artifact, query = {}) {
   if (operation === 'centrality') {
     return engine.centrality(query);
   }
+  if (operation === 'communities') {
+    return engine.communities(query);
+  }
   if (operation === 'explain_relation') {
     return engine.explainRelation(query.from, query.to, query);
   }
@@ -101,7 +104,7 @@ export function queryCompiledOntology(artifact, query = {}) {
   }
 
   throw new Error(
-    'operation must be one of: neighbors, path, all_paths, query_plan, centrality, explain_relation, reachability, pattern_walk, impact, blast_radius, subgraph, overview, schema, facets, match_nodes, match_edges, node_profile, domain_profile, domain_matrix, project_scope, project_map, relation_check, components, lineage, containment_tree, cycles, topological_order, recommend_relations, growth_plan, workspace_brief, health.',
+    'operation must be one of: neighbors, path, all_paths, query_plan, centrality, communities, explain_relation, reachability, pattern_walk, impact, blast_radius, subgraph, overview, schema, facets, match_nodes, match_edges, node_profile, domain_profile, domain_matrix, project_scope, project_map, relation_check, components, lineage, containment_tree, cycles, topological_order, recommend_relations, growth_plan, workspace_brief, health.',
   );
 }
 
@@ -1475,6 +1478,109 @@ export function createOntologyEngine(artifact) {
     };
   }
 
+  function communities(options = {}) {
+    const limit = normalizeLimit(options.limit ?? 20);
+    const nodeLimit = normalizeLimit(options.nodeLimit ?? 25);
+    const iterations = normalizeIterations(options.iterations);
+    const typeSet = normalizeTypes(options.types);
+    const adjacency = undirectedAdjacencyFrom(nodes, edges, typeSet);
+    const labels = propagateCommunityLabels(adjacency, iterations);
+    const groupsByLabel = new Map();
+
+    for (const node of nodes) {
+      const label = labels.get(node.slug) || node.slug;
+      if (!groupsByLabel.has(label)) groupsByLabel.set(label, []);
+      groupsByLabel.get(label).push(node.slug);
+    }
+
+    const groups = [...groupsByLabel.entries()].map(([label, slugs]) => {
+      const sortedSlugs = [...slugs].sort();
+      const internalEdges = [];
+      const boundaryEdges = [];
+      const slugSet = new Set(sortedSlugs);
+      for (const edge of edges) {
+        if (!edge.resolved || !typeAllowed(edge.via, typeSet)) continue;
+        const fromIn = slugSet.has(edge.from);
+        const toIn = slugSet.has(edge.to);
+        if (fromIn && toIn) internalEdges.push(edge);
+        else if (fromIn || toIn) boundaryEdges.push(edge);
+      }
+      const groupNodes = sortedSlugs.map((slug) => nodeBySlug.get(slug)).filter(Boolean);
+      return {
+        label,
+        slugs: sortedSlugs,
+        size: sortedSlugs.length,
+        internalEdges: internalEdges.length,
+        boundaryEdges: boundaryEdges.length,
+        kinds: countBy(groupNodes, 'kind'),
+        domains: countBy(groupNodes, 'domain'),
+        representative: summarizeNode(
+          [...groupNodes].sort(
+            (a, b) =>
+              (b.inDegree || 0) + (b.outDegree || 0) - ((a.inDegree || 0) + (a.outDegree || 0)) ||
+              a.slug.localeCompare(b.slug),
+          )[0],
+        ),
+      };
+    });
+
+    groups.sort(
+      (a, b) =>
+        b.size - a.size ||
+        b.internalEdges - a.internalEdges ||
+        (a.representative?.slug || a.label).localeCompare(b.representative?.slug || b.label),
+    );
+
+    const communityBySlug = new Map();
+    groups.forEach((group, index) => {
+      for (const slug of group.slugs) communityBySlug.set(slug, index + 1);
+    });
+    const crossCommunityEdges = edges.filter(
+      (edge) =>
+        edge.resolved &&
+        typeAllowed(edge.via, typeSet) &&
+        communityBySlug.get(edge.from) !== communityBySlug.get(edge.to),
+    );
+
+    return {
+      operation: 'communities',
+      parameters: {
+        types: typeSet ? [...typeSet].sort() : null,
+        iterations,
+        limit,
+        nodeLimit,
+      },
+      summary: {
+        communities: groups.length,
+        largestSize: groups[0]?.size || 0,
+        singletonCount: groups.filter((group) => group.size === 1).length,
+        crossCommunityEdges: crossCommunityEdges.length,
+      },
+      limited: groups.length > limit,
+      communities: groups.slice(0, limit).map((group, index) => ({
+        id: index + 1,
+        label: group.label,
+        size: group.size,
+        internalEdges: group.internalEdges,
+        boundaryEdges: group.boundaryEdges,
+        kinds: group.kinds,
+        domains: group.domains,
+        representative: group.representative,
+        nodeLimited: group.slugs.length > nodeLimit,
+        nodes: group.slugs.slice(0, nodeLimit).map((slug) => summarizeNode(nodeBySlug.get(slug))),
+      })),
+      crossCommunityEdges: {
+        total: crossCommunityEdges.length,
+        limited: crossCommunityEdges.length > limit,
+        rows: crossCommunityEdges.slice(0, limit).map((edge) => ({
+          ...formatPathEdge(edge, edge.from, edge.to),
+          fromCommunity: communityBySlug.get(edge.from),
+          toCommunity: communityBySlug.get(edge.to),
+        })),
+      },
+    };
+  }
+
   function lineage(slugOrAlias, options = {}) {
     const center = resolve(slugOrAlias, 'slug');
     const depth = normalizeDepth(options.depth, 20);
@@ -2612,6 +2718,7 @@ export function createOntologyEngine(artifact) {
     allPaths,
     queryPlan,
     centrality,
+    communities,
     explainRelation,
     reachability,
     patternWalk,
@@ -2886,6 +2993,42 @@ function pageRankScores(nodes, outgoingEdgesBySlug, iterations) {
   return scores;
 }
 
+function undirectedAdjacencyFrom(nodes, edges, typeSet) {
+  const adjacency = new Map(nodes.map((node) => [node.slug, new Set()]));
+  for (const edge of edges) {
+    if (!edge.resolved || !typeAllowed(edge.via, typeSet)) continue;
+    adjacency.get(edge.from)?.add(edge.to);
+    adjacency.get(edge.to)?.add(edge.from);
+  }
+  return adjacency;
+}
+
+function propagateCommunityLabels(adjacency, iterations) {
+  const labels = new Map([...adjacency.keys()].map((slug) => [slug, slug]));
+  const slugs = [...adjacency.keys()].sort();
+  for (let iteration = 0; iteration < iterations; iteration += 1) {
+    let changed = false;
+    for (const slug of slugs) {
+      const counts = new Map();
+      for (const neighbor of [...(adjacency.get(slug) || [])].sort()) {
+        const label = labels.get(neighbor) || neighbor;
+        counts.set(label, (counts.get(label) || 0) + 1);
+      }
+      if (counts.size === 0) continue;
+      const nextLabel = [...counts.entries()].sort(
+        ([leftLabel, leftCount], [rightLabel, rightCount]) =>
+          rightCount - leftCount || leftLabel.localeCompare(rightLabel),
+      )[0][0];
+      if (labels.get(slug) !== nextLabel) {
+        labels.set(slug, nextLabel);
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+  return labels;
+}
+
 function compareCentralityRows(left, right) {
   if (right.pageRank !== left.pageRank) return right.pageRank - left.pageRank;
   if (right.degree !== left.degree) return right.degree - left.degree;
@@ -2902,6 +3045,7 @@ function normalizePlanTargetOperation(value) {
     'path',
     'all_paths',
     'centrality',
+    'communities',
     'explain_relation',
     'reachability',
     'impact',
