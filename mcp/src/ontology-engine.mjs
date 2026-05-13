@@ -2239,6 +2239,7 @@ export function createOntologyEngine(artifact) {
     const limit = normalizeLimit(options.limit ?? 25);
     const phaseFilter = normalizeStringSet(options.phases);
     const severityFilter = normalizeStringSet(options.severities);
+    const kindFilter = normalizeStringSet(options.kinds);
     const cycleResult = cycles({ limit, types: options.dependencyTypes ?? ['dependencies'] });
     const relationRecommendations = recommendRelations({ limit });
     const externalElementRefs = externalElementCandidates(limit);
@@ -2348,6 +2349,7 @@ export function createOntologyEngine(artifact) {
       if (options.executableOnly === true && !action.executable) return false;
       if (phaseFilter && !phaseFilter.has(action.phase)) return false;
       if (severityFilter && !severityFilter.has(action.severity)) return false;
+      if (kindFilter && !kindFilter.has(action.kind)) return false;
       return true;
     });
     const afterActionId = typeof options.afterActionId === 'string' && options.afterActionId.trim()
@@ -2385,6 +2387,7 @@ export function createOntologyEngine(artifact) {
         executableOnly: options.executableOnly === true,
         phases: phaseFilter ? [...phaseFilter].sort() : [],
         severities: severityFilter ? [...severityFilter].sort() : [],
+        kinds: kindFilter ? [...kindFilter].sort() : [],
       },
       cursor: {
         afterActionId,

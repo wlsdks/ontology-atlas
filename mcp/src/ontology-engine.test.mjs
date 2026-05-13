@@ -349,6 +349,7 @@ describe('queryCompiledOntology', () => {
       executableOnly: true,
       phases: ['link'],
       severities: ['warn'],
+      kinds: [],
     });
     assert.equal(result.summary.totalActions, 3);
     assert.equal(result.summary.filteredActions, 1);
@@ -383,12 +384,15 @@ describe('queryCompiledOntology', () => {
         operation: 'maintenance_plan',
         executableOnly: true,
         phases: ['repair'],
+        kinds: ['canonicalize_graph_arrays'],
         limit: 10,
       },
     );
 
     const action = result.actions.find((row) => row.kind === 'canonicalize_graph_arrays');
     assert.ok(action);
+    assert.deepEqual(result.filters.kinds, ['canonicalize_graph_arrays']);
+    assert.deepEqual(result.actions.map((row) => row.kind), ['canonicalize_graph_arrays']);
     assert.equal(result.summary.canonicalizationActions, 1);
     assert.equal(action.executable, true);
     assert.deepEqual(action.proposedAction, {
