@@ -311,6 +311,11 @@ describe('queryCompiledOntology', () => {
     });
     assert.deepEqual(result.byPhase, { link: 1, materialize: 1, review: 1 });
     assert.deepEqual(result.bySeverity, { info: 2, warn: 1 });
+    assert.deepEqual(result.byKind, {
+      add_missing_relation: 1,
+      materialize_external_element: 1,
+      unassigned_node: 1,
+    });
     assert.equal(result.cursor.afterActionId, null);
     assert.equal(result.cursor.found, true);
     assert.equal(result.cursor.startIndex, 0);
@@ -356,6 +361,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.summary.remainingActions, 1);
     assert.deepEqual(result.byPhase, { link: 1 });
     assert.deepEqual(result.bySeverity, { warn: 1 });
+    assert.deepEqual(result.byKind, { add_missing_relation: 1 });
     assert.deepEqual(result.actions.map((action) => action.kind), ['add_missing_relation']);
     assert.equal(result.actions[0].executable, true);
     assert.equal(result.nextExecutableAction.kind, 'add_missing_relation');
@@ -450,6 +456,7 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(missing.actions, []);
     assert.deepEqual(missing.byPhase, {});
     assert.deepEqual(missing.bySeverity, {});
+    assert.deepEqual(missing.byKind, {});
     assert.equal(missing.nextExecutableAction, null);
     assert.equal(missing.nextReviewAction, null);
   });

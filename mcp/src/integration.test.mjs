@@ -734,6 +734,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(maintenancePlan.summary.relationRecommendations, 1);
     assert.equal(maintenancePlan.summary.externalElementRefs, 1);
     assert.equal(maintenancePlan.cursor.found, true);
+    assert.equal(maintenancePlan.byKind.add_missing_relation, 1);
     assert.deepEqual(maintenancePlan.actions.slice(0, 2).map((action) => action.kind), [
       "add_missing_relation",
       "materialize_external_element",

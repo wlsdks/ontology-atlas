@@ -1837,6 +1837,7 @@ function compactPostWriteMaintenance(limit = 5) {
     cursor: result.cursor,
     byPhase: result.byPhase,
     bySeverity: result.bySeverity,
+    byKind: result.byKind,
     nextExecutableAction: compactMaintenanceAction(result.nextExecutableAction),
     nextReviewAction: compactMaintenanceAction(result.nextReviewAction),
     actions: result.actions.map(compactMaintenanceAction),

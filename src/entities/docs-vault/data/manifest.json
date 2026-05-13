@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-13T03:20:51.252Z",
+  "generatedAt": "2026-05-13T03:26:44.527Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -4226,8 +4226,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260509 (postcleanonboarding — CLI · MCP · Web 3 surface, 20 MCP tools, clean Codex setup smoke, current web E2E restored). Routes section UI 디테일은 R10 시점 snapshot — surface 자체와 mode branching 은 R15 까지 정확. routes UI microdetail 은 R10 후 변화 작아",
-      "wordCount": 4894,
-      "updatedAt": "2026-05-13T03:17:13.704Z",
+      "wordCount": 4897,
+      "updatedAt": "2026-05-13T03:22:58.372Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4705,8 +4705,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (kind 필터) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서 보존, missing 은 partial result) | | ",
-      "wordCount": 771,
-      "updatedAt": "2026-05-13T03:17:30.163Z",
+      "wordCount": 775,
+      "updatedAt": "2026-05-13T03:23:15.486Z",
       "linksOut": []
     },
     {
