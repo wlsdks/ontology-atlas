@@ -80,6 +80,16 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --limit N --json                       ${COLORS.dim}default limit 100${COLORS.reset}
   npx oh-my-ontology overview [vault]         Vault first-contact dashboard (counts + 분포 + 허브)
        --limit N --json                       ${COLORS.dim}허브 N 개 (default 10) · machine output${COLORS.reset}
+  npx oh-my-ontology hubs [vault]             Centrality 4 rankings — PageRank / Bridges / Authorities / Hubs
+       --limit N --json                       ${COLORS.dim}각 랭킹 N rows (default 10)${COLORS.reset}
+  npx oh-my-ontology blast-radius <slug>      이 노드 변경 시 영향받는 노드/관계 (refactor safety)
+       --depth N --direction incoming|outgoing|both --json
+  npx oh-my-ontology cycles [vault]           depends_on dependency cycle 검출
+       --max-hops N --json                    ${COLORS.dim}default maxDepth 8${COLORS.reset}
+  npx oh-my-ontology health [vault]           Graph 무결성 dashboard (5 checks)
+       --json                                 ${COLORS.dim}exit 0 만 healthy${COLORS.reset}
+  npx oh-my-ontology workspace-brief [vault]  Status + hotspots + project 요약 + next actions 한 화면
+       --json
   npx oh-my-ontology rename <old> <new>       Atomic rename — moves .md, redirects every backlink
        --confirm                              ${COLORS.dim}default dry-run (preview); --confirm to apply${COLORS.reset}
   npx oh-my-ontology merge <from> <into>      Atomic merge — redirect backlinks then delete fromSlug
@@ -369,6 +379,31 @@ if (SUBCOMMAND === 'path') {
 if (SUBCOMMAND === 'overview') {
   const { runOverview } = await import('./commands/overview.mjs');
   exit(await runOverview(ARGS.slice(1)));
+}
+
+if (SUBCOMMAND === 'hubs') {
+  const { runHubs } = await import('./commands/hubs.mjs');
+  exit(await runHubs(ARGS.slice(1)));
+}
+
+if (SUBCOMMAND === 'blast-radius') {
+  const { runBlastRadius } = await import('./commands/blast-radius.mjs');
+  exit(await runBlastRadius(ARGS.slice(1)));
+}
+
+if (SUBCOMMAND === 'cycles') {
+  const { runCycles } = await import('./commands/cycles.mjs');
+  exit(await runCycles(ARGS.slice(1)));
+}
+
+if (SUBCOMMAND === 'health') {
+  const { runHealth } = await import('./commands/health.mjs');
+  exit(await runHealth(ARGS.slice(1)));
+}
+
+if (SUBCOMMAND === 'workspace-brief') {
+  const { runWorkspaceBrief } = await import('./commands/workspace-brief.mjs');
+  exit(await runWorkspaceBrief(ARGS.slice(1)));
 }
 
 if (SUBCOMMAND === 'query') {
