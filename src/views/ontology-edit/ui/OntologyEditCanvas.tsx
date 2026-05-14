@@ -302,10 +302,11 @@ export function OntologyEditCanvas({
       });
     });
     // 자동정렬 / layoutMode 변경 시 transition 활성화 — 노드들이 새 위치로
-    // 부드럽게 슬라이드. fitView duration (400ms) 와 매칭되게 500ms 유지.
+    // 부드럽게 슬라이드. fitView duration (400ms) + transition duration (550ms)
+    // 후에도 안정화 시간 여유 둬 750ms 까지 클래스 유지.
     if (isAutoLayoutTrigger || isLayoutModeChange) {
       setIsLayoutAnimating(true);
-      const timer = setTimeout(() => setIsLayoutAnimating(false), 500);
+      const timer = setTimeout(() => setIsLayoutAnimating(false), 750);
       return () => clearTimeout(timer);
     }
   }, [baseNodes, autoLayoutToken, layoutMode]);
@@ -609,13 +610,19 @@ export function OntologyEditCanvas({
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        /* layout 변경 시 일시적 슬라이드 애니메이션 — fitView duration
-           (400ms) 와 매칭. 드래그 중엔 클래스 비활성이라 즉각 반응. */
+        /* layout 변경 시 일시적 슬라이드 애니메이션 — 550ms 부드러운
+           ease-out-quint 으로 노드가 새 좌표로 흘러감. 드래그 중엔 클래스
+           비활성이라 즉각 반응. edge 의 SVG path 도 같이 슬라이드 — opacity
+           만이 아니라 d 도 부드럽게 보간되도록 transition 추가. */
         .rf-layout-animating .react-flow__node {
-          transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
+          transition: transform 550ms cubic-bezier(0.22, 1, 0.36, 1);
         }
         .rf-layout-animating .react-flow__edge {
-          transition: opacity 400ms ease-out;
+          transition: opacity 550ms ease-out;
+        }
+        .rf-layout-animating .react-flow__edge-path,
+        .rf-layout-animating .react-flow__connection-path {
+          transition: d 550ms cubic-bezier(0.22, 1, 0.36, 1);
         }
         @media (prefers-reduced-motion: reduce) {
           .react-flow__node-atlas,
