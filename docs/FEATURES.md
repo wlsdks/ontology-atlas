@@ -14,7 +14,7 @@
 
 | Surface | Entry | Audience |
 |---|---|---|
-| **CLI** (R12 / R14 / R15+) | `oh-my-ontology init / list / validate / add / find / import / analyze / infer-imports / bootstrap / graph commands` | developer terminal — vault scaffold, daily exploration, bulk import, clean first graph |
+| **CLI** (R12 / R14 / R15+ · 24 commands) | `init / add / import / list / find / validate / query` (vault basics) · `analyze / infer-imports / bootstrap` (autonomous ingest) · `backlinks / orphans / path / rename / merge / delete` (graph CRUD) · `overview / hubs / blast-radius / cycles / health / workspace-brief / node / similar` (graph deep dive — `query_ontology` ops) | developer terminal — vault scaffold, daily exploration, bulk import, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 23 tools (15 read · 8 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — read for context · write back findings · bootstrap empty vault (R16 `analyze_repo_structure` · R17 `infer_imports`) |
 | **Web** (8 routes, R10 surface diet) | `pnpm dev` / static export | sigma topology · tree+ego · ERD builder · insights — graph visualization, mobile-friendly |
 
@@ -393,8 +393,11 @@ Run via `pnpm exec node mcp/src/index.js` (registered in user's `.mcp.json`). AI
 | Trigger | What | Where |
 |---|---|---|
 | **SessionStart hook** (implicit) | Vault census (kind counts + first 8 entries) auto-injected into agent's system context on session start | `.claude/hooks/inject-ontology-summary.sh` — silent in repos without a vault |
-| **`/ontology-sync` skill** (explicit) | "I'm done with this task — please sync the ontology now" loop. git diff + context → MCP write tools | `.claude/skills/ontology-sync/SKILL.md` |
+| **`/ontology-bootstrap` skill** (cold start) | Empty vault → first 5–15 nodes from code structure. `analyze_repo_structure` side-effect-zero → user picks candidates → land via batch writers | `.claude/skills/ontology-bootstrap/SKILL.md` |
+| **`/ontology-sync` skill** (code change) | "I'm done with this task — please sync the ontology now" loop. git diff + context → MCP write tools | `.claude/skills/ontology-sync/SKILL.md` |
+| **`/ontology-extract` skill** (prose ingress, R+) | User shares prose (meeting note / PR / RFC / Notion paragraph) → `find_evidence` + `similar_nodes` cross-check → candidate table → user picks → land. LLM hallucination guard via prose-source citation in body | `.claude/skills/ontology-extract/SKILL.md` |
 | **`mcp__oh-my-ontology__*` `instructions` field** (R13 v0.7.1) | Server's initialize response carries kind hierarchy, first-time workflow, write safety patterns — every connecting agent gets the discipline without trial-and-error | `mcp/src/index.js` |
+| **`.omotignore`** (R+) | Vault-root gitignore-style file. Patterns match `materialize_external_element` refs in `growth_plan` / `maintenance_plan` and skip them. Intentional external code (e.g. `src/**`, `cli/**`) stops surfacing as noise. `externalElementRefsIgnored` count exposed for transparency | `docs/ontology/.omotignore` (dogfood example) · `mcp/src/omot-ignore.mjs` |
 
 R14 also unified `add_concept` / CLI `add` / CLI `import` to a single per-kind frontmatter schema (`mcp/src/schema.mjs` ↔ `cli/src/lib/schema.mjs`) — three entry points, one shape.
 

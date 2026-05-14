@@ -6,7 +6,7 @@
 
 ## Project overview
 
-`oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology init/list/validate/add/find/import`) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (23 tools).
+`oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology` 24 commands — vault scaffold, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (23 tools).
 
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
@@ -61,10 +61,16 @@ src/                       FSD layers
   ├── entities/            business entities
   └── shared/              UI · lib · config primitives
 mcp/                       MCP server (the AI agent's surface) — npm pkg, 23 tools
-cli/                       CLI binary (developer's daily entry point) — npm pkg, R12 v0.2
-                           init / list / validate / add / find / import
+cli/                       CLI binary (developer's daily entry point) — npm pkg, 24 commands
+                           init / add / import / list / find / validate / query
+                           analyze / infer-imports / bootstrap
+                           backlinks / orphans / path / rename / merge / delete
+                           overview / hubs / blast-radius / cycles / health
+                           workspace-brief / node / similar
 docs/                      long-form docs
-docs/ontology/             this project's own ontology vault (dogfood — 26 nodes)
+docs/ontology/             this project's own ontology vault (dogfood — 28 nodes)
+                           `.omotignore` (gitignore-style) suppresses external
+                           element ref noise in growth_plan / maintenance_plan
 tests/                     Vitest unit + Playwright E2E
   └── contract/            cross-package contract tests (parser 4-way, validator 3-way)
 scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood walk (R12)
@@ -155,7 +161,14 @@ A 30-second read at the top of the task often replaces a 10-minute re-discovery 
 
 - It calls `analyze_repo_structure` once. **Side effect 0** — returns deterministic candidates (project + domains[] + capabilities[] + elements[] + suggestedRelations[]) by reading `package.json` / `README.md` H2 sections / `src/` folder layout (FSD or generic). Vault NOT modified.
 - Shows the candidates compactly, lets the user prune / refine, then lands the accepted ones via `add_concept` / `add_relation`. Single source of truth preserved — only the user (via your subsequent calls) writes to the vault.
-- Companion to `/ontology-sync` (incremental, post-bootstrap).
+- Companion to `/ontology-sync` (incremental, post-bootstrap) and `/ontology-extract` (prose ingress).
+
+**Extract from prose** (R+). When the user shares a meeting note, PR description, RFC draft, or any prose paragraph and asks to "extract ontology from this" or similar, use the **`/ontology-extract`** skill (`.claude/skills/ontology-extract/SKILL.md`):
+
+- Cross-checks the prose against the existing vault via `find_evidence` / `similar_nodes` first — duplicate avoidance is the primary value.
+- Proposes a small set of candidate nodes/edges (typically 0–3 per paragraph). Asks the user to pick which to land *before* writing.
+- Only confirmed candidates land via `add_concept` / `add_concepts` / `patch_concept` / `add_relation`. Hallucinated nodes are the failure mode; the prose-source quote in the body is the audit trail.
+- Distinguishes itself from `/ontology-sync` (code change input) and `/ontology-bootstrap` (cold start) — *three ingress paths* (code / code-change / prose) for the same vault.
 
 **Write at the end of a task** (the part that's easy to skip). When a unit of work introduced a new capability / element / domain, or renamed/folded an existing one, mirror the change in the vault:
 
@@ -200,7 +213,7 @@ A vault with no `kind: project` doc still works (no containment, all nodes orpha
 
 ### 프로젝트 개요
 
-`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology init/list/validate/add/find/import`) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (23 tools) 로 같은 `.md` 파일을 read/write.
+`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology` 24 명령 — vault scaffold, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (23 tools) 로 같은 `.md` 파일을 read/write.
 
 핵심 원칙 한 줄 (v3, R11 fire #25):
 
@@ -269,7 +282,14 @@ vault 는 개발자와 AI agent 가 **공유하는 mental model**. ontology 의 
 
 - `analyze_repo_structure` 1 회 호출. **side effect 0** — `package.json` / `README.md` H2 / `src/` 폴더 layout 읽어 deterministic 후보 반환. vault 변경 안 함.
 - 후보를 사용자에게 *5 줄 max* 요약 → confirm/pick/refine 분기 → 채택된 것만 `add_concept` / `add_relation`. 단일 source of truth 보존.
-- `/ontology-sync` 의 *cold-start* 짝 (sync 는 incremental, bootstrap 은 post-init).
+- `/ontology-sync` (incremental, code change) 와 `/ontology-extract` (prose ingress) 짝.
+
+**prose 에서 추출** (R+). 사용자가 회의록 / PR 본문 / RFC 한 단락 / Notion 페이지 한 단락 등 *prose* 를 보여주고 "ontology 로 정리해줘" / "여기서 추출해줘" 류 요청 시 **`/ontology-extract`** skill (`.claude/skills/ontology-extract/SKILL.md`):
+
+- `find_evidence` / `similar_nodes` 로 기존 vault 와 *먼저 cross-check* — duplicate 회피가 1차 가치.
+- 후보 노드/엣지를 *짧게* (단락당 0–3 개) 제안. write *전* 사용자에게 진행/일부/취소 선택 받음.
+- 확인 받은 것만 `add_concept` / `add_concepts` / `patch_concept` / `add_relation`. LLM hallucination 노드가 실패 모드 — body 의 prose-source 인용이 audit trail.
+- 세 ingress path 완성: `/ontology-bootstrap` (cold start, 코드) · `/ontology-sync` (code change) · **`/ontology-extract` (prose)**. 같은 vault, 다른 입력.
 
 **작업 끝에 write** (쉽게 빠뜨림). 한 작업 단위가 새 capability / element / domain 을 도입했거나 기존 것을 rename / 합쳤다면, vault 에 반영:
 
