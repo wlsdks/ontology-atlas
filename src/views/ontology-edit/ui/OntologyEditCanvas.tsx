@@ -32,7 +32,7 @@ import {
   type AlignAction,
   type AlignableNode,
 } from "../lib/align-nodes";
-import { resolveDomainTint } from "../lib/domain-color";
+import { resolveDomainTint } from "@/shared/lib/domain-color";
 
 const EDGE_TYPES = { ephemeral: EphemeralEdgeComponent };
 

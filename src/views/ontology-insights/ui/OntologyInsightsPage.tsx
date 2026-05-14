@@ -23,6 +23,29 @@ import {
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { EmptyState } from "@/shared/ui";
+import { resolveDomainTint } from "@/shared/lib/domain-color";
+
+/**
+ * 노드 row 좌측 accent bar 색 — 빌더의 도메인 grouping 과 시각 일관.
+ * domain 노드 자체만 자기 hue 로 tint (capability/element 는 domain 정보가
+ * KnowledgeGraphNode shape 에 직접 없어 자체 hue 미지원, follow-up).
+ */
+function rowAccentColor(node: { id: string; kind: string }): string | null {
+  if (node.kind !== 'domain') return null;
+  const tail = node.id.split('/').pop() ?? node.id;
+  return resolveDomainTint(tail).accent;
+}
+
+/**
+ * 노드 row 에 일관 적용하는 hover elevation + transition + 선택적 accent bar.
+ * 빌더의 노드 hover 패턴 (box-shadow 강화, scale 금지) 그대로 — 시각 시스템 일치.
+ */
+const ROW_BASE_CLASS =
+  "flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] " +
+  "bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[12px] " +
+  "transition-[border-color,box-shadow] duration-200 " +
+  "hover:border-[color:rgba(139,151,255,0.4)] " +
+  "hover:shadow-[0_4px_14px_rgba(94,106,210,0.18)]";
 
 /**
  * `/ontology/insights` — ontology 의 구조를 한눈에.
@@ -320,7 +343,11 @@ export function OntologyInsightsPage() {
                   <li key={node.id}>
                     <Link
                       href={buildOntologyNodeHref(node.id)}
-                      className="flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[12px] transition-colors hover:border-[color:rgba(94,106,210,0.32)]"
+                      className={ROW_BASE_CLASS}
+                      style={(() => {
+                        const accent = rowAccentColor(node);
+                        return accent ? { borderLeft: `3px solid ${accent}` } : undefined;
+                      })()}
                     >
                       <span className="w-5 shrink-0 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
                         {idx + 1}
@@ -378,7 +405,7 @@ export function OntologyInsightsPage() {
                   <li key={node.id}>
                     <Link
                       href={buildOntologyNodeHref(node.id)}
-                      className="flex items-center gap-2 rounded-md border border-[color:rgba(255,179,71,0.18)] bg-[color:rgba(255,179,71,0.04)] px-2.5 py-1.5 text-[12px] transition-colors hover:border-[color:rgba(255,179,71,0.40)] hover:bg-[color:rgba(255,179,71,0.08)]"
+                      className="flex items-center gap-2 rounded-md border border-[color:rgba(255,179,71,0.18)] bg-[color:rgba(255,179,71,0.04)] px-2.5 py-1.5 text-[12px] transition-[border-color,box-shadow,background-color] duration-200 hover:border-[color:rgba(255,179,71,0.40)] hover:bg-[color:rgba(255,179,71,0.08)] hover:shadow-[0_4px_14px_rgba(255,179,71,0.18)]"
                     >
                       <span className="inline-flex shrink-0 items-center rounded-full border border-[color:rgba(255,179,71,0.30)] bg-[color:rgba(255,179,71,0.08)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.95)]">
                         {kindLabel(node.kind)}

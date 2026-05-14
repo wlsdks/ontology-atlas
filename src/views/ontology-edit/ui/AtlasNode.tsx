@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { resolveDomainTint } from "../lib/domain-color";
+import { resolveDomainTint } from "@/shared/lib/domain-color";
 
 /**
  * Atlas custom node — kind 별 디자인 폴리시.
