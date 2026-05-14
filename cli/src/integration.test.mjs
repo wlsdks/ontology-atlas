@@ -1172,6 +1172,44 @@ await test('node — slug 누락 시 usage + exit 1', async () => {
   assert.match(clean, /slug is required/);
 });
 
+await test('similar — title 매치로 graph fixture 의 비슷한 노드 발견', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['similar', 'foo capability', root]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /similar to:.*foo capability/);
+    // fixture 의 capabilities/foo 가 매치되어야 (title 'Foo' 에 매치)
+    assert.match(clean, /capabilities\/(foo|bar)/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('similar --json — JSON 응답 matches/score/signals 키 노출', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['similar', 'foo', root, '--json']);
+    assert.equal(r.code, 0);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'similar_nodes');
+    assert.ok(Array.isArray(data.matches));
+    if (data.matches.length > 0) {
+      assert.ok(typeof data.matches[0].score === 'number');
+      assert.ok(data.matches[0].signals);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('similar — query / --slug 둘 다 없으면 usage + exit 1', async () => {
+  const r = await run(['similar']);
+  assert.equal(r.code, 1);
+  const clean = stripAnsi(r.stderr);
+  assert.match(clean, /query is required/);
+});
+
 await test('rename — dry-run preview, no disk change', async () => {
   const root = await buildGraphFixture();
   try {

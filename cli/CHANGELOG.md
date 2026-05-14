@@ -1,5 +1,15 @@
 # Changelog — oh-my-ontology (CLI)
 
+## 0.10.0 — 2026-05-14
+
+### Added — `similar` 명령 (24th, query_ontology similar_nodes wrap)
+
+- `oh-my-ontology similar "<title>" [vault] [--slug X] [--kind K] [--limit N] [--json]` — vault 에서 비슷한 노드 찾기. MCP `query_ontology({operation: 'similar_nodes'})` thin wrapper.
+- 두 입력 모드: 자연어 title 또는 `--slug` (둘 다도 가능 — slug-similarity + title-similarity 둘 다 계산).
+- 출력: score (red ≥ 0.5 / yellow 0.25-0.5 / dim < 0.25) + signal breakdown (slug / title / kind / domain / neighbors 어디서 매치) + shared neighbors + 행동 가이드 한 줄 (top score 별 patch vs add 권장).
+- `/ontology-extract` skill 의 핵심 cross-check (duplicate 회피) 가 CLI 에서도 1 줄. dev 가 "내 머리 속 개념이 vault 에 이미 있나" 즉시 확인.
+- 신규 integration test 3건 (title 매치 / --json / usage).
+
 ## 0.9.0 — 2026-05-14
 
 ### Added — `node` 명령 (23rd, query_ontology node_profile wrap)

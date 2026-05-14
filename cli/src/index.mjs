@@ -92,6 +92,8 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --json
   npx oh-my-ontology node <slug> [vault]      한 노드 deep dive — header · lineage · incoming/outgoing edges
        --json                                 ${COLORS.dim}relation 별 그룹 + 노드 title 동봉${COLORS.reset}
+  npx oh-my-ontology similar "<title>" [vault] vault 에서 비슷한 노드 찾기 (duplicate 회피, /ontology-extract 짝)
+       --slug X --kind K --limit N --json    ${COLORS.dim}slug 기반 / kind 필터 / 결과 N / machine${COLORS.reset}
   npx oh-my-ontology rename <old> <new>       Atomic rename — moves .md, redirects every backlink
        --confirm                              ${COLORS.dim}default dry-run (preview); --confirm to apply${COLORS.reset}
   npx oh-my-ontology merge <from> <into>      Atomic merge — redirect backlinks then delete fromSlug
@@ -411,6 +413,11 @@ if (SUBCOMMAND === 'workspace-brief') {
 if (SUBCOMMAND === 'node') {
   const { runNodeProfile } = await import('./commands/node-profile.mjs');
   exit(await runNodeProfile(ARGS.slice(1)));
+}
+
+if (SUBCOMMAND === 'similar') {
+  const { runSimilar } = await import('./commands/similar.mjs');
+  exit(await runSimilar(ARGS.slice(1)));
 }
 
 if (SUBCOMMAND === 'query') {
