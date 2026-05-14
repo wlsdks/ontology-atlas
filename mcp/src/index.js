@@ -614,7 +614,8 @@ const TOOLS = [
     name: 'compile_ontology',
     description:
       'Compile the whole markdown vault into a deterministic graph artifact: canonical nodes, edges, aliases, graph issues, graph-array canonicalization actions, and optional adjacency indexes. ' +
-      'This is the compiler-style read path for graph-database-like use: call it before advanced reasoning, indexing, export, or non-developer-friendly graph views. Includes a stable semantic graphHash and maxMtime for cache invalidation. side effect 0.',
+      'This is the compiler-style read path for graph-database-like use: call it before advanced reasoning, indexing, export, or non-developer-friendly graph views. Includes a stable semantic graphHash and maxMtime for cache invalidation. side effect 0. ' +
+      'Large vaults (100+ nodes) can exceed the MCP token cap with the default full payload — use `summary: true` for cheap polling (counts + graphHash, no arrays), or `nodesLimit/nodesOffset` / `edgesLimit/edgesOffset` to slice arrays. The response includes `nodesPagination` / `edgesPagination` meta with `{offset, limit, total, returned, hasMore, nextOffset}` when sliced.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -622,6 +623,27 @@ const TOOLS = [
           type: 'boolean',
           description:
             'When true, include indexes `{out, in, byKind, byDomain, edgeById, aliasToSlug}`. Defaults false to keep payload smaller.',
+        },
+        summary: {
+          type: 'boolean',
+          description:
+            'When true, omit `nodes` / `edges` / `aliases` / `ambiguousAliases` / `canonicalizationActions` / `indexes` arrays — return only `graphHash`, `maxMtime`, counts (`nodeCount`/`edgeCount`/`aliasCount`/...), and aggregate `byKind`/`byDomain` as counts. Cheap polling for cache invalidation and graph-size assessment.',
+        },
+        nodesLimit: {
+          type: 'number',
+          description: 'Max nodes to return. Pair with `nodesOffset` to paginate. Omit for unlimited (backward compat).',
+        },
+        nodesOffset: {
+          type: 'number',
+          description: 'Starting index in the sorted nodes array. Defaults 0.',
+        },
+        edgesLimit: {
+          type: 'number',
+          description: 'Max edges to return. Pair with `edgesOffset` to paginate.',
+        },
+        edgesOffset: {
+          type: 'number',
+          description: 'Starting index in the sorted edges array. Defaults 0.',
         },
       },
     },
@@ -1787,10 +1809,25 @@ function queryConceptsTool({ filter, limit }) {
   };
 }
 
-function compileOntologyTool({ includeIndexes } = {}) {
+function compileOntologyTool({
+  includeIndexes,
+  summary,
+  nodesLimit,
+  nodesOffset,
+  edgesLimit,
+  edgesOffset,
+} = {}) {
   const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), {
     includeIndexes: includeIndexes === true,
+    summary: summary === true,
+    nodesLimit: typeof nodesLimit === 'number' ? nodesLimit : undefined,
+    nodesOffset: typeof nodesOffset === 'number' ? nodesOffset : undefined,
+    edgesLimit: typeof edgesLimit === 'number' ? edgesLimit : undefined,
+    edgesOffset: typeof edgesOffset === 'number' ? edgesOffset : undefined,
   });
+  // summary mode — artifact 자체가 카운트/aggregate. wrapper 의 추가 summary
+  // stats 불필요 (carter 가 중복됨). 그대로 반환.
+  if (summary === true) return artifact;
   return {
     ...artifact,
     summary: {
