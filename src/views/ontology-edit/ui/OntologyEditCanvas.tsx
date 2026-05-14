@@ -564,24 +564,27 @@ export function OntologyEditCanvas({
         .react-flow__node-atlas:hover {
           filter: brightness(1.06);
         }
-        /* Handle (connection point) — 기본 9x9. 노드 hover 시 12x12 + glow,
-           핸들 직접 hover 시 14x14 + 더 강한 glow → 'drag here' 신호 강화. */
+        /* Handle (connection point) — n8n 스타일 항상 visible port. 기본 10x10
+           + 옅은 인디고 ring 으로 '여기서 끌어서 연결' 항상 인지 가능. 노드/
+           핸들 hover 시 단계적 enlarge + 짙은 ring. crosshair 커서가 'drag' 신호. */
         .react-flow__handle {
-          width: 9px;
-          height: 9px;
+          width: 10px;
+          height: 10px;
+          cursor: crosshair;
+          box-shadow: 0 0 0 2px rgba(94, 106, 210, 0.14);
           transition: width 160ms ease-out, height 160ms ease-out,
                       box-shadow 160ms ease-out, opacity 160ms ease-out;
         }
         .react-flow__node-atlas:hover .react-flow__handle {
           width: 12px;
           height: 12px;
-          box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.18);
+          box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.24);
         }
         .react-flow__handle.connectingto,
         .react-flow__handle:hover {
           width: 14px;
           height: 14px;
-          box-shadow: 0 0 0 4px rgba(94, 106, 210, 0.28);
+          box-shadow: 0 0 0 4px rgba(94, 106, 210, 0.36);
         }
         .react-flow__edge-path {
           transition: stroke-width 180ms ease-out, filter 180ms ease-out;
