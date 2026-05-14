@@ -511,13 +511,20 @@ export function OntologyEditCanvas({
           box-shadow: 0 0 0 4px rgba(94, 106, 210, 0.28);
         }
         .react-flow__edge-path {
-          transition: stroke-width 180ms ease-out;
+          transition: stroke-width 180ms ease-out, filter 180ms ease-out;
         }
         .react-flow__edge {
           animation: rfEdgeAppear 240ms ease-out;
         }
+        /* n8n 스타일 hover — 굵기 + soft indigo halo. drop-shadow 가 SVG
+           stroke 둘레로 부드러운 후광. relation overlay 도 hover 시엔 강조. */
         .react-flow__edge:hover .react-flow__edge-path {
-          stroke-width: 2.5px;
+          stroke-width: 2.6px;
+          filter: drop-shadow(0 0 4px rgba(139, 151, 255, 0.55));
+        }
+        /* 화살표 marker 도 hover 시 같이 또렷하게. */
+        .react-flow__edge:hover .react-flow__arrowhead {
+          filter: drop-shadow(0 0 3px rgba(139, 151, 255, 0.55));
         }
         /* 새 노드 / edge mount 시 부드러운 fade-in — 역동성 + 사용자가
            '추가됐다' 인지 빠름. id 새로 생긴 노드만 적용 (layout

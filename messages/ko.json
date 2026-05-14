@@ -703,7 +703,8 @@
           "dependencies": "의존",
           "relates": "관련",
           "contains": "포함",
-          "describes": "설명"
+          "describes": "설명",
+          "domains": "도메인"
         }
       },
       "inspector": {

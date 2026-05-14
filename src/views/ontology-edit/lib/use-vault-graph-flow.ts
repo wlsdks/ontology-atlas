@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, useMemo } from "react";
-import type { Edge, Node } from "@xyflow/react";
+import { MarkerType, type Edge, type Node } from "@xyflow/react";
 import dagre from "@dagrejs/dagre";
 import Graph from "graphology";
 import forceAtlas2 from "graphology-layout-forceatlas2";
@@ -74,14 +74,37 @@ export function useVaultGraphFlow(
 const NODE_WIDTH = 220;
 const NODE_HEIGHT = 60;
 
-const NEIGHBOR_KEYS = [
+// 의미상 부모→자식 hierarchy 를 만드는 keys. 이들 엣지가 dagre rank 계산을
+// 주도해서 project → domain → capability → element 의 LR 골격을 형성한다.
+// `domains` 가 R14 schema 에서 project 의 array 키 — 빠지면 골격이 안 그려져
+// 사선 relates 가 화면을 잡아먹는다.
+const CONTAINMENT_KEYS = [
+  "domains",
   "capabilities",
   "elements",
+  "contains",
+] as const;
+
+// 횡단 관계 — rank 에 영향 주지 않고 overlay 로만 그려진다. 같은 kind 두
+// 노드가 서로 relates 라도 같은 column 에 머물러야 사선이 폭증하지 않음.
+const RELATION_KEYS = [
   "dependencies",
   "relates",
-  "contains",
   "describes",
 ] as const;
+
+const NEIGHBOR_KEYS = [
+  ...CONTAINMENT_KEYS,
+  ...RELATION_KEYS,
+] as const;
+
+const CONTAINMENT_KEY_SET: ReadonlySet<string> = new Set(CONTAINMENT_KEYS);
+
+type SemanticType = "containment" | "relation";
+
+function semanticTypeOf(key: string): SemanticType {
+  return CONTAINMENT_KEY_SET.has(key) ? "containment" : "relation";
+}
 
 /**
  * 순수 함수 — manifest → xyflow Node[] / Edge[]. 테스트용 export.
@@ -123,9 +146,17 @@ export function buildVaultGraphFlow(
     return null;
   }
 
-  // Edge 페어 (sourceSlug → targetSlug) 를 layout 전에 한 번 모은다.
-  // dagre / 미래의 다른 layout 알고리즘 모두 이 raw 페어 list 가 필요.
-  const rawEdgePairs: Array<[string, string]> = [];
+  // Edge 페어를 한 번에 수집 — frontmatter key 와 semanticType 까지 같이
+  // tag. layout 은 containment 만 사용 (rank skeleton), 렌더는 전체 사용.
+  // 같은 (source, target) 페어는 *처음 본 key* 만 유지 (containment 가
+  // 먼저 등장하도록 NEIGHBOR_KEYS 순서가 containment 우선).
+  interface EdgeRecord {
+    source: string;
+    target: string;
+    key: string;
+    semanticType: SemanticType;
+  }
+  const edgeRecords: EdgeRecord[] = [];
   const seenPair = new Set<string>();
   for (const doc of ontologyDocs) {
     for (const key of NEIGHBOR_KEYS) {
@@ -138,20 +169,30 @@ export function buildVaultGraphFlow(
         const pairKey = `${doc.slug}->${resolved}`;
         if (seenPair.has(pairKey)) continue;
         seenPair.add(pairKey);
-        rawEdgePairs.push([doc.slug, resolved]);
+        edgeRecords.push({
+          source: doc.slug,
+          target: resolved,
+          key,
+          semanticType: semanticTypeOf(key),
+        });
       }
     }
   }
 
-  // 자동 layout — 사용자 선호에 따라 dagre (default, kind 계층 LR) 또는
-  // force (FA2 organic 분포) 두 가지. dagre 는 ontology 의 project → domain
-  // → capability → element 흐름이 자연스럽게 좌→우 계층, force 는 토폴로지
-  // 와 같이 노드 사이 인력/척력 시뮬레이션. 사용자가 drag 한 노드는 그대로
-  // 우선 (수동 배치 보존).
+  // 자동 layout — dagre 는 containment 엣지만 받는다. relates / dependencies
+  // / describes 가 rank 에 끼면 같은 kind 끼리 column 이 갈라져 사선 폭증.
+  // force 는 모든 엣지로 자연스럽게 인력/척력 분포.
+  const containmentPairs: Array<[string, string]> = edgeRecords
+    .filter((e) => e.semanticType === "containment")
+    .map((e) => [e.source, e.target]);
+  const allPairs: Array<[string, string]> = edgeRecords.map((e) => [
+    e.source,
+    e.target,
+  ]);
   const fallbackPositions =
     layoutMode === "force"
-      ? computeForceLayout(ontologyDocs, rawEdgePairs)
-      : computeDagreLayout(ontologyDocs, rawEdgePairs);
+      ? computeForceLayout(ontologyDocs, allPairs)
+      : computeDagreLayout(ontologyDocs, containmentPairs);
   const nodes: Node[] = ontologyDocs.map((doc) => {
     // frontmatter.canvasPosition: { x, y } 가 있으면 우선. 없으면 dagre fallback.
     // 사용자가 빌더에서 drag-stop 시 canvasPosition patch — 다음 mount 부터
@@ -204,41 +245,58 @@ export function buildVaultGraphFlow(
     };
   });
 
-  // edge style / label 풍부 결정 — frontmatter array 키별 톤. raw pair 는
-  // 이미 위에서 dedup 됐고, 여기서 같은 (source,target) 에 대해 처음 매칭된
-  // key 의 style 적용. 같은 페어가 두 키에 있으면 첫 번째만.
-  const seenEdges = new Set<string>();
-  const edges: Edge[] = [];
-  for (const doc of ontologyDocs) {
-    for (const key of NEIGHBOR_KEYS) {
-      const value = doc.frontmatter[key];
-      if (!Array.isArray(value)) continue;
-      for (const ref of value) {
-        if (typeof ref !== "string") continue;
-        const resolved = resolveRef(ref);
-        if (!resolved || resolved === doc.slug) continue;
-        const edgeId = `${doc.slug}--${key}-->${resolved}`;
-        if (seenEdges.has(edgeId)) continue;
-        seenEdges.add(edgeId);
-        edges.push({
-          id: edgeId,
-          source: doc.slug,
-          target: resolved,
-          type: "default",
-          label: resolveEdgeLabel(key),
-          labelStyle: edgeLabelStyle,
-          labelBgStyle: edgeLabelBgStyle,
-          labelBgPadding: [6, 4] as [number, number],
-          labelBgBorderRadius: 4,
-          style: edgeStrokeStyleByKey(key),
-          animated: false,
-          // vault edge 는 frontmatter 진실원이라 캔버스 Del 로 삭제 금지.
-          // 인스펙터의 array editor (-) 버튼만 patch 권한.
-          deletable: false,
-        });
-      }
-    }
-  }
+  // edge 렌더 — 위에서 모은 edgeRecords 를 xyflow Edge[] 로 변환. n8n 스타일:
+  //  - containment → smoothstep + 둥근 모서리 (borderRadius 12) + 화살표 marker
+  //  - dependencies → bezier 곡선 + 화살표 marker (방향성 의존 강조)
+  //  - relates / describes → 양방향 약한 overlay, marker 없음
+  // **라벨은 기본 비표시** — 시각 노이즈 주범, hover/inspector 가 담당.
+  // 라벨 텍스트는 data.frontmatterKey 로만 노출, edgeLabelOf 는 향후 hover
+  // 단계에서 호출. 지금은 미사용 분기 회피용으로 호출하지 않음.
+  void resolveEdgeLabel;
+  const edges: Edge[] = edgeRecords.map((rec) => {
+    const id = `${rec.source}--${rec.key}-->${rec.target}`;
+    const isContainment = rec.semanticType === "containment";
+    const isDirectional =
+      isContainment || rec.key === "dependencies";
+    const stroke = edgeStrokeStyleByKey(rec.key);
+    return {
+      id,
+      source: rec.source,
+      target: rec.target,
+      type: isContainment ? "smoothstep" : "default",
+      // smoothstep 모서리를 n8n 처럼 둥글게. 5(default) 는 거의 직각으로
+      // 보임, 12 면 부드러운 곡선 인상.
+      ...(isContainment
+        ? { pathOptions: { borderRadius: 12, offset: 18 } }
+        : {}),
+      style: stroke,
+      animated: false,
+      // 방향성 있는 엣지 (containment / depends_on) 에 화살표 marker. 색은
+      // stroke 와 매칭해서 시각 일관성. relates / describes 는 대칭 관계라
+      // marker 생략.
+      ...(isDirectional
+        ? {
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              width: 16,
+              height: 16,
+              color: typeof stroke.stroke === "string"
+                ? stroke.stroke
+                : "rgba(139, 151, 255, 0.78)",
+            },
+          }
+        : {}),
+      // Inspector / 디버그 / 향후 hover UI 에서 의미를 알 수 있게 metadata
+      // 노출. semanticType 으로 스타일/필터 분기.
+      data: {
+        semanticType: rec.semanticType,
+        frontmatterKey: rec.key,
+      },
+      // vault edge 는 frontmatter 진실원이라 캔버스 Del 로 삭제 금지.
+      // 인스펙터의 array editor (-) 버튼만 patch 권한.
+      deletable: false,
+    };
+  });
 
   return { nodes, edges };
 }
@@ -356,34 +414,36 @@ function computeForceLayout(
   return map;
 }
 
-const edgeLabelStyle = {
-  fontSize: 10,
-  fill: "rgba(220, 226, 240, 0.96)",
-  fontWeight: 600,
-};
-const edgeLabelBgStyle = {
-  fill: "rgba(14, 16, 22, 0.92)",
-  stroke: "rgba(94, 106, 210, 0.32)",
-  strokeWidth: 1,
-};
-
 function edgeStrokeStyleByKey(key: string): CSSProperties {
-  if (key === "contains" || key === "capabilities" || key === "elements") {
-    return { stroke: "rgba(139, 151, 255, 0.66)", strokeWidth: 1.5 };
+  // n8n 스타일 — 굵은 indigo cable 이 골격. solid 선 + 화살표 marker (caller).
+  if (
+    key === "contains" ||
+    key === "capabilities" ||
+    key === "elements" ||
+    key === "domains"
+  ) {
+    return { stroke: "rgba(139, 151, 255, 0.85)", strokeWidth: 1.9 };
   }
+  // Dependencies — 방향성 있는 의존, dashed indigo + 화살표 marker (caller).
   if (key === "dependencies") {
-    return { stroke: "rgba(94, 106, 210, 0.46)", strokeWidth: 1.25 };
+    return {
+      stroke: "rgba(139, 151, 255, 0.62)",
+      strokeWidth: 1.45,
+      strokeDasharray: "6 4",
+    };
   }
+  // relates / describes — 양방향 overlay, marker 없음. 골격을 가리지 않으면서
+  // *읽힐 만큼* 가시 (이전 0.18 회귀 후 0.5 로).
   if (key === "describes") {
     return {
-      stroke: "rgba(180, 188, 220, 0.4)",
-      strokeWidth: 1,
+      stroke: "rgba(180, 188, 220, 0.5)",
+      strokeWidth: 1.1,
       strokeDasharray: "2 3",
     };
   }
   return {
-    stroke: "rgba(180, 188, 220, 0.32)",
-    strokeWidth: 1,
+    stroke: "rgba(180, 188, 220, 0.5)",
+    strokeWidth: 1.1,
     strokeDasharray: "4 4",
   };
 }

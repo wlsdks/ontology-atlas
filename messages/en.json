@@ -703,7 +703,8 @@
           "dependencies": "depends",
           "relates": "relates",
           "contains": "contains",
-          "describes": "describes"
+          "describes": "describes",
+          "domains": "domain"
         }
       },
       "inspector": {

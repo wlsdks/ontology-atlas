@@ -117,4 +117,121 @@ describe("buildVaultGraphFlow", () => {
     );
     expect(result.edges).toEqual([]);
   });
+
+  // ─────────────────────────────────────────────────────────────────────
+  // Layout contract — 선 꼬임 회귀 차단. Containment (capabilities /
+  // elements / contains / domains) 만 dagre rank 에 들어가야 계층이
+  // 클리어해진다. relates / dependencies / describes 가 rank 에 끼면 같은
+  // kind 의 두 노드가 다른 column 으로 흩어져 사선 엣지가 폭증.
+  // ─────────────────────────────────────────────────────────────────────
+
+  it("containment chain 으로 LR 계층이 형성된다 (project → domain → capability → element)", () => {
+    const result = buildVaultGraphFlow(
+      makeManifest([
+        makeDoc({
+          slug: "project",
+          frontmatter: {
+            kind: "project",
+            domains: ["foo"],
+          },
+        }),
+        makeDoc({
+          slug: "domains/foo",
+          frontmatter: {
+            kind: "domain",
+            title: "Foo",
+            capabilities: ["bar"],
+          },
+        }),
+        makeDoc({
+          slug: "capabilities/bar",
+          frontmatter: {
+            kind: "capability",
+            title: "Bar",
+            elements: ["baz"],
+          },
+        }),
+        makeDoc({
+          slug: "elements/baz",
+          frontmatter: { kind: "element", title: "Baz" },
+        }),
+      ]),
+      { layoutMode: "dagre" },
+    );
+    const xOf = (id: string) =>
+      result.nodes.find((n) => n.id === id)?.position.x ?? NaN;
+    // LR 계층 — 좌→우 단조 증가.
+    expect(xOf("project")).toBeLessThan(xOf("domains/foo"));
+    expect(xOf("domains/foo")).toBeLessThan(xOf("capabilities/bar"));
+    expect(xOf("capabilities/bar")).toBeLessThan(xOf("elements/baz"));
+  });
+
+  it("relates 엣지는 rank 에 영향 주지 않는다 — 같은 kind 끼리는 같은 column", () => {
+    // 두 capability 가 서로 relates. 옛 버전은 rank 에 들어가서 b 가
+    // a 보다 한 단계 우측. fix 후엔 둘 다 같은 rank (x 동일).
+    const result = buildVaultGraphFlow(
+      makeManifest([
+        makeDoc({
+          slug: "capabilities/a",
+          frontmatter: {
+            kind: "capability",
+            title: "A",
+            relates: ["capabilities/b"],
+          },
+        }),
+        makeDoc({
+          slug: "capabilities/b",
+          frontmatter: { kind: "capability", title: "B" },
+        }),
+      ]),
+      { layoutMode: "dagre" },
+    );
+    const xA = result.nodes.find((n) => n.id === "capabilities/a")?.position.x;
+    const xB = result.nodes.find((n) => n.id === "capabilities/b")?.position.x;
+    expect(xA).toBe(xB);
+  });
+
+  it("엣지 data 에 semanticType 이 표시된다 (containment | relation)", () => {
+    const result = buildVaultGraphFlow(
+      makeManifest([
+        makeDoc({
+          slug: "domains/foo",
+          frontmatter: {
+            kind: "domain",
+            title: "Foo",
+            capabilities: ["bar"],
+          },
+        }),
+        makeDoc({
+          slug: "capabilities/bar",
+          frontmatter: {
+            kind: "capability",
+            title: "Bar",
+            relates: ["baz"],
+            dependencies: ["qux"],
+          },
+        }),
+        makeDoc({
+          slug: "capabilities/baz",
+          frontmatter: { kind: "capability", title: "Baz" },
+        }),
+        makeDoc({
+          slug: "capabilities/qux",
+          frontmatter: { kind: "capability", title: "Qux" },
+        }),
+      ]),
+    );
+    const byKey = Object.fromEntries(
+      result.edges.map((e) => [`${e.source}->${e.target}`, e]),
+    );
+    expect(byKey["domains/foo->capabilities/bar"]?.data).toMatchObject({
+      semanticType: "containment",
+    });
+    expect(byKey["capabilities/bar->capabilities/baz"]?.data).toMatchObject({
+      semanticType: "relation",
+    });
+    expect(byKey["capabilities/bar->capabilities/qux"]?.data).toMatchObject({
+      semanticType: "relation",
+    });
+  });
 });
