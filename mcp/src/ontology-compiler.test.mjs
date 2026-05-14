@@ -192,4 +192,103 @@ describe('compileOntology', () => {
     assert.deepEqual(clean.canonicalizationActions, []);
     assert.equal(dirty.graphHash, clean.graphHash);
   });
+
+  it('summary: true returns counts + aggregates but no array bulk', () => {
+    const result = compileOntology(
+      [
+        doc('project', { kind: 'project', capabilities: ['login', 'logout'] }),
+        doc('capabilities/login', { kind: 'capability', domain: 'auth' }),
+        doc('capabilities/logout', { kind: 'capability', domain: 'auth' }),
+        doc('elements/jwt', { kind: 'element', domain: 'auth' }),
+      ],
+      { summary: true },
+    );
+    assert.equal(result.nodeCount, 4);
+    assert.equal(typeof result.graphHash, 'string');
+    // 각 노드가 slug + tail alias → 4 node 중 3 개가 path-style (tail 분리) →
+    // 1 + 2*3 = 7
+    assert.equal(result.aliasCount, 7);
+    assert.deepEqual(result.byKind, {
+      capability: 2,
+      element: 1,
+      project: 1,
+    });
+    assert.deepEqual(result.byDomain, { auth: 3 });
+    // arrays should NOT be present
+    assert.equal(result.nodes, undefined);
+    assert.equal(result.edges, undefined);
+    assert.equal(result.aliases, undefined);
+    assert.equal(result.indexes, undefined);
+  });
+
+  it('summary hash matches full compile hash (same graph)', () => {
+    const docs = [
+      doc('project', { kind: 'project', domains: ['auth'] }),
+      doc('domains/auth', { kind: 'domain', capabilities: ['login'] }),
+      doc('capabilities/login', { kind: 'capability', domain: 'auth' }),
+    ];
+    const full = compileOntology(docs);
+    const summary = compileOntology(docs, { summary: true });
+    assert.equal(summary.graphHash, full.graphHash);
+    assert.equal(summary.nodeCount, full.nodeCount);
+    assert.equal(summary.edgeCount, full.edgeCount);
+  });
+
+  it('nodesLimit / nodesOffset slice nodes with pagination meta', () => {
+    const docs = ['a', 'b', 'c', 'd', 'e'].map((s) =>
+      doc(`capabilities/${s}`, { kind: 'capability' }),
+    );
+    const page1 = compileOntology(docs, { nodesLimit: 2, nodesOffset: 0 });
+    assert.equal(page1.nodes.length, 2);
+    assert.equal(page1.nodes[0].slug, 'capabilities/a');
+    assert.deepEqual(page1.nodesPagination, {
+      offset: 0,
+      limit: 2,
+      total: 5,
+      returned: 2,
+      hasMore: true,
+      nextOffset: 2,
+    });
+
+    const page2 = compileOntology(docs, { nodesLimit: 2, nodesOffset: 2 });
+    assert.equal(page2.nodes[0].slug, 'capabilities/c');
+    assert.equal(page2.nodesPagination.hasMore, true);
+
+    const page3 = compileOntology(docs, { nodesLimit: 2, nodesOffset: 4 });
+    assert.equal(page3.nodes.length, 1);
+    assert.equal(page3.nodesPagination.hasMore, false);
+    assert.equal(page3.nodesPagination.nextOffset, null);
+  });
+
+  it('edgesLimit / edgesOffset slice edges independently of nodes', () => {
+    const docs = [
+      doc('project', {
+        kind: 'project',
+        capabilities: ['login', 'logout', 'signup', 'reset'],
+      }),
+      doc('capabilities/login', { kind: 'capability' }),
+      doc('capabilities/logout', { kind: 'capability' }),
+      doc('capabilities/signup', { kind: 'capability' }),
+      doc('capabilities/reset', { kind: 'capability' }),
+    ];
+    const result = compileOntology(docs, { edgesLimit: 2, edgesOffset: 1 });
+    assert.equal(result.edges.length, 2);
+    assert.equal(result.edgesPagination.total, 4);
+    assert.equal(result.edgesPagination.offset, 1);
+    assert.equal(result.edgesPagination.hasMore, true);
+    assert.equal(result.edgesPagination.nextOffset, 3);
+    // nodes 그대로 (별도 pagination 안 적용)
+    assert.equal(result.nodes.length, 5);
+    assert.equal(result.nodesPagination, undefined);
+  });
+
+  it('no pagination meta when limits omitted (backward compat)', () => {
+    const result = compileOntology([
+      doc('a', { kind: 'capability' }),
+      doc('b', { kind: 'capability' }),
+    ]);
+    assert.equal(result.nodes.length, 2);
+    assert.equal(result.nodesPagination, undefined);
+    assert.equal(result.edgesPagination, undefined);
+  });
 });

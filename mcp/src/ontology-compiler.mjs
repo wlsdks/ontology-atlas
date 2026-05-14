@@ -4,8 +4,22 @@ import { GRAPH_ARRAY_KEYS, collectNeighborRefs, normalizeRelationRefs } from './
 
 const COMPILER_VERSION = 1;
 
+/**
+ * `summary: true` 면 nodes / edges / aliases 배열을 생략하고 카운트/aggregate
+ * 만 반환 — AI agent 가 graphHash 변화 감지 + 사이즈 판단용 cheap call. 큰
+ * vault (100+ 노드) 에서 토큰 한도 초과 회피.
+ *
+ * `nodesLimit / nodesOffset` (또는 `edgesLimit / edgesOffset`) 가 있으면 그
+ * 배열을 slice 해서 `nodesPagination: { offset, limit, total, hasMore,
+ * nextOffset }` 메타와 함께 반환. summary 가 우선 (둘 다 주면 summary 만).
+ */
 export function compileOntology(docs, options = {}) {
   const includeIndexes = options.includeIndexes === true;
+  const summary = options.summary === true;
+  const nodesLimit = toNonNegInt(options.nodesLimit);
+  const nodesOffset = toNonNegInt(options.nodesOffset) ?? 0;
+  const edgesLimit = toNonNegInt(options.edgesLimit);
+  const edgesOffset = toNonNegInt(options.edgesOffset) ?? 0;
   const nodeMap = new Map();
   const aliasEntries = new Map();
 
@@ -149,17 +163,55 @@ export function compileOntology(docs, options = {}) {
     issues,
   });
 
+  const nodeCount = nodes.length;
+  const edgeCount = edges.length;
+  const resolvedEdgeCount = edges.filter((edge) => edge.resolved).length;
+  const externalEdgeCount = edges.filter((edge) => edge.external).length;
+  const unresolvedEdgeCount = edges.filter(
+    (edge) => !edge.resolved && !edge.external,
+  ).length;
+  const maxMtime = Math.max(0, ...nodes.map((node) => Number(node.mtime) || 0));
+
+  // summary mode — 배열 전부 omit, 카운트와 aggregate 만. 큰 vault 에서
+  // AI agent 가 토큰 한도 초과 없이 graphHash / 변화 감지 / 사이즈 판단 가능.
+  // byKind / byDomain 은 *slug list* 가 아닌 *count* 로 응축.
+  // 응답에 marker 안 둠 — 호출자가 자기가 요청한 거 안다.
+  if (summary) {
+    return {
+      version: COMPILER_VERSION,
+      graphHash,
+      maxMtime,
+      nodeCount,
+      edgeCount,
+      resolvedEdgeCount,
+      externalEdgeCount,
+      unresolvedEdgeCount,
+      aliasCount: aliases.length,
+      ambiguousAliasCount: ambiguousAliases.length,
+      issueCount: issues.length,
+      canonicalizationActionCount: canonicalizationActions.length,
+      byKind: countByGroup(nodes, 'kind'),
+      byDomain: countByGroup(nodes, 'domain'),
+    };
+  }
+
+  // Pagination — slice + meta. 미지정 시 전체 반환 (backward compat).
+  const slicedNodes = sliceWithMeta(nodes, nodesOffset, nodesLimit);
+  const slicedEdges = sliceWithMeta(edges, edgesOffset, edgesLimit);
+
   return {
     version: COMPILER_VERSION,
     graphHash,
-    maxMtime: Math.max(0, ...nodes.map((node) => Number(node.mtime) || 0)),
-    nodeCount: nodes.length,
-    edgeCount: edges.length,
-    resolvedEdgeCount: edges.filter((edge) => edge.resolved).length,
-    externalEdgeCount: edges.filter((edge) => edge.external).length,
-    unresolvedEdgeCount: edges.filter((edge) => !edge.resolved && !edge.external).length,
-    nodes,
-    edges,
+    maxMtime,
+    nodeCount,
+    edgeCount,
+    resolvedEdgeCount,
+    externalEdgeCount,
+    unresolvedEdgeCount,
+    nodes: slicedNodes.items,
+    edges: slicedEdges.items,
+    ...(slicedNodes.paginated ? { nodesPagination: slicedNodes.meta } : {}),
+    ...(slicedEdges.paginated ? { edgesPagination: slicedEdges.meta } : {}),
     aliases,
     ambiguousAliases,
     issues,
@@ -167,6 +219,47 @@ export function compileOntology(docs, options = {}) {
     indexes: includeIndexes
       ? { out, in: incoming, byKind, byDomain, edgeById, aliasToSlug: aliasToSlugIndex }
       : undefined,
+  };
+}
+
+function toNonNegInt(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.floor(value));
+}
+
+function countByGroup(nodes, key) {
+  const counts = {};
+  for (const node of nodes) {
+    const value = node[key];
+    if (typeof value !== 'string' || !value.trim()) continue;
+    counts[value] = (counts[value] || 0) + 1;
+  }
+  // 알파벳 sort — deterministic
+  return Object.fromEntries(
+    Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)),
+  );
+}
+
+function sliceWithMeta(items, offset, limit) {
+  const total = items.length;
+  if (limit === null && offset === 0) {
+    return { items, paginated: false };
+  }
+  const start = Math.min(offset, total);
+  const end = limit === null ? total : Math.min(start + limit, total);
+  const slice = items.slice(start, end);
+  const hasMore = end < total;
+  return {
+    items: slice,
+    paginated: true,
+    meta: {
+      offset: start,
+      limit: limit ?? total - start,
+      total,
+      returned: slice.length,
+      hasMore,
+      nextOffset: hasMore ? end : null,
+    },
   };
 }
 
