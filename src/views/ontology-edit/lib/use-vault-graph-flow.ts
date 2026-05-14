@@ -107,6 +107,25 @@ function semanticTypeOf(key: string): SemanticType {
 }
 
 /**
+ * 노드 카드 라벨용 — 트레일링 괄호 메타데이터 strip.
+ *
+ *   "CLI Developer Entry (16 commands incl. bootstrap)"
+ *     → "CLI Developer Entry"
+ *   "Ontology Hub — Mode-Aware (Q1=(a))"
+ *     → "Ontology Hub — Mode-Aware"
+ *   "Mode-Aware Adapter"        // 괄호 없음 → 그대로
+ *
+ * 조건: 마지막 `)` 가 문자열 끝, 그 이전에 매칭되는 `(`, 그리고 그 앞에 본문
+ * 텍스트가 있을 때만. 중간 괄호 (예: "Foo (bar) baz") 는 건드리지 않음.
+ * Inspector / hover tooltip 은 원본 title 그대로 사용 — 카드 라벨만 짧아짐.
+ */
+export function stripTrailingParenthetical(title: string): string {
+  const trimmed = title.trim();
+  const match = trimmed.match(/^(.+?)\s+\(.+\)\s*$/);
+  return match ? match[1].trim() : trimmed;
+}
+
+/**
  * 순수 함수 — manifest → xyflow Node[] / Edge[]. 테스트용 export.
  *
  * options:
@@ -214,6 +233,9 @@ export function buildVaultGraphFlow(
     const pos = persistedPos ?? fallbackPositions.get(doc.slug) ?? { x: 0, y: 0 };
     const kind = String(doc.frontmatter.kind);
     const title = doc.title || doc.slug;
+    // 카드 라벨은 짧게 (트레일링 괄호 strip), inspector / hover tooltip 은
+    // 원본 title 그대로 (description 으로 노출).
+    const labelTitle = stripTrailingParenthetical(title);
     const description =
       typeof doc.frontmatter.description === "string"
         ? doc.frontmatter.description
@@ -223,7 +245,9 @@ export function buildVaultGraphFlow(
       type: "atlas",
       position: pos,
       data: {
-        label: `${resolveKindLabel(kind)} · ${title}`,
+        label: `${resolveKindLabel(kind)} · ${labelTitle}`,
+        // 원본 title — inspector / tooltip 이 짧은 라벨 아닌 풀 텍스트 필요할 때.
+        fullTitle: title,
         kind,
         ephemeral: false,
         vault: true,

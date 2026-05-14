@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { VaultManifest, VaultDoc } from "@/entities/docs-vault";
-import { buildVaultGraphFlow } from "./use-vault-graph-flow";
+import {
+  buildVaultGraphFlow,
+  stripTrailingParenthetical,
+} from "./use-vault-graph-flow";
 
 function makeDoc(partial: Partial<VaultDoc> & { slug: string }): VaultDoc {
   return {
@@ -104,6 +107,34 @@ describe("buildVaultGraphFlow", () => {
       ]),
     );
     expect(result.edges).toEqual([]);
+  });
+
+  it("노드 카드 라벨은 트레일링 괄호 메타 strip (fullTitle 은 원본 유지)", () => {
+    const result = buildVaultGraphFlow(
+      makeManifest([
+        makeDoc({
+          slug: "capabilities/cli",
+          title: "CLI Developer Entry (16 commands incl. bootstrap)",
+          frontmatter: {
+            kind: "capability",
+            title: "CLI Developer Entry (16 commands incl. bootstrap)",
+          },
+        }),
+        makeDoc({
+          slug: "capabilities/no-parens",
+          title: "Plain Title",
+          frontmatter: { kind: "capability", title: "Plain Title" },
+        }),
+      ]),
+      { kindLabelOf: () => "역량" },
+    );
+    const cli = result.nodes.find((n) => n.id === "capabilities/cli");
+    const plain = result.nodes.find((n) => n.id === "capabilities/no-parens");
+    expect(cli?.data.label).toBe("역량 · CLI Developer Entry");
+    expect(cli?.data.fullTitle).toBe(
+      "CLI Developer Entry (16 commands incl. bootstrap)",
+    );
+    expect(plain?.data.label).toBe("역량 · Plain Title");
   });
 
   it("self-edge 는 추가 안 함", () => {
@@ -233,5 +264,29 @@ describe("buildVaultGraphFlow", () => {
     expect(byKey["capabilities/bar->capabilities/qux"]?.data).toMatchObject({
       semanticType: "relation",
     });
+  });
+});
+
+describe("stripTrailingParenthetical", () => {
+  it("트레일링 괄호 메타 strip", () => {
+    expect(
+      stripTrailingParenthetical("CLI Developer Entry (16 commands incl. bootstrap)"),
+    ).toBe("CLI Developer Entry");
+  });
+  it("중첩 괄호도 trailing 그룹이면 전체 strip", () => {
+    expect(
+      stripTrailingParenthetical("Ontology Hub — Mode-Aware (Q1=(a))"),
+    ).toBe("Ontology Hub — Mode-Aware");
+  });
+  it("괄호 없으면 그대로", () => {
+    expect(stripTrailingParenthetical("Mode-Aware Adapter")).toBe(
+      "Mode-Aware Adapter",
+    );
+  });
+  it("중간 괄호 + 뒤 텍스트는 strip 안 함", () => {
+    expect(stripTrailingParenthetical("Foo (bar) baz")).toBe("Foo (bar) baz");
+  });
+  it("괄호로 시작하는 타이틀은 그대로", () => {
+    expect(stripTrailingParenthetical("(Internal)")).toBe("(Internal)");
   });
 });
