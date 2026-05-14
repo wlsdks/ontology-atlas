@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { resolveDomainTint } from "../lib/domain-color";
 
 /**
  * Atlas custom node — kind 별 디자인 폴리시.
@@ -11,6 +12,7 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
  * - glow / 보라핑크 / scale hover X
  * - rounded + soft shadow (정적, 무채색 alpha)
  * - vault (실선 border) vs ephemeral (dashed border) 시각 구분
+ * - 같은 도메인 노드는 같은 hue 좌측 accent bar (4px) — 그룹 시각화
  */
 export interface AtlasNodeData {
   label: string;
@@ -18,7 +20,10 @@ export interface AtlasNodeData {
   ephemeral?: boolean;
   /** vault 노드 frontmatter.description — hover 시 native title tooltip 으로 노출. */
   description?: string;
-  /** kindLabel 별도 (예: '프로젝트' / '도메인'). label 안에 이미 prefix 로 들어감. */
+  /** 원본 title (트레일링 괄호 strip 전) — tooltip / inspector 가 풀 텍스트 노출. */
+  fullTitle?: string;
+  /** 도메인 grouping 키. capability/element 의 frontmatter.domain, domain 자기 tail. */
+  domainSlug?: string | null;
   [key: string]: unknown;
 }
 
@@ -65,11 +70,23 @@ export function AtlasNode({ data, selected }: NodeProps) {
   const borderWidth = isEphemeral ? 2 : 1;
   const borderColor = isEphemeral ? "rgba(255, 179, 71, 0.55)" : tone.border;
   const ephemeralBadgeColor = "rgba(255, 179, 71, 0.95)";
-  // hover 시 native browser tooltip — description 있으면 frontmatter 미리보기,
-  // 없으면 label 만. 사용자가 클릭 안 해도 노드 정체 빠르게 확인.
+  // hover 시 native browser tooltip — description / fullTitle 노출.
+  // fullTitle 이 있으면 카드 짧은 라벨 대신 풀 텍스트 + description.
+  const hoverHeader =
+    typeof nodeData.fullTitle === "string" && nodeData.fullTitle
+      ? nodeData.fullTitle
+      : nodeData.label;
   const hoverTitle = nodeData.description
-    ? `${nodeData.label}\n\n${nodeData.description}`
-    : nodeData.label;
+    ? `${hoverHeader}\n\n${nodeData.description}`
+    : hoverHeader;
+  // 도메인 tint — 같은 도메인 노드끼리 시각 그룹화. domain 자체 노드 + capability /
+  // element 가 도메인 일치하면 같은 hue. project / vault-readme 는 null tint.
+  const domainTint = resolveDomainTint(
+    typeof nodeData.domainSlug === "string" ? nodeData.domainSlug : null,
+  );
+  // ephemeral 은 amber 신호색이 강해서 도메인 tint 적용 안 함 (혼동 방지).
+  // domain 노드 자기 카드도 자기 색으로 hue 진하게 (좌측 4px bar, bg tint).
+  const showDomainTint = !isEphemeral && nodeData.domainSlug;
   return (
     <div
       title={hoverTitle}
@@ -77,11 +94,19 @@ export function AtlasNode({ data, selected }: NodeProps) {
         minWidth: 220,
         minHeight: 60,
         padding: "12px 16px",
+        paddingLeft: showDomainTint ? 18 : 16,
         borderRadius: 12,
         border: `${borderWidth}px ${borderStyle} ${borderColor}`,
+        // 좌측 4px accent bar 가 domain 시각 그룹의 anchor. ephemeral 은
+        // amber 강조라 적용 X (잘못된 신호 혼합 회피).
+        borderLeft: showDomainTint
+          ? `4px solid ${domainTint.accent}`
+          : `${borderWidth}px ${borderStyle} ${borderColor}`,
         background: isEphemeral
           ? "rgba(255, 179, 71, 0.06)"
-          : tone.bg,
+          : showDomainTint
+            ? `linear-gradient(to right, ${domainTint.bg}, ${tone.bg})`
+            : tone.bg,
         color: "var(--color-text-primary)",
         boxShadow: selected
           ? `0 0 0 2px ${isEphemeral ? "rgba(255, 179, 71, 0.6)" : tone.accent}, 0 10px 22px rgba(0, 0, 0, 0.36)`

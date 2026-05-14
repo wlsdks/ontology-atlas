@@ -126,6 +126,27 @@ export function stripTrailingParenthetical(title: string): string {
 }
 
 /**
+ * 노드의 domain grouping 키 결정. UI tint / swimlane 분기용.
+ *  - domain 자체 → tail slug ("domains/ai-agent-partner" → "ai-agent-partner")
+ *  - capability / element → frontmatter.domain (inline 단일 string)
+ *  - project / vault-readme / 기타 → null (그룹화 안 함)
+ */
+export function resolveNodeDomainSlug(
+  doc: VaultDoc,
+  kind: string,
+): string | null {
+  if (kind === "domain") {
+    const tail = doc.slug.split("/").pop() ?? doc.slug;
+    return tail || null;
+  }
+  if (kind === "capability" || kind === "element") {
+    const dom = doc.frontmatter.domain;
+    return typeof dom === "string" && dom ? dom : null;
+  }
+  return null;
+}
+
+/**
  * 순수 함수 — manifest → xyflow Node[] / Edge[]. 테스트용 export.
  *
  * options:
@@ -240,6 +261,10 @@ export function buildVaultGraphFlow(
       typeof doc.frontmatter.description === "string"
         ? doc.frontmatter.description
         : "";
+    // 도메인 grouping 용 — capability / element 의 frontmatter.domain (inline
+    // 단일 string), domain 자체는 자기 slug 의 tail. project / vault-readme 는
+    // null (그룹화 없음).
+    const domainSlug = resolveNodeDomainSlug(doc, kind);
     return {
       id: doc.slug,
       type: "atlas",
@@ -252,6 +277,7 @@ export function buildVaultGraphFlow(
         ephemeral: false,
         vault: true,
         description,
+        domainSlug,
       },
       width: NODE_WIDTH,
       height: NODE_HEIGHT,

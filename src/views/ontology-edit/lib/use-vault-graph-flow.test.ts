@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { VaultManifest, VaultDoc } from "@/entities/docs-vault";
 import {
   buildVaultGraphFlow,
+  resolveNodeDomainSlug,
   stripTrailingParenthetical,
 } from "./use-vault-graph-flow";
 
@@ -135,6 +136,34 @@ describe("buildVaultGraphFlow", () => {
       "CLI Developer Entry (16 commands incl. bootstrap)",
     );
     expect(plain?.data.label).toBe("역량 · Plain Title");
+  });
+
+  it("노드 data 에 domainSlug 가 들어간다 (capability/element=frontmatter.domain, domain=자기 tail)", () => {
+    const result = buildVaultGraphFlow(
+      makeManifest([
+        makeDoc({
+          slug: "domains/foo",
+          frontmatter: { kind: "domain", title: "Foo" },
+        }),
+        makeDoc({
+          slug: "capabilities/bar",
+          frontmatter: { kind: "capability", title: "Bar", domain: "foo" },
+        }),
+        makeDoc({
+          slug: "elements/baz",
+          frontmatter: { kind: "element", title: "Baz", domain: "foo" },
+        }),
+        makeDoc({
+          slug: "project",
+          frontmatter: { kind: "project", title: "P" },
+        }),
+      ]),
+    );
+    const byId = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
+    expect(byId["domains/foo"]?.data.domainSlug).toBe("foo");
+    expect(byId["capabilities/bar"]?.data.domainSlug).toBe("foo");
+    expect(byId["elements/baz"]?.data.domainSlug).toBe("foo");
+    expect(byId["project"]?.data.domainSlug).toBeNull();
   });
 
   it("self-edge 는 추가 안 함", () => {
@@ -288,5 +317,54 @@ describe("stripTrailingParenthetical", () => {
   });
   it("괄호로 시작하는 타이틀은 그대로", () => {
     expect(stripTrailingParenthetical("(Internal)")).toBe("(Internal)");
+  });
+});
+
+describe("resolveNodeDomainSlug", () => {
+  const make = (slug: string, kind: string, fm: Record<string, unknown> = {}) =>
+    ({
+      slug,
+      path: `${slug}.md`,
+      title: slug,
+      tags: [],
+      frontmatter: { kind, title: slug, ...fm },
+      headings: [],
+      excerpt: "",
+      wordCount: 0,
+      updatedAt: "2026-05-14T00:00:00Z",
+      linksOut: [],
+    }) as VaultDoc;
+
+  it("domain → 자기 tail slug", () => {
+    expect(
+      resolveNodeDomainSlug(make("domains/ai-agent-partner", "domain"), "domain"),
+    ).toBe("ai-agent-partner");
+  });
+  it("capability → frontmatter.domain", () => {
+    expect(
+      resolveNodeDomainSlug(
+        make("capabilities/x", "capability", { domain: "foo" }),
+        "capability",
+      ),
+    ).toBe("foo");
+  });
+  it("element → frontmatter.domain", () => {
+    expect(
+      resolveNodeDomainSlug(
+        make("elements/y", "element", { domain: "bar" }),
+        "element",
+      ),
+    ).toBe("bar");
+  });
+  it("project → null", () => {
+    expect(resolveNodeDomainSlug(make("project", "project"), "project")).toBeNull();
+  });
+  it("frontmatter.domain 없으면 null", () => {
+    expect(
+      resolveNodeDomainSlug(
+        make("capabilities/z", "capability"),
+        "capability",
+      ),
+    ).toBeNull();
   });
 });
