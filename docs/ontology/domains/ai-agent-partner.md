@@ -2,7 +2,7 @@
 slug: domains/ai-agent-partner
 kind: domain
 title: AI Agent Partner
-capabilities: [mcp-conflict-guard, mcp-server, ontology-bootstrap-skill, ontology-sync-skill, session-start-ontology-context]
+capabilities: [mcp-conflict-guard, mcp-server, ontology-bootstrap-skill, ontology-extract-skill, ontology-sync-skill, session-start-ontology-context]
 elements: [.claude/hooks/inject-ontology-summary.sh, mcp-sdk, mcp/src/index.js, mcp/src/parser.mjs, mcp/src/vault.mjs]
 relates: [domains/ontology-core, domains/vault-local-first]
 ---
