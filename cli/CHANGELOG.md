@@ -1,5 +1,19 @@
 # Changelog — oh-my-ontology (CLI)
 
+## 0.8.0 — 2026-05-14
+
+### Added — 5 graph commands (18–22, query_ontology operations)
+
+mission v3 의 *dev primary surface* (CLI) 와 *AI agent primary surface* (MCP) 의 권한 격차 추가 축소. `overview` (0.7.0) 에 이어 `query_ontology` 의 5 operation 직접 노출.
+
+- `oh-my-ontology hubs [vault] [--limit N]` — centrality 4 rankings (PageRank / Bridges / Authorities / Hubs)
+- `oh-my-ontology blast-radius <slug> [--depth N] [--direction incoming|outgoing|both]` — 이 노드 변경 시 영향받는 노드/관계 (refactor safety). risk low/medium/high + byKind/byDomain breakdown
+- `oh-my-ontology cycles [vault] [--max-hops N]` — depends_on dependency cycle 검출. 0 cycle 시 그린 "graph clean ✓", 그 외 cycle 별 슬러그 chain 출력
+- `oh-my-ontology health [vault]` — 5 graph 무결성 check (compile / unresolved / cycles / relation recommendations / components). exit 0 만 healthy
+- `oh-my-ontology workspace-brief [vault]` — status + hotspots top 5 + project 별 노드 수 + next actions 한 화면
+
+전부 `--json` 옵션으로 raw query_ontology 응답 pass-through.
+
 ## 0.7.0 — 2026-05-14
 
 ### Added — `overview` command (17th, query_ontology wrap)
