@@ -1,6 +1,6 @@
 {
   "name": "oh-my-ontology",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "AI-native codebase ontology workbench — vault scaffold + graph-level/CRUD commands + MCP 23-tool agent surface.",
   "type": "module",
   "bin": {

@@ -1078,6 +1078,58 @@ await test('query — kind=capability AND has(elements)', async () => {
   }
 });
 
+await test('overview — graph fixture 의 counts + 허브 정확', async () => {
+  // buildGraphFixture: 3 노드 (capabilities/foo, capabilities/bar, domains/auth)
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['overview', root]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    // header — 3 노드 (vault-readme 없음)
+    assert.match(clean, /3 노드/);
+    // KIND 분포 — capability 2 / domain 1
+    assert.match(clean, /capability\s+2/);
+    assert.match(clean, /domain\s+1/);
+    // 허브 — degree 가 가장 큰 domains/auth 가 top
+    assert.match(clean, /domains\/auth/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('overview --json — JSON 응답 graph/byKind/hubs 키 노출', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['overview', root, '--json']);
+    assert.equal(r.code, 0, `stderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'overview');
+    assert.ok(data.graph);
+    assert.equal(data.graph.nodes, 3);
+    assert.ok(data.byKind);
+    assert.equal(data.byKind.capability, 2);
+    assert.equal(data.byKind.domain, 1);
+    assert.ok(Array.isArray(data.hubs));
+    // domains/auth 가 hubs 안에 있어야 함 (degree 가장 큼)
+    assert.ok(data.hubs.some((h) => h.slug === 'domains/auth'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('overview --limit 3 — 허브 N 만 출력', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['overview', root, '--limit', '3']);
+    assert.equal(r.code, 0);
+    const clean = stripAnsi(r.stdout);
+    // 허브 라인 (rank prefix 1-3 만) — 4+ 가 없어야
+    assert.match(clean, /허브 노드.*상위 3/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('rename — dry-run preview, no disk change', async () => {
   const root = await buildGraphFixture();
   try {

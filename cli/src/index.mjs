@@ -78,6 +78,8 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --max-hops N --json                    ${COLORS.dim}default 5${COLORS.reset}
   npx oh-my-ontology query "<filter>"         Typed filter DSL (kind=X AND has(elements))
        --limit N --json                       ${COLORS.dim}default limit 100${COLORS.reset}
+  npx oh-my-ontology overview [vault]         Vault first-contact dashboard (counts + 분포 + 허브)
+       --limit N --json                       ${COLORS.dim}허브 N 개 (default 10) · machine output${COLORS.reset}
   npx oh-my-ontology rename <old> <new>       Atomic rename — moves .md, redirects every backlink
        --confirm                              ${COLORS.dim}default dry-run (preview); --confirm to apply${COLORS.reset}
   npx oh-my-ontology merge <from> <into>      Atomic merge — redirect backlinks then delete fromSlug
@@ -362,6 +364,11 @@ if (SUBCOMMAND === 'orphans') {
 if (SUBCOMMAND === 'path') {
   const { runPath } = await import('./commands/path.mjs');
   exit(await runPath(ARGS.slice(1)));
+}
+
+if (SUBCOMMAND === 'overview') {
+  const { runOverview } = await import('./commands/overview.mjs');
+  exit(await runOverview(ARGS.slice(1)));
 }
 
 if (SUBCOMMAND === 'query') {

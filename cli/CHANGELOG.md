@@ -1,5 +1,15 @@
 # Changelog — oh-my-ontology (CLI)
 
+## 0.7.0 — 2026-05-14
+
+### Added — `overview` command (17th, query_ontology wrap)
+
+- `oh-my-ontology overview [vault] [--limit N] [--json]` — vault first-contact dashboard. MCP `query_ontology({operation: 'overview'})` thin wrapper.
+- 출력 4 섹션: header 한 줄 (총 노드/관계 카운트 + resolved/external/unresolved 분해), **KIND 분포** (kind 별 count + 색깔 막대 그래프), **관계 종류 분포** (frontmatter key 별 비율), **도메인 분포** (도메인 별 노드 수), **허브 노드 top N** (degree 상위, document/project 제외).
+- 신규 사용자가 모르는 vault 를 처음 열었을 때 — `oh-my-ontology overview` 한 줄로 *어떤 vault 인지* 즉시 파악. AI agent 의 MCP overview 호출과 같은 권한.
+- 옵션: `--limit N` (허브 N 개, 기본 10), `--json` (raw query_ontology 응답 pass-through), `--vault path` (auto-detect override).
+- 신규 integration test 3건 (counts / --json / --limit).
+
 ## 0.6.0 — 2026-05-14
 
 ### Fixed — graph-level 명령 vault 자동 감지
