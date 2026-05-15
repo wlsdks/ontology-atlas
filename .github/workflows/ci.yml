@@ -50,6 +50,9 @@ jobs:
       - name: Vault paths audit (capability/element 의 path 가 실 코드 일치)
         run: pnpm vault:audit
 
+      - name: Package contracts (MCP/CLI publish files)
+        run: pnpm package:check
+
       # R11 #24 — audit-only e2e CI 게이트 시도했으나 CI 환경 navigation race
       # 빈도 높아 reverted (a11y-structure / aria-audit / overflow-sweep
       # mobile-390 등 회귀). audit spec 은 console dump 의도라 실질 가드 0
