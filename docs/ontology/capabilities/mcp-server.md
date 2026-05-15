@@ -3,7 +3,7 @@ slug: capabilities/mcp-server
 kind: capability
 title: MCP Server (23 tools)
 domain: ai-agent-partner
-elements: [mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/vault.mjs]
+elements: [mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/vault.mjs, scripts/dogfood-mcp-walk.mjs]
 relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 ---
 
@@ -47,3 +47,7 @@ file-backed graph 를 graph database 처럼 더 예측 가능하게 다룰 수 �
 `workspace_brief`, `health` 를 한 번에 호출해 agent first-contact graph diagnosis 경로까지
 확인한다. 기본 server wait 는 8초이며 큰 vault / 느린 파일시스템에서는
 `OMOT_VERIFY_TIMEOUT_MS` 로 늘릴 수 있다.
+
+`pnpm dogfood:walk` 는 이 repo 의 `docs/ontology` 를 대상으로 실제 MCP stdio 호출을
+연속 실행한다. 기본 census / backlink / path 질의에 더해 `workspace_brief` 와 `health`
+를 함께 출력해, AI agent 가 첫 접촉에서 받는 graph diagnosis 품질을 계속 확인한다.

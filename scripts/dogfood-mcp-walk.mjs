@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 // R12 #38 — AI agent dogfood 시뮬. 사용자 .mcp.json 등록 후 시나리오와
-// 같은 흐름으로 mcp server 에 6 read tool 호출. *진짜 AI agent 입장* 에서
+// 같은 흐름으로 mcp server 에 read tool + first-contact graph diagnosis 호출.
+// *진짜 AI agent 입장* 에서
 // 받는 정보 quality 측정.
 //
 // write 안 함 (dogfood vault 보존). list_kinds / list_concepts /
-// find_evidence / find_path / find_backlinks / find_orphans 만.
+// find_evidence / find_path / find_backlinks / find_orphans /
+// query_ontology workspace_brief / health 만.
 
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -116,6 +118,8 @@ async function main() {
     }),
     call(6, "find_backlinks", { slug: "capabilities/mcp-server" }),
     call(7, "find_orphans", {}),
+    call(8, "query_ontology", { operation: "workspace_brief", limit: 5 }),
+    call(9, "query_ontology", { operation: "health" }),
   ];
 
   const { responses, stderr } = await rpc(requests, 5000);
@@ -197,6 +201,33 @@ async function main() {
     }
   }
 
+  // 7. workspace_brief
+  header(`query_ontology(workspace_brief)`);
+  const brief = getResult(responses, 8);
+  if (brief) {
+    console.log(`  status: ${brief.status}`);
+    console.log(
+      `  summary: nodes ${brief.summary?.nodes ?? "n/a"} · edges ${brief.summary?.edges ?? "n/a"} · issues ${brief.summary?.issues ?? "n/a"}`,
+    );
+    console.log(`  nextActions: ${(brief.nextActions || []).length}`);
+    for (const action of (brief.nextActions || []).slice(0, 5)) {
+      console.log(`  ${action.kind?.padEnd(18) || ""} ${action.id || ""}`);
+    }
+  }
+
+  // 8. health
+  header(`query_ontology(health)`);
+  const health = getResult(responses, 9);
+  if (health) {
+    console.log(`  status: ${health.status}`);
+    console.log(
+      `  summary: issues ${health.summary?.issues ?? "n/a"} · unresolved ${health.summary?.unresolvedEdges ?? "n/a"} · cycles ${health.summary?.dependencyCycles ?? "n/a"}`,
+    );
+    for (const check of health.checks || []) {
+      console.log(`  ${check.status?.padEnd(6) || ""} ${check.id.padEnd(26)} ${check.count}`);
+    }
+  }
+
   // 분석
   header("Analysis — AI agent quality assessment");
   const total = kinds?.total || 0;
@@ -209,6 +240,8 @@ async function main() {
   );
   console.log(`  find_path hop: ${path?.hopCount ?? "n/a"}`);
   console.log(`  find_backlinks: ${bl?.total ?? "n/a"} (mcp-server 가 얼마나 popular)`);
+  console.log(`  workspace_brief: ${brief?.status ?? "n/a"} (${(brief?.nextActions || []).length} next actions)`);
+  console.log(`  health: ${health?.status ?? "n/a"} (${(health?.checks || []).length} checks)`);
 
   if (stderr.trim()) {
     console.log(
