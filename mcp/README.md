@@ -147,9 +147,11 @@ All passed — register .mcp.json with Claude Code and restart to use the 23 too
 ```
 
 On failure, it tells you which step blocked progress and prints a diagnostic message. The
-verify path exercises the same first-contact graph diagnosis an agent should run:
+verify path exercises and gates the same first-contact graph diagnosis an agent should run:
 `tools/list`, `list_concepts`, `query_ontology({operation:"workspace_brief"})`, and
-`query_ontology({operation:"health"})`. The default wait window is 8 seconds; set
+`query_ontology({operation:"health"})`. `list_concepts` vault warnings or failing health
+checks fail the command; advisory `needs_attention` states still print so starter vaults can
+verify before cleanup. The default wait window is 8 seconds; set
 `OMOT_VERIFY_TIMEOUT_MS` if your vault is large or on a slow filesystem.
 
 ### Manual verification (reference)

@@ -68,6 +68,31 @@ function verifyTimeoutMs() {
   return Number.isFinite(VERIFY_TIMEOUT_MS) && VERIFY_TIMEOUT_MS > 0 ? VERIFY_TIMEOUT_MS : 8000;
 }
 
+export function vaultWarningsFailure(parsed) {
+  const warnings = parsed?.vaultWarnings;
+  if (!warnings) return null;
+  const errorCount = warnings.errorCount || 0;
+  const warningCount = warnings.warningCount || 0;
+  if (errorCount === 0 && warningCount === 0) return null;
+  return `list_concepts vaultWarnings present — errors ${errorCount}, warnings ${warningCount}`;
+}
+
+export function diagnosisBlockingFailure(label, parsed, expectedOperation) {
+  if (parsed?.operation !== expectedOperation) {
+    return `${label} returned unexpected operation: ${parsed?.operation}`;
+  }
+  const checks = Array.isArray(parsed?.checks)
+    ? parsed.checks
+    : Array.isArray(parsed?.health?.checks)
+      ? parsed.health.checks
+      : [];
+  const failedChecks = checks.filter((check) => check.status === 'fail');
+  if (failedChecks.length > 0) {
+    return `${label} has failing health checks: ${failedChecks.map((check) => check.id).join(', ')}`;
+  }
+  return null;
+}
+
 async function step1ParserSmoke() {
   log('info', 'step 1 — parser smoke test');
   return new Promise((res) => {
@@ -191,6 +216,11 @@ async function step2BootAndCall() {
         if (parsed.total === 0) {
           log('info', 'Warning: vault is empty. Make sure OMOT_VAULT points to the right folder (e.g. ./docs/ontology)');
         }
+        const failure = vaultWarningsFailure(parsed);
+        if (failure) {
+          log('fail', failure);
+          return res(false);
+        }
       } catch (err) {
         log('fail', `failed to parse list_concepts response: ${err.message}`);
         return res(false);
@@ -203,8 +233,9 @@ async function step2BootAndCall() {
       try {
         const text = briefRes.result.content?.[0]?.text || '';
         const parsed = JSON.parse(text);
-        if (parsed.operation !== 'workspace_brief') {
-          log('fail', `workspace_brief returned unexpected operation: ${parsed.operation}`);
+        const failure = diagnosisBlockingFailure('workspace_brief', parsed, 'workspace_brief');
+        if (failure) {
+          log('fail', failure);
           return res(false);
         }
         log('ok', `workspace_brief — ${parsed.status} (${parsed.summary?.nodes ?? 0} nodes, nextActions ${(parsed.nextActions || []).length})`);
@@ -220,8 +251,9 @@ async function step2BootAndCall() {
       try {
         const text = healthRes.result.content?.[0]?.text || '';
         const parsed = JSON.parse(text);
-        if (parsed.operation !== 'health') {
-          log('fail', `health returned unexpected operation: ${parsed.operation}`);
+        const failure = diagnosisBlockingFailure('health', parsed, 'health');
+        if (failure) {
+          log('fail', failure);
           return res(false);
         }
         log('ok', `health — ${parsed.status} (${(parsed.checks || []).length} checks, issues ${parsed.summary?.compileIssues ?? 0})`);
@@ -249,4 +281,6 @@ async function main() {
   process.exit(0);
 }
 
-main();
+if (fileURLToPath(import.meta.url) === resolve(process.argv[1] ?? '')) {
+  main();
+}

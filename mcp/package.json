@@ -38,7 +38,7 @@
   ],
   "scripts": {
     "start": "node src/index.js",
-    "test": "node --test src/parser.test.mjs src/query.test.mjs src/validate.test.mjs src/vault.test.mjs src/redirect-backlinks.test.mjs src/conflict-detection.test.mjs src/analyze.test.mjs src/infer-imports.test.mjs src/omot-ignore.test.mjs src/ontology-compiler.test.mjs src/ontology-engine.test.mjs src/integration.test.mjs",
+    "test": "node --test src/parser.test.mjs src/query.test.mjs src/validate.test.mjs src/vault.test.mjs src/redirect-backlinks.test.mjs src/conflict-detection.test.mjs src/analyze.test.mjs src/infer-imports.test.mjs src/omot-ignore.test.mjs src/ontology-compiler.test.mjs src/ontology-engine.test.mjs src/verify-script.test.mjs src/integration.test.mjs",
     "test:smoke": "node src/parser.test.mjs",
     "verify": "node scripts/verify.mjs"
   },
