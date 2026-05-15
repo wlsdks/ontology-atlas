@@ -14,7 +14,8 @@
  *   2. server boot — initialize JSON-RPC 응답
  *   3. tools/list — 23 도구 모두 노출
  *   4. tools/call list_concepts — vault 노드 수 출력
- *   5. tools/call query_ontology workspace_brief + health — agent first-contact graph diagnosis
+ *   5. tools/call validate_vault — whole-vault frontmatter / graph-reference health
+ *   6. tools/call query_ontology workspace_brief + health — agent first-contact graph diagnosis
  *
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
  */
@@ -75,6 +76,14 @@ export function vaultWarningsFailure(parsed) {
   const warningCount = warnings.warningCount || 0;
   if (errorCount === 0 && warningCount === 0) return null;
   return `list_concepts vaultWarnings present — errors ${errorCount}, warnings ${warningCount}`;
+}
+
+export function validateVaultFailure(parsed) {
+  const summary = parsed?.summary;
+  if (!summary) return 'validate_vault response missing summary';
+  const problemFiles = summary.problemFiles || 0;
+  if (problemFiles === 0) return null;
+  return `validate_vault found ${problemFiles} problem file(s) — errors ${summary.errorFiles || 0}, warnings ${summary.warningFiles || 0}`;
 }
 
 export function diagnosisBlockingFailure(label, parsed, expectedOperation) {
@@ -142,11 +151,17 @@ async function step2BootAndCall() {
       jsonrpc: '2.0',
       id: 4,
       method: 'tools/call',
-      params: { name: 'query_ontology', arguments: { operation: 'workspace_brief', limit: 3 } },
+      params: { name: 'validate_vault', arguments: {} },
     }),
     JSON.stringify({
       jsonrpc: '2.0',
       id: 5,
+      method: 'tools/call',
+      params: { name: 'query_ontology', arguments: { operation: 'workspace_brief', limit: 3 } },
+    }),
+    JSON.stringify({
+      jsonrpc: '2.0',
+      id: 6,
       method: 'tools/call',
       params: { name: 'query_ontology', arguments: { operation: 'health' } },
     }),
@@ -182,8 +197,9 @@ async function step2BootAndCall() {
       const initRes = responses.find((r) => r.id === 1);
       const listRes = responses.find((r) => r.id === 2);
       const callRes = responses.find((r) => r.id === 3);
-      const briefRes = responses.find((r) => r.id === 4);
-      const healthRes = responses.find((r) => r.id === 5);
+      const validateRes = responses.find((r) => r.id === 4);
+      const briefRes = responses.find((r) => r.id === 5);
+      const healthRes = responses.find((r) => r.id === 6);
 
       if (!initRes || !initRes.result) {
         log('fail', `no initialize response. stderr: ${stderr.slice(0, 300)}`);
@@ -223,6 +239,24 @@ async function step2BootAndCall() {
         }
       } catch (err) {
         log('fail', `failed to parse list_concepts response: ${err.message}`);
+        return res(false);
+      }
+
+      if (!validateRes || !validateRes.result) {
+        log('fail', 'no validate_vault response');
+        return res(false);
+      }
+      try {
+        const text = validateRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const failure = validateVaultFailure(parsed);
+        if (failure) {
+          log('fail', failure);
+          return res(false);
+        }
+        log('ok', `validate_vault — ${parsed.scanned ?? 0} files, problemFiles ${parsed.summary?.problemFiles ?? 0}`);
+      } catch (err) {
+        log('fail', `failed to parse validate_vault response: ${err.message}`);
         return res(false);
       }
 

@@ -140,6 +140,7 @@ A successful run looks like this:
 ✓ initialize OK — server oh-my-ontology-mcp@0.12.0
 ✓ tools/list 23/23 — add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
 ✓ list_concepts — vault total 28 nodes (vaultRoot /path/to/docs/ontology)
+✓ validate_vault — 28 files, problemFiles 0
 ✓ workspace_brief — healthy (28 nodes, nextActions 1)
 ✓ health — healthy (5 checks, issues 0)
 
@@ -148,9 +149,11 @@ All passed — register .mcp.json with Claude Code and restart to use the 23 too
 
 On failure, it tells you which step blocked progress and prints a diagnostic message. The
 verify path exercises and gates the same first-contact graph diagnosis an agent should run:
-`tools/list`, `list_concepts`, `query_ontology({operation:"workspace_brief"})`, and
-`query_ontology({operation:"health"})`. `list_concepts` vault warnings or failing health
-checks fail the command; advisory `needs_attention` states still print so starter vaults can
+`tools/list`, `list_concepts`, `validate_vault`,
+`query_ontology({operation:"workspace_brief"})`, and
+`query_ontology({operation:"health"})`. `list_concepts` vault warnings,
+`validate_vault` problem files, or failing health checks fail the command; advisory
+`needs_attention` states still print so starter vaults can
 verify before cleanup. The default wait window is 8 seconds; set
 `OMOT_VERIFY_TIMEOUT_MS` if your vault is large or on a slow filesystem.
 

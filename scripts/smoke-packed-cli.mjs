@@ -89,6 +89,7 @@ try {
   });
   assert.match(cliMcpVerify.stdout, /timeout=1000ms/);
   assert.match(cliMcpVerify.stdout, /tools\/list 23\/23/);
+  assert.match(cliMcpVerify.stdout, /validate_vault/);
   assert.match(cliMcpVerify.stdout, /workspace_brief/);
   assert.match(cliMcpVerify.stdout, /health/);
 
@@ -105,6 +106,7 @@ try {
       env: { OMOT_VAULT: join(projectDir, 'ontology') },
     },
   );
+  assert.match(mcpVerify.stdout, /validate_vault/);
   assert.match(mcpVerify.stdout, /workspace_brief/);
   assert.match(mcpVerify.stdout, /health/);
 

@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 
 import {
   diagnosisBlockingFailure,
+  validateVaultFailure,
   vaultWarningsFailure,
 } from '../scripts/verify.mjs';
 
@@ -17,6 +18,21 @@ describe('verify.mjs first-contact gates', () => {
       vaultWarningsFailure({ vaultWarnings: { errorCount: 1, warningCount: 2 } }),
       'list_concepts vaultWarnings present — errors 1, warnings 2',
     );
+  });
+
+  it('accepts clean validate_vault payloads', () => {
+    assert.equal(validateVaultFailure({ summary: { problemFiles: 0 } }), null);
+  });
+
+  it('fails when validate_vault reports problem files', () => {
+    assert.equal(
+      validateVaultFailure({ summary: { problemFiles: 2, errorFiles: 1, warningFiles: 1 } }),
+      'validate_vault found 2 problem file(s) — errors 1, warnings 1',
+    );
+  });
+
+  it('fails malformed validate_vault payloads', () => {
+    assert.equal(validateVaultFailure({}), 'validate_vault response missing summary');
   });
 
   it('accepts healthy first-contact diagnosis responses', () => {

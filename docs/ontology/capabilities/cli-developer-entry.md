@@ -18,7 +18,7 @@ R12 (2026-05-04) 에 도입된 *developer-primary* 진입점. R14 에서 `import
 | `oh-my-ontology init [folder]` | Scaffold vault (5 starter .md + `.mcp.json` cwd + vault). Source checkout 에서는 npm 404 없이 바로 붙도록 local `mcp/src/index.js` 를 가리킴. Codex 는 project `.mcp.json` 을 자동으로 읽지 않으므로 exact `codex mcp add ...` 명령도 출력. repo root 기준 copy-paste bootstrap 명령 (`analyze . --vault ./ontology`, `bootstrap . --vault ./ontology`) 도 함께 출력. |
 | `oh-my-ontology list [vault]` | List ontology nodes (color table, `--kind X` filter, `--json`) |
 | `oh-my-ontology validate [vault]` | Frontmatter integrity + graph array drift check (CI gate via exit 1, R+ grouped-by-code 요약) |
-| `oh-my-ontology mcp-verify [vault]` | Installed MCP verify wrapper — parser smoke, server boot, 23-tool inventory, `list_concepts`, `workspace_brief`, `health` 를 resolved vault 에서 실행. `--timeout-ms N` 으로 큰/느린 vault wait 조절. |
+| `oh-my-ontology mcp-verify [vault]` | Installed MCP verify wrapper — parser smoke, server boot, 23-tool inventory, `list_concepts`, `validate_vault`, `workspace_brief`, `health` 를 resolved vault 에서 실행. `--timeout-ms N` 으로 큰/느린 vault wait 조절. |
 | `oh-my-ontology add <kind> <slug> --title="..."` | Scaffold new node (duplicate throw, `--domain --body --vault`, R15 `--auto-prefix` default on, `--raw-slug` opt-out) |
 | `oh-my-ontology find <query> [vault]` | Search slug + title with yellow highlight (`--kind --json`) |
 | `oh-my-ontology import <path...>` | **R14** Import external `.md` (frontmatter normalize + `--auto-prefix` / `--rename` / `--dry-run`) |
