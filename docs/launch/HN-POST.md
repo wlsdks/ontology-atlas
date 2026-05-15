@@ -28,10 +28,10 @@ silo, or in nobody's.
 oh-my-ontology takes the opposite path. The mental model is a folder of
 markdown files. Frontmatter is the graph: `kind: capability`, `domain:
 auth`, `depends_on: [...]`. Humans edit it in any markdown editor. AI
-agents read and write it via a tiny MCP server (20 tools — list,
-get, validate_vault, analyze_repo_structure, infer_imports, find_path,
-find_orphans, query_concepts, add_concept, add_concepts, patch_concept,
-rename_concept, ...).
+agents read and write it via a tiny MCP server (23 tools — list,
+get, validate_vault, compile_ontology, query_ontology,
+analyze_repo_structure, infer_imports, add_concept, add_concepts,
+patch_concept, rename_concept, ...).
 
 Three views over the same vault: Sigma WebGL topology, hierarchical
 tree, and an xyflow ERD builder. Local-first by default — the static

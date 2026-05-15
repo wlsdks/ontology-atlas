@@ -47,9 +47,9 @@ depends_on: [capabilities/signup]
 ## Tweet 4 (AI fits in)
 
 ```
-AI agents (Claude Code, Cursor, etc.) read it via MCP — 20 tools:
-list_concepts, validate_vault, analyze_repo_structure, infer_imports,
-find_path, find_orphans, query_concepts, add_concepts, patch_concept …
+AI agents (Claude Code, Cursor, etc.) read it via MCP — 23 tools:
+list_concepts, validate_vault, compile_ontology, query_ontology,
+analyze_repo_structure, infer_imports, add_concepts, patch_concept …
 
 ask "what breaks if I refactor auth/login?" → agent calls find_backlinks
 and gives a real answer. the dependency graph is in the repo, not a silo.

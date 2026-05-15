@@ -38,12 +38,9 @@ tags: [architecture, infra, overview]
        ↑ stdio JSON-RPC
 
 ┌────────────────────────────────────────────────────────┐
-│ MCP server (mcp/, v0.10.0)                              │
-│ ├─ 12 read tools  list_concepts · get_concept ·         │
-│ │                  get_concepts · find_evidence ·       │
-│ │                  find_backlinks · find_path ·         │
-│ │                  list_kinds · find_orphans ·          │
-│ │                  query_concepts · validate_vault ·    │
+│ MCP server (mcp/, v0.12.0)                              │
+│ ├─ 15 read tools  list/get/find/query/validate ·        │
+│ │                  compile_ontology · query_ontology ·  │
 │ │                  analyze_repo_structure · infer_imports│
 │ └─ 8 write tools  add_concept · add_concepts ·          │
 │                    add_relation · add_relations ·       │
@@ -57,12 +54,10 @@ tags: [architecture, infra, overview]
        ↑ stdio JSON-RPC (separate process)
 
 ┌────────────────────────────────────────────────────────┐
-│ CLI (cli/, v0.2.0 — R12)                               │
-│ ├─ init [folder]              scaffold a vault         │
-│ ├─ list [vault]               list nodes (filters)     │
-│ ├─ validate [vault]           frontmatter integrity    │
-│ ├─ add <kind> <slug>          scaffold a node          │
-│ └─ find <query> [vault]       search slug + title      │
+│ CLI (cli/, v0.10.0 — 25 commands)                      │
+│ ├─ init/add/import/list/find/validate/query            │
+│ ├─ analyze/infer-imports/bootstrap/compile             │
+│ └─ graph CRUD + deep dive commands                     │
 │                                                         │
 │ Developer-primary daily entry point. Same `.md` files. │
 └────────────────────────────────────────────────────────┘
