@@ -41,7 +41,7 @@ npm pack --dry-run
 We've audited: 0 secrets, 0 PII, 0 absolute paths.
 
 Check that each package manifest ships the files its bin / npm scripts can
-actually reach:
+actually reach, and run the package-contract self-test:
 
 ```bash
 pnpm package:check

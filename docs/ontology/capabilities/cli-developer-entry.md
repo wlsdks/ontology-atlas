@@ -3,7 +3,7 @@ slug: capabilities/cli-developer-entry
 kind: capability
 title: CLI Developer Entry (25 commands — vault + compile + graph deep dive)
 domain: onboarding-ux
-elements: [cli/src/commands/add.mjs, cli/src/commands/analyze.mjs, cli/src/commands/backlinks.mjs, cli/src/commands/blast-radius.mjs, cli/src/commands/bootstrap.mjs, cli/src/commands/compile.mjs, cli/src/commands/cycles.mjs, cli/src/commands/delete.mjs, cli/src/commands/find.mjs, cli/src/commands/health.mjs, cli/src/commands/hubs.mjs, cli/src/commands/import.mjs, cli/src/commands/infer-imports.mjs, cli/src/commands/list.mjs, cli/src/commands/merge.mjs, cli/src/commands/node-profile.mjs, cli/src/commands/orphans.mjs, cli/src/commands/overview.mjs, cli/src/commands/path.mjs, cli/src/commands/query.mjs, cli/src/commands/rename.mjs, cli/src/commands/similar.mjs, cli/src/commands/validate.mjs, cli/src/commands/workspace-brief.mjs, cli/src/index.mjs, cli/src/lib/mcp-call.mjs, cli/src/lib/resolve-vault.mjs, scripts/check-package-contracts.mjs]
+elements: [cli/src/commands/add.mjs, cli/src/commands/analyze.mjs, cli/src/commands/backlinks.mjs, cli/src/commands/blast-radius.mjs, cli/src/commands/bootstrap.mjs, cli/src/commands/compile.mjs, cli/src/commands/cycles.mjs, cli/src/commands/delete.mjs, cli/src/commands/find.mjs, cli/src/commands/health.mjs, cli/src/commands/hubs.mjs, cli/src/commands/import.mjs, cli/src/commands/infer-imports.mjs, cli/src/commands/list.mjs, cli/src/commands/merge.mjs, cli/src/commands/node-profile.mjs, cli/src/commands/orphans.mjs, cli/src/commands/overview.mjs, cli/src/commands/path.mjs, cli/src/commands/query.mjs, cli/src/commands/rename.mjs, cli/src/commands/similar.mjs, cli/src/commands/validate.mjs, cli/src/commands/workspace-brief.mjs, cli/src/index.mjs, cli/src/lib/mcp-call.mjs, cli/src/lib/resolve-vault.mjs, scripts/check-package-contracts.mjs, scripts/check-package-contracts.test.mjs]
 relates: [capabilities/mcp-server, capabilities/vault-validator, domains/onboarding-ux]
 ---
 
@@ -68,4 +68,6 @@ scripts/check-package-contracts.mjs — publish 전 package manifest gate. `mcp/
 `package.json#files` 에 포함되는지 검사한다. 반대로 `files` 항목이 실제 package
 파일/디렉토리/glob 과 매치되는지도 확인하고, CLI 의 `oh-my-ontology-mcp` dependency
 가 현재 MCP package version 을 추적하는지 본다. source checkout 에서는 통과하지만
-npm tarball 에서만 깨지는 release drift 를 차단한다.
+npm tarball 에서만 깨지는 release drift 를 차단한다. paired self-test 는 누락된
+reachable import, 죽은 `files` glob, multiline/dynamic import parsing 을 fixture 로
+고정한다.

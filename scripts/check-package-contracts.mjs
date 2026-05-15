@@ -8,7 +8,7 @@ import { dirname, join, normalize, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const PACKAGES = [
+const DEFAULT_PACKAGES = [
   { label: 'mcp', dir: join(ROOT, 'mcp') },
   { label: 'cli', dir: join(ROOT, 'cli') },
 ];
@@ -47,7 +47,7 @@ function listFiles(root, dir = root) {
   return files.sort();
 }
 
-function isCoveredByFiles(relPath, files) {
+export function isCoveredByFiles(relPath, files) {
   const path = normalizeRel(relPath);
   return files.some((entry) => {
     const normalized = normalizeRel(entry).replace(/\/$/, '');
@@ -57,7 +57,7 @@ function isCoveredByFiles(relPath, files) {
   });
 }
 
-function fileEntryMatches(entry, packageFiles, dir) {
+export function fileEntryMatches(entry, packageFiles, dir) {
   const normalized = normalizeRel(entry).replace(/\/$/, '');
   if (normalized.includes('*')) {
     const re = globToRegExp(normalized);
@@ -67,7 +67,7 @@ function fileEntryMatches(entry, packageFiles, dir) {
   return packageFiles.some((file) => file.startsWith(`${normalized}/`));
 }
 
-function parseScriptFileRefs(command) {
+export function parseScriptFileRefs(command) {
   const tokens = command.split(/\s+/).filter(Boolean);
   const refs = [];
   for (const token of tokens) {
@@ -86,7 +86,7 @@ function resolveImport(fromFile, specifier) {
   return candidates.find((candidate) => existsSync(candidate) && statSync(candidate).isFile()) ?? base;
 }
 
-function importedSpecifiers(source) {
+export function importedSpecifiers(source) {
   const imports = [];
   for (const match of source.matchAll(/^\s*import\s+['"]([^'"]+)['"][^;]*;?/gm)) {
     imports.push(match[1]);
@@ -102,7 +102,7 @@ function importedSpecifiers(source) {
   return imports;
 }
 
-function collectReachableFiles(entryFiles) {
+export function collectReachableFiles(entryFiles) {
   const seen = new Set();
   const stack = [...entryFiles];
 
@@ -122,7 +122,7 @@ function collectReachableFiles(entryFiles) {
   return [...seen].sort();
 }
 
-function packageEntrypoints(pkg, dir) {
+export function packageEntrypoints(pkg, dir) {
   const refs = new Set();
   if (pkg.main) refs.add(pkg.main);
   for (const bin of Object.values(pkg.bin ?? {})) refs.add(bin);
@@ -132,7 +132,7 @@ function packageEntrypoints(pkg, dir) {
   return [...refs].map((ref) => resolve(dir, ref));
 }
 
-function checkPackage({ label, dir }) {
+export function checkPackage({ label, dir }, options = {}) {
   const pkg = readJson(join(dir, 'package.json'));
   const files = pkg.files ?? [];
   assert.ok(files.length > 0, `${label}: package.json#files must be explicit`);
@@ -159,19 +159,27 @@ function checkPackage({ label, dir }) {
     );
   }
 
-  console.log(`${label}: ${reachable.length} reachable package files covered`);
+  if (!options.silent) {
+    console.log(`${label}: ${reachable.length} reachable package files covered`);
+  }
 }
 
-for (const pkg of PACKAGES) {
-  checkPackage(pkg);
+export function checkReleasePackages(packages = DEFAULT_PACKAGES) {
+  for (const pkg of packages) {
+    checkPackage(pkg);
+  }
+
+  const mcpPkg = readJson(join(ROOT, 'mcp', 'package.json'));
+  const cliPkg = readJson(join(ROOT, 'cli', 'package.json'));
+  assert.equal(
+    cliPkg.dependencies?.['oh-my-ontology-mcp'],
+    `^${mcpPkg.version}`,
+    'cli: oh-my-ontology-mcp dependency must track the current local MCP package version',
+  );
+
+  console.log('package contracts OK');
 }
 
-const mcpPkg = readJson(join(ROOT, 'mcp', 'package.json'));
-const cliPkg = readJson(join(ROOT, 'cli', 'package.json'));
-assert.equal(
-  cliPkg.dependencies?.['oh-my-ontology-mcp'],
-  `^${mcpPkg.version}`,
-  'cli: oh-my-ontology-mcp dependency must track the current local MCP package version',
-);
-
-console.log('package contracts OK');
+if (fileURLToPath(import.meta.url) === resolve(process.argv[1] ?? '')) {
+  checkReleasePackages();
+}
