@@ -21,6 +21,11 @@ import { fileURLToPath } from 'node:url';
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const MCP_DIR = join(ROOT, 'mcp');
 const CLI_DIR = join(ROOT, 'cli');
+const MCP_PKG = JSON.parse(readFileSync(join(MCP_DIR, 'package.json'), 'utf-8'));
+const CLI_PKG = JSON.parse(readFileSync(join(CLI_DIR, 'package.json'), 'utf-8'));
+const expectedToolCount = MCP_PKG.description.match(/(\d+) tools/)?.[1];
+
+assert.ok(expectedToolCount, 'mcp/package.json description must include the current tool count');
 
 function run(cmd, args, options = {}) {
   const result = spawnSync(cmd, args, {
@@ -67,10 +72,10 @@ try {
   assert.equal(existsSync(cliBin), true, 'installed CLI bin is missing');
 
   const version = run(cliBin, ['--version'], { cwd: projectDir });
-  assert.equal(version.stdout.trim(), '0.11.0');
+  assert.equal(version.stdout.trim(), CLI_PKG.version);
 
   const init = run(cliBin, ['init', 'ontology'], { cwd: projectDir });
-  assert.match(init.stdout, /23 tools/);
+  assert.match(init.stdout, new RegExp(`${expectedToolCount} tools`));
   assert.match(init.stdout, /codex mcp add oh-my-ontology/);
 
   const config = JSON.parse(readFileSync(join(projectDir, '.mcp.json'), 'utf-8'));
@@ -78,6 +83,11 @@ try {
   assert.equal(server.command, 'node');
   assert.match(server.args[0], /node_modules\/oh-my-ontology-mcp\/src\/index\.js$/);
   assert.equal(server.env.OMOT_VAULT, './ontology');
+
+  const installedMcpPkg = JSON.parse(
+    readFileSync(join(installDir, 'node_modules', 'oh-my-ontology-mcp', 'package.json'), 'utf-8'),
+  );
+  assert.equal(installedMcpPkg.version, MCP_PKG.version);
 
   const compile = run(cliBin, ['compile', 'ontology', '--summary'], { cwd: projectDir });
   assert.match(compile.stdout, /compiled ontology/);
