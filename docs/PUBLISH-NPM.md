@@ -40,6 +40,13 @@ npm pack --dry-run
 
 We've audited: 0 secrets, 0 PII, 0 absolute paths.
 
+Check that each package manifest ships the files its bin / npm scripts can
+actually reach:
+
+```bash
+pnpm package:check
+```
+
 For a stronger local release smoke, run the packed-install check:
 
 ```bash

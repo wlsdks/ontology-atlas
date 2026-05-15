@@ -3,7 +3,7 @@ slug: capabilities/cli-developer-entry
 kind: capability
 title: CLI Developer Entry (25 commands — vault + compile + graph deep dive)
 domain: onboarding-ux
-elements: [cli/src/commands/add.mjs, cli/src/commands/analyze.mjs, cli/src/commands/backlinks.mjs, cli/src/commands/blast-radius.mjs, cli/src/commands/bootstrap.mjs, cli/src/commands/compile.mjs, cli/src/commands/cycles.mjs, cli/src/commands/delete.mjs, cli/src/commands/find.mjs, cli/src/commands/health.mjs, cli/src/commands/hubs.mjs, cli/src/commands/import.mjs, cli/src/commands/infer-imports.mjs, cli/src/commands/list.mjs, cli/src/commands/merge.mjs, cli/src/commands/node-profile.mjs, cli/src/commands/orphans.mjs, cli/src/commands/overview.mjs, cli/src/commands/path.mjs, cli/src/commands/query.mjs, cli/src/commands/rename.mjs, cli/src/commands/similar.mjs, cli/src/commands/validate.mjs, cli/src/commands/workspace-brief.mjs, cli/src/index.mjs, cli/src/lib/mcp-call.mjs, cli/src/lib/resolve-vault.mjs]
+elements: [cli/src/commands/add.mjs, cli/src/commands/analyze.mjs, cli/src/commands/backlinks.mjs, cli/src/commands/blast-radius.mjs, cli/src/commands/bootstrap.mjs, cli/src/commands/compile.mjs, cli/src/commands/cycles.mjs, cli/src/commands/delete.mjs, cli/src/commands/find.mjs, cli/src/commands/health.mjs, cli/src/commands/hubs.mjs, cli/src/commands/import.mjs, cli/src/commands/infer-imports.mjs, cli/src/commands/list.mjs, cli/src/commands/merge.mjs, cli/src/commands/node-profile.mjs, cli/src/commands/orphans.mjs, cli/src/commands/overview.mjs, cli/src/commands/path.mjs, cli/src/commands/query.mjs, cli/src/commands/rename.mjs, cli/src/commands/similar.mjs, cli/src/commands/validate.mjs, cli/src/commands/workspace-brief.mjs, cli/src/index.mjs, cli/src/lib/mcp-call.mjs, cli/src/lib/resolve-vault.mjs, scripts/check-package-contracts.mjs]
 relates: [capabilities/mcp-server, capabilities/vault-validator, domains/onboarding-ux]
 ---
 
@@ -62,3 +62,9 @@ Claude Code/Cursor `.mcp.json` 경로와 Codex `codex mcp add ...` 경로가 모
 확인해 CLI/Web onboarding drift 를 차단한다.
 
 scripts/smoke-clean-onboarding.mjs — fresh user smoke. 임시 `HOME` / `CODEX_HOME` 과 새 프로젝트를 만들고 `init → bootstrap → validate` 부터 Claude project `.mcp.json` health, Codex `mcp add` 등록까지 clean-room 으로 검증.
+
+scripts/check-package-contracts.mjs — publish 전 package manifest gate. `mcp/` 와
+`cli/` 의 bin / main / npm scripts 에서 도달 가능한 local import와 실행 파일이
+`package.json#files` 에 포함되는지 검사하고, CLI 의 `oh-my-ontology-mcp`
+dependency 가 현재 MCP package version 을 추적하는지 확인한다. source checkout 에서는
+통과하지만 npm tarball 에서만 깨지는 release drift 를 차단한다.

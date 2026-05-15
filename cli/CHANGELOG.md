@@ -14,6 +14,7 @@
 - `oh-my-ontology` package version `0.11.0`.
 - `oh-my-ontology-mcp` dependency bumped to `^0.12.0` so published CLI installs pick up the current 23-tool MCP release surface directly.
 - CLI engine raised to Node 20+ to match the MCP dependency used by `compile`, `bootstrap`, graph CRUD, and graph deep-dive commands.
+- `package.json#files` includes `src/integration.test.mjs`, matching the package `npm test` script so packed installs keep the test contract intact.
 
 ## 0.10.0 — 2026-05-14
 

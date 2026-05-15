@@ -11,6 +11,7 @@
   },
   "files": [
     "src/index.mjs",
+    "src/integration.test.mjs",
     "src/commands",
     "src/lib",
     "templates",
