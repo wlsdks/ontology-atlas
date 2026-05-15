@@ -18,6 +18,7 @@
 - `npm run verify` now fails on blocking first-contact diagnosis problems: `list_concepts` vault warnings or `fail` health checks return exit 1, while advisory `needs_attention` states still print for starter vaults.
 - `npm run verify` uses an 8s server wait window by default and supports `OMOT_VERIFY_TIMEOUT_MS` for larger/slower vaults.
 - `OMOT_VERIFY_TIMEOUT_MS` is validated as a strict positive integer, so partial values like `1000ms` fail instead of being silently truncated.
+- `npm run verify` now exits as soon as all first-contact JSON-RPC responses arrive, while true timeout failures name the missing response groups and suggest increasing `OMOT_VERIFY_TIMEOUT_MS`.
 
 ## 0.11.0 — 2026-05-14
 

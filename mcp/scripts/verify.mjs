@@ -72,6 +72,28 @@ export function parseVerifyTimeoutMs(value, fallback = 8000) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : false;
 }
 
+export function verifyTimeoutFailure(timeoutMs) {
+  return `server verify timed out after ${timeoutMs}ms. Increase OMOT_VERIFY_TIMEOUT_MS for large or slow vaults.`;
+}
+
+export function hasAllFirstContactResponses(stdout) {
+  const ids = new Set(
+    stdout
+      .split('\n')
+      .filter(Boolean)
+      .map((s) => {
+        try {
+          return JSON.parse(s);
+        } catch {
+          return null;
+        }
+      })
+      .filter((response) => response?.result)
+      .map((response) => response.id),
+  );
+  return [1, 2, 3, 4, 5, 6].every((id) => ids.has(id));
+}
+
 function verifyTimeoutMs() {
   return parseVerifyTimeoutMs(VERIFY_TIMEOUT_MS_RAW);
 }
@@ -185,14 +207,27 @@ async function step2BootAndCall() {
     });
     let stdout = '';
     let stderr = '';
-    proc.stdout.on('data', (b) => (stdout += b.toString()));
+    let timedOut = false;
+    let completed = false;
+    let timer = null;
+    proc.stdout.on('data', (b) => {
+      stdout += b.toString();
+      if (!completed && hasAllFirstContactResponses(stdout)) {
+        completed = true;
+        if (timer) clearTimeout(timer);
+        proc.kill('SIGTERM');
+      }
+    });
     proc.stderr.on('data', (b) => (stderr += b.toString()));
 
     proc.stdin.write(lines.join('\n') + '\n');
-    const timer = setTimeout(() => proc.kill('SIGTERM'), timeoutMs);
+    timer = setTimeout(() => {
+      timedOut = true;
+      proc.kill('SIGTERM');
+    }, timeoutMs);
 
     proc.on('close', () => {
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
       const responses = stdout
         .split('\n')
         .filter(Boolean)
@@ -211,6 +246,20 @@ async function step2BootAndCall() {
       const validateRes = responses.find((r) => r.id === 4);
       const briefRes = responses.find((r) => r.id === 5);
       const healthRes = responses.find((r) => r.id === 6);
+      const missingResponses = [
+        ['initialize', initRes],
+        ['tools/list', listRes],
+        ['list_concepts', callRes],
+        ['validate_vault', validateRes],
+        ['workspace_brief', briefRes],
+        ['health', healthRes],
+      ].filter(([, response]) => !response?.result);
+
+      if (timedOut && missingResponses.length > 0) {
+        log('fail', `${verifyTimeoutFailure(timeoutMs)} Missing responses: ${missingResponses.map(([label]) => label).join(', ')}`);
+        if (stderr) console.error(stderr.slice(0, 300));
+        return res(false);
+      }
 
       if (!initRes || !initRes.result) {
         log('fail', `no initialize response. stderr: ${stderr.slice(0, 300)}`);

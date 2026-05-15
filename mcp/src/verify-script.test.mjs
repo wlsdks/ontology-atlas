@@ -3,8 +3,10 @@ import { describe, it } from 'node:test';
 
 import {
   diagnosisBlockingFailure,
+  hasAllFirstContactResponses,
   parseVerifyTimeoutMs,
   validateVaultFailure,
+  verifyTimeoutFailure,
   vaultWarningsFailure,
 } from '../scripts/verify.mjs';
 
@@ -20,6 +22,30 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(parseVerifyTimeoutMs('0'), false);
     assert.equal(parseVerifyTimeoutMs('-1'), false);
     assert.equal(parseVerifyTimeoutMs('nope'), false);
+  });
+
+  it('formats actionable timeout failures', () => {
+    assert.equal(
+      verifyTimeoutFailure(1),
+      'server verify timed out after 1ms. Increase OMOT_VERIFY_TIMEOUT_MS for large or slow vaults.',
+    );
+  });
+
+  it('detects when all first-contact JSON-RPC responses arrived', () => {
+    assert.equal(
+      hasAllFirstContactResponses(
+        [1, 2, 3, 4, 5, 6]
+          .map((id) => JSON.stringify({ jsonrpc: '2.0', id, result: {} }))
+          .join('\n'),
+      ),
+      true,
+    );
+    assert.equal(
+      hasAllFirstContactResponses(
+        [1, 2, 3, 4, 5].map((id) => JSON.stringify({ jsonrpc: '2.0', id, result: {} })).join('\n'),
+      ),
+      false,
+    );
   });
 
   it('accepts clean list_concepts payloads', () => {
