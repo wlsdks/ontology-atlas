@@ -89,6 +89,17 @@ try {
   );
   assert.equal(installedMcpPkg.version, MCP_PKG.version);
 
+  const mcpVerify = run(
+    'npm',
+    ['--prefix', join(installDir, 'node_modules', 'oh-my-ontology-mcp'), 'run', 'verify'],
+    {
+      cwd: projectDir,
+      env: { OMOT_VAULT: join(projectDir, 'ontology') },
+    },
+  );
+  assert.match(mcpVerify.stdout, /workspace_brief/);
+  assert.match(mcpVerify.stdout, /health/);
+
   const compile = run(cliBin, ['compile', 'ontology', '--summary'], { cwd: projectDir });
   assert.match(compile.stdout, /compiled ontology/);
   assert.match(compile.stdout, /5 nodes/);
