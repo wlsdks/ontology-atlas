@@ -16,6 +16,14 @@ This project publishes two npm packages:
 
 ## Pre-flight check (already done, kept for reference)
 
+Both npm packages require Node 20+. Verify the maintainer shell and release
+smoke shell use the same floor:
+
+```bash
+node --version
+# must print v20.x or higher
+```
+
 `npm pack --dry-run` shows exactly which files would be published:
 
 ```bash

@@ -35,7 +35,7 @@
   },
   "license": "MIT",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "oh-my-ontology-mcp": "^0.12.0"

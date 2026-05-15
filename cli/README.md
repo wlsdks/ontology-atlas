@@ -11,6 +11,9 @@ $EDITOR project.md
 That's it. You now have a frontmatter-based ontology vault that humans
 and AI agents (Claude Code, Cursor, etc.) can read and write together.
 
+Requires Node 20+. The CLI installs and spawns `oh-my-ontology-mcp`, which
+uses the same Node floor.
+
 ## Commands (R12)
 
 | Command | What it does |
