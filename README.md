@@ -132,7 +132,9 @@ Use these when changing `mcp/`, `cli/`, package manifests, or release
 scripts. `npm run verify` calls `workspace_brief` and `health`, so the
 same first-contact diagnosis an AI agent should run is exercised locally.
 `dogfood:walk` runs that diagnosis plus graph lookup tasks against this
-repo's own `docs/ontology` vault.
+repo's own `docs/ontology` vault and exits non-zero if the core MCP
+responses, path check, vault warnings, `workspace_brief`, or `health`
+gate regress.
 
 ## Verifiable promises
 

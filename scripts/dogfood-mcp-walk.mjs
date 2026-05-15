@@ -87,6 +87,22 @@ function getResult(responses, id) {
   }
 }
 
+function recordResult(failures, label, result) {
+  if (!result) {
+    failures.push(`${label}: missing response`);
+    return false;
+  }
+  if (result.error) {
+    failures.push(`${label}: ${result.error.message || JSON.stringify(result.error)}`);
+    return false;
+  }
+  if (result.rawText) {
+    failures.push(`${label}: non-JSON response`);
+    return false;
+  }
+  return true;
+}
+
 const COLORS = {
   bold: "\x1b[1m",
   dim: "\x1b[2m",
@@ -123,10 +139,12 @@ async function main() {
   ];
 
   const { responses, stderr } = await rpc(requests, 5000);
+  const failures = [];
 
   // 1. list_kinds
   header("list_kinds — vault census");
   const kinds = getResult(responses, 2);
+  recordResult(failures, "list_kinds", kinds);
   if (kinds) {
     console.log(`  total: ${kinds.total}`);
     console.log(`  byKind:`);
@@ -138,6 +156,7 @@ async function main() {
   // 2. list_concepts (preview)
   header("list_concepts — preview (top 8)");
   const list = getResult(responses, 3);
+  recordResult(failures, "list_concepts", list);
   if (list) {
     console.log(`  total: ${list.total}`);
     for (const node of (list.nodes || []).slice(0, 8)) {
@@ -154,12 +173,16 @@ async function main() {
       console.log(
         `  ${COLORS.yellow}vault corruption: error ${list.vaultWarnings.errorCount} · warning ${list.vaultWarnings.warningCount}${COLORS.reset}`,
       );
+      if ((list.vaultWarnings.errorCount || 0) > 0 || (list.vaultWarnings.warningCount || 0) > 0) {
+        failures.push("list_concepts: vaultWarnings present");
+      }
     }
   }
 
   // 3. find_evidence
   header(`find_evidence(title="vault")`);
   const ev = getResult(responses, 4);
+  recordResult(failures, "find_evidence", ev);
   if (ev) {
     console.log(`  matches: ${ev.matches?.length || 0}`);
     for (const m of (ev.matches || []).slice(0, 5)) {
@@ -170,18 +193,21 @@ async function main() {
   // 4. find_path
   header(`find_path(capabilities/mcp-server → domains/vault-local-first)`);
   const path = getResult(responses, 5);
+  recordResult(failures, "find_path", path);
   if (path) {
     if (path.found) {
       console.log(`  hops: ${path.hopCount}`);
       console.log(`  ${path.hops.join(" → ")}`);
     } else {
       console.log(`  ${COLORS.yellow}경로 없음${COLORS.reset} — ${path.reason || ""}`);
+      failures.push("find_path: expected mcp-server → vault-local-first path");
     }
   }
 
   // 5. find_backlinks
   header(`find_backlinks(capabilities/mcp-server)`);
   const bl = getResult(responses, 6);
+  recordResult(failures, "find_backlinks", bl);
   if (bl) {
     console.log(`  matches: ${bl.total}`);
     for (const m of (bl.matches || []).slice(0, 5)) {
@@ -194,6 +220,7 @@ async function main() {
   // 6. find_orphans
   header(`find_orphans (어떤 backlink 도 없는 고립 노드)`);
   const orph = getResult(responses, 7);
+  recordResult(failures, "find_orphans", orph);
   if (orph) {
     console.log(`  total: ${orph.total}`);
     for (const m of (orph.orphans || []).slice(0, 8)) {
@@ -204,6 +231,7 @@ async function main() {
   // 7. workspace_brief
   header(`query_ontology(workspace_brief)`);
   const brief = getResult(responses, 8);
+  recordResult(failures, "workspace_brief", brief);
   if (brief) {
     console.log(`  status: ${brief.status}`);
     console.log(
@@ -213,11 +241,15 @@ async function main() {
     for (const action of (brief.nextActions || []).slice(0, 5)) {
       console.log(`  ${action.kind?.padEnd(18) || ""} ${action.id || ""}`);
     }
+    if (brief.status !== "healthy") {
+      failures.push(`workspace_brief: status ${brief.status}`);
+    }
   }
 
   // 8. health
   header(`query_ontology(health)`);
   const health = getResult(responses, 9);
+  recordResult(failures, "health", health);
   if (health) {
     console.log(`  status: ${health.status}`);
     console.log(
@@ -225,6 +257,9 @@ async function main() {
     );
     for (const check of health.checks || []) {
       console.log(`  ${check.status?.padEnd(6) || ""} ${check.id.padEnd(26)} ${check.count}`);
+    }
+    if (health.status !== "healthy") {
+      failures.push(`health: status ${health.status}`);
     }
   }
 
@@ -242,11 +277,20 @@ async function main() {
   console.log(`  find_backlinks: ${bl?.total ?? "n/a"} (mcp-server 가 얼마나 popular)`);
   console.log(`  workspace_brief: ${brief?.status ?? "n/a"} (${(brief?.nextActions || []).length} next actions)`);
   console.log(`  health: ${health?.status ?? "n/a"} (${(health?.checks || []).length} checks)`);
+  console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   if (stderr.trim()) {
     console.log(
       `\n${COLORS.dim}[stderr]${COLORS.reset}\n${stderr.trim().split("\n").slice(0, 5).join("\n")}`,
     );
+  }
+
+  if (failures.length > 0) {
+    console.error(`\n${COLORS.yellow}dogfood walk failed gate:${COLORS.reset}`);
+    for (const failure of failures) {
+      console.error(`  - ${failure}`);
+    }
+    process.exit(1);
   }
 }
 
