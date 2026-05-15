@@ -42,7 +42,10 @@ export async function runMcpVerify(args) {
 
 function resolveVerifyScript() {
   const envPath = process.env.OMOT_MCP_VERIFY_PATH;
-  if (envPath && existsSync(envPath)) return envPath;
+  if (envPath) {
+    if (existsSync(envPath)) return envPath;
+    throw new Error(`OMOT_MCP_VERIFY_PATH does not exist: ${envPath}`);
+  }
 
   const monoDev = resolve(__dirname, '../../../mcp/scripts/verify.mjs');
   if (existsSync(monoDev)) return monoDev;
