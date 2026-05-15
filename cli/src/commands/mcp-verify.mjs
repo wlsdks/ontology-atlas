@@ -95,7 +95,8 @@ function parseArgs(args) {
 }
 
 function parseTimeout(value) {
-  const parsed = Number.parseInt(value ?? '', 10);
+  if (!/^[1-9]\d*$/.test(String(value ?? ''))) return false;
+  const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? String(parsed) : false;
 }
 

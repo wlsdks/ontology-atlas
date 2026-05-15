@@ -137,6 +137,10 @@ await test('mcp-verify — rejects invalid timeout values', async () => {
   const r = await run(['mcp-verify', '--timeout-ms', 'nope']);
   assert.equal(r.code, 1);
   assert.match(stripAnsi(r.stderr), /--timeout-ms must be a positive integer/);
+
+  const partial = await run(['mcp-verify', '--timeout-ms=1000ms']);
+  assert.equal(partial.code, 1);
+  assert.match(stripAnsi(partial.stderr), /--timeout-ms must be a positive integer/);
 });
 
 await test('compile --fix — applies compiler relation-array canonicalization', async () => {
