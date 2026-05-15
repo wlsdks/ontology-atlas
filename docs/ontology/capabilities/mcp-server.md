@@ -3,7 +3,7 @@ slug: capabilities/mcp-server
 kind: capability
 title: MCP Server (23 tools)
 domain: ai-agent-partner
-elements: [mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/vault.mjs, scripts/dogfood-mcp-walk.mjs]
+elements: [mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/vault.mjs, scripts/dogfood-mcp-walk.mjs, scripts/dogfood-mcp-walk.test.mjs]
 relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 ---
 
@@ -52,4 +52,5 @@ file-backed graph 를 graph database 처럼 더 예측 가능하게 다룰 수 �
 연속 실행한다. 기본 census / backlink / path 질의에 더해 `workspace_brief` 와 `health`
 를 함께 출력해, AI agent 가 첫 접촉에서 받는 graph diagnosis 품질을 계속 확인한다.
 핵심 응답 누락, vault warning, 예상 graph path 부재, `workspace_brief` / `health`
-비정상 상태는 exit 1 로 처리한다.
+비정상 상태는 exit 1 로 처리한다. `pnpm dogfood:test` 는 이 gate 판정을 fixture 로
+검증해 dogfood walk 의 실패 조건이 조용히 약해지지 않게 막는다.

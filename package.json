@@ -22,6 +22,7 @@
     "benchmark": "node scripts/benchmark.mjs",
     "benchmark:scale": "node scripts/benchmark-scale.mjs",
     "dogfood:walk": "node scripts/dogfood-mcp-walk.mjs",
+    "dogfood:test": "node --test scripts/dogfood-mcp-walk.test.mjs",
     "lint": "eslint",
     "bundle:check": "node scripts/check-bundle.mjs",
     "test": "vitest",

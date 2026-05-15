@@ -87,7 +87,7 @@ function getResult(responses, id) {
   }
 }
 
-function recordResult(failures, label, result) {
+export function recordResult(failures, label, result) {
   if (!result) {
     failures.push(`${label}: missing response`);
     return false;
@@ -101,6 +101,33 @@ function recordResult(failures, label, result) {
     return false;
   }
   return true;
+}
+
+export function evaluateDogfoodGate({ kinds, list, ev, path, bl, orph, brief, health }) {
+  const failures = [];
+  recordResult(failures, "list_kinds", kinds);
+  recordResult(failures, "list_concepts", list);
+  recordResult(failures, "find_evidence", ev);
+  recordResult(failures, "find_path", path);
+  recordResult(failures, "find_backlinks", bl);
+  recordResult(failures, "find_orphans", orph);
+  recordResult(failures, "workspace_brief", brief);
+  recordResult(failures, "health", health);
+
+  if (list?.vaultWarnings && ((list.vaultWarnings.errorCount || 0) > 0 || (list.vaultWarnings.warningCount || 0) > 0)) {
+    failures.push("list_concepts: vaultWarnings present");
+  }
+  if (path && !path.found) {
+    failures.push("find_path: expected mcp-server → vault-local-first path");
+  }
+  if (brief && brief.status !== "healthy") {
+    failures.push(`workspace_brief: status ${brief.status}`);
+  }
+  if (health && health.status !== "healthy") {
+    failures.push(`health: status ${health.status}`);
+  }
+
+  return failures;
 }
 
 const COLORS = {
@@ -139,12 +166,10 @@ async function main() {
   ];
 
   const { responses, stderr } = await rpc(requests, 5000);
-  const failures = [];
 
   // 1. list_kinds
   header("list_kinds — vault census");
   const kinds = getResult(responses, 2);
-  recordResult(failures, "list_kinds", kinds);
   if (kinds) {
     console.log(`  total: ${kinds.total}`);
     console.log(`  byKind:`);
@@ -156,7 +181,6 @@ async function main() {
   // 2. list_concepts (preview)
   header("list_concepts — preview (top 8)");
   const list = getResult(responses, 3);
-  recordResult(failures, "list_concepts", list);
   if (list) {
     console.log(`  total: ${list.total}`);
     for (const node of (list.nodes || []).slice(0, 8)) {
@@ -173,16 +197,12 @@ async function main() {
       console.log(
         `  ${COLORS.yellow}vault corruption: error ${list.vaultWarnings.errorCount} · warning ${list.vaultWarnings.warningCount}${COLORS.reset}`,
       );
-      if ((list.vaultWarnings.errorCount || 0) > 0 || (list.vaultWarnings.warningCount || 0) > 0) {
-        failures.push("list_concepts: vaultWarnings present");
-      }
     }
   }
 
   // 3. find_evidence
   header(`find_evidence(title="vault")`);
   const ev = getResult(responses, 4);
-  recordResult(failures, "find_evidence", ev);
   if (ev) {
     console.log(`  matches: ${ev.matches?.length || 0}`);
     for (const m of (ev.matches || []).slice(0, 5)) {
@@ -193,21 +213,18 @@ async function main() {
   // 4. find_path
   header(`find_path(capabilities/mcp-server → domains/vault-local-first)`);
   const path = getResult(responses, 5);
-  recordResult(failures, "find_path", path);
   if (path) {
     if (path.found) {
       console.log(`  hops: ${path.hopCount}`);
       console.log(`  ${path.hops.join(" → ")}`);
     } else {
       console.log(`  ${COLORS.yellow}경로 없음${COLORS.reset} — ${path.reason || ""}`);
-      failures.push("find_path: expected mcp-server → vault-local-first path");
     }
   }
 
   // 5. find_backlinks
   header(`find_backlinks(capabilities/mcp-server)`);
   const bl = getResult(responses, 6);
-  recordResult(failures, "find_backlinks", bl);
   if (bl) {
     console.log(`  matches: ${bl.total}`);
     for (const m of (bl.matches || []).slice(0, 5)) {
@@ -220,7 +237,6 @@ async function main() {
   // 6. find_orphans
   header(`find_orphans (어떤 backlink 도 없는 고립 노드)`);
   const orph = getResult(responses, 7);
-  recordResult(failures, "find_orphans", orph);
   if (orph) {
     console.log(`  total: ${orph.total}`);
     for (const m of (orph.orphans || []).slice(0, 8)) {
@@ -231,7 +247,6 @@ async function main() {
   // 7. workspace_brief
   header(`query_ontology(workspace_brief)`);
   const brief = getResult(responses, 8);
-  recordResult(failures, "workspace_brief", brief);
   if (brief) {
     console.log(`  status: ${brief.status}`);
     console.log(
@@ -241,15 +256,11 @@ async function main() {
     for (const action of (brief.nextActions || []).slice(0, 5)) {
       console.log(`  ${action.kind?.padEnd(18) || ""} ${action.id || ""}`);
     }
-    if (brief.status !== "healthy") {
-      failures.push(`workspace_brief: status ${brief.status}`);
-    }
   }
 
   // 8. health
   header(`query_ontology(health)`);
   const health = getResult(responses, 9);
-  recordResult(failures, "health", health);
   if (health) {
     console.log(`  status: ${health.status}`);
     console.log(
@@ -258,10 +269,9 @@ async function main() {
     for (const check of health.checks || []) {
       console.log(`  ${check.status?.padEnd(6) || ""} ${check.id.padEnd(26)} ${check.count}`);
     }
-    if (health.status !== "healthy") {
-      failures.push(`health: status ${health.status}`);
-    }
   }
+
+  const failures = evaluateDogfoodGate({ kinds, list, ev, path, bl, orph, brief, health });
 
   // 분석
   header("Analysis — AI agent quality assessment");
@@ -294,7 +304,9 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error("dogfood walk failed:", err);
-  process.exit(1);
-});
+if (fileURLToPath(import.meta.url) === resolve(process.argv[1] ?? "")) {
+  main().catch((err) => {
+    console.error("dogfood walk failed:", err);
+    process.exit(1);
+  });
+}
