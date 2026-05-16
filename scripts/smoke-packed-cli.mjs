@@ -113,6 +113,8 @@ try {
   assert.match(cliMcpVerify.stdout, new RegExp(`tools/list ${expectedToolCount}/${expectedToolCount}`));
   assert.match(cliMcpVerify.stdout, /validate_vault/);
   assert.match(cliMcpVerify.stdout, /workspace_brief/);
+  assert.match(cliMcpVerify.stdout, /workspace_brief advisory nextActions/);
+  assert.match(cliMcpVerify.stdout, /compile_issues:warn/);
   assert.match(cliMcpVerify.stdout, /health/);
 
   const missingVerifyOverride = runRaw(cliBin, ['mcp-verify', 'ontology'], {
@@ -144,6 +146,8 @@ try {
   );
   assert.match(mcpVerify.stdout, /validate_vault/);
   assert.match(mcpVerify.stdout, /workspace_brief/);
+  assert.match(mcpVerify.stdout, /workspace_brief advisory nextActions/);
+  assert.match(mcpVerify.stdout, /compile_issues:warn/);
   assert.match(mcpVerify.stdout, /health/);
 
   const invalidMcpVerifyTimeout = runRaw(

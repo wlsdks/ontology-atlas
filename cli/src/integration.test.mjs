@@ -192,6 +192,8 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, new RegExp(`tools/list ${EXPECTED_TOOL_COUNT}/${EXPECTED_TOOL_COUNT}`));
     assert.match(clean, /validate_vault/);
     assert.match(clean, /workspace_brief/);
+    assert.match(clean, /workspace_brief advisory nextActions/);
+    assert.match(clean, /compile_issues:warn/);
     assert.match(clean, /health/);
   } finally {
     rmSync(root, { recursive: true, force: true });
