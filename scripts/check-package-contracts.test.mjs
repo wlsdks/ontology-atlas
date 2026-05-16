@@ -395,6 +395,7 @@ describe('package contract helpers', () => {
     assert.match(tableRow, /write-tool `postWriteMaintenance` `score`\/`proposedAction`\/next-action guidance/);
     assert.match(tableRow, /enum-validated `maintenance_plan` filters/);
     assert.match(tableRow, /ready `maintenance_plan` cursor \+ missing `maintenance_plan\.afterActionId` cursor smoke/);
+    assert.match(tableRow, /maintenance bucket \/ current-page next-action summaries/);
     assert.match(tableRow, /`workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`/);
     assert.match(tableRow, /`neighbors`\/`path`\/`project_scope` graph-query smoke/);
     assert.match(verifySection, /mcp-verify --help/);
@@ -407,6 +408,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`cursor\.found=true` with `cursor\.reason=null`/);
     assert.match(verifySection, /`cursor\.found=false`/);
     assert.match(verifySection, /`nextExecutableAction` \/ `nextReviewAction`\s+point only at the first executable\/review action in the current returned page/);
+    assert.match(verifySection, /Successful maintenance cursor lines also print bucket summaries and\s+current-page executable\/review next-action summaries/);
     assert.match(verifySection, /enum-validated\s+`maintenance_plan\.phases` \/ `maintenance_plan\.severities` \/\s+`maintenance_plan\.kinds` filters/);
     assert.match(verifySection, /strict work-queue\s+checks before starting the MCP server/);
     assert.match(verifySection, /Batch tool caps/);
@@ -594,6 +596,7 @@ describe('package contract helpers', () => {
     assert.match(mcpVerifyRow, /project-node `list_concepts` probe/);
     assert.match(mcpVerifyRow, /write-tool `postWriteMaintenance` `score` \/ executable `proposedAction` \/ current-page next-action guidance/);
     assert.match(mcpVerifyRow, /ready `maintenance_plan` cursor \+ missing `maintenance_plan\.afterActionId` cursor smoke/);
+    assert.match(mcpVerifyRow, /maintenance bucket \/ current-page next-action summaries/);
     assert.match(mcpVerifyRow, /`maintenance_plan\.phases` \/ `maintenance_plan\.severities` \/ `maintenance_plan\.kinds` enum filter/);
     assert.match(mcpVerifyRow, /`cursor\.found=false`/);
     assert.match(mcpVerifyRow, /첫 executable\/review page action alignment/);

@@ -242,6 +242,7 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, /overview query_plan/);
     assert.match(clean, /project_map query_plan/);
     assert.match(clean, /maintenance cursor — missing afterActionId reported/);
+    assert.match(clean, /phase none; severity none; kind none; executable none; review none/);
     assert.match(clean, /maintenance cursor — ready page stable/);
     assert.match(clean, /neighbors — elements\/example/);
     assert.match(clean, /path — elements\/example → project \(1 hop, 1 edge\)/);
@@ -320,6 +321,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /cursor smoke checks both cursor\.found=true with cursor\.reason=null and cursor\.found=false/);
   assert.match(clean, /zero remaining actions, and no next actions/);
   assert.match(clean, /nextExecutableAction \/ nextReviewAction point only at the first executable\/review action in the current returned page/);
+  assert.match(clean, /Successful maintenance cursor lines print bucket summaries plus current-page executable\/review next-action summaries/);
 });
 
 await test('mcp-verify — rejects invalid timeout values', async () => {

@@ -268,6 +268,7 @@ try {
   assert.match(cliMcpVerifyHelp.stdout, /cursor smoke checks both cursor\.found=true with cursor\.reason=null and cursor\.found=false/);
   assert.match(cliMcpVerifyHelp.stdout, /zero remaining actions, and no next actions/);
   assert.match(cliMcpVerifyHelp.stdout, /nextExecutableAction \/ nextReviewAction point only at the first executable\/review action in the current returned page/);
+  assert.match(cliMcpVerifyHelp.stdout, /Successful maintenance cursor lines print bucket summaries plus current-page executable\/review next-action summaries/);
 
   const missingVerifyOverride = runRaw(cliBin, ['mcp-verify', 'ontology'], {
     cwd: projectDir,
@@ -402,6 +403,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /missing afterActionId/);
   assert.match(directMcpVerifyHelp.stdout, /cursor\.found=false, reason, empty page/);
   assert.match(directMcpVerifyHelp.stdout, /nextExecutableAction \/ nextReviewAction point only at the first executable\/review action in the current returned page/);
+  assert.match(directMcpVerifyHelp.stdout, /Successful cursor lines print bucket summaries plus current-page executable\/review next-action summaries/);
 
   const mcpEmptyVerify = run(
     'npm',
