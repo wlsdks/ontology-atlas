@@ -2011,9 +2011,9 @@ function compileOntologyTool({
 } = {}) {
   requireOptionalBoolean(includeIndexes, 'includeIndexes');
   requireOptionalBoolean(summary, 'summary');
-  requireOptionalPositiveInteger(nodesLimit, 'nodesLimit');
+  requireOptionalPositiveInteger(nodesLimit, 'nodesLimit', { max: 500 });
   requireOptionalNonNegativeInteger(nodesOffset, 'nodesOffset');
-  requireOptionalPositiveInteger(edgesLimit, 'edgesLimit');
+  requireOptionalPositiveInteger(edgesLimit, 'edgesLimit', { max: 500 });
   requireOptionalNonNegativeInteger(edgesOffset, 'edgesOffset');
   const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), {
     includeIndexes: includeIndexes === true,
