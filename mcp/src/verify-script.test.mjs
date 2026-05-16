@@ -15,6 +15,8 @@ import {
   firstContactErrorFailure,
   hasAllFirstContactResponses,
   hasFirstContactErrorResponse,
+  listConceptsFailure,
+  listKindsFailure,
   parseVerifyTimeoutMs,
   serverStartupFailure,
   validationCodeSummary,
@@ -91,15 +93,59 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('accepts clean list_concepts payloads', () => {
+    assert.equal(
+      listConceptsFailure({
+        total: 1,
+        vaultRoot: '/tmp/vault',
+        nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+      }),
+      null,
+    );
+    assert.equal(
+      listConceptsFailure({
+        total: 0,
+        vaultRoot: '/tmp/vault',
+        nodes: [],
+        vaultWarnings: { errorCount: 0, warningCount: 0 },
+      }),
+      null,
+    );
     assert.equal(vaultWarningsFailure({ total: 1 }), null);
-    assert.equal(vaultWarningsFailure({ vaultWarnings: { errorCount: 0, warningCount: 0 } }), null);
   });
 
   it('fails when list_concepts reports vault warnings', () => {
     assert.equal(
-      vaultWarningsFailure({ vaultWarnings: { errorCount: 1, warningCount: 2 } }),
+      listConceptsFailure({
+        total: 0,
+        vaultRoot: '/tmp/vault',
+        nodes: [],
+        vaultWarnings: { errorCount: 1, warningCount: 2 },
+      }),
       'list_concepts vaultWarnings present — errors 1, warnings 2',
     );
+  });
+
+  it('fails malformed list_kinds payloads', () => {
+    assert.equal(listKindsFailure({ byKind: {} }), 'list_kinds response missing total count');
+    assert.equal(listKindsFailure({ total: 0 }), 'list_kinds response missing byKind aggregate');
+    assert.equal(listKindsFailure({ total: 1, byKind: { project: -1 } }), 'list_kinds response missing count for kind: project');
+    assert.equal(listKindsFailure({ total: 2, byKind: { project: 1 } }), 'list_kinds response total mismatch — total 2, byKind 1');
+    assert.equal(listKindsFailure({ total: 1, byKind: { project: 1 } }), null);
+  });
+
+  it('fails malformed list_concepts payloads', () => {
+    assert.equal(listConceptsFailure({ vaultRoot: '/tmp/vault', nodes: [] }), 'list_concepts response missing total count');
+    assert.equal(listConceptsFailure({ total: 0, nodes: [] }), 'list_concepts response missing vaultRoot');
+    assert.equal(listConceptsFailure({ total: 0, vaultRoot: '/tmp/vault' }), 'list_concepts response missing nodes array');
+    assert.equal(
+      listConceptsFailure({ total: 0, vaultRoot: '/tmp/vault', nodes: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1 }] }),
+      'list_concepts response node count exceeds total — nodes 1, total 0',
+    );
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [null] }), 'list_concepts response malformed node at index 0');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{}] }), 'list_concepts response missing node slug at index 0');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ slug: 'project' }] }), 'list_concepts response missing node kind: project');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ slug: 'project', kind: 'project' }] }), 'list_concepts response missing node title: project');
+    assert.equal(listConceptsFailure({ total: 1, vaultRoot: '/tmp/vault', nodes: [{ slug: 'project', kind: 'project', title: 'Project' }] }), 'list_concepts response missing node mtime: project');
   });
 
   it('fails malformed list_concepts vaultWarnings payloads', () => {

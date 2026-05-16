@@ -15,7 +15,11 @@ import {
 
 const okShape = {
   kinds: { total: 1, byKind: { project: 1 } },
-  list: { total: 1, nodes: [] },
+  list: {
+    total: 1,
+    vaultRoot: "/tmp/vault",
+    nodes: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }],
+  },
   ev: { matches: [] },
   path: { found: true, hopCount: 1, hops: ["a", "b"] },
   bl: { total: 1, matches: [] },
@@ -100,6 +104,22 @@ describe("rpc response completion helpers", () => {
 describe("evaluateDogfoodGate", () => {
   it("passes the healthy dogfood shape", () => {
     assert.deepEqual(evaluateDogfoodGate(okShape), []);
+  });
+
+  it("fails on malformed list_kinds payloads", () => {
+    const failures = evaluateDogfoodGate({
+      ...okShape,
+      kinds: { total: 2, byKind: { project: 1 } },
+    });
+    assert.deepEqual(failures, ["list_kinds response total mismatch — total 2, byKind 1"]);
+  });
+
+  it("fails on malformed list_concepts payloads", () => {
+    const failures = evaluateDogfoodGate({
+      ...okShape,
+      list: { total: 1, nodes: [] },
+    });
+    assert.deepEqual(failures, ["list_concepts response missing vaultRoot"]);
   });
 
   it("fails on vault warnings", () => {

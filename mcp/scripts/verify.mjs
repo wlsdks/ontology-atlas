@@ -141,6 +141,62 @@ export function vaultWarningsFailure(parsed) {
   return `list_concepts vaultWarnings present — errors ${errorCount}, warnings ${warningCount}`;
 }
 
+export function listKindsFailure(parsed) {
+  if (!Number.isInteger(parsed?.total) || parsed.total < 0) {
+    return 'list_kinds response missing total count';
+  }
+  if (!parsed.byKind || typeof parsed.byKind !== 'object' || Array.isArray(parsed.byKind)) {
+    return 'list_kinds response missing byKind aggregate';
+  }
+  let sum = 0;
+  for (const [kind, count] of Object.entries(parsed.byKind)) {
+    if (typeof kind !== 'string' || kind.length === 0) {
+      return 'list_kinds response has empty kind key';
+    }
+    if (!Number.isInteger(count) || count < 0) {
+      return `list_kinds response missing count for kind: ${kind || 'unknown'}`;
+    }
+    sum += count;
+  }
+  if (sum !== parsed.total) {
+    return `list_kinds response total mismatch — total ${parsed.total}, byKind ${sum}`;
+  }
+  return null;
+}
+
+export function listConceptsFailure(parsed) {
+  if (!Number.isInteger(parsed?.total) || parsed.total < 0) {
+    return 'list_concepts response missing total count';
+  }
+  if (typeof parsed.vaultRoot !== 'string' || parsed.vaultRoot.length === 0) {
+    return 'list_concepts response missing vaultRoot';
+  }
+  if (!Array.isArray(parsed.nodes)) {
+    return 'list_concepts response missing nodes array';
+  }
+  if (parsed.nodes.length > parsed.total) {
+    return `list_concepts response node count exceeds total — nodes ${parsed.nodes.length}, total ${parsed.total}`;
+  }
+  for (const [index, node] of parsed.nodes.entries()) {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) {
+      return `list_concepts response malformed node at index ${index}`;
+    }
+    if (typeof node.slug !== 'string' || node.slug.length === 0) {
+      return `list_concepts response missing node slug at index ${index}`;
+    }
+    if (typeof node.kind !== 'string' || node.kind.length === 0) {
+      return `list_concepts response missing node kind: ${node.slug}`;
+    }
+    if (typeof node.title !== 'string' || node.title.length === 0) {
+      return `list_concepts response missing node title: ${node.slug}`;
+    }
+    if (!Number.isFinite(node.mtime) || node.mtime < 0) {
+      return `list_concepts response missing node mtime: ${node.slug}`;
+    }
+  }
+  return vaultWarningsFailure(parsed);
+}
+
 export function validateVaultFailure(parsed) {
   const summary = parsed?.summary;
   if (!summary) return 'validate_vault response missing summary';
@@ -400,14 +456,14 @@ async function step2BootAndCall() {
       try {
         const text = callRes.result.content?.[0]?.text || '';
         const parsed = JSON.parse(text);
-        log('ok', `list_concepts — vault total ${parsed.total} nodes (vaultRoot ${parsed.vaultRoot})`);
-        if (parsed.total === 0) {
-          log('info', 'Warning: vault is empty. Make sure OMOT_VAULT points to the right folder (e.g. ./docs/ontology)');
-        }
-        const failure = vaultWarningsFailure(parsed);
+        const failure = listConceptsFailure(parsed);
         if (failure) {
           log('fail', failure);
           return res(false);
+        }
+        log('ok', `list_concepts — vault total ${parsed.total} nodes (vaultRoot ${parsed.vaultRoot})`);
+        if (parsed.total === 0) {
+          log('info', 'Warning: vault is empty. Make sure OMOT_VAULT points to the right folder (e.g. ./docs/ontology)');
         }
       } catch (err) {
         log('fail', `failed to parse list_concepts response: ${err.message}`);
