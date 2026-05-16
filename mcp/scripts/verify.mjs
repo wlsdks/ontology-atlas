@@ -542,7 +542,7 @@ export function vaultWarningsFailure(parsed) {
   const errorCount = warnings.errorCount;
   const warningCount = warnings.warningCount;
   if (errorCount === 0 && warningCount === 0) return null;
-  return `list_concepts vaultWarnings present — errors ${errorCount}, warnings ${warningCount}`;
+  return `list_concepts vaultWarnings present — errors ${errorCount}, warnings ${warningCount}. Run validate_vault for file-level diagnostics before writing.`;
 }
 
 export function listKindsFailure(parsed) {

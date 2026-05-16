@@ -683,7 +683,7 @@ describe('verify.mjs first-contact gates', () => {
         nodes: [],
         vaultWarnings: { errorCount: 1, warningCount: 2 },
       }),
-      'list_concepts vaultWarnings present — errors 1, warnings 2',
+      'list_concepts vaultWarnings present — errors 1, warnings 2. Run validate_vault for file-level diagnostics before writing.',
     );
   });
 
