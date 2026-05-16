@@ -4,7 +4,11 @@
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
+import {
+  parseRequiredFlagValue,
+  parseVaultFlag,
+  resolveExclusiveVaultArg,
+} from '../lib/cli-args.mjs';
 
 const COLORS = {
   green: '\x1b[32m',
@@ -87,22 +91,27 @@ function parseArgs(args) {
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
-    else if (a === '--kind') flags.kind = args[++i] || null;
-    else if (a.startsWith('--kind=')) flags.kind = a.slice('--kind='.length);
+    else if (a === '--kind') flags.kind = parseRequiredFlagValue('--kind', args[++i]);
+    else if (a.startsWith('--kind=')) flags.kind = parseRequiredFlagValue('--kind', a.slice('--kind='.length));
     else if (a === '--exclude-kinds') {
-      const next = args[++i] || '';
+      const next = parseRequiredFlagValue('--exclude-kinds', args[++i]);
+      if (next instanceof Error) return { error: next.message };
       flags.excludeKinds = next
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
     } else if (a.startsWith('--exclude-kinds=')) {
-      flags.excludeKinds = a
-        .slice('--exclude-kinds='.length)
+      const next = parseRequiredFlagValue('--exclude-kinds', a.slice('--exclude-kinds='.length));
+      if (next instanceof Error) return { error: next.message };
+      flags.excludeKinds = next
         .split(',')
         .map((s) => s.trim())
         .filter(Boolean);
     } else if (a.startsWith('--')) return { error: `unknown flag: ${a}` };
     else positional.push(a);
+  }
+  for (const value of Object.values(flags)) {
+    if (value instanceof Error) return { error: value.message };
   }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;

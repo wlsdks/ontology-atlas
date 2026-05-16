@@ -4,7 +4,12 @@
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { parseVaultFlag, resolveTrailingVaultArg } from '../lib/cli-args.mjs';
+import {
+  parsePositiveIntegerFlag,
+  parseRequiredFlagValue,
+  parseVaultFlag,
+  resolveTrailingVaultArg,
+} from '../lib/cli-args.mjs';
 
 const COLORS = {
   green: '\x1b[32m',
@@ -114,16 +119,22 @@ function parseArgs(args) {
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
-    else if (a === '--depth') flags.depth = Number(args[++i]) || undefined;
-    else if (a.startsWith('--depth=')) flags.depth = Number(a.slice('--depth='.length)) || undefined;
-    else if (a === '--direction') flags.direction = args[++i] || 'incoming';
+    else if (a === '--depth') flags.depth = parsePositiveIntegerFlag('--depth', args[++i]);
+    else if (a.startsWith('--depth=')) flags.depth = parsePositiveIntegerFlag('--depth', a.slice('--depth='.length));
+    else if (a === '--direction') flags.direction = parseRequiredFlagValue('--direction', args[++i]);
     else if (a.startsWith('--direction='))
-      flags.direction = a.slice('--direction='.length) || 'incoming';
+      flags.direction = parseRequiredFlagValue('--direction', a.slice('--direction='.length));
     else if (a.startsWith('--')) return { error: `unknown flag: ${a}` };
     else positional.push(a);
   }
   if (positional.length === 0) {
     return { error: 'slug is required (e.g. `blast-radius capabilities/foo`)' };
+  }
+  for (const value of Object.values(flags)) {
+    if (value instanceof Error) return { error: value.message };
+  }
+  if (!['incoming', 'outgoing', 'both'].includes(flags.direction)) {
+    return { error: '--direction must be one of incoming / outgoing / both' };
   }
   const vaultResult = resolveTrailingVaultArg({ vault: flags.vault, positional, vaultIndex: 1 });
   if (vaultResult.error) return vaultResult;

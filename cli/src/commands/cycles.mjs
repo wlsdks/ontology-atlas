@@ -3,7 +3,11 @@
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
+import {
+  parsePositiveIntegerFlag,
+  parseVaultFlag,
+  resolveExclusiveVaultArg,
+} from '../lib/cli-args.mjs';
 
 const COLORS = {
   green: '\x1b[32m',
@@ -70,11 +74,14 @@ function parseArgs(args) {
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
-    else if (a === '--max-hops') flags.maxHops = Number(args[++i]) || undefined;
+    else if (a === '--max-hops') flags.maxHops = parsePositiveIntegerFlag('--max-hops', args[++i]);
     else if (a.startsWith('--max-hops='))
-      flags.maxHops = Number(a.slice('--max-hops='.length)) || undefined;
+      flags.maxHops = parsePositiveIntegerFlag('--max-hops', a.slice('--max-hops='.length));
     else if (a.startsWith('--')) return { error: `unknown flag: ${a}` };
     else positional.push(a);
+  }
+  for (const value of Object.values(flags)) {
+    if (value instanceof Error) return { error: value.message };
   }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;

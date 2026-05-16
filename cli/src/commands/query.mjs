@@ -4,7 +4,11 @@
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { parseVaultFlag, resolveTrailingVaultArg } from '../lib/cli-args.mjs';
+import {
+  parsePositiveIntegerFlag,
+  parseVaultFlag,
+  resolveTrailingVaultArg,
+} from '../lib/cli-args.mjs';
 
 const COLORS = {
   green: '\x1b[32m',
@@ -74,14 +78,17 @@ function parseArgs(args) {
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
-    else if (a === '--limit') flags.limit = Number(args[++i]) || 100;
+    else if (a === '--limit') flags.limit = parsePositiveIntegerFlag('--limit', args[++i]);
     else if (a.startsWith('--limit='))
-      flags.limit = Number(a.slice('--limit='.length)) || 100;
+      flags.limit = parsePositiveIntegerFlag('--limit', a.slice('--limit='.length));
     else if (a.startsWith('--')) return { error: `unknown flag: ${a}` };
     else positional.push(a);
   }
   if (positional.length === 0) {
     return { error: 'filter is required (e.g. "kind=capability AND has(elements)")' };
+  }
+  for (const value of Object.values(flags)) {
+    if (value instanceof Error) return { error: value.message };
   }
   const vaultResult = resolveTrailingVaultArg({ vault: flags.vault, positional, vaultIndex: 1 });
   if (vaultResult.error) return vaultResult;

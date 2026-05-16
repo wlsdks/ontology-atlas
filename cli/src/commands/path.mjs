@@ -6,7 +6,11 @@
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { parseVaultFlag, resolveTrailingVaultArg } from '../lib/cli-args.mjs';
+import {
+  parsePositiveIntegerFlag,
+  parseVaultFlag,
+  resolveTrailingVaultArg,
+} from '../lib/cli-args.mjs';
 
 const COLORS = {
   green: '\x1b[32m',
@@ -92,18 +96,9 @@ function parseArgs(args) {
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
     else if (a === '--max-hops') {
-      const next = args[++i];
-      const n = Number.parseInt(next, 10);
-      if (!Number.isFinite(n) || n < 1) {
-        return { error: `--max-hops requires a positive integer, got "${next}"` };
-      }
-      flags.maxHops = n;
+      flags.maxHops = parsePositiveIntegerFlag('--max-hops', args[++i]);
     } else if (a.startsWith('--max-hops=')) {
-      const n = Number.parseInt(a.slice('--max-hops='.length), 10);
-      if (!Number.isFinite(n) || n < 1) {
-        return { error: `--max-hops requires a positive integer` };
-      }
-      flags.maxHops = n;
+      flags.maxHops = parsePositiveIntegerFlag('--max-hops', a.slice('--max-hops='.length));
     } else if (a.startsWith('--')) {
       return { error: `unknown flag: ${a}` };
     } else {
@@ -112,6 +107,9 @@ function parseArgs(args) {
   }
   if (positional.length < 2) {
     return { error: 'both <from> and <to> are required' };
+  }
+  for (const value of Object.values(flags)) {
+    if (value instanceof Error) return { error: value.message };
   }
   // 3rd positional = vault path (parity with list/find/validate/backlinks/orphans).
   const vaultResult = resolveTrailingVaultArg({ vault: flags.vault, positional, vaultIndex: 2 });

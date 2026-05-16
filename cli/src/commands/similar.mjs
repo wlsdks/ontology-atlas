@@ -4,6 +4,12 @@
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
+import {
+  parsePositiveIntegerFlag,
+  parseRequiredFlagValue,
+  parseVaultFlag,
+  resolveTrailingVaultArg,
+} from '../lib/cli-args.mjs';
 
 const COLORS = {
   green: '\x1b[32m',
@@ -108,31 +114,35 @@ function render(result, query) {
 }
 
 function parseArgs(args) {
-  const flags = { vault: '.', json: false, limit: 10, kind: null, slug: null };
+  const flags = { vault: null, json: false, limit: 10, kind: null, slug: null };
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
-    if (a === '--vault') flags.vault = args[++i] || '.';
-    else if (a.startsWith('--vault=')) flags.vault = a.slice('--vault='.length);
+    if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
+    else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
-    else if (a === '--limit') flags.limit = Number(args[++i]) || 10;
-    else if (a.startsWith('--limit=')) flags.limit = Number(a.slice('--limit='.length)) || 10;
-    else if (a === '--kind') flags.kind = args[++i] || null;
-    else if (a.startsWith('--kind=')) flags.kind = a.slice('--kind='.length);
-    else if (a === '--slug') flags.slug = args[++i] || null;
-    else if (a.startsWith('--slug=')) flags.slug = a.slice('--slug='.length);
+    else if (a === '--limit') flags.limit = parsePositiveIntegerFlag('--limit', args[++i]);
+    else if (a.startsWith('--limit=')) flags.limit = parsePositiveIntegerFlag('--limit', a.slice('--limit='.length));
+    else if (a === '--kind') flags.kind = parseRequiredFlagValue('--kind', args[++i]);
+    else if (a.startsWith('--kind=')) flags.kind = parseRequiredFlagValue('--kind', a.slice('--kind='.length));
+    else if (a === '--slug') flags.slug = parseRequiredFlagValue('--slug', args[++i]);
+    else if (a.startsWith('--slug=')) flags.slug = parseRequiredFlagValue('--slug', a.slice('--slug='.length));
     else if (a.startsWith('--')) return { error: `unknown flag: ${a}` };
     else positional.push(a);
   }
   if (positional.length === 0 && !flags.slug) {
     return { error: 'query is required (e.g. `similar "사용자 로그인"` or `similar --slug capabilities/foo`)' };
   }
-  const [title, vault] = positional;
-  if (vault && flags.vault === '.') flags.vault = vault;
+  if (flags.vault === false) return { error: '--vault requires a path' };
+  for (const value of Object.values(flags)) {
+    if (value instanceof Error) return { error: value.message };
+  }
+  const vaultResult = resolveTrailingVaultArg({ vault: flags.vault, positional, vaultIndex: 1 });
+  if (vaultResult.error) return vaultResult;
   return {
-    title: title || null,
+    title: positional[0] || null,
     slug: flags.slug,
-    vault: flags.vault,
+    vault: vaultResult.vault,
     json: flags.json,
     limit: flags.limit,
     kind: flags.kind,

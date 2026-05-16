@@ -1319,6 +1319,73 @@ await test('read-only graph commands — reject ambiguous vault arguments before
   }
 });
 
+await test('graph diagnostic commands — reject invalid option values before MCP call', async () => {
+  const cases = [
+    {
+      args: ['query', 'kind=capability', '--limit', '--json'],
+      pattern: /--limit must be a positive integer/,
+    },
+    {
+      args: ['overview', '--limit=0'],
+      pattern: /--limit must be a positive integer/,
+    },
+    {
+      args: ['hubs', '--limit=abc'],
+      pattern: /--limit must be a positive integer/,
+    },
+    {
+      args: ['path', 'capabilities/foo', 'capabilities/bar', '--max-hops=2x'],
+      pattern: /--max-hops must be a positive integer/,
+    },
+    {
+      args: ['cycles', '--max-hops', '--json'],
+      pattern: /--max-hops must be a positive integer/,
+    },
+    {
+      args: ['blast-radius', 'capabilities/foo', '--depth=0'],
+      pattern: /--depth must be a positive integer/,
+    },
+    {
+      args: ['blast-radius', 'capabilities/foo', '--direction', '--json'],
+      pattern: /--direction requires a value/,
+    },
+    {
+      args: ['blast-radius', 'capabilities/foo', '--direction=sideways'],
+      pattern: /--direction must be one of incoming \/ outgoing \/ both/,
+    },
+    {
+      args: ['orphans', '--kind'],
+      pattern: /--kind requires a value/,
+    },
+    {
+      args: ['orphans', '--exclude-kinds='],
+      pattern: /--exclude-kinds requires a value/,
+    },
+    {
+      args: ['similar', 'auth', '--limit=0'],
+      pattern: /--limit must be a positive integer/,
+    },
+    {
+      args: ['similar', 'auth', '--kind'],
+      pattern: /--kind requires a value/,
+    },
+    {
+      args: ['similar', '--slug'],
+      pattern: /--slug requires a value/,
+    },
+    {
+      args: ['similar', 'auth', 'ontology', '--vault', 'docs/ontology'],
+      pattern: /either positional argument or --vault/,
+    },
+  ];
+
+  for (const c of cases) {
+    const r = await run(c.args);
+    assert.equal(r.code, 1, `${c.args.join(' ')}\nstdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.match(stripAnsi(r.stderr), c.pattern);
+  }
+});
+
 await test('orphans — graph fixture 에서 referenced 노드 0건 보고', async () => {
   // buildGraphFixture: foo (referenced by bar.relates + auth.capabilities),
   // bar (referenced by 0 — orphan? but auth domain.capabilities 가 references bar),
