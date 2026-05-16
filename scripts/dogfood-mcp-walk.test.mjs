@@ -452,6 +452,10 @@ const okShape = {
         tool: "add_relation",
         args: { from: "domains/ai-agent-partner", to: "capabilities/mcp-server", type: "capabilities" },
       },
+      nodes: {
+        from: { slug: "domains/ai-agent-partner", kind: "domain", title: "AI Agent Partner" },
+        to: { slug: "capabilities/mcp-server", kind: "capability", title: "MCP Server" },
+      },
     },
     nextReviewAction: {
       id: "maint_review",
@@ -474,6 +478,10 @@ const okShape = {
         proposedAction: {
           tool: "add_relation",
           args: { from: "domains/ai-agent-partner", to: "capabilities/mcp-server", type: "capabilities" },
+        },
+        nodes: {
+          from: { slug: "domains/ai-agent-partner", kind: "domain", title: "AI Agent Partner" },
+          to: { slug: "capabilities/mcp-server", kind: "capability", title: "MCP Server" },
         },
       },
       {
@@ -2686,6 +2694,25 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["maintenance_plan executable action missing proposedAction: maint_link"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        maintenancePlan: {
+          ...okShape.maintenancePlan,
+          actions: [
+            {
+              ...okShape.maintenancePlan.actions[0],
+              proposedAction: {
+                ...okShape.maintenancePlan.actions[0].proposedAction,
+                args: { ...okShape.maintenancePlan.actions[0].proposedAction.args, to: "capabilities/other" },
+              },
+            },
+            okShape.maintenancePlan.actions[1],
+          ],
+        },
+      }),
+      ["maintenance_plan proposedAction endpoint mismatch: maint_link"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
