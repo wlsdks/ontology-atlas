@@ -487,18 +487,19 @@ describe('verify.mjs first-contact gates', () => {
           { slug: 'capabilities/mcp-server', kind: 'capability' },
         ],
       }),
-      { slug: 'project', project: 'project', hasNode: true, hasProject: true },
+      { slug: 'capabilities/mcp-server', pathTarget: 'project', project: 'project', hasNode: true, hasProject: true },
     );
     assert.deepEqual(
       buildGraphQuerySmokeArgs({ nodes: [{ slug: 'capabilities/a', kind: 'capability' }] }),
-      { slug: 'capabilities/a', project: null, hasNode: true, hasProject: false },
+      { slug: 'capabilities/a', pathTarget: 'capabilities/a', project: null, hasNode: true, hasProject: false },
     );
-    assert.deepEqual(buildGraphQuerySmokeArgs({ nodes: [] }), { slug: null, project: null, hasNode: false, hasProject: false });
+    assert.deepEqual(buildGraphQuerySmokeArgs({ nodes: [] }), { slug: null, pathTarget: null, project: null, hasNode: false, hasProject: false });
   });
 
   it('builds graph-query smoke requests for project, projectless, and empty vaults', () => {
     const projectSmoke = buildGraphQuerySmokeRequests({
-      slug: 'project',
+      slug: 'capabilities/login',
+      pathTarget: 'project',
       project: 'project',
       hasNode: true,
       hasProject: true,
@@ -518,7 +519,7 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.deepEqual(projectSmoke.requests[1].params.arguments, {
       operation: 'path',
-      from: 'project',
+      from: 'capabilities/login',
       to: 'project',
     });
     assert.equal(projectSmoke.requests[2].params.arguments.project, 'project');
@@ -843,13 +844,13 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       pathQueryFailure({
         operation: 'path',
-        from: 'project',
+        from: 'capabilities/login',
         to: 'project',
         found: true,
-        hopCount: 0,
-        hops: ['project'],
-        edges: [],
-      }, 'project'),
+        hopCount: 1,
+        hops: ['capabilities/login', 'project'],
+        edges: [{ from: 'project', to: 'capabilities/login', via: 'capabilities' }],
+      }, 'capabilities/login', 'project'),
       null,
     );
     assert.equal(
@@ -986,7 +987,7 @@ describe('verify.mjs first-contact gates', () => {
         hops: ['project'],
         edges: [],
       }, 'project'),
-      'path response expected self-hop count 0, got 1',
+      'path response hop count mismatch',
     );
     assert.equal(projectScopeFailure({ operation: 'project_map' }, 'project'), 'project_scope returned unexpected operation: project_map');
     assert.equal(

@@ -348,10 +348,19 @@ export function buildFirstContactRequests() {
 export function buildGraphQuerySmokeArgs(listPayload) {
   const nodes = Array.isArray(listPayload?.nodes) ? listPayload.nodes : [];
   const projectSlug = nodes.find((node) => node?.kind === 'project' && typeof node.slug === 'string' && node.slug.length > 0)?.slug;
+  const nonRootSlug = nodes.find(
+    (node) => (
+      !['project', 'vault-readme'].includes(node?.kind)
+      && typeof node?.slug === 'string'
+      && node.slug.length > 0
+    ),
+  )?.slug;
   const fallbackSlug = nodes.find((node) => typeof node?.slug === 'string' && node.slug.length > 0)?.slug || null;
-  const smokeSlug = projectSlug || fallbackSlug;
+  const smokeSlug = nonRootSlug || projectSlug || fallbackSlug;
+  const pathTarget = projectSlug && projectSlug !== smokeSlug ? projectSlug : smokeSlug;
   return {
     slug: smokeSlug,
+    pathTarget,
     project: projectSlug || null,
     hasNode: Boolean(smokeSlug),
     hasProject: Boolean(projectSlug),
@@ -373,7 +382,7 @@ export function buildGraphQuerySmokeRequests(graphSmoke) {
         jsonrpc: '2.0',
         id: 14,
         method: 'tools/call',
-        params: { name: 'query_ontology', arguments: { operation: 'path', from: graphSmoke.slug, to: graphSmoke.slug } },
+        params: { name: 'query_ontology', arguments: { operation: 'path', from: graphSmoke.slug, to: graphSmoke.pathTarget || graphSmoke.slug } },
       },
     );
     expectedResponseIds.push(13, 14);
@@ -714,24 +723,31 @@ export function neighborsFailure(parsed, expectedSlug) {
   return null;
 }
 
-export function pathQueryFailure(parsed, expectedSlug) {
+export function pathQueryFailure(parsed, expectedFrom, expectedTo = expectedFrom) {
   if (parsed?.operation !== 'path') {
     return `path returned unexpected operation: ${parsed?.operation}`;
   }
-  if (parsed.from !== expectedSlug || parsed.to !== expectedSlug) {
-    return `path endpoint mismatch — expected ${expectedSlug}, got ${parsed.from}->${parsed.to}`;
+  if (parsed.from !== expectedFrom || parsed.to !== expectedTo) {
+    return `path endpoint mismatch — expected ${expectedFrom}->${expectedTo}, got ${parsed.from}->${parsed.to}`;
   }
   if (parsed.found !== true) {
     return 'path response expected found:true';
   }
-  if (parsed.hopCount !== 0) {
-    return `path response expected self-hop count 0, got ${parsed.hopCount}`;
+  if (!Number.isInteger(parsed.hopCount) || parsed.hopCount < 0) {
+    return 'path response missing hopCount';
   }
-  if (!Array.isArray(parsed.hops) || parsed.hops.length !== 1 || parsed.hops[0] !== expectedSlug) {
-    return 'path response missing self hop';
+  if (!Array.isArray(parsed.hops) || parsed.hops.length !== parsed.hopCount + 1) {
+    return 'path response hop count mismatch';
   }
-  if (!Array.isArray(parsed.edges) || parsed.edges.length !== 0) {
-    return 'path response expected empty self-path edges';
+  if (parsed.hops[0] !== expectedFrom || parsed.hops.at(-1) !== expectedTo) {
+    return 'path response endpoint hops mismatch';
+  }
+  if (!Array.isArray(parsed.edges) || parsed.edges.length !== parsed.hopCount) {
+    return 'path response edge count mismatch';
+  }
+  for (const [index, edge] of parsed.edges.entries()) {
+    const edgeFailure = graphEdgeFailure('path edge', edge, index);
+    if (edgeFailure) return edgeFailure;
   }
   return null;
 }
@@ -1445,7 +1461,7 @@ async function step2BootAndCall() {
           const text = pathRes.result.content?.[0]?.text || '';
           const parsed = JSON.parse(text);
           const expectedSlug = graphSmokeArgs.slug;
-          const failure = pathQueryFailure(parsed, expectedSlug);
+          const failure = pathQueryFailure(parsed, expectedSlug, graphSmokeArgs.pathTarget || expectedSlug);
           if (failure) {
             log('fail', failure);
             return res(false);

@@ -121,7 +121,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /success-row \/ partial-row contract drift/);
     assert.match(verifySection, /`compile_ontology`, `overview`, `overview`\/`project_map` query_plan, and actual `neighbors` \/ `path` \/ `project_scope` graph-query smoke/);
-    assert.match(verifySection, /core graph-query execution with `neighbors`, self-`path`, and `project_scope`/);
+    assert.match(verifySection, /core graph-query execution with `neighbors`, node→project `path`, and `project_scope`/);
     assert.match(verifySection, /skips only the containment-specific `project_scope` smoke/);
     assert.match(verifySection, /accepts empty vault folders by skipping node-targeted graph smoke/);
     assert.match(verifySection, /cross-checks `list_kinds` census totals/);
@@ -168,7 +168,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /partial-row contract drift/);
     assert.match(verifySection, /`overview`, `overview`\/`project_map` query_plan, and actual `neighbors` \/ `path` \/ `project_scope` graph-query smoke/);
-    assert.match(verifySection, /core graph-query smoke for `neighbors`, self-`path`, and `project_scope`/);
+    assert.match(verifySection, /core graph-query smoke for `neighbors`, node→project `path`, and `project_scope`/);
     assert.match(verifySection, /accepts valid project-less vaults/);
     assert.match(verifySection, /accepts empty vault folders/);
     assert.match(verifySection, /runtime unknown-argument and invalid-enum rejection smoke/);
@@ -185,7 +185,7 @@ describe('package contract helpers', () => {
     assert.match(releaseChecks, /batch-read\s+partial-row contract/);
     assert.match(releaseChecks, /mcp-verify --help/);
     assert.match(releaseChecks, /graph-query and strict argument\/enum smoke scope/);
-    assert.match(releaseChecks, /actual `neighbors`, self-`path`, and\s+`project_scope` calls/);
+    assert.match(releaseChecks, /actual `neighbors`, node→project `path`, and\s+`project_scope` calls/);
     assert.match(releaseChecks, /project-less and empty-vault verify paths/);
     assert.match(releaseChecks, /flow\/help\/failure/);
     assert.match(releaseChecks, /dependency-cycle vault/);
@@ -211,7 +211,7 @@ describe('package contract helpers', () => {
     const mcpVerifyRow = doc.split('| `oh-my-ontology mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
     const implementationSection = doc.split('## 구현 단일 진실원')[1]?.split('## 회귀 차단')[0] ?? '';
 
-    assert.match(mcpVerifyRow, /실제 `neighbors` \/ self-`path` \/ `project_scope` graph smoke/);
+    assert.match(mcpVerifyRow, /실제 `neighbors` \/ node→project `path` \/ `project_scope` graph smoke/);
     assert.match(mcpVerifyRow, /project-less vault/);
     assert.match(mcpVerifyRow, /empty vault/);
     assert.match(mcpVerifyRow, /node-targeted graph smoke/);
@@ -264,7 +264,7 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /`maintenance_plan`/);
 
     const verifySection = doc.split('환경변수 `OMOT_VAULT`')[1]?.split('`get_concepts` 는')[0] ?? '';
-    assert.match(verifySection, /실제 `neighbors` \/[\s\S]*self-`path` \/ `project_scope`/);
+    assert.match(verifySection, /실제 `neighbors` \/[\s\S]*node→project `path` \/ `project_scope`/);
     assert.match(verifySection, /project\s+노드가 있을 때만 containment hard gate/);
     assert.match(verifySection, /빈 vault 는 node-targeted graph\s+smoke 를 skip/);
     assert.match(verifySection, /strict schema\/runtime unknown-argument and invalid-enum rejection/);

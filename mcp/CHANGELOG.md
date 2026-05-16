@@ -16,8 +16,8 @@
 - `package.json#files` now includes `scripts/json-rpc-lines.mjs`, the shared JSON-RPC line parser used by the installed `npm run verify` path.
 - `package.json#files` now ships only the `src/parser.test.mjs` smoke fixture needed by installed `npm run verify`; full test files stay source-checkout-only so the published tarball remains lean.
 - `npm run verify` now exercises the full first-contact diagnosis path: server boot, 23-tool inventory, `list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`, `workspace_brief`, `health`, `compile_ontology`, `overview`, `overview`/`project_map` query_plan, and actual `neighbors` / `path` / `project_scope` graph-query smoke.
-- `npm run verify` now gates core graph-query execution with `neighbors`, self-`path`, and `project_scope`, so installed packages prove local traversal, path, and project containment contracts before agents rely on them.
-- `npm run verify` now skips only the containment-specific `project_scope` smoke when a valid vault has no `kind: project` node, while still gating `neighbors` and self-`path`.
+- `npm run verify` now gates core graph-query execution with `neighbors`, node→project `path`, and `project_scope`, so installed packages prove local traversal, path, and project containment contracts before agents rely on them.
+- `npm run verify` now skips only the containment-specific `project_scope` smoke when a valid vault has no `kind: project` node, while still gating `neighbors` and node-level `path`.
 - `npm run verify` now accepts empty vault folders by skipping node-targeted graph smoke until a first node exists, while still gating boot, inventory, validation, diagnosis, compile, overview, and query planning.
 - `npm run verify` now gates a widened `query_plan.targetOperation` smoke with `project_map`, so installed packages prove non-`overview` aggregate targets before agents rely on the schema enum.
 - `npm run verify` now checks the `get_concepts` batch reader with slugs discovered from `list_concepts` plus one missing slug, so installed packages catch success-row / partial-row contract drift without assuming dogfood-specific vault slugs.

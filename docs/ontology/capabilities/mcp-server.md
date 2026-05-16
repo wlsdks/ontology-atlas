@@ -65,7 +65,7 @@ agent 가 실패 호출로 subset 을 학습하지 않고, `project_map` / `patt
 `relation_check` 같은 실제 operation 도 실행 전 계획할 수 있게 한다. 이 enum 은
 graph engine 의 runtime allow-list 에서 직접 가져와 schema 와 실행 계약이 따로
 드리프트하지 않게 한다. `npm run verify` 는 `overview` 에 더해 `project_map`
-query_plan 도 실행하고, 실제 `neighbors` / self-`path` / `project_scope` graph smoke
+query_plan 도 실행하고, 실제 `neighbors` / node→project `path` / `project_scope` graph smoke
 까지 호출해 설치된 MCP package 가 widened target enum 과 core traversal 계약을
 runtime 에서 받아들이는지 dogfood한다. `project_scope` 는 `kind: project` 노드가
 있을 때 hard gate 이고, project-less vault 는 containment-specific check 만 skip 한다.
@@ -84,7 +84,7 @@ strict schema/runtime unknown-argument and invalid-enum rejection,
 `get_concepts`, `list_kinds`, `validate_vault`, `workspace_brief`, `health`, `compile_ontology({ summary: true })`,
 `query_ontology(overview)`, `query_plan(targetOperation:"overview")`,
 `query_plan(targetOperation:"project_map")`, 그리고 실제 `neighbors` /
-self-`path` / `project_scope` 를 한 번에 호출해 agent first-contact graph diagnosis,
+node→project `path` / `project_scope` 를 한 번에 호출해 agent first-contact graph diagnosis,
 compiler summary, graph-query smoke 경로까지 확인한다. `project_scope` 는 project
 노드가 있을 때만 containment hard gate 로 실행하고, 빈 vault 는 node-targeted graph
 smoke 를 skip 해 첫 설치 확인이 seed 작성 전에 막히지 않게 한다. vault warning / validate problem / `fail` health check /

@@ -5,8 +5,8 @@
 ### Added — `mcp-verify` command
 
 - `oh-my-ontology mcp-verify [vault] [--timeout-ms N]` — installed CLI wrapper around the MCP package verify script. Runs parser smoke, server boot, 23-tool inventory, `list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`, `workspace_brief`, `health`, `compile_ontology`, `overview`, `overview`/`project_map` query_plan, and actual `neighbors` / `path` / `project_scope` graph-query smoke against the resolved vault.
-- `mcp-verify` now inherits the MCP package core graph-query smoke for `neighbors`, self-`path`, and `project_scope`, so installed CLI checks prove more than aggregate query planning.
-- `mcp-verify` now accepts valid project-less vaults by skipping only the containment-specific `project_scope` smoke while still proving `neighbors` and self-`path`.
+- `mcp-verify` now inherits the MCP package core graph-query smoke for `neighbors`, node→project `path`, and `project_scope`, so installed CLI checks prove more than aggregate query planning.
+- `mcp-verify` now accepts valid project-less vaults by skipping only the containment-specific `project_scope` smoke while still proving `neighbors` and node-level `path`.
 - `mcp-verify` now accepts empty vault folders by skipping node-targeted graph smoke until a first node exists, while still proving the installed MCP boot, inventory, validation, diagnosis, compile, overview, and query planning path.
 - `mcp-verify` now inherits the MCP package `project_map` query_plan smoke, so installed CLI checks prove widened `query_plan.targetOperation` support beyond the original `overview` target.
 - `mcp-verify` now inherits the MCP package `get_concepts` smoke: discovered vault slugs plus one missing slug catch batch-reader success and partial-row contract drift in installed CLI checks.

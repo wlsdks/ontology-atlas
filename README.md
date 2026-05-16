@@ -141,7 +141,7 @@ change. `npm run verify` calls `get_concepts` with discovered slugs plus one
 missing slug, then runs `workspace_brief` and `health`, so the same batch-read
 partial-row contract and first-contact diagnosis an AI agent should run are
 exercised locally. It also checks both `overview` and `project_map`
-`query_plan` targets plus actual `neighbors`, self-`path`, and
+`query_plan` targets plus actual `neighbors`, node→project `path`, and
 `project_scope` calls, so the installed MCP path proves more than the original
 single aggregate query. Project-less vaults skip only the containment-specific
 `project_scope` smoke, and empty vaults skip node-targeted graph smoke until a
