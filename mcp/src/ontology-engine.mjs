@@ -224,7 +224,8 @@ export function createOntologyEngine(artifact, options = {}) {
   function neighbors(slugOrAlias, options = {}) {
     const center = resolve(slugOrAlias, 'slug');
     const limit = normalizeLimit(options.limit);
-    const rows = filteredEdges(center, options).slice(0, limit);
+    const allRows = filteredEdges(center, options);
+    const rows = allRows.slice(0, limit);
     const neighborSlugs = new Set();
 
     for (const row of rows) {
@@ -237,8 +238,8 @@ export function createOntologyEngine(artifact, options = {}) {
       operation: 'neighbors',
       center,
       node: nodeBySlug.get(center),
-      total: rows.length,
-      limited: rows.length >= limit,
+      total: allRows.length,
+      limited: allRows.length > rows.length,
       edges: rows.map(formatDirectedEdge),
       nodes: [...neighborSlugs].sort().map((slug) => nodeBySlug.get(slug)),
     };

@@ -63,6 +63,48 @@ describe('queryCompiledOntology', () => {
     );
   });
 
+  it('reports neighbors total and limited from the unsliced edge set', () => {
+    const graph = compileOntology(
+      [
+        doc('domains/auth', { slug: 'auth-domain', kind: 'domain', title: 'Auth' }),
+        doc('capabilities/login', {
+          kind: 'capability',
+          title: 'Login',
+          domain: 'auth-domain',
+          dependencies: ['auth-domain'],
+        }),
+        doc('capabilities/session', {
+          kind: 'capability',
+          title: 'Session',
+          dependencies: ['auth-domain'],
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const exact = queryCompiledOntology(graph, {
+      operation: 'neighbors',
+      slug: 'auth-domain',
+      direction: 'incoming',
+      types: ['dependencies'],
+      limit: 2,
+    });
+    assert.equal(exact.total, 2);
+    assert.equal(exact.edges.length, 2);
+    assert.equal(exact.limited, false);
+
+    const truncated = queryCompiledOntology(graph, {
+      operation: 'neighbors',
+      slug: 'auth-domain',
+      direction: 'incoming',
+      types: ['dependencies'],
+      limit: 1,
+    });
+    assert.equal(truncated.total, 2);
+    assert.equal(truncated.edges.length, 1);
+    assert.equal(truncated.limited, true);
+  });
+
   it('finds graph paths over resolved compiled edges', () => {
     const result = queryCompiledOntology(artifact(), {
       operation: 'path',
