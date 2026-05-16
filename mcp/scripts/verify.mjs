@@ -283,8 +283,8 @@ export function parseVerifyArgs({
       }
       timeoutMsRaw = value;
     } else if (arg === '--vault') {
-      const value = args[index + 1];
-      if (typeof value !== 'string' || value.length === 0 || value.startsWith('-')) {
+      const value = parseVerifyVaultArg(args[index + 1]);
+      if (value === false) {
         error = '--vault requires a path value';
         break;
       }
@@ -295,8 +295,8 @@ export function parseVerifyArgs({
       positionalVault = value;
       index += 1;
     } else if (arg.startsWith('--vault=')) {
-      const value = arg.slice('--vault='.length);
-      if (value.length === 0) {
+      const value = parseVerifyVaultArg(arg.slice('--vault='.length));
+      if (value === false) {
         error = '--vault requires a path value';
         break;
       }
@@ -323,6 +323,12 @@ export function parseVerifyArgs({
     timeoutMsRaw: timeoutMsRaw ?? env.OMOT_VERIFY_TIMEOUT_MS,
     vault: positionalVault ?? envVault ?? cwd,
   };
+}
+
+function parseVerifyVaultArg(value) {
+  const path = String(value ?? '').trim();
+  if (!path || path.startsWith('-')) return false;
+  return path;
 }
 
 export function verifyTimeoutFailure(timeoutMs) {
