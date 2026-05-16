@@ -171,6 +171,20 @@ describe('findOrphans — graph frontmatter keys', () => {
       false,
     );
   });
+
+  it('project / vault-readme 루트 문서는 기본 orphan cleanup 후보에서 제외', () => {
+    writeFileSync(
+      join(orphanRoot, 'README.md'),
+      '---\nkind: vault-readme\ntitle: README\n---\n',
+    );
+    const result = findOrphans(orphanRoot);
+    assert.equal(result.orphans.some((node) => node.kind === 'project'), false);
+    assert.equal(result.orphans.some((node) => node.kind === 'vault-readme'), false);
+
+    const explicit = findOrphans(orphanRoot, { excludeKinds: [] });
+    assert.equal(explicit.orphans.some((node) => node.kind === 'project'), true);
+    assert.equal(explicit.orphans.some((node) => node.kind === 'vault-readme'), true);
+  });
 });
 
 describe('suggestSimilarSlugs (R+)', () => {

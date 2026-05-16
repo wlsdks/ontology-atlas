@@ -522,7 +522,7 @@ export function listKinds(rootPath) {
  *
  * 옵션:
  *   - kind: 특정 kind 만 대상
- *   - excludeKinds: 이 kind 들은 결과에서 제외 (기본 ['vault-readme'])
+ *   - excludeKinds: 이 kind 들은 결과에서 제외 (기본 ['project', 'vault-readme'])
  *
  * 사용 시나리오: AI agent 가 "이 vault 의 고립 노드 정리하자" / 사용자가
  * "내가 만든 노드 중 안 쓰이는 거 뭐냐" 점검.
@@ -533,7 +533,7 @@ export function findOrphans(rootPath, options = {}) {
   const excludeKinds = new Set(
     Array.isArray(options.excludeKinds)
       ? options.excludeKinds
-      : ['vault-readme'],
+      : ['project', 'vault-readme'],
   );
   const slugs = new Set(docs.map((d) => d.slug));
   const tailToFull = new Map();

@@ -153,7 +153,7 @@ const SERVER_INSTRUCTIONS = `oh-my-ontology — vault of markdown files where ea
 4. \`find_backlinks(slug)\` — understand how a node is referenced (run *before* rename / merge). Each row already includes \`domain\` + \`mtime\` — no follow-up \`get_concept\` needed for sort/filter.
 5. \`find_neighbors(slug)\` — one-hop graph subgraph around a node; use \`direction\` / \`types\` to inspect incoming, outgoing, or both.
 6. \`find_path(from, to)\` — "how does A relate to B?" (BFS, undirected). Returns \`hops: [slug...]\` **and \`edges: [{from, to, via}]\` where \`via\` is the frontmatter key (\`domains\` / \`domain\` / \`capabilities\` / \`elements\` / \`dependencies\` / \`relates\` / \`contains\` / \`describes\`) that linked the pair** — so you see not just *that* A and B are connected but *why*.
-7. \`find_orphans\` — spot nodes that no other node points to (cleanup or deletion candidates).
+7. \`find_orphans\` — spot nodes that no other node points to (cleanup or deletion candidates; project roots and vault README are excluded by default).
 8. \`query_concepts(filter)\` — structured questions like \`kind=capability AND domain=auth AND NOT has(elements)\` (= "unfinished caps under auth").
 9. \`compile_ontology({includeIndexes:true})\` — compiler-style graph artifact: canonical nodes, edges, aliases, issues, stable \`graphHash\`, \`maxMtime\`, and query indexes.
 10. \`query_ontology({operation:'neighbors'|'path'|'all_paths'|'query_plan'|'centrality'|'communities'|'similar_nodes'|'explain_relation'|'reachability'|'pattern_walk'|'impact'|'blast_radius'|'subgraph'|'overview'|'schema'|'facets'|'match_nodes'|'match_edges'|'node_profile'|'domain_profile'|'domain_matrix'|'project_scope'|'project_map'|'relation_check'|'components'|'lineage'|'containment_tree'|'cycles'|'topological_order'|'recommend_relations'|'growth_plan'|'maintenance_plan'|'workspace_brief'|'health', ...})\` — graph-engine query over the compiled artifact. Use \`neighbors\` for local graph view, \`path\` for one relation route, \`all_paths\` for bounded simple paths between two nodes, \`query_plan\` for an EXPLAIN-style side-effect-free cost/index estimate before running a target operation, \`centrality\` for PageRank-style core-node ranking plus bridge/authority/hub lists, \`communities\` for label-propagation clusters inside the graph, \`similar_nodes\` before writes to catch likely duplicate or overlapping concepts, \`explain_relation\` for direct edges + shortest path + shared-neighbor explanation between two nodes, \`reachability\` for transitive graph closure from a start node, \`pattern_walk\` for explicit relation-sequence paths such as project → domains → capabilities, \`impact\` for "what depends on this?" change analysis, \`blast_radius\` for impact grouped by kind/domain with cross-domain edge risk, \`subgraph\` for a bounded N-hop graph slice, \`overview\` for dashboard-style graph aggregates, \`schema\` for \`(:kind)-[:relation]->(:kind)\` patterns, \`facets\` for filter/dashboard aggregates, \`match_nodes\` for graph DB-style node rows with degree filters, \`match_edges\` for graph DB-style edge pattern rows, \`node_profile\` for a single node detail dashboard, \`domain_profile\` for a domain detail dashboard, \`domain_matrix\` for domain-to-domain coupling, \`project_scope\` for a project-contained graph slice, \`project_map\` for a domain-by-domain project map, \`relation_check\` before writes, \`components\` to find disconnected graph islands, \`lineage\` and \`containment_tree\` for project/domain/capability containment, \`cycles\` for directed dependency-cycle checks, \`topological_order\` for prerequisite-first dependency ordering, \`recommend_relations\` for safe domain-containment suggestions, \`growth_plan\` for side-effect-free ontology expansion candidates, \`maintenance_plan\` for ordered post-write graph cleanup/repair actions, \`workspace_brief\` for first-contact status + next actions, and \`health\` for a one-shot graph integrity dashboard.
@@ -574,7 +574,7 @@ const TOOLS = [
       'List orphan nodes — docs that no other node references via any frontmatter ' +
       'array key. Useful as a cleanup starting point or to answer "which nodes ' +
       'are unused?". Same matching policy as find_backlinks (full slug or final ' +
-      'segment). Sentinel kinds like vault-readme are excluded by default.',
+      'segment). Root/sentinel kinds like project and vault-readme are excluded by default.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -585,7 +585,7 @@ const TOOLS = [
           type: 'array',
           items: NON_BLANK_STRING_SCHEMA,
           description:
-            "Kinds to exclude from results. Defaults to ['vault-readme'].",
+            "Kinds to exclude from results. Defaults to ['project', 'vault-readme']. Pass [] to include every kind.",
         },
       },
     },
