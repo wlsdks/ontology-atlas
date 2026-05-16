@@ -34,6 +34,7 @@ import {
   listKindsFailure,
   overviewFailure,
   overviewQueryPlanFailure,
+  parseVerifyArgs,
   parseVerifyTimeoutMs,
   resolveVerifyVault,
   neighborsFailure,
@@ -49,6 +50,7 @@ import {
   validateVaultFailure,
   verifyCountConsistencyFailure,
   verifyTimeoutFailure,
+  verifyUsage,
   vaultWarningsFailure,
   workspaceBriefSummary,
 } from '../scripts/verify.mjs';
@@ -311,6 +313,30 @@ describe('verify.mjs first-contact gates', () => {
       '/tmp/cwd',
     );
     assert.equal(resolveVerifyVault({ env: {}, argv: ['node', 'verify.mjs'], cwd: '/tmp/cwd', isMain: true }), '/tmp/cwd');
+  });
+
+  it('parses direct verify CLI args for vault, timeout, and help', () => {
+    assert.deepEqual(
+      parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '/tmp/vault', '--timeout-ms', '15000'], cwd: '/tmp/cwd', isMain: true }),
+      { error: null, help: false, timeoutMsRaw: '15000', vault: '/tmp/vault' },
+    );
+    assert.deepEqual(
+      parseVerifyArgs({ env: { OMOT_VAULT: '/tmp/env-vault', OMOT_VERIFY_TIMEOUT_MS: '9000' }, argv: ['node', 'verify.mjs', '/tmp/arg-vault', '--timeout-ms=15000'], cwd: '/tmp/cwd', isMain: true }),
+      { error: null, help: false, timeoutMsRaw: '15000', vault: '/tmp/env-vault' },
+    );
+    assert.deepEqual(
+      parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--help'], cwd: '/tmp/cwd', isMain: true }),
+      { error: null, help: true, timeoutMsRaw: undefined, vault: '/tmp/cwd' },
+    );
+    assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--timeout-ms'], cwd: '/tmp/cwd', isMain: true }).error, /requires/);
+    assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '/one', '/two'], cwd: '/tmp/cwd', isMain: true }).error, /Unexpected extra vault argument/);
+    assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--unknown'], cwd: '/tmp/cwd', isMain: true }).error, /Unknown option/);
+  });
+
+  it('describes direct verify usage', () => {
+    assert.match(verifyUsage(), /node mcp\/scripts\/verify\.mjs \[vault\] \[--timeout-ms N\]/);
+    assert.match(verifyUsage(), /npm run verify -- \[vault\] \[--timeout-ms N\]/);
+    assert.match(verifyUsage(), /project probe/);
   });
 
   it('fails malformed strict argument smoke responses', () => {

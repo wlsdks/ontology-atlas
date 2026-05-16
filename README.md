@@ -131,6 +131,7 @@ pnpm smoke:packed-cli           # pack/install MCP+CLI, verify installed flow/he
 pnpm dogfood:walk               # actual MCP stdio walk over this repo's ontology
 cd mcp && OMOT_VAULT=../docs/ontology npm run verify
 cd mcp && npm run verify -- ../docs/ontology
+cd mcp && npm run verify -- ../docs/ontology --timeout-ms 15000
 ```
 
 Use these when changing `mcp/`, `cli/`, package manifests, or release

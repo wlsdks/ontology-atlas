@@ -7,6 +7,7 @@
  * 사용법:
  *   node mcp/scripts/verify.mjs                    # vault = cwd
  *   node mcp/scripts/verify.mjs ./docs/ontology    # vault = positional arg
+ *   node mcp/scripts/verify.mjs ./docs/ontology --timeout-ms 15000
  *   OMOT_VAULT=./docs/ontology node mcp/scripts/verify.mjs
  *   OMOT_VERIFY_TIMEOUT_MS=15000 npm run verify    # larger/slower vaults
  *
@@ -46,8 +47,9 @@ const MCP_ROOT = resolve(__dirname, '..');
 const PARSER_TEST = join(MCP_ROOT, 'src', 'parser.test.mjs');
 const SERVER_ENTRY = join(MCP_ROOT, 'src', 'index.js');
 const IS_MAIN = fileURLToPath(import.meta.url) === resolve(process.argv[1] ?? '');
-const VAULT = resolveVerifyVault({ isMain: IS_MAIN });
-const VERIFY_TIMEOUT_MS_RAW = process.env.OMOT_VERIFY_TIMEOUT_MS;
+const VERIFY_ARGS = parseVerifyArgs({ isMain: IS_MAIN });
+const VAULT = VERIFY_ARGS.vault;
+const VERIFY_TIMEOUT_MS_RAW = VERIFY_ARGS.timeoutMsRaw;
 
 export const EXPECTED_READ_TOOLS = [
   'list_concepts',
@@ -245,18 +247,73 @@ export function resolveVerifyVault({
   cwd = process.cwd(),
   isMain = false,
 } = {}) {
-  if (typeof env.OMOT_VAULT === 'string' && env.OMOT_VAULT.length > 0) {
-    return env.OMOT_VAULT;
+  return parseVerifyArgs({ env, argv, cwd, isMain }).vault;
+}
+
+export function parseVerifyArgs({
+  env = process.env,
+  argv = process.argv,
+  cwd = process.cwd(),
+  isMain = false,
+} = {}) {
+  const args = isMain ? argv.slice(2) : [];
+  let help = false;
+  let error = null;
+  let positionalVault = null;
+  let timeoutMsRaw = null;
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === '--help' || arg === '-h') {
+      help = true;
+    } else if (arg === '--timeout-ms') {
+      const value = args[index + 1];
+      if (typeof value !== 'string' || value.length === 0 || value.startsWith('-')) {
+        error = '--timeout-ms requires a positive integer value';
+        break;
+      }
+      timeoutMsRaw = value;
+      index += 1;
+    } else if (arg.startsWith('--timeout-ms=')) {
+      const value = arg.slice('--timeout-ms='.length);
+      if (value.length === 0) {
+        error = '--timeout-ms requires a positive integer value';
+        break;
+      }
+      timeoutMsRaw = value;
+    } else if (arg.startsWith('-')) {
+      error = `Unknown option: ${arg}`;
+      break;
+    } else if (positionalVault) {
+      error = `Unexpected extra vault argument: ${arg}`;
+      break;
+    } else {
+      positionalVault = arg;
+    }
   }
-  const positionalVault = isMain ? argv[2] : null;
-  if (typeof positionalVault === 'string' && positionalVault.length > 0) {
-    return positionalVault;
-  }
-  return cwd;
+
+  const envVault = typeof env.OMOT_VAULT === 'string' && env.OMOT_VAULT.length > 0 ? env.OMOT_VAULT : null;
+  return {
+    error,
+    help,
+    timeoutMsRaw: timeoutMsRaw ?? env.OMOT_VERIFY_TIMEOUT_MS,
+    vault: envVault ?? positionalVault ?? cwd,
+  };
 }
 
 export function verifyTimeoutFailure(timeoutMs) {
   return `server verify timed out after ${timeoutMs}ms. Increase OMOT_VERIFY_TIMEOUT_MS for large or slow vaults.`;
+}
+
+export function verifyUsage() {
+  return (
+    '\nUsage:\n' +
+    '  node mcp/scripts/verify.mjs [vault] [--timeout-ms N]\n' +
+    '  npm run verify -- [vault] [--timeout-ms N]\n\n' +
+    'Runs the MCP server first-contact verification against the resolved vault.\n' +
+    'Checks parser smoke, server boot, tool inventory, project probe, batch reads, node census,\n' +
+    'vault validation, workspace health, compile/overview, query plans, and graph-query smoke.\n'
+  );
 }
 
 export function serverStartupFailure(stderr) {
@@ -1613,9 +1670,18 @@ async function step2BootAndCall() {
 }
 
 async function main() {
+  if (VERIFY_ARGS.help) {
+    process.stdout.write(verifyUsage());
+    process.exit(0);
+  }
   console.log('\n[oh-my-ontology-mcp verify]\n');
+  if (VERIFY_ARGS.error) {
+    log('fail', VERIFY_ARGS.error);
+    process.stderr.write(verifyUsage());
+    process.exit(1);
+  }
   if (verifyTimeoutMs() === false) {
-    log('fail', 'OMOT_VERIFY_TIMEOUT_MS must be a positive integer');
+    log('fail', 'verify timeout must be a positive integer');
     process.exit(1);
   }
   const ok1 = await step1ParserSmoke();

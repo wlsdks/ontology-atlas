@@ -168,6 +168,7 @@ if you change one, mirror the other.
 cd mcp && npm install
 OMOT_VAULT=../docs/ontology npm run verify
 npm run verify -- ../docs/ontology
+npm run verify -- ../docs/ontology --timeout-ms 15000
 # Larger/slower vaults can raise the child-process wait window:
 OMOT_VERIFY_TIMEOUT_MS=15000 OMOT_VAULT=../docs/ontology npm run verify
 ```

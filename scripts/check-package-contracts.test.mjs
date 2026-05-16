@@ -91,6 +91,7 @@ describe('package contract helpers', () => {
     const scopedNodes = census.total - census.byKind['vault-readme'];
 
     assert.match(verifySection, /npm run verify -- \.\.\/docs\/ontology/);
+    assert.match(verifySection, /npm run verify -- \.\.\/docs\/ontology --timeout-ms 15000/);
     assert.match(verifySection, /list_concepts\/project probe\/get_concepts\/list_kinds/);
     assert.match(verifySection, /✓ tools\/list schema contract — strict arguments \+ graph-query enums/);
     assert.match(verifySection, /✓ strict arguments — unknown tool argument rejected at runtime/);
