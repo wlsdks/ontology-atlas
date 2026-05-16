@@ -112,13 +112,14 @@ pnpm vault:validate /your/vault  # validate any folder, not just dogfood
 pnpm vault:validate -- --help    # print validator usage without scanning
 pnpm test:vault:validate         # focused validator CLI argument contract
 pnpm vault:audit                 # dogfood ontology paths match real repo files
+pnpm test:vault:audit            # focused vault audit CLI argument contract
 pnpm vault:migrate --list        # see registered schema migrations
 pnpm vault:migrate <id>          # dry-run a migration (default — no disk writes)
 pnpm vault:migrate <id> --write  # apply a migration to disk
 ```
 
 CI runs `pnpm vault:validate`, `pnpm test:vault:validate`,
-`pnpm vault:audit`, and `pnpm package:check` on every PR. The
+`pnpm vault:audit`, `pnpm test:vault:audit`, and `pnpm package:check` on every PR. The
 `LocalVaultPicker` shows a chip when your vault has
 frontmatter issues so you know which docs aren't becoming graph nodes.
 

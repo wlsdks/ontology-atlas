@@ -361,22 +361,30 @@ describe('package contract helpers', () => {
     const vaultTooling = readme.split('### Vault tooling')[1]?.split('### Package / MCP release checks')[0] ?? '';
 
     assert.equal(pkg.scripts['test:vault:validate'], 'node --test scripts/validate-vault-script.test.mjs');
+    assert.equal(pkg.scripts['test:vault:audit'], 'node --test scripts/audit-vault-paths.test.mjs');
     assert.match(workflow, /name: Vault validate \(dogfood frontmatter integrity\)\s+run: pnpm vault:validate/);
     assert.match(workflow, /name: Vault validator CLI contract\s+run: pnpm test:vault:validate/);
-    assert.match(workflow, /name: Vault paths audit/);
+    assert.match(workflow, /name: Vault paths audit \(capability\/element 의 path 가 실 코드 일치\)\s+run: pnpm vault:audit/);
+    assert.match(workflow, /name: Vault audit CLI contract\s+run: pnpm test:vault:audit/);
     assert.match(vaultTooling, /pnpm vault:validate\s+# frontmatter integrity audit/);
     assert.match(vaultTooling, /pnpm vault:validate \/your\/vault/);
     assert.match(vaultTooling, /pnpm vault:validate -- --help/);
     assert.match(vaultTooling, /print validator usage without scanning/);
     assert.match(vaultTooling, /pnpm test:vault:validate/);
     assert.match(vaultTooling, /focused validator CLI argument contract/);
-    assert.match(readme, /CI runs `pnpm vault:validate`, `pnpm test:vault:validate`,\s+`pnpm vault:audit`, and `pnpm package:check`/);
+    assert.match(vaultTooling, /pnpm test:vault:audit/);
+    assert.match(vaultTooling, /focused vault audit CLI argument contract/);
+    assert.match(readme, /CI runs `pnpm vault:validate`, `pnpm test:vault:validate`,\s+`pnpm vault:audit`, `pnpm test:vault:audit`, and `pnpm package:check`/);
     assert.match(agents, /pnpm test:vault:validate\s+# focused validator CLI argument contract/);
     assert.match(agents, /pnpm vault:audit\s+# capability\/element path drift guard \(R12\)/);
+    assert.match(agents, /pnpm test:vault:audit\s+# focused vault audit CLI argument contract/);
+    assert.match(agents, /pnpm test:vault:audit\s+# vault audit CLI 인자 계약 focused test/);
     assert.match(agents, /pnpm test:vault:validate\s+# validator CLI 인자 계약 focused test/);
     assert.match(architecture, /pnpm test:vault:validate\s+# focused validator CLI argument contract \(CI gate\)/);
-    assert.match(architecture, /`vault:validate`, `test:vault:validate`, `vault:audit`, and `package:check` run in CI/);
+    assert.match(architecture, /pnpm test:vault:audit\s+# focused vault audit CLI argument contract \(CI gate\)/);
+    assert.match(architecture, /`vault:validate`, `test:vault:validate`, `vault:audit`, `test:vault:audit`, and `package:check` run in CI/);
     assert.match(prTemplate, /If `scripts\/validate-vault\.mjs`, vault validation docs, or CI validation gates changed: `pnpm test:vault:validate`/);
+    assert.match(prTemplate, /If `scripts\/audit-vault-paths\.mjs`, dogfood path audit docs, or CI audit gates changed: `pnpm test:vault:audit`/);
   });
 
   it('keeps the benchmark script-list task unfrozen', () => {

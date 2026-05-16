@@ -141,11 +141,12 @@ pnpm bundle:check          # verifies firebase SDK chunk = 0 across user-facing 
 pnpm vault:validate        # R11+ — frontmatter integrity + graph array drift (CI gate)
 pnpm test:vault:validate   # focused validator CLI argument contract (CI gate)
 pnpm vault:audit           # dogfood ontology capability/element paths exist in repo
+pnpm test:vault:audit      # focused vault audit CLI argument contract (CI gate)
 pnpm package:check         # MCP/CLI package files contract + self-test (CI gate)
 pnpm vault:migrate --list  # R11 — schema migration runner (dry-run default)
 ```
 
-The `docs-vault:build` step is automatic via `predev` and `prebuild` npm hooks. `vault:validate`, `test:vault:validate`, `vault:audit`, and `package:check` run in CI on every PR (`.github/workflows/ci.yml`).
+The `docs-vault:build` step is automatic via `predev` and `prebuild` npm hooks. `vault:validate`, `test:vault:validate`, `vault:audit`, `test:vault:audit`, and `package:check` run in CI on every PR (`.github/workflows/ci.yml`).
 
 ## i18n routing contract
 

@@ -4,6 +4,8 @@ kind: capability
 title: Vault Validator (Silent Corruption 가시화)
 domain: vault-local-first
 elements:
+  - scripts/audit-vault-paths.mjs
+  - scripts/audit-vault-paths.test.mjs
   - scripts/validate-vault-script.test.mjs
   - scripts/validate-vault.mjs
   - src/shared/lib/validate-vault-document.ts
@@ -28,7 +30,12 @@ R11 에서 이 silent corruption 을 가시화.
    - `pnpm test:vault:validate` 로 script-level argument contract 만 focused 실행한다
    - dogfood vault 는 매 PR 마다 `.github/workflows/ci.yml` 의 step 으로 자동 검증
 
-2. **UI chip** — LocalVaultPicker 안의 ✗ N / ⚠ N
+2. **Path audit** — `pnpm vault:audit [vaultPath] [repoPath]`
+   - capability / element frontmatter 의 source path 가 실제 repo 파일과 drift 없는지 확인한다
+   - pnpm `--` separator, `--help`, 잘못된 vault/repo path 를 stack trace 없이 진단한다
+   - `pnpm test:vault:audit` 로 audit CLI argument contract 만 focused 실행한다
+
+3. **UI chip** — LocalVaultPicker 안의 ✗ N / ⚠ N
    - `validateVaultDocFrontmatter(fm)` — fast UI path (raw 다시 안 읽음, parsed frontmatter 만 검증)
    - `summarizeVaultValidation(items)` — collection helper
    - error 빨강 / warning amber
@@ -52,4 +59,5 @@ UI 측은 fast path 라 raw 의존 issue 와 whole-vault reference issue 는 det
 
 - `tests/contract/parse-frontmatter.contract.test.ts` — TS runtime / MCP package / scripts / CLI parser 4-way parity.
 - `tests/contract/frontmatter-writer.contract.test.ts` — MCP `buildMarkdown` / `serializeFrontmatter` 와 CLI writer 의 byte-for-byte markdown shape parity.
+- `scripts/audit-vault-paths.test.mjs` — audit script argument parsing, pnpm separator, `--help`, invalid path regression.
 - `scripts/validate-vault-script.test.mjs` — script-level argument parsing, `--help`, unknown option regression. CI 에서는 `pnpm test:vault:validate` 로 focused 실행한다.

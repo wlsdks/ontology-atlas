@@ -53,6 +53,9 @@ jobs:
       - name: Vault paths audit (capability/element 의 path 가 실 코드 일치)
         run: pnpm vault:audit
 
+      - name: Vault audit CLI contract
+        run: pnpm test:vault:audit
+
       - name: Package contracts (MCP/CLI publish files)
         run: pnpm package:check
 

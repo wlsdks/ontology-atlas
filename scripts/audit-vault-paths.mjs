@@ -27,12 +27,50 @@ const COLORS = {
   reset: "\x1b[0m",
 };
 
+function usage() {
+  return [
+    "Usage: node scripts/audit-vault-paths.mjs [vaultDir] [repoDir]",
+    "",
+    "Audits dogfood ontology capability/element source paths against the repo.",
+    "",
+    "Arguments:",
+    "  vaultDir     Ontology vault folder. Defaults to docs/ontology.",
+    "  repoDir      Repository root for path resolution. Defaults to current directory.",
+    "",
+    "Options:",
+    "  -h, --help   Show this help text.",
+  ].join("\n");
+}
+
 const args = process.argv.slice(2);
+if (args[0] === "--") {
+  args.shift();
+}
+if (args.includes("--help") || args.includes("-h")) {
+  console.log(usage());
+  process.exit(0);
+}
+if (args.length > 2) {
+  process.stderr.write(`Unexpected argument: ${args[2]}\n${usage()}\n`);
+  process.exit(2);
+}
+if (args[0]?.startsWith("-")) {
+  process.stderr.write(`Unknown option: ${args[0]}\n${usage()}\n`);
+  process.exit(2);
+}
+if (args[1]?.startsWith("-")) {
+  process.stderr.write(`Unknown option: ${args[1]}\n${usage()}\n`);
+  process.exit(2);
+}
 const VAULT = resolve(args[0] ?? "docs/ontology");
 const REPO = resolve(args[1] ?? ".");
 
 if (!existsSync(VAULT)) {
-  process.stderr.write(`vault not found: ${VAULT}\n`);
+  process.stderr.write(`Vault path does not exist: ${VAULT}\n`);
+  process.exit(2);
+}
+if (!existsSync(REPO)) {
+  process.stderr.write(`Repo path does not exist: ${REPO}\n`);
   process.exit(2);
 }
 
