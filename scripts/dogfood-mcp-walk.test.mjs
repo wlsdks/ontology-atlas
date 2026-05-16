@@ -124,11 +124,18 @@ describe("evaluateDogfoodGate", () => {
       validation: {
         scanned: 2,
         problems: [{ slug: "broken", issues: [{ code: "missing-kind", severity: "error" }] }],
-        summary: { problemFiles: 1, errorFiles: 1, warningFiles: 0, byCode: {} },
+        summary: {
+          problemFiles: 1,
+          errorFiles: 1,
+          warningFiles: 0,
+          byCode: {
+            "missing-kind": { severity: "error", count: 1, files: ["broken"] },
+          },
+        },
       },
     });
     assert.deepEqual(failures, [
-      "validate_vault found 1 problem file(s) — errors 1, warnings 0",
+      "validate_vault found 1 problem file(s) — errors 1, warnings 0 — codes missing-kind:error:1",
     ]);
   });
 

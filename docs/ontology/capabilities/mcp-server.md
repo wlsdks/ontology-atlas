@@ -71,6 +71,8 @@ fail severity `workspace_brief.nextActions` 는 exit 1 로 처리하되, starter
 `summary.errorFiles`, `summary.warningFiles` count 와 `summary.byCode`
 aggregate shape 까지 검증해, malformed validation payload 가 clean vault 로
 오인되지 않게 한다.
+validation 실패 메시지는 `summary.byCode` 의 상위 issue code 요약도 포함해
+agent 가 실패 직후 어떤 frontmatter 문제부터 볼지 바로 판단할 수 있게 한다.
 non-blocking `workspace_brief.nextActions` 는 짧은 advisory 목록으로 출력해
 MCP wiring 확인 직후 정리할 항목을 바로 보여준다.
 기본 server wait 는 8초이며 큰 vault / 느린 파일시스템에서는

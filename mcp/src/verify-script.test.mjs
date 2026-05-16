@@ -17,6 +17,7 @@ import {
   hasFirstContactErrorResponse,
   parseVerifyTimeoutMs,
   serverStartupFailure,
+  validationCodeSummary,
   validateVaultFailure,
   verifyTimeoutFailure,
   vaultWarningsFailure,
@@ -119,8 +120,19 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails when validate_vault reports problem files', () => {
     assert.equal(
-      validateVaultFailure({ scanned: 3, summary: { problemFiles: 2, errorFiles: 1, warningFiles: 1, byCode: {} } }),
-      'validate_vault found 2 problem file(s) — errors 1, warnings 1',
+      validateVaultFailure({
+        scanned: 3,
+        summary: {
+          problemFiles: 2,
+          errorFiles: 1,
+          warningFiles: 1,
+          byCode: {
+            'missing-kind': { severity: 'error', count: 1, files: ['a'] },
+            'dangling-graph-reference': { severity: 'warning', count: 2, files: ['b'] },
+          },
+        },
+      }),
+      'validate_vault found 2 problem file(s) — errors 1, warnings 1 — codes dangling-graph-reference:warning:2, missing-kind:error:1',
     );
   });
 
@@ -135,7 +147,24 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: -1 } }), 'validate_vault response missing warningFiles count');
     assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0 } }), 'validate_vault response missing byCode aggregate');
     assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: [] } }), 'validate_vault response missing byCode aggregate');
+    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: { broken: null } } }), 'validate_vault response malformed byCode entry: broken');
+    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: { broken: { count: 1, files: [] } } } }), 'validate_vault response missing byCode severity: broken');
+    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: { broken: { severity: 'error', files: [] } } } }), 'validate_vault response missing byCode count: broken');
+    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: { broken: { severity: 'error', count: 1 } } } }), 'validate_vault response missing byCode files: broken');
     assert.equal(validateVaultFailure({}), 'validate_vault response missing summary');
+  });
+
+  it('formats validate_vault byCode summaries by count', () => {
+    assert.equal(validationCodeSummary({}), null);
+    assert.equal(
+      validationCodeSummary({
+        b: { severity: 'warning', count: 1, files: [] },
+        a: { severity: 'error', count: 3, files: [] },
+        c: { severity: 'warning', count: 2, files: [] },
+        d: { severity: 'warning', count: 1, files: [] },
+      }, 2),
+      'a:error:3, c:warning:2, +2 more',
+    );
   });
 
   it('accepts healthy first-contact diagnosis responses', () => {

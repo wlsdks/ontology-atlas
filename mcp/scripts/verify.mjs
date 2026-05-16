@@ -159,9 +159,13 @@ export function validateVaultFailure(parsed) {
   if (!summary.byCode || typeof summary.byCode !== 'object' || Array.isArray(summary.byCode)) {
     return 'validate_vault response missing byCode aggregate';
   }
+  const byCodeFailure = validateByCodeAggregate(summary.byCode);
+  if (byCodeFailure) return byCodeFailure;
   const problemFiles = summary.problemFiles;
   if (problemFiles === 0) return null;
-  return `validate_vault found ${problemFiles} problem file(s) — errors ${summary.errorFiles}, warnings ${summary.warningFiles}`;
+  const codeSummary = validationCodeSummary(summary.byCode);
+  const suffix = codeSummary ? ` — codes ${codeSummary}` : '';
+  return `validate_vault found ${problemFiles} problem file(s) — errors ${summary.errorFiles}, warnings ${summary.warningFiles}${suffix}`;
 }
 
 export function diagnosisBlockingFailure(label, parsed, expectedOperation) {
@@ -182,6 +186,34 @@ export function diagnosisBlockingFailure(label, parsed, expectedOperation) {
     return `${label} has actionable nextActions: ${blockingActions.join(', ')}`;
   }
   return null;
+}
+
+function validateByCodeAggregate(byCode) {
+  for (const [code, entry] of Object.entries(byCode)) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return `validate_vault response malformed byCode entry: ${code}`;
+    }
+    if (typeof entry.severity !== 'string' || entry.severity.length === 0) {
+      return `validate_vault response missing byCode severity: ${code}`;
+    }
+    if (!Number.isInteger(entry.count) || entry.count < 0) {
+      return `validate_vault response missing byCode count: ${code}`;
+    }
+    if (!Array.isArray(entry.files)) {
+      return `validate_vault response missing byCode files: ${code}`;
+    }
+  }
+  return null;
+}
+
+export function validationCodeSummary(byCode, limit = 3) {
+  const entries = Object.entries(byCode || {})
+    .filter(([, entry]) => Number.isInteger(entry?.count))
+    .sort(([aCode, a], [bCode, b]) => b.count - a.count || aCode.localeCompare(bCode));
+  if (entries.length === 0) return null;
+  const shown = entries.slice(0, limit).map(([code, entry]) => `${code}:${entry.severity || 'unknown'}:${entry.count}`);
+  const suffix = entries.length > shown.length ? `, +${entries.length - shown.length} more` : '';
+  return `${shown.join(', ')}${suffix}`;
 }
 
 function blockingNextActions(actions) {
