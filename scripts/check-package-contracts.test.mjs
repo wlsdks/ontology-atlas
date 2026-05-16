@@ -424,6 +424,16 @@ describe('package contract helpers', () => {
 
     assert.doesNotMatch(regressionSection, /\*\*\d+ spawn-based\*\* integration test/);
     assert.match(regressionSection, /spawn-based integration suite/);
+    assert.match(regressionSection, /Node `--test-name-pattern`/);
+    assert.match(regressionSection, /`pnpm integration:cli:mcp-verify`/);
+  });
+
+  it('keeps dogfood MCP capability docs aligned with focused integration shortcuts', () => {
+    const doc = readFileSync('docs/ontology/capabilities/mcp-server.md', 'utf-8');
+
+    assert.match(doc, /Node `--test-name-pattern`/);
+    assert.match(doc, /`pnpm integration:mcp:readme`/);
+    assert.match(doc, /first-contact README read-only/);
   });
 
   it('parses package script file references', () => {
