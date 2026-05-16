@@ -53,6 +53,8 @@ commands do, then delegates to `oh-my-ontology-mcp/scripts/verify.mjs`.
 to stdout, so CLI users can inspect the verify scope without starting a server.
 The delegated verifier also checks the installed `tools/list` schema contract,
 including strict unknown-argument rejection and graph-query operation enums.
+Batch tool caps for `get_concepts`, `add_concepts`, and `add_relations` are
+checked against the runtime 50-row contract too.
 It also checks `get_concepts` with discovered vault slugs plus one missing slug,
 so installed CLI users catch batch-reader success and partial-row contract drift.
 It blocks parser/server/tool inventory failures, vault validation problems,

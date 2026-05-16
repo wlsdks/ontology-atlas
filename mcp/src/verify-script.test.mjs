@@ -60,11 +60,35 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(expectedToolSplitLabel(), `${described[2]} read + ${described[3]} write`);
   });
 
-  it('fails tools/list schema drift for strict arguments and graph-query enums', () => {
+  it('fails tools/list schema drift for strict arguments, graph-query enums, and batch caps', () => {
     const tools = [
       {
         name: 'list_concepts',
         inputSchema: { additionalProperties: false, properties: {} },
+      },
+      {
+        name: 'get_concepts',
+        inputSchema: {
+          additionalProperties: false,
+          required: ['slugs'],
+          properties: { slugs: { type: 'array', maxItems: 50 } },
+        },
+      },
+      {
+        name: 'add_concepts',
+        inputSchema: {
+          additionalProperties: false,
+          required: ['concepts'],
+          properties: { concepts: { type: 'array', maxItems: 50 } },
+        },
+      },
+      {
+        name: 'add_relations',
+        inputSchema: {
+          additionalProperties: false,
+          required: ['relations'],
+          properties: { relations: { type: 'array', maxItems: 50 } },
+        },
       },
       {
         name: 'query_ontology',
@@ -78,6 +102,10 @@ describe('verify.mjs first-contact gates', () => {
         },
       },
     ];
+    const withQueryTool = (queryTool) => [
+      ...tools.slice(0, 4),
+      queryTool,
+    ];
 
     assert.equal(toolsListSchemaFailure(tools), null);
     assert.equal(toolsListSchemaFailure(null), 'tools/list response missing tools array');
@@ -90,6 +118,52 @@ describe('verify.mjs first-contact gates', () => {
       'tools/list response missing query_ontology tool',
     );
     assert.equal(
+      toolsListSchemaFailure(withQueryTool(
+        {
+          ...tools[4],
+          inputSchema: {
+            ...tools[4].inputSchema,
+            required: [],
+          },
+        },
+      )),
+      'query_ontology required schema drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryTool(
+        {
+          ...tools[4],
+          inputSchema: {
+            ...tools[4].inputSchema,
+            properties: {
+              ...tools[4].inputSchema.properties,
+              operation: { enum: QUERY_ONTOLOGY_OPERATIONS.filter((operation) => operation !== 'health') },
+            },
+          },
+        },
+      )),
+      'query_ontology operation enum schema drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryTool(
+        {
+          ...tools[4],
+          inputSchema: {
+            ...tools[4].inputSchema,
+            properties: {
+              ...tools[4].inputSchema.properties,
+              targetOperation: { enum: [...QUERY_PLAN_TARGET_OPERATIONS, 'query_plan'] },
+            },
+          },
+        },
+      )),
+      'query_ontology targetOperation enum schema drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(tools.filter((tool) => tool.name !== 'get_concepts')),
+      'tools/list response missing get_concepts tool',
+    );
+    assert.equal(
       toolsListSchemaFailure([
         tools[0],
         {
@@ -99,40 +173,23 @@ describe('verify.mjs first-contact gates', () => {
             required: [],
           },
         },
+        ...tools.slice(2),
       ]),
-      'query_ontology required schema drift',
+      'get_concepts required schema drift',
     );
     assert.equal(
       toolsListSchemaFailure([
-        tools[0],
+        ...tools.slice(0, 2),
         {
-          ...tools[1],
+          ...tools[2],
           inputSchema: {
-            ...tools[1].inputSchema,
-            properties: {
-              ...tools[1].inputSchema.properties,
-              operation: { enum: QUERY_ONTOLOGY_OPERATIONS.filter((operation) => operation !== 'health') },
-            },
+            ...tools[2].inputSchema,
+            properties: { concepts: { type: 'array', maxItems: 51 } },
           },
         },
+        ...tools.slice(3),
       ]),
-      'query_ontology operation enum schema drift',
-    );
-    assert.equal(
-      toolsListSchemaFailure([
-        tools[0],
-        {
-          ...tools[1],
-          inputSchema: {
-            ...tools[1].inputSchema,
-            properties: {
-              ...tools[1].inputSchema.properties,
-              targetOperation: { enum: [...QUERY_PLAN_TARGET_OPERATIONS, 'query_plan'] },
-            },
-          },
-        },
-      ]),
-      'query_ontology targetOperation enum schema drift',
+      'add_concepts.concepts batch cap schema drift',
     );
   });
 

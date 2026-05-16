@@ -212,7 +212,9 @@ plus actual `query_ontology({operation:"neighbors"})`,
 The `tools/list` gate also checks that every tool rejects unknown arguments via
 `additionalProperties:false`, and that required `query_ontology.operation` plus
 the `query_ontology.operation` / `query_ontology.targetOperation` enums match
-the graph engine's runtime allow-lists.
+the graph engine's runtime allow-lists. It also checks the installed batch
+tool schemas for the same 50-row cap used by `get_concepts`, `add_concepts`,
+and `add_relations` at runtime.
 `project_scope` is a hard gate when the vault has a `kind: project` node; valid
 project-less vaults skip that one containment-specific check while still
 gating `neighbors` and `path`. Empty vaults skip node-targeted graph smoke until

@@ -88,6 +88,10 @@ function sameArray(left, right) {
     left.every((value, index) => value === right[index]);
 }
 
+function propertyAt(tool, path) {
+  return path.reduce((value, key) => value?.[key], tool?.inputSchema);
+}
+
 export function toolsListSchemaFailure(tools) {
   if (!Array.isArray(tools)) return 'tools/list response missing tools array';
   const schemaDriftTool = tools.find((tool) => tool?.inputSchema?.additionalProperties !== false);
@@ -108,6 +112,22 @@ export function toolsListSchemaFailure(tools) {
 
   if (!sameArray(queryTool.inputSchema?.properties?.targetOperation?.enum, QUERY_PLAN_TARGET_OPERATIONS)) {
     return 'query_ontology targetOperation enum schema drift';
+  }
+
+  for (const [toolName, propertyName] of [
+    ['get_concepts', 'slugs'],
+    ['add_concepts', 'concepts'],
+    ['add_relations', 'relations'],
+  ]) {
+    const tool = tools.find((candidate) => candidate?.name === toolName);
+    if (!tool) return `tools/list response missing ${toolName} tool`;
+    if (!sameArray(tool.inputSchema?.required, [propertyName])) {
+      return `${toolName} required schema drift`;
+    }
+    const batchProperty = propertyAt(tool, ['properties', propertyName]);
+    if (batchProperty?.type !== 'array' || batchProperty?.maxItems !== 50) {
+      return `${toolName}.${propertyName} batch cap schema drift`;
+    }
   }
 
   return null;
