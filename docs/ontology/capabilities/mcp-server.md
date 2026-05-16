@@ -117,8 +117,8 @@ error message 를 바로 출력한다.
 tool count metadata, 그리고 `initialize.instructions` 의 agent-facing inventory 가
 서로 drift 나지 않도록 같은 23-tool 목록을 교차 검증한다.
 `initialize.instructions` 는 agent 가 write 도구부터 시도하지 않도록
-`validate_vault` 와 `workspace_brief` 기반 read-only first-contact diagnosis 를
-기본 진입 순서로 안내한다.
+`validate_vault`, `workspace_brief`, `overview`, `query_plan(targetOperation:"overview")`
+기반 read-only first-contact diagnosis 와 graph-query smoke 를 기본 진입 순서로 안내한다.
 spawn-heavy integration 은 `pnpm integration:mcp` 로 실행하고
 `OMOT_TEST_NAME_PATTERN` 으로 수정 파트만 골라 실행할 수 있어, 작은 변경마다
 전체 MCP 통합 파일을 돌리는 비용을 줄인다.
