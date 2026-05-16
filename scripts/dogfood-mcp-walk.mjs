@@ -181,6 +181,18 @@ export function rpcTimeoutFailure(timeoutMs, missingLabels) {
   return `rpc: timed out after ${timeoutMs}ms waiting for ${missingLabels.join(", ")}`;
 }
 
+export function formatWorkspaceNextActionRows(actions, limit = 5) {
+  if (!Array.isArray(actions)) return [];
+  return actions.slice(0, limit).map((action) => {
+    const severity = typeof action?.severity === "string" ? action.severity : "";
+    const kind = typeof action?.kind === "string" ? action.kind : "";
+    const id = typeof action?.id === "string" ? action.id : "";
+    const count = Number.isInteger(action?.count) ? ` x${action.count}` : "";
+    const message = typeof action?.message === "string" && action.message.length > 0 ? ` - ${action.message}` : "";
+    return `  ${severity.padEnd(5)} ${kind.padEnd(30)} ${id}${count}${message}`;
+  });
+}
+
 export function parseDogfoodTimeoutMs(value, fallback = 5000) {
   if (value == null || value === "") return fallback;
   if (!/^[1-9]\d*$/.test(String(value))) return false;
@@ -3699,8 +3711,8 @@ async function main() {
       `  summary: nodes ${brief.summary?.nodes ?? "n/a"} · edges ${brief.summary?.edges ?? "n/a"} · issues ${brief.summary?.issues ?? "n/a"}`,
     );
     console.log(`  ${workspaceBriefSummary(brief)}`);
-    for (const action of (brief.nextActions || []).slice(0, 5)) {
-      console.log(`  ${action.kind?.padEnd(18) || ""} ${action.id || ""}`);
+    for (const row of formatWorkspaceNextActionRows(brief.nextActions)) {
+      console.log(row);
     }
   }
 
@@ -3739,6 +3751,9 @@ async function main() {
       `  summary: nodes ${tunedBrief.summary?.nodes ?? "n/a"} · edges ${tunedBrief.summary?.edges ?? "n/a"} · issues ${tunedBrief.summary?.issues ?? "n/a"}`,
     );
     console.log(`  ${workspaceBriefSummary(tunedBrief)}`);
+    for (const row of formatWorkspaceNextActionRows(tunedBrief.nextActions)) {
+      console.log(row);
+    }
   }
 
   // 11. compile_ontology(summary)

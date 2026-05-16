@@ -7,6 +7,7 @@ import {
   DOGFOOD_RESPONSE_LABELS,
   evaluateDogfoodGate,
   expectedResponseIds,
+  formatWorkspaceNextActionRows,
   missingResponseLabels,
   parseDogfoodTimeoutMs,
   parseRpcResponses,
@@ -1369,6 +1370,29 @@ describe("recordResult", () => {
 });
 
 describe("rpc response completion helpers", () => {
+  it("formats workspace next actions with actionable detail", () => {
+    assert.deepEqual(
+      formatWorkspaceNextActionRows([
+        {
+          kind: "health_check",
+          severity: "info",
+          id: "components",
+          count: 6,
+          message: "Inspect disconnected components.",
+        },
+        {
+          kind: "materialize_external_elements",
+          severity: "warn",
+          count: 2,
+        },
+      ]),
+      [
+        "  info  health_check                   components x6 - Inspect disconnected components.",
+        "  warn  materialize_external_elements   x2",
+      ],
+    );
+  });
+
   it("parses dogfood timeout env as a strict positive integer", () => {
     assert.equal(parseDogfoodTimeoutMs(undefined), 5000);
     assert.equal(parseDogfoodTimeoutMs(""), 5000);

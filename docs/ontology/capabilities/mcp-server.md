@@ -186,8 +186,9 @@ validation 실패 메시지는 `summary.byCode` 의 상위 issue code 요약도 
 agent 가 실패 직후 어떤 frontmatter 문제부터 볼지 바로 판단할 수 있게 한다.
 `problemFiles` 가 1 이상이면 `byCode` 도 비어 있으면 안 된다는 일관성까지
 검증한다.
-non-blocking `workspace_brief.nextActions` 는 짧은 advisory 목록으로 출력해
-MCP wiring 확인 직후 정리할 항목을 바로 보여준다.
+non-blocking `workspace_brief.nextActions` 는 기본/tuned brief 모두에서
+severity/kind/id/count/message 를 담은 짧은 advisory 목록으로 출력해 MCP
+wiring 확인 직후 정리할 항목을 바로 보여준다.
 dogfood walk 도 `workspace_brief.nextActions` row 의 identifier/severity 와
 `health.checks` row 의 id/status/count 를 fail-closed 로 검증하고 severity/status enum 오타도 거부해, 실제 MCP 응답이
 advisory/coverage 출력에서 `unknown` 으로 숨지 않게 한다.

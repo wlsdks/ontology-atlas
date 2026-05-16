@@ -579,6 +579,7 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /workspace_brief\.health\.checks/);
     assert.match(dogfoodSection, /tuned `workspace_brief`/);
     assert.match(dogfoodSection, /workspace_brief\.nextActions/);
+    assert.match(dogfoodSection, /severity\/kind\/id\/count\/message/);
     assert.match(dogfoodSection, /health\.checks/);
     assert.match(doc, /`orderLimit`, `nodeLimit`, `dependencyTypes`, `componentTypes`/);
     assert.match(doc, /cursor miss `reason`/);
