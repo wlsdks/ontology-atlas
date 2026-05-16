@@ -197,6 +197,46 @@ describe('verify.mjs first-contact gates', () => {
               description:
                 'maintenance_plan only: nextExecutableAction/nextReviewAction point only at the first executable/review action in the returned page.',
             },
+            componentLimit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 500,
+              description: 'health/workspace_brief only: positive integer max connected components to inspect.',
+            },
+            cycleLimit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 500,
+              description: 'health/workspace_brief only: positive integer max dependency cycles to inspect.',
+            },
+            recommendationLimit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 500,
+              description: 'health/workspace_brief only: positive integer max relation recommendations to inspect.',
+            },
+            orderLimit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 500,
+              description: 'health/workspace_brief only: positive integer max topological-order rows to inspect.',
+            },
+            nodeLimit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 500,
+              description: 'components/communities/health/workspace_brief only: positive integer max node summaries.',
+            },
+            dependencyTypes: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'health/workspace_brief only: dependency relation types.',
+            },
+            componentTypes: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'health/workspace_brief only: relation types used for connected-component checks.',
+            },
             phases: { items: { enum: MAINTENANCE_PHASE_VALUES } },
             severities: { items: { enum: MAINTENANCE_SEVERITY_VALUES } },
             kinds: {
@@ -242,6 +282,45 @@ describe('verify.mjs first-contact gates', () => {
         },
       })),
       'query_ontology afterActionId description missing current-page next pointers',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryTool({
+        ...tools[10],
+        inputSchema: {
+          ...tools[10].inputSchema,
+          properties: {
+            ...tools[10].inputSchema.properties,
+            componentLimit: { type: 'integer', minimum: 0, maximum: 500, description: 'health/workspace_brief only.' },
+          },
+        },
+      })),
+      'query_ontology componentLimit health tuning schema drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryTool({
+        ...tools[10],
+        inputSchema: {
+          ...tools[10].inputSchema,
+          properties: {
+            ...tools[10].inputSchema.properties,
+            dependencyTypes: { type: 'array', items: { type: 'number' }, description: 'health/workspace_brief only.' },
+          },
+        },
+      })),
+      'query_ontology dependencyTypes health tuning schema drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryTool({
+        ...tools[10],
+        inputSchema: {
+          ...tools[10].inputSchema,
+          properties: {
+            ...tools[10].inputSchema.properties,
+            componentTypes: { type: 'array', items: { type: 'string' }, description: 'components only.' },
+          },
+        },
+      })),
+      'query_ontology componentTypes health tuning description drift',
     );
     assert.equal(
       toolsListSchemaFailure(tools.filter((tool) => tool.name !== 'find_orphans')),

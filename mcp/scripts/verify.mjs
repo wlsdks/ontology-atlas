@@ -150,6 +150,24 @@ export function toolsListSchemaFailure(tools) {
   if (!/nextExecutableAction\/nextReviewAction point only at the first executable\/review action in the returned page/.test(afterActionId?.description || '')) {
     return 'query_ontology afterActionId description missing current-page next pointers';
   }
+  for (const propertyName of ['componentLimit', 'cycleLimit', 'recommendationLimit', 'orderLimit', 'nodeLimit']) {
+    const option = propertyAt(queryTool, ['properties', propertyName]);
+    if (option?.type !== 'integer' || option.minimum !== 1 || option.maximum !== 500) {
+      return `query_ontology ${propertyName} health tuning schema drift`;
+    }
+    if (!/health\/workspace_brief/.test(option.description || '')) {
+      return `query_ontology ${propertyName} health tuning description drift`;
+    }
+  }
+  for (const propertyName of ['dependencyTypes', 'componentTypes']) {
+    const option = propertyAt(queryTool, ['properties', propertyName]);
+    if (option?.type !== 'array' || option.items?.type !== 'string') {
+      return `query_ontology ${propertyName} health tuning schema drift`;
+    }
+    if (!/health\/workspace_brief/.test(option.description || '')) {
+      return `query_ontology ${propertyName} health tuning description drift`;
+    }
+  }
 
   const findOrphansTool = tools.find((candidate) => candidate?.name === 'find_orphans');
   if (!findOrphansTool) return 'tools/list response missing find_orphans tool';
