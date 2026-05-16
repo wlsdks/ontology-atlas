@@ -3259,11 +3259,22 @@ function normalizePattern(pattern) {
   if (!Array.isArray(pattern) || pattern.length === 0) {
     throw new Error('pattern (non-empty string array) is required for pattern_walk.');
   }
-  const normalized = pattern
-    .filter((relation) => typeof relation === 'string' && relation.trim())
-    .map((relation) => normalizeRelationType(relation.trim()));
-  if (normalized.length === 0) {
-    throw new Error('pattern must contain at least one relation type.');
+  const normalized = [];
+  for (const relation of pattern) {
+    if (typeof relation !== 'string') {
+      throw new Error('pattern must be an array of strings.');
+    }
+    const trimmed = relation.trim();
+    if (!trimmed) {
+      throw new Error('pattern items must be non-empty strings.');
+    }
+    if (trimmed !== relation) {
+      throw new Error('pattern items must not have leading or trailing whitespace.');
+    }
+    if (trimmed.includes('\0')) {
+      throw new Error('pattern items must not contain a null byte.');
+    }
+    normalized.push(normalizeRelationType(trimmed));
   }
   return normalized.slice(0, 20);
 }

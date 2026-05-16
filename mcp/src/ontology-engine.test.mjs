@@ -771,6 +771,41 @@ describe('queryCompiledOntology', () => {
     );
   });
 
+  it('rejects invalid pattern_walk pattern items instead of dropping them', () => {
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'pattern_walk',
+        slug: 'capabilities/login',
+        pattern: ['dependencies', null],
+      }),
+      /pattern must be an array of strings/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'pattern_walk',
+        slug: 'capabilities/login',
+        pattern: ['dependencies', ' '],
+      }),
+      /pattern items must be non-empty strings/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'pattern_walk',
+        slug: 'capabilities/login',
+        pattern: [' dependencies'],
+      }),
+      /pattern items must not have leading or trailing whitespace/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'pattern_walk',
+        slug: 'capabilities/login',
+        pattern: ['dependencies\0'],
+      }),
+      /pattern items must not contain a null byte/,
+    );
+  });
+
   it('returns incoming change impact by default', () => {
     const result = queryCompiledOntology(artifact(), {
       operation: 'impact',
