@@ -3,7 +3,7 @@ slug: capabilities/mcp-server
 kind: capability
 title: MCP Server (23 tools)
 domain: ai-agent-partner
-elements: [mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/json-rpc-lines.test.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/vault.mjs, mcp/src/verify-script.test.mjs, scripts/dogfood-mcp-walk.mjs, scripts/dogfood-mcp-walk.test.mjs]
+elements: [mcp/scripts/json-rpc-lines.mjs, mcp/scripts/verify.mjs, mcp/src/analyze.mjs, mcp/src/index.js, mcp/src/infer-imports.mjs, mcp/src/integration.test.mjs, mcp/src/json-rpc-lines.test.mjs, mcp/src/ontology-compiler.mjs, mcp/src/ontology-engine.mjs, mcp/src/parser.mjs, mcp/src/vault.mjs, mcp/src/verify-script.test.mjs, scripts/dogfood-mcp-walk.mjs, scripts/dogfood-mcp-walk.test.mjs]
 relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 ---
 
@@ -56,6 +56,10 @@ first-contact 응답 6개가 모두 도착하면 timeout 까지 기다리지 않
 `initialize` 전 서버 시작 실패는 timeout 과 구분해 stderr 의 vault 설정 진단을 보존한다.
 first-contact JSON-RPC error 응답도 timeout 까지 기다리지 않고 실패한 step 이름과
 error message 를 바로 출력한다.
+`mcp/src/integration.test.mjs` 와 `mcp/src/verify-script.test.mjs` 는 실제
+`tools/list` registry, `verify.mjs` 의 `EXPECTED_TOOLS`, `mcp/package.json`
+tool count metadata, 그리고 `initialize.instructions` 의 agent-facing inventory 가
+서로 drift 나지 않도록 같은 23-tool 목록을 교차 검증한다.
 
 `pnpm dogfood:walk` 는 이 repo 의 `docs/ontology` 를 대상으로 실제 MCP stdio 호출을
 연속 실행한다. 기본 census / backlink / path 질의에 더해 `workspace_brief` 와 `health`
