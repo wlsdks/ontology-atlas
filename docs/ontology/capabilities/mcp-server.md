@@ -120,6 +120,9 @@ agent 가 실패 직후 어떤 frontmatter 문제부터 볼지 바로 판단할 
 검증한다.
 non-blocking `workspace_brief.nextActions` 는 짧은 advisory 목록으로 출력해
 MCP wiring 확인 직후 정리할 항목을 바로 보여준다.
+dogfood walk 도 `workspace_brief.nextActions` row 의 identifier/severity 와
+`health.checks` row 의 id/status/count 를 fail-closed 로 검증해, 실제 MCP 응답이
+advisory/coverage 출력에서 `unknown` 으로 숨지 않게 한다.
 기본 server wait 는 8초이며 큰 vault / 느린 파일시스템에서는
 양의 정수 millisecond 값인 `OMOT_VERIFY_TIMEOUT_MS` 로 늘릴 수 있다.
 `1000ms` 같은 부분 숫자 값은 조용히 truncate 하지 않고 실패한다.

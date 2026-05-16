@@ -423,6 +423,19 @@ describe("evaluateDogfoodGate", () => {
       }),
       ["workspace_brief response missing nextAction severity at index 0"],
     );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        brief: {
+          operation: "workspace_brief",
+          status: "healthy",
+          summary: { nodes: 1, edges: 0, issues: 0 },
+          nextActions: [{ severity: "info" }],
+          health: okShape.brief.health,
+        },
+      }),
+      ["workspace_brief response missing nextAction identifier at index 0"],
+    );
   });
 
   it("fails on malformed health payloads", () => {
@@ -449,6 +462,14 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, health: { operation: "health", status: "healthy", summary: okShape.health.summary, checks: [] } }),
       ["health response missing health checks"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, health: { operation: "health", status: "healthy", summary: okShape.health.summary, checks: [{ status: "pass", count: 0 }] } }),
+      ["health response missing check id at index 0"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, health: { operation: "health", status: "healthy", summary: okShape.health.summary, checks: [{ id: "compile_issues", count: 0 }] } }),
+      ["health response missing check status: compile_issues"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, health: { operation: "health", status: "healthy", summary: okShape.health.summary, checks: [{ id: "compile_issues", status: "pass" }] } }),

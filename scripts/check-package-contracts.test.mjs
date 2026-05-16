@@ -162,10 +162,14 @@ describe('package contract helpers', () => {
     const readme = readFileSync('README.md', 'utf-8');
     const doc = readFileSync('docs/ontology/capabilities/mcp-server.md', 'utf-8');
     const releaseChecks = readme.split('### Package / MCP release checks')[1]?.split('## Verifiable promises')[0] ?? '';
-    const dogfoodSection = doc.split('dogfood walk 는 `find_evidence.matches`')[1]?.split('dogfood walk 는 `compile_ontology')[0] ?? '';
+    const dogfoodSection = doc.split('dogfood walk 는 `find_evidence.matches`')[1]?.split('기본 server wait')[0] ?? '';
 
     assert.match(releaseChecks, /workspace_brief\.health\.checks/);
     assert.match(dogfoodSection, /workspace_brief\.health\.checks/);
+    assert.match(dogfoodSection, /workspace_brief\.nextActions/);
+    assert.match(dogfoodSection, /health\.checks/);
+    assert.match(dogfoodSection, /identifier\/severity/);
+    assert.match(dogfoodSection, /id\/status\/count/);
   });
 
   it('keeps packed CLI smoke aligned with installed hard gates', () => {
