@@ -70,7 +70,7 @@ describe('verify.mjs first-contact gates', () => {
   it('detects when all first-contact JSON-RPC responses arrived', () => {
     assert.equal(
       hasAllFirstContactResponses(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
           .map((id) => JSON.stringify({ jsonrpc: '2.0', id, result: {} }))
           .join('\n'),
       ),
@@ -406,19 +406,29 @@ describe('verify.mjs first-contact gates', () => {
       byKind: { project: 1 },
       byDomain: {},
     };
+    const kinds = { total: 1, byKind: { project: 1 } };
 
-    assert.equal(verifyCountConsistencyFailure({ list, validation, compiled }), null);
+    assert.equal(verifyCountConsistencyFailure({ kinds, list, validation, compiled }), null);
     assert.equal(
-      verifyCountConsistencyFailure({ list: { ...list, total: 2 }, validation, compiled }),
-      'verify count mismatch — list_concepts.total 2, validate_vault.scanned 1',
+      verifyCountConsistencyFailure({ kinds: { total: 2, byKind: { project: 2 } }, list, validation, compiled }),
+      'verify count mismatch — list_kinds.total 2, list_concepts.total 1',
     );
     assert.equal(
-      verifyCountConsistencyFailure({ list, validation: { ...validation, scanned: 2 }, compiled }),
-      'verify count mismatch — list_concepts.total 1, validate_vault.scanned 2',
+      verifyCountConsistencyFailure({ kinds, list, validation: { ...validation, scanned: 2 }, compiled }),
+      'verify count mismatch — list_kinds.total 1, validate_vault.scanned 2',
     );
     assert.equal(
-      verifyCountConsistencyFailure({ list, validation, compiled: { ...compiled, nodeCount: 2, byKind: { project: 2 } } }),
-      'verify count mismatch — list_concepts.total 1, compile_ontology.nodeCount 2',
+      verifyCountConsistencyFailure({ kinds, list, validation, compiled: { ...compiled, nodeCount: 2, byKind: { project: 2 } } }),
+      'verify count mismatch — list_kinds.total 1, compile_ontology.nodeCount 2',
+    );
+    assert.equal(
+      verifyCountConsistencyFailure({
+        kinds: { total: 1, byKind: { capability: 1 } },
+        list,
+        validation,
+        compiled,
+      }),
+      'verify byKind mismatch — capability: list_kinds 1, compile_ontology 0',
     );
   });
 

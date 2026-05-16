@@ -14,10 +14,11 @@
  *   2. server boot — initialize JSON-RPC 응답
  *   3. tools/list — 23 도구 모두 노출
  *   4. tools/call list_concepts — vault 노드 수 출력
- *   5. tools/call validate_vault — whole-vault frontmatter / graph-reference health
- *   6. tools/call query_ontology workspace_brief + health — agent first-contact graph diagnosis
- *   7. tools/call compile_ontology(summary) — compiler graph summary contract
- *   8. tools/call query_ontology overview + query_plan(overview) — graph-query smoke contract
+ *   5. tools/call list_kinds — kind census aggregate
+ *   6. tools/call validate_vault — whole-vault frontmatter / graph-reference health
+ *   7. tools/call query_ontology workspace_brief + health — agent first-contact graph diagnosis
+ *   8. tools/call compile_ontology(summary) — compiler graph summary contract
+ *   9. tools/call query_ontology overview + query_plan(overview) — graph-query smoke contract
  *
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
  */
@@ -78,12 +79,13 @@ const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [1, 'initialize'],
   [2, 'tools/list'],
   [3, 'list_concepts'],
-  [4, 'validate_vault'],
-  [5, 'workspace_brief'],
-  [6, 'health'],
-  [7, 'compile_ontology'],
-  [8, 'overview'],
-  [9, 'overview_query_plan'],
+  [4, 'list_kinds'],
+  [5, 'validate_vault'],
+  [6, 'workspace_brief'],
+  [7, 'health'],
+  [8, 'compile_ontology'],
+  [9, 'overview'],
+  [10, 'overview_query_plan'],
 ]);
 
 function log(level, msg) {
@@ -345,8 +347,9 @@ export function overviewQueryPlanFailure(parsed) {
   return null;
 }
 
-export function verifyCountConsistencyFailure({ list, validation, compiled }) {
+export function verifyCountConsistencyFailure({ kinds, list, validation, compiled }) {
   if (
+    (kinds && listKindsFailure(kinds)) ||
     (list && listConceptsFailure(list)) ||
     (validation && validateVaultFailure(validation)) ||
     (compiled && compileSummaryFailure(compiled))
@@ -355,6 +358,7 @@ export function verifyCountConsistencyFailure({ list, validation, compiled }) {
   }
 
   const counts = [
+    ['list_kinds.total', kinds?.total],
     ['list_concepts.total', list?.total],
     ['validate_vault.scanned', validation?.scanned],
     ['compile_ontology.nodeCount', compiled?.nodeCount],
@@ -366,6 +370,16 @@ export function verifyCountConsistencyFailure({ list, validation, compiled }) {
   for (const [label, value] of counts.slice(1)) {
     if (value !== baseValue) {
       return `verify count mismatch — ${baseLabel} ${baseValue}, ${label} ${value}`;
+    }
+  }
+  if (kinds?.byKind && compiled?.byKind) {
+    const kindKeys = new Set([...Object.keys(kinds.byKind), ...Object.keys(compiled.byKind)]);
+    for (const kind of [...kindKeys].sort()) {
+      const kindsCount = kinds.byKind[kind] ?? 0;
+      const compiledCount = compiled.byKind[kind] ?? 0;
+      if (kindsCount !== compiledCount) {
+        return `verify byKind mismatch — ${kind}: list_kinds ${kindsCount}, compile_ontology ${compiledCount}`;
+      }
     }
   }
   return null;
@@ -496,7 +510,7 @@ async function step2BootAndCall() {
     log('fail', 'OMOT_VERIFY_TIMEOUT_MS must be a positive integer');
     return false;
   }
-  log('info', `step 2 — server boot + tools/list + list_concepts (vault=${VAULT}, timeout=${timeoutMs}ms)`);
+  log('info', `step 2 — server boot + tools/list + list_concepts/list_kinds (vault=${VAULT}, timeout=${timeoutMs}ms)`);
 
   const lines = [
     JSON.stringify({
@@ -521,35 +535,41 @@ async function step2BootAndCall() {
       jsonrpc: '2.0',
       id: 4,
       method: 'tools/call',
-      params: { name: 'validate_vault', arguments: {} },
+      params: { name: 'list_kinds', arguments: {} },
     }),
     JSON.stringify({
       jsonrpc: '2.0',
       id: 5,
       method: 'tools/call',
-      params: { name: 'query_ontology', arguments: { operation: 'workspace_brief', limit: 3 } },
+      params: { name: 'validate_vault', arguments: {} },
     }),
     JSON.stringify({
       jsonrpc: '2.0',
       id: 6,
       method: 'tools/call',
-      params: { name: 'query_ontology', arguments: { operation: 'health' } },
+      params: { name: 'query_ontology', arguments: { operation: 'workspace_brief', limit: 3 } },
     }),
     JSON.stringify({
       jsonrpc: '2.0',
       id: 7,
       method: 'tools/call',
-      params: { name: 'compile_ontology', arguments: { summary: true } },
+      params: { name: 'query_ontology', arguments: { operation: 'health' } },
     }),
     JSON.stringify({
       jsonrpc: '2.0',
       id: 8,
       method: 'tools/call',
-      params: { name: 'query_ontology', arguments: { operation: 'overview', limit: 5 } },
+      params: { name: 'compile_ontology', arguments: { summary: true } },
     }),
     JSON.stringify({
       jsonrpc: '2.0',
       id: 9,
+      method: 'tools/call',
+      params: { name: 'query_ontology', arguments: { operation: 'overview', limit: 5 } },
+    }),
+    JSON.stringify({
+      jsonrpc: '2.0',
+      id: 10,
       method: 'tools/call',
       params: { name: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'overview' } },
     }),
@@ -588,12 +608,14 @@ async function step2BootAndCall() {
       const initRes = responses.find((r) => r.id === 1);
       const listRes = responses.find((r) => r.id === 2);
       const callRes = responses.find((r) => r.id === 3);
-      const validateRes = responses.find((r) => r.id === 4);
-      const briefRes = responses.find((r) => r.id === 5);
-      const healthRes = responses.find((r) => r.id === 6);
-      const compileRes = responses.find((r) => r.id === 7);
-      const overviewRes = responses.find((r) => r.id === 8);
-      const overviewPlanRes = responses.find((r) => r.id === 9);
+      const kindsRes = responses.find((r) => r.id === 4);
+      const validateRes = responses.find((r) => r.id === 5);
+      const briefRes = responses.find((r) => r.id === 6);
+      const healthRes = responses.find((r) => r.id === 7);
+      const compileRes = responses.find((r) => r.id === 8);
+      const overviewRes = responses.find((r) => r.id === 9);
+      const overviewPlanRes = responses.find((r) => r.id === 10);
+      let kindsPayload = null;
       let listPayload = null;
       let validationPayload = null;
       let compilePayload = null;
@@ -601,6 +623,7 @@ async function step2BootAndCall() {
         ['initialize', initRes],
         ['tools/list', listRes],
         ['list_concepts', callRes],
+        ['list_kinds', kindsRes],
         ['validate_vault', validateRes],
         ['workspace_brief', briefRes],
         ['health', healthRes],
@@ -666,6 +689,29 @@ async function step2BootAndCall() {
         }
       } catch (err) {
         log('fail', `failed to parse list_concepts response: ${err.message}`);
+        return res(false);
+      }
+
+      if (!kindsRes || !kindsRes.result) {
+        log('fail', 'no list_kinds response');
+        return res(false);
+      }
+      try {
+        const text = kindsRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const failure = listKindsFailure(parsed);
+        if (failure) {
+          log('fail', failure);
+          return res(false);
+        }
+        kindsPayload = parsed;
+        const kindSummary = Object.entries(parsed.byKind)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([kind, count]) => `${kind}:${count}`)
+          .join(', ');
+        log('ok', `list_kinds — ${parsed.total} nodes (${kindSummary})`);
+      } catch (err) {
+        log('fail', `failed to parse list_kinds response: ${err.message}`);
         return res(false);
       }
 
@@ -777,6 +823,7 @@ async function step2BootAndCall() {
         }
         log('ok', `overview query_plan — ${parsed.estimate.strategy} (${parsed.estimate.costClass}, nodes ${parsed.estimate.nodeScans}, edges ${parsed.estimate.edgeScans})`);
         const countFailure = verifyCountConsistencyFailure({
+          kinds: kindsPayload,
           list: listPayload,
           validation: validationPayload,
           compiled: compilePayload,

@@ -213,6 +213,7 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /timeout=1000ms/);
     assert.match(clean, new RegExp(`tools/list ${EXPECTED_TOOL_COUNT}/${EXPECTED_TOOL_COUNT}`));
+    assert.match(clean, /list_kinds/);
     assert.match(clean, /validate_vault/);
     assert.match(clean, /workspace_brief/);
     assert.match(clean, /workspace_brief advisory nextActions/);

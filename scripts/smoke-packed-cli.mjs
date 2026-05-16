@@ -111,6 +111,7 @@ try {
   });
   assert.match(cliMcpVerify.stdout, /timeout=1000ms/);
   assert.match(cliMcpVerify.stdout, new RegExp(`tools/list ${expectedToolCount}/${expectedToolCount}`));
+  assert.match(cliMcpVerify.stdout, /list_kinds/);
   assert.match(cliMcpVerify.stdout, /validate_vault/);
   assert.match(cliMcpVerify.stdout, /workspace_brief/);
   assert.match(cliMcpVerify.stdout, /workspace_brief advisory nextActions/);
@@ -154,6 +155,7 @@ try {
     },
   );
   assert.match(mcpVerify.stdout, /validate_vault/);
+  assert.match(mcpVerify.stdout, /list_kinds/);
   assert.match(mcpVerify.stdout, /workspace_brief/);
   assert.match(mcpVerify.stdout, /workspace_brief advisory nextActions/);
   assert.match(mcpVerify.stdout, /compile_issues:warn/);
