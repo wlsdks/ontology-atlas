@@ -188,8 +188,8 @@ verify path exercises and gates the same first-contact graph diagnosis an agent 
 `tools/list`, `list_concepts`, `validate_vault`,
 `query_ontology({operation:"workspace_brief"})`, and
 `query_ontology({operation:"health"})`. `list_concepts` vault warnings,
-`validate_vault` problem files, or failing health checks fail the command; advisory
-`needs_attention` states still print so starter vaults can
+`validate_vault` problem files, failing health checks, or warn/fail
+`workspace_brief.nextActions` fail the command; advisory `needs_attention` states still print so starter vaults can
 verify before cleanup. The default wait window is 8 seconds; set
 `OMOT_VERIFY_TIMEOUT_MS` to a positive integer millisecond value if your vault
 is large or on a slow filesystem.

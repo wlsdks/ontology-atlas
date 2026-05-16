@@ -157,4 +157,23 @@ describe('verify.mjs first-contact gates', () => {
       'workspace_brief has failing health checks: dependency_cycles',
     );
   });
+
+  it('fails workspace_brief responses with warn/fail next actions', () => {
+    assert.equal(
+      diagnosisBlockingFailure(
+        'workspace_brief',
+        {
+          operation: 'workspace_brief',
+          status: 'healthy',
+          nextActions: [
+            { kind: 'health_check', severity: 'info', id: 'components' },
+            { kind: 'materialize_external_elements', severity: 'warn', count: 2 },
+            { kind: 'resolve_dangling_references', severity: 'fail', count: 1 },
+          ],
+        },
+        'workspace_brief',
+      ),
+      'workspace_brief has actionable nextActions: materialize_external_elements, resolve_dangling_references',
+    );
+  });
 });

@@ -144,7 +144,18 @@ export function diagnosisBlockingFailure(label, parsed, expectedOperation) {
   if (failedChecks.length > 0) {
     return `${label} has failing health checks: ${failedChecks.map((check) => check.id).join(', ')}`;
   }
+  const blockingActions = blockingNextActions(parsed?.nextActions);
+  if (blockingActions.length > 0) {
+    return `${label} has actionable nextActions: ${blockingActions.join(', ')}`;
+  }
   return null;
+}
+
+function blockingNextActions(actions) {
+  if (!Array.isArray(actions)) return [];
+  return actions
+    .filter((action) => action?.severity === 'warn' || action?.severity === 'fail')
+    .map((action) => action.id || action.kind || 'unknown');
 }
 
 export function diagnosisIssueCount(parsed) {
