@@ -280,6 +280,55 @@ const okShape = {
       unresolved: { total: 0, limited: false, byRelation: {}, edges: [] },
     },
   },
+  domainMatrix: {
+    operation: "domain_matrix",
+    project: "project",
+    summary: {
+      domains: 2,
+      nodes: 5,
+      assignedNodes: 4,
+      unassignedNodes: 1,
+      crossDomainEdges: 1,
+      selfDomainEdges: 2,
+      externalEdges: 1,
+      unresolvedEdges: 0,
+    },
+    domains: [
+      {
+        slug: "domains/ai-agent-partner",
+        node: { slug: "domains/ai-agent-partner", kind: "domain", title: "AI Agent Partner" },
+        nodes: 3,
+        outgoing: 1,
+        incoming: 0,
+        selfEdges: 2,
+        externalEdges: 1,
+        unresolvedEdges: 0,
+      },
+      {
+        slug: "domains/vault-local-first",
+        node: { slug: "domains/vault-local-first", kind: "domain", title: "Vault Local First" },
+        nodes: 1,
+        outgoing: 0,
+        incoming: 1,
+        selfEdges: 0,
+        externalEdges: 0,
+        unresolvedEdges: 0,
+      },
+    ],
+    connections: {
+      total: 1,
+      limited: false,
+      rows: [
+        {
+          from: "domains/ai-agent-partner",
+          to: "domains/vault-local-first",
+          count: 1,
+          byRelation: { relates: 1 },
+          examples: [{ from: "capabilities/mcp-server", to: "domains/vault-local-first", via: "relates" }],
+        },
+      ],
+    },
+  },
 };
 
 describe("recordResult", () => {
@@ -354,6 +403,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(17), "project_map_query_plan");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(18), "project_map");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(19), "domain_profile");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(20), "domain_matrix");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -935,6 +985,60 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, domainProfile: { ...okShape.domainProfile, hotspots: [{}] } }),
       ["domain_profile hotspots response missing row slug at index 0"],
+    );
+  });
+
+  it("fails on malformed domain_matrix payloads", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, domainMatrix: { ...okShape.domainMatrix, operation: "project_map" } }),
+      ["domain_matrix response operation mismatch — project_map"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, domainMatrix: { ...okShape.domainMatrix, domains: okShape.domainMatrix.domains.slice(0, 1) } }),
+      ["domain_matrix response domain count mismatch — domains 1, summary 2"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        domainMatrix: {
+          ...okShape.domainMatrix,
+          summary: { ...okShape.domainMatrix.summary, assignedNodes: 5 },
+        },
+      }),
+      ["domain_matrix assigned node mismatch — summary 5, domains 4"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        domainMatrix: {
+          ...okShape.domainMatrix,
+          domains: [{ ...okShape.domainMatrix.domains[0], outgoing: -1 }, okShape.domainMatrix.domains[1]],
+        },
+      }),
+      ["domain_matrix domain missing outgoing: domains/ai-agent-partner"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        domainMatrix: {
+          ...okShape.domainMatrix,
+          connections: { total: 1, limited: false, rows: [] },
+        },
+      }),
+      ["domain_matrix connections row count mismatch — rows 0, total 1"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        domainMatrix: {
+          ...okShape.domainMatrix,
+          connections: {
+            ...okShape.domainMatrix.connections,
+            rows: [{ ...okShape.domainMatrix.connections.rows[0], count: 0 }],
+          },
+        },
+      }),
+      ["domain_matrix connection missing count: domains/ai-agent-partner->domains/vault-local-first"],
     );
   });
 

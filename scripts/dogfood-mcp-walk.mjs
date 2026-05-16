@@ -54,6 +54,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [17, "project_map_query_plan"],
   [18, "project_map"],
   [19, "domain_profile"],
+  [20, "domain_matrix"],
 ]);
 
 function rpc(requests, timeoutMs = 3000) {
@@ -192,6 +193,11 @@ export function buildDogfoodRequests() {
       itemLimit: 5,
       limit: 5,
     }),
+    call(20, "query_ontology", {
+      operation: "domain_matrix",
+      project: "project",
+      limit: 10,
+    }),
   ];
 }
 
@@ -252,6 +258,7 @@ export function evaluateDogfoodGate({
   projectMapPlan,
   projectMap,
   domainProfile,
+  domainMatrix,
 }) {
   const failures = [];
   recordResult(failures, "list_kinds", kinds);
@@ -272,6 +279,7 @@ export function evaluateDogfoodGate({
   recordResult(failures, "project_map_query_plan", projectMapPlan);
   recordResult(failures, "project_map", projectMap);
   recordResult(failures, "domain_profile", domainProfile);
+  recordResult(failures, "domain_matrix", domainMatrix);
 
   if (kinds) {
     const kindsFailure = listKindsFailure(kinds);
@@ -349,6 +357,10 @@ export function evaluateDogfoodGate({
   if (domainProfile) {
     const domainProfileFailure = domainProfileShapeFailure(domainProfile);
     if (domainProfileFailure) failures.push(domainProfileFailure);
+  }
+  if (domainMatrix) {
+    const domainMatrixFailure = domainMatrixShapeFailure(domainMatrix);
+    if (domainMatrixFailure) failures.push(domainMatrixFailure);
   }
   if (allPaths && allPathsPlan && !allPathsFailure && !allPathsPlanFailure) {
     const plannedLimit = allPathsPlan.normalized.limit;
@@ -677,6 +689,88 @@ function domainProfileShapeFailure(result) {
   for (const key of ["boundary", "external", "unresolved"]) {
     const failure = scopeEdgeBucketFailure(`domain_profile ${key} edges`, result.edges[key]);
     if (failure) return failure;
+  }
+  return null;
+}
+
+function domainMatrixShapeFailure(result) {
+  if (result.operation !== "domain_matrix") {
+    return `domain_matrix response operation mismatch — ${result.operation}`;
+  }
+  if (result.project !== "project") {
+    return `domain_matrix response project mismatch — ${result.project}`;
+  }
+  const summaryFailure = numericSummaryFailure("domain_matrix", result.summary, [
+    "domains",
+    "nodes",
+    "assignedNodes",
+    "unassignedNodes",
+    "crossDomainEdges",
+    "selfDomainEdges",
+    "externalEdges",
+    "unresolvedEdges",
+  ]);
+  if (summaryFailure) return summaryFailure;
+  if (!Array.isArray(result.domains)) {
+    return "domain_matrix response missing domains array";
+  }
+  if (result.domains.length !== result.summary.domains) {
+    return `domain_matrix response domain count mismatch — domains ${result.domains.length}, summary ${result.summary.domains}`;
+  }
+  const assignedNodes = result.domains.reduce((sum, domain) => sum + (Number.isInteger(domain?.nodes) ? domain.nodes : 0), 0);
+  if (assignedNodes !== result.summary.assignedNodes) {
+    return `domain_matrix assigned node mismatch — summary ${result.summary.assignedNodes}, domains ${assignedNodes}`;
+  }
+  for (const [index, domain] of result.domains.entries()) {
+    if (!domain || typeof domain !== "object" || Array.isArray(domain)) {
+      return `domain_matrix response malformed domain at index ${index}`;
+    }
+    if (typeof domain.slug !== "string" || domain.slug.length === 0) {
+      return `domain_matrix response missing domain slug at index ${index}`;
+    }
+    for (const key of ["nodes", "outgoing", "incoming", "selfEdges", "externalEdges", "unresolvedEdges"]) {
+      if (!Number.isInteger(domain[key]) || domain[key] < 0) {
+        return `domain_matrix domain missing ${key}: ${domain.slug}`;
+      }
+    }
+  }
+  if (!result.connections || typeof result.connections !== "object" || Array.isArray(result.connections)) {
+    return "domain_matrix response missing connections";
+  }
+  if (!Number.isInteger(result.connections.total) || result.connections.total < 0) {
+    return "domain_matrix connections missing total";
+  }
+  if (typeof result.connections.limited !== "boolean") {
+    return "domain_matrix connections missing limited flag";
+  }
+  if (!Array.isArray(result.connections.rows)) {
+    return "domain_matrix connections missing rows array";
+  }
+  if (result.connections.rows.length > result.connections.total) {
+    return `domain_matrix connections rows exceed total — rows ${result.connections.rows.length}, total ${result.connections.total}`;
+  }
+  if (!result.connections.limited && result.connections.rows.length !== result.connections.total) {
+    return `domain_matrix connections row count mismatch — rows ${result.connections.rows.length}, total ${result.connections.total}`;
+  }
+  for (const [index, row] of result.connections.rows.entries()) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) {
+      return `domain_matrix connection malformed row at index ${index}`;
+    }
+    if (typeof row.from !== "string" || row.from.length === 0) {
+      return `domain_matrix connection missing from at index ${index}`;
+    }
+    if (typeof row.to !== "string" || row.to.length === 0) {
+      return `domain_matrix connection missing to at index ${index}`;
+    }
+    if (!Number.isInteger(row.count) || row.count <= 0) {
+      return `domain_matrix connection missing count: ${row.from}->${row.to}`;
+    }
+    if (!row.byRelation || typeof row.byRelation !== "object" || Array.isArray(row.byRelation)) {
+      return `domain_matrix connection missing byRelation: ${row.from}->${row.to}`;
+    }
+    if (!Array.isArray(row.examples)) {
+      return `domain_matrix connection missing examples: ${row.from}->${row.to}`;
+    }
   }
   return null;
 }
@@ -1204,6 +1298,18 @@ async function main() {
     }
   }
 
+  // 19. domain_matrix
+  header(`query_ontology(domain_matrix)`);
+  const domainMatrix = getResult(responses, 20);
+  if (domainMatrix) {
+    console.log(
+      `  domains ${domainMatrix.summary?.domains ?? "n/a"} · cross ${domainMatrix.summary?.crossDomainEdges ?? "n/a"} · self ${domainMatrix.summary?.selfDomainEdges ?? "n/a"} · connections ${domainMatrix.connections?.rows?.length ?? "n/a"} / total ${domainMatrix.connections?.total ?? "n/a"}`,
+    );
+    for (const row of (domainMatrix.connections?.rows || []).slice(0, 5)) {
+      console.log(`  ${row.from} → ${row.to}: ${row.count}`);
+    }
+  }
+
   const failures = evaluateDogfoodGate({
     kinds,
     list,
@@ -1223,6 +1329,7 @@ async function main() {
     projectMapPlan,
     projectMap,
     domainProfile,
+    domainMatrix,
   });
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
   if (timedOut && missingLabels.length > 0) {
@@ -1256,6 +1363,7 @@ async function main() {
   console.log(`  project_map query_plan: ${projectMapPlan?.estimate?.costClass ?? "n/a"} · ${projectMapPlan?.estimate?.strategy ?? "n/a"}`);
   console.log(`  project_map: ${projectMap?.domains?.length ?? "n/a"} domains · ${projectMap?.summary?.capabilities ?? "n/a"} capabilities`);
   console.log(`  domain_profile: ${domainProfile?.capabilities?.total ?? "n/a"} capabilities · ${domainProfile?.elements?.total ?? "n/a"} elements`);
+  console.log(`  domain_matrix: ${domainMatrix?.summary?.crossDomainEdges ?? "n/a"} cross-domain edges · ${domainMatrix?.connections?.total ?? "n/a"} connections`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   if (stderr.trim()) {
