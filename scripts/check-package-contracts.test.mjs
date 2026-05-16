@@ -90,6 +90,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /integration:cli:mcp-verify/);
     assert.match(readme, /integration:mcp:readme/);
     assert.match(readme, /runs `workspace_brief`, tuned `workspace_brief`, `health`, and tuned `health`/);
+    assert.match(readme, /graph-query, post-write guidance, and strict argument\/enum smoke scope/);
   });
 
   it('keeps the MCP first-call prompt read-only', () => {
@@ -581,6 +582,7 @@ describe('package contract helpers', () => {
     assert.match(mcpVerifyRow, /실제 `neighbors` \/ node→project `path` \/ `project_scope` graph smoke/);
     assert.match(mcpVerifyRow, /`workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`/);
     assert.match(mcpVerifyRow, /project-node `list_concepts` probe/);
+    assert.match(mcpVerifyRow, /write-tool `postWriteMaintenance` `score` \/ executable `proposedAction` \/ current-page next-action guidance/);
     assert.match(mcpVerifyRow, /ready `maintenance_plan` cursor \+ missing `maintenance_plan\.afterActionId` cursor smoke/);
     assert.match(mcpVerifyRow, /`maintenance_plan\.phases` \/ `maintenance_plan\.severities` \/ `maintenance_plan\.kinds` enum filter/);
     assert.match(mcpVerifyRow, /`cursor\.found=false`/);
@@ -737,6 +739,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /neighbors\\\/node-to-project path\\\/project_scope graph-query smoke/);
     assert.match(smoke, /runtime unknown-argument/);
     assert.match(smoke, /invalid-enum rejection/);
+    assert.match(smoke, /write-tool postWriteMaintenance score\\\/proposedAction\\\/next-action guidance/);
     assert.ok(smoke.includes('maintenance_plan cursor smoke'));
     assert.match(smoke, /Maintenance filters are enum-validated for phases\\\/severities\\\/kinds/);
     assert.match(smoke, /cursor smoke checks both cursor\\\.found=true with cursor\\\.reason=null and cursor\\\.found=false/);
@@ -793,6 +796,7 @@ describe('package contract helpers', () => {
     assert.match(regressionSection, /spawn-based integration suite/);
     assert.match(regressionSection, /Node `--test-name-pattern`/);
     assert.match(regressionSection, /`pnpm integration:cli:mcp-verify`/);
+    assert.match(regressionSection, /write-tool post-write guidance/);
     assert.match(regressionSection, /maintenance filter enum/);
     assert.match(regressionSection, /ready cursor \/ missing cursor 계약/);
     assert.match(regressionSection, /ready cursor \/ missing cursor scope/);
