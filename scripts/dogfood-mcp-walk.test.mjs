@@ -594,6 +594,28 @@ const okShape = {
       },
     ],
   },
+  topologicalOrder: {
+    operation: "topological_order",
+    relationTypes: ["dependencies"],
+    prerequisiteFirst: true,
+    includeIsolated: false,
+    acyclic: true,
+    totalNodes: 3,
+    orderedCount: 3,
+    selectedEdges: 2,
+    limited: false,
+    order: [
+      { rank: 0, slug: "capabilities/storage", node: { slug: "capabilities/storage", kind: "capability", title: "Storage" } },
+      { rank: 1, slug: "capabilities/auth", node: { slug: "capabilities/auth", kind: "capability", title: "Auth" } },
+      { rank: 2, slug: "capabilities/app", node: { slug: "capabilities/app", kind: "capability", title: "App" } },
+    ],
+    layers: [
+      { rank: 0, nodes: [{ slug: "capabilities/storage", kind: "capability", title: "Storage" }] },
+      { rank: 1, nodes: [{ slug: "capabilities/auth", kind: "capability", title: "Auth" }] },
+      { rank: 2, nodes: [{ slug: "capabilities/app", kind: "capability", title: "App" }] },
+    ],
+    blocked: [],
+  },
 };
 
 describe("recordResult", () => {
@@ -675,6 +697,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(24), "growth_plan");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(25), "recommend_relations");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(26), "cycles");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(27), "topological_order");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -1638,6 +1661,56 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["cycles edge missing via: capabilities/a>capabilities/b>capabilities/a/0"],
+    );
+  });
+
+  it("fails on malformed topological_order payloads", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, topologicalOrder: { ...okShape.topologicalOrder, operation: "cycles" } }),
+      ["topological_order response operation mismatch — cycles"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, topologicalOrder: { ...okShape.topologicalOrder, prerequisiteFirst: false } }),
+      ["topological_order must be prerequisite-first"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, topologicalOrder: { ...okShape.topologicalOrder, totalNodes: 4, orderedCount: 4 } }),
+      ["topological_order order count mismatch — rows 3, ordered 4"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, topologicalOrder: { ...okShape.topologicalOrder, blocked: [{ slug: "capabilities/a", remainingInDegree: 1 }] } }),
+      ["topological_order acyclic result has blocked nodes"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        topologicalOrder: {
+          ...okShape.topologicalOrder,
+          order: [{ ...okShape.topologicalOrder.order[0], rank: -1 }, okShape.topologicalOrder.order[1], okShape.topologicalOrder.order[2]],
+        },
+      }),
+      ["topological_order order row missing rank at index 0"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        topologicalOrder: {
+          ...okShape.topologicalOrder,
+          layers: [{ rank: 0, nodes: [{ kind: "capability", title: "Storage" }] }],
+        },
+      }),
+      ["topological_order layer 0 row missing slug at index 0"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        topologicalOrder: {
+          ...okShape.topologicalOrder,
+          acyclic: false,
+          blocked: [{ slug: "capabilities/a", remainingInDegree: 0 }],
+        },
+      }),
+      ["topological_order blocked row missing remainingInDegree: capabilities/a"],
     );
   });
 

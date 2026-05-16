@@ -7,7 +7,7 @@
 // write 안 함 (dogfood vault 보존). list_kinds / list_concepts / get_concepts /
 // find_evidence / find_path / find_backlinks / find_orphans /
 // validate_vault / compile_ontology(summary) /
-// query_ontology overview / query_plan / all_paths / pattern_walk / cycles / relation_check / components / recommend_relations / growth_plan / maintenance_plan / workspace_brief / health.
+// query_ontology overview / query_plan / all_paths / pattern_walk / cycles / topological_order / relation_check / components / recommend_relations / growth_plan / maintenance_plan / workspace_brief / health.
 
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -61,6 +61,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [24, "growth_plan"],
   [25, "recommend_relations"],
   [26, "cycles"],
+  [27, "topological_order"],
 ]);
 
 function rpc(requests, timeoutMs = 3000) {
@@ -231,6 +232,10 @@ export function buildDogfoodRequests() {
       operation: "cycles",
       limit: 5,
     }),
+    call(27, "query_ontology", {
+      operation: "topological_order",
+      limit: 10,
+    }),
   ];
 }
 
@@ -298,6 +303,7 @@ export function evaluateDogfoodGate({
   growthPlan,
   relationRecommendations,
   cycles,
+  topologicalOrder,
 }) {
   const failures = [];
   recordResult(failures, "list_kinds", kinds);
@@ -325,6 +331,7 @@ export function evaluateDogfoodGate({
   recordResult(failures, "growth_plan", growthPlan);
   recordResult(failures, "recommend_relations", relationRecommendations);
   recordResult(failures, "cycles", cycles);
+  recordResult(failures, "topological_order", topologicalOrder);
 
   if (kinds) {
     const kindsFailure = listKindsFailure(kinds);
@@ -430,6 +437,10 @@ export function evaluateDogfoodGate({
   if (cycles) {
     const cyclesFailure = cyclesShapeFailure(cycles);
     if (cyclesFailure) failures.push(cyclesFailure);
+  }
+  if (topologicalOrder) {
+    const topologicalOrderFailure = topologicalOrderShapeFailure(topologicalOrder);
+    if (topologicalOrderFailure) failures.push(topologicalOrderFailure);
   }
   if (allPaths && allPathsPlan && !allPathsFailure && !allPathsPlanFailure) {
     const plannedLimit = allPathsPlan.normalized.limit;
@@ -1225,6 +1236,98 @@ function cyclesShapeFailure(result) {
   return null;
 }
 
+function topologicalOrderShapeFailure(result) {
+  if (result.operation !== "topological_order") {
+    return `topological_order response operation mismatch — ${result.operation}`;
+  }
+  if (!Array.isArray(result.relationTypes) || result.relationTypes.some((type) => typeof type !== "string" || type.length === 0)) {
+    return "topological_order response missing relationTypes";
+  }
+  if (result.prerequisiteFirst !== true) {
+    return "topological_order must be prerequisite-first";
+  }
+  if (typeof result.includeIsolated !== "boolean") {
+    return "topological_order response missing includeIsolated";
+  }
+  if (typeof result.acyclic !== "boolean") {
+    return "topological_order response missing acyclic flag";
+  }
+  for (const key of ["totalNodes", "orderedCount", "selectedEdges"]) {
+    if (!Number.isInteger(result[key]) || result[key] < 0) {
+      return `topological_order response missing ${key}`;
+    }
+  }
+  if (result.orderedCount > result.totalNodes) {
+    return `topological_order orderedCount exceeds totalNodes — ordered ${result.orderedCount}, total ${result.totalNodes}`;
+  }
+  if (typeof result.limited !== "boolean") {
+    return "topological_order response missing limited flag";
+  }
+  if (!Array.isArray(result.order)) {
+    return "topological_order response missing order";
+  }
+  if (result.order.length > result.orderedCount) {
+    return `topological_order order exceeds orderedCount — rows ${result.order.length}, ordered ${result.orderedCount}`;
+  }
+  if (!result.limited && result.order.length !== result.orderedCount) {
+    return `topological_order order count mismatch — rows ${result.order.length}, ordered ${result.orderedCount}`;
+  }
+  if (!Array.isArray(result.layers)) {
+    return "topological_order response missing layers";
+  }
+  if (!Array.isArray(result.blocked)) {
+    return "topological_order response missing blocked";
+  }
+  if (result.acyclic && result.blocked.length > 0) {
+    return "topological_order acyclic result has blocked nodes";
+  }
+  for (const [index, row] of result.order.entries()) {
+    const rowFailure = topologicalNodeRowFailure("topological_order order", row, index, { requireRank: true });
+    if (rowFailure) return rowFailure;
+  }
+  for (const [index, layer] of result.layers.entries()) {
+    if (!layer || typeof layer !== "object" || Array.isArray(layer)) {
+      return `topological_order malformed layer at index ${index}`;
+    }
+    if (!Number.isInteger(layer.rank) || layer.rank < 0) {
+      return `topological_order layer missing rank at index ${index}`;
+    }
+    if (!Array.isArray(layer.nodes)) {
+      return `topological_order layer missing nodes at rank ${layer.rank}`;
+    }
+    for (const [nodeIndex, node] of layer.nodes.entries()) {
+      const rowFailure = topologicalNodeRowFailure(`topological_order layer ${layer.rank}`, node, nodeIndex);
+      if (rowFailure) return rowFailure;
+    }
+  }
+  for (const [index, row] of result.blocked.entries()) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) {
+      return `topological_order malformed blocked row at index ${index}`;
+    }
+    if (typeof row.slug !== "string" || row.slug.length === 0) {
+      return `topological_order blocked row missing slug at index ${index}`;
+    }
+    if (!Number.isInteger(row.remainingInDegree) || row.remainingInDegree <= 0) {
+      return `topological_order blocked row missing remainingInDegree: ${row.slug}`;
+    }
+  }
+  return null;
+}
+
+function topologicalNodeRowFailure(label, row, index, { requireRank = false } = {}) {
+  if (!row || typeof row !== "object" || Array.isArray(row)) {
+    return `${label} malformed row at index ${index}`;
+  }
+  if (requireRank && (!Number.isInteger(row.rank) || row.rank < 0)) {
+    return `${label} row missing rank at index ${index}`;
+  }
+  const slug = typeof row.slug === "string" ? row.slug : row.node?.slug;
+  if (typeof slug !== "string" || slug.length === 0) {
+    return `${label} row missing slug at index ${index}`;
+  }
+  return null;
+}
+
 function candidateGroupShapeFailure(label, group, expectedTotal) {
   if (!group || typeof group !== "object" || Array.isArray(group)) {
     return `${label} missing group`;
@@ -1895,6 +1998,18 @@ async function main() {
     }
   }
 
+  // 26. topological_order
+  header(`query_ontology(topological_order)`);
+  const topologicalOrder = getResult(responses, 27);
+  if (topologicalOrder) {
+    console.log(
+      `  acyclic ${topologicalOrder.acyclic ?? "n/a"} · ordered ${topologicalOrder.order?.length ?? "n/a"} / ${topologicalOrder.orderedCount ?? "n/a"} · total ${topologicalOrder.totalNodes ?? "n/a"} · edges ${topologicalOrder.selectedEdges ?? "n/a"}`,
+    );
+    for (const row of (topologicalOrder.order || []).slice(0, 5)) {
+      console.log(`  rank ${row.rank}: ${row.slug}`);
+    }
+  }
+
   const failures = evaluateDogfoodGate({
     kinds,
     list,
@@ -1921,6 +2036,7 @@ async function main() {
     growthPlan,
     relationRecommendations,
     cycles,
+    topologicalOrder,
   });
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
   if (timedOut && missingLabels.length > 0) {
@@ -1961,6 +2077,7 @@ async function main() {
   console.log(`  growth_plan: ${growthPlan?.summary?.totalActions ?? "n/a"} actions · ${growthPlan?.summary?.externalElementRefsIgnored ?? "n/a"} ignored external refs`);
   console.log(`  recommend_relations: ${relationRecommendations?.totalRecommendations ?? "n/a"} recommendations`);
   console.log(`  cycles: ${cycles?.totalCycles ?? "n/a"} total`);
+  console.log(`  topological_order: ${topologicalOrder?.orderedCount ?? "n/a"} ordered · acyclic ${topologicalOrder?.acyclic ?? "n/a"}`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   if (stderr.trim()) {

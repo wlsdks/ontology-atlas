@@ -111,8 +111,8 @@ capabilities 경로로, `query_ontology(all_paths)` 와
 경로로 호출해 agent 가 단계형 graph traversal, 다중 path enumeration, 실행 전
 plan contract 를 받을 수 있는지 확인한다. `project_map` query_plan 과 실제
 `project_map` 실행, 그리고 `domain_profile` / `domain_matrix` / `components` /
-`cycles` / `relation_check` / `recommend_relations` / `growth_plan` /
-`maintenance_plan` 도 추가로 dogfood 해, installed
+`cycles` / `topological_order` / `relation_check` / `recommend_relations` /
+`growth_plan` / `maintenance_plan` 도 추가로 dogfood 해, installed
 verify 에서 넓힌 aggregate target smoke 가 이 repo 의 반복 MCP walk 에서 실제
 project/domain map 과 특정 domain drill-down 출력까지 이어지는지 본다.
 이후 `list_kinds.total`, `list_concepts.total`, `validate_vault.scanned`,
@@ -203,8 +203,8 @@ path 가 있을 때만 true 다.
 연속 실행한다. 기본 census / backlink / path 질의에 더해 `validate_vault`,
 `workspace_brief`, `health`, `compile_ontology`, `overview`, `pattern_walk`,
 `all_paths`, `all_paths query_plan`, `project_map query_plan`, `project_map`,
-`domain_profile`, `domain_matrix`, `components`, `cycles`, `relation_check`,
-`recommend_relations`, `growth_plan`, `maintenance_plan` 를
+`domain_profile`, `domain_matrix`, `components`, `cycles`, `topological_order`,
+`relation_check`, `recommend_relations`, `growth_plan`, `maintenance_plan` 를
 함께 출력해, AI agent 가 첫 접촉에서 받는 graph diagnosis 와 traversal 품질을
 계속 확인한다.
 dogfood 의 `list_concepts.vaultWarnings` / `validate_vault` 판정은

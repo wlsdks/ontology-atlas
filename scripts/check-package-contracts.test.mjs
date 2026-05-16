@@ -176,6 +176,7 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /`domain_matrix`/);
     assert.match(dogfoodSection, /`components`/);
     assert.match(dogfoodSection, /`cycles`/);
+    assert.match(dogfoodSection, /`topological_order`/);
     assert.match(dogfoodSection, /`relation_check`/);
     assert.match(dogfoodSection, /`recommend_relations`/);
     assert.match(dogfoodSection, /`growth_plan`/);
