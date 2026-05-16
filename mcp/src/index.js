@@ -1450,6 +1450,10 @@ function requireOptionalStringArray(value, name) {
 
 function requireOptionalPlainObject(value, name) {
   if (value === undefined) return;
+  requirePlainObject(value, name);
+}
+
+function requirePlainObject(value, name) {
   if (value === null || Array.isArray(value) || typeof value !== 'object') {
     throw new Error(`${name} must be an object.`);
   }
@@ -1556,14 +1560,16 @@ function addConceptsBatch({ concepts }) {
   // 혼동을 줄임. 같은 slug 의 첫 row 만 land 시도, 후속 동일 slug 는 input
   // 단계에서 ok:false.
   const seenInBatch = new Set();
-  const results = concepts.map((spec) => {
-    const slug = spec && typeof spec.slug === 'string' ? spec.slug : '';
-    if (slug && seenInBatch.has(slug)) {
-      return { slug, ok: false, error: 'duplicate slug in input batch' };
-    }
-    if (slug) seenInBatch.add(slug);
+  const results = concepts.map((spec, index) => {
+    let slug = '';
     try {
-      const result = addConcept(spec || {}, { includePostWriteMaintenance: false });
+      requirePlainObject(spec, `concepts[${index}]`);
+      slug = typeof spec.slug === 'string' ? spec.slug : '';
+      if (slug && seenInBatch.has(slug)) {
+        return { slug, ok: false, error: 'duplicate slug in input batch' };
+      }
+      if (slug) seenInBatch.add(slug);
+      const result = addConcept(spec, { includePostWriteMaintenance: false });
       return result;
     } catch (err) {
       const msg = err && err.message ? err.message : String(err);
@@ -1712,14 +1718,18 @@ function addRelationsBatch({ relations }) {
       `Too many relations: ${relations.length}. Max 50 per call — split into multiple add_relations batches.`
     );
   }
-  const results = relations.map((spec) => {
+  const results = relations.map((spec, index) => {
+    let from = '';
+    let to = '';
+    let type = '';
     try {
-      return addRelation(spec || {}, { includePostWriteMaintenance: false });
+      requirePlainObject(spec, `relations[${index}]`);
+      from = typeof spec.from === 'string' ? spec.from : '';
+      to = typeof spec.to === 'string' ? spec.to : '';
+      type = typeof spec.type === 'string' ? spec.type : '';
+      return addRelation(spec, { includePostWriteMaintenance: false });
     } catch (err) {
       const msg = err && err.message ? err.message : String(err);
-      const from = spec && typeof spec.from === 'string' ? spec.from : '';
-      const to = spec && typeof spec.to === 'string' ? spec.to : '';
-      const type = spec && typeof spec.type === 'string' ? spec.type : '';
       return { ok: false, from, to, type, error: msg };
     }
   });

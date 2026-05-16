@@ -2019,6 +2019,36 @@ await test("add_concepts — 입력 내 중복 slug 두번째는 ok:false", asyn
   }
 });
 
+await test("add_concepts — object 가 아닌 row 는 row-level error 로 격리", async () => {
+  const root = makeVault([]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", {
+        concepts: [
+          { slug: "ok", kind: "capability", title: "OK" },
+          null,
+          "not-object",
+          [],
+        ],
+      }),
+      callTool(3, "list_concepts"),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.concepts[0].ok, true, "valid row still lands");
+    assert.equal(result.concepts[1].ok, false);
+    assert.match(result.concepts[1].error, /concepts\[1\] must be an object/i);
+    assert.equal(result.concepts[2].ok, false);
+    assert.match(result.concepts[2].error, /concepts\[2\] must be an object/i);
+    assert.equal(result.concepts[3].ok, false);
+    assert.match(result.concepts[3].error, /concepts\[3\] must be an object/i);
+    const list = getCallParsed(responses, 3);
+    assert.ok(list.nodes.some((node) => node.slug === "ok"));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("MCP write tools — blank/padded string inputs are rejected before disk writes", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
@@ -2257,6 +2287,39 @@ await test("add_relations — 빈 relations[] → 빈 results, 51개 → error",
     ]);
     const text = JSON.stringify(r2.find((r) => r.id === 2));
     assert.match(text, /Too many relations|50/i);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("add_relations — object 가 아닌 row 는 row-level error 로 격리", async () => {
+  const root = makeVault([
+    { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
+    { slug: "b", content: "---\nkind: capability\ntitle: B\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relations", {
+        relations: [
+          { from: "a", to: "b", type: "relates" },
+          null,
+          "not-object",
+          [],
+        ],
+      }),
+      callTool(3, "get_concept", { slug: "a" }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.relations[0].ok, true, "valid row still lands");
+    assert.equal(result.relations[1].ok, false);
+    assert.match(result.relations[1].error, /relations\[1\] must be an object/i);
+    assert.equal(result.relations[2].ok, false);
+    assert.match(result.relations[2].error, /relations\[2\] must be an object/i);
+    assert.equal(result.relations[3].ok, false);
+    assert.match(result.relations[3].error, /relations\[3\] must be an object/i);
+    const concept = getCallParsed(responses, 3);
+    assert.deepEqual(concept.frontmatter.relates, ["b"]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
