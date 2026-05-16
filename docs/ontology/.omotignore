@@ -13,6 +13,7 @@ src/**
 mcp/**
 cli/**
 scripts/**
+tests/**
 
 # Claude Code skill / hook
 .claude/**

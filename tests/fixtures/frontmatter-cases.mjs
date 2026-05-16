@@ -1,11 +1,12 @@
-// 3-way frontmatter parser contract — 같은 입력에 같은 출력을 보장.
+// 4-way frontmatter parser contract — 같은 입력에 같은 출력을 보장.
 //
 // 단일 진실원: 이 fixture 1 곳. 검증 대상:
 //   - src/shared/lib/parse-frontmatter.ts        (런타임)
 //   - mcp/src/parser.mjs                         (AI agent surface, 별도 npm pkg)
 //   - scripts/lib/parse-frontmatter.mjs          (빌드 스크립트 + validator CLI)
+//   - cli/src/lib/parse-frontmatter.mjs          (developer CLI, 별도 npm pkg)
 //
-// 한쪽이 drift 하면 contract test 가 즉시 잡는다. mcp/ 는 별도 publish 라
+// 한쪽이 drift 하면 contract test 가 즉시 잡는다. mcp/ 와 cli/ 는 별도 publish 라
 // 물리적 단일 모듈로 묶을 수 없으므로 contract test 가 effective 단일화.
 
 export const CASES = [

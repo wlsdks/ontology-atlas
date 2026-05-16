@@ -107,9 +107,9 @@ function unquote(value) {
   return value.replace(/^["']|["']$/g, "");
 }
 
-// frontmatter 작성 — value 를 raw markdown 으로 직렬화. mcp/src/parser.mjs
-// 의 serializeFrontmatter / buildMarkdown 와 contract 일관 (drift 차단은
-// 별도 contract test 후속).
+// frontmatter 작성 — value 를 raw markdown 으로 직렬화.
+// tests/contract/frontmatter-writer.contract.test.ts 가 mcp/src/parser.mjs 와
+// serializeFrontmatter / buildMarkdown drift 를 차단한다.
 // null 값은 key 삭제, undefined 는 skip.
 
 export function serializeFrontmatter(fm) {

@@ -6,6 +6,7 @@ domain: vault-local-first
 elements:
   - scripts/validate-vault.mjs
   - src/shared/lib/validate-vault-document.ts
+  - tests/contract/frontmatter-writer.contract.test.ts
 relates:
   - capabilities/frontmatter-to-ontology
   - domains/vault-local-first
@@ -43,3 +44,8 @@ R11 에서 이 silent corruption 을 가시화.
 | `parse-zero-keys` | warning | CLI only |
 
 UI 측은 fast path 라 raw 의존 issue 와 whole-vault reference issue 는 detect 못 하지만 *대부분의 사용자 실수* (kind 값 오타 / 빠뜨림 / graph 배열 drift) 는 cover.
+
+## Drift contracts
+
+- `tests/contract/parse-frontmatter.contract.test.ts` — TS runtime / MCP package / scripts / CLI parser 4-way parity.
+- `tests/contract/frontmatter-writer.contract.test.ts` — MCP `buildMarkdown` / `serializeFrontmatter` 와 CLI writer 의 byte-for-byte markdown shape parity.
