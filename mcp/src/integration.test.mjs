@@ -2335,6 +2335,39 @@ await test("add_concepts — object 가 아닌 row 는 row-level error 로 격�
   }
 });
 
+await test("add_concepts — blank/padded scalar row 는 row-level error 로 격리", async () => {
+  const root = makeVault([]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", {
+        concepts: [
+          { slug: "ok", kind: "capability", title: "OK", domain: "x" },
+          { slug: " padded", kind: "capability", title: "Padded Slug", domain: "x" },
+          { slug: "bad-title", kind: "capability", title: " Bad Title", domain: "x" },
+          { slug: "bad-domain", kind: "capability", title: "Bad Domain", domain: " x" },
+          { slug: "blank-title", kind: "capability", title: "   ", domain: "x" },
+        ],
+      }),
+      callTool(3, "list_concepts"),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.concepts[0].ok, true, "valid row still lands");
+    assert.equal(result.concepts[1].ok, false);
+    assert.match(result.concepts[1].error, /slug must not have leading or trailing whitespace/i);
+    assert.equal(result.concepts[2].ok, false);
+    assert.match(result.concepts[2].error, /title must not have leading or trailing whitespace/i);
+    assert.equal(result.concepts[3].ok, false);
+    assert.match(result.concepts[3].error, /domain must not have leading or trailing whitespace/i);
+    assert.equal(result.concepts[4].ok, false);
+    assert.match(result.concepts[4].error, /title must be a non-empty string/i);
+    const list = getCallParsed(responses, 3);
+    assert.deepEqual(list.nodes.map((node) => node.slug), ["ok"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("MCP write tools — blank/padded string inputs are rejected before disk writes", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
