@@ -2,7 +2,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { evaluateDogfoodGate, recordResult } from "./dogfood-mcp-walk.mjs";
+import {
+  evaluateDogfoodGate,
+  expectedResponseIds,
+  parseRpcResponses,
+  recordResult,
+  shouldFinishRpc,
+} from "./dogfood-mcp-walk.mjs";
 
 const okShape = {
   kinds: { total: 1, byKind: { project: 1 } },
@@ -32,6 +38,32 @@ describe("recordResult", () => {
     const failures = [];
     assert.equal(recordResult(failures, "ok", { total: 1 }), true);
     assert.deepEqual(failures, []);
+  });
+});
+
+describe("rpc response completion helpers", () => {
+  it("derives response ids from requests with JSON-RPC ids", () => {
+    assert.deepEqual(
+      [...expectedResponseIds([{ id: 1 }, { method: "notifications/initialized" }, { id: 2 }])],
+      [1, 2],
+    );
+  });
+
+  it("parses newline-delimited JSON-RPC responses", () => {
+    assert.deepEqual(
+      parseRpcResponses('{"id":1,"result":{}}\nnot-json\n{"id":2,"error":{"message":"bad"}}\n'),
+      [
+        { id: 1, result: {} },
+        { id: 2, error: { message: "bad" } },
+      ],
+    );
+  });
+
+  it("finishes after all expected responses or any error response", () => {
+    const expectedIds = new Set([1, 2]);
+    assert.equal(shouldFinishRpc('{"id":1,"result":{}}\n', expectedIds), false);
+    assert.equal(shouldFinishRpc('{"id":1,"result":{}}\n{"id":2,"result":{}}\n', expectedIds), true);
+    assert.equal(shouldFinishRpc('{"id":1,"error":{"message":"bad"}}\n', expectedIds), true);
   });
 });
 

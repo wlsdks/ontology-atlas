@@ -19,36 +19,65 @@ const VAULT = join(ROOT, "docs", "ontology");
 
 function rpc(requests, timeoutMs = 3000) {
   return new Promise((resolveP, rejectP) => {
+    const expectedIds = expectedResponseIds(requests);
     const proc = spawn("node", [SERVER], {
       env: { ...process.env, OMOT_VAULT: VAULT },
       stdio: ["pipe", "pipe", "pipe"],
     });
     let stdout = "";
     let stderr = "";
-    proc.stdout.on("data", (b) => (stdout += b.toString()));
+    let completed = false;
+    let timer = null;
+    proc.stdout.on("data", (b) => {
+      stdout += b.toString();
+      if (!completed && shouldFinishRpc(stdout, expectedIds)) {
+        completed = true;
+        if (timer) clearTimeout(timer);
+        proc.kill("SIGTERM");
+      }
+    });
     proc.stderr.on("data", (b) => (stderr += b.toString()));
 
     const lines = requests.map((r) => JSON.stringify(r)).join("\n") + "\n";
     proc.stdin.write(lines);
-    const timer = setTimeout(() => proc.kill("SIGTERM"), timeoutMs);
+    timer = setTimeout(() => proc.kill("SIGTERM"), timeoutMs);
 
     proc.on("close", () => {
-      clearTimeout(timer);
-      const responses = stdout
-        .split("\n")
-        .filter(Boolean)
-        .map((s) => {
-          try {
-            return JSON.parse(s);
-          } catch {
-            return null;
-          }
-        })
-        .filter(Boolean);
+      if (timer) clearTimeout(timer);
+      const responses = parseRpcResponses(stdout);
       resolveP({ responses, stderr });
     });
     proc.on("error", rejectP);
   });
+}
+
+export function expectedResponseIds(requests) {
+  return new Set(
+    requests
+      .map((request) => request.id)
+      .filter((id) => Number.isInteger(id)),
+  );
+}
+
+export function parseRpcResponses(stdout) {
+  return stdout
+    .split("\n")
+    .filter(Boolean)
+    .map((s) => {
+      try {
+        return JSON.parse(s);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+export function shouldFinishRpc(stdout, expectedIds) {
+  const responses = parseRpcResponses(stdout);
+  if (responses.some((response) => response.error)) return true;
+  const receivedIds = new Set(responses.map((response) => response.id));
+  return [...expectedIds].every((id) => receivedIds.has(id));
 }
 
 const init = [
