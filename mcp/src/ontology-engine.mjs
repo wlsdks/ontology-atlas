@@ -299,7 +299,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const to = resolve(toInput, 'to');
     const maxHops = normalizeDepth(options.maxHops, 5);
     const direction = normalizePathDirection(options.direction);
-    const limit = normalizeLimit(options.limit ?? 25);
+    const limit = normalizeLimit(options.limit, 25);
     const typeSet = normalizeTypes(options.types);
     const matches = [];
 
@@ -357,9 +357,7 @@ export function createOntologyEngine(artifact, options = {}) {
 
   function queryPlan(options = {}) {
     const targetOperation = normalizePlanTargetOperation(options.targetOperation);
-    const limit = normalizeLimit(
-      options.limit ?? (targetOperation === 'all_paths' ? 25 : DEFAULT_LIMIT),
-    );
+    const limit = normalizeLimit(options.limit, targetOperation === 'all_paths' ? 25 : DEFAULT_LIMIT);
     const typeSet = normalizeTypes(options.types);
     const normalized = {
       targetOperation,
@@ -484,7 +482,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function centrality(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 10);
+    const limit = normalizeLimit(options.limit, 10);
     const iterations = normalizeIterations(options.iterations);
     const typeSet = normalizeTypes(options.types);
     const resolvedEdges = edges.filter((edge) => edge.resolved && typeAllowed(edge.via, typeSet));
@@ -545,7 +543,7 @@ export function createOntologyEngine(artifact, options = {}) {
   function explainRelation(fromInput, toInput, options = {}) {
     const from = resolve(fromInput, 'from');
     const to = resolve(toInput, 'to');
-    const limit = normalizeLimit(options.limit ?? 20);
+    const limit = normalizeLimit(options.limit, 20);
     const maxHops = normalizeDepth(options.maxHops, 5);
     const direction = normalizePathDirection(options.direction);
     const typeSet = normalizeTypes(options.types);
@@ -935,7 +933,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function overview(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 10);
+    const limit = normalizeLimit(options.limit, 10);
     const byKind = countBy(nodes, 'kind');
     const byDomain = countBy(nodes, 'domain');
     const byRelation = countEdges(edges, 'via');
@@ -965,7 +963,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function schema(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 50);
+    const limit = normalizeLimit(options.limit, 50);
     const patterns = schemaPatterns();
 
     return {
@@ -977,7 +975,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function facets(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 10);
+    const limit = normalizeLimit(options.limit, 10);
     const resolvedEdges = edges.filter((edge) => edge.resolved);
     const externalEdges = edges.filter((edge) => edge.external);
     const unresolvedEdges = edges.filter((edge) => !edge.resolved && !edge.external);
@@ -1178,7 +1176,7 @@ export function createOntologyEngine(artifact, options = {}) {
 
   function nodeProfile(slugOrAlias, options = {}) {
     const center = resolve(slugOrAlias, 'slug');
-    const limit = normalizeLimit(options.limit ?? 20);
+    const limit = normalizeLimit(options.limit, 20);
     const depth = normalizeDepth(options.depth, 3);
     const includeExternal = normalizeOptionalBoolean(options.includeExternal, 'includeExternal', true);
     const includeUnresolved = normalizeOptionalBoolean(options.includeUnresolved, 'includeUnresolved', true);
@@ -1240,8 +1238,8 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function domainProfile(slugOrAlias, options = {}) {
-    const limit = normalizeLimit(options.limit ?? 100);
-    const itemLimit = normalizeLimit(options.itemLimit ?? 20);
+    const limit = normalizeLimit(options.limit, 100);
+    const itemLimit = normalizeLimit(options.itemLimit, 20, 'itemLimit');
     const domain = resolveDomainRoot(slugOrAlias);
     const included = collectContainmentScope(domain);
     const scopedNodes = sortedNodesInScope(included);
@@ -1284,7 +1282,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function domainMatrix(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 100);
+    const limit = normalizeLimit(options.limit, 100);
     const project = normalizeOptionalString(options.project ?? options.slug, 'project');
     const scope = project
       ? collectContainmentScope(resolveProjectRoot(project))
@@ -1401,7 +1399,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function projectScope(slugOrAlias, options = {}) {
-    const limit = normalizeLimit(options.limit ?? 200);
+    const limit = normalizeLimit(options.limit, 200);
     const project = resolveProjectRoot(slugOrAlias);
     const included = collectContainmentScope(project);
     const nodeRows = [...included]
@@ -1438,8 +1436,8 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function projectMap(slugOrAlias, options = {}) {
-    const limit = normalizeLimit(options.limit ?? 50);
-    const itemLimit = normalizeLimit(options.itemLimit ?? 20);
+    const limit = normalizeLimit(options.limit, 50);
+    const itemLimit = normalizeLimit(options.itemLimit, 20, 'itemLimit');
     const project = resolveProjectRoot(slugOrAlias);
     const included = collectContainmentScope(project);
     const scopedNodes = sortedNodesInScope(included);
@@ -1515,8 +1513,8 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function components(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 20);
-    const nodeLimit = normalizeLimit(options.nodeLimit ?? 25);
+    const limit = normalizeLimit(options.limit, 20);
+    const nodeLimit = normalizeLimit(options.nodeLimit, 25, 'nodeLimit');
     const typeSet = normalizeTypes(options.types);
     const groups = connectedComponentGroups(typeSet);
 
@@ -1545,8 +1543,8 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function communities(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 20);
-    const nodeLimit = normalizeLimit(options.nodeLimit ?? 25);
+    const limit = normalizeLimit(options.limit, 20);
+    const nodeLimit = normalizeLimit(options.nodeLimit, 25, 'nodeLimit');
     const iterations = normalizeIterations(options.iterations);
     const typeSet = normalizeTypes(options.types);
     const adjacency = undirectedAdjacencyFrom(nodes, edges, typeSet);
@@ -1648,7 +1646,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function similarNodes(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 10);
+    const limit = normalizeLimit(options.limit, 10);
     const typeSet = normalizeTypes(options.types);
     const sourceSlug = normalizeOptionalString(options.slug, 'slug');
     const resolvedSource = sourceSlug ? resolve(sourceSlug, 'slug') : null;
@@ -1752,7 +1750,7 @@ export function createOntologyEngine(artifact, options = {}) {
   function containmentTree(slugOrAlias, options = {}) {
     const root = normalizeOptionalString(slugOrAlias, 'slug');
     const depth = normalizeDepth(options.depth, 20);
-    const limit = normalizeLimit(options.limit ?? 200);
+    const limit = normalizeLimit(options.limit, 200);
     const includeOrphans = normalizeOptionalBoolean(options.includeOrphans, 'includeOrphans', false);
     const rootSlugs = root
       ? [resolve(root, 'slug')]
@@ -2112,7 +2110,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function cycles(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 20);
+    const limit = normalizeLimit(options.limit, 20);
     const maxDepth = normalizeDepth(options.maxHops ?? options.depth, 8);
     const typeSet = normalizeTypes(options.types ?? ['dependencies']);
     const cycleMap = new Map();
@@ -2162,7 +2160,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function topologicalOrder(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 100);
+    const limit = normalizeLimit(options.limit, 100);
     const typeSet = normalizeTypes(options.types ?? ['dependencies']);
     const includeIsolated = normalizeOptionalBoolean(options.includeIsolated, 'includeIsolated', false);
     const selectedEdges = edges.filter((edge) => edge.resolved && typeAllowed(edge.via, typeSet));
@@ -2241,7 +2239,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function recommendRelations(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 50);
+    const limit = normalizeLimit(options.limit, 50);
     const kindFilter = normalizeRecommendRelationKind(options.kind);
     const recommendations = [];
 
@@ -2287,7 +2285,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function growthPlan(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 25);
+    const limit = normalizeLimit(options.limit, 25);
     const relationRecommendations = recommendRelations({ limit });
     const externalElementRefs = externalElementCandidates(limit);
     const danglingReferences = danglingReferenceCandidates(limit);
@@ -2317,7 +2315,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function maintenancePlan(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 25);
+    const limit = normalizeLimit(options.limit, 25);
     const phaseFilter = normalizeStringSet(options.phases, 'phases');
     const severityFilter = normalizeStringSet(options.severities, 'severities');
     const kindFilter = normalizeStringSet(options.kinds, 'kinds');
@@ -2490,7 +2488,7 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function workspaceBrief(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 10);
+    const limit = normalizeLimit(options.limit, 10);
     const overviewResult = overview({ limit });
     const healthResult = health({
       limit,
@@ -2551,12 +2549,12 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function health(options = {}) {
-    const limit = normalizeLimit(options.limit ?? 10);
+    const limit = normalizeLimit(options.limit, 10);
     const overviewResult = overview({ limit });
     const componentTypeSet = normalizeTypes(options.componentTypes ?? options.types);
     const componentResult = components({
-      limit: normalizeLimit(options.componentLimit ?? 5),
-      nodeLimit: normalizeLimit(options.nodeLimit ?? 10),
+      limit: normalizeLimit(options.componentLimit, 5, 'componentLimit'),
+      nodeLimit: normalizeLimit(options.nodeLimit, 10, 'nodeLimit'),
       types: options.componentTypes ?? options.types,
     });
     const allComponentGroups = connectedComponentGroups(componentTypeSet);
@@ -2566,15 +2564,15 @@ export function createOntologyEngine(artifact, options = {}) {
     const actionableComponentCount = actionableComponentGroups.length;
     const ignoredComponentCount = allComponentGroups.length - actionableComponentCount;
     const cycleResult = cycles({
-      limit: normalizeLimit(options.cycleLimit ?? 5),
+      limit: normalizeLimit(options.cycleLimit, 5, 'cycleLimit'),
       maxHops: options.maxHops ?? options.depth,
       types: options.dependencyTypes ?? ['dependencies'],
     });
     const recommendationResult = recommendRelations({
-      limit: normalizeLimit(options.recommendationLimit ?? 20),
+      limit: normalizeLimit(options.recommendationLimit, 20, 'recommendationLimit'),
     });
     const orderResult = topologicalOrder({
-      limit: normalizeLimit(options.orderLimit ?? 20),
+      limit: normalizeLimit(options.orderLimit, 20, 'orderLimit'),
       types: options.dependencyTypes ?? ['dependencies'],
     });
     const issueCount = Array.isArray(artifact?.issues) ? artifact.issues.length : 0;
@@ -3639,9 +3637,15 @@ function normalizeDepth(value, fallback) {
   return value;
 }
 
-function normalizeLimit(value) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return DEFAULT_LIMIT;
-  return Math.max(1, Math.min(500, Math.trunc(value)));
+function normalizeLimit(value, fallback = DEFAULT_LIMIT, name = 'limit') {
+  if (value === undefined) return fallback;
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error(`${name} must be a positive integer.`);
+  }
+  if (value > 500) {
+    throw new Error(`${name} must be <= 500.`);
+  }
+  return value;
 }
 
 function formatDirectedEdge({ direction, edge }) {

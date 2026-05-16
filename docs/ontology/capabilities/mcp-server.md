@@ -193,6 +193,8 @@ core graph engine 직접 호출도 `iterations` 를 같은 1..100 integer contra
 검증해 문자열/소수/과대값을 기본값이나 clamp 로 조용히 흡수하지 않는다.
 `depth` / `maxHops` 도 core 에서 같은 non-negative integer, max 20 contract 로
 검증해 traversal 범위를 silent clamp 하지 않는다.
+`limit` / `itemLimit` / `nodeLimit` / health sub-limit 계열도 core 에서
+positive integer, max 500 contract 로 검증해 page 크기를 silent clamp 하지 않는다.
 `tools/list` inputSchema 도 같은 integer / minimum / maximum 제약을 노출해
 agent 가 호출 전 잘못된 인자를 스스로 고칠 수 있게 한다.
 `match_nodes` 의 degree 필터 (`minDegree`, `maxDegree`, `minInDegree`,

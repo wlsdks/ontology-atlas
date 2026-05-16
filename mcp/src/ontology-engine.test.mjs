@@ -320,6 +320,43 @@ describe('queryCompiledOntology', () => {
     );
   });
 
+  it('rejects invalid query limits instead of defaulting or clamping them', () => {
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'centrality', limit: '10' }),
+      /limit must be a positive integer/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'overview', limit: 1.5 }),
+      /limit must be a positive integer/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'schema', limit: 0 }),
+      /limit must be a positive integer/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'all_paths',
+        from: 'capabilities/login',
+        to: 'domains/auth',
+        limit: 501,
+      }),
+      /limit must be <= 500/,
+    );
+    assert.throws(
+      () =>
+        queryCompiledOntology(artifact(), {
+          operation: 'project_map',
+          project: 'project',
+          itemLimit: null,
+        }),
+      /itemLimit must be a positive integer/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'health', componentLimit: 501 }),
+      /componentLimit must be <= 500/,
+    );
+  });
+
   it('detects deterministic ontology communities', () => {
     const result = queryCompiledOntology(
       compileOntology(
