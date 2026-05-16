@@ -3,7 +3,7 @@ slug: capabilities/cli-developer-entry
 kind: capability
 title: CLI Developer Entry (26 commands — vault + MCP verify + graph deep dive)
 domain: onboarding-ux
-elements: [cli/src/commands/add.mjs, cli/src/commands/analyze.mjs, cli/src/commands/backlinks.mjs, cli/src/commands/blast-radius.mjs, cli/src/commands/bootstrap.mjs, cli/src/commands/compile.mjs, cli/src/commands/cycles.mjs, cli/src/commands/delete.mjs, cli/src/commands/find.mjs, cli/src/commands/health.mjs, cli/src/commands/hubs.mjs, cli/src/commands/import.mjs, cli/src/commands/infer-imports.mjs, cli/src/commands/list.mjs, cli/src/commands/mcp-verify.mjs, cli/src/commands/merge.mjs, cli/src/commands/node-profile.mjs, cli/src/commands/orphans.mjs, cli/src/commands/overview.mjs, cli/src/commands/path.mjs, cli/src/commands/query.mjs, cli/src/commands/rename.mjs, cli/src/commands/similar.mjs, cli/src/commands/validate.mjs, cli/src/commands/workspace-brief.mjs, cli/src/index.mjs, cli/src/lib/mcp-call.mjs, cli/src/lib/mcp-metadata.mjs, cli/src/lib/resolve-vault.mjs, scripts/check-package-contracts.mjs, scripts/check-package-contracts.test.mjs, scripts/smoke-clean-onboarding.mjs, scripts/smoke-packed-cli.mjs]
+elements: [cli/src/commands/add.mjs, cli/src/commands/analyze.mjs, cli/src/commands/backlinks.mjs, cli/src/commands/blast-radius.mjs, cli/src/commands/bootstrap.mjs, cli/src/commands/compile.mjs, cli/src/commands/cycles.mjs, cli/src/commands/delete.mjs, cli/src/commands/find.mjs, cli/src/commands/health.mjs, cli/src/commands/hubs.mjs, cli/src/commands/import.mjs, cli/src/commands/infer-imports.mjs, cli/src/commands/list.mjs, cli/src/commands/mcp-verify.mjs, cli/src/commands/merge.mjs, cli/src/commands/node-profile.mjs, cli/src/commands/orphans.mjs, cli/src/commands/overview.mjs, cli/src/commands/path.mjs, cli/src/commands/query.mjs, cli/src/commands/rename.mjs, cli/src/commands/similar.mjs, cli/src/commands/validate.mjs, cli/src/commands/workspace-brief.mjs, cli/src/index.mjs, cli/src/lib/cli-commands.mjs, cli/src/lib/mcp-call.mjs, cli/src/lib/mcp-metadata.mjs, cli/src/lib/resolve-vault.mjs, scripts/check-package-contracts.mjs, scripts/check-package-contracts.test.mjs, scripts/smoke-clean-onboarding.mjs, scripts/smoke-packed-cli.mjs]
 relates: [capabilities/mcp-server, capabilities/vault-validator, domains/onboarding-ux]
 ---
 
@@ -51,11 +51,11 @@ post-publish architectural audit 발견 — *위험한-그러나-필수* 작업 
 
 local commands 는 *cli 안* 구현 (4-way parser/3-way validator contract). graph-level + analyze/infer-imports + bootstrap + `--apply` 흐름은 *MCP server child_process spawn + JSON-RPC* — `cli/src/lib/mcp-call.mjs` 의 thin wrapper. drift surface 0 (logic 복제 안 함). spawn ~50-100ms per call — bootstrap 은 3-4 회 호출이라 ~200-400ms 정도.
 
-cli 가 별도 npm package — `oh-my-ontology` binary. cli/package.json 의 `dependencies: oh-my-ontology-mcp` 가 graph-level + apply + bootstrap 흐름 자동 활성. `cli/src/lib/mcp-metadata.mjs` 는 MCP package description 의 tool count / read-write split 을 한 번만 parse 해서 production `init` copy 와 source / packed smoke 의 기대값이 같은 해석을 공유하게 한다.
+cli 가 별도 npm package — `oh-my-ontology` binary. cli/package.json 의 `dependencies: oh-my-ontology-mcp` 가 graph-level + apply + bootstrap 흐름 자동 활성. `cli/src/lib/cli-commands.mjs` 는 CLI command inventory 와 package description 의 command count 를 검증 가능한 metadata 로 노출하고, `cli/src/lib/mcp-metadata.mjs` 는 MCP package description 의 tool count / read-write split 을 한 번만 parse 해서 production `init` copy 와 source / packed smoke 의 기대값이 같은 해석을 공유하게 한다.
 
 ## 회귀 차단
 
-cli/src/integration.test.mjs — **97 spawn-based** integration test. 매 PR 마다 help 출력의 setup contract, init MCP config + copy-paste bootstrap 명령, MCP tool count metadata 기반 출력, compile `--fix` canonicalization 경로, graph-level 명령의 dry-run/confirm 경로, backlink redirect, analyze/infer-imports/bootstrap apply 경로, fresh init starter prune/preserve/replace 경로, single-file layered repo 의 bootstrap endpoint 자동 생성 경로를 검증.
+cli/src/integration.test.mjs — **99 spawn-based** integration test. 매 PR 마다 command inventory 와 package command count metadata, help 출력의 setup contract, init MCP config + copy-paste bootstrap 명령, MCP tool count metadata 기반 출력, compile `--fix` canonicalization 경로, graph-level 명령의 dry-run/confirm 경로, backlink redirect, analyze/infer-imports/bootstrap apply 경로, fresh init starter prune/preserve/replace 경로, single-file layered repo 의 bootstrap endpoint 자동 생성 경로를 검증.
 
 src/features/docs-vault-local/lib/ontology-starter.test.ts — web workbench starter 의 5개
 파일이 `cli/templates/vault/` 와 byte-for-byte 동일한지 검증. starter README 안에

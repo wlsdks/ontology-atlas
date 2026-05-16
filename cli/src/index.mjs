@@ -18,6 +18,7 @@ import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { stdout, stderr, argv, exit, cwd } from 'node:process';
+import { CLI_COMMAND_COUNT } from './lib/cli-commands.mjs';
 import { readMcpPackageMetadata } from './lib/mcp-metadata.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -46,7 +47,7 @@ const SUBCOMMAND = ARGS[0];
 function printHelp() {
   stdout.write(`${COLORS.bold}oh-my-ontology${COLORS.reset} ${COLORS.dim}v${PKG.version}${COLORS.reset}
 
-AI-native codebase ontology workbench — vault scaffold + MCP setup.
+AI-native codebase ontology workbench — ${CLI_COMMAND_COUNT} commands + MCP setup.
 
 ${COLORS.bold}Usage:${COLORS.reset}
   npx oh-my-ontology init [folder]            Scaffold a new ontology vault (default: ./vault)

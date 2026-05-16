@@ -11,19 +11,29 @@ import {
   mkdirSync,
   readFileSync,
   rmSync,
+  readdirSync,
 } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
+import {
+  CLI_COMMANDS,
+  CLI_COMMAND_COUNT,
+  CLI_COMMAND_MODULES,
+  parseCliCommandMetadataFromDescription,
+} from './lib/cli-commands.mjs';
 import { parseMcpToolMetadataFromDescription } from './lib/mcp-metadata.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = join(__dirname, 'index.mjs');
+const CLI_PKG = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 const MCP_PKG = JSON.parse(readFileSync(join(__dirname, '..', '..', 'mcp', 'package.json'), 'utf-8'));
+const CLI_COMMAND_METADATA = parseCliCommandMetadataFromDescription(CLI_PKG.description);
 const MCP_TOOL_METADATA = parseMcpToolMetadataFromDescription(MCP_PKG.description);
 const EXPECTED_TOOL_COUNT = MCP_TOOL_METADATA?.toolCount;
 const EXPECTED_TOOL_SPLIT_RE = MCP_TOOL_METADATA?.splitPattern;
 
+assert.ok(CLI_COMMAND_METADATA, 'cli/package.json description must include the current command count');
 assert.ok(MCP_TOOL_METADATA, 'mcp/package.json description must include the current tool count and split');
 
 function run(args, options = {}) {
@@ -72,6 +82,30 @@ async function test(name, fn) {
 }
 
 console.log('cli integration');
+
+await test('metadata — package command count matches executable command inventory', async () => {
+  assert.equal(CLI_COMMAND_METADATA.commandCount, CLI_COMMAND_COUNT);
+});
+
+await test('command inventory — help and command modules stay aligned', async () => {
+  const r = await run(['--help']);
+  assert.equal(r.code, 0);
+  const clean = stripAnsi(r.stdout);
+
+  for (const command of CLI_COMMANDS) {
+    assert.match(clean, new RegExp(`oh-my-ontology ${command.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`));
+  }
+
+  const indexSource = readFileSync(CLI, 'utf-8');
+  for (const command of CLI_COMMANDS) {
+    assert.match(indexSource, new RegExp(`SUBCOMMAND === '${command.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}'`));
+  }
+
+  const commandFiles = readdirSync(join(__dirname, 'commands'))
+    .filter((name) => name.endsWith('.mjs'))
+    .sort();
+  assert.deepEqual(commandFiles, Object.values(CLI_COMMAND_MODULES).sort());
+});
 
 await test('help — current setup contract and default slug layout are not stale', async () => {
   const r = await run(['--help']);
