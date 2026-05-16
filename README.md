@@ -142,9 +142,10 @@ exercised locally. It also checks both `overview` and `project_map`
 single aggregate query. Project-less vaults skip only the containment-specific
 `project_scope` smoke, and empty vaults skip node-targeted graph smoke until a
 first node exists.
-`smoke:packed-cli` also checks the installed `mcp-verify --help` output, so
-release tarballs keep exposing the graph-query smoke scope without starting a
-server. It also creates a dependency-cycle vault and checks installed
+`smoke:packed-cli` also checks the installed `mcp-verify --help` output plus
+project-less and empty-vault verify paths, so release tarballs keep exposing the
+graph-query smoke scope without starting a server for help and without assuming
+every valid vault already has containment roots. It also creates a dependency-cycle vault and checks installed
 `workspace-brief --json` exits 1 on fail-severity nextActions.
 For local CLI gates, `compile --json` exits 1 on unresolved graph references,
 `cycles --json` exits 1 on dependency cycles, and `path --json` exits 1 when

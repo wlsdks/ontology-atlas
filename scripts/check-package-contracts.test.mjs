@@ -140,6 +140,7 @@ describe('package contract helpers', () => {
     assert.match(releaseChecks, /mcp-verify --help/);
     assert.match(releaseChecks, /graph-query smoke scope/);
     assert.match(releaseChecks, /actual `neighbors`, self-`path`, and\s+`project_scope` calls/);
+    assert.match(releaseChecks, /project-less and empty-vault verify paths/);
     assert.match(releaseChecks, /flow\/help\/failure/);
     assert.match(releaseChecks, /dependency-cycle vault/);
     assert.match(releaseChecks, /get_concepts` success\/partial rows/);
@@ -235,12 +236,17 @@ describe('package contract helpers', () => {
     assert.match(smoke, /workspace_brief — \.\*healthChecks/);
     assert.match(smoke, /health — \.\*compile_issues:\(pass\|warn\)/);
     assert.match(smoke, /health — \.\*checks/);
+    assert.match(smoke, /neighbors\\\/path\\\/project_scope graph-query smoke/);
+    assert.match(smoke, /project_scope — skipped \\\(no project node in vault\\\)/);
+    assert.match(smoke, /neighbors\\\/path — skipped \\\(vault has no nodes\\\)/);
     assert.match(smokeSection, /cycles --json/);
     assert.match(smokeSection, /compile --json/);
     assert.match(smokeSection, /path --json/);
     assert.match(smokeSection, /health check count/);
     assert.match(smokeSection, /`overview`\/`project_map` query_plan \/ `neighbors` \/ `path` \//);
     assert.match(smokeSection, /`project_scope` smoke/);
+    assert.match(smokeSection, /project-less vault/);
+    assert.match(smokeSection, /empty vault/);
   });
 
   it('keeps the self-ontology README census aligned with the vault files', () => {

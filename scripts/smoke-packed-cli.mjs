@@ -157,6 +157,23 @@ function writeDisconnectedVault(root) {
   }
 }
 
+function writeProjectlessVault(root) {
+  mkdirSync(join(root, 'domains'), { recursive: true });
+  writeFileSync(
+    join(root, 'domains', 'core.md'),
+    [
+      '---',
+      'kind: domain',
+      'slug: domains/core',
+      'title: Core',
+      '---',
+      '',
+      '# Core',
+      '',
+    ].join('\n'),
+  );
+}
+
 const temp = mkdtempSync(join(tmpdir(), 'omot-packed-cli-'));
 try {
   const packDir = join(temp, 'packs');
@@ -209,12 +226,33 @@ try {
   assert.match(cliMcpVerify.stdout, /overview/);
   assert.match(cliMcpVerify.stdout, /overview query_plan/);
   assert.match(cliMcpVerify.stdout, /project_map query_plan/);
+  assert.match(cliMcpVerify.stdout, /neighbors/);
+  assert.match(cliMcpVerify.stdout, /path/);
+  assert.match(cliMcpVerify.stdout, /project_scope/);
+
+  const projectlessVault = join(projectDir, 'projectless-vault');
+  writeProjectlessVault(projectlessVault);
+  const cliProjectlessMcpVerify = run(cliBin, ['mcp-verify', projectlessVault, '--timeout-ms', '1000'], {
+    cwd: projectDir,
+  });
+  assert.match(cliProjectlessMcpVerify.stdout, /neighbors/);
+  assert.match(cliProjectlessMcpVerify.stdout, /path/);
+  assert.match(cliProjectlessMcpVerify.stdout, /project_scope — skipped \(no project node in vault\)/);
+
+  const emptyVault = join(projectDir, 'empty-vault');
+  mkdirSync(emptyVault, { recursive: true });
+  const cliEmptyMcpVerify = run(cliBin, ['mcp-verify', emptyVault, '--timeout-ms', '1000'], {
+    cwd: projectDir,
+  });
+  assert.match(cliEmptyMcpVerify.stdout, /vault total 0 nodes/);
+  assert.match(cliEmptyMcpVerify.stdout, /neighbors\/path — skipped \(vault has no nodes\)/);
+  assert.match(cliEmptyMcpVerify.stdout, /project_scope — skipped \(no project node in vault\)/);
 
   const cliMcpVerifyHelp = run(cliBin, ['mcp-verify', '--help'], { cwd: projectDir });
   assert.equal(cliMcpVerifyHelp.stderr, '');
   assert.match(cliMcpVerifyHelp.stdout, /Usage:/);
   assert.match(cliMcpVerifyHelp.stdout, /compile_ontology/);
-  assert.match(cliMcpVerifyHelp.stdout, /overview\/project_map query_plan graph-query smoke/);
+  assert.match(cliMcpVerifyHelp.stdout, /neighbors\/path\/project_scope graph-query smoke/);
 
   const missingVerifyOverride = runRaw(cliBin, ['mcp-verify', 'ontology'], {
     cwd: projectDir,
@@ -255,6 +293,21 @@ try {
   assert.match(mcpVerify.stdout, /overview/);
   assert.match(mcpVerify.stdout, /overview query_plan/);
   assert.match(mcpVerify.stdout, /project_map query_plan/);
+  assert.match(mcpVerify.stdout, /neighbors/);
+  assert.match(mcpVerify.stdout, /path/);
+  assert.match(mcpVerify.stdout, /project_scope/);
+
+  const mcpEmptyVerify = run(
+    'npm',
+    ['--prefix', join(installDir, 'node_modules', 'oh-my-ontology-mcp'), 'run', 'verify'],
+    {
+      cwd: projectDir,
+      env: { OMOT_VAULT: emptyVault },
+    },
+  );
+  assert.match(mcpEmptyVerify.stdout, /vault total 0 nodes/);
+  assert.match(mcpEmptyVerify.stdout, /neighbors\/path — skipped \(vault has no nodes\)/);
+  assert.match(mcpEmptyVerify.stdout, /project_scope — skipped \(no project node in vault\)/);
 
   const invalidMcpVerifyTimeout = runRaw(
     'npm',
