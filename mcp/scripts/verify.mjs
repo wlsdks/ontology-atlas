@@ -261,6 +261,9 @@ export function toolsListSchemaFailure(tools) {
     if (!/score/.test(description)) {
       return `${toolName} description missing maintenance action score guidance`;
     }
+    if (!/proposedAction/.test(description)) {
+      return `${toolName} description missing executable maintenance proposedAction guidance`;
+    }
     if (!/next action pointers|nextExecutableAction/.test(description)) {
       return `${toolName} description missing maintenance next action pointer guidance`;
     }

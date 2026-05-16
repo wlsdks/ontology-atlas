@@ -320,7 +320,7 @@ const TOOLS = [
       'arrays; capability gets `elements: []`; capability/element should also ' +
       'set `domain:` so the tree has a parent — missing extras come back as ' +
       '`warnings` in the response, not as an error. ' +
-      'Successful writes return `postWriteMaintenance` (compact `maintenance_plan`) so agents can immediately see graph cleanup / relation suggestions after the new node lands; compact action rows include `score` and current-page `nextExecutableAction` / `nextReviewAction` pointers. ' +
+      'Successful writes return `postWriteMaintenance` (compact `maintenance_plan`) so agents can immediately see graph cleanup / relation suggestions after the new node lands; compact action rows include `score`, executable `proposedAction`, and current-page `nextExecutableAction` / `nextReviewAction` pointers. ' +
       '**For bulk creation (e.g. bootstrap flow with 5+ nodes) use `add_concepts({concepts: [...]})` (batch, max 50, partial result) — saves K-1 round-trips.**',
     inputSchema: {
       type: 'object',
@@ -363,7 +363,7 @@ const TOOLS = [
       'missing-required-fields surface as `{ slug, ok: false, error }` rows; the rest ' +
       'still land. `concepts[]` order in the response matches the input. Cap = 50 per ' +
       'call (split into multiple batches for larger sets). NO atomic rollback — if you ' +
-      'need all-or-nothing semantics use single `add_concept` calls. When at least one row changes the vault, the response includes one compact `postWriteMaintenance` summary for the final graph with action `score` and current-page next action pointers.',
+      'need all-or-nothing semantics use single `add_concept` calls. When at least one row changes the vault, the response includes one compact `postWriteMaintenance` summary for the final graph with action `score`, executable `proposedAction`, and current-page next action pointers.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -401,7 +401,7 @@ const TOOLS = [
       '`domain` sets the source node\'s inline parent domain. The relation type picks which key receives the entry. **R11**: optional ' +
       '`expected_mtime` — pass the source-side `mtime` from a prior get_concept ' +
       'so concurrent external edits throw VaultConflictError. ' +
-      'Changed writes return `postWriteMaintenance` (compact `maintenance_plan`) so agents can immediately see graph cleanup / relation suggestions after the edge lands; compact action rows include `score` and current-page `nextExecutableAction` / `nextReviewAction` pointers. ' +
+      'Changed writes return `postWriteMaintenance` (compact `maintenance_plan`) so agents can immediately see graph cleanup / relation suggestions after the edge lands; compact action rows include `score`, executable `proposedAction`, and current-page `nextExecutableAction` / `nextReviewAction` pointers. ' +
       '**For multiple edges (e.g. all suggestedRelations from analyze, or all moduleEdges from infer_imports) use `add_relations({relations: [...]})` (batch, idempotent, max 50).**',
     inputSchema: {
       type: 'object',
@@ -443,7 +443,7 @@ const TOOLS = [
       '`relations[]` order in the response matches the input. Cap = 50 per call. ' +
       'NO atomic rollback — for all-or-nothing semantics use single `add_relation` calls. ' +
       'Tip: avoid `expected_mtime` in batch when multiple rows share the same `from` slug — ' +
-      'the first row mutates that file so the second would see a stale mtime. When at least one row changes the vault, the response includes one compact `postWriteMaintenance` summary for the final graph with action `score` and current-page next action pointers.',
+      'the first row mutates that file so the second would see a stale mtime. When at least one row changes the vault, the response includes one compact `postWriteMaintenance` summary for the final graph with action `score`, executable `proposedAction`, and current-page next action pointers.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -489,7 +489,7 @@ const TOOLS = [
       '`expected_mtime` (from the previous get_concept response) to detect ' +
       'concurrent external edits — throws VaultConflictError if the file has ' +
       'changed on disk since you read it. Changed writes return compact ' +
-      '`postWriteMaintenance` with action `score` and current-page next action pointers so agents can immediately continue graph cleanup.',
+      '`postWriteMaintenance` with action `score`, executable `proposedAction`, and current-page next action pointers so agents can immediately continue graph cleanup.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1053,7 +1053,7 @@ const TOOLS = [
       '  2. With confirm: true the file is moved and all backlinks are rewritten in one pass.\n' +
       'Throws if oldSlug missing or newSlug already taken (unless overwrite: true). Use this instead ' +
       'of patch_concept + N find_backlinks + N patch_concept loops. Confirmed writes return compact ' +
-      '`postWriteMaintenance` for the final graph with action `score` and current-page next action pointers.',
+      '`postWriteMaintenance` for the final graph with action `score`, executable `proposedAction`, and current-page next action pointers.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1092,7 +1092,7 @@ const TOOLS = [
       '  1. Without confirm: true the call is a dry-run — returns the redirect plan + list of deletions ' +
       'without writing.\n' +
       '  2. With confirm: true the rewrites and the delete happen in one pass.\n' +
-      'Throws if either slug is missing. Confirmed writes return compact `postWriteMaintenance` for the final graph with action `score` and current-page next action pointers.',
+      'Throws if either slug is missing. Confirmed writes return compact `postWriteMaintenance` for the final graph with action `score`, executable `proposedAction`, and current-page next action pointers.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1123,7 +1123,7 @@ const TOOLS = [
       'Successful deletion returns the frontmatter + body so a user who deleted by mistake ' +
       'can recreate the node via add_concept. Directories are left untouched. Pass ' +
       '`expected_mtime` to guard against concurrent external edits — throws if the file ' +
-      'changed on disk since you read it. Confirmed deletes return compact `postWriteMaintenance` for the final graph with action `score` and current-page next action pointers.',
+      'changed on disk since you read it. Confirmed deletes return compact `postWriteMaintenance` for the final graph with action `score`, executable `proposedAction`, and current-page next action pointers.',
     inputSchema: {
       type: 'object',
       properties: {

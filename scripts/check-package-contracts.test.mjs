@@ -336,6 +336,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /validates the installed `find_orphans\.excludeKinds` schema and default description/);
     assert.match(verifySection, /write tools must keep their `expected_mtime` \/ `confirm` \/ `rename_concept\.overwrite` \/ `delete_concept\.force` safety schemas/);
     assert.match(verifySection, /write tool descriptions keep compact `postWriteMaintenance` action `score`/);
+    assert.match(verifySection, /executable `proposedAction`/);
     assert.match(verifySection, /current-page next action pointer guidance/);
     assert.match(verifySection, /`initialize\.instructions` now names the destructive-write safety boundaries directly/);
     assert.match(verifySection, /`overwrite: true`/);
@@ -614,7 +615,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /ready cursor 의 `cursor\.found=true` \/ `cursor\.reason=null`/);
     assert.match(doc, /unknown `afterActionId` cursor 의 `cursor\.found=false`/);
     assert.match(doc, /`cursor\.reason` 계약/);
-    assert.match(doc, /compact `postWriteMaintenance` 반환 \(`operation` \/ `sideEffect:false` \/ `filters` \/ `limited` \/ cursor \/ action `score` 포함\)/);
+    assert.match(doc, /compact `postWriteMaintenance` 반환 \(`operation` \/ `sideEffect:false` \/ `filters` \/ `limited` \/ cursor \/ action `score` \/ executable `proposedAction` 포함\)/);
     assert.match(dogfoodSection, /`project_map` query_plan/);
     assert.match(dogfoodSection, /실제\s+`project_map` 실행/);
     assert.match(dogfoodSection, /`neighbors`/);

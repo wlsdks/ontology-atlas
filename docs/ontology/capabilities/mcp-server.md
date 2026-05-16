@@ -28,10 +28,10 @@ relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 | `validate_vault` | **R+** vault 전체 health 한 호출 (per-doc + byCode aggregate) — first-contact before writes 와 batch write 전후 점검에 사용, `list_concepts → K×get_concept` K-roundtrip 대체 |
 | `analyze_repo_structure` | **R16** code repo (default cwd) 분석 → ontology 노드 후보 제안. **side effect 0** — vault 변경 안 함. AI agent 가 빈 vault bootstrap 시 사용 (사용자 한 줄 *"이 codebase 분석해줘"*). FSD vs generic detect. 후보 slug 는 `domains/*`, `capabilities/*`, `elements/src/...` 로 starter layout 과 일치. |
 | `infer_imports` | **R17** TS/JS import graph 추출 → file/module-level edge + external (npm) imports 분리. **side effect 0**. moduleEdges 도 analyze 와 같은 folder-prefixed slug 를 사용해 add_relation endpoint mismatch 를 피함. |
-| `add_concept` | 새 노드 (.md) 작성 — slug/kind/title/domain 은 blank 또는 앞뒤 공백이면 쓰기 전 reject, graph 배열은 trim + dedup + sort, body 는 생략 시에만 기본 본문 생성하고 명시한 빈 문자열은 보존, 기존 slug 면 throw, changed write 는 compact `postWriteMaintenance` 반환 (`operation` / `sideEffect:false` / `filters` / `limited` / cursor / action `score` 포함) |
-| `add_concepts` | **R+** 배치 writer — 여러 노드 한 호출에 (max 50, 입력 순서 보존, partial result, 입력 내 중복 slug 사전 감지). row-level blank/padded/unknown-field 입력은 해당 row 만 실패한다. `/ontology-bootstrap` 흐름이 5~15 노드를 한 번에 land. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / action `score` 포함). |
-| `add_relation` | depends_on / relates / contains / describes edge 추가. from/to/type 은 blank 또는 앞뒤 공백이면 쓰기 전 reject, changed write 는 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / action `score` 포함) |
-| `add_relations` | **R+** 배치 edge writer — 여러 edge 한 호출에 (max 50, 응답 row 순서 보존, 저장 배열은 dedup + sort, idempotent, partial result). row-level unknown-field 입력도 해당 row 만 실패한다. analyze_repo_structure suggestedRelations · infer_imports moduleEdges 수신 직후 적합. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / action `score` 포함). |
+| `add_concept` | 새 노드 (.md) 작성 — slug/kind/title/domain 은 blank 또는 앞뒤 공백이면 쓰기 전 reject, graph 배열은 trim + dedup + sort, body 는 생략 시에만 기본 본문 생성하고 명시한 빈 문자열은 보존, 기존 slug 면 throw, changed write 는 compact `postWriteMaintenance` 반환 (`operation` / `sideEffect:false` / `filters` / `limited` / cursor / action `score` / executable `proposedAction` 포함) |
+| `add_concepts` | **R+** 배치 writer — 여러 노드 한 호출에 (max 50, 입력 순서 보존, partial result, 입력 내 중복 slug 사전 감지). row-level blank/padded/unknown-field 입력은 해당 row 만 실패한다. `/ontology-bootstrap` 흐름이 5~15 노드를 한 번에 land. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / action `score` / executable `proposedAction` 포함). |
+| `add_relation` | depends_on / relates / contains / describes edge 추가. from/to/type 은 blank 또는 앞뒤 공백이면 쓰기 전 reject, changed write 는 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / action `score` / executable `proposedAction` 포함) |
+| `add_relations` | **R+** 배치 edge writer — 여러 edge 한 호출에 (max 50, 응답 row 순서 보존, 저장 배열은 dedup + sort, idempotent, partial result). row-level unknown-field 입력도 해당 row 만 실패한다. analyze_repo_structure suggestedRelations · infer_imports moduleEdges 수신 직후 적합. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / action `score` / executable `proposedAction` 포함). |
 
 R+ follow-up: `add_relation` / `add_relations` 와 `rename_concept` / `merge_concepts`
 backlink redirect 는 relation 배열을 canonical set 으로 저장한다. 같은 edge 집합은
@@ -79,10 +79,10 @@ runtime 에서 받아들이는지 dogfood한다. verify 는 graph smoke 전에 `
 containment-specific check 만 skip 한다.
 완전히 빈 vault 는 node-targeted graph smoke 를 skip 하되 boot / inventory /
 validation / diagnosis / compile / overview / query planning 은 계속 hard gate 로 검증한다.
-| `patch_concept` | 기존 노드 frontmatter (key 단위 patch) + body 갱신 — graph 배열 patch 는 clean string array 만 허용하고 dedup + sort, 핵심 scalar(`kind`/`domain`/frontmatter `slug`/`body`) 도 strict 검증, changed write 는 compact `postWriteMaintenance` 반환 (`score` 로 후속 정리 우선순위 판단 가능) |
-| `delete_concept` | **⚠ DESTRUCTIVE** — 노드 영구 삭제. 안전 가드 2단: ① `confirm:true` 미지정 시 dry-run, ② backlinks 있으면 throw — `force:true` 만 강행. 응답에 frontmatter+body 캡처. confirmed delete 는 compact `postWriteMaintenance` 반환 (`score` 포함). |
-| `rename_concept` | **⚠ MULTI-FILE (R11)** — slug 변경 + 모든 backlink 의 array/body 자동 redirect. dry-run default. `newSlug` 가 이미 있으면 throw 하고, 의식적으로 `overwrite:true` 를 준 경우만 대체. tail-only 참조도 새 tail 로 일관 갱신. `find_backlinks` + N 회 `patch_concept` 의 atomic 대체. confirmed rename 은 compact `postWriteMaintenance` 반환 (`score` 포함). |
-| `merge_concepts` | **⚠ DESTRUCTIVE MULTI-FILE (R11)** — `fromSlug` 의 backlink 를 `intoSlug` 로 redirect 후 fromSlug.md 삭제. `intoSlug` 의 frontmatter/body 는 자동 합치지 않음 (필요 시 후속 `patch_concept`). dry-run default. confirmed merge 는 compact `postWriteMaintenance` 반환 (`score` 포함). |
+| `patch_concept` | 기존 노드 frontmatter (key 단위 patch) + body 갱신 — graph 배열 patch 는 clean string array 만 허용하고 dedup + sort, 핵심 scalar(`kind`/`domain`/frontmatter `slug`/`body`) 도 strict 검증, changed write 는 compact `postWriteMaintenance` 반환 (`score` / executable `proposedAction` 으로 후속 정리 우선순위와 실행 의도 판단 가능) |
+| `delete_concept` | **⚠ DESTRUCTIVE** — 노드 영구 삭제. 안전 가드 2단: ① `confirm:true` 미지정 시 dry-run, ② backlinks 있으면 throw — `force:true` 만 강행. 응답에 frontmatter+body 캡처. confirmed delete 는 compact `postWriteMaintenance` 반환 (`score` / executable `proposedAction` 포함). |
+| `rename_concept` | **⚠ MULTI-FILE (R11)** — slug 변경 + 모든 backlink 의 array/body 자동 redirect. dry-run default. `newSlug` 가 이미 있으면 throw 하고, 의식적으로 `overwrite:true` 를 준 경우만 대체. tail-only 참조도 새 tail 로 일관 갱신. `find_backlinks` + N 회 `patch_concept` 의 atomic 대체. confirmed rename 은 compact `postWriteMaintenance` 반환 (`score` / executable `proposedAction` 포함). |
+| `merge_concepts` | **⚠ DESTRUCTIVE MULTI-FILE (R11)** — `fromSlug` 의 backlink 를 `intoSlug` 로 redirect 후 fromSlug.md 삭제. `intoSlug` 의 frontmatter/body 는 자동 합치지 않음 (필요 시 후속 `patch_concept`). dry-run default. confirmed merge 는 compact `postWriteMaintenance` 반환 (`score` / executable `proposedAction` 포함). |
 
 환경변수 `OMOT_VAULT` 로 vault 위치 지정. 등록 가이드: `mcp/README.md`. 1줄 verify:
 `npm run verify` (mcp/) — parser smoke, server boot, 23-tool inventory
@@ -257,9 +257,9 @@ dispatch 가 갈라지지 않도록 한다. `get_concepts` / `add_concepts` /
 설치 verify 에서 확인한다. `find_orphans.excludeKinds` schema 와 root/sentinel 기본
 제외 설명도 설치 verify 에서 확인해 MCP client 가 runtime cleanup 의미와 같은
 계약을 보게 한다. `tools/list` description 은 write 후 compact
-`postWriteMaintenance` 의 action `score` 와 current-page next action pointer 를
+`postWriteMaintenance` 의 action `score`, executable `proposedAction`, current-page next action pointer 를
 안내하고, integration contract 와 설치 verify 가 이 설명을 고정해 MCP client 가 tool 목록만으로도
-write 직후 cleanup 우선순위를 알 수 있게 한다. 설치 verify 는 잘못된 `list_concepts.lmit` 호출도
+write 직후 cleanup 우선순위와 실행 의도를 알 수 있게 한다. 설치 verify 는 잘못된 `list_concepts.lmit` 호출도
 실제로 보내고 unknown argument 거절 응답을 기대한다. write safety 도 같은 경로에서 `expected_mtime`
 conflict guard, destructive tool 의 `confirm` dry-run switch, `rename_concept.overwrite`, `delete_concept.force`
 schema 를 검사한다. 또한 installed verify 는 `initialize.instructions` 가
