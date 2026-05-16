@@ -52,11 +52,18 @@ describe('query-result-contract', () => {
     assert.equal(cyclesResultExitCode({ cycles: [] }), 0);
     assert.equal(cyclesResultExitCode({ cycles: [{ slugs: ['a', 'b', 'a'] }] }), 1);
     assert.equal(cyclesResultExitCode({}), 1);
+    assert.equal(cyclesResultExitCode({ totalCycles: -1, cycles: [] }), 1);
+    assert.equal(cyclesResultExitCode({ totalCycles: 0, cycles: [null] }), 1);
+    assert.equal(cyclesResultExitCode({ totalCycles: 0, cycles: [{ slugs: ['a'] }] }), 1);
+    assert.equal(cyclesResultExitCode({ totalCycles: 0, cycles: [{ slugs: ['a', ''] }] }), 1);
 
-    assert.equal(pathResultExitCode({ found: true, hops: ['a', 'b'] }), 0);
+    assert.equal(pathResultExitCode({ found: true, hopCount: 1, hops: ['a', 'b'], edges: [{}] }), 0);
     assert.equal(pathResultExitCode({ found: false }), 1);
     assert.equal(pathResultExitCode({ found: true, hops: [] }), 1);
     assert.equal(pathResultExitCode({ found: true }), 1);
+    assert.equal(pathResultExitCode({ found: true, hops: [null] }), 1);
+    assert.equal(pathResultExitCode({ found: true, hopCount: 2, hops: ['a', 'b'] }), 1);
+    assert.equal(pathResultExitCode({ found: true, hops: ['a', 'b'], edges: [] }), 1);
 
     assert.equal(healthResultExitCode({ status: 'healthy', checks: [] }), 0);
     assert.equal(healthResultExitCode({ status: 'pass', checks: [] }), 0);

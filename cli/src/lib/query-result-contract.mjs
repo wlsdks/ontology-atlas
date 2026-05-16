@@ -24,15 +24,21 @@ export function compileBlockingCounts(artifact) {
 }
 
 export function cyclesResultExitCode(result) {
-  const cycles = Array.isArray(result?.cycles) ? result.cycles : [];
-  const total = numberValue(result?.totalCycles, Array.isArray(result?.cycles) ? cycles.length : Number.NaN);
-  if (!Number.isFinite(total)) return 1;
+  if (!Array.isArray(result?.cycles)) return 1;
+  const cycles = result.cycles;
+  const total = numberValue(result?.totalCycles, cycles.length);
+  if (!Number.isInteger(total) || total < 0) return 1;
+  if (cycles.some((cycle) => !validCycle(cycle))) return 1;
   return total === 0 ? 0 : 1;
 }
 
 export function pathResultExitCode(result) {
   if (result?.found === false) return 1;
-  return Array.isArray(result?.hops) && result.hops.length > 0 ? 0 : 1;
+  if (!Array.isArray(result?.hops) || result.hops.length === 0) return 1;
+  if (result.hops.some((hop) => !hasNonEmptyString(hop))) return 1;
+  if (typeof result.hopCount === 'number' && result.hopCount !== result.hops.length - 1) return 1;
+  if (Array.isArray(result.edges) && result.edges.length !== result.hops.length - 1) return 1;
+  return 0;
 }
 
 export function healthResultExitCode(result) {
@@ -72,6 +78,12 @@ function validHealthCheck(check) {
     && hasNonEmptyString(check.id)
     && hasNonEmptyString(check.status)
   );
+}
+
+function validCycle(cycle) {
+  if (!cycle || typeof cycle !== 'object' || Array.isArray(cycle)) return false;
+  if (!Array.isArray(cycle.slugs) || cycle.slugs.length < 2) return false;
+  return cycle.slugs.every((slug) => hasNonEmptyString(slug));
 }
 
 function hasNonEmptyString(...values) {

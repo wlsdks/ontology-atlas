@@ -332,7 +332,7 @@ describe('package contract helpers', () => {
     const changelog = readFileSync('cli/CHANGELOG.md', 'utf-8');
     const verifySection = changelog.split('### Added — `mcp-verify` command')[1]?.split('### Added — `compile`')[0] ?? '';
 
-    assert.match(changelog, /malformed `health\.checks`, malformed `workspace_brief\.health\.checks`, and malformed `workspace_brief\.nextActions` rows/);
+    assert.match(changelog, /malformed `cycles`, `path`, `health\.checks`, `workspace_brief\.health\.checks`, and `workspace_brief\.nextActions` rows/);
     assert.match(verifySection, /`list_concepts`, `get_concepts`, `find_orphans`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /partial-row contract drift/);
     assert.match(verifySection, /split between node census checks/);
