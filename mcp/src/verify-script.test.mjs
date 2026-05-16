@@ -592,7 +592,7 @@ describe('verify.mjs first-contact gates', () => {
   it('detects when all first-contact JSON-RPC responses arrived', () => {
     assert.equal(
       hasAllFirstContactResponses(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21]
           .map((id) => JSON.stringify({ jsonrpc: '2.0', id, result: {} }))
           .join('\n'),
       ),
@@ -625,6 +625,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(18), 'project_probe');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(19), 'find_orphans');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(20), 'health_tuned');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(21), 'workspace_brief_tuned');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -1472,6 +1473,21 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
+  it('builds tuned workspace brief first-contact smoke arguments', () => {
+    const tunedBrief = buildFirstContactRequests().find((request) => request.id === 21);
+    assert.deepEqual(tunedBrief?.params?.arguments, {
+      operation: 'workspace_brief',
+      limit: 3,
+      componentLimit: 3,
+      cycleLimit: 3,
+      recommendationLimit: 3,
+      orderLimit: 3,
+      nodeLimit: 3,
+      dependencyTypes: ['dependencies'],
+      componentTypes: ['domain', 'capabilities'],
+    });
+  });
+
   it('accepts advisory needs_attention diagnosis responses', () => {
     assert.equal(
       diagnosisBlockingFailure(
@@ -1568,6 +1584,19 @@ describe('verify.mjs first-contact gates', () => {
         'workspace_brief',
       ),
       'workspace_brief has failing health checks: dependency_cycles. Inspect query_ontology({operation:"health"}) before writing.',
+    );
+    assert.equal(
+      diagnosisBlockingFailure(
+        'workspace_brief_tuned',
+        {
+          operation: 'workspace_brief',
+          status: 'needs_attention',
+          nextActions: [],
+          health: { checks: [{ id: 'components', status: 'fail' }] },
+        },
+        'workspace_brief',
+      ),
+      'workspace_brief_tuned has failing health checks: components. Inspect query_ontology({operation:"health"}) before writing.',
     );
   });
 

@@ -184,6 +184,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, new RegExp(`✓ list_kinds — ${census.total} nodes \\(${kindSummary}\\)`));
     assert.match(verifySection, new RegExp(`✓ validate_vault — ${census.files} files, 0 problem files`));
     assert.match(verifySection, new RegExp(`✓ workspace_brief — healthy \\(${census.total} nodes, 0 next actions, 5 health checks\\)`));
+    assert.match(verifySection, new RegExp(`✓ workspace_brief_tuned — healthy \\(${census.total} nodes, 1 next action, 5 health checks\\)`));
+    assert.match(verifySection, /workspace_brief_tuned advisory nextActions — components:info/);
     assert.match(verifySection, /✓ health — healthy \(5 checks: compile_issues:pass/);
     assert.match(verifySection, /✓ health_tuned — healthy \(5 checks: compile_issues:pass/);
     assert.match(verifySection, /✓ neighbors — elements\/file-system-access-api/);
@@ -239,7 +241,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /cross-checks node census totals across `list_kinds`, `list_concepts`, `compile_ontology`, and `overview`/);
     assert.match(verifySection, /keeping `validate_vault\.scanned` as file-level health/);
     assert.match(verifySection, /missing or malformed first-contact diagnosis payloads/);
-    assert.match(verifySection, /`workspace_brief\.nextActions`, `workspace_brief\.health\.checks`, `health\.checks`, tuned `health\.checks`/);
+    assert.match(verifySection, /`workspace_brief\.nextActions`, `workspace_brief\.health\.checks`, `health\.checks`, tuned `workspace_brief\.health\.checks`, tuned `health\.checks`/);
     assert.match(verifySection, /requires every `workspace_brief\.nextActions` row to include a non-empty `id` or `kind` plus non-empty `severity`/);
     assert.match(verifySection, /requires every health check row to include non-empty `id` and `status`/);
     assert.match(verifySection, /prints the validated `workspace_brief\.health\.checks` count/);
@@ -330,7 +332,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /partial-row contract drift/);
     assert.match(verifySection, /split between node census checks/);
     assert.match(verifySection, /file-level `validate_vault\.scanned` health/);
-    assert.match(verifySection, /`workspace_brief`, `health`, tuned `health`/);
+    assert.match(verifySection, /`workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`/);
     assert.match(verifySection, /`overview`, `overview`\/`project_map` query_plan, and actual `neighbors` \/ `path` \/ `project_scope` graph-query smoke/);
     assert.match(verifySection, /core graph-query smoke for `neighbors`, node→project `path`, and `project_scope`/);
     assert.match(verifySection, /project-node probe before graph smoke/);
@@ -451,7 +453,7 @@ describe('package contract helpers', () => {
     const implementationSection = doc.split('## 구현 단일 진실원')[1]?.split('## 회귀 차단')[0] ?? '';
 
     assert.match(mcpVerifyRow, /실제 `neighbors` \/ node→project `path` \/ `project_scope` graph smoke/);
-    assert.match(mcpVerifyRow, /`workspace_brief`, `health`, tuned `health`/);
+    assert.match(mcpVerifyRow, /`workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`/);
     assert.match(mcpVerifyRow, /project-node `list_concepts` probe/);
     assert.match(mcpVerifyRow, /`project_scope` hard gate 를 놓치지 않는다/);
     assert.match(mcpVerifyRow, /project-less vault/);
@@ -544,6 +546,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /verify timeout must be a positive integer/);
     assert.match(smoke, /health — \.\*compile_issues:\(pass\|warn\)/);
     assert.match(smoke, /health — \.\*checks/);
+    assert.match(smoke, /workspace_brief_tuned — \.\*next actions, \.\*health checks/);
     assert.match(smoke, /health_tuned — \.\*compile_issues:\(pass\|warn\)/);
     assert.match(smoke, /health_tuned — \.\*checks/);
     assert.match(smoke, /neighbors\\\/node-to-project path\\\/project_scope graph-query smoke/);

@@ -22,7 +22,7 @@
  *   7. tools/call find_orphans — row shape + root/sentinel default-exclusion contract
  *   8. tools/call list_kinds — kind census aggregate
  *   9. tools/call validate_vault — whole-vault frontmatter / graph-reference health
- *   10. tools/call query_ontology workspace_brief + health + tuned health — agent first-contact graph diagnosis
+ *   10. tools/call query_ontology workspace_brief + tuned workspace_brief + health + tuned health — agent first-contact graph diagnosis
  *   11. tools/call compile_ontology(summary) — compiler graph summary contract
  *   12. tools/call query_ontology overview + query_plan(overview/project_map) — graph-query smoke contract
  *   13. tools/call query_ontology neighbors/node-to-project path/project_scope — core graph query smoke contract
@@ -275,6 +275,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [18, 'project_probe'],
   [19, 'find_orphans'],
   [20, 'health_tuned'],
+  [21, 'workspace_brief_tuned'],
 ]);
 
 function log(level, msg) {
@@ -495,6 +496,25 @@ export function buildFirstContactRequests() {
       id: 7,
       method: 'tools/call',
       params: { name: 'query_ontology', arguments: { operation: 'health' } },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 21,
+      method: 'tools/call',
+      params: {
+        name: 'query_ontology',
+        arguments: {
+          operation: 'workspace_brief',
+          limit: 3,
+          componentLimit: 3,
+          cycleLimit: 3,
+          recommendationLimit: 3,
+          orderLimit: 3,
+          nodeLimit: 3,
+          dependencyTypes: ['dependencies'],
+          componentTypes: ['domain', 'capabilities'],
+        },
+      },
     },
     {
       jsonrpc: '2.0',
@@ -1439,6 +1459,7 @@ async function step2BootAndCall() {
       const briefRes = responses.find((r) => r.id === 6);
       const healthRes = responses.find((r) => r.id === 7);
       const tunedHealthRes = responses.find((r) => r.id === 20);
+      const tunedBriefRes = responses.find((r) => r.id === 21);
       const compileRes = responses.find((r) => r.id === 8);
       const overviewRes = responses.find((r) => r.id === 9);
       const overviewPlanRes = responses.find((r) => r.id === 10);
@@ -1665,6 +1686,29 @@ async function step2BootAndCall() {
         if (advisory) log('info', `workspace_brief advisory nextActions — ${advisory}`);
       } catch (err) {
         log('fail', `failed to parse workspace_brief response: ${err.message}`);
+        return res(false);
+      }
+
+      if (!tunedBriefRes || !tunedBriefRes.result) {
+        log('fail', 'no query_ontology tuned workspace_brief response');
+        return res(false);
+      }
+      try {
+        const text = tunedBriefRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const failure = diagnosisBlockingFailure('workspace_brief_tuned', parsed, 'workspace_brief');
+        if (failure) {
+          log('fail', failure);
+          return res(false);
+        }
+        log(
+          'ok',
+          `workspace_brief_tuned — ${parsed.status} (${workspaceBriefSummary(parsed)})`,
+        );
+        const advisory = advisoryNextActionsSummary(parsed.nextActions);
+        if (advisory) log('info', `workspace_brief_tuned advisory nextActions — ${advisory}`);
+      } catch (err) {
+        log('fail', `failed to parse tuned workspace_brief response: ${err.message}`);
         return res(false);
       }
 

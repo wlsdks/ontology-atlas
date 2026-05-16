@@ -218,12 +218,14 @@ A successful run looks like this:
 ✓ validate_vault — 28 files, 0 problem files
 ✓ project probe — 1 project node
 ✓ workspace_brief — healthy (28 nodes, 0 next actions, 5 health checks)
+✓ workspace_brief_tuned — healthy (28 nodes, 1 next action, 5 health checks)
+· workspace_brief_tuned advisory nextActions — components:info
 ✓ health — healthy (5 checks: compile_issues:pass, unresolved_edges:pass, dependency_cycles:pass, relation_recommendations:pass, components:pass, issues 0)
 ✓ health_tuned — healthy (5 checks: compile_issues:pass, unresolved_edges:pass, dependency_cycles:pass, relation_recommendations:pass, components:info, issues 0)
-✓ compile_ontology — graph 192c6e615658 (28 nodes, 202 edges, issues 0)
-✓ overview — graph 192c6e615658 (28 nodes, 202 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 28, edges 202)
-✓ project_map query_plan — aggregate_scan (medium, nodes 28, edges 202)
+✓ compile_ontology — graph bff1dd2122d5 (28 nodes, 209 edges, issues 0)
+✓ overview — graph bff1dd2122d5 (28 nodes, 209 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 28, edges 209)
+✓ project_map query_plan — aggregate_scan (medium, nodes 28, edges 209)
 ✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ path — elements/file-system-access-api → project (2 hops)
 ✓ project_scope — project (27 nodes, internalEdges 92)
@@ -235,7 +237,9 @@ On failure, it tells you which step blocked progress and prints a diagnostic mes
 verify path exercises and gates the same first-contact graph diagnosis an agent should run:
 `tools/list`, `list_concepts`, a project-node `list_concepts` probe,
 `get_concepts`, `find_orphans`, `list_kinds`, `validate_vault`,
-`query_ontology({operation:"workspace_brief"})`, and
+`query_ontology({operation:"workspace_brief"})`, tuned
+`query_ontology({operation:"workspace_brief"})`,
+`query_ontology({operation:"health"})`, and tuned
 `query_ontology({operation:"health"})`, plus `compile_ontology({summary:true})`,
 `query_ontology({operation:"overview"})`, and
 `query_ontology({operation:"query_plan", targetOperation:"overview"})` /
@@ -277,12 +281,12 @@ census shape/count mismatches, `validate_vault` problem files, failing health ch
 `workspace_brief.nextActions` fail the command; advisory `needs_attention` states still print so starter vaults can
 verify before cleanup. Missing or malformed first-contact diagnosis payloads
 such as `workspace_brief.nextActions`, `workspace_brief.health.checks`,
-`health.checks`, and tuned `health.checks` also fail the command instead of being treated as clean; every
+`health.checks`, tuned `workspace_brief.health.checks`, and tuned `health.checks` also fail the command instead of being treated as clean; every
 `workspace_brief.nextActions` row must include a non-empty `id` or `kind` plus
 non-empty `severity`, and every health check row must include non-empty `id`
 and `status`.
 Non-blocking `workspace_brief.nextActions` are printed as a short
-advisory list, the `workspace_brief` success line includes the
+advisory list, the `workspace_brief` / `workspace_brief_tuned` success lines include the
 `workspace_brief.health.checks` count, and the `health` / `health_tuned` lines include the
 check `id:status` coverage that the verify gate validated. The default wait window is 8 seconds; set
 `OMOT_VERIFY_TIMEOUT_MS` to a positive integer millisecond value if your vault

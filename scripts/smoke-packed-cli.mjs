@@ -218,6 +218,7 @@ try {
   assert.match(cliMcpVerify.stdout, /validate_vault/);
   assert.match(cliMcpVerify.stdout, /workspace_brief/);
   assert.match(cliMcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
+  assert.match(cliMcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
   assert.match(cliMcpVerify.stdout, /workspace_brief advisory nextActions/);
   assert.match(cliMcpVerify.stdout, /compile_issues:warn/);
   assert.match(cliMcpVerify.stdout, /health — .*checks/);
@@ -315,6 +316,7 @@ try {
   assert.match(mcpVerify.stdout, /list_kinds/);
   assert.match(mcpVerify.stdout, /workspace_brief/);
   assert.match(mcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
+  assert.match(mcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
   assert.match(mcpVerify.stdout, /workspace_brief advisory nextActions/);
   assert.match(mcpVerify.stdout, /compile_issues:warn/);
   assert.match(mcpVerify.stdout, /health — .*checks/);
@@ -346,6 +348,7 @@ try {
   assert.match(directMcpVerify.stdout, /timeout=1000ms/);
   assert.match(directMcpVerify.stdout, /project probe — 1 project node/);
   assert.match(directMcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
+  assert.match(directMcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
   assert.match(directMcpVerify.stdout, /health_tuned — .*checks/);
 
   const directMcpVerifyVaultFlag = run(
