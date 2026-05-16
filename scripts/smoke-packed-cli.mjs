@@ -217,7 +217,7 @@ try {
   assert.match(cliMcpVerify.stdout, /list_kinds/);
   assert.match(cliMcpVerify.stdout, /validate_vault/);
   assert.match(cliMcpVerify.stdout, /workspace_brief/);
-  assert.match(cliMcpVerify.stdout, /workspace_brief — .*healthChecks/);
+  assert.match(cliMcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
   assert.match(cliMcpVerify.stdout, /workspace_brief advisory nextActions/);
   assert.match(cliMcpVerify.stdout, /compile_issues:warn/);
   assert.match(cliMcpVerify.stdout, /health — .*checks/);
@@ -286,7 +286,7 @@ try {
   assert.match(mcpVerify.stdout, /validate_vault/);
   assert.match(mcpVerify.stdout, /list_kinds/);
   assert.match(mcpVerify.stdout, /workspace_brief/);
-  assert.match(mcpVerify.stdout, /workspace_brief — .*healthChecks/);
+  assert.match(mcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
   assert.match(mcpVerify.stdout, /workspace_brief advisory nextActions/);
   assert.match(mcpVerify.stdout, /compile_issues:warn/);
   assert.match(mcpVerify.stdout, /health — .*checks/);
