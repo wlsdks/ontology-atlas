@@ -376,6 +376,20 @@ await test('compile --fix — applies compiler relation-array canonicalization',
   }
 });
 
+await test('compile --help — prints usage without treating help as an error', async () => {
+  const longHelp = await run(['compile', '--help']);
+  assert.equal(longHelp.code, 0);
+  assert.equal(longHelp.stderr, '');
+  assert.match(stripAnsi(longHelp.stdout), /Usage:/);
+  assert.match(stripAnsi(longHelp.stdout), /oh-my-ontology compile \[vault\]/);
+  assert.match(stripAnsi(longHelp.stdout), /--fix/);
+
+  const shortHelp = await run(['compile', '-h']);
+  assert.equal(shortHelp.code, 0);
+  assert.equal(shortHelp.stderr, '');
+  assert.match(stripAnsi(shortHelp.stdout), /Usage:/);
+});
+
 await test('compile — rejects zero pagination limits', async () => {
   const root = withVault([
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },

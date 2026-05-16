@@ -24,6 +24,10 @@ const COLORS = {
 
 export async function runCompile(args) {
   const parsed = parseArgs(args);
+  if (parsed.help) {
+    printUsage(process.stdout);
+    return 0;
+  }
   if (parsed.error) {
     process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${parsed.error}\n`);
     printUsage();
@@ -187,6 +191,9 @@ function renderFixResult(result) {
 }
 
 function parseArgs(args) {
+  if (args.includes('--help') || args.includes('-h')) {
+    return { help: true };
+  }
   const flags = {
     vault: null,
     json: false,
@@ -230,8 +237,8 @@ function shortHash(hash) {
   return typeof hash === 'string' && hash.length > 8 ? hash.slice(0, 8) : hash || 'none';
 }
 
-function printUsage() {
-  process.stderr.write(
+function printUsage(stream = process.stderr) {
+  stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  oh-my-ontology compile [vault] [--summary] [--json]\n` +
       `  oh-my-ontology compile [vault] --fix\n\n` +
