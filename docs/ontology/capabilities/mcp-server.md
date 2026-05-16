@@ -296,7 +296,9 @@ safety 를 위해 limit 과 offset 계약을 분리한다. `nodesLimit` / `edges
 `query_ontology(health)` / `query_ontology(workspace_brief)` 의 내부 probe 옵션도
 MCP schema 에서 노출한다. `componentLimit`, `cycleLimit`, `recommendationLimit`,
 `orderLimit`, `dependencyTypes`, `componentTypes` 는 strict top-level argument gate 를
-통과하고, runtime 에서 같은 numeric/string-array 검증을 받는다.
+통과하고, runtime 에서 같은 numeric/string-array 검증을 받는다. `workspace_brief`
+의 embedded `health.checks` 도 이 튜닝 옵션을 그대로 적용해 first-contact brief 와
+직접 `health` 호출의 진단 범위가 갈라지지 않는다.
 
 `pnpm dogfood:walk` 는 이 repo 의 `docs/ontology` 를 대상으로 실제 MCP stdio 호출을
 연속 실행한다. 기본 census / backlink / path 질의에 더해 `validate_vault`,

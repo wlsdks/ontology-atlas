@@ -2500,6 +2500,8 @@ export function createOntologyEngine(artifact, options = {}) {
       recommendationLimit: limit,
       orderLimit: limit,
       nodeLimit: limit,
+      dependencyTypes: options.dependencyTypes,
+      componentTypes: options.componentTypes ?? options.types,
     });
     const growthResult = growthPlan({ limit });
     const projectRoots = projectRootSlugs();

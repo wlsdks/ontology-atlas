@@ -2597,6 +2597,45 @@ describe('queryCompiledOntology', () => {
     ]);
   });
 
+  it('applies workspace brief health tuning controls to embedded health checks', () => {
+    const graph = compileOntology(
+      [
+        doc('domains/auth', {
+          kind: 'domain',
+          title: 'Auth',
+          capabilities: ['capabilities/login'],
+        }),
+        doc('capabilities/login', {
+          kind: 'capability',
+          title: 'Login',
+          domain: 'domains/auth',
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const tuned = queryCompiledOntology(graph, {
+      operation: 'workspace_brief',
+      limit: 5,
+      componentTypes: ['dependencies'],
+    });
+
+    assert.equal(tuned.operation, 'workspace_brief');
+    assert.equal(tuned.status, 'healthy');
+    assert.deepEqual(
+      tuned.health.checks.find((check) => check.id === 'components'),
+      {
+        id: 'components',
+        status: 'info',
+        count: 2,
+        message: 'The resolved ontology graph has disconnected actionable islands.',
+      },
+    );
+    assert.ok(
+      tuned.nextActions.some((action) => action.kind === 'health_check' && action.id === 'components'),
+    );
+  });
+
   it('returns a one-shot health dashboard for clean ontology graphs', () => {
     const clean = compileOntology(
       [
