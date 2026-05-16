@@ -41,6 +41,17 @@ describe('package contract helpers', () => {
     assert.match(readme, /OMOT_TEST_NAME_PATTERN="tools\/list\|initialize" pnpm integration:mcp/);
   });
 
+  it('keeps the MCP first-call prompt read-only', () => {
+    const readme = readFileSync('mcp/README.md', 'utf-8');
+    const firstCallSection = readme.split('## First call after registering with Claude Code')[1]?.split('## Design principles')[0] ?? '';
+
+    assert.match(firstCallSection, /validate_vault\(\{\}\)/);
+    assert.match(firstCallSection, /query_ontology\(\{ operation: "workspace_brief" \}\)/);
+    assert.match(firstCallSection, /read-only calls respond cleanly/);
+    assert.doesNotMatch(firstCallSection, /add_concept/);
+    assert.doesNotMatch(firstCallSection, /those four tools/);
+  });
+
   it('parses package script file references', () => {
     assert.deepEqual(parseScriptFileRefs('node --test src/a.test.mjs scripts/check.mjs'), [
       'src/a.test.mjs',

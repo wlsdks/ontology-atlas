@@ -217,9 +217,10 @@ After you add `.mcp.json` and restart Claude Code, try the following with your L
 > 1. Call `mcp__oh-my-ontology__list_concepts` to list every node in the vault.
 > 2. Call `get_concept({ slug: "project" })` to see the root node's frontmatter and neighbors.
 > 3. Call `find_neighbors({ slug: "capabilities/mcp-server" })` to inspect the local graph around that capability.
-> 4. (Optional) Call `add_concept` to create a new capability node — `slug`, `kind`, and `title` are required.
+> 4. Call `validate_vault({})` to check frontmatter and graph-reference integrity before writing.
+> 5. Call `query_ontology({ operation: "workspace_brief" })` for the first-contact graph diagnosis.
 
-If those four tools respond cleanly, your read/write round-trip against the vault is working. Once an agent starts *committing* its analysis of your codebase to the ontology through these 23 tools (15 read + 8 write), the human + AI co-authoring loop is officially open.
+If those read-only calls respond cleanly, the agent can see the vault and its graph health. Once an agent starts *committing* its analysis of your codebase to the ontology through these 23 tools (15 read + 8 write), the human + AI co-authoring loop is officially open.
 
 ## Design principles
 
