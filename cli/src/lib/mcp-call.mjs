@@ -15,7 +15,7 @@
 //   3. node:require.resolve('oh-my-ontology-mcp/src/index.js')
 
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
@@ -25,8 +25,11 @@ const __dirname = dirname(__filename);
 const require_ = createRequire(import.meta.url);
 
 function resolveMcpEntry() {
-  if (process.env.OMOT_MCP_PATH && existsSync(process.env.OMOT_MCP_PATH)) {
-    return process.env.OMOT_MCP_PATH;
+  if (process.env.OMOT_MCP_PATH) {
+    const envPath = process.env.OMOT_MCP_PATH;
+    if (isFile(envPath)) return envPath;
+    if (existsSync(envPath)) throw new Error(`OMOT_MCP_PATH is not a file: ${envPath}`);
+    throw new Error(`OMOT_MCP_PATH does not exist: ${envPath}`);
   }
   const monoDev = resolve(__dirname, '../../../mcp/src/index.js');
   if (existsSync(monoDev)) return monoDev;
@@ -37,6 +40,14 @@ function resolveMcpEntry() {
       'oh-my-ontology-mcp not found. Install it (`npm install oh-my-ontology-mcp`) ' +
         'or set OMOT_MCP_PATH to mcp/src/index.js.',
     );
+  }
+}
+
+function isFile(path) {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
   }
 }
 

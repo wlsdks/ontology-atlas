@@ -1644,6 +1644,22 @@ await test('read-only graph commands — reject ambiguous vault arguments before
   }
 });
 
+await test('graph MCP calls — reject invalid OMOT_MCP_PATH overrides before spawning node', async () => {
+  const missing = await run(['overview', 'docs/ontology'], {
+    env: { OMOT_MCP_PATH: join(tmpdir(), 'missing-omot-mcp-entry.js') },
+  });
+  assert.equal(missing.code, 2);
+  assert.match(stripAnsi(missing.stderr), /OMOT_MCP_PATH does not exist/);
+  assert.doesNotMatch(stripAnsi(missing.stderr), /vault overview|MODULE_NOT_FOUND/);
+
+  const directory = await run(['overview', 'docs/ontology'], {
+    env: { OMOT_MCP_PATH: tmpdir() },
+  });
+  assert.equal(directory.code, 2);
+  assert.match(stripAnsi(directory.stderr), /OMOT_MCP_PATH is not a file/);
+  assert.doesNotMatch(stripAnsi(directory.stderr), /vault overview|MODULE_NOT_FOUND/);
+});
+
 await test('graph diagnostic commands — reject invalid option values before MCP call', async () => {
   const cases = [
     {
