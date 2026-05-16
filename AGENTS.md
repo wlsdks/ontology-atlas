@@ -27,6 +27,7 @@ pnpm lint
 pnpm build                        # static export → out/
 pnpm bundle:check                 # local-first chunk leak guard
 pnpm vault:validate               # frontmatter integrity (R11 — runs in CI too)
+pnpm test:vault:validate          # focused validator CLI argument contract
 pnpm vault:migrate --list         # see registered schema migrations (R11)
 
 # AI agent (Claude Code) auto-registers via this repo's `.mcp.json` — `mcp/README.md` has details.
@@ -231,6 +232,7 @@ pnpm exec tsc --noEmit
 pnpm lint
 pnpm build                        # 정적 export → out/
 pnpm vault:validate               # frontmatter integrity (R11 — CI 게이트)
+pnpm test:vault:validate          # validator CLI 인자 계약 focused test
 pnpm vault:audit                  # capability/element path drift 가드 (R12)
 pnpm vault:migrate --list         # 등록된 schema 마이그레이션 (R11)
 

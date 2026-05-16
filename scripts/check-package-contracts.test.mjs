@@ -352,6 +352,7 @@ describe('package contract helpers', () => {
   });
 
   it('keeps the root README explicit about vault validator help', () => {
+    const agents = readFileSync('AGENTS.md', 'utf-8');
     const readme = readFileSync('README.md', 'utf-8');
     const architecture = readFileSync('docs/ARCHITECTURE.md', 'utf-8');
     const prTemplate = readFileSync('.github/PULL_REQUEST_TEMPLATE.md', 'utf-8');
@@ -370,6 +371,8 @@ describe('package contract helpers', () => {
     assert.match(vaultTooling, /pnpm test:vault:validate/);
     assert.match(vaultTooling, /focused validator CLI argument contract/);
     assert.match(readme, /CI runs `pnpm vault:validate`, `pnpm test:vault:validate`,\s+`pnpm vault:audit`, and `pnpm package:check`/);
+    assert.match(agents, /pnpm test:vault:validate\s+# focused validator CLI argument contract/);
+    assert.match(agents, /pnpm test:vault:validate\s+# validator CLI 인자 계약 focused test/);
     assert.match(architecture, /pnpm test:vault:validate\s+# focused validator CLI argument contract \(CI gate\)/);
     assert.match(architecture, /`vault:validate`, `test:vault:validate`, `vault:audit`, and `package:check` run in CI/);
     assert.match(prTemplate, /If `scripts\/validate-vault\.mjs`, vault validation docs, or CI validation gates changed: `pnpm test:vault:validate`/);
