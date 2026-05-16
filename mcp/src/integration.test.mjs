@@ -167,7 +167,7 @@ function assertPostWriteMaintenanceShape(value, label = "postWriteMaintenance") 
   assert.equal(value.operation, "maintenance_plan", `${label} preserves operation`);
   assert.equal(value.sideEffect, false, `${label} stays side-effect free`);
   assert.equal(typeof value.graphHash, "string", `${label} exposes graphHash`);
-  assert.equal(typeof value.summary?.compileIssues, "number", `${label} exposes summary`);
+  assertPostWriteMaintenanceSummaryShape(value.summary, label);
   assert.ok(value.filters, `${label} exposes maintenance filters`);
   assert.equal(value.filters.executableOnly, false, `${label} exposes default executableOnly filter`);
   assert.deepEqual(value.filters.phases, [], `${label} exposes phase filters`);
@@ -194,6 +194,43 @@ function assertPostWriteMaintenanceShape(value, label = "postWriteMaintenance") 
   if (value.actions.length > 0) {
     assertCompactMaintenanceActionShape(value.actions[0], label);
   }
+}
+
+function assertPostWriteMaintenanceSummaryShape(summary, label) {
+  assert.ok(summary && typeof summary === "object", `${label} exposes summary`);
+  for (const key of [
+    "totalActions",
+    "filteredActions",
+    "remainingActions",
+    "executableActions",
+    "reviewActions",
+    "compileIssues",
+    "dependencyCycles",
+    "canonicalizationActions",
+    "danglingReferences",
+    "relationRecommendations",
+    "externalElementRefs",
+    "externalElementRefsIgnored",
+    "unassignedNodes",
+    "emptyDomains",
+  ]) {
+    assert.equal(typeof summary[key], "number", `${label} summary exposes ${key}`);
+    assert.ok(Number.isFinite(summary[key]), `${label} summary ${key} is finite`);
+    assert.ok(summary[key] >= 0, `${label} summary ${key} is non-negative`);
+  }
+  assert.equal(
+    summary.executableActions + summary.reviewActions,
+    summary.totalActions,
+    `${label} summary executable/review counts add up`,
+  );
+  assert.ok(
+    summary.filteredActions <= summary.totalActions,
+    `${label} summary filteredActions does not exceed totalActions`,
+  );
+  assert.ok(
+    summary.remainingActions <= summary.filteredActions,
+    `${label} summary remainingActions does not exceed filteredActions`,
+  );
 }
 
 function assertCompactMaintenanceActionShape(action, label) {
