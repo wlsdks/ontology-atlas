@@ -39,6 +39,7 @@ import {
   projectScopeFailure,
   serverStartupFailure,
   strictArgsFailure,
+  strictEnumFailure,
   toolsListSchemaFailure,
   validationCodeSummary,
   validateVaultFailure,
@@ -309,6 +310,30 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
+  it('fails malformed strict enum smoke responses', () => {
+    assert.equal(
+      strictEnumFailure({
+        result: {
+          isError: true,
+          content: [{ text: 'operation must be one of: overview, health. Invalid value: overveiw. Did you mean "overview"?' }],
+        },
+      }),
+      null,
+    );
+    assert.equal(
+      strictEnumFailure({ result: { isError: false, content: [{ text: 'ok' }] } }),
+      'strict enum response was not rejected',
+    );
+    assert.equal(
+      strictEnumFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
+      'strict enum response did not report the invalid query_ontology operation',
+    );
+    assert.equal(
+      strictEnumFailure({ result: { isError: true, content: [{ text: 'operation must be one of: overview. invalid value overveiw' }] } }),
+      'strict enum response did not suggest the closest query_ontology operation',
+    );
+  });
+
   it('rejects partial or non-positive verify timeout env values', () => {
     assert.equal(parseVerifyTimeoutMs('1000ms'), false);
     assert.equal(parseVerifyTimeoutMs('0'), false);
@@ -331,7 +356,7 @@ describe('verify.mjs first-contact gates', () => {
   it('detects when all first-contact JSON-RPC responses arrived', () => {
     assert.equal(
       hasAllFirstContactResponses(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
           .map((id) => JSON.stringify({ jsonrpc: '2.0', id, result: {} }))
           .join('\n'),
       ),

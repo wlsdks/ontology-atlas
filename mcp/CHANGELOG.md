@@ -35,7 +35,7 @@
 - `npm run verify` now distinguishes server startup failures before `initialize` from timeout failures, preserving stderr such as invalid `OMOT_VAULT` diagnostics.
 - `npm run verify` now detects first-contact JSON-RPC error responses immediately and reports the failing step instead of waiting for timeout.
 - `npm run verify` now validates the installed `tools/list` schema contract: every tool must expose `additionalProperties:false`, `query_ontology.operation` must stay required, `query_ontology.operation` / `targetOperation` enums must match the graph engine runtime allow-lists, batch tools must keep their 50-row caps, and write tools must keep their `expected_mtime` / `confirm` safety schemas.
-- `npm run verify` now makes a runtime negative smoke call with invalid `list_concepts.lmit` arguments, so installed packages prove unknown-argument rejection before agents rely on the MCP surface.
+- `npm run verify` now makes runtime negative smoke calls with invalid `list_concepts.lmit` and `query_ontology.operation="overveiw"` inputs, so installed packages prove unknown-argument and invalid-enum rejection before agents rely on the MCP surface.
 
 ## 0.11.0 — 2026-05-14
 

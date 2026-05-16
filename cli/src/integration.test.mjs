@@ -288,7 +288,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /compile_ontology/);
   assert.match(clean, /neighbors\/path\/project_scope graph-query smoke/);
   assert.match(clean, /tools\/list schema strictness/);
-  assert.match(clean, /runtime unknown-argument rejection smoke/);
+  assert.match(clean, /runtime unknown-argument \/ invalid-enum rejection smoke/);
 });
 
 await test('mcp-verify — rejects invalid timeout values', async () => {

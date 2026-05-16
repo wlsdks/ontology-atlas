@@ -144,7 +144,7 @@ single aggregate query. Project-less vaults skip only the containment-specific
 first node exists.
 `smoke:packed-cli` also checks the installed `mcp-verify --help` output plus
 project-less and empty-vault verify paths, so release tarballs keep exposing the
-graph-query and strict-argument smoke scope without starting a server for help
+graph-query and strict argument/enum smoke scope without starting a server for help
 and without assuming every valid vault already has containment roots. It also creates a dependency-cycle vault and checks installed
 `workspace-brief --json` exits 1 on fail-severity nextActions.
 For local CLI gates, `compile --json` exits 1 on unresolved graph references,
@@ -155,7 +155,7 @@ The graph diagnostic exit contract is fail-closed: malformed `cycles`,
 failures instead of clean vaults.
 `dogfood:walk` runs that diagnosis plus graph lookup tasks against this
 repo's own `docs/ontology` vault and exits non-zero if the core MCP
-responses, strict unknown-argument rejection, `get_concepts` success/partial rows, path check, vault warnings, `validate_vault` problem files,
+responses, strict unknown-argument and invalid-enum rejection, `get_concepts` success/partial rows, path check, vault warnings, `validate_vault` problem files,
 `workspace_brief.nextActions`, `workspace_brief.health.checks`, or `health`
 gate regress. Set `OMOT_DOGFOOD_TIMEOUT_MS=10000` for slower local
 filesystems; the value must be a positive integer in milliseconds.

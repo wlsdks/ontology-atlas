@@ -1261,6 +1261,12 @@ const okShape = {
       content: [{ text: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: kind, limit.' }],
     },
   },
+  strictEnum: {
+    result: {
+      isError: true,
+      content: [{ text: 'operation must be one of: overview, health. Received: "overveiw". Did you mean "overview"?' }],
+    },
+  },
 };
 
 describe("recordResult", () => {
@@ -1362,6 +1368,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(44), "path");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(45), "project_scope");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(46), "strict_args");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(47), "strict_enum");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -1405,6 +1412,21 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, strictArgs: { result: { isError: true, content: [{ text: 'Unknown argument "lmit" for list_concepts.' }] } } }),
       ["strict_args: strict arguments response did not suggest the closest list_concepts argument"],
+    );
+  });
+
+  it("fails malformed strict enum dogfood responses", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictEnum: { result: { isError: false, content: [{ text: "ok" }] } } }),
+      ["strict_enum: strict enum response was not rejected"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictEnum: { result: { isError: true, content: [{ text: "different error" }] } } }),
+      ["strict_enum: strict enum response did not report the invalid query_ontology operation"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictEnum: { result: { isError: true, content: [{ text: 'operation must be one of: overview. Received: "overveiw".' }] } } }),
+      ["strict_enum: strict enum response did not suggest the closest query_ontology operation"],
     );
   });
 

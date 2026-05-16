@@ -6,7 +6,7 @@
 //
 // write 안 함 (dogfood vault 보존). list_kinds / list_concepts / get_concepts /
 // find_evidence / find_path / find_backlinks / find_orphans /
-// strict unknown-argument rejection / validate_vault / compile_ontology(summary) /
+// strict unknown-argument and invalid-enum rejection / validate_vault / compile_ontology(summary) /
 // query_ontology overview / query_plan / neighbors / path / all_paths / pattern_walk / project_scope / centrality / communities / similar_nodes / explain_relation / reachability / impact / blast_radius / subgraph / schema / facets / match_nodes / match_edges / node_profile / lineage / containment_tree / cycles / topological_order / relation_check / components / recommend_relations / growth_plan / maintenance_plan / workspace_brief / health.
 
 import { spawn } from "node:child_process";
@@ -26,6 +26,7 @@ import {
   overviewFailure,
   projectMapQueryPlanFailure,
   strictArgsFailure,
+  strictEnumFailure,
   validateVaultFailure,
 } from "../mcp/scripts/verify.mjs";
 
@@ -82,6 +83,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [44, "path"],
   [45, "project_scope"],
   [46, "strict_args"],
+  [47, "strict_enum"],
 ]);
 
 function rpc(requests, timeoutMs = 3000) {
@@ -363,6 +365,7 @@ export function buildDogfoodRequests() {
       limit: 12,
     }),
     call(46, "list_concepts", { lmit: 1 }),
+    call(47, "query_ontology", { operation: "overveiw" }),
   ];
 }
 
@@ -450,6 +453,7 @@ export function evaluateDogfoodGate({
   queryPath,
   projectScope,
   strictArgs,
+  strictEnum,
 }) {
   const failures = [];
   recordResult(failures, "list_kinds", kinds);
@@ -499,6 +503,8 @@ export function evaluateDogfoodGate({
 
   const strictFailure = strictArgsFailure(strictArgs);
   if (strictFailure) failures.push(`strict_args: ${strictFailure}`);
+  const strictEnumError = strictEnumFailure(strictEnum);
+  if (strictEnumError) failures.push(`strict_enum: ${strictEnumError}`);
 
   if (kinds) {
     const kindsFailure = listKindsFailure(kinds);
@@ -3881,6 +3887,15 @@ async function main() {
     console.log(`  ${strictArgsText}`);
   }
 
+  // 46. strict enum rejection
+  header("strict enums — invalid query operation rejection");
+  const strictEnum = responses.find((response) => response.id === 47);
+  const strictEnumText = strictEnum?.result?.content?.[0]?.text || "";
+  console.log(`  rejected: ${strictEnum?.result?.isError === true}`);
+  if (strictEnumText) {
+    console.log(`  ${strictEnumText}`);
+  }
+
   const failures = evaluateDogfoodGate({
     kinds,
     list,
@@ -3927,6 +3942,7 @@ async function main() {
     queryPath,
     projectScope,
     strictArgs,
+    strictEnum,
   });
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
   if (timedOut && missingLabels.length > 0) {
@@ -3987,6 +4003,7 @@ async function main() {
   console.log(`  path: ${queryPath?.found ?? "n/a"} · hops ${queryPath?.hopCount ?? "n/a"}`);
   console.log(`  project_scope: ${projectScope?.summary?.nodes ?? "n/a"} nodes · ${projectScope?.summary?.internalEdges ?? "n/a"} internal edges`);
   console.log(`  strict_args: rejected ${strictArgs?.result?.isError === true}`);
+  console.log(`  strict_enum: rejected ${strictEnum?.result?.isError === true}`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   if (stderr.trim()) {

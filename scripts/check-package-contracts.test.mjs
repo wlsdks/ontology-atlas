@@ -71,6 +71,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /list_concepts\/get_concepts\/list_kinds/);
     assert.match(verifySection, /✓ tools\/list schema contract — strict arguments \+ graph-query enums/);
     assert.match(verifySection, /✓ strict arguments — unknown tool argument rejected at runtime/);
+    assert.match(verifySection, /✓ strict enums — invalid query operation rejected with closest-value hint/);
     assert.match(verifySection, /✓ get_concepts — 2 ok rows, 1 partial rows/);
     assert.match(verifySection, /✓ list_kinds/);
     assert.match(verifySection, /✓ workspace_brief — healthy \(28 nodes, nextActions 0, healthChecks 5\)/);
@@ -89,7 +90,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /same 50-row cap used by `get_concepts`, `add_concepts`,\s+and `add_relations`/);
     assert.match(verifySection, /write-safety schemas for `expected_mtime`/);
     assert.match(verifySection, /destructive-tool `confirm` dry-run switches/);
-    assert.match(verifySection, /runtime negative call with `list_concepts\.lmit`/);
+    assert.match(verifySection, /runtime negative calls with `list_concepts\.lmit`/);
+    assert.match(verifySection, /`query_ontology\.operation="overveiw"`/);
     assert.match(verifySection, /project-less vaults skip/);
     assert.match(verifySection, /Empty vaults skip node-targeted graph smoke/);
     assert.match(verifySection, /`list_kinds` \/ `compile_ontology` \/ `overview`\s+census shape\/count mismatches/);
@@ -122,7 +124,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /graph engine runtime allow-lists/);
     assert.match(verifySection, /batch tools must keep their 50-row caps/);
     assert.match(verifySection, /write tools must keep their `expected_mtime` \/ `confirm` safety schemas/);
-    assert.match(verifySection, /runtime negative smoke call with invalid `list_concepts\.lmit` arguments/);
+    assert.match(verifySection, /runtime negative smoke calls with invalid `list_concepts\.lmit`/);
+    assert.match(verifySection, /`query_ontology\.operation="overveiw"` inputs/);
   });
 
   it('keeps the CLI README explicit about mcp-verify help scope', () => {
@@ -132,7 +135,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /mcp-verify --help/);
     assert.match(verifySection, /graph-query smoke contract/);
     assert.match(verifySection, /`tools\/list` schema contract/);
-    assert.match(verifySection, /runtime negative smoke with an invalid `list_concepts\.lmit`/);
+    assert.match(verifySection, /runtime negative smokes with invalid `list_concepts\.lmit`/);
+    assert.match(verifySection, /`query_ontology\.operation="overveiw"` inputs/);
     assert.match(verifySection, /Batch tool caps/);
     assert.match(verifySection, /Write-safety schema/);
     assert.match(verifySection, /get_concepts/);
@@ -154,7 +158,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /core graph-query smoke for `neighbors`, self-`path`, and `project_scope`/);
     assert.match(verifySection, /accepts valid project-less vaults/);
     assert.match(verifySection, /accepts empty vault folders/);
-    assert.match(verifySection, /runtime unknown-argument rejection smoke/);
+    assert.match(verifySection, /runtime unknown-argument and invalid-enum rejection smoke/);
   });
 
   it('documents dogfood validation as a release gate', () => {
@@ -162,12 +166,12 @@ describe('package contract helpers', () => {
     const releaseChecks = readme.split('### Package / MCP release checks')[1]?.split('## Verifiable promises')[0] ?? '';
 
     assert.match(releaseChecks, /pnpm dogfood:walk/);
-    assert.match(releaseChecks, /strict unknown-argument rejection/);
+    assert.match(releaseChecks, /strict unknown-argument and invalid-enum rejection/);
     assert.match(releaseChecks, /pnpm smoke:packed-cli/);
     assert.match(releaseChecks, /get_concepts` with discovered slugs plus one\s+missing slug/);
     assert.match(releaseChecks, /batch-read\s+partial-row contract/);
     assert.match(releaseChecks, /mcp-verify --help/);
-    assert.match(releaseChecks, /graph-query and strict-argument smoke scope/);
+    assert.match(releaseChecks, /graph-query and strict argument\/enum smoke scope/);
     assert.match(releaseChecks, /actual `neighbors`, self-`path`, and\s+`project_scope` calls/);
     assert.match(releaseChecks, /project-less and empty-vault verify paths/);
     assert.match(releaseChecks, /flow\/help\/failure/);
@@ -242,7 +246,7 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /`topological_order`/);
     assert.match(dogfoodSection, /`relation_check`/);
     assert.match(dogfoodSection, /`recommend_relations`/);
-    assert.match(dogfoodSection, /strict unknown-argument rejection smoke/);
+    assert.match(dogfoodSection, /strict unknown-argument and invalid-enum rejection smoke/);
     assert.match(dogfoodSection, /`growth_plan`/);
     assert.match(dogfoodSection, /`maintenance_plan`/);
 
@@ -250,7 +254,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /실제 `neighbors` \/[\s\S]*self-`path` \/ `project_scope`/);
     assert.match(verifySection, /project\s+노드가 있을 때만 containment hard gate/);
     assert.match(verifySection, /빈 vault 는 node-targeted graph\s+smoke 를 skip/);
-    assert.match(verifySection, /strict schema\/runtime unknown-argument rejection/);
+    assert.match(verifySection, /strict schema\/runtime unknown-argument and invalid-enum rejection/);
   });
 
   it('keeps packed CLI smoke aligned with installed hard gates', () => {
@@ -268,7 +272,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /health — \.\*compile_issues:\(pass\|warn\)/);
     assert.match(smoke, /health — \.\*checks/);
     assert.match(smoke, /neighbors\\\/path\\\/project_scope graph-query smoke/);
-    assert.match(smoke, /runtime unknown-argument rejection smoke/);
+    assert.match(smoke, /invalid-enum rejection smoke/);
     assert.match(smoke, /project_scope — skipped \\\(no project node in vault\\\)/);
     assert.match(smoke, /neighbors\\\/path — skipped \\\(vault has no nodes\\\)/);
     assert.match(smokeSection, /cycles --json/);
@@ -277,7 +281,7 @@ describe('package contract helpers', () => {
     assert.match(smokeSection, /health check count/);
     assert.match(smokeSection, /`overview`\/`project_map` query_plan \/ `neighbors` \/ `path` \//);
     assert.match(smokeSection, /`project_scope` smoke/);
-    assert.match(smokeSection, /strict argument smoke/);
+    assert.match(smokeSection, /strict argument\/enum smoke/);
     assert.match(smokeSection, /project-less vault/);
     assert.match(smokeSection, /empty vault/);
   });

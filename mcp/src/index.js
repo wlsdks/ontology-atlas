@@ -1265,8 +1265,16 @@ function formatAllowedValueError(name, value, allowed) {
   const suggestion = typeof value === 'string'
     ? closestAllowedArgument(value, allowed)
     : null;
+  const receivedText = ` Received: ${formatErrorValue(value)}.`;
   const suggestionText = suggestion ? ` Did you mean "${suggestion}"?` : '';
-  return `${name} must be one of: ${allowed.join(', ')}.${suggestionText}`;
+  return `${name} must be one of: ${allowed.join(', ')}.${receivedText}${suggestionText}`;
+}
+
+function formatErrorValue(value) {
+  if (typeof value === 'string') return `"${value}"`;
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
 }
 
 function requireOptionalBoolean(value, name) {

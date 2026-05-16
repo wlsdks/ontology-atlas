@@ -182,6 +182,7 @@ A successful run looks like this:
 ✓ tools/list 23/23 (15 read + 8 write) — add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
 ✓ tools/list schema contract — strict arguments + graph-query enums
 ✓ strict arguments — unknown tool argument rejected at runtime
+✓ strict enums — invalid query operation rejected with closest-value hint
 ✓ list_concepts — vault total 28 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concepts — 2 ok rows, 1 partial rows
 ✓ list_kinds — 28 nodes (capability:16, domain:6, element:4, project:1, vault-readme:1)
@@ -217,8 +218,9 @@ the graph engine's runtime allow-lists. It also checks the installed batch
 tool schemas for the same 50-row cap used by `get_concepts`, `add_concepts`,
 and `add_relations` at runtime, plus write-safety schemas for `expected_mtime`
 conflict guards and destructive-tool `confirm` dry-run switches.
-The verify path also makes a runtime negative call with `list_concepts.lmit`
-and fails unless the server rejects it as an unknown argument.
+The verify path also makes runtime negative calls with `list_concepts.lmit`
+and `query_ontology.operation="overveiw"`, and fails unless the server rejects
+them with the closest argument/value hint.
 `project_scope` is a hard gate when the vault has a `kind: project` node; valid
 project-less vaults skip that one containment-specific check while still
 gating `neighbors` and `path`. Empty vaults skip node-targeted graph smoke until

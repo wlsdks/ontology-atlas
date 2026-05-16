@@ -10,7 +10,7 @@
 - `mcp-verify` now accepts empty vault folders by skipping node-targeted graph smoke until a first node exists, while still proving the installed MCP boot, inventory, validation, diagnosis, compile, overview, and query planning path.
 - `mcp-verify` now inherits the MCP package `project_map` query_plan smoke, so installed CLI checks prove widened `query_plan.targetOperation` support beyond the original `overview` target.
 - `mcp-verify` now inherits the MCP package `get_concepts` smoke: discovered vault slugs plus one missing slug catch batch-reader success and partial-row contract drift in installed CLI checks.
-- `mcp-verify` now inherits the MCP package runtime unknown-argument rejection smoke, so installed CLI checks prove strict schema behavior beyond `tools/list` metadata.
+- `mcp-verify` now inherits the MCP package runtime unknown-argument and invalid-enum rejection smoke, so installed CLI checks prove strict schema behavior beyond `tools/list` metadata.
 - `mcp-verify` blocks fail-severity first-contact problems while still allowing warn-level starter-vault diagnostics to print, so fresh `init` users can confirm MCP wiring before graph cleanup.
 - Delegated verify output now includes a compact advisory nextActions line when cleanup is recommended but not blocking.
 - 신규 integration test 2건 (`mcp-verify` runs against a fresh `init` vault with a short verify timeout and graph-query smoke output, invalid timeout rejected).

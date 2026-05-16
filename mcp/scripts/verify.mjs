@@ -12,7 +12,7 @@
  * 검증 항목:
  *   1. parser smoke test (parser.test.mjs) 통과
  *   2. server boot — initialize JSON-RPC 응답
- *   3. tools/list — 23 도구 모두 노출 + graph-query enum schema contract + strict argument runtime smoke
+ *   3. tools/list — 23 도구 모두 노출 + graph-query enum schema contract + strict argument/enum runtime smoke
  *   4. tools/call list_concepts — vault 노드 수 출력
  *   5. tools/call get_concepts — batch reader success + partial-row contract
  *   6. tools/call list_kinds — kind census aggregate
@@ -182,6 +182,20 @@ export function strictArgsFailure(response) {
   return null;
 }
 
+export function strictEnumFailure(response) {
+  if (response?.result?.isError !== true) {
+    return 'strict enum response was not rejected';
+  }
+  const text = response.result.content?.[0]?.text || '';
+  if (!/operation must be one of/i.test(text) || !/overveiw/i.test(text)) {
+    return 'strict enum response did not report the invalid query_ontology operation';
+  }
+  if (!/Did you mean "overview"\?/i.test(text)) {
+    return 'strict enum response did not suggest the closest query_ontology operation';
+  }
+  return null;
+}
+
 export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [1, 'initialize'],
   [2, 'tools/list'],
@@ -199,6 +213,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [14, 'path'],
   [15, 'project_scope'],
   [16, 'strict_args'],
+  [17, 'strict_enum'],
 ]);
 
 function log(level, msg) {
@@ -320,6 +335,12 @@ export function buildFirstContactRequests() {
       id: 16,
       method: 'tools/call',
       params: { name: 'list_concepts', arguments: { lmit: 1 } },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 17,
+      method: 'tools/call',
+      params: { name: 'query_ontology', arguments: { operation: 'overveiw' } },
     },
   ];
 }
@@ -1127,6 +1148,7 @@ async function step2BootAndCall() {
       const pathRes = responses.find((r) => r.id === 14);
       const projectScopeRes = responses.find((r) => r.id === 15);
       const strictArgsRes = responses.find((r) => r.id === 16);
+      const strictEnumRes = responses.find((r) => r.id === 17);
       let kindsPayload = null;
       let listPayload = null;
       let validationPayload = null;
@@ -1180,6 +1202,12 @@ async function step2BootAndCall() {
         return res(false);
       }
       log('ok', 'strict arguments — unknown tool argument rejected at runtime');
+      const strictEnum = strictEnumFailure(strictEnumRes);
+      if (strictEnum) {
+        log('fail', strictEnum);
+        return res(false);
+      }
+      log('ok', 'strict enums — invalid query operation rejected with closest-value hint');
 
       if (!callRes || !callRes.result) {
         log('fail', 'no list_concepts response');

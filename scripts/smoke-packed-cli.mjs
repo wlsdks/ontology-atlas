@@ -254,7 +254,7 @@ try {
   assert.match(cliMcpVerifyHelp.stdout, /compile_ontology/);
   assert.match(cliMcpVerifyHelp.stdout, /neighbors\/path\/project_scope graph-query smoke/);
   assert.match(cliMcpVerifyHelp.stdout, /tools\/list schema strictness/);
-  assert.match(cliMcpVerifyHelp.stdout, /runtime unknown-argument rejection smoke/);
+  assert.match(cliMcpVerifyHelp.stdout, /runtime unknown-argument \/ invalid-enum rejection smoke/);
 
   const missingVerifyOverride = runRaw(cliBin, ['mcp-verify', 'ontology'], {
     cwd: projectDir,
