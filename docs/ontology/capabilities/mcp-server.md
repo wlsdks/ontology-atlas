@@ -112,7 +112,8 @@ capabilities 경로로, `query_ontology(all_paths)` 와
 plan contract 를 받을 수 있는지 확인한다. `project_map` query_plan 과 실제
 `project_map` 실행, 그리고 `domain_profile` / `domain_matrix` / `components` /
 `reachability` / `impact` / `blast_radius` / `subgraph` / `schema` / `facets` /
-`match_nodes` / `match_edges` / `node_profile` / `lineage` / `containment_tree` / `cycles` / `topological_order` /
+`match_nodes` / `match_edges` / `node_profile` / `centrality` / `communities` /
+`similar_nodes` / `explain_relation` / `lineage` / `containment_tree` / `cycles` / `topological_order` /
 `relation_check` / `recommend_relations` / `growth_plan` / `maintenance_plan` 도 추가로 dogfood 해, installed
 verify 에서 넓힌 aggregate target smoke 가 이 repo 의 반복 MCP walk 에서 실제
 project/domain map 과 특정 domain drill-down 출력까지 이어지는지 본다.

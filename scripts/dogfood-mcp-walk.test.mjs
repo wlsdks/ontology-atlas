@@ -963,6 +963,190 @@ const okShape = {
       descendants: { total: 0, limited: false, nodes: [] },
     },
   },
+  centrality: {
+    operation: "centrality",
+    graph: { nodes: 3, edges: 4, resolvedEdges: 3, graphHash: "abc123" },
+    parameters: { types: null, iterations: 20, limit: 8 },
+    rankings: {
+      pageRank: [
+        {
+          slug: "capabilities/mcp-server",
+          kind: "capability",
+          title: "MCP Server",
+          inDegree: 2,
+          outDegree: 3,
+          degree: 5,
+          pageRank: 0.42,
+          bridgeScore: 6,
+        },
+        {
+          slug: "domains/ai-agent-partner",
+          kind: "domain",
+          title: "AI Agent Partner",
+          inDegree: 1,
+          outDegree: 1,
+          degree: 2,
+          pageRank: 0.2,
+          bridgeScore: 1,
+        },
+      ],
+      bridges: [
+        {
+          slug: "capabilities/mcp-server",
+          kind: "capability",
+          title: "MCP Server",
+          inDegree: 2,
+          outDegree: 3,
+          degree: 5,
+          pageRank: 0.42,
+          bridgeScore: 6,
+        },
+      ],
+      authorities: [
+        {
+          slug: "capabilities/mcp-server",
+          kind: "capability",
+          title: "MCP Server",
+          inDegree: 2,
+          outDegree: 3,
+          degree: 5,
+          pageRank: 0.42,
+          bridgeScore: 6,
+        },
+      ],
+      hubs: [
+        {
+          slug: "capabilities/mcp-server",
+          kind: "capability",
+          title: "MCP Server",
+          inDegree: 2,
+          outDegree: 3,
+          degree: 5,
+          pageRank: 0.42,
+          bridgeScore: 6,
+        },
+      ],
+    },
+  },
+  communities: {
+    operation: "communities",
+    parameters: { types: null, iterations: 20, limit: 6, nodeLimit: 6 },
+    summary: { communities: 2, largestSize: 3, singletonCount: 1, crossCommunityEdges: 1 },
+    limited: false,
+    communities: [
+      {
+        id: 1,
+        label: "domains/ai-agent-partner",
+        size: 3,
+        internalEdges: 2,
+        boundaryEdges: 1,
+        kinds: { domain: 1, capability: 2 },
+        domains: { "domains/ai-agent-partner": 3 },
+        representative: { slug: "capabilities/mcp-server", kind: "capability", title: "MCP Server" },
+        nodeLimited: false,
+        nodes: [
+          { slug: "domains/ai-agent-partner", kind: "domain", title: "AI Agent Partner" },
+          { slug: "capabilities/mcp-server", kind: "capability", title: "MCP Server" },
+          { slug: "capabilities/ontology-sync-skill", kind: "capability", title: "Ontology Sync Skill" },
+        ],
+      },
+      {
+        id: 2,
+        label: "README",
+        size: 1,
+        internalEdges: 0,
+        boundaryEdges: 0,
+        kinds: { "vault-readme": 1 },
+        domains: {},
+        representative: { slug: "README", kind: "vault-readme", title: "Readme" },
+        nodeLimited: false,
+        nodes: [{ slug: "README", kind: "vault-readme", title: "Readme" }],
+      },
+    ],
+    crossCommunityEdges: {
+      total: 1,
+      limited: false,
+      rows: [
+        {
+          from: "capabilities/mcp-server",
+          to: "domains/vault-local-first",
+          via: "relates",
+          fromCommunity: 1,
+          toCommunity: 2,
+        },
+      ],
+    },
+  },
+  similarNodes: {
+    operation: "similar_nodes",
+    source: {
+      mode: "candidate",
+      slug: "capabilities/mcp-server-v2",
+      kind: "capability",
+      title: "MCP Server",
+      domain: "domains/ai-agent-partner",
+    },
+    parameters: { types: null, limit: 5 },
+    totalMatches: 1,
+    limited: false,
+    matches: [
+      {
+        node: { slug: "capabilities/mcp-server", kind: "capability", title: "MCP Server" },
+        score: 0.9,
+        signals: { slug: 0.2, title: 0.35, kind: 0.1, domain: 0.1, neighbors: 0.15 },
+        sharedNeighbors: [
+          { slug: "domains/ai-agent-partner", kind: "domain", title: "AI Agent Partner" },
+        ],
+      },
+    ],
+  },
+  explainRelation: {
+    operation: "explain_relation",
+    from: "capabilities/mcp-server",
+    to: "domains/vault-local-first",
+    fromNode: { slug: "capabilities/mcp-server", kind: "capability", title: "MCP Server" },
+    toNode: { slug: "domains/vault-local-first", kind: "domain", title: "Vault Local First" },
+    verdict: "path",
+    domains: { from: "domains/ai-agent-partner", to: "domains/vault-local-first", sameDomain: false },
+    direct: { total: 0, edges: [] },
+    shortestPath: {
+      found: true,
+      direction: "undirected",
+      maxHops: 4,
+      hopCount: 2,
+      hops: ["capabilities/mcp-server", "domains/ai-agent-partner", "domains/vault-local-first"],
+      edges: [
+        { from: "capabilities/mcp-server", to: "domains/ai-agent-partner", via: "domain" },
+        { from: "domains/ai-agent-partner", to: "domains/vault-local-first", via: "relates" },
+      ],
+    },
+    commonNeighbors: {
+      total: 1,
+      limited: false,
+      rows: [
+        {
+          slug: "domains/ai-agent-partner",
+          node: { slug: "domains/ai-agent-partner", kind: "domain", title: "AI Agent Partner" },
+          fromEdges: [
+            {
+              from: "capabilities/mcp-server",
+              to: "domains/ai-agent-partner",
+              via: "domain",
+              direction: "outgoing",
+            },
+          ],
+          toEdges: [
+            {
+              from: "domains/ai-agent-partner",
+              to: "domains/vault-local-first",
+              via: "relates",
+              direction: "outgoing",
+            },
+          ],
+        },
+      ],
+    },
+  },
 };
 
 describe("recordResult", () => {
@@ -1056,6 +1240,10 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(36), "match_nodes");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(37), "match_edges");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(38), "node_profile");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(39), "centrality");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(40), "communities");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(41), "similar_nodes");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(42), "explain_relation");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -2461,6 +2649,161 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["node_profile containment parents row missing via: domains/ai-agent-partner"],
+    );
+  });
+
+  it("fails on malformed centrality payloads", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, centrality: { ...okShape.centrality, operation: "overview" } }),
+      ["centrality response operation mismatch — overview"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, centrality: { ...okShape.centrality, graph: { ...okShape.centrality.graph, graphHash: "" } } }),
+      ["centrality graph missing graphHash"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        centrality: {
+          ...okShape.centrality,
+          rankings: {
+            ...okShape.centrality.rankings,
+            pageRank: [{ ...okShape.centrality.rankings.pageRank[0], degree: 6 }],
+          },
+        },
+      }),
+      ["centrality pageRank degree mismatch: capabilities/mcp-server"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        centrality: { ...okShape.centrality, rankings: { ...okShape.centrality.rankings, pageRank: [] } },
+      }),
+      ["centrality pageRank returned no rows"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        centrality: { ...okShape.centrality, rankings: { ...okShape.centrality.rankings, hubs: null } },
+      }),
+      ["centrality rankings missing hubs"],
+    );
+  });
+
+  it("fails on malformed communities payloads", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, communities: { ...okShape.communities, operation: "components" } }),
+      ["communities response operation mismatch — components"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        communities: { ...okShape.communities, communities: okShape.communities.communities.slice(0, 1) },
+      }),
+      ["communities row count mismatch — rows 1, total 2"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, communities: { ...okShape.communities, summary: { ...okShape.communities.summary, largestSize: 2 } } }),
+      ["communities largestSize below returned community — largest 2, observed 3"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        communities: {
+          ...okShape.communities,
+          communities: [{ ...okShape.communities.communities[0], nodes: okShape.communities.communities[0].nodes.slice(0, 1) }, okShape.communities.communities[1]],
+        },
+      }),
+      ["communities community node count mismatch: 1"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        communities: {
+          ...okShape.communities,
+          crossCommunityEdges: {
+            ...okShape.communities.crossCommunityEdges,
+            rows: [{ ...okShape.communities.crossCommunityEdges.rows[0], fromCommunity: 0 }],
+          },
+        },
+      }),
+      ["communities crossCommunityEdges missing fromCommunity at index 0"],
+    );
+  });
+
+  it("fails on malformed similar_nodes payloads", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, similarNodes: { ...okShape.similarNodes, operation: "match_nodes" } }),
+      ["similar_nodes response operation mismatch — match_nodes"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, similarNodes: { ...okShape.similarNodes, source: { ...okShape.similarNodes.source, slug: "capabilities/other" } } }),
+      ["similar_nodes source slug mismatch — capabilities/other"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, similarNodes: { ...okShape.similarNodes, totalMatches: 2 } }),
+      ["similar_nodes row count mismatch — rows 1, total 2"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        similarNodes: {
+          ...okShape.similarNodes,
+          matches: [{ ...okShape.similarNodes.matches[0], node: { slug: "capabilities/other", kind: "capability", title: "Other" } }],
+        },
+      }),
+      ["similar_nodes response missing existing mcp-server match"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        similarNodes: {
+          ...okShape.similarNodes,
+          matches: [{ ...okShape.similarNodes.matches[0], signals: { ...okShape.similarNodes.matches[0].signals, title: -1 } }],
+        },
+      }),
+      ["similar_nodes match missing signal title: capabilities/mcp-server"],
+    );
+  });
+
+  it("fails on malformed explain_relation payloads", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, explainRelation: { ...okShape.explainRelation, operation: "path" } }),
+      ["explain_relation response operation mismatch — path"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, explainRelation: { ...okShape.explainRelation, from: "capabilities/other" } }),
+      ["explain_relation from mismatch — capabilities/other"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        explainRelation: {
+          ...okShape.explainRelation,
+          shortestPath: { ...okShape.explainRelation.shortestPath, found: false },
+        },
+      }),
+      ["explain_relation expected shortestPath to be found"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        explainRelation: {
+          ...okShape.explainRelation,
+          shortestPath: { ...okShape.explainRelation.shortestPath, hopCount: 3 },
+        },
+      }),
+      ["explain_relation shortestPath hop mismatch — hopCount 3, hops 3"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        explainRelation: {
+          ...okShape.explainRelation,
+          commonNeighbors: { ...okShape.explainRelation.commonNeighbors, rows: [{}] },
+        },
+      }),
+      ["explain_relation commonNeighbors row missing slug at index 0"],
     );
   });
 

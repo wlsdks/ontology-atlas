@@ -7,7 +7,7 @@
 // write 안 함 (dogfood vault 보존). list_kinds / list_concepts / get_concepts /
 // find_evidence / find_path / find_backlinks / find_orphans /
 // validate_vault / compile_ontology(summary) /
-// query_ontology overview / query_plan / all_paths / pattern_walk / reachability / impact / blast_radius / subgraph / schema / facets / match_nodes / match_edges / node_profile / lineage / containment_tree / cycles / topological_order / relation_check / components / recommend_relations / growth_plan / maintenance_plan / workspace_brief / health.
+// query_ontology overview / query_plan / all_paths / pattern_walk / centrality / communities / similar_nodes / explain_relation / reachability / impact / blast_radius / subgraph / schema / facets / match_nodes / match_edges / node_profile / lineage / containment_tree / cycles / topological_order / relation_check / components / recommend_relations / growth_plan / maintenance_plan / workspace_brief / health.
 
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -73,6 +73,10 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [36, "match_nodes"],
   [37, "match_edges"],
   [38, "node_profile"],
+  [39, "centrality"],
+  [40, "communities"],
+  [41, "similar_nodes"],
+  [42, "explain_relation"],
 ]);
 
 function rpc(requests, timeoutMs = 3000) {
@@ -313,6 +317,30 @@ export function buildDogfoodRequests() {
       slug: "capabilities/mcp-server",
       limit: 8,
     }),
+    call(39, "query_ontology", {
+      operation: "centrality",
+      limit: 8,
+    }),
+    call(40, "query_ontology", {
+      operation: "communities",
+      limit: 6,
+      nodeLimit: 6,
+    }),
+    call(41, "query_ontology", {
+      operation: "similar_nodes",
+      candidateSlug: "capabilities/mcp-server-v2",
+      title: "MCP Server",
+      kind: "capability",
+      domain: "domains/ai-agent-partner",
+      limit: 5,
+    }),
+    call(42, "query_ontology", {
+      operation: "explain_relation",
+      from: "capabilities/mcp-server",
+      to: "domains/vault-local-first",
+      maxHops: 4,
+      limit: 5,
+    }),
   ];
 }
 
@@ -392,6 +420,10 @@ export function evaluateDogfoodGate({
   matchNodes,
   matchEdges,
   nodeProfile,
+  centrality,
+  communities,
+  similarNodes,
+  explainRelation,
 }) {
   const failures = [];
   recordResult(failures, "list_kinds", kinds);
@@ -431,6 +463,10 @@ export function evaluateDogfoodGate({
   recordResult(failures, "match_nodes", matchNodes);
   recordResult(failures, "match_edges", matchEdges);
   recordResult(failures, "node_profile", nodeProfile);
+  recordResult(failures, "centrality", centrality);
+  recordResult(failures, "communities", communities);
+  recordResult(failures, "similar_nodes", similarNodes);
+  recordResult(failures, "explain_relation", explainRelation);
 
   if (kinds) {
     const kindsFailure = listKindsFailure(kinds);
@@ -584,6 +620,22 @@ export function evaluateDogfoodGate({
   if (nodeProfile) {
     const nodeProfileFailure = nodeProfileShapeFailure(nodeProfile);
     if (nodeProfileFailure) failures.push(nodeProfileFailure);
+  }
+  if (centrality) {
+    const centralityFailure = centralityShapeFailure(centrality);
+    if (centralityFailure) failures.push(centralityFailure);
+  }
+  if (communities) {
+    const communitiesFailure = communitiesShapeFailure(communities);
+    if (communitiesFailure) failures.push(communitiesFailure);
+  }
+  if (similarNodes) {
+    const similarNodesFailure = similarNodesShapeFailure(similarNodes);
+    if (similarNodesFailure) failures.push(similarNodesFailure);
+  }
+  if (explainRelation) {
+    const explainRelationFailure = explainRelationShapeFailure(explainRelation);
+    if (explainRelationFailure) failures.push(explainRelationFailure);
   }
   if (allPaths && allPathsPlan && !allPathsFailure && !allPathsPlanFailure) {
     const plannedLimit = allPathsPlan.normalized.limit;
@@ -2264,6 +2316,418 @@ function nodeProfileShapeFailure(result) {
   return null;
 }
 
+function centralityShapeFailure(result) {
+  if (result.operation !== "centrality") {
+    return `centrality response operation mismatch — ${result.operation}`;
+  }
+  const graphFailure = numericSummaryFailure("centrality graph", result.graph, ["nodes", "edges", "resolvedEdges"]);
+  if (graphFailure) return graphFailure;
+  if (typeof result.graph.graphHash !== "string" || result.graph.graphHash.length === 0) {
+    return "centrality graph missing graphHash";
+  }
+  if (!result.parameters || typeof result.parameters !== "object" || Array.isArray(result.parameters)) {
+    return "centrality response missing parameters";
+  }
+  if (result.parameters.types !== null && !Array.isArray(result.parameters.types)) {
+    return "centrality parameters missing types";
+  }
+  for (const key of ["iterations", "limit"]) {
+    if (!Number.isInteger(result.parameters[key]) || result.parameters[key] <= 0) {
+      return `centrality parameters missing ${key}`;
+    }
+  }
+  if (!result.rankings || typeof result.rankings !== "object" || Array.isArray(result.rankings)) {
+    return "centrality response missing rankings";
+  }
+  for (const key of ["pageRank", "bridges", "authorities", "hubs"]) {
+    const rows = result.rankings[key];
+    if (!Array.isArray(rows)) {
+      return `centrality rankings missing ${key}`;
+    }
+    if (rows.length > result.parameters.limit) {
+      return `centrality ${key} rows exceed limit — rows ${rows.length}, limit ${result.parameters.limit}`;
+    }
+    if (key === "pageRank" && rows.length === 0) {
+      return "centrality pageRank returned no rows";
+    }
+    for (const [index, row] of rows.entries()) {
+      const rowFailure = centralityRowFailure(`centrality ${key}`, row, index);
+      if (rowFailure) return rowFailure;
+    }
+  }
+  return null;
+}
+
+function centralityRowFailure(label, row, index) {
+  const summaryFailure = matchRowsFailure(label, [row]);
+  if (summaryFailure) return summaryFailure.replace("at index 0", `at index ${index}`);
+  for (const key of ["inDegree", "outDegree", "degree", "bridgeScore"]) {
+    if (!Number.isInteger(row[key]) || row[key] < 0) {
+      return `${label} row missing ${key}: ${row.slug}`;
+    }
+  }
+  if (row.degree !== row.inDegree + row.outDegree) {
+    return `${label} degree mismatch: ${row.slug}`;
+  }
+  if (typeof row.pageRank !== "number" || !Number.isFinite(row.pageRank) || row.pageRank < 0) {
+    return `${label} row missing pageRank: ${row.slug}`;
+  }
+  return null;
+}
+
+function communitiesShapeFailure(result) {
+  if (result.operation !== "communities") {
+    return `communities response operation mismatch — ${result.operation}`;
+  }
+  if (!result.parameters || typeof result.parameters !== "object" || Array.isArray(result.parameters)) {
+    return "communities response missing parameters";
+  }
+  if (result.parameters.types !== null && !Array.isArray(result.parameters.types)) {
+    return "communities parameters missing types";
+  }
+  for (const key of ["iterations", "limit", "nodeLimit"]) {
+    if (!Number.isInteger(result.parameters[key]) || result.parameters[key] <= 0) {
+      return `communities parameters missing ${key}`;
+    }
+  }
+  const summaryFailure = numericSummaryFailure("communities", result.summary, [
+    "communities",
+    "largestSize",
+    "singletonCount",
+    "crossCommunityEdges",
+  ]);
+  if (summaryFailure) return summaryFailure;
+  if (typeof result.limited !== "boolean") {
+    return "communities response missing limited flag";
+  }
+  if (!Array.isArray(result.communities)) {
+    return "communities response missing communities";
+  }
+  if (result.communities.length === 0) {
+    return "communities response returned no communities";
+  }
+  if (result.communities.length > result.summary.communities) {
+    return `communities rows exceed total — rows ${result.communities.length}, total ${result.summary.communities}`;
+  }
+  if (!result.limited && result.communities.length !== result.summary.communities) {
+    return `communities row count mismatch — rows ${result.communities.length}, total ${result.summary.communities}`;
+  }
+  const largestObserved = result.communities.reduce((max, community) => Math.max(max, Number.isInteger(community?.size) ? community.size : 0), 0);
+  if (result.summary.largestSize < largestObserved) {
+    return `communities largestSize below returned community — largest ${result.summary.largestSize}, observed ${largestObserved}`;
+  }
+  for (const [index, community] of result.communities.entries()) {
+    const communityFailure = communityRowFailure(community, index, result.parameters.nodeLimit);
+    if (communityFailure) return communityFailure;
+  }
+  const crossFailure = communityEdgeBucketFailure("communities crossCommunityEdges", result.crossCommunityEdges, result.summary.crossCommunityEdges);
+  if (crossFailure) return crossFailure;
+  return null;
+}
+
+function communityRowFailure(community, index, nodeLimit) {
+  if (!community || typeof community !== "object" || Array.isArray(community)) {
+    return `communities malformed community at index ${index}`;
+  }
+  if (!Number.isInteger(community.id) || community.id <= 0) {
+    return `communities community missing id at index ${index}`;
+  }
+  if (typeof community.label !== "string" || community.label.length === 0) {
+    return `communities community missing label: ${community.id}`;
+  }
+  for (const key of ["size", "internalEdges", "boundaryEdges"]) {
+    const min = key === "size" ? 1 : 0;
+    if (!Number.isInteger(community[key]) || community[key] < min) {
+      return `communities community missing ${key}: ${community.id}`;
+    }
+  }
+  for (const key of ["kinds", "domains"]) {
+    if (!community[key] || typeof community[key] !== "object" || Array.isArray(community[key])) {
+      return `communities community missing ${key}: ${community.id}`;
+    }
+  }
+  const kindTotal = Object.values(community.kinds).reduce((sum, count) => sum + (Number.isInteger(count) ? count : 0), 0);
+  if (kindTotal !== community.size) {
+    return `communities community kind count mismatch: ${community.id}`;
+  }
+  const representativeFailure = matchRowsFailure("communities representative", [community.representative]);
+  if (representativeFailure) return representativeFailure.replace("at index 0", `for community ${community.id}`);
+  if (typeof community.nodeLimited !== "boolean") {
+    return `communities community missing nodeLimited flag: ${community.id}`;
+  }
+  if (!Array.isArray(community.nodes)) {
+    return `communities community missing nodes: ${community.id}`;
+  }
+  if (community.nodes.length > community.size) {
+    return `communities community nodes exceed size: ${community.id}`;
+  }
+  if (community.nodes.length > nodeLimit) {
+    return `communities community nodes exceed nodeLimit: ${community.id}`;
+  }
+  if (!community.nodeLimited && community.nodes.length !== community.size) {
+    return `communities community node count mismatch: ${community.id}`;
+  }
+  return matchRowsFailure(`communities community ${community.id}`, community.nodes);
+}
+
+function communityEdgeBucketFailure(label, bucket, expectedTotal) {
+  if (!bucket || typeof bucket !== "object" || Array.isArray(bucket)) {
+    return `${label} missing bucket`;
+  }
+  if (!Number.isInteger(bucket.total) || bucket.total < 0) {
+    return `${label} missing total`;
+  }
+  if (bucket.total !== expectedTotal) {
+    return `${label} total mismatch — summary ${expectedTotal}, bucket ${bucket.total}`;
+  }
+  if (typeof bucket.limited !== "boolean") {
+    return `${label} missing limited flag`;
+  }
+  if (!Array.isArray(bucket.rows)) {
+    return `${label} missing rows`;
+  }
+  if (bucket.rows.length > bucket.total) {
+    return `${label} rows exceed total — rows ${bucket.rows.length}, total ${bucket.total}`;
+  }
+  if (!bucket.limited && bucket.rows.length !== bucket.total) {
+    return `${label} row count mismatch — rows ${bucket.rows.length}, total ${bucket.total}`;
+  }
+  for (const [index, edge] of bucket.rows.entries()) {
+    const edgeFailure = graphEdgeFailure(label, edge, index);
+    if (edgeFailure) return edgeFailure;
+    for (const key of ["fromCommunity", "toCommunity"]) {
+      if (!Number.isInteger(edge[key]) || edge[key] <= 0) {
+        return `${label} missing ${key} at index ${index}`;
+      }
+    }
+  }
+  return null;
+}
+
+function similarNodesShapeFailure(result) {
+  if (result.operation !== "similar_nodes") {
+    return `similar_nodes response operation mismatch — ${result.operation}`;
+  }
+  if (!result.source || typeof result.source !== "object" || Array.isArray(result.source)) {
+    return "similar_nodes response missing source";
+  }
+  const expectedSource = {
+    mode: "candidate",
+    slug: "capabilities/mcp-server-v2",
+    kind: "capability",
+    title: "MCP Server",
+    domain: "domains/ai-agent-partner",
+  };
+  for (const [key, value] of Object.entries(expectedSource)) {
+    if (result.source[key] !== value) {
+      return `similar_nodes source ${key} mismatch — ${result.source[key]}`;
+    }
+  }
+  if (!result.parameters || typeof result.parameters !== "object" || Array.isArray(result.parameters)) {
+    return "similar_nodes response missing parameters";
+  }
+  if (result.parameters.types !== null && !Array.isArray(result.parameters.types)) {
+    return "similar_nodes parameters missing types";
+  }
+  if (!Number.isInteger(result.parameters.limit) || result.parameters.limit <= 0) {
+    return "similar_nodes parameters missing limit";
+  }
+  if (!Number.isInteger(result.totalMatches) || result.totalMatches < 0) {
+    return "similar_nodes response missing totalMatches";
+  }
+  if (typeof result.limited !== "boolean") {
+    return "similar_nodes response missing limited flag";
+  }
+  if (!Array.isArray(result.matches)) {
+    return "similar_nodes response missing matches";
+  }
+  if (result.matches.length === 0) {
+    return "similar_nodes response returned no matches";
+  }
+  if (result.matches.length > result.totalMatches) {
+    return `similar_nodes rows exceed total — rows ${result.matches.length}, total ${result.totalMatches}`;
+  }
+  if (!result.limited && result.matches.length !== result.totalMatches) {
+    return `similar_nodes row count mismatch — rows ${result.matches.length}, total ${result.totalMatches}`;
+  }
+  if (!result.matches.some((match) => match?.node?.slug === "capabilities/mcp-server")) {
+    return "similar_nodes response missing existing mcp-server match";
+  }
+  for (const [index, match] of result.matches.entries()) {
+    const matchFailure = similarMatchFailure(match, index);
+    if (matchFailure) return matchFailure;
+  }
+  return null;
+}
+
+function similarMatchFailure(match, index) {
+  if (!match || typeof match !== "object" || Array.isArray(match)) {
+    return `similar_nodes malformed match at index ${index}`;
+  }
+  const nodeFailure = matchRowsFailure("similar_nodes match node", [match.node]);
+  if (nodeFailure) return nodeFailure.replace("at index 0", `at index ${index}`);
+  if (typeof match.score !== "number" || !Number.isFinite(match.score) || match.score < 0) {
+    return `similar_nodes match missing score: ${match.node.slug}`;
+  }
+  if (!match.signals || typeof match.signals !== "object" || Array.isArray(match.signals)) {
+    return `similar_nodes match missing signals: ${match.node.slug}`;
+  }
+  for (const key of ["slug", "title", "kind", "domain", "neighbors"]) {
+    if (typeof match.signals[key] !== "number" || !Number.isFinite(match.signals[key]) || match.signals[key] < 0) {
+      return `similar_nodes match missing signal ${key}: ${match.node.slug}`;
+    }
+  }
+  if (!Array.isArray(match.sharedNeighbors)) {
+    return `similar_nodes match missing sharedNeighbors: ${match.node.slug}`;
+  }
+  return matchRowsFailure(`similar_nodes sharedNeighbors ${match.node.slug}`, match.sharedNeighbors);
+}
+
+function explainRelationShapeFailure(result) {
+  if (result.operation !== "explain_relation") {
+    return `explain_relation response operation mismatch — ${result.operation}`;
+  }
+  if (result.from !== "capabilities/mcp-server") {
+    return `explain_relation from mismatch — ${result.from}`;
+  }
+  if (result.to !== "domains/vault-local-first") {
+    return `explain_relation to mismatch — ${result.to}`;
+  }
+  if (!result.fromNode || result.fromNode.slug !== result.from) {
+    return "explain_relation response missing fromNode";
+  }
+  if (!result.toNode || result.toNode.slug !== result.to) {
+    return "explain_relation response missing toNode";
+  }
+  if (typeof result.verdict !== "string" || result.verdict.length === 0) {
+    return "explain_relation response missing verdict";
+  }
+  if (!result.domains || typeof result.domains !== "object" || Array.isArray(result.domains)) {
+    return "explain_relation response missing domains";
+  }
+  for (const key of ["from", "to"]) {
+    if (result.domains[key] !== null && typeof result.domains[key] !== "string") {
+      return `explain_relation domains missing ${key}`;
+    }
+  }
+  if (typeof result.domains.sameDomain !== "boolean") {
+    return "explain_relation domains missing sameDomain";
+  }
+  const directFailure = relationEdgeBucketFailure("explain_relation direct", result.direct);
+  if (directFailure) return directFailure;
+  const pathFailure = shortestRelationPathFailure(result.shortestPath, result.from, result.to);
+  if (pathFailure) return pathFailure;
+  const commonFailure = commonNeighborBucketFailure("explain_relation commonNeighbors", result.commonNeighbors);
+  if (commonFailure) return commonFailure;
+  return null;
+}
+
+function shortestRelationPathFailure(path, from, to) {
+  if (!path || typeof path !== "object" || Array.isArray(path)) {
+    return "explain_relation response missing shortestPath";
+  }
+  if (typeof path.found !== "boolean") {
+    return "explain_relation shortestPath missing found flag";
+  }
+  if (!path.found) {
+    return "explain_relation expected shortestPath to be found";
+  }
+  if (typeof path.direction !== "string" || path.direction.length === 0) {
+    return "explain_relation shortestPath missing direction";
+  }
+  if (!Number.isInteger(path.maxHops) || path.maxHops <= 0) {
+    return "explain_relation shortestPath missing maxHops";
+  }
+  if (!Number.isInteger(path.hopCount) || path.hopCount < 0) {
+    return "explain_relation shortestPath missing hopCount";
+  }
+  if (!Array.isArray(path.hops) || path.hops.length === 0) {
+    return "explain_relation shortestPath missing hops";
+  }
+  if (path.hops[0] !== from || path.hops[path.hops.length - 1] !== to) {
+    return "explain_relation shortestPath endpoint mismatch";
+  }
+  if (path.hopCount !== path.hops.length - 1) {
+    return `explain_relation shortestPath hop mismatch — hopCount ${path.hopCount}, hops ${path.hops.length}`;
+  }
+  if (!Array.isArray(path.edges)) {
+    return "explain_relation shortestPath missing edges";
+  }
+  if (path.edges.length !== path.hopCount) {
+    return `explain_relation shortestPath edge mismatch — edges ${path.edges.length}, hopCount ${path.hopCount}`;
+  }
+  for (const [index, edge] of path.edges.entries()) {
+    const edgeFailure = graphEdgeFailure("explain_relation shortestPath", edge, index);
+    if (edgeFailure) return edgeFailure;
+  }
+  return null;
+}
+
+function relationEdgeBucketFailure(label, bucket) {
+  if (!bucket || typeof bucket !== "object" || Array.isArray(bucket)) {
+    return `${label} missing bucket`;
+  }
+  if (!Number.isInteger(bucket.total) || bucket.total < 0) {
+    return `${label} missing total`;
+  }
+  if (!Array.isArray(bucket.edges)) {
+    return `${label} missing edges`;
+  }
+  if (bucket.edges.length > bucket.total) {
+    return `${label} edges exceed total — edges ${bucket.edges.length}, total ${bucket.total}`;
+  }
+  for (const [index, edge] of bucket.edges.entries()) {
+    const edgeFailure = graphEdgeFailure(label, edge, index);
+    if (edgeFailure) return edgeFailure;
+  }
+  return null;
+}
+
+function commonNeighborBucketFailure(label, bucket) {
+  if (!bucket || typeof bucket !== "object" || Array.isArray(bucket)) {
+    return `${label} missing bucket`;
+  }
+  if (!Number.isInteger(bucket.total) || bucket.total < 0) {
+    return `${label} missing total`;
+  }
+  if (typeof bucket.limited !== "boolean") {
+    return `${label} missing limited flag`;
+  }
+  if (!Array.isArray(bucket.rows)) {
+    return `${label} missing rows`;
+  }
+  if (bucket.rows.length > bucket.total) {
+    return `${label} rows exceed total — rows ${bucket.rows.length}, total ${bucket.total}`;
+  }
+  if (!bucket.limited && bucket.rows.length !== bucket.total) {
+    return `${label} row count mismatch — rows ${bucket.rows.length}, total ${bucket.total}`;
+  }
+  for (const [index, row] of bucket.rows.entries()) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) {
+      return `${label} malformed row at index ${index}`;
+    }
+    if (typeof row.slug !== "string" || row.slug.length === 0) {
+      return `${label} row missing slug at index ${index}`;
+    }
+    if (!row.node || row.node.slug !== row.slug) {
+      return `${label} row missing node summary: ${row.slug}`;
+    }
+    for (const key of ["fromEdges", "toEdges"]) {
+      if (!Array.isArray(row[key])) {
+        return `${label} row missing ${key}: ${row.slug}`;
+      }
+      for (const [edgeIndex, edge] of row[key].entries()) {
+        const edgeFailure = graphEdgeFailure(`${label} ${key}`, edge, edgeIndex);
+        if (edgeFailure) return edgeFailure;
+        if (!["incoming", "outgoing"].includes(edge.direction)) {
+          return `${label} ${key} missing direction at index ${edgeIndex}`;
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function profileEdgeGroupFailure(label, group) {
   if (!group || typeof group !== "object" || Array.isArray(group)) {
     return `${label} missing group`;
@@ -3126,6 +3590,54 @@ async function main() {
     );
   }
 
+  // 38. centrality
+  header(`query_ontology(centrality)`);
+  const centrality = getResult(responses, 39);
+  if (centrality) {
+    console.log(
+      `  graph ${centrality.graph?.nodes ?? "n/a"} nodes · pageRank ${centrality.rankings?.pageRank?.length ?? "n/a"} · bridges ${centrality.rankings?.bridges?.length ?? "n/a"}`,
+    );
+    for (const row of (centrality.rankings?.pageRank || []).slice(0, 5)) {
+      console.log(`  ${row.slug}: pr ${row.pageRank?.toFixed?.(4) ?? "n/a"} · degree ${row.degree ?? "n/a"}`);
+    }
+  }
+
+  // 39. communities
+  header(`query_ontology(communities)`);
+  const communities = getResult(responses, 40);
+  if (communities) {
+    console.log(
+      `  communities ${communities.communities?.length ?? "n/a"} / total ${communities.summary?.communities ?? "n/a"} · largest ${communities.summary?.largestSize ?? "n/a"} · cross ${communities.summary?.crossCommunityEdges ?? "n/a"}`,
+    );
+    for (const community of (communities.communities || []).slice(0, 5)) {
+      console.log(`  #${community.id}: ${community.label} · ${community.size} nodes`);
+    }
+  }
+
+  // 40. similar_nodes
+  header(`query_ontology(similar_nodes candidate=mcp-server-v2)`);
+  const similarNodes = getResult(responses, 41);
+  if (similarNodes) {
+    console.log(
+      `  matches ${similarNodes.matches?.length ?? "n/a"} / total ${similarNodes.totalMatches ?? "n/a"} · limited ${similarNodes.limited ?? "n/a"}`,
+    );
+    for (const match of (similarNodes.matches || []).slice(0, 5)) {
+      console.log(`  ${match.node?.slug ?? "n/a"}: score ${match.score?.toFixed?.(3) ?? "n/a"}`);
+    }
+  }
+
+  // 41. explain_relation
+  header(`query_ontology(explain_relation mcp-server → vault-local-first)`);
+  const explainRelation = getResult(responses, 42);
+  if (explainRelation) {
+    console.log(
+      `  verdict ${explainRelation.verdict ?? "n/a"} · sameDomain ${explainRelation.domains?.sameDomain ?? "n/a"} · path ${explainRelation.shortestPath?.found ?? "n/a"} · hops ${explainRelation.shortestPath?.hopCount ?? "n/a"}`,
+    );
+    if (explainRelation.shortestPath?.found) {
+      console.log(`  ${explainRelation.shortestPath.hops.join(" → ")}`);
+    }
+  }
+
   const failures = evaluateDogfoodGate({
     kinds,
     list,
@@ -3164,6 +3676,10 @@ async function main() {
     matchNodes,
     matchEdges,
     nodeProfile,
+    centrality,
+    communities,
+    similarNodes,
+    explainRelation,
   });
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
   if (timedOut && missingLabels.length > 0) {
@@ -3216,6 +3732,10 @@ async function main() {
   console.log(`  match_nodes: ${matchNodes?.totalMatches ?? "n/a"} matches`);
   console.log(`  match_edges: ${matchEdges?.totalMatches ?? "n/a"} matches`);
   console.log(`  node_profile: degree ${nodeProfile?.degree?.total ?? "n/a"} · aliases ${(nodeProfile?.aliases || []).length}`);
+  console.log(`  centrality: ${centrality?.rankings?.pageRank?.length ?? "n/a"} pageRank rows`);
+  console.log(`  communities: ${communities?.summary?.communities ?? "n/a"} total · largest ${communities?.summary?.largestSize ?? "n/a"}`);
+  console.log(`  similar_nodes: ${similarNodes?.totalMatches ?? "n/a"} matches`);
+  console.log(`  explain_relation: ${explainRelation?.verdict ?? "n/a"} · path ${explainRelation?.shortestPath?.found ?? "n/a"}`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   if (stderr.trim()) {
