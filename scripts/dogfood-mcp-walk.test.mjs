@@ -20,6 +20,11 @@ const okShape = {
   path: { found: true, hopCount: 1, hops: ["a", "b"] },
   bl: { total: 1, matches: [] },
   orph: { total: 0, orphans: [] },
+  validation: {
+    scanned: 1,
+    problems: [],
+    summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0 },
+  },
   brief: { status: "healthy", summary: { nodes: 1, edges: 0, issues: 0 }, nextActions: [] },
   health: { status: "healthy", summary: { issues: 0 }, checks: [] },
 };
@@ -103,6 +108,20 @@ describe("evaluateDogfoodGate", () => {
       list: { ...okShape.list, vaultWarnings: { errorCount: 0, warningCount: 1 } },
     });
     assert.deepEqual(failures, ["list_concepts: vaultWarnings present"]);
+  });
+
+  it("fails on validate_vault problem files", () => {
+    const failures = evaluateDogfoodGate({
+      ...okShape,
+      validation: {
+        scanned: 2,
+        problems: [{ slug: "broken", issues: [{ code: "missing-kind", severity: "error" }] }],
+        summary: { problemFiles: 1, errorFiles: 1, warningFiles: 0 },
+      },
+    });
+    assert.deepEqual(failures, [
+      "validate_vault: problemFiles 1 (errors 1, warnings 0)",
+    ]);
   });
 
   it("fails on missing graph path", () => {

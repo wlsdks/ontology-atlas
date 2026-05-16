@@ -6,7 +6,7 @@
 //
 // write 안 함 (dogfood vault 보존). list_kinds / list_concepts /
 // find_evidence / find_path / find_backlinks / find_orphans /
-// query_ontology workspace_brief / health 만.
+// validate_vault / query_ontology workspace_brief / health 만.
 
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -33,8 +33,9 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [5, "find_path"],
   [6, "find_backlinks"],
   [7, "find_orphans"],
-  [8, "workspace_brief"],
-  [9, "health"],
+  [8, "validate_vault"],
+  [9, "workspace_brief"],
+  [10, "health"],
 ]);
 
 function rpc(requests, timeoutMs = 3000) {
@@ -148,7 +149,7 @@ export function recordResult(failures, label, result) {
   return true;
 }
 
-export function evaluateDogfoodGate({ kinds, list, ev, path, bl, orph, brief, health }) {
+export function evaluateDogfoodGate({ kinds, list, ev, path, bl, orph, validation, brief, health }) {
   const failures = [];
   recordResult(failures, "list_kinds", kinds);
   recordResult(failures, "list_concepts", list);
@@ -156,11 +157,17 @@ export function evaluateDogfoodGate({ kinds, list, ev, path, bl, orph, brief, he
   recordResult(failures, "find_path", path);
   recordResult(failures, "find_backlinks", bl);
   recordResult(failures, "find_orphans", orph);
+  recordResult(failures, "validate_vault", validation);
   recordResult(failures, "workspace_brief", brief);
   recordResult(failures, "health", health);
 
   if (list?.vaultWarnings && ((list.vaultWarnings.errorCount || 0) > 0 || (list.vaultWarnings.warningCount || 0) > 0)) {
     failures.push("list_concepts: vaultWarnings present");
+  }
+  if (validation?.summary && (validation.summary.problemFiles || 0) > 0) {
+    failures.push(
+      `validate_vault: problemFiles ${validation.summary.problemFiles} (errors ${validation.summary.errorFiles || 0}, warnings ${validation.summary.warningFiles || 0})`,
+    );
   }
   if (path && !path.found) {
     failures.push("find_path: expected mcp-server → vault-local-first path");
@@ -237,8 +244,9 @@ async function main() {
     }),
     call(6, "find_backlinks", { slug: "capabilities/mcp-server" }),
     call(7, "find_orphans", {}),
-    call(8, "query_ontology", { operation: "workspace_brief", limit: 5 }),
-    call(9, "query_ontology", { operation: "health" }),
+    call(8, "validate_vault", {}),
+    call(9, "query_ontology", { operation: "workspace_brief", limit: 5 }),
+    call(10, "query_ontology", { operation: "health" }),
   ];
 
   const { responses, stderr, timedOut } = await rpc(requests, timeoutMs);
@@ -320,9 +328,23 @@ async function main() {
     }
   }
 
-  // 7. workspace_brief
+  // 7. validate_vault
+  header(`validate_vault`);
+  const validation = getResult(responses, 8);
+  if (validation) {
+    console.log(`  scanned: ${validation.scanned ?? "n/a"}`);
+    console.log(
+      `  problemFiles: ${validation.summary?.problemFiles ?? "n/a"} · errors ${validation.summary?.errorFiles ?? "n/a"} · warnings ${validation.summary?.warningFiles ?? "n/a"}`,
+    );
+    for (const problem of (validation.problems || []).slice(0, 5)) {
+      const codes = (problem.issues || []).map((issue) => issue.code).join(",");
+      console.log(`  ${problem.slug || "unknown"} ${codes}`);
+    }
+  }
+
+  // 8. workspace_brief
   header(`query_ontology(workspace_brief)`);
-  const brief = getResult(responses, 8);
+  const brief = getResult(responses, 9);
   if (brief) {
     console.log(`  status: ${brief.status}`);
     console.log(
@@ -334,9 +356,9 @@ async function main() {
     }
   }
 
-  // 8. health
+  // 9. health
   header(`query_ontology(health)`);
-  const health = getResult(responses, 9);
+  const health = getResult(responses, 10);
   if (health) {
     console.log(`  status: ${health.status}`);
     console.log(
@@ -347,7 +369,7 @@ async function main() {
     }
   }
 
-  const failures = evaluateDogfoodGate({ kinds, list, ev, path, bl, orph, brief, health });
+  const failures = evaluateDogfoodGate({ kinds, list, ev, path, bl, orph, validation, brief, health });
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
   if (timedOut && missingLabels.length > 0) {
     failures.unshift(rpcTimeoutFailure(timeoutMs, missingLabels));
@@ -363,6 +385,7 @@ async function main() {
   console.log(
     `  list_concepts vaultWarnings: ${list?.vaultWarnings ? "있음 (vault 정합성 회귀!)" : "0 (clean)"}`,
   );
+  console.log(`  validate_vault: ${validation?.summary?.problemFiles ?? "n/a"} problem files`);
   console.log(`  find_path hop: ${path?.hopCount ?? "n/a"}`);
   console.log(`  find_backlinks: ${bl?.total ?? "n/a"} (mcp-server 가 얼마나 popular)`);
   console.log(`  workspace_brief: ${brief?.status ?? "n/a"} (${(brief?.nextActions || []).length} next actions)`);
