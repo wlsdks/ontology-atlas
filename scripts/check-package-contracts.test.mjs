@@ -232,6 +232,19 @@ describe('package contract helpers', () => {
     assert.match(dogfoodRow, new RegExp(`vault-readme ${census.byKind['vault-readme']}`));
   });
 
+  it('keeps current dogfood vault count docs aligned with the vault census', () => {
+    const census = dogfoodVaultCensus(process.cwd());
+    const backlog = readFileSync('docs/BACKLOG.md', 'utf-8');
+    const direction = readFileSync('docs/PRODUCT-DIRECTION.md', 'utf-8');
+    const hnPost = readFileSync('docs/launch/HN-POST.md', 'utf-8');
+    const demoStoryboard = readFileSync('docs/launch/DEMO-GIF-STORYBOARD.md', 'utf-8');
+
+    assert.match(backlog, new RegExp(`dogfood ${census.total} 노드`));
+    assert.match(direction, new RegExp(`dogfood vault — ${census.total} nodes`));
+    assert.match(hnPost, new RegExp(`dogfood vault — ${census.total} nodes`));
+    assert.match(demoStoryboard, new RegExp(`dogfood vault \\(${census.total} 노드\\)`));
+  });
+
   it('keeps dogfood CLI docs explicit about fail-closed graph diagnostics', () => {
     const doc = readFileSync('docs/ontology/capabilities/cli-developer-entry.md', 'utf-8');
     const mcpVerifyRow = doc.split('| `oh-my-ontology mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
