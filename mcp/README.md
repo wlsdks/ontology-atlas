@@ -95,7 +95,9 @@ Batch arrays expose the same runtime cap as schema too: `get_concepts.slugs`,
 `maxItems: 50`.
 `query_ontology.targetOperation` also exposes the supported `query_plan`
 targets as an enum so clients can offer valid choices instead of discovering
-the subset through failed calls.
+the subset through failed calls. The enum is sourced from the graph engine's
+runtime allow-list, so schema and execution stay aligned when query support
+changes.
 
 ## Frontmatter shape per kind (R14)
 

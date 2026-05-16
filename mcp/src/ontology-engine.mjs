@@ -3,6 +3,31 @@ import { refMatchesOmotIgnore } from './omot-ignore.mjs';
 const DEFAULT_LIMIT = 100;
 const DOWNWARD_CONTAINMENT_TYPES = new Set(['domains', 'capabilities', 'elements', 'contains']);
 const UPWARD_CONTAINMENT_TYPES = new Set(['domain']);
+export const QUERY_PLAN_TARGET_OPERATIONS = Object.freeze([
+  'neighbors',
+  'path',
+  'all_paths',
+  'centrality',
+  'communities',
+  'similar_nodes',
+  'explain_relation',
+  'reachability',
+  'impact',
+  'blast_radius',
+  'subgraph',
+  'overview',
+  'schema',
+  'facets',
+  'match_nodes',
+  'match_edges',
+  'components',
+  'cycles',
+  'topological_order',
+  'growth_plan',
+  'maintenance_plan',
+  'workspace_brief',
+  'health',
+]);
 
 export function queryCompiledOntology(artifact, query = {}, options = {}) {
   const operation = query.operation;
@@ -3347,31 +3372,7 @@ function roundScore(value) {
 }
 
 function normalizePlanTargetOperation(value) {
-  const allowed = new Set([
-    'neighbors',
-    'path',
-    'all_paths',
-    'centrality',
-    'communities',
-    'similar_nodes',
-    'explain_relation',
-    'reachability',
-    'impact',
-    'blast_radius',
-    'subgraph',
-    'overview',
-    'schema',
-    'facets',
-    'match_nodes',
-    'match_edges',
-    'components',
-    'cycles',
-    'topological_order',
-    'growth_plan',
-    'maintenance_plan',
-    'workspace_brief',
-    'health',
-  ]);
+  const allowed = new Set(QUERY_PLAN_TARGET_OPERATIONS);
   if (typeof value === 'string' && allowed.has(value)) return value;
   throw new Error('targetOperation is required for query_plan and must name a supported query.');
 }
