@@ -103,6 +103,24 @@ describe('package contract helpers', () => {
     assert.match(row, /later valid slugs still resolve/);
   });
 
+  it('keeps the MCP README aligned with health tuning controls', () => {
+    const readme = readFileSync('mcp/README.md', 'utf-8');
+    const row = readme.split('| `query_ontology` |')[1]?.split('\n')[0] ?? '';
+
+    assert.match(row, /`health` \/ `workspace_brief` can tune their internal probes/);
+    for (const option of [
+      'componentLimit',
+      'cycleLimit',
+      'recommendationLimit',
+      'orderLimit',
+      'nodeLimit',
+      'dependencyTypes',
+      'componentTypes',
+    ]) {
+      assert.match(row, new RegExp(`\`${option}\``));
+    }
+  });
+
   it('keeps the MCP README explicit about destructive write safety switches', () => {
     const readme = readFileSync('mcp/README.md', 'utf-8');
     const deleteRow = readme.split('| `delete_concept` |')[1]?.split('\n')[0] ?? '';
@@ -452,6 +470,7 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /workspace_brief\.health\.checks/);
     assert.match(dogfoodSection, /workspace_brief\.nextActions/);
     assert.match(dogfoodSection, /health\.checks/);
+    assert.match(doc, /`orderLimit`, `nodeLimit`, `dependencyTypes`, `componentTypes`/);
     assert.match(dogfoodSection, /identifier\/severity/);
     assert.match(dogfoodSection, /id\/status\/count/);
     assert.match(dogfoodSection, /project-node `list_concepts` probe/);
