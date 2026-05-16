@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   diagnosisBlockingFailure,
+  diagnosisIssueCount,
   EXPECTED_TOOLS,
   firstContactErrorFailure,
   hasAllFirstContactResponses,
@@ -127,6 +128,12 @@ describe('verify.mjs first-contact gates', () => {
       ),
       null,
     );
+  });
+
+  it('reads health issue count from the current health summary shape', () => {
+    assert.equal(diagnosisIssueCount({ summary: { issues: 3 } }), 3);
+    assert.equal(diagnosisIssueCount({ summary: { compileIssues: 2 } }), 2);
+    assert.equal(diagnosisIssueCount({ summary: {} }), 0);
   });
 
   it('fails unexpected diagnosis operations', () => {

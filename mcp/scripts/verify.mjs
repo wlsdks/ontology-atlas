@@ -147,6 +147,10 @@ export function diagnosisBlockingFailure(label, parsed, expectedOperation) {
   return null;
 }
 
+export function diagnosisIssueCount(parsed) {
+  return parsed?.summary?.issues ?? parsed?.summary?.compileIssues ?? 0;
+}
+
 async function step1ParserSmoke() {
   log('info', 'step 1 — parser smoke test');
   return new Promise((res) => {
@@ -368,7 +372,7 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
-        log('ok', `health — ${parsed.status} (${(parsed.checks || []).length} checks, issues ${parsed.summary?.compileIssues ?? 0})`);
+        log('ok', `health — ${parsed.status} (${(parsed.checks || []).length} checks, issues ${diagnosisIssueCount(parsed)})`);
         res(true);
       } catch (err) {
         log('fail', `failed to parse health response: ${err.message}`);
