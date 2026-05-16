@@ -133,15 +133,17 @@ cd mcp && OMOT_VAULT=../docs/ontology npm run verify
 Use these when changing `mcp/`, `cli/`, package manifests, or release
 scripts. `integration:cli` and `integration:mcp` accept `OMOT_TEST_NAME_PATTERN`
 so you can run only the spawn-heavy integration cases touched by a small
-change. `npm run verify` calls `workspace_brief` and `health`, so the
-same first-contact diagnosis an AI agent should run is exercised locally.
+change. `npm run verify` calls `get_concepts` with discovered slugs plus one
+missing slug, then runs `workspace_brief` and `health`, so the same batch-read
+partial-row contract and first-contact diagnosis an AI agent should run are
+exercised locally.
 `smoke:packed-cli` also checks the installed `mcp-verify --help` output, so
 release tarballs keep exposing the graph-query smoke scope without starting a
 server. It also creates a dependency-cycle vault and checks installed
 `workspace-brief --json` exits 1 on fail-severity nextActions.
 `dogfood:walk` runs that diagnosis plus graph lookup tasks against this
 repo's own `docs/ontology` vault and exits non-zero if the core MCP
-responses, path check, vault warnings, `validate_vault` problem files,
+responses, `get_concepts` success/partial rows, path check, vault warnings, `validate_vault` problem files,
 `workspace_brief`, or `health` gate regress. Set `OMOT_DOGFOOD_TIMEOUT_MS=10000` for slower local
 filesystems; the value must be a positive integer in milliseconds.
 
