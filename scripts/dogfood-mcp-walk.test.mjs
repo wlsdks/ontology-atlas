@@ -68,6 +68,13 @@ const okShape = {
     nextActions: [],
     health: { checks: [{ id: "compile_issues", status: "pass", count: 0 }] },
   },
+  tunedBrief: {
+    operation: "workspace_brief",
+    status: "healthy",
+    summary: { nodes: 1, edges: 0, issues: 0 },
+    nextActions: [],
+    health: { checks: [{ id: "compile_issues", status: "pass", count: 0 }] },
+  },
   health: {
     operation: "health",
     status: "healthy",
@@ -1382,6 +1389,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(47), "strict_enum");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(48), "project_probe");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(49), "health_tuned");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(50), "workspace_brief_tuned");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -1611,6 +1619,10 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, brief: { operation: "workspace_brief", status: "healthy", summary: { nodes: 1, edges: 0, issues: 0 }, nextActions: [], health: { checks: [] } } }),
       ["workspace_brief response missing health checks"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, tunedBrief: { operation: "workspace_brief", status: "healthy", summary: { nodes: 1, edges: 0, issues: 0 }, nextActions: [], health: { checks: [] } } }),
+      ["workspace_brief_tuned response missing health checks"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
@@ -3327,9 +3339,14 @@ describe("evaluateDogfoodGate", () => {
         ...okShape.tunedHealth,
         checks: [{ id: "components", status: "fail", count: 1 }],
       },
+      tunedBrief: {
+        ...okShape.tunedBrief,
+        health: { checks: [{ id: "components", status: "fail", count: 1 }] },
+      },
     });
     assert.deepEqual(failures, [
       "workspace_brief: failing health checks dependency_cycles",
+      "workspace_brief_tuned: failing health checks components",
       "health: failing health checks compile_issues",
       "health_tuned: failing health checks components",
     ]);

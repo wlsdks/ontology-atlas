@@ -88,6 +88,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [47, "strict_enum"],
   [48, "project_probe"],
   [49, "health_tuned"],
+  [50, "workspace_brief_tuned"],
 ]);
 
 function rpc(requests, timeoutMs = 3000) {
@@ -197,6 +198,17 @@ export function buildDogfoodRequests() {
       cycleLimit: 3,
       recommendationLimit: 3,
       orderLimit: 3,
+      dependencyTypes: ["dependencies"],
+      componentTypes: ["domain", "capabilities"],
+    }),
+    call(50, "query_ontology", {
+      operation: "workspace_brief",
+      limit: 5,
+      componentLimit: 3,
+      cycleLimit: 3,
+      recommendationLimit: 3,
+      orderLimit: 3,
+      nodeLimit: 3,
       dependencyTypes: ["dependencies"],
       componentTypes: ["domain", "capabilities"],
     }),
@@ -431,6 +443,7 @@ export function evaluateDogfoodGate({
   orph,
   validation,
   brief,
+  tunedBrief,
   health,
   tunedHealth,
   compiled,
@@ -481,6 +494,7 @@ export function evaluateDogfoodGate({
   recordResult(failures, "find_orphans", orph);
   recordResult(failures, "validate_vault", validation);
   recordResult(failures, "workspace_brief", brief);
+  recordResult(failures, "workspace_brief_tuned", tunedBrief);
   recordResult(failures, "health", health);
   recordResult(failures, "health_tuned", tunedHealth);
   recordResult(failures, "compile_ontology", compiled);
@@ -578,6 +592,11 @@ export function evaluateDogfoodGate({
   if (brief) {
     briefShapeFailure = workspaceBriefShapeFailure(brief);
     if (briefShapeFailure) failures.push(briefShapeFailure);
+  }
+  let tunedBriefShapeFailure = null;
+  if (tunedBrief) {
+    tunedBriefShapeFailure = workspaceBriefShapeFailure(tunedBrief, "workspace_brief_tuned");
+    if (tunedBriefShapeFailure) failures.push(tunedBriefShapeFailure);
   }
   let healthShapeFailure = null;
   if (health) {
@@ -745,6 +764,17 @@ export function evaluateDogfoodGate({
   const blockingActions = blockingNextActions(brief?.nextActions);
   if (blockingActions.length > 0) {
     failures.push(`workspace_brief: actionable nextActions ${blockingActions.join(", ")}`);
+  }
+  if (tunedBrief && !tunedBriefShapeFailure && tunedBrief.status !== "healthy") {
+    failures.push(`workspace_brief_tuned: status ${tunedBrief.status}`);
+  }
+  const tunedBriefFailedChecks = failedHealthChecks(tunedBrief?.health?.checks);
+  if (tunedBriefFailedChecks.length > 0) {
+    failures.push(`workspace_brief_tuned: failing health checks ${tunedBriefFailedChecks.join(", ")}`);
+  }
+  const tunedBlockingActions = blockingNextActions(tunedBrief?.nextActions);
+  if (tunedBlockingActions.length > 0) {
+    failures.push(`workspace_brief_tuned: actionable nextActions ${tunedBlockingActions.join(", ")}`);
   }
   if (health && !healthShapeFailure && health.status !== "healthy") {
     failures.push(`health: status ${health.status}`);
@@ -3214,33 +3244,33 @@ function pathShapeFailure(result) {
   return null;
 }
 
-function workspaceBriefShapeFailure(result) {
+function workspaceBriefShapeFailure(result, label = "workspace_brief") {
   if (result.operation !== "workspace_brief") {
-    return `workspace_brief response operation mismatch — ${result.operation}`;
+    return `${label} response operation mismatch — ${result.operation}`;
   }
   if (typeof result.status !== "string" || result.status.length === 0) {
-    return "workspace_brief response missing status";
+    return `${label} response missing status`;
   }
-  const summaryFailure = numericSummaryFailure("workspace_brief", result.summary, ["nodes", "edges", "issues"]);
+  const summaryFailure = numericSummaryFailure(label, result.summary, ["nodes", "edges", "issues"]);
   if (summaryFailure) return summaryFailure;
   if (!Array.isArray(result.nextActions)) {
-    return "workspace_brief response missing nextActions array";
+    return `${label} response missing nextActions array`;
   }
   for (const [index, action] of result.nextActions.entries()) {
     if (!action || typeof action !== "object" || Array.isArray(action)) {
-      return `workspace_brief response malformed nextAction at index ${index}`;
+      return `${label} response malformed nextAction at index ${index}`;
     }
     if (typeof action.severity !== "string" || action.severity.length === 0) {
-      return `workspace_brief response missing nextAction severity at index ${index}`;
+      return `${label} response missing nextAction severity at index ${index}`;
     }
     if (typeof action.id !== "string" && typeof action.kind !== "string") {
-      return `workspace_brief response missing nextAction identifier at index ${index}`;
+      return `${label} response missing nextAction identifier at index ${index}`;
     }
   }
   if (!result.health || typeof result.health !== "object" || Array.isArray(result.health)) {
-    return "workspace_brief response missing health block";
+    return `${label} response missing health block`;
   }
-  return checksShapeFailure("workspace_brief", result.health.checks, { requireNonEmpty: true });
+  return checksShapeFailure(label, result.health.checks, { requireNonEmpty: true });
 }
 
 function healthShapeFailureForDogfood(result, label = "health") {
@@ -3537,6 +3567,17 @@ async function main() {
     for (const check of tunedHealth.checks || []) {
       console.log(`  ${check.status?.padEnd(6) || ""} ${check.id.padEnd(26)} ${check.count}`);
     }
+  }
+
+  // 10c. workspace_brief tuned
+  header(`query_ontology(workspace_brief tuned)`);
+  const tunedBrief = getResult(responses, 50);
+  if (tunedBrief) {
+    console.log(`  status: ${tunedBrief.status}`);
+    console.log(
+      `  summary: nodes ${tunedBrief.summary?.nodes ?? "n/a"} · edges ${tunedBrief.summary?.edges ?? "n/a"} · issues ${tunedBrief.summary?.issues ?? "n/a"}`,
+    );
+    console.log(`  ${workspaceBriefSummary(tunedBrief)}`);
   }
 
   // 11. compile_ontology(summary)
@@ -3971,6 +4012,7 @@ async function main() {
     orph,
     validation,
     brief,
+    tunedBrief,
     health,
     tunedHealth,
     compiled,
@@ -4036,6 +4078,9 @@ async function main() {
   console.log(`  find_backlinks: ${bl?.total ?? "n/a"} (mcp-server 가 얼마나 popular)`);
   console.log(
     `  workspace_brief: ${brief?.status ?? "n/a"} (${(brief?.nextActions || []).length} next actions · ${(brief?.health?.checks || []).length} health checks)`,
+  );
+  console.log(
+    `  workspace_brief_tuned: ${tunedBrief?.status ?? "n/a"} (${(tunedBrief?.nextActions || []).length} next actions · ${(tunedBrief?.health?.checks || []).length} health checks)`,
   );
   console.log(`  health: ${health?.status ?? "n/a"} (${(health?.checks || []).length} checks)`);
   console.log(`  health_tuned: ${tunedHealth?.status ?? "n/a"} (${(tunedHealth?.checks || []).length} checks)`);
