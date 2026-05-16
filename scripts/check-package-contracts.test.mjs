@@ -123,6 +123,12 @@ describe('package contract helpers', () => {
     assert.match(releaseChecks, /get_concepts` success\/partial rows/);
     assert.match(releaseChecks, /workspace-brief --json` exits 1/);
     assert.match(releaseChecks, /fail-severity nextActions/);
+    assert.match(releaseChecks, /compile --json` exits 1/);
+    assert.match(releaseChecks, /unresolved graph references/);
+    assert.match(releaseChecks, /cycles --json` exits 1/);
+    assert.match(releaseChecks, /dependency cycles/);
+    assert.match(releaseChecks, /path --json` exits 1/);
+    assert.match(releaseChecks, /found:false/);
     assert.match(releaseChecks, /validate_vault` problem files/);
   });
 

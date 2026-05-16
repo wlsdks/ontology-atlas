@@ -141,6 +141,9 @@ exercised locally.
 release tarballs keep exposing the graph-query smoke scope without starting a
 server. It also creates a dependency-cycle vault and checks installed
 `workspace-brief --json` exits 1 on fail-severity nextActions.
+For local CLI gates, `compile --json` exits 1 on unresolved graph references,
+`cycles --json` exits 1 on dependency cycles, and `path --json` exits 1 when
+`found:false` so scripts can use these commands as hard ontology checks.
 `dogfood:walk` runs that diagnosis plus graph lookup tasks against this
 repo's own `docs/ontology` vault and exits non-zero if the core MCP
 responses, `get_concepts` success/partial rows, path check, vault warnings, `validate_vault` problem files,
