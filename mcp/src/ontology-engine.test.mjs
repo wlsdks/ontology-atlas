@@ -713,6 +713,8 @@ describe('queryCompiledOntology', () => {
     assert.equal(first.actions.length, 1);
     assert.equal(first.cursor.hasMore, true);
     assert.equal(first.cursor.nextAfterActionId, first.actions[0].id);
+    assert.equal(first.nextExecutableAction.kind, 'add_missing_relation');
+    assert.equal(first.nextReviewAction, null);
 
     const second = queryCompiledOntology(artifact(), {
       operation: 'maintenance_plan',

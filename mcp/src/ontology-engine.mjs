@@ -2500,8 +2500,8 @@ export function createOntologyEngine(artifact, options = {}) {
       bySeverity: countBy(cursorActions, 'severity'),
       byKind: countBy(cursorActions, 'kind'),
       limited: cursorActions.length > limit,
-      nextExecutableAction: cursorActions.find((action) => action.executable) ?? null,
-      nextReviewAction: cursorActions.find((action) => !action.executable) ?? null,
+      nextExecutableAction: pageActions.find((action) => action.executable) ?? null,
+      nextReviewAction: pageActions.find((action) => !action.executable) ?? null,
       actions: pageActions,
     };
   }
