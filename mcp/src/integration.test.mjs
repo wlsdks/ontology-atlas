@@ -12,6 +12,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { EXPECTED_TOOLS } from "../scripts/verify.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SERVER_ENTRY = resolve(__dirname, "index.js");
@@ -144,6 +145,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.ok(list, "tools/list 응답");
     const tools = list.result?.tools;
     assert.ok(Array.isArray(tools));
+    assert.deepEqual(
+      tools.map((tool) => tool.name).sort(),
+      [...EXPECTED_TOOLS].sort(),
+      "tools/list registry must match verify inventory",
+    );
     const findDesc = (name) => tools.find((t) => t.name === name)?.description;
     const getC = findDesc("get_concept");
     const findN = findDesc("find_neighbors");
