@@ -441,6 +441,8 @@ tool metadata 만으로 구분할 수 있게 한다.
 노출해, client 가 text JSON 을 다시 파싱하지 않고 kind 분포를 검증할 수 있게 한다.
 `list_concepts` 도 `outputSchema` 와 동일한 `structuredContent` node table payload 를
 노출해, first-contact node listing 을 구조화된 결과로 바로 처리할 수 있게 한다.
+`get_concepts` 도 `outputSchema` 와 동일한 `structuredContent` batch payload 를
+노출해, partial row 가 섞인 batch read 결과를 구조화된 결과로 바로 처리할 수 있게 한다.
 `validate_vault` 도 `outputSchema` 와 동일한 `structuredContent` health payload 를
 노출해, first-contact health check 를 구조화된 결과로 바로 처리할 수 있게 한다.
 project probe 도 fail-closed 로 확인해 dogfood vault 에서 `project_scope` smoke 가

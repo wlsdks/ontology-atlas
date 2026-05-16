@@ -120,6 +120,31 @@ function makeDogfoodToolsList() {
           },
         };
       }
+      if (name === "get_concepts") {
+        tool.outputSchema = {
+          type: "object",
+          required: ["concepts"],
+          properties: {
+            concepts: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["ok", "slug"],
+                properties: {
+                  ok: { type: "boolean" },
+                  slug: { type: "string" },
+                  frontmatter: { type: "object" },
+                  outgoingEdges: {
+                    type: "array",
+                    items: { required: ["to", "via"] },
+                  },
+                  mtime: { type: "number", minimum: 0 },
+                },
+              },
+            },
+          },
+        };
+      }
       if (name === "list_kinds") {
         tool.outputSchema = {
           type: "object",
@@ -227,6 +252,27 @@ const okShape = {
     nodes: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }],
   },
   batch: {
+    concepts: [
+      {
+        ok: true,
+        slug: "project",
+        frontmatter: { kind: "project", title: "Project" },
+        mtime: 1,
+      },
+      {
+        ok: true,
+        slug: "capabilities/mcp-server",
+        frontmatter: { kind: "capability", title: "MCP Server" },
+        mtime: 1,
+      },
+      {
+        ok: false,
+        slug: "missing-dogfood-slug",
+        error: "Doc not found: missing-dogfood-slug",
+      },
+    ],
+  },
+  batchStructured: {
     concepts: [
       {
         ok: true,
@@ -1855,6 +1901,12 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, toolsList: listOutputSchemaDrifted }),
       ["tools/list: list_concepts outputSchema node mtime drift"],
     );
+    const batchOutputSchemaDrifted = makeDogfoodToolsList();
+    batchOutputSchemaDrifted.tools.find((tool) => tool.name === "get_concepts").outputSchema.properties.concepts.items.properties.mtime.type = "integer";
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: batchOutputSchemaDrifted }),
+      ["tools/list: get_concepts outputSchema row mtime drift"],
+    );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, listStructured: { ...okShape.list, total: 2 } }),
       ["list_concepts structuredContent mismatch"],
@@ -2054,6 +2106,10 @@ describe("evaluateDogfoodGate", () => {
         batch: { concepts: [okShape.batch.concepts[0], okShape.batch.concepts[1], { slug: "missing-dogfood-slug", ok: true }] },
       }),
       ["get_concepts response expected missing row to be ok:false"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, batchStructured: { concepts: [okShape.batch.concepts[0]] } }),
+      ["get_concepts structuredContent mismatch"],
     );
   });
 

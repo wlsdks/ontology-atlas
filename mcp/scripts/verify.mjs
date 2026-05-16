@@ -227,6 +227,37 @@ export function toolsListSchemaFailure(tools) {
     }
   }
 
+  const getConceptsTool = tools.find((tool) => tool?.name === 'get_concepts');
+  if (!getConceptsTool) return 'tools/list response missing get_concepts tool';
+  if (getConceptsTool.outputSchema?.type !== 'object') {
+    return 'get_concepts outputSchema root drift';
+  }
+  if (!sameArray(getConceptsTool.outputSchema?.required, ['concepts'])) {
+    return 'get_concepts outputSchema required drift';
+  }
+  const getConceptsItemsSchema = outputPropertyAt(getConceptsTool, ['properties', 'concepts', 'items']);
+  if (outputPropertyAt(getConceptsTool, ['properties', 'concepts'])?.type !== 'array' || getConceptsItemsSchema?.type !== 'object') {
+    return 'get_concepts outputSchema concepts drift';
+  }
+  if (!sameArray(getConceptsItemsSchema.required, ['ok', 'slug'])) {
+    return 'get_concepts outputSchema row required drift';
+  }
+  if (getConceptsItemsSchema.properties?.ok?.type !== 'boolean') {
+    return 'get_concepts outputSchema row ok drift';
+  }
+  if (getConceptsItemsSchema.properties?.slug?.type !== 'string') {
+    return 'get_concepts outputSchema row slug drift';
+  }
+  if (getConceptsItemsSchema.properties?.mtime?.type !== 'number' || getConceptsItemsSchema.properties?.mtime?.minimum !== 0) {
+    return 'get_concepts outputSchema row mtime drift';
+  }
+  if (getConceptsItemsSchema.properties?.frontmatter?.type !== 'object') {
+    return 'get_concepts outputSchema row frontmatter drift';
+  }
+  if (getConceptsItemsSchema.properties?.outgoingEdges?.type !== 'array' || !sameArray(getConceptsItemsSchema.properties?.outgoingEdges?.items?.required, ['to', 'via'])) {
+    return 'get_concepts outputSchema row outgoingEdges drift';
+  }
+
   const queryTool = tools.find((tool) => tool?.name === 'query_ontology');
   if (!queryTool) return 'tools/list response missing query_ontology tool';
 
@@ -2207,6 +2238,10 @@ async function step2BootAndCall() {
         const failure = getConceptsFailure(parsed);
         if (failure) {
           log('fail', failure);
+          return res(false);
+        }
+        if (JSON.stringify(getConceptsRes.result.structuredContent) !== JSON.stringify(parsed)) {
+          log('fail', 'get_concepts structuredContent mismatch');
           return res(false);
         }
         const okRows = parsed.concepts.filter((row) => row?.ok === true).length;

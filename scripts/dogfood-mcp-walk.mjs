@@ -582,6 +582,7 @@ export function evaluateDogfoodGate({
   list,
   listStructured,
   batch,
+  batchStructured,
   ev,
   path,
   bl,
@@ -736,6 +737,9 @@ export function evaluateDogfoodGate({
   if (batch) {
     const batchFailure = getConceptsShapeFailure(batch);
     if (batchFailure) failures.push(batchFailure);
+    else if (batchStructured !== undefined && JSON.stringify(batchStructured) !== JSON.stringify(batch)) {
+      failures.push("get_concepts structuredContent mismatch");
+    }
   }
   if (ev) {
     const evidenceFailure = evidenceShapeFailure(ev);
@@ -4048,7 +4052,9 @@ async function main() {
   // 3. get_concepts (batch reader + partial row)
   header("get_concepts — batch read + partial row");
   const batch = getResult(responses, 16);
+  const batchStructured = getRpcResult(responses, 16)?.structuredContent ?? null;
   if (batch) {
+    console.log(`  structuredContent: ${JSON.stringify(batchStructured) === JSON.stringify(batch) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
     for (const row of batch.concepts || []) {
       if (row.ok === false) {
         console.log(`  ${COLORS.yellow}missing${COLORS.reset} ${String(row.slug).padEnd(40)} ${row.error || ""}`);
@@ -4634,6 +4640,7 @@ async function main() {
     list,
     listStructured,
     batch,
+    batchStructured,
     ev,
     path,
     bl,

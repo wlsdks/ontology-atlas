@@ -131,6 +131,31 @@ describe('verify.mjs first-contact gates', () => {
           required: ['slugs'],
           properties: { slugs: { type: 'array', maxItems: 50 } },
         },
+        outputSchema: {
+          type: 'object',
+          required: ['concepts'],
+          properties: {
+            concepts: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['ok', 'slug'],
+                properties: {
+                  ok: { type: 'boolean' },
+                  slug: { type: 'string' },
+                  frontmatter: { type: 'object' },
+                  outgoingEdges: {
+                    type: 'array',
+                    items: {
+                      required: ['to', 'via'],
+                    },
+                  },
+                  mtime: { type: 'number', minimum: 0 },
+                },
+              },
+            },
+          },
+        },
       },
       {
         name: 'find_orphans',
@@ -775,6 +800,43 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.slice(2),
       ]),
       'get_concepts required schema drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        tools[0],
+        {
+          ...tools[1],
+          outputSchema: { ...tools[1].outputSchema, required: [] },
+        },
+        ...tools.slice(2),
+      ]),
+      'get_concepts outputSchema required drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        tools[0],
+        {
+          ...tools[1],
+          outputSchema: {
+            ...tools[1].outputSchema,
+            properties: {
+              ...tools[1].outputSchema.properties,
+              concepts: {
+                ...tools[1].outputSchema.properties.concepts,
+                items: {
+                  ...tools[1].outputSchema.properties.concepts.items,
+                  properties: {
+                    ...tools[1].outputSchema.properties.concepts.items.properties,
+                    mtime: { type: 'integer', minimum: 0 },
+                  },
+                },
+              },
+            },
+          },
+        },
+        ...tools.slice(2),
+      ]),
+      'get_concepts outputSchema row mtime drift',
     );
     assert.equal(
       toolsListSchemaFailure([

@@ -328,6 +328,13 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(listConcepts?.outputSchema?.properties?.vaultRoot?.type, "string");
     assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.properties?.mtime?.type, "number");
     assert.deepEqual(listConcepts?.outputSchema?.properties?.vaultWarnings?.required, ["errorCount", "warningCount"]);
+    const getConceptsTool = findTool("get_concepts");
+    assert.equal(getConceptsTool?.outputSchema?.type, "object");
+    assert.deepEqual(getConceptsTool?.outputSchema?.required, ["concepts"]);
+    assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.type, "array");
+    assert.deepEqual(getConceptsTool?.outputSchema?.properties?.concepts?.items?.required, ["ok", "slug"]);
+    assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.ok?.type, "boolean");
+    assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.mtime?.type, "number");
     const listKinds = findTool("list_kinds");
     assert.equal(listKinds?.outputSchema?.type, "object");
     assert.deepEqual(listKinds?.outputSchema?.required, ["total", "byKind"]);
@@ -956,6 +963,7 @@ await test("README first exploration — documented read-only MCP calls stay val
     const project = getCallParsed(responses, 4);
     assert.equal(project.slug, "project");
     assert.equal(project.frontmatter.kind, "project");
+    assert.deepEqual(getCallStructured(responses, 4), project);
 
     const neighbors = getCallParsed(responses, 5);
     assert.equal(neighbors.center, "capabilities/mcp-server");
@@ -2556,6 +2564,7 @@ await test("get_concept/get_concepts — tail/frontmatter slug alias 를 canonic
     assert.equal(batch.concepts[1].ok, true);
     assert.equal(batch.concepts[2].ok, false);
     assert.match(batch.concepts[2].error, /not found/i);
+    assert.deepEqual(getCallStructured(responses, 4), batch);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -2603,6 +2612,7 @@ await test("get_concepts — 배치 read, 입력 순서 보존 + partial result"
       callTool(2, "get_concepts", { slugs: ["beta", "missing-slug", "alpha"] }),
     ]);
     const result = getCallParsed(responses, 2);
+    assert.deepEqual(getCallStructured(responses, 2), result);
     assert.equal(result.concepts.length, 3, "concepts row 수 = 입력 slugs 수");
     // 순서 보존: 입력 [beta, missing, alpha] → 출력 같은 순서.
     assert.equal(result.concepts[0].slug, "beta");

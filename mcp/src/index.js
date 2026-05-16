@@ -347,6 +347,61 @@ const TOOLS = [
       },
       required: ['slugs'],
     },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        concepts: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              ok: {
+                type: 'boolean',
+                description: 'True for resolved concept rows; false for missing or invalid input rows.',
+              },
+              slug: NON_BLANK_STRING_SCHEMA,
+              frontmatter: {
+                type: 'object',
+                description: 'Resolved markdown frontmatter for successful rows.',
+              },
+              excerpt: {
+                type: 'string',
+                description: 'Short body excerpt for successful rows.',
+              },
+              neighbors: {
+                type: 'object',
+                description: 'Direct graph neighbor buckets for successful rows.',
+              },
+              outgoingEdges: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    to: NON_BLANK_STRING_SCHEMA,
+                    via: NON_BLANK_STRING_SCHEMA,
+                  },
+                  required: ['to', 'via'],
+                },
+              },
+              mtime: {
+                type: 'number',
+                minimum: 0,
+              },
+              warnings: {
+                type: 'array',
+                items: { type: 'object' },
+              },
+              error: {
+                type: 'string',
+                description: 'Human-readable error for partial rows.',
+              },
+            },
+            required: ['ok', 'slug'],
+          },
+        },
+      },
+      required: ['concepts'],
+    },
   },
   {
     name: 'find_evidence',
