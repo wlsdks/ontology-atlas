@@ -55,6 +55,21 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain(".mcp.json.example");
     expect(readme).toContain("OMOT_VAULT");
   });
+
+  it("starter README 는 현재 MCP tool inventory 를 안내", () => {
+    const readme = ONTOLOGY_STARTER_FILES.find(
+      (f) => f.relPath === "README.md",
+    )?.content;
+
+    expect(readme).toContain("agent gets 23");
+    expect(readme).toContain("**read 15**");
+    expect(readme).toContain("**write 8**");
+    expect(readme).toContain("find_neighbors");
+    expect(readme).toContain("compile_ontology");
+    expect(readme).toContain("query_ontology");
+    expect(readme).not.toContain("agent gets 20");
+    expect(readme).not.toContain("**read 12**");
+  });
 });
 
 describe("buildMcpConfigJson", () => {
