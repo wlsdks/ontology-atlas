@@ -230,6 +230,17 @@ export function componentSummary(result, limit = 3) {
   return `${shown.join(", ")}${suffix}`;
 }
 
+export function maintenanceBucketSummary(bucket, limit = 5) {
+  if (!bucket || typeof bucket !== "object" || Array.isArray(bucket)) return "n/a";
+  const entries = Object.entries(bucket)
+    .filter(([, count]) => Number.isInteger(count) && count > 0)
+    .sort(([leftKey, leftCount], [rightKey, rightCount]) => rightCount - leftCount || leftKey.localeCompare(rightKey));
+  if (entries.length === 0) return "none";
+  const shown = entries.slice(0, limit).map(([key, count]) => `${key}:${count}`);
+  const suffix = entries.length > shown.length ? `, +${entries.length - shown.length} more` : "";
+  return `${shown.join(", ")}${suffix}`;
+}
+
 export function parseDogfoodTimeoutMs(value, fallback = 5000) {
   if (value == null || value === "") return fallback;
   if (!/^[1-9]\d*$/.test(String(value))) return false;
@@ -4210,6 +4221,9 @@ async function main() {
     console.log(
       `  cursor found ${maintenancePlan.cursor?.found ?? "n/a"} · reason ${maintenancePlan.cursor?.reason ?? "null"} · next ${maintenancePlan.cursor?.nextAfterActionId ?? "none"} · hasMore ${maintenancePlan.cursor?.hasMore ?? "n/a"}`,
     );
+    console.log(
+      `  buckets phase ${maintenanceBucketSummary(maintenancePlan.byPhase)} · severity ${maintenanceBucketSummary(maintenancePlan.bySeverity)} · kind ${maintenanceBucketSummary(maintenancePlan.byKind)}`,
+    );
     for (const action of (maintenancePlan.actions || []).slice(0, 5)) {
       console.log(`  ${action.id}: ${action.phase}/${action.kind} · ${action.severity} · executable ${action.executable}`);
     }
@@ -4625,6 +4639,7 @@ async function main() {
   console.log(`  component rows: ${componentSummary(components)}`);
   console.log(`  relation_check: ${relationCheck?.verdict ?? "n/a"} · exists ${relationCheck?.exists ?? "n/a"}`);
   console.log(`  maintenance_plan: found ${maintenancePlan?.cursor?.found ?? "n/a"} · reason ${maintenancePlan?.cursor?.reason ?? "null"} · ${maintenancePlan?.summary?.remainingActions ?? "n/a"} remaining · ${maintenancePlan?.summary?.executableActions ?? "n/a"} executable`);
+  console.log(`  maintenance buckets: phase ${maintenanceBucketSummary(maintenancePlan?.byPhase)} · severity ${maintenanceBucketSummary(maintenancePlan?.bySeverity)} · kind ${maintenanceBucketSummary(maintenancePlan?.byKind)}`);
   console.log(`  maintenance_plan_missing_cursor: found ${maintenancePlanMissingCursor?.cursor?.found ?? "n/a"} · reason ${maintenancePlanMissingCursor?.cursor?.reason ?? "n/a"}`);
   console.log(`  growth_plan: ${growthPlan?.summary?.totalActions ?? "n/a"} actions · ${growthPlan?.summary?.externalElementRefsIgnored ?? "n/a"} ignored external refs`);
   console.log(`  recommend_relations: ${relationRecommendations?.totalRecommendations ?? "n/a"} recommendations`);

@@ -200,6 +200,8 @@ installed verify 의 `maintenance_plan` cursor smoke 도 `totalActions` / `filte
 `remainingActions` / `executableActions` / `reviewActions` count 와 관계를 검증해
 post-write work queue summary 가 drift 나도 설치 경로에서 fail-fast 한다. 같은 smoke 는
 `byPhase` / `bySeverity` / `byKind` bucket 합계와 `remainingActions` 관계도 확인한다.
+dogfood walk 출력도 같은 bucket 을 phase / severity / kind 요약으로 보여줘
+agent 가 maintenance queue 구성을 눈으로 확인하면서 다음 cleanup action 을 고를 수 있게 한다.
 post-write compact `postWriteMaintenance` 도 executable action 의 `proposedAction` 과
 `add_missing_relation` endpoint args 를 통합 테스트에서 확인해 write 직후 후속 action 이 drift 나지 않게 한다.
 `maintenance_plan.phases` 는 `validate` / `repair` / `link` / `materialize` / `review`,

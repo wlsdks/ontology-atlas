@@ -10,6 +10,7 @@ import {
   expectedResponseIds,
   formatWorkspaceNextActionRows,
   healthCheckStatusSummary,
+  maintenanceBucketSummary,
   missingResponseLabels,
   parseDogfoodTimeoutMs,
   parseRpcResponses,
@@ -1585,6 +1586,30 @@ describe("rpc response completion helpers", () => {
         "[oh-my-ontology-mcp] connected. vault=/tmp/x\n(node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected",
       ),
       ["stderr warning: (node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected"],
+    );
+  });
+});
+
+describe("maintenanceBucketSummary", () => {
+  it("formats remaining maintenance buckets for dogfood output", () => {
+    assert.equal(maintenanceBucketSummary(null), "n/a");
+    assert.equal(maintenanceBucketSummary({}), "none");
+    assert.equal(
+      maintenanceBucketSummary({
+        review: 1,
+        link: 2,
+        materialize: 2,
+        ignored: 0,
+      }),
+      "link:2, materialize:2, review:1",
+    );
+    assert.equal(
+      maintenanceBucketSummary({
+        zeta: 1,
+        alpha: 1,
+        beta: 1,
+      }, 2),
+      "alpha:1, beta:1, +1 more",
     );
   });
 });
