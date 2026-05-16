@@ -371,11 +371,28 @@ await test('compile — rejects zero pagination limits', async () => {
   try {
     const nodes = await run(['compile', root, '--nodes-limit=0']);
     assert.equal(nodes.code, 1);
-    assert.match(stripAnsi(nodes.stderr), /--nodes-limit must be a positive number/);
+    assert.match(stripAnsi(nodes.stderr), /--nodes-limit must be a positive integer/);
 
     const edges = await run(['compile', root, '--edges-limit', '0']);
     assert.equal(edges.code, 1);
-    assert.match(stripAnsi(edges.stderr), /--edges-limit must be a positive number/);
+    assert.match(stripAnsi(edges.stderr), /--edges-limit must be a positive integer/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('compile — rejects fractional pagination values', async () => {
+  const root = withVault([
+    { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
+  ]);
+  try {
+    const limit = await run(['compile', root, '--nodes-limit=1.5']);
+    assert.equal(limit.code, 1);
+    assert.match(stripAnsi(limit.stderr), /--nodes-limit must be a positive integer/);
+
+    const offset = await run(['compile', root, '--edges-offset=1.5']);
+    assert.equal(offset.code, 1);
+    assert.match(stripAnsi(offset.stderr), /--edges-offset must be a non-negative integer/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

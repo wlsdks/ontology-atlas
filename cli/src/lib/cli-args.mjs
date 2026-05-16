@@ -46,6 +46,14 @@ export function parsePositiveIntegerFlag(flag, value) {
   return Number.isSafeInteger(parsed) ? parsed : new Error(`${flag} must be a positive integer`);
 }
 
+export function parseNonNegativeIntegerFlag(flag, value) {
+  if (!/^(0|[1-9]\d*)$/.test(String(value ?? ''))) {
+    return new Error(`${flag} must be a non-negative integer`);
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isSafeInteger(parsed) ? parsed : new Error(`${flag} must be a non-negative integer`);
+}
+
 export function parseRequiredFlagValue(flag, value) {
   const text = String(value ?? '').trim();
   if (!text || text.startsWith('--')) return new Error(`${flag} requires a value`);

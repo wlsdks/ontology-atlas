@@ -5,7 +5,12 @@
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { compileResultExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
+import {
+  parseNonNegativeIntegerFlag,
+  parsePositiveIntegerFlag,
+  parseVaultFlag,
+  resolveExclusiveVaultArg,
+} from '../lib/cli-args.mjs';
 
 const COLORS = {
   green: '\x1b[32m',
@@ -202,14 +207,14 @@ function parseArgs(args) {
     else if (a === '--summary') flags.summary = true;
     else if (a === '--indexes') flags.includeIndexes = true;
     else if (a === '--fix') flags.fix = true;
-    else if (a === '--nodes-limit') flags.nodesLimit = parsePositiveNumberFlag(a, args[++i]);
-    else if (a.startsWith('--nodes-limit=')) flags.nodesLimit = parsePositiveNumberFlag('--nodes-limit', a.slice('--nodes-limit='.length));
-    else if (a === '--nodes-offset') flags.nodesOffset = parseNumberFlag(a, args[++i]);
-    else if (a.startsWith('--nodes-offset=')) flags.nodesOffset = parseNumberFlag('--nodes-offset', a.slice('--nodes-offset='.length));
-    else if (a === '--edges-limit') flags.edgesLimit = parsePositiveNumberFlag(a, args[++i]);
-    else if (a.startsWith('--edges-limit=')) flags.edgesLimit = parsePositiveNumberFlag('--edges-limit', a.slice('--edges-limit='.length));
-    else if (a === '--edges-offset') flags.edgesOffset = parseNumberFlag(a, args[++i]);
-    else if (a.startsWith('--edges-offset=')) flags.edgesOffset = parseNumberFlag('--edges-offset', a.slice('--edges-offset='.length));
+    else if (a === '--nodes-limit') flags.nodesLimit = parsePositiveIntegerFlag(a, args[++i]);
+    else if (a.startsWith('--nodes-limit=')) flags.nodesLimit = parsePositiveIntegerFlag('--nodes-limit', a.slice('--nodes-limit='.length));
+    else if (a === '--nodes-offset') flags.nodesOffset = parseNonNegativeIntegerFlag(a, args[++i]);
+    else if (a.startsWith('--nodes-offset=')) flags.nodesOffset = parseNonNegativeIntegerFlag('--nodes-offset', a.slice('--nodes-offset='.length));
+    else if (a === '--edges-limit') flags.edgesLimit = parsePositiveIntegerFlag(a, args[++i]);
+    else if (a.startsWith('--edges-limit=')) flags.edgesLimit = parsePositiveIntegerFlag('--edges-limit', a.slice('--edges-limit='.length));
+    else if (a === '--edges-offset') flags.edgesOffset = parseNonNegativeIntegerFlag(a, args[++i]);
+    else if (a.startsWith('--edges-offset=')) flags.edgesOffset = parseNonNegativeIntegerFlag('--edges-offset', a.slice('--edges-offset='.length));
     else if (a.startsWith('--')) return { error: `unknown flag: ${a}` };
     else positional.push(a);
   }
@@ -219,24 +224,6 @@ function parseArgs(args) {
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;
   return { ...flags, vault: vaultResult.vault };
-}
-
-function parseNumberFlag(flag, raw) {
-  if (raw === undefined) return new Error(`${flag} requires a number`);
-  const value = Number(raw);
-  if (!Number.isFinite(value) || value < 0) {
-    return new Error(`${flag} must be a non-negative number`);
-  }
-  return Math.floor(value);
-}
-
-function parsePositiveNumberFlag(flag, raw) {
-  if (raw === undefined) return new Error(`${flag} requires a number`);
-  const value = Number(raw);
-  if (!Number.isFinite(value) || value <= 0) {
-    return new Error(`${flag} must be a positive number`);
-  }
-  return Math.floor(value);
 }
 
 function shortHash(hash) {
