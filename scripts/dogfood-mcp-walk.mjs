@@ -1533,6 +1533,13 @@ function relationCheckShapeFailure(result) {
     if (!Number.isInteger(result.schemaPattern.count) || result.schemaPattern.count <= 0) {
       return "relation_check schemaPattern missing count";
     }
+    if (
+      result.schemaPattern.fromKind !== result.fromKind ||
+      result.schemaPattern.relation !== result.relation ||
+      result.schemaPattern.toKind !== result.toKind
+    ) {
+      return "relation_check schemaPattern mismatch";
+    }
   }
   for (const [index, edge] of result.matchingEdges.entries()) {
     if (!edge || typeof edge !== "object" || Array.isArray(edge)) {
@@ -1542,6 +1549,9 @@ function relationCheckShapeFailure(result) {
       if (typeof edge[key] !== "string" || edge[key].length === 0) {
         return `relation_check matching edge missing ${key} at index ${index}`;
       }
+    }
+    if (edge.from !== result.from || edge.to !== result.to || edge.via !== result.relation) {
+      return `relation_check matching edge mismatch at index ${index}`;
     }
   }
   return null;

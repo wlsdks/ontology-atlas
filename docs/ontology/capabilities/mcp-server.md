@@ -141,6 +141,9 @@ endpoint 가 resolved/external 대상을 혼동하지 않게 한다.
 `edges[]` endpoint 가 실제로 맞물리는지 검증해 관계 설명 path 가 끊기지 않게 한다.
 commonNeighbors 의 `fromEdges` / `toEdges` 도 각각 source / target 과 공통 이웃을
 실제로 연결하는지 확인해 shared-neighbor 설명이 엉뚱한 edge 로 구성되지 않게 한다.
+`query_ontology(relation_check)` preflight 는 `schemaPattern` 이 요청한
+from/to kind + relation 과 일치하고, `matchingEdges` 가 요청한 from/to/relation 을
+그대로 가리키는지도 확인해 write 전 판단이 잘못된 schema/edge 로 승인되지 않게 한다.
 또한 `get_concepts` 를 실제 project / mcp-server slug 와 missing slug 를 섞어
 호출해 batch reader 의 성공 row 와 partial row 가 동시에 유지되는지 확인한다.
 project-node `list_concepts` probe 도 fail-closed 로 확인해 verify / dogfood vault 에서

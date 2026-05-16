@@ -2466,10 +2466,30 @@ describe("evaluateDogfoodGate", () => {
         ...okShape,
         relationCheck: {
           ...okShape.relationCheck,
+          schemaPattern: { ...okShape.relationCheck.schemaPattern, relation: "relates" },
+        },
+      }),
+      ["relation_check schemaPattern mismatch"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        relationCheck: {
+          ...okShape.relationCheck,
           matchingEdges: [{ ...okShape.relationCheck.matchingEdges[0], via: "" }],
         },
       }),
       ["relation_check matching edge missing via at index 0"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        relationCheck: {
+          ...okShape.relationCheck,
+          matchingEdges: [{ ...okShape.relationCheck.matchingEdges[0], to: "domains/other" }],
+        },
+      }),
+      ["relation_check matching edge mismatch at index 0"],
     );
   });
 
