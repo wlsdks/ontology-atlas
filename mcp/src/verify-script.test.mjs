@@ -537,6 +537,9 @@ describe('verify.mjs first-contact gates', () => {
       'delete_concept force: true means accepting dangling referrers.',
       'Use expected_mtime when patching a previously-read concept.',
       'Tool schemas reject unknown arguments with nearest hints.',
+      'unknown arguments are rejected instead of being ignored.',
+      'Unknown argument "lmit" for list_concepts. Did you mean "limit"?',
+      'operation must be one of: overview, health. Invalid value: overveiw. Did you mean "overview"?',
       'This filler keeps the instructions representative of a real initialize response.',
     ].join('\n');
 
@@ -556,6 +559,14 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('expected_mtime', '') } }),
       'initialize instructions missing expected_mtime conflict guard',
+    );
+    assert.equal(
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('unknown arguments are rejected', '') } }),
+      'initialize instructions missing strict arguments guidance',
+    );
+    assert.equal(
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('Did you mean "overview"?', '') } }),
+      'initialize instructions missing nearest enum hint guidance',
     );
   });
 

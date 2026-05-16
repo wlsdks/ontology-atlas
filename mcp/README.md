@@ -254,7 +254,9 @@ schema and root/sentinel default description, plus write-safety schemas for
 The `initialize.instructions` gate fails if first-contact guidance loses the
 read-only diagnosis flow, `expected_mtime`, `rename_concept` existing
 `newSlug` / `overwrite: true` safety, or `delete_concept.force` / dangling
-referrers safety.
+referrers safety. It also gates strict-input typo recovery guidance, including
+unknown argument rejection plus nearest argument/value hints such as
+`Did you mean "limit"?` and `Did you mean "overview"?`.
 The verify path also makes runtime negative calls with `list_concepts.lmit`
 and `query_ontology.operation="overveiw"`, and fails unless the server rejects
 them with the closest argument/value hint.

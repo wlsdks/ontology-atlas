@@ -192,6 +192,9 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /read-only diagnosis flow/);
     assert.match(verifySection, /`newSlug` \/ `overwrite: true` safety/);
     assert.match(verifySection, /`delete_concept\.force` \/ dangling\s+referrers safety/);
+    assert.match(verifySection, /strict-input typo recovery guidance/);
+    assert.match(verifySection, /`Did you mean "limit"\?`/);
+    assert.match(verifySection, /`Did you mean "overview"\?`/);
     assert.match(verifySection, /runtime negative calls with `list_concepts\.lmit`/);
     assert.match(verifySection, /`query_ontology\.operation="overveiw"`/);
     assert.match(verifySection, /project-less vaults skip/);
@@ -240,6 +243,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /read-only diagnosis/);
     assert.match(verifySection, /`expected_mtime`/);
     assert.match(verifySection, /`force: true`/);
+    assert.match(verifySection, /strict-input typo recovery/);
+    assert.match(verifySection, /`Did you mean "limit"\?` \/ `Did you mean "overview"\?`/);
     assert.match(verifySection, /runtime negative smoke calls with invalid `list_concepts\.lmit`/);
     assert.match(verifySection, /`query_ontology\.operation="overveiw"` inputs/);
   });

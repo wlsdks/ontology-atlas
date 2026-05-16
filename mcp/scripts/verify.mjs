@@ -242,6 +242,9 @@ export function initializeInstructionsFailure(response) {
     ['force safety', /force: true/],
     ['dangling referrers safety', /dangling referrers/i],
     ['expected_mtime conflict guard', /expected_mtime/],
+    ['strict arguments guidance', /unknown arguments are rejected/i],
+    ['nearest argument hint guidance', /Did you mean "limit"\?/],
+    ['nearest enum hint guidance', /Did you mean "overview"\?/],
   ];
   for (const [label, pattern] of required) {
     if (!pattern.test(instructions)) {

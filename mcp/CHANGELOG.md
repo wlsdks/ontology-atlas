@@ -40,7 +40,7 @@
 - `npm run verify` now detects first-contact JSON-RPC error responses immediately and reports the failing step instead of waiting for timeout.
 - `npm run verify` now validates the installed `tools/list` schema contract: every tool must expose `additionalProperties:false`, `query_ontology.operation` must stay required, `query_ontology.operation` / `targetOperation` enums must match the graph engine runtime allow-lists, batch tools must keep their 50-row caps, and write tools must keep their `expected_mtime` / `confirm` / `rename_concept.overwrite` / `delete_concept.force` safety schemas.
 - `initialize.instructions` now names the destructive-write safety boundaries directly: `rename_concept` refuses an existing `newSlug` unless `overwrite: true`, and `delete_concept.force` means accepting dangling referrers.
-- `npm run verify` now fails when `initialize.instructions` loses first-contact safety guidance for read-only diagnosis, `expected_mtime`, `overwrite: true`, `force: true`, or dangling referrers, so installed packages prove agent-facing startup guidance before writes.
+- `npm run verify` now fails when `initialize.instructions` loses first-contact safety guidance for read-only diagnosis, `expected_mtime`, `overwrite: true`, `force: true`, dangling referrers, or strict-input typo recovery (`Did you mean "limit"?` / `Did you mean "overview"?`), so installed packages prove agent-facing startup guidance before writes.
 - `npm run verify` now makes runtime negative smoke calls with invalid `list_concepts.lmit` and `query_ontology.operation="overveiw"` inputs, so installed packages prove unknown-argument and invalid-enum rejection before agents rely on the MCP surface.
 
 ## 0.11.0 — 2026-05-14
