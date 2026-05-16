@@ -145,6 +145,36 @@ function makeDogfoodToolsList() {
           },
         };
       }
+      if (name === "get_concept") {
+        tool.outputSchema = {
+          type: "object",
+          required: ["slug", "frontmatter", "excerpt", "neighbors", "outgoingEdges", "mtime"],
+          properties: {
+            slug: { type: "string" },
+            frontmatter: { type: "object" },
+            excerpt: { type: "string" },
+            neighbors: {
+              type: "object",
+              required: ["domains", "domain", "capabilities", "elements", "dependencies", "relates", "contains", "describes"],
+              properties: {
+                domains: { type: "array", items: { type: "string" } },
+                domain: { type: ["string", "null"] },
+                capabilities: { type: "array", items: { type: "string" } },
+                elements: { type: "array", items: { type: "string" } },
+                dependencies: { type: "array", items: { type: "string" } },
+                relates: { type: "array", items: { type: "string" } },
+                contains: { type: "array", items: { type: "string" } },
+                describes: { type: "array", items: { type: "string" } },
+              },
+            },
+            outgoingEdges: {
+              type: "array",
+              items: { required: ["to", "via"] },
+            },
+            mtime: { type: "number", minimum: 0 },
+          },
+        };
+      }
       if (name === "list_kinds") {
         tool.outputSchema = {
           type: "object",
@@ -1906,6 +1936,12 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: batchOutputSchemaDrifted }),
       ["tools/list: get_concepts outputSchema row mtime drift"],
+    );
+    const getConceptOutputSchemaDrifted = makeDogfoodToolsList();
+    getConceptOutputSchemaDrifted.tools.find((tool) => tool.name === "get_concept").outputSchema.properties.neighbors.properties.relates.type = "object";
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: getConceptOutputSchemaDrifted }),
+      ["tools/list: get_concept outputSchema neighbors relates drift"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, listStructured: { ...okShape.list, total: 2 } }),

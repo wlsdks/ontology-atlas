@@ -227,6 +227,44 @@ export function toolsListSchemaFailure(tools) {
     }
   }
 
+  const getConceptTool = tools.find((tool) => tool?.name === 'get_concept');
+  if (!getConceptTool) return 'tools/list response missing get_concept tool';
+  if (getConceptTool.outputSchema?.type !== 'object') {
+    return 'get_concept outputSchema root drift';
+  }
+  if (!sameArray(getConceptTool.outputSchema?.required, ['slug', 'frontmatter', 'excerpt', 'neighbors', 'outgoingEdges', 'mtime'])) {
+    return 'get_concept outputSchema required drift';
+  }
+  for (const propertyName of ['slug', 'excerpt']) {
+    if (outputPropertyAt(getConceptTool, ['properties', propertyName])?.type !== 'string') {
+      return `get_concept outputSchema ${propertyName} drift`;
+    }
+  }
+  if (outputPropertyAt(getConceptTool, ['properties', 'frontmatter'])?.type !== 'object') {
+    return 'get_concept outputSchema frontmatter drift';
+  }
+  const getConceptNeighborsSchema = outputPropertyAt(getConceptTool, ['properties', 'neighbors']);
+  if (
+    getConceptNeighborsSchema?.type !== 'object' ||
+    !sameArray(getConceptNeighborsSchema.required, ['domains', 'domain', 'capabilities', 'elements', 'dependencies', 'relates', 'contains', 'describes'])
+  ) {
+    return 'get_concept outputSchema neighbors drift';
+  }
+  for (const propertyName of ['domains', 'capabilities', 'elements', 'dependencies', 'relates', 'contains', 'describes']) {
+    const neighborSchema = getConceptNeighborsSchema.properties?.[propertyName];
+    if (neighborSchema?.type !== 'array' || neighborSchema.items?.type !== 'string') {
+      return `get_concept outputSchema neighbors ${propertyName} drift`;
+    }
+  }
+  const getConceptEdgesSchema = outputPropertyAt(getConceptTool, ['properties', 'outgoingEdges']);
+  if (getConceptEdgesSchema?.type !== 'array' || !sameArray(getConceptEdgesSchema.items?.required, ['to', 'via'])) {
+    return 'get_concept outputSchema outgoingEdges drift';
+  }
+  const getConceptMtimeSchema = outputPropertyAt(getConceptTool, ['properties', 'mtime']);
+  if (getConceptMtimeSchema?.type !== 'number' || getConceptMtimeSchema.minimum !== 0) {
+    return 'get_concept outputSchema mtime drift';
+  }
+
   const getConceptsTool = tools.find((tool) => tool?.name === 'get_concepts');
   if (!getConceptsTool) return 'tools/list response missing get_concepts tool';
   if (getConceptsTool.outputSchema?.type !== 'object') {

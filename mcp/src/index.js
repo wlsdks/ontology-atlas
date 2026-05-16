@@ -330,6 +330,54 @@ const TOOLS = [
       },
       required: ['slug'],
     },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        slug: NON_BLANK_STRING_SCHEMA,
+        frontmatter: {
+          type: 'object',
+          description: 'Resolved markdown frontmatter.',
+        },
+        excerpt: {
+          type: 'string',
+          description: 'Short body excerpt.',
+        },
+        neighbors: {
+          type: 'object',
+          properties: {
+            domains: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            domain: { type: ['string', 'null'] },
+            capabilities: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            elements: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            dependencies: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            relates: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            contains: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            describes: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+          },
+          required: ['domains', 'domain', 'capabilities', 'elements', 'dependencies', 'relates', 'contains', 'describes'],
+        },
+        outgoingEdges: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              to: NON_BLANK_STRING_SCHEMA,
+              via: NON_BLANK_STRING_SCHEMA,
+            },
+            required: ['to', 'via'],
+          },
+        },
+        mtime: {
+          type: 'number',
+          minimum: 0,
+        },
+        warnings: {
+          type: 'array',
+          items: { type: 'object' },
+        },
+      },
+      required: ['slug', 'frontmatter', 'excerpt', 'neighbors', 'outgoingEdges', 'mtime'],
+    },
   },
   {
     name: 'get_concepts',

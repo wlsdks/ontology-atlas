@@ -381,6 +381,40 @@ describe('verify.mjs first-contact gates', () => {
           },
         },
       },
+      {
+        name: 'get_concept',
+        inputSchema: { additionalProperties: false, required: ['slug'], properties: {} },
+        outputSchema: {
+          type: 'object',
+          required: ['slug', 'frontmatter', 'excerpt', 'neighbors', 'outgoingEdges', 'mtime'],
+          properties: {
+            slug: { type: 'string' },
+            frontmatter: { type: 'object' },
+            excerpt: { type: 'string' },
+            neighbors: {
+              type: 'object',
+              required: ['domains', 'domain', 'capabilities', 'elements', 'dependencies', 'relates', 'contains', 'describes'],
+              properties: {
+                domains: { type: 'array', items: { type: 'string' } },
+                domain: { type: ['string', 'null'] },
+                capabilities: { type: 'array', items: { type: 'string' } },
+                elements: { type: 'array', items: { type: 'string' } },
+                dependencies: { type: 'array', items: { type: 'string' } },
+                relates: { type: 'array', items: { type: 'string' } },
+                contains: { type: 'array', items: { type: 'string' } },
+                describes: { type: 'array', items: { type: 'string' } },
+              },
+            },
+            outgoingEdges: {
+              type: 'array',
+              items: {
+                required: ['to', 'via'],
+              },
+            },
+            mtime: { type: 'number', minimum: 0 },
+          },
+        },
+      },
     ].map((tool) => ({
       ...tool,
       annotations: {
@@ -837,6 +871,45 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.slice(2),
       ]),
       'get_concepts outputSchema row mtime drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        tools[0],
+        tools[1],
+        {
+          ...tools.find((tool) => tool.name === 'get_concept'),
+          outputSchema: {
+            ...tools.find((tool) => tool.name === 'get_concept').outputSchema,
+            required: ['slug', 'frontmatter'],
+          },
+        },
+        ...tools.filter((tool) => !['list_concepts', 'get_concepts', 'get_concept'].includes(tool.name)),
+      ]),
+      'get_concept outputSchema required drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        tools[0],
+        tools[1],
+        {
+          ...tools.find((tool) => tool.name === 'get_concept'),
+          outputSchema: {
+            ...tools.find((tool) => tool.name === 'get_concept').outputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'get_concept').outputSchema.properties,
+              neighbors: {
+                ...tools.find((tool) => tool.name === 'get_concept').outputSchema.properties.neighbors,
+                properties: {
+                  ...tools.find((tool) => tool.name === 'get_concept').outputSchema.properties.neighbors.properties,
+                  dependencies: { type: 'object' },
+                },
+              },
+            },
+          },
+        },
+        ...tools.filter((tool) => !['list_concepts', 'get_concepts', 'get_concept'].includes(tool.name)),
+      ]),
+      'get_concept outputSchema neighbors dependencies drift',
     );
     assert.equal(
       toolsListSchemaFailure([

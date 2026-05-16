@@ -328,6 +328,13 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(listConcepts?.outputSchema?.properties?.vaultRoot?.type, "string");
     assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.properties?.mtime?.type, "number");
     assert.deepEqual(listConcepts?.outputSchema?.properties?.vaultWarnings?.required, ["errorCount", "warningCount"]);
+    const getConceptTool = findTool("get_concept");
+    assert.equal(getConceptTool?.outputSchema?.type, "object");
+    assert.deepEqual(getConceptTool?.outputSchema?.required, ["slug", "frontmatter", "excerpt", "neighbors", "outgoingEdges", "mtime"]);
+    assert.equal(getConceptTool?.outputSchema?.properties?.frontmatter?.type, "object");
+    assert.deepEqual(getConceptTool?.outputSchema?.properties?.neighbors?.required, ["domains", "domain", "capabilities", "elements", "dependencies", "relates", "contains", "describes"]);
+    assert.equal(getConceptTool?.outputSchema?.properties?.outgoingEdges?.items?.properties?.via?.type, "string");
+    assert.equal(getConceptTool?.outputSchema?.properties?.mtime?.type, "number");
     const getConceptsTool = findTool("get_concepts");
     assert.equal(getConceptsTool?.outputSchema?.type, "object");
     assert.deepEqual(getConceptsTool?.outputSchema?.required, ["concepts"]);

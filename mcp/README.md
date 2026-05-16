@@ -278,7 +278,8 @@ the `query_ontology.operation` / `query_ontology.targetOperation` enums match
 the graph engine's runtime allow-lists. It also checks the `list_kinds`
 `outputSchema` and matching `structuredContent` census payload, the `validate_vault`
 `outputSchema` and matching `structuredContent` health payload, the `list_concepts`
-`outputSchema` and matching `structuredContent` node table payload, the `get_concepts`
+`outputSchema` and matching `structuredContent` node table payload, the `get_concept`
+`outputSchema` for single-node detail payloads, the `get_concepts`
 `outputSchema` and matching `structuredContent` batch payload, the installed batch
 input schemas for the same 50-row cap used by `get_concepts`, `add_concepts`,
 and `add_relations` at runtime, the `find_orphans.excludeKinds` string-array
