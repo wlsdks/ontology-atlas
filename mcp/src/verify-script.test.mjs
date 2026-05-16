@@ -964,9 +964,10 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('detects when all first-contact JSON-RPC responses arrived', () => {
+    const allFirstContactIds = [...FIRST_CONTACT_RESPONSE_LABELS.keys()];
     assert.equal(
       hasAllFirstContactResponses(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+        allFirstContactIds
           .map((id) => JSON.stringify({ jsonrpc: '2.0', id, result: {} }))
           .join('\n'),
       ),
