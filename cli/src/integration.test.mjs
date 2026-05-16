@@ -69,8 +69,16 @@ function withVault(seed = []) {
 
 let passed = 0;
 let failed = 0;
+let skipped = 0;
+const TEST_NAME_PATTERN = process.env.OMOT_TEST_NAME_PATTERN
+  ? new RegExp(process.env.OMOT_TEST_NAME_PATTERN, 'i')
+  : null;
 
 async function test(name, fn) {
+  if (TEST_NAME_PATTERN && !TEST_NAME_PATTERN.test(name)) {
+    skipped += 1;
+    return;
+  }
   try {
     await fn();
     passed += 1;
@@ -82,7 +90,11 @@ async function test(name, fn) {
   }
 }
 
-console.log('cli integration');
+console.log(
+  TEST_NAME_PATTERN
+    ? `cli integration (filter=${process.env.OMOT_TEST_NAME_PATTERN})`
+    : 'cli integration',
+);
 
 await test('metadata — package command count matches executable command inventory', async () => {
   assert.equal(CLI_COMMAND_METADATA.commandCount, CLI_COMMAND_COUNT);
@@ -2812,5 +2824,6 @@ await test('bootstrap 두번째 실행 — idempotent (errors 0)', async () => {
   }
 });
 
-console.log(`\ncli integration: ${passed} passed, ${failed} failed`);
+const skippedSuffix = skipped > 0 ? `, ${skipped} skipped` : '';
+console.log(`\ncli integration: ${passed} passed, ${failed} failed${skippedSuffix}`);
 if (failed > 0) process.exit(1);

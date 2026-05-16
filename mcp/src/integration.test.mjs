@@ -19,8 +19,16 @@ const SERVER_ENTRY = resolve(__dirname, "index.js");
 
 let passed = 0;
 let failed = 0;
+let skipped = 0;
+const TEST_NAME_PATTERN = process.env.OMOT_TEST_NAME_PATTERN
+  ? new RegExp(process.env.OMOT_TEST_NAME_PATTERN, "i")
+  : null;
 
 function test(name, fn) {
+  if (TEST_NAME_PATTERN && !TEST_NAME_PATTERN.test(name)) {
+    skipped += 1;
+    return Promise.resolve();
+  }
   return fn()
     .then(() => {
       passed += 1;
@@ -33,6 +41,12 @@ function test(name, fn) {
       if (err.stack) console.error(err.stack);
     });
 }
+
+console.log(
+  TEST_NAME_PATTERN
+    ? `integration (filter=${process.env.OMOT_TEST_NAME_PATTERN})`
+    : "integration",
+);
 
 function makeVault(seed = []) {
   const root = mkdtempSync(join(tmpdir(), "omot-int-"));
@@ -127,8 +141,6 @@ function isErrorResponse(responses, id) {
   if (!res) return false;
   return res.result?.isError === true;
 }
-
-console.log("integration");
 
 // R+ — cycle 39: 단일 도구 (get_concept · add_concept · add_relation) 의
 // description 이 batch 짝 (get_concepts · add_concepts · add_relations) 을
@@ -3009,5 +3021,6 @@ await test("add_relation — tail/frontmatter slug alias 를 canonical slug 로 
   }
 });
 
-console.log(`\nintegration: ${passed} passed, ${failed} failed`);
+const skippedSuffix = skipped > 0 ? `, ${skipped} skipped` : "";
+console.log(`\nintegration: ${passed} passed, ${failed} failed${skippedSuffix}`);
 if (failed > 0) process.exit(1);
