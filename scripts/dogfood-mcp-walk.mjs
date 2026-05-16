@@ -170,6 +170,9 @@ export function evaluateDogfoodGate({ kinds, list, ev, path, bl, orph, validatio
   if (validation?.summary && (!Number.isInteger(validation.scanned) || validation.scanned < 0)) {
     failures.push("validate_vault: response missing scanned count");
   }
+  if (validation?.summary && (!Number.isInteger(validation.summary.problemFiles) || validation.summary.problemFiles < 0)) {
+    failures.push("validate_vault: response missing problemFiles count");
+  }
   if (validation?.summary && (validation.summary.problemFiles || 0) > 0) {
     failures.push(
       `validate_vault: problemFiles ${validation.summary.problemFiles} (errors ${validation.summary.errorFiles || 0}, warnings ${validation.summary.warningFiles || 0})`,

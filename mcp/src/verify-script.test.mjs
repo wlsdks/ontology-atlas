@@ -115,6 +115,8 @@ describe('verify.mjs first-contact gates', () => {
   it('fails malformed validate_vault payloads', () => {
     assert.equal(validateVaultFailure({ summary: { problemFiles: 0 } }), 'validate_vault response missing scanned count');
     assert.equal(validateVaultFailure({ scanned: -1, summary: { problemFiles: 0 } }), 'validate_vault response missing scanned count');
+    assert.equal(validateVaultFailure({ scanned: 1, summary: {} }), 'validate_vault response missing problemFiles count');
+    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: -1 } }), 'validate_vault response missing problemFiles count');
     assert.equal(validateVaultFailure({}), 'validate_vault response missing summary');
   });
 

@@ -140,6 +140,14 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(failures, ["validate_vault: response missing scanned count"]);
   });
 
+  it("fails when validate_vault omits the problemFiles count", () => {
+    const failures = evaluateDogfoodGate({
+      ...okShape,
+      validation: { scanned: 2, problems: [], summary: { errorFiles: 0, warningFiles: 0 } },
+    });
+    assert.deepEqual(failures, ["validate_vault: response missing problemFiles count"]);
+  });
+
   it("fails on missing graph path", () => {
     const failures = evaluateDogfoodGate({
       ...okShape,
