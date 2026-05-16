@@ -329,9 +329,10 @@ try {
       join(projectDir, 'ontology'),
       '--timeout-ms=1000',
     ],
-    { cwd: projectDir },
+    { cwd: projectDir, env: { OMOT_VAULT: emptyVault } },
   );
   assert.match(directMcpVerifyVaultFlag.stdout, /timeout=1000ms/);
+  assert.match(directMcpVerifyVaultFlag.stdout, /vault total 5 nodes/);
   assert.match(directMcpVerifyVaultFlag.stdout, /project probe — 1 project node/);
 
   const directMcpVerifyHelp = run(

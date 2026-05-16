@@ -355,6 +355,8 @@ describe('package contract helpers', () => {
     assert.match(smoke, /workspace_brief — \.\*next actions, \.\*health checks/);
     assert.match(smoke, /directMcpVerify/);
     assert.match(smoke, /directMcpVerifyVaultFlag/);
+    assert.match(smoke, /env: \{ OMOT_VAULT: emptyVault \}/);
+    assert.match(smoke, /vault total 5 nodes/);
     assert.match(smoke, /--vault requires a path value/);
     assert.match(smoke, /npm run verify -- \\\[vault\\\] \\\[--timeout-ms N\\\]/);
     assert.match(smoke, /npm run verify -- --vault path --timeout-ms 15000/);
