@@ -123,7 +123,7 @@ function printUsage(output = process.stderr) {
       `Checks parser smoke, server boot, tool inventory, list/project probe/get_concepts/find_orphans/node census/file validation, workspace health,\n` +
       `compile_ontology, overview, overview/project_map query_plan, and neighbors/node-to-project path/project_scope graph-query smoke.\n` +
       `Node census is cross-checked across list_kinds/list_concepts/compile_ontology/overview; validate_vault.scanned stays file-level health.\n` +
-      `Also checks tools/list schema strictness, runtime unknown-argument / invalid-enum rejection, and maintenance_plan cursor smoke.\n` +
+      `Also checks tools/list schema strictness, write-tool postWriteMaintenance score/proposedAction/next-action guidance, runtime unknown-argument / invalid-enum rejection, and maintenance_plan cursor smoke.\n` +
       `Maintenance filters are enum-validated for phases/severities/kinds; cursor smoke checks both cursor.found=true with cursor.reason=null and cursor.found=false with the miss reason, zero remaining actions, and no next actions.\n` +
       `Ready cursor smoke also verifies nextExecutableAction / nextReviewAction point only at the first executable/review action in the current returned page.\n`,
   );

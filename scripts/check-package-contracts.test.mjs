@@ -381,6 +381,7 @@ describe('package contract helpers', () => {
     const verifySection = readme.split('`oh-my-ontology mcp-verify [vault]` is the fastest')[1]?.split('The vault is a plain folder')[0] ?? '';
 
     assert.match(tableRow, /project-node `list_concepts` probe/);
+    assert.match(tableRow, /write-tool `postWriteMaintenance` `score`\/`proposedAction`\/next-action guidance/);
     assert.match(tableRow, /enum-validated `maintenance_plan` filters/);
     assert.match(tableRow, /ready `maintenance_plan` cursor \+ missing `maintenance_plan\.afterActionId` cursor smoke/);
     assert.match(tableRow, /`workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`/);
@@ -388,6 +389,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /mcp-verify --help/);
     assert.match(verifySection, /graph-query smoke contract/);
     assert.match(verifySection, /`tools\/list` schema contract/);
+    assert.match(verifySection, /write-tool `postWriteMaintenance` `score` \/ executable\s+`proposedAction` \/ current-page next action pointer guidance/);
     assert.match(verifySection, /runtime negative smokes with invalid `list_concepts\.lmit`/);
     assert.match(verifySection, /`query_ontology\.operation="overveiw"` inputs/);
     assert.match(verifySection, /`maintenance_plan` cursor contract/);
@@ -702,6 +704,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /project probe 덕분에 `project_scope`/);
     assert.match(verifySection, /빈 vault 는 node-targeted graph\s+smoke 를 skip/);
     assert.match(verifySection, /strict schema\/runtime unknown-argument and invalid-enum rejection/);
+    assert.match(verifySection, /compact `postWriteMaintenance` action `score`, executable `proposedAction`, and current-page next action pointer guidance/);
     assert.match(dogfoodSection, /설치 verify 성공 로그도 허용된 phases \/\s+severities \/ kinds enum 목록을 함께 출력/);
   });
 
