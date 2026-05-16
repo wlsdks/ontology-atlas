@@ -225,6 +225,48 @@ function makeDogfoodToolsList() {
           },
         };
       }
+      if (name === "find_neighbors") {
+        tool.outputSchema = {
+          type: "object",
+          required: ["center", "requested", "direction", "totalEdges", "limited", "edges"],
+          properties: {
+            center: { type: "string" },
+            requested: { type: "string" },
+            direction: { enum: ["outgoing", "incoming", "both"] },
+            types: { type: "array", items: { type: "string" } },
+            totalEdges: { type: "integer", minimum: 0 },
+            limited: { type: "boolean" },
+            edges: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["direction", "from", "to", "via", "ref", "resolved"],
+                properties: {
+                  direction: { enum: ["outgoing", "incoming"] },
+                  from: { type: "string" },
+                  to: { type: "string" },
+                  via: { type: "string" },
+                  ref: { type: "string" },
+                  resolved: { type: "boolean" },
+                },
+              },
+            },
+            nodes: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["slug", "kind", "title", "mtime"],
+                properties: {
+                  slug: { type: "string" },
+                  kind: { type: "string" },
+                  title: { type: "string" },
+                  mtime: { type: "number", minimum: 0 },
+                },
+              },
+            },
+          },
+        };
+      }
       if (name === "list_kinds") {
         tool.outputSchema = {
           type: "object",
@@ -2026,6 +2068,12 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: backlinksOutputSchemaDrifted }),
       ["tools/list: find_backlinks outputSchema match matchedKeys drift"],
+    );
+    const neighborsOutputSchemaDrifted = makeDogfoodToolsList();
+    neighborsOutputSchemaDrifted.tools.find((tool) => tool.name === "find_neighbors").outputSchema.properties.edges.items.required = ["direction", "from", "to", "via", "resolved"];
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: neighborsOutputSchemaDrifted }),
+      ["tools/list: find_neighbors outputSchema edges drift"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, listStructured: { ...okShape.list, total: 2 } }),

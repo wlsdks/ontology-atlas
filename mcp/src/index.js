@@ -772,6 +772,57 @@ const TOOLS = [
       },
       required: ['slug'],
     },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        center: NON_BLANK_STRING_SCHEMA,
+        requested: NON_BLANK_STRING_SCHEMA,
+        direction: {
+          type: 'string',
+          enum: ['outgoing', 'incoming', 'both'],
+        },
+        types: {
+          type: 'array',
+          items: NON_BLANK_STRING_SCHEMA,
+        },
+        totalEdges: { type: 'integer', minimum: 0 },
+        limited: { type: 'boolean' },
+        edges: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              direction: {
+                type: 'string',
+                enum: ['outgoing', 'incoming'],
+              },
+              from: NON_BLANK_STRING_SCHEMA,
+              to: NON_BLANK_STRING_SCHEMA,
+              via: NON_BLANK_STRING_SCHEMA,
+              ref: NON_BLANK_STRING_SCHEMA,
+              resolved: { type: 'boolean' },
+              unresolvedReason: { type: 'string' },
+            },
+            required: ['direction', 'from', 'to', 'via', 'ref', 'resolved'],
+          },
+        },
+        nodes: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              slug: NON_BLANK_STRING_SCHEMA,
+              kind: NON_BLANK_STRING_SCHEMA,
+              title: NON_BLANK_STRING_SCHEMA,
+              domain: { type: 'string' },
+              mtime: { type: 'number', minimum: 0 },
+            },
+            required: ['slug', 'kind', 'title', 'mtime'],
+          },
+        },
+      },
+      required: ['center', 'requested', 'direction', 'totalEdges', 'limited', 'edges'],
+    },
   },
   {
     name: 'find_path',

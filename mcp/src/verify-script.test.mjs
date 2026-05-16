@@ -468,6 +468,50 @@ describe('verify.mjs first-contact gates', () => {
           },
         },
       },
+      {
+        name: 'find_neighbors',
+        inputSchema: { additionalProperties: false, required: ['slug'], properties: {} },
+        outputSchema: {
+          type: 'object',
+          required: ['center', 'requested', 'direction', 'totalEdges', 'limited', 'edges'],
+          properties: {
+            center: { type: 'string' },
+            requested: { type: 'string' },
+            direction: { enum: ['outgoing', 'incoming', 'both'] },
+            types: { type: 'array', items: { type: 'string' } },
+            totalEdges: { type: 'integer', minimum: 0 },
+            limited: { type: 'boolean' },
+            edges: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['direction', 'from', 'to', 'via', 'ref', 'resolved'],
+                properties: {
+                  direction: { enum: ['outgoing', 'incoming'] },
+                  from: { type: 'string' },
+                  to: { type: 'string' },
+                  via: { type: 'string' },
+                  ref: { type: 'string' },
+                  resolved: { type: 'boolean' },
+                },
+              },
+            },
+            nodes: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['slug', 'kind', 'title', 'mtime'],
+                properties: {
+                  slug: { type: 'string' },
+                  kind: { type: 'string' },
+                  title: { type: 'string' },
+                  mtime: { type: 'number', minimum: 0 },
+                },
+              },
+            },
+          },
+        },
+      },
     ].map((tool) => ({
       ...tool,
       annotations: {
@@ -1033,6 +1077,53 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'find_backlinks outputSchema match matchedKeys drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'find_neighbors'),
+        {
+          ...tools.find((tool) => tool.name === 'find_neighbors'),
+          outputSchema: {
+            ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties,
+              edges: {
+                ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties.edges,
+                items: {
+                  ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties.edges.items,
+                  required: ['direction', 'from', 'to', 'via', 'resolved'],
+                },
+              },
+            },
+          },
+        },
+      ]),
+      'find_neighbors outputSchema edges drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'find_neighbors'),
+        {
+          ...tools.find((tool) => tool.name === 'find_neighbors'),
+          outputSchema: {
+            ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties,
+              nodes: {
+                ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties.nodes,
+                items: {
+                  ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties.nodes.items,
+                  properties: {
+                    ...tools.find((tool) => tool.name === 'find_neighbors').outputSchema.properties.nodes.items.properties,
+                    mtime: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ]),
+      'find_neighbors outputSchema node mtime drift',
     );
     assert.equal(
       toolsListSchemaFailure([

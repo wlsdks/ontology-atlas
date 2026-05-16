@@ -365,6 +365,68 @@ export function toolsListSchemaFailure(tools) {
     return 'find_backlinks outputSchema match matchedInBody drift';
   }
 
+  const findNeighborsTool = tools.find((tool) => tool?.name === 'find_neighbors');
+  if (!findNeighborsTool) return 'tools/list response missing find_neighbors tool';
+  if (findNeighborsTool.outputSchema?.type !== 'object') {
+    return 'find_neighbors outputSchema root drift';
+  }
+  if (!sameArray(findNeighborsTool.outputSchema?.required, ['center', 'requested', 'direction', 'totalEdges', 'limited', 'edges'])) {
+    return 'find_neighbors outputSchema required drift';
+  }
+  for (const propertyName of ['center', 'requested']) {
+    if (outputPropertyAt(findNeighborsTool, ['properties', propertyName])?.type !== 'string') {
+      return `find_neighbors outputSchema ${propertyName} drift`;
+    }
+  }
+  if (!sameArray(outputPropertyAt(findNeighborsTool, ['properties', 'direction'])?.enum, ['outgoing', 'incoming', 'both'])) {
+    return 'find_neighbors outputSchema direction drift';
+  }
+  if (outputPropertyAt(findNeighborsTool, ['properties', 'types'])?.type !== 'array' || outputPropertyAt(findNeighborsTool, ['properties', 'types'])?.items?.type !== 'string') {
+    return 'find_neighbors outputSchema types drift';
+  }
+  const neighborsTotalEdgesSchema = outputPropertyAt(findNeighborsTool, ['properties', 'totalEdges']);
+  if (neighborsTotalEdgesSchema?.type !== 'integer' || neighborsTotalEdgesSchema.minimum !== 0) {
+    return 'find_neighbors outputSchema totalEdges drift';
+  }
+  if (outputPropertyAt(findNeighborsTool, ['properties', 'limited'])?.type !== 'boolean') {
+    return 'find_neighbors outputSchema limited drift';
+  }
+  const neighborsEdgesSchema = outputPropertyAt(findNeighborsTool, ['properties', 'edges']);
+  if (
+    neighborsEdgesSchema?.type !== 'array' ||
+    neighborsEdgesSchema.items?.type !== 'object' ||
+    !sameArray(neighborsEdgesSchema.items?.required, ['direction', 'from', 'to', 'via', 'ref', 'resolved'])
+  ) {
+    return 'find_neighbors outputSchema edges drift';
+  }
+  if (!sameArray(neighborsEdgesSchema.items?.properties?.direction?.enum, ['outgoing', 'incoming'])) {
+    return 'find_neighbors outputSchema edge direction drift';
+  }
+  for (const propertyName of ['from', 'to', 'via', 'ref']) {
+    if (neighborsEdgesSchema.items?.properties?.[propertyName]?.type !== 'string') {
+      return `find_neighbors outputSchema edge ${propertyName} drift`;
+    }
+  }
+  if (neighborsEdgesSchema.items?.properties?.resolved?.type !== 'boolean') {
+    return 'find_neighbors outputSchema edge resolved drift';
+  }
+  const neighborsNodesSchema = outputPropertyAt(findNeighborsTool, ['properties', 'nodes']);
+  if (
+    neighborsNodesSchema?.type !== 'array' ||
+    neighborsNodesSchema.items?.type !== 'object' ||
+    !sameArray(neighborsNodesSchema.items?.required, ['slug', 'kind', 'title', 'mtime'])
+  ) {
+    return 'find_neighbors outputSchema nodes drift';
+  }
+  for (const propertyName of ['slug', 'kind', 'title']) {
+    if (neighborsNodesSchema.items?.properties?.[propertyName]?.type !== 'string') {
+      return `find_neighbors outputSchema node ${propertyName} drift`;
+    }
+  }
+  if (neighborsNodesSchema.items?.properties?.mtime?.type !== 'number' || neighborsNodesSchema.items?.properties?.mtime?.minimum !== 0) {
+    return 'find_neighbors outputSchema node mtime drift';
+  }
+
   const queryTool = tools.find((tool) => tool?.name === 'query_ontology');
   if (!queryTool) return 'tools/list response missing query_ontology tool';
 

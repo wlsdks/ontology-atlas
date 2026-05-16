@@ -282,7 +282,8 @@ the graph engine's runtime allow-lists. It also checks the `list_kinds`
 `outputSchema` for single-node detail payloads, the `get_concepts`
 `outputSchema` and matching `structuredContent` batch payload, the `find_evidence`
 `outputSchema` and matching `structuredContent` evidence-match payload, the `find_backlinks`
-`outputSchema` and matching `structuredContent` backlink-match payload, the installed batch
+`outputSchema` and matching `structuredContent` backlink-match payload, the `find_neighbors`
+`outputSchema` and matching `structuredContent` local-neighborhood payload, the installed batch
 input schemas for the same 50-row cap used by `get_concepts`, `add_concepts`,
 and `add_relations` at runtime, the `find_orphans.excludeKinds` string-array
 schema and root/sentinel default description, plus write-safety schemas for

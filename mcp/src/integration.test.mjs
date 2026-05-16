@@ -359,6 +359,13 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(findBacklinks?.outputSchema?.properties?.total?.type, "integer");
     assert.deepEqual(findBacklinks?.outputSchema?.properties?.matches?.items?.required, ["slug", "kind", "title", "mtime"]);
     assert.equal(findBacklinks?.outputSchema?.properties?.matches?.items?.properties?.matchedKeys?.items?.type, "string");
+    const findNeighbors = findTool("find_neighbors");
+    assert.equal(findNeighbors?.outputSchema?.type, "object");
+    assert.deepEqual(findNeighbors?.outputSchema?.required, ["center", "requested", "direction", "totalEdges", "limited", "edges"]);
+    assert.deepEqual(findNeighbors?.outputSchema?.properties?.direction?.enum, ["outgoing", "incoming", "both"]);
+    assert.equal(findNeighbors?.outputSchema?.properties?.totalEdges?.type, "integer");
+    assert.deepEqual(findNeighbors?.outputSchema?.properties?.edges?.items?.required, ["direction", "from", "to", "via", "ref", "resolved"]);
+    assert.deepEqual(findNeighbors?.outputSchema?.properties?.nodes?.items?.required, ["slug", "kind", "title", "mtime"]);
     const listKinds = findTool("list_kinds");
     assert.equal(listKinds?.outputSchema?.type, "object");
     assert.deepEqual(listKinds?.outputSchema?.required, ["total", "byKind"]);
@@ -1972,6 +1979,7 @@ await test("find_neighbors — one-hop graph subgraph 를 방향/타입 기준�
       callTool(5, "get_concept", { slug: "login" }),
     ]);
     const both = getCallParsed(responses, 2);
+    assert.deepEqual(getCallStructured(responses, 2), both);
     assert.equal(both.center, "capabilities/login");
     assert.equal(both.requested, "login");
     assert.equal(both.totalEdges, 4);
@@ -1991,6 +1999,7 @@ await test("find_neighbors — one-hop graph subgraph 를 방향/타입 기준�
     );
 
     const incoming = getCallParsed(responses, 3);
+    assert.deepEqual(getCallStructured(responses, 3), incoming);
     assert.deepEqual(incoming.types, ["capabilities"]);
     assert.deepEqual(incoming.edges, [
       {
@@ -2004,6 +2013,7 @@ await test("find_neighbors — one-hop graph subgraph 를 방향/타입 기준�
     ]);
 
     const dependsOn = getCallParsed(responses, 4);
+    assert.deepEqual(getCallStructured(responses, 4), dependsOn);
     assert.deepEqual(dependsOn.types, ["dependencies"]);
     assert.deepEqual(dependsOn.edges, [
       {

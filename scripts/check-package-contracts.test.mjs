@@ -315,6 +315,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`get_concepts`\s+`outputSchema` and matching `structuredContent` batch payload/);
     assert.match(verifySection, /`find_evidence`\s+`outputSchema` and matching `structuredContent` evidence-match payload/);
     assert.match(verifySection, /`find_backlinks`\s+`outputSchema` and matching `structuredContent` backlink-match payload/);
+    assert.match(verifySection, /`find_neighbors`\s+`outputSchema` and matching `structuredContent` local-neighborhood payload/);
     assert.match(verifySection, /same 50-row cap used by `get_concepts`, `add_concepts`,\s+and `add_relations`/);
     assert.match(verifySection, /`find_orphans\.excludeKinds` string-array\s+schema and root\/sentinel default description/);
     assert.match(verifySection, /write-safety schemas for\s+`expected_mtime`/);
@@ -680,6 +681,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`get_concepts` 도 `outputSchema` 와 동일한 `structuredContent` batch payload/);
     assert.match(doc, /`find_evidence` 도 `outputSchema` 와 동일한 `structuredContent` evidence-match payload/);
     assert.match(doc, /`find_backlinks` 도 `outputSchema` 와 동일한 `structuredContent` backlink-match payload/);
+    assert.match(doc, /`find_neighbors` 도 `outputSchema` 와 동일한 `structuredContent` local-neighborhood payload/);
     assert.match(doc, /`validate_vault` 도 `outputSchema` 와 동일한 `structuredContent` health payload/);
     assert.match(doc, /15 read \/ 8 write split/);
     assert.match(doc, /annotation drift/);
