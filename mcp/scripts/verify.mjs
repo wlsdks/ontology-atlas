@@ -68,6 +68,10 @@ export const EXPECTED_WRITE_TOOLS = [
 
 export const EXPECTED_TOOLS = [...EXPECTED_READ_TOOLS, ...EXPECTED_WRITE_TOOLS];
 
+export function expectedToolSplitLabel() {
+  return `${EXPECTED_READ_TOOLS.length} read + ${EXPECTED_WRITE_TOOLS.length} write`;
+}
+
 const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [1, 'initialize'],
   [2, 'tools/list'],
@@ -328,7 +332,7 @@ async function step2BootAndCall() {
         log('fail', `tools mismatch — missing: ${missing.join(',') || '(none)'}, extra: ${extra.join(',') || '(none)'}`);
         return res(false);
       }
-      log('ok', `tools/list ${toolNames.length}/${EXPECTED_TOOLS.length} — ${toolNames.join(' · ')}`);
+      log('ok', `tools/list ${toolNames.length}/${EXPECTED_TOOLS.length} (${expectedToolSplitLabel()}) — ${toolNames.join(' · ')}`);
 
       if (!callRes || !callRes.result) {
         log('fail', 'no list_concepts response');

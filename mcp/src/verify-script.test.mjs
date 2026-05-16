@@ -11,6 +11,7 @@ import {
   EXPECTED_READ_TOOLS,
   EXPECTED_TOOLS,
   EXPECTED_WRITE_TOOLS,
+  expectedToolSplitLabel,
   firstContactErrorFailure,
   hasAllFirstContactResponses,
   hasFirstContactErrorResponse,
@@ -31,6 +32,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(described[1], String(EXPECTED_TOOLS.length));
     assert.equal(described[2], String(EXPECTED_READ_TOOLS.length));
     assert.equal(described[3], String(EXPECTED_WRITE_TOOLS.length));
+    assert.equal(expectedToolSplitLabel(), `${described[2]} read + ${described[3]} write`);
   });
 
   it('parses verify timeout env as a strict positive integer', () => {
