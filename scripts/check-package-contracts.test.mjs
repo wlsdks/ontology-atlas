@@ -93,6 +93,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`list_concepts`, `validate_vault`, `compile_ontology`, and `overview`/);
     assert.match(verifySection, /missing or malformed first-contact diagnosis payloads/);
     assert.match(verifySection, /`workspace_brief\.nextActions`, `workspace_brief\.health\.checks`, `health\.checks`/);
+    assert.match(verifySection, /requires every health check row to include an `id` and `status`/);
     assert.match(verifySection, /prints the validated `workspace_brief\.health\.checks` count/);
     assert.match(verifySection, /health check `id:status` coverage/);
   });

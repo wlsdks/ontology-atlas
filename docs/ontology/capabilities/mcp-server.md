@@ -71,7 +71,8 @@ fail severity `workspace_brief.nextActions` 는 exit 1 로 처리하되, starter
 권고 수준 `needs_attention` 은 출력만 하고 설치 검증은 통과시킨다.
 `workspace_brief.nextActions`, `workspace_brief.health.checks`, `health.checks`
 같은 first-contact diagnosis payload 의 핵심 배열이 빠지거나 malformed 이면
-clean vault 로 오인하지 않고 verify 를 실패시킨다.
+clean vault 로 오인하지 않고 verify 를 실패시킨다. 각 health check row 도
+`id` / `status` 를 모두 가져야 해서 malformed row 가 `unknown` coverage 로 숨지 않는다.
 성공 출력도 `workspace_brief` 라인에 validated health check count 를, `health`
 라인에 check `id:status` coverage 를 드러내 agent 가 nextActions 와 실제 검증 축을
 한 화면에서 확인하게 한다.

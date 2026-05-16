@@ -20,6 +20,7 @@
 - `npm run verify` cross-checks `list_kinds` census totals against `list_concepts`, `validate_vault`, `compile_ontology`, and `overview`, so package installs catch kind-count drift before an agent trusts the vault summary.
 - `npm run verify` now fails on blocking first-contact diagnosis problems: `list_concepts` vault warnings, `fail` health checks, or fail-severity `workspace_brief.nextActions` return exit 1, while advisory `needs_attention` states still print for starter vaults.
 - `npm run verify` now treats missing or malformed first-contact diagnosis payloads (`workspace_brief.nextActions`, `workspace_brief.health.checks`, `health.checks`) as failures instead of clean vaults.
+- `npm run verify` now requires every health check row to include an `id` and `status`, so coverage output cannot hide malformed checks as `unknown`.
 - `npm run verify` now prints the validated `workspace_brief.health.checks` count in the `workspace_brief` success line, so first-contact output shows both next actions and health coverage.
 - `npm run verify` now prints health check `id:status` coverage in the `health` success line, so a green install shows which graph-integrity checks actually ran.
 - `npm run verify` prints non-blocking `workspace_brief.nextActions` as a compact advisory list, so starter vault users see what to clean up after MCP wiring is confirmed.

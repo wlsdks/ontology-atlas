@@ -762,6 +762,18 @@ describe('verify.mjs first-contact gates', () => {
       ),
       'health response malformed health check',
     );
+    assert.equal(
+      diagnosisBlockingFailure(
+        'health',
+        {
+          operation: 'health',
+          status: 'healthy',
+          checks: [{ status: 'pass' }],
+        },
+        'health',
+      ),
+      'health response malformed health check',
+    );
   });
 
   it('accepts workspace_brief responses with warn next actions', () => {

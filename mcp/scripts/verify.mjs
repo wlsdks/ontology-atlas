@@ -533,7 +533,9 @@ export function diagnosisBlockingFailure(label, parsed, expectedOperation) {
   if (!checks) {
     return `${label} response missing health checks`;
   }
-  const malformedCheck = checks.find((check) => !check || typeof check !== 'object' || typeof check.status !== 'string');
+  const malformedCheck = checks.find(
+    (check) => !check || typeof check !== 'object' || typeof check.id !== 'string' || typeof check.status !== 'string',
+  );
   if (malformedCheck) {
     return `${label} response malformed health check`;
   }
