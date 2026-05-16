@@ -526,6 +526,16 @@ export function evaluateDogfoodGate({
     if (!projectProbeFailure && projectProbe.total < 1) {
       failures.push("project_probe response missing project node");
     }
+    if (!projectProbeFailure) {
+      const nonProject = (projectProbe.nodes || []).find((node) => node?.kind !== "project");
+      if (nonProject) {
+        failures.push(`project_probe returned non-project node: ${nonProject.slug || "(unknown)"}`);
+      }
+      const kindProjectCount = kinds?.byKind?.project;
+      if (Number.isInteger(kindProjectCount) && projectProbe.total >= 1 && projectProbe.total !== kindProjectCount) {
+        failures.push(`project_probe count mismatch — list_kinds project ${kindProjectCount}, probe ${projectProbe.total}`);
+      }
+    }
   }
   if (batch) {
     const batchFailure = getConceptsShapeFailure(batch);

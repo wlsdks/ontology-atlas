@@ -1467,6 +1467,28 @@ describe("evaluateDogfoodGate", () => {
       }),
       ["project_probe: list_concepts response missing vaultRoot"],
     );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        projectProbe: {
+          total: 1,
+          vaultRoot: "/tmp/vault",
+          nodes: [{ slug: "capabilities/not-project", kind: "capability", title: "Wrong", mtime: 1 }],
+        },
+      }),
+      ["project_probe returned non-project node: capabilities/not-project"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        projectProbe: {
+          total: 2,
+          vaultRoot: "/tmp/vault",
+          nodes: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }],
+        },
+      }),
+      ["project_probe count mismatch — list_kinds project 1, probe 2"],
+    );
   });
 
   it("fails on malformed get_concepts dogfood payloads", () => {
