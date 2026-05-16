@@ -30,7 +30,8 @@ export function cyclesResultExitCode(result) {
 }
 
 export function pathResultExitCode(result) {
-  return result?.found === false ? 1 : 0;
+  if (result?.found === false) return 1;
+  return Array.isArray(result?.hops) && result.hops.length > 0 ? 0 : 1;
 }
 
 export function healthResultExitCode(result) {
