@@ -4,7 +4,7 @@
 // *진짜 AI agent 입장* 에서
 // 받는 정보 quality 측정.
 //
-// write 안 함 (dogfood vault 보존). list_kinds / list_concepts /
+// write 안 함 (dogfood vault 보존). list_kinds / list_concepts / get_concepts /
 // find_evidence / find_path / find_backlinks / find_orphans /
 // validate_vault / compile_ontology(summary) /
 // query_ontology overview / query_plan / all_paths / pattern_walk / workspace_brief / health.
@@ -49,6 +49,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [13, "all_paths"],
   [14, "all_paths_query_plan"],
   [15, "overview"],
+  [16, "get_concepts"],
 ]);
 
 function rpc(requests, timeoutMs = 3000) {
@@ -174,6 +175,7 @@ export function stderrWarningFailures(stderr) {
 export function evaluateDogfoodGate({
   kinds,
   list,
+  batch,
   ev,
   path,
   bl,
@@ -190,6 +192,7 @@ export function evaluateDogfoodGate({
   const failures = [];
   recordResult(failures, "list_kinds", kinds);
   recordResult(failures, "list_concepts", list);
+  recordResult(failures, "get_concepts", batch);
   recordResult(failures, "find_evidence", ev);
   recordResult(failures, "find_path", path);
   recordResult(failures, "find_backlinks", bl);
@@ -210,6 +213,10 @@ export function evaluateDogfoodGate({
   if (list) {
     const listFailure = listConceptsFailure(list);
     if (listFailure) failures.push(listFailure);
+  }
+  if (batch) {
+    const batchFailure = getConceptsShapeFailure(batch);
+    if (batchFailure) failures.push(batchFailure);
   }
   if (ev) {
     const evidenceFailure = evidenceShapeFailure(ev);
@@ -299,6 +306,46 @@ function evidenceShapeFailure(result) {
     return "find_evidence response missing matches array";
   }
   return matchRowsFailure("find_evidence", result.matches);
+}
+
+function getConceptsShapeFailure(result) {
+  if (!Array.isArray(result.concepts)) {
+    return "get_concepts response missing concepts array";
+  }
+  if (result.concepts.length !== 3) {
+    return `get_concepts response row count mismatch — expected 3, got ${result.concepts.length}`;
+  }
+  const [project, mcpServer, missing] = result.concepts;
+  for (const [index, row] of [project, mcpServer].entries()) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) {
+      return `get_concepts response malformed success row at index ${index}`;
+    }
+    if (row.ok !== true) {
+      return `get_concepts response expected success row at index ${index}`;
+    }
+    if (typeof row.slug !== "string" || row.slug.length === 0) {
+      return `get_concepts response missing success slug at index ${index}`;
+    }
+    if (!row.frontmatter || typeof row.frontmatter !== "object" || Array.isArray(row.frontmatter)) {
+      return `get_concepts response missing frontmatter: ${row.slug}`;
+    }
+    if (typeof row.mtime !== "number" || !Number.isFinite(row.mtime)) {
+      return `get_concepts response missing mtime: ${row.slug}`;
+    }
+  }
+  if (!missing || typeof missing !== "object" || Array.isArray(missing)) {
+    return "get_concepts response malformed missing row";
+  }
+  if (missing.ok !== false) {
+    return "get_concepts response expected missing row to be ok:false";
+  }
+  if (missing.slug !== "missing-dogfood-slug") {
+    return `get_concepts response missing row slug mismatch — ${missing.slug}`;
+  }
+  if (typeof missing.error !== "string" || !/not found/i.test(missing.error)) {
+    return "get_concepts response missing row error";
+  }
+  return null;
 }
 
 function patternWalkShapeFailure(result) {
@@ -672,6 +719,9 @@ async function main() {
     ...init,
     call(2, "list_kinds"),
     call(3, "list_concepts", { limit: 30 }),
+    call(16, "get_concepts", {
+      slugs: ["project", "capabilities/mcp-server", "missing-dogfood-slug"],
+    }),
     call(4, "find_evidence", { title: "vault" }),
     call(5, "find_path", {
       from: "capabilities/mcp-server",
@@ -741,7 +791,22 @@ async function main() {
     }
   }
 
-  // 3. find_evidence
+  // 3. get_concepts (batch reader + partial row)
+  header("get_concepts — batch read + partial row");
+  const batch = getResult(responses, 16);
+  if (batch) {
+    for (const row of batch.concepts || []) {
+      if (row.ok === false) {
+        console.log(`  ${COLORS.yellow}missing${COLORS.reset} ${String(row.slug).padEnd(40)} ${row.error || ""}`);
+      } else {
+        console.log(
+          `  ${(row.frontmatter?.kind || "").padEnd(13)} ${(row.slug || "").padEnd(40)} ${row.frontmatter?.title || ""}`,
+        );
+      }
+    }
+  }
+
+  // 4. find_evidence
   header(`find_evidence(title="vault")`);
   const ev = getResult(responses, 4);
   if (ev) {
@@ -751,7 +816,7 @@ async function main() {
     }
   }
 
-  // 4. find_path
+  // 5. find_path
   header(`find_path(capabilities/mcp-server → domains/vault-local-first)`);
   const path = getResult(responses, 5);
   if (path) {
@@ -763,7 +828,7 @@ async function main() {
     }
   }
 
-  // 5. find_backlinks
+  // 6. find_backlinks
   header(`find_backlinks(capabilities/mcp-server)`);
   const bl = getResult(responses, 6);
   if (bl) {
@@ -775,7 +840,7 @@ async function main() {
     }
   }
 
-  // 6. find_orphans
+  // 7. find_orphans
   header(`find_orphans (어떤 backlink 도 없는 고립 노드)`);
   const orph = getResult(responses, 7);
   if (orph) {
@@ -785,7 +850,7 @@ async function main() {
     }
   }
 
-  // 7. validate_vault
+  // 8. validate_vault
   header(`validate_vault`);
   const validation = getResult(responses, 8);
   if (validation) {
@@ -799,7 +864,7 @@ async function main() {
     }
   }
 
-  // 8. workspace_brief
+  // 9. workspace_brief
   header(`query_ontology(workspace_brief)`);
   const brief = getResult(responses, 9);
   if (brief) {
@@ -813,7 +878,7 @@ async function main() {
     }
   }
 
-  // 9. health
+  // 10. health
   header(`query_ontology(health)`);
   const health = getResult(responses, 10);
   if (health) {
@@ -826,7 +891,7 @@ async function main() {
     }
   }
 
-  // 10. compile_ontology(summary)
+  // 11. compile_ontology(summary)
   header(`compile_ontology(summary)`);
   const compiled = getResult(responses, 11);
   if (compiled) {
@@ -836,7 +901,7 @@ async function main() {
     );
   }
 
-  // 11. overview
+  // 12. overview
   header(`query_ontology(overview)`);
   const overview = getResult(responses, 15);
   if (overview) {
@@ -845,7 +910,7 @@ async function main() {
     );
   }
 
-  // 12. pattern_walk
+  // 13. pattern_walk
   header(`query_ontology(pattern_walk project → domains → capabilities)`);
   const patternWalk = getResult(responses, 12);
   if (patternWalk) {
@@ -857,7 +922,7 @@ async function main() {
     }
   }
 
-  // 13. all_paths
+  // 14. all_paths
   header(`query_ontology(all_paths mcp-server → vault-local-first)`);
   const allPaths = getResult(responses, 13);
   if (allPaths) {
@@ -870,7 +935,7 @@ async function main() {
     }
   }
 
-  // 14. all_paths query_plan
+  // 15. all_paths query_plan
   header(`query_ontology(query_plan all_paths mcp-server → vault-local-first)`);
   const allPathsPlan = getResult(responses, 14);
   if (allPathsPlan) {
@@ -885,6 +950,7 @@ async function main() {
   const failures = evaluateDogfoodGate({
     kinds,
     list,
+    batch,
     ev,
     path,
     bl,
@@ -914,6 +980,7 @@ async function main() {
   console.log(
     `  list_concepts vaultWarnings: ${list?.vaultWarnings ? "있음 (vault 정합성 회귀!)" : "0 (clean)"}`,
   );
+  console.log(`  get_concepts: ${(batch?.concepts || []).filter((row) => row?.ok === true).length} ok · ${(batch?.concepts || []).filter((row) => row?.ok === false).length} partial`);
   console.log(`  validate_vault: ${validation?.summary?.problemFiles ?? "n/a"} problem files`);
   console.log(`  find_path hop: ${path?.hopCount ?? "n/a"}`);
   console.log(`  find_backlinks: ${bl?.total ?? "n/a"} (mcp-server 가 얼마나 popular)`);

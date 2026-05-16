@@ -21,6 +21,27 @@ const okShape = {
     vaultRoot: "/tmp/vault",
     nodes: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }],
   },
+  batch: {
+    concepts: [
+      {
+        ok: true,
+        slug: "project",
+        frontmatter: { kind: "project", title: "Project" },
+        mtime: 1,
+      },
+      {
+        ok: true,
+        slug: "capabilities/mcp-server",
+        frontmatter: { kind: "capability", title: "MCP Server" },
+        mtime: 1,
+      },
+      {
+        ok: false,
+        slug: "missing-dogfood-slug",
+        error: "Doc not found: missing-dogfood-slug",
+      },
+    ],
+  },
   ev: { matches: [] },
   path: { found: true, hopCount: 1, hops: ["a", "b"] },
   bl: {
@@ -247,6 +268,31 @@ describe("evaluateDogfoodGate", () => {
       list: { total: 1, nodes: [] },
     });
     assert.deepEqual(failures, ["list_concepts response missing vaultRoot"]);
+  });
+
+  it("fails on malformed get_concepts dogfood payloads", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, batch: {} }),
+      ["get_concepts response missing concepts array"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, batch: { concepts: [okShape.batch.concepts[0]] } }),
+      ["get_concepts response row count mismatch — expected 3, got 1"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        batch: { concepts: [{ ...okShape.batch.concepts[0], ok: false }, okShape.batch.concepts[1], okShape.batch.concepts[2]] },
+      }),
+      ["get_concepts response expected success row at index 0"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        batch: { concepts: [okShape.batch.concepts[0], okShape.batch.concepts[1], { slug: "missing-dogfood-slug", ok: true }] },
+      }),
+      ["get_concepts response expected missing row to be ok:false"],
+    );
   });
 
   it("fails on malformed find_evidence payloads", () => {
