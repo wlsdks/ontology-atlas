@@ -81,6 +81,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`query_ontology\(\{operation:"neighbors"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"path"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"project_scope"\}\)`/);
+    assert.match(verifySection, /project-less vaults skip/);
+    assert.match(verifySection, /Empty vaults skip node-targeted graph smoke/);
     assert.match(verifySection, /`list_kinds` \/ `compile_ontology` \/ `overview`\s+census shape\/count mismatches/);
     assert.match(verifySection, /Missing or malformed first-contact diagnosis payloads/);
     assert.match(verifySection, /`workspace_brief\.nextActions`/);
@@ -96,6 +98,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /success-row \/ partial-row contract drift/);
     assert.match(verifySection, /`compile_ontology`, `overview`, `overview`\/`project_map` query_plan, and actual `neighbors` \/ `path` \/ `project_scope` graph-query smoke/);
     assert.match(verifySection, /core graph-query execution with `neighbors`, self-`path`, and `project_scope`/);
+    assert.match(verifySection, /skips only the containment-specific `project_scope` smoke/);
+    assert.match(verifySection, /accepts empty vault folders by skipping node-targeted graph smoke/);
     assert.match(verifySection, /cross-checks `list_kinds` census totals/);
     assert.match(verifySection, /`list_concepts`, `validate_vault`, `compile_ontology`, and `overview`/);
     assert.match(verifySection, /missing or malformed first-contact diagnosis payloads/);
@@ -117,6 +121,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /stdout/);
     assert.match(verifySection, /`overview`, `overview`\/`project_map` query_plan, and actual `neighbors`/);
     assert.match(verifySection, /`path` \/ `project_scope` calls/);
+    assert.match(verifySection, /Vaults without a `kind: project` node skip/);
+    assert.match(verifySection, /empty vault folders skip\s+node-targeted graph smoke/);
   });
 
   it('keeps the CLI changelog aligned with the mcp-verify census scope', () => {
@@ -127,6 +133,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /partial-row contract drift/);
     assert.match(verifySection, /`overview`, `overview`\/`project_map` query_plan, and actual `neighbors` \/ `path` \/ `project_scope` graph-query smoke/);
     assert.match(verifySection, /core graph-query smoke for `neighbors`, self-`path`, and `project_scope`/);
+    assert.match(verifySection, /accepts valid project-less vaults/);
+    assert.match(verifySection, /accepts empty vault folders/);
   });
 
   it('documents dogfood validation as a release gate', () => {
