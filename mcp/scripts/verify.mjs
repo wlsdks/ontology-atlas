@@ -298,6 +298,37 @@ export function maintenanceMissingCursorFailure(parsed) {
   return null;
 }
 
+export function maintenanceReadyCursorFailure(parsed) {
+  if (parsed?.operation !== 'maintenance_plan') {
+    return `maintenance ready-cursor smoke returned unexpected operation: ${parsed?.operation}`;
+  }
+  if (parsed.sideEffect !== false) {
+    return 'maintenance ready-cursor smoke must be side-effect-free';
+  }
+  if (parsed.cursor?.found !== true) {
+    return 'maintenance ready-cursor smoke did not report cursor.found=true';
+  }
+  if (!Object.hasOwn(parsed.cursor || {}, 'reason') || parsed.cursor.reason !== null) {
+    return 'maintenance ready-cursor smoke did not expose cursor.reason=null';
+  }
+  if (parsed.cursor?.afterActionId !== null) {
+    return 'maintenance ready-cursor smoke should start without afterActionId';
+  }
+  if (parsed.cursor?.startIndex !== 0) {
+    return 'maintenance ready-cursor smoke should start at index 0';
+  }
+  if (!Array.isArray(parsed.actions)) {
+    return 'maintenance ready-cursor smoke response missing actions array';
+  }
+  if (typeof parsed.summary?.remainingActions !== 'number') {
+    return 'maintenance ready-cursor smoke missing remainingActions summary';
+  }
+  if (!Object.hasOwn(parsed, 'nextExecutableAction') || !Object.hasOwn(parsed, 'nextReviewAction')) {
+    return 'maintenance ready-cursor smoke missing next action pointers';
+  }
+  return null;
+}
+
 export function maintenanceFilterEnumSummary() {
   return [
     `phases=${MAINTENANCE_PHASE_VALUES.join('/')}`,
@@ -359,6 +390,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [23, 'strict_maintenance_severity_filter'],
   [24, 'strict_maintenance_kind_filter'],
   [25, 'maintenance_missing_cursor'],
+  [26, 'maintenance_ready_cursor'],
 ]);
 
 function log(level, msg) {
@@ -688,6 +720,15 @@ export function buildFirstContactRequests() {
       params: {
         name: 'query_ontology',
         arguments: { operation: 'maintenance_plan', afterActionId: 'maint_missing', limit: 5 },
+      },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 26,
+      method: 'tools/call',
+      params: {
+        name: 'query_ontology',
+        arguments: { operation: 'maintenance_plan', limit: 5 },
       },
     },
   ];
@@ -1613,6 +1654,7 @@ async function step2BootAndCall() {
       const strictMaintenanceSeverityFilterRes = responses.find((r) => r.id === 23);
       const strictMaintenanceKindFilterRes = responses.find((r) => r.id === 24);
       const maintenanceMissingCursorRes = responses.find((r) => r.id === 25);
+      const maintenanceReadyCursorRes = responses.find((r) => r.id === 26);
       let kindsPayload = null;
       let listPayload = null;
       let validationPayload = null;
@@ -1711,6 +1753,24 @@ async function step2BootAndCall() {
         log('ok', `maintenance cursor — missing afterActionId reported (${parsed.cursor.reason})`);
       } catch (err) {
         log('fail', `failed to parse maintenance missing-cursor response: ${err.message}`);
+        return res(false);
+      }
+
+      if (!maintenanceReadyCursorRes || !maintenanceReadyCursorRes.result) {
+        log('fail', 'no query_ontology maintenance ready-cursor response');
+        return res(false);
+      }
+      try {
+        const text = maintenanceReadyCursorRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const failure = maintenanceReadyCursorFailure(parsed);
+        if (failure) {
+          log('fail', failure);
+          return res(false);
+        }
+        log('ok', `maintenance cursor — ready page stable (${formatCount(parsed.summary.remainingActions, 'remaining action')})`);
+      } catch (err) {
+        log('fail', `failed to parse maintenance ready-cursor response: ${err.message}`);
         return res(false);
       }
 

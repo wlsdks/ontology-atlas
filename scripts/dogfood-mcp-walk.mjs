@@ -3839,7 +3839,7 @@ async function main() {
       `  actions ${maintenancePlan.actions?.length ?? "n/a"} / remaining ${maintenancePlan.summary?.remainingActions ?? "n/a"} · executable ${maintenancePlan.summary?.executableActions ?? "n/a"} · review ${maintenancePlan.summary?.reviewActions ?? "n/a"}`,
     );
     console.log(
-      `  cursor next ${maintenancePlan.cursor?.nextAfterActionId ?? "none"} · hasMore ${maintenancePlan.cursor?.hasMore ?? "n/a"}`,
+      `  cursor found ${maintenancePlan.cursor?.found ?? "n/a"} · reason ${maintenancePlan.cursor?.reason ?? "null"} · next ${maintenancePlan.cursor?.nextAfterActionId ?? "none"} · hasMore ${maintenancePlan.cursor?.hasMore ?? "n/a"}`,
     );
     for (const action of (maintenancePlan.actions || []).slice(0, 5)) {
       console.log(`  ${action.id}: ${action.phase}/${action.kind} · ${action.severity} · executable ${action.executable}`);
@@ -4250,7 +4250,7 @@ async function main() {
   console.log(`  domain_matrix: ${domainMatrix?.summary?.crossDomainEdges ?? "n/a"} cross-domain edges · ${domainMatrix?.connections?.total ?? "n/a"} connections`);
   console.log(`  components: ${components?.totalComponents ?? "n/a"} total · largest ${components?.largestSize ?? "n/a"}`);
   console.log(`  relation_check: ${relationCheck?.verdict ?? "n/a"} · exists ${relationCheck?.exists ?? "n/a"}`);
-  console.log(`  maintenance_plan: ${maintenancePlan?.summary?.remainingActions ?? "n/a"} remaining · ${maintenancePlan?.summary?.executableActions ?? "n/a"} executable`);
+  console.log(`  maintenance_plan: found ${maintenancePlan?.cursor?.found ?? "n/a"} · reason ${maintenancePlan?.cursor?.reason ?? "null"} · ${maintenancePlan?.summary?.remainingActions ?? "n/a"} remaining · ${maintenancePlan?.summary?.executableActions ?? "n/a"} executable`);
   console.log(`  maintenance_plan_missing_cursor: found ${maintenancePlanMissingCursor?.cursor?.found ?? "n/a"} · reason ${maintenancePlanMissingCursor?.cursor?.reason ?? "n/a"}`);
   console.log(`  growth_plan: ${growthPlan?.summary?.totalActions ?? "n/a"} actions · ${growthPlan?.summary?.externalElementRefsIgnored ?? "n/a"} ignored external refs`);
   console.log(`  recommend_relations: ${relationRecommendations?.totalRecommendations ?? "n/a"} recommendations`);

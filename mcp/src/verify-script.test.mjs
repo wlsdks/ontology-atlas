@@ -39,6 +39,7 @@ import {
   listKindsFailure,
   maintenanceFilterEnumSummary,
   maintenanceMissingCursorFailure,
+  maintenanceReadyCursorFailure,
   overviewFailure,
   overviewQueryPlanFailure,
   parseVerifyArgs,
@@ -692,6 +693,63 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
+  it('fails malformed maintenance ready-cursor smoke responses', () => {
+    const clean = {
+      operation: 'maintenance_plan',
+      sideEffect: false,
+      summary: { remainingActions: 0 },
+      cursor: {
+        afterActionId: null,
+        found: true,
+        reason: null,
+        startIndex: 0,
+      },
+      actions: [],
+      nextExecutableAction: null,
+      nextReviewAction: null,
+    };
+
+    assert.equal(maintenanceReadyCursorFailure(clean), null);
+    assert.equal(
+      maintenanceReadyCursorFailure({ ...clean, operation: 'growth_plan' }),
+      'maintenance ready-cursor smoke returned unexpected operation: growth_plan',
+    );
+    assert.equal(
+      maintenanceReadyCursorFailure({ ...clean, sideEffect: true }),
+      'maintenance ready-cursor smoke must be side-effect-free',
+    );
+    assert.equal(
+      maintenanceReadyCursorFailure({ ...clean, cursor: { ...clean.cursor, found: false } }),
+      'maintenance ready-cursor smoke did not report cursor.found=true',
+    );
+    assert.equal(
+      maintenanceReadyCursorFailure({ ...clean, cursor: { ...clean.cursor, reason: undefined } }),
+      'maintenance ready-cursor smoke did not expose cursor.reason=null',
+    );
+    assert.equal(
+      maintenanceReadyCursorFailure({ ...clean, cursor: { ...clean.cursor, afterActionId: 'maint_prev' } }),
+      'maintenance ready-cursor smoke should start without afterActionId',
+    );
+    assert.equal(
+      maintenanceReadyCursorFailure({ ...clean, cursor: { ...clean.cursor, startIndex: null } }),
+      'maintenance ready-cursor smoke should start at index 0',
+    );
+    assert.equal(
+      maintenanceReadyCursorFailure({ ...clean, actions: null }),
+      'maintenance ready-cursor smoke response missing actions array',
+    );
+    assert.equal(
+      maintenanceReadyCursorFailure({ ...clean, summary: {} }),
+      'maintenance ready-cursor smoke missing remainingActions summary',
+    );
+    const withoutNextExecutable = { ...clean };
+    delete withoutNextExecutable.nextExecutableAction;
+    assert.equal(
+      maintenanceReadyCursorFailure(withoutNextExecutable),
+      'maintenance ready-cursor smoke missing next action pointers',
+    );
+  });
+
   it('fails initialize instructions missing first-contact safety guidance', () => {
     const safeInstructions = [
       'Use read-only first-contact diagnosis before write tools.',
@@ -802,6 +860,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(23), 'strict_maintenance_severity_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(24), 'strict_maintenance_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(25), 'maintenance_missing_cursor');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(26), 'maintenance_ready_cursor');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),

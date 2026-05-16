@@ -226,6 +226,7 @@ A successful run looks like this:
 ✓ strict enums — invalid query operation rejected with closest-value hint
 ✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain)
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions)
+✓ maintenance cursor — ready page stable (0 remaining actions)
 ✓ list_concepts — vault total 28 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concepts — 2 ok rows, 1 partial row
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
@@ -289,7 +290,10 @@ accepted `phases` / `severities` / `kinds` enum lists beside the strict-filter
 runtime smoke, so installed logs show which work-queue contract was tested. It also calls
 `maintenance_plan.afterActionId="maint_missing"` and fails unless the response
 reports `cursor.found=false`, the cursor miss reason, zero remaining actions,
-and no next actions.
+and no next actions. A companion ready-page smoke calls `maintenance_plan`
+without `afterActionId` and fails unless the response keeps the stable cursor
+shape, including `cursor.found=true`, explicit `cursor.reason=null`,
+`startIndex=0`, `remainingActions`, and next-action pointers.
 `project_scope` is a hard gate when the vault has a `kind: project` node. The
 verify path probes `kind: project` directly before graph smoke, so containment
 checks are not skipped just because the project node was outside the first
