@@ -122,6 +122,13 @@ export function hasFirstContactErrorResponse(stdout) {
   return hasAnyErrorResponse(stdout, new Set(FIRST_CONTACT_RESPONSE_LABELS.keys()));
 }
 
+export function firstContactMissingResponseLabels(responses) {
+  return missingResponseLabels(
+    responses.filter((response) => response?.result),
+    FIRST_CONTACT_RESPONSE_LABELS,
+  );
+}
+
 export function buildFirstContactRequests() {
   return [
     {
@@ -712,19 +719,7 @@ async function step2BootAndCall() {
       let validationPayload = null;
       let compilePayload = null;
       let overviewPayload = null;
-      const missingResponses = [
-        ['initialize', initRes],
-        ['tools/list', listRes],
-        ['list_concepts', callRes],
-        ['list_kinds', kindsRes],
-        ['validate_vault', validateRes],
-        ['workspace_brief', briefRes],
-        ['health', healthRes],
-        ['compile_ontology', compileRes],
-        ['overview', overviewRes],
-        ['overview_query_plan', overviewPlanRes],
-        ['get_concepts', getConceptsRes],
-      ].filter(([, response]) => !response?.result);
+      const missingLabels = firstContactMissingResponseLabels(responses);
       const errorRes = responses.find((response) => (
         FIRST_CONTACT_RESPONSE_LABELS.has(response?.id) && response?.error
       ));
@@ -734,11 +729,7 @@ async function step2BootAndCall() {
         return res(false);
       }
 
-      if (timedOut && missingResponses.length > 0) {
-        const missingLabels = missingResponseLabels(
-          responses.filter((response) => response?.result),
-          FIRST_CONTACT_RESPONSE_LABELS,
-        );
+      if (timedOut && missingLabels.length > 0) {
         log('fail', `${verifyTimeoutFailure(timeoutMs)} Missing responses: ${missingLabels.join(', ')}`);
         if (stderr) console.error(stderr.slice(0, 300));
         return res(false);

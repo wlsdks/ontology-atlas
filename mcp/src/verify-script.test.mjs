@@ -16,6 +16,7 @@ import {
   EXPECTED_WRITE_TOOLS,
   FIRST_CONTACT_RESPONSE_LABELS,
   expectedToolSplitLabel,
+  firstContactMissingResponseLabels,
   firstContactErrorFailure,
   getConceptsFailure,
   hasAllFirstContactResponses,
@@ -102,6 +103,13 @@ describe('verify.mjs first-contact gates', () => {
       missingResponseLabels(responsesWithoutGetConcepts, FIRST_CONTACT_RESPONSE_LABELS),
       ['get_concepts'],
     );
+  });
+
+  it('derives missing first-contact labels from the shared label map', () => {
+    const responsesWithoutGetConcepts = [...FIRST_CONTACT_RESPONSE_LABELS.keys()]
+      .filter((id) => id !== 11)
+      .map((id) => ({ id, result: {} }));
+    assert.deepEqual(firstContactMissingResponseLabels(responsesWithoutGetConcepts), ['get_concepts']);
   });
 
   it('detects first-contact JSON-RPC error responses before timeout', () => {
