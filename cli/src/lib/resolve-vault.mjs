@@ -1,6 +1,13 @@
 import { existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 
+export class VaultRootError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = 'VaultRootError';
+  }
+}
+
 /**
  * Vault root 결정 우선순위 — graph-level read 명령 (list / query / path /
  * orphans / backlinks / find / validate) 공유.
@@ -18,13 +25,17 @@ import { resolve } from 'node:path';
 export function resolveVaultRoot(explicit) {
   // 1) 명시적 사용자 지정 — 우선
   if (typeof explicit === 'string' && explicit && explicit !== '.') {
-    return resolve(process.cwd(), explicit);
+    const root = resolve(process.cwd(), explicit);
+    assertVaultDirectory(root);
+    return root;
   }
 
   // 2) OMOT_VAULT env (MCP 서버 규약과 동일)
   const env = process.env.OMOT_VAULT;
   if (typeof env === 'string' && env.length > 0) {
-    return resolve(process.cwd(), env);
+    const root = resolve(process.cwd(), env);
+    assertVaultDirectory(root);
+    return root;
   }
 
   // 3) cwd 의 docs/ontology 디렉토리 — repo dogfood 자동 감지
@@ -33,6 +44,15 @@ export function resolveVaultRoot(explicit) {
 
   // 4) fallback — cwd
   return process.cwd();
+}
+
+function assertVaultDirectory(path) {
+  if (!existsSync(path)) {
+    throw new VaultRootError(`Vault root not found: ${path}`);
+  }
+  if (!isDirectory(path)) {
+    throw new VaultRootError(`Vault root is not a directory: ${path}`);
+  }
 }
 
 function isDirectory(path) {

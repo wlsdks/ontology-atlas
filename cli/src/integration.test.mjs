@@ -523,6 +523,11 @@ await test('local/frontmatter commands — reject invalid vault and value argume
       stderr: /too many arguments: two/,
     },
     {
+      args: ['list', './not-a-vault'],
+      expectedCode: 2,
+      stderr: /Vault root not found:/,
+    },
+    {
       args: ['validate', '--vault', '--json'],
       expectedCode: 1,
       stderr: /--vault requires a path/,
@@ -531,6 +536,11 @@ await test('local/frontmatter commands — reject invalid vault and value argume
       args: ['validate', 'one', 'two'],
       expectedCode: 1,
       stderr: /too many arguments: two/,
+    },
+    {
+      args: ['validate', './not-a-vault'],
+      expectedCode: 2,
+      stderr: /Vault root not found:/,
     },
     {
       args: ['validate', '--fail-on'],
@@ -551,6 +561,11 @@ await test('local/frontmatter commands — reject invalid vault and value argume
       args: ['find', 'auth', '--kind'],
       expectedCode: 1,
       stderr: /--kind requires a value/,
+    },
+    {
+      args: ['find', 'auth', './not-a-vault'],
+      expectedCode: 2,
+      stderr: /Vault root not found:/,
     },
     {
       args: ['add', 'capability', 'foo', '--title', 'Foo', '--vault'],
@@ -1658,6 +1673,25 @@ await test('graph MCP calls — reject invalid OMOT_MCP_PATH overrides before sp
   assert.equal(directory.code, 2);
   assert.match(stripAnsi(directory.stderr), /OMOT_MCP_PATH is not a file/);
   assert.doesNotMatch(stripAnsi(directory.stderr), /vault overview|MODULE_NOT_FOUND/);
+});
+
+await test('graph MCP calls — reject invalid explicit vault roots before spawning MCP', async () => {
+  const missing = await run(['overview', './not-a-vault']);
+  assert.equal(missing.code, 2);
+  assert.match(stripAnsi(missing.stderr), /Vault root not found:/);
+  assert.doesNotMatch(stripAnsi(missing.stderr), /mcp exited|vault root 검증 실패/);
+
+  const dir = mkdtempSync(join(tmpdir(), 'cli-vault-root-'));
+  const file = join(dir, 'not-a-vault.md');
+  try {
+    writeFileSync(file, 'not a directory\n');
+    const notDirectory = await run(['overview', file]);
+    assert.equal(notDirectory.code, 2);
+    assert.match(stripAnsi(notDirectory.stderr), /Vault root is not a directory:/);
+    assert.doesNotMatch(stripAnsi(notDirectory.stderr), /mcp exited|vault root 검증 실패/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 await test('graph diagnostic commands — reject invalid option values before MCP call', async () => {

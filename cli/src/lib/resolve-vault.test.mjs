@@ -1,38 +1,69 @@
 import { strict as assert } from 'node:assert';
-import { mkdtempSync, mkdirSync, realpathSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import test from 'node:test';
 import { resolveVaultRoot } from './resolve-vault.mjs';
 
 test('resolveVaultRoot — explicit 인자가 1순위 (env 보다 강함)', () => {
+  const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'omot-vault-test-')));
+  const explicit = resolve(tmp, 'my-vault');
+  mkdirSync(explicit, { recursive: true });
   process.env.OMOT_VAULT = '/tmp/env-vault';
   try {
-    const got = resolveVaultRoot('./my-vault');
-    assert.equal(got, resolve(process.cwd(), 'my-vault'));
+    const got = resolveVaultRoot(explicit);
+    assert.equal(got, explicit);
   } finally {
     delete process.env.OMOT_VAULT;
+    rmSync(tmp, { recursive: true, force: true });
   }
 });
 
 test("resolveVaultRoot — explicit 이 '.' 면 default 로 취급 (env 가 다음 차례)", () => {
-  process.env.OMOT_VAULT = '/tmp/env-vault';
+  const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'omot-vault-test-')));
+  process.env.OMOT_VAULT = tmp;
   try {
     const got = resolveVaultRoot('.');
-    assert.equal(got, resolve(process.cwd(), '/tmp/env-vault'));
+    assert.equal(got, tmp);
   } finally {
     delete process.env.OMOT_VAULT;
+    rmSync(tmp, { recursive: true, force: true });
   }
 });
 
 test('resolveVaultRoot — env 가 2순위', () => {
+  const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'omot-vault-test-')));
   delete process.env.OMOT_VAULT;
-  process.env.OMOT_VAULT = '/tmp/foo';
+  process.env.OMOT_VAULT = tmp;
   try {
     const got = resolveVaultRoot();
-    assert.equal(got, resolve(process.cwd(), '/tmp/foo'));
+    assert.equal(got, tmp);
   } finally {
     delete process.env.OMOT_VAULT;
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
+
+test('resolveVaultRoot — explicit/env vault paths must exist and be directories', () => {
+  const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'omot-vault-test-')));
+  const file = resolve(tmp, 'not-a-vault.md');
+  writeFileSync(file, 'not a directory\n');
+
+  try {
+    assert.throws(
+      () => resolveVaultRoot(resolve(tmp, 'missing')),
+      /Vault root not found:/,
+    );
+    assert.throws(
+      () => resolveVaultRoot(file),
+      /Vault root is not a directory:/,
+    );
+
+    process.env.OMOT_VAULT = resolve(tmp, 'missing-env');
+    assert.throws(() => resolveVaultRoot(), /Vault root not found:/);
+  } finally {
+    delete process.env.OMOT_VAULT;
+    rmSync(tmp, { recursive: true, force: true });
   }
 });
 
@@ -70,11 +101,13 @@ test('resolveVaultRoot — fallback 은 cwd (4 순위, 아무것도 없을 때)'
 });
 
 test('resolveVaultRoot — 빈 문자열 explicit 은 default 로 취급', () => {
-  process.env.OMOT_VAULT = '/tmp/from-env';
+  const tmp = realpathSync(mkdtempSync(resolve(tmpdir(), 'omot-vault-test-')));
+  process.env.OMOT_VAULT = tmp;
   try {
     const got = resolveVaultRoot('');
-    assert.equal(got, resolve(process.cwd(), '/tmp/from-env'));
+    assert.equal(got, tmp);
   } finally {
     delete process.env.OMOT_VAULT;
+    rmSync(tmp, { recursive: true, force: true });
   }
 });

@@ -391,7 +391,15 @@ if (runner) {
     fail(`command ${SUBCOMMAND} is misconfigured: missing ${runner.exportName}`);
     exit(1);
   }
-  exit(await run(ARGS.slice(1)));
+  try {
+    exit(await run(ARGS.slice(1)));
+  } catch (err) {
+    if (err?.name === 'VaultRootError') {
+      fail(err.message);
+      exit(2);
+    }
+    throw err;
+  }
 }
 
 fail(`unknown command: ${SUBCOMMAND}`);
