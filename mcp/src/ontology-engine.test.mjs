@@ -152,6 +152,38 @@ describe('queryCompiledOntology', () => {
         },
       ],
     );
+
+    const branchingGraph = compileOntology(
+      [
+        doc('a', { kind: 'capability', title: 'A', relates: ['b', 'c', 'e'] }),
+        doc('b', { kind: 'capability', title: 'B', relates: ['d'] }),
+        doc('c', { kind: 'capability', title: 'C', relates: ['d'] }),
+        doc('e', { kind: 'capability', title: 'E', relates: ['d'] }),
+        doc('d', { kind: 'capability', title: 'D' }),
+      ],
+      { includeIndexes: true },
+    );
+    const exactLimit = queryCompiledOntology(branchingGraph, {
+      operation: 'all_paths',
+      from: 'a',
+      to: 'd',
+      maxHops: 2,
+      limit: 3,
+    });
+    assert.equal(exactLimit.totalPaths, 3);
+    assert.equal(exactLimit.limited, false);
+    assert.equal(exactLimit.paths.length, 3);
+
+    const truncated = queryCompiledOntology(branchingGraph, {
+      operation: 'all_paths',
+      from: 'a',
+      to: 'd',
+      maxHops: 2,
+      limit: 2,
+    });
+    assert.equal(truncated.totalPaths, 3);
+    assert.equal(truncated.limited, true);
+    assert.equal(truncated.paths.length, 2);
   });
 
   it('plans bounded graph queries before execution', () => {

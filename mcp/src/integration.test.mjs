@@ -1829,6 +1829,46 @@ await test("query_ontology pattern_walk — exact branch limit keeps all MCP pat
   }
 });
 
+await test("query_ontology all_paths — limited exposes hidden MCP paths", async () => {
+  const root = makeVault([
+    { slug: "a", content: "---\nkind: capability\ntitle: A\nrelates: [b, c, e]\n---\n" },
+    { slug: "b", content: "---\nkind: capability\ntitle: B\nrelates: [d]\n---\n" },
+    { slug: "c", content: "---\nkind: capability\ntitle: C\nrelates: [d]\n---\n" },
+    { slug: "e", content: "---\nkind: capability\ntitle: E\nrelates: [d]\n---\n" },
+    { slug: "d", content: "---\nkind: capability\ntitle: D\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", {
+        operation: "all_paths",
+        from: "a",
+        to: "d",
+        maxHops: 2,
+        limit: 3,
+      }),
+      callTool(3, "query_ontology", {
+        operation: "all_paths",
+        from: "a",
+        to: "d",
+        maxHops: 2,
+        limit: 2,
+      }),
+    ]);
+    const exact = getCallParsed(responses, 2);
+    assert.equal(exact.totalPaths, 3);
+    assert.equal(exact.limited, false);
+    assert.equal(exact.paths.length, 3);
+
+    const truncated = getCallParsed(responses, 3);
+    assert.equal(truncated.totalPaths, 3);
+    assert.equal(truncated.limited, true);
+    assert.equal(truncated.paths.length, 2);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("find_orphans — orphan row 에 domain + mtime 포함 (R+)", async () => {
   // list_concepts / find_backlinks 와 동일 shape. agent 가 orphans 받자마자
   // sort/filter 가능 — 후속 get_concept 없이.

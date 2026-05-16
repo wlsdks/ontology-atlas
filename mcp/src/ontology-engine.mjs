@@ -300,8 +300,8 @@ export function createOntologyEngine(artifact, options = {}) {
       const hopCount = current.hops.length - 1;
       if (current.slug === to) {
         matches.push(current);
-        if (matches.length >= limit) {
-          limited = stack.length > 0;
+        if (matches.length > limit) {
+          limited = true;
           break;
         }
         continue;
@@ -333,6 +333,7 @@ export function createOntologyEngine(artifact, options = {}) {
       const key = String(row.hopCount);
       lengthCounts.set(key, (lengthCounts.get(key) || 0) + 1);
     }
+    const visibleRows = rows.slice(0, limit);
 
     return {
       operation: 'all_paths',
@@ -343,9 +344,9 @@ export function createOntologyEngine(artifact, options = {}) {
       maxHops,
       totalPaths: rows.length,
       limited,
-      shortestHopCount: rows[0]?.hopCount ?? null,
+      shortestHopCount: visibleRows[0]?.hopCount ?? null,
       byLength: sortedCountObject(lengthCounts),
-      paths: rows,
+      paths: visibleRows,
     };
   }
 
