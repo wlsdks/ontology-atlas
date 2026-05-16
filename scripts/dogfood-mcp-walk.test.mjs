@@ -54,6 +54,32 @@ const okShape = {
     byKind: { project: 1 },
     byDomain: {},
   },
+  patternWalk: {
+    operation: "pattern_walk",
+    start: "project",
+    pattern: ["domains", "capabilities"],
+    layers: [
+      {
+        step: 1,
+        relation: "domains",
+        totalPaths: 1,
+        totalNodes: 1,
+        nodes: [{ slug: "domains/auth", kind: "domain", title: "Auth" }],
+      },
+    ],
+    endNodes: [{ slug: "capabilities/login", kind: "capability", title: "Login" }],
+    paths: {
+      total: 1,
+      limited: false,
+      rows: [
+        {
+          end: "capabilities/login",
+          path: ["project", "domains/auth", "capabilities/login"],
+          edges: [],
+        },
+      ],
+    },
+  },
 };
 
 describe("recordResult", () => {
@@ -311,6 +337,37 @@ describe("evaluateDogfoodGate", () => {
         compiled: { ...okShape.compiled, edgeCount: 1, resolvedEdgeCount: 1, externalEdgeCount: 1 },
       }),
       ["compile_ontology response edge count mismatch — edgeCount 1, resolved+external+unresolved 2"],
+    );
+  });
+
+  it("fails on malformed pattern_walk payloads", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, patternWalk: { ...okShape.patternWalk, operation: "path" } }),
+      ["pattern_walk response operation mismatch"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, patternWalk: { ...okShape.patternWalk, paths: { total: 1, limited: false } } }),
+      ["pattern_walk response missing paths.rows array"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        patternWalk: {
+          ...okShape.patternWalk,
+          paths: { total: 0, limited: false, rows: [] },
+        },
+      }),
+      ["pattern_walk response returned no rows"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        patternWalk: {
+          ...okShape.patternWalk,
+          paths: { total: 1, limited: false, rows: [{ end: "capabilities/login" }] },
+        },
+      }),
+      ["pattern_walk response missing path at index 0"],
     );
   });
 

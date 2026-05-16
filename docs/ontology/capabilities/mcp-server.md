@@ -85,6 +85,9 @@ dogfood walk 는 `compile_ontology({ summary: true })` 도 직접 호출해
 `graphHash`, `maxMtime`, node/edge/alias/issue count, `byKind` / `byDomain`
 aggregate 가 유효한지 확인한다. `byKind` 합계가 `nodeCount` 와 다르거나
 edge breakdown 이 `edgeCount` 를 설명하지 못하면 gate 실패로 본다.
+또한 `query_ontology(pattern_walk)` 를 실제 repo ontology 의 project → domains →
+capabilities 경로로 호출해, agent 가 단계형 graph traversal 을 받을 수 있는지와
+`paths.total` / `paths.limited` / `paths.rows[]` shape 가 유지되는지 확인한다.
 이후 `list_kinds.total`, `list_concepts.total`, `validate_vault.scanned`,
 `compile_ontology.nodeCount` 를 서로 비교하고 `list_kinds.byKind` 와
 `compile_ontology.byKind` 가 같은 census 를 말하는지도 확인한다.
@@ -158,8 +161,8 @@ branch 수를 truncation 으로 오인하지 않아, 후속 pattern step 이 누
 
 `pnpm dogfood:walk` 는 이 repo 의 `docs/ontology` 를 대상으로 실제 MCP stdio 호출을
 연속 실행한다. 기본 census / backlink / path 질의에 더해 `validate_vault`,
-`workspace_brief`, `health` 를 함께 출력해, AI agent 가 첫 접촉에서 받는 graph
-diagnosis 품질을 계속 확인한다.
+`workspace_brief`, `health`, `pattern_walk` 를 함께 출력해, AI agent 가 첫 접촉에서
+받는 graph diagnosis 와 traversal 품질을 계속 확인한다.
 dogfood 의 `list_concepts.vaultWarnings` / `validate_vault` 판정은
 `mcp/scripts/verify.mjs` 의 helper 를 재사용해 installed verify 와 dogfood gate 가
 서로 다른 first-contact payload 계약으로 갈라지지 않게 한다.

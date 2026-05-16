@@ -1766,6 +1766,68 @@ await test("query_concepts — limited reflects hidden rows, not exact page fill
   }
 });
 
+await test("query_ontology pattern_walk — exact branch limit keeps all MCP paths", async () => {
+  const root = makeVault([
+    {
+      slug: "project",
+      content:
+        "---\nkind: project\ntitle: Project\ndomains: [domains/auth, domains/billing]\n---\n",
+    },
+    {
+      slug: "domains/auth",
+      content:
+        "---\nkind: domain\ntitle: Auth\ncapabilities: [capabilities/login]\n---\n",
+    },
+    {
+      slug: "domains/billing",
+      content:
+        "---\nkind: domain\ntitle: Billing\ncapabilities: [capabilities/invoice]\n---\n",
+    },
+    {
+      slug: "capabilities/login",
+      content: "---\nkind: capability\ntitle: Login\n---\n",
+    },
+    {
+      slug: "capabilities/invoice",
+      content: "---\nkind: capability\ntitle: Invoice\n---\n",
+    },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_ontology", {
+        operation: "pattern_walk",
+        slug: "project",
+        pattern: ["domains", "capabilities"],
+        limit: 2,
+      }),
+      callTool(3, "query_ontology", {
+        operation: "pattern_walk",
+        slug: "project",
+        pattern: ["domains", "capabilities"],
+        limit: 1,
+      }),
+    ]);
+    const exact = getCallParsed(responses, 2);
+    assert.equal(exact.paths.total, 2);
+    assert.equal(exact.paths.limited, false);
+    assert.deepEqual(
+      exact.paths.rows.map((row) => row.end),
+      ["capabilities/login", "capabilities/invoice"],
+    );
+
+    const truncated = getCallParsed(responses, 3);
+    assert.equal(truncated.paths.total, 1);
+    assert.equal(truncated.paths.limited, true);
+    assert.deepEqual(
+      truncated.paths.rows.map((row) => row.end),
+      ["capabilities/login"],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("find_orphans — orphan row 에 domain + mtime 포함 (R+)", async () => {
   // list_concepts / find_backlinks 와 동일 shape. agent 가 orphans 받자마자
   // sort/filter 가능 — 후속 get_concept 없이.

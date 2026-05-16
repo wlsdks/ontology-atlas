@@ -7,7 +7,7 @@
 // write 안 함 (dogfood vault 보존). list_kinds / list_concepts /
 // find_evidence / find_path / find_backlinks / find_orphans /
 // validate_vault / compile_ontology(summary) /
-// query_ontology workspace_brief / health 만.
+// query_ontology pattern_walk / workspace_brief / health.
 
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -44,6 +44,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [9, "workspace_brief"],
   [10, "health"],
   [11, "compile_ontology"],
+  [12, "pattern_walk"],
 ]);
 
 function rpc(requests, timeoutMs = 3000) {
@@ -157,7 +158,19 @@ export function recordResult(failures, label, result) {
   return true;
 }
 
-export function evaluateDogfoodGate({ kinds, list, ev, path, bl, orph, validation, brief, health, compiled }) {
+export function evaluateDogfoodGate({
+  kinds,
+  list,
+  ev,
+  path,
+  bl,
+  orph,
+  validation,
+  brief,
+  health,
+  compiled,
+  patternWalk,
+}) {
   const failures = [];
   recordResult(failures, "list_kinds", kinds);
   recordResult(failures, "list_concepts", list);
@@ -169,6 +182,7 @@ export function evaluateDogfoodGate({ kinds, list, ev, path, bl, orph, validatio
   recordResult(failures, "workspace_brief", brief);
   recordResult(failures, "health", health);
   recordResult(failures, "compile_ontology", compiled);
+  recordResult(failures, "pattern_walk", patternWalk);
 
   if (kinds) {
     const kindsFailure = listKindsFailure(kinds);
@@ -213,6 +227,10 @@ export function evaluateDogfoodGate({ kinds, list, ev, path, bl, orph, validatio
     const compileFailure = compileSummaryFailure(compiled);
     if (compileFailure) failures.push(compileFailure);
   }
+  if (patternWalk) {
+    const patternWalkFailure = patternWalkShapeFailure(patternWalk);
+    if (patternWalkFailure) failures.push(patternWalkFailure);
+  }
   const consistencyFailures = crossToolConsistencyFailures({ kinds, list, validation, compiled });
   failures.push(...consistencyFailures);
   if (brief && !briefShapeFailure && brief.status !== "healthy") {
@@ -242,6 +260,43 @@ function evidenceShapeFailure(result) {
     return "find_evidence response missing matches array";
   }
   return matchRowsFailure("find_evidence", result.matches);
+}
+
+function patternWalkShapeFailure(result) {
+  if (result.operation !== "pattern_walk") {
+    return "pattern_walk response operation mismatch";
+  }
+  if (!Array.isArray(result.pattern) || result.pattern.length === 0) {
+    return "pattern_walk response missing pattern array";
+  }
+  if (!Array.isArray(result.layers)) {
+    return "pattern_walk response missing layers array";
+  }
+  if (!Array.isArray(result.endNodes)) {
+    return "pattern_walk response missing endNodes array";
+  }
+  if (!result.paths || !Array.isArray(result.paths.rows)) {
+    return "pattern_walk response missing paths.rows array";
+  }
+  if (!Number.isInteger(result.paths.total) || result.paths.total < 0) {
+    return "pattern_walk response missing paths.total";
+  }
+  if (typeof result.paths.limited !== "boolean") {
+    return "pattern_walk response missing paths.limited flag";
+  }
+  if (result.paths.rows.length === 0) {
+    return "pattern_walk response returned no rows";
+  }
+  for (let i = 0; i < result.paths.rows.length; i += 1) {
+    const row = result.paths.rows[i];
+    if (!Array.isArray(row.path) || row.path.length < 2) {
+      return `pattern_walk response missing path at index ${i}`;
+    }
+    if (!row.end) {
+      return `pattern_walk response missing end at index ${i}`;
+    }
+  }
+  return null;
 }
 
 function matchesShapeFailure(label, result) {
@@ -478,6 +533,12 @@ async function main() {
     call(9, "query_ontology", { operation: "workspace_brief", limit: 5 }),
     call(10, "query_ontology", { operation: "health" }),
     call(11, "compile_ontology", { summary: true }),
+    call(12, "query_ontology", {
+      operation: "pattern_walk",
+      slug: "project",
+      pattern: ["domains", "capabilities"],
+      limit: 5,
+    }),
   ];
 
   const { responses, stderr, timedOut } = await rpc(requests, timeoutMs);
@@ -610,7 +671,31 @@ async function main() {
     );
   }
 
-  const failures = evaluateDogfoodGate({ kinds, list, ev, path, bl, orph, validation, brief, health, compiled });
+  // 11. pattern_walk
+  header(`query_ontology(pattern_walk project → domains → capabilities)`);
+  const patternWalk = getResult(responses, 12);
+  if (patternWalk) {
+    console.log(
+      `  paths: ${patternWalk.paths?.rows?.length ?? "n/a"} / total ${patternWalk.paths?.total ?? "n/a"} · limited ${patternWalk.paths?.limited ?? "n/a"}`,
+    );
+    for (const row of (patternWalk.paths?.rows || []).slice(0, 5)) {
+      console.log(`  ${row.path?.join(" → ") || row.end || "unknown"}`);
+    }
+  }
+
+  const failures = evaluateDogfoodGate({
+    kinds,
+    list,
+    ev,
+    path,
+    bl,
+    orph,
+    validation,
+    brief,
+    health,
+    compiled,
+    patternWalk,
+  });
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
   if (timedOut && missingLabels.length > 0) {
     failures.unshift(rpcTimeoutFailure(timeoutMs, missingLabels));
@@ -632,6 +717,7 @@ async function main() {
   console.log(`  workspace_brief: ${brief?.status ?? "n/a"} (${(brief?.nextActions || []).length} next actions)`);
   console.log(`  health: ${health?.status ?? "n/a"} (${(health?.checks || []).length} checks)`);
   console.log(`  compile_ontology: ${compiled?.nodeCount ?? "n/a"} nodes · ${compiled?.edgeCount ?? "n/a"} edges · ${compiled?.issueCount ?? "n/a"} issues`);
+  console.log(`  pattern_walk: ${patternWalk?.paths?.rows?.length ?? "n/a"} paths (${patternWalk?.paths?.limited ? "limited" : "complete"})`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   if (stderr.trim()) {
