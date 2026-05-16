@@ -74,6 +74,14 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /overview query_plan/);
   });
 
+  it('keeps the CLI changelog aligned with the mcp-verify census scope', () => {
+    const changelog = readFileSync('cli/CHANGELOG.md', 'utf-8');
+    const verifySection = changelog.split('### Added — `mcp-verify` command')[1]?.split('### Added — `compile`')[0] ?? '';
+
+    assert.match(verifySection, /`list_concepts`, `list_kinds`, `validate_vault`/);
+    assert.match(verifySection, /`overview`, and `overview query_plan`/);
+  });
+
   it('documents dogfood validation as a release gate', () => {
     const readme = readFileSync('README.md', 'utf-8');
     const releaseChecks = readme.split('### Package / MCP release checks')[1]?.split('## Verifiable promises')[0] ?? '';
