@@ -426,19 +426,19 @@ R14 also unified `add_concept` / CLI `add` / CLI `import` to a single per-kind f
 15. **infer_imports** `{ repoRoot? }` — side-effect-free TS/JS import graph → dependency edge candidates
 
 #### Write tools (8)
-1. **add_concept** `{ slug, kind, title, domain?, capabilities?, elements?, body? }` — create new `.md`; graph arrays are trimmed, deduped, and sorted on write (throws on existing slug); changed writes return compact `postWriteMaintenance`
+1. **add_concept** `{ slug, kind, title, domain?, capabilities?, elements?, body? }` — create new `.md`; graph arrays are trimmed, deduped, and sorted on write (throws on existing slug); changed writes return compact `postWriteMaintenance` with action `score`, executable `proposedAction`, and current-page next action pointers
    - **R6 validation**: title must be non-empty trimmed string (`isValidVaultTitle`)
-2. **add_concepts** `{ concepts }` — batch create nodes (max 50), order-preserving partial results; changed batches return compact `postWriteMaintenance` for the final graph
-3. **patch_concept** `{ slug, frontmatter?, body?, expected_mtime? }` — update existing (`null` value deletes key); graph arrays are trimmed, deduped, and sorted on patch; changed writes return compact `postWriteMaintenance`
+2. **add_concepts** `{ concepts }` — batch create nodes (max 50), order-preserving partial results; changed batches return compact `postWriteMaintenance` with action `score`, executable `proposedAction`, and current-page next action pointers for the final graph
+3. **patch_concept** `{ slug, frontmatter?, body?, expected_mtime? }` — update existing (`null` value deletes key); graph arrays are trimmed, deduped, and sorted on patch; changed writes return compact `postWriteMaintenance` with action `score`, executable `proposedAction`, and current-page next action pointers
     - **R6 validation**: rejects `title: null` and `title: ""`
     - **R11 conflict guard**: optional `expected_mtime` (from get_concept response). Throws `VaultConflictError` if file mtime differs at write time — caller re-reads and retries.
-4. **add_relation** `{ from, to, type }` — append to source frontmatter graph key; changed writes return compact `postWriteMaintenance`
+4. **add_relation** `{ from, to, type }` — append to source frontmatter graph key; changed writes return compact `postWriteMaintenance` with action `score`, executable `proposedAction`, and current-page next action pointers
     - type enum: `depends_on` (→ `dependencies`) / `relates` / `contains` / `describes` / `domains` / `capabilities` / `elements` / `domain`
     - **R7 validation**: both `from` AND `to` slug must exist in vault (`vaultSlugExists`)
     - Unique tail aliases and frontmatter `slug:` aliases are resolved to canonical file slugs before write
     - Idempotent: duplicate returns `{ alreadyExists: true }`
-5. **add_relations** `{ relations }` — batch edge writer (max 50), idempotent per row; stored relation arrays are deduped and sorted as canonical graph sets; changed batches return compact `postWriteMaintenance` for the final graph
-6. **delete_concept** `{ slug, confirm?, force?, expected_mtime? }` — permanent delete; confirmed deletes return compact `postWriteMaintenance`
+5. **add_relations** `{ relations }` — batch edge writer (max 50), idempotent per row; stored relation arrays are deduped and sorted as canonical graph sets; changed batches return compact `postWriteMaintenance` with action `score`, executable `proposedAction`, and current-page next action pointers for the final graph
+6. **delete_concept** `{ slug, confirm?, force?, expected_mtime? }` — permanent delete; confirmed deletes return compact `postWriteMaintenance` with action `score`, executable `proposedAction`, and current-page next action pointers
     - `confirm: false` (dry-run with backlinks preview) / `true` (actual)
     - `force: false` (throw if backlinks exist) / `true` (delete anyway)
     - **R11 conflict guard**: optional `expected_mtime`
@@ -446,13 +446,13 @@ R14 also unified `add_concept` / CLI `add` / CLI `import` to a single per-kind f
     - Moves the .md file, updates the moved file's `slug:` key, rewrites every backlink (frontmatter array entries, inline string keys like `domain`, body links `[[oldSlug]]` / `(oldSlug.md)`)
     - Tail-only references (`mcp-server` for `capabilities/mcp-server`) also redirected to the new tail
     - `confirm: false` (dry-run with full update preview) / `true` (actual)
-    - Confirmed renames return compact `postWriteMaintenance`
+    - Confirmed renames return compact `postWriteMaintenance` with action `score`, executable `proposedAction`, and current-page next action pointers
     - Replaces the manual `find_backlinks` + N `patch_concept` loop
 8. **merge_concepts** `{ fromSlug, intoSlug, confirm? }` — **R11** atomic graph-level merge
     - Redirects every backlink `fromSlug` → `intoSlug`, then deletes `fromSlug.md`
     - `intoSlug` node preserved as-is (frontmatter / body not auto-merged — use `patch_concept` after to combine)
     - `confirm: false` (dry-run) / `true` (actual)
-    - Confirmed merges return compact `postWriteMaintenance`
+    - Confirmed merges return compact `postWriteMaintenance` with action `score`, executable `proposedAction`, and current-page next action pointers
 
 ---
 

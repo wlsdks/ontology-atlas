@@ -137,12 +137,36 @@ describe('package contract helpers', () => {
     assert.match(addConceptRow, /`limited`/);
     assert.match(addConceptRow, /next action pointers/);
     assert.match(addConceptRow, /`score`/);
+    assert.match(addConceptRow, /executable `proposedAction`/);
     assert.match(featureRow, /explicit `cursor\.reason` metadata/);
     assert.match(featureRow, /current-page `nextExecutableAction`/);
     assert.match(featureRow, /current-page `nextReviewAction`/);
     assert.match(featureRow, /ready pages report `cursor\.found=true` with `cursor\.reason=null`/);
     assert.match(featureRow, /unknown cursors return an empty page with `cursor\.found=false`/);
     assert.match(featureRow, /zero remaining actions, and no next actions/);
+
+    for (const toolName of [
+      'add_concept',
+      'add_concepts',
+      'patch_concept',
+      'add_relation',
+      'add_relations',
+      'delete_concept',
+      'rename_concept',
+      'merge_concepts',
+    ]) {
+      const featureSuffix = features.split(`**${toolName}**`)[1] ?? '';
+      const nextToolStart = featureSuffix.search(/\n\d+\. \*\*/);
+      const toolText = featureSuffix === ''
+        ? ''
+        : nextToolStart === -1
+          ? featureSuffix
+          : featureSuffix.slice(0, nextToolStart);
+      assert.match(toolText, /compact `postWriteMaintenance`/, `${toolName} documents compact post-write maintenance`);
+      assert.match(toolText, /action `score`/, `${toolName} documents maintenance action score`);
+      assert.match(toolText, /executable `proposedAction`/, `${toolName} documents executable proposedAction`);
+      assert.match(toolText, /current-page next action pointers/, `${toolName} documents current-page next action pointers`);
+    }
     for (const option of [
       'componentLimit',
       'cycleLimit',
