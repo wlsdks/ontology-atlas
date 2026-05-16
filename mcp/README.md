@@ -200,7 +200,10 @@ so batch success rows and partial rows are verified during installation checks. 
 `list_kinds` / `compile_ontology` / `overview`
 census shape/count mismatches, `validate_vault` problem files, failing health checks, or fail-severity
 `workspace_brief.nextActions` fail the command; advisory `needs_attention` states still print so starter vaults can
-verify before cleanup. Non-blocking `workspace_brief.nextActions` are printed as a short
+verify before cleanup. Missing or malformed first-contact diagnosis payloads
+such as `workspace_brief.nextActions`, `workspace_brief.health.checks`, and
+`health.checks` also fail the command instead of being treated as clean.
+Non-blocking `workspace_brief.nextActions` are printed as a short
 advisory list. The default wait window is 8 seconds; set
 `OMOT_VERIFY_TIMEOUT_MS` to a positive integer millisecond value if your vault
 is large or on a slow filesystem.

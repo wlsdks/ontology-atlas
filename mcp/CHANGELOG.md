@@ -19,6 +19,7 @@
 - `npm run verify` now checks the `get_concepts` batch reader with slugs discovered from `list_concepts` plus one missing slug, so installed packages catch success-row / partial-row contract drift without assuming dogfood-specific vault slugs.
 - `npm run verify` cross-checks `list_kinds` census totals against `list_concepts`, `validate_vault`, `compile_ontology`, and `overview`, so package installs catch kind-count drift before an agent trusts the vault summary.
 - `npm run verify` now fails on blocking first-contact diagnosis problems: `list_concepts` vault warnings, `fail` health checks, or fail-severity `workspace_brief.nextActions` return exit 1, while advisory `needs_attention` states still print for starter vaults.
+- `npm run verify` now treats missing or malformed first-contact diagnosis payloads (`workspace_brief.nextActions`, `workspace_brief.health.checks`, `health.checks`) as failures instead of clean vaults.
 - `npm run verify` prints non-blocking `workspace_brief.nextActions` as a compact advisory list, so starter vault users see what to clean up after MCP wiring is confirmed.
 - `npm run verify` uses an 8s server wait window by default and supports `OMOT_VERIFY_TIMEOUT_MS` for larger/slower vaults.
 - `OMOT_VERIFY_TIMEOUT_MS` is validated as a strict positive integer, so partial values like `1000ms` fail instead of being silently truncated.

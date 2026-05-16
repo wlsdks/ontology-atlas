@@ -74,6 +74,10 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /batch success rows\s+and partial rows are verified during installation checks/);
     assert.match(verifySection, /`list_kinds` \/ `compile_ontology` \/ `overview`\s+census shape\/count mismatches/);
+    assert.match(verifySection, /Missing or malformed first-contact diagnosis payloads/);
+    assert.match(verifySection, /`workspace_brief\.nextActions`/);
+    assert.match(verifySection, /`workspace_brief\.health\.checks`/);
+    assert.match(verifySection, /`health\.checks`/);
   });
 
   it('keeps the MCP changelog aligned with the verify census gates', () => {
@@ -85,6 +89,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`compile_ontology`, `overview`, and `overview query_plan`/);
     assert.match(verifySection, /cross-checks `list_kinds` census totals/);
     assert.match(verifySection, /`list_concepts`, `validate_vault`, `compile_ontology`, and `overview`/);
+    assert.match(verifySection, /missing or malformed first-contact diagnosis payloads/);
+    assert.match(verifySection, /`workspace_brief\.nextActions`, `workspace_brief\.health\.checks`, `health\.checks`/);
   });
 
   it('keeps the CLI README explicit about mcp-verify help scope', () => {
