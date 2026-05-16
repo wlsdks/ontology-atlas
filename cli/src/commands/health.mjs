@@ -47,7 +47,7 @@ export async function runHealth(args) {
   }
   if (json) {
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
-    return 0;
+    return healthExitCode(result);
   }
   const status = result?.status ?? 'unknown';
   const sc = STATUS_COLORS[status] || COLORS.dim;
@@ -69,6 +69,11 @@ export async function runHealth(args) {
   if (sum.dependencyCycles) {
     process.stdout.write(`\n${COLORS.red}cycles ${sum.dependencyCycles}${COLORS.reset} — \`cycles\` 명령으로 자세히\n`);
   }
+  return healthExitCode(result);
+}
+
+function healthExitCode(result) {
+  const status = result?.status ?? 'unknown';
   return status === 'healthy' || status === 'pass' ? 0 : 1;
 }
 
