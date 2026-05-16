@@ -227,7 +227,7 @@ A successful run looks like this:
 ✓ overview query_plan — aggregate_scan (medium, nodes 28, edges 209)
 ✓ project_map query_plan — aggregate_scan (medium, nodes 28, edges 209)
 ✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
-✓ path — elements/file-system-access-api → project (2 hops)
+✓ path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ project_scope — project (27 nodes, internalEdges 92)
 
 All passed — register .mcp.json with Claude Code and restart to use the 23 tools.

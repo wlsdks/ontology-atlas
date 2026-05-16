@@ -190,7 +190,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ health — healthy \(5 checks: compile_issues:pass/);
     assert.match(verifySection, /✓ health_tuned — healthy \(5 checks: compile_issues:pass/);
     assert.match(verifySection, /✓ neighbors — elements\/file-system-access-api/);
-    assert.match(verifySection, /✓ path — elements\/file-system-access-api → project \(2 hops\)/);
+    assert.match(verifySection, /✓ path — elements\/file-system-access-api → project \(2 hops, 2 edges\)/);
     assert.doesNotMatch(verifySection, /✓ path — project → project/);
     assert.match(verifySection, new RegExp(`✓ project_scope — project \\(${scopedNodes} nodes, internalEdges`));
     assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concepts`, `find_orphans`, `list_kinds`, `validate_vault`/);
@@ -567,6 +567,8 @@ describe('package contract helpers', () => {
     assert.match(smoke, /neighbors\\\/node-to-project path\\\/project_scope graph-query smoke/);
     assert.match(smoke, /invalid-enum rejection smoke/);
     assert.match(smoke, /project_scope — skipped \\\(no project node in vault\\\)/);
+    assert.match(smoke, /path — elements\\\/example → project \\\(1 hop, 1 edges\\\)/);
+    assert.match(smoke, /path — domains\\\/core → domains\\\/core \\\(0 hops, 0 edges\\\)/);
     assert.match(smoke, /neighbors\\\/path — skipped \\\(vault has no nodes\\\)/);
     assert.match(smokeSection, /cycles --json/);
     assert.match(smokeSection, /compile --json/);
