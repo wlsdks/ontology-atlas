@@ -174,15 +174,35 @@ function assertPostWriteMaintenanceShape(value, label = "postWriteMaintenance") 
   assert.deepEqual(value.filters.severities, [], `${label} exposes severity filters`);
   assert.deepEqual(value.filters.kinds, [], `${label} exposes kind filters`);
   assert.ok(value.cursor, `${label} exposes cursor metadata`);
+  assert.equal(typeof value.cursor.found, "boolean", `${label} cursor exposes found flag`);
   assert.ok(Object.hasOwn(value.cursor, "reason"), `${label} cursor exposes miss reason metadata`);
+  assert.ok(Object.hasOwn(value.cursor, "startIndex"), `${label} cursor exposes start index`);
+  assert.equal(typeof value.cursor.hasMore, "boolean", `${label} cursor exposes hasMore flag`);
+  assert.ok(value.byPhase && typeof value.byPhase === "object", `${label} exposes phase counts`);
+  assert.ok(value.bySeverity && typeof value.bySeverity === "object", `${label} exposes severity counts`);
+  assert.ok(value.byKind && typeof value.byKind === "object", `${label} exposes kind counts`);
   assert.equal(typeof value.limited, "boolean", `${label} exposes limited flag`);
   assert.ok(Array.isArray(value.actions), `${label} exposes compact actions`);
   assert.ok(Object.hasOwn(value, "nextExecutableAction"), `${label} exposes next executable action pointer`);
   assert.ok(Object.hasOwn(value, "nextReviewAction"), `${label} exposes next review action pointer`);
-  if (value.actions.length > 0) {
-    assert.match(value.actions[0].id, /^maint_[a-f0-9]{8}$/, `${label} action has stable id`);
-    assert.equal(typeof value.actions[0].executable, "boolean", `${label} action exposes executable flag`);
+  if (value.nextExecutableAction) {
+    assertCompactMaintenanceActionShape(value.nextExecutableAction, `${label} nextExecutableAction`);
   }
+  if (value.nextReviewAction) {
+    assertCompactMaintenanceActionShape(value.nextReviewAction, `${label} nextReviewAction`);
+  }
+  if (value.actions.length > 0) {
+    assertCompactMaintenanceActionShape(value.actions[0], label);
+  }
+}
+
+function assertCompactMaintenanceActionShape(action, label) {
+  assert.match(action.id, /^maint_[a-f0-9]{8}$/, `${label} action has stable id`);
+  assert.equal(typeof action.phase, "string", `${label} action exposes phase`);
+  assert.equal(typeof action.kind, "string", `${label} action exposes kind`);
+  assert.equal(typeof action.severity, "string", `${label} action exposes severity`);
+  assert.equal(typeof action.executable, "boolean", `${label} action exposes executable flag`);
+  assert.equal(typeof action.reason, "string", `${label} action exposes reason`);
 }
 
 // R+ — cycle 39: 단일 도구 (get_concept · add_concept · add_relation) 의
