@@ -136,8 +136,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /core graph-query execution with `neighbors`, node→project `path`, and `project_scope`/);
     assert.match(verifySection, /skips only the containment-specific `project_scope` smoke/);
     assert.match(verifySection, /accepts empty vault folders by skipping node-targeted graph smoke/);
-    assert.match(verifySection, /cross-checks `list_kinds` census totals/);
-    assert.match(verifySection, /`list_concepts`, `validate_vault`, `compile_ontology`, and `overview`/);
+    assert.match(verifySection, /cross-checks node census totals across `list_kinds`, `list_concepts`, `compile_ontology`, and `overview`/);
+    assert.match(verifySection, /keeping `validate_vault\.scanned` as file-level health/);
     assert.match(verifySection, /missing or malformed first-contact diagnosis payloads/);
     assert.match(verifySection, /`workspace_brief\.nextActions`, `workspace_brief\.health\.checks`, `health\.checks`/);
     assert.match(verifySection, /requires every `workspace_brief\.nextActions` row to include a non-empty `id` or `kind` plus non-empty `severity`/);

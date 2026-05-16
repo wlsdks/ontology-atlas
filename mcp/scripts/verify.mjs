@@ -877,7 +877,6 @@ export function verifyCountConsistencyFailure({ kinds, list, validation, compile
   const counts = [
     ['list_kinds.total', kinds?.total],
     ['list_concepts.total', list?.total],
-    ['validate_vault.scanned', validation?.scanned],
     ['compile_ontology.nodeCount', compiled?.nodeCount],
     ['overview.graph.nodes', overview?.graph?.nodes],
   ].filter(([, value]) => Number.isInteger(value));

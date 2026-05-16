@@ -1082,10 +1082,7 @@ describe('verify.mjs first-contact gates', () => {
       verifyCountConsistencyFailure({ kinds: { total: 2, byKind: { project: 2 } }, list, validation, compiled }),
       'verify count mismatch — list_kinds.total 2, list_concepts.total 1',
     );
-    assert.equal(
-      verifyCountConsistencyFailure({ kinds, list, validation: { ...validation, scanned: 2 }, compiled }),
-      'verify count mismatch — list_kinds.total 1, validate_vault.scanned 2',
-    );
+    assert.equal(verifyCountConsistencyFailure({ kinds, list, validation: { ...validation, scanned: 2 }, compiled }), null);
     assert.equal(
       verifyCountConsistencyFailure({ kinds, list, validation, compiled: { ...compiled, nodeCount: 2, byKind: { project: 2 } } }),
       'verify count mismatch — list_kinds.total 1, compile_ontology.nodeCount 2',

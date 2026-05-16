@@ -3069,10 +3069,7 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, list: { ...okShape.list, total: 2 } }),
       ["dogfood count mismatch — list_kinds.total 1, list_concepts.total 2"],
     );
-    assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, validation: { ...okShape.validation, scanned: 2 } }),
-      ["dogfood count mismatch — list_kinds.total 1, validate_vault.scanned 2"],
-    );
+    assert.deepEqual(evaluateDogfoodGate({ ...okShape, validation: { ...okShape.validation, scanned: 2 } }), []);
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, compiled: { ...okShape.compiled, nodeCount: 2, byKind: { project: 2 } } }),
       ["dogfood count mismatch — list_kinds.total 1, compile_ontology.nodeCount 2", "dogfood byKind mismatch — project: list_kinds 1, compile_ontology 2"],
