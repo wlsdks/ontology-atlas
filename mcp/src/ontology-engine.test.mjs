@@ -667,6 +667,55 @@ describe('queryCompiledOntology', () => {
       'capabilities/login',
       'elements/login-form',
     ]);
+
+    const branchingGraph = compileOntology(
+      [
+        doc('project', {
+          kind: 'project',
+          title: 'Project',
+          domains: ['domains/auth', 'domains/billing'],
+        }),
+        doc('domains/auth', {
+          kind: 'domain',
+          title: 'Auth',
+          capabilities: ['capabilities/login'],
+        }),
+        doc('domains/billing', {
+          kind: 'domain',
+          title: 'Billing',
+          capabilities: ['capabilities/invoice'],
+        }),
+        doc('capabilities/login', { kind: 'capability', title: 'Login' }),
+        doc('capabilities/invoice', { kind: 'capability', title: 'Invoice' }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const exactLimit = queryCompiledOntology(branchingGraph, {
+      operation: 'pattern_walk',
+      slug: 'project',
+      pattern: ['domains', 'capabilities'],
+      limit: 2,
+    });
+    assert.equal(exactLimit.paths.total, 2);
+    assert.equal(exactLimit.paths.limited, false);
+    assert.deepEqual(
+      exactLimit.paths.rows.map((row) => row.end),
+      ['capabilities/login', 'capabilities/invoice'],
+    );
+
+    const truncated = queryCompiledOntology(branchingGraph, {
+      operation: 'pattern_walk',
+      slug: 'project',
+      pattern: ['domains', 'capabilities'],
+      limit: 1,
+    });
+    assert.equal(truncated.paths.total, 1);
+    assert.equal(truncated.paths.limited, true);
+    assert.deepEqual(
+      truncated.paths.rows.map((row) => row.end),
+      ['capabilities/login'],
+    );
   });
 
   it('returns incoming change impact by default', () => {

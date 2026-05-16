@@ -680,6 +680,7 @@ export function createOntologyEngine(artifact, options = {}) {
 
     pattern.forEach((relation, index) => {
       const nextPaths = [];
+      let stepLimited = false;
       const relationSet = new Set([relation]);
       for (const row of paths) {
         const candidates = traversalEdges(row.slug, direction, relationSet);
@@ -691,16 +692,18 @@ export function createOntologyEngine(artifact, options = {}) {
             path: [...row.path, next],
             edges: [...row.edges, formattedEdge],
           });
-          if (nextPaths.length >= limit) {
-            limited = true;
+          if (nextPaths.length > limit) {
+            stepLimited = true;
             break;
           }
         }
-        if (limited) break;
+        if (stepLimited) break;
       }
+      if (stepLimited) limited = true;
       nextPaths.sort((a, b) => a.path.join('\0').localeCompare(b.path.join('\0')));
-      layers.push(patternLayer(index + 1, relation, nextPaths));
-      paths = nextPaths.slice(0, limit);
+      const visiblePaths = nextPaths.slice(0, limit);
+      layers.push(patternLayer(index + 1, relation, visiblePaths));
+      paths = visiblePaths;
     });
 
     const endSlugs = [...new Set(paths.map((row) => row.slug))].sort();

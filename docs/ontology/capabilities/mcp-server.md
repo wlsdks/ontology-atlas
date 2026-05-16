@@ -149,6 +149,8 @@ edge 수이고 `limited` 는 반환되지 않은 edge 가 있을 때만 true 다
 `query_ontology(reachability)` / `query_ontology(subgraph)` 역시 시작 노드와
 sentinel 탐색을 분리해, agent 가 실제로 더 볼 노드가 있을 때만 limited 상태를
 받는다.
+`query_ontology(pattern_walk)` 는 단계별 path 확장에서도 limit 과 정확히 같은
+branch 수를 truncation 으로 오인하지 않아, 후속 pattern step 이 누락되지 않는다.
 `compile_ontology` pagination 은 cursor safety 를 위해 limit 과 offset 계약을
 분리한다. `nodesLimit` / `edgesLimit` 은 1 이상 양수만 허용하고,
 `nodesOffset` / `edgesOffset` 만 0 이상을 허용한다. 따라서 page size 0 으로
