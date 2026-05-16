@@ -90,7 +90,8 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [48, "project_probe"],
   [49, "health_tuned"],
   [50, "workspace_brief_tuned"],
-  [51, "strict_maintenance_filter"],
+  [51, "strict_maintenance_phase_filter"],
+  [52, "strict_maintenance_severity_filter"],
 ]);
 
 const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
@@ -276,6 +277,10 @@ export function buildDogfoodRequests() {
     call(51, "query_ontology", {
       operation: "maintenance_plan",
       phases: ["repiar"],
+    }),
+    call(52, "query_ontology", {
+      operation: "maintenance_plan",
+      severities: ["fatal"],
     }),
     call(24, "query_ontology", {
       operation: "growth_plan",
@@ -492,7 +497,8 @@ export function evaluateDogfoodGate({
   projectProbe,
   strictArgs,
   strictEnum,
-  strictMaintenanceFilter,
+  strictMaintenancePhaseFilter,
+  strictMaintenanceSeverityFilter,
 }) {
   const failures = [];
   recordResult(failures, "list_kinds", kinds);
@@ -547,8 +553,10 @@ export function evaluateDogfoodGate({
   if (strictFailure) failures.push(`strict_args: ${strictFailure}`);
   const strictEnumError = strictEnumFailure(strictEnum);
   if (strictEnumError) failures.push(`strict_enum: ${strictEnumError}`);
-  const strictMaintenanceFilterError = strictMaintenanceFilterFailure(strictMaintenanceFilter);
-  if (strictMaintenanceFilterError) failures.push(`strict_maintenance_filter: ${strictMaintenanceFilterError}`);
+  const strictMaintenancePhaseFilterError = strictMaintenanceFilterFailure(strictMaintenancePhaseFilter, "phases");
+  if (strictMaintenancePhaseFilterError) failures.push(`strict_maintenance_phase_filter: ${strictMaintenancePhaseFilterError}`);
+  const strictMaintenanceSeverityFilterError = strictMaintenanceFilterFailure(strictMaintenanceSeverityFilter, "severities");
+  if (strictMaintenanceSeverityFilterError) failures.push(`strict_maintenance_severity_filter: ${strictMaintenanceSeverityFilterError}`);
 
   if (kinds) {
     const kindsFailure = listKindsFailure(kinds);
@@ -4038,12 +4046,18 @@ async function main() {
   }
 
   // 47. strict maintenance filter rejection
-  header("strict maintenance filters — invalid phase rejection");
-  const strictMaintenanceFilter = responses.find((response) => response.id === 51);
-  const strictMaintenanceFilterText = strictMaintenanceFilter?.result?.content?.[0]?.text || "";
-  console.log(`  rejected: ${strictMaintenanceFilter?.result?.isError === true}`);
-  if (strictMaintenanceFilterText) {
-    console.log(`  ${strictMaintenanceFilterText}`);
+  header("strict maintenance filters — invalid phase/severity rejection");
+  const strictMaintenancePhaseFilter = responses.find((response) => response.id === 51);
+  const strictMaintenancePhaseFilterText = strictMaintenancePhaseFilter?.result?.content?.[0]?.text || "";
+  console.log(`  phase rejected: ${strictMaintenancePhaseFilter?.result?.isError === true}`);
+  if (strictMaintenancePhaseFilterText) {
+    console.log(`  ${strictMaintenancePhaseFilterText}`);
+  }
+  const strictMaintenanceSeverityFilter = responses.find((response) => response.id === 52);
+  const strictMaintenanceSeverityFilterText = strictMaintenanceSeverityFilter?.result?.content?.[0]?.text || "";
+  console.log(`  severity rejected: ${strictMaintenanceSeverityFilter?.result?.isError === true}`);
+  if (strictMaintenanceSeverityFilterText) {
+    console.log(`  ${strictMaintenanceSeverityFilterText}`);
   }
 
   const failures = evaluateDogfoodGate({
@@ -4096,7 +4110,8 @@ async function main() {
     projectProbe,
     strictArgs,
     strictEnum,
-    strictMaintenanceFilter,
+    strictMaintenancePhaseFilter,
+    strictMaintenanceSeverityFilter,
   });
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
   if (timedOut && missingLabels.length > 0) {
@@ -4165,7 +4180,8 @@ async function main() {
   console.log(`  project_scope: ${projectScope?.summary?.nodes ?? "n/a"} nodes · ${projectScope?.summary?.internalEdges ?? "n/a"} internal edges`);
   console.log(`  strict_args: rejected ${strictArgs?.result?.isError === true}`);
   console.log(`  strict_enum: rejected ${strictEnum?.result?.isError === true}`);
-  console.log(`  strict_maintenance_filter: rejected ${strictMaintenanceFilter?.result?.isError === true}`);
+  console.log(`  strict_maintenance_phase_filter: rejected ${strictMaintenancePhaseFilter?.result?.isError === true}`);
+  console.log(`  strict_maintenance_severity_filter: rejected ${strictMaintenanceSeverityFilter?.result?.isError === true}`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   if (stderr.trim()) {

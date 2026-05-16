@@ -570,7 +570,16 @@ describe('verify.mjs first-contact gates', () => {
           isError: true,
           content: [{ text: 'phases items must be one of: validate, repair, link, materialize, review.' }],
         },
-      }),
+      }, 'phases'),
+      null,
+    );
+    assert.equal(
+      strictMaintenanceFilterFailure({
+        result: {
+          isError: true,
+          content: [{ text: 'severities items must be one of: fail, warn, info.' }],
+        },
+      }, 'severities'),
       null,
     );
     assert.equal(
@@ -579,11 +588,15 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       strictMaintenanceFilterFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
-      'strict maintenance filter response did not report the invalid maintenance_plan phase',
+      'strict maintenance filter response did not report the invalid maintenance_plan phases filter',
     );
     assert.equal(
       strictMaintenanceFilterFailure({ result: { isError: true, content: [{ text: 'phases items must be one of: validate, repair. Received: "repiar".' }] } }),
       'strict maintenance filter response did not list allowed maintenance_plan phases',
+    );
+    assert.equal(
+      strictMaintenanceFilterFailure({ result: { isError: true, content: [{ text: 'severities items must be one of: fail, warn.' }] } }, 'severities'),
+      'strict maintenance filter response did not list allowed maintenance_plan severities',
     );
   });
 
@@ -683,7 +696,8 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(19), 'find_orphans');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(20), 'health_tuned');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(21), 'workspace_brief_tuned');
-    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(22), 'strict_maintenance_filter');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(22), 'strict_maintenance_phase_filter');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(23), 'strict_maintenance_severity_filter');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),

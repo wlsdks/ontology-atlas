@@ -1285,10 +1285,16 @@ const okShape = {
       content: [{ text: 'operation must be one of: overview, health. Received: "overveiw". Did you mean "overview"?' }],
     },
   },
-  strictMaintenanceFilter: {
+  strictMaintenancePhaseFilter: {
     result: {
       isError: true,
       content: [{ text: 'phases items must be one of: validate, repair, link, materialize, review.' }],
+    },
+  },
+  strictMaintenanceSeverityFilter: {
+    result: {
+      isError: true,
+      content: [{ text: 'severities items must be one of: fail, warn, info.' }],
     },
   },
 };
@@ -1396,7 +1402,8 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(48), "project_probe");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(49), "health_tuned");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(50), "workspace_brief_tuned");
-    assert.equal(DOGFOOD_RESPONSE_LABELS.get(51), "strict_maintenance_filter");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(51), "strict_maintenance_phase_filter");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(52), "strict_maintenance_severity_filter");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -1460,24 +1467,36 @@ describe("evaluateDogfoodGate", () => {
 
   it("fails malformed strict maintenance filter dogfood responses", () => {
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictMaintenanceFilter: { result: { isError: false, content: [{ text: "ok" }] } } }),
-      ["strict_maintenance_filter: strict maintenance filter response was not rejected"],
+      evaluateDogfoodGate({ ...okShape, strictMaintenancePhaseFilter: { result: { isError: false, content: [{ text: "ok" }] } } }),
+      ["strict_maintenance_phase_filter: strict maintenance filter response was not rejected"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictMaintenanceFilter: { result: { isError: true, content: [{ text: "different error" }] } } }),
-      ["strict_maintenance_filter: strict maintenance filter response did not report the invalid maintenance_plan phase"],
+      evaluateDogfoodGate({ ...okShape, strictMaintenancePhaseFilter: { result: { isError: true, content: [{ text: "different error" }] } } }),
+      ["strict_maintenance_phase_filter: strict maintenance filter response did not report the invalid maintenance_plan phases filter"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
-        strictMaintenanceFilter: {
+        strictMaintenancePhaseFilter: {
           result: {
             isError: true,
             content: [{ text: 'phases items must be one of: validate, repair.' }],
           },
         },
       }),
-      ["strict_maintenance_filter: strict maintenance filter response did not list allowed maintenance_plan phases"],
+      ["strict_maintenance_phase_filter: strict maintenance filter response did not list allowed maintenance_plan phases"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictMaintenanceSeverityFilter: {
+          result: {
+            isError: true,
+            content: [{ text: 'severities items must be one of: fail, warn.' }],
+          },
+        },
+      }),
+      ["strict_maintenance_severity_filter: strict maintenance filter response did not list allowed maintenance_plan severities"],
     );
   });
 

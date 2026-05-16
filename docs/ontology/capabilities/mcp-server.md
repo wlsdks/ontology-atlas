@@ -153,7 +153,7 @@ project/domain map 과 특정 domain drill-down 출력까지 이어지는지 본
 `maintenance_plan.phases` 는 `validate` / `repair` / `link` / `materialize` / `review`,
 `maintenance_plan.severities` 는 `fail` / `warn` / `info` enum 으로 검증해
 agent 작업 큐 filter 오타가 빈 계획으로 조용히 숨지 않게 한다. verify / dogfood
-walk 는 `phases: ["repiar"]` negative call 도 실제 MCP runtime 에 던져 이 계약이
+walk 는 `phases: ["repiar"]` 와 `severities: ["fatal"]` negative call 도 실제 MCP runtime 에 던져 이 계약이
 schema 문서에만 머물지 않게 한다.
 이후 `validate_vault.scanned` / `summary.problemFiles` 로 file-level health 를 확인한 뒤,
 node-count consistency 는 `list_kinds.total`, `list_concepts.total`,
@@ -324,7 +324,7 @@ project-node `list_concepts` probe, `all_paths`, `all_paths query_plan`, `neighb
 `blast_radius`, `subgraph`, `schema`, `facets`, `match_nodes`, `match_edges`,
 `node_profile`, `lineage`, `containment_tree`, `cycles`, `topological_order`, `relation_check`, `recommend_relations`,
 `growth_plan`, `maintenance_plan`, strict unknown-argument / invalid-enum /
-invalid `maintenance_plan.phases` rejection smoke 를
+invalid `maintenance_plan.phases` / `maintenance_plan.severities` rejection smoke 를
 함께 출력해, AI agent 가 첫 접촉에서 받는 graph diagnosis 와 traversal 품질을
 계속 확인한다.
 dogfood 의 `list_concepts.vaultWarnings` / `validate_vault` 판정은

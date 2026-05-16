@@ -241,16 +241,19 @@ export function strictEnumFailure(response) {
   return null;
 }
 
-export function strictMaintenanceFilterFailure(response) {
+export function strictMaintenanceFilterFailure(response, field = 'phases') {
   if (response?.result?.isError !== true) {
     return 'strict maintenance filter response was not rejected';
   }
   const text = response.result.content?.[0]?.text || '';
-  if (!/phases items must be one of/i.test(text)) {
-    return 'strict maintenance filter response did not report the invalid maintenance_plan phase';
+  const allowedPattern = field === 'severities'
+    ? /fail, warn, info/i
+    : /validate, repair, link, materialize, review/i;
+  if (!new RegExp(`${field} items must be one of`, 'i').test(text)) {
+    return `strict maintenance filter response did not report the invalid maintenance_plan ${field} filter`;
   }
-  if (!/validate, repair, link, materialize, review/i.test(text)) {
-    return 'strict maintenance filter response did not list allowed maintenance_plan phases';
+  if (!allowedPattern.test(text)) {
+    return `strict maintenance filter response did not list allowed maintenance_plan ${field}`;
   }
   return null;
 }
@@ -302,7 +305,8 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [19, 'find_orphans'],
   [20, 'health_tuned'],
   [21, 'workspace_brief_tuned'],
-  [22, 'strict_maintenance_filter'],
+  [22, 'strict_maintenance_phase_filter'],
+  [23, 'strict_maintenance_severity_filter'],
 ]);
 
 function log(level, msg) {
@@ -603,6 +607,15 @@ export function buildFirstContactRequests() {
       params: {
         name: 'query_ontology',
         arguments: { operation: 'maintenance_plan', phases: ['repiar'] },
+      },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 23,
+      method: 'tools/call',
+      params: {
+        name: 'query_ontology',
+        arguments: { operation: 'maintenance_plan', severities: ['fatal'] },
       },
     },
   ];
@@ -1524,7 +1537,8 @@ async function step2BootAndCall() {
       const strictArgsRes = responses.find((r) => r.id === 16);
       const strictEnumRes = responses.find((r) => r.id === 17);
       const orphansRes = responses.find((r) => r.id === 19);
-      const strictMaintenanceFilterRes = responses.find((r) => r.id === 22);
+      const strictMaintenancePhaseFilterRes = responses.find((r) => r.id === 22);
+      const strictMaintenanceSeverityFilterRes = responses.find((r) => r.id === 23);
       let kindsPayload = null;
       let listPayload = null;
       let validationPayload = null;
@@ -1591,12 +1605,17 @@ async function step2BootAndCall() {
         return res(false);
       }
       log('ok', 'strict enums — invalid query operation rejected with closest-value hint');
-      const strictMaintenanceFilter = strictMaintenanceFilterFailure(strictMaintenanceFilterRes);
-      if (strictMaintenanceFilter) {
-        log('fail', strictMaintenanceFilter);
+      const strictMaintenancePhaseFilter = strictMaintenanceFilterFailure(strictMaintenancePhaseFilterRes, 'phases');
+      if (strictMaintenancePhaseFilter) {
+        log('fail', strictMaintenancePhaseFilter);
         return res(false);
       }
-      log('ok', 'strict maintenance filters — invalid phase rejected at runtime');
+      const strictMaintenanceSeverityFilter = strictMaintenanceFilterFailure(strictMaintenanceSeverityFilterRes, 'severities');
+      if (strictMaintenanceSeverityFilter) {
+        log('fail', strictMaintenanceSeverityFilter);
+        return res(false);
+      }
+      log('ok', 'strict maintenance filters — invalid phase/severity rejected at runtime');
 
       if (!callRes || !callRes.result) {
         log('fail', 'no list_concepts response');
