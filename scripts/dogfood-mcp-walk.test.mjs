@@ -110,6 +110,14 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(failures, ["list_concepts vaultWarnings present — errors 0, warnings 1"]);
   });
 
+  it("fails on malformed vault warnings", () => {
+    const failures = evaluateDogfoodGate({
+      ...okShape,
+      list: { ...okShape.list, vaultWarnings: { warningCount: 0 } },
+    });
+    assert.deepEqual(failures, ["list_concepts vaultWarnings missing errorCount"]);
+  });
+
   it("fails on validate_vault problem files", () => {
     const failures = evaluateDogfoodGate({
       ...okShape,

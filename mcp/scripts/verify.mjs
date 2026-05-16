@@ -126,8 +126,17 @@ function verifyTimeoutMs() {
 export function vaultWarningsFailure(parsed) {
   const warnings = parsed?.vaultWarnings;
   if (!warnings) return null;
-  const errorCount = warnings.errorCount || 0;
-  const warningCount = warnings.warningCount || 0;
+  if (typeof warnings !== 'object' || Array.isArray(warnings)) {
+    return 'list_concepts vaultWarnings malformed';
+  }
+  if (!Number.isInteger(warnings.errorCount) || warnings.errorCount < 0) {
+    return 'list_concepts vaultWarnings missing errorCount';
+  }
+  if (!Number.isInteger(warnings.warningCount) || warnings.warningCount < 0) {
+    return 'list_concepts vaultWarnings missing warningCount';
+  }
+  const errorCount = warnings.errorCount;
+  const warningCount = warnings.warningCount;
   if (errorCount === 0 && warningCount === 0) return null;
   return `list_concepts vaultWarnings present — errors ${errorCount}, warnings ${warningCount}`;
 }

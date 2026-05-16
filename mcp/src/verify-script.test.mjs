@@ -101,6 +101,18 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
+  it('fails malformed list_concepts vaultWarnings payloads', () => {
+    assert.equal(vaultWarningsFailure({ vaultWarnings: [] }), 'list_concepts vaultWarnings malformed');
+    assert.equal(
+      vaultWarningsFailure({ vaultWarnings: { warningCount: 0 } }),
+      'list_concepts vaultWarnings missing errorCount',
+    );
+    assert.equal(
+      vaultWarningsFailure({ vaultWarnings: { errorCount: 0 } }),
+      'list_concepts vaultWarnings missing warningCount',
+    );
+  });
+
   it('accepts clean validate_vault payloads', () => {
     assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: {} } }), null);
   });
