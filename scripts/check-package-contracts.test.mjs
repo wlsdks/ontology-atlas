@@ -50,6 +50,7 @@ describe('package contract helpers', () => {
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /check-package-contracts\.test\.mjs/);
     assert.match(pkg.scripts?.['test:mcp:suggestions'] ?? '', /mcp\/src\/suggestions\.test\.mjs/);
     assert.match(pkg.scripts?.['test:mcp:suggestions'] ?? '', /mcp\/src\/ontology-engine\.test\.mjs/);
+    assert.equal(pkg.scripts?.['test:mcp:verify'], 'node --test mcp/src/verify-script.test.mjs');
     assert.match(
       pkg.scripts?.['test:mcp:docs'] ?? '',
       /^node --test --test-name-pattern "[^"]+" scripts\/check-package-contracts\.test\.mjs$/,
@@ -65,6 +66,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm test:mcp:docs/);
     assert.match(readme, /pnpm test:mcp:package/);
     assert.match(readme, /pnpm test:mcp:suggestions/);
+    assert.match(readme, /pnpm test:mcp:verify/);
     assert.match(readme, /OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli/);
     assert.match(readme, /pnpm integration:cli:mcp-verify/);
     assert.match(readme, /OMOT_TEST_NAME_PATTERN="tools\/list\|initialize" pnpm integration:mcp/);
@@ -108,8 +110,10 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm integration:mcp:readme/);
     assert.match(section, /pnpm test:mcp:docs/);
     assert.match(section, /pnpm test:mcp:suggestions/);
+    assert.match(section, /pnpm test:mcp:verify/);
     assert.match(section, /first-contact read-only MCP flow/);
     assert.match(section, /documentation drift/);
+    assert.match(section, /verify helper contract/);
     assert.match(section, /OMOT_TEST_NAME_PATTERN/);
     assert.match(section, /Node `--test-name-pattern`/);
   });
@@ -465,6 +469,7 @@ describe('package contract helpers', () => {
 
     assert.match(doc, /Node `--test-name-pattern`/);
     assert.match(doc, /`pnpm integration:mcp:readme`/);
+    assert.match(doc, /`pnpm test:mcp:verify`/);
     assert.match(doc, /first-contact README read-only/);
   });
 

@@ -30,6 +30,7 @@
     "test:mcp:docs": "node --test --test-name-pattern \"README|dogfood CLI capability|dogfood MCP capability|filtered integration scripts\" scripts/check-package-contracts.test.mjs",
     "test:mcp:package": "node --test --test-name-pattern \"MCP npm test|allows only the parser smoke fixture\" scripts/check-package-contracts.test.mjs",
     "test:mcp:suggestions": "node --test --test-name-pattern \"suggestions|suggests close enum values\" mcp/src/suggestions.test.mjs mcp/src/ontology-engine.test.mjs",
+    "test:mcp:verify": "node --test mcp/src/verify-script.test.mjs",
     "lint": "eslint",
     "bundle:check": "node scripts/check-bundle.mjs",
     "test": "vitest",

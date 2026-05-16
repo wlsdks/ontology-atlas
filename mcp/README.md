@@ -51,11 +51,14 @@ before escalating to the full integration suite:
 pnpm integration:mcp:readme
 pnpm test:mcp:docs
 pnpm test:mcp:suggestions
+pnpm test:mcp:verify
 ```
 
 `integration:mcp:readme` runs the documented first-contact read-only MCP flow
 only. `test:mcp:docs` checks README and dogfood ontology documentation drift.
 `test:mcp:suggestions` covers strict enum / argument suggestion behavior.
+`test:mcp:verify` covers the MCP verify helper contract without spawning the
+full integration suite.
 Use `OMOT_TEST_NAME_PATTERN` or Node `--test-name-pattern` with
 `pnpm integration:mcp` when the touched MCP integration case has a different
 name.

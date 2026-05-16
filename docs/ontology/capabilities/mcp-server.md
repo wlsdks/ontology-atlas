@@ -198,7 +198,8 @@ root shortcut `pnpm integration:mcp:readme` 는 first-contact README read-only
 subset 만 실행해 agent onboarding 문서 변경을 빠르게 검증한다.
 package manifest / enum suggestion 류의 더 작은 변경은 root 의
 `pnpm test:mcp:package` / `pnpm test:mcp:suggestions` 로 파일 단위 검증을 먼저
-돌려 반복 dogfood 비용을 낮춘다.
+돌려 반복 dogfood 비용을 낮춘다. verify helper 자체를 만질 때는
+`pnpm test:mcp:verify` 로 `mcp/src/verify-script.test.mjs` 만 바로 실행한다.
 또한 write tool schema 가 `expected_mtime` conflict guard 와 destructive
 tool 의 `confirm` dry-run safety switch 를 계속 노출하는지 `tools/list`
 응답에서 직접 검증해, agent-facing MCP schema 가 실제 동시 편집 보호
