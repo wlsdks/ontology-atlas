@@ -354,6 +354,7 @@ export function initializeInstructionsFailure(response) {
     ['nearest argument hint guidance', /Did you mean "limit"\?/],
     ['nearest enum hint guidance', /Did you mean "overview"\?/],
     ['maintenance filter enum guidance', /phases.*severities.*kinds/],
+    ['maintenance ready cursor guidance', /cursor\.found=true[\s\S]*cursor\.reason=null/],
     ['maintenance cursor miss guidance', /afterActionId[\s\S]*cursor\.found=false[\s\S]*cursor\.reason/],
   ];
   for (const [label, pattern] of required) {
@@ -527,7 +528,8 @@ export function verifyUsage() {
     'Checks parser smoke, server boot, tool inventory, project probe, batch reads, node census,\n' +
     'vault validation, workspace health, compile/overview, query plans, and graph-query smoke.\n' +
     'Also checks strict unknown-argument / invalid-enum rejection, maintenance_plan filter enums,\n' +
-    'and missing maintenance_plan.afterActionId cursor handling (cursor.found=false, reason, empty page).\n'
+    'and maintenance_plan cursor handling: ready page (cursor.found=true, cursor.reason=null)\n' +
+    'plus missing afterActionId (cursor.found=false, reason, empty page).\n'
   );
 }
 

@@ -275,6 +275,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`Did you mean "overview"\?`/);
     assert.match(verifySection, /Maintenance work-queue\s+guidance is gated too/);
     assert.match(verifySection, /enum-validated\s+`maintenance_plan` filters/);
+    assert.match(verifySection, /ready cursor pages with `cursor\.found=true` plus\s+`cursor\.reason=null`/);
     assert.match(verifySection, /unknown `afterActionId` cursor misses/);
     assert.match(verifySection, /`cursor\.found=false` plus `cursor\.reason`/);
     assert.match(verifySection, /runtime negative calls with `list_concepts\.lmit`/);
@@ -344,7 +345,7 @@ describe('package contract helpers', () => {
 
     assert.match(tableRow, /project-node `list_concepts` probe/);
     assert.match(tableRow, /enum-validated `maintenance_plan` filters/);
-    assert.match(tableRow, /missing `maintenance_plan\.afterActionId` cursor smoke/);
+    assert.match(tableRow, /ready `maintenance_plan` cursor \+ missing `maintenance_plan\.afterActionId` cursor smoke/);
     assert.match(tableRow, /`workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`/);
     assert.match(tableRow, /`neighbors`\/`path`\/`project_scope` graph-query smoke/);
     assert.match(verifySection, /mcp-verify --help/);
@@ -352,7 +353,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`tools\/list` schema contract/);
     assert.match(verifySection, /runtime negative smokes with invalid `list_concepts\.lmit`/);
     assert.match(verifySection, /`query_ontology\.operation="overveiw"` inputs/);
-    assert.match(verifySection, /missing `maintenance_plan\.afterActionId` cursor contract/);
+    assert.match(verifySection, /`maintenance_plan` cursor contract/);
+    assert.match(verifySection, /`cursor\.found=true` with `cursor\.reason=null`/);
     assert.match(verifySection, /`cursor\.found=false`/);
     assert.match(verifySection, /enum-validated\s+`maintenance_plan\.phases` \/ `maintenance_plan\.severities` \/\s+`maintenance_plan\.kinds` filters/);
     assert.match(verifySection, /strict work-queue\s+checks before starting the MCP server/);
@@ -417,8 +419,9 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /accepts valid project-less vaults/);
     assert.match(verifySection, /accepts empty vault folders/);
     assert.match(verifySection, /runtime unknown-argument and invalid-enum rejection smoke/);
-    assert.match(verifySection, /missing `maintenance_plan\.afterActionId` cursor smoke/);
+    assert.match(verifySection, /ready `maintenance_plan` cursor \+ missing `maintenance_plan\.afterActionId` cursor smoke/);
     assert.match(verifySection, /`cursor\.found=false`/);
+    assert.match(verifySection, /`cursor\.found=true` \/ `cursor\.reason=null`/);
   });
 
   it('documents dogfood validation as a release gate', () => {
@@ -538,7 +541,7 @@ describe('package contract helpers', () => {
     assert.match(mcpVerifyRow, /실제 `neighbors` \/ node→project `path` \/ `project_scope` graph smoke/);
     assert.match(mcpVerifyRow, /`workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`/);
     assert.match(mcpVerifyRow, /project-node `list_concepts` probe/);
-    assert.match(mcpVerifyRow, /missing `maintenance_plan\.afterActionId` cursor smoke/);
+    assert.match(mcpVerifyRow, /ready `maintenance_plan` cursor \+ missing `maintenance_plan\.afterActionId` cursor smoke/);
     assert.match(mcpVerifyRow, /`maintenance_plan\.phases` \/ `maintenance_plan\.severities` \/ `maintenance_plan\.kinds` enum filter/);
     assert.match(mcpVerifyRow, /`cursor\.found=false`/);
     assert.match(mcpVerifyRow, /zero remaining actions 계약/);
@@ -579,6 +582,7 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /`list_kinds\.byKind\.project`/);
     assert.match(doc, /MCP `initialize\.instructions` 의 `query_ontology\.operation`\s+안내와 `query_plan\.targetOperation` 안내도 같은 allow-list 에서 생성/);
     assert.match(doc, /`maintenance_plan` work-queue 안내도 first-contact 에 포함/);
+    assert.match(doc, /ready cursor 의 `cursor\.found=true` \/ `cursor\.reason=null`/);
     assert.match(doc, /unknown `afterActionId` cursor 의 `cursor\.found=false`/);
     assert.match(doc, /`cursor\.reason` 계약/);
     assert.match(doc, /compact `postWriteMaintenance` 반환 \(`operation` \/ `sideEffect:false` \/ `filters` \/ `limited` \/ cursor 포함\)/);
@@ -727,9 +731,9 @@ describe('package contract helpers', () => {
     assert.match(regressionSection, /spawn-based integration suite/);
     assert.match(regressionSection, /Node `--test-name-pattern`/);
     assert.match(regressionSection, /`pnpm integration:cli:mcp-verify`/);
-    assert.match(regressionSection, /missing `maintenance_plan\.afterActionId` cursor smoke/);
     assert.match(regressionSection, /maintenance filter enum/);
-    assert.match(regressionSection, /missing cursor smoke 범위/);
+    assert.match(regressionSection, /ready cursor \/ missing cursor 계약/);
+    assert.match(regressionSection, /ready cursor \/ missing cursor scope/);
   });
 
   it('keeps dogfood MCP capability docs aligned with focused integration shortcuts', () => {
@@ -740,7 +744,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`pnpm test:mcp:verify`/);
     assert.match(doc, /first-contact README read-only/);
     assert.match(doc, /직접 verify help\(`npm run verify -- --help`\)/);
-    assert.match(doc, /missing `maintenance_plan\.afterActionId`\s+cursor handling 범위/);
+    assert.match(doc, /ready `maintenance_plan` cursor 와\s+missing `maintenance_plan\.afterActionId` cursor handling 범위/);
   });
 
   it('parses package script file references', () => {

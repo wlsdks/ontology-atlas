@@ -222,8 +222,9 @@ read-only first-contact diagnosis, `expected_mtime`, existing `newSlug` /
 strict-input typo recovery 안내도 같은 gate 에 포함되어 `Did you mean "limit"?`,
 `Did you mean "overview"?` 같은 nearest hint 가 first-contact 에서 사라지지 않게 한다.
 `maintenance_plan` work-queue 안내도 first-contact 에 포함해 `phases` / `severities` /
-`kinds` filter enum 과 unknown `afterActionId` cursor 의 `cursor.found=false` /
-`cursor.reason` 계약을 agent 가 연결 즉시 알 수 있게 한다.
+`kinds` filter enum, ready cursor 의 `cursor.found=true` / `cursor.reason=null`,
+unknown `afterActionId` cursor 의 `cursor.found=false` / `cursor.reason` 계약을
+agent 가 연결 즉시 알 수 있게 한다.
 `initialize.instructions` 는 agent 가 write 도구부터 시도하지 않도록
 `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `overview`, `query_plan(targetOperation:"overview")`,
 `query_plan(targetOperation:"project_map")`
@@ -338,16 +339,17 @@ project-node `list_concepts` probe, `all_paths`, `all_paths query_plan`, `neighb
 `domain_profile`, `domain_matrix`, `components`, `reachability`, `impact`,
 `blast_radius`, `subgraph`, `schema`, `facets`, `match_nodes`, `match_edges`,
 `node_profile`, `lineage`, `containment_tree`, `cycles`, `topological_order`, `relation_check`, `recommend_relations`,
-`growth_plan`, `maintenance_plan`, missing `maintenance_plan.afterActionId` cursor,
+`growth_plan`, `maintenance_plan`, ready `maintenance_plan` cursor,
+missing `maintenance_plan.afterActionId` cursor,
 strict unknown-argument / invalid-enum /
 invalid `maintenance_plan.phases` / `maintenance_plan.severities` /
 `maintenance_plan.kinds` rejection smoke 를
 함께 출력해, AI agent 가 첫 접촉에서 받는 graph diagnosis 와 traversal 품질을
 계속 확인한다.
 직접 verify help(`npm run verify -- --help`) 도 strict unknown-argument /
-invalid-enum rejection, maintenance filter enum, missing `maintenance_plan.afterActionId`
-cursor handling 범위를 서버 시작 없이 설명하게 해, 설치자가 smoke 실행 전에도 검증
-범위를 확인할 수 있다.
+invalid-enum rejection, maintenance filter enum, ready `maintenance_plan` cursor 와
+missing `maintenance_plan.afterActionId` cursor handling 범위를 서버 시작 없이
+설명하게 해, 설치자가 smoke 실행 전에도 검증 범위를 확인할 수 있다.
 dogfood 의 `list_concepts.vaultWarnings` / `validate_vault` 판정은
 `mcp/scripts/verify.mjs` 의 helper 를 재사용해 installed verify 와 dogfood gate 가
 서로 다른 first-contact payload 계약으로 갈라지지 않게 한다.

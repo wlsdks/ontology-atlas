@@ -541,7 +541,9 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /project probe/);
     assert.match(verifyUsage(), /strict unknown-argument \/ invalid-enum rejection/);
     assert.match(verifyUsage(), /maintenance_plan filter enums/);
-    assert.match(verifyUsage(), /missing maintenance_plan\.afterActionId cursor handling/);
+    assert.match(verifyUsage(), /maintenance_plan cursor handling/);
+    assert.match(verifyUsage(), /cursor\.found=true, cursor\.reason=null/);
+    assert.match(verifyUsage(), /missing afterActionId/);
     assert.match(verifyUsage(), /cursor\.found=false, reason, empty page/);
   });
 
@@ -761,6 +763,7 @@ describe('verify.mjs first-contact gates', () => {
       'Unknown argument "lmit" for list_concepts. Did you mean "limit"?',
       'operation must be one of: overview, health. Invalid value: overveiw. Did you mean "overview"?',
       'maintenance_plan phases, severities, and kinds filters are enum-validated.',
+      'maintenance_plan ready pages return cursor.found=true with cursor.reason=null.',
       'maintenance_plan afterActionId cursor misses return cursor.found=false and cursor.reason.',
       'This filler keeps the instructions representative of a real initialize response.',
     ].join('\n');
@@ -793,6 +796,10 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('phases, severities, and kinds', 'filters') } }),
       'initialize instructions missing maintenance filter enum guidance',
+    );
+    assert.equal(
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('cursor.found=true with cursor.reason=null', 'ready cursor') } }),
+      'initialize instructions missing maintenance ready cursor guidance',
     );
     assert.equal(
       initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('cursor.found=false and cursor.reason', 'empty page') } }),

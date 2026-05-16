@@ -9,7 +9,7 @@
 
 ### Added — `mcp-verify` command
 
-- `oh-my-ontology mcp-verify [vault] [--timeout-ms N]` — installed CLI wrapper around the MCP package verify script. Runs parser smoke, server boot, 23-tool inventory, missing `maintenance_plan.afterActionId` cursor smoke, `list_concepts`, `get_concepts`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology`, `overview`, `overview`/`project_map` query_plan, and actual `neighbors` / `path` / `project_scope` graph-query smoke against the resolved vault.
+- `oh-my-ontology mcp-verify [vault] [--timeout-ms N]` — installed CLI wrapper around the MCP package verify script. Runs parser smoke, server boot, 23-tool inventory, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, `list_concepts`, `get_concepts`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology`, `overview`, `overview`/`project_map` query_plan, and actual `neighbors` / `path` / `project_scope` graph-query smoke against the resolved vault.
 - `mcp-verify` now inherits the MCP package core graph-query smoke for `neighbors`, node→project `path`, and `project_scope`, so installed CLI checks prove more than aggregate query planning.
 - `mcp-verify` now inherits the MCP package project-node probe before graph smoke, so `project_scope` is not accidentally skipped when the project node is outside the first `list_concepts` sample.
 - `mcp-verify` now accepts valid project-less vaults by skipping only the containment-specific `project_scope` smoke while still proving `neighbors` and node-level `path`.
@@ -18,7 +18,7 @@
 - `mcp-verify` now inherits the MCP package `get_concepts` smoke: discovered vault slugs plus one missing slug catch batch-reader success and partial-row contract drift in installed CLI checks.
 - `mcp-verify` now inherits the MCP package `find_orphans` smoke, including root/sentinel default exclusions, so installed CLI checks catch stale orphan-cleanup semantics before agents act on them.
 - `mcp-verify` now inherits the MCP package runtime unknown-argument and invalid-enum rejection smoke, so installed CLI checks prove strict schema behavior beyond `tools/list` metadata.
-- `mcp-verify` now inherits the MCP package missing `maintenance_plan.afterActionId` cursor smoke, so installed CLI checks fail when cursor misses stop reporting `cursor.found=false`, the miss reason, or an empty page.
+- `mcp-verify` now inherits the MCP package `maintenance_plan` cursor smoke, so installed CLI checks fail when the ready page stops reporting `cursor.found=true` / `cursor.reason=null` or cursor misses stop reporting `cursor.found=false`, the miss reason, or an empty page.
 - `mcp-verify` now inherits the MCP package split between node census checks (`list_kinds`, `list_concepts`, `compile_ontology`, `overview`) and file-level `validate_vault.scanned` health, so installed CLI checks do not conflate files with graph nodes.
 - `mcp-verify` blocks fail-severity first-contact problems while still allowing warn-level starter-vault diagnostics to print, so fresh `init` users can confirm MCP wiring before graph cleanup.
 - Delegated verify output now includes a compact advisory nextActions line when cleanup is recommended but not blocking.

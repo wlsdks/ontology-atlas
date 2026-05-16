@@ -730,6 +730,8 @@ await test("initialize — instructions 필드 (#45) AI agent 안내 노출", as
     assert.match(instructions, /Did you mean "limit"\?/);
     assert.match(instructions, /maintenance_plan/);
     assert.match(instructions, /phases.*severities.*kinds/);
+    assert.match(instructions, /cursor\.found=true/);
+    assert.match(instructions, /cursor\.reason=null/);
     assert.match(instructions, /afterActionId/);
     assert.match(instructions, /cursor\.found=false/);
     assert.match(instructions, /cursor\.reason/);

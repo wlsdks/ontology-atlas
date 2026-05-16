@@ -395,7 +395,9 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /project probe/);
   assert.match(directMcpVerifyHelp.stdout, /strict unknown-argument \/ invalid-enum rejection/);
   assert.match(directMcpVerifyHelp.stdout, /maintenance_plan filter enums/);
-  assert.match(directMcpVerifyHelp.stdout, /missing maintenance_plan\.afterActionId cursor handling/);
+  assert.match(directMcpVerifyHelp.stdout, /maintenance_plan cursor handling/);
+  assert.match(directMcpVerifyHelp.stdout, /cursor\.found=true, cursor\.reason=null/);
+  assert.match(directMcpVerifyHelp.stdout, /missing afterActionId/);
   assert.match(directMcpVerifyHelp.stdout, /cursor\.found=false, reason, empty page/);
 
   const mcpEmptyVerify = run(

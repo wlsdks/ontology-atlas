@@ -21,7 +21,7 @@ uses the same Node floor.
 | `oh-my-ontology init [folder]` | Scaffold a new vault (project / domain / capability / element starter .md). **R15+**: also drops a wired `.mcp.json` in *both* cwd (codebase root, `OMOT_VAULT='./<vault>'`) and the vault folder (`OMOT_VAULT='.'`) — open either in an AI agent and the 23 MCP tools auto-register. Existing `.mcp.json` is preserved (`.mcp.json.example` falls back instead). |
 | `oh-my-ontology list [vault]` | List ontology nodes (color table; `--kind X` filter, `--json`) |
 | `oh-my-ontology validate [vault]` | Frontmatter integrity (includes `missing-expected-field`, `non-canonical-graph-array`, and `dangling-graph-reference`; `exit 1` on errors — usable as a CI gate). Same code 가 2+ file 에서 등장하면 끝에 *grouped by code* 요약 섹션이 자동으로 붙어 *어느 종류 경고가 얼마나 많은지* 한눈에 파악. |
-| `oh-my-ontology mcp-verify [vault]` | Runs the installed MCP package verify CLI against the resolved vault: parser smoke, server boot, 23-tool inventory, strict schema/runtime unknown-argument and invalid-enum checks, enum-validated `maintenance_plan` filters, missing `maintenance_plan.afterActionId` cursor smoke, `list_concepts`, project-node `list_concepts` probe, `get_concepts`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology`, `overview`, `overview`/`project_map` query_plan, and `neighbors`/`path`/`project_scope` graph-query smoke. Use `--timeout-ms N` for large/slow vaults. |
+| `oh-my-ontology mcp-verify [vault]` | Runs the installed MCP package verify CLI against the resolved vault: parser smoke, server boot, 23-tool inventory, strict schema/runtime unknown-argument and invalid-enum checks, enum-validated `maintenance_plan` filters, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, `list_concepts`, project-node `list_concepts` probe, `get_concepts`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology`, `overview`, `overview`/`project_map` query_plan, and `neighbors`/`path`/`project_scope` graph-query smoke. Use `--timeout-ms N` for large/slow vaults. |
 | `oh-my-ontology add <kind> <slug> --title="..."` | Scaffold a new node (`--domain X --body "..." --vault path`); throws on duplicate slug. `slug`, `--title`, and `--domain` must be non-empty strings without leading/trailing whitespace, so bad scalar input fails before writing. Body defaults to a starter only when `--body` is omitted, so `--body=` intentionally writes an empty body. **R15**: `--auto-prefix` is now **default on** (kind→folder, e.g. `add capability foo` → `capabilities/foo.md`) for consistency with the `init` starter layout. Use `--raw-slug` (or `--no-auto-prefix`) to opt out. |
 | `oh-my-ontology find <query> [vault]` | Search slug + title (case-insensitive, `--kind X --json`) |
 | `oh-my-ontology import <path...>` | **R14** Import external `.md` into the vault. Reads each file's frontmatter, falls back to `--kind` when missing, derives `slug` from the filename and `title` from the first H1, then writes through the same schema as `add`. Options: `--vault path`, `--kind K`, `--auto-prefix` (R15 **default on**, kind→folder), `--raw-slug` (opt out), `--rename` (auto `-2`/`-3` on slug clash), `--dry-run` (preview only). Accepts files or directories (recursive, `.git`/`node_modules` skipped). |
@@ -75,9 +75,10 @@ including strict unknown-argument / invalid-enum rejection and graph-query opera
 It also performs runtime negative smokes with invalid `list_concepts.lmit` and
 `query_ontology.operation="overveiw"` inputs, so CLI users catch schema/runtime
 strictness drift in the installed MCP package.
-It also verifies the missing `maintenance_plan.afterActionId` cursor contract:
-the delegated MCP response must report `cursor.found=false`, include the cursor
-miss reason, return zero remaining actions, and expose no next action.
+It also verifies the `maintenance_plan` cursor contract: the ready page must
+report `cursor.found=true` with `cursor.reason=null`, while a missing
+`afterActionId` must report `cursor.found=false`, include the cursor miss
+reason, return zero remaining actions, and expose no next action.
 The wrapper help mirrors that contract too, including enum-validated
 `maintenance_plan.phases` / `maintenance_plan.severities` /
 `maintenance_plan.kinds` filters, so a user can inspect the strict work-queue
