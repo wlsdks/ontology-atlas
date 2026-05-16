@@ -25,6 +25,35 @@ const PKG_ROOT = resolve(__dirname, '..');
 const PKG = JSON.parse(readFileSync(join(PKG_ROOT, 'package.json'), 'utf-8'));
 const require_ = createRequire(import.meta.url);
 
+function readMcpPackageMetadata() {
+  const candidates = [];
+  try {
+    candidates.push(require_.resolve('oh-my-ontology-mcp/package.json'));
+  } catch {
+    // Source checkout fallback below.
+  }
+  candidates.push(resolve(PKG_ROOT, '..', 'mcp', 'package.json'));
+
+  for (const candidate of candidates) {
+    if (!existsSync(candidate)) continue;
+    const pkg = JSON.parse(readFileSync(candidate, 'utf-8'));
+    const match = pkg.description?.match(/(\d+) tools \((\d+) read \+ (\d+) write\)/);
+    return {
+      toolCount: match?.[1],
+      readCount: match?.[2],
+      writeCount: match?.[3],
+    };
+  }
+
+  return {};
+}
+
+const MCP_METADATA = readMcpPackageMetadata();
+const MCP_TOOL_COUNT = MCP_METADATA.toolCount ?? 'current';
+const MCP_TOOL_SPLIT = MCP_METADATA.readCount && MCP_METADATA.writeCount
+  ? `${MCP_METADATA.readCount} read + ${MCP_METADATA.writeCount} write`
+  : 'read/write';
+
 const COLORS = {
   reset: '\x1b[0m',
   bold: '\x1b[1m',
@@ -294,7 +323,7 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        ${COLORS.cyan}cd ${target}${COLORS.reset}
        ${COLORS.cyan}oh-my-ontology list${COLORS.reset}                        ${COLORS.dim}# 5 starter nodes${COLORS.reset}
        ${COLORS.cyan}oh-my-ontology validate${COLORS.reset}                    ${COLORS.dim}# frontmatter integrity${COLORS.reset}
-       ${COLORS.cyan}oh-my-ontology mcp-verify${COLORS.reset}                  ${COLORS.dim}# server + 23-tool MCP health${COLORS.reset}
+       ${COLORS.cyan}oh-my-ontology mcp-verify${COLORS.reset}                  ${COLORS.dim}# server + ${MCP_TOOL_COUNT}-tool MCP health${COLORS.reset}
 
   ${COLORS.dim}2.${COLORS.reset} ${COLORS.bold}Bootstrap from your codebase${COLORS.reset} (recommended — agent-less, 1 line):
        ${COLORS.cyan}${analyzeCommand}${COLORS.reset}     ${COLORS.dim}# preview candidates only${COLORS.reset}
@@ -314,8 +343,8 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        ${COLORS.bold}Claude Code / Cursor${COLORS.reset}
        Both your codebase root (cwd) and the vault folder now have a wired
        ${COLORS.bold}.mcp.json${COLORS.reset}. Open either folder, restart the agent,
-       and the ${COLORS.bold}oh-my-ontology${COLORS.reset} namespace appears with 23 tools
-       (15 read + 8 write).
+       and the ${COLORS.bold}oh-my-ontology${COLORS.reset} namespace appears with ${MCP_TOOL_COUNT} tools
+       (${MCP_TOOL_SPLIT}).
 
        ${COLORS.bold}Codex${COLORS.reset}
        ${COLORS.cyan}${codexSetupCommand}${COLORS.reset}
