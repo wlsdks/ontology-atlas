@@ -19,12 +19,13 @@
  *   4. tools/call list_concepts — vault 노드 수 출력
  *   5. tools/call list_concepts(kind=project) — project_scope gate probe
  *   6. tools/call get_concepts — batch reader success + partial-row contract
- *   7. tools/call list_kinds — kind census aggregate
- *   8. tools/call validate_vault — whole-vault frontmatter / graph-reference health
- *   9. tools/call query_ontology workspace_brief + health — agent first-contact graph diagnosis
- *   10. tools/call compile_ontology(summary) — compiler graph summary contract
- *   11. tools/call query_ontology overview + query_plan(overview/project_map) — graph-query smoke contract
- *   12. tools/call query_ontology neighbors/node-to-project path/project_scope — core graph query smoke contract
+ *   7. tools/call find_orphans — row shape + root/sentinel default-exclusion contract
+ *   8. tools/call list_kinds — kind census aggregate
+ *   9. tools/call validate_vault — whole-vault frontmatter / graph-reference health
+ *   10. tools/call query_ontology workspace_brief + health — agent first-contact graph diagnosis
+ *   11. tools/call compile_ontology(summary) — compiler graph summary contract
+ *   12. tools/call query_ontology overview + query_plan(overview/project_map) — graph-query smoke contract
+ *   13. tools/call query_ontology neighbors/node-to-project path/project_scope — core graph query smoke contract
  *
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
  */
@@ -225,6 +226,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [16, 'strict_args'],
   [17, 'strict_enum'],
   [18, 'project_probe'],
+  [19, 'find_orphans'],
 ]);
 
 function log(level, msg) {
@@ -427,6 +429,12 @@ export function buildFirstContactRequests() {
       id: 18,
       method: 'tools/call',
       params: { name: 'list_concepts', arguments: { kind: 'project', limit: 1 } },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 19,
+      method: 'tools/call',
+      params: { name: 'find_orphans', arguments: {} },
     },
     {
       jsonrpc: '2.0',
@@ -678,6 +686,39 @@ export function getConceptsFailure(parsed) {
   }
   if (typeof missing.error !== 'string' || !/not found/i.test(missing.error)) {
     return 'get_concepts response missing partial row error';
+  }
+  return null;
+}
+
+export function findOrphansFailure(parsed) {
+  if (!Number.isInteger(parsed?.total) || parsed.total < 0) {
+    return 'find_orphans response missing total count';
+  }
+  if (!Array.isArray(parsed.orphans)) {
+    return 'find_orphans response missing orphans array';
+  }
+  if (parsed.orphans.length > parsed.total) {
+    return `find_orphans response orphan count exceeds total — orphans ${parsed.orphans.length}, total ${parsed.total}`;
+  }
+  for (const [index, node] of parsed.orphans.entries()) {
+    if (!node || typeof node !== 'object' || Array.isArray(node)) {
+      return `find_orphans response malformed orphan at index ${index}`;
+    }
+    if (typeof node.slug !== 'string' || node.slug.length === 0) {
+      return `find_orphans response missing orphan slug at index ${index}`;
+    }
+    if (typeof node.kind !== 'string' || node.kind.length === 0) {
+      return `find_orphans response missing orphan kind: ${node.slug}`;
+    }
+    if (node.kind === 'project' || node.kind === 'vault-readme') {
+      return `find_orphans default exclusions returned root/sentinel kind: ${node.slug}`;
+    }
+    if (typeof node.title !== 'string' || node.title.length === 0) {
+      return `find_orphans response missing orphan title: ${node.slug}`;
+    }
+    if (!Number.isFinite(node.mtime) || node.mtime < 0) {
+      return `find_orphans response missing orphan mtime: ${node.slug}`;
+    }
   }
   return null;
 }
@@ -1245,7 +1286,7 @@ async function step2BootAndCall() {
     log('fail', 'verify timeout must be a positive integer');
     return false;
   }
-  log('info', `step 2 — server boot + tools/list + list_concepts/project probe/get_concepts/list_kinds (vault=${VAULT}, timeout=${timeoutMs}ms)`);
+  log('info', `step 2 — server boot + tools/list + list_concepts/project probe/get_concepts/find_orphans/list_kinds (vault=${VAULT}, timeout=${timeoutMs}ms)`);
 
   const lines = buildFirstContactRequests().map((request) => JSON.stringify(request));
 
@@ -1342,6 +1383,7 @@ async function step2BootAndCall() {
       const projectScopeRes = responses.find((r) => r.id === 15);
       const strictArgsRes = responses.find((r) => r.id === 16);
       const strictEnumRes = responses.find((r) => r.id === 17);
+      const orphansRes = responses.find((r) => r.id === 19);
       let kindsPayload = null;
       let listPayload = null;
       let validationPayload = null;
@@ -1442,6 +1484,24 @@ async function step2BootAndCall() {
         log('ok', `get_concepts — ${formatCount(okRows, 'ok row')}, ${formatCount(partialRows, 'partial row')}`);
       } catch (err) {
         log('fail', `failed to parse get_concepts response: ${err.message}`);
+        return res(false);
+      }
+
+      if (!orphansRes || !orphansRes.result) {
+        log('fail', 'no find_orphans response');
+        return res(false);
+      }
+      try {
+        const text = orphansRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const failure = findOrphansFailure(parsed);
+        if (failure) {
+          log('fail', failure);
+          return res(false);
+        }
+        log('ok', `find_orphans — ${formatCount(parsed.total, 'orphan')} (root/sentinel defaults excluded)`);
+      } catch (err) {
+        log('fail', `failed to parse find_orphans response: ${err.message}`);
         return res(false);
       }
 

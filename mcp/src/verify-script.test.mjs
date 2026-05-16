@@ -24,6 +24,7 @@ import {
   expectedToolSplitLabel,
   firstContactMissingResponseLabels,
   firstContactErrorFailure,
+  findOrphansFailure,
   formatCount,
   formatHopCount,
   getConceptsFailure,
@@ -457,7 +458,7 @@ describe('verify.mjs first-contact gates', () => {
   it('detects when all first-contact JSON-RPC responses arrived', () => {
     assert.equal(
       hasAllFirstContactResponses(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
           .map((id) => JSON.stringify({ jsonrpc: '2.0', id, result: {} }))
           .join('\n'),
       ),
@@ -488,6 +489,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(15), 'project_scope');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(16), 'strict_args');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(18), 'project_probe');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(19), 'find_orphans');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -556,6 +558,43 @@ describe('verify.mjs first-contact gates', () => {
         ],
       }),
       null,
+    );
+  });
+
+  it('fails malformed find_orphans payloads and root default-exclusion drift', () => {
+    assert.equal(
+      findOrphansFailure({
+        total: 1,
+        orphans: [
+          {
+            slug: 'capabilities/orphan',
+            kind: 'capability',
+            title: 'Orphan',
+            mtime: 1,
+          },
+        ],
+      }),
+      null,
+    );
+    assert.equal(findOrphansFailure({ orphans: [] }), 'find_orphans response missing total count');
+    assert.equal(findOrphansFailure({ total: 0 }), 'find_orphans response missing orphans array');
+    assert.equal(
+      findOrphansFailure({ total: 0, orphans: [{ slug: 'capabilities/orphan' }] }),
+      'find_orphans response orphan count exceeds total — orphans 1, total 0',
+    );
+    assert.equal(
+      findOrphansFailure({
+        total: 1,
+        orphans: [{ slug: 'project', kind: 'project', title: 'Project', mtime: 1 }],
+      }),
+      'find_orphans default exclusions returned root/sentinel kind: project',
+    );
+    assert.equal(
+      findOrphansFailure({
+        total: 1,
+        orphans: [{ slug: 'README', kind: 'vault-readme', title: 'README', mtime: 1 }],
+      }),
+      'find_orphans default exclusions returned root/sentinel kind: README',
     );
   });
 

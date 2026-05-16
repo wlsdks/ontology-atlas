@@ -204,7 +204,7 @@ A successful run looks like this:
 [oh-my-ontology-mcp verify]
 · step 1 — parser smoke test
 ✓ result: 7 passed, 0 failed
-· step 2 — server boot + tools/list + list_concepts/project probe/get_concepts/list_kinds (vault=../docs/ontology, timeout=8000ms)
+· step 2 — server boot + tools/list + list_concepts/project probe/get_concepts/find_orphans/list_kinds (vault=../docs/ontology, timeout=8000ms)
 ✓ initialize OK — server oh-my-ontology-mcp@0.12.0
 ✓ tools/list 23/23 (15 read + 8 write) — add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
 ✓ tools/list schema contract — strict arguments + graph-query enums
@@ -212,6 +212,7 @@ A successful run looks like this:
 ✓ strict enums — invalid query operation rejected with closest-value hint
 ✓ list_concepts — vault total 28 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concepts — 2 ok rows, 1 partial row
+✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
 ✓ list_kinds — 28 nodes (capability:16, domain:6, element:4, project:1, vault-readme:1)
 ✓ validate_vault — 28 files, 0 problem files
 ✓ project probe — 1 project node
@@ -231,7 +232,7 @@ All passed — register .mcp.json with Claude Code and restart to use the 23 too
 On failure, it tells you which step blocked progress and prints a diagnostic message. The
 verify path exercises and gates the same first-contact graph diagnosis an agent should run:
 `tools/list`, `list_concepts`, a project-node `list_concepts` probe,
-`get_concepts`, `list_kinds`, `validate_vault`,
+`get_concepts`, `find_orphans`, `list_kinds`, `validate_vault`,
 `query_ontology({operation:"workspace_brief"})`, and
 `query_ontology({operation:"health"})`, plus `compile_ontology({summary:true})`,
 `query_ontology({operation:"overview"})`, and

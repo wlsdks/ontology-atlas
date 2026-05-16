@@ -135,11 +135,12 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /npm run verify -- --vault \.\.\/docs\/ontology/);
     assert.match(verifySection, /npm run verify -- \.\.\/docs\/ontology --timeout-ms 15000/);
     assert.match(verifySection, /explicit positional vault or `--vault` argument takes\s+precedence over `OMOT_VAULT`/);
-    assert.match(verifySection, /list_concepts\/project probe\/get_concepts\/list_kinds/);
+    assert.match(verifySection, /list_concepts\/project probe\/get_concepts\/find_orphans\/list_kinds/);
     assert.match(verifySection, /✓ tools\/list schema contract — strict arguments \+ graph-query enums/);
     assert.match(verifySection, /✓ strict arguments — unknown tool argument rejected at runtime/);
     assert.match(verifySection, /✓ strict enums — invalid query operation rejected with closest-value hint/);
     assert.match(verifySection, /✓ get_concepts — 2 ok rows, 1 partial row/);
+    assert.match(verifySection, /✓ find_orphans — 0 orphans \(root\/sentinel defaults excluded\)/);
     assert.match(verifySection, /✓ project probe — 1 project node/);
     assert.match(verifySection, new RegExp(`✓ list_concepts — vault total ${census.total} nodes`));
     assert.match(verifySection, new RegExp(`✓ list_kinds — ${census.total} nodes \\(${kindSummary}\\)`));
@@ -150,7 +151,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ path — elements\/file-system-access-api → project \(2 hops\)/);
     assert.doesNotMatch(verifySection, /✓ path — project → project/);
     assert.match(verifySection, new RegExp(`✓ project_scope — project \\(${scopedNodes} nodes, internalEdges`));
-    assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concepts`, `list_kinds`, `validate_vault`/);
+    assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concepts`, `find_orphans`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /batch success rows\s+and partial rows are verified during installation checks/);
     assert.match(verifySection, /`query_ontology\(\{operation:"neighbors"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"path"\}\)`/);
@@ -179,7 +180,7 @@ describe('package contract helpers', () => {
     const changelog = readFileSync('mcp/CHANGELOG.md', 'utf-8');
     const verifySection = changelog.split('### Fixed — package tarball runtime files')[1]?.split('## 0.11.0')[0] ?? '';
 
-    assert.match(verifySection, /`list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`/);
+    assert.match(verifySection, /`list_concepts`, `get_concepts`, `find_orphans`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /success-row \/ partial-row contract drift/);
     assert.match(verifySection, /`compile_ontology`, `overview`, `overview`\/`project_map` query_plan, and actual `neighbors` \/ `path` \/ `project_scope` graph-query smoke/);
     assert.match(verifySection, /core graph-query execution with `neighbors`, node→project `path`, and `project_scope`/);
@@ -253,7 +254,7 @@ describe('package contract helpers', () => {
     const changelog = readFileSync('cli/CHANGELOG.md', 'utf-8');
     const verifySection = changelog.split('### Added — `mcp-verify` command')[1]?.split('### Added — `compile`')[0] ?? '';
 
-    assert.match(verifySection, /`list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`/);
+    assert.match(verifySection, /`list_concepts`, `get_concepts`, `find_orphans`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /partial-row contract drift/);
     assert.match(verifySection, /split between node census checks/);
     assert.match(verifySection, /file-level `validate_vault\.scanned` health/);

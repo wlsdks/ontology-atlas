@@ -83,7 +83,7 @@ validation / diagnosis / compile / overview / query planning 은 계속 hard gat
 (`15 read + 8 write` split 포함), strict argument schema 와 graph-query enum schema,
 strict schema/runtime unknown-argument and invalid-enum rejection,
 `list_concepts`, project-node `list_concepts` probe,
-`get_concepts`, `list_kinds`, `validate_vault`, `workspace_brief`, `health`, `compile_ontology({ summary: true })`,
+`get_concepts`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, `health`, `compile_ontology({ summary: true })`,
 `query_ontology(overview)`, `query_plan(targetOperation:"overview")`,
 `query_plan(targetOperation:"project_map")`, 그리고 실제 `neighbors` /
 node→project `path` / `project_scope` 를 한 번에 호출해 agent first-contact graph diagnosis,
@@ -102,6 +102,8 @@ malformed row 가 `unknown` advisory/coverage 로 숨지 않는다.
 한 화면에서 확인하게 한다.
 `get_concepts` 는 `list_concepts` 에서 얻은 실제 slug 최대 2개와 missing slug 를 섞어
 설치 검증에서도 batch reader 의 성공 row 와 partial row 계약을 확인한다.
+`find_orphans` 는 기본 row shape 와 project / vault-readme root-sentinel 기본 제외
+계약을 확인해, agent 가 top-level root 를 accidental cleanup 후보로 오인하지 않게 한다.
 verify 는 `validate_vault.scanned` / `summary.problemFiles` 로 file-level health 를 별도 확인하고,
 node-count consistency 는 `list_kinds.total`, `list_concepts.total`,
 `compile_ontology.nodeCount`, `overview.graph.nodes` 끼리 비교한다.

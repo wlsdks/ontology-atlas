@@ -219,6 +219,8 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, new RegExp(`tools/list ${EXPECTED_TOOL_COUNT}/${EXPECTED_TOOL_COUNT}`));
     assert.match(clean, /get_concepts/);
     assert.match(clean, /2 ok rows, 1 partial row/);
+    assert.match(clean, /find_orphans/);
+    assert.match(clean, /root\/sentinel defaults excluded/);
     assert.match(clean, /list_kinds/);
     assert.match(clean, /validate_vault/);
     assert.match(clean, /workspace_brief/);
@@ -288,6 +290,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /server boot/);
   assert.match(clean, /tool inventory/);
   assert.match(clean, /get_concepts/);
+  assert.match(clean, /find_orphans/);
   assert.match(clean, /project probe/);
   assert.match(clean, /node census\/file validation/);
   assert.match(clean, /list_kinds\/list_concepts\/compile_ontology\/overview/);
