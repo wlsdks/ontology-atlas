@@ -2131,6 +2131,37 @@ await test("get_concepts — 배치 read, 입력 순서 보존 + partial result"
   }
 });
 
+await test("get_concepts — invalid slug rows are isolated as partial results", async () => {
+  const root = makeVault([
+    { slug: "alpha", content: "---\nkind: capability\ntitle: Alpha\n---\nbody A" },
+    { slug: "beta", content: "---\nkind: element\ntitle: Beta\n---\nbody B" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "get_concepts", { slugs: ["alpha", " beta", "", null, 123, "beta"] }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.concepts.length, 6, "concepts row 수 = 입력 slugs 수");
+    assert.equal(result.concepts[0].ok, true);
+    assert.equal(result.concepts[0].slug, "alpha");
+    assert.equal(result.concepts[1].ok, false);
+    assert.match(result.concepts[1].error, /slug must not have leading or trailing whitespace/i);
+    assert.equal(result.concepts[2].ok, false);
+    assert.match(result.concepts[2].error, /slug must be a non-empty string/i);
+    assert.equal(result.concepts[3].ok, false);
+    assert.equal(result.concepts[3].slug, null);
+    assert.match(result.concepts[3].error, /slug must be a non-empty string/i);
+    assert.equal(result.concepts[4].ok, false);
+    assert.equal(result.concepts[4].slug, 123);
+    assert.match(result.concepts[4].error, /slug must be a non-empty string/i);
+    assert.equal(result.concepts[5].ok, true);
+    assert.equal(result.concepts[5].slug, "beta");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 // R+ — get_concepts 빈 배열 / cap (50) 가드. 정상 빈 응답 vs error.
 await test("get_concepts — 빈 slugs[] → 빈 concepts[], 51개 → error", async () => {
   const root = makeVault([
