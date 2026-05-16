@@ -670,7 +670,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /dogfood walk 출력도 같은 bucket 을 phase \/ severity \/ kind 요약으로 보여줘/);
     assert.match(doc, /현재 page 의 `nextExecutableAction` \/ `nextReviewAction`/);
     assert.match(doc, /id phase\/kind:severity 와 executable tool 요약/);
-    assert.match(doc, /pointer 가 현재 page action 의 `id`, `executable`, `phase`, `kind`,\s+`severity` 와 같은지도 확인/);
+    assert.match(doc, /verify \/ dogfood 는 이 pointer 가 현재 page action 의 `id`, `executable`, `phase`, `kind`,\s+`severity` 와 같은지도 확인/);
     assert.match(dogfoodSection, /`project_map` query_plan/);
     assert.match(dogfoodSection, /실제\s+`project_map` 실행/);
     assert.match(dogfoodSection, /`neighbors`/);

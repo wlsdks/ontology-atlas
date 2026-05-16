@@ -2820,6 +2820,45 @@ describe("evaluateDogfoodGate", () => {
         ...okShape,
         maintenancePlan: {
           ...okShape.maintenancePlan,
+          nextExecutableAction: {
+            ...okShape.maintenancePlan.nextExecutableAction,
+            phase: "repair",
+          },
+        },
+      }),
+      ["maintenance_plan nextExecutableAction phase mismatch"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        maintenancePlan: {
+          ...okShape.maintenancePlan,
+          nextReviewAction: {
+            ...okShape.maintenancePlan.nextReviewAction,
+            kind: "empty_domain",
+          },
+        },
+      }),
+      ["maintenance_plan nextReviewAction kind mismatch"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        maintenancePlan: {
+          ...okShape.maintenancePlan,
+          nextExecutableAction: {
+            ...okShape.maintenancePlan.nextExecutableAction,
+            severity: "info",
+          },
+        },
+      }),
+      ["maintenance_plan nextExecutableAction severity mismatch"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        maintenancePlan: {
+          ...okShape.maintenancePlan,
           actions: [okShape.maintenancePlan.actions[1]],
           cursor: { ...okShape.maintenancePlan.cursor, nextAfterActionId: "maint_review" },
           nextExecutableAction: okShape.maintenancePlan.nextExecutableAction,

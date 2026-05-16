@@ -1691,6 +1691,12 @@ function maintenancePlanShapeFailure(result, options = {}) {
     if (firstExecutableAction && result.nextExecutableAction?.id !== firstExecutableAction.id) {
       return "maintenance_plan nextExecutableAction does not match first executable page action";
     }
+    const executablePointerFailure = maintenanceNextActionPointerFailure(
+      firstExecutableAction,
+      result.nextExecutableAction,
+      "nextExecutableAction",
+    );
+    if (executablePointerFailure) return executablePointerFailure;
     if (!firstExecutableAction && result.nextExecutableAction !== null) {
       return "maintenance_plan unexpected nextExecutableAction outside current page";
     }
@@ -1698,6 +1704,12 @@ function maintenancePlanShapeFailure(result, options = {}) {
     if (firstReviewAction && result.nextReviewAction?.id !== firstReviewAction.id) {
       return "maintenance_plan nextReviewAction does not match first review page action";
     }
+    const reviewPointerFailure = maintenanceNextActionPointerFailure(
+      firstReviewAction,
+      result.nextReviewAction,
+      "nextReviewAction",
+    );
+    if (reviewPointerFailure) return reviewPointerFailure;
     if (!firstReviewAction && result.nextReviewAction !== null) {
       return "maintenance_plan unexpected nextReviewAction outside current page";
     }
@@ -1705,6 +1717,16 @@ function maintenancePlanShapeFailure(result, options = {}) {
   for (const [index, action] of result.actions.entries()) {
     const actionFailure = maintenanceActionFailure(action, index);
     if (actionFailure) return actionFailure;
+  }
+  return null;
+}
+
+function maintenanceNextActionPointerFailure(expectedAction, pointer, label) {
+  if (!expectedAction || !pointer) return null;
+  for (const key of ["executable", "phase", "kind", "severity"]) {
+    if (pointer[key] !== expectedAction[key]) {
+      return `maintenance_plan ${label} ${key} mismatch`;
+    }
   }
   return null;
 }
