@@ -1255,6 +1255,12 @@ const okShape = {
       unresolved: { total: 0, byRelation: {}, limited: false, edges: [] },
     },
   },
+  strictArgs: {
+    result: {
+      isError: true,
+      content: [{ text: 'Unknown argument "lmit" for list_concepts. Allowed arguments: kind, limit.' }],
+    },
+  },
 };
 
 describe("recordResult", () => {
@@ -1355,6 +1361,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(43), "neighbors");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(44), "path");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(45), "project_scope");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(46), "strict_args");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -1384,6 +1391,17 @@ describe("rpc response completion helpers", () => {
 describe("evaluateDogfoodGate", () => {
   it("passes the healthy dogfood shape", () => {
     assert.deepEqual(evaluateDogfoodGate(okShape), []);
+  });
+
+  it("fails malformed strict argument dogfood responses", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictArgs: { result: { isError: false, content: [{ text: "ok" }] } } }),
+      ["strict_args: strict arguments response was not rejected"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictArgs: { result: { isError: true, content: [{ text: "different error" }] } } }),
+      ["strict_args: strict arguments response did not report the unknown list_concepts argument"],
+    );
   });
 
   it("fails on malformed list_kinds payloads", () => {

@@ -162,6 +162,7 @@ describe('package contract helpers', () => {
     const releaseChecks = readme.split('### Package / MCP release checks')[1]?.split('## Verifiable promises')[0] ?? '';
 
     assert.match(releaseChecks, /pnpm dogfood:walk/);
+    assert.match(releaseChecks, /strict unknown-argument rejection/);
     assert.match(releaseChecks, /pnpm smoke:packed-cli/);
     assert.match(releaseChecks, /get_concepts` with discovered slugs plus one\s+missing slug/);
     assert.match(releaseChecks, /batch-read\s+partial-row contract/);
@@ -241,6 +242,7 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /`topological_order`/);
     assert.match(dogfoodSection, /`relation_check`/);
     assert.match(dogfoodSection, /`recommend_relations`/);
+    assert.match(dogfoodSection, /strict unknown-argument rejection smoke/);
     assert.match(dogfoodSection, /`growth_plan`/);
     assert.match(dogfoodSection, /`maintenance_plan`/);
 
