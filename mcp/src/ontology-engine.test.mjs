@@ -584,6 +584,30 @@ describe('queryCompiledOntology', () => {
       ],
     );
     assert.deepEqual(result.terminalNodes.map((node) => node.slug), ['domains/auth']);
+
+    const exactLimit = queryCompiledOntology(artifact(), {
+      operation: 'reachability',
+      slug: 'capabilities/session',
+      depth: 3,
+      types: ['dependencies'],
+      limit: 2,
+    });
+    assert.equal(exactLimit.paths.total, 2);
+    assert.equal(exactLimit.paths.limited, false);
+
+    const truncated = queryCompiledOntology(artifact(), {
+      operation: 'reachability',
+      slug: 'capabilities/session',
+      depth: 3,
+      types: ['dependencies'],
+      limit: 1,
+    });
+    assert.equal(truncated.paths.total, 2);
+    assert.equal(truncated.paths.limited, true);
+    assert.deepEqual(
+      truncated.paths.rows.map((row) => row.slug),
+      ['capabilities/login'],
+    );
   });
 
   it('walks an explicit relation pattern from a start node', () => {
@@ -822,8 +846,22 @@ describe('queryCompiledOntology', () => {
       direction: 'incoming',
       limit: 2,
     });
-    assert.equal(limited.totalNodes, 2);
+    assert.equal(limited.totalNodes, 3);
     assert.equal(limited.limited, true);
+    assert.deepEqual(
+      limited.nodes.map((row) => row.slug),
+      ['domains/auth', 'capabilities/login'],
+    );
+
+    const exactLimit = queryCompiledOntology(artifact(), {
+      operation: 'subgraph',
+      slug: 'auth-domain',
+      depth: 2,
+      direction: 'incoming',
+      limit: 3,
+    });
+    assert.equal(exactLimit.totalNodes, 3);
+    assert.equal(exactLimit.limited, false);
   });
 
   it('returns graph overview aggregates for dashboard-style use', () => {

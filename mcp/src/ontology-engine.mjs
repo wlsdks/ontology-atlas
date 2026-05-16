@@ -590,7 +590,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const collectedEdges = [];
     const queue = [discovered.get(start)];
 
-    while (queue.length > 0 && discovered.size < limit + 1) {
+    while (queue.length > 0 && discovered.size < limit + 2) {
       const current = queue.shift();
       if (current.distance >= depth) continue;
       const candidates = traversalEdges(current.slug, direction, typeSet);
@@ -606,7 +606,7 @@ export function createOntologyEngine(artifact, options = {}) {
         };
         discovered.set(next, item);
         queue.push(item);
-        if (discovered.size >= limit + 1) break;
+        if (discovered.size >= limit + 2) break;
       }
     }
 
@@ -614,13 +614,14 @@ export function createOntologyEngine(artifact, options = {}) {
       .filter((row) => row.slug !== start)
       .sort((a, b) => a.distance - b.distance || a.slug.localeCompare(b.slug));
     const limitedRows = rows.slice(0, limit);
+    const visibleSlugs = new Set([start, ...limitedRows.map((row) => row.slug)]);
     const layerMap = new Map();
     for (const row of limitedRows) {
       if (!layerMap.has(row.distance)) layerMap.set(row.distance, []);
       layerMap.get(row.distance).push(row);
     }
     const edgeRows = uniqueEdges(collectedEdges)
-      .filter((edge) => discovered.has(edge.from) && discovered.has(edge.to))
+      .filter((edge) => visibleSlugs.has(edge.from) && visibleSlugs.has(edge.to))
       .sort((a, b) => edgeSortKey(a).localeCompare(edgeSortKey(b)));
     const terminalRows = limitedRows.filter(
       (row) => traversalEdges(row.slug, direction, typeSet).length === 0,
@@ -876,7 +877,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const queue = [{ slug: seed, distance: 0 }];
     let limited = false;
 
-    while (queue.length > 0 && discovered.size < limit) {
+    while (queue.length > 0 && discovered.size < limit + 1) {
       const current = queue.shift();
       if (current.distance >= depth) continue;
       const candidates = traversalEdges(current.slug, direction, typeSet);
@@ -887,8 +888,8 @@ export function createOntologyEngine(artifact, options = {}) {
         const item = { slug: next, distance: current.distance + 1 };
         discovered.set(next, item);
         queue.push(item);
-        if (discovered.size >= limit) {
-          limited = i < candidates.length - 1 || queue.length > 0;
+        if (discovered.size >= limit + 1) {
+          limited = true;
           break;
         }
       }
@@ -897,7 +898,8 @@ export function createOntologyEngine(artifact, options = {}) {
     const nodeRows = [...discovered.values()].sort(
       (a, b) => a.distance - b.distance || a.slug.localeCompare(b.slug),
     );
-    const allowedSlugs = new Set(nodeRows.map((row) => row.slug));
+    const visibleRows = nodeRows.slice(0, limit);
+    const allowedSlugs = new Set(visibleRows.map((row) => row.slug));
     const internalEdges = uniqueEdges(collectedEdges)
       .filter((edge) => allowedSlugs.has(edge.from) && allowedSlugs.has(edge.to))
       .sort((a, b) => edgeSortKey(a).localeCompare(edgeSortKey(b)));
@@ -909,8 +911,8 @@ export function createOntologyEngine(artifact, options = {}) {
       depth,
       totalNodes: nodeRows.length,
       totalEdges: internalEdges.length,
-      limited,
-      nodes: nodeRows.map((row) => ({
+      limited: limited || nodeRows.length > limit,
+      nodes: visibleRows.map((row) => ({
         ...row,
         node: nodeBySlug.get(row.slug),
       })),
