@@ -164,9 +164,9 @@ error message 를 바로 출력한다.
 tool count metadata, 그리고 `initialize.instructions` 의 agent-facing inventory 가
 서로 drift 나지 않도록 같은 23-tool 목록을 교차 검증한다.
 installed verify 도 `tools/list` schema 의 `additionalProperties:false` 와
-`query_ontology.operation` / `targetOperation` enum 이 runtime allow-list 와
-일치하는지 검사해, MCP client schema 와 실제 graph engine dispatch 가 갈라지지
-않도록 한다.
+required `query_ontology.operation`, `operation` / `targetOperation` enum 이
+runtime allow-list 와 일치하는지 검사해, MCP client schema 와 실제 graph engine
+dispatch 가 갈라지지 않도록 한다.
 `initialize.instructions` 는 agent 가 write 도구부터 시도하지 않도록
 `validate_vault`, `workspace_brief`, `overview`, `query_plan(targetOperation:"overview")`,
 `query_plan(targetOperation:"project_map")`

@@ -98,6 +98,10 @@ export function toolsListSchemaFailure(tools) {
   const queryTool = tools.find((tool) => tool?.name === 'query_ontology');
   if (!queryTool) return 'tools/list response missing query_ontology tool';
 
+  if (!sameArray(queryTool.inputSchema?.required, ['operation'])) {
+    return 'query_ontology required schema drift';
+  }
+
   if (!sameArray(queryTool.inputSchema?.properties?.operation?.enum, QUERY_ONTOLOGY_OPERATIONS)) {
     return 'query_ontology operation enum schema drift';
   }

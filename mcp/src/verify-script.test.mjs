@@ -70,6 +70,7 @@ describe('verify.mjs first-contact gates', () => {
         name: 'query_ontology',
         inputSchema: {
           additionalProperties: false,
+          required: ['operation'],
           properties: {
             operation: { enum: QUERY_ONTOLOGY_OPERATIONS },
             targetOperation: { enum: QUERY_PLAN_TARGET_OPERATIONS },
@@ -87,6 +88,19 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       toolsListSchemaFailure(tools.filter((tool) => tool.name !== 'query_ontology')),
       'tools/list response missing query_ontology tool',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        tools[0],
+        {
+          ...tools[1],
+          inputSchema: {
+            ...tools[1].inputSchema,
+            required: [],
+          },
+        },
+      ]),
+      'query_ontology required schema drift',
     );
     assert.equal(
       toolsListSchemaFailure([

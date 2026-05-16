@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-16T11:55:44.595Z",
+  "generatedAt": "2026-05-16T11:58:27.317Z",
   "docs": [
     {
       "slug": "ARCHITECTURE",
@@ -4777,8 +4777,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 50, 입력 순서 보존, m",
-      "wordCount": 3049,
-      "updatedAt": "2026-05-16T11:55:07.868Z",
+      "wordCount": 3051,
+      "updatedAt": "2026-05-16T11:58:09.255Z",
       "linksOut": []
     },
     {

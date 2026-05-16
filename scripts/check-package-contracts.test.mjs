@@ -83,6 +83,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`query_ontology\(\{operation:"path"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"project_scope"\}\)`/);
     assert.match(verifySection, /`additionalProperties:false`/);
+    assert.match(verifySection, /required `query_ontology\.operation`/);
     assert.match(verifySection, /`query_ontology\.operation` \/[\s\S]*`query_ontology\.targetOperation` enums/);
     assert.match(verifySection, /project-less vaults skip/);
     assert.match(verifySection, /Empty vaults skip node-targeted graph smoke/);
@@ -112,6 +113,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /prints the validated `workspace_brief\.health\.checks` count/);
     assert.match(verifySection, /health check `id:status` coverage/);
     assert.match(verifySection, /validates the installed `tools\/list` schema contract/);
+    assert.match(verifySection, /`query_ontology\.operation` must stay required/);
     assert.match(verifySection, /graph engine runtime allow-lists/);
   });
 
