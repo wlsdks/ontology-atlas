@@ -60,7 +60,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(expectedToolSplitLabel(), `${described[2]} read + ${described[3]} write`);
   });
 
-  it('fails tools/list schema drift for strict arguments, graph-query enums, and batch caps', () => {
+  it('fails tools/list schema drift for strict arguments, graph-query enums, batch caps, and write safety', () => {
     const tools = [
       {
         name: 'list_concepts',
@@ -87,7 +87,61 @@ describe('verify.mjs first-contact gates', () => {
         inputSchema: {
           additionalProperties: false,
           required: ['relations'],
-          properties: { relations: { type: 'array', maxItems: 50 } },
+          properties: {
+            relations: {
+              type: 'array',
+              maxItems: 50,
+              items: {
+                properties: {
+                  expected_mtime: { type: 'number', minimum: 0 },
+                },
+              },
+            },
+          },
+        },
+      },
+      {
+        name: 'add_relation',
+        inputSchema: {
+          additionalProperties: false,
+          properties: { expected_mtime: { type: 'number', minimum: 0 } },
+        },
+      },
+      {
+        name: 'patch_concept',
+        inputSchema: {
+          additionalProperties: false,
+          properties: { expected_mtime: { type: 'number', minimum: 0 } },
+        },
+      },
+      {
+        name: 'rename_concept',
+        inputSchema: {
+          additionalProperties: false,
+          properties: {
+            confirm: { type: 'boolean' },
+            expected_mtime: { type: 'number', minimum: 0 },
+          },
+        },
+      },
+      {
+        name: 'merge_concepts',
+        inputSchema: {
+          additionalProperties: false,
+          properties: {
+            confirm: { type: 'boolean' },
+            expected_mtime: { type: 'number', minimum: 0 },
+          },
+        },
+      },
+      {
+        name: 'delete_concept',
+        inputSchema: {
+          additionalProperties: false,
+          properties: {
+            confirm: { type: 'boolean' },
+            expected_mtime: { type: 'number', minimum: 0 },
+          },
         },
       },
       {
@@ -103,7 +157,7 @@ describe('verify.mjs first-contact gates', () => {
       },
     ];
     const withQueryTool = (queryTool) => [
-      ...tools.slice(0, 4),
+      ...tools.slice(0, 9),
       queryTool,
     ];
 
@@ -120,9 +174,9 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       toolsListSchemaFailure(withQueryTool(
         {
-          ...tools[4],
+          ...tools[9],
           inputSchema: {
-            ...tools[4].inputSchema,
+            ...tools[9].inputSchema,
             required: [],
           },
         },
@@ -132,11 +186,11 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       toolsListSchemaFailure(withQueryTool(
         {
-          ...tools[4],
+          ...tools[9],
           inputSchema: {
-            ...tools[4].inputSchema,
+            ...tools[9].inputSchema,
             properties: {
-              ...tools[4].inputSchema.properties,
+              ...tools[9].inputSchema.properties,
               operation: { enum: QUERY_ONTOLOGY_OPERATIONS.filter((operation) => operation !== 'health') },
             },
           },
@@ -147,11 +201,11 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       toolsListSchemaFailure(withQueryTool(
         {
-          ...tools[4],
+          ...tools[9],
           inputSchema: {
-            ...tools[4].inputSchema,
+            ...tools[9].inputSchema,
             properties: {
-              ...tools[4].inputSchema.properties,
+              ...tools[9].inputSchema.properties,
               targetOperation: { enum: [...QUERY_PLAN_TARGET_OPERATIONS, 'query_plan'] },
             },
           },
@@ -190,6 +244,37 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.slice(3),
       ]),
       'add_concepts.concepts batch cap schema drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.slice(0, 4),
+        {
+          ...tools[4],
+          inputSchema: {
+            ...tools[4].inputSchema,
+            properties: { expected_mtime: { type: 'number' } },
+          },
+        },
+        ...tools.slice(5),
+      ]),
+      'add_relation.expected_mtime conflict guard schema drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.slice(0, 8),
+        {
+          ...tools[8],
+          inputSchema: {
+            ...tools[8].inputSchema,
+            properties: {
+              ...tools[8].inputSchema.properties,
+              confirm: { type: 'string' },
+            },
+          },
+        },
+        tools[9],
+      ]),
+      'delete_concept.confirm dry-run safety schema drift',
     );
   });
 

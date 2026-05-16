@@ -86,6 +86,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /required `query_ontology\.operation`/);
     assert.match(verifySection, /`query_ontology\.operation` \/[\s\S]*`query_ontology\.targetOperation` enums/);
     assert.match(verifySection, /same 50-row cap used by `get_concepts`, `add_concepts`,\s+and `add_relations`/);
+    assert.match(verifySection, /write-safety schemas for `expected_mtime`/);
+    assert.match(verifySection, /destructive-tool `confirm` dry-run switches/);
     assert.match(verifySection, /project-less vaults skip/);
     assert.match(verifySection, /Empty vaults skip node-targeted graph smoke/);
     assert.match(verifySection, /`list_kinds` \/ `compile_ontology` \/ `overview`\s+census shape\/count mismatches/);
@@ -117,6 +119,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`query_ontology\.operation` must stay required/);
     assert.match(verifySection, /graph engine runtime allow-lists/);
     assert.match(verifySection, /batch tools must keep their 50-row caps/);
+    assert.match(verifySection, /write tools must keep their `expected_mtime` \/ `confirm` safety schemas/);
   });
 
   it('keeps the CLI README explicit about mcp-verify help scope', () => {
@@ -127,6 +130,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /graph-query smoke contract/);
     assert.match(verifySection, /`tools\/list` schema contract/);
     assert.match(verifySection, /Batch tool caps/);
+    assert.match(verifySection, /Write-safety schema/);
     assert.match(verifySection, /get_concepts/);
     assert.match(verifySection, /partial-row contract drift/);
     assert.match(verifySection, /stdout/);

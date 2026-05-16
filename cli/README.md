@@ -55,6 +55,8 @@ The delegated verifier also checks the installed `tools/list` schema contract,
 including strict unknown-argument rejection and graph-query operation enums.
 Batch tool caps for `get_concepts`, `add_concepts`, and `add_relations` are
 checked against the runtime 50-row contract too.
+Write-safety schema for `expected_mtime` conflict guards and destructive
+`confirm` dry-run switches is checked as part of the same installed verify.
 It also checks `get_concepts` with discovered vault slugs plus one missing slug,
 so installed CLI users catch batch-reader success and partial-row contract drift.
 It blocks parser/server/tool inventory failures, vault validation problems,

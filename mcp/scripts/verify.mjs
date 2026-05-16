@@ -130,6 +130,41 @@ export function toolsListSchemaFailure(tools) {
     }
   }
 
+  for (const toolName of [
+    'add_relation',
+    'patch_concept',
+    'rename_concept',
+    'merge_concepts',
+    'delete_concept',
+  ]) {
+    const tool = tools.find((candidate) => candidate?.name === toolName);
+    if (!tool) return `tools/list response missing ${toolName} tool`;
+    const expectedMtime = propertyAt(tool, ['properties', 'expected_mtime']);
+    if (expectedMtime?.type !== 'number' || expectedMtime?.minimum !== 0) {
+      return `${toolName}.expected_mtime conflict guard schema drift`;
+    }
+  }
+
+  const addRelations = tools.find((candidate) => candidate?.name === 'add_relations');
+  const rowExpectedMtime = propertyAt(addRelations, [
+    'properties',
+    'relations',
+    'items',
+    'properties',
+    'expected_mtime',
+  ]);
+  if (rowExpectedMtime?.type !== 'number' || rowExpectedMtime?.minimum !== 0) {
+    return 'add_relations row expected_mtime conflict guard schema drift';
+  }
+
+  for (const toolName of ['rename_concept', 'merge_concepts', 'delete_concept']) {
+    const tool = tools.find((candidate) => candidate?.name === toolName);
+    const confirm = propertyAt(tool, ['properties', 'confirm']);
+    if (confirm?.type !== 'boolean') {
+      return `${toolName}.confirm dry-run safety schema drift`;
+    }
+  }
+
   return null;
 }
 
