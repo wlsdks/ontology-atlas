@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   advisoryNextActionsSummary,
+  buildGetConceptsSmokeSlugs,
   compileSummaryFailure,
   diagnosisBlockingFailure,
   diagnosisIssueCount,
@@ -122,6 +123,27 @@ describe('verify.mjs first-contact gates', () => {
       }),
       null,
     );
+  });
+
+  it('builds get_concepts smoke slugs from the current list response', () => {
+    assert.deepEqual(
+      buildGetConceptsSmokeSlugs({
+        nodes: [
+          { slug: 'project' },
+          { slug: 'capabilities/mcp-server' },
+          { slug: 'elements/mcp-sdk' },
+        ],
+      }),
+      ['project', 'capabilities/mcp-server', 'missing-verify-slug'],
+    );
+    assert.deepEqual(
+      buildGetConceptsSmokeSlugs({
+        nodes: [{ slug: '' }, { slug: null }, { title: 'No slug' }],
+      }),
+      ['missing-verify-slug'],
+    );
+    assert.deepEqual(buildGetConceptsSmokeSlugs({ nodes: [] }), ['missing-verify-slug']);
+    assert.deepEqual(buildGetConceptsSmokeSlugs({}), ['missing-verify-slug']);
   });
 
   it('fails malformed get_concepts batch payloads', () => {

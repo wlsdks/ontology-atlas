@@ -247,7 +247,7 @@ export function getConceptsFailure(parsed) {
   return null;
 }
 
-function buildGetConceptsSmokeSlugs(listPayload) {
+export function buildGetConceptsSmokeSlugs(listPayload) {
   const slugs = Array.isArray(listPayload?.nodes)
     ? listPayload.nodes
         .map((node) => node?.slug)
