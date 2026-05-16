@@ -103,6 +103,20 @@ describe('package contract helpers', () => {
     assert.match(row, /later valid slugs still resolve/);
   });
 
+  it('keeps the MCP README explicit about destructive write safety switches', () => {
+    const readme = readFileSync('mcp/README.md', 'utf-8');
+    const deleteRow = readme.split('| `delete_concept` |')[1]?.split('\n')[0] ?? '';
+    const renameRow = readme.split('| `rename_concept` |')[1]?.split('\n')[0] ?? '';
+
+    assert.match(deleteRow, /confirm:true/);
+    assert.match(deleteRow, /force:true/);
+    assert.match(deleteRow, /backlinks/);
+    assert.match(renameRow, /confirm:true/);
+    assert.match(renameRow, /newSlug/);
+    assert.match(renameRow, /overwrite:true/);
+    assert.match(renameRow, /already exists/);
+  });
+
   it('keeps the MCP README explicit about focused source-checkout verification', () => {
     const readme = readFileSync('mcp/README.md', 'utf-8');
     const section = readme.split('### Source-checkout verification')[1]?.split('### 2. Restart Claude Code')[0] ?? '';
