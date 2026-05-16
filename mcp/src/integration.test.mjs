@@ -501,8 +501,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         type: findTool("add_concepts")?.inputSchema?.properties?.concepts?.type,
         maxItems: findTool("add_concepts")?.inputSchema?.properties?.concepts?.maxItems,
         itemType: findTool("add_concepts")?.inputSchema?.properties?.concepts?.items?.type,
+        itemAdditionalProperties:
+          findTool("add_concepts")?.inputSchema?.properties?.concepts?.items?.additionalProperties,
       },
-      { type: "array", maxItems: 50, itemType: "object" },
+      { type: "array", maxItems: 50, itemType: "object", itemAdditionalProperties: false },
       "add_concepts exposes batch maxItems schema",
     );
     assert.deepEqual(
@@ -510,8 +512,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         type: findTool("add_relations")?.inputSchema?.properties?.relations?.type,
         maxItems: findTool("add_relations")?.inputSchema?.properties?.relations?.maxItems,
         itemType: findTool("add_relations")?.inputSchema?.properties?.relations?.items?.type,
+        itemAdditionalProperties:
+          findTool("add_relations")?.inputSchema?.properties?.relations?.items?.additionalProperties,
       },
-      { type: "array", maxItems: 50, itemType: "object" },
+      { type: "array", maxItems: 50, itemType: "object", itemAdditionalProperties: false },
       "add_relations exposes batch maxItems schema",
     );
   } finally {
@@ -2476,6 +2480,36 @@ await test("add_concepts — blank/padded scalar row 는 row-level error 로 격
   }
 });
 
+await test("add_concepts — unknown row field 는 row-level error 로 격리", async () => {
+  const root = makeVault([]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", {
+        concepts: [
+          { slug: "ok", kind: "capability", title: "OK", domain: "x" },
+          {
+            slug: "typo-title",
+            kind: "capability",
+            title: "Typo Title",
+            domain: "x",
+            titel: "ignored typo",
+          },
+        ],
+      }),
+      callTool(3, "list_concepts"),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.concepts[0].ok, true, "valid row still lands");
+    assert.equal(result.concepts[1].ok, false);
+    assert.match(result.concepts[1].error, /Unknown field "titel" in concepts\[1\]/i);
+    const list = getCallParsed(responses, 3);
+    assert.deepEqual(list.nodes.map((node) => node.slug), ["ok"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("MCP write tools — blank/padded string inputs are rejected before disk writes", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
@@ -2783,6 +2817,34 @@ await test("add_relations — blank/padded scalar row 는 row-level error 로 �
     assert.match(result.relations[4].error, /from must be a non-empty string/i);
     const concept = getCallParsed(responses, 3);
     assert.deepEqual(concept.frontmatter.relates, ["b"]);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("add_relations — unknown row field 는 row-level error 로 격리", async () => {
+  const root = makeVault([
+    { slug: "a", content: "---\nkind: capability\ntitle: A\n---\n" },
+    { slug: "b", content: "---\nkind: capability\ntitle: B\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relations", {
+        relations: [
+          { from: "a", to: "b", type: "relates" },
+          { from: "a", to: "b", type: "contains", relation: "relates" },
+        ],
+      }),
+      callTool(3, "get_concept", { slug: "a" }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.relations[0].ok, true, "valid row still lands");
+    assert.equal(result.relations[1].ok, false);
+    assert.match(result.relations[1].error, /Unknown field "relation" in relations\[1\]/i);
+    const concept = getCallParsed(responses, 3);
+    assert.deepEqual(concept.frontmatter.relates, ["b"]);
+    assert.equal(concept.frontmatter.contains, undefined);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -363,6 +363,7 @@ const TOOLS = [
               body: { type: 'string' },
             },
             required: ['slug', 'kind', 'title'],
+            additionalProperties: false,
           },
           description: 'Array of concept specs (max 50). Each row uses the same shape as `add_concept` input.',
         },
@@ -448,6 +449,7 @@ const TOOLS = [
               expected_mtime: { type: 'number', minimum: 0 },
             },
             required: ['from', 'to', 'type'],
+            additionalProperties: false,
           },
           description: 'Array of relation specs (max 50). Each row uses the same shape as `add_relation` input.',
         },
@@ -1503,6 +1505,16 @@ function requirePlainObject(value, name) {
   }
 }
 
+function requireAllowedObjectKeys(value, name, allowedKeys) {
+  const allowed = new Set(allowedKeys);
+  for (const key of Object.keys(value)) {
+    if (allowed.has(key)) continue;
+    throw new Error(
+      `Unknown field "${key}" in ${name}. Allowed fields: ${allowedKeys.join(', ')}.`,
+    );
+  }
+}
+
 function requireValidFrontmatterPatch(frontmatter) {
   if (frontmatter === undefined) return;
   for (const [key, value] of Object.entries(frontmatter)) {
@@ -1609,6 +1621,15 @@ function addConceptsBatch({ concepts }) {
     try {
       requirePlainObject(spec, `concepts[${index}]`);
       slug = typeof spec.slug === 'string' ? spec.slug : '';
+      requireAllowedObjectKeys(spec, `concepts[${index}]`, [
+        'slug',
+        'kind',
+        'title',
+        'domain',
+        'capabilities',
+        'elements',
+        'body',
+      ]);
       if (slug && seenInBatch.has(slug)) {
         return { slug, ok: false, error: 'duplicate slug in input batch' };
       }
@@ -1771,6 +1792,12 @@ function addRelationsBatch({ relations }) {
       from = typeof spec.from === 'string' ? spec.from : '';
       to = typeof spec.to === 'string' ? spec.to : '';
       type = typeof spec.type === 'string' ? spec.type : '';
+      requireAllowedObjectKeys(spec, `relations[${index}]`, [
+        'from',
+        'to',
+        'type',
+        'expected_mtime',
+      ]);
       return addRelation(spec, { includePostWriteMaintenance: false });
     } catch (err) {
       const msg = err && err.message ? err.message : String(err);

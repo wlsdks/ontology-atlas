@@ -29,9 +29,9 @@ relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 | `analyze_repo_structure` | **R16** code repo (default cwd) 분석 → ontology 노드 후보 제안. **side effect 0** — vault 변경 안 함. AI agent 가 빈 vault bootstrap 시 사용 (사용자 한 줄 *"이 codebase 분석해줘"*). FSD vs generic detect. 후보 slug 는 `domains/*`, `capabilities/*`, `elements/src/...` 로 starter layout 과 일치. |
 | `infer_imports` | **R17** TS/JS import graph 추출 → file/module-level edge + external (npm) imports 분리. **side effect 0**. moduleEdges 도 analyze 와 같은 folder-prefixed slug 를 사용해 add_relation endpoint mismatch 를 피함. |
 | `add_concept` | 새 노드 (.md) 작성 — slug/kind/title/domain 은 blank 또는 앞뒤 공백이면 쓰기 전 reject, graph 배열은 trim + dedup + sort, body 는 생략 시에만 기본 본문 생성하고 명시한 빈 문자열은 보존, 기존 slug 면 throw, changed write 는 compact `postWriteMaintenance` 반환 |
-| `add_concepts` | **R+** 배치 writer — 여러 노드 한 호출에 (max 50, 입력 순서 보존, partial result, 입력 내 중복 slug 사전 감지). row-level blank/padded 입력은 해당 row 만 실패한다. `/ontology-bootstrap` 흐름이 5~15 노드를 한 번에 land. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환. |
+| `add_concepts` | **R+** 배치 writer — 여러 노드 한 호출에 (max 50, 입력 순서 보존, partial result, 입력 내 중복 slug 사전 감지). row-level blank/padded/unknown-field 입력은 해당 row 만 실패한다. `/ontology-bootstrap` 흐름이 5~15 노드를 한 번에 land. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환. |
 | `add_relation` | depends_on / relates / contains / describes edge 추가. from/to/type 은 blank 또는 앞뒤 공백이면 쓰기 전 reject, changed write 는 compact `postWriteMaintenance` 반환 |
-| `add_relations` | **R+** 배치 edge writer — 여러 edge 한 호출에 (max 50, 응답 row 순서 보존, 저장 배열은 dedup + sort, idempotent, partial result). analyze_repo_structure suggestedRelations · infer_imports moduleEdges 수신 직후 적합. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환. |
+| `add_relations` | **R+** 배치 edge writer — 여러 edge 한 호출에 (max 50, 응답 row 순서 보존, 저장 배열은 dedup + sort, idempotent, partial result). row-level unknown-field 입력도 해당 row 만 실패한다. analyze_repo_structure suggestedRelations · infer_imports moduleEdges 수신 직후 적합. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환. |
 
 R+ follow-up: `add_relation` / `add_relations` 와 `rename_concept` / `merge_concepts`
 backlink redirect 는 relation 배열을 canonical set 으로 저장한다. 같은 edge 집합은
@@ -181,9 +181,9 @@ row partial-failure 경로까지 `mcp/src/integration.test.mjs` 의 spawn 기반
 테스트가 검증한다. wrapper 바깥의 vault core 함수도 `writeDoc` / `patchFrontmatter` /
 `updateDoc` 에서 invalid `frontmatter` object 와 non-string `body` 를 디스크 쓰기
 전에 reject 해 generic TypeError 나 YAML coercion 으로 숨지 않게 한다.
-`add_concepts` / `add_relations` 의 batch row 도 object shape 를 먼저 검증해,
-잘못된 row 는 index 가 포함된 row-level error 로 격리하고 나머지 유효 row 는 계속
-land 한다.
+`add_concepts` / `add_relations` 의 batch row 도 object shape 와 허용 field set 을
+먼저 검증해, 잘못된 row 는 index 가 포함된 row-level error 로 격리하고 나머지 유효
+row 는 계속 land 한다.
 `tools/call.arguments` 자체도 생략은 빈 object 로 처리하되, null / 배열 /
 문자열처럼 object 가 아닌 값은 SDK 또는 server 경계에서 명확한 MCP error 로
 거부한다. 알 수 없는 top-level argument key 도 reject 하고 `tools/list` schema 는
