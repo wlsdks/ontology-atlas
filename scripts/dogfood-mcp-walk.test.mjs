@@ -1663,6 +1663,19 @@ describe("evaluateDogfoodGate", () => {
           operation: "workspace_brief",
           status: "healthy",
           summary: { nodes: 1, edges: 0, issues: 0 },
+          nextActions: [{ id: "compile_issues", severity: "fatal" }],
+          health: okShape.brief.health,
+        },
+      }),
+      ["workspace_brief response unknown nextAction severity at index 0: fatal"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        brief: {
+          operation: "workspace_brief",
+          status: "healthy",
+          summary: { nodes: 1, edges: 0, issues: 0 },
           nextActions: [{ severity: "info" }],
           health: okShape.brief.health,
         },
@@ -1703,6 +1716,10 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, health: { operation: "health", status: "healthy", summary: okShape.health.summary, checks: [{ id: "compile_issues", count: 0 }] } }),
       ["health response missing check status: compile_issues"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, health: { operation: "health", status: "healthy", summary: okShape.health.summary, checks: [{ id: "compile_issues", status: "warning", count: 0 }] } }),
+      ["health response unknown check status: compile_issues=warning"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, health: { operation: "health", status: "healthy", summary: okShape.health.summary, checks: [{ id: "compile_issues", status: "pass" }] } }),

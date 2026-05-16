@@ -52,6 +52,8 @@ const IS_MAIN = fileURLToPath(import.meta.url) === resolve(process.argv[1] ?? ''
 const VERIFY_ARGS = parseVerifyArgs({ isMain: IS_MAIN });
 const VAULT = VERIFY_ARGS.vault;
 const VERIFY_TIMEOUT_MS_RAW = VERIFY_ARGS.timeoutMsRaw;
+const HEALTH_CHECK_STATUSES = new Set(['pass', 'warn', 'fail', 'info']);
+const NEXT_ACTION_SEVERITIES = new Set(['info', 'warn', 'fail']);
 
 export const EXPECTED_READ_TOOLS = [
   'list_concepts',
@@ -1215,7 +1217,7 @@ export function diagnosisBlockingFailure(label, parsed, expectedOperation) {
         || typeof action !== 'object'
         || Array.isArray(action)
         || !hasNonEmptyString(action.id, action.kind)
-        || !hasNonEmptyString(action.severity)
+        || !NEXT_ACTION_SEVERITIES.has(action.severity)
       ),
     );
     if (malformedAction) {
@@ -1227,7 +1229,12 @@ export function diagnosisBlockingFailure(label, parsed, expectedOperation) {
     return `${label} response missing health checks`;
   }
   const malformedCheck = checks.find(
-    (check) => !check || typeof check !== 'object' || !hasNonEmptyString(check.id) || !hasNonEmptyString(check.status),
+    (check) => (
+      !check
+      || typeof check !== 'object'
+      || !hasNonEmptyString(check.id)
+      || !HEALTH_CHECK_STATUSES.has(check.status)
+    ),
   );
   if (malformedCheck) {
     return `${label} response malformed health check`;

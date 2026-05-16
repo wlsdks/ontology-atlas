@@ -1,3 +1,6 @@
+const HEALTH_CHECK_STATUSES = new Set(['pass', 'warn', 'fail', 'info']);
+const NEXT_ACTION_SEVERITIES = new Set(['info', 'warn', 'fail']);
+
 export function assertQueryOperation(result, expectedOperation) {
   if (!result || typeof result !== 'object' || Array.isArray(result)) {
     throw new Error(`${expectedOperation} query returned a non-object response`);
@@ -73,7 +76,7 @@ function validNextAction(action) {
     && typeof action === 'object'
     && !Array.isArray(action)
     && hasNonEmptyString(action.id, action.kind)
-    && hasNonEmptyString(action.severity)
+    && NEXT_ACTION_SEVERITIES.has(action.severity)
   );
 }
 
@@ -83,7 +86,7 @@ function validHealthCheck(check) {
     && typeof check === 'object'
     && !Array.isArray(check)
     && hasNonEmptyString(check.id)
-    && hasNonEmptyString(check.status)
+    && HEALTH_CHECK_STATUSES.has(check.status)
   );
 }
 

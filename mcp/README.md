@@ -285,8 +285,8 @@ verify before cleanup. Missing or malformed first-contact diagnosis payloads
 such as `workspace_brief.nextActions`, `workspace_brief.health.checks`,
 `health.checks`, tuned `workspace_brief.health.checks`, and tuned `health.checks` also fail the command instead of being treated as clean; every
 `workspace_brief.nextActions` row must include a non-empty `id` or `kind` plus
-non-empty `severity`, and every health check row must include non-empty `id`
-and `status`.
+`severity` in `info` / `warn` / `fail`, and every health check row must include
+non-empty `id` plus `status` in `pass` / `warn` / `fail` / `info`.
 Non-blocking `workspace_brief.nextActions` are printed as a short
 advisory list, the `workspace_brief` / `workspace_brief_tuned` success lines include the
 `workspace_brief.health.checks` count, and the `health` / `health_tuned` lines include the

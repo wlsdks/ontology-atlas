@@ -28,8 +28,8 @@
 - `npm run verify` cross-checks node census totals across `list_kinds`, `list_concepts`, `compile_ontology`, and `overview`, while keeping `validate_vault.scanned` as file-level health, so package installs catch kind-count drift without conflating files and nodes.
 - `npm run verify` now fails on blocking first-contact diagnosis problems: `list_concepts` vault warnings, `fail` health checks, or fail-severity `workspace_brief.nextActions` return exit 1, while advisory `needs_attention` states still print for starter vaults.
 - `npm run verify` now treats missing or malformed first-contact diagnosis payloads (`workspace_brief.nextActions`, `workspace_brief.health.checks`, `health.checks`, tuned `workspace_brief.health.checks`, tuned `health.checks`) as failures instead of clean vaults.
-- `npm run verify` now requires every `workspace_brief.nextActions` row to include a non-empty `id` or `kind` plus non-empty `severity`, so advisory output cannot hide malformed actions as `unknown`.
-- `npm run verify` now requires every health check row to include non-empty `id` and `status`, so coverage output cannot hide malformed checks as `unknown`.
+- `npm run verify` now requires every `workspace_brief.nextActions` row to include a non-empty `id` or `kind` plus `severity` in `info` / `warn` / `fail`, so advisory output cannot hide malformed actions as `unknown`.
+- `npm run verify` now requires every health check row to include non-empty `id` plus `status` in `pass` / `warn` / `fail` / `info`, so coverage output cannot hide malformed checks as `unknown`.
 - `npm run verify` now prints the validated `workspace_brief.health.checks` count in the `workspace_brief` and `workspace_brief_tuned` success lines, so first-contact output shows both next actions and health coverage for default and tuned probes.
 - `npm run verify` now prints health check `id:status` coverage in the `health` and `health_tuned` success lines, so a green install shows which graph-integrity checks actually ran.
 - `npm run verify` prints non-blocking `workspace_brief.nextActions` as a compact advisory list, so starter vault users see what to clean up after MCP wiring is confirmed.

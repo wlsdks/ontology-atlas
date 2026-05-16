@@ -95,7 +95,8 @@ fail severity `workspace_brief.nextActions` 는 exit 1 로 처리하되, starter
 `workspace_brief.nextActions`, `workspace_brief.health.checks`, `health.checks`, tuned `workspace_brief.health.checks`, tuned `health.checks`
 같은 first-contact diagnosis payload 의 핵심 배열이 빠지거나 malformed 이면
 clean vault 로 오인하지 않고 verify 를 실패시킨다. 각 nextAction row 는
-비어있지 않은 `id` 또는 `kind` 와 `severity`, 각 health check row 는 비어있지 않은 `id` / `status` 를 가져야 해서
+비어있지 않은 `id` 또는 `kind` 와 `info` / `warn` / `fail` severity, 각 health check row 는
+비어있지 않은 `id` 와 `pass` / `warn` / `fail` / `info` status 를 가져야 해서
 malformed row 가 `unknown` advisory/coverage 로 숨지 않는다.
 성공 출력도 `workspace_brief` / `workspace_brief_tuned` 라인에 validated health check count 를, `health` /
 tuned `health` 라인에 check `id:status` coverage 를 드러내 agent 가 nextActions 와 실제 검증 축을
@@ -169,7 +170,7 @@ agent 가 실패 직후 어떤 frontmatter 문제부터 볼지 바로 판단할 
 non-blocking `workspace_brief.nextActions` 는 짧은 advisory 목록으로 출력해
 MCP wiring 확인 직후 정리할 항목을 바로 보여준다.
 dogfood walk 도 `workspace_brief.nextActions` row 의 identifier/severity 와
-`health.checks` row 의 id/status/count 를 fail-closed 로 검증해, 실제 MCP 응답이
+`health.checks` row 의 id/status/count 를 fail-closed 로 검증하고 severity/status enum 오타도 거부해, 실제 MCP 응답이
 advisory/coverage 출력에서 `unknown` 으로 숨지 않게 한다.
 기본 server wait 는 8초이며 큰 vault / 느린 파일시스템에서는
 양의 정수 millisecond 값인 `OMOT_VERIFY_TIMEOUT_MS` 로 늘릴 수 있다.

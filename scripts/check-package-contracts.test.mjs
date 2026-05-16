@@ -244,8 +244,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /keeping `validate_vault\.scanned` as file-level health/);
     assert.match(verifySection, /missing or malformed first-contact diagnosis payloads/);
     assert.match(verifySection, /`workspace_brief\.nextActions`, `workspace_brief\.health\.checks`, `health\.checks`, tuned `workspace_brief\.health\.checks`, tuned `health\.checks`/);
-    assert.match(verifySection, /requires every `workspace_brief\.nextActions` row to include a non-empty `id` or `kind` plus non-empty `severity`/);
-    assert.match(verifySection, /requires every health check row to include non-empty `id` and `status`/);
+    assert.match(verifySection, /requires every `workspace_brief\.nextActions` row to include a non-empty `id` or `kind` plus `severity` in `info` \/ `warn` \/ `fail`/);
+    assert.match(verifySection, /requires every health check row to include non-empty `id` plus `status` in `pass` \/ `warn` \/ `fail` \/ `info`/);
     assert.match(verifySection, /prints the validated `workspace_brief\.health\.checks` count/);
     assert.match(verifySection, /health check `id:status` coverage/);
     assert.match(verifySection, /accepts direct vault arguments/);

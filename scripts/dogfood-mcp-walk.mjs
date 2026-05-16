@@ -91,6 +91,9 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [50, "workspace_brief_tuned"],
 ]);
 
+const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
+const NEXT_ACTION_SEVERITIES = new Set(["info", "warn", "fail"]);
+
 function rpc(requests, timeoutMs = 3000) {
   return new Promise((resolveP, rejectP) => {
     const expectedIds = expectedResponseIds(requests);
@@ -3280,6 +3283,9 @@ function workspaceBriefShapeFailure(result, label = "workspace_brief") {
     if (typeof action.severity !== "string" || action.severity.length === 0) {
       return `${label} response missing nextAction severity at index ${index}`;
     }
+    if (!NEXT_ACTION_SEVERITIES.has(action.severity)) {
+      return `${label} response unknown nextAction severity at index ${index}: ${action.severity}`;
+    }
     if (typeof action.id !== "string" && typeof action.kind !== "string") {
       return `${label} response missing nextAction identifier at index ${index}`;
     }
@@ -3382,6 +3388,9 @@ function checksShapeFailure(label, checks, { requireNonEmpty = false } = {}) {
     }
     if (typeof check.status !== "string" || check.status.length === 0) {
       return `${label} response missing check status: ${check.id}`;
+    }
+    if (!HEALTH_CHECK_STATUSES.has(check.status)) {
+      return `${label} response unknown check status: ${check.id}=${check.status}`;
     }
     if (!Number.isInteger(check.count) || check.count < 0) {
       return `${label} response missing check count: ${check.id}`;
