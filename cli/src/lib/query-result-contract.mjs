@@ -41,7 +41,10 @@ export function pathResultExitCode(result) {
   if (!Array.isArray(result?.hops) || result.hops.length === 0) return 1;
   if (result.hops.some((hop) => !hasNonEmptyString(hop))) return 1;
   if (typeof result.hopCount === 'number' && result.hopCount !== result.hops.length - 1) return 1;
-  if (Array.isArray(result.edges) && result.edges.length !== result.hops.length - 1) return 1;
+  if (!Array.isArray(result.edges) || result.edges.length !== result.hops.length - 1) return 1;
+  if (result.edges.some((edge, index) => !validPathEdge(edge, result.hops[index], result.hops[index + 1]))) {
+    return 1;
+  }
   return 0;
 }
 
@@ -88,6 +91,17 @@ function validCycle(cycle) {
   if (!cycle || typeof cycle !== 'object' || Array.isArray(cycle)) return false;
   if (!Array.isArray(cycle.slugs) || cycle.slugs.length < 2) return false;
   return cycle.slugs.every((slug) => hasNonEmptyString(slug));
+}
+
+function validPathEdge(edge, from, to) {
+  return Boolean(
+    edge
+    && typeof edge === 'object'
+    && !Array.isArray(edge)
+    && edge.from === from
+    && edge.to === to
+    && hasNonEmptyString(edge.via)
+  );
 }
 
 function hasNonEmptyString(...values) {

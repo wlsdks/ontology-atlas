@@ -61,13 +61,16 @@ describe('query-result-contract', () => {
     assert.equal(cyclesResultExitCode({ totalCycles: 0, cycles: [{ slugs: ['a'] }] }), 1);
     assert.equal(cyclesResultExitCode({ totalCycles: 0, cycles: [{ slugs: ['a', ''] }] }), 1);
 
-    assert.equal(pathResultExitCode({ found: true, hopCount: 1, hops: ['a', 'b'], edges: [{}] }), 0);
+    assert.equal(pathResultExitCode({ found: true, hopCount: 1, hops: ['a', 'b'], edges: [{ from: 'a', to: 'b', via: 'relates' }] }), 0);
     assert.equal(pathResultExitCode({ found: false }), 1);
     assert.equal(pathResultExitCode({ found: true, hops: [] }), 1);
     assert.equal(pathResultExitCode({ found: true }), 1);
     assert.equal(pathResultExitCode({ found: true, hops: [null] }), 1);
     assert.equal(pathResultExitCode({ found: true, hopCount: 2, hops: ['a', 'b'] }), 1);
     assert.equal(pathResultExitCode({ found: true, hops: ['a', 'b'], edges: [] }), 1);
+    assert.equal(pathResultExitCode({ found: true, hops: ['a', 'b'], edges: [{}] }), 1);
+    assert.equal(pathResultExitCode({ found: true, hops: ['a', 'b'], edges: [{ from: 'b', to: 'a', via: 'relates' }] }), 1);
+    assert.equal(pathResultExitCode({ found: true, hops: ['a', 'b'], edges: [{ from: 'a', to: 'b' }] }), 1);
 
     assert.equal(healthResultExitCode({ status: 'healthy', checks: [] }), 0);
     assert.equal(healthResultExitCode({ status: 'pass', checks: [] }), 0);

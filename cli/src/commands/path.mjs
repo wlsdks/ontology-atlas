@@ -62,6 +62,10 @@ export async function runPath(args) {
     );
     return 1;
   }
+  if (pathResultExitCode(result) !== 0) {
+    process.stderr.write(`${COLORS.red}error${COLORS.reset}  malformed find_path response\n`);
+    return 1;
+  }
 
   const hops = result.hops;
   const edges = Array.isArray(result.edges) ? result.edges : [];
