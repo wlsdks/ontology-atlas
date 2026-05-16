@@ -219,6 +219,19 @@ describe('package contract helpers', () => {
     assert.match(releaseChecks, /validate_vault` problem files/);
   });
 
+  it('keeps the root README dogfood snapshot aligned with the vault census', () => {
+    const readme = readFileSync('README.md', 'utf-8');
+    const dogfoodRow = readme.split('| **Dogfooding** |')[1]?.split('\n')[0] ?? '';
+    const census = dogfoodVaultCensus(process.cwd());
+
+    assert.match(dogfoodRow, new RegExp(`\\*\\*${census.total} nodes\\*\\*`));
+    assert.match(dogfoodRow, new RegExp(`capabilities ${census.byKind.capabilities}`));
+    assert.match(dogfoodRow, new RegExp(`domains ${census.byKind.domains}`));
+    assert.match(dogfoodRow, new RegExp(`elements ${census.byKind.elements}`));
+    assert.match(dogfoodRow, new RegExp(`project ${census.byKind.project}`));
+    assert.match(dogfoodRow, new RegExp(`vault-readme ${census.byKind['vault-readme']}`));
+  });
+
   it('keeps dogfood CLI docs explicit about fail-closed graph diagnostics', () => {
     const doc = readFileSync('docs/ontology/capabilities/cli-developer-entry.md', 'utf-8');
     const mcpVerifyRow = doc.split('| `oh-my-ontology mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
