@@ -210,7 +210,9 @@ strict unknown-argument / invalid-enum rejection, enum-validated
 `maintenance_plan` filters, and maintenance_plan cursor handling (ready page +
 missing `afterActionId`): the ready page must keep `cursor.found=true`,
 `cursor.reason=null`, and the missing cursor still reports `cursor.found=false`,
-reason, empty page. This help path does not start the MCP server.
+reason, empty page. Ready pages also verify `nextExecutableAction` /
+`nextReviewAction` point at the first executable/review page actions. This help
+path does not start the MCP server.
 
 A successful run looks like this:
 

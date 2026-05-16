@@ -229,6 +229,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /maintenance_plan cursor handling \(ready page \+\s+missing `afterActionId`\)/);
     assert.match(verifySection, /ready page must keep `cursor\.found=true`,\s+`cursor\.reason=null`/);
     assert.match(verifySection, /missing cursor still reports `cursor\.found=false`,\s+reason, empty page/);
+    assert.match(verifySection, /`nextExecutableAction` \/\s+`nextReviewAction` point at the first executable\/review page actions/);
     assert.match(verifySection, /list_concepts\/project probe\/get_concepts\/find_orphans\/list_kinds/);
     assert.match(verifySection, /✓ initialize instructions — first-contact safety guidance present/);
     assert.match(verifySection, /✓ tools\/list schema contract — strict arguments \+ graph-query enums/);
@@ -358,6 +359,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`maintenance_plan` cursor contract/);
     assert.match(verifySection, /`cursor\.found=true` with `cursor\.reason=null`/);
     assert.match(verifySection, /`cursor\.found=false`/);
+    assert.match(verifySection, /`nextExecutableAction` \/ `nextReviewAction`\s+point at the first executable\/review page actions/);
     assert.match(verifySection, /enum-validated\s+`maintenance_plan\.phases` \/ `maintenance_plan\.severities` \/\s+`maintenance_plan\.kinds` filters/);
     assert.match(verifySection, /strict work-queue\s+checks before starting the MCP server/);
     assert.match(verifySection, /Batch tool caps/);
@@ -546,6 +548,7 @@ describe('package contract helpers', () => {
     assert.match(mcpVerifyRow, /ready `maintenance_plan` cursor \+ missing `maintenance_plan\.afterActionId` cursor smoke/);
     assert.match(mcpVerifyRow, /`maintenance_plan\.phases` \/ `maintenance_plan\.severities` \/ `maintenance_plan\.kinds` enum filter/);
     assert.match(mcpVerifyRow, /`cursor\.found=false`/);
+    assert.match(mcpVerifyRow, /첫 executable\/review page action alignment/);
     assert.match(mcpVerifyRow, /zero remaining actions 계약/);
     assert.match(mcpVerifyRow, /`project_scope` hard gate 를 놓치지 않는다/);
     assert.match(mcpVerifyRow, /project-less vault/);
@@ -689,6 +692,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /Maintenance filters are enum-validated for phases\\\/severities\\\/kinds/);
     assert.match(smoke, /cursor smoke checks both cursor\\\.found=true with cursor\\\.reason=null and cursor\\\.found=false/);
     assert.match(smoke, /zero remaining actions, and no next actions/);
+    assert.match(smoke, /nextExecutableAction \\\/ nextReviewAction point at the first executable\\\/review page actions/);
     assert.match(smoke, /maintenance cursor — missing afterActionId reported/);
     assert.match(smoke, /maintenance cursor — ready page stable/);
     assert.ok(smoke.includes('directMcpVerify.stdout, /maintenance cursor'));

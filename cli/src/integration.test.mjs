@@ -315,6 +315,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /Maintenance filters are enum-validated for phases\/severities\/kinds/);
   assert.match(clean, /cursor smoke checks both cursor\.found=true with cursor\.reason=null and cursor\.found=false/);
   assert.match(clean, /zero remaining actions, and no next actions/);
+  assert.match(clean, /nextExecutableAction \/ nextReviewAction point at the first executable\/review page actions/);
 });
 
 await test('mcp-verify — rejects invalid timeout values', async () => {

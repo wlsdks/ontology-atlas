@@ -562,7 +562,8 @@ export function verifyUsage() {
     'vault validation, workspace health, compile/overview, query plans, and graph-query smoke.\n' +
     'Also checks strict unknown-argument / invalid-enum rejection, maintenance_plan filter enums,\n' +
     'and maintenance_plan cursor handling: ready page (cursor.found=true, cursor.reason=null)\n' +
-    'plus missing afterActionId (cursor.found=false, reason, empty page).\n'
+    'plus missing afterActionId (cursor.found=false, reason, empty page).\n' +
+    'Ready cursor smoke also verifies nextExecutableAction / nextReviewAction point at the first executable/review page actions.\n'
   );
 }
 
