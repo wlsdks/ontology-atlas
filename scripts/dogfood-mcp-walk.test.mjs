@@ -1470,6 +1470,16 @@ describe("rpc response completion helpers", () => {
     );
   });
 
+  it("keeps dogfood request ids unique", () => {
+    const ids = buildDogfoodRequests()
+      .map((request) => request.id)
+      .filter((id) => Number.isInteger(id));
+    assert.deepEqual(
+      ids.filter((id, index) => ids.indexOf(id) !== index),
+      [],
+    );
+  });
+
   it("flags stderr warnings without failing on normal connection logs", () => {
     assert.deepEqual(stderrWarningFailures("[oh-my-ontology-mcp] connected. vault=/tmp/x"), []);
     assert.deepEqual(
