@@ -27,6 +27,7 @@ import {
   overviewFailure,
   overviewQueryPlanFailure,
   parseVerifyTimeoutMs,
+  projectMapQueryPlanFailure,
   serverStartupFailure,
   validationCodeSummary,
   validateVaultFailure,
@@ -77,7 +78,7 @@ describe('verify.mjs first-contact gates', () => {
   it('detects when all first-contact JSON-RPC responses arrived', () => {
     assert.equal(
       hasAllFirstContactResponses(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
           .map((id) => JSON.stringify({ jsonrpc: '2.0', id, result: {} }))
           .join('\n'),
       ),
@@ -93,6 +94,7 @@ describe('verify.mjs first-contact gates', () => {
 
   it('keeps first-contact response labels aligned with the get_concepts smoke', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(11), 'get_concepts');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(12), 'project_map_query_plan');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), 11].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -441,6 +443,23 @@ describe('verify.mjs first-contact gates', () => {
       }),
       null,
     );
+    assert.equal(
+      projectMapQueryPlanFailure({
+        operation: 'query_plan',
+        targetOperation: 'project_map',
+        sideEffect: false,
+        normalized: { targetOperation: 'project_map', limit: 100 },
+        indexesUsed: ['compiled_artifact'],
+        estimate: {
+          strategy: 'aggregate_scan',
+          nodeScans: 1,
+          edgeScans: 2,
+          costClass: 'low',
+        },
+        warnings: [],
+      }),
+      null,
+    );
   });
 
   it('fails malformed graph-query verify smoke payloads', () => {
@@ -492,6 +511,14 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(overviewQueryPlanFailure({ ...cleanPlan, estimate: { ...cleanPlan.estimate, strategy: 'node_scan' } }), 'overview query_plan missing aggregate_scan estimate');
     assert.equal(overviewQueryPlanFailure({ ...cleanPlan, indexesUsed: [] }), 'overview query_plan missing compiled_artifact index hint');
     assert.equal(overviewQueryPlanFailure({ ...cleanPlan, warnings: null }), 'overview query_plan missing warnings array');
+    assert.equal(
+      projectMapQueryPlanFailure({
+        ...cleanPlan,
+        targetOperation: 'overview',
+        normalized: { targetOperation: 'overview' },
+      }),
+      'project_map query_plan returned unexpected targetOperation: overview',
+    );
   });
 
   it('fails when verify read surfaces disagree on node counts', () => {

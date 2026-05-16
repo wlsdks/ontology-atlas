@@ -208,12 +208,13 @@ try {
   assert.match(cliMcpVerify.stdout, /compile_ontology/);
   assert.match(cliMcpVerify.stdout, /overview/);
   assert.match(cliMcpVerify.stdout, /overview query_plan/);
+  assert.match(cliMcpVerify.stdout, /project_map query_plan/);
 
   const cliMcpVerifyHelp = run(cliBin, ['mcp-verify', '--help'], { cwd: projectDir });
   assert.equal(cliMcpVerifyHelp.stderr, '');
   assert.match(cliMcpVerifyHelp.stdout, /Usage:/);
   assert.match(cliMcpVerifyHelp.stdout, /compile_ontology/);
-  assert.match(cliMcpVerifyHelp.stdout, /overview query_plan graph-query smoke/);
+  assert.match(cliMcpVerifyHelp.stdout, /overview\/project_map query_plan graph-query smoke/);
 
   const missingVerifyOverride = runRaw(cliBin, ['mcp-verify', 'ontology'], {
     cwd: projectDir,
@@ -253,6 +254,7 @@ try {
   assert.match(mcpVerify.stdout, /compile_ontology/);
   assert.match(mcpVerify.stdout, /overview/);
   assert.match(mcpVerify.stdout, /overview query_plan/);
+  assert.match(mcpVerify.stdout, /project_map query_plan/);
 
   const invalidMcpVerifyTimeout = runRaw(
     'npm',

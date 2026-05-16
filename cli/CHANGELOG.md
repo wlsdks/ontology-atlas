@@ -4,7 +4,8 @@
 
 ### Added — `mcp-verify` command
 
-- `oh-my-ontology mcp-verify [vault] [--timeout-ms N]` — installed CLI wrapper around the MCP package verify script. Runs parser smoke, server boot, 23-tool inventory, `list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`, `workspace_brief`, `health`, `compile_ontology`, `overview`, and `overview query_plan` against the resolved vault.
+- `oh-my-ontology mcp-verify [vault] [--timeout-ms N]` — installed CLI wrapper around the MCP package verify script. Runs parser smoke, server boot, 23-tool inventory, `list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`, `workspace_brief`, `health`, `compile_ontology`, `overview`, and `overview`/`project_map` query_plan against the resolved vault.
+- `mcp-verify` now inherits the MCP package `project_map` query_plan smoke, so installed CLI checks prove widened `query_plan.targetOperation` support beyond the original `overview` target.
 - `mcp-verify` now inherits the MCP package `get_concepts` smoke: discovered vault slugs plus one missing slug catch batch-reader success and partial-row contract drift in installed CLI checks.
 - `mcp-verify` blocks fail-severity first-contact problems while still allowing warn-level starter-vault diagnostics to print, so fresh `init` users can confirm MCP wiring before graph cleanup.
 - Delegated verify output now includes a compact advisory nextActions line when cleanup is recommended but not blocking.

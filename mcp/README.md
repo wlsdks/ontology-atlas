@@ -184,6 +184,7 @@ A successful run looks like this:
 ✓ compile_ontology — graph 01dcdf26c195 (28 nodes, 200 edges, issues 0)
 ✓ overview — graph 01dcdf26c195 (28 nodes, 200 edges, hubs 5)
 ✓ overview query_plan — aggregate_scan (medium, nodes 28, edges 200)
+✓ project_map query_plan — aggregate_scan (medium, nodes 28, edges 200)
 
 All passed — register .mcp.json with Claude Code and restart to use the 23 tools.
 ```
@@ -194,7 +195,8 @@ verify path exercises and gates the same first-contact graph diagnosis an agent 
 `query_ontology({operation:"workspace_brief"})`, and
 `query_ontology({operation:"health"})`, plus `compile_ontology({summary:true})`,
 `query_ontology({operation:"overview"})`, and
-`query_ontology({operation:"query_plan", targetOperation:"overview"})`.
+`query_ontology({operation:"query_plan", targetOperation:"overview"})` /
+`query_ontology({operation:"query_plan", targetOperation:"project_map"})`.
 `get_concepts` reuses up to two slugs from `list_concepts` plus one missing slug
 so batch success rows and partial rows are verified during installation checks. `list_concepts` vault warnings,
 `list_kinds` / `compile_ontology` / `overview`
@@ -238,7 +240,7 @@ After you add `.mcp.json` and restart Claude Code, try the following with your L
 > 4. Call `validate_vault({})` to check frontmatter and graph-reference integrity before writing.
 > 5. Call `query_ontology({ operation: "workspace_brief" })` for the first-contact graph diagnosis.
 > 6. Call `query_ontology({ operation: "overview", limit: 5 })` to confirm graph-query summaries work without fetching the full compile artifact.
-> 7. Call `query_ontology({ operation: "query_plan", targetOperation: "overview" })` before heavier graph exploration so the agent sees the cost/index contract.
+> 7. Call `query_ontology({ operation: "query_plan", targetOperation: "overview" })`, then another target such as `project_map`, before heavier graph exploration so the agent sees the cost/index contract across more than one operation.
 
 If those read-only calls respond cleanly, the agent can see the vault and its graph health. Once an agent starts *committing* its analysis of your codebase to the ontology through these 23 tools (15 read + 8 write), the human + AI co-authoring loop is officially open.
 

@@ -136,7 +136,9 @@ so you can run only the spawn-heavy integration cases touched by a small
 change. `npm run verify` calls `get_concepts` with discovered slugs plus one
 missing slug, then runs `workspace_brief` and `health`, so the same batch-read
 partial-row contract and first-contact diagnosis an AI agent should run are
-exercised locally.
+exercised locally. It also checks both `overview` and `project_map`
+`query_plan` targets, so the installed MCP path proves more than the original
+single aggregate query.
 `smoke:packed-cli` also checks the installed `mcp-verify --help` output, so
 release tarballs keep exposing the graph-query smoke scope without starting a
 server. It also creates a dependency-cycle vault and checks installed

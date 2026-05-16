@@ -125,6 +125,6 @@ function printUsage(output = process.stderr) {
       `  oh-my-ontology mcp-verify --vault path --timeout-ms 15000\n\n` +
       `Runs the MCP package verify CLI against the resolved vault.\n` +
       `Checks parser smoke, server boot, tool inventory, list/get_concepts/kind census/validate, workspace health,\n` +
-      `compile_ontology, overview, and overview query_plan graph-query smoke.\n`,
+      `compile_ontology, overview, and overview/project_map query_plan graph-query smoke.\n`,
   );
 }

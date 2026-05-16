@@ -88,7 +88,7 @@ describe('package contract helpers', () => {
 
     assert.match(verifySection, /`list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /success-row \/ partial-row contract drift/);
-    assert.match(verifySection, /`compile_ontology`, `overview`, and `overview query_plan`/);
+    assert.match(verifySection, /`compile_ontology`, `overview`, and `overview`\/`project_map` query_plan/);
     assert.match(verifySection, /cross-checks `list_kinds` census totals/);
     assert.match(verifySection, /`list_concepts`, `validate_vault`, `compile_ontology`, and `overview`/);
     assert.match(verifySection, /missing or malformed first-contact diagnosis payloads/);
@@ -108,7 +108,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /get_concepts/);
     assert.match(verifySection, /partial-row contract drift/);
     assert.match(verifySection, /stdout/);
-    assert.match(verifySection, /overview query_plan/);
+    assert.match(verifySection, /`overview` and `overview`\/`project_map` query_plan/);
   });
 
   it('keeps the CLI changelog aligned with the mcp-verify census scope', () => {
@@ -117,7 +117,7 @@ describe('package contract helpers', () => {
 
     assert.match(verifySection, /`list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /partial-row contract drift/);
-    assert.match(verifySection, /`overview`, and `overview query_plan`/);
+    assert.match(verifySection, /`overview`, and `overview`\/`project_map` query_plan/);
   });
 
   it('documents dogfood validation as a release gate', () => {

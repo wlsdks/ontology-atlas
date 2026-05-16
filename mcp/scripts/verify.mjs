@@ -19,7 +19,7 @@
  *   7. tools/call validate_vault — whole-vault frontmatter / graph-reference health
  *   8. tools/call query_ontology workspace_brief + health — agent first-contact graph diagnosis
  *   9. tools/call compile_ontology(summary) — compiler graph summary contract
- *   10. tools/call query_ontology overview + query_plan(overview) — graph-query smoke contract
+ *   10. tools/call query_ontology overview + query_plan(overview/project_map) — graph-query smoke contract
  *
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
  */
@@ -88,6 +88,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [9, 'overview'],
   [10, 'overview_query_plan'],
   [11, 'get_concepts'],
+  [12, 'project_map_query_plan'],
 ]);
 
 function log(level, msg) {
@@ -190,6 +191,12 @@ export function buildFirstContactRequests() {
       id: 10,
       method: 'tools/call',
       params: { name: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'overview' } },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 12,
+      method: 'tools/call',
+      params: { name: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'project_map' } },
     },
   ];
 }
@@ -438,38 +445,46 @@ export function overviewFailure(parsed) {
   return null;
 }
 
-export function overviewQueryPlanFailure(parsed) {
+export function aggregateQueryPlanFailure(parsed, targetOperation, label = `${targetOperation} query_plan`) {
   if (parsed?.operation !== 'query_plan') {
-    return `overview query_plan returned unexpected operation: ${parsed?.operation}`;
+    return `${label} returned unexpected operation: ${parsed?.operation}`;
   }
-  if (parsed.targetOperation !== 'overview') {
-    return `overview query_plan returned unexpected targetOperation: ${parsed.targetOperation}`;
+  if (parsed.targetOperation !== targetOperation) {
+    return `${label} returned unexpected targetOperation: ${parsed.targetOperation}`;
   }
   if (parsed.sideEffect !== false) {
-    return 'overview query_plan must be side-effect-free';
+    return `${label} must be side-effect-free`;
   }
-  if (!parsed.normalized || parsed.normalized.targetOperation !== 'overview') {
-    return 'overview query_plan missing normalized targetOperation';
+  if (!parsed.normalized || parsed.normalized.targetOperation !== targetOperation) {
+    return `${label} missing normalized targetOperation`;
   }
   if (!parsed.estimate || parsed.estimate.strategy !== 'aggregate_scan') {
-    return 'overview query_plan missing aggregate_scan estimate';
+    return `${label} missing aggregate_scan estimate`;
   }
   if (!Number.isInteger(parsed.estimate.nodeScans) || parsed.estimate.nodeScans < 0) {
-    return 'overview query_plan missing nodeScans';
+    return `${label} missing nodeScans`;
   }
   if (!Number.isInteger(parsed.estimate.edgeScans) || parsed.estimate.edgeScans < 0) {
-    return 'overview query_plan missing edgeScans';
+    return `${label} missing edgeScans`;
   }
   if (!['low', 'medium', 'high'].includes(parsed.estimate.costClass)) {
-    return 'overview query_plan missing costClass';
+    return `${label} missing costClass`;
   }
   if (!Array.isArray(parsed.indexesUsed) || !parsed.indexesUsed.includes('compiled_artifact')) {
-    return 'overview query_plan missing compiled_artifact index hint';
+    return `${label} missing compiled_artifact index hint`;
   }
   if (!Array.isArray(parsed.warnings)) {
-    return 'overview query_plan missing warnings array';
+    return `${label} missing warnings array`;
   }
   return null;
+}
+
+export function overviewQueryPlanFailure(parsed) {
+  return aggregateQueryPlanFailure(parsed, 'overview', 'overview query_plan');
+}
+
+export function projectMapQueryPlanFailure(parsed) {
+  return aggregateQueryPlanFailure(parsed, 'project_map', 'project_map query_plan');
 }
 
 export function verifyCountConsistencyFailure({ kinds, list, validation, compiled, overview }) {
@@ -761,6 +776,7 @@ async function step2BootAndCall() {
       const overviewRes = responses.find((r) => r.id === 9);
       const overviewPlanRes = responses.find((r) => r.id === 10);
       const getConceptsRes = responses.find((r) => r.id === 11);
+      const projectMapPlanRes = responses.find((r) => r.id === 12);
       let kindsPayload = null;
       let listPayload = null;
       let validationPayload = null;
@@ -986,22 +1002,41 @@ async function step2BootAndCall() {
           return res(false);
         }
         log('ok', `overview query_plan — ${parsed.estimate.strategy} (${parsed.estimate.costClass}, nodes ${parsed.estimate.nodeScans}, edges ${parsed.estimate.edgeScans})`);
-        const countFailure = verifyCountConsistencyFailure({
-          kinds: kindsPayload,
-          list: listPayload,
-          validation: validationPayload,
-          compiled: compilePayload,
-          overview: overviewPayload,
-        });
-        if (countFailure) {
-          log('fail', countFailure);
-          return res(false);
-        }
-        res(true);
       } catch (err) {
         log('fail', `failed to parse overview query_plan response: ${err.message}`);
-        res(false);
+        return res(false);
       }
+
+      if (!projectMapPlanRes || !projectMapPlanRes.result) {
+        log('fail', 'no query_ontology project_map query_plan response');
+        return res(false);
+      }
+      try {
+        const text = projectMapPlanRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const failure = projectMapQueryPlanFailure(parsed);
+        if (failure) {
+          log('fail', failure);
+          return res(false);
+        }
+        log('ok', `project_map query_plan — ${parsed.estimate.strategy} (${parsed.estimate.costClass}, nodes ${parsed.estimate.nodeScans}, edges ${parsed.estimate.edgeScans})`);
+      } catch (err) {
+        log('fail', `failed to parse project_map query_plan response: ${err.message}`);
+        return res(false);
+      }
+
+      const countFailure = verifyCountConsistencyFailure({
+        kinds: kindsPayload,
+        list: listPayload,
+        validation: validationPayload,
+        compiled: compilePayload,
+        overview: overviewPayload,
+      });
+      if (countFailure) {
+        log('fail', countFailure);
+        return res(false);
+      }
+      res(true);
     });
 
     proc.on('error', (err) => {
