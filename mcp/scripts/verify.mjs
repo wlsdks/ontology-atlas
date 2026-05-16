@@ -98,6 +98,33 @@ export function formatCount(count, singular, plural = `${singular}s`) {
   return `${count} ${count === 1 ? singular : plural}`;
 }
 
+export function maintenanceBucketOutputSummary(parsed) {
+  const summarize = (bucket) => {
+    if (!bucket || typeof bucket !== 'object' || Array.isArray(bucket)) return 'n/a';
+    const entries = Object.entries(bucket)
+      .filter(([, count]) => Number.isInteger(count) && count > 0)
+      .sort(([leftKey, leftCount], [rightKey, rightCount]) => rightCount - leftCount || leftKey.localeCompare(rightKey));
+    return entries.length > 0 ? entries.map(([key, count]) => `${key}:${count}`).join(',') : 'none';
+  };
+  return `phase ${summarize(parsed?.byPhase)}; severity ${summarize(parsed?.bySeverity)}; kind ${summarize(parsed?.byKind)}`;
+}
+
+export function maintenanceNextActionOutputSummary(parsed) {
+  const summarize = (action) => {
+    if (action === null) return 'none';
+    if (!action || typeof action !== 'object' || Array.isArray(action)) return 'n/a';
+    const id = typeof action.id === 'string' && action.id.length > 0 ? action.id : 'unknown';
+    const phase = typeof action.phase === 'string' && action.phase.length > 0 ? action.phase : 'unknown';
+    const kind = typeof action.kind === 'string' && action.kind.length > 0 ? action.kind : 'unknown';
+    const severity = typeof action.severity === 'string' && action.severity.length > 0 ? action.severity : 'unknown';
+    const tool = typeof action.proposedAction?.tool === 'string' && action.proposedAction.tool.length > 0
+      ? `->${action.proposedAction.tool}`
+      : '';
+    return `${id}:${phase}/${kind}:${severity}${tool}`;
+  };
+  return `executable ${summarize(parsed?.nextExecutableAction)}; review ${summarize(parsed?.nextReviewAction)}`;
+}
+
 function sameArray(left, right) {
   return Array.isArray(left) &&
     Array.isArray(right) &&
@@ -1962,7 +1989,7 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
-        log('ok', `maintenance cursor — missing afterActionId reported (${parsed.cursor.reason})`);
+        log('ok', `maintenance cursor — missing afterActionId reported (${parsed.cursor.reason}; ${maintenanceBucketOutputSummary(parsed)}; ${maintenanceNextActionOutputSummary(parsed)})`);
       } catch (err) {
         log('fail', `failed to parse maintenance missing-cursor response: ${err.message}`);
         return res(false);
@@ -1980,7 +2007,7 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
-        log('ok', `maintenance cursor — ready page stable (${formatCount(parsed.summary.remainingActions, 'remaining action')})`);
+        log('ok', `maintenance cursor — ready page stable (${formatCount(parsed.summary.remainingActions, 'remaining action')}; ${maintenanceBucketOutputSummary(parsed)}; ${maintenanceNextActionOutputSummary(parsed)})`);
       } catch (err) {
         log('fail', `failed to parse maintenance ready-cursor response: ${err.message}`);
         return res(false);

@@ -267,12 +267,14 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /maintenance summary counts \(`totalActions`,\s+`filteredActions`, `remainingActions`, `executableActions`, `reviewActions`\)/);
     assert.match(verifySection, /`byPhase` \/ `bySeverity` \/ `byKind`\s+bucket totals against `remainingActions`/);
     assert.match(verifySection, /catches\s+work-queue drift/);
+    assert.match(verifySection, /Successful\s+verify logs print the same bucket summary and current-page executable\/review\s+next-action summary/);
     assert.match(verifySection, /list_concepts\/project probe\/get_concepts\/find_orphans\/list_kinds/);
     assert.match(verifySection, /✓ initialize instructions — first-contact safety guidance present/);
     assert.match(verifySection, /✓ tools\/list schema contract — strict arguments \+ graph-query enums \+ health tuning \+ post-write guidance/);
     assert.match(verifySection, /✓ strict arguments — unknown tool argument rejected at runtime/);
     assert.match(verifySection, /✓ strict enums — invalid query operation rejected with closest-value hint/);
-    assert.match(verifySection, /✓ maintenance cursor — missing afterActionId reported/);
+    assert.match(verifySection, /✓ maintenance cursor — missing afterActionId reported .*phase none; severity none; kind none; executable none; review none/);
+    assert.match(verifySection, /✓ maintenance cursor — ready page stable .*phase none; severity none; kind none; executable none; review none/);
     assert.match(verifySection, /✓ maintenance cursor — ready page stable/);
     assert.match(verifySection, /✓ get_concepts — 2 ok rows, 1 partial row/);
     assert.match(verifySection, /✓ find_orphans — 0 orphans \(root\/sentinel defaults excluded\)/);
@@ -660,6 +662,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /installed verify 의 `maintenance_plan` cursor smoke 도 `totalActions` \/ `filteredActions` \//);
     assert.match(doc, /post-write work queue summary 가 drift 나도 설치 경로에서 fail-fast/);
     assert.match(doc, /같은 smoke 는\s+`byPhase` \/ `bySeverity` \/ `byKind` bucket 합계와 `remainingActions` 관계도 확인/);
+    assert.match(doc, /성공 로그도 같은 bucket 요약과 현재 page 의 executable\/review next-action 요약/);
     assert.match(doc, /dogfood walk 출력도 같은 bucket 을 phase \/ severity \/ kind 요약으로 보여줘/);
     assert.match(doc, /현재 page 의 `nextExecutableAction` \/ `nextReviewAction`/);
     assert.match(doc, /id phase\/kind:severity 와 executable tool 요약/);

@@ -228,8 +228,8 @@ A successful run looks like this:
 ✓ strict arguments — unknown tool argument rejected at runtime
 ✓ strict enums — invalid query operation rejected with closest-value hint
 ✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain)
-✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions)
-✓ maintenance cursor — ready page stable (0 remaining actions)
+✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
+✓ maintenance cursor — ready page stable (0 remaining actions; phase none; severity none; kind none; executable none; review none)
 ✓ list_concepts — vault total 28 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concepts — 2 ok rows, 1 partial row
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
@@ -306,7 +306,10 @@ smokes also validate the maintenance summary counts (`totalActions`,
 `filteredActions`, `remainingActions`, `executableActions`, `reviewActions`)
 and their count relationships, plus the `byPhase` / `bySeverity` / `byKind`
 bucket totals against `remainingActions`, so installed verify catches
-work-queue drift before an agent follows stale cleanup guidance.
+work-queue drift before an agent follows stale cleanup guidance. Successful
+verify logs print the same bucket summary and current-page executable/review
+next-action summary so agents can see the next cleanup shape without re-parsing
+the JSON payload.
 `project_scope` is a hard gate when the vault has a `kind: project` node. The
 verify path probes `kind: project` directly before graph smoke, so containment
 checks are not skipped just because the project node was outside the first

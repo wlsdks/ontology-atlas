@@ -38,7 +38,9 @@ import {
   listConceptsFailure,
   listKindsFailure,
   maintenanceFilterEnumSummary,
+  maintenanceBucketOutputSummary,
   maintenanceMissingCursorFailure,
+  maintenanceNextActionOutputSummary,
   maintenanceReadyCursorFailure,
   overviewFailure,
   overviewQueryPlanFailure,
@@ -799,6 +801,39 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       maintenanceFilterEnumSummary(),
       `phases=${MAINTENANCE_PHASE_VALUES.join('/')}; severities=${MAINTENANCE_SEVERITY_VALUES.join('/')}; kinds=${MAINTENANCE_KIND_VALUES.join('/')}`,
+    );
+  });
+
+  it('summarizes maintenance cursor buckets and next actions in verify output', () => {
+    assert.equal(
+      maintenanceBucketOutputSummary({
+        byPhase: { review: 1, link: 2 },
+        bySeverity: {},
+        byKind: null,
+      }),
+      'phase link:2,review:1; severity none; kind n/a',
+    );
+    assert.equal(
+      maintenanceNextActionOutputSummary({
+        nextExecutableAction: {
+          id: 'maint_link',
+          phase: 'link',
+          kind: 'add_missing_relation',
+          severity: 'warn',
+          proposedAction: { tool: 'add_relation', args: {} },
+        },
+        nextReviewAction: {
+          id: 'maint_review',
+          phase: 'review',
+          kind: 'unassigned_node',
+          severity: 'info',
+        },
+      }),
+      'executable maint_link:link/add_missing_relation:warn->add_relation; review maint_review:review/unassigned_node:info',
+    );
+    assert.equal(
+      maintenanceNextActionOutputSummary({ nextExecutableAction: null, nextReviewAction: null }),
+      'executable none; review none',
     );
   });
 
