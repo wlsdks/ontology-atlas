@@ -16,7 +16,7 @@
 - `package.json#files` now includes `scripts/json-rpc-lines.mjs`, the shared JSON-RPC line parser used by the installed `npm run verify` path.
 - `package.json#files` now ships only the `src/parser.test.mjs` smoke fixture needed by installed `npm run verify`; full test files stay source-checkout-only so the published tarball remains lean.
 - `npm run verify` now exercises the full first-contact diagnosis path: server boot, 23-tool inventory, `list_concepts`, `list_kinds`, `validate_vault`, `workspace_brief`, `health`, `compile_ontology`, `overview`, and `overview query_plan`.
-- `npm run verify` cross-checks `list_kinds` census totals against `list_concepts`, `validate_vault`, and `compile_ontology`, so package installs catch kind-count drift before an agent trusts the vault summary.
+- `npm run verify` cross-checks `list_kinds` census totals against `list_concepts`, `validate_vault`, `compile_ontology`, and `overview`, so package installs catch kind-count drift before an agent trusts the vault summary.
 - `npm run verify` now fails on blocking first-contact diagnosis problems: `list_concepts` vault warnings, `fail` health checks, or fail-severity `workspace_brief.nextActions` return exit 1, while advisory `needs_attention` states still print for starter vaults.
 - `npm run verify` prints non-blocking `workspace_brief.nextActions` as a compact advisory list, so starter vault users see what to clean up after MCP wiring is confirmed.
 - `npm run verify` uses an 8s server wait window by default and supports `OMOT_VERIFY_TIMEOUT_MS` for larger/slower vaults.

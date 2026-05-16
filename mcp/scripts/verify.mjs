@@ -347,12 +347,13 @@ export function overviewQueryPlanFailure(parsed) {
   return null;
 }
 
-export function verifyCountConsistencyFailure({ kinds, list, validation, compiled }) {
+export function verifyCountConsistencyFailure({ kinds, list, validation, compiled, overview }) {
   if (
     (kinds && listKindsFailure(kinds)) ||
     (list && listConceptsFailure(list)) ||
     (validation && validateVaultFailure(validation)) ||
-    (compiled && compileSummaryFailure(compiled))
+    (compiled && compileSummaryFailure(compiled)) ||
+    (overview && overviewFailure(overview))
   ) {
     return null;
   }
@@ -362,6 +363,7 @@ export function verifyCountConsistencyFailure({ kinds, list, validation, compile
     ['list_concepts.total', list?.total],
     ['validate_vault.scanned', validation?.scanned],
     ['compile_ontology.nodeCount', compiled?.nodeCount],
+    ['overview.graph.nodes', overview?.graph?.nodes],
   ].filter(([, value]) => Number.isInteger(value));
 
   if (counts.length <= 1) return null;
@@ -379,6 +381,16 @@ export function verifyCountConsistencyFailure({ kinds, list, validation, compile
       const compiledCount = compiled.byKind[kind] ?? 0;
       if (kindsCount !== compiledCount) {
         return `verify byKind mismatch — ${kind}: list_kinds ${kindsCount}, compile_ontology ${compiledCount}`;
+      }
+    }
+  }
+  if (kinds?.byKind && overview?.byKind) {
+    const kindKeys = new Set([...Object.keys(kinds.byKind), ...Object.keys(overview.byKind)]);
+    for (const kind of [...kindKeys].sort()) {
+      const kindsCount = kinds.byKind[kind] ?? 0;
+      const overviewCount = overview.byKind[kind] ?? 0;
+      if (kindsCount !== overviewCount) {
+        return `verify byKind mismatch — ${kind}: list_kinds ${kindsCount}, overview ${overviewCount}`;
       }
     }
   }
@@ -619,6 +631,7 @@ async function step2BootAndCall() {
       let listPayload = null;
       let validationPayload = null;
       let compilePayload = null;
+      let overviewPayload = null;
       const missingResponses = [
         ['initialize', initRes],
         ['tools/list', listRes],
@@ -803,6 +816,7 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
+        overviewPayload = parsed;
         log('ok', `overview — graph ${parsed.graph.graphHash.slice(0, 12)} (${parsed.graph.nodes} nodes, ${parsed.graph.edges} edges, hubs ${(parsed.hubs || []).length})`);
       } catch (err) {
         log('fail', `failed to parse overview response: ${err.message}`);
@@ -827,6 +841,7 @@ async function step2BootAndCall() {
           list: listPayload,
           validation: validationPayload,
           compiled: compilePayload,
+          overview: overviewPayload,
         });
         if (countFailure) {
           log('fail', countFailure);

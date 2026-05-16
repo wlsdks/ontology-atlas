@@ -61,7 +61,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /list_concepts\/list_kinds/);
     assert.match(verifySection, /✓ list_kinds/);
     assert.match(verifySection, /`list_concepts`, `list_kinds`, `validate_vault`/);
-    assert.match(verifySection, /list_kinds` census shape\/count mismatches/);
+    assert.match(verifySection, /`list_kinds` \/ `compile_ontology` \/ `overview`\s+census shape\/count mismatches/);
   });
 
   it('keeps the MCP changelog aligned with the verify census gates', () => {
@@ -71,7 +71,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`list_concepts`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /`compile_ontology`, `overview`, and `overview query_plan`/);
     assert.match(verifySection, /cross-checks `list_kinds` census totals/);
-    assert.match(verifySection, /`list_concepts`, `validate_vault`, and `compile_ontology`/);
+    assert.match(verifySection, /`list_concepts`, `validate_vault`, `compile_ontology`, and `overview`/);
   });
 
   it('keeps the CLI README explicit about mcp-verify help scope', () => {

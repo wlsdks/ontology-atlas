@@ -194,8 +194,8 @@ verify path exercises and gates the same first-contact graph diagnosis an agent 
 `query_ontology({operation:"health"})`, plus `compile_ontology({summary:true})`,
 `query_ontology({operation:"overview"})`, and
 `query_ontology({operation:"query_plan", targetOperation:"overview"})`.
-`list_concepts` vault warnings, `list_kinds` census shape/count mismatches,
-`validate_vault` problem files, failing health checks, or fail-severity
+`list_concepts` vault warnings, `list_kinds` / `compile_ontology` / `overview`
+census shape/count mismatches, `validate_vault` problem files, failing health checks, or fail-severity
 `workspace_brief.nextActions` fail the command; advisory `needs_attention` states still print so starter vaults can
 verify before cleanup. Non-blocking `workspace_brief.nextActions` are printed as a short
 advisory list. The default wait window is 8 seconds; set

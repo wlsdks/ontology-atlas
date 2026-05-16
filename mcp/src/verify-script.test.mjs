@@ -407,8 +407,26 @@ describe('verify.mjs first-contact gates', () => {
       byDomain: {},
     };
     const kinds = { total: 1, byKind: { project: 1 } };
+    const overview = {
+      operation: 'overview',
+      graph: {
+        nodes: 1,
+        edges: 2,
+        resolvedEdges: 1,
+        externalEdges: 1,
+        unresolvedEdges: 0,
+        aliases: 1,
+        ambiguousAliases: 0,
+        issues: 0,
+        graphHash: 'abc123',
+        maxMtime: 1,
+      },
+      byKind: { project: 1 },
+      byRelation: {},
+      hubs: [],
+    };
 
-    assert.equal(verifyCountConsistencyFailure({ kinds, list, validation, compiled }), null);
+    assert.equal(verifyCountConsistencyFailure({ kinds, list, validation, compiled, overview }), null);
     assert.equal(
       verifyCountConsistencyFailure({ kinds: { total: 2, byKind: { project: 2 } }, list, validation, compiled }),
       'verify count mismatch — list_kinds.total 2, list_concepts.total 1',
@@ -423,12 +441,32 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       verifyCountConsistencyFailure({
+        kinds,
+        list,
+        validation,
+        compiled,
+        overview: { ...overview, graph: { ...overview.graph, nodes: 2 }, byKind: { project: 2 } },
+      }),
+      'verify count mismatch — list_kinds.total 1, overview.graph.nodes 2',
+    );
+    assert.equal(
+      verifyCountConsistencyFailure({
         kinds: { total: 1, byKind: { capability: 1 } },
         list,
         validation,
         compiled,
       }),
       'verify byKind mismatch — capability: list_kinds 1, compile_ontology 0',
+    );
+    assert.equal(
+      verifyCountConsistencyFailure({
+        kinds: { total: 1, byKind: { capability: 1 } },
+        list,
+        validation,
+        compiled: { ...compiled, byKind: { capability: 1 } },
+        overview,
+      }),
+      'verify byKind mismatch — capability: list_kinds 1, overview 0',
     );
   });
 
