@@ -15,6 +15,7 @@ import {
   rpcTimeoutFailure,
   shouldFinishRpc,
   stderrWarningFailures,
+  workspaceNextActionSummary,
 } from "./dogfood-mcp-walk.mjs";
 
 const okShape = {
@@ -1390,6 +1391,20 @@ describe("rpc response completion helpers", () => {
         "  info  health_check                   components x6 - Inspect disconnected components.",
         "  warn  materialize_external_elements   x2",
       ],
+    );
+  });
+
+  it("summarizes workspace next actions for the final dogfood analysis", () => {
+    assert.equal(workspaceNextActionSummary(null), "none");
+    assert.equal(workspaceNextActionSummary([]), "none");
+    assert.equal(
+      workspaceNextActionSummary([
+        { id: "components", severity: "info", count: 6 },
+        { kind: "materialize_external_elements", severity: "warn", count: 2 },
+        { kind: "resolve_dangling_references", severity: "fail" },
+        { kind: "add_missing_relations", severity: "warn", count: 4 },
+      ]),
+      "components:info:6, materialize_external_elements:warn:2, resolve_dangling_references:fail, +1 more",
     );
   });
 

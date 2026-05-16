@@ -193,6 +193,18 @@ export function formatWorkspaceNextActionRows(actions, limit = 5) {
   });
 }
 
+export function workspaceNextActionSummary(actions, limit = 3) {
+  if (!Array.isArray(actions) || actions.length === 0) return "none";
+  const shown = actions.slice(0, limit).map((action) => {
+    const label = action?.id || action?.kind || "unknown";
+    const severity = action?.severity || "unknown";
+    const count = Number.isInteger(action?.count) ? `:${action.count}` : "";
+    return `${label}:${severity}${count}`;
+  });
+  const suffix = actions.length > shown.length ? `, +${actions.length - shown.length} more` : "";
+  return `${shown.join(", ")}${suffix}`;
+}
+
 export function parseDogfoodTimeoutMs(value, fallback = 5000) {
   if (value == null || value === "") return fallback;
   if (!/^[1-9]\d*$/.test(String(value))) return false;
@@ -4287,9 +4299,11 @@ async function main() {
   console.log(
     `  workspace_brief: ${brief?.status ?? "n/a"} (${(brief?.nextActions || []).length} next actions · ${(brief?.health?.checks || []).length} health checks)`,
   );
+  console.log(`  workspace_brief nextActions: ${workspaceNextActionSummary(brief?.nextActions)}`);
   console.log(
     `  workspace_brief_tuned: ${tunedBrief?.status ?? "n/a"} (${(tunedBrief?.nextActions || []).length} next actions · ${(tunedBrief?.health?.checks || []).length} health checks)`,
   );
+  console.log(`  workspace_brief_tuned nextActions: ${workspaceNextActionSummary(tunedBrief?.nextActions)}`);
   console.log(`  health: ${health?.status ?? "n/a"} (${(health?.checks || []).length} checks)`);
   console.log(`  health_tuned: ${tunedHealth?.status ?? "n/a"} (${(tunedHealth?.checks || []).length} checks)`);
   console.log(`  compile_ontology: ${compiled?.nodeCount ?? "n/a"} nodes · ${compiled?.edgeCount ?? "n/a"} edges · ${compiled?.issueCount ?? "n/a"} issues`);
