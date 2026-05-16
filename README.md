@@ -153,7 +153,7 @@ their custom runners also honor Node's `--test-name-pattern`, so you can run
 only the spawn-heavy integration cases touched by a small change. The
 `integration:cli:mcp-verify` and `integration:mcp:readme` shortcuts cover the
 common install-verification and first-contact read-only checks. `npm run verify` calls `get_concepts` with discovered slugs plus one
-missing slug, then runs `workspace_brief`, `health`, and tuned `health`, so the same batch-read
+missing slug, then runs `workspace_brief`, tuned `workspace_brief`, `health`, and tuned `health`, so the same batch-read
 partial-row contract and first-contact diagnosis an AI agent should run are
 exercised locally. It also checks both `overview` and `project_map`
 `query_plan` targets plus actual `neighbors`, node→project `path`, and

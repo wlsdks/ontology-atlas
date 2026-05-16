@@ -75,6 +75,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /custom runners also honor Node's `--test-name-pattern`/);
     assert.match(readme, /integration:cli:mcp-verify/);
     assert.match(readme, /integration:mcp:readme/);
+    assert.match(readme, /runs `workspace_brief`, tuned `workspace_brief`, `health`, and tuned `health`/);
   });
 
   it('keeps the MCP first-call prompt read-only', () => {
