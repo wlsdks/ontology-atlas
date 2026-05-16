@@ -40,6 +40,10 @@ function markdownEnumList(values) {
   return values.map((value) => `\`${value}\``).join(' / ');
 }
 
+function normalizedMarkdownIncludes(markdown, expected) {
+  return markdown.replace(/\s+/g, ' ').includes(expected);
+}
+
 describe('package contract helpers', () => {
   it('keeps filtered integration scripts discoverable from the root README', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
@@ -131,21 +135,23 @@ describe('package contract helpers', () => {
     ]) {
       assert.match(row, new RegExp(`\`${option}\``));
     }
-    const normalizedStrictInputSection = strictInputSection.replace(/\s+/g, ' ');
     assert.ok(
-      normalizedStrictInputSection.includes(
+      normalizedMarkdownIncludes(
+        strictInputSection,
         `\`maintenance_plan.phases\` is additionally limited to ${markdownEnumList(MAINTENANCE_PHASE_VALUES)}`,
       ),
       'MCP README must document every maintenance_plan.phases enum value',
     );
     assert.ok(
-      normalizedStrictInputSection.includes(
+      normalizedMarkdownIncludes(
+        strictInputSection,
         `\`maintenance_plan.severities\` is limited to ${markdownEnumList(MAINTENANCE_SEVERITY_VALUES)}`,
       ),
       'MCP README must document every maintenance_plan.severities enum value',
     );
     assert.ok(
-      normalizedStrictInputSection.includes(
+      normalizedMarkdownIncludes(
+        strictInputSection,
         `\`maintenance_plan.kinds\` is limited to ${markdownEnumList(MAINTENANCE_KIND_VALUES)}`,
       ),
       'MCP README must document every maintenance_plan.kinds enum value',
@@ -560,9 +566,27 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /strict unknown-argument and invalid-enum rejection smoke/);
     assert.match(dogfoodSection, /`growth_plan`/);
     assert.match(dogfoodSection, /`maintenance_plan`/);
-    assert.match(dogfoodSection, /`maintenance_plan\.phases` 는 `validate` \/ `repair`/);
-    assert.match(dogfoodSection, /`maintenance_plan\.severities` 는 `fail` \/ `warn` \/ `info`/);
-    assert.match(dogfoodSection, /`maintenance_plan\.kinds` 는/);
+    assert.ok(
+      normalizedMarkdownIncludes(
+        dogfoodSection,
+        `\`maintenance_plan.phases\` 는 ${markdownEnumList(MAINTENANCE_PHASE_VALUES)}`,
+      ),
+      'dogfood MCP docs must document every maintenance_plan.phases enum value',
+    );
+    assert.ok(
+      normalizedMarkdownIncludes(
+        dogfoodSection,
+        `\`maintenance_plan.severities\` 는 ${markdownEnumList(MAINTENANCE_SEVERITY_VALUES)}`,
+      ),
+      'dogfood MCP docs must document every maintenance_plan.severities enum value',
+    );
+    assert.ok(
+      normalizedMarkdownIncludes(
+        dogfoodSection,
+        `\`maintenance_plan.kinds\` 는 ${markdownEnumList(MAINTENANCE_KIND_VALUES)}`,
+      ),
+      'dogfood MCP docs must document every maintenance_plan.kinds enum value',
+    );
     assert.match(dogfoodSection, /`kinds: \["add_mising_relation"\]`/);
 
     const verifySection = doc.split('환경변수 `OMOT_VAULT`')[1]?.split('`get_concepts` 는')[0] ?? '';

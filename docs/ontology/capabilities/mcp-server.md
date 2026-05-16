@@ -155,7 +155,9 @@ verify 에서 넓힌 aggregate target smoke 가 이 repo 의 반복 MCP walk 에
 project/domain map 과 특정 domain drill-down 출력까지 이어지는지 본다.
 `maintenance_plan.phases` 는 `validate` / `repair` / `link` / `materialize` / `review`,
 `maintenance_plan.severities` 는 `fail` / `warn` / `info`, `maintenance_plan.kinds` 는
-known maintenance action kind enum 으로 검증해
+`inspect_compile_issue` / `break_dependency_cycle` / `canonicalize_graph_arrays` /
+`resolve_dangling_reference` / `add_missing_relation` / `materialize_external_element` /
+`unassigned_node` / `empty_domain` 으로 검증해
 agent 작업 큐 filter 오타가 빈 계획으로 조용히 숨지 않게 한다. verify / dogfood
 walk 는 `phases: ["repiar"]`, `severities: ["fatal"]`, `kinds: ["add_mising_relation"]`
 negative call 도 실제 MCP runtime 에 던져 이 계약이
