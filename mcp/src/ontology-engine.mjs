@@ -2315,9 +2315,9 @@ export function createOntologyEngine(artifact, options = {}) {
 
   function maintenancePlan(options = {}) {
     const limit = normalizeLimit(options.limit ?? 25);
-    const phaseFilter = normalizeStringSet(options.phases);
-    const severityFilter = normalizeStringSet(options.severities);
-    const kindFilter = normalizeStringSet(options.kinds);
+    const phaseFilter = normalizeStringSet(options.phases, 'phases');
+    const severityFilter = normalizeStringSet(options.severities, 'severities');
+    const kindFilter = normalizeStringSet(options.kinds, 'kinds');
     const cycleResult = cycles({ limit, types: options.dependencyTypes ?? ['dependencies'] });
     const relationRecommendations = recommendRelations({ limit });
     const externalElementRefs = externalElementCandidates(limit);
@@ -3521,11 +3521,28 @@ function normalizeMaintenanceActionNodes(nodesValue) {
   return nodesValue;
 }
 
-function normalizeStringSet(value) {
-  if (!Array.isArray(value)) return null;
-  const items = value
-    .filter((item) => typeof item === 'string' && item.trim())
-    .map((item) => item.trim());
+function normalizeStringSet(value, name) {
+  if (value === undefined || value === null) return null;
+  if (!Array.isArray(value)) {
+    throw new Error(`${name} must be an array of strings.`);
+  }
+  const items = [];
+  for (const item of value) {
+    if (typeof item !== 'string') {
+      throw new Error(`${name} must be an array of strings.`);
+    }
+    const trimmed = item.trim();
+    if (!trimmed) {
+      throw new Error(`${name} items must be non-empty strings.`);
+    }
+    if (trimmed !== item) {
+      throw new Error(`${name} items must not have leading or trailing whitespace.`);
+    }
+    if (trimmed.includes('\0')) {
+      throw new Error(`${name} items must not contain a null byte.`);
+    }
+    items.push(trimmed);
+  }
   return items.length > 0 ? new Set(items) : null;
 }
 

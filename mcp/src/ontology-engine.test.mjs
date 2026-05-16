@@ -463,6 +463,37 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.nextReviewAction, null);
   });
 
+  it('rejects invalid maintenance filters instead of dropping them', () => {
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'maintenance_plan',
+        phases: ['repair', null],
+      }),
+      /phases must be an array of strings/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'maintenance_plan',
+        severities: ['warn', ' '],
+      }),
+      /severities items must be non-empty strings/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'maintenance_plan',
+        kinds: [' canonicalize_graph_arrays'],
+      }),
+      /kinds items must not have leading or trailing whitespace/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'maintenance_plan',
+        phases: ['repair\0'],
+      }),
+      /phases items must not contain a null byte/,
+    );
+  });
+
   it('plans executable canonicalization for dirty graph arrays', () => {
     const result = queryCompiledOntology(
       compileOntology(
