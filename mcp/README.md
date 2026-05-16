@@ -218,7 +218,7 @@ A successful run looks like this:
 ✓ tools/list schema contract — strict arguments + graph-query enums
 ✓ strict arguments — unknown tool argument rejected at runtime
 ✓ strict enums — invalid query operation rejected with closest-value hint
-✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime
+✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain)
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions)
 ✓ list_concepts — vault total 28 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concepts — 2 ok rows, 1 partial row
@@ -278,7 +278,9 @@ The verify path also makes runtime negative calls with `list_concepts.lmit`,
 `query_ontology.operation="overveiw"`, typoed `maintenance_plan.phases`, and
 typoed `maintenance_plan.severities` / `maintenance_plan.kinds`,
 and fails unless the server rejects them with the closest argument/value hint or
-the allowed maintenance filter enum. It also calls
+the allowed maintenance filter enum. Successful verify output prints the
+accepted `phases` / `severities` / `kinds` enum lists beside the strict-filter
+runtime smoke, so installed logs show which work-queue contract was tested. It also calls
 `maintenance_plan.afterActionId="maint_missing"` and fails unless the response
 reports `cursor.found=false`, the cursor miss reason, zero remaining actions,
 and no next actions.

@@ -37,6 +37,7 @@ import {
   initializeInstructionsFailure,
   listConceptsFailure,
   listKindsFailure,
+  maintenanceFilterEnumSummary,
   maintenanceMissingCursorFailure,
   overviewFailure,
   overviewQueryPlanFailure,
@@ -634,6 +635,13 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       strictMaintenanceFilterFailure({ result: { isError: true, content: [{ text: 'kinds items must be one of: add_missing_relation.' }] } }, 'kinds'),
       'strict maintenance filter response did not list allowed maintenance_plan kinds',
+    );
+  });
+
+  it('summarizes strict maintenance filter enum values in verify output', () => {
+    assert.equal(
+      maintenanceFilterEnumSummary(),
+      `phases=${MAINTENANCE_PHASE_VALUES.join('/')}; severities=${MAINTENANCE_SEVERITY_VALUES.join('/')}; kinds=${MAINTENANCE_KIND_VALUES.join('/')}`,
     );
   });
 

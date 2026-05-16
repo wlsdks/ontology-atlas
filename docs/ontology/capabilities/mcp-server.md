@@ -163,7 +163,9 @@ project/domain map 과 특정 domain drill-down 출력까지 이어지는지 본
 agent 작업 큐 filter 오타가 빈 계획으로 조용히 숨지 않게 한다. verify / dogfood
 walk 는 `phases: ["repiar"]`, `severities: ["fatal"]`, `kinds: ["add_mising_relation"]`
 negative call 도 실제 MCP runtime 에 던져 이 계약이
-schema 문서에만 머물지 않게 한다.
+schema 문서에만 머물지 않게 한다. 설치 verify 성공 로그도 허용된 phases /
+severities / kinds enum 목록을 함께 출력해 사용자가 어떤 작업 큐 계약을 검증했는지
+서버 응답을 다시 파싱하지 않고 볼 수 있다.
 이후 `validate_vault.scanned` / `summary.problemFiles` 로 file-level health 를 확인한 뒤,
 node-count consistency 는 `list_kinds.total`, `list_concepts.total`,
 `compile_ontology.nodeCount`, `overview.graph.nodes` 끼리 비교하고

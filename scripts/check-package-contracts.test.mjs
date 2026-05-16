@@ -268,6 +268,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`query_ontology\.operation="overveiw"`/);
     assert.match(verifySection, /`maintenance_plan\.afterActionId="maint_missing"`/);
     assert.match(verifySection, /`cursor\.found=false`/);
+    assert.match(verifySection, /Successful verify output prints the\s+accepted `phases` \/ `severities` \/ `kinds` enum lists/);
+    assert.match(readme, /strict maintenance filters — invalid phase\/severity\/kind rejected at runtime \(phases=validate\/repair\/link\/materialize\/review; severities=fail\/warn\/info; kinds=inspect_compile_issue\/break_dependency_cycle\/canonicalize_graph_arrays\/resolve_dangling_reference\/add_missing_relation\/materialize_external_element\/unassigned_node\/empty_domain\)/);
     assert.match(verifySection, /project-less vaults skip/);
     assert.match(verifySection, /Empty\s+vaults skip node-targeted graph smoke/);
     assert.match(verifySection, /`list_kinds` \/ `compile_ontology` \/ `overview`\s+census shape\/count mismatches/);
@@ -628,6 +630,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /project probe 덕분에 `project_scope`/);
     assert.match(verifySection, /빈 vault 는 node-targeted graph\s+smoke 를 skip/);
     assert.match(verifySection, /strict schema\/runtime unknown-argument and invalid-enum rejection/);
+    assert.match(dogfoodSection, /설치 verify 성공 로그도 허용된 phases \/\s+severities \/ kinds enum 목록을 함께 출력/);
   });
 
   it('keeps packed CLI smoke aligned with installed hard gates', () => {

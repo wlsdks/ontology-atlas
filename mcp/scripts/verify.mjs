@@ -298,6 +298,14 @@ export function maintenanceMissingCursorFailure(parsed) {
   return null;
 }
 
+export function maintenanceFilterEnumSummary() {
+  return [
+    `phases=${MAINTENANCE_PHASE_VALUES.join('/')}`,
+    `severities=${MAINTENANCE_SEVERITY_VALUES.join('/')}`,
+    `kinds=${MAINTENANCE_KIND_VALUES.join('/')}`,
+  ].join('; ');
+}
+
 export function initializeInstructionsFailure(response) {
   const instructions = response?.result?.instructions;
   if (typeof instructions !== 'string' || instructions.length < 200) {
@@ -1684,7 +1692,7 @@ async function step2BootAndCall() {
         log('fail', strictMaintenanceKindFilter);
         return res(false);
       }
-      log('ok', 'strict maintenance filters — invalid phase/severity/kind rejected at runtime');
+      log('ok', `strict maintenance filters — invalid phase/severity/kind rejected at runtime (${maintenanceFilterEnumSummary()})`);
 
       if (!maintenanceMissingCursorRes || !maintenanceMissingCursorRes.result) {
         log('fail', 'no query_ontology maintenance missing-cursor response');
