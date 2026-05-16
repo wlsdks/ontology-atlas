@@ -347,6 +347,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         maximum: findTool("query_ontology")?.inputSchema?.properties?.limit?.maximum,
         depthMaximum: findTool("query_ontology")?.inputSchema?.properties?.depth?.maximum,
         maxHopsMaximum: findTool("query_ontology")?.inputSchema?.properties?.maxHops?.maximum,
+        nodeLimitDescription:
+          findTool("query_ontology")?.inputSchema?.properties?.nodeLimit?.description,
       },
       {
         type: "integer",
@@ -354,6 +356,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         maximum: 500,
         depthMaximum: 20,
         maxHopsMaximum: 20,
+        nodeLimitDescription:
+          "components/communities/health/workspace_brief only: positive integer max node summaries per component/community group. Defaults to 25 for components/communities and 10 for health, capped at 500.",
       },
       "query_ontology exposes runtime numeric caps in schema",
     );
@@ -370,6 +374,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
           findTool("query_ontology")?.inputSchema?.properties?.dependencyTypes?.items?.type,
         componentTypesItem:
           findTool("query_ontology")?.inputSchema?.properties?.componentTypes?.items?.type,
+        componentTypesDescription:
+          findTool("query_ontology")?.inputSchema?.properties?.componentTypes?.description,
       },
       {
         componentLimitType: "integer",
@@ -379,6 +385,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         orderLimitType: "integer",
         dependencyTypesItem: "string",
         componentTypesItem: "string",
+        componentTypesDescription:
+          "health/workspace_brief only: relation types used for connected-component checks. Defaults to the full graph relation set.",
       },
       "query_ontology exposes health/workspace_brief tuning controls",
     );

@@ -868,7 +868,8 @@ const TOOLS = [
           type: 'integer',
           minimum: 1,
           maximum: 500,
-          description: 'components/communities only: positive integer max node summaries per group. Defaults to 25, capped at 500.',
+          description:
+            'components/communities/health/workspace_brief only: positive integer max node summaries per component/community group. Defaults to 25 for components/communities and 10 for health, capped at 500.',
         },
         itemLimit: {
           type: 'integer',
@@ -915,7 +916,7 @@ const TOOLS = [
           type: 'array',
           items: NON_BLANK_STRING_SCHEMA,
           description:
-            'health only: relation types used for connected-component checks. Defaults to the full graph relation set.',
+            'health/workspace_brief only: relation types used for connected-component checks. Defaults to the full graph relation set.',
         },
       },
       required: ['operation'],
