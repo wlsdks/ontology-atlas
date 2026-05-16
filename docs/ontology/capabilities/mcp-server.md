@@ -37,6 +37,9 @@ R+ follow-up: `add_relation` / `add_relations` 와 `rename_concept` / `merge_con
 backlink redirect 는 relation 배열을 canonical set 으로 저장한다. 같은 edge 집합은
 항상 같은 frontmatter 순서로 직렬화되어 agent 반복 실행 시 diff noise 를 줄이고,
 file-backed graph 를 graph database 처럼 더 예측 가능하게 다룰 수 있다.
+Batch 도구의 `slugs` / `concepts` / `relations` 배열도 `tools/list`
+`inputSchema` 에 `maxItems: 50` 을 노출해 런타임 cap 과 client-side
+validation 힌트가 드리프트하지 않게 한다.
 | `patch_concept` | 기존 노드 frontmatter (key 단위 patch) + body 갱신 — graph 배열 patch 도 trim + dedup + sort, changed write 는 compact `postWriteMaintenance` 반환 |
 | `delete_concept` | **⚠ DESTRUCTIVE** — 노드 영구 삭제. 안전 가드 2단: ① `confirm:true` 미지정 시 dry-run, ② backlinks 있으면 throw — `force:true` 만 강행. 응답에 frontmatter+body 캡처. confirmed delete 는 compact `postWriteMaintenance` 반환. |
 | `rename_concept` | **⚠ MULTI-FILE (R11)** — slug 변경 + 모든 backlink 의 array/body 자동 redirect. dry-run default. tail-only 참조도 새 tail 로 일관 갱신. `find_backlinks` + N 회 `patch_concept` 의 atomic 대체. confirmed rename 은 compact `postWriteMaintenance` 반환. |

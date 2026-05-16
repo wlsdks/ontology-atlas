@@ -90,6 +90,9 @@ integer / minimum / maximum constraints that the runtime enforces for
 `query_concepts.limit`, `compile_ontology` pagination, and `query_ontology`
 limit/depth/iteration controls, so MCP clients and agents can correct invalid
 arguments before the tool call instead of relying on silent fallback.
+Batch arrays expose the same runtime cap as schema too: `get_concepts.slugs`,
+`add_concepts.concepts`, and `add_relations.relations` all advertise
+`maxItems: 50`.
 
 ## Frontmatter shape per kind (R14)
 

@@ -247,6 +247,7 @@ const TOOLS = [
       properties: {
         slugs: {
           type: 'array',
+          maxItems: 50,
           items: { type: 'string' },
           description: 'Vault-relative slugs, unique tail slugs, or frontmatter `slug` aliases (e.g. ["capabilities/x", "elements/y"]). Omit the .md extension. Max 50 per call.',
         },
@@ -330,6 +331,7 @@ const TOOLS = [
       properties: {
         concepts: {
           type: 'array',
+          maxItems: 50,
           items: {
             type: 'object',
             properties: {
@@ -407,6 +409,7 @@ const TOOLS = [
       properties: {
         relations: {
           type: 'array',
+          maxItems: 50,
           items: {
             type: 'object',
             properties: {

@@ -243,6 +243,33 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       { type: "integer", minimum: 1, maximum: 100 },
       "query_ontology exposes bounded iterations schema",
     );
+    assert.deepEqual(
+      {
+        type: findTool("get_concepts")?.inputSchema?.properties?.slugs?.type,
+        maxItems: findTool("get_concepts")?.inputSchema?.properties?.slugs?.maxItems,
+        itemType: findTool("get_concepts")?.inputSchema?.properties?.slugs?.items?.type,
+      },
+      { type: "array", maxItems: 50, itemType: "string" },
+      "get_concepts exposes batch maxItems schema",
+    );
+    assert.deepEqual(
+      {
+        type: findTool("add_concepts")?.inputSchema?.properties?.concepts?.type,
+        maxItems: findTool("add_concepts")?.inputSchema?.properties?.concepts?.maxItems,
+        itemType: findTool("add_concepts")?.inputSchema?.properties?.concepts?.items?.type,
+      },
+      { type: "array", maxItems: 50, itemType: "object" },
+      "add_concepts exposes batch maxItems schema",
+    );
+    assert.deepEqual(
+      {
+        type: findTool("add_relations")?.inputSchema?.properties?.relations?.type,
+        maxItems: findTool("add_relations")?.inputSchema?.properties?.relations?.maxItems,
+        itemType: findTool("add_relations")?.inputSchema?.properties?.relations?.items?.type,
+      },
+      { type: "array", maxItems: 50, itemType: "object" },
+      "add_relations exposes batch maxItems schema",
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -1607,6 +1634,35 @@ await test("add_concepts — 배치 write, 순서 보존 + partial result", asyn
     assert.ok(slugs.includes("beta"), "beta land");
     assert.ok(slugs.includes("exist"), "exist 그대로");
     assert.ok(!slugs.includes("gamma"), "gamma fail → land 안 됨");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// R+ — add_concepts 빈 배열 / cap (50) 가드. get_concepts/add_relations 와
+// 같은 batch 계약을 writer 쪽에도 명시 고정한다.
+await test("add_concepts — 빈 concepts[] → 빈 results, 51개 → error", async () => {
+  const root = makeVault([]);
+  try {
+    const { responses: r1 } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", { concepts: [] }),
+    ]);
+    const result = getCallParsed(r1, 2);
+    assert.deepEqual(result.concepts, []);
+
+    const tooMany = Array.from({ length: 51 }, (_, i) => ({
+      slug: `cap-${i}`,
+      kind: "capability",
+      title: `Cap ${i}`,
+      domain: "test",
+    }));
+    const { responses: r2 } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", { concepts: tooMany }),
+    ]);
+    const text = JSON.stringify(r2.find((r) => r.id === 2));
+    assert.match(text, /Too many concepts|50/i);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
