@@ -138,6 +138,8 @@ describe('package contract helpers', () => {
     assert.match(releaseChecks, /fail-closed/);
     assert.match(releaseChecks, /malformed `cycles`/);
     assert.match(releaseChecks, /`path`, `health`, or `workspace-brief` payloads/);
+    assert.match(releaseChecks, /workspace_brief\.nextActions/);
+    assert.match(releaseChecks, /workspace_brief\.health\.checks/);
     assert.match(releaseChecks, /validate_vault` problem files/);
   });
 
@@ -148,6 +150,16 @@ describe('package contract helpers', () => {
     assert.match(implementationSection, /query-result-contract\.mjs/);
     assert.match(implementationSection, /malformed `cycles` \/ `path` \/ `health` \/ `workspace-brief` payload/);
     assert.match(implementationSection, /fail-closed/);
+  });
+
+  it('keeps dogfood MCP docs explicit about workspace brief health checks', () => {
+    const readme = readFileSync('README.md', 'utf-8');
+    const doc = readFileSync('docs/ontology/capabilities/mcp-server.md', 'utf-8');
+    const releaseChecks = readme.split('### Package / MCP release checks')[1]?.split('## Verifiable promises')[0] ?? '';
+    const dogfoodSection = doc.split('dogfood walk 는 `find_evidence.matches`')[1]?.split('dogfood walk 는 `compile_ontology')[0] ?? '';
+
+    assert.match(releaseChecks, /workspace_brief\.health\.checks/);
+    assert.match(dogfoodSection, /workspace_brief\.health\.checks/);
   });
 
   it('keeps packed CLI smoke aligned with installed hard gates', () => {
