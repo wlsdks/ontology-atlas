@@ -70,9 +70,18 @@ function withVault(seed = []) {
 let passed = 0;
 let failed = 0;
 let skipped = 0;
-const TEST_NAME_PATTERN = process.env.OMOT_TEST_NAME_PATTERN
-  ? new RegExp(process.env.OMOT_TEST_NAME_PATTERN, 'i')
-  : null;
+const TEST_NAME_PATTERN_RAW = process.env.OMOT_TEST_NAME_PATTERN;
+const TEST_NAME_PATTERN = parseTestNamePattern(TEST_NAME_PATTERN_RAW);
+
+function parseTestNamePattern(value) {
+  if (!value) return null;
+  try {
+    return new RegExp(value, 'i');
+  } catch (err) {
+    console.error(`invalid OMOT_TEST_NAME_PATTERN: ${err.message}`);
+    process.exit(1);
+  }
+}
 
 async function test(name, fn) {
   if (TEST_NAME_PATTERN && !TEST_NAME_PATTERN.test(name)) {
@@ -92,7 +101,7 @@ async function test(name, fn) {
 
 console.log(
   TEST_NAME_PATTERN
-    ? `cli integration (filter=${process.env.OMOT_TEST_NAME_PATTERN})`
+    ? `cli integration (filter=${TEST_NAME_PATTERN_RAW})`
     : 'cli integration',
 );
 
@@ -2826,4 +2835,8 @@ await test('bootstrap 두번째 실행 — idempotent (errors 0)', async () => {
 
 const skippedSuffix = skipped > 0 ? `, ${skipped} skipped` : '';
 console.log(`\ncli integration: ${passed} passed, ${failed} failed${skippedSuffix}`);
+if (TEST_NAME_PATTERN && passed === 0) {
+  console.error(`no cli integration tests matched OMOT_TEST_NAME_PATTERN=${TEST_NAME_PATTERN_RAW}`);
+  process.exit(1);
+}
 if (failed > 0) process.exit(1);
