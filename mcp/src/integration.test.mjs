@@ -240,6 +240,16 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       assert.equal(confirm?.type, "boolean", `${toolName} exposes confirm dry-run safety switch`);
       assert.match(confirm?.description ?? "", /dry-run|actually/i);
     }
+    assert.equal(
+      findTool("rename_concept")?.inputSchema?.properties?.overwrite?.type,
+      "boolean",
+      "rename_concept exposes overwrite destructive safety switch",
+    );
+    assert.equal(
+      findTool("delete_concept")?.inputSchema?.properties?.force?.type,
+      "boolean",
+      "delete_concept exposes force destructive safety switch",
+    );
 
     assert.deepEqual(
       {
