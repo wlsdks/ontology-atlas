@@ -53,7 +53,7 @@ export function runAdd(args) {
   try {
     const filePath = writeDoc(vaultPath, slug, {
       frontmatter: fm,
-      body: body || defaultBody(kind, title),
+      body: body === undefined ? defaultBody(kind, title) : body,
     });
     const rel = relative(process.cwd(), filePath);
     console.log(
@@ -101,8 +101,8 @@ function parseArgs(args) {
     else if (a.startsWith('--title=')) flags.title = parseRequiredFlagValue('--title', a.slice('--title='.length));
     else if (a === '--domain') flags.domain = parseRequiredFlagValue('--domain', args[++i]);
     else if (a.startsWith('--domain=')) flags.domain = parseRequiredFlagValue('--domain', a.slice('--domain='.length));
-    else if (a === '--body') flags.body = parseRequiredFlagValue('--body', args[++i]);
-    else if (a.startsWith('--body=')) flags.body = parseRequiredFlagValue('--body', a.slice('--body='.length));
+    else if (a === '--body') flags.body = parseBodyFlagValue('--body', args[++i]);
+    else if (a.startsWith('--body=')) flags.body = parseBodyFlagValue('--body', a.slice('--body='.length));
     else if (a === '--auto-prefix') flags.autoPrefix = true;
     else if (a === '--raw-slug' || a === '--no-auto-prefix') flags.autoPrefix = false;
     else if (a.startsWith('--')) {
@@ -139,6 +139,13 @@ function parseArgs(args) {
     vault: flags.vault || '.',
     autoPrefix: flags.autoPrefix,
   };
+}
+
+function parseBodyFlagValue(flag, value) {
+  if (value === undefined) return new Error(`${flag} requires a value`);
+  const text = String(value);
+  if (text.startsWith('--')) return new Error(`${flag} requires a value`);
+  return text;
 }
 
 function printAddUsage() {

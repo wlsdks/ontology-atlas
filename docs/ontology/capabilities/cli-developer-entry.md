@@ -19,7 +19,7 @@ R12 (2026-05-04) 에 도입된 *developer-primary* 진입점. R14 에서 `import
 | `oh-my-ontology list [vault]` | List ontology nodes (color table, `--kind X` filter, `--json`). `--kind` 값을 vault 로 오해하지 않도록 flag/value parsing 을 분리하고 빈 `--vault` / 중복 vault 입력을 거부한다. |
 | `oh-my-ontology validate [vault]` | Frontmatter integrity + graph array drift check (CI gate via exit 1, R+ grouped-by-code 요약). `--fail-on` 값을 vault 로 오해하지 않도록 flag/value parsing 을 분리하고 빈 `--vault` / 중복 vault 입력을 거부한다. |
 | `oh-my-ontology mcp-verify [vault]` | Installed MCP verify wrapper — parser smoke, server boot, 23-tool inventory, `list_concepts`, `validate_vault`, `workspace_brief`, `health` 를 resolved vault 에서 실행. `--timeout-ms N` 으로 큰/느린 vault wait 조절. |
-| `oh-my-ontology add <kind> <slug> --title="..."` | Scaffold new node (duplicate throw, `--domain --body --vault`, R15 `--auto-prefix` default on, `--raw-slug` opt-out). 값 필요한 flag 의 누락 / 다음 flag 포획 / 초과 positional 을 디스크 쓰기 전에 거부한다. |
+| `oh-my-ontology add <kind> <slug> --title="..."` | Scaffold new node (duplicate throw, `--domain --body --vault`, R15 `--auto-prefix` default on, `--raw-slug` opt-out). `--body` 생략 시에만 기본 본문을 만들고 `--body=` 는 명시적 빈 본문으로 보존한다. 값 필요한 flag 의 누락 / 다음 flag 포획 / 초과 positional 을 디스크 쓰기 전에 거부한다. |
 | `oh-my-ontology find <query> [vault]` | Search slug + title with yellow highlight (`--kind --json`). positional vault 와 `--vault` 중복 / 빈 `--vault` / 초과 positional 을 scan 전에 거부한다. |
 | `oh-my-ontology import <path...>` | **R14** Import external `.md` (frontmatter normalize + `--auto-prefix` / `--rename` / `--dry-run`). `--vault` / `--kind` 값 누락을 디스크 쓰기 전에 거부한다. |
 

@@ -407,6 +407,56 @@ await test('local/frontmatter commands — reject invalid vault and value argume
   }
 });
 
+await test('add — --body= 명시 빈 문자열은 기본 본문으로 대체하지 않음', async () => {
+  const root = withVault([]);
+  try {
+    const empty = await run([
+      'add',
+      'document',
+      'empty-body',
+      '--title',
+      'Empty Body',
+      '--body=',
+      '--vault',
+      root,
+    ]);
+    assert.equal(empty.code, 0, `stdout: ${empty.stdout}\nstderr: ${empty.stderr}`);
+
+    const padded = await run([
+      'add',
+      'document',
+      'padded-body',
+      '--title',
+      'Padded Body',
+      '--body',
+      '  keep padding  ',
+      '--vault',
+      root,
+    ]);
+    assert.equal(padded.code, 0, `stdout: ${padded.stdout}\nstderr: ${padded.stderr}`);
+
+    const missing = await run([
+      'add',
+      'document',
+      'missing-body',
+      '--title',
+      'Missing Body',
+      '--body',
+    ]);
+    assert.equal(missing.code, 1);
+    assert.match(stripAnsi(missing.stderr), /--body requires a value/);
+
+    const emptyText = readFileSync(join(root, 'empty-body.md'), 'utf-8');
+    assert.match(emptyText, /^---[\s\S]*title: Empty Body[\s\S]*---\n\n$/);
+    assert.doesNotMatch(emptyText, /# Empty Body/);
+
+    const paddedText = readFileSync(join(root, 'padded-body.md'), 'utf-8');
+    assert.match(paddedText, /---\n\n  keep padding  $/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('validate — clean vault: exit 0', async () => {
   // R14 — capability/element 는 domain 까지 박아야 missing-expected-field
   // warning 없이 clean. canonical kind 인식 자체를 보는 fixture 라 domain 추가.
