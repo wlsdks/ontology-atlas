@@ -47,7 +47,7 @@ export async function runPath(args) {
 
   if (json) {
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
-    return 0;
+    return pathExitCode(result);
   }
 
   if (!result || result.found === false || !Array.isArray(result.hops) || result.hops.length === 0) {
@@ -55,7 +55,7 @@ export async function runPath(args) {
       `${COLORS.dim}no path${COLORS.reset} ${COLORS.bold}${from}${COLORS.reset} ${COLORS.dim}→${COLORS.reset} ${COLORS.bold}${to}${COLORS.reset}` +
         ` ${COLORS.dim}(maxHops ${maxHops ?? 5} 초과 또는 vault 에 slug 없음)${COLORS.reset}\n`,
     );
-    return 0;
+    return 1;
   }
 
   const hops = result.hops;
@@ -85,6 +85,10 @@ export async function runPath(args) {
     }
   }
   return 0;
+}
+
+function pathExitCode(result) {
+  return result?.found === false ? 1 : 0;
 }
 
 function parseArgs(args) {
@@ -121,6 +125,7 @@ function printUsage() {
   process.stderr.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  oh-my-ontology path <from> <to> [vault] [--max-hops N] [--vault path] [--json]\n\n` +
+      `found=false exits 1 so scripts can use this as a relation gate.\n\n` +
       `${COLORS.bold}Example:${COLORS.reset}\n` +
       `  oh-my-ontology path capabilities/cli-developer-entry capabilities/mcp-server\n` +
       `  oh-my-ontology path project elements/sigma-graphology --max-hops 8 --json\n`,

@@ -1455,6 +1455,27 @@ await test('path — same slug → 0 hops trivial', async () => {
   }
 });
 
+await test('path --json — disconnected nodes exit non-zero', async () => {
+  const root = withVault([
+    {
+      slug: 'capabilities/a',
+      content: '---\nkind: capability\nslug: capabilities/a\ntitle: A\n---\n\n# A\n',
+    },
+    {
+      slug: 'capabilities/b',
+      content: '---\nkind: capability\nslug: capabilities/b\ntitle: B\n---\n\n# B\n',
+    },
+  ]);
+  try {
+    const r = await run(['path', 'capabilities/a', 'capabilities/b', root, '--json']);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.found, false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('path — 두 인자 누락 시 usage + exit 1', async () => {
   const r = await run(['path', 'only-one']);
   assert.equal(r.code, 1);
