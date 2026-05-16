@@ -60,6 +60,10 @@ error message 를 바로 출력한다.
 `tools/list` registry, `verify.mjs` 의 `EXPECTED_TOOLS`, `mcp/package.json`
 tool count metadata, 그리고 `initialize.instructions` 의 agent-facing inventory 가
 서로 drift 나지 않도록 같은 23-tool 목록을 교차 검증한다.
+또한 write tool schema 가 `expected_mtime` conflict guard 와 destructive
+tool 의 `confirm` dry-run safety switch 를 계속 노출하는지 `tools/list`
+응답에서 직접 검증해, agent-facing MCP schema 가 실제 동시 편집 보호
+계약을 잃지 않게 막는다.
 
 `pnpm dogfood:walk` 는 이 repo 의 `docs/ontology` 를 대상으로 실제 MCP stdio 호출을
 연속 실행한다. 기본 census / backlink / path 질의에 더해 `workspace_brief` 와 `health`

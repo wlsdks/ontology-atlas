@@ -163,6 +163,38 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.ok(query && /graph-engine queries/i.test(query), "query_ontology engine hint");
     assert.ok(addC && /add_concepts/.test(addC), "add_concept → add_concepts hint");
     assert.ok(addR && /add_relations/.test(addR), "add_relation → add_relations hint");
+
+    const findTool = (name) => tools.find((t) => t.name === name);
+    const expectedMtimeTools = [
+      "add_relation",
+      "patch_concept",
+      "rename_concept",
+      "merge_concepts",
+      "delete_concept",
+    ];
+    for (const toolName of expectedMtimeTools) {
+      const property = findTool(toolName)?.inputSchema?.properties?.expected_mtime;
+      assert.equal(property?.type, "number", `${toolName} exposes expected_mtime as a numeric conflict guard`);
+      assert.match(
+        property?.description ?? "",
+        /conflict|mtime|modified externally|read time/i,
+        `${toolName} explains expected_mtime conflict semantics`,
+      );
+    }
+
+    const relationItemSchema =
+      findTool("add_relations")?.inputSchema?.properties?.relations?.items;
+    assert.equal(
+      relationItemSchema?.properties?.expected_mtime?.type,
+      "number",
+      "add_relations row schema exposes expected_mtime",
+    );
+
+    for (const toolName of ["rename_concept", "merge_concepts", "delete_concept"]) {
+      const confirm = findTool(toolName)?.inputSchema?.properties?.confirm;
+      assert.equal(confirm?.type, "boolean", `${toolName} exposes confirm dry-run safety switch`);
+      assert.match(confirm?.description ?? "", /dry-run|actually/i);
+    }
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
