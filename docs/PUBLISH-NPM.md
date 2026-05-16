@@ -52,7 +52,8 @@ For a stronger local release smoke, run the packed-install check:
 ```bash
 pnpm smoke:packed-cli
 # packs mcp/ + cli/, installs both tarballs into a temp project,
-# then runs installed oh-my-ontology init + compile and installed MCP verify.
+# then runs installed oh-my-ontology init + compile, installed MCP verify,
+# and negative checks for verify timeout / override configuration errors.
 ```
 
 ---
