@@ -41,6 +41,14 @@ describe('package contract helpers', () => {
     assert.match(pkg.scripts?.['test:mcp:package'] ?? '', /check-package-contracts\.test\.mjs/);
     assert.match(pkg.scripts?.['test:mcp:suggestions'] ?? '', /mcp\/src\/suggestions\.test\.mjs/);
     assert.match(pkg.scripts?.['test:mcp:suggestions'] ?? '', /mcp\/src\/ontology-engine\.test\.mjs/);
+    assert.match(
+      pkg.scripts?.['test:mcp:package'] ?? '',
+      /^node --test --test-name-pattern "[^"]+" scripts\/check-package-contracts\.test\.mjs$/,
+    );
+    assert.match(
+      pkg.scripts?.['test:mcp:suggestions'] ?? '',
+      /^node --test --test-name-pattern "[^"]+" mcp\/src\/suggestions\.test\.mjs mcp\/src\/ontology-engine\.test\.mjs$/,
+    );
     assert.match(readme, /pnpm test:mcp:package/);
     assert.match(readme, /pnpm test:mcp:suggestions/);
     assert.match(readme, /OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli/);
