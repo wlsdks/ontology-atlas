@@ -70,15 +70,30 @@ function withVault(seed = []) {
 let passed = 0;
 let failed = 0;
 let skipped = 0;
-const TEST_NAME_PATTERN_RAW = process.env.OMOT_TEST_NAME_PATTERN;
+const NODE_TEST_NAME_PATTERN_RAW = readNodeTestNamePattern(process.execArgv);
+const TEST_NAME_PATTERN_RAW = process.env.OMOT_TEST_NAME_PATTERN || NODE_TEST_NAME_PATTERN_RAW;
+const TEST_NAME_PATTERN_SOURCE = process.env.OMOT_TEST_NAME_PATTERN
+  ? 'OMOT_TEST_NAME_PATTERN'
+  : NODE_TEST_NAME_PATTERN_RAW
+    ? 'node --test-name-pattern'
+    : null;
 const TEST_NAME_PATTERN = parseTestNamePattern(TEST_NAME_PATTERN_RAW);
+
+function readNodeTestNamePattern(argv) {
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--test-name-pattern') return argv[index + 1] || null;
+    if (arg.startsWith('--test-name-pattern=')) return arg.slice('--test-name-pattern='.length);
+  }
+  return null;
+}
 
 function parseTestNamePattern(value) {
   if (!value) return null;
   try {
     return new RegExp(value, 'i');
   } catch (err) {
-    console.error(`invalid OMOT_TEST_NAME_PATTERN: ${err.message}`);
+    console.error(`invalid ${TEST_NAME_PATTERN_SOURCE || 'test name pattern'}: ${err.message}`);
     process.exit(1);
   }
 }
@@ -101,7 +116,7 @@ async function test(name, fn) {
 
 console.log(
   TEST_NAME_PATTERN
-    ? `cli integration (filter=${TEST_NAME_PATTERN_RAW})`
+    ? `cli integration (filter=${TEST_NAME_PATTERN_RAW}${TEST_NAME_PATTERN_SOURCE ? `, source=${TEST_NAME_PATTERN_SOURCE}` : ''})`
     : 'cli integration',
 );
 
@@ -3046,7 +3061,7 @@ await test('bootstrap 두번째 실행 — idempotent (errors 0)', async () => {
 const skippedSuffix = skipped > 0 ? `, ${skipped} skipped` : '';
 console.log(`\ncli integration: ${passed} passed, ${failed} failed${skippedSuffix}`);
 if (TEST_NAME_PATTERN && passed === 0) {
-  console.error(`no cli integration tests matched OMOT_TEST_NAME_PATTERN=${TEST_NAME_PATTERN_RAW}`);
+  console.error(`no cli integration tests matched ${TEST_NAME_PATTERN_SOURCE || 'test name pattern'}=${TEST_NAME_PATTERN_RAW}`);
   process.exit(1);
 }
 if (failed > 0) process.exit(1);

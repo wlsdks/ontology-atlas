@@ -127,6 +127,7 @@ pnpm test:mcp:package           # focused package-script/tarball contract checks
 pnpm test:mcp:suggestions       # focused enum/argument suggestion checks
 OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli
 OMOT_TEST_NAME_PATTERN="tools/list|initialize" pnpm integration:mcp
+pnpm exec node --test --test-name-pattern "README first exploration" mcp/src/integration.test.mjs
 pnpm smoke:packed-cli           # pack/install MCP+CLI, verify installed flow/help/failure + tarball summary
 pnpm dogfood:walk               # actual MCP stdio walk over this repo's ontology
 cd mcp && OMOT_VAULT=../docs/ontology npm run verify
@@ -138,9 +139,9 @@ cd mcp && npm run verify -- ../docs/ontology --timeout-ms 15000
 Use these when changing `mcp/`, `cli/`, package manifests, or release
 scripts. Prefer the focused `test:mcp:*` scripts for small package or enum
 diagnostic changes before escalating to the broader release checks.
-`integration:cli` and `integration:mcp` accept `OMOT_TEST_NAME_PATTERN`
-so you can run only the spawn-heavy integration cases touched by a small
-change. `npm run verify` calls `get_concepts` with discovered slugs plus one
+`integration:cli` and `integration:mcp` accept `OMOT_TEST_NAME_PATTERN`, and
+their custom runners also honor Node's `--test-name-pattern`, so you can run
+only the spawn-heavy integration cases touched by a small change. `npm run verify` calls `get_concepts` with discovered slugs plus one
 missing slug, then runs `workspace_brief` and `health`, so the same batch-read
 partial-row contract and first-contact diagnosis an AI agent should run are
 exercised locally. It also checks both `overview` and `project_map`

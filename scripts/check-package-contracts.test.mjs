@@ -53,6 +53,8 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm test:mcp:suggestions/);
     assert.match(readme, /OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli/);
     assert.match(readme, /OMOT_TEST_NAME_PATTERN="tools\/list\|initialize" pnpm integration:mcp/);
+    assert.match(readme, /pnpm exec node --test --test-name-pattern "README first exploration" mcp\/src\/integration\.test\.mjs/);
+    assert.match(readme, /custom runners also honor Node's `--test-name-pattern`/);
   });
 
   it('keeps the MCP first-call prompt read-only', () => {
