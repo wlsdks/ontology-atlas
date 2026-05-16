@@ -877,6 +877,46 @@ const TOOLS = [
           description:
             'project_map only: positive integer max capability/element/hotspot summaries per domain. Defaults to 20, capped at 500.',
         },
+        componentLimit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 500,
+          description:
+            'health/workspace_brief only: positive integer max connected components to inspect. Defaults to 5, capped at 500.',
+        },
+        cycleLimit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 500,
+          description:
+            'health/workspace_brief only: positive integer max dependency cycles to inspect. Defaults to 5, capped at 500.',
+        },
+        recommendationLimit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 500,
+          description:
+            'health/workspace_brief only: positive integer max relation recommendations to inspect. Defaults to 20, capped at 500.',
+        },
+        orderLimit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 500,
+          description:
+            'health/workspace_brief only: positive integer max topological-order rows to inspect. Defaults to 20, capped at 500.',
+        },
+        dependencyTypes: {
+          type: 'array',
+          items: NON_BLANK_STRING_SCHEMA,
+          description:
+            'health/workspace_brief only: dependency relation types used for cycle and topological-order checks. Defaults to ["dependencies"].',
+        },
+        componentTypes: {
+          type: 'array',
+          items: NON_BLANK_STRING_SCHEMA,
+          description:
+            'health only: relation types used for connected-component checks. Defaults to the full graph relation set.',
+        },
       },
       required: ['operation'],
     },

@@ -293,6 +293,10 @@ safety 를 위해 limit 과 offset 계약을 분리한다. `nodesLimit` / `edges
 1 이상 양수이면서 500 이하만 허용하고, `nodesOffset` / `edgesOffset` 만 0 이상을 허용한다.
 따라서 page size 0 이나 소수 값을 조용히 보정해 `hasMore: true` 인데
 `nextOffset` 이 전진하지 않는 agent loop 를 만들지 않는다.
+`query_ontology(health)` / `query_ontology(workspace_brief)` 의 내부 probe 옵션도
+MCP schema 에서 노출한다. `componentLimit`, `cycleLimit`, `recommendationLimit`,
+`orderLimit`, `dependencyTypes`, `componentTypes` 는 strict top-level argument gate 를
+통과하고, runtime 에서 같은 numeric/string-array 검증을 받는다.
 
 `pnpm dogfood:walk` 는 이 repo 의 `docs/ontology` 를 대상으로 실제 MCP stdio 호출을
 연속 실행한다. 기본 census / backlink / path 질의에 더해 `validate_vault`,

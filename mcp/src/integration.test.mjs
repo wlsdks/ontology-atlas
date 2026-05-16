@@ -359,6 +359,31 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.deepEqual(
       {
+        componentLimitType: findTool("query_ontology")?.inputSchema?.properties?.componentLimit?.type,
+        componentLimitMaximum:
+          findTool("query_ontology")?.inputSchema?.properties?.componentLimit?.maximum,
+        cycleLimitType: findTool("query_ontology")?.inputSchema?.properties?.cycleLimit?.type,
+        recommendationLimitType:
+          findTool("query_ontology")?.inputSchema?.properties?.recommendationLimit?.type,
+        orderLimitType: findTool("query_ontology")?.inputSchema?.properties?.orderLimit?.type,
+        dependencyTypesItem:
+          findTool("query_ontology")?.inputSchema?.properties?.dependencyTypes?.items?.type,
+        componentTypesItem:
+          findTool("query_ontology")?.inputSchema?.properties?.componentTypes?.items?.type,
+      },
+      {
+        componentLimitType: "integer",
+        componentLimitMaximum: 500,
+        cycleLimitType: "integer",
+        recommendationLimitType: "integer",
+        orderLimitType: "integer",
+        dependencyTypesItem: "string",
+        componentTypesItem: "string",
+      },
+      "query_ontology exposes health/workspace_brief tuning controls",
+    );
+    assert.deepEqual(
+      {
         minDegreeType: findTool("query_ontology")?.inputSchema?.properties?.minDegree?.type,
         minDegreeMinimum: findTool("query_ontology")?.inputSchema?.properties?.minDegree?.minimum,
         maxDegreeType: findTool("query_ontology")?.inputSchema?.properties?.maxDegree?.type,
@@ -977,6 +1002,15 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       callTool(30, "query_ontology", {
         operation: "health",
       }),
+      callTool(80, "query_ontology", {
+        operation: "health",
+        componentLimit: 1,
+        cycleLimit: 1,
+        recommendationLimit: 1,
+        orderLimit: 1,
+        dependencyTypes: ["dependencies"],
+        componentTypes: ["domain", "contains"],
+      }),
       callTool(31, "query_ontology", {
         operation: "query_plan",
         targetOperation: "all_paths",
@@ -1252,6 +1286,10 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(health.summary.dependencyCycles, 0);
     assert.equal(health.summary.relationRecommendations, 1);
     assert.equal(health.checks.find((check) => check.id === "relation_recommendations").status, "warn");
+
+    const tunedHealth = getCallParsed(responses, 80);
+    assert.equal(tunedHealth.operation, "health");
+    assert.equal(tunedHealth.summary.nodes, 4);
 
     const queryPlan = getCallParsed(responses, 31);
     assert.equal(queryPlan.operation, "query_plan");
@@ -1853,12 +1891,14 @@ await test("MCP read/query tools — invalid numeric and direction options are r
         targetOperation: "overveiw",
       }),
       callTool(56, "find_neighbors", { slug: "a", direction: "incomng" }),
+      callTool(57, "query_ontology", { operation: "health", componentLimit: 501 }),
+      callTool(58, "query_ontology", { operation: "health", dependencyTypes: [" dependencies"] }),
     ]);
     for (const id of [
       2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
       21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
       38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
-      55, 56,
+      55, 56, 57, 58,
     ]) {
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
     }
@@ -1892,6 +1932,8 @@ await test("MCP read/query tools — invalid numeric and direction options are r
     assert.match(responses.find((r) => r.id === 54).result.content[0].text, /Did you mean "overview"\?/i);
     assert.match(responses.find((r) => r.id === 55).result.content[0].text, /Did you mean "overview"\?/i);
     assert.match(responses.find((r) => r.id === 56).result.content[0].text, /Did you mean "incoming"\?/i);
+    assert.match(responses.find((r) => r.id === 57).result.content[0].text, /componentLimit must be <= 500/i);
+    assert.match(responses.find((r) => r.id === 58).result.content[0].text, /dependencyTypes items must not have leading or trailing whitespace/i);
     assert.match(responses.find((r) => r.id === 16).result.content[0].text, /pattern must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 17).result.content[0].text, /phases must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 18).result.content[0].text, /types items must be non-empty strings/i);
