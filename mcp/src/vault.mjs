@@ -66,6 +66,17 @@ function assertMtime(slug, filePath, expectedMtime) {
   }
 }
 
+function assertPlainObject(value, name) {
+  if (value === null || Array.isArray(value) || typeof value !== 'object') {
+    throw new Error(`${name} must be an object.`);
+  }
+}
+
+function assertOptionalPlainObject(value, name) {
+  if (value === undefined) return;
+  assertPlainObject(value, name);
+}
+
 /**
  * frontmatter 의 array 키 중 *그래프 엣지로 해석되는* 키. 새 edge 타입을
  * 추가하면 (e.g. 'aggregates', 'implements') 여기만 갱신하면 findOrphans /
@@ -410,6 +421,10 @@ export function writeDoc(rootPath, slug, { frontmatter, body = '' }) {
       `Doc already exists at "${slug}". To update fields, use patch_concept(slug, frontmatter, body, expected_mtime). To rename, use rename_concept(oldSlug, newSlug). Never delete-then-add — that loses backlinks.`,
     );
   }
+  assertPlainObject(frontmatter, 'frontmatter');
+  if (typeof body !== 'string') {
+    throw new Error('body must be a string.');
+  }
   mkdirSync(dirname(filePath), { recursive: true });
   const md = buildMarkdown({ frontmatter, body });
   writeFileSync(filePath, md, 'utf-8');
@@ -449,6 +464,7 @@ export function patchFrontmatter(rootPath, slug, patch, options = {}) {
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
+  assertPlainObject(patch, 'frontmatter');
   assertMtime(slug, filePath, options.expectedMtime);
   const raw = readFileSync(filePath, 'utf-8');
   const { frontmatter, body } = parseFrontmatter(raw);
@@ -475,11 +491,12 @@ export function updateDoc(rootPath, slug, { frontmatter: patch, body, expectedMt
   if (!existsSync(filePath)) {
     throw new Error(`Doc not found: "${slug}". ${notFoundSuffix(rootPath, slug)}`);
   }
+  assertOptionalPlainObject(patch, 'frontmatter');
   assertMtime(slug, filePath, expectedMtime);
   const raw = readFileSync(filePath, 'utf-8');
   const { frontmatter, body: oldBody } = parseFrontmatter(raw);
   const nextFm = { ...frontmatter };
-  if (patch) {
+  if (patch !== undefined) {
     for (const [key, value] of Object.entries(patch)) {
       if (value === null) {
         delete nextFm[key];

@@ -178,7 +178,9 @@ MCP write handler 는 schema 우회 또는 agent 실수로 들어오는 blank/pa
 입력을 디스크 쓰기 전에 거부한다. `add_concept` / `add_relation` / `patch_concept`
 및 destructive write (`rename_concept` / `merge_concepts` / `delete_concept`), batch
 row partial-failure 경로까지 `mcp/src/integration.test.mjs` 의 spawn 기반 통합
-테스트가 검증한다.
+테스트가 검증한다. wrapper 바깥의 vault core 함수도 `writeDoc` / `patchFrontmatter` /
+`updateDoc` 에서 invalid `frontmatter` object 와 non-string `body` 를 디스크 쓰기
+전에 reject 해 generic TypeError 나 YAML coercion 으로 숨지 않게 한다.
 `add_concepts` / `add_relations` 의 batch row 도 object shape 를 먼저 검증해,
 잘못된 row 는 index 가 포함된 row-level error 로 격리하고 나머지 유효 row 는 계속
 land 한다.

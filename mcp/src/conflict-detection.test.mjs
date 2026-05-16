@@ -13,6 +13,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
   readDoc,
+  writeDoc,
   patchFrontmatter,
   updateDoc,
   deleteDoc,
@@ -144,6 +145,70 @@ test("updateDoc 는 null body 를 빈 본문으로 coerce 하지 않는다", () 
         body: null,
       }),
     /body must be a string/,
+  );
+  const after = readFileSync(join(root, "foo.md"), "utf-8");
+  assert.match(after, /old body/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("writeDoc 는 invalid frontmatter/body 를 쓰기 전에 거부한다", () => {
+  const root = makeVault();
+
+  assert.throws(
+    () =>
+      writeDoc(root, "foo", {
+        frontmatter: null,
+        body: "body",
+      }),
+    /frontmatter must be an object/,
+  );
+  assert.throws(
+    () =>
+      writeDoc(root, "bar", {
+        frontmatter: { kind: "capability" },
+        body: null,
+      }),
+    /body must be a string/,
+  );
+  assert.throws(() => readFileSync(join(root, "foo.md"), "utf-8"), /ENOENT/);
+  assert.throws(() => readFileSync(join(root, "bar.md"), "utf-8"), /ENOENT/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("patchFrontmatter 는 invalid patch 를 generic TypeError 전에 거부한다", () => {
+  const root = makeVault();
+  writeMd(root, "foo", "---\nkind: capability\n---\nold body");
+
+  assert.throws(
+    () => patchFrontmatter(root, "foo", null),
+    /frontmatter must be an object/,
+  );
+  assert.throws(
+    () => patchFrontmatter(root, "foo", ["bad"]),
+    /frontmatter must be an object/,
+  );
+  const after = readFileSync(join(root, "foo.md"), "utf-8");
+  assert.match(after, /old body/);
+  rmSync(root, { recursive: true, force: true });
+});
+
+test("updateDoc 는 invalid frontmatter patch 를 쓰기 전에 거부한다", () => {
+  const root = makeVault();
+  writeMd(root, "foo", "---\nkind: capability\n---\nold body");
+
+  assert.throws(
+    () =>
+      updateDoc(root, "foo", {
+        frontmatter: null,
+      }),
+    /frontmatter must be an object/,
+  );
+  assert.throws(
+    () =>
+      updateDoc(root, "foo", {
+        frontmatter: ["bad"],
+      }),
+    /frontmatter must be an object/,
   );
   const after = readFileSync(join(root, "foo.md"), "utf-8");
   assert.match(after, /old body/);
