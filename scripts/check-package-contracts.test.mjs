@@ -37,7 +37,15 @@ describe('package contract helpers', () => {
     const readme = readFileSync('README.md', 'utf-8');
 
     assert.equal(pkg.scripts?.['integration:cli'], 'node --test cli/src/integration.test.mjs');
+    assert.equal(
+      pkg.scripts?.['integration:cli:mcp-verify'],
+      'node --test --test-name-pattern "mcp-verify" cli/src/integration.test.mjs',
+    );
     assert.equal(pkg.scripts?.['integration:mcp'], 'node --test mcp/src/integration.test.mjs');
+    assert.equal(
+      pkg.scripts?.['integration:mcp:readme'],
+      'node --test --test-name-pattern "README first exploration" mcp/src/integration.test.mjs',
+    );
     assert.match(pkg.scripts?.['test:mcp:package'] ?? '', /check-package-contracts\.test\.mjs/);
     assert.match(pkg.scripts?.['test:mcp:suggestions'] ?? '', /mcp\/src\/suggestions\.test\.mjs/);
     assert.match(pkg.scripts?.['test:mcp:suggestions'] ?? '', /mcp\/src\/ontology-engine\.test\.mjs/);
@@ -52,9 +60,13 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm test:mcp:package/);
     assert.match(readme, /pnpm test:mcp:suggestions/);
     assert.match(readme, /OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli/);
+    assert.match(readme, /pnpm integration:cli:mcp-verify/);
     assert.match(readme, /OMOT_TEST_NAME_PATTERN="tools\/list\|initialize" pnpm integration:mcp/);
+    assert.match(readme, /pnpm integration:mcp:readme/);
     assert.match(readme, /pnpm exec node --test --test-name-pattern "README first exploration" mcp\/src\/integration\.test\.mjs/);
     assert.match(readme, /custom runners also honor Node's `--test-name-pattern`/);
+    assert.match(readme, /integration:cli:mcp-verify/);
+    assert.match(readme, /integration:mcp:readme/);
   });
 
   it('keeps the MCP first-call prompt read-only', () => {
