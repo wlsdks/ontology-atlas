@@ -188,6 +188,8 @@ action tool/slug/kind 계약을 검사해 agent 작업 큐가 실제 graph targe
 growth breakdown 도 맞물려 검증해 first-contact action count drift 를 막는다.
 installed verify 도 같은 `workspace_brief` growth count drift 를 fail-fast 로 확인해
 repo dogfood 와 외부 MCP 설치 smoke 의 first-contact 계약이 갈라지지 않게 한다.
+post-write compact `postWriteMaintenance` 도 executable action 의 `proposedAction` 과
+`add_missing_relation` endpoint args 를 통합 테스트에서 확인해 write 직후 후속 action 이 drift 나지 않게 한다.
 `maintenance_plan.phases` 는 `validate` / `repair` / `link` / `materialize` / `review`,
 `maintenance_plan.severities` 는 `fail` / `warn` / `info`, `maintenance_plan.kinds` 는
 `inspect_compile_issue` / `break_dependency_cycle` / `canonicalize_graph_arrays` /

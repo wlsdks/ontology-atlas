@@ -205,6 +205,22 @@ function assertCompactMaintenanceActionShape(action, label) {
   assert.ok(Number.isFinite(action.score), `${label} action score is finite`);
   assert.equal(typeof action.executable, "boolean", `${label} action exposes executable flag`);
   assert.equal(typeof action.reason, "string", `${label} action exposes reason`);
+  if (action.executable) {
+    assert.ok(action.proposedAction, `${label} executable action exposes proposedAction`);
+  }
+  if (action.proposedAction) {
+    assert.equal(typeof action.proposedAction.tool, "string", `${label} proposedAction exposes tool`);
+    assert.ok(action.proposedAction.tool.length > 0, `${label} proposedAction tool is non-empty`);
+    assert.ok(action.proposedAction.args && typeof action.proposedAction.args === "object", `${label} proposedAction exposes args`);
+  }
+  if (action.kind === "add_missing_relation" && action.proposedAction) {
+    assert.equal(action.proposedAction.tool, "add_relation", `${label} add_missing_relation uses add_relation`);
+    assert.ok(action.nodes?.from?.slug, `${label} add_missing_relation exposes from node`);
+    assert.ok(action.nodes?.to?.slug, `${label} add_missing_relation exposes to node`);
+    assert.equal(action.proposedAction.args.from, action.nodes.from.slug, `${label} add_missing_relation from matches args`);
+    assert.equal(action.proposedAction.args.to, action.nodes.to.slug, `${label} add_missing_relation to matches args`);
+    assert.equal(typeof action.proposedAction.args.type, "string", `${label} add_missing_relation exposes relation type`);
+  }
 }
 
 // R+ — cycle 39: 단일 도구 (get_concept · add_concept · add_relation) 의
