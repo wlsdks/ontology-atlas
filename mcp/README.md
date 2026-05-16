@@ -214,6 +214,7 @@ A successful run looks like this:
 ✓ tools/list schema contract — strict arguments + graph-query enums
 ✓ strict arguments — unknown tool argument rejected at runtime
 ✓ strict enums — invalid query operation rejected with closest-value hint
+✓ strict maintenance filters — invalid phase rejected at runtime
 ✓ list_concepts — vault total 28 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concepts — 2 ok rows, 1 partial row
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
@@ -265,9 +266,10 @@ read-only diagnosis flow, `expected_mtime`, `rename_concept` existing
 referrers safety. It also gates strict-input typo recovery guidance, including
 unknown argument rejection plus nearest argument/value hints such as
 `Did you mean "limit"?` and `Did you mean "overview"?`.
-The verify path also makes runtime negative calls with `list_concepts.lmit`
-and `query_ontology.operation="overveiw"`, and fails unless the server rejects
-them with the closest argument/value hint.
+The verify path also makes runtime negative calls with `list_concepts.lmit`,
+`query_ontology.operation="overveiw"`, and typoed `maintenance_plan.phases`,
+and fails unless the server rejects them with the closest argument/value hint or
+the allowed maintenance filter enum.
 `project_scope` is a hard gate when the vault has a `kind: project` node. The
 verify path probes `kind: project` directly before graph smoke, so containment
 checks are not skipped just because the project node was outside the first

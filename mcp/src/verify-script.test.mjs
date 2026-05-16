@@ -47,6 +47,7 @@ import {
   serverStartupFailure,
   strictArgsFailure,
   strictEnumFailure,
+  strictMaintenanceFilterFailure,
   toolsListSchemaFailure,
   validationCodeSummary,
   validateVaultFailure,
@@ -562,6 +563,30 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
+  it('fails malformed strict maintenance filter smoke responses', () => {
+    assert.equal(
+      strictMaintenanceFilterFailure({
+        result: {
+          isError: true,
+          content: [{ text: 'phases items must be one of: validate, repair, link, materialize, review.' }],
+        },
+      }),
+      null,
+    );
+    assert.equal(
+      strictMaintenanceFilterFailure({ result: { isError: false, content: [{ text: 'ok' }] } }),
+      'strict maintenance filter response was not rejected',
+    );
+    assert.equal(
+      strictMaintenanceFilterFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
+      'strict maintenance filter response did not report the invalid maintenance_plan phase',
+    );
+    assert.equal(
+      strictMaintenanceFilterFailure({ result: { isError: true, content: [{ text: 'phases items must be one of: validate, repair. Received: "repiar".' }] } }),
+      'strict maintenance filter response did not list allowed maintenance_plan phases',
+    );
+  });
+
   it('fails initialize instructions missing first-contact safety guidance', () => {
     const safeInstructions = [
       'Use read-only first-contact diagnosis before write tools.',
@@ -658,6 +683,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(19), 'find_orphans');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(20), 'health_tuned');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(21), 'workspace_brief_tuned');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(22), 'strict_maintenance_filter');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),

@@ -241,6 +241,20 @@ export function strictEnumFailure(response) {
   return null;
 }
 
+export function strictMaintenanceFilterFailure(response) {
+  if (response?.result?.isError !== true) {
+    return 'strict maintenance filter response was not rejected';
+  }
+  const text = response.result.content?.[0]?.text || '';
+  if (!/phases items must be one of/i.test(text)) {
+    return 'strict maintenance filter response did not report the invalid maintenance_plan phase';
+  }
+  if (!/validate, repair, link, materialize, review/i.test(text)) {
+    return 'strict maintenance filter response did not list allowed maintenance_plan phases';
+  }
+  return null;
+}
+
 export function initializeInstructionsFailure(response) {
   const instructions = response?.result?.instructions;
   if (typeof instructions !== 'string' || instructions.length < 200) {
@@ -288,6 +302,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [19, 'find_orphans'],
   [20, 'health_tuned'],
   [21, 'workspace_brief_tuned'],
+  [22, 'strict_maintenance_filter'],
 ]);
 
 function log(level, msg) {
@@ -580,6 +595,15 @@ export function buildFirstContactRequests() {
       id: 17,
       method: 'tools/call',
       params: { name: 'query_ontology', arguments: { operation: 'overveiw' } },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 22,
+      method: 'tools/call',
+      params: {
+        name: 'query_ontology',
+        arguments: { operation: 'maintenance_plan', phases: ['repiar'] },
+      },
     },
   ];
 }
@@ -1500,6 +1524,7 @@ async function step2BootAndCall() {
       const strictArgsRes = responses.find((r) => r.id === 16);
       const strictEnumRes = responses.find((r) => r.id === 17);
       const orphansRes = responses.find((r) => r.id === 19);
+      const strictMaintenanceFilterRes = responses.find((r) => r.id === 22);
       let kindsPayload = null;
       let listPayload = null;
       let validationPayload = null;
@@ -1566,6 +1591,12 @@ async function step2BootAndCall() {
         return res(false);
       }
       log('ok', 'strict enums — invalid query operation rejected with closest-value hint');
+      const strictMaintenanceFilter = strictMaintenanceFilterFailure(strictMaintenanceFilterRes);
+      if (strictMaintenanceFilter) {
+        log('fail', strictMaintenanceFilter);
+        return res(false);
+      }
+      log('ok', 'strict maintenance filters — invalid phase rejected at runtime');
 
       if (!callRes || !callRes.result) {
         log('fail', 'no list_concepts response');

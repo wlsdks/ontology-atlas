@@ -1285,6 +1285,12 @@ const okShape = {
       content: [{ text: 'operation must be one of: overview, health. Received: "overveiw". Did you mean "overview"?' }],
     },
   },
+  strictMaintenanceFilter: {
+    result: {
+      isError: true,
+      content: [{ text: 'phases items must be one of: validate, repair, link, materialize, review.' }],
+    },
+  },
 };
 
 describe("recordResult", () => {
@@ -1390,6 +1396,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(48), "project_probe");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(49), "health_tuned");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(50), "workspace_brief_tuned");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(51), "strict_maintenance_filter");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -1448,6 +1455,29 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, strictEnum: { result: { isError: true, content: [{ text: 'operation must be one of: overview. Received: "overveiw".' }] } } }),
       ["strict_enum: strict enum response did not suggest the closest query_ontology operation"],
+    );
+  });
+
+  it("fails malformed strict maintenance filter dogfood responses", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictMaintenanceFilter: { result: { isError: false, content: [{ text: "ok" }] } } }),
+      ["strict_maintenance_filter: strict maintenance filter response was not rejected"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictMaintenanceFilter: { result: { isError: true, content: [{ text: "different error" }] } } }),
+      ["strict_maintenance_filter: strict maintenance filter response did not report the invalid maintenance_plan phase"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictMaintenanceFilter: {
+          result: {
+            isError: true,
+            content: [{ text: 'phases items must be one of: validate, repair.' }],
+          },
+        },
+      }),
+      ["strict_maintenance_filter: strict maintenance filter response did not list allowed maintenance_plan phases"],
     );
   });
 
