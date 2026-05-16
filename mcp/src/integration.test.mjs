@@ -286,6 +286,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       const description = findTool(toolName)?.description ?? "";
       assert.match(description, /postWriteMaintenance/, `${toolName} describes post-write maintenance`);
       assert.match(description, /score/, `${toolName} describes maintenance action score`);
+      assert.match(description, /proposedAction/, `${toolName} describes executable proposedAction`);
       assert.match(description, /next action pointers|nextExecutableAction/, `${toolName} describes next action pointers`);
     }
     const expectedMtimeTools = [
