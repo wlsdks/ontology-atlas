@@ -1032,6 +1032,15 @@ export function pathQueryFailure(parsed, expectedFrom, expectedTo = expectedFrom
   for (const [index, edge] of parsed.edges.entries()) {
     const edgeFailure = graphEdgeFailure('path edge', edge, index);
     if (edgeFailure) return edgeFailure;
+    const fromHop = parsed.hops[index];
+    const toHop = parsed.hops[index + 1];
+    if (typeof edge.traversedFrom === 'string' || typeof edge.traversedTo === 'string') {
+      if (edge.traversedFrom !== fromHop || edge.traversedTo !== toHop) {
+        return `path response traversal mismatch at edge ${index}`;
+      }
+    } else if (!((edge.from === fromHop && edge.to === toHop) || (edge.from === toHop && edge.to === fromHop))) {
+      return `path response edge/hop mismatch at edge ${index}`;
+    }
   }
   return null;
 }

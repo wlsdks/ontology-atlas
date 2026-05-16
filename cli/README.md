@@ -97,7 +97,8 @@ cleanup is recommended but not blocking, validates both default and tuned
 `workspace_brief.health.checks`, and prints tuned `workspace_brief` output
 beside `health` / tuned `health`. It also prints graph-query smoke lines for
 `overview`, `overview`/`project_map` query_plan, and actual `neighbors` /
-node-to-project `path` / `project_scope` calls. Vaults without a `kind: project`
+node-to-project `path` / `project_scope` calls, with `path` hop/edge alignment
+validated before the path is treated as usable. Vaults without a `kind: project`
 node skip only the containment-specific `project_scope` smoke; empty vault
 folders skip node-targeted graph smoke until a first node exists.
 Use `--timeout-ms 15000` when a large vault or slow filesystem needs a longer

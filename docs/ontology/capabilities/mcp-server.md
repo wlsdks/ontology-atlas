@@ -152,6 +152,9 @@ node-count consistency 는 `list_kinds.total`, `list_concepts.total`,
 `compile_ontology.nodeCount`, `overview.graph.nodes` 끼리 비교하고
 `list_kinds.byKind` / `compile_ontology.byKind` / `overview.byKind` 가 같은 census 를
 말하는지도 확인한다.
+설치 verify 의 `query_ontology(path)` smoke 도 hop/edge alignment 를 검증해,
+`path` 가 성공처럼 보이지만 edge payload 가 hop sequence 를 설명하지 못하는
+packed MCP 회귀를 차단한다.
 `find_path` dogfood 응답은 hop sequence 뿐 아니라 hop 사이 `edges[].from` /
 `edges[].to` / `edges[].via` 까지 확인해, 경로가 있다는 사실만 있고 왜 연결됐는지
 빠진 MCP 회귀를 clean pass 로 숨기지 않는다.

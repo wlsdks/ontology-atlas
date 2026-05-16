@@ -236,6 +236,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /success-row \/ partial-row contract drift/);
     assert.match(verifySection, /`compile_ontology`, `overview`, `overview`\/`project_map` query_plan, and actual `neighbors` \/ `path` \/ `project_scope` graph-query smoke/);
     assert.match(verifySection, /core graph-query execution with `neighbors`, node→project `path`, and `project_scope`/);
+    assert.match(verifySection, /validates `path` hop\/edge alignment/);
     assert.match(verifySection, /dedicated `list_concepts` call before graph smoke/);
     assert.match(verifySection, /skips only the containment-specific `project_scope` smoke/);
     assert.match(verifySection, /accepts empty vault folders by skipping node-targeted graph smoke/);
@@ -297,6 +298,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /stdout/);
     assert.match(verifySection, /`overview`, `overview`\/`project_map` query_plan, and actual `neighbors`/);
     assert.match(verifySection, /node-to-project `path`/);
+    assert.match(verifySection, /`path` hop\/edge alignment/);
     assert.match(verifySection, /`path` \/ `project_scope` calls/);
     assert.match(verifySection, /Vaults without a `kind: project`\s+node skip/);
     assert.match(verifySection, /empty vault\s+folders skip\s+node-targeted graph smoke/);
@@ -489,6 +491,8 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /`edges\[\]\.from`/);
     assert.match(dogfoodSection, /`edges\[\]\.to`/);
     assert.match(dogfoodSection, /`edges\[\]\.via`/);
+    assert.match(dogfoodSection, /설치 verify 의 `query_ontology\(path\)` smoke/);
+    assert.match(dogfoodSection, /hop\/edge alignment/);
     assert.match(dogfoodSection, /project-node `list_concepts` probe/);
     assert.match(dogfoodSection, /project-node `list_concepts` probe 도 fail-closed/);
     assert.match(dogfoodSection, /`kind: project`/);

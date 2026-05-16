@@ -1316,6 +1316,36 @@ describe('verify.mjs first-contact gates', () => {
       }, 'project'),
       'path response hop count mismatch',
     );
+    assert.equal(
+      pathQueryFailure({
+        operation: 'path',
+        from: 'capabilities/login',
+        to: 'project',
+        found: true,
+        hopCount: 1,
+        hops: ['capabilities/login', 'project'],
+        edges: [{ from: 'domains/auth', to: 'project', via: 'domains' }],
+      }, 'capabilities/login', 'project'),
+      'path response edge/hop mismatch at edge 0',
+    );
+    assert.equal(
+      pathQueryFailure({
+        operation: 'path',
+        from: 'capabilities/login',
+        to: 'project',
+        found: true,
+        hopCount: 1,
+        hops: ['capabilities/login', 'project'],
+        edges: [{
+          from: 'project',
+          to: 'capabilities/login',
+          via: 'capabilities',
+          traversedFrom: 'project',
+          traversedTo: 'capabilities/login',
+        }],
+      }, 'capabilities/login', 'project'),
+      'path response traversal mismatch at edge 0',
+    );
     assert.equal(projectScopeFailure({ operation: 'project_map' }, 'project'), 'project_scope returned unexpected operation: project_map');
     assert.equal(
       projectScopeFailure({
