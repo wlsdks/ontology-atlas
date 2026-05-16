@@ -2024,6 +2024,25 @@ await test('delete — backlinks 있으면 dry-run 에서 경고', async () => {
   }
 });
 
+await test('delete --confirm — backlinks 있으면 MCP error 로 실패', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'delete',
+      'capabilities/foo',
+      root,
+      '--confirm',
+    ]);
+    assert.equal(r.code, 2);
+    const clean = stripAnsi(r.stderr);
+    assert.match(clean, /backlink/);
+    assert.match(clean, /force:true|--force/);
+    assert.equal(existsSyncTest(join(root, 'capabilities/foo.md')), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('delete --confirm (no backlinks) — 파일 삭제', async () => {
   const root = withVault([
     {
