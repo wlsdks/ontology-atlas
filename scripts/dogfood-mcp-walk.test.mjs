@@ -3258,6 +3258,18 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, matchEdges: { ...okShape.matchEdges, edges: [{ ...okShape.matchEdges.edges[0], toKind: "" }, okShape.matchEdges.edges[1]] } }),
       ["match_edges row missing toKind at index 0"],
     );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, matchEdges: { ...okShape.matchEdges, edges: [{ ...okShape.matchEdges.edges[0], toKind: "element" }, okShape.matchEdges.edges[1]] } }),
+      ["match_edges row toKind mismatch at index 0"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, matchEdges: { ...okShape.matchEdges, edges: [okShape.matchEdges.edges[0], { ...okShape.matchEdges.edges[1], toNode: { slug: "mcp/src/index.js", kind: "element", title: "index.js" } }] } }),
+      ["match_edges external row has toNode at index 1"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, matchEdges: { ...okShape.matchEdges, edges: [okShape.matchEdges.edges[0], { ...okShape.matchEdges.edges[1], toKind: "element" }] } }),
+      ["match_edges external row toKind mismatch at index 1"],
+    );
   });
 
   it("fails on malformed node_profile payloads", () => {

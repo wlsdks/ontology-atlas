@@ -2711,6 +2711,15 @@ function matchEdgesShapeFailure(result) {
     if (edge.resolved && (!edge.toNode || edge.toNode.slug !== edge.to)) {
       return `match_edges row missing toNode at index ${index}`;
     }
+    if (edge.resolved && edge.toNode.kind !== edge.toKind) {
+      return `match_edges row toKind mismatch at index ${index}`;
+    }
+    if (edge.external && edge.toNode !== null) {
+      return `match_edges external row has toNode at index ${index}`;
+    }
+    if (edge.external && edge.toKind !== "external") {
+      return `match_edges external row toKind mismatch at index ${index}`;
+    }
   }
   return null;
 }
