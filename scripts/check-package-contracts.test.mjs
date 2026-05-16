@@ -119,12 +119,17 @@ describe('package contract helpers', () => {
 
   it('keeps the MCP README aligned with health tuning controls', () => {
     const readme = readFileSync('mcp/README.md', 'utf-8');
+    const features = readFileSync('docs/FEATURES.md', 'utf-8');
     const row = readme.split('| `query_ontology` |')[1]?.split('\n')[0] ?? '';
+    const featureRow = features.split('12. **query_ontology**')[1]?.split('\n')[0] ?? '';
     const strictInputSection = readme.split('String-array options are strict too:')[1]?.split('Scalar string options')[0] ?? '';
 
     assert.match(row, /`health` \/ `workspace_brief` can tune their internal probes/);
     assert.match(row, /`phases`, `severities`, and `kinds` are enum-validated/);
     assert.match(row, /`cursor\.reason` when a cursor is not found/);
+    assert.match(featureRow, /`cursor\.reason` when a cursor is not found/);
+    assert.match(featureRow, /unknown cursors return an empty page with `cursor\.found=false`/);
+    assert.match(featureRow, /zero remaining actions, and no next actions/);
     for (const option of [
       'componentLimit',
       'cycleLimit',

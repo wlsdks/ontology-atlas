@@ -876,7 +876,7 @@ const TOOLS = [
             'maintenance_plan only: optional action-kind filter, e.g. ["add_missing_relation", "canonicalize_graph_arrays"].',
         },
         afterActionId: nonBlankStringSchema(
-          'maintenance_plan only: stable action id cursor; return actions after this id. Unknown cursors return an empty page with cursor.found=false.',
+          'maintenance_plan only: stable action id cursor; return actions after this id. Unknown cursors return an empty page with cursor.found=false, cursor.reason, zero remaining actions, and no next actions.',
         ),
         limit: {
           type: 'integer',

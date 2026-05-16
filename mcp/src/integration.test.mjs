@@ -387,6 +387,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
           findTool("query_ontology")?.inputSchema?.properties?.severities?.items?.enum,
         maintenanceKindsEnum:
           findTool("query_ontology")?.inputSchema?.properties?.kinds?.items?.enum,
+        afterActionIdDescription:
+          findTool("query_ontology")?.inputSchema?.properties?.afterActionId?.description,
         componentTypesDescription:
           findTool("query_ontology")?.inputSchema?.properties?.componentTypes?.description,
       },
@@ -401,6 +403,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         phasesEnum: MAINTENANCE_PHASE_VALUES,
         severitiesEnum: MAINTENANCE_SEVERITY_VALUES,
         maintenanceKindsEnum: MAINTENANCE_KIND_VALUES,
+        afterActionIdDescription:
+          "maintenance_plan only: stable action id cursor; return actions after this id. Unknown cursors return an empty page with cursor.found=false, cursor.reason, zero remaining actions, and no next actions.",
         componentTypesDescription:
           "health/workspace_brief only: relation types used for connected-component checks. Defaults to the full graph relation set.",
       },
