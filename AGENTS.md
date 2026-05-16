@@ -28,6 +28,7 @@ pnpm build                        # static export → out/
 pnpm bundle:check                 # local-first chunk leak guard
 pnpm vault:validate               # frontmatter integrity (R11 — runs in CI too)
 pnpm test:vault:validate          # focused validator CLI argument contract
+pnpm vault:audit                  # capability/element path drift guard (R12)
 pnpm vault:migrate --list         # see registered schema migrations (R11)
 
 # AI agent (Claude Code) auto-registers via this repo's `.mcp.json` — `mcp/README.md` has details.

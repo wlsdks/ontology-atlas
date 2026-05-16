@@ -372,6 +372,7 @@ describe('package contract helpers', () => {
     assert.match(vaultTooling, /focused validator CLI argument contract/);
     assert.match(readme, /CI runs `pnpm vault:validate`, `pnpm test:vault:validate`,\s+`pnpm vault:audit`, and `pnpm package:check`/);
     assert.match(agents, /pnpm test:vault:validate\s+# focused validator CLI argument contract/);
+    assert.match(agents, /pnpm vault:audit\s+# capability\/element path drift guard \(R12\)/);
     assert.match(agents, /pnpm test:vault:validate\s+# validator CLI 인자 계약 focused test/);
     assert.match(architecture, /pnpm test:vault:validate\s+# focused validator CLI argument contract \(CI gate\)/);
     assert.match(architecture, /`vault:validate`, `test:vault:validate`, `vault:audit`, and `package:check` run in CI/);
