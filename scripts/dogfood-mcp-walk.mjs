@@ -205,6 +205,18 @@ export function workspaceNextActionSummary(actions, limit = 3) {
   return `${shown.join(", ")}${suffix}`;
 }
 
+export function healthCheckStatusSummary(checks, limit = 5) {
+  if (!Array.isArray(checks) || checks.length === 0) return "none";
+  const shown = checks.slice(0, limit).map((check) => {
+    const id = check?.id || "unknown";
+    const status = check?.status || "unknown";
+    const count = Number.isInteger(check?.count) ? `:${check.count}` : "";
+    return `${id}:${status}${count}`;
+  });
+  const suffix = checks.length > shown.length ? `, +${checks.length - shown.length} more` : "";
+  return `${shown.join(", ")}${suffix}`;
+}
+
 export function parseDogfoodTimeoutMs(value, fallback = 5000) {
   if (value == null || value === "") return fallback;
   if (!/^[1-9]\d*$/.test(String(value))) return false;
@@ -4305,7 +4317,9 @@ async function main() {
   );
   console.log(`  workspace_brief_tuned nextActions: ${workspaceNextActionSummary(tunedBrief?.nextActions)}`);
   console.log(`  health: ${health?.status ?? "n/a"} (${(health?.checks || []).length} checks)`);
+  console.log(`  health checks: ${healthCheckStatusSummary(health?.checks)}`);
   console.log(`  health_tuned: ${tunedHealth?.status ?? "n/a"} (${(tunedHealth?.checks || []).length} checks)`);
+  console.log(`  health_tuned checks: ${healthCheckStatusSummary(tunedHealth?.checks)}`);
   console.log(`  compile_ontology: ${compiled?.nodeCount ?? "n/a"} nodes · ${compiled?.edgeCount ?? "n/a"} edges · ${compiled?.issueCount ?? "n/a"} issues`);
   console.log(`  overview: ${overview?.graph?.nodes ?? "n/a"} nodes · ${overview?.graph?.edges ?? "n/a"} edges · ${(overview?.hubs || []).length} hubs`);
   console.log(`  pattern_walk: ${patternWalk?.paths?.rows?.length ?? "n/a"} paths (${patternWalk?.paths?.limited ? "limited" : "complete"})`);

@@ -8,6 +8,7 @@ import {
   evaluateDogfoodGate,
   expectedResponseIds,
   formatWorkspaceNextActionRows,
+  healthCheckStatusSummary,
   missingResponseLabels,
   parseDogfoodTimeoutMs,
   parseRpcResponses,
@@ -1405,6 +1406,19 @@ describe("rpc response completion helpers", () => {
         { kind: "add_missing_relations", severity: "warn", count: 4 },
       ]),
       "components:info:6, materialize_external_elements:warn:2, resolve_dangling_references:fail, +1 more",
+    );
+  });
+
+  it("summarizes health check statuses for the final dogfood analysis", () => {
+    assert.equal(healthCheckStatusSummary(null), "none");
+    assert.equal(healthCheckStatusSummary([]), "none");
+    assert.equal(
+      healthCheckStatusSummary([
+        { id: "compile_issues", status: "pass", count: 0 },
+        { id: "components", status: "info", count: 6 },
+        { id: "dependency_cycles", status: "fail", count: 1 },
+      ], 2),
+      "compile_issues:pass:0, components:info:6, +1 more",
     );
   });
 
