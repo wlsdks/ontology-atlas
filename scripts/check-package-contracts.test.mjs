@@ -68,6 +68,7 @@ describe('package contract helpers', () => {
       pkg.scripts?.['test:mcp:docs'] ?? '',
       /^node --test --test-name-pattern "[^"]+" scripts\/check-package-contracts\.test\.mjs$/,
     );
+    assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /dogfood MCP docs/);
     assert.match(
       pkg.scripts?.['test:mcp:package'] ?? '',
       /^node --test --test-name-pattern "[^"]+" scripts\/check-package-contracts\.test\.mjs$/,
@@ -597,7 +598,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /ready cursor 의 `cursor\.found=true` \/ `cursor\.reason=null`/);
     assert.match(doc, /unknown `afterActionId` cursor 의 `cursor\.found=false`/);
     assert.match(doc, /`cursor\.reason` 계약/);
-    assert.match(doc, /compact `postWriteMaintenance` 반환 \(`operation` \/ `sideEffect:false` \/ `filters` \/ `limited` \/ cursor 포함\)/);
+    assert.match(doc, /compact `postWriteMaintenance` 반환 \(`operation` \/ `sideEffect:false` \/ `filters` \/ `limited` \/ cursor \/ action `score` 포함\)/);
     assert.match(dogfoodSection, /`project_map` query_plan/);
     assert.match(dogfoodSection, /실제\s+`project_map` 실행/);
     assert.match(dogfoodSection, /`neighbors`/);
