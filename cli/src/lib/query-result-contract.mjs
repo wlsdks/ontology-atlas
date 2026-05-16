@@ -25,7 +25,8 @@ export function compileBlockingCounts(artifact) {
 
 export function cyclesResultExitCode(result) {
   const cycles = Array.isArray(result?.cycles) ? result.cycles : [];
-  const total = numberValue(result?.totalCycles, cycles.length);
+  const total = numberValue(result?.totalCycles, Array.isArray(result?.cycles) ? cycles.length : Number.NaN);
+  if (!Number.isFinite(total)) return 1;
   return total === 0 ? 0 : 1;
 }
 
@@ -36,14 +37,17 @@ export function pathResultExitCode(result) {
 
 export function healthResultExitCode(result) {
   const status = result?.status ?? 'unknown';
+  const checks = Array.isArray(result?.checks) ? result.checks : [];
+  if (checks.some((check) => check?.status === 'fail')) return 1;
   return status === 'healthy' || status === 'pass' ? 0 : 1;
 }
 
 export function workspaceBriefExitCode(result) {
-  const next = Array.isArray(result?.nextActions) ? result.nextActions : [];
+  if (!Array.isArray(result?.nextActions)) return 1;
+  if (!Array.isArray(result?.health?.checks)) return 1;
+  const next = result.nextActions;
   if (next.some((action) => action?.severity === 'fail')) return 1;
-  const checks = Array.isArray(result?.health?.checks) ? result.health.checks : [];
-  return checks.some((check) => check?.status === 'fail') ? 1 : 0;
+  return result.health.checks.some((check) => check?.status === 'fail') ? 1 : 0;
 }
 
 function numberValue(value, fallback = 0) {

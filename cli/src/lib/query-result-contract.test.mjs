@@ -49,7 +49,9 @@ describe('query-result-contract', () => {
 
   it('blocks graph query results that represent broken gates', () => {
     assert.equal(cyclesResultExitCode({ totalCycles: 0, cycles: [] }), 0);
+    assert.equal(cyclesResultExitCode({ cycles: [] }), 0);
     assert.equal(cyclesResultExitCode({ cycles: [{ slugs: ['a', 'b', 'a'] }] }), 1);
+    assert.equal(cyclesResultExitCode({}), 1);
 
     assert.equal(pathResultExitCode({ found: true, hops: ['a', 'b'] }), 0);
     assert.equal(pathResultExitCode({ found: false }), 1);
@@ -59,9 +61,17 @@ describe('query-result-contract', () => {
     assert.equal(healthResultExitCode({ status: 'healthy' }), 0);
     assert.equal(healthResultExitCode({ status: 'pass' }), 0);
     assert.equal(healthResultExitCode({ status: 'needs_attention' }), 1);
+    assert.equal(healthResultExitCode({ status: 'healthy', checks: [{ status: 'fail' }] }), 1);
 
-    assert.equal(workspaceBriefExitCode({ nextActions: [{ severity: 'warn' }] }), 0);
-    assert.equal(workspaceBriefExitCode({ nextActions: [{ severity: 'fail' }] }), 1);
+    assert.equal(
+      workspaceBriefExitCode({ nextActions: [{ severity: 'warn' }], health: { checks: [] } }),
+      0,
+    );
+    assert.equal(
+      workspaceBriefExitCode({ nextActions: [{ severity: 'fail' }], health: { checks: [] } }),
+      1,
+    );
     assert.equal(workspaceBriefExitCode({ health: { checks: [{ status: 'fail' }] } }), 1);
+    assert.equal(workspaceBriefExitCode({ nextActions: [] }), 1);
   });
 });
