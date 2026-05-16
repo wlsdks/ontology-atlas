@@ -343,6 +343,10 @@ invalid `maintenance_plan.phases` / `maintenance_plan.severities` /
 `maintenance_plan.kinds` rejection smoke 를
 함께 출력해, AI agent 가 첫 접촉에서 받는 graph diagnosis 와 traversal 품질을
 계속 확인한다.
+직접 verify help(`npm run verify -- --help`) 도 strict unknown-argument /
+invalid-enum rejection, maintenance filter enum, missing `maintenance_plan.afterActionId`
+cursor handling 범위를 서버 시작 없이 설명하게 해, 설치자가 smoke 실행 전에도 검증
+범위를 확인할 수 있다.
 dogfood 의 `list_concepts.vaultWarnings` / `validate_vault` 판정은
 `mcp/scripts/verify.mjs` 의 helper 를 재사용해 installed verify 와 dogfood gate 가
 서로 다른 first-contact payload 계약으로 갈라지지 않게 한다.

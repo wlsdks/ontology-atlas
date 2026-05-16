@@ -198,12 +198,18 @@ OMOT_VAULT=../docs/ontology npm run verify
 npm run verify -- ../docs/ontology
 npm run verify -- --vault ../docs/ontology
 npm run verify -- ../docs/ontology --timeout-ms 15000
+npm run verify -- --help
 # Larger/slower vaults can raise the child-process wait window:
 OMOT_VERIFY_TIMEOUT_MS=15000 OMOT_VAULT=../docs/ontology npm run verify
 ```
 
 When both are present, an explicit positional vault or `--vault` argument takes
 precedence over `OMOT_VAULT`.
+`npm run verify -- --help` prints the same first-contact scope, including
+strict unknown-argument / invalid-enum rejection, enum-validated
+`maintenance_plan` filters, and missing `maintenance_plan.afterActionId` cursor
+handling (`cursor.found=false`, reason, empty page), without starting the MCP
+server.
 
 A successful run looks like this:
 

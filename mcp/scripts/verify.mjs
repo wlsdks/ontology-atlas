@@ -493,7 +493,9 @@ export function verifyUsage() {
     'Runs the MCP server first-contact verification against the resolved vault.\n' +
     'Explicit [vault] or --vault arguments take precedence over OMOT_VAULT.\n' +
     'Checks parser smoke, server boot, tool inventory, project probe, batch reads, node census,\n' +
-    'vault validation, workspace health, compile/overview, query plans, and graph-query smoke.\n'
+    'vault validation, workspace health, compile/overview, query plans, and graph-query smoke.\n' +
+    'Also checks strict unknown-argument / invalid-enum rejection, maintenance_plan filter enums,\n' +
+    'and missing maintenance_plan.afterActionId cursor handling (cursor.found=false, reason, empty page).\n'
   );
 }
 

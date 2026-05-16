@@ -387,6 +387,10 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /npm run verify -- --vault path --timeout-ms 15000/);
   assert.match(directMcpVerifyHelp.stdout, /Explicit \[vault\] or --vault arguments take precedence over OMOT_VAULT/);
   assert.match(directMcpVerifyHelp.stdout, /project probe/);
+  assert.match(directMcpVerifyHelp.stdout, /strict unknown-argument \/ invalid-enum rejection/);
+  assert.match(directMcpVerifyHelp.stdout, /maintenance_plan filter enums/);
+  assert.match(directMcpVerifyHelp.stdout, /missing maintenance_plan\.afterActionId cursor handling/);
+  assert.match(directMcpVerifyHelp.stdout, /cursor\.found=false, reason, empty page/);
 
   const mcpEmptyVerify = run(
     'npm',

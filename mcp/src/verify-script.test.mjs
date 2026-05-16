@@ -538,6 +538,10 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /npm run verify -- --vault path --timeout-ms 15000/);
     assert.match(verifyUsage(), /Explicit \[vault\] or --vault arguments take precedence over OMOT_VAULT/);
     assert.match(verifyUsage(), /project probe/);
+    assert.match(verifyUsage(), /strict unknown-argument \/ invalid-enum rejection/);
+    assert.match(verifyUsage(), /maintenance_plan filter enums/);
+    assert.match(verifyUsage(), /missing maintenance_plan\.afterActionId cursor handling/);
+    assert.match(verifyUsage(), /cursor\.found=false, reason, empty page/);
   });
 
   it('fails malformed strict argument smoke responses', () => {

@@ -214,7 +214,11 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /npm run verify -- \.\.\/docs\/ontology/);
     assert.match(verifySection, /npm run verify -- --vault \.\.\/docs\/ontology/);
     assert.match(verifySection, /npm run verify -- \.\.\/docs\/ontology --timeout-ms 15000/);
+    assert.match(verifySection, /npm run verify -- --help/);
     assert.match(verifySection, /explicit positional vault or `--vault` argument takes\s+precedence over `OMOT_VAULT`/);
+    assert.match(verifySection, /`npm run verify -- --help` prints the same first-contact scope/);
+    assert.match(verifySection, /strict unknown-argument \/ invalid-enum rejection/);
+    assert.match(verifySection, /missing `maintenance_plan\.afterActionId` cursor\s+handling \(`cursor\.found=false`, reason, empty page\)/);
     assert.match(verifySection, /list_concepts\/project probe\/get_concepts\/find_orphans\/list_kinds/);
     assert.match(verifySection, /✓ initialize instructions — first-contact safety guidance present/);
     assert.match(verifySection, /✓ tools\/list schema contract — strict arguments \+ graph-query enums/);
@@ -723,6 +727,8 @@ describe('package contract helpers', () => {
     assert.match(doc, /`pnpm integration:mcp:readme`/);
     assert.match(doc, /`pnpm test:mcp:verify`/);
     assert.match(doc, /first-contact README read-only/);
+    assert.match(doc, /직접 verify help\(`npm run verify -- --help`\)/);
+    assert.match(doc, /missing `maintenance_plan\.afterActionId`\s+cursor handling 범위/);
   });
 
   it('parses package script file references', () => {
