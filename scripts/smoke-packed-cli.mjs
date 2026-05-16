@@ -120,6 +120,43 @@ function writeCycleVault(root) {
   );
 }
 
+function writeDanglingVault(root) {
+  mkdirSync(join(root, 'capabilities'), { recursive: true });
+  writeFileSync(
+    join(root, 'capabilities', 'a.md'),
+    [
+      '---',
+      'kind: capability',
+      'slug: capabilities/a',
+      'title: A',
+      'dependencies: [capabilities/missing]',
+      '---',
+      '',
+      '# A',
+      '',
+    ].join('\n'),
+  );
+}
+
+function writeDisconnectedVault(root) {
+  mkdirSync(join(root, 'capabilities'), { recursive: true });
+  for (const slug of ['a', 'b']) {
+    writeFileSync(
+      join(root, 'capabilities', `${slug}.md`),
+      [
+        '---',
+        'kind: capability',
+        `slug: capabilities/${slug}`,
+        `title: ${slug.toUpperCase()}`,
+        '---',
+        '',
+        `# ${slug.toUpperCase()}`,
+        '',
+      ].join('\n'),
+    );
+  }
+}
+
 const temp = mkdtempSync(join(tmpdir(), 'omot-packed-cli-'));
 try {
   const packDir = join(temp, 'packs');
@@ -230,10 +267,11 @@ try {
     /OMOT_VERIFY_TIMEOUT_MS must be a positive integer/,
   );
 
-  const compile = run(cliBin, ['compile', 'ontology', '--summary'], { cwd: projectDir });
+  const compile = runRaw(cliBin, ['compile', 'ontology', '--summary'], { cwd: projectDir });
+  assert.equal(compile.status, 1);
   assert.match(compile.stdout, /compiled ontology/);
   assert.match(compile.stdout, /5 nodes/);
-  assert.match(compile.stdout, /issues.*0/);
+  assert.match(compile.stdout, /issues.*1/);
 
   const cycleVault = join(projectDir, 'cycle-vault');
   writeCycleVault(cycleVault);
@@ -247,6 +285,31 @@ try {
     )),
     true,
   );
+
+  const blockingCycles = runRaw(cliBin, ['cycles', cycleVault, '--json'], { cwd: projectDir });
+  assert.equal(blockingCycles.status, 1);
+  const blockingCyclesPayload = JSON.parse(blockingCycles.stdout);
+  assert.equal(blockingCyclesPayload.operation, 'cycles');
+  assert.equal(blockingCyclesPayload.totalCycles, 1);
+
+  const danglingVault = join(projectDir, 'dangling-vault');
+  writeDanglingVault(danglingVault);
+  const blockingCompile = runRaw(cliBin, ['compile', danglingVault, '--json'], { cwd: projectDir });
+  assert.equal(blockingCompile.status, 1);
+  const blockingCompilePayload = JSON.parse(blockingCompile.stdout);
+  assert.equal(blockingCompilePayload.summary.issues, 1);
+  assert.equal(blockingCompilePayload.summary.unresolvedEdges, 1);
+
+  const disconnectedVault = join(projectDir, 'disconnected-vault');
+  writeDisconnectedVault(disconnectedVault);
+  const missingPath = runRaw(
+    cliBin,
+    ['path', 'capabilities/a', 'capabilities/b', disconnectedVault, '--json'],
+    { cwd: projectDir },
+  );
+  assert.equal(missingPath.status, 1);
+  const missingPathPayload = JSON.parse(missingPath.stdout);
+  assert.equal(missingPathPayload.found, false);
 
   const mcpSummary = packSummary(MCP_DIR);
   checkMcpLeanTarballFiles(mcpSummary.files);
