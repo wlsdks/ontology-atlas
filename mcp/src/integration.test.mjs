@@ -2420,6 +2420,76 @@ await test("patch_concept — graph 배열 patch 는 배열 string item 만 허�
   }
 });
 
+await test("patch_concept — 핵심 scalar frontmatter 와 body 타입을 검증", async () => {
+  const root = makeVault([
+    { slug: "foo", content: "---\nkind: capability\ntitle: Foo\ndomain: domains/a\nslug: foo-alias\n---\nbody\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "patch_concept", {
+        slug: "foo",
+        frontmatter: { kind: "unknown" },
+      }),
+      callTool(3, "patch_concept", {
+        slug: "foo",
+        frontmatter: { kind: null },
+      }),
+      callTool(4, "patch_concept", {
+        slug: "foo",
+        frontmatter: { domain: ["domains/b"] },
+      }),
+      callTool(5, "patch_concept", {
+        slug: "foo",
+        frontmatter: { slug: " alias" },
+      }),
+      callTool(6, "patch_concept", {
+        slug: "foo",
+        body: null,
+      }),
+      callTool(7, "patch_concept", {
+        slug: "foo",
+        frontmatter: { kind: "document", domain: null, slug: null },
+        body: "",
+      }),
+      callTool(8, "get_concept", { slug: "foo" }),
+    ]);
+    assert.equal(isErrorResponse(responses, 2), true);
+    assert.match(
+      responses.find((r) => r.id === 2).result.content[0].text,
+      /frontmatter\.kind must be one of/i,
+    );
+    assert.equal(isErrorResponse(responses, 3), true);
+    assert.match(
+      responses.find((r) => r.id === 3).result.content[0].text,
+      /kind cannot be deleted/i,
+    );
+    assert.equal(isErrorResponse(responses, 4), true);
+    assert.match(
+      responses.find((r) => r.id === 4).result.content[0].text,
+      /frontmatter\.domain must be a non-empty string/i,
+    );
+    assert.equal(isErrorResponse(responses, 5), true);
+    assert.match(
+      responses.find((r) => r.id === 5).result.content[0].text,
+      /frontmatter\.slug must not have leading or trailing whitespace/i,
+    );
+    assert.equal(isErrorResponse(responses, 6), true);
+    assert.match(
+      responses.find((r) => r.id === 6).result.content[0].text,
+      /body must be a string/i,
+    );
+    assert.equal(isErrorResponse(responses, 7), false, "valid scalar patch still lands");
+    const result = getCallParsed(responses, 8);
+    assert.equal(result.frontmatter.kind, "document");
+    assert.equal(Object.hasOwn(result.frontmatter, "domain"), false);
+    assert.equal(Object.hasOwn(result.frontmatter, "slug"), false);
+    assert.equal(result.excerpt, "");
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("rename_concept dry-run — preview 만, 디스크 변경 0", async () => {
   const root = makeVault([
     { slug: "old-target", content: "---\nkind: capability\ntitle: Old\n---\n" },

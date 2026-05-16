@@ -1454,6 +1454,24 @@ function requireValidFrontmatterPatch(frontmatter) {
     }
     requireOptionalStringArray(value, `frontmatter.${key}`);
   }
+  if (Object.prototype.hasOwnProperty.call(frontmatter, 'kind')) {
+    const kind = frontmatter.kind;
+    if (kind === null) {
+      throw new Error('kind cannot be deleted from a vault node — pass a valid kind instead.');
+    }
+    requireNonBlankString(kind, 'frontmatter.kind');
+    if (!ADD_CONCEPT_KINDS.has(kind)) {
+      throw new Error(
+        `frontmatter.kind must be one of: ${[...ADD_CONCEPT_KINDS].join(', ')}.`,
+      );
+    }
+  }
+  for (const key of ['domain', 'slug']) {
+    if (!Object.prototype.hasOwnProperty.call(frontmatter, key)) continue;
+    const value = frontmatter[key];
+    if (value === null || value === undefined) continue;
+    requireNonBlankString(value, `frontmatter.${key}`);
+  }
 }
 
 function addConcept({ slug, kind, title, domain, capabilities, elements, body }, options = {}) {
@@ -1712,7 +1730,7 @@ function patchConcept({ slug, frontmatter, body, expected_mtime }) {
   }
   requireOptionalPlainObject(frontmatter, 'frontmatter');
   requireValidFrontmatterPatch(frontmatter);
-  if (body !== undefined && body !== null && typeof body !== 'string') {
+  if (body !== undefined && typeof body !== 'string') {
     throw new Error('body must be a string.');
   }
   // title 을 포함한 patch 라면 비-빈 문자열 강제. UI 의 renameVaultDoc 은
