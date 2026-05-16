@@ -3605,16 +3605,21 @@ function normalizeRelationType(type) {
 }
 
 function normalizeDirection(direction, fallback) {
+  if (direction === undefined) return fallback;
   if (direction === 'incoming' || direction === 'outgoing' || direction === 'both') return direction;
-  return fallback;
+  if (direction === 'undirected') return 'both';
+  throw new Error('direction must be one of: incoming, outgoing, both, undirected.');
 }
 
 function normalizePathDirection(direction) {
+  if (direction === undefined) return 'undirected';
   if (direction === 'incoming' || direction === 'outgoing') return direction;
-  return 'undirected';
+  if (direction === 'both' || direction === 'undirected') return 'undirected';
+  throw new Error('direction must be one of: incoming, outgoing, both, undirected.');
 }
 
 function normalizeTraversalDirection(direction, fallback) {
+  if (direction === undefined) return fallback;
   if (
     direction === 'incoming' ||
     direction === 'outgoing' ||
@@ -3623,7 +3628,7 @@ function normalizeTraversalDirection(direction, fallback) {
   ) {
     return direction;
   }
-  return fallback;
+  throw new Error('direction must be one of: incoming, outgoing, both, undirected.');
 }
 
 function normalizeDepth(value, fallback) {

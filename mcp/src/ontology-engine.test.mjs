@@ -357,6 +357,34 @@ describe('queryCompiledOntology', () => {
     );
   });
 
+  it('rejects invalid directions instead of defaulting them', () => {
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'neighbors',
+        slug: 'capabilities/login',
+        direction: 'sideways',
+      }),
+      /direction must be one of: incoming, outgoing, both, undirected/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'path',
+        from: 'capabilities/session',
+        to: 'auth-domain',
+        direction: null,
+      }),
+      /direction must be one of: incoming, outgoing, both, undirected/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'reachability',
+        slug: 'capabilities/login',
+        direction: 1,
+      }),
+      /direction must be one of: incoming, outgoing, both, undirected/,
+    );
+  });
+
   it('detects deterministic ontology communities', () => {
     const result = queryCompiledOntology(
       compileOntology(
