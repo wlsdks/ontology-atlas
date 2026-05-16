@@ -173,6 +173,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     const findDesc = (name) => tools.find((t) => t.name === name)?.description;
     const getC = findDesc("get_concept");
+    const getCs = findDesc("get_concepts");
     const findN = findDesc("find_neighbors");
     const compile = findDesc("compile_ontology");
     const query = findDesc("query_ontology");
@@ -180,6 +181,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     const addC = findDesc("add_concept");
     const addR = findDesc("add_relation");
     assert.ok(getC && /get_concepts/.test(getC), "get_concept → get_concepts hint");
+    assert.ok(
+      getCs && /Missing or invalid slug rows return/.test(getCs) && /later valid slugs still resolve/.test(getCs),
+      "get_concepts partial-row recovery hint",
+    );
     assert.ok(findN && /one-hop graph neighborhood/i.test(findN), "find_neighbors graph hint");
     assert.ok(compile && /deterministic graph artifact/i.test(compile), "compile_ontology compiler hint");
     assert.ok(query && /graph-engine queries/i.test(query), "query_ontology engine hint");
