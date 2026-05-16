@@ -1817,8 +1817,9 @@ await test("query_ontology pattern_walk — exact branch limit keeps all MCP pat
     );
 
     const truncated = getCallParsed(responses, 3);
-    assert.equal(truncated.paths.total, 1);
+    assert.equal(truncated.paths.total, 2);
     assert.equal(truncated.paths.limited, true);
+    assert.equal(truncated.paths.rows.length, 1);
     assert.deepEqual(
       truncated.paths.rows.map((row) => row.end),
       ["capabilities/login"],

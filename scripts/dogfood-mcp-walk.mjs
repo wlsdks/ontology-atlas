@@ -287,6 +287,15 @@ function patternWalkShapeFailure(result) {
   if (result.paths.rows.length === 0) {
     return "pattern_walk response returned no rows";
   }
+  if (result.paths.rows.length > result.paths.total) {
+    return `pattern_walk response row count exceeds total — rows ${result.paths.rows.length}, total ${result.paths.total}`;
+  }
+  if (result.paths.limited && result.paths.total <= result.paths.rows.length) {
+    return `pattern_walk response limited without hidden row — rows ${result.paths.rows.length}, total ${result.paths.total}`;
+  }
+  if (!result.paths.limited && result.paths.total !== result.paths.rows.length) {
+    return `pattern_walk response total mismatch — rows ${result.paths.rows.length}, total ${result.paths.total}`;
+  }
   for (let i = 0; i < result.paths.rows.length; i += 1) {
     const row = result.paths.rows[i];
     if (!Array.isArray(row.path) || row.path.length < 2) {

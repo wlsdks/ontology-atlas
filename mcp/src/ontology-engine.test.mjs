@@ -710,8 +710,9 @@ describe('queryCompiledOntology', () => {
       pattern: ['domains', 'capabilities'],
       limit: 1,
     });
-    assert.equal(truncated.paths.total, 1);
+    assert.equal(truncated.paths.total, 2);
     assert.equal(truncated.paths.limited, true);
+    assert.equal(truncated.paths.rows.length, 1);
     assert.deepEqual(
       truncated.paths.rows.map((row) => row.end),
       ['capabilities/login'],

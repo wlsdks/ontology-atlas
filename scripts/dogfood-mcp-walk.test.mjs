@@ -369,6 +369,34 @@ describe("evaluateDogfoodGate", () => {
       }),
       ["pattern_walk response missing path at index 0"],
     );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        patternWalk: {
+          ...okShape.patternWalk,
+          paths: {
+            total: 1,
+            limited: true,
+            rows: okShape.patternWalk.paths.rows,
+          },
+        },
+      }),
+      ["pattern_walk response limited without hidden row — rows 1, total 1"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        patternWalk: {
+          ...okShape.patternWalk,
+          paths: {
+            total: 2,
+            limited: false,
+            rows: okShape.patternWalk.paths.rows,
+          },
+        },
+      }),
+      ["pattern_walk response total mismatch — rows 1, total 2"],
+    );
   });
 
   it("fails when dogfood read surfaces disagree on counts", () => {

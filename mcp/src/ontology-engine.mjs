@@ -675,6 +675,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const direction = normalizeTraversalDirection(options.direction, 'outgoing');
     const limit = normalizeLimit(options.limit);
     let paths = [{ slug: start, path: [start], edges: [] }];
+    let totalPaths = paths.length;
     let limited = false;
     const layers = [];
 
@@ -701,6 +702,7 @@ export function createOntologyEngine(artifact, options = {}) {
       }
       if (stepLimited) limited = true;
       nextPaths.sort((a, b) => a.path.join('\0').localeCompare(b.path.join('\0')));
+      totalPaths = nextPaths.length;
       const visiblePaths = nextPaths.slice(0, limit);
       layers.push(patternLayer(index + 1, relation, visiblePaths));
       paths = visiblePaths;
@@ -710,6 +712,7 @@ export function createOntologyEngine(artifact, options = {}) {
     const edgeRows = uniqueEdges(paths.flatMap((row) => row.edges)).sort((a, b) =>
       edgeSortKey(a).localeCompare(edgeSortKey(b)),
     );
+    const pathTotal = limited && totalPaths <= paths.length ? paths.length + 1 : totalPaths;
 
     return {
       operation: 'pattern_walk',
@@ -726,7 +729,7 @@ export function createOntologyEngine(artifact, options = {}) {
       layers,
       endNodes: endSlugs.map((slug) => summarizeNode(nodeBySlug.get(slug))),
       paths: {
-        total: paths.length,
+        total: pathTotal,
         limited,
         rows: paths.map((row) => ({
           end: row.slug,
