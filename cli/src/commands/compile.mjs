@@ -201,12 +201,12 @@ function parseArgs(args) {
     else if (a === '--summary') flags.summary = true;
     else if (a === '--indexes') flags.includeIndexes = true;
     else if (a === '--fix') flags.fix = true;
-    else if (a === '--nodes-limit') flags.nodesLimit = parseNumberFlag(a, args[++i]);
-    else if (a.startsWith('--nodes-limit=')) flags.nodesLimit = parseNumberFlag('--nodes-limit', a.slice('--nodes-limit='.length));
+    else if (a === '--nodes-limit') flags.nodesLimit = parsePositiveNumberFlag(a, args[++i]);
+    else if (a.startsWith('--nodes-limit=')) flags.nodesLimit = parsePositiveNumberFlag('--nodes-limit', a.slice('--nodes-limit='.length));
     else if (a === '--nodes-offset') flags.nodesOffset = parseNumberFlag(a, args[++i]);
     else if (a.startsWith('--nodes-offset=')) flags.nodesOffset = parseNumberFlag('--nodes-offset', a.slice('--nodes-offset='.length));
-    else if (a === '--edges-limit') flags.edgesLimit = parseNumberFlag(a, args[++i]);
-    else if (a.startsWith('--edges-limit=')) flags.edgesLimit = parseNumberFlag('--edges-limit', a.slice('--edges-limit='.length));
+    else if (a === '--edges-limit') flags.edgesLimit = parsePositiveNumberFlag(a, args[++i]);
+    else if (a.startsWith('--edges-limit=')) flags.edgesLimit = parsePositiveNumberFlag('--edges-limit', a.slice('--edges-limit='.length));
     else if (a === '--edges-offset') flags.edgesOffset = parseNumberFlag(a, args[++i]);
     else if (a.startsWith('--edges-offset=')) flags.edgesOffset = parseNumberFlag('--edges-offset', a.slice('--edges-offset='.length));
     else if (a.startsWith('--')) return { error: `unknown flag: ${a}` };
@@ -225,6 +225,15 @@ function parseNumberFlag(flag, raw) {
   const value = Number(raw);
   if (!Number.isFinite(value) || value < 0) {
     return new Error(`${flag} must be a non-negative number`);
+  }
+  return Math.floor(value);
+}
+
+function parsePositiveNumberFlag(flag, raw) {
+  if (raw === undefined) return new Error(`${flag} requires a number`);
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) {
+    return new Error(`${flag} must be a positive number`);
   }
   return Math.floor(value);
 }

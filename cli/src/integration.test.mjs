@@ -296,6 +296,23 @@ await test('compile --fix — applies compiler relation-array canonicalization',
   }
 });
 
+await test('compile — rejects zero pagination limits', async () => {
+  const root = withVault([
+    { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
+  ]);
+  try {
+    const nodes = await run(['compile', root, '--nodes-limit=0']);
+    assert.equal(nodes.code, 1);
+    assert.match(stripAnsi(nodes.stderr), /--nodes-limit must be a positive number/);
+
+    const edges = await run(['compile', root, '--edges-limit', '0']);
+    assert.equal(edges.code, 1);
+    assert.match(stripAnsi(edges.stderr), /--edges-limit must be a positive number/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('compile — rejects ambiguous vault arguments before compile/fix', async () => {
   const missing = await run(['compile', '--vault']);
   assert.equal(missing.code, 1);

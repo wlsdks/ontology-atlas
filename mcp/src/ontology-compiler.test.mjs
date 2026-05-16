@@ -260,6 +260,16 @@ describe('compileOntology', () => {
     assert.equal(page3.nodesPagination.nextOffset, null);
   });
 
+  it('ignores zero limits so pagination cursors always advance', () => {
+    const docs = ['a', 'b', 'c'].map((s) =>
+      doc(`capabilities/${s}`, { kind: 'capability' }),
+    );
+    const result = compileOntology(docs, { nodesLimit: 0, edgesLimit: 0 });
+    assert.equal(result.nodes.length, 3);
+    assert.equal(result.nodesPagination, undefined);
+    assert.equal(result.edgesPagination, undefined);
+  });
+
   it('edgesLimit / edgesOffset slice edges independently of nodes', () => {
     const docs = [
       doc('project', {

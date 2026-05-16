@@ -16,9 +16,9 @@ const COMPILER_VERSION = 1;
 export function compileOntology(docs, options = {}) {
   const includeIndexes = options.includeIndexes === true;
   const summary = options.summary === true;
-  const nodesLimit = toNonNegInt(options.nodesLimit);
+  const nodesLimit = toPositiveInt(options.nodesLimit);
   const nodesOffset = toNonNegInt(options.nodesOffset) ?? 0;
-  const edgesLimit = toNonNegInt(options.edgesLimit);
+  const edgesLimit = toPositiveInt(options.edgesLimit);
   const edgesOffset = toNonNegInt(options.edgesOffset) ?? 0;
   const nodeMap = new Map();
   const aliasEntries = new Map();
@@ -225,6 +225,12 @@ export function compileOntology(docs, options = {}) {
 function toNonNegInt(value) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null;
   return Math.max(0, Math.floor(value));
+}
+
+function toPositiveInt(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  const parsed = Math.floor(value);
+  return parsed > 0 ? parsed : null;
 }
 
 function countByGroup(nodes, key) {

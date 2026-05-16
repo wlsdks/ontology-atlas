@@ -643,8 +643,8 @@ const TOOLS = [
         },
         nodesLimit: {
           type: 'integer',
-          minimum: 0,
-          description: 'Non-negative integer max nodes to return. Pair with `nodesOffset` to paginate. Omit for unlimited (backward compat).',
+          minimum: 1,
+          description: 'Positive integer max nodes to return. Pair with `nodesOffset` to paginate. Omit for unlimited (backward compat).',
         },
         nodesOffset: {
           type: 'integer',
@@ -653,8 +653,8 @@ const TOOLS = [
         },
         edgesLimit: {
           type: 'integer',
-          minimum: 0,
-          description: 'Non-negative integer max edges to return. Pair with `edgesOffset` to paginate.',
+          minimum: 1,
+          description: 'Positive integer max edges to return. Pair with `edgesOffset` to paginate.',
         },
         edgesOffset: {
           type: 'integer',
@@ -1964,9 +1964,9 @@ function compileOntologyTool({
 } = {}) {
   requireOptionalBoolean(includeIndexes, 'includeIndexes');
   requireOptionalBoolean(summary, 'summary');
-  requireOptionalNonNegativeInteger(nodesLimit, 'nodesLimit');
+  requireOptionalPositiveInteger(nodesLimit, 'nodesLimit');
   requireOptionalNonNegativeInteger(nodesOffset, 'nodesOffset');
-  requireOptionalNonNegativeInteger(edgesLimit, 'edgesLimit');
+  requireOptionalPositiveInteger(edgesLimit, 'edgesLimit');
   requireOptionalNonNegativeInteger(edgesOffset, 'edgesOffset');
   const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), {
     includeIndexes: includeIndexes === true,

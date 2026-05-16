@@ -260,11 +260,26 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.deepEqual(
       {
+        nodesLimitType: findTool("compile_ontology")?.inputSchema?.properties?.nodesLimit?.type,
+        nodesLimitMinimum: findTool("compile_ontology")?.inputSchema?.properties?.nodesLimit?.minimum,
         type: findTool("compile_ontology")?.inputSchema?.properties?.nodesOffset?.type,
         minimum: findTool("compile_ontology")?.inputSchema?.properties?.nodesOffset?.minimum,
+        edgesLimitType: findTool("compile_ontology")?.inputSchema?.properties?.edgesLimit?.type,
+        edgesLimitMinimum: findTool("compile_ontology")?.inputSchema?.properties?.edgesLimit?.minimum,
+        edgesOffsetType: findTool("compile_ontology")?.inputSchema?.properties?.edgesOffset?.type,
+        edgesOffsetMinimum: findTool("compile_ontology")?.inputSchema?.properties?.edgesOffset?.minimum,
       },
-      { type: "integer", minimum: 0 },
-      "compile_ontology exposes non-negative pagination schema",
+      {
+        nodesLimitType: "integer",
+        nodesLimitMinimum: 1,
+        type: "integer",
+        minimum: 0,
+        edgesLimitType: "integer",
+        edgesLimitMinimum: 1,
+        edgesOffsetType: "integer",
+        edgesOffsetMinimum: 0,
+      },
+      "compile_ontology exposes advancing pagination schema",
     );
     assert.deepEqual(
       {
@@ -1591,11 +1606,12 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       callTool(38, "infer_imports", { ignore: ["dist", 7] }),
       callTool(39, "infer_imports", { maxFiles: 0 }),
       callTool(40, "infer_imports", { maxFiles: 50001 }),
+      callTool(41, "compile_ontology", { nodesLimit: 0 }),
     ]);
     for (const id of [
       2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
       21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
-      38, 39, 40,
+      38, 39, 40, 41,
     ]) {
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
     }
@@ -1606,13 +1622,14 @@ await test("MCP read/query tools — invalid numeric and direction options are r
     assert.match(responses.find((r) => r.id === 6).result.content[0].text, /maxHops must be a non-negative integer/i);
     assert.match(responses.find((r) => r.id === 7).result.content[0].text, /limit must be a positive integer/i);
     assert.match(responses.find((r) => r.id === 8).result.content[0].text, /nodesOffset must be a non-negative integer/i);
-    assert.match(responses.find((r) => r.id === 9).result.content[0].text, /edgesLimit must be a non-negative integer/i);
+    assert.match(responses.find((r) => r.id === 9).result.content[0].text, /edgesLimit must be a positive integer/i);
     assert.match(responses.find((r) => r.id === 10).result.content[0].text, /direction must be one of/i);
     assert.match(responses.find((r) => r.id === 11).result.content[0].text, /iterations must be <= 100/i);
     assert.match(responses.find((r) => r.id === 12).result.content[0].text, /depth must be a non-negative integer/i);
     assert.match(responses.find((r) => r.id === 13).result.content[0].text, /types must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 14).result.content[0].text, /excludeKinds must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 15).result.content[0].text, /types must be an array of strings/i);
+    assert.match(responses.find((r) => r.id === 41).result.content[0].text, /nodesLimit must be a positive integer/i);
     assert.match(responses.find((r) => r.id === 16).result.content[0].text, /pattern must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 17).result.content[0].text, /phases must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 18).result.content[0].text, /types items must be non-empty strings/i);
