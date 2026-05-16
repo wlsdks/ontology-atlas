@@ -37,7 +37,7 @@ const SERVER_ENTRY = join(MCP_ROOT, 'src', 'index.js');
 const VAULT = process.env.OMOT_VAULT || process.cwd();
 const VERIFY_TIMEOUT_MS_RAW = process.env.OMOT_VERIFY_TIMEOUT_MS;
 
-const EXPECTED_TOOLS = [
+export const EXPECTED_TOOLS = [
   'list_concepts',
   'get_concept',
   'get_concepts',

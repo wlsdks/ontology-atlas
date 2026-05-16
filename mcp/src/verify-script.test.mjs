@@ -1,8 +1,12 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   diagnosisBlockingFailure,
+  EXPECTED_TOOLS,
   firstContactErrorFailure,
   hasAllFirstContactResponses,
   hasFirstContactErrorResponse,
@@ -13,7 +17,15 @@ import {
   vaultWarningsFailure,
 } from '../scripts/verify.mjs';
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const MCP_PKG = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
+
 describe('verify.mjs first-contact gates', () => {
+  it('keeps package metadata tool count aligned with verify inventory', () => {
+    const describedCount = MCP_PKG.description.match(/(\d+) tools/)?.[1];
+    assert.equal(describedCount, String(EXPECTED_TOOLS.length));
+  });
+
   it('parses verify timeout env as a strict positive integer', () => {
     assert.equal(parseVerifyTimeoutMs(undefined), 8000);
     assert.equal(parseVerifyTimeoutMs(''), 8000);
