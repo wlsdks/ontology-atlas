@@ -260,14 +260,26 @@ describe('compileOntology', () => {
     assert.equal(page3.nodesPagination.nextOffset, null);
   });
 
-  it('ignores zero limits so pagination cursors always advance', () => {
+  it('rejects invalid pagination values instead of silently coercing them', () => {
     const docs = ['a', 'b', 'c'].map((s) =>
       doc(`capabilities/${s}`, { kind: 'capability' }),
     );
-    const result = compileOntology(docs, { nodesLimit: 0, edgesLimit: 0 });
-    assert.equal(result.nodes.length, 3);
-    assert.equal(result.nodesPagination, undefined);
-    assert.equal(result.edgesPagination, undefined);
+    assert.throws(
+      () => compileOntology(docs, { nodesLimit: 0 }),
+      /nodesLimit must be a positive integer/,
+    );
+    assert.throws(
+      () => compileOntology(docs, { edgesLimit: 1.5 }),
+      /edgesLimit must be a positive integer/,
+    );
+    assert.throws(
+      () => compileOntology(docs, { nodesOffset: -1 }),
+      /nodesOffset must be a non-negative integer/,
+    );
+    assert.throws(
+      () => compileOntology(docs, { edgesOffset: 1.5 }),
+      /edgesOffset must be a non-negative integer/,
+    );
   });
 
   it('edgesLimit / edgesOffset slice edges independently of nodes', () => {

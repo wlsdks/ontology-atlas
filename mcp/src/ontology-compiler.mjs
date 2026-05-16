@@ -16,10 +16,10 @@ const COMPILER_VERSION = 1;
 export function compileOntology(docs, options = {}) {
   const includeIndexes = options.includeIndexes === true;
   const summary = options.summary === true;
-  const nodesLimit = toPositiveInt(options.nodesLimit);
-  const nodesOffset = toNonNegInt(options.nodesOffset) ?? 0;
-  const edgesLimit = toPositiveInt(options.edgesLimit);
-  const edgesOffset = toNonNegInt(options.edgesOffset) ?? 0;
+  const nodesLimit = optionalPositiveInt(options.nodesLimit, 'nodesLimit');
+  const nodesOffset = optionalNonNegativeInt(options.nodesOffset, 'nodesOffset') ?? 0;
+  const edgesLimit = optionalPositiveInt(options.edgesLimit, 'edgesLimit');
+  const edgesOffset = optionalNonNegativeInt(options.edgesOffset, 'edgesOffset') ?? 0;
   const nodeMap = new Map();
   const aliasEntries = new Map();
 
@@ -222,15 +222,20 @@ export function compileOntology(docs, options = {}) {
   };
 }
 
-function toNonNegInt(value) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
-  return Math.max(0, Math.floor(value));
+function optionalNonNegativeInt(value, name) {
+  if (value === undefined || value === null) return null;
+  if (!Number.isInteger(value) || value < 0) {
+    throw new Error(`${name} must be a non-negative integer`);
+  }
+  return value;
 }
 
-function toPositiveInt(value) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
-  const parsed = Math.floor(value);
-  return parsed > 0 ? parsed : null;
+function optionalPositiveInt(value, name) {
+  if (value === undefined || value === null) return null;
+  if (!Number.isInteger(value) || value <= 0) {
+    throw new Error(`${name} must be a positive integer`);
+  }
+  return value;
 }
 
 function countByGroup(nodes, key) {

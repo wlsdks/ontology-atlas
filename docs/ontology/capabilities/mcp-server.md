@@ -203,10 +203,11 @@ path 가 있을 때만 true 다.
 `query_plan(targetOperation:"all_paths")` 의 기본 limit 도 실제 `all_paths`
 기본값과 같은 25 라서, agent 가 plan 에서 본 반환 상한과 실제 호출 상한이
 갈라지지 않는다.
-`compile_ontology` pagination 은 cursor safety 를 위해 limit 과 offset 계약을
-분리한다. `nodesLimit` / `edgesLimit` 은 1 이상 양수만 허용하고,
-`nodesOffset` / `edgesOffset` 만 0 이상을 허용한다. 따라서 page size 0 으로
-`hasMore: true` 인데 `nextOffset` 이 전진하지 않는 agent loop 를 만들지 않는다.
+`compile_ontology` pagination 은 MCP handler 와 core compiler 양쪽에서 cursor
+safety 를 위해 limit 과 offset 계약을 분리한다. `nodesLimit` / `edgesLimit` 은
+1 이상 양수만 허용하고, `nodesOffset` / `edgesOffset` 만 0 이상을 허용한다.
+따라서 page size 0 이나 소수 값을 조용히 보정해 `hasMore: true` 인데
+`nextOffset` 이 전진하지 않는 agent loop 를 만들지 않는다.
 
 `pnpm dogfood:walk` 는 이 repo 의 `docs/ontology` 를 대상으로 실제 MCP stdio 호출을
 연속 실행한다. 기본 census / backlink / path 질의에 더해 `validate_vault`,
