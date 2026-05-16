@@ -293,26 +293,24 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        slug: { type: 'string', description: 'Vault-relative slug (omit the .md extension).' },
+        slug: nonBlankStringSchema('Vault-relative slug (omit the .md extension).'),
         kind: {
-          type: 'string',
+          ...NON_BLANK_STRING_SCHEMA,
           enum: ['project', 'domain', 'capability', 'element', 'document'],
           description: 'project / domain / capability / element / document. (vault-readme is reserved for the auto-generated README.md and should not be set by agents.)',
         },
-        title: { type: 'string', description: 'Display title for the node.' },
-        domain: {
-          type: 'string',
-          description:
-            'Parent domain slug. Strongly expected for kind=capability and kind=element — without it the node floats orphaned in the tree.',
-        },
+        title: nonBlankStringSchema('Display title for the node.'),
+        domain: nonBlankStringSchema(
+          'Parent domain slug. Strongly expected for kind=capability and kind=element — without it the node floats orphaned in the tree.',
+        ),
         capabilities: {
           type: 'array',
-          items: { type: 'string' },
+          items: NON_BLANK_STRING_SCHEMA,
           description: 'Capability slugs this node owns (project / domain).',
         },
         elements: {
           type: 'array',
-          items: { type: 'string' },
+          items: NON_BLANK_STRING_SCHEMA,
           description: 'Element slugs this node uses (project / capability).',
         },
         body: {
@@ -343,15 +341,15 @@ const TOOLS = [
           items: {
             type: 'object',
             properties: {
-              slug: { type: 'string' },
+              slug: NON_BLANK_STRING_SCHEMA,
               kind: {
-                type: 'string',
+                ...NON_BLANK_STRING_SCHEMA,
                 enum: ['project', 'domain', 'capability', 'element', 'document'],
               },
-              title: { type: 'string' },
-              domain: { type: 'string' },
-              capabilities: { type: 'array', items: { type: 'string' } },
-              elements: { type: 'array', items: { type: 'string' } },
+              title: NON_BLANK_STRING_SCHEMA,
+              domain: NON_BLANK_STRING_SCHEMA,
+              capabilities: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+              elements: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
               body: { type: 'string' },
             },
             required: ['slug', 'kind', 'title'],
@@ -375,10 +373,10 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        from: { type: 'string', description: 'Source slug.' },
-        to: { type: 'string', description: 'Target slug.' },
+        from: nonBlankStringSchema('Source slug.'),
+        to: nonBlankStringSchema('Target slug.'),
         type: {
-          type: 'string',
+          ...NON_BLANK_STRING_SCHEMA,
           enum: [
             'depends_on',
             'relates',
@@ -421,10 +419,10 @@ const TOOLS = [
           items: {
             type: 'object',
             properties: {
-              from: { type: 'string' },
-              to: { type: 'string' },
+              from: NON_BLANK_STRING_SCHEMA,
+              to: NON_BLANK_STRING_SCHEMA,
               type: {
-                type: 'string',
+                ...NON_BLANK_STRING_SCHEMA,
                 enum: [
                   'depends_on',
                   'relates',
@@ -460,7 +458,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        slug: { type: 'string', description: 'Vault-relative slug (omit the .md extension).' },
+        slug: nonBlankStringSchema('Vault-relative slug (omit the .md extension).'),
         frontmatter: {
           type: 'object',
           description:
@@ -489,10 +487,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        slug: {
-          type: 'string',
-          description: 'Target vault-relative slug (omit the .md extension).',
-        },
+        slug: nonBlankStringSchema('Target vault-relative slug (omit the .md extension).'),
       },
       required: ['slug'],
     },
@@ -999,14 +994,10 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        oldSlug: {
-          type: 'string',
-          description: 'Current vault-relative slug (omit the .md extension).',
-        },
-        newSlug: {
-          type: 'string',
-          description: 'Target vault-relative slug (omit the .md extension). Directories are created if needed.',
-        },
+        oldSlug: nonBlankStringSchema('Current vault-relative slug (omit the .md extension).'),
+        newSlug: nonBlankStringSchema(
+          'Target vault-relative slug (omit the .md extension). Directories are created if needed.',
+        ),
         confirm: {
           type: 'boolean',
           description:
@@ -1041,14 +1032,8 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        fromSlug: {
-          type: 'string',
-          description: 'Slug to dissolve. Its file is deleted after backlinks redirect.',
-        },
-        intoSlug: {
-          type: 'string',
-          description: 'Slug to keep. Receives every redirected backlink.',
-        },
+        fromSlug: nonBlankStringSchema('Slug to dissolve. Its file is deleted after backlinks redirect.'),
+        intoSlug: nonBlankStringSchema('Slug to keep. Receives every redirected backlink.'),
         confirm: {
           type: 'boolean',
           description:
@@ -1077,10 +1062,7 @@ const TOOLS = [
     inputSchema: {
       type: 'object',
       properties: {
-        slug: {
-          type: 'string',
-          description: 'Vault-relative slug (omit the .md extension).',
-        },
+        slug: nonBlankStringSchema('Vault-relative slug (omit the .md extension).'),
         confirm: {
           type: 'boolean',
           description:

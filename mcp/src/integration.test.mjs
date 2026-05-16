@@ -294,9 +294,23 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       ["list_concepts", "domain"],
       ["get_concept", "slug"],
       ["find_evidence", "title"],
+      ["add_concept", "slug"],
+      ["add_concept", "kind"],
+      ["add_concept", "title"],
+      ["add_concept", "domain"],
+      ["add_relation", "from"],
+      ["add_relation", "to"],
+      ["add_relation", "type"],
+      ["patch_concept", "slug"],
+      ["find_backlinks", "slug"],
       ["find_neighbors", "slug"],
       ["find_path", "from"],
       ["find_path", "to"],
+      ["rename_concept", "oldSlug"],
+      ["rename_concept", "newSlug"],
+      ["merge_concepts", "fromSlug"],
+      ["merge_concepts", "intoSlug"],
+      ["delete_concept", "slug"],
       ["find_orphans", "kind"],
       ["query_concepts", "filter"],
       ["query_ontology", "slug"],
@@ -321,6 +335,34 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       },
       { type: "array", maxItems: 50, itemType: "string", itemMinLength: 1 },
       "get_concepts exposes batch maxItems schema",
+    );
+    assert.deepEqual(
+      {
+        slugMinLength:
+          findTool("add_concepts")?.inputSchema?.properties?.concepts?.items?.properties?.slug?.minLength,
+        kindMinLength:
+          findTool("add_concepts")?.inputSchema?.properties?.concepts?.items?.properties?.kind?.minLength,
+        titleMinLength:
+          findTool("add_concepts")?.inputSchema?.properties?.concepts?.items?.properties?.title?.minLength,
+        capabilityItemMinLength:
+          findTool("add_concepts")?.inputSchema?.properties?.concepts?.items?.properties?.capabilities?.items?.minLength,
+        relationFromMinLength:
+          findTool("add_relations")?.inputSchema?.properties?.relations?.items?.properties?.from?.minLength,
+        relationToMinLength:
+          findTool("add_relations")?.inputSchema?.properties?.relations?.items?.properties?.to?.minLength,
+        relationTypeMinLength:
+          findTool("add_relations")?.inputSchema?.properties?.relations?.items?.properties?.type?.minLength,
+      },
+      {
+        slugMinLength: 1,
+        kindMinLength: 1,
+        titleMinLength: 1,
+        capabilityItemMinLength: 1,
+        relationFromMinLength: 1,
+        relationToMinLength: 1,
+        relationTypeMinLength: 1,
+      },
+      "batch write row schemas expose strict string hints",
     );
     assert.deepEqual(
       {
