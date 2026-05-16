@@ -15,7 +15,8 @@
 - `package.json#files` now includes runtime-only imports `src/schema.mjs` and `src/omot-ignore.mjs`. Packed installs can boot `src/index.js` and run `compile_ontology` / `query_ontology` without source-checkout-only files.
 - `package.json#files` now includes `scripts/json-rpc-lines.mjs`, the shared JSON-RPC line parser used by the installed `npm run verify` path.
 - `package.json#files` now ships only the `src/parser.test.mjs` smoke fixture needed by installed `npm run verify`; full test files stay source-checkout-only so the published tarball remains lean.
-- `npm run verify` now exercises the full first-contact diagnosis path: server boot, 23-tool inventory, `list_concepts`, `list_kinds`, `validate_vault`, `workspace_brief`, `health`, `compile_ontology`, `overview`, and `overview query_plan`.
+- `npm run verify` now exercises the full first-contact diagnosis path: server boot, 23-tool inventory, `list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`, `workspace_brief`, `health`, `compile_ontology`, `overview`, and `overview query_plan`.
+- `npm run verify` now checks the `get_concepts` batch reader with slugs discovered from `list_concepts` plus one missing slug, so installed packages catch success-row / partial-row contract drift without assuming dogfood-specific vault slugs.
 - `npm run verify` cross-checks `list_kinds` census totals against `list_concepts`, `validate_vault`, `compile_ontology`, and `overview`, so package installs catch kind-count drift before an agent trusts the vault summary.
 - `npm run verify` now fails on blocking first-contact diagnosis problems: `list_concepts` vault warnings, `fail` health checks, or fail-severity `workspace_brief.nextActions` return exit 1, while advisory `needs_attention` states still print for starter vaults.
 - `npm run verify` prints non-blocking `workspace_brief.nextActions` as a compact advisory list, so starter vault users see what to clean up after MCP wiring is confirmed.

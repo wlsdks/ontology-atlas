@@ -14,11 +14,12 @@
  *   2. server boot — initialize JSON-RPC 응답
  *   3. tools/list — 23 도구 모두 노출
  *   4. tools/call list_concepts — vault 노드 수 출력
- *   5. tools/call list_kinds — kind census aggregate
- *   6. tools/call validate_vault — whole-vault frontmatter / graph-reference health
- *   7. tools/call query_ontology workspace_brief + health — agent first-contact graph diagnosis
- *   8. tools/call compile_ontology(summary) — compiler graph summary contract
- *   9. tools/call query_ontology overview + query_plan(overview) — graph-query smoke contract
+ *   5. tools/call get_concepts — batch reader success + partial-row contract
+ *   6. tools/call list_kinds — kind census aggregate
+ *   7. tools/call validate_vault — whole-vault frontmatter / graph-reference health
+ *   8. tools/call query_ontology workspace_brief + health — agent first-contact graph diagnosis
+ *   9. tools/call compile_ontology(summary) — compiler graph summary contract
+ *   10. tools/call query_ontology overview + query_plan(overview) — graph-query smoke contract
  *
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
  */
@@ -86,6 +87,7 @@ const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [8, 'compile_ontology'],
   [9, 'overview'],
   [10, 'overview_query_plan'],
+  [11, 'get_concepts'],
 ]);
 
 function log(level, msg) {
@@ -202,6 +204,57 @@ export function listConceptsFailure(parsed) {
     }
   }
   return vaultWarningsFailure(parsed);
+}
+
+export function getConceptsFailure(parsed) {
+  if (!Array.isArray(parsed?.concepts)) {
+    return 'get_concepts response missing concepts array';
+  }
+  if (parsed.concepts.length < 1) {
+    return 'get_concepts response missing partial smoke row';
+  }
+  const successRows = parsed.concepts.slice(0, -1);
+  const missing = parsed.concepts.at(-1);
+  for (const [index, row] of successRows.entries()) {
+    if (!row || typeof row !== 'object' || Array.isArray(row)) {
+      return `get_concepts response malformed success row at index ${index}`;
+    }
+    if (row.ok !== true) {
+      return `get_concepts response expected success row at index ${index}`;
+    }
+    if (typeof row.slug !== 'string' || row.slug.length === 0) {
+      return `get_concepts response missing success slug at index ${index}`;
+    }
+    if (!row.frontmatter || typeof row.frontmatter !== 'object' || Array.isArray(row.frontmatter)) {
+      return `get_concepts response missing frontmatter: ${row.slug}`;
+    }
+    if (!Number.isFinite(row.mtime) || row.mtime < 0) {
+      return `get_concepts response missing mtime: ${row.slug}`;
+    }
+  }
+  if (!missing || typeof missing !== 'object' || Array.isArray(missing)) {
+    return 'get_concepts response malformed partial row';
+  }
+  if (missing.ok !== false) {
+    return 'get_concepts response expected partial row to be ok:false';
+  }
+  if (missing.slug !== 'missing-verify-slug') {
+    return `get_concepts response partial row slug mismatch — ${missing.slug}`;
+  }
+  if (typeof missing.error !== 'string' || !/not found/i.test(missing.error)) {
+    return 'get_concepts response missing partial row error';
+  }
+  return null;
+}
+
+function buildGetConceptsSmokeSlugs(listPayload) {
+  const slugs = Array.isArray(listPayload?.nodes)
+    ? listPayload.nodes
+        .map((node) => node?.slug)
+        .filter((slug) => typeof slug === 'string' && slug.length > 0)
+        .slice(0, 2)
+    : [];
+  return [...slugs, 'missing-verify-slug'];
 }
 
 export function validateVaultFailure(parsed) {
@@ -522,7 +575,7 @@ async function step2BootAndCall() {
     log('fail', 'OMOT_VERIFY_TIMEOUT_MS must be a positive integer');
     return false;
   }
-  log('info', `step 2 — server boot + tools/list + list_concepts/list_kinds (vault=${VAULT}, timeout=${timeoutMs}ms)`);
+  log('info', `step 2 — server boot + tools/list + list_concepts/get_concepts/list_kinds (vault=${VAULT}, timeout=${timeoutMs}ms)`);
 
   const lines = [
     JSON.stringify({
@@ -596,9 +649,31 @@ async function step2BootAndCall() {
     let stderr = '';
     let timedOut = false;
     let completed = false;
+    let sentGetConceptsSmoke = false;
     let timer = null;
     proc.stdout.on('data', (b) => {
       stdout += b.toString();
+      if (!sentGetConceptsSmoke) {
+        const listResponse = parseJsonRpcResponses(stdout).find((response) => response?.id === 3 && response?.result);
+        if (listResponse) {
+          sentGetConceptsSmoke = true;
+          let listPayload = null;
+          try {
+            listPayload = JSON.parse(listResponse.result.content?.[0]?.text || '{}');
+          } catch {
+            listPayload = null;
+          }
+          proc.stdin.write(JSON.stringify({
+            jsonrpc: '2.0',
+            id: 11,
+            method: 'tools/call',
+            params: {
+              name: 'get_concepts',
+              arguments: { slugs: buildGetConceptsSmokeSlugs(listPayload) },
+            },
+          }) + '\n');
+        }
+      }
       if (!completed && (hasAllFirstContactResponses(stdout) || hasFirstContactErrorResponse(stdout))) {
         completed = true;
         if (timer) clearTimeout(timer);
@@ -627,6 +702,7 @@ async function step2BootAndCall() {
       const compileRes = responses.find((r) => r.id === 8);
       const overviewRes = responses.find((r) => r.id === 9);
       const overviewPlanRes = responses.find((r) => r.id === 10);
+      const getConceptsRes = responses.find((r) => r.id === 11);
       let kindsPayload = null;
       let listPayload = null;
       let validationPayload = null;
@@ -643,6 +719,7 @@ async function step2BootAndCall() {
         ['compile_ontology', compileRes],
         ['overview', overviewRes],
         ['overview_query_plan', overviewPlanRes],
+        ['get_concepts', getConceptsRes],
       ].filter(([, response]) => !response?.result);
       const errorRes = responses.find((response) => (
         FIRST_CONTACT_RESPONSE_LABELS.has(response?.id) && response?.error
@@ -702,6 +779,26 @@ async function step2BootAndCall() {
         }
       } catch (err) {
         log('fail', `failed to parse list_concepts response: ${err.message}`);
+        return res(false);
+      }
+
+      if (!getConceptsRes || !getConceptsRes.result) {
+        log('fail', 'no get_concepts response');
+        return res(false);
+      }
+      try {
+        const text = getConceptsRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const failure = getConceptsFailure(parsed);
+        if (failure) {
+          log('fail', failure);
+          return res(false);
+        }
+        const okRows = parsed.concepts.filter((row) => row?.ok === true).length;
+        const partialRows = parsed.concepts.filter((row) => row?.ok === false).length;
+        log('ok', `get_concepts — ${okRows} ok rows, ${partialRows} partial rows`);
+      } catch (err) {
+        log('fail', `failed to parse get_concepts response: ${err.message}`);
         return res(false);
       }
 

@@ -14,6 +14,7 @@ import {
   EXPECTED_WRITE_TOOLS,
   expectedToolSplitLabel,
   firstContactErrorFailure,
+  getConceptsFailure,
   hasAllFirstContactResponses,
   hasFirstContactErrorResponse,
   listConceptsFailure,
@@ -70,7 +71,7 @@ describe('verify.mjs first-contact gates', () => {
   it('detects when all first-contact JSON-RPC responses arrived', () => {
     assert.equal(
       hasAllFirstContactResponses(
-        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
           .map((id) => JSON.stringify({ jsonrpc: '2.0', id, result: {} }))
           .join('\n'),
       ),
@@ -93,6 +94,58 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       firstContactErrorFailure({ id: 3, error: { message: 'vault failed' } }),
       'list_concepts returned JSON-RPC error: vault failed',
+    );
+  });
+
+  it('accepts clean get_concepts batch payloads with partial rows', () => {
+    assert.equal(
+      getConceptsFailure({
+        concepts: [
+          {
+            ok: true,
+            slug: 'project',
+            frontmatter: { kind: 'project', title: 'Project' },
+            mtime: 1,
+          },
+          {
+            ok: true,
+            slug: 'capabilities/mcp-server',
+            frontmatter: { kind: 'capability', title: 'MCP Server' },
+            mtime: 1,
+          },
+          {
+            ok: false,
+            slug: 'missing-verify-slug',
+            error: 'Doc not found: missing-verify-slug',
+          },
+        ],
+      }),
+      null,
+    );
+  });
+
+  it('fails malformed get_concepts batch payloads', () => {
+    const okConcepts = [
+      { ok: true, slug: 'project', frontmatter: { kind: 'project', title: 'Project' }, mtime: 1 },
+      { ok: true, slug: 'capabilities/mcp-server', frontmatter: { kind: 'capability', title: 'MCP Server' }, mtime: 1 },
+      { ok: false, slug: 'missing-verify-slug', error: 'Doc not found: missing-verify-slug' },
+    ];
+    assert.equal(getConceptsFailure({}), 'get_concepts response missing concepts array');
+    assert.equal(
+      getConceptsFailure({ concepts: [] }),
+      'get_concepts response missing partial smoke row',
+    );
+    assert.equal(
+      getConceptsFailure({ concepts: [{ ...okConcepts[0], ok: false }, okConcepts[1], okConcepts[2]] }),
+      'get_concepts response expected success row at index 0',
+    );
+    assert.equal(
+      getConceptsFailure({ concepts: [okConcepts[0], { ...okConcepts[1], frontmatter: null }, okConcepts[2]] }),
+      'get_concepts response missing frontmatter: capabilities/mcp-server',
+    );
+    assert.equal(
+      getConceptsFailure({ concepts: [okConcepts[0], okConcepts[1], { slug: 'missing-verify-slug', ok: true }] }),
+      'get_concepts response expected partial row to be ok:false',
     );
   });
 

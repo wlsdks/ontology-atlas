@@ -172,10 +172,11 @@ A successful run looks like this:
 [oh-my-ontology-mcp verify]
 · step 1 — parser smoke test
 ✓ result: 7 passed, 0 failed
-· step 2 — server boot + tools/list + list_concepts/list_kinds (vault=../docs/ontology, timeout=8000ms)
+· step 2 — server boot + tools/list + list_concepts/get_concepts/list_kinds (vault=../docs/ontology, timeout=8000ms)
 ✓ initialize OK — server oh-my-ontology-mcp@0.12.0
 ✓ tools/list 23/23 (15 read + 8 write) — add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
 ✓ list_concepts — vault total 28 nodes (vaultRoot /path/to/docs/ontology)
+✓ get_concepts — 2 ok rows, 1 partial rows
 ✓ list_kinds — 28 nodes (capability:16, domain:6, element:4, project:1, vault-readme:1)
 ✓ validate_vault — 28 files, problemFiles 0
 ✓ workspace_brief — healthy (28 nodes, nextActions 0)
@@ -189,12 +190,14 @@ All passed — register .mcp.json with Claude Code and restart to use the 23 too
 
 On failure, it tells you which step blocked progress and prints a diagnostic message. The
 verify path exercises and gates the same first-contact graph diagnosis an agent should run:
-`tools/list`, `list_concepts`, `list_kinds`, `validate_vault`,
+`tools/list`, `list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`,
 `query_ontology({operation:"workspace_brief"})`, and
 `query_ontology({operation:"health"})`, plus `compile_ontology({summary:true})`,
 `query_ontology({operation:"overview"})`, and
 `query_ontology({operation:"query_plan", targetOperation:"overview"})`.
-`list_concepts` vault warnings, `list_kinds` / `compile_ontology` / `overview`
+`get_concepts` reuses up to two slugs from `list_concepts` plus one missing slug
+so batch success rows and partial rows are verified during installation checks. `list_concepts` vault warnings,
+`list_kinds` / `compile_ontology` / `overview`
 census shape/count mismatches, `validate_vault` problem files, failing health checks, or fail-severity
 `workspace_brief.nextActions` fail the command; advisory `needs_attention` states still print so starter vaults can
 verify before cleanup. Non-blocking `workspace_brief.nextActions` are printed as a short

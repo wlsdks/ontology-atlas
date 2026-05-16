@@ -67,9 +67,11 @@ describe('package contract helpers', () => {
     const readme = readFileSync('mcp/README.md', 'utf-8');
     const verifySection = readme.split('### One-line verify CLI')[1]?.split('### Manual verification')[0] ?? '';
 
-    assert.match(verifySection, /list_concepts\/list_kinds/);
+    assert.match(verifySection, /list_concepts\/get_concepts\/list_kinds/);
+    assert.match(verifySection, /✓ get_concepts — 2 ok rows, 1 partial rows/);
     assert.match(verifySection, /✓ list_kinds/);
-    assert.match(verifySection, /`list_concepts`, `list_kinds`, `validate_vault`/);
+    assert.match(verifySection, /`list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`/);
+    assert.match(verifySection, /batch success rows\s+and partial rows are verified during installation checks/);
     assert.match(verifySection, /`list_kinds` \/ `compile_ontology` \/ `overview`\s+census shape\/count mismatches/);
   });
 
@@ -77,7 +79,8 @@ describe('package contract helpers', () => {
     const changelog = readFileSync('mcp/CHANGELOG.md', 'utf-8');
     const verifySection = changelog.split('### Fixed — package tarball runtime files')[1]?.split('## 0.11.0')[0] ?? '';
 
-    assert.match(verifySection, /`list_concepts`, `list_kinds`, `validate_vault`/);
+    assert.match(verifySection, /`list_concepts`, `get_concepts`, `list_kinds`, `validate_vault`/);
+    assert.match(verifySection, /success-row \/ partial-row contract drift/);
     assert.match(verifySection, /`compile_ontology`, `overview`, and `overview query_plan`/);
     assert.match(verifySection, /cross-checks `list_kinds` census totals/);
     assert.match(verifySection, /`list_concepts`, `validate_vault`, `compile_ontology`, and `overview`/);
