@@ -326,7 +326,7 @@ export function parseVerifyArgs({
 }
 
 export function verifyTimeoutFailure(timeoutMs) {
-  return `server verify timed out after ${timeoutMs}ms. Increase OMOT_VERIFY_TIMEOUT_MS for large or slow vaults.`;
+  return `server verify timed out after ${timeoutMs}ms. Increase --timeout-ms or OMOT_VERIFY_TIMEOUT_MS for large or slow vaults.`;
 }
 
 export function verifyUsage() {
@@ -1220,7 +1220,7 @@ async function step1ParserSmoke() {
 async function step2BootAndCall() {
   const timeoutMs = verifyTimeoutMs();
   if (timeoutMs === false) {
-    log('fail', 'OMOT_VERIFY_TIMEOUT_MS must be a positive integer');
+    log('fail', 'verify timeout must be a positive integer');
     return false;
   }
   log('info', `step 2 — server boot + tools/list + list_concepts/project probe/get_concepts/list_kinds (vault=${VAULT}, timeout=${timeoutMs}ms)`);

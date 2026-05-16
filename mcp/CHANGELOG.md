@@ -30,9 +30,10 @@
 - `npm run verify` now prints the validated `workspace_brief.health.checks` count in the `workspace_brief` success line, so first-contact output shows both next actions and health coverage.
 - `npm run verify` now prints health check `id:status` coverage in the `health` success line, so a green install shows which graph-integrity checks actually ran.
 - `npm run verify` prints non-blocking `workspace_brief.nextActions` as a compact advisory list, so starter vault users see what to clean up after MCP wiring is confirmed.
-- `npm run verify` uses an 8s server wait window by default and supports `OMOT_VERIFY_TIMEOUT_MS` for larger/slower vaults.
+- `npm run verify` accepts direct vault arguments (`npm run verify -- ../vault`, `npm run verify -- --vault ../vault`) in addition to `OMOT_VAULT`, so package users can run the same first-contact check without exporting environment variables.
+- `npm run verify` uses an 8s server wait window by default and supports `--timeout-ms` or `OMOT_VERIFY_TIMEOUT_MS` for larger/slower vaults.
 - `OMOT_VERIFY_TIMEOUT_MS` is validated as a strict positive integer, so partial values like `1000ms` fail instead of being silently truncated.
-- `npm run verify` now exits as soon as all first-contact JSON-RPC responses arrive, while true timeout failures name the missing response groups and suggest increasing `OMOT_VERIFY_TIMEOUT_MS`.
+- `npm run verify` now exits as soon as all first-contact JSON-RPC responses arrive, while true timeout failures name the missing response groups and suggest increasing `--timeout-ms` or `OMOT_VERIFY_TIMEOUT_MS`.
 - `npm run verify` now distinguishes server startup failures before `initialize` from timeout failures, preserving stderr such as invalid `OMOT_VAULT` diagnostics.
 - `npm run verify` now detects first-contact JSON-RPC error responses immediately and reports the failing step instead of waiting for timeout.
 - `npm run verify` now validates the installed `tools/list` schema contract: every tool must expose `additionalProperties:false`, `query_ontology.operation` must stay required, `query_ontology.operation` / `targetOperation` enums must match the graph engine runtime allow-lists, batch tools must keep their 50-row caps, and write tools must keep their `expected_mtime` / `confirm` safety schemas.

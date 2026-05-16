@@ -152,6 +152,10 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /requires every health check row to include non-empty `id` and `status`/);
     assert.match(verifySection, /prints the validated `workspace_brief\.health\.checks` count/);
     assert.match(verifySection, /health check `id:status` coverage/);
+    assert.match(verifySection, /accepts direct vault arguments/);
+    assert.match(verifySection, /`npm run verify -- --vault \.\.\/vault`/);
+    assert.match(verifySection, /supports `--timeout-ms` or `OMOT_VERIFY_TIMEOUT_MS`/);
+    assert.match(verifySection, /suggest increasing `--timeout-ms` or `OMOT_VERIFY_TIMEOUT_MS`/);
     assert.match(verifySection, /validates the installed `tools\/list` schema contract/);
     assert.match(verifySection, /`query_ontology\.operation` must stay required/);
     assert.match(verifySection, /graph engine runtime allow-lists/);
