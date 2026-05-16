@@ -1377,8 +1377,28 @@ await test("MCP read/query tools — invalid numeric and direction options are r
         slug: "a",
         pattern: ["dependencies\0"],
       }),
+      callTool(21, "list_concepts", { summary: "true" }),
+      callTool(22, "find_neighbors", { slug: "a", includeNodes: "false" }),
+      callTool(23, "compile_ontology", { includeIndexes: 1 }),
+      callTool(24, "compile_ontology", { summary: "true" }),
+      callTool(25, "query_ontology", {
+        operation: "neighbors",
+        slug: "a",
+        includeExternal: "true",
+      }),
+      callTool(26, "query_ontology", {
+        operation: "maintenance_plan",
+        executableOnly: 1,
+      }),
+      callTool(27, "query_ontology", {
+        operation: "match_nodes",
+        hasIncoming: "false",
+      }),
     ]);
-    for (const id of [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]) {
+    for (const id of [
+      2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+      21, 22, 23, 24, 25, 26, 27,
+    ]) {
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
     }
     assert.match(responses.find((r) => r.id === 2).result.content[0].text, /limit must be a positive integer/i);
@@ -1400,6 +1420,13 @@ await test("MCP read/query tools — invalid numeric and direction options are r
     assert.match(responses.find((r) => r.id === 18).result.content[0].text, /types items must be non-empty strings/i);
     assert.match(responses.find((r) => r.id === 19).result.content[0].text, /types items must not have leading or trailing whitespace/i);
     assert.match(responses.find((r) => r.id === 20).result.content[0].text, /pattern items must not contain a null byte/i);
+    assert.match(responses.find((r) => r.id === 21).result.content[0].text, /summary must be a boolean/i);
+    assert.match(responses.find((r) => r.id === 22).result.content[0].text, /includeNodes must be a boolean/i);
+    assert.match(responses.find((r) => r.id === 23).result.content[0].text, /includeIndexes must be a boolean/i);
+    assert.match(responses.find((r) => r.id === 24).result.content[0].text, /summary must be a boolean/i);
+    assert.match(responses.find((r) => r.id === 25).result.content[0].text, /includeExternal must be a boolean/i);
+    assert.match(responses.find((r) => r.id === 26).result.content[0].text, /executableOnly must be a boolean/i);
+    assert.match(responses.find((r) => r.id === 27).result.content[0].text, /hasIncoming must be a boolean/i);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -1815,8 +1842,31 @@ await test("MCP write tools — blank/padded string inputs are rejected before d
         title: "Array Padded",
         elements: [" element"],
       }),
+      callTool(13, "rename_concept", {
+        oldSlug: "a",
+        newSlug: "renamed-a",
+        confirm: "true",
+      }),
+      callTool(14, "rename_concept", {
+        oldSlug: "a",
+        newSlug: "renamed-a",
+        overwrite: 1,
+      }),
+      callTool(15, "merge_concepts", {
+        fromSlug: "a",
+        intoSlug: "b",
+        confirm: "true",
+      }),
+      callTool(16, "delete_concept", {
+        slug: "a",
+        confirm: "true",
+      }),
+      callTool(17, "delete_concept", {
+        slug: "a",
+        force: "true",
+      }),
     ]);
-    for (const id of [2, 3, 4, 5, 7, 8, 9, 11, 12]) {
+    for (const id of [2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17]) {
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
     }
     assert.match(responses.find((r) => r.id === 2).result.content[0].text, /slug must be a non-empty string/i);
@@ -1834,6 +1884,11 @@ await test("MCP write tools — blank/padded string inputs are rejected before d
     assert.match(responses.find((r) => r.id === 9).result.content[0].text, /slug must not have leading or trailing whitespace/i);
     assert.match(responses.find((r) => r.id === 11).result.content[0].text, /capabilities items must be non-empty strings/i);
     assert.match(responses.find((r) => r.id === 12).result.content[0].text, /elements items must not have leading or trailing whitespace/i);
+    assert.match(responses.find((r) => r.id === 13).result.content[0].text, /confirm must be a boolean/i);
+    assert.match(responses.find((r) => r.id === 14).result.content[0].text, /overwrite must be a boolean/i);
+    assert.match(responses.find((r) => r.id === 15).result.content[0].text, /confirm must be a boolean/i);
+    assert.match(responses.find((r) => r.id === 16).result.content[0].text, /confirm must be a boolean/i);
+    assert.match(responses.find((r) => r.id === 17).result.content[0].text, /force must be a boolean/i);
 
     const list = getCallParsed(responses, 10);
     const slugs = list.nodes.map((node) => node.slug);

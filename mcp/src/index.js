@@ -1229,8 +1229,16 @@ function requireOptionalDirection(value, name, allowed) {
   }
 }
 
+function requireOptionalBoolean(value, name) {
+  if (value === undefined) return;
+  if (typeof value !== 'boolean') {
+    throw new Error(`${name} must be a boolean.`);
+  }
+}
+
 function listConcepts({ kind, domain, since, summary, limit = 100 }) {
   requireOptionalNonNegativeNumber(since, 'since');
+  requireOptionalBoolean(summary, 'summary');
   requireOptionalPositiveInteger(limit, 'limit');
   const docs = loadVaultDocs(VAULT_ROOT);
 
@@ -1755,6 +1763,7 @@ function findNeighborsTool({ slug, direction = 'both', types, includeNodes = tru
   }
   requireOptionalDirection(direction, 'direction', ['outgoing', 'incoming', 'both']);
   requireOptionalStringArray(types, 'types');
+  requireOptionalBoolean(includeNodes, 'includeNodes');
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
   const docs = loadVaultDocs(VAULT_ROOT);
   const center = resolveExistingVaultSlug(slug, docs);
@@ -1927,6 +1936,8 @@ function compileOntologyTool({
   edgesLimit,
   edgesOffset,
 } = {}) {
+  requireOptionalBoolean(includeIndexes, 'includeIndexes');
+  requireOptionalBoolean(summary, 'summary');
   requireOptionalNonNegativeInteger(nodesLimit, 'nodesLimit');
   requireOptionalNonNegativeInteger(nodesOffset, 'nodesOffset');
   requireOptionalNonNegativeInteger(edgesLimit, 'edgesLimit');
@@ -1994,6 +2005,17 @@ function validateQueryOntologyArgs(args = {}) {
   requireOptionalNonNegativeInteger(args.maxHops, 'maxHops');
   requireOptionalNonNegativeInteger(args.depth, 'depth');
   requireOptionalDirection(args.direction, 'direction', ['incoming', 'outgoing', 'both', 'undirected']);
+  for (const key of [
+    'includeExternal',
+    'includeUnresolved',
+    'includeIsolated',
+    'includeOrphans',
+    'executableOnly',
+    'hasIncoming',
+    'hasOutgoing',
+  ]) {
+    requireOptionalBoolean(args[key], key);
+  }
   for (const key of [
     'types',
     'pattern',
@@ -2234,6 +2256,8 @@ function inferImportsTool({ rootPath, sourceFolders, ignore, maxFiles } = {}) {
 function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, expected_mtime }) {
   requireNonBlankString(oldSlug, 'oldSlug');
   requireNonBlankString(newSlug, 'newSlug');
+  requireOptionalBoolean(confirm, 'confirm');
+  requireOptionalBoolean(overwrite, 'overwrite');
   if (oldSlug === newSlug) {
     throw new Error('oldSlug and newSlug are identical.');
   }
@@ -2305,6 +2329,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
 function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) {
   requireNonBlankString(fromSlug, 'fromSlug');
   requireNonBlankString(intoSlug, 'intoSlug');
+  requireOptionalBoolean(confirm, 'confirm');
   if (fromSlug === intoSlug) {
     throw new Error('fromSlug and intoSlug are identical.');
   }
@@ -2363,6 +2388,8 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) 
 
 function deleteConcept({ slug, confirm = false, force = false, expected_mtime }) {
   requireNonBlankString(slug, 'slug');
+  requireOptionalBoolean(confirm, 'confirm');
+  requireOptionalBoolean(force, 'force');
   // 존재 검사 — dry-run 이 \"삭제 가능\" 이라고 거짓 안내 안 하도록.
   // (실제 삭제 단계의 deleteDoc 도 다시 throw 하지만, dry-run path 는
   // deleteDoc 까지 가지 않으므로 별도 확인.)

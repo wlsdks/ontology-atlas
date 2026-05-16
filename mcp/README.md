@@ -95,6 +95,8 @@ String-array options are strict too: relation filters such as
 `maintenance_plan` filters reject non-string array items instead of silently
 dropping them; blank, whitespace-padded, and null-byte items are rejected at the
 MCP boundary as well.
+Boolean options are also validated explicitly, including read/query flags and
+destructive write safety switches such as `confirm`, `overwrite`, and `force`.
 Batch arrays expose the same runtime cap as schema too: `get_concepts.slugs`,
 `add_concepts.concepts`, and `add_relations.relations` all advertise
 `maxItems: 50`.
