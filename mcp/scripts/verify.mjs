@@ -207,6 +207,49 @@ export function toolsListSchemaFailure(tools) {
     return 'list_kinds outputSchema byKind drift';
   }
 
+  const validateTool = tools.find((tool) => tool?.name === 'validate_vault');
+  if (!validateTool) return 'tools/list response missing validate_vault tool';
+  if (validateTool.outputSchema?.type !== 'object') {
+    return 'validate_vault outputSchema root drift';
+  }
+  if (!sameArray(validateTool.outputSchema?.required, ['scanned', 'problems', 'summary'])) {
+    return 'validate_vault outputSchema required drift';
+  }
+  const scannedSchema = outputPropertyAt(validateTool, ['properties', 'scanned']);
+  if (scannedSchema?.type !== 'integer' || scannedSchema.minimum !== 0) {
+    return 'validate_vault outputSchema scanned drift';
+  }
+  const problemsSchema = outputPropertyAt(validateTool, ['properties', 'problems']);
+  if (problemsSchema?.type !== 'array' || problemsSchema.items?.type !== 'object' || !sameArray(problemsSchema.items?.required, ['slug', 'issues'])) {
+    return 'validate_vault outputSchema problems drift';
+  }
+  const summarySchema = outputPropertyAt(validateTool, ['properties', 'summary']);
+  if (summarySchema?.type !== 'object' || !sameArray(summarySchema.required, ['problemFiles', 'errorFiles', 'warningFiles', 'byCode'])) {
+    return 'validate_vault outputSchema summary drift';
+  }
+  for (const countName of ['problemFiles', 'errorFiles', 'warningFiles']) {
+    const countSchema = summarySchema.properties?.[countName];
+    if (countSchema?.type !== 'integer' || countSchema.minimum !== 0) {
+      return `validate_vault outputSchema ${countName} drift`;
+    }
+  }
+  const byCodeSchema = summarySchema.properties?.byCode;
+  if (byCodeSchema?.type !== 'object' || byCodeSchema.additionalProperties?.type !== 'object') {
+    return 'validate_vault outputSchema byCode drift';
+  }
+  if (!sameArray(byCodeSchema.additionalProperties?.required, ['severity', 'count', 'files'])) {
+    return 'validate_vault outputSchema byCode entry required drift';
+  }
+  if (!sameArray(byCodeSchema.additionalProperties?.properties?.severity?.enum, ['error', 'warning'])) {
+    return 'validate_vault outputSchema byCode severity drift';
+  }
+  if (byCodeSchema.additionalProperties?.properties?.count?.type !== 'integer' || byCodeSchema.additionalProperties?.properties?.count?.minimum !== 0) {
+    return 'validate_vault outputSchema byCode count drift';
+  }
+  if (byCodeSchema.additionalProperties?.properties?.files?.type !== 'array' || byCodeSchema.additionalProperties?.properties?.files?.items?.type !== 'string') {
+    return 'validate_vault outputSchema byCode files drift';
+  }
+
   if (!sameArray(queryTool.inputSchema?.required, ['operation'])) {
     return 'query_ontology required schema drift';
   }
@@ -2185,6 +2228,10 @@ async function step2BootAndCall() {
         const failure = validateVaultFailure(parsed);
         if (failure) {
           log('fail', failure);
+          return res(false);
+        }
+        if (JSON.stringify(validateRes.result.structuredContent) !== JSON.stringify(parsed)) {
+          log('fail', 'validate_vault structuredContent mismatch');
           return res(false);
         }
         validationPayload = parsed;

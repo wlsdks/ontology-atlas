@@ -439,6 +439,8 @@ verify / dogfood 가 같은 helper 로 annotation drift 를 막아 agent 가
 tool metadata 만으로 구분할 수 있게 한다.
 `list_kinds` 는 `outputSchema` 와 동일한 `structuredContent` census payload 도
 노출해, client 가 text JSON 을 다시 파싱하지 않고 kind 분포를 검증할 수 있게 한다.
+`validate_vault` 도 `outputSchema` 와 동일한 `structuredContent` health payload 를
+노출해, first-contact health check 를 구조화된 결과로 바로 처리할 수 있게 한다.
 project probe 도 fail-closed 로 확인해 dogfood vault 에서 `project_scope` smoke 가
 하드코딩된 slug 에만 기대지 않고 실제 project-node discovery 계약을 검증한다.
 반환 row 의 `kind: project` 와 `list_kinds.byKind.project` count 도 같이 검증한다.

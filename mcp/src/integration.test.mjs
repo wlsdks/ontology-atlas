@@ -329,6 +329,12 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(listKinds?.outputSchema?.properties?.byKind?.type, "object");
     assert.equal(listKinds?.outputSchema?.properties?.byKind?.additionalProperties?.type, "integer");
     assert.equal(listKinds?.outputSchema?.properties?.byKind?.additionalProperties?.minimum, 0);
+    const validateVault = findTool("validate_vault");
+    assert.equal(validateVault?.outputSchema?.type, "object");
+    assert.deepEqual(validateVault?.outputSchema?.required, ["scanned", "problems", "summary"]);
+    assert.equal(validateVault?.outputSchema?.properties?.scanned?.type, "integer");
+    assert.equal(validateVault?.outputSchema?.properties?.problems?.type, "array");
+    assert.equal(validateVault?.outputSchema?.properties?.summary?.properties?.byCode?.additionalProperties?.properties?.files?.items?.type, "string");
     const findDesc = (name) => findTool(name)?.description;
     const getC = findDesc("get_concept");
     const getCs = findDesc("get_concepts");
@@ -952,6 +958,7 @@ await test("README first exploration — documented read-only MCP calls stay val
     const validation = getCallParsed(responses, 6);
     assert.equal(validation.scanned, 3);
     assert.equal(validation.summary.problemFiles, 0);
+    assert.deepEqual(getCallStructured(responses, 6), validation);
 
     const brief = getCallParsed(responses, 7);
     assert.equal(brief.operation, "workspace_brief");

@@ -586,6 +586,7 @@ export function evaluateDogfoodGate({
   bl,
   orph,
   validation,
+  validationStructured,
   brief,
   tunedBrief,
   health,
@@ -752,6 +753,9 @@ export function evaluateDogfoodGate({
   if (validation) {
     const validationFailure = validateVaultFailure(validation);
     if (validationFailure) failures.push(validationFailure);
+  }
+  if (validation && validationStructured !== undefined && JSON.stringify(validationStructured) !== JSON.stringify(validation)) {
+    failures.push("validate_vault structuredContent mismatch");
   }
   let briefShapeFailure = null;
   if (brief) {
@@ -4097,7 +4101,9 @@ async function main() {
   // 8. validate_vault
   header(`validate_vault`);
   const validation = getResult(responses, 8);
+  const validationStructured = getRpcResult(responses, 8)?.structuredContent ?? null;
   if (validation) {
+    console.log(`  structuredContent: ${JSON.stringify(validationStructured) === JSON.stringify(validation) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
     console.log(
       `  ${formatCount(validation.scanned ?? 0, "file")} · ${formatCount(validation.summary?.problemFiles ?? 0, "problem file")} · errors ${validation.summary?.errorFiles ?? "n/a"} · warnings ${validation.summary?.warningFiles ?? "n/a"}`,
     );
@@ -4667,6 +4673,7 @@ async function main() {
     projectScope,
     projectProbe,
     kindsStructured,
+    validationStructured,
     strictArgs,
     strictEnum,
     strictMaintenancePhaseFilter,

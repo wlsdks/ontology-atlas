@@ -287,6 +287,46 @@ describe('verify.mjs first-contact gates', () => {
           'Successful writes return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
         inputSchema: { additionalProperties: false, properties: {} },
       },
+      {
+        name: 'validate_vault',
+        inputSchema: { additionalProperties: false, properties: {} },
+        outputSchema: {
+          type: 'object',
+          required: ['scanned', 'problems', 'summary'],
+          properties: {
+            scanned: { type: 'integer', minimum: 0 },
+            problems: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['slug', 'issues'],
+                properties: {},
+              },
+            },
+            summary: {
+              type: 'object',
+              required: ['problemFiles', 'errorFiles', 'warningFiles', 'byCode'],
+              properties: {
+                problemFiles: { type: 'integer', minimum: 0 },
+                errorFiles: { type: 'integer', minimum: 0 },
+                warningFiles: { type: 'integer', minimum: 0 },
+                byCode: {
+                  type: 'object',
+                  additionalProperties: {
+                    type: 'object',
+                    required: ['severity', 'count', 'files'],
+                    properties: {
+                      severity: { enum: ['error', 'warning'] },
+                      count: { type: 'integer', minimum: 0 },
+                      files: { type: 'array', items: { type: 'string' } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     ].map((tool) => ({
       ...tool,
       annotations: {
@@ -364,6 +404,46 @@ describe('verify.mjs first-contact gates', () => {
           : tool
       ))),
       'list_kinds outputSchema byKind drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(tools.map((tool) => (
+        tool.name === 'validate_vault'
+          ? { ...tool, outputSchema: { ...tool.outputSchema, required: ['summary', 'problems', 'scanned'] } }
+          : tool
+      ))),
+      'validate_vault outputSchema required drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(tools.map((tool) => (
+        tool.name === 'validate_vault'
+          ? {
+            ...tool,
+            outputSchema: {
+              ...tool.outputSchema,
+              properties: {
+                ...tool.outputSchema.properties,
+                summary: {
+                  ...tool.outputSchema.properties.summary,
+                  properties: {
+                    ...tool.outputSchema.properties.summary.properties,
+                    byCode: {
+                      type: 'object',
+                      additionalProperties: {
+                        ...tool.outputSchema.properties.summary.properties.byCode.additionalProperties,
+                        properties: {
+                          ...tool.outputSchema.properties.summary.properties.byCode.additionalProperties.properties,
+                          severity: { enum: ['warning', 'error'] },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          }
+          : tool
+      ))),
+      'validate_vault outputSchema byCode severity drift',
     );
     assert.equal(
       toolsListSchemaFailure(tools.map((tool) => (
@@ -691,8 +771,7 @@ describe('verify.mjs first-contact gates', () => {
             },
           },
         },
-        tools[10],
-        tools[11],
+        ...tools.slice(10),
       ]),
       'delete_concept.confirm dry-run safety schema drift',
     );
@@ -709,8 +788,7 @@ describe('verify.mjs first-contact gates', () => {
             },
           },
         },
-        tools[10],
-        tools[11],
+        ...tools.slice(10),
       ]),
       'delete_concept.force destructive safety schema drift',
     );

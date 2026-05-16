@@ -977,6 +977,69 @@ const TOOLS = [
       type: 'object',
       properties: {},
     },
+    outputSchema: {
+      type: 'object',
+      properties: {
+        scanned: {
+          type: 'integer',
+          minimum: 0,
+          description: 'Number of vault markdown files scanned.',
+        },
+        problems: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              slug: NON_BLANK_STRING_SCHEMA,
+              issues: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    code: NON_BLANK_STRING_SCHEMA,
+                    severity: {
+                      type: 'string',
+                      enum: ['error', 'warning'],
+                    },
+                    message: NON_BLANK_STRING_SCHEMA,
+                  },
+                  required: ['code', 'severity', 'message'],
+                },
+              },
+            },
+            required: ['slug', 'issues'],
+          },
+        },
+        summary: {
+          type: 'object',
+          properties: {
+            problemFiles: { type: 'integer', minimum: 0 },
+            errorFiles: { type: 'integer', minimum: 0 },
+            warningFiles: { type: 'integer', minimum: 0 },
+            byCode: {
+              type: 'object',
+              additionalProperties: {
+                type: 'object',
+                properties: {
+                  severity: {
+                    type: 'string',
+                    enum: ['error', 'warning'],
+                  },
+                  count: { type: 'integer', minimum: 0 },
+                  files: {
+                    type: 'array',
+                    items: NON_BLANK_STRING_SCHEMA,
+                  },
+                },
+                required: ['severity', 'count', 'files'],
+              },
+            },
+          },
+          required: ['problemFiles', 'errorFiles', 'warningFiles', 'byCode'],
+        },
+      },
+      required: ['scanned', 'problems', 'summary'],
+    },
   },
   {
     name: 'infer_imports',

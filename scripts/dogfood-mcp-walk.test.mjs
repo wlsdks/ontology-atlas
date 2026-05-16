@@ -102,6 +102,40 @@ function makeDogfoodToolsList() {
           },
         };
       }
+      if (name === "validate_vault") {
+        tool.outputSchema = {
+          type: "object",
+          required: ["scanned", "problems", "summary"],
+          properties: {
+            scanned: { type: "integer", minimum: 0 },
+            problems: {
+              type: "array",
+              items: { type: "object", required: ["slug", "issues"], properties: {} },
+            },
+            summary: {
+              type: "object",
+              required: ["problemFiles", "errorFiles", "warningFiles", "byCode"],
+              properties: {
+                problemFiles: { type: "integer", minimum: 0 },
+                errorFiles: { type: "integer", minimum: 0 },
+                warningFiles: { type: "integer", minimum: 0 },
+                byCode: {
+                  type: "object",
+                  additionalProperties: {
+                    type: "object",
+                    required: ["severity", "count", "files"],
+                    properties: {
+                      severity: { enum: ["error", "warning"] },
+                      count: { type: "integer", minimum: 0 },
+                      files: { type: "array", items: { type: "string" } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        };
+      }
       if (name === "find_orphans") {
         tool.inputSchema.properties.excludeKinds = {
           type: "array",
@@ -1779,9 +1813,19 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, toolsList: outputSchemaDrifted }),
       ["tools/list: list_kinds outputSchema total drift"],
     );
+    const validateOutputSchemaDrifted = makeDogfoodToolsList();
+    validateOutputSchemaDrifted.tools.find((tool) => tool.name === "validate_vault").outputSchema.properties.summary.properties.byCode.additionalProperties.properties.files.items.type = "number";
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: validateOutputSchemaDrifted }),
+      ["tools/list: validate_vault outputSchema byCode files drift"],
+    );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, kindsStructured: { total: 1, byKind: { project: 2 } } }),
       ["list_kinds structuredContent mismatch"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, validationStructured: { ...okShape.validation, scanned: 2 } }),
+      ["validate_vault structuredContent mismatch"],
     );
     const openWorldDrifted = makeDogfoodToolsList();
     openWorldDrifted.tools.find((tool) => tool.name === "list_concepts").annotations.openWorldHint = true;
