@@ -1339,6 +1339,26 @@ async function buildGraphFixture() {
   return root;
 }
 
+function buildCycleFixture() {
+  return withVault([
+    {
+      slug: 'capabilities/a',
+      content:
+        '---\nkind: capability\nslug: capabilities/a\ntitle: A\ndomain: domains/auth\ndependencies: [capabilities/b]\n---\n\n# A\n',
+    },
+    {
+      slug: 'capabilities/b',
+      content:
+        '---\nkind: capability\nslug: capabilities/b\ntitle: B\ndomain: domains/auth\ndependencies: [capabilities/a]\n---\n\n# B\n',
+    },
+    {
+      slug: 'domains/auth',
+      content:
+        '---\nkind: domain\nslug: domains/auth\ntitle: Auth\ncapabilities: [capabilities/a, capabilities/b]\n---\n\n# Auth\n',
+    },
+  ]);
+}
+
 await test('backlinks — capabilities/foo 의 backlinks (bar relates + auth capabilities)', async () => {
   const root = await buildGraphFixture();
   try {
@@ -1669,23 +1689,7 @@ await test('overview --limit 3 — 허브 N 만 출력', async () => {
 });
 
 await test('workspace-brief — fail severity nextActions make the CLI fail', async () => {
-  const root = withVault([
-    {
-      slug: 'capabilities/a',
-      content:
-        '---\nkind: capability\nslug: capabilities/a\ntitle: A\ndomain: domains/auth\ndependencies: [capabilities/b]\n---\n\n# A\n',
-    },
-    {
-      slug: 'capabilities/b',
-      content:
-        '---\nkind: capability\nslug: capabilities/b\ntitle: B\ndomain: domains/auth\ndependencies: [capabilities/a]\n---\n\n# B\n',
-    },
-    {
-      slug: 'domains/auth',
-      content:
-        '---\nkind: domain\nslug: domains/auth\ntitle: Auth\ncapabilities: [capabilities/a, capabilities/b]\n---\n\n# Auth\n',
-    },
-  ]);
+  const root = buildCycleFixture();
   try {
     const r = await run(['workspace-brief', root, '--json']);
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
@@ -1701,23 +1705,7 @@ await test('workspace-brief — fail severity nextActions make the CLI fail', as
 });
 
 await test('health --json — unhealthy graph exits non-zero', async () => {
-  const root = withVault([
-    {
-      slug: 'capabilities/a',
-      content:
-        '---\nkind: capability\nslug: capabilities/a\ntitle: A\ndomain: domains/auth\ndependencies: [capabilities/b]\n---\n\n# A\n',
-    },
-    {
-      slug: 'capabilities/b',
-      content:
-        '---\nkind: capability\nslug: capabilities/b\ntitle: B\ndomain: domains/auth\ndependencies: [capabilities/a]\n---\n\n# B\n',
-    },
-    {
-      slug: 'domains/auth',
-      content:
-        '---\nkind: domain\nslug: domains/auth\ntitle: Auth\ncapabilities: [capabilities/a, capabilities/b]\n---\n\n# Auth\n',
-    },
-  ]);
+  const root = buildCycleFixture();
   try {
     const r = await run(['health', root, '--json']);
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
@@ -1725,6 +1713,19 @@ await test('health --json — unhealthy graph exits non-zero', async () => {
     assert.equal(data.operation, 'health');
     assert.equal(data.status, 'needs_attention');
     assert.equal(data.summary.dependencyCycles, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('cycles --json — dependency cycles exit non-zero', async () => {
+  const root = buildCycleFixture();
+  try {
+    const r = await run(['cycles', root, '--json']);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'cycles');
+    assert.equal(data.totalCycles, 1);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

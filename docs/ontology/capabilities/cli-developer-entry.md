@@ -47,6 +47,7 @@ post-publish architectural audit 발견 — *위험한-그러나-필수* 작업 
 | `oh-my-ontology path <from> <to>` | **R+** MCP `find_path` — BFS 최단 경로, `edges[via]` 로 *왜* 연결됐는지 표시. positional vault 와 `--vault` 중복 / 빈 `--vault` / 초과 positional 을 MCP 호출 전에 거부한다. |
 | `oh-my-ontology orphans` | **R+** MCP `find_orphans` — 어디서도 link 안 받는 고립 노드 (kind 필터, project/vault-readme 루트 문서는 기본 cleanup 후보에서 제외). positional vault 와 `--vault` 중복 / 빈 `--vault` / 초과 positional 을 MCP 호출 전에 거부한다. |
 | `oh-my-ontology workspace-brief` | MCP `query_ontology(workspace_brief)` — first-contact dashboard. warn/advisory nextAction 은 안내만 하고, fail severity nextAction 또는 failing health check 는 exit 1 로 반환해 shell script 가 깨진 graph state 를 놓치지 않게 한다. |
+| `oh-my-ontology cycles` | MCP `query_ontology(cycles)` — dependency cycle 검출. `--json` 과 일반 출력 모두 cycle 이 1개 이상이면 exit 1 로 반환해 shell script / agent verification 에서 순환 의존을 조용히 통과시키지 않는다. |
 
 ## 구현 단일 진실원
 
@@ -56,7 +57,7 @@ cli 가 별도 npm package — `oh-my-ontology` binary. cli/package.json 의 `de
 
 ## 회귀 차단
 
-cli/src/integration.test.mjs — **111 spawn-based** integration test. 매 PR 마다 command inventory 와 package command count metadata, help 출력의 setup contract, init MCP config + copy-paste bootstrap 명령, init flag/positional misuse 거부, MCP tool count metadata 기반 출력, local/frontmatter 명령의 vault/value argument 거부, `mcp-verify --help` 의 graph-query smoke contract, `add` 의 body omission/empty-body 계약과 slug/title/domain clean string 거부, compile `--fix` canonicalization 경로와 vault 인자 ambiguity 거부, graph-level 명령의 dry-run/confirm 경로와 write-command/read-command vault ambiguity 및 diagnostic option 값 거부, repo-analysis 명령의 vault/root/numeric argument 거부, backlink redirect, analyze/infer-imports/bootstrap apply 경로, fresh init starter prune/preserve/replace 경로, single-file layered repo 의 bootstrap endpoint 자동 생성 경로를 검증. `pnpm integration:cli` 로 실행하고, `OMOT_TEST_NAME_PATTERN` 으로 spawn-heavy integration 중 수정 파트만 골라 실행할 수 있다.
+cli/src/integration.test.mjs — **112 spawn-based** integration test. 매 PR 마다 command inventory 와 package command count metadata, help 출력의 setup contract, init MCP config + copy-paste bootstrap 명령, init flag/positional misuse 거부, MCP tool count metadata 기반 출력, local/frontmatter 명령의 vault/value argument 거부, `mcp-verify --help` 의 graph-query smoke contract, `add` 의 body omission/empty-body 계약과 slug/title/domain clean string 거부, compile `--fix` canonicalization 경로와 vault 인자 ambiguity 거부, graph-level 명령의 dry-run/confirm 경로와 write-command/read-command vault ambiguity 및 diagnostic option 값 거부, repo-analysis 명령의 vault/root/numeric argument 거부, backlink redirect, analyze/infer-imports/bootstrap apply 경로, fresh init starter prune/preserve/replace 경로, single-file layered repo 의 bootstrap endpoint 자동 생성 경로, `health --json` / `cycles --json` 의 unhealthy graph non-zero exit 계약을 검증. `pnpm integration:cli` 로 실행하고, `OMOT_TEST_NAME_PATTERN` 으로 spawn-heavy integration 중 수정 파트만 골라 실행할 수 있다.
 
 src/features/docs-vault-local/lib/ontology-starter.test.ts — web workbench starter 의 5개
 파일이 `cli/templates/vault/` 와 byte-for-byte 동일한지 검증. starter README 안에

@@ -43,7 +43,7 @@ export async function runCycles(args) {
   }
   if (json) {
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
-    return 0;
+    return cyclesExitCode(result);
   }
   const cycles = Array.isArray(result?.cycles) ? result.cycles : [];
   const total = result?.totalCycles ?? cycles.length;
@@ -65,7 +65,13 @@ export async function runCycles(args) {
     }
     if (slugs.length > 0) process.stdout.write(`    ${COLORS.dim}↩ back to ${slugs[0]}${COLORS.reset}\n\n`);
   }
-  return 0;
+  return cyclesExitCode(result);
+}
+
+function cyclesExitCode(result) {
+  const cycles = Array.isArray(result?.cycles) ? result.cycles : [];
+  const total = result?.totalCycles ?? cycles.length;
+  return total === 0 ? 0 : 1;
 }
 
 function parseArgs(args) {
@@ -94,6 +100,6 @@ function printUsage() {
   process.stderr.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  oh-my-ontology cycles [vault] [--max-hops N] [--json]\n\n` +
-      `directed depends_on cycle detection (default maxDepth 8).\n`,
+      `directed depends_on cycle detection (default maxDepth 8). exit 0 only when no cycles are found.\n`,
   );
 }
