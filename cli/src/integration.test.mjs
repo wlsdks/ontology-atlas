@@ -226,7 +226,7 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, /overview query_plan/);
     assert.match(clean, /project_map query_plan/);
     assert.match(clean, /neighbors — elements\/example/);
-    assert.match(clean, /path — elements\/example → project \(1 hops\)/);
+    assert.match(clean, /path — elements\/example → project \(1 hop\)/);
     assert.match(clean, /project_scope/);
   } finally {
     rmSync(root, { recursive: true, force: true });

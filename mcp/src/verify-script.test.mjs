@@ -24,6 +24,7 @@ import {
   expectedToolSplitLabel,
   firstContactMissingResponseLabels,
   firstContactErrorFailure,
+  formatHopCount,
   getConceptsFailure,
   hasAllFirstContactResponses,
   hasFirstContactErrorResponse,
@@ -889,6 +890,12 @@ describe('verify.mjs first-contact gates', () => {
       }, 'project'),
       null,
     );
+  });
+
+  it('formats path hop counts for human-facing verify output', () => {
+    assert.equal(formatHopCount(0), '0 hops');
+    assert.equal(formatHopCount(1), '1 hop');
+    assert.equal(formatHopCount(2), '2 hops');
   });
 
   it('fails malformed graph-query verify smoke payloads', () => {

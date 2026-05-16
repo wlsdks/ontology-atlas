@@ -752,6 +752,10 @@ export function pathQueryFailure(parsed, expectedFrom, expectedTo = expectedFrom
   return null;
 }
 
+export function formatHopCount(hopCount) {
+  return `${hopCount} ${hopCount === 1 ? 'hop' : 'hops'}`;
+}
+
 export function projectScopeFailure(parsed, expectedProject) {
   if (parsed?.operation !== 'project_scope') {
     return `project_scope returned unexpected operation: ${parsed?.operation}`;
@@ -1466,7 +1470,7 @@ async function step2BootAndCall() {
             log('fail', failure);
             return res(false);
           }
-          log('ok', `path — ${parsed.from} → ${parsed.to} (${parsed.hopCount} hops)`);
+          log('ok', `path — ${parsed.from} → ${parsed.to} (${formatHopCount(parsed.hopCount)})`);
         } catch (err) {
           log('fail', `failed to parse path response: ${err.message}`);
           return res(false);
