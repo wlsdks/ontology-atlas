@@ -273,6 +273,25 @@ describe('queryCompiledOntology', () => {
     ]);
   });
 
+  it('rejects invalid iterations instead of defaulting or clamping them', () => {
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'centrality', iterations: '20' }),
+      /iterations must be a positive integer/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'centrality', iterations: 1.5 }),
+      /iterations must be a positive integer/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'communities', iterations: 0 }),
+      /iterations must be a positive integer/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'communities', iterations: 101 }),
+      /iterations must be <= 100/,
+    );
+  });
+
   it('detects deterministic ontology communities', () => {
     const result = queryCompiledOntology(
       compileOntology(

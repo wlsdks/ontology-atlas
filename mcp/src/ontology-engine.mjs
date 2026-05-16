@@ -3592,8 +3592,14 @@ function hashString(value) {
 }
 
 function normalizeIterations(value) {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return 20;
-  return Math.max(1, Math.min(100, Math.trunc(value)));
+  if (value === undefined || value === null) return 20;
+  if (!Number.isInteger(value) || value < 1) {
+    throw new Error('iterations must be a positive integer.');
+  }
+  if (value > 100) {
+    throw new Error('iterations must be <= 100.');
+  }
+  return value;
 }
 
 function normalizeRelationType(type) {
