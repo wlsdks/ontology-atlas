@@ -83,4 +83,6 @@ import 로 바뀌어도 `runner('*.mjs', 'runX')` registry 항목을 command mod
 reachable import, 죽은 `files` glob, multiline/dynamic import parsing, command registry
 reachability, test script 제외 규칙을 fixture 로 고정한다. CLI README 의
 `mcp-verify --help` graph-query smoke scope 도 문서 계약으로 고정해 release smoke 와
-사용자-facing 문서가 갈라지지 않게 한다.
+사용자-facing 문서가 갈라지지 않게 한다. root README 의 release gate 섹션도
+`smoke:packed-cli` 가 installed `mcp-verify --help` scope 를 검증한다고 명시하고,
+package contract test 가 이를 고정한다.

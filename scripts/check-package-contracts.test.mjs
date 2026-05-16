@@ -69,6 +69,9 @@ describe('package contract helpers', () => {
     const releaseChecks = readme.split('### Package / MCP release checks')[1]?.split('## Verifiable promises')[0] ?? '';
 
     assert.match(releaseChecks, /pnpm dogfood:walk/);
+    assert.match(releaseChecks, /pnpm smoke:packed-cli/);
+    assert.match(releaseChecks, /mcp-verify --help/);
+    assert.match(releaseChecks, /graph-query smoke scope/);
     assert.match(releaseChecks, /validate_vault` problem files/);
   });
 
