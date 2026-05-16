@@ -250,7 +250,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, new RegExp(`✓ validate_vault — ${census.files} files, 0 problem files`));
     assert.match(verifySection, new RegExp(`✓ workspace_brief — healthy \\(${census.total} nodes, 0 next actions, 5 health checks\\)`));
     assert.match(verifySection, new RegExp(`✓ workspace_brief_tuned — healthy \\(${census.total} nodes, 1 next action, 5 health checks\\)`));
-    assert.match(verifySection, /workspace_brief_tuned advisory nextActions — components:info/);
+    assert.match(verifySection, /workspace_brief_tuned advisory nextActions — components:info:6 - The resolved ontology graph has disconnected actionable islands\./);
     assert.match(verifySection, /✓ health — healthy \(5 checks: compile_issues:pass/);
     assert.match(verifySection, /✓ health_tuned — healthy \(5 checks: compile_issues:pass/);
     assert.match(verifySection, /✓ neighbors — elements\/file-system-access-api/);
@@ -321,6 +321,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /requires every `workspace_brief\.nextActions` row to include a non-empty `id` or `kind` plus `severity` in `info` \/ `warn` \/ `fail`/);
     assert.match(verifySection, /requires every health check row to include non-empty `id` plus `status` in `pass` \/ `warn` \/ `fail` \/ `info`/);
     assert.match(verifySection, /prints the validated `workspace_brief\.health\.checks` count/);
+    assert.match(verifySection, /compact advisory list with label\/severity\/count\/message detail/);
     assert.match(verifySection, /health check `id:status` coverage/);
     assert.match(verifySection, /accepts direct vault arguments/);
     assert.match(verifySection, /explicit direct arguments take precedence over the environment variable/);

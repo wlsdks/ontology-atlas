@@ -1985,12 +1985,12 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(advisoryNextActionsSummary(null), null);
     assert.equal(
       advisoryNextActionsSummary([
-        { id: 'compile_issues', severity: 'warn' },
-        { kind: 'add_missing_relations', severity: 'warn' },
+        { id: 'compile_issues', severity: 'warn', count: 2, message: 'Inspect compile issues.' },
+        { kind: 'add_missing_relations', severity: 'warn', count: 3 },
         { kind: 'materialize_external_elements', severity: 'info' },
         { kind: 'resolve_dangling_references', severity: 'fail' },
       ]),
-      'compile_issues:warn, add_missing_relations:warn, materialize_external_elements:info',
+      'compile_issues:warn:2 - Inspect compile issues., add_missing_relations:warn:3, materialize_external_elements:info',
     );
     assert.equal(
       advisoryNextActionsSummary([

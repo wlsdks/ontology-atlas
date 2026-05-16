@@ -1605,7 +1605,13 @@ export function advisoryNextActionsSummary(actions, limit = 3) {
   if (!Array.isArray(actions)) return null;
   const advisory = actions
     .filter((action) => action?.severity !== 'fail')
-    .map((action) => `${action.id || action.kind || 'unknown'}:${action.severity || 'unknown'}`);
+    .map((action) => {
+      const label = action.id || action.kind || 'unknown';
+      const severity = action.severity || 'unknown';
+      const count = Number.isInteger(action.count) ? `:${action.count}` : '';
+      const message = typeof action.message === 'string' && action.message.length > 0 ? ` - ${action.message}` : '';
+      return `${label}:${severity}${count}${message}`;
+    });
   if (advisory.length === 0) return null;
   const shown = advisory.slice(0, limit);
   const suffix = advisory.length > shown.length ? `, +${advisory.length - shown.length} more` : '';

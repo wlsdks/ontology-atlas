@@ -238,7 +238,7 @@ A successful run looks like this:
 ✓ project probe — 1 project node
 ✓ workspace_brief — healthy (28 nodes, 0 next actions, 5 health checks)
 ✓ workspace_brief_tuned — healthy (28 nodes, 1 next action, 5 health checks)
-· workspace_brief_tuned advisory nextActions — components:info
+· workspace_brief_tuned advisory nextActions — components:info:6 - The resolved ontology graph has disconnected actionable islands.
 ✓ health — healthy (5 checks: compile_issues:pass, unresolved_edges:pass, dependency_cycles:pass, relation_recommendations:pass, components:pass, issues 0)
 ✓ health_tuned — healthy (5 checks: compile_issues:pass, unresolved_edges:pass, dependency_cycles:pass, relation_recommendations:pass, components:info, issues 0)
 ✓ compile_ontology — graph bff1dd2122d5 (28 nodes, 209 edges, issues 0)
@@ -324,7 +324,8 @@ such as top-level `status`, `workspace_brief.nextActions`,
 `severity` in `info` / `warn` / `fail`, and every health check row must include
 non-empty `id` plus `status` in `pass` / `warn` / `fail` / `info`.
 Non-blocking `workspace_brief.nextActions` are printed as a short
-advisory list, the `workspace_brief` / `workspace_brief_tuned` success lines include the
+advisory list with action label, severity, optional count, and message, the
+`workspace_brief` / `workspace_brief_tuned` success lines include the
 `workspace_brief.health.checks` count, and the `health` / `health_tuned` lines include the
 check `id:status` coverage that the verify gate validated. The default wait window is 8 seconds; set
 `OMOT_VERIFY_TIMEOUT_MS` to a positive integer millisecond value if your vault
