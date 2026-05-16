@@ -81,6 +81,10 @@ export function expectedToolSplitLabel() {
   return `${EXPECTED_READ_TOOLS.length} read + ${EXPECTED_WRITE_TOOLS.length} write`;
 }
 
+export function formatCount(count, singular, plural = `${singular}s`) {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
 function sameArray(left, right) {
   return Array.isArray(left) &&
     Array.isArray(right) &&
@@ -753,7 +757,7 @@ export function pathQueryFailure(parsed, expectedFrom, expectedTo = expectedFrom
 }
 
 export function formatHopCount(hopCount) {
-  return `${hopCount} ${hopCount === 1 ? 'hop' : 'hops'}`;
+  return formatCount(hopCount, 'hop');
 }
 
 export function projectScopeFailure(parsed, expectedProject) {
@@ -1266,7 +1270,7 @@ async function step2BootAndCall() {
         }
         const okRows = parsed.concepts.filter((row) => row?.ok === true).length;
         const partialRows = parsed.concepts.filter((row) => row?.ok === false).length;
-        log('ok', `get_concepts — ${okRows} ok rows, ${partialRows} partial rows`);
+        log('ok', `get_concepts — ${formatCount(okRows, 'ok row')}, ${formatCount(partialRows, 'partial row')}`);
       } catch (err) {
         log('fail', `failed to parse get_concepts response: ${err.message}`);
         return res(false);

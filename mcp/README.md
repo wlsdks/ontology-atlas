@@ -184,7 +184,7 @@ A successful run looks like this:
 ✓ strict arguments — unknown tool argument rejected at runtime
 ✓ strict enums — invalid query operation rejected with closest-value hint
 ✓ list_concepts — vault total 28 nodes (vaultRoot /path/to/docs/ontology)
-✓ get_concepts — 2 ok rows, 1 partial rows
+✓ get_concepts — 2 ok rows, 1 partial row
 ✓ list_kinds — 28 nodes (capability:16, domain:6, element:4, project:1, vault-readme:1)
 ✓ validate_vault — 28 files, problemFiles 0
 ✓ workspace_brief — healthy (28 nodes, nextActions 0, healthChecks 5)

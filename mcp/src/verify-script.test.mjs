@@ -24,6 +24,7 @@ import {
   expectedToolSplitLabel,
   firstContactMissingResponseLabels,
   firstContactErrorFailure,
+  formatCount,
   formatHopCount,
   getConceptsFailure,
   hasAllFirstContactResponses,
@@ -61,6 +62,12 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(described[2], String(EXPECTED_READ_TOOLS.length));
     assert.equal(described[3], String(EXPECTED_WRITE_TOOLS.length));
     assert.equal(expectedToolSplitLabel(), `${described[2]} read + ${described[3]} write`);
+  });
+
+  it('formats row counts for human-facing verify output', () => {
+    assert.equal(formatCount(0, 'partial row'), '0 partial rows');
+    assert.equal(formatCount(1, 'partial row'), '1 partial row');
+    assert.equal(formatCount(2, 'ok row'), '2 ok rows');
   });
 
   it('fails tools/list schema drift for strict arguments, graph-query enums, batch caps, and write safety', () => {

@@ -85,7 +85,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ tools\/list schema contract — strict arguments \+ graph-query enums/);
     assert.match(verifySection, /✓ strict arguments — unknown tool argument rejected at runtime/);
     assert.match(verifySection, /✓ strict enums — invalid query operation rejected with closest-value hint/);
-    assert.match(verifySection, /✓ get_concepts — 2 ok rows, 1 partial rows/);
+    assert.match(verifySection, /✓ get_concepts — 2 ok rows, 1 partial row/);
     assert.match(verifySection, /✓ list_kinds/);
     assert.match(verifySection, /✓ workspace_brief — healthy \(28 nodes, nextActions 0, healthChecks 5\)/);
     assert.match(verifySection, /✓ health — healthy \(5 checks: compile_issues:pass/);
