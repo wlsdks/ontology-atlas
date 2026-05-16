@@ -106,6 +106,9 @@ export function importedSpecifiers(source) {
   )) {
     imports.push(match[1]);
   }
+  for (const match of source.matchAll(/\brunner\(\s*['"]([^'"]+\.(?:mjs|js|cjs))['"]/g)) {
+    imports.push(`../commands/${match[1]}`);
+  }
   return imports;
 }
 

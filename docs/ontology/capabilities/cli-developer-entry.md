@@ -51,7 +51,7 @@ post-publish architectural audit 발견 — *위험한-그러나-필수* 작업 
 
 local commands 는 *cli 안* 구현 (4-way parser/3-way validator contract). graph-level + analyze/infer-imports + bootstrap + `--apply` 흐름은 *MCP server child_process spawn + JSON-RPC* — `cli/src/lib/mcp-call.mjs` 의 thin wrapper. drift surface 0 (logic 복제 안 함). spawn ~50-100ms per call — bootstrap 은 3-4 회 호출이라 ~200-400ms 정도.
 
-cli 가 별도 npm package — `oh-my-ontology` binary. cli/package.json 의 `dependencies: oh-my-ontology-mcp` 가 graph-level + apply + bootstrap 흐름 자동 활성. `cli/src/lib/cli-commands.mjs` 는 CLI command inventory 와 package description 의 command count 를 검증 가능한 metadata 로 노출하고, `cli/src/lib/mcp-metadata.mjs` 는 MCP package description 의 tool count / read-write split 을 한 번만 parse 해서 production `init` copy 와 source / packed smoke 의 기대값이 같은 해석을 공유하게 한다.
+cli 가 별도 npm package — `oh-my-ontology` binary. cli/package.json 의 `dependencies: oh-my-ontology-mcp` 가 graph-level + apply + bootstrap 흐름 자동 활성. `cli/src/lib/cli-commands.mjs` 는 CLI command inventory / module runner registry / package description 의 command count 를 한 곳에서 노출하고 `cli/src/index.mjs` 의 runtime dispatch 도 같은 registry 로 실행해 command 추가 시 help / dispatcher / package metadata drift 를 줄인다. `cli/src/lib/mcp-metadata.mjs` 는 MCP package description 의 tool count / read-write split 을 한 번만 parse 해서 production `init` copy 와 source / packed smoke 의 기대값이 같은 해석을 공유하게 한다.
 
 ## 회귀 차단
 
@@ -76,7 +76,9 @@ scripts/check-package-contracts.mjs — publish 전 package manifest gate. `mcp/
 checkout 검증 surface 로 보고 tarball runtime 에서는 제외해 MCP package 가 full test
 suite 를 싣지 않게 한다. 반대로 `files` 항목이 실제 package 파일/디렉토리/glob 과
 매치되는지도 확인하고, CLI 의 `oh-my-ontology-mcp` dependency 가 현재 MCP package
-version 을 추적하는지 본다. source checkout 에서는 통과하지만 npm tarball 에서만
-깨지는 release drift 를 차단한다. paired self-test 는 누락된 reachable import, 죽은
-`files` glob, multiline/dynamic import parsing, test script 제외 규칙을 fixture 로
-고정한다.
+version 을 추적하는지 본다. CLI runtime dispatcher 가 command registry 기반 dynamic
+import 로 바뀌어도 `runner('*.mjs', 'runX')` registry 항목을 command module reachability
+로 추적해 packaged CLI 에서 특정 명령 파일이 빠지는 회귀를 잡는다. source checkout 에서는
+통과하지만 npm tarball 에서만 깨지는 release drift 를 차단한다. paired self-test 는 누락된
+reachable import, 죽은 `files` glob, multiline/dynamic import parsing, command registry
+reachability, test script 제외 규칙을 fixture 로 고정한다.

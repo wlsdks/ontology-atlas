@@ -20,6 +20,7 @@ import {
   CLI_COMMANDS,
   CLI_COMMAND_COUNT,
   CLI_COMMAND_MODULES,
+  CLI_COMMAND_RUNNERS,
   parseCliCommandMetadataFromDescription,
 } from './lib/cli-commands.mjs';
 import { parseMcpToolMetadataFromDescription } from './lib/mcp-metadata.mjs';
@@ -96,9 +97,9 @@ await test('command inventory — help and command modules stay aligned', async 
     assert.match(clean, new RegExp(`oh-my-ontology ${command.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`));
   }
 
-  const indexSource = readFileSync(CLI, 'utf-8');
-  for (const command of CLI_COMMANDS) {
-    assert.match(indexSource, new RegExp(`SUBCOMMAND === '${command.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}'`));
+  for (const [command, runner] of Object.entries(CLI_COMMAND_RUNNERS)) {
+    const mod = await import(runner.modulePath);
+    assert.equal(typeof mod[runner.exportName], 'function', `${command} exports ${runner.exportName}`);
   }
 
   const commandFiles = readdirSync(join(__dirname, 'commands'))

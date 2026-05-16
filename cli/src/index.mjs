@@ -18,7 +18,7 @@ import { join, dirname, resolve, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import { stdout, stderr, argv, exit, cwd } from 'node:process';
-import { CLI_COMMAND_COUNT } from './lib/cli-commands.mjs';
+import { CLI_COMMAND_COUNT, CLI_COMMAND_RUNNERS } from './lib/cli-commands.mjs';
 import { readMcpPackageMetadata } from './lib/mcp-metadata.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -350,130 +350,15 @@ if (SUBCOMMAND === 'init') {
   exit(0);
 }
 
-if (SUBCOMMAND === 'list') {
-  const { runList } = await import('./commands/list.mjs');
-  exit(runList(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'validate') {
-  const { runValidate } = await import('./commands/validate.mjs');
-  exit(runValidate(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'mcp-verify') {
-  const { runMcpVerify } = await import('./commands/mcp-verify.mjs');
-  exit(await runMcpVerify(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'add') {
-  const { runAdd } = await import('./commands/add.mjs');
-  exit(runAdd(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'find') {
-  const { runFind } = await import('./commands/find.mjs');
-  exit(runFind(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'import') {
-  const { runImport } = await import('./commands/import.mjs');
-  exit(runImport(ARGS.slice(1)));
-}
-
-// R15 graph-level commands — async (spawn MCP). Each returns a Promise<exitCode>.
-if (SUBCOMMAND === 'backlinks') {
-  const { runBacklinks } = await import('./commands/backlinks.mjs');
-  exit(await runBacklinks(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'orphans') {
-  const { runOrphans } = await import('./commands/orphans.mjs');
-  exit(await runOrphans(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'path') {
-  const { runPath } = await import('./commands/path.mjs');
-  exit(await runPath(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'overview') {
-  const { runOverview } = await import('./commands/overview.mjs');
-  exit(await runOverview(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'hubs') {
-  const { runHubs } = await import('./commands/hubs.mjs');
-  exit(await runHubs(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'blast-radius') {
-  const { runBlastRadius } = await import('./commands/blast-radius.mjs');
-  exit(await runBlastRadius(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'cycles') {
-  const { runCycles } = await import('./commands/cycles.mjs');
-  exit(await runCycles(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'health') {
-  const { runHealth } = await import('./commands/health.mjs');
-  exit(await runHealth(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'workspace-brief') {
-  const { runWorkspaceBrief } = await import('./commands/workspace-brief.mjs');
-  exit(await runWorkspaceBrief(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'node') {
-  const { runNodeProfile } = await import('./commands/node-profile.mjs');
-  exit(await runNodeProfile(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'similar') {
-  const { runSimilar } = await import('./commands/similar.mjs');
-  exit(await runSimilar(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'query') {
-  const { runQuery } = await import('./commands/query.mjs');
-  exit(await runQuery(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'compile') {
-  const { runCompile } = await import('./commands/compile.mjs');
-  exit(await runCompile(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'rename') {
-  const { runRename } = await import('./commands/rename.mjs');
-  exit(await runRename(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'merge') {
-  const { runMerge } = await import('./commands/merge.mjs');
-  exit(await runMerge(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'delete') {
-  const { runDelete } = await import('./commands/delete.mjs');
-  exit(await runDelete(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'analyze') {
-  const { runAnalyze } = await import('./commands/analyze.mjs');
-  exit(await runAnalyze(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'infer-imports') {
-  const { runInferImports } = await import('./commands/infer-imports.mjs');
-  exit(await runInferImports(ARGS.slice(1)));
-}
-
-if (SUBCOMMAND === 'bootstrap') {
-  const { runBootstrap } = await import('./commands/bootstrap.mjs');
-  exit(await runBootstrap(ARGS.slice(1)));
+const runner = CLI_COMMAND_RUNNERS[SUBCOMMAND];
+if (runner) {
+  const mod = await import(runner.modulePath);
+  const run = mod[runner.exportName];
+  if (typeof run !== 'function') {
+    fail(`command ${SUBCOMMAND} is misconfigured: missing ${runner.exportName}`);
+    exit(1);
+  }
+  exit(await run(ARGS.slice(1)));
 }
 
 fail(`unknown command: ${SUBCOMMAND}`);

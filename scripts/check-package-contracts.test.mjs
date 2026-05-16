@@ -98,6 +98,23 @@ writeFileSync('fixture.mjs', "import './not-real.mjs';");
     ].sort());
   });
 
+  it('parses CLI command registry runner entries as reachable command modules', () => {
+    const source = `
+function runner(moduleFile, exportName) {
+  return { modulePath: \`./commands/\${moduleFile}\`, moduleFile, exportName };
+}
+export const CLI_COMMAND_RUNNERS = Object.freeze({
+  list: runner('list.mjs', 'runList'),
+  'mcp-verify': runner("mcp-verify.mjs", 'runMcpVerify'),
+});
+`;
+
+    assert.deepEqual(importedSpecifiers(source).sort(), [
+      '../commands/list.mjs',
+      '../commands/mcp-verify.mjs',
+    ].sort());
+  });
+
   it('matches files entries by exact file, directory, and glob', () => {
     assert.equal(isCoveredByFiles('src/index.mjs', ['src/index.mjs']), true);
     assert.equal(isCoveredByFiles('src/lib/a.mjs', ['src/lib']), true);

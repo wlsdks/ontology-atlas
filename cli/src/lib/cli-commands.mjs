@@ -1,30 +1,47 @@
-export const CLI_COMMAND_MODULES = Object.freeze({
-  list: 'list.mjs',
-  validate: 'validate.mjs',
-  'mcp-verify': 'mcp-verify.mjs',
-  add: 'add.mjs',
-  find: 'find.mjs',
-  import: 'import.mjs',
-  backlinks: 'backlinks.mjs',
-  orphans: 'orphans.mjs',
-  path: 'path.mjs',
-  overview: 'overview.mjs',
-  hubs: 'hubs.mjs',
-  'blast-radius': 'blast-radius.mjs',
-  cycles: 'cycles.mjs',
-  health: 'health.mjs',
-  'workspace-brief': 'workspace-brief.mjs',
-  node: 'node-profile.mjs',
-  similar: 'similar.mjs',
-  query: 'query.mjs',
-  compile: 'compile.mjs',
-  rename: 'rename.mjs',
-  merge: 'merge.mjs',
-  delete: 'delete.mjs',
-  bootstrap: 'bootstrap.mjs',
-  analyze: 'analyze.mjs',
-  'infer-imports': 'infer-imports.mjs',
+function runner(moduleFile, exportName) {
+  return {
+    modulePath: `./commands/${moduleFile}`,
+    moduleFile,
+    exportName,
+  };
+}
+
+export const CLI_COMMAND_RUNNERS = Object.freeze({
+  list: runner('list.mjs', 'runList'),
+  validate: runner('validate.mjs', 'runValidate'),
+  'mcp-verify': runner('mcp-verify.mjs', 'runMcpVerify'),
+  add: runner('add.mjs', 'runAdd'),
+  find: runner('find.mjs', 'runFind'),
+  import: runner('import.mjs', 'runImport'),
+  backlinks: runner('backlinks.mjs', 'runBacklinks'),
+  orphans: runner('orphans.mjs', 'runOrphans'),
+  path: runner('path.mjs', 'runPath'),
+  overview: runner('overview.mjs', 'runOverview'),
+  hubs: runner('hubs.mjs', 'runHubs'),
+  'blast-radius': runner('blast-radius.mjs', 'runBlastRadius'),
+  cycles: runner('cycles.mjs', 'runCycles'),
+  health: runner('health.mjs', 'runHealth'),
+  'workspace-brief': runner('workspace-brief.mjs', 'runWorkspaceBrief'),
+  node: runner('node-profile.mjs', 'runNodeProfile'),
+  similar: runner('similar.mjs', 'runSimilar'),
+  query: runner('query.mjs', 'runQuery'),
+  compile: runner('compile.mjs', 'runCompile'),
+  rename: runner('rename.mjs', 'runRename'),
+  merge: runner('merge.mjs', 'runMerge'),
+  delete: runner('delete.mjs', 'runDelete'),
+  bootstrap: runner('bootstrap.mjs', 'runBootstrap'),
+  analyze: runner('analyze.mjs', 'runAnalyze'),
+  'infer-imports': runner('infer-imports.mjs', 'runInferImports'),
 });
+
+export const CLI_COMMAND_MODULES = Object.freeze(
+  Object.fromEntries(
+    Object.entries(CLI_COMMAND_RUNNERS).map(([command, runner]) => [
+      command,
+      runner.moduleFile,
+    ]),
+  ),
+);
 
 export const CLI_COMMANDS = Object.freeze(['init', ...Object.keys(CLI_COMMAND_MODULES)]);
 export const CLI_COMMAND_COUNT = CLI_COMMANDS.length;
