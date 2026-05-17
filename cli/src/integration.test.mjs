@@ -252,6 +252,65 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
   }
 });
 
+await test('mcp-verify — verifies maintenance cursor resume when actions exist', async () => {
+  const root = withVault([
+    {
+      slug: 'project',
+      content: [
+        '---',
+        'kind: project',
+        'slug: project',
+        'title: Project',
+        'domains:',
+        '  - core',
+        '---',
+        '',
+        '# Project',
+        '',
+      ].join('\n'),
+    },
+    {
+      slug: 'core',
+      content: [
+        '---',
+        'kind: domain',
+        'slug: core',
+        'title: Core',
+        '---',
+        '',
+        '# Core',
+        '',
+      ].join('\n'),
+    },
+    {
+      slug: 'feature',
+      content: [
+        '---',
+        'kind: capability',
+        'slug: feature',
+        'title: Feature',
+        'domain: core',
+        'elements: []',
+        '---',
+        '',
+        '# Feature',
+        '',
+      ].join('\n'),
+    },
+  ]);
+  try {
+    const r = await run(['mcp-verify', root, '--timeout-ms', '3000']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /maintenance cursor — ready page stable \(1 remaining action/);
+    assert.match(clean, /kind add_missing_relation:1/);
+    assert.match(clean, /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 0 remaining actions/);
+    assert.match(clean, /structuredContent — direct 7\/7, write 2\/2, maintenance 3\/3, graph 10\/10/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('mcp-verify — allows valid vaults without a project node', async () => {
   const root = withVault([
     {
