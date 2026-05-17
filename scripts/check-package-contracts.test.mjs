@@ -986,6 +986,8 @@ describe('package contract helpers', () => {
     assert.match(doc, /dogfood helper \/ structuredContent 출력 계약/);
     assert.match(doc, /first-contact README read-only/);
     assert.match(doc, /직접 verify help\(`npm run verify -- --help`\)/);
+    assert.match(doc, /`query_concepts`, limited `query_concepts`, `find_neighbors`/);
+    assert.match(doc, /별도 limited `query_concepts` smoke 로 `slug!=project, limit=1`/);
     assert.match(doc, /ready `maintenance_plan` cursor 와\s+missing `maintenance_plan\.afterActionId` cursor handling 범위/);
   });
 

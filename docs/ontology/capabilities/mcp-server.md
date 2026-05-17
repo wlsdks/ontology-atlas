@@ -90,7 +90,7 @@ validation / diagnosis / compile / overview / query planning 은 계속 hard gat
 strict schema/runtime unknown-argument and invalid-enum rejection,
 `add_concepts` / `add_relations` row-isolation runtime smoke,
 `list_concepts`, project-node `list_concepts` probe,
-`get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology({ summary: true })`,
+`get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology({ summary: true })`,
 `query_ontology(overview)`, `query_plan(targetOperation:"overview")`,
 `query_plan(targetOperation:"project_map")`, 그리고 실제 `neighbors` /
 node→project `path` / `project_scope` 를 한 번에 호출해 agent first-contact graph diagnosis,
@@ -116,7 +116,8 @@ compact `postWriteMaintenance` action `score`, executable `proposedAction`, and 
 frontmatter / excerpt / neighbors / outgoingEdges / mtime 과 `structuredContent` 계약을 확인한다.
 `get_concepts` 는 `list_concepts` 에서 얻은 실제 slug 최대 2개와 missing slug 를 섞어
 설치 검증에서도 batch reader 의 성공 row 와 partial row 계약을 확인한다.
-`find_evidence` / `find_backlinks` / `query_concepts` 는 resolved vault 에 실제 호출해
+`find_evidence` / `find_backlinks` / `query_concepts` 는 resolved vault 에 실제 호출하고,
+별도 limited `query_concepts` smoke 로 `slug!=project, limit=1` 도 확인해
 search, backlink 영향 범위, typed-filter row shape, `limited:true` query semantics 와 `structuredContent` 계약을 확인한다.
 direct `find_neighbors` / `find_path` 도 resolved vault 에 실제 호출해 local-neighborhood 와
 shortest-path read tool 계약을 `query_ontology` graph operation 과 별도로 확인한다.
