@@ -342,6 +342,22 @@ export function workspaceNextActionSummary(actions, limit = 3) {
   return `${shown.join(", ")}${suffix}`;
 }
 
+export function writeRowLabelGuidanceSummary(tools) {
+  if (!Array.isArray(tools)) return "missing tools/list";
+  const missing = [];
+  const addConcepts = tools.find((tool) => tool?.name === "add_concepts");
+  const addRelations = tools.find((tool) => tool?.name === "add_relations");
+
+  if (!/concepts\[n\]/.test(addConcepts?.description || "")) {
+    missing.push("add_concepts concepts[n]");
+  }
+  if (!/relations\[n\]/.test(addRelations?.description || "")) {
+    missing.push("add_relations relations[n]");
+  }
+
+  return missing.length > 0 ? `missing ${missing.join(", ")}` : "pass";
+}
+
 export function healthCheckStatusSummary(checks, limit = 5) {
   if (!Array.isArray(checks) || checks.length === 0) return "none";
   const shown = checks.slice(0, limit).map((check) => {
@@ -4386,6 +4402,7 @@ async function main() {
     const expectedSplit = `${EXPECTED_READ_TOOLS.length} read + ${EXPECTED_WRITE_TOOLS.length} write`;
     console.log(`  tools: ${tools.length} (${titleCount} titled; ${readCount} read + ${writeCount} write; ${destructiveCount} destructive; ${idempotentCount} idempotent; expected ${EXPECTED_TOOLS.length} titled, ${expectedSplit}, ${EXPECTED_DESTRUCTIVE_TOOLS.length} destructive, ${EXPECTED_IDEMPOTENT_TOOLS.length} idempotent)`);
     console.log(`  schema: ${schemaFailure ? `${COLORS.yellow}${schemaFailure}${COLORS.reset}` : `${COLORS.green}pass${COLORS.reset}`}`);
+    console.log(`  write row labels: ${writeRowLabelGuidanceSummary(tools)}`);
   }
 
   // 1. list_kinds
@@ -5392,6 +5409,7 @@ async function main() {
   const orphRatio = total > 0 ? ((orphCount / total) * 100).toFixed(0) : 0;
   console.log(`  vault size: ${total} 노드`);
   console.log(`  tools/list schema: ${toolsListSchemaFailure(toolsList?.tools) || "pass"}`);
+  console.log(`  tools/list write row labels: ${writeRowLabelGuidanceSummary(toolsList?.tools)}`);
   console.log(`  orphans: ${orphCount} (${orphRatio}%)`);
   console.log(
     `  list_concepts vaultWarnings: ${list?.vaultWarnings ? "있음 (vault 정합성 회귀!)" : "0 (clean)"}`,

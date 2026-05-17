@@ -31,6 +31,7 @@ import {
   structuredContentStatus,
   tunedHealthScopeSummary,
   workspaceNextActionSummary,
+  writeRowLabelGuidanceSummary,
 } from "./dogfood-mcp-walk.mjs";
 import {
   compileIndexesSummary,
@@ -2725,6 +2726,23 @@ describe("rpc response completion helpers", () => {
       ]),
       "components:info:6, materialize_external_elements:warn:2, resolve_dangling_references:fail, +1 more",
     );
+  });
+
+  it("summarizes batch writer row-label guidance for dogfood output", () => {
+    const tools = makeDogfoodToolsList().tools;
+    assert.equal(writeRowLabelGuidanceSummary(tools), "pass");
+
+    const missingConcepts = makeDogfoodToolsList().tools;
+    missingConcepts.find((tool) => tool.name === "add_concepts").description =
+      "Batch rows isolate non-object row shape and unknown row field as ok:false rows.";
+    assert.equal(writeRowLabelGuidanceSummary(missingConcepts), "missing add_concepts concepts[n]");
+
+    const missingRelations = makeDogfoodToolsList().tools;
+    missingRelations.find((tool) => tool.name === "add_relations").description =
+      "Batch rows isolate non-object row shape and unknown row field as ok:false rows.";
+    assert.equal(writeRowLabelGuidanceSummary(missingRelations), "missing add_relations relations[n]");
+
+    assert.equal(writeRowLabelGuidanceSummary(null), "missing tools/list");
   });
 
   it("summarizes health check statuses for the final dogfood analysis", () => {
