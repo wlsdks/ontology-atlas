@@ -120,13 +120,25 @@ function stringArrayMapSchemaFixture() {
   };
 }
 
+function postWriteMaintenanceSchemaFixture() {
+  return {
+    type: "object",
+    properties: {
+      byPhase: { type: "object", additionalProperties: { type: "integer", minimum: 0 } },
+      bySeverity: { type: "object", additionalProperties: { type: "integer", minimum: 0 } },
+      byKind: { type: "object", additionalProperties: { type: "integer", minimum: 0 } },
+      actions: { type: "array" },
+    },
+  };
+}
+
 function makeDogfoodToolsList() {
   return {
     tools: EXPECTED_TOOLS.map((name) => {
       const tool = {
         name,
         description: WRITE_TOOL_NAMES.has(name)
-          ? "Write tool returns postWriteMaintenance with action score, executable proposedAction, and nextExecutableAction next action pointers."
+          ? "Write tool returns postWriteMaintenance with byPhase bySeverity byKind queue buckets, action score, executable proposedAction, and nextExecutableAction next action pointers."
           : `${name} read tool.`,
         annotations: {
           title: expectedToolTitle(name),
@@ -861,7 +873,7 @@ function makeDogfoodToolsList() {
                 },
               },
             },
-            postWriteMaintenance: { type: "object" },
+            postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
         };
       }
@@ -875,7 +887,7 @@ function makeDogfoodToolsList() {
             filePath: { type: "string" },
             changed: { type: "boolean" },
             warnings: { type: "array", items: { type: "string" } },
-            postWriteMaintenance: { type: "object" },
+            postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
         };
       }
@@ -908,7 +920,7 @@ function makeDogfoodToolsList() {
                 },
               },
             },
-            postWriteMaintenance: { type: "object" },
+            postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
         };
       }
@@ -924,7 +936,7 @@ function makeDogfoodToolsList() {
             key: { type: "string" },
             changed: { type: "boolean" },
             alreadyExists: { type: "boolean" },
-            postWriteMaintenance: { type: "object" },
+            postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
         };
       }
@@ -937,7 +949,7 @@ function makeDogfoodToolsList() {
             slug: { type: "string" },
             filePath: { type: "string" },
             changed: { type: "boolean" },
-            postWriteMaintenance: { type: "object" },
+            postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
         };
       }
@@ -963,7 +975,7 @@ function makeDogfoodToolsList() {
             backlinkUpdates: { type: "object" },
             message: { type: "string" },
             changed: { type: "boolean" },
-            postWriteMaintenance: { type: "object" },
+            postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
         };
       }
@@ -982,7 +994,7 @@ function makeDogfoodToolsList() {
             capturedFrom: { type: "object" },
             message: { type: "string" },
             changed: { type: "boolean" },
-            postWriteMaintenance: { type: "object" },
+            postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
         };
       }
@@ -1002,7 +1014,7 @@ function makeDogfoodToolsList() {
             backlinksAtDelete: { type: "array", items: { type: "object" } },
             changed: { type: "boolean" },
             captured: { type: "object" },
-            postWriteMaintenance: { type: "object" },
+            postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
         };
       }

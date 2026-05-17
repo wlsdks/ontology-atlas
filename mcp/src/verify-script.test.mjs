@@ -160,6 +160,17 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('fails tools/list schema drift for strict arguments, graph-query enums, batch caps, and write safety', () => {
+    const postWriteDescription =
+      'postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page next action pointers';
+    const postWriteMaintenanceSchema = {
+      type: 'object',
+      properties: {
+        byPhase: { type: 'object', additionalProperties: { type: 'integer', minimum: 0 } },
+        bySeverity: { type: 'object', additionalProperties: { type: 'integer', minimum: 0 } },
+        byKind: { type: 'object', additionalProperties: { type: 'integer', minimum: 0 } },
+        actions: { type: 'array' },
+      },
+    };
     const tools = [
       {
         name: 'list_concepts',
@@ -306,7 +317,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_concept',
         description:
-          'Changed writes return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
+          `Changed writes return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['slug', 'kind', 'title'],
@@ -321,14 +332,14 @@ describe('verify.mjs first-contact gates', () => {
             filePath: { type: 'string' },
             changed: { type: 'boolean' },
             warnings: { type: 'array', items: { type: 'string' } },
-            postWriteMaintenance: { type: 'object' },
+            postWriteMaintenance: postWriteMaintenanceSchema,
           },
         },
       },
       {
         name: 'add_concepts',
         description:
-          'Batch writes isolate non-object row shape and unknown row field as ok:false rows with concepts[n] labels and return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
+          `Batch writes isolate non-object row shape and unknown row field as ok:false rows with concepts[n] labels and return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['concepts'],
@@ -353,14 +364,14 @@ describe('verify.mjs first-contact gates', () => {
                 },
               },
             },
-            postWriteMaintenance: { type: 'object' },
+            postWriteMaintenance: postWriteMaintenanceSchema,
           },
         },
       },
       {
         name: 'add_relations',
         description:
-          'Batch writes isolate non-object row shape and unknown row field as ok:false rows with relations[n] labels and return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
+          `Batch writes isolate non-object row shape and unknown row field as ok:false rows with relations[n] labels and return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['relations'],
@@ -397,14 +408,14 @@ describe('verify.mjs first-contact gates', () => {
                 },
               },
             },
-            postWriteMaintenance: { type: 'object' },
+            postWriteMaintenance: postWriteMaintenanceSchema,
           },
         },
       },
       {
         name: 'add_relation',
         description:
-          'Changed writes return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
+          `Changed writes return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           properties: { expected_mtime: { type: 'number', minimum: 0 } },
@@ -420,14 +431,14 @@ describe('verify.mjs first-contact gates', () => {
             key: { type: 'string' },
             changed: { type: 'boolean' },
             alreadyExists: { type: 'boolean' },
-            postWriteMaintenance: { type: 'object' },
+            postWriteMaintenance: postWriteMaintenanceSchema,
           },
         },
       },
       {
         name: 'patch_concept',
         description:
-          'Changed writes return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
+          `Changed writes return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           properties: { expected_mtime: { type: 'number', minimum: 0 } },
@@ -440,14 +451,14 @@ describe('verify.mjs first-contact gates', () => {
             slug: { type: 'string' },
             filePath: { type: 'string' },
             changed: { type: 'boolean' },
-            postWriteMaintenance: { type: 'object' },
+            postWriteMaintenance: postWriteMaintenanceSchema,
           },
         },
       },
       {
         name: 'rename_concept',
         description:
-          'Confirmed writes return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
+          `Confirmed writes return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -470,14 +481,14 @@ describe('verify.mjs first-contact gates', () => {
             backlinkUpdates: { type: 'object' },
             message: { type: 'string' },
             changed: { type: 'boolean' },
-            postWriteMaintenance: { type: 'object' },
+            postWriteMaintenance: postWriteMaintenanceSchema,
           },
         },
       },
       {
         name: 'merge_concepts',
         description:
-          'Confirmed writes return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
+          `Confirmed writes return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -499,14 +510,14 @@ describe('verify.mjs first-contact gates', () => {
             capturedFrom: { type: 'object' },
             message: { type: 'string' },
             changed: { type: 'boolean' },
-            postWriteMaintenance: { type: 'object' },
+            postWriteMaintenance: postWriteMaintenanceSchema,
           },
         },
       },
       {
         name: 'delete_concept',
         description:
-          'Confirmed deletes return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
+          `Confirmed deletes return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           properties: {
@@ -529,7 +540,7 @@ describe('verify.mjs first-contact gates', () => {
             backlinksAtDelete: { type: 'array', items: { type: 'object' } },
             changed: { type: 'boolean' },
             captured: { type: 'object' },
-            postWriteMaintenance: { type: 'object' },
+            postWriteMaintenance: postWriteMaintenanceSchema,
           },
         },
       },
@@ -1343,11 +1354,29 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(toolsListSchemaFailure(null), 'tools/list response missing tools array');
     assert.equal(
       toolsListSchemaFailure(tools.map((tool) => (
-        tool.name === 'add_concept'
+        tool.name === 'add_concept' && tool.outputSchema
           ? { ...tool, description: 'Successful writes return postWriteMaintenance with current-page next action pointers.' }
           : tool
       ))),
       'add_concept description missing maintenance action score guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(tools.map((tool) => (
+        tool.name === 'add_concept' && tool.outputSchema
+          ? {
+              ...tool,
+              description: 'Successful writes return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page next action pointers.',
+              outputSchema: {
+                ...tool.outputSchema,
+                properties: {
+                  ...tool.outputSchema.properties,
+                  postWriteMaintenance: { type: 'object' },
+                },
+              },
+            }
+          : tool
+      ))),
+      'add_concept outputSchema postWriteMaintenance byPhase bucket drift',
     );
     assert.equal(
       toolsListSchemaFailure(tools.map((tool) => (
@@ -1359,11 +1388,37 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       toolsListSchemaFailure(tools.map((tool) => (
+        tool.name === 'patch_concept'
+          ? {
+              ...tool,
+              description: 'Changed writes return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page next action pointers.',
+              outputSchema: {
+                ...tool.outputSchema,
+                properties: {
+                  ...tool.outputSchema.properties,
+                  postWriteMaintenance: { type: 'object' },
+                },
+              },
+            }
+          : tool
+      ))),
+      'patch_concept outputSchema postWriteMaintenance byPhase bucket drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(tools.map((tool) => (
         tool.name === 'add_relation'
           ? { ...tool, description: 'Changed writes return postWriteMaintenance with score and current-page next action pointers.' }
           : tool
       ))),
       'add_relation description missing executable maintenance proposedAction guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(tools.map((tool) => (
+        tool.name === 'add_relation'
+          ? { ...tool, description: 'Changed writes return postWriteMaintenance with score proposedAction and current-page next action pointers.' }
+          : tool
+      ))),
+      'add_relation description missing maintenance bucket guidance',
     );
     assert.equal(
       toolsListSchemaFailure([{ name: 'list_concepts', inputSchema: { properties: {} } }]),
@@ -2770,7 +2825,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_concepts'),
         {
           ...tools.find((tool) => tool.name === 'add_concepts'),
-          description: 'Batch writes return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
+          description: 'Batch writes return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page next action pointers.',
         },
       ]),
       'add_concepts description missing row isolation guidance',
@@ -2780,7 +2835,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_concepts'),
         {
           ...tools.find((tool) => tool.name === 'add_concepts'),
-          description: 'Batch writes isolate non-object row shape and unknown row field as ok:false rows and return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
+          description: 'Batch writes isolate non-object row shape and unknown row field as ok:false rows and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page next action pointers.',
         },
       ]),
       'add_concepts description missing row label guidance',
@@ -2825,7 +2880,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_relations'),
         {
           ...tools.find((tool) => tool.name === 'add_relations'),
-          description: 'Batch writes return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
+          description: 'Batch writes return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page next action pointers.',
         },
       ]),
       'add_relations description missing row isolation guidance',
@@ -2835,7 +2890,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_relations'),
         {
           ...tools.find((tool) => tool.name === 'add_relations'),
-          description: 'Batch writes isolate non-object row shape and unknown row field as ok:false rows and return postWriteMaintenance with score, proposedAction, and current-page next action pointers.',
+          description: 'Batch writes isolate non-object row shape and unknown row field as ok:false rows and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page next action pointers.',
         },
       ]),
       'add_relations description missing row label guidance',

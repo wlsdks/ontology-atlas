@@ -204,6 +204,26 @@ function outputPropertyAt(tool, path) {
   return path.reduce((value, key) => value?.[key], tool?.outputSchema);
 }
 
+function postWriteMaintenanceSchemaFailure(schema, toolName) {
+  if (schema?.type !== 'object') {
+    return `${toolName} outputSchema postWriteMaintenance drift`;
+  }
+  for (const key of ['byPhase', 'bySeverity', 'byKind']) {
+    const bucketSchema = schema.properties?.[key];
+    if (
+      bucketSchema?.type !== 'object' ||
+      bucketSchema.additionalProperties?.type !== 'integer' ||
+      bucketSchema.additionalProperties?.minimum !== 0
+    ) {
+      return `${toolName} outputSchema postWriteMaintenance ${key} bucket drift`;
+    }
+  }
+  if (schema.properties?.actions?.type !== 'array') {
+    return `${toolName} outputSchema postWriteMaintenance actions drift`;
+  }
+  return null;
+}
+
 export function toolsListSchemaFailure(tools) {
   if (!Array.isArray(tools)) return 'tools/list response missing tools array';
   const schemaDriftTool = tools.find((tool) => tool?.inputSchema?.additionalProperties !== false);
@@ -1529,6 +1549,14 @@ export function toolsListSchemaFailure(tools) {
     if (!/next action pointers|nextExecutableAction/.test(description)) {
       return `${toolName} description missing maintenance next action pointer guidance`;
     }
+    if (!/byPhase/.test(description) || !/bySeverity/.test(description) || !/byKind/.test(description)) {
+      return `${toolName} description missing maintenance bucket guidance`;
+    }
+    const schemaFailure = postWriteMaintenanceSchemaFailure(
+      outputPropertyAt(tool, ['properties', 'postWriteMaintenance']),
+      toolName,
+    );
+    if (schemaFailure) return schemaFailure;
   }
 
   return null;

@@ -636,6 +636,13 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       assert.match(description, /score/, `${toolName} describes maintenance action score`);
       assert.match(description, /proposedAction/, `${toolName} describes executable proposedAction`);
       assert.match(description, /next action pointers|nextExecutableAction/, `${toolName} describes next action pointers`);
+      assert.match(description, /byPhase/, `${toolName} describes maintenance phase buckets`);
+      assert.match(description, /bySeverity/, `${toolName} describes maintenance severity buckets`);
+      assert.match(description, /byKind/, `${toolName} describes maintenance kind buckets`);
+      const postWriteSchema = findTool(toolName)?.outputSchema?.properties?.postWriteMaintenance;
+      assert.equal(postWriteSchema?.properties?.byPhase?.additionalProperties?.type, "integer", `${toolName} exposes byPhase bucket schema`);
+      assert.equal(postWriteSchema?.properties?.bySeverity?.additionalProperties?.type, "integer", `${toolName} exposes bySeverity bucket schema`);
+      assert.equal(postWriteSchema?.properties?.byKind?.additionalProperties?.type, "integer", `${toolName} exposes byKind bucket schema`);
     }
     const expectedMtimeTools = [
       "add_relation",
