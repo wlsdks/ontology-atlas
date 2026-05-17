@@ -4364,7 +4364,7 @@ describe('verify.mjs first-contact gates', () => {
         filesScanned: 1,
         edges: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static' }],
         externalImports: [{ from: 'src/a.ts', spec: 'react' }],
-        unresolved: [{ from: 'src/a.ts', spec: '@/missing', reason: 'unresolved-alias' }],
+        unresolved: [{ from: 'src/a.ts', spec: '@/missing', reason: 'alias-not-found' }],
         moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 1, kindCounts: { static: 1 } }],
       }),
       null,
@@ -4807,6 +4807,10 @@ describe('verify.mjs first-contact gates', () => {
       'infer_imports response unknown edge kind: unknown',
     );
     assert.equal(
+      inferImportsFailure({ rootPath: '/repo', filesScanned: 1, edges: [], externalImports: [], unresolved: [{ from: 'a.ts', spec: '@/missing', reason: 'unresolved-alias' }], moduleEdges: [] }),
+      'infer_imports response unknown unresolved reason at index 0: unresolved-alias',
+    );
+    assert.equal(
       inferImportsFailure({ rootPath: '/repo', filesScanned: 1, edges: [], externalImports: [], unresolved: [], moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 0 }] }),
       'infer_imports response missing module edge count at index 0',
     );
@@ -4817,6 +4821,10 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       inferImportsFailure({ rootPath: '/repo', filesScanned: 1, edges: [], externalImports: [], unresolved: [], moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 2, kindCounts: { static: 1 } }] }),
       'infer_imports response module edge kindCounts mismatch at index 0',
+    );
+    assert.equal(
+      inferImportsFailure({ rootPath: '/repo', filesScanned: 1, edges: [], externalImports: [], unresolved: [], moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 1, kindCounts: { unknown: 1 } }] }),
+      'infer_imports response malformed module edge kindCounts at index 0',
     );
   });
 

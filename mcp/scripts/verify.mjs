@@ -3074,6 +3074,7 @@ export function inferImportsFailure(parsed) {
     }
   }
   const edgeKinds = new Set(['static', 'dynamic', 'require', 'reexport', 'side']);
+  const unresolvedReasons = new Set(['empty', 'relative-not-found', 'alias-not-found']);
   for (const [index, edge] of parsed.edges.entries()) {
     if (!edge || typeof edge !== 'object' || Array.isArray(edge)) {
       return `infer_imports response malformed edge at index ${index}`;
@@ -3110,6 +3111,12 @@ export function inferImportsFailure(parsed) {
     if (typeof unresolved.reason !== 'string' || unresolved.reason.length === 0) {
       return `infer_imports response missing unresolved reason at index ${index}`;
     }
+    if (!unresolvedReasons.has(unresolved.reason)) {
+      return `infer_imports response unknown unresolved reason at index ${index}: ${unresolved.reason}`;
+    }
+    if (unresolved.reason !== 'empty' && unresolved.spec.length === 0) {
+      return `infer_imports response missing unresolved spec at index ${index}`;
+    }
   }
   for (const [index, moduleEdge] of parsed.moduleEdges.entries()) {
     if (!moduleEdge || typeof moduleEdge !== 'object' || Array.isArray(moduleEdge)) {
@@ -3126,10 +3133,14 @@ export function inferImportsFailure(parsed) {
     if (!moduleEdge.kindCounts || typeof moduleEdge.kindCounts !== 'object' || Array.isArray(moduleEdge.kindCounts)) {
       return `infer_imports response missing module edge kindCounts at index ${index}`;
     }
-    const kindTotal = Object.values(moduleEdge.kindCounts).reduce((sum, value) => {
+    const kindTotal = Object.entries(moduleEdge.kindCounts).reduce((sum, [kind, value]) => {
+      if (!edgeKinds.has(kind)) return NaN;
       if (!Number.isInteger(value) || value < 1) return NaN;
       return sum + value;
     }, 0);
+    if (Number.isNaN(kindTotal)) {
+      return `infer_imports response malformed module edge kindCounts at index ${index}`;
+    }
     if (kindTotal !== moduleEdge.count) {
       return `infer_imports response module edge kindCounts mismatch at index ${index}`;
     }

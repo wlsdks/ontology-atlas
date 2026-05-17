@@ -129,6 +129,10 @@ search, backlink 영향 범위, typed-filter row shape, `limited:true` query sem
 `analyze_repo_structure` / `infer_imports` 도 실제 repo root 를 대상으로 호출해
 bootstrap 후보와 import graph payload 의 shape / `structuredContent` 계약이
 dogfood walk 뿐 아니라 설치 verify 에서도 깨지지 않게 한다.
+설치 verify 와 dogfood gate 는 `infer_imports.unresolved.reason` 을 `empty` /
+`relative-not-found` / `alias-not-found` 로 제한하고, module edge `kindCounts`
+키도 static / dynamic / require / reexport / side 근거 집합으로 제한해
+잘못된 import graph 근거가 조용히 `depends_on` 후보로 넘어가지 않게 한다.
 2026-05-17 dogfood 에서 `infer_imports` 는 이 repo 의 `tsconfig.json`
 paths(`@/app-providers/*`, root `@/*`) 를 읽어 `app/[locale]/layout.tsx`
 와 `app/not-found.tsx` 의 정상 alias import 를 내부 edge 로 resolve 하고,
@@ -580,6 +584,7 @@ direct-tool `structuredContent` summary 를 함께 검증한다.
 노출해, file edge / external import / unresolved import / module edge 후보를 구조화된 결과로 바로 처리할 수 있게 한다.
 verify / dogfood walk 는 상위 module edge 의 `kindCounts` 도 출력해 `depends_on` 후보가
 static import 중심인지 dynamic / require / reexport 근거인지 사람이 바로 검토하게 한다.
+또한 unknown `unresolved.reason` / unknown `kindCounts` key 를 fail-closed 로 거부한다.
 `add_concept` / `add_relation` / `patch_concept` 도 single writer `outputSchema`
 계약을 노출해, 성공/changed/idempotent/post-write maintenance 결과를 구조화된 결과로 바로 처리할 수 있게 한다.
 `add_concepts` / `add_relations` 도 batch writer `outputSchema` row 계약을

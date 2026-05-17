@@ -3715,6 +3715,10 @@ describe("evaluateDogfoodGate", () => {
       ["infer_imports response unknown edge kind: unknown"],
     );
     assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, inferredImports: { ...okShape.inferredImports, unresolved: [{ from: "a", spec: "@/missing", reason: "unresolved-alias" }] } }),
+      ["infer_imports response unknown unresolved reason at index 0: unresolved-alias"],
+    );
+    assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, inferredImports: { ...okShape.inferredImports, moduleEdges: [{ from: "a", to: "b", count: 0 }] } }),
       ["infer_imports response missing module edge count at index 0"],
     );
@@ -3725,6 +3729,10 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, inferredImports: { ...okShape.inferredImports, moduleEdges: [{ from: "a", to: "b", count: 2, kindCounts: { static: 1 } }] } }),
       ["infer_imports response module edge kindCounts mismatch at index 0"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, inferredImports: { ...okShape.inferredImports, moduleEdges: [{ from: "a", to: "b", count: 1, kindCounts: { unknown: 1 } }] } }),
+      ["infer_imports response malformed module edge kindCounts at index 0"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, inferredImportsStructured: { ...okShape.inferredImports, filesScanned: 3 } }),
