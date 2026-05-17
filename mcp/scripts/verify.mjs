@@ -20,7 +20,7 @@
  *   5. tools/call list_concepts(kind=project) — project_scope gate probe
  *   6. tools/call get_concept — single-node detail + structuredContent contract
  *   7. tools/call get_concepts — batch reader success + partial-row contract
- *   8. tools/call find_evidence/find_backlinks/query_concepts — search, backlink, and typed-filter read smoke
+ *   8. tools/call find_evidence/find_backlinks/query_concepts/limited query_concepts — search, backlink, typed-filter, and limit-semantics read smoke
  *   9. tools/call find_neighbors/find_path — daily graph-read smoke
  *   10. tools/call add_concepts/add_relations — invalid batch rows remain row-level, not top-level errors
  *   11. tools/call find_orphans — row shape + root/sentinel default-exclusion contract
@@ -3137,7 +3137,7 @@ async function step2BootAndCall() {
     log('fail', 'verify timeout must be a positive integer');
     return false;
   }
-  log('info', `step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/find_neighbors/find_path/find_orphans/list_kinds (vault=${VAULT}, timeout=${timeoutMs}ms)`);
+  log('info', `step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/find_neighbors/find_path/find_orphans/list_kinds (vault=${VAULT}, timeout=${timeoutMs}ms)`);
 
   const lines = buildFirstContactRequests().map((request) => JSON.stringify(request));
 

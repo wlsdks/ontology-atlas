@@ -283,7 +283,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`byPhase` \/ `bySeverity` \/ `byKind`\s+bucket totals against `remainingActions`/);
     assert.match(verifySection, /catches\s+work-queue drift/);
     assert.match(verifySection, /Successful\s+verify logs print the same bucket summary and current-page executable\/review\s+next-action summary/);
-    assert.match(verifySection, /list_concepts\/project probe\/get_concept\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/find_neighbors\/find_path\/find_orphans\/list_kinds/);
+    assert.match(verifySection, /list_concepts\/project probe\/get_concept\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/find_neighbors\/find_path\/find_orphans\/list_kinds/);
     assert.match(verifySection, /✓ initialize instructions — first-contact safety guidance present/);
     assert.match(verifySection, /✓ tools\/list schema contract — strict arguments \+ read\/write hints \+ graph-query enums \+ health tuning \+ post-write guidance/);
     assert.match(verifySection, /✓ strict arguments — unknown tool argument rejected at runtime/);
@@ -391,7 +391,7 @@ describe('package contract helpers', () => {
     const changelog = readFileSync('mcp/CHANGELOG.md', 'utf-8');
     const verifySection = changelog.split('### Fixed — package tarball runtime files')[1]?.split('## 0.11.0')[0] ?? '';
 
-    assert.match(verifySection, /`list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`/);
+    assert.match(verifySection, /`list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /`get_concept`/);
     assert.match(verifySection, /single-node detail payload drift/);
     assert.match(verifySection, /success-row \/ partial-row contract drift/);
