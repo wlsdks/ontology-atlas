@@ -409,7 +409,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /structuredContent coverage split by direct reads \/ batch row-isolation writes \/ destructive dry-runs \/ maintenance cursor checks \/ graph queries/);
   assert.match(clean, /write-tool postWriteMaintenance byPhase\/bySeverity\/byKind buckets \+ score\/proposedAction\/next-action guidance/);
   assert.match(clean, /runtime unknown-argument \/ invalid-enum rejection/);
-  assert.match(clean, /match_nodes\.kind\/sort, recommend_relations\.kind, and match_edges\.type\/fromKind\/toKind typo and unsupported-kind rejection/);
+  assert.match(clean, /find_neighbors\.types, match_nodes\.kind\/sort, recommend_relations\.kind, and match_edges\.type\/fromKind\/toKind typo and unsupported-kind rejection/);
   assert.match(clean, /relation filter \/ relation_check closest-value rejection/);
   assert.match(clean, /maintenance_plan cursor smoke/);
   assert.match(clean, /Maintenance filters are enum-validated for phases\/severities\/kinds/);

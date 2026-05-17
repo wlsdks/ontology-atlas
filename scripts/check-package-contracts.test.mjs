@@ -640,6 +640,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ add_relations — non-object, unknown-field, and invalid-type rows isolated with input indexes and closest-value hints/);
     assert.match(verifySection, /✓ strict enums — invalid query operation rejected with closest-value hint/);
     assert.match(verifySection, /✓ strict relation filters — invalid dependencyTypes rejected with closest-value hint/);
+    assert.match(verifySection, /✓ strict find_neighbors filters — invalid relation types rejected before slug resolution with closest-value hint/);
     assert.match(verifySection, /✓ strict relation_check — invalid type rejected before endpoint resolution with closest-value hint/);
     assert.match(verifySection, /✓ strict add_relation — invalid type rejected before endpoint resolution without writing/);
     assert.match(verifySection, /✓ strict graph filters — invalid match_nodes\.kind\/sort, match_edges\.type, and recommend_relations\.kind rejected with narrowed diagnostics/);
@@ -946,10 +947,11 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /write-tool `postWriteMaintenance` `byPhase` \/ `bySeverity` \/\s+`byKind` bucket summaries plus `score` \/ executable `proposedAction` \/\s+current-page next action pointer guidance/);
     assert.match(verifySection, /runtime negative smokes with invalid `list_concepts\.lmit`/);
     assert.match(verifySection, /`query_ontology\.operation="overveiw"` inputs/);
+    assert.match(verifySection, /`find_neighbors\.types`/);
     assert.match(verifySection, /`match_nodes\.kind`/);
     assert.match(verifySection, /`match_nodes\.sort`/);
     assert.match(verifySection, /`recommend_relations\.kind`/);
-    assert.match(verifySection, /`match_edges\.type` \/ `match_edges\.fromKind` \/\s+`match_edges\.toKind`\s+typo and unsupported-kind rejection/);
+    assert.match(verifySection, /`match_edges\.type` \/\s+`match_edges\.fromKind` \/\s+`match_edges\.toKind`\s+typo and unsupported-kind rejection/);
     assert.match(verifySection, /relation type typos, and operation-specific kind mismatches fail with\s+diagnostics instead of\s+silently/);
     assert.match(verifySection, /`maintenance_plan` cursor contract/);
     assert.match(verifySection, /`cursor\.found=true` with `cursor\.reason=null`/);
@@ -1848,7 +1850,8 @@ describe('package contract helpers', () => {
     assert.match(doc, /dogfood helper \/ structuredContent 출력 계약/);
     assert.match(doc, /initialize safety\/recovery guidance gate/);
     assert.match(doc, /tools\/list inventory name \/ annotation coverage/);
-    assert.match(doc, /direct verify help 와 CLI wrapper help 도 이 `match_nodes\.kind`/);
+    assert.match(doc, /strict `find_neighbors\.types` row/);
+    assert.match(doc, /direct verify help 와 CLI wrapper help 도 이 `find_neighbors\.types`/);
     assert.match(doc, /`match_nodes\.sort=outDegre`/);
     assert.match(doc, /`match_edges\.type=depend_on`/);
     assert.match(doc, /`recommend_relations\.kind` \/ `match_edges\.type` \/ `match_edges\.fromKind`/);

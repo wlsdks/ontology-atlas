@@ -412,7 +412,7 @@ function makeDogfoodToolsList() {
           },
           types: {
             type: "array",
-            items: { type: "string" },
+            items: { type: "string", enum: RELATION_TYPE_VALUES },
             description:
               'Optional relation types, e.g. ["domain", "depends_on"]. Public add_relation types are normalized to stored graph keys.',
           },
@@ -2758,6 +2758,12 @@ const okShape = {
       content: [{ text: 'dependencyTypes items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
     },
   },
+  strictFindNeighborsTypeFilter: {
+    result: {
+      isError: true,
+      content: [{ text: 'types items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
+    },
+  },
   strictRelationCheck: {
     result: {
       isError: true,
@@ -3008,6 +3014,10 @@ describe("rpc response completion helpers", () => {
   it("summarizes strict closest-value smoke details for final dogfood output", () => {
     assert.equal(
       strictClosestValueSummary(okShape.strictRelationFilter),
+      "rejected true (depend_on -> depends_on)",
+    );
+    assert.equal(
+      strictClosestValueSummary(okShape.strictFindNeighborsTypeFilter),
       "rejected true (depend_on -> depends_on)",
     );
     assert.equal(
@@ -3308,6 +3318,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(72), "strict_recommend_relations_unsupported_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(73), "strict_match_nodes_sort_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(74), "strict_match_edges_type_filter");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(75), "strict_find_neighbors_type_filter");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -3353,6 +3364,17 @@ describe("rpc response completion helpers", () => {
         from: "missing-relation-check-source",
         to: "missing-relation-check-target",
         type: "depend_on",
+      },
+    });
+  });
+
+  it("keeps strict find_neighbors types dogfood request endpoint-independent", () => {
+    const requests = buildDogfoodRequests();
+    assert.deepEqual(requests.find((request) => request.id === 75)?.params, {
+      name: "find_neighbors",
+      arguments: {
+        slug: "missing-find-neighbors-type-source",
+        types: ["depend_on"],
       },
     });
   });
@@ -3931,6 +3953,41 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["strict_relation_filter: strict relation filter response did not suggest the closest dependencyTypes value"],
+    );
+  });
+
+  it("fails malformed strict find_neighbors types dogfood responses", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictFindNeighborsTypeFilter: { result: { isError: false, content: [{ text: "ok" }] } } }),
+      ["strict_find_neighbors_type_filter: strict find_neighbors types response was not rejected"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictFindNeighborsTypeFilter: { result: { isError: true, content: [{ text: "different error" }] } } }),
+      ["strict_find_neighbors_type_filter: strict find_neighbors types response did not report the invalid types filter"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictFindNeighborsTypeFilter: {
+          result: {
+            isError: true,
+            content: [{ text: 'types items must be one of: domains, domain, capabilities, elements, dependencies.' }],
+          },
+        },
+      }),
+      ["strict_find_neighbors_type_filter: strict find_neighbors types response did not report the invalid types value"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictFindNeighborsTypeFilter: {
+          result: {
+            isError: true,
+            content: [{ text: 'types items must be one of: domains, domain, capabilities, elements, dependencies. Received: "depend_on".' }],
+          },
+        },
+      }),
+      ["strict_find_neighbors_type_filter: strict find_neighbors types response did not suggest the closest types value"],
     );
   });
 

@@ -887,7 +887,7 @@ const TOOLS = [
         },
         types: {
           type: 'array',
-          items: NON_BLANK_STRING_SCHEMA,
+          items: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
           description:
             'Optional relation types/frontmatter keys to include, e.g. ["domain", "depends_on", "contains"]. Public add_relation types are normalized to stored graph keys.',
         },
@@ -2569,6 +2569,16 @@ function requireOptionalStringArray(value, name) {
   }
 }
 
+function requireOptionalRelationTypeArray(value, name) {
+  requireOptionalStringArray(value, name);
+  if (value === undefined) return;
+  for (const item of value) {
+    if (!RELATION_TYPE_VALUES.includes(item)) {
+      throw new Error(formatAllowedValueError(`${name} items`, item, RELATION_TYPE_VALUES));
+    }
+  }
+}
+
 function requireOptionalPlainObject(value, name) {
   if (value === undefined) return;
   requirePlainObject(value, name);
@@ -2950,7 +2960,7 @@ function findBacklinksTool({ slug }) {
 function findNeighborsTool({ slug, direction = 'both', types, includeNodes = true, limit = 100 }) {
   requireNonBlankString(slug, 'slug');
   requireOptionalDirection(direction, 'direction', ['outgoing', 'incoming', 'both']);
-  requireOptionalStringArray(types, 'types');
+  requireOptionalRelationTypeArray(types, 'types');
   requireOptionalBoolean(includeNodes, 'includeNodes');
   requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
   const docs = loadVaultDocs(VAULT_ROOT);

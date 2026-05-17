@@ -41,6 +41,7 @@ import {
   strictRecommendRelationsKindFilterFailure,
   strictMatchNodesSortFailure,
   strictMatchEdgesTypeFailure,
+  strictFindNeighborsTypeFailure,
   strictMaintenanceFilterFailure,
   strictAddRelationFailure,
   strictRelationFilterFailure,
@@ -186,6 +187,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [72, "strict_recommend_relations_unsupported_kind_filter"],
   [73, "strict_match_nodes_sort_filter"],
   [74, "strict_match_edges_type_filter"],
+  [75, "strict_find_neighbors_type_filter"],
 ]);
 
 const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
@@ -695,6 +697,10 @@ export function buildDogfoodRequests() {
       operation: "match_edges",
       type: "depend_on",
     }),
+    call(75, "find_neighbors", {
+      slug: "missing-find-neighbors-type-source",
+      types: ["depend_on"],
+    }),
     call(68, "query_ontology", {
       operation: "match_edges",
       fromKind: "capabilty",
@@ -1019,6 +1025,7 @@ export function evaluateDogfoodGate({
   strictMaintenanceSeverityFilter,
   strictMaintenanceKindFilter,
   strictRelationFilter,
+  strictFindNeighborsTypeFilter,
   strictRelationCheck,
   strictAddRelation,
   strictGraphKindFilter,
@@ -1101,6 +1108,8 @@ export function evaluateDogfoodGate({
   if (strictMaintenanceKindFilterError) failures.push(`strict_maintenance_kind_filter: ${strictMaintenanceKindFilterError}`);
   const strictRelationFilterError = strictRelationFilterFailure(strictRelationFilter);
   if (strictRelationFilterError) failures.push(`strict_relation_filter: ${strictRelationFilterError}`);
+  const strictFindNeighborsTypeFilterError = strictFindNeighborsTypeFailure(strictFindNeighborsTypeFilter);
+  if (strictFindNeighborsTypeFilterError) failures.push(`strict_find_neighbors_type_filter: ${strictFindNeighborsTypeFilterError}`);
   const strictRelationCheckError = strictRelationCheckFailure(strictRelationCheck);
   if (strictRelationCheckError) failures.push(`strict_relation_check: ${strictRelationCheckError}`);
   const strictAddRelationError = strictAddRelationFailure(strictAddRelation);
@@ -5413,6 +5422,12 @@ async function main() {
   if (strictRelationFilterText) {
     console.log(`  ${strictRelationFilterText}`);
   }
+  const strictFindNeighborsTypeFilter = responses.find((response) => response.id === 75);
+  const strictFindNeighborsTypeFilterText = strictFindNeighborsTypeFilter?.result?.content?.[0]?.text || "";
+  console.log(`  find_neighbors.types rejected: ${strictFindNeighborsTypeFilter?.result?.isError === true}`);
+  if (strictFindNeighborsTypeFilterText) {
+    console.log(`  ${strictFindNeighborsTypeFilterText}`);
+  }
 
   // 50. strict relation_check rejection
   header("strict relation_check — invalid type rejection");
@@ -5654,6 +5669,7 @@ async function main() {
     strictMaintenanceSeverityFilter,
     strictMaintenanceKindFilter,
     strictRelationFilter,
+    strictFindNeighborsTypeFilter,
     strictRelationCheck,
     strictAddRelation,
     strictGraphKindFilter,
@@ -5764,6 +5780,7 @@ async function main() {
   console.log(`  strict_maintenance_severity_filter: rejected ${strictMaintenanceSeverityFilter?.result?.isError === true}`);
   console.log(`  strict_maintenance_kind_filter: rejected ${strictMaintenanceKindFilter?.result?.isError === true}`);
   console.log(`  strict_relation_filter: ${strictClosestValueSummary(strictRelationFilter)}`);
+  console.log(`  strict_find_neighbors_type_filter: ${strictClosestValueSummary(strictFindNeighborsTypeFilter)}`);
   console.log(`  strict_relation_check: ${strictClosestValueSummary(strictRelationCheck)}`);
   console.log(`  strict_add_relation: ${strictClosestValueSummary(strictAddRelation)}`);
   console.log(`  strict_graph_kind_filter: ${strictClosestValueSummary(strictGraphKindFilter)}`);

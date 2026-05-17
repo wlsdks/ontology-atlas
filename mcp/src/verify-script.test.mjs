@@ -96,6 +96,7 @@ import {
   strictMatchEdgesTypeFailure,
   strictMaintenanceFilterFailure,
   strictRelationFilterFailure,
+  strictFindNeighborsTypeFailure,
   strictRelationCheckFailure,
   strictAddRelationFailure,
   structuredContentFailure,
@@ -1318,7 +1319,7 @@ describe('verify.mjs first-contact gates', () => {
             },
             types: {
               type: 'array',
-              items: { type: 'string' },
+              items: { type: 'string', enum: RELATION_TYPE_VALUES },
               description:
                 'Optional relation types/frontmatter keys to include, e.g. ["domain", "depends_on", "contains"]. Public add_relation types are normalized to stored graph keys.',
             },
@@ -3648,7 +3649,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /compile_ontology summary \+ paginated full-artifact \+ indexed full-artifact smoke/);
     assert.match(verifyUsage(), /Successful output prints read census consistency after cross-checking list_kinds\/list_concepts\/compile_ontology\/overview/);
     assert.match(verifyUsage(), /strict unknown-argument \/ invalid-enum rejection/);
-    assert.match(verifyUsage(), /match_nodes\.kind\/sort, recommend_relations\.kind, and match_edges\.type\/fromKind\/toKind typo and unsupported-kind rejection/);
+    assert.match(verifyUsage(), /find_neighbors\.types, match_nodes\.kind\/sort, recommend_relations\.kind, and match_edges\.type\/fromKind\/toKind typo and unsupported-kind rejection/);
     assert.match(verifyUsage(), /tools\/list inventory names, schema strictness, and annotation coverage \(title\/read\/write\/destructive\/idempotent\/local-only\)/);
     assert.match(verifyUsage(), /batch writer row isolation for non-object rows and unknown row fields with concepts\[n\]\/relations\[n\] error labels, plus invalid add_relations type closest-value hints/);
     assert.match(verifyUsage(), /structuredContent coverage summary splits direct reads, batch row-isolation writes, destructive dry-runs, maintenance cursor checks, and graph queries/);
@@ -4166,6 +4167,34 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       strictRelationFilterFailure({ result: { isError: true, content: [{ text: 'dependencyTypes items must be one of: dependencies, depends_on. Received: "depend_on".' }] } }),
       'strict relation filter response did not suggest the closest dependencyTypes value',
+    );
+  });
+
+  it('fails malformed strict find_neighbors types smoke responses', () => {
+    assert.equal(
+      strictFindNeighborsTypeFailure({
+        result: {
+          isError: true,
+          content: [{ text: 'types items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
+        },
+      }),
+      null,
+    );
+    assert.equal(
+      strictFindNeighborsTypeFailure({ result: { isError: false, content: [{ text: 'ok' }] } }),
+      'strict find_neighbors types response was not rejected',
+    );
+    assert.equal(
+      strictFindNeighborsTypeFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
+      'strict find_neighbors types response did not report the invalid types filter',
+    );
+    assert.equal(
+      strictFindNeighborsTypeFailure({ result: { isError: true, content: [{ text: 'types items must be one of: dependencies, depends_on. Did you mean "depends_on"?' }] } }),
+      'strict find_neighbors types response did not report the invalid types value',
+    );
+    assert.equal(
+      strictFindNeighborsTypeFailure({ result: { isError: true, content: [{ text: 'types items must be one of: dependencies, depends_on. Received: "depend_on".' }] } }),
+      'strict find_neighbors types response did not suggest the closest types value',
     );
   });
 
@@ -5039,6 +5068,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(52), 'strict_recommend_relations_unsupported_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(53), 'strict_match_nodes_sort_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(54), 'strict_match_edges_type_filter');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(55), 'strict_find_neighbors_type_filter');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15, 30, 31, 33, 35, 36, 37, 43, 44, 45].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),

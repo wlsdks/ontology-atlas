@@ -600,6 +600,7 @@ export function toolsListSchemaFailure(tools) {
   if (
     neighborsTypesInputSchema?.type !== 'array' ||
     neighborsTypesInputSchema.items?.type !== 'string' ||
+    !sameArray(neighborsTypesInputSchema.items?.enum, RELATION_TYPE_VALUES) ||
     !/Public add_relation types are normalized to stored graph keys/i.test(neighborsTypesInputSchema?.description ?? '')
   ) {
     return 'find_neighbors inputSchema types alias guidance drift';
@@ -1799,6 +1800,23 @@ export function strictRelationFilterFailure(response) {
   return null;
 }
 
+export function strictFindNeighborsTypeFailure(response) {
+  if (response?.result?.isError !== true) {
+    return 'strict find_neighbors types response was not rejected';
+  }
+  const text = response.result.content?.[0]?.text || '';
+  if (!/types items must be one of/i.test(text)) {
+    return 'strict find_neighbors types response did not report the invalid types filter';
+  }
+  if (!/Received: "depend_on"/i.test(text)) {
+    return 'strict find_neighbors types response did not report the invalid types value';
+  }
+  if (!/Did you mean "depends_on"\?/i.test(text)) {
+    return 'strict find_neighbors types response did not suggest the closest types value';
+  }
+  return null;
+}
+
 export function strictGraphKindFilterFailure(
   response,
   { field = 'kind', received = 'capabilty', suggestion = 'capability' } = {},
@@ -2363,6 +2381,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [52, 'strict_recommend_relations_unsupported_kind_filter'],
   [53, 'strict_match_nodes_sort_filter'],
   [54, 'strict_match_edges_type_filter'],
+  [55, 'strict_find_neighbors_type_filter'],
 ]);
 
 function log(level, msg) {
@@ -2601,7 +2620,7 @@ export function verifyUsage() {
     'including list/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans.\n' +
     'It also checks node census, vault validation, workspace health, compile_ontology summary + paginated full-artifact + indexed full-artifact smoke, overview, query plans, and graph-query smoke.\n' +
     'Successful output prints read census consistency after cross-checking list_kinds/list_concepts/compile_ontology/overview.\n' +
-    'Also checks strict unknown-argument / invalid-enum rejection, match_nodes.kind/sort, recommend_relations.kind, and match_edges.type/fromKind/toKind typo and unsupported-kind rejection, maintenance_plan filter enums,\n' +
+    'Also checks strict unknown-argument / invalid-enum rejection, find_neighbors.types, match_nodes.kind/sort, recommend_relations.kind, and match_edges.type/fromKind/toKind typo and unsupported-kind rejection, maintenance_plan filter enums,\n' +
     'tools/list inventory names, schema strictness, and annotation coverage (title/read/write/destructive/idempotent/local-only),\n' +
     'batch writer row isolation for non-object rows and unknown row fields with concepts[n]/relations[n] error labels, plus invalid add_relations type closest-value hints,\n' +
     'destructive writer dry-runs for rename_concept/merge_concepts/delete_concept with every planned response present and no changed/postWriteMaintenance,\n' +
@@ -2959,6 +2978,18 @@ export function buildFirstContactRequests() {
         arguments: {
           operation: 'match_edges',
           type: 'depend_on',
+        },
+      },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 55,
+      method: 'tools/call',
+      params: {
+        name: 'find_neighbors',
+        arguments: {
+          slug: 'missing-find-neighbors-type-source',
+          types: ['depend_on'],
         },
       },
     },
@@ -5205,6 +5236,7 @@ async function step2BootAndCall() {
       const strictRecommendRelationsUnsupportedKindFilterRes = responses.find((r) => r.id === 52);
       const strictMatchNodesSortFilterRes = responses.find((r) => r.id === 53);
       const strictMatchEdgesTypeFilterRes = responses.find((r) => r.id === 54);
+      const strictFindNeighborsTypeFilterRes = responses.find((r) => r.id === 55);
       const strictGraphFromKindFilterRes = responses.find((r) => r.id === 48);
       const strictGraphToKindFilterRes = responses.find((r) => r.id === 49);
       const maintenanceMissingCursorRes = responses.find((r) => r.id === 25);
@@ -5335,6 +5367,12 @@ async function step2BootAndCall() {
         return res(false);
       }
       log('ok', 'strict relation filters — invalid dependencyTypes rejected with closest-value hint');
+      const strictFindNeighborsTypeFilter = strictFindNeighborsTypeFailure(strictFindNeighborsTypeFilterRes);
+      if (strictFindNeighborsTypeFilter) {
+        log('fail', strictFindNeighborsTypeFilter);
+        return res(false);
+      }
+      log('ok', 'strict find_neighbors filters — invalid relation types rejected before slug resolution with closest-value hint');
       const strictRelationCheck = strictRelationCheckFailure(strictRelationCheckRes);
       if (strictRelationCheck) {
         log('fail', strictRelationCheck);
