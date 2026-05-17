@@ -3567,7 +3567,7 @@ await test('infer-imports --apply — fails closed when add_relations response r
       "    return;",
       "  }",
       "  if (msg.params?.name === 'infer_imports') {",
-      "    const payload = { rootPath: '/repo', filesScanned: 2, edges: [], externalImports: [], unresolved: [], moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 1 }] };",
+      "    const payload = { rootPath: '/repo', filesScanned: 2, edges: [], externalImports: [], unresolved: [], moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 1, kindCounts: { static: 1 } }] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "    return;",
       "  }",
@@ -3586,6 +3586,45 @@ await test('infer-imports --apply — fails closed when add_relations response r
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /add_relations chunk @0\.relations\[0\]\.to must be a non-empty string/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('infer-imports — fails closed when infer_imports module edge payload drifts', async () => {
+  const vault = withVault([]);
+  const repo = makeImportRepo();
+  const fakeMcp = join(vault, 'fake-mcp-infer-payload-drift.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.method === 'initialize') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'infer_imports') {",
+      "    const payload = { rootPath: '/repo', filesScanned: 1, edges: [], externalImports: [], unresolved: [], moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 2, kindCounts: { static: 1 } }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['infer-imports', repo, '--vault', vault, '--json'], {
+      env: { OMOT_MCP_PATH: fakeMcp },
+    });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(
+      stripAnsi(r.stderr),
+      /infer_imports\.moduleEdges\[0\]\.kindCounts total must equal count: count 2, kindCounts 1/,
+    );
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });

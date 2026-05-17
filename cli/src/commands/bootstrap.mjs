@@ -25,6 +25,7 @@ import {
   assertConceptBatchResult,
   assertRelationBatchResult,
 } from '../lib/batch-results.mjs';
+import { assertInferImportsResult } from '../lib/import-analysis-results.mjs';
 import { assertAnalyzeRepoStructureResult } from '../lib/repo-analysis-results.mjs';
 import {
   pruneUntouchedStarterNodes,
@@ -120,6 +121,7 @@ export async function runBootstrap(args) {
         rootPath: target,
         maxFiles: parsed.maxFiles,
       });
+      assertInferImportsResult(importsResult);
     } catch (err) {
       process.stderr.write(
         `${COLORS.red}error${COLORS.reset}  infer_imports: ${err instanceof Error ? err.message : String(err)}\n`,

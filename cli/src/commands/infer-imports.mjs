@@ -5,6 +5,7 @@
 import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertRelationBatchResult } from '../lib/batch-results.mjs';
+import { assertInferImportsResult } from '../lib/import-analysis-results.mjs';
 import { getVaultCensus, writeVaultCensus } from '../lib/vault-census.mjs';
 import {
   formatUnknownFlagError,
@@ -49,9 +50,10 @@ export async function runInferImports(args) {
       rootPath: target,
       maxFiles,
     });
+    assertInferImportsResult(result);
   } catch (err) {
     process.stderr.write(
-      `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
+      `${COLORS.red}error${COLORS.reset}  infer_imports: ${err instanceof Error ? err.message : String(err)}\n`,
     );
     return 2;
   }
