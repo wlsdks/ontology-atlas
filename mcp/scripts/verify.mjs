@@ -2119,6 +2119,16 @@ export function verifyTimeoutFailure(timeoutMs) {
   return `server verify timed out after ${timeoutMs}ms. Increase --timeout-ms or OMOT_VERIFY_TIMEOUT_MS for large or slow vaults.`;
 }
 
+export function verifyTimeoutValueErrorMessage(value) {
+  const received = value == null ? 'undefined' : JSON.stringify(String(value));
+  return [
+    'verify timeout must be a positive integer wait window in milliseconds.',
+    `Received: ${received}.`,
+    'Set --timeout-ms N or OMOT_VERIFY_TIMEOUT_MS=N.',
+    'Example: npm run verify -- --timeout-ms 15000',
+  ].join('\n');
+}
+
 export function verifyUsage() {
   return (
     '\nUsage:\n' +
@@ -5211,7 +5221,7 @@ async function main() {
     process.exit(1);
   }
   if (verifyTimeoutMs() === false) {
-    process.stderr.write(`\n[oh-my-ontology-mcp verify]\n\n\x1b[31m✗\x1b[0m verify timeout must be a positive integer. Set --timeout-ms N or OMOT_VERIFY_TIMEOUT_MS=N.\n`);
+    process.stderr.write(`\n[oh-my-ontology-mcp verify]\n\n\x1b[31m✗\x1b[0m ${verifyTimeoutValueErrorMessage(VERIFY_TIMEOUT_MS_RAW)}\n`);
     process.exit(1);
   }
   console.log('\n[oh-my-ontology-mcp verify]\n');

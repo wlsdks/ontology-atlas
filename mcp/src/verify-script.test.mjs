@@ -88,6 +88,7 @@ import {
   validateVaultFailure,
   verifyCountConsistencyFailure,
   verifyTimeoutFailure,
+  verifyTimeoutValueErrorMessage,
   verifyUsage,
   vaultWarningsFailure,
   workspaceBriefSummary,
@@ -3097,8 +3098,10 @@ describe('verify.mjs first-contact gates', () => {
       assert.equal(result.stdout, '');
       assert.match(result.stderr, /\[oh-my-ontology-mcp verify\]/);
       assert.match(result.stderr, /verify timeout must be a positive integer/);
+      assert.match(result.stderr, /Received: "abc"/);
       assert.match(result.stderr, /--timeout-ms N/);
       assert.match(result.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
+      assert.match(result.stderr, /npm run verify -- --timeout-ms 15000/);
     }
   });
 
@@ -3865,6 +3868,8 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(parseVerifyTimeoutMs('0'), false);
     assert.equal(parseVerifyTimeoutMs('-1'), false);
     assert.equal(parseVerifyTimeoutMs('nope'), false);
+    assert.match(verifyTimeoutValueErrorMessage('1000ms'), /Received: "1000ms"/);
+    assert.match(verifyTimeoutValueErrorMessage('1000ms'), /npm run verify -- --timeout-ms 15000/);
   });
 
   it('formats actionable timeout failures', () => {
