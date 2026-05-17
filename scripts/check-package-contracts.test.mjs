@@ -86,6 +86,28 @@ function healthCheckSummary(checks) {
   return checks.map((check) => `${check.id}:${check.status}:${check.count}`).join(', ');
 }
 
+function dogfoodVaultCensusFromDocs(docs) {
+  const byKind = {
+    capabilities: 0,
+    domains: 0,
+    elements: 0,
+    project: 0,
+    'vault-readme': 0,
+  };
+  for (const doc of docs) {
+    if (doc.frontmatter.kind === 'capability') byKind.capabilities += 1;
+    if (doc.frontmatter.kind === 'domain') byKind.domains += 1;
+    if (doc.frontmatter.kind === 'element') byKind.elements += 1;
+    if (doc.frontmatter.kind === 'project') byKind.project += 1;
+    if (doc.frontmatter.kind === 'vault-readme') byKind['vault-readme'] += 1;
+  }
+  return {
+    files: docs.length,
+    total: Object.values(byKind).reduce((sum, count) => sum + count, 0),
+    byKind,
+  };
+}
+
 describe('package contract helpers', () => {
   it('keeps filtered integration scripts discoverable from the root README', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
@@ -385,7 +407,9 @@ describe('package contract helpers', () => {
   it('keeps the MCP verify README aligned with first-contact census gates', () => {
     const readme = readFileSync('mcp/README.md', 'utf-8');
     const verifySection = readme.split('### One-line verify CLI')[1]?.split('### Manual verification')[0] ?? '';
-    const census = dogfoodVaultCensus(process.cwd());
+    const ontologyRoot = join(process.cwd(), 'docs', 'ontology');
+    const dogfoodDocs = loadVaultDocs(ontologyRoot);
+    const census = dogfoodVaultCensusFromDocs(dogfoodDocs);
     const kindSummary = [
       `capability:${census.byKind.capabilities}`,
       `domain:${census.byKind.domains}`,
@@ -394,8 +418,6 @@ describe('package contract helpers', () => {
       `vault-readme:${census.byKind['vault-readme']}`,
     ].join(', ');
     const scopedNodes = census.total - census.byKind['vault-readme'];
-    const ontologyRoot = join(process.cwd(), 'docs', 'ontology');
-    const dogfoodDocs = loadVaultDocs(ontologyRoot);
     const projectDoc = dogfoodDocs.find((doc) => doc.slug === 'project');
     assert.ok(projectDoc, 'dogfood vault has a project node');
     const projectOutgoingEdgeCount = collectNeighborRefs(projectDoc).length;
