@@ -358,7 +358,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ query_concepts — \d+ query results? \/ \d+ total query results?/);
     assert.match(verifySection, /✓ query_concepts limited — \d+ query results? \/ \d+ total query results? \(limited true\)/);
     assert.match(verifySection, /✓ analyze_repo_structure — (fsd|next|generic) \(\d+ domain candidates?, \d+ capability candidates?, \d+ element candidates?\)/);
-    assert.match(verifySection, /✓ infer_imports — \d+ files? scanned, \d+ module edges?/);
+    assert.match(verifySection, /✓ infer_imports — \d+ files? scanned, \d+ module edges? \(.+->.+ x\d+ \((static|dynamic|require|reexport|side):\d+/);
     assert.match(verifySection, /✓ find_neighbors — elements\/file-system-access-api/);
     assert.match(verifySection, /✓ find_path — elements\/file-system-access-api → project \(2 hops, 2 edges\)/);
     assert.match(verifySection, /✓ find_orphans — 0 orphans \(root\/sentinel defaults excluded\)/);
@@ -849,7 +849,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`compile_ontology` 도 `outputSchema` 와 동일한 `structuredContent` graph-summary payload/);
     assert.match(doc, /`analyze_repo_structure` 도 `outputSchema` 와 동일한 `structuredContent` bootstrap-candidate payload/);
     assert.match(doc, /`infer_imports` 도 `outputSchema` 와 동일한 `structuredContent` import-graph payload/);
-    assert.match(doc, /상위 module edge 의 `kindCounts` 도 출력/);
+    assert.match(doc, /verify \/ dogfood walk 는 상위 module edge 의 `kindCounts` 도 출력/);
     assert.match(inferImportsRow, /common `@\/\*` alias/);
     assert.match(inferImportsRow, /내부 edge 로 resolve/);
     assert.match(inferImportsRow, /`alias-not-found` unresolved/);

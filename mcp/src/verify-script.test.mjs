@@ -48,6 +48,7 @@ import {
   hasFirstContactErrorResponse,
   healthChecksSummary,
   inferImportsFailure,
+  importModuleEdgeKindOutputSummary,
   initializeInstructionsFailure,
   listConceptsFailure,
   listKindsFailure,
@@ -106,6 +107,35 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(formatCount(0, 'partial row'), '0 partial rows');
     assert.equal(formatCount(1, 'partial row'), '1 partial row');
     assert.equal(formatCount(2, 'ok row'), '2 ok rows');
+  });
+
+  it('formats infer_imports module edge kind evidence for verify output', () => {
+    assert.equal(
+      importModuleEdgeKindOutputSummary([
+        {
+          from: 'capabilities/auth',
+          to: 'capabilities/user',
+          count: 3,
+          kindCounts: { static: 2, dynamic: 1 },
+        },
+        {
+          from: 'capabilities/billing',
+          to: 'elements/src/shared/api',
+          count: 1,
+          kindCounts: { reexport: 1 },
+        },
+      ]),
+      'capabilities/auth->capabilities/user x3 (static:2/dynamic:1), capabilities/billing->elements/src/shared/api x1 (reexport:1)',
+    );
+    assert.equal(
+      importModuleEdgeKindOutputSummary([
+        { from: 'a', to: 'b', count: 1, kindCounts: { static: 1 } },
+        { from: 'c', to: 'd', count: 1, kindCounts: { require: 1 } },
+        { from: 'e', to: 'f', count: 1, kindCounts: { side: 1 } },
+      ], 2),
+      'a->b x1 (static:1), c->d x1 (require:1), +1 more',
+    );
+    assert.equal(importModuleEdgeKindOutputSummary([]), 'none');
   });
 
   it('fails tools/list schema drift for strict arguments, graph-query enums, batch caps, and write safety', () => {

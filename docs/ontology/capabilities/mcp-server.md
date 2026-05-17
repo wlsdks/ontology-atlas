@@ -537,7 +537,7 @@ direct-tool `structuredContent` summary 를 함께 검증한다.
 노출해, fresh repo 의 project/domain/capability/element 후보를 구조화된 결과로 바로 처리할 수 있게 한다.
 `infer_imports` 도 `outputSchema` 와 동일한 `structuredContent` import-graph payload 를
 노출해, file edge / external import / unresolved import / module edge 후보를 구조화된 결과로 바로 처리할 수 있게 한다.
-dogfood walk 는 상위 module edge 의 `kindCounts` 도 출력해 `depends_on` 후보가
+verify / dogfood walk 는 상위 module edge 의 `kindCounts` 도 출력해 `depends_on` 후보가
 static import 중심인지 dynamic / require / reexport 근거인지 사람이 바로 검토하게 한다.
 `add_concept` / `add_relation` / `patch_concept` 도 single writer `outputSchema`
 계약을 노출해, 성공/changed/idempotent/post-write maintenance 결과를 구조화된 결과로 바로 처리할 수 있게 한다.

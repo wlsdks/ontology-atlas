@@ -150,6 +150,34 @@ export function maintenanceNextActionOutputSummary(parsed) {
   return `executable ${summarize(parsed?.nextExecutableAction)}; review ${summarize(parsed?.nextReviewAction)}`;
 }
 
+export function importModuleEdgeKindOutputSummary(moduleEdges, limit = 2) {
+  if (!Array.isArray(moduleEdges) || moduleEdges.length === 0) return 'none';
+  const shown = moduleEdges.slice(0, limit).map((edge) => {
+    const from = typeof edge?.from === 'string' && edge.from.length > 0 ? edge.from : 'unknown';
+    const to = typeof edge?.to === 'string' && edge.to.length > 0 ? edge.to : 'unknown';
+    const count = Number.isInteger(edge?.count) ? edge.count : 'n/a';
+    const kindSummary = importKindCountOutputSummary(edge?.kindCounts);
+    const kindSuffix = kindSummary === 'none' ? '' : ` (${kindSummary})`;
+    return `${from}->${to} x${count}${kindSuffix}`;
+  });
+  const suffix = moduleEdges.length > shown.length ? `, +${moduleEdges.length - shown.length} more` : '';
+  return `${shown.join(', ')}${suffix}`;
+}
+
+function importKindCountOutputSummary(kindCounts) {
+  if (!kindCounts || typeof kindCounts !== 'object' || Array.isArray(kindCounts)) return 'none';
+  const ordered = ['static', 'dynamic', 'require', 'reexport', 'side'];
+  const known = ordered
+    .filter((kind) => Number.isInteger(kindCounts[kind]) && kindCounts[kind] > 0)
+    .map((kind) => `${kind}:${kindCounts[kind]}`);
+  const extra = Object.entries(kindCounts)
+    .filter(([kind, count]) => !ordered.includes(kind) && Number.isInteger(count) && count > 0)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([kind, count]) => `${kind}:${count}`);
+  const entries = [...known, ...extra];
+  return entries.length > 0 ? entries.join('/') : 'none';
+}
+
 function sameArray(left, right) {
   return Array.isArray(left) &&
     Array.isArray(right) &&
@@ -4241,7 +4269,7 @@ async function step2BootAndCall() {
           log('fail', structuredFailure);
           return res(false);
         }
-        log('ok', `infer_imports — ${formatCount(parsed.filesScanned, 'file')} scanned, ${formatCount(parsed.moduleEdges.length, 'module edge')}`);
+        log('ok', `infer_imports — ${formatCount(parsed.filesScanned, 'file')} scanned, ${formatCount(parsed.moduleEdges.length, 'module edge')} (${importModuleEdgeKindOutputSummary(parsed.moduleEdges)})`);
       } catch (err) {
         log('fail', `failed to parse infer_imports response: ${err.message}`);
         return res(false);
