@@ -2267,6 +2267,14 @@ await test('workspace-brief — prints health check coverage', async () => {
   }
 });
 
+await test('workspace-brief --help — documents health and growth output', async () => {
+  const r = await run(['workspace-brief', '--help']);
+  assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+  const clean = stripAnsi(r.stdout);
+  assert.match(clean, /HEALTH CHECKS id:status:count/);
+  assert.match(clean, /GROWTH actions\/relations\/dangling\/external\/ignoredExternal counts/);
+});
+
 await test('maintenance --json — exposes maintenance_plan work queue', async () => {
   const root = buildCycleFixture();
   try {
@@ -2308,6 +2316,14 @@ await test('maintenance — supports cursor and enum filter flags', async () => 
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+await test('maintenance --help — documents summary and next pointers', async () => {
+  const r = await run(['maintenance', '--help']);
+  assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+  const clean = stripAnsi(r.stdout);
+  assert.match(clean, /cursor state, summary counts, bucket counts/);
+  assert.match(clean, /current-page next executable\/review pointers/);
 });
 
 await test('maintenance — rejects malformed CLI flags before runtime work', async () => {

@@ -159,6 +159,8 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  oh-my-ontology workspace-brief [vault] [--json]\n\n` +
-      `first-contact dashboard: status + hotspots + project 요약 + next actions.\n`,
+      `first-contact dashboard: status + hotspots + project 요약 + next actions.\n` +
+      `Non-JSON output includes HEALTH CHECKS id:status:count coverage and\n` +
+      `GROWTH actions/relations/dangling/external/ignoredExternal counts.\n`,
   );
 }
