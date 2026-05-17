@@ -22,6 +22,10 @@
 import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
+  assertConceptBatchResult,
+  assertRelationBatchResult,
+} from '../lib/batch-results.mjs';
+import {
   pruneUntouchedStarterNodes,
   restorePrunedStarterNodes,
   summarizePrunedStarterNodes,
@@ -88,6 +92,7 @@ export async function runBootstrap(args) {
   if (concepts.length > 0) {
     try {
       const r = await callMcpTool(vaultRoot, 'add_concepts', { concepts });
+      assertConceptBatchResult(r);
       conceptsRows = r.concepts ?? [];
     } catch (err) {
       restorePrunedStarterNodes(vaultRoot, prunedStarters);
@@ -147,6 +152,7 @@ export async function runBootstrap(args) {
         const r = await callMcpTool(vaultRoot, 'add_concepts', {
           concepts: importEndpointConcepts,
         });
+        assertConceptBatchResult(r, 'add_concepts(import endpoints)');
         importEndpointRows = r.concepts ?? [];
       } catch (err) {
         process.stderr.write(
@@ -488,6 +494,7 @@ async function applyRelations(vaultRoot, relations) {
     let res;
     try {
       res = await callMcpTool(vaultRoot, 'add_relations', { relations: chunk });
+      assertRelationBatchResult(res, `add_relations chunk @${i}`);
     } catch (err) {
       process.stderr.write(
         `${COLORS.red}error${COLORS.reset}  add_relations chunk @${i}: ${err instanceof Error ? err.message : String(err)}\n`,

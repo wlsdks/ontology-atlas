@@ -3978,6 +3978,93 @@ await test('bootstrap --json — vaultCensus 필드 노출 (R+ cycle 37)', async
   }
 });
 
+await test('bootstrap — fails closed when add_concepts response rows drift', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  const fakeMcp = join(vault, 'fake-mcp-bootstrap-concepts-drift.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.method === 'initialize') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'analyze_repo_structure') {",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [], capabilities: [], elements: [], suggestedRelations: [] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'add_concepts') {",
+      "    const payload = { concepts: [{ slug: 'demo', ok: 'true' }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['bootstrap', repo, '--vault', vault], {
+      env: { OMOT_MCP_PATH: fakeMcp },
+    });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /add_concepts\.concepts\[0\]\.ok must be a boolean/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('bootstrap — fails closed when add_relations response rows drift', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  const fakeMcp = join(vault, 'fake-mcp-bootstrap-relations-drift.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.method === 'initialize') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'analyze_repo_structure') {",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core' }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'add_concepts') {",
+      "    const payload = { concepts: msg.params.arguments.concepts.map((concept) => ({ slug: concept.slug, ok: true, filePath: `/tmp/${concept.slug}.md`, changed: true })) };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'add_relations') {",
+      "    const payload = { relations: [{ ok: true, from: 'demo', to: '', type: 'contains' }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['bootstrap', repo, '--vault', vault], {
+      env: { OMOT_MCP_PATH: fakeMcp },
+    });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /add_relations chunk @0\.relations\[0\]\.to must be a non-empty string/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('bootstrap 두번째 실행 — idempotent (errors 0)', async () => {
   const vault = withVault([]);
   const repo = makeFullRepo();
