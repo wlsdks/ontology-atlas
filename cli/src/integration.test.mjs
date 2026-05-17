@@ -881,6 +881,11 @@ await test('local/frontmatter commands — reject invalid vault and value argume
       stderr: /--kind requires a value/,
     },
     {
+      args: ['find', 'auth', '--kind=capabilty'],
+      expectedCode: 1,
+      stderr: /--kind must be one of: project, domain, capability, element, document, vault-readme\. Received: "capabilty"\. Did you mean "capability"\?/,
+    },
+    {
       args: ['find', 'auth', '--knd=capability'],
       expectedCode: 1,
       stderr: /unknown flag: --knd=capability\. Did you mean --kind\?/,

@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { parseFrontmatter } from '../lib/parse-frontmatter.mjs';
+import { READABLE_KIND_VALUES } from '../lib/kinds.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
+import { formatAllowedValueError } from '../lib/suggestions.mjs';
 import { walkMd, pathToSlug } from '../lib/walk-vault.mjs';
 import {
   formatUnknownFlagError,
@@ -142,6 +144,9 @@ function parseArgs(args) {
   if (flags.vaultPath === false) return { error: '--vault requires a path' };
   for (const value of Object.values(flags)) {
     if (value instanceof Error) return { error: value.message };
+  }
+  if (flags.kindFilter && !READABLE_KIND_VALUES.includes(flags.kindFilter)) {
+    return { error: formatAllowedValueError('--kind', flags.kindFilter, READABLE_KIND_VALUES) };
   }
   const vaultResult = resolveTrailingVaultArg({
     vault: flags.vaultPath,

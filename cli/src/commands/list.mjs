@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { parseFrontmatter } from '../lib/parse-frontmatter.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { VAULT_KINDS } from '../lib/schema.mjs';
+import { READABLE_KIND_VALUES } from '../lib/kinds.mjs';
 import { formatAllowedValueError } from '../lib/suggestions.mjs';
 import { walkMd, pathToSlug } from '../lib/walk-vault.mjs';
 import {
@@ -12,7 +12,6 @@ import {
 } from '../lib/cli-args.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--kind', '--json'];
-const LIST_KIND_VALUES = Object.freeze([...VAULT_KINDS, 'vault-readme']);
 
 const COLORS = {
   dim: '\x1b[2m',
@@ -122,8 +121,8 @@ function parseArgs(args) {
   for (const value of Object.values(flags)) {
     if (value instanceof Error) return { error: value.message };
   }
-  if (flags.kindFilter && !LIST_KIND_VALUES.includes(flags.kindFilter)) {
-    return { error: formatAllowedValueError('--kind', flags.kindFilter, LIST_KIND_VALUES) };
+  if (flags.kindFilter && !READABLE_KIND_VALUES.includes(flags.kindFilter)) {
+    return { error: formatAllowedValueError('--kind', flags.kindFilter, READABLE_KIND_VALUES) };
   }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;
