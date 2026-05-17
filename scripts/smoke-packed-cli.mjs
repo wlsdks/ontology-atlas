@@ -470,7 +470,7 @@ try {
   assert.match(cliMcpVerifyHelp.stdout, /pnpm integration:cli:mcp-verify/);
   assert.match(cliMcpVerifyHelp.stdout, /Installed CLI mcp-verify wrapper flow\/help\/failure checks/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
-  assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health\/read\/sample-shape helper gates/);
+  assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health-summary\/read\/sample-shape helper gates/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:verify:timeout/);
   assert.match(cliMcpVerifyHelp.stdout, /Narrow MCP verify timeout\/help diagnostics/);
 
@@ -679,7 +679,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /Successful cursor lines print bucket summaries plus current-page executable\/review next-action summaries/);
   assert.match(directMcpVerifyHelp.stdout, /Focused checks:/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
-  assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health\/read\/sample-shape helper gates/);
+  assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health-summary\/read\/sample-shape helper gates/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify:timeout/);
   assert.match(directMcpVerifyHelp.stdout, /Narrow MCP verify timeout\/help diagnostics/);
 

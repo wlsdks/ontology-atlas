@@ -417,7 +417,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /pnpm integration:cli:mcp-verify/);
   assert.match(clean, /Installed CLI mcp-verify wrapper flow\/help\/failure checks/);
   assert.match(clean, /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
-  assert.match(clean, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health\/read\/sample-shape helper gates/);
+  assert.match(clean, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health-summary\/read\/sample-shape helper gates/);
   assert.match(clean, /pnpm test:mcp:verify:timeout/);
   assert.match(clean, /Narrow MCP verify timeout\/help diagnostics/);
   assertPnpmScriptsExist(clean);
