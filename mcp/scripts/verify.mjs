@@ -1750,19 +1750,22 @@ export function strictRelationFilterFailure(response) {
   return null;
 }
 
-export function strictGraphKindFilterFailure(response) {
+export function strictGraphKindFilterFailure(
+  response,
+  { field = 'kind', received = 'capabilty', suggestion = 'capability' } = {},
+) {
   if (response?.result?.isError !== true) {
     return 'strict graph kind filter response was not rejected';
   }
   const text = response.result.content?.[0]?.text || '';
-  if (!/kind must be one of/i.test(text)) {
-    return 'strict graph kind filter response did not report the invalid kind filter';
+  if (!new RegExp(`${field} must be one of`, 'i').test(text)) {
+    return `strict graph kind filter response did not report the invalid ${field} filter`;
   }
-  if (!/Received: "capabilty"/i.test(text)) {
-    return 'strict graph kind filter response did not report the invalid kind value';
+  if (!new RegExp(`Received: "${received}"`, 'i').test(text)) {
+    return `strict graph kind filter response did not report the invalid ${field} value`;
   }
-  if (!/Did you mean "capability"\?/i.test(text)) {
-    return 'strict graph kind filter response did not suggest the closest kind value';
+  if (!new RegExp(`Did you mean "${suggestion}"\\?`, 'i').test(text)) {
+    return `strict graph kind filter response did not suggest the closest ${field} value`;
   }
   return null;
 }
@@ -2213,6 +2216,8 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [45, 'delete_concept_dry_run'],
   [46, 'strict_relation_check'],
   [47, 'strict_graph_kind_filter'],
+  [48, 'strict_graph_from_kind_filter'],
+  [49, 'strict_graph_to_kind_filter'],
 ]);
 
 function log(level, msg) {
@@ -2739,6 +2744,30 @@ export function buildFirstContactRequests() {
         arguments: {
           operation: 'match_nodes',
           kind: 'capabilty',
+        },
+      },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 48,
+      method: 'tools/call',
+      params: {
+        name: 'query_ontology',
+        arguments: {
+          operation: 'match_edges',
+          fromKind: 'capabilty',
+        },
+      },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 49,
+      method: 'tools/call',
+      params: {
+        name: 'query_ontology',
+        arguments: {
+          operation: 'match_edges',
+          toKind: 'externl',
         },
       },
     },
@@ -4910,6 +4939,8 @@ async function step2BootAndCall() {
       const strictRelationFilterRes = responses.find((r) => r.id === 40);
       const strictRelationCheckRes = responses.find((r) => r.id === 46);
       const strictGraphKindFilterRes = responses.find((r) => r.id === 47);
+      const strictGraphFromKindFilterRes = responses.find((r) => r.id === 48);
+      const strictGraphToKindFilterRes = responses.find((r) => r.id === 49);
       const maintenanceMissingCursorRes = responses.find((r) => r.id === 25);
       const maintenanceReadyCursorRes = responses.find((r) => r.id === 26);
       const maintenanceResumeCursorRes = responses.find((r) => r.id === 30);
@@ -5051,6 +5082,21 @@ async function step2BootAndCall() {
         return res(false);
       }
       log('ok', 'strict graph kind filters — invalid match_nodes.kind rejected with closest-value hint');
+      const strictGraphFromKindFilter = strictGraphKindFilterFailure(strictGraphFromKindFilterRes, { field: 'fromKind' });
+      if (strictGraphFromKindFilter) {
+        log('fail', strictGraphFromKindFilter);
+        return res(false);
+      }
+      const strictGraphToKindFilter = strictGraphKindFilterFailure(strictGraphToKindFilterRes, {
+        field: 'toKind',
+        received: 'externl',
+        suggestion: 'external',
+      });
+      if (strictGraphToKindFilter) {
+        log('fail', strictGraphToKindFilter);
+        return res(false);
+      }
+      log('ok', 'strict graph edge kind filters — invalid match_edges.fromKind/toKind rejected with closest-value hints');
 
       if (!maintenanceMissingCursorRes || !maintenanceMissingCursorRes.result) {
         log('fail', 'no query_ontology maintenance missing-cursor response');

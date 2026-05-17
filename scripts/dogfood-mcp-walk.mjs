@@ -174,6 +174,8 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [65, "delete_concept_dry_run"],
   [66, "strict_relation_check"],
   [67, "strict_graph_kind_filter"],
+  [68, "strict_graph_from_kind_filter"],
+  [69, "strict_graph_to_kind_filter"],
 ]);
 
 const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
@@ -642,6 +644,14 @@ export function buildDogfoodRequests() {
       operation: "match_nodes",
       kind: "capabilty",
     }),
+    call(68, "query_ontology", {
+      operation: "match_edges",
+      fromKind: "capabilty",
+    }),
+    call(69, "query_ontology", {
+      operation: "match_edges",
+      toKind: "externl",
+    }),
     call(24, "query_ontology", {
       operation: "growth_plan",
       limit: 5,
@@ -960,6 +970,8 @@ export function evaluateDogfoodGate({
   strictRelationFilter,
   strictRelationCheck,
   strictGraphKindFilter,
+  strictGraphFromKindFilter,
+  strictGraphToKindFilter,
   toolsList,
 }) {
   const failures = [];
@@ -1037,6 +1049,14 @@ export function evaluateDogfoodGate({
   if (strictRelationCheckError) failures.push(`strict_relation_check: ${strictRelationCheckError}`);
   const strictGraphKindFilterError = strictGraphKindFilterFailure(strictGraphKindFilter);
   if (strictGraphKindFilterError) failures.push(`strict_graph_kind_filter: ${strictGraphKindFilterError}`);
+  const strictGraphFromKindFilterError = strictGraphKindFilterFailure(strictGraphFromKindFilter, { field: "fromKind" });
+  if (strictGraphFromKindFilterError) failures.push(`strict_graph_from_kind_filter: ${strictGraphFromKindFilterError}`);
+  const strictGraphToKindFilterError = strictGraphKindFilterFailure(strictGraphToKindFilter, {
+    field: "toKind",
+    received: "externl",
+    suggestion: "external",
+  });
+  if (strictGraphToKindFilterError) failures.push(`strict_graph_to_kind_filter: ${strictGraphToKindFilterError}`);
   const initializeInstructionsError = initializeInstructionsFailure({ result: initialize });
   if (initializeInstructionsError) failures.push(`initialize: ${initializeInstructionsError}`);
 
@@ -5328,6 +5348,18 @@ async function main() {
   if (strictGraphKindFilterText) {
     console.log(`  ${strictGraphKindFilterText}`);
   }
+  const strictGraphFromKindFilter = responses.find((response) => response.id === 68);
+  const strictGraphFromKindFilterText = strictGraphFromKindFilter?.result?.content?.[0]?.text || "";
+  console.log(`  match_edges.fromKind rejected: ${strictGraphFromKindFilter?.result?.isError === true}`);
+  if (strictGraphFromKindFilterText) {
+    console.log(`  ${strictGraphFromKindFilterText}`);
+  }
+  const strictGraphToKindFilter = responses.find((response) => response.id === 69);
+  const strictGraphToKindFilterText = strictGraphToKindFilter?.result?.content?.[0]?.text || "";
+  console.log(`  match_edges.toKind rejected: ${strictGraphToKindFilter?.result?.isError === true}`);
+  if (strictGraphToKindFilterText) {
+    console.log(`  ${strictGraphToKindFilterText}`);
+  }
 
   const graphStructuredContentRows = [
     ["workspace_brief", brief, briefStructured],
@@ -5508,6 +5540,8 @@ async function main() {
     strictRelationFilter,
     strictRelationCheck,
     strictGraphKindFilter,
+    strictGraphFromKindFilter,
+    strictGraphToKindFilter,
     toolsList,
   });
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
@@ -5609,6 +5643,8 @@ async function main() {
   console.log(`  strict_relation_filter: ${strictClosestValueSummary(strictRelationFilter)}`);
   console.log(`  strict_relation_check: ${strictClosestValueSummary(strictRelationCheck)}`);
   console.log(`  strict_graph_kind_filter: ${strictClosestValueSummary(strictGraphKindFilter)}`);
+  console.log(`  strict_graph_from_kind_filter: ${strictClosestValueSummary(strictGraphFromKindFilter)}`);
+  console.log(`  strict_graph_to_kind_filter: ${strictClosestValueSummary(strictGraphToKindFilter)}`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   const stderrWarnings = stderrWarningLines(stderr);

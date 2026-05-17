@@ -621,6 +621,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ strict relation filters — invalid dependencyTypes rejected with closest-value hint/);
     assert.match(verifySection, /✓ strict relation_check — invalid type rejected with closest-value hint/);
     assert.match(verifySection, /✓ strict graph kind filters — invalid match_nodes\.kind rejected with closest-value hint/);
+    assert.match(verifySection, /✓ strict graph edge kind filters — invalid match_edges\.fromKind\/toKind rejected with closest-value hints/);
     assert.match(verifySection, /✓ maintenance cursor — missing afterActionId reported .*phase none; severity none; kind none; executable none; review none/);
     assert.match(verifySection, /✓ maintenance cursor — ready page stable .*phase none; severity none; kind none; executable none; review none/);
     assert.match(verifySection, /✓ maintenance cursor — ready page stable/);

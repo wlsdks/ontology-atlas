@@ -288,6 +288,7 @@ A successful run looks like this:
 ✓ strict relation filters — invalid dependencyTypes rejected with closest-value hint
 ✓ strict relation_check — invalid type rejected with closest-value hint
 ✓ strict graph kind filters — invalid match_nodes.kind rejected with closest-value hint
+✓ strict graph edge kind filters — invalid match_edges.fromKind/toKind rejected with closest-value hints
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
 ✓ maintenance cursor — ready page stable (0 remaining actions; phase none; severity none; kind none; executable none; review none)
 · maintenance cursor — resume skipped (ready page has no actions)

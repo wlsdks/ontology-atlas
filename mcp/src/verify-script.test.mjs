@@ -3929,6 +3929,44 @@ describe('verify.mjs first-contact gates', () => {
       strictGraphKindFilterFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Received: "capabilty".' }] } }),
       'strict graph kind filter response did not suggest the closest kind value',
     );
+    assert.equal(
+      strictGraphKindFilterFailure(
+        {
+          result: {
+            isError: true,
+            content: [{ text: 'fromKind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
+          },
+        },
+        { field: 'fromKind' },
+      ),
+      null,
+    );
+    assert.equal(
+      strictGraphKindFilterFailure(
+        {
+          result: {
+            isError: true,
+            content: [{ text: 'toKind must be one of: project, domain, capability, element, document, vault-readme, external, unresolved. Received: "externl". Did you mean "external"?' }],
+          },
+        },
+        { field: 'toKind', received: 'externl', suggestion: 'external' },
+      ),
+      null,
+    );
+    assert.equal(
+      strictGraphKindFilterFailure(
+        { result: { isError: true, content: [{ text: 'fromKind must be one of: project, domain, capability. Did you mean "capability"?' }] } },
+        { field: 'fromKind' },
+      ),
+      'strict graph kind filter response did not report the invalid fromKind value',
+    );
+    assert.equal(
+      strictGraphKindFilterFailure(
+        { result: { isError: true, content: [{ text: 'toKind must be one of: project, domain, capability, external. Received: "externl".' }] } },
+        { field: 'toKind', received: 'externl', suggestion: 'external' },
+      ),
+      'strict graph kind filter response did not suggest the closest toKind value',
+    );
   });
 
   it('fails malformed strict relation_check smoke responses', () => {
@@ -4566,6 +4604,8 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(45), 'delete_concept_dry_run');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(46), 'strict_relation_check');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(47), 'strict_graph_kind_filter');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(48), 'strict_graph_from_kind_filter');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(49), 'strict_graph_to_kind_filter');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15, 30, 31, 33, 35, 36, 37, 43, 44, 45].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
