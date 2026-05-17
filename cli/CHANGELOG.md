@@ -30,6 +30,7 @@
 - `mcp-verify` now inherits the MCP package valid `maintenance_plan.afterActionId` resume smoke when the ready page has actions, so installed CLI checks catch repeated cursor actions or non-advancing `remainingActions`.
 - `mcp-verify` now inherits the MCP package split between node census checks (`list_kinds`, `list_concepts`, `compile_ontology`, `overview`) and file-level `validate_vault.scanned` health, so installed CLI checks do not conflate files with graph nodes.
 - `mcp-verify` blocks fail-severity first-contact problems while still allowing warn-level starter-vault diagnostics to print, so fresh `init` users can confirm MCP wiring before graph cleanup.
+- `mcp-verify` now inherits the MCP package `workspace_brief.nextActions[].sample` shape gate, so executable cleanup examples for missing relations and external elements must stay aligned with real `add_relation` / `add_concept` inputs.
 - Delegated verify output now includes a compact advisory nextActions line when cleanup is recommended but not blocking.
 - 신규 integration test 2건 (`mcp-verify` runs against a fresh `init` vault with a short verify timeout and graph-query smoke output, invalid timeout rejected).
 

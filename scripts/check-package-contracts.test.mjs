@@ -918,6 +918,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /daily local-neighborhood and shortest-path read tools/);
     assert.match(verifySection, /split between node census checks/);
     assert.match(verifySection, /file-level `validate_vault\.scanned` health/);
+    assert.match(verifySection, /`workspace_brief\.nextActions\[\]\.sample` shape gate/);
+    assert.match(verifySection, /real `add_relation` \/ `add_concept` inputs/);
     assert.match(verifySection, /`workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`/);
     assert.match(verifySection, /`compile_ontology` summary \+ paginated full-artifact \+ indexed full-artifact smoke/);
     assert.match(verifySection, /`overview`, `overview`\/`project_map` query_plan, and actual `neighbors` \/ `path` \/ `project_scope` graph-query smoke/);
@@ -948,6 +950,9 @@ describe('package contract helpers', () => {
     assert.match(productMaintenanceSection, /`query_ontology\(\{operation:"maintenance_plan"\}\)`/);
     assert.match(productMaintenanceSection, /phase \/ severity\s+\/ kind bucket summaries/);
     assert.match(productMaintenanceSection, /`pnpm integration:cli:maintenance`/);
+    assert.match(productMaintenanceSection, /First-contact sample gate/);
+    assert.match(productMaintenanceSection, /`workspace_brief\.nextActions\[\]\.sample` executable shapes/);
+    assert.match(productMaintenanceSection, /real `add_relation` \/ `add_concept` inputs/);
     assert.match(productMaintenanceSection, /27-command CLI surface/);
   });
 

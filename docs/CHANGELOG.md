@@ -20,6 +20,9 @@ one more gap between agent-side graph repair guidance and terminal dogfood.
   maintenance command and maintenance-related installed verify integration
   cases, so small work-queue changes no longer require the full CLI integration
   suite by default.
+- **First-contact sample gate** — focused MCP/CLI verification now checks
+  `workspace_brief.nextActions[].sample` executable shapes, so dogfood cleanup
+  guidance cannot drift from real `add_relation` / `add_concept` inputs.
 - **Dogfood docs contract** — README, CLI docs, and the self-ontology
   `cli-developer-entry` capability now document the 27-command CLI surface and
   maintenance shortcut.
