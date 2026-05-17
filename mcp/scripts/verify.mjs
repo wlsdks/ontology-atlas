@@ -3385,6 +3385,14 @@ function groupedIndexCountFailure(label, value, counts) {
   return null;
 }
 
+function indexedEdgeMembershipCountFailure(label, value, expected, expectedLabel) {
+  const actual = Object.values(value).reduce((sum, row) => sum + row.length, 0);
+  if (actual !== expected) {
+    return `${label} count mismatch — index ${actual}, ${expectedLabel} ${expected}`;
+  }
+  return null;
+}
+
 export function compileIndexesFailure(parsed) {
   const fullFailure = compileFullArtifactFailure(parsed);
   if (fullFailure) return fullFailure;
@@ -3420,6 +3428,20 @@ export function compileIndexesFailure(parsed) {
   for (const name of ['out', 'in']) {
     const failure = stringArrayMapReferenceFailure(`compile_ontology.indexes.${name}`, indexes[name], edgeIdSet, 'edge id');
     if (failure) return failure;
+  }
+  const outCountFailure = indexedEdgeMembershipCountFailure('compile_ontology.indexes.out', indexes.out, parsed.edgeCount, 'edgeCount');
+  if (outCountFailure) return outCountFailure;
+  const inCountFailure = indexedEdgeMembershipCountFailure('compile_ontology.indexes.in', indexes.in, parsed.resolvedEdgeCount, 'resolvedEdgeCount');
+  if (inCountFailure) return inCountFailure;
+  const indexedResolved = Object.values(indexes.edgeById).filter((edge) => edge.resolved).length;
+  const indexedExternal = Object.values(indexes.edgeById).filter((edge) => edge.external).length;
+  const indexedUnresolved = Object.values(indexes.edgeById).filter((edge) => !edge.resolved && !edge.external).length;
+  if (
+    indexedResolved !== parsed.resolvedEdgeCount ||
+    indexedExternal !== parsed.externalEdgeCount ||
+    indexedUnresolved !== parsed.unresolvedEdgeCount
+  ) {
+    return `compile_ontology.indexes.edgeById edge breakdown mismatch — index ${indexedResolved}/${indexedExternal}/${indexedUnresolved}, counts ${parsed.resolvedEdgeCount}/${parsed.externalEdgeCount}/${parsed.unresolvedEdgeCount}`;
   }
   for (const [id, edge] of Object.entries(indexes.edgeById)) {
     if (!indexes.out[edge.from]?.includes(id)) {

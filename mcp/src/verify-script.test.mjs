@@ -4933,8 +4933,11 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, edgeById: {} } }), 'compile_ontology.indexes.edgeById count mismatch — index 0, edgeCount 1');
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, aliasToSlug: {} } }), 'compile_ontology.indexes.aliasToSlug count mismatch — index 0, aliasCount 1');
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, out: { project: ['missing-edge'] } } }), 'compile_ontology.indexes.out references unknown edge id');
-    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, out: {} } }), 'compile_ontology.indexes.out missing edgeById edge');
-    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, in: {} } }), 'compile_ontology.indexes.in missing resolved edge');
+    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, out: { project: [edgeId, edgeId] } } }), 'compile_ontology.indexes.out count mismatch — index 2, edgeCount 1');
+    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, in: { 'domains/core': [edgeId, edgeId] } } }), 'compile_ontology.indexes.in count mismatch — index 2, resolvedEdgeCount 1');
+    assert.equal(compileIndexesFailure({ ...clean, resolvedEdgeCount: 0, unresolvedEdgeCount: 1, indexes: { ...clean.indexes, in: {} } }), 'compile_ontology.indexes.edgeById edge breakdown mismatch — index 1/0/0, counts 0/0/1');
+    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, out: { other: [edgeId] } } }), 'compile_ontology.indexes.out missing edgeById edge');
+    assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, in: { other: [edgeId] } } }), 'compile_ontology.indexes.in missing resolved edge');
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, byKind: { project: ['missing-node'] } } }), 'compile_ontology.indexes.byKind references unknown node slug');
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, aliasToSlug: { project: 'missing-node' } } }), 'compile_ontology.indexes.aliasToSlug references unknown slug: project');
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, byKind: { project: ['project', 'project'] } } }), 'compile_ontology.indexes.byKind count mismatch: project');
