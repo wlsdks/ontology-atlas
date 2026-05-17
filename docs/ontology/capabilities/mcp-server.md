@@ -88,7 +88,7 @@ validation / diagnosis / compile / overview / query planning 은 계속 hard gat
 `npm run verify` (mcp/) — parser smoke, server boot, 23-tool inventory
 (`15 read + 8 write` split 포함), strict argument schema 와 graph-query enum schema,
 strict schema/runtime unknown-argument and invalid-enum rejection,
-`add_concepts` / `add_relations` row-isolation runtime smoke,
+`add_concepts` / `add_relations` row-isolation runtime smoke (`concepts[n]` / `relations[n]` row label 포함),
 `rename_concept` / `merge_concepts` / `delete_concept` destructive dry-run smoke,
 `list_concepts`, project-node `list_concepts` probe,
 `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology({ summary: true })`, paginated `compile_ontology({ nodesLimit: 1, edgesLimit: 1 })`, indexed `compile_ontology({ nodesLimit: 1, edgesLimit: 1, includeIndexes: true })`,

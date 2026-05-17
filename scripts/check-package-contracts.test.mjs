@@ -970,6 +970,7 @@ describe('package contract helpers', () => {
     assert.match(mcpVerifyRow, /별도 limited `query_concepts` smoke/);
     assert.match(mcpVerifyRow, /`slug!=project, limit=1` semantics/);
     assert.match(mcpVerifyRow, /`add_concepts` \/ `add_relations` row-isolation runtime smoke/);
+    assert.match(mcpVerifyRow, /`concepts\[n\]` \/ `relations\[n\]` row label/);
     assert.match(mcpVerifyRow, /top-level tool error 가 아니라 row-level `ok:false`/);
     assert.match(mcpVerifyRow, /invalid-only smoke 에 `postWriteMaintenance` 가 없는지도 확인/);
     assert.match(mcpVerifyRow, /write-tool `postWriteMaintenance` `score` \/ executable `proposedAction` \/ current-page next-action guidance/);
