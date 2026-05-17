@@ -374,6 +374,9 @@ guidance is gated too: `initialize.instructions` must mention enum-validated
 `maintenance_plan` filters, ready cursor pages with `cursor.found=true` plus
 `cursor.reason=null`, and unknown `afterActionId` cursor misses with
 `cursor.found=false` plus `cursor.reason`.
+The dogfood walk reuses the same initialize-instruction gate, so the live
+agent simulation fails when first-contact guidance loses the read-only flow,
+strict input hints, or relation-filter enum guidance.
 The verify path also makes runtime negative calls with `list_concepts.lmit`,
 `list_concepts.lmit` plus `list_concepts.summry`,
 `query_ontology.operation="overveiw"`, typoed `maintenance_plan.phases`, and

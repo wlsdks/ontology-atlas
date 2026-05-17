@@ -62,6 +62,33 @@ const WRITE_TOOL_NAMES = new Set([
 ]);
 const ROOT_PKG = JSON.parse(readFileSync("package.json", "utf-8"));
 
+function makeDogfoodInitialize() {
+  return {
+    protocolVersion: "2024-11-05",
+    serverInfo: { name: "oh-my-ontology-mcp", version: "0.12.0" },
+    instructions: [
+      "Use read-only first-contact diagnosis before write tools.",
+      "rename_concept refuses an existing `newSlug` unless overwrite: true is explicit.",
+      "delete_concept force: true means accepting dangling referrers.",
+      "Use expected_mtime when patching a previously-read concept.",
+      "Tool schemas reject unknown arguments with nearest hints.",
+      "unknown arguments are rejected instead of being ignored.",
+      'Unknown argument "lmit" for list_concepts. Did you mean "limit"?',
+      'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)',
+      "Batch add_concepts and add_relations isolate each non-object row and unknown row field as ok:false.",
+      'operation must be one of: overview, health. Invalid value: overveiw. Did you mean "overview"?',
+      "maintenance_plan phases, severities, and kinds filters are enum-validated.",
+      "health and workspace_brief tune probes with componentLimit, cycleLimit, recommendationLimit, orderLimit, nodeLimit, dependencyTypes, and componentTypes.",
+      "dependencyTypes / componentTypes accept relation types domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes; typoed values fail with nearest-value hints.",
+      "maintenance_plan ready pages return cursor.found=true with cursor.reason=null.",
+      "maintenance_plan ready pages set cursor.nextAfterActionId to the last returned action id and cursor.hasMore for remaining pages.",
+      "maintenance_plan nextExecutableAction and nextReviewAction point only at the first executable/review action in the current returned page.",
+      "maintenance_plan afterActionId cursor misses return cursor.found=false and cursor.reason.",
+      "maintenance_plan missing cursors return cursor.nextAfterActionId=null and cursor.hasMore=false.",
+    ].join("\n"),
+  };
+}
+
 function assertPnpmScriptsExist(text) {
   for (const [, script] of text.matchAll(/pnpm ([\w:-]+)/g)) {
     assert.equal(typeof ROOT_PKG.scripts?.[script], "string", `${script} exists in package.json`);
@@ -985,6 +1012,7 @@ function makeDogfoodToolsList() {
 }
 
 const okShape = {
+  initialize: makeDogfoodInitialize(),
   toolsList: makeDogfoodToolsList(),
   kinds: { total: 1, byKind: { project: 1 } },
   kindsStructured: { total: 1, byKind: { project: 1 } },
@@ -3122,6 +3150,23 @@ describe("maintenanceNextActionSummary", () => {
 describe("evaluateDogfoodGate", () => {
   it("passes the healthy dogfood shape", () => {
     assert.deepEqual(evaluateDogfoodGate(okShape), []);
+  });
+
+  it("fails malformed initialize instructions", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, initialize: null }),
+      ["initialize: missing response", "initialize: initialize instructions missing or too short"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        initialize: {
+          ...okShape.initialize,
+          instructions: okShape.initialize.instructions.replace("depends_on, relates, contains, describes", "relation values"),
+        },
+      }),
+      ["initialize: initialize instructions missing health relation filter enum guidance"],
+    );
   });
 
   it("fails malformed destructive dogfood dry-run responses", () => {

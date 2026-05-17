@@ -34,6 +34,7 @@ import {
   expectedToolTitle,
   formatCount,
   inferImportsFailure,
+  initializeInstructionsFailure,
   listConceptsFailure,
   listKindsFailure,
   overviewFailure,
@@ -787,6 +788,7 @@ export function stderrWarningLines(stderr) {
 }
 
 export function evaluateDogfoodGate({
+  initialize,
   kinds,
   list,
   listStructured,
@@ -906,6 +908,7 @@ export function evaluateDogfoodGate({
   toolsList,
 }) {
   const failures = [];
+  recordResult(failures, "initialize", initialize);
   recordResult(failures, "tools/list", toolsList);
   recordResult(failures, "list_kinds", kinds);
   recordResult(failures, "list_concepts", list);
@@ -975,6 +978,8 @@ export function evaluateDogfoodGate({
   if (strictMaintenanceKindFilterError) failures.push(`strict_maintenance_kind_filter: ${strictMaintenanceKindFilterError}`);
   const strictRelationFilterError = strictRelationFilterFailure(strictRelationFilter);
   if (strictRelationFilterError) failures.push(`strict_relation_filter: ${strictRelationFilterError}`);
+  const initializeInstructionsError = initializeInstructionsFailure({ result: initialize });
+  if (initializeInstructionsError) failures.push(`initialize: ${initializeInstructionsError}`);
 
   for (const [toolName, response] of [
     ["rename_concept", renameDryRunRes],
@@ -4388,6 +4393,14 @@ async function main() {
 
   const { responses, stderr, timedOut } = await rpc(requests, timeoutMs);
   const structuredContent = (id) => getRpcResult(responses, id)?.structuredContent;
+  const initialize = getRpcResult(responses, 1);
+
+  header("initialize — first-contact instructions");
+  const instructionFailure = initializeInstructionsFailure({ result: initialize });
+  if (initialize) {
+    console.log(`  server: ${initialize.serverInfo?.name || "unknown"}@${initialize.serverInfo?.version || "unknown"}`);
+    console.log(`  instructions: ${instructionFailure ? `${COLORS.yellow}${instructionFailure}${COLORS.reset}` : `${COLORS.green}pass${COLORS.reset}`}`);
+  }
 
   header("tools/list — schema contract");
   const toolsList = getRpcResult(responses, 55);
@@ -5277,6 +5290,7 @@ async function main() {
   ];
 
   const failures = evaluateDogfoodGate({
+    initialize,
     kinds,
     list,
     listStructured,

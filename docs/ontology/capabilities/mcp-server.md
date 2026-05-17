@@ -504,6 +504,9 @@ invalid `maintenance_plan.phases` / `maintenance_plan.severities` /
 함께 출력해, AI agent 가 첫 접촉에서 받는 graph diagnosis 와 traversal 품질을
 계속 확인한다. malformed indexed compile 응답도 출력 요약 단계에서 먼저 crash 하지 않고
 gate failure 로 남겨 원인 메시지를 보존한다.
+dogfood gate 는 `initialize.instructions` 도 verify 와 같은 기준으로 검사해
+read-only first-contact flow, strict input hints, relation filter enum 안내가
+실제 agent 시뮬레이션에서 빠지면 실패한다.
 `health tuned` / `workspace_brief tuned` 섹션은 dogfood 출력에 `dependencyTypes=dependencies`,
 `componentTypes=domain/capabilities` scope 를 같이 찍어, 전체 graph components 와
 scoped health component count 를 agent 가 혼동하지 않게 한다.
