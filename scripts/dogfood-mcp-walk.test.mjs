@@ -21,6 +21,7 @@ import {
   recordResult,
   rpcTimeoutFailure,
   shouldFinishRpc,
+  stderrWarningLines,
   stderrWarningFailures,
   structuredContentStatus,
   workspaceNextActionSummary,
@@ -2679,7 +2680,14 @@ describe("rpc response completion helpers", () => {
   });
 
   it("flags stderr warnings without failing on normal connection logs", () => {
+    assert.deepEqual(stderrWarningLines("[oh-my-ontology-mcp] connected. vault=/tmp/x"), []);
     assert.deepEqual(stderrWarningFailures("[oh-my-ontology-mcp] connected. vault=/tmp/x"), []);
+    assert.deepEqual(
+      stderrWarningLines(
+        "[oh-my-ontology-mcp] connected. vault=/tmp/x\n(node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected",
+      ),
+      ["(node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected"],
+    );
     assert.deepEqual(
       stderrWarningFailures(
         "[oh-my-ontology-mcp] connected. vault=/tmp/x\n(node:1) MaxListenersExceededWarning: Possible EventEmitter memory leak detected",

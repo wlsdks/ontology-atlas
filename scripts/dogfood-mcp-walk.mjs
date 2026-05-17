@@ -673,12 +673,16 @@ export function recordResult(failures, label, result) {
 }
 
 export function stderrWarningFailures(stderr) {
+  return stderrWarningLines(stderr)
+    .map((line) => `stderr warning: ${line}`);
+}
+
+export function stderrWarningLines(stderr) {
   if (!stderr) return [];
   return stderr
     .split("\n")
     .map((line) => line.trim())
-    .filter((line) => /Warning:/.test(line))
-    .map((line) => `stderr warning: ${line}`);
+    .filter((line) => /Warning:/.test(line));
 }
 
 export function evaluateDogfoodGate({
@@ -5308,9 +5312,10 @@ async function main() {
   console.log(`  strict_relation_filter: rejected ${strictRelationFilter?.result?.isError === true}`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
-  if (stderr.trim()) {
+  const stderrWarnings = stderrWarningLines(stderr);
+  if (stderrWarnings.length > 0) {
     console.log(
-      `\n${COLORS.dim}[stderr]${COLORS.reset}\n${stderr.trim().split("\n").slice(0, 5).join("\n")}`,
+      `\n${COLORS.dim}[stderr warnings]${COLORS.reset}\n${stderrWarnings.slice(0, 5).join("\n")}`,
     );
   }
 

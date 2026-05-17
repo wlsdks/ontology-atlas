@@ -556,6 +556,8 @@ project probe 도 fail-closed 로 확인해 dogfood vault 에서 `project_scope`
 즉시 종료해 반복 dogfood 비용을 낮춘다. timeout 으로 끝나면 누락된 응답 label 을
 gate failure 에 함께 출력한다. 느린 환경에서는 양의 정수 millisecond 값인
 `OMOT_DOGFOOD_TIMEOUT_MS` 로 dogfood wait 를 늘릴 수 있다.
+정상 MCP connection stderr 는 성공 로그에서 숨기고, `Warning:` stderr 만
+별도 `[stderr warnings]` 섹션에 출력해 실제 경고와 정상 연결 로그를 분리한다.
 핵심 응답 누락, vault warning, `validate_vault` problemFiles, 예상 graph path 부재,
 `workspace_brief` / `health` 비정상 상태, top-level status 와 별개로 내부 health
 check 의 `fail` 상태, warn·fail `workspace_brief.nextActions` 는 exit 1 로 처리한다.
