@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { VALIDATE_CASES } from '../fixtures/validate-vault-cases.mjs';
 import { validateVaultDocument as validateCli } from '../../cli/src/lib/validate.mjs';
 import { KNOWN_CODES } from '../../cli/src/commands/validate.mjs';
+import { VAULT_ISSUE_CODE_VALUES } from '../../mcp/src/validate.mjs';
 
 /**
  * R+ — cycle 45: KNOWN_CODES (cli/src/commands/validate.mjs) ↔
@@ -17,6 +18,8 @@ import { KNOWN_CODES } from '../../cli/src/commands/validate.mjs';
  * 두 contract:
  * 1. document-scope KNOWN_CODES 가 fixture 가 elicit 하는 모든 code 와 일치.
  * 2. document-scope KNOWN_CODES 엔트리의 severity 가 실제 validator 출력의 severity 와 동일.
+ * 3. CLI list-codes / fail-on 과 MCP validate_vault outputSchema 의 issue
+ *    code set 이 동일.
  */
 
 interface ValidatorReport {
@@ -45,6 +48,12 @@ describe('KNOWN_CODES drift contract — list-codes / fail-on UX 진실원', () 
     const codes = KNOWN_CODES.map((c) => c.code);
     const unique = new Set(codes);
     expect(codes.length).toBe(unique.size);
+  });
+
+  it('MCP validate_vault issue-code enum 이 CLI KNOWN_CODES 전체와 동일', () => {
+    expect([...VAULT_ISSUE_CODE_VALUES].sort()).toEqual(
+      KNOWN_CODES.map((c) => c.code).sort(),
+    );
   });
 
   it('각 KNOWN_CODES.severity 가 validator 실제 출력 severity 와 일치', () => {
