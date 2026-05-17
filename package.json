@@ -20,6 +20,7 @@
     "test:vault:audit": "node --test scripts/audit-vault-paths.test.mjs",
     "package:check": "node scripts/check-package-contracts.mjs && pnpm test:cli:lib && node --test scripts/check-package-contracts.test.mjs",
     "test:cli:lib": "node --test cli/src/lib/*.test.mjs",
+    "test:contracts": "vitest run tests/contract",
     "integration:cli": "node --test cli/src/integration.test.mjs",
     "integration:cli:mcp-verify": "node --test --test-name-pattern \"mcp-verify\" cli/src/integration.test.mjs",
     "integration:cli:maintenance": "node --test --test-name-pattern \"maintenance\" cli/src/integration.test.mjs",

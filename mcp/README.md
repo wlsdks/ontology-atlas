@@ -48,6 +48,7 @@ When editing this MCP package from the monorepo, prefer the focused root checks
 before escalating to the full integration suite:
 
 ```bash
+pnpm test:contracts
 pnpm integration:mcp:readme
 pnpm test:mcp:docs
 pnpm test:mcp:dogfood

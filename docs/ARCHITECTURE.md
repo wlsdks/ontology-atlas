@@ -143,6 +143,7 @@ pnpm test:vault:validate   # focused validator CLI argument contract (CI gate)
 pnpm vault:audit           # dogfood ontology capability/element paths exist in repo
 pnpm test:vault:audit      # focused vault audit CLI argument contract (CI gate)
 pnpm package:check         # MCP/CLI package files contract + self-test (CI gate)
+pnpm test:contracts        # focused cross-package parser/schema/validator contracts
 pnpm vault:migrate --list  # R11 — schema migration runner (dry-run default)
 ```
 

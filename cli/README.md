@@ -54,6 +54,7 @@ checks that match the touched surface:
 
 ```bash
 pnpm test:cli:lib
+pnpm test:contracts
 pnpm integration:cli:mcp-verify
 pnpm integration:cli:maintenance
 pnpm test:mcp:docs
@@ -70,6 +71,8 @@ pnpm cli:mcp-verify -- --help
 `test:cli:lib` checks shared CLI helper contracts for argument parsing,
 command registry metadata, MCP response unwrapping, package metadata, and
 graph result fail-closed handling without spawning the full CLI.
+`test:contracts` checks cross-package parser, writer, schema, and validator
+parity without running unrelated UI or E2E gates.
 `integration:cli:mcp-verify` runs only the installed MCP verification wrapper
 subset inside the spawn-heavy CLI integration file.
 `integration:cli:maintenance` runs only the CLI maintenance command and

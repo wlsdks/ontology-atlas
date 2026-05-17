@@ -22,6 +22,7 @@ Markdown frontmatter is the graph. The git repo is the source of truth. No backe
 pnpm install
 pnpm dev                          # http://localhost:3000 — pick a markdown folder and you're in
 pnpm test:run                     # vitest unit suite
+pnpm test:contracts               # focused cross-package contract suite
 pnpm exec tsc --noEmit
 pnpm lint
 pnpm build                        # static export → out/
@@ -230,6 +231,7 @@ md frontmatter 가 곧 그래프. git repo 가 진실원. 백엔드 / 로그인 
 pnpm install
 pnpm dev                          # http://localhost:3000 — vault 폴더 선택만으로 즉시 동작
 pnpm test:run
+pnpm test:contracts               # cross-package contract focused test
 pnpm exec tsc --noEmit
 pnpm lint
 pnpm build                        # 정적 export → out/

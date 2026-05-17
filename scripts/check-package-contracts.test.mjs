@@ -135,6 +135,7 @@ describe('package contract helpers', () => {
       'node scripts/check-package-contracts.mjs && pnpm test:cli:lib && node --test scripts/check-package-contracts.test.mjs',
     );
     assert.equal(pkg.scripts?.['test:cli:lib'], 'node --test cli/src/lib/*.test.mjs');
+    assert.equal(pkg.scripts?.['test:contracts'], 'vitest run tests/contract');
     assert.match(pkg.scripts?.['test:mcp:package'] ?? '', /check-package-contracts\.test\.mjs/);
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /check-package-contracts\.test\.mjs/);
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /scripts\/dogfood-mcp-walk\.test\.mjs/);
@@ -197,6 +198,7 @@ describe('package contract helpers', () => {
     );
     assert.match(readme, /pnpm package:check\s+# MCP\/CLI package files contract \+ CLI lib \+ docs self-test/);
     assert.match(readme, /pnpm test:cli:lib\s+# focused CLI shared helper unit contracts/);
+    assert.match(readme, /pnpm test:contracts\s+# focused cross-package contract tests/);
     assert.match(readme, /pnpm test:mcp:docs/);
     assert.match(readme, /pnpm test:mcp:dogfood/);
     assert.match(readme, /structuredContent\/compile\/row-label\/vault-warning\/health\/sample-shape\/maintenance work-queue\+formatter\/initialize\/destructive dry-run\/help\/argument\/timeout\/strict relation\/stderr checks/);
@@ -464,6 +466,7 @@ describe('package contract helpers', () => {
     const readme = readFileSync('mcp/README.md', 'utf-8');
     const section = readme.split('### Source-checkout verification')[1]?.split('### 2. Restart Claude Code')[0] ?? '';
 
+    assert.match(section, /pnpm test:contracts/);
     assert.match(section, /pnpm integration:mcp:readme/);
     assert.match(section, /pnpm test:mcp:docs/);
     assert.match(section, /pnpm test:mcp:dogfood/);
@@ -913,6 +916,7 @@ describe('package contract helpers', () => {
     const section = readme.split('### Source-checkout verification')[1]?.split('`oh-my-ontology mcp-verify [vault]` is the fastest')[0] ?? '';
 
     assert.match(section, /pnpm test:cli:lib/);
+    assert.match(section, /pnpm test:contracts/);
     assert.match(section, /pnpm integration:cli:mcp-verify/);
     assert.match(section, /pnpm test:mcp:docs/);
     assert.match(section, /pnpm test:mcp:maintenance/);
@@ -1097,12 +1101,15 @@ describe('package contract helpers', () => {
     assert.match(vaultTooling, /focused vault audit CLI argument contract/);
     assert.match(readme, /CI runs `pnpm vault:validate`, `pnpm test:vault:validate`,\s+`pnpm vault:audit`, `pnpm test:vault:audit`, and `pnpm package:check`/);
     assert.match(agents, /pnpm test:vault:validate\s+# focused validator CLI argument contract/);
+    assert.match(agents, /pnpm test:contracts\s+# focused cross-package contract suite/);
     assert.match(agents, /pnpm vault:audit\s+# capability\/element path drift guard \(R12\)/);
     assert.match(agents, /pnpm test:vault:audit\s+# focused vault audit CLI argument contract/);
     assert.match(agents, /pnpm test:vault:audit\s+# vault audit CLI 인자 계약 focused test/);
+    assert.match(agents, /pnpm test:contracts\s+# cross-package contract focused test/);
     assert.match(agents, /pnpm test:vault:validate\s+# validator CLI 인자 계약 focused test/);
     assert.match(architecture, /pnpm test:vault:validate\s+# focused validator CLI argument contract \(CI gate\)/);
     assert.match(architecture, /pnpm test:vault:audit\s+# focused vault audit CLI argument contract \(CI gate\)/);
+    assert.match(architecture, /pnpm test:contracts\s+# focused cross-package parser\/schema\/validator contracts/);
     assert.match(architecture, /`vault:validate`, `test:vault:validate`, `vault:audit`, `test:vault:audit`, and `package:check` run in CI/);
     assert.match(prTemplate, /If `scripts\/validate-vault\.mjs`, vault validation docs, or CI validation gates changed: `pnpm test:vault:validate`/);
     assert.match(prTemplate, /If `scripts\/audit-vault-paths\.mjs`, dogfood path audit docs, or CI audit gates changed: `pnpm test:vault:audit`/);
