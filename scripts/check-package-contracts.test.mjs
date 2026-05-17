@@ -11,7 +11,7 @@ import {
   MAINTENANCE_SEVERITY_VALUES,
 } from '../mcp/src/ontology-engine.mjs';
 import { compileOntology } from '../mcp/src/ontology-compiler.mjs';
-import { findBacklinks, loadVaultDocs } from '../mcp/src/vault.mjs';
+import { collectNeighborRefs, findBacklinks, loadVaultDocs } from '../mcp/src/vault.mjs';
 import {
   checkPackage,
   checkMcpLeanTarballFiles,
@@ -354,7 +354,12 @@ describe('package contract helpers', () => {
       `vault-readme:${census.byKind['vault-readme']}`,
     ].join(', ');
     const scopedNodes = census.total - census.byKind['vault-readme'];
-    const compiled = compileOntology(loadVaultDocs(join(process.cwd(), 'docs', 'ontology')), {
+    const dogfoodDocs = loadVaultDocs(join(process.cwd(), 'docs', 'ontology'));
+    const projectDoc = dogfoodDocs.find((doc) => doc.slug === 'project');
+    assert.ok(projectDoc, 'dogfood vault has a project node');
+    const projectOutgoingEdgeCount = collectNeighborRefs(projectDoc).length;
+    const projectOutgoingEdgeLabel = projectOutgoingEdgeCount === 1 ? 'edge' : 'edges';
+    const compiled = compileOntology(dogfoodDocs, {
       includeIndexes: true,
     });
     const projectBacklinkCount = findBacklinks(join(process.cwd(), 'docs', 'ontology'), 'project').length;
@@ -397,7 +402,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ maintenance cursor — missing afterActionId reported .*phase none; severity none; kind none; executable none; review none/);
     assert.match(verifySection, /✓ maintenance cursor — ready page stable .*phase none; severity none; kind none; executable none; review none/);
     assert.match(verifySection, /✓ maintenance cursor — ready page stable/);
-    assert.match(verifySection, /✓ get_concept — project \(\d+ outgoing edges\)/);
+    assert.match(verifySection, new RegExp(`✓ get_concept — project \\(${projectOutgoingEdgeCount} outgoing ${projectOutgoingEdgeLabel}\\)`));
     assert.match(verifySection, /✓ get_concepts — 2 ok rows, 1 partial row/);
     assert.match(verifySection, /✓ find_evidence — \d+ evidence results for "project"/);
     assert.match(verifySection, new RegExp(`✓ find_backlinks — project \\(${projectBacklinkCount} ${projectBacklinkLabel}\\)`));
