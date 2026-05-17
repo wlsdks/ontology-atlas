@@ -1093,7 +1093,7 @@ const TOOLS = [
       '  filter    := atom (AND|OR atom)*\n' +
       '  atom      := NOT? predicate\n' +
       '  predicate := key=value | key!=value | has(key)\n\n' +
-      'Keys: kind / domain / slug / title for equality, plus any frontmatter array key for has(...).\n' +
+      'Keys: kind / domain / slug / title for equality, plus any graph frontmatter array key for has(...). kind and has(...) keys are enum-validated with nearest-value hints.\n' +
       'Example: `kind=capability AND domain=auth AND NOT has(elements)` — ' +
       'capabilities under domain auth that have zero elements (= unfinished caps).',
     inputSchema: {

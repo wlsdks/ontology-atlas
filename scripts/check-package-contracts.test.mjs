@@ -640,6 +640,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ add_relations — non-object, unknown-field, and invalid-type rows isolated with input indexes and closest-value hints/);
     assert.match(verifySection, /✓ strict enums — invalid query operation rejected with closest-value hint/);
     assert.match(verifySection, /✓ strict relation filters — invalid dependencyTypes rejected with closest-value hint/);
+    assert.match(verifySection, /✓ strict query_concepts filters — invalid kind\/has-key rejected with closest-value hints/);
     assert.match(verifySection, /✓ strict find_neighbors filters — invalid relation types rejected before slug resolution with closest-value hint/);
     assert.match(verifySection, /✓ strict find_orphans filters — invalid kind\/excludeKinds rejected with closest-value hints/);
     assert.match(verifySection, /✓ strict relation_check — invalid type rejected before endpoint resolution with closest-value hint/);
@@ -948,6 +949,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /write-tool `postWriteMaintenance` `byPhase` \/ `bySeverity` \/\s+`byKind` bucket summaries plus `score` \/ executable `proposedAction` \/\s+current-page next action pointer guidance/);
     assert.match(verifySection, /runtime negative smokes with invalid `list_concepts\.lmit`/);
     assert.match(verifySection, /`query_ontology\.operation="overveiw"` inputs/);
+    assert.match(verifySection, /`query_concepts\.kind` \/ `query_concepts\.has-key`/);
     assert.match(verifySection, /`find_neighbors\.types`/);
     assert.match(verifySection, /`find_orphans\.kind` \/ `find_orphans\.excludeKinds`/);
     assert.match(verifySection, /`match_nodes\.kind`/);
@@ -1852,9 +1854,10 @@ describe('package contract helpers', () => {
     assert.match(doc, /dogfood helper \/ structuredContent 출력 계약/);
     assert.match(doc, /initialize safety\/recovery guidance gate/);
     assert.match(doc, /tools\/list inventory name \/ annotation coverage/);
+    assert.match(doc, /strict `query_concepts\.kind` \/ `query_concepts\.has-key` row/);
     assert.match(doc, /strict `find_neighbors\.types` row/);
     assert.match(doc, /strict `find_orphans\.kind` \/ `find_orphans\.excludeKinds` row/);
-    assert.match(doc, /direct verify help 와 CLI wrapper help 도 이 `find_neighbors\.types` \/ `find_orphans\.kind`/);
+    assert.match(doc, /direct verify help 와 CLI wrapper help 도 이 `query_concepts\.kind` \/ `query_concepts\.has-key`/);
     assert.match(doc, /`match_nodes\.sort=outDegre`/);
     assert.match(doc, /`match_edges\.type=depend_on`/);
     assert.match(doc, /`recommend_relations\.kind` \/ `match_edges\.type` \/ `match_edges\.fromKind`/);

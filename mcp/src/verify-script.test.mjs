@@ -98,6 +98,7 @@ import {
   strictRelationFilterFailure,
   strictFindNeighborsTypeFailure,
   strictFindOrphansKindFailure,
+  strictQueryConceptsFilterFailure,
   strictRelationCheckFailure,
   strictAddRelationFailure,
   structuredContentFailure,
@@ -3652,7 +3653,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /compile_ontology summary \+ paginated full-artifact \+ indexed full-artifact smoke/);
     assert.match(verifyUsage(), /Successful output prints read census consistency after cross-checking list_kinds\/list_concepts\/compile_ontology\/overview/);
     assert.match(verifyUsage(), /strict unknown-argument \/ invalid-enum rejection/);
-    assert.match(verifyUsage(), /find_neighbors\.types, find_orphans\.kind\/excludeKinds, match_nodes\.kind\/sort, recommend_relations\.kind, and match_edges\.type\/fromKind\/toKind typo and unsupported-kind rejection/);
+    assert.match(verifyUsage(), /query_concepts\.kind\/has-key, find_neighbors\.types, find_orphans\.kind\/excludeKinds, match_nodes\.kind\/sort, recommend_relations\.kind, and match_edges\.type\/fromKind\/toKind typo and unsupported-kind rejection/);
     assert.match(verifyUsage(), /tools\/list inventory names, schema strictness, and annotation coverage \(title\/read\/write\/destructive\/idempotent\/local-only\)/);
     assert.match(verifyUsage(), /batch writer row isolation for non-object rows and unknown row fields with concepts\[n\]\/relations\[n\] error labels, plus invalid add_relations type closest-value hints/);
     assert.match(verifyUsage(), /structuredContent coverage summary splits direct reads, batch row-isolation writes, destructive dry-runs, maintenance cursor checks, and graph queries/);
@@ -4235,6 +4236,43 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       strictFindOrphansKindFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Received: "capabilty".' }] } }),
       'strict find_orphans kind response did not suggest the closest kind value',
+    );
+  });
+
+  it('fails malformed strict query_concepts filter smoke responses', () => {
+    assert.equal(
+      strictQueryConceptsFilterFailure({
+        result: {
+          isError: true,
+          content: [{ text: 'kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
+        },
+      }),
+      null,
+    );
+    assert.equal(
+      strictQueryConceptsFilterFailure({
+        result: {
+          isError: true,
+          content: [{ text: 'has key must be one of: domains, capabilities, elements, dependencies, relates, contains, describes, depends_on. Received: "capabilties". Did you mean "capabilities"?' }],
+        },
+      }, { field: 'has key', received: 'capabilties', suggestion: 'capabilities' }),
+      null,
+    );
+    assert.equal(
+      strictQueryConceptsFilterFailure({ result: { isError: false, content: [{ text: 'ok' }] } }),
+      'strict query_concepts filter response was not rejected',
+    );
+    assert.equal(
+      strictQueryConceptsFilterFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
+      'strict query_concepts filter response did not report the invalid kind',
+    );
+    assert.equal(
+      strictQueryConceptsFilterFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Did you mean "capability"?' }] } }),
+      'strict query_concepts filter response did not report the invalid kind value',
+    );
+    assert.equal(
+      strictQueryConceptsFilterFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Received: "capabilty".' }] } }),
+      'strict query_concepts filter response did not suggest the closest kind value',
     );
   });
 
@@ -5111,6 +5149,8 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(55), 'strict_find_neighbors_type_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(56), 'strict_find_orphans_kind_filter');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(57), 'strict_find_orphans_exclude_kind_filter');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(58), 'strict_query_concepts_kind_filter');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(59), 'strict_query_concepts_has_key_filter');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15, 30, 31, 33, 35, 36, 37, 43, 44, 45].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),

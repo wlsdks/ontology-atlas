@@ -34,7 +34,16 @@
  * Returns: { match: (doc) => boolean, repr: string } — repr 은 디버그용.
  */
 
+import { NODE_KIND_VALUES } from './ontology-engine.mjs';
+import { formatAllowedValueError } from './suggestions.mjs';
+import { GRAPH_ARRAY_KEYS } from './vault.mjs';
+
 const KEY_RE = /^[a-z_][a-z0-9_]*$/i;
+const EQUALITY_KEYS = Object.freeze(['kind', 'domain', 'slug', 'title']);
+const HAS_KEY_ALIASES = Object.freeze({
+  depends_on: 'dependencies',
+});
+const HAS_KEYS = Object.freeze([...GRAPH_ARRAY_KEYS]);
 
 export function parseFilter(input) {
   if (typeof input !== 'string') {
@@ -190,11 +199,13 @@ function parsePrimary(tokens, pos) {
     if (!keyTok || keyTok.type !== 'word') throw new Error('expected key inside has(...)');
     if (tokens[pos + 3]?.value !== ')') throw new Error('expected `)` to close has(...)');
     if (!KEY_RE.test(keyTok.value)) throw new Error(`invalid key: ${keyTok.value}`);
-    return { node: { type: 'has', key: keyTok.value }, next: pos + 4 };
+    const key = normalizeHasKey(keyTok.value);
+    return { node: { type: 'has', key }, next: pos + 4 };
   }
   if (t.type === 'word') {
     // key = value or key != value
     if (!KEY_RE.test(t.value)) throw new Error(`invalid key: ${t.value}`);
+    validateEqualityKey(t.value);
     const opTok = tokens[pos + 1];
     if (!opTok || opTok.type !== 'op') {
       throw new Error(`expected = or != after key ${t.value}`);
@@ -203,12 +214,34 @@ function parsePrimary(tokens, pos) {
     if (!valTok || (valTok.type !== 'word' && valTok.type !== 'value')) {
       throw new Error(`expected value after ${t.value} ${opTok.value}`);
     }
+    if (t.value === 'kind') validateKindValue(valTok.value);
     return {
       node: { type: 'cmp', op: opTok.value, key: t.value, value: valTok.value },
       next: pos + 3,
     };
   }
   throw new Error(`unexpected token: ${t.value}`);
+}
+
+function validateEqualityKey(key) {
+  if (!EQUALITY_KEYS.includes(key)) {
+    throw new Error(formatAllowedValueError('key', key, EQUALITY_KEYS));
+  }
+}
+
+function normalizeHasKey(key) {
+  const canonical = HAS_KEY_ALIASES[key] || key;
+  if (!HAS_KEYS.includes(key) && !HAS_KEYS.includes(canonical)) {
+    throw new Error(formatAllowedValueError('has key', key, HAS_KEYS));
+  }
+  return canonical;
+}
+
+function validateKindValue(value) {
+  const normalized = String(value).toLowerCase();
+  if (!NODE_KIND_VALUES.includes(normalized)) {
+    throw new Error(formatAllowedValueError('kind', value, NODE_KIND_VALUES));
+  }
 }
 
 // ── evaluator ─────────────────────────────────────────────────────────────
@@ -244,6 +277,9 @@ function evaluate(node, doc) {
 function readField(doc, key) {
   // doc is { slug, frontmatter }. Special-case `slug` field.
   if (key === 'slug') return doc.slug;
+  if (key === 'dependencies') {
+    return doc.frontmatter?.dependencies ?? doc.frontmatter?.depends_on;
+  }
   return doc.frontmatter?.[key];
 }
 

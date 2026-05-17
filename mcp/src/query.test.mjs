@@ -6,8 +6,8 @@ import { parseFilter } from './query.mjs';
 
 const docs = [
   { slug: 'auth', frontmatter: { kind: 'domain', title: 'Auth', capabilities: ['login'] } },
-  { slug: 'login', frontmatter: { kind: 'capability', domain: 'auth', elements: ['jwt'] } },
-  { slug: 'signup', frontmatter: { kind: 'capability', domain: 'auth' } },
+  { slug: 'login', frontmatter: { kind: 'capability', domain: 'auth', elements: ['jwt'], dependencies: ['jwt'] } },
+  { slug: 'signup', frontmatter: { kind: 'capability', domain: 'auth', depends_on: ['login'] } },
   { slug: 'jwt', frontmatter: { kind: 'element', domain: 'auth' } },
   { slug: 'README', frontmatter: { kind: 'vault-readme', title: 'README' } },
 ];
@@ -62,6 +62,17 @@ test('NOT has(elements) matches everything else', () => {
   const matched = docs.filter(match).map((d) => d.slug);
   if (JSON.stringify(matched) !== JSON.stringify(['auth', 'signup', 'jwt', 'README'])) {
     throw new Error(`got ${matched.join(',')}`);
+  }
+});
+
+test('has(depends_on) matches canonical dependencies and legacy depends_on', () => {
+  const { match, repr } = parseFilter('has(depends_on)');
+  const matched = docs.filter(match).map((d) => d.slug);
+  if (JSON.stringify(matched) !== JSON.stringify(['login', 'signup'])) {
+    throw new Error(`got ${matched.join(',')}`);
+  }
+  if (repr !== 'has(dependencies)') {
+    throw new Error(`repr did not canonicalize depends_on: ${repr}`);
   }
 });
 
@@ -166,6 +177,39 @@ test('unterminated string throws', () => {
     throw new Error('should have thrown');
   } catch (err) {
     if (!err.message.includes('unterminated')) throw err;
+  }
+});
+
+test('kind value typo throws with closest-value hint', () => {
+  try {
+    parseFilter('kind=capabilty');
+    throw new Error('should have thrown');
+  } catch (err) {
+    if (!err.message.includes('kind must be one of')) throw err;
+    if (!err.message.includes('Received: "capabilty"')) throw err;
+    if (!err.message.includes('Did you mean "capability"?')) throw err;
+  }
+});
+
+test('unknown equality key throws with closest-value hint', () => {
+  try {
+    parseFilter('knd=capability');
+    throw new Error('should have thrown');
+  } catch (err) {
+    if (!err.message.includes('key must be one of')) throw err;
+    if (!err.message.includes('Received: "knd"')) throw err;
+    if (!err.message.includes('Did you mean "kind"?')) throw err;
+  }
+});
+
+test('has key typo throws with closest-value hint', () => {
+  try {
+    parseFilter('has(capabilties)');
+    throw new Error('should have thrown');
+  } catch (err) {
+    if (!err.message.includes('has key must be one of')) throw err;
+    if (!err.message.includes('Received: "capabilties"')) throw err;
+    if (!err.message.includes('Did you mean "capabilities"?')) throw err;
   }
 });
 

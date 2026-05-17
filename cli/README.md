@@ -39,7 +39,7 @@ These wrap the MCP server (`oh-my-ontology-mcp`) so the developer has the same a
 | `oh-my-ontology backlinks <slug>` | Lists every node referencing the target (`matches[]` from MCP `find_backlinks`, `--json` for raw). |
 | `oh-my-ontology orphans [vault]` | Lists isolated nodes — docs no other node references in their frontmatter (MCP `find_orphans`). Options: `--kind X` (filter), `--exclude-kinds A,B` (skip; MCP default excludes `project,vault-readme`), `--json`. Quick "what should I clean up" surface for vault maintenance. |
 | `oh-my-ontology path <from> <to> [vault]` | Shortest path (BFS, undirected) between two slugs. Each hop is annotated with the frontmatter key (`capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`) that linked the pair, so you see *why* A and B are connected. (`--max-hops N --json`) |
-| `oh-my-ontology query "<filter>"` | Typed filter DSL — `kind=X AND has(Y) AND NOT domain=Z`, parens / OR / NOT supported. (`--limit N --json`) |
+| `oh-my-ontology query "<filter>"` | Typed filter DSL — `kind=X AND has(Y) AND NOT domain=Z`, parens / OR / NOT supported. `kind` and `has(...)` graph keys fail closed with closest-value hints. (`--limit N --json`) |
 | `oh-my-ontology maintenance [vault]` | Inspect MCP `maintenance_plan` cleanup/repair work queue without writing. Human output includes cursor state, active filters, compile/cycle/canonicalize/dangling/relation/external/ignored-external summary counts, phase/severity/kind bucket summaries, and current-page next action pointers. Supports `--limit`, `--after-action-id`, `--executable-only`, `--phases`, `--severities`, `--kinds`, and `--json` for cursor/filter dogfood. |
 | `oh-my-ontology rename <oldSlug> <newSlug>` | Atomic rename — moves the `.md`, updates `slug:`, rewrites every backlink (frontmatter array entries, inline strings, body links). Default dry-run preview; `--confirm` to apply. Refuses an existing target slug unless `--overwrite` is passed. |
 | `oh-my-ontology merge <fromSlug> <intoSlug>` | Atomic merge — redirects every backlink `from → into`, then deletes `from.md`. Default dry-run; `--confirm` to apply. The `into` node's frontmatter / body are **not** auto-combined — edit by hand if needed. |
@@ -130,7 +130,7 @@ with no `changed` or `postWriteMaintenance`.
 It also performs runtime negative smokes with invalid `list_concepts.lmit` and
 `query_ontology.operation="overveiw"` inputs, so CLI users catch schema/runtime
 strictness drift in the installed MCP package.
-The same help and verifier name `find_neighbors.types`,
+The same help and verifier name `query_concepts.kind` / `query_concepts.has-key`, `find_neighbors.types`,
 `find_orphans.kind` / `find_orphans.excludeKinds`, `match_nodes.kind` /
 `match_nodes.sort`, `recommend_relations.kind`, and `match_edges.type` /
 `match_edges.fromKind` / `match_edges.toKind`

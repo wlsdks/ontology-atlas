@@ -2710,12 +2710,16 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       callTool(69, "find_neighbors", { slug: "a", types: ["depend_on"] }),
       callTool(70, "find_orphans", { kind: "capabilty" }),
       callTool(71, "find_orphans", { excludeKinds: ["capabilty"] }),
+      callTool(72, "query_concepts", { filter: "kind=capabilty" }),
+      callTool(73, "query_concepts", { filter: "has(capabilties)" }),
+      callTool(74, "query_concepts", { filter: "knd=capability" }),
     ]);
     for (const id of [
       2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
       21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
       38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
       55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71,
+      72, 73, 74,
     ]) {
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
     }
@@ -2788,6 +2792,15 @@ await test("MCP read/query tools — invalid numeric and direction options are r
     assert.match(responses.find((r) => r.id === 71).result.content[0].text, /excludeKinds items must be one of/i);
     assert.match(responses.find((r) => r.id === 71).result.content[0].text, /Received: "capabilty"/i);
     assert.match(responses.find((r) => r.id === 71).result.content[0].text, /Did you mean "capability"\?/i);
+    assert.match(responses.find((r) => r.id === 72).result.content[0].text, /kind must be one of/i);
+    assert.match(responses.find((r) => r.id === 72).result.content[0].text, /Received: "capabilty"/i);
+    assert.match(responses.find((r) => r.id === 72).result.content[0].text, /Did you mean "capability"\?/i);
+    assert.match(responses.find((r) => r.id === 73).result.content[0].text, /has key must be one of/i);
+    assert.match(responses.find((r) => r.id === 73).result.content[0].text, /Received: "capabilties"/i);
+    assert.match(responses.find((r) => r.id === 73).result.content[0].text, /Did you mean "capabilities"\?/i);
+    assert.match(responses.find((r) => r.id === 74).result.content[0].text, /key must be one of/i);
+    assert.match(responses.find((r) => r.id === 74).result.content[0].text, /Received: "knd"/i);
+    assert.match(responses.find((r) => r.id === 74).result.content[0].text, /Did you mean "kind"\?/i);
     assert.match(responses.find((r) => r.id === 16).result.content[0].text, /pattern must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 17).result.content[0].text, /phases must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 18).result.content[0].text, /types items must be non-empty strings/i);
@@ -2894,6 +2907,25 @@ await test("query_concepts — 매치 row 에 mtime 포함 (R+)", async () => {
       assert.equal(typeof m.mtime, "number", `${m.slug}.mtime number`);
       assert.ok(m.mtime > 0);
     }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test("query_concepts — depends_on alias in has() matches canonical dependencies", async () => {
+  const root = makeVault([
+    { slug: "a", content: "---\nkind: capability\ntitle: A\ndependencies: [b]\n---\n" },
+    { slug: "b", content: "---\nkind: capability\ntitle: B\n---\n" },
+    { slug: "c", content: "---\nkind: capability\ntitle: C\ndepends_on: [b]\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "query_concepts", { filter: "has(depends_on)" }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.parsedAs, "has(dependencies)");
+    assert.deepEqual(result.matches.map((row) => row.slug), ["a", "c"]);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

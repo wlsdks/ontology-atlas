@@ -1842,6 +1842,26 @@ export function strictFindOrphansKindFailure(
   return null;
 }
 
+export function strictQueryConceptsFilterFailure(
+  response,
+  { field = 'kind', received = 'capabilty', suggestion = 'capability' } = {},
+) {
+  if (response?.result?.isError !== true) {
+    return 'strict query_concepts filter response was not rejected';
+  }
+  const text = response.result.content?.[0]?.text || '';
+  if (!new RegExp(`${escapeRegExp(field)} must be one of`, 'i').test(text)) {
+    return `strict query_concepts filter response did not report the invalid ${field}`;
+  }
+  if (!new RegExp(`Received: "${escapeRegExp(received)}"`, 'i').test(text)) {
+    return `strict query_concepts filter response did not report the invalid ${field} value`;
+  }
+  if (!new RegExp(`Did you mean "${escapeRegExp(suggestion)}"\\?`, 'i').test(text)) {
+    return `strict query_concepts filter response did not suggest the closest ${field} value`;
+  }
+  return null;
+}
+
 export function strictGraphKindFilterFailure(
   response,
   { field = 'kind', received = 'capabilty', suggestion = 'capability' } = {},
@@ -2409,6 +2429,8 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [55, 'strict_find_neighbors_type_filter'],
   [56, 'strict_find_orphans_kind_filter'],
   [57, 'strict_find_orphans_exclude_kind_filter'],
+  [58, 'strict_query_concepts_kind_filter'],
+  [59, 'strict_query_concepts_has_key_filter'],
 ]);
 
 function log(level, msg) {
@@ -2647,7 +2669,7 @@ export function verifyUsage() {
     'including list/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans.\n' +
     'It also checks node census, vault validation, workspace health, compile_ontology summary + paginated full-artifact + indexed full-artifact smoke, overview, query plans, and graph-query smoke.\n' +
     'Successful output prints read census consistency after cross-checking list_kinds/list_concepts/compile_ontology/overview.\n' +
-    'Also checks strict unknown-argument / invalid-enum rejection, find_neighbors.types, find_orphans.kind/excludeKinds, match_nodes.kind/sort, recommend_relations.kind, and match_edges.type/fromKind/toKind typo and unsupported-kind rejection, maintenance_plan filter enums,\n' +
+    'Also checks strict unknown-argument / invalid-enum rejection, query_concepts.kind/has-key, find_neighbors.types, find_orphans.kind/excludeKinds, match_nodes.kind/sort, recommend_relations.kind, and match_edges.type/fromKind/toKind typo and unsupported-kind rejection, maintenance_plan filter enums,\n' +
     'tools/list inventory names, schema strictness, and annotation coverage (title/read/write/destructive/idempotent/local-only),\n' +
     'batch writer row isolation for non-object rows and unknown row fields with concepts[n]/relations[n] error labels, plus invalid add_relations type closest-value hints,\n' +
     'destructive writer dry-runs for rename_concept/merge_concepts/delete_concept with every planned response present and no changed/postWriteMaintenance,\n' +
@@ -3039,6 +3061,28 @@ export function buildFirstContactRequests() {
         name: 'find_orphans',
         arguments: {
           excludeKinds: ['capabilty'],
+        },
+      },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 58,
+      method: 'tools/call',
+      params: {
+        name: 'query_concepts',
+        arguments: {
+          filter: 'kind=capabilty',
+        },
+      },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 59,
+      method: 'tools/call',
+      params: {
+        name: 'query_concepts',
+        arguments: {
+          filter: 'has(capabilties)',
         },
       },
     },
@@ -5288,6 +5332,8 @@ async function step2BootAndCall() {
       const strictFindNeighborsTypeFilterRes = responses.find((r) => r.id === 55);
       const strictFindOrphansKindFilterRes = responses.find((r) => r.id === 56);
       const strictFindOrphansExcludeKindFilterRes = responses.find((r) => r.id === 57);
+      const strictQueryConceptsKindFilterRes = responses.find((r) => r.id === 58);
+      const strictQueryConceptsHasKeyFilterRes = responses.find((r) => r.id === 59);
       const strictGraphFromKindFilterRes = responses.find((r) => r.id === 48);
       const strictGraphToKindFilterRes = responses.find((r) => r.id === 49);
       const maintenanceMissingCursorRes = responses.find((r) => r.id === 25);
@@ -5435,6 +5481,20 @@ async function step2BootAndCall() {
         return res(false);
       }
       log('ok', 'strict find_orphans filters — invalid kind/excludeKinds rejected with closest-value hints');
+      const strictQueryConceptsKindFilter = strictQueryConceptsFilterFailure(strictQueryConceptsKindFilterRes);
+      if (strictQueryConceptsKindFilter) {
+        log('fail', strictQueryConceptsKindFilter);
+        return res(false);
+      }
+      const strictQueryConceptsHasKeyFilter = strictQueryConceptsFilterFailure(
+        strictQueryConceptsHasKeyFilterRes,
+        { field: 'has key', received: 'capabilties', suggestion: 'capabilities' },
+      );
+      if (strictQueryConceptsHasKeyFilter) {
+        log('fail', strictQueryConceptsHasKeyFilter);
+        return res(false);
+      }
+      log('ok', 'strict query_concepts filters — invalid kind/has-key rejected with closest-value hints');
       const strictRelationCheck = strictRelationCheckFailure(strictRelationCheckRes);
       if (strictRelationCheck) {
         log('fail', strictRelationCheck);

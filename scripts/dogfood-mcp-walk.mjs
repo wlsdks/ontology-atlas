@@ -43,6 +43,7 @@ import {
   strictMatchEdgesTypeFailure,
   strictFindNeighborsTypeFailure,
   strictFindOrphansKindFailure,
+  strictQueryConceptsFilterFailure,
   strictMaintenanceFilterFailure,
   strictAddRelationFailure,
   strictRelationFilterFailure,
@@ -191,6 +192,8 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [75, "strict_find_neighbors_type_filter"],
   [76, "strict_find_orphans_kind_filter"],
   [77, "strict_find_orphans_exclude_kind_filter"],
+  [78, "strict_query_concepts_kind_filter"],
+  [79, "strict_query_concepts_has_key_filter"],
 ]);
 
 const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
@@ -710,6 +713,12 @@ export function buildDogfoodRequests() {
     call(77, "find_orphans", {
       excludeKinds: ["capabilty"],
     }),
+    call(78, "query_concepts", {
+      filter: "kind=capabilty",
+    }),
+    call(79, "query_concepts", {
+      filter: "has(capabilties)",
+    }),
     call(68, "query_ontology", {
       operation: "match_edges",
       fromKind: "capabilty",
@@ -1037,6 +1046,8 @@ export function evaluateDogfoodGate({
   strictFindNeighborsTypeFilter,
   strictFindOrphansKindFilter,
   strictFindOrphansExcludeKindFilter,
+  strictQueryConceptsKindFilter,
+  strictQueryConceptsHasKeyFilter,
   strictRelationCheck,
   strictAddRelation,
   strictGraphKindFilter,
@@ -1125,6 +1136,13 @@ export function evaluateDogfoodGate({
   if (strictFindOrphansKindFilterError) failures.push(`strict_find_orphans_kind_filter: ${strictFindOrphansKindFilterError}`);
   const strictFindOrphansExcludeKindFilterError = strictFindOrphansKindFailure(strictFindOrphansExcludeKindFilter, { field: "excludeKinds items" });
   if (strictFindOrphansExcludeKindFilterError) failures.push(`strict_find_orphans_exclude_kind_filter: ${strictFindOrphansExcludeKindFilterError}`);
+  const strictQueryConceptsKindFilterError = strictQueryConceptsFilterFailure(strictQueryConceptsKindFilter);
+  if (strictQueryConceptsKindFilterError) failures.push(`strict_query_concepts_kind_filter: ${strictQueryConceptsKindFilterError}`);
+  const strictQueryConceptsHasKeyFilterError = strictQueryConceptsFilterFailure(
+    strictQueryConceptsHasKeyFilter,
+    { field: "has key", received: "capabilties", suggestion: "capabilities" },
+  );
+  if (strictQueryConceptsHasKeyFilterError) failures.push(`strict_query_concepts_has_key_filter: ${strictQueryConceptsHasKeyFilterError}`);
   const strictRelationCheckError = strictRelationCheckFailure(strictRelationCheck);
   if (strictRelationCheckError) failures.push(`strict_relation_check: ${strictRelationCheckError}`);
   const strictAddRelationError = strictAddRelationFailure(strictAddRelation);
@@ -5455,6 +5473,18 @@ async function main() {
   if (strictFindOrphansExcludeKindFilterText) {
     console.log(`  ${strictFindOrphansExcludeKindFilterText}`);
   }
+  const strictQueryConceptsKindFilter = responses.find((response) => response.id === 78);
+  const strictQueryConceptsKindFilterText = strictQueryConceptsKindFilter?.result?.content?.[0]?.text || "";
+  console.log(`  query_concepts.kind rejected: ${strictQueryConceptsKindFilter?.result?.isError === true}`);
+  if (strictQueryConceptsKindFilterText) {
+    console.log(`  ${strictQueryConceptsKindFilterText}`);
+  }
+  const strictQueryConceptsHasKeyFilter = responses.find((response) => response.id === 79);
+  const strictQueryConceptsHasKeyFilterText = strictQueryConceptsHasKeyFilter?.result?.content?.[0]?.text || "";
+  console.log(`  query_concepts.has-key rejected: ${strictQueryConceptsHasKeyFilter?.result?.isError === true}`);
+  if (strictQueryConceptsHasKeyFilterText) {
+    console.log(`  ${strictQueryConceptsHasKeyFilterText}`);
+  }
 
   // 50. strict relation_check rejection
   header("strict relation_check — invalid type rejection");
@@ -5699,6 +5729,8 @@ async function main() {
     strictFindNeighborsTypeFilter,
     strictFindOrphansKindFilter,
     strictFindOrphansExcludeKindFilter,
+    strictQueryConceptsKindFilter,
+    strictQueryConceptsHasKeyFilter,
     strictRelationCheck,
     strictAddRelation,
     strictGraphKindFilter,
@@ -5812,6 +5844,8 @@ async function main() {
   console.log(`  strict_find_neighbors_type_filter: ${strictClosestValueSummary(strictFindNeighborsTypeFilter)}`);
   console.log(`  strict_find_orphans_kind_filter: ${strictClosestValueSummary(strictFindOrphansKindFilter)}`);
   console.log(`  strict_find_orphans_exclude_kind_filter: ${strictClosestValueSummary(strictFindOrphansExcludeKindFilter)}`);
+  console.log(`  strict_query_concepts_kind_filter: ${strictClosestValueSummary(strictQueryConceptsKindFilter)}`);
+  console.log(`  strict_query_concepts_has_key_filter: ${strictClosestValueSummary(strictQueryConceptsHasKeyFilter)}`);
   console.log(`  strict_relation_check: ${strictClosestValueSummary(strictRelationCheck)}`);
   console.log(`  strict_add_relation: ${strictClosestValueSummary(strictAddRelation)}`);
   console.log(`  strict_graph_kind_filter: ${strictClosestValueSummary(strictGraphKindFilter)}`);
