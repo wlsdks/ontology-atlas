@@ -3218,6 +3218,54 @@ await test('analyze --apply --json — applied / summary 필드 노출', async (
   }
 });
 
+await test('analyze --apply — labels row-level failures without slug or relation shape', async () => {
+  const vault = withVault([]);
+  const repo = makeRepoFixture();
+  const fakeMcp = join(vault, 'fake-mcp-analyze-row-labels.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.method === 'initialize') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'analyze_repo_structure') {",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core' }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'add_concepts') {",
+      "    const payload = { concepts: [{ ok: false, error: 'concepts[0] missing slug' }, { ok: true, slug: 'domains/core', filePath: '/tmp/domains/core.md', changed: true }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'add_relations') {",
+      "    const payload = { relations: [{ ok: false, error: 'relations[0] missing source' }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['analyze', repo, '--vault', vault, '--apply'], {
+      env: { OMOT_MCP_PATH: fakeMcp },
+    });
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /✗ concepts\[0\] — concepts\[0\] missing slug/);
+    assert.match(clean, /✗ relations\[0\] — relations\[0\] missing source/);
+    assert.doesNotMatch(clean, /undefined/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 await test('analyze --apply — fails closed when add_concepts response rows drift', async () => {
   const vault = withVault([]);
   const repo = makeRepoFixture();
@@ -3537,6 +3585,57 @@ await test('infer-imports --apply --json — applied / summary 필드 노출', a
     assert.ok(Array.isArray(data.applied.relations), 'applied.relations 배열');
     assert.ok(data.summary, 'summary 필드');
     assert.equal(typeof data.summary.errors, 'number');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('infer-imports --apply — labels row-level relation failures without relation shape', async () => {
+  const vault = withVault([
+    {
+      slug: 'capabilities/a',
+      content: '---\nkind: capability\ntitle: A\ndomain: x\n---\n',
+    },
+    {
+      slug: 'capabilities/b',
+      content: '---\nkind: capability\ntitle: B\ndomain: x\n---\n',
+    },
+  ]);
+  const repo = makeImportRepo();
+  const fakeMcp = join(vault, 'fake-mcp-infer-row-labels.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.method === 'initialize') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'infer_imports') {",
+      "    const payload = { rootPath: '/repo', filesScanned: 2, edges: [], externalImports: [], unresolved: [], moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 1, kindCounts: { static: 1 } }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'add_relations') {",
+      "    const payload = { relations: [{ ok: false, error: 'relations[0] missing target' }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['infer-imports', repo, '--vault', vault, '--apply'], {
+      env: { OMOT_MCP_PATH: fakeMcp },
+    });
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /✗ relations\[0\] — relations\[0\] missing target/);
+    assert.doesNotMatch(clean, /undefined/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -4094,6 +4193,54 @@ await test('bootstrap --json — vaultCensus 필드 노출 (R+ cycle 37)', async
     assert.equal(typeof data.vaultCensus.total, 'number');
     assert.ok(data.vaultCensus.byKind, 'byKind 객체');
     assert.ok(data.vaultCensus.total >= 3, 'project + 2 capability 최소');
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('bootstrap --skip-imports — labels row-level failures without slug or relation shape', async () => {
+  const vault = withVault([]);
+  const repo = makeFullRepo();
+  const fakeMcp = join(vault, 'fake-mcp-bootstrap-row-labels.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.method === 'initialize') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'analyze_repo_structure') {",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core' }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'add_concepts') {",
+      "    const payload = { concepts: [{ ok: false, error: 'concepts[0] missing slug' }, { ok: true, slug: 'domains/core', filePath: '/tmp/domains/core.md', changed: true }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'add_relations') {",
+      "    const payload = { relations: [{ ok: false, error: 'relations[0] missing source' }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['bootstrap', repo, '--vault', vault, '--skip-imports'], {
+      env: { OMOT_MCP_PATH: fakeMcp },
+    });
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /✗ concept concepts\[0\] — concepts\[0\] missing slug/);
+    assert.match(clean, /✗ suggested relations\[0\] — relations\[0\] missing source/);
+    assert.doesNotMatch(clean, /undefined/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
