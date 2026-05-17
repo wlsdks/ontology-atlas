@@ -602,8 +602,9 @@ helper 를 재사용해 `additionalProperties:false`, tool annotations, graph-qu
 health tuning option, write safety schema, post-write bucket guidance, maintenance next pointer description drift 를
 source checkout 에서도 fail-closed 로 잡는다.
 dogfood 출력 상단과 최종 Analysis 는 `add_concepts` / `add_relations` description 의
-`concepts[n]` / `relations[n]` row-label guidance 도 `write row labels: pass` 로
-요약해, 긴 로그의 끝만 봐도 batch writer 오류 위치 안내가 살아 있는지 확인할 수 있다.
+`concepts[n]` / `relations[n]` row-label guidance 와 `add_concepts` duplicate
+slug first-seen 안내도 `write row labels: pass` 로 요약해, 긴 로그의 끝만
+봐도 batch writer 오류 위치 안내가 살아 있는지 확인할 수 있다.
 `tools/list` schema gate 도 같은 summary helper 를 공유해 dogfood 섹션과 최종
 Analysis 가 `strict arguments + annotations + graph-query enums + graph kind enums + write relation enums + health tuning + post-write bucket guidance`
 범위를 함께 출력한다. 그래서

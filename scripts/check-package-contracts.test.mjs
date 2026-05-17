@@ -1330,6 +1330,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`additionalProperties:false`, tool annotations, graph-query enum,\s+health tuning option/);
     assert.match(doc, /maintenance next pointer description drift/);
     assert.match(doc, /row-label guidance/);
+    assert.match(doc, /`add_concepts` duplicate\s+slug first-seen 안내/);
     assert.match(doc, /write row labels: pass/);
     assert.match(doc, /schema gate 도 같은 summary helper 를 공유/);
     assert.match(doc, /strict arguments \+ annotations \+ graph-query enums \+ graph kind enums \+ write relation enums\s+\+ health tuning \+ post-write bucket guidance/);

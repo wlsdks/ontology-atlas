@@ -362,6 +362,9 @@ export function writeRowLabelGuidanceSummary(tools) {
   if (!/Received fields/.test(addConcepts?.description || "")) {
     missing.push("add_concepts Received fields");
   }
+  if (!/duplicate input slugs/.test(addConcepts?.description || "") || !/first-seen `concepts\[m\]`/.test(addConcepts?.description || "")) {
+    missing.push("add_concepts duplicate first-seen");
+  }
   if (!/relations\[n\]/.test(addRelations?.description || "")) {
     missing.push("add_relations relations[n]");
   }

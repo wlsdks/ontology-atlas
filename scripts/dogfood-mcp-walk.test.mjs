@@ -905,7 +905,7 @@ function makeDogfoodToolsList() {
         };
       }
       if (name === "add_concepts") {
-        tool.description += " Batch rows isolate non-object row shape and unknown row field as ok:false rows with concepts[n] labels and unknown-field rows include Received fields.";
+        tool.description += " Batch rows isolate non-object row shape and unknown row field as ok:false rows with concepts[n] labels, unknown-field rows include Received fields, and duplicate input slugs report the later concepts[n] row plus first-seen `concepts[m]`.";
         tool.inputSchema.required = ["concepts"];
         tool.inputSchema.properties.concepts = { type: "array", maxItems: 50 };
         tool.outputSchema = {
@@ -2885,12 +2885,17 @@ describe("rpc response completion helpers", () => {
     const missingConcepts = makeDogfoodToolsList().tools;
     missingConcepts.find((tool) => tool.name === "add_concepts").description =
       "Batch rows isolate non-object row shape and unknown row field as ok:false rows.";
-    assert.equal(writeRowLabelGuidanceSummary(missingConcepts), "missing add_concepts concepts[n], add_concepts Received fields");
+    assert.equal(writeRowLabelGuidanceSummary(missingConcepts), "missing add_concepts concepts[n], add_concepts Received fields, add_concepts duplicate first-seen");
 
     const missingConceptsReceivedFields = makeDogfoodToolsList().tools;
     missingConceptsReceivedFields.find((tool) => tool.name === "add_concepts").description =
       "Batch rows isolate non-object row shape and unknown row field as ok:false rows with concepts[n] labels.";
-    assert.equal(writeRowLabelGuidanceSummary(missingConceptsReceivedFields), "missing add_concepts Received fields");
+    assert.equal(writeRowLabelGuidanceSummary(missingConceptsReceivedFields), "missing add_concepts Received fields, add_concepts duplicate first-seen");
+
+    const missingConceptsDuplicate = makeDogfoodToolsList().tools;
+    missingConceptsDuplicate.find((tool) => tool.name === "add_concepts").description =
+      "Batch rows isolate non-object row shape and unknown row field as ok:false rows with concepts[n] labels and unknown-field rows include Received fields.";
+    assert.equal(writeRowLabelGuidanceSummary(missingConceptsDuplicate), "missing add_concepts duplicate first-seen");
 
     const missingRelations = makeDogfoodToolsList().tools;
     missingRelations.find((tool) => tool.name === "add_relations").description =
