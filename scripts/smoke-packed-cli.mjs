@@ -305,6 +305,21 @@ try {
   assert.match(invalidCliMcpVerifyTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
   assert.match(invalidCliMcpVerifyTimeout.stderr, /oh-my-ontology mcp-verify --timeout-ms 15000/);
 
+  const invalidCliMcpVerifyEnvTimeout = runRaw(
+    cliBin,
+    ['mcp-verify', 'ontology'],
+    {
+      cwd: projectDir,
+      env: { OMOT_VERIFY_TIMEOUT_MS: '1000ms' },
+    },
+  );
+  assert.equal(invalidCliMcpVerifyEnvTimeout.status, 1);
+  assert.equal(invalidCliMcpVerifyEnvTimeout.stdout, '');
+  assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS must be a positive integer/);
+  assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /Received: "1000ms"/);
+  assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /oh-my-ontology mcp-verify --timeout-ms 15000/);
+  assert.doesNotMatch(invalidCliMcpVerifyEnvTimeout.stderr, /npm run verify -- --timeout-ms 15000/);
+
   const maintenanceResumeVault = join(projectDir, 'maintenance-resume-vault');
   writeMaintenanceResumeVault(maintenanceResumeVault);
   const cliMaintenanceResumeMcpVerify = run(

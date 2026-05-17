@@ -1018,6 +1018,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /Explicit \\\[vault\\\] or --vault arguments take precedence over OMOT_VAULT/);
     assert.match(smoke, /verify timeout must be a positive integer/);
     assert.match(smoke, /invalidCliMcpVerifyTimeout/);
+    assert.match(smoke, /invalidCliMcpVerifyEnvTimeout/);
     assert.match(smoke, /'--silent', 'run', 'verify'/);
     assert.match(smoke, /assert\.equal\(invalidMcpVerifyTimeout\.stdout, ''\)/);
     assert.match(smoke, /assert\.equal\(invalidDirectMcpVerifyVault\.stdout, ''\)/);
@@ -1025,6 +1026,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /--timeout-ms N/);
     assert.match(smoke, /OMOT_VERIFY_TIMEOUT_MS=N/);
     assert.match(smoke, /oh-my-ontology mcp-verify --timeout-ms 15000/);
+    assert.match(smoke, /assert\.doesNotMatch\(invalidCliMcpVerifyEnvTimeout\.stderr, \/npm run verify -- --timeout-ms 15000\/\)/);
     assert.match(smoke, /npm run verify -- --timeout-ms 15000/);
     assert.match(smoke, /health — \.\*compile_issues:\(pass\|warn\)/);
     assert.match(smoke, /health — \.\*checks/);
