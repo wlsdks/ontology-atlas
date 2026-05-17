@@ -1172,7 +1172,9 @@ export function createOntologyEngine(artifact, options = {}) {
     if (typeof relationInput !== 'string' || !relationInput.trim()) {
       throw new Error('type (string) is required for relation_check.');
     }
-    const relation = normalizeRelationType(relationInput.trim());
+    const trimmedRelation = relationInput.trim();
+    requireRelationType(trimmedRelation, options.type === undefined ? 'relation' : 'type');
+    const relation = normalizeRelationType(trimmedRelation);
     const fromKind = nodeBySlug.get(from)?.kind || 'unknown';
     const toKind = nodeBySlug.get(to)?.kind || 'unknown';
     const existing = edges.filter(

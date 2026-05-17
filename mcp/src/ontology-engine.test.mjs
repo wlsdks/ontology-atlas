@@ -1436,6 +1436,18 @@ describe('queryCompiledOntology', () => {
     assert.equal(newPattern.schemaPattern, null);
   });
 
+  it('rejects typoed relation_check relation types with nearest-value hints', () => {
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'relation_check',
+        from: 'capabilities/session',
+        to: 'auth-domain',
+        type: 'depend_on',
+      }),
+      /type must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
+    );
+  });
+
   it('matches compiled nodes by graph-derived attributes', () => {
     const result = queryCompiledOntology(artifact(), {
       operation: 'match_nodes',

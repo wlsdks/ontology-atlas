@@ -2715,6 +2715,12 @@ const okShape = {
       content: [{ text: 'dependencyTypes items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
     },
   },
+  strictRelationCheck: {
+    result: {
+      isError: true,
+      content: [{ text: 'type must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
+    },
+  },
 };
 
 for (const [resultField, structuredField] of [
@@ -3121,6 +3127,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(63), "rename_concept_dry_run");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(64), "merge_concepts_dry_run");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(65), "delete_concept_dry_run");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(66), "strict_relation_check");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -3654,6 +3661,41 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["strict_relation_filter: strict relation filter response did not suggest the closest dependencyTypes value"],
+    );
+  });
+
+  it("fails malformed strict relation_check dogfood responses", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictRelationCheck: { result: { isError: false, content: [{ text: "ok" }] } } }),
+      ["strict_relation_check: strict relation_check response was not rejected"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictRelationCheck: { result: { isError: true, content: [{ text: "different error" }] } } }),
+      ["strict_relation_check: strict relation_check response did not report the invalid type filter"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictRelationCheck: {
+          result: {
+            isError: true,
+            content: [{ text: 'type must be one of: domains, domain, capabilities, elements, dependencies.' }],
+          },
+        },
+      }),
+      ["strict_relation_check: strict relation_check response did not report the invalid type value"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictRelationCheck: {
+          result: {
+            isError: true,
+            content: [{ text: 'type must be one of: domains, domain, capabilities, elements, dependencies. Received: "depend_on".' }],
+          },
+        },
+      }),
+      ["strict_relation_check: strict relation_check response did not suggest the closest type value"],
     );
   });
 

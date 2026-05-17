@@ -170,6 +170,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [63, "rename_concept_dry_run"],
   [64, "merge_concepts_dry_run"],
   [65, "delete_concept_dry_run"],
+  [66, "strict_relation_check"],
 ]);
 
 const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
@@ -608,6 +609,12 @@ export function buildDogfoodRequests() {
       operation: "health",
       dependencyTypes: ["depend_on"],
     }),
+    call(66, "query_ontology", {
+      operation: "relation_check",
+      from: "capabilities/mcp-server",
+      to: "domains/ai-agent-partner",
+      type: "depend_on",
+    }),
     call(24, "query_ontology", {
       operation: "growth_plan",
       limit: 5,
@@ -789,6 +796,23 @@ export function stderrWarningLines(stderr) {
     .filter((line) => /Warning:/.test(line));
 }
 
+export function strictRelationCheckFailure(response) {
+  if (response?.result?.isError !== true) {
+    return "strict relation_check response was not rejected";
+  }
+  const text = response.result.content?.[0]?.text || "";
+  if (!/type must be one of/i.test(text)) {
+    return "strict relation_check response did not report the invalid type filter";
+  }
+  if (!/Received: "depend_on"/i.test(text)) {
+    return "strict relation_check response did not report the invalid type value";
+  }
+  if (!/Did you mean "depends_on"\?/i.test(text)) {
+    return "strict relation_check response did not suggest the closest type value";
+  }
+  return null;
+}
+
 export function evaluateDogfoodGate({
   initialize,
   kinds,
@@ -907,6 +931,7 @@ export function evaluateDogfoodGate({
   strictMaintenanceSeverityFilter,
   strictMaintenanceKindFilter,
   strictRelationFilter,
+  strictRelationCheck,
   toolsList,
 }) {
   const failures = [];
@@ -980,6 +1005,8 @@ export function evaluateDogfoodGate({
   if (strictMaintenanceKindFilterError) failures.push(`strict_maintenance_kind_filter: ${strictMaintenanceKindFilterError}`);
   const strictRelationFilterError = strictRelationFilterFailure(strictRelationFilter);
   if (strictRelationFilterError) failures.push(`strict_relation_filter: ${strictRelationFilterError}`);
+  const strictRelationCheckError = strictRelationCheckFailure(strictRelationCheck);
+  if (strictRelationCheckError) failures.push(`strict_relation_check: ${strictRelationCheckError}`);
   const initializeInstructionsError = initializeInstructionsFailure({ result: initialize });
   if (initializeInstructionsError) failures.push(`initialize: ${initializeInstructionsError}`);
 
@@ -5254,6 +5281,15 @@ async function main() {
     console.log(`  ${strictRelationFilterText}`);
   }
 
+  // 50. strict relation_check rejection
+  header("strict relation_check — invalid type rejection");
+  const strictRelationCheck = responses.find((response) => response.id === 66);
+  const strictRelationCheckText = strictRelationCheck?.result?.content?.[0]?.text || "";
+  console.log(`  relation_check type rejected: ${strictRelationCheck?.result?.isError === true}`);
+  if (strictRelationCheckText) {
+    console.log(`  ${strictRelationCheckText}`);
+  }
+
   const graphStructuredContentRows = [
     ["workspace_brief", brief, briefStructured],
     ["workspace_brief_tuned", tunedBrief, tunedBriefStructured],
@@ -5431,6 +5467,7 @@ async function main() {
     strictMaintenanceSeverityFilter,
     strictMaintenanceKindFilter,
     strictRelationFilter,
+    strictRelationCheck,
     toolsList,
   });
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
@@ -5529,6 +5566,7 @@ async function main() {
   console.log(`  strict_maintenance_severity_filter: rejected ${strictMaintenanceSeverityFilter?.result?.isError === true}`);
   console.log(`  strict_maintenance_kind_filter: rejected ${strictMaintenanceKindFilter?.result?.isError === true}`);
   console.log(`  strict_relation_filter: rejected ${strictRelationFilter?.result?.isError === true}`);
+  console.log(`  strict_relation_check: rejected ${strictRelationCheck?.result?.isError === true}`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   const stderrWarnings = stderrWarningLines(stderr);

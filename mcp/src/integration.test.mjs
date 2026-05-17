@@ -2643,12 +2643,18 @@ await test("MCP read/query tools — invalid numeric and direction options are r
       callTool(62, "query_ontology", { operation: "maintenance_plan", kinds: ["add_mising_relation"] }),
       callTool(63, "query_ontology", { operation: "health", dependencyTypes: ["depend_on"] }),
       callTool(64, "query_ontology", { operation: "workspace_brief", componentTypes: ["capabilties"] }),
+      callTool(65, "query_ontology", {
+        operation: "relation_check",
+        from: "a",
+        to: "b",
+        type: "depend_on",
+      }),
     ]);
     for (const id of [
       2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
       21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
       38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
-      55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
+      55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65,
     ]) {
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
     }
@@ -2700,6 +2706,9 @@ await test("MCP read/query tools — invalid numeric and direction options are r
     assert.match(responses.find((r) => r.id === 64).result.content[0].text, /componentTypes items must be one of/i);
     assert.match(responses.find((r) => r.id === 64).result.content[0].text, /Received: "capabilties"/i);
     assert.match(responses.find((r) => r.id === 64).result.content[0].text, /Did you mean "capabilities"\?/i);
+    assert.match(responses.find((r) => r.id === 65).result.content[0].text, /type must be one of/i);
+    assert.match(responses.find((r) => r.id === 65).result.content[0].text, /Received: "depend_on"/i);
+    assert.match(responses.find((r) => r.id === 65).result.content[0].text, /Did you mean "depends_on"\?/i);
     assert.match(responses.find((r) => r.id === 16).result.content[0].text, /pattern must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 17).result.content[0].text, /phases must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 18).result.content[0].text, /types items must be non-empty strings/i);
