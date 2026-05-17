@@ -14,6 +14,7 @@ import {
   RELATION_TYPE_VALUES,
 } from './ontology-engine.mjs';
 import {
+  advisoryHealthChecksSummary,
   advisoryNextActionsSummary,
   analyzeRepoStructureFailure,
   batchRowIsolationFailure,
@@ -5883,6 +5884,33 @@ describe('verify.mjs first-contact gates', () => {
         { id: 'c', status: 'pass', count: 1 },
       ], 2),
       'a:pass:0, b:pass, +1 more',
+    );
+  });
+
+  it('formats non-blocking health check advisories for verify output', () => {
+    assert.equal(advisoryHealthChecksSummary(null), null);
+    assert.equal(advisoryHealthChecksSummary([]), null);
+    assert.equal(
+      advisoryHealthChecksSummary([
+        { id: 'compile_issues', status: 'pass', count: 0 },
+        {
+          id: 'components',
+          status: 'info',
+          count: 6,
+          message: 'The scoped ontology graph has disconnected actionable islands.',
+        },
+        { id: 'relation_recommendations', status: 'warn', count: 2 },
+        { id: 'dependency_cycles', status: 'fail', count: 1 },
+      ]),
+      'components:info:6 - The scoped ontology graph has disconnected actionable islands., relation_recommendations:warn:2',
+    );
+    assert.equal(
+      advisoryHealthChecksSummary([
+        { id: 'a', status: 'info' },
+        { id: 'b', status: 'warn' },
+        { id: 'c', status: 'info' },
+      ], 2),
+      'a:info, b:warn, +1 more',
     );
   });
 

@@ -308,6 +308,7 @@ A successful run looks like this:
 · workspace_brief_tuned non-blocking advisory nextActions — components:info:6 - The scoped ontology graph has disconnected actionable islands.
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:info:6; dependencyTypes=dependencies; componentTypes=domain/capabilities)
+· health_tuned non-blocking advisory checks — components:info:6 - The scoped ontology graph has disconnected actionable islands.
 ✓ compile_ontology — graph 9c329481eae2 (28 nodes, 213 edges, issues 0)
 ✓ compile_ontology page — 1/28 nodes, 1/213 edges
 ✓ compile_ontology indexes — out 28, in 27, edgeById 213, aliases 55, edges 93/120/0

@@ -302,7 +302,9 @@ issues/unresolved/cycle/check count 를 함께 출력해 top-level status 실패
 라인도 issues/unresolved/cycles/check count 를 한 줄에 담아 설치 직후 health
 범위를 바로 읽을 수 있게 한다. 같은 요약에서 `health checks` /
 `health_tuned checks` 도 id:status:count 형태로 출력해 tuned probe 가 info
-상태를 낸 축을 끝부분에서도 확인할 수 있게 한다. `components` probe 는
+상태를 낸 축을 끝부분에서도 확인할 수 있게 한다. `health_tuned` non-blocking
+advisory checks 라인은 info/warn health check 의 message 를 별도 출력해
+scoped probe 가 왜 advisory 인지 숨기지 않는다. `components` probe 는
 마지막 Analysis 에 `component rows` 를 componentId:size:firstSlug 형태로
 다시 출력하고, node-limited row 는 size 뒤에 `+` 를 붙여 disconnected
 component 의 첫 노드와 truncated 여부를 긴 로그 끝에서도 바로 확인하게 한다.
@@ -539,8 +541,9 @@ read-only first-contact flow, strict input hints, relation filter enum 안내가
 `health tuned` / `workspace_brief tuned` 섹션은 dogfood 출력에 `dependencyTypes=dependencies`,
 `componentTypes=domain/capabilities` scope 를 같이 찍어, 전체 graph components 와
 scoped health component count 를 agent 가 혼동하지 않게 한다. scoped component
-advisory message 도 `The scoped ontology graph...` 로 시작해 전체 graph health 와
-분리된다.
+advisory message 도 `workspace_brief_tuned non-blocking advisory nextActions` 와
+`health_tuned non-blocking advisory checks` 양쪽에서 `The scoped ontology graph...`
+로 시작해 전체 graph health 와 분리된다.
 dogfood 에서 실행한 `query_ontology` graph-query 응답은 `structuredContent`
 누락을 실패로 처리하고 text JSON payload 와 `structuredContent` payload 의
 구조적 일치 여부도 비교해 key 순서 차이를 false mismatch 로 보지 않으며,

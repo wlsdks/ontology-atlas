@@ -4436,6 +4436,21 @@ export function healthChecksSummary(checks, limit = 5) {
   return `${shown.join(', ')}${suffix}`;
 }
 
+export function advisoryHealthChecksSummary(checks, limit = 3) {
+  if (!Array.isArray(checks)) return null;
+  const advisory = checks
+    .filter((check) => check?.status !== 'pass' && check?.status !== 'fail')
+    .map((check) => {
+      const count = Number.isInteger(check.count) ? `:${check.count}` : '';
+      const message = typeof check.message === 'string' && check.message.length > 0 ? ` - ${check.message}` : '';
+      return `${check.id || 'unknown'}:${check.status || 'unknown'}${count}${message}`;
+    });
+  if (advisory.length === 0) return null;
+  const shown = advisory.slice(0, limit);
+  const suffix = advisory.length > shown.length ? `, +${advisory.length - shown.length} more` : '';
+  return `${shown.join(', ')}${suffix}`;
+}
+
 export function tunedHealthScopeOutputSummary(args = VERIFY_TUNED_HEALTH_ARGS) {
   const dependencyTypes = Array.isArray(args.dependencyTypes) && args.dependencyTypes.length > 0
     ? args.dependencyTypes.join('/')
@@ -5407,6 +5422,8 @@ async function step2BootAndCall() {
             checksSummary ? `: ${checksSummary}` : ''
           })`,
         );
+        const advisory = advisoryHealthChecksSummary(parsed.checks);
+        if (advisory) log('info', `health non-blocking advisory checks — ${advisory}`);
       } catch (err) {
         log('fail', `failed to parse health response: ${err.message}`);
         return res(false);
@@ -5436,6 +5453,8 @@ async function step2BootAndCall() {
             checksSummary ? `: ${checksSummary}` : ''
           }; ${tunedHealthScopeOutputSummary()})`,
         );
+        const advisory = advisoryHealthChecksSummary(parsed.checks);
+        if (advisory) log('info', `health_tuned non-blocking advisory checks — ${advisory}`);
       } catch (err) {
         log('fail', `failed to parse tuned health response: ${err.message}`);
         return res(false);
