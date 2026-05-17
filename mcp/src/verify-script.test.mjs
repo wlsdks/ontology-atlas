@@ -3186,7 +3186,7 @@ describe('verify.mjs first-contact gates', () => {
       parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '/tmp/vault', '--timeout-ms'], cwd: '/tmp/cwd', isMain: true }).error,
       /npm run verify -- --vault \/tmp\/vault --timeout-ms 15000/,
     );
-    assert.doesNotMatch(
+    assert.match(
       parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--timeout-ms', '--vault', '/tmp/vault'], cwd: '/tmp/cwd', isMain: true }).error,
       /--vault \/tmp\/vault --timeout-ms 15000/,
     );
@@ -3256,6 +3256,17 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(missing.stderr, /verify timeout must be a positive integer/);
     assert.match(missing.stderr, /Received: undefined/);
     assert.match(missing.stderr, /npm run verify -- --timeout-ms 15000/);
+
+    const missingBeforeVault = spawnSync(
+      process.execPath,
+      [VERIFY_SCRIPT, '--timeout-ms', '--vault', '../docs/ontology'],
+      { cwd: join(__dirname, '..'), encoding: 'utf8' },
+    );
+
+    assert.equal(missingBeforeVault.status, 1);
+    assert.equal(missingBeforeVault.stdout, '');
+    assert.match(missingBeforeVault.stderr, /Received: "--vault"/);
+    assert.match(missingBeforeVault.stderr, /npm run verify -- --vault \.\.\/docs\/ontology --timeout-ms 15000/);
 
     const explicitVault = spawnSync(
       process.execPath,

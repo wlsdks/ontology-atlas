@@ -2132,6 +2132,7 @@ export function parseVerifyArgs({
   let error = null;
   let positionalVault = null;
   let timeoutMsRaw = null;
+  const retryEnv = () => verifyRetryEnvForVault(positionalVault ?? findVerifyRetryVaultArg(args));
 
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
@@ -2140,7 +2141,7 @@ export function parseVerifyArgs({
     } else if (arg === '--timeout-ms') {
       const value = args[index + 1];
       if (typeof value !== 'string' || value.length === 0 || value.startsWith('-')) {
-        error = verifyTimeoutValueErrorMessage(value, verifyRetryEnvForVault(positionalVault));
+        error = verifyTimeoutValueErrorMessage(value, retryEnv());
         break;
       }
       timeoutMsRaw = value;
@@ -2148,7 +2149,7 @@ export function parseVerifyArgs({
     } else if (arg.startsWith('--timeout-ms=')) {
       const value = arg.slice('--timeout-ms='.length);
       if (value.length === 0) {
-        error = verifyTimeoutValueErrorMessage(value, verifyRetryEnvForVault(positionalVault));
+        error = verifyTimeoutValueErrorMessage(value, retryEnv());
         break;
       }
       timeoutMsRaw = value;
@@ -2213,6 +2214,24 @@ function parseVerifyVaultArg(value) {
   const path = String(value ?? '').trim();
   if (!path || path.startsWith('-')) return false;
   return path;
+}
+
+function findVerifyRetryVaultArg(args) {
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === '--vault') {
+      const value = parseVerifyVaultArg(args[index + 1]);
+      if (value !== false) return value;
+      index += 1;
+    } else if (arg.startsWith('--vault=')) {
+      const value = parseVerifyVaultArg(arg.slice('--vault='.length));
+      if (value !== false) return value;
+    } else if (!arg.startsWith('-')) {
+      const value = parseVerifyVaultArg(arg);
+      if (value !== false) return value;
+    }
+  }
+  return null;
 }
 
 function formatUnknownVerifyOption(arg) {
