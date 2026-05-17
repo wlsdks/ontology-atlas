@@ -13,6 +13,7 @@ import {
   QUERY_PLAN_TARGET_OPERATIONS,
   RELATION_TYPE_VALUES,
 } from './ontology-engine.mjs';
+
 import {
   advisoryHealthChecksSummary,
   advisoryNextActionsSummary,
@@ -108,6 +109,16 @@ import {
 } from '../scripts/verify.mjs';
 import { expectedResponseIds, missingResponseLabels } from '../scripts/json-rpc-lines.mjs';
 
+const VAULT_ISSUE_CODE_VALUES = [
+  'unclosed-frontmatter',
+  'parse-zero-keys',
+  'missing-kind',
+  'empty-kind',
+  'unknown-kind',
+  'missing-expected-field',
+  'non-canonical-graph-array',
+  'dangling-graph-reference',
+];
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MCP_PKG = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 const ROOT_PKG = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'));
@@ -1071,7 +1082,21 @@ describe('verify.mjs first-contact gates', () => {
               items: {
                 type: 'object',
                 required: ['slug', 'issues'],
-                properties: {},
+                properties: {
+                  slug: { type: 'string' },
+                  issues: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      required: ['code', 'severity', 'message'],
+                      properties: {
+                        code: { type: 'string', enum: VAULT_ISSUE_CODE_VALUES },
+                        severity: { type: 'string', enum: ['error', 'warning'] },
+                        message: { type: 'string' },
+                      },
+                    },
+                  },
+                },
               },
             },
             summary: {
@@ -1083,6 +1108,7 @@ describe('verify.mjs first-contact gates', () => {
                 warningFiles: { type: 'integer', minimum: 0 },
                 byCode: {
                   type: 'object',
+                  propertyNames: { enum: VAULT_ISSUE_CODE_VALUES },
                   additionalProperties: {
                     type: 'object',
                     required: ['severity', 'count', 'files'],
@@ -1628,6 +1654,7 @@ describe('verify.mjs first-contact gates', () => {
                     ...tool.outputSchema.properties.summary.properties,
                     byCode: {
                       type: 'object',
+                      propertyNames: tool.outputSchema.properties.summary.properties.byCode.propertyNames,
                       additionalProperties: {
                         ...tool.outputSchema.properties.summary.properties.byCode.additionalProperties,
                         properties: {
@@ -1644,6 +1671,67 @@ describe('verify.mjs first-contact gates', () => {
           : tool
       ))),
       'validate_vault outputSchema byCode severity drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(tools.map((tool) => (
+        tool.name === 'validate_vault'
+          ? {
+            ...tool,
+            outputSchema: {
+              ...tool.outputSchema,
+              properties: {
+                ...tool.outputSchema.properties,
+                problems: {
+                  ...tool.outputSchema.properties.problems,
+                  items: {
+                    ...tool.outputSchema.properties.problems.items,
+                    properties: {
+                      ...tool.outputSchema.properties.problems.items.properties,
+                      issues: {
+                        ...tool.outputSchema.properties.problems.items.properties.issues,
+                        items: {
+                          ...tool.outputSchema.properties.problems.items.properties.issues.items,
+                          properties: {
+                            ...tool.outputSchema.properties.problems.items.properties.issues.items.properties,
+                            code: { type: 'string', enum: VAULT_ISSUE_CODE_VALUES.slice(0, -1) },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          }
+          : tool
+      ))),
+      'validate_vault outputSchema issue code drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(tools.map((tool) => (
+        tool.name === 'validate_vault'
+          ? {
+            ...tool,
+            outputSchema: {
+              ...tool.outputSchema,
+              properties: {
+                ...tool.outputSchema.properties,
+                summary: {
+                  ...tool.outputSchema.properties.summary,
+                  properties: {
+                    ...tool.outputSchema.properties.summary.properties,
+                    byCode: {
+                      ...tool.outputSchema.properties.summary.properties.byCode,
+                      propertyNames: { enum: VAULT_ISSUE_CODE_VALUES.slice(0, -1) },
+                    },
+                  },
+                },
+              },
+            },
+          }
+          : tool
+      ))),
+      'validate_vault outputSchema byCode key drift',
     );
     assert.equal(
       toolsListSchemaFailure(tools.map((tool) => (
@@ -5172,10 +5260,31 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: -1 } }), 'validate_vault response missing warningFiles count');
     assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0 } }), 'validate_vault response missing byCode aggregate');
     assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: [] } }), 'validate_vault response missing byCode aggregate');
-    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: { broken: null } } }), 'validate_vault response malformed byCode entry: broken');
-    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: { broken: { count: 1, files: [] } } } }), 'validate_vault response missing byCode severity: broken');
-    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: { broken: { severity: 'error', files: [] } } } }), 'validate_vault response missing byCode count: broken');
-    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: { broken: { severity: 'error', count: 1 } } } }), 'validate_vault response missing byCode files: broken');
+    assert.equal(
+      validateVaultFailure({
+        scanned: 1,
+        problems: [{ slug: 'broken', issues: [{ code: 'new-code', severity: 'warning', message: 'x' }] }],
+        summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: {} },
+      }),
+      'validate_vault response unknown issue code at problems[0].issues[0]: new-code',
+    );
+    assert.equal(
+      validateVaultFailure({
+        scanned: 1,
+        problems: [],
+        summary: {
+          problemFiles: 0,
+          errorFiles: 0,
+          warningFiles: 0,
+          byCode: { 'new-code': { severity: 'warning', count: 1, files: ['broken'] } },
+        },
+      }),
+      'validate_vault response unknown byCode key: new-code',
+    );
+    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: { 'missing-kind': null } } }), 'validate_vault response malformed byCode entry: missing-kind');
+    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: { 'missing-kind': { count: 1, files: [] } } } }), 'validate_vault response missing byCode severity: missing-kind');
+    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: { 'missing-kind': { severity: 'error', files: [] } } } }), 'validate_vault response missing byCode count: missing-kind');
+    assert.equal(validateVaultFailure({ scanned: 1, summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: { 'missing-kind': { severity: 'error', count: 1 } } } }), 'validate_vault response missing byCode files: missing-kind');
     assert.equal(validateVaultFailure({}), 'validate_vault response missing summary');
   });
 

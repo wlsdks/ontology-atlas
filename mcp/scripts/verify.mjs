@@ -113,6 +113,16 @@ export const EXPECTED_DESTRUCTIVE_TOOLS = [
   'merge_concepts',
   'rename_concept',
 ];
+const VAULT_ISSUE_CODE_VALUES = [
+  'unclosed-frontmatter',
+  'parse-zero-keys',
+  'missing-kind',
+  'empty-kind',
+  'unknown-kind',
+  'missing-expected-field',
+  'non-canonical-graph-array',
+  'dangling-graph-reference',
+];
 export const EXPECTED_IDEMPOTENT_TOOLS = [
   'add_relation',
   'add_relations',
@@ -1106,6 +1116,14 @@ export function toolsListSchemaFailure(tools) {
   if (problemsSchema?.type !== 'array' || problemsSchema.items?.type !== 'object' || !sameArray(problemsSchema.items?.required, ['slug', 'issues'])) {
     return 'validate_vault outputSchema problems drift';
   }
+  const issueSchema = problemsSchema.items?.properties?.issues?.items;
+  if (
+    issueSchema?.type !== 'object' ||
+    !sameArray(issueSchema.required, ['code', 'severity', 'message']) ||
+    !sameArray(issueSchema.properties?.code?.enum, VAULT_ISSUE_CODE_VALUES)
+  ) {
+    return 'validate_vault outputSchema issue code drift';
+  }
   const summarySchema = outputPropertyAt(validateTool, ['properties', 'summary']);
   if (summarySchema?.type !== 'object' || !sameArray(summarySchema.required, ['problemFiles', 'errorFiles', 'warningFiles', 'byCode'])) {
     return 'validate_vault outputSchema summary drift';
@@ -1119,6 +1137,9 @@ export function toolsListSchemaFailure(tools) {
   const byCodeSchema = summarySchema.properties?.byCode;
   if (byCodeSchema?.type !== 'object' || byCodeSchema.additionalProperties?.type !== 'object') {
     return 'validate_vault outputSchema byCode drift';
+  }
+  if (!sameArray(byCodeSchema.propertyNames?.enum, VAULT_ISSUE_CODE_VALUES)) {
+    return 'validate_vault outputSchema byCode key drift';
   }
   if (!sameArray(byCodeSchema.additionalProperties?.required, ['severity', 'count', 'files'])) {
     return 'validate_vault outputSchema byCode entry required drift';
@@ -3509,6 +3530,16 @@ export function validateVaultFailure(parsed) {
   if (!summary.byCode || typeof summary.byCode !== 'object' || Array.isArray(summary.byCode)) {
     return 'validate_vault response missing byCode aggregate';
   }
+  if (Array.isArray(parsed.problems)) {
+    for (const [problemIndex, problem] of parsed.problems.entries()) {
+      if (!Array.isArray(problem?.issues)) continue;
+      for (const [issueIndex, issue] of problem.issues.entries()) {
+        if (!VAULT_ISSUE_CODE_VALUES.includes(issue?.code)) {
+          return `validate_vault response unknown issue code at problems[${problemIndex}].issues[${issueIndex}]: ${issue?.code}`;
+        }
+      }
+    }
+  }
   const byCodeFailure = validateByCodeAggregate(summary.byCode);
   if (byCodeFailure) return byCodeFailure;
   const problemFiles = summary.problemFiles;
@@ -4351,6 +4382,9 @@ function diagnosisChecks(parsed, expectedOperation) {
 
 function validateByCodeAggregate(byCode) {
   for (const [code, entry] of Object.entries(byCode)) {
+    if (!VAULT_ISSUE_CODE_VALUES.includes(code)) {
+      return `validate_vault response unknown byCode key: ${code}`;
+    }
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
       return `validate_vault response malformed byCode entry: ${code}`;
     }

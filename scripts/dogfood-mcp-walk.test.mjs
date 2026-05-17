@@ -62,6 +62,16 @@ const WRITE_TOOL_NAMES = new Set([
   "rename_concept",
   "merge_concepts",
 ]);
+const VAULT_ISSUE_CODE_VALUES = [
+  "unclosed-frontmatter",
+  "parse-zero-keys",
+  "missing-kind",
+  "empty-kind",
+  "unknown-kind",
+  "missing-expected-field",
+  "non-canonical-graph-array",
+  "dangling-graph-reference",
+];
 const ROOT_PKG = JSON.parse(readFileSync("package.json", "utf-8"));
 
 function makeDogfoodInitialize() {
@@ -491,7 +501,25 @@ function makeDogfoodToolsList() {
             scanned: { type: "integer", minimum: 0 },
             problems: {
               type: "array",
-              items: { type: "object", required: ["slug", "issues"], properties: {} },
+              items: {
+                type: "object",
+                required: ["slug", "issues"],
+                properties: {
+                  slug: { type: "string" },
+                  issues: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      required: ["code", "severity", "message"],
+                      properties: {
+                        code: { type: "string", enum: VAULT_ISSUE_CODE_VALUES },
+                        severity: { type: "string", enum: ["error", "warning"] },
+                        message: { type: "string" },
+                      },
+                    },
+                  },
+                },
+              },
             },
             summary: {
               type: "object",
@@ -502,6 +530,7 @@ function makeDogfoodToolsList() {
                 warningFiles: { type: "integer", minimum: 0 },
                 byCode: {
                   type: "object",
+                  propertyNames: { enum: VAULT_ISSUE_CODE_VALUES },
                   additionalProperties: {
                     type: "object",
                     required: ["severity", "count", "files"],
@@ -3440,6 +3469,18 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, toolsList: validateOutputSchemaDrifted }),
       ["tools/list: validate_vault outputSchema byCode files drift"],
     );
+    const validateIssueCodeSchemaDrifted = makeDogfoodToolsList();
+    validateIssueCodeSchemaDrifted.tools.find((tool) => tool.name === "validate_vault").outputSchema.properties.problems.items.properties.issues.items.properties.code.enum = VAULT_ISSUE_CODE_VALUES.slice(0, -1);
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: validateIssueCodeSchemaDrifted }),
+      ["tools/list: validate_vault outputSchema issue code drift"],
+    );
+    const validateByCodeKeySchemaDrifted = makeDogfoodToolsList();
+    validateByCodeKeySchemaDrifted.tools.find((tool) => tool.name === "validate_vault").outputSchema.properties.summary.properties.byCode.propertyNames.enum = VAULT_ISSUE_CODE_VALUES.slice(0, -1);
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: validateByCodeKeySchemaDrifted }),
+      ["tools/list: validate_vault outputSchema byCode key drift"],
+    );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, kindsStructured: { total: 1, byKind: { project: 2 } } }),
       ["list_kinds structuredContent mismatch — $.byKind.project: parsed 1, structuredContent 2"],
@@ -6327,6 +6368,39 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["validate_vault response missing byCode aggregate"],
+    );
+  });
+
+  it("fails when validate_vault reports an unknown issue code", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        validation: {
+          scanned: 2,
+          problems: [{ slug: "broken", issues: [{ code: "new-code", severity: "warning", message: "x" }] }],
+          summary: { problemFiles: 0, errorFiles: 0, warningFiles: 0, byCode: {} },
+        },
+      }),
+      ["validate_vault response unknown issue code at problems[0].issues[0]: new-code"],
+    );
+  });
+
+  it("fails when validate_vault reports an unknown byCode key", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        validation: {
+          scanned: 2,
+          problems: [],
+          summary: {
+            problemFiles: 0,
+            errorFiles: 0,
+            warningFiles: 0,
+            byCode: { "new-code": { severity: "warning", count: 1, files: ["broken"] } },
+          },
+        },
+      }),
+      ["validate_vault response unknown byCode key: new-code"],
     );
   });
 

@@ -273,6 +273,7 @@ describe('package contract helpers', () => {
     assert.doesNotMatch(firstCallSection, /add_concept/);
     assert.doesNotMatch(firstCallSection, /those four tools/);
     assert.match(validateVaultRow, /first-contact before writes/);
+    assert.match(validateVaultRow, /`outputSchema` restricts both `issues\[\]\.code` and `summary\.byCode` keys/);
   });
 
   it('keeps the MCP README explicit about get_concepts partial rows', () => {
@@ -1311,6 +1312,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /invalid-only smoke 에 `postWriteMaintenance` 가 없는지도 확인/);
     assert.match(doc, /`rename_concept` \/ `merge_concepts` \/ `delete_concept` 도 destructive writer\s+dry-run\/confirm `outputSchema`/);
     assert.match(doc, /`validate_vault` 도 `outputSchema` 와 동일한 `structuredContent` health payload/);
+    assert.match(doc, /issue-code enum\/key set/);
     assert.match(doc, /15 read \/ 8 write split/);
     assert.match(doc, /annotation drift/);
     assert.match(doc, /`query_ontology` tool 설명과\s+`afterActionId` schema description 도 `maintenance_plan` cursor 의 `nextAfterActionId` \/\s+`hasMore` pagination metadata 를 안내/);

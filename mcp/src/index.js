@@ -112,6 +112,16 @@ const NON_BLANK_STRING_SCHEMA = Object.freeze({
   minLength: 1,
   pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$',
 });
+const VAULT_ISSUE_CODE_VALUES = Object.freeze([
+  'unclosed-frontmatter',
+  'parse-zero-keys',
+  'missing-kind',
+  'empty-kind',
+  'unknown-kind',
+  'missing-expected-field',
+  'non-canonical-graph-array',
+  'dangling-graph-reference',
+]);
 const POST_WRITE_MAINTENANCE_GUIDANCE =
   'compact `postWriteMaintenance` (maintenance_plan) with count-safe `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers';
 const POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA = Object.freeze({
@@ -1643,7 +1653,7 @@ const TOOLS = [
                 items: {
                   type: 'object',
                   properties: {
-                    code: NON_BLANK_STRING_SCHEMA,
+                    code: { ...NON_BLANK_STRING_SCHEMA, enum: VAULT_ISSUE_CODE_VALUES },
                     severity: {
                       type: 'string',
                       enum: ['error', 'warning'],
@@ -1665,6 +1675,7 @@ const TOOLS = [
             warningFiles: { type: 'integer', minimum: 0 },
             byCode: {
               type: 'object',
+              propertyNames: { enum: VAULT_ISSUE_CODE_VALUES },
               additionalProperties: {
                 type: 'object',
                 properties: {
