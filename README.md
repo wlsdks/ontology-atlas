@@ -128,7 +128,7 @@ frontmatter issues so you know which docs aren't becoming graph nodes.
 ```bash
 pnpm package:check              # MCP/CLI package files contract + self-test
 pnpm test:mcp:docs              # focused README + dogfood ontology docs contract
-pnpm test:mcp:dogfood           # focused dogfood helper + structuredContent/compile/help/argument/stderr checks
+pnpm test:mcp:dogfood           # focused dogfood helper + structuredContent/compile/help/argument/timeout/stderr checks
 pnpm test:mcp:package           # focused package-script/dependency/tarball contract checks
 pnpm test:mcp:suggestions       # focused enum/argument suggestion checks
 pnpm test:mcp:verify            # focused MCP verify helper checks
