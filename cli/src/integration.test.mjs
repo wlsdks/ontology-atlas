@@ -420,7 +420,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000\s+Source-checkout dogfood verify with explicit args/);
   assert.match(clean, /pnpm cli:mcp-verify -- --help\s+Source-checkout shortcut for this help from the repo root/);
   assert.match(clean, /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
-  assert.match(clean, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health-summary\/read\/sample-shape helper gates/);
+  assert.match(clean, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health-summary\/advisory\/read\/sample-shape helper gates/);
   assert.match(clean, /pnpm test:mcp:verify:timeout/);
   assert.match(clean, /Narrow MCP verify timeout\/startup\/help diagnostics/);
   assertPnpmScriptsExist(clean);
@@ -2284,12 +2284,41 @@ await test('workspace-brief — prints health check coverage', async () => {
   }
 });
 
+await test('workspace-brief --json — forwards focused diagnosis tuning flags', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'workspace-brief',
+      root,
+      '--json',
+      '--component-types=dependencies',
+      '--dependency-types',
+      'dependencies',
+      '--component-limit=2',
+      '--node-limit=1',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'workspace_brief');
+    assert.equal(data.status, 'healthy');
+    const components = data.health.checks.find((check) => check.id === 'components');
+    assert.equal(components.status, 'info');
+    assert.equal(components.count, 3);
+    assert.match(components.message, /scoped ontology graph/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('workspace-brief --help — documents health and growth output', async () => {
   const r = await run(['workspace-brief', '--help']);
   assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
   const clean = stripAnsi(r.stdout);
   assert.match(clean, /HEALTH CHECKS id:status:count/);
   assert.match(clean, /GROWTH actions\/relations\/dangling\/external\/ignoredExternal counts/);
+  assert.match(clean, /--dependency-types A,B/);
+  assert.match(clean, /--component-types A,B/);
+  assert.match(clean, /Tuning flags forward to query_ontology workspace_brief/);
 });
 
 await test('maintenance --json — exposes maintenance_plan work queue', async () => {
@@ -2388,6 +2417,60 @@ await test('health — prints check status and count coverage', async () => {
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+await test('health --help — documents focused diagnosis tuning flags', async () => {
+  const r = await run(['health', '--help']);
+  assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+  const clean = stripAnsi(r.stdout);
+  assert.match(clean, /--dependency-types A,B/);
+  assert.match(clean, /--component-types A,B/);
+  assert.match(clean, /--component-limit N/);
+  assert.match(clean, /Tuning flags forward to query_ontology health/);
+});
+
+await test('health --json — forwards focused diagnosis tuning flags', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'health',
+      root,
+      '--json',
+      '--component-types',
+      'dependencies',
+      '--dependency-types=dependencies',
+      '--component-limit=2',
+      '--node-limit=1',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'health');
+    assert.equal(data.status, 'healthy');
+    const components = data.checks.find((check) => check.id === 'components');
+    assert.equal(components.status, 'info');
+    assert.equal(components.count, 3);
+    assert.match(components.message, /scoped ontology graph/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('health/workspace-brief — reject malformed diagnosis tuning flags', async () => {
+  const missing = await run(['health', '--component-types']);
+  assert.equal(missing.code, 1);
+  assert.match(stripAnsi(missing.stderr), /--component-types requires a value/);
+
+  const emptyTypes = await run(['workspace-brief', '--dependency-types=,']);
+  assert.equal(emptyTypes.code, 1);
+  assert.match(stripAnsi(emptyTypes.stderr), /--dependency-types requires at least one relation type/);
+
+  const highLimit = await run(['health', '--component-limit=501']);
+  assert.equal(highLimit.code, 1);
+  assert.match(stripAnsi(highLimit.stderr), /--component-limit must be <= 500/);
+
+  const typo = await run(['workspace-brief', '--component-lmit=1']);
+  assert.equal(typo.code, 1);
+  assert.match(stripAnsi(typo.stderr), /unknown flag: --component-lmit=1\. Did you mean --component-limit\?/);
 });
 
 await test('cycles --json — dependency cycles exit non-zero', async () => {

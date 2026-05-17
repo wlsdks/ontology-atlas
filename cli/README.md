@@ -195,6 +195,11 @@ parsing JSON. Non-JSON `workspace-brief` also prints a `GROWTH` line with
 `actions`, `relations`, `dangling`, `external`, and `ignoredExternal` counts so
 `.omotignore`-suppressed external refs remain visible even when the vault is
 healthy.
+Both commands forward focused diagnosis tuning flags to MCP `query_ontology`:
+`--dependency-types A,B`, `--component-types A,B`, `--component-limit N`,
+`--cycle-limit N`, `--recommendation-limit N`, `--order-limit N`, and
+`--node-limit N`. Use these when a large vault needs scoped health checks
+without opening the full MCP payload.
 
 The vault is a plain folder of `.md` files. **Frontmatter is the graph.**
 

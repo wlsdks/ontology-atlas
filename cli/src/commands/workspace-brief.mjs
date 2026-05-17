@@ -5,9 +5,10 @@ import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertQueryOperation, workspaceBriefExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { formatUnknownFlagError, parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
+import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-options.mjs';
 import { diagnosisStatusColor } from '../lib/diagnosis-colors.mjs';
 
-const ALLOWED_FLAGS = ['--vault', '--json'];
+const ALLOWED_FLAGS = ['--vault', '--json', ...DIAGNOSIS_OPTION_FLAGS];
 
 const COLORS = {
   green: '\x1b[32m',
@@ -34,7 +35,7 @@ const SEVERITY_COLORS = {
   info: COLORS.dim,
 };
 export async function runWorkspaceBrief(args) {
-  const { vault, json, error, help } = parseArgs(args);
+  const { vault, json, options, error, help } = parseArgs(args);
   if (help) {
     printUsage(process.stdout);
     return 0;
@@ -47,7 +48,7 @@ export async function runWorkspaceBrief(args) {
   const vaultRoot = resolveVaultRoot(vault);
   let result;
   try {
-    result = await callMcpTool(vaultRoot, 'query_ontology', { operation: 'workspace_brief' });
+    result = await callMcpTool(vaultRoot, 'query_ontology', { operation: 'workspace_brief', ...options });
     assertQueryOperation(result, 'workspace_brief');
   } catch (err) {
     process.stderr.write(
@@ -141,26 +142,38 @@ function render(result) {
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
   const flags = { vault: null, json: false };
+  const options = {};
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
+    const [maybeFlag, maybeValue] = a.includes('=') ? a.split(/=(.*)/s, 2) : [a, null];
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
-    else if (a.startsWith('--')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
+    else if (DIAGNOSIS_OPTION_FLAGS.includes(a)) {
+      const error = parseDiagnosisOption(options, a, args[++i]);
+      if (error) return { error: error.message };
+    } else if (DIAGNOSIS_OPTION_FLAGS.includes(maybeFlag)) {
+      const error = parseDiagnosisOption(options, maybeFlag, maybeValue);
+      if (error) return { error: error.message };
+    } else if (a.startsWith('--')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
     else positional.push(a);
   }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;
-  return { vault: vaultResult.vault, json: flags.json };
+  return { vault: vaultResult.vault, json: flags.json, options };
 }
 
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology workspace-brief [vault] [--json]\n\n` +
+      `  oh-my-ontology workspace-brief [vault] [--json]\n` +
+      `       [--dependency-types A,B] [--component-types A,B]\n` +
+      `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
+      `       [--order-limit N] [--node-limit N]\n\n` +
       `first-contact dashboard: status + hotspots + project 요약 + next actions.\n` +
       `Non-JSON output includes HEALTH CHECKS id:status:count coverage and\n` +
-      `GROWTH actions/relations/dangling/external/ignoredExternal counts.\n`,
+      `GROWTH actions/relations/dangling/external/ignoredExternal counts.\n` +
+      `Tuning flags forward to query_ontology workspace_brief for focused diagnostics.\n`,
   );
 }

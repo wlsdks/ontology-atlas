@@ -195,6 +195,10 @@ The graph diagnostic exit contract is fail-closed: malformed `compile`,
 `cycles`, `path`, `health`, or `workspace-brief` payloads are treated as command
 failures instead of clean vaults. For `health --json` and `workspace-brief --json`,
 top-level diagnosis `status` must be `healthy` or `needs_attention`.
+`health` and `workspace-brief` also accept focused diagnosis tuning flags such
+as `--dependency-types A,B`, `--component-types A,B`, `--component-limit N`, and
+`--node-limit N`, forwarding them to MCP `query_ontology` without requiring raw
+JSON-RPC.
 `dogfood:walk` runs that diagnosis plus graph lookup tasks against this
 repo's own `docs/ontology` vault and exits non-zero if the core MCP
 responses, strict unknown-argument and invalid-enum rejection, `get_concepts` success/partial rows, path edge check, vault warnings, `validate_vault` problem files,

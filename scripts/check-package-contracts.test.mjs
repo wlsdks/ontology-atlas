@@ -230,6 +230,8 @@ describe('package contract helpers', () => {
     assert.match(readme, /`pnpm cli:mcp-verify -- --help` only for help output/);
     assert.match(readme, /vault arguments are passed\s+without the extra `--`/);
     assert.match(readme, /runs `workspace_brief`, tuned `workspace_brief`, `health`, and tuned `health`/);
+    assert.match(readme, /`health` and `workspace-brief` also accept focused diagnosis tuning flags/);
+    assert.match(readme, /`--dependency-types A,B`, `--component-types A,B`, `--component-limit N`/);
     assert.match(readme, /graph-query, destructive\s+dry-run, post-write bucket guidance, and strict argument\/enum\s+smoke scope/);
     assert.match(readme, /graph-query, destructive dry-run, post-write bucket,\s+and strict argument\/enum smoke scope/);
   });
@@ -1142,6 +1144,7 @@ describe('package contract helpers', () => {
 
   it('keeps dogfood CLI docs explicit about fail-closed graph diagnostics', () => {
     const doc = readFileSync('docs/ontology/capabilities/cli-developer-entry.md', 'utf-8');
+    const readme = readFileSync('cli/README.md', 'utf-8');
     const mcpVerifyRow = doc.split('| `oh-my-ontology mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
     const inferImportsRow = doc.split('| `oh-my-ontology infer-imports [rootPath]` |')[1]?.split('\n')[0] ?? '';
     const implementationSection = doc.split('## 구현 단일 진실원')[1]?.split('## 회귀 차단')[0] ?? '';
@@ -1183,11 +1186,13 @@ describe('package contract helpers', () => {
     assert.match(implementationSection, /`health\.checks` \/ `workspace-brief\.health\.checks` 의 non-empty id\/status\/count coverage/);
     assert.match(implementationSection, /malformed `compile` \/ `cycles` \/ `path` \/ `health` \/ `workspace-brief` payload/);
     assert.match(implementationSection, /fail-closed/);
-    assert.match(doc, /`workspace-brief` non-json 의 `HEALTH CHECKS` id:status:count coverage 출력 계약/);
+    assert.match(doc, /`workspace-brief` non-json 의 `HEALTH CHECKS` id:status:count coverage 와 `GROWTH` action/);
     assert.match(doc, /`health` non-json 의 `pass:count` 출력/);
     assert.match(doc, /`HEALTH CHECKS` 라인에 `compile_issues:pass:0` 같은 id:status:count coverage/);
     assert.match(readme, /Non-JSON `workspace-brief` also prints a `GROWTH` line/);
     assert.match(readme, /`actions`, `relations`, `dangling`, `external`, and `ignoredExternal` counts/);
+    assert.match(readme, /Both commands forward focused diagnosis tuning flags to MCP `query_ontology`/);
+    assert.match(readme, /`--dependency-types A,B`, `--component-types A,B`, `--component-limit N`/);
   });
 
   it('keeps dogfood MCP docs explicit about workspace brief health checks', () => {

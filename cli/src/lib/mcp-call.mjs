@@ -77,17 +77,19 @@ export function callMcpTool(vaultRoot, toolName, args = {}) {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
-    let stdoutBuf = '';
-    let stderrBuf = '';
+    const stdoutChunks = [];
+    const stderrChunks = [];
     proc.stdout.on('data', (chunk) => {
-      stdoutBuf += chunk.toString();
+      stdoutChunks.push(chunk);
     });
     proc.stderr.on('data', (chunk) => {
-      stderrBuf += chunk.toString();
+      stderrChunks.push(chunk);
     });
 
     proc.on('error', (err) => rejectP(err));
     proc.on('exit', (code) => {
+      const stdoutBuf = Buffer.concat(stdoutChunks).toString('utf8');
+      const stderrBuf = Buffer.concat(stderrChunks).toString('utf8');
       if (code !== 0 && code !== null) {
         rejectP(
           new Error(
