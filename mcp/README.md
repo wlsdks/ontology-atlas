@@ -172,6 +172,10 @@ ids reject blank, whitespace-padded, or null-byte values before graph
 resolution, repo walking, or disk writes. `tools/list` exposes the same
 `minLength` and pattern hints for those scalar strings and strict string-array
 items so MCP clients can catch bad calls before sending them.
+For `query_ontology({ operation: "relation_check" })`, relation `type` is
+validated before endpoint slug resolution, so typoed values such as
+`depend_on` still return the nearest-value hint even in empty or project-less
+vaults where the requested endpoints do not exist.
 Boolean options are also validated explicitly, including read/query flags and
 destructive write safety switches such as `confirm`, `overwrite`, and `force`.
 Write conflict guards are strict as well: every `expected_mtime` field must be

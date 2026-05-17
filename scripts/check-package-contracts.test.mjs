@@ -305,6 +305,7 @@ describe('package contract helpers', () => {
     const addConceptRow = readme.split('| `add_concept` |')[1]?.split('\n')[0] ?? '';
     const featureRow = features.split('12. **query_ontology**')[1]?.split('\n')[0] ?? '';
     const strictInputSection = readme.split('String-array options are strict too:')[1]?.split('Scalar string options')[0] ?? '';
+    const scalarInputSection = readme.split('Scalar string options follow the same boundary across read and write tools:')[1]?.split('Boolean options are also validated explicitly')[0] ?? '';
 
     assert.match(row, /`health` \/ `workspace_brief` can tune their internal probes/);
     assert.match(row, /`phases`, `severities`, and `kinds` are enum-validated/);
@@ -410,6 +411,9 @@ describe('package contract helpers', () => {
       ),
       'MCP README must document every health/workspace_brief relation filter enum value',
     );
+    assert.match(scalarInputSection, /`query_ontology\(\{ operation: "relation_check" \}\)`/);
+    assert.match(scalarInputSection, /relation `type` is\s+validated before endpoint slug resolution/);
+    assert.match(scalarInputSection, /empty or project-less\s+vaults where the requested endpoints do not exist/);
   });
 
   it('keeps docs aligned with repo analysis MCP argument names', () => {
