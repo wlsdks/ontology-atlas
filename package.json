@@ -23,6 +23,7 @@
     "integration:cli": "node --test cli/src/integration.test.mjs",
     "integration:cli:mcp-verify": "node --test --test-name-pattern \"mcp-verify\" cli/src/integration.test.mjs",
     "integration:cli:maintenance": "node --test --test-name-pattern \"maintenance\" cli/src/integration.test.mjs",
+    "cli:mcp-verify": "node cli/src/index.mjs mcp-verify",
     "integration:mcp": "node --test mcp/src/integration.test.mjs",
     "integration:mcp:readme": "node --test --test-name-pattern \"README first exploration\" mcp/src/integration.test.mjs",
     "smoke:onboarding": "node scripts/smoke-clean-onboarding.mjs",

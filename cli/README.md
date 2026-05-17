@@ -62,6 +62,7 @@ pnpm test:mcp:package
 pnpm test:mcp:verify
 pnpm test:mcp:verify:first-contact
 pnpm test:mcp:verify:timeout
+pnpm cli:mcp-verify -- --help
 ```
 
 `test:cli:lib` checks shared CLI helper contracts for argument parsing,
@@ -84,7 +85,9 @@ vault warning / `validate_vault`, health summary / next-action gates, and
 diagnostics that `mcp-verify` exposes through the CLI. Use
 `OMOT_TEST_NAME_PATTERN` or Node `--test-name-pattern` with
 `pnpm integration:cli` when the touched CLI integration case has a different
-name.
+name. `cli:mcp-verify` is the root-checkout shortcut for the CLI wrapper; use
+`pnpm cli:mcp-verify -- --help` to inspect the installed-style verify scope
+without relying on a published `oh-my-ontology` bin link.
 
 `oh-my-ontology mcp-verify [vault]` is the fastest installed-package sanity
 check for the agent-facing surface. It resolves the vault the same way graph

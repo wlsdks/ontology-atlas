@@ -115,6 +115,7 @@ describe('package contract helpers', () => {
       pkg.scripts?.['integration:cli:maintenance'],
       'node --test --test-name-pattern "maintenance" cli/src/integration.test.mjs',
     );
+    assert.equal(pkg.scripts?.['cli:mcp-verify'], 'node cli/src/index.mjs mcp-verify');
     assert.equal(pkg.scripts?.['integration:mcp'], 'node --test mcp/src/integration.test.mjs');
     assert.equal(
       pkg.scripts?.['integration:mcp:readme'],
@@ -197,6 +198,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm test:mcp:verify/);
     assert.match(readme, /pnpm test:mcp:verify:first-contact\s+# narrow MCP verify first-contact health-summary\/read\/sample gates/);
     assert.match(readme, /pnpm test:mcp:verify:timeout\s+# narrow MCP verify timeout\/help diagnostics/);
+    assert.match(readme, /pnpm cli:mcp-verify -- --help\s+# root checkout shortcut for installed mcp-verify help scope/);
     assert.match(readme, /timeout mistakes, the error reports the\s+received value/);
     assert.match(readme, /`npm run verify -- --timeout-ms 15000`/);
     assert.match(readme, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
@@ -211,6 +213,8 @@ describe('package contract helpers', () => {
     assert.match(readme, /integration:cli:mcp-verify/);
     assert.match(readme, /integration:cli:maintenance/);
     assert.match(readme, /integration:mcp:readme/);
+    assert.match(readme, /`cli:mcp-verify`\s+is a source-checkout shortcut for the CLI wrapper/);
+    assert.match(readme, /`pnpm cli:mcp-verify -- --help`\s+prints the installed-style verify scope from the repo root/);
     assert.match(readme, /runs `workspace_brief`, tuned `workspace_brief`, `health`, and tuned `health`/);
     assert.match(readme, /graph-query, destructive\s+dry-run, post-write bucket guidance, and strict argument\/enum\s+smoke scope/);
     assert.match(readme, /graph-query, destructive dry-run, post-write bucket,\s+and strict argument\/enum smoke scope/);
@@ -870,6 +874,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm test:mcp:verify:first-contact/);
     assert.match(section, /health summary \/ next-action gates/);
     assert.match(section, /pnpm test:mcp:verify:timeout/);
+    assert.match(section, /pnpm cli:mcp-verify -- --help/);
     assert.match(section, /shared CLI helper contracts/);
     assert.match(section, /argument parsing/);
     assert.match(section, /command registry metadata/);
@@ -885,6 +890,8 @@ describe('package contract helpers', () => {
     assert.match(section, /timeout parsing, usage, and retry\s+diagnostics/);
     assert.match(section, /OMOT_TEST_NAME_PATTERN/);
     assert.match(section, /Node `--test-name-pattern`/);
+    assert.match(section, /`cli:mcp-verify` is the root-checkout shortcut for the CLI wrapper/);
+    assert.match(section, /`pnpm cli:mcp-verify -- --help` to inspect the installed-style verify scope/);
   });
 
   it('keeps the CLI README explicit about installed batch row isolation gates', () => {
@@ -1576,6 +1583,7 @@ describe('package contract helpers', () => {
     );
     assert.match(regressionSection, /paginated `compile_ontology` full-artifact smoke/);
     assert.match(regressionSection, /`mcp-verify --help` graph-query smoke \/ direct read smoke set\(`get_concept`, `get_concepts`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`, `find_path` 포함\) \/ tools\/list annotation coverage \/ strict argument\/enum smoke \/ batch writer row-isolation smoke \/ destructive dry-run smoke/);
+    assert.match(regressionSection, /root source-checkout shortcut `pnpm cli:mcp-verify -- --help`/);
     assert.match(regressionSection, /write-tool post-write bucket guidance/);
     assert.match(regressionSection, /maintenance filter enum/);
     assert.match(regressionSection, /ready cursor \/ missing cursor 계약/);
