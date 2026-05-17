@@ -1309,6 +1309,8 @@ describe('package contract helpers', () => {
     assert.match(doc, /maintenance next pointer description drift/);
     assert.match(doc, /row-label guidance/);
     assert.match(doc, /write row labels: pass/);
+    assert.match(doc, /schema gate 도 같은 summary helper 를 공유/);
+    assert.match(doc, /strict arguments \+ annotations \+ graph-query enums \+ write relation enums\s+\+ health tuning \+ post-write bucket guidance/);
     assert.match(doc, /`tools\/list` 의 `annotations\.title`/);
     assert.match(doc, /`annotations\.readOnlyHint`/);
     assert.match(doc, /`annotations\.destructiveHint`/);

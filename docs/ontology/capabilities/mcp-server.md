@@ -595,6 +595,11 @@ source checkout 에서도 fail-closed 로 잡는다.
 dogfood 출력 상단과 최종 Analysis 는 `add_concepts` / `add_relations` description 의
 `concepts[n]` / `relations[n]` row-label guidance 도 `write row labels: pass` 로
 요약해, 긴 로그의 끝만 봐도 batch writer 오류 위치 안내가 살아 있는지 확인할 수 있다.
+`tools/list` schema gate 도 같은 summary helper 를 공유해 dogfood 섹션과 최종
+Analysis 가 `strict arguments + annotations + graph-query enums + write relation enums + health tuning + post-write bucket guidance`
+범위를 함께 출력한다. 그래서
+`schema: pass` 만 보고 어떤 schema 계약을 통과했는지 다시 README 나 verify script 를
+열어보지 않아도 된다.
 `tools/list` 의 `annotations.title` 표시명과 `annotations.readOnlyHint` 도 15 read / 8 write split 과
 일치하게 노출하고, destructive multi-file/delete 도구는 `annotations.destructiveHint`,
 retry-safe relation writer 는 `annotations.idempotentHint`, 모든 도구는 local
