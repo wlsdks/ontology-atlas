@@ -44,6 +44,7 @@ import {
   structuredContentMismatchSummary,
   structuredContentParityStatus,
   toolsListAnnotationSummary,
+  toolsListInventoryFailure,
   toolsListSchemaFailure,
   TOOLS_LIST_SCHEMA_CONTRACT_SUMMARY,
   tunedHealthScopeOutputSummary,
@@ -54,7 +55,7 @@ import {
   workspaceBriefSummary,
 } from "../mcp/scripts/verify.mjs";
 
-export { toolsListAnnotationSummary } from "../mcp/scripts/verify.mjs";
+export { toolsListAnnotationSummary, toolsListInventoryFailure } from "../mcp/scripts/verify.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..");
@@ -84,7 +85,7 @@ export function dogfoodUsage() {
     "                              Example: OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk",
     "",
     "Focused checks:",
-    "  pnpm test:mcp:dogfood           Dogfood helper, compile/index gates, tools/list annotation coverage, row-label guidance, strict closest-value summary, vault warning and validate_vault problem gates, first-contact health/growth/sample-shape gates, maintenance work-queue shape + formatter checks, initialize safety/recovery guidance, destructive dry-run, help/argument/timeout handling, structuredContent, strict relation filters, stderr warning checks.",
+    "  pnpm test:mcp:dogfood           Dogfood helper, compile/index gates, tools/list inventory names + annotation coverage, row-label guidance, strict closest-value summary, vault warning and validate_vault problem gates, first-contact health/growth/sample-shape gates, maintenance work-queue shape + formatter checks, initialize safety/recovery guidance, destructive dry-run, help/argument/timeout handling, structuredContent, strict relation filters, stderr warning checks.",
     "  pnpm test:mcp:dogfood:timeout   Narrow dogfood timeout/help retry diagnostics.",
   ].join("\n");
 }
@@ -386,6 +387,14 @@ export function toolsListSchemaStatus(schemaFailure, options = {}) {
   }
   const pass = options.color ? `${COLORS.green}pass${COLORS.reset}` : "pass";
   return `${pass} (${TOOLS_LIST_SCHEMA_CONTRACT_SUMMARY})`;
+}
+
+export function toolsListInventoryStatus(inventoryFailure, options = {}) {
+  if (inventoryFailure) {
+    return options.color ? `${COLORS.yellow}${inventoryFailure}${COLORS.reset}` : inventoryFailure;
+  }
+  const pass = options.color ? `${COLORS.green}pass${COLORS.reset}` : "pass";
+  return `${pass} (missing/extra/duplicate/invalid names)`;
 }
 
 export function strictClosestValueSummary(response) {
@@ -1091,6 +1100,10 @@ export function evaluateDogfoodGate({
     if (failure) failures.push(`${toolName}_dry_run: ${failure}`);
   }
   if (toolsList) {
+    if (Array.isArray(toolsList.tools)) {
+      const toolsInventoryFailure = toolsListInventoryFailure(toolsList.tools);
+      if (toolsInventoryFailure) failures.push(`tools/list: ${toolsInventoryFailure}`);
+    }
     const toolsListFailure = toolsListSchemaFailure(toolsList.tools);
     if (toolsListFailure) failures.push(`tools/list: ${toolsListFailure}`);
   }
@@ -4534,8 +4547,10 @@ async function main() {
   const toolsList = getRpcResult(responses, 55);
   if (toolsList) {
     const tools = Array.isArray(toolsList.tools) ? toolsList.tools : [];
+    const inventoryFailure = toolsListInventoryFailure(toolsList.tools);
     const schemaFailure = toolsListSchemaFailure(tools);
     console.log(`  tools: ${tools.length} (${toolsListAnnotationSummary(tools)})`);
+    console.log(`  inventory: ${toolsListInventoryStatus(inventoryFailure, { color: true })}`);
     console.log(`  schema: ${toolsListSchemaStatus(schemaFailure, { color: true })}`);
     console.log(`  write row labels: ${writeRowLabelGuidanceSummary(tools)}`);
   }
@@ -5588,7 +5603,9 @@ async function main() {
   const orphCount = orph?.total || 0;
   const orphRatio = total > 0 ? ((orphCount / total) * 100).toFixed(0) : 0;
   console.log(`  vault size: ${total} 노드`);
+  const inventoryFailure = toolsListInventoryFailure(toolsList?.tools);
   const schemaFailure = toolsListSchemaFailure(toolsList?.tools);
+  console.log(`  tools/list inventory: ${toolsListInventoryStatus(inventoryFailure)}`);
   console.log(`  tools/list schema: ${toolsListSchemaStatus(schemaFailure)}`);
   console.log(`  tools/list annotations: ${toolsListAnnotationSummary(toolsList?.tools)}`);
   console.log(`  tools/list write row labels: ${writeRowLabelGuidanceSummary(toolsList?.tools)}`);

@@ -32,6 +32,7 @@ import {
   stderrWarningFailures,
   strictClosestValueSummary,
   structuredContentStatus,
+  toolsListInventoryStatus,
   toolsListSchemaStatus,
   toolsListAnnotationSummary,
   tunedHealthScopeSummary,
@@ -2941,6 +2942,14 @@ describe("rpc response completion helpers", () => {
 
   it("summarizes tools/list schema coverage for dogfood output", () => {
     assert.equal(
+      toolsListInventoryStatus(null),
+      "pass (missing/extra/duplicate/invalid names)",
+    );
+    assert.equal(
+      toolsListInventoryStatus("tools mismatch — missing: (none), extra: (none), duplicates: list_concepts, invalidNames: 0"),
+      "tools mismatch — missing: (none), extra: (none), duplicates: list_concepts, invalidNames: 0",
+    );
+    assert.equal(
       toolsListSchemaStatus(null),
       `pass (${TOOLS_LIST_SCHEMA_CONTRACT_SUMMARY})`,
     );
@@ -3113,7 +3122,7 @@ describe("rpc response completion helpers", () => {
     assert.match(usage, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
     assert.match(usage, /pnpm test:mcp:dogfood:timeout/);
     assert.match(usage, /Narrow dogfood timeout\/help retry diagnostics/);
-    assert.match(usage, /Dogfood helper, compile\/index gates, tools\/list annotation coverage, row-label guidance, strict closest-value summary, vault warning and validate_vault problem gates, first-contact health\/growth\/sample-shape gates, maintenance work-queue shape \+ formatter checks, initialize safety\/recovery guidance, destructive dry-run, help\/argument\/timeout handling, structuredContent, strict relation filters, stderr warning checks/);
+    assert.match(usage, /Dogfood helper, compile\/index gates, tools\/list inventory names \+ annotation coverage, row-label guidance, strict closest-value summary, vault warning and validate_vault problem gates, first-contact health\/growth\/sample-shape gates, maintenance work-queue shape \+ formatter checks, initialize safety\/recovery guidance, destructive dry-run, help\/argument\/timeout handling, structuredContent, strict relation filters, stderr warning checks/);
     assertPnpmScriptsExist(usage);
   });
 
@@ -3452,6 +3461,21 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: { tools: null } }),
       ["tools/list: tools/list response missing tools array"],
+    );
+    const duplicateInventory = makeDogfoodToolsList();
+    duplicateInventory.tools.push(duplicateInventory.tools.find((tool) => tool.name === "list_concepts"));
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: duplicateInventory }),
+      ["tools/list: tools mismatch — missing: (none), extra: (none), duplicates: list_concepts, invalidNames: 0"],
+    );
+    const invalidInventory = makeDogfoodToolsList();
+    invalidInventory.tools.push({ name: "" }, {});
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: invalidInventory }),
+      [
+        "tools/list: tools mismatch — missing: (none), extra: (none), duplicates: (none), invalidNames: 2",
+        "tools/list: tools/list schema missing additionalProperties:false: (unknown)",
+      ],
     );
     const titleDrifted = makeDogfoodToolsList();
     titleDrifted.tools.find((tool) => tool.name === "list_concepts").annotations.title = "List concept rows";
