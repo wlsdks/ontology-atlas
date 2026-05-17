@@ -123,7 +123,8 @@ health so a file-count issue is not mistaken for graph node-count drift.
 It also calls paginated `compile_ontology({nodesLimit:1, edgesLimit:1})` and
 `compile_ontology({nodesLimit:1, edgesLimit:1, includeIndexes:true})` so the
 installed package proves the full-artifact node/edge row shape, pagination
-metadata, and graph index payloads, not only the cheap summary path.
+metadata, graph index payloads, index membership, and edge breakdown counts,
+not only the cheap summary path.
 It blocks parser/server/tool inventory failures, vault validation problems,
 failing health checks, and fail-severity `workspace_brief.nextActions`; warn
 diagnostics still print so a fresh starter vault can verify before cleanup.

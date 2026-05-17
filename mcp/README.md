@@ -303,6 +303,8 @@ and paginated `compile_ontology({nodesLimit:1, edgesLimit:1})`,
 plus actual `query_ontology({operation:"neighbors"})`,
 `query_ontology({operation:"path"})`, and
 `query_ontology({operation:"project_scope"})` smoke calls.
+The indexed compile smoke verifies index shape, count alignment, edge membership,
+known-slug references, and resolved/external/unresolved edge breakdowns.
 It also requires every exercised direct read, write row-isolation smoke,
 maintenance cursor, and
 `query_ontology` graph-query response to include `structuredContent`, and

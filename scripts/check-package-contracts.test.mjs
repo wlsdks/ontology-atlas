@@ -389,6 +389,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`query_ontology\(\{operation:"neighbors"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"path"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"project_scope"\}\)`/);
+    assert.match(verifySection, /indexed compile smoke verifies index shape, count alignment, edge membership,\s+known-slug references, and resolved\/external\/unresolved edge breakdowns/);
     assert.match(verifySection, /requires every exercised direct read, write row-isolation smoke,\s+maintenance cursor, and\s+`query_ontology` graph-query response to include `structuredContent`, and\s+compares that payload with the text JSON payload/);
     assert.match(verifySection, /summarizes the\s+direct-read, write, maintenance-cursor, and graph-query `structuredContent` coverage/);
     assert.match(verifySection, /project-node `list_concepts` probe/);
@@ -568,6 +569,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /prints tuned `workspace_brief` output\s+beside `health` \/ tuned `health`/);
     assert.match(verifySection, /stdout/);
     assert.match(verifySection, /paginated `compile_ontology\(\{nodesLimit:1, edgesLimit:1\}\)`/);
+    assert.match(verifySection, /graph index payloads, index membership, and edge breakdown counts/);
     assert.match(verifySection, /`overview`, `overview`\/`project_map` query_plan, and actual `neighbors`/);
     assert.match(verifySection, /node-to-project `path`/);
     assert.match(verifySection, /`path` hop\/edge alignment/);
@@ -869,6 +871,8 @@ describe('package contract helpers', () => {
     assert.match(doc, /dogfood walk 는 `slug!=project, limit=1` 도 직접 호출해 `limited:true` query semantics/);
     assert.match(doc, /`compile_ontology` 도 `outputSchema` 와 동일한 `structuredContent` graph-summary \/ full-artifact payload/);
     assert.match(doc, /full graph arrays \/ pagination \/ canonicalization action/);
+    assert.match(doc, /indexed full-artifact smoke 는 `out` \/ `in` membership 이 `edgeById` 와 맞는지/);
+    assert.match(doc, /edge resolved\/external\/unresolved breakdown 이 summary count 와 맞는지도 fail-closed/);
     assert.match(doc, /`analyze_repo_structure` 도 `outputSchema` 와 동일한 `structuredContent` bootstrap-candidate payload/);
     assert.match(doc, /`infer_imports` 도 `outputSchema` 와 동일한 `structuredContent` import-graph payload/);
     assert.match(doc, /verify \/ dogfood walk 는 상위 module edge 의 `kindCounts` 도 출력/);

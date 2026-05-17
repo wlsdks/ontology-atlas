@@ -186,7 +186,8 @@ paginated `compile_ontology({ nodesLimit: 1, edgesLimit: 1 })`, indexed
 `compile_ontology({ nodesLimit: 1, edgesLimit: 1, includeIndexes: true })` 를 직접 호출해
 `graphHash`, `maxMtime`, node/edge/alias/issue count, `byKind` / `byDomain`
 aggregate, full artifact `nodes` / `edges` row shape, pagination meta,
-`canonicalizationActions`, full-response `summary` 와 array/count alignment, `indexes.out` / `indexes.in` / `indexes.byKind` / `indexes.byDomain` / `indexes.edgeById` / `indexes.aliasToSlug` shape 과 count alignment 가 유효한지 확인한다. `byKind`
+`canonicalizationActions`, full-response `summary` 와 array/count alignment, `indexes.out` / `indexes.in` / `indexes.byKind` / `indexes.byDomain` / `indexes.edgeById` / `indexes.aliasToSlug` shape 과 count alignment 가 유효한지 확인한다.
+indexed full-artifact smoke 는 `out` / `in` membership 이 `edgeById` 와 맞는지, `aliasToSlug` / `byKind` / `byDomain` 이 known slug 를 가리키는지, edge resolved/external/unresolved breakdown 이 summary count 와 맞는지도 fail-closed 로 확인한다. `byKind`
 합계가 `nodeCount` 와 다르거나 edge breakdown 이 `edgeCount` 를 설명하지 못하면
 gate 실패로 본다.
 또한 `query_ontology(pattern_walk)` 를 실제 repo ontology 의 project → domains →
