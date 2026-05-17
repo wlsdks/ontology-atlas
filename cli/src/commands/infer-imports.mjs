@@ -6,10 +6,13 @@ import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { getVaultCensus, writeVaultCensus } from '../lib/vault-census.mjs';
 import {
+  parseBoundedPositiveIntegerFlag,
   parsePositiveIntegerFlag,
   parseVaultFlag,
   resolveSingleRootPathArg,
 } from '../lib/cli-args.mjs';
+
+const MAX_FILES_CAP = 50000;
 
 const COLORS = {
   green: '\x1b[32m',
@@ -125,9 +128,9 @@ function parseArgs(args) {
     else if (a === '--json') flags.json = true;
     else if (a === '--apply') flags.apply = true;
     else if (a === '--max-files')
-      flags.maxFiles = parsePositiveIntegerFlag('--max-files', args[++i]);
+      flags.maxFiles = parseBoundedPositiveIntegerFlag('--max-files', args[++i], { max: MAX_FILES_CAP });
     else if (a.startsWith('--max-files='))
-      flags.maxFiles = parsePositiveIntegerFlag('--max-files', a.slice('--max-files='.length));
+      flags.maxFiles = parseBoundedPositiveIntegerFlag('--max-files', a.slice('--max-files='.length), { max: MAX_FILES_CAP });
     else if (a === '--threshold') {
       const v = parsePositiveIntegerFlag('--threshold', args[++i]);
       if (v instanceof Error) return { error: v.message };
@@ -262,7 +265,8 @@ function printUsage(stream = process.stderr) {
       `  (50 단위 chunk, partial — 없는 endpoint 는 row-level error).\n` +
       `  ${COLORS.bold}--threshold N${COLORS.reset}: count < N 인 약한 module edge 를 필터.\n` +
       `  큰 codebase 의 accidental cross-feature import 가 ontology 에\n` +
-      `  들어가는 걸 차단. preview / --apply / --json 모두 적용.\n\n` +
+      `  들어가는 걸 차단. preview / --apply / --json 모두 적용.\n` +
+      `  ${COLORS.bold}--max-files N${COLORS.reset}: default 5000, max ${MAX_FILES_CAP} hard stop.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
       `  oh-my-ontology infer-imports                       # preview only\n` +
       `  oh-my-ontology infer-imports ~/my-app --json       # machine output\n` +

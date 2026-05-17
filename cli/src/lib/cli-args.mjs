@@ -46,6 +46,15 @@ export function parsePositiveIntegerFlag(flag, value) {
   return Number.isSafeInteger(parsed) ? parsed : new Error(`${flag} must be a positive integer`);
 }
 
+export function parseBoundedPositiveIntegerFlag(flag, value, { max } = {}) {
+  const parsed = parsePositiveIntegerFlag(flag, value);
+  if (parsed instanceof Error) return parsed;
+  if (Number.isInteger(max) && parsed > max) {
+    return new Error(`${flag} must be <= ${max}`);
+  }
+  return parsed;
+}
+
 export function parseNonNegativeIntegerFlag(flag, value) {
   if (!/^(0|[1-9]\d*)$/.test(String(value ?? ''))) {
     return new Error(`${flag} must be a non-negative integer`);

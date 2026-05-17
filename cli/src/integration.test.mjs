@@ -2357,6 +2357,10 @@ await test('repo analysis commands — reject invalid numeric option values befo
       pattern: /--max-files must be a positive integer/,
     },
     {
+      args: ['infer-imports', '--max-files=50001'],
+      pattern: /--max-files must be <= 50000/,
+    },
+    {
       args: ['infer-imports', '--threshold', '--json'],
       pattern: /--threshold must be a positive integer/,
     },
@@ -2367,6 +2371,10 @@ await test('repo analysis commands — reject invalid numeric option values befo
     {
       args: ['bootstrap', '--max-files=abc'],
       pattern: /--max-files must be a positive integer/,
+    },
+    {
+      args: ['bootstrap', '--max-files=50001'],
+      pattern: /--max-files must be <= 50000/,
     },
     {
       args: ['bootstrap', '--threshold=0'],

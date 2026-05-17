@@ -28,10 +28,13 @@ import {
 } from '../lib/prune-starters.mjs';
 import { getVaultCensus, writeVaultCensus } from '../lib/vault-census.mjs';
 import {
+  parseBoundedPositiveIntegerFlag,
   parsePositiveIntegerFlag,
   parseVaultFlag,
   resolveSingleRootPathArg,
 } from '../lib/cli-args.mjs';
+
+const MAX_FILES_CAP = 50000;
 
 const COLORS = {
   green: '\x1b[32m',
@@ -572,9 +575,9 @@ function parseArgs(args) {
     else if (a.startsWith('--max-depth='))
       flags.maxDepth = parsePositiveIntegerFlag('--max-depth', a.slice('--max-depth='.length));
     else if (a === '--max-files')
-      flags.maxFiles = parsePositiveIntegerFlag('--max-files', args[++i]);
+      flags.maxFiles = parseBoundedPositiveIntegerFlag('--max-files', args[++i], { max: MAX_FILES_CAP });
     else if (a.startsWith('--max-files='))
-      flags.maxFiles = parsePositiveIntegerFlag('--max-files', a.slice('--max-files='.length));
+      flags.maxFiles = parseBoundedPositiveIntegerFlag('--max-files', a.slice('--max-files='.length), { max: MAX_FILES_CAP });
     else if (a === '--threshold') {
       const v = parsePositiveIntegerFlag('--threshold', args[++i]);
       if (v instanceof Error) return { error: v.message };
@@ -613,6 +616,7 @@ function printUsage(stream = process.stderr) {
       `  1줄 full bootstrap. analyze --apply (노드 + suggested relations) +\n` +
       `  infer-imports --apply (depends_on edges) 를 합친 적용 명령.\n` +
       `  agent-less 환경 (CI · plain shell) 또는 새 repo 진입 직후 흐름.\n\n` +
+      `  --max-files N: import walk default 5000, max ${MAX_FILES_CAP} hard stop.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
       `  oh-my-ontology bootstrap                       # cwd → cwd vault\n` +
       `  oh-my-ontology bootstrap ~/my-app --vault .    # 다른 repo 분석\n` +
