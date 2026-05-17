@@ -826,6 +826,11 @@ await test('local/frontmatter commands — reject invalid vault and value argume
       stderr: /unknown flag: --jsson\. Did you mean --json\?/,
     },
     {
+      args: ['list', '--kind=capabilty'],
+      expectedCode: 1,
+      stderr: /--kind must be one of: project, domain, capability, element, document, vault-readme\. Received: "capabilty"\. Did you mean "capability"\?/,
+    },
+    {
       args: ['list', 'one', 'two'],
       expectedCode: 1,
       stderr: /too many arguments: two/,
