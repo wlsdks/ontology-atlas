@@ -19,7 +19,10 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { checkMcpLeanTarballFiles } from './check-package-contracts.mjs';
 import { parseMcpToolMetadataFromDescription } from '../cli/src/lib/mcp-metadata.mjs';
-import { tunedHealthScopeOutputSummary } from '../mcp/scripts/verify.mjs';
+import {
+  tunedHealthScopeOutputSummary,
+  tunedWorkspaceBriefScopeOutputSummary,
+} from '../mcp/scripts/verify.mjs';
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const MCP_DIR = join(ROOT, 'mcp');
@@ -30,6 +33,7 @@ const mcpToolMetadata = parseMcpToolMetadataFromDescription(MCP_PKG.description)
 const expectedToolCount = mcpToolMetadata?.toolCount;
 const expectedToolSplitRe = mcpToolMetadata?.splitPattern;
 const tunedDiagnosisScopeRe = new RegExp(regexEscape(tunedHealthScopeOutputSummary()));
+const tunedWorkspaceBriefScopeRe = new RegExp(regexEscape(tunedWorkspaceBriefScopeOutputSummary()));
 
 assert.ok(mcpToolMetadata, 'mcp/package.json description must include the current tool count and split');
 
@@ -301,7 +305,7 @@ try {
   assert.match(cliMcpVerify.stdout, /workspace_brief/);
   assert.match(cliMcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
   assert.match(cliMcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
-  assert.match(cliMcpVerify.stdout, tunedDiagnosisScopeRe);
+  assert.match(cliMcpVerify.stdout, tunedWorkspaceBriefScopeRe);
   assert.match(cliMcpVerify.stdout, /workspace_brief non-blocking advisory nextActions/);
   assert.match(cliMcpVerify.stdout, /compile_issues:warn/);
   assert.match(cliMcpVerify.stdout, /health — .*checks/);
@@ -573,7 +577,7 @@ try {
   assert.match(mcpVerify.stdout, /workspace_brief/);
   assert.match(mcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
   assert.match(mcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
-  assert.match(mcpVerify.stdout, tunedDiagnosisScopeRe);
+  assert.match(mcpVerify.stdout, tunedWorkspaceBriefScopeRe);
   assert.match(mcpVerify.stdout, /workspace_brief non-blocking advisory nextActions/);
   assert.match(mcpVerify.stdout, /compile_issues:warn/);
   assert.match(mcpVerify.stdout, /health — .*checks/);
@@ -611,7 +615,7 @@ try {
   assert.match(directMcpVerify.stdout, /project probe — 1 project node/);
   assert.match(directMcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
   assert.match(directMcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
-  assert.match(directMcpVerify.stdout, tunedDiagnosisScopeRe);
+  assert.match(directMcpVerify.stdout, tunedWorkspaceBriefScopeRe);
   assert.match(directMcpVerify.stdout, /health_tuned — .*checks/);
   assert.match(directMcpVerify.stdout, tunedDiagnosisScopeRe);
   assert.match(directMcpVerify.stdout, /compile_ontology page — 1\/5 nodes, 1\/\d+ edges/);

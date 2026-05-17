@@ -1501,8 +1501,11 @@ describe('package contract helpers', () => {
     assert.match(smoke, /health — \.\*checks/);
     assert.match(smoke, /workspace_brief_tuned — \.\*next actions, \.\*health checks/);
     assert.match(smoke, /tunedHealthScopeOutputSummary/);
+    assert.match(smoke, /tunedWorkspaceBriefScopeOutputSummary/);
     assert.match(smoke, /new RegExp\(regexEscape\(tunedHealthScopeOutputSummary\(\)\)\)/);
+    assert.match(smoke, /new RegExp\(regexEscape\(tunedWorkspaceBriefScopeOutputSummary\(\)\)\)/);
     assert.match(smoke, /tunedDiagnosisScopeRe/);
+    assert.match(smoke, /tunedWorkspaceBriefScopeRe/);
     assert.match(smoke, /health_tuned — \.\*compile_issues:\(pass\|warn\)/);
     assert.match(smoke, /health_tuned — \.\*checks/);
     assert.match(smoke, /compile_ontology page — 1\\\/5 nodes, 1\\\/\\d\+ edges/);
