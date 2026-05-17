@@ -183,6 +183,10 @@ responses, strict unknown-argument and invalid-enum rejection, `get_concepts` su
 `workspace_brief.nextActions`, `workspace_brief.health.checks`, `health`, or
 tuned `workspace_brief` / tuned `health` gates regress. Set `OMOT_DOGFOOD_TIMEOUT_MS=10000` for slower local
 filesystems; the value must be a positive integer in milliseconds.
+For `npm run verify` / `mcp-verify` timeout mistakes, the error reports the
+received value and a concrete retry example such as
+`npm run verify -- --timeout-ms 15000`, so agents can self-correct without
+guessing the accepted format.
 
 ## Verifiable promises
 

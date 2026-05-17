@@ -138,7 +138,8 @@ validated before the path is treated as usable. Vaults without a `kind: project`
 node skip only the containment-specific `project_scope` smoke; empty vault
 folders skip node-targeted graph smoke until a first node exists.
 Use `--timeout-ms 15000` when a large vault or slow filesystem needs a longer
-server wait window.
+server wait window. Invalid timeout values print the received value and a
+retry example such as `oh-my-ontology mcp-verify --timeout-ms 15000`.
 
 `oh-my-ontology workspace-brief [vault]` follows the same blocking distinction:
 warn/advisory next actions render as guidance, but fail-severity next actions

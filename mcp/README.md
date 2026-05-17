@@ -416,7 +416,9 @@ advisory list with action label, severity, optional count, and message, the
 `workspace_brief.health.checks` count, and the `health` / `health_tuned` lines include the
 check `id:status:count` coverage that the verify gate validated. The default wait window is 8 seconds; set
 `OMOT_VERIFY_TIMEOUT_MS` to a positive integer millisecond value if your vault
-is large or on a slow filesystem.
+is large or on a slow filesystem. Invalid timeout values fail before the server
+starts and print the received value plus a concrete retry example, for example
+`npm run verify -- --timeout-ms 15000`.
 
 ### Manual verification (reference)
 

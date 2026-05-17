@@ -91,6 +91,8 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm test:mcp:package\s+# focused package-script\/dependency\/tarball contract checks/);
     assert.match(readme, /pnpm test:mcp:suggestions/);
     assert.match(readme, /pnpm test:mcp:verify/);
+    assert.match(readme, /timeout mistakes, the error reports the\s+received value/);
+    assert.match(readme, /`npm run verify -- --timeout-ms 15000`/);
     assert.match(readme, /OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli/);
     assert.match(readme, /pnpm integration:cli:mcp-verify/);
     assert.match(readme, /OMOT_TEST_NAME_PATTERN="tools\/list\|initialize" pnpm integration:mcp/);
@@ -304,6 +306,8 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm test:mcp:dogfood/);
     assert.match(section, /pnpm test:mcp:suggestions/);
     assert.match(section, /pnpm test:mcp:verify/);
+    assert.match(readme, /Invalid timeout values fail before the server\s+starts and print the received value plus a concrete retry example/);
+    assert.match(readme, /`npm run verify -- --timeout-ms 15000`/);
     assert.match(section, /first-contact read-only MCP flow/);
     assert.match(section, /documentation drift/);
     assert.match(section, /help output/);
@@ -492,6 +496,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`npm run verify -- --vault \.\.\/vault`/);
     assert.match(verifySection, /supports `--timeout-ms` or `OMOT_VERIFY_TIMEOUT_MS`/);
     assert.match(verifySection, /suggest increasing `--timeout-ms` or `OMOT_VERIFY_TIMEOUT_MS`/);
+    assert.match(verifySection, /Invalid timeout values fail before the server\s+starts and print the received value plus a concrete retry example/);
+    assert.match(verifySection, /`npm run verify -- --timeout-ms 15000`/);
     assert.match(verifySection, /validates the installed `tools\/list` schema contract/);
     assert.match(verifySection, /`query_ontology\.operation` must stay required/);
     assert.match(verifySection, /graph engine runtime allow-lists/);
@@ -572,6 +578,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /paginated `compile_ontology\(\{nodesLimit:1, edgesLimit:1\}\)`/);
     assert.match(verifySection, /graph index payloads, index membership, and edge breakdown counts/);
     assert.match(verifySection, /`overview`, `overview`\/`project_map` query_plan, and actual `neighbors`/);
+    assert.match(verifySection, /Invalid timeout values print the received value/);
+    assert.match(verifySection, /`oh-my-ontology mcp-verify --timeout-ms 15000`/);
     assert.match(verifySection, /node-to-project `path`/);
     assert.match(verifySection, /`path` hop\/edge alignment/);
     assert.match(verifySection, /`path` \/ `project_scope` calls/);
