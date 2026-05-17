@@ -891,7 +891,17 @@ await test('local/frontmatter commands — reject invalid vault and value argume
       expectedCode: 0,
     },
     {
+      args: ['list', '--kind', '-json'],
+      expectedCode: 1,
+      stderr: /--kind requires a value/,
+    },
+    {
       args: ['list', '--vault', '--json'],
+      expectedCode: 1,
+      stderr: /--vault requires a path/,
+    },
+    {
+      args: ['list', '--vault', '-json'],
       expectedCode: 1,
       stderr: /--vault requires a path/,
     },

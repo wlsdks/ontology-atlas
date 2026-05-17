@@ -1,6 +1,6 @@
 export function parseVaultFlag(value) {
   const path = String(value ?? '').trim();
-  if (path.startsWith('--')) return false;
+  if (path.startsWith('-')) return false;
   return path ? path : false;
 }
 
@@ -82,7 +82,7 @@ export function parseBoundedNonNegativeIntegerFlag(flag, value, { max } = {}) {
 
 export function parseRequiredFlagValue(flag, value) {
   const text = String(value ?? '').trim();
-  if (!text || text.startsWith('--')) return new Error(`${flag} requires a value`);
+  if (!text || text.startsWith('-')) return new Error(`${flag} requires a value`);
   return text;
 }
 

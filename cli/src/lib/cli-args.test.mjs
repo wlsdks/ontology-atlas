@@ -100,6 +100,7 @@ describe('cli vault and positional argument parsers', () => {
     assert.equal(parseVaultFlag(''), false);
     assert.equal(parseVaultFlag(undefined), false);
     assert.equal(parseVaultFlag('--timeout-ms'), false);
+    assert.equal(parseVaultFlag('-json'), false);
   });
 
   it('rejects ambiguous vault sources and extra positional arguments', () => {
@@ -158,6 +159,7 @@ describe('cli vault and positional argument parsers', () => {
     assert.equal(parseRequiredFlagValue('--from', ' node '), 'node');
     assert.equal(errorMessage(parseRequiredFlagValue('--from', '')), '--from requires a value');
     assert.equal(errorMessage(parseRequiredFlagValue('--from', '--to')), '--from requires a value');
+    assert.equal(errorMessage(parseRequiredFlagValue('--from', '-to')), '--from requires a value');
   });
 
   it('keeps raw required values available for commands that validate whitespace later', () => {
