@@ -1428,19 +1428,22 @@ const TOOLS = [
         },
         types: {
           type: 'array',
-          items: NON_BLANK_STRING_SCHEMA,
+          items: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
           description:
             'Optional relation types to include, e.g. ["dependencies"] or ["depends_on"].',
         },
         pattern: {
           type: 'array',
-          items: NON_BLANK_STRING_SCHEMA,
+          items: { ...NON_BLANK_STRING_SCHEMA, enum: RELATION_TYPE_VALUES },
           description:
             'pattern_walk only: required relation sequence to follow, e.g. ["domains", "capabilities", "elements"]. depends_on is normalized to dependencies.',
         },
-        type: nonBlankStringSchema(
-          'Relation type for relation_check, e.g. depends_on, relates, contains, describes, domains, capabilities, elements, or domain.',
-        ),
+        type: {
+          ...nonBlankStringSchema(
+            'Relation type for relation_check/match_edges, e.g. depends_on, relates, contains, describes, domains, capabilities, elements, or domain.',
+          ),
+          enum: RELATION_TYPE_VALUES,
+        },
         kind: nonBlankStringSchema(
           'match_nodes/recommend_relations: optional node kind filter. recommend_relations currently supports capability or element.',
         ),
@@ -1490,7 +1493,10 @@ const TOOLS = [
         toKind: nonBlankStringSchema(
           'match_edges only: optional target kind filter. Use external or unresolved for non-node refs.',
         ),
-        relation: nonBlankStringSchema('Alias for type when operation is relation_check.'),
+        relation: {
+          ...nonBlankStringSchema('Alias for type when operation is relation_check.'),
+          enum: RELATION_TYPE_VALUES,
+        },
         depth: {
           type: 'integer',
           minimum: 0,

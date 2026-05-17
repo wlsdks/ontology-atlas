@@ -1183,6 +1183,18 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(queryTool.inputSchema?.properties?.targetOperation?.enum, QUERY_PLAN_TARGET_OPERATIONS)) {
     return 'query_ontology targetOperation enum schema drift';
   }
+  for (const propertyName of ['types', 'pattern']) {
+    const option = propertyAt(queryTool, ['properties', propertyName]);
+    if (option?.type !== 'array' || option.items?.type !== 'string' || !sameArray(option.items?.enum, RELATION_TYPE_VALUES)) {
+      return `query_ontology ${propertyName} relation enum schema drift`;
+    }
+  }
+  for (const propertyName of ['type', 'relation']) {
+    const option = propertyAt(queryTool, ['properties', propertyName]);
+    if (option?.type !== 'string' || !sameArray(option.enum, RELATION_TYPE_VALUES)) {
+      return `query_ontology ${propertyName} relation enum schema drift`;
+    }
+  }
   if (!/current-page `nextExecutableAction` \/ `nextReviewAction` pointers/.test(queryTool.description || '')) {
     return 'query_ontology description missing current-page maintenance next pointers';
   }

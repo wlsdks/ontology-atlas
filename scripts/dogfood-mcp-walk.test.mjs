@@ -181,6 +181,10 @@ function makeDogfoodToolsList() {
           recommendationLimit: { type: "integer", minimum: 1, maximum: 500, description: "health/workspace_brief tuning" },
           orderLimit: { type: "integer", minimum: 1, maximum: 500, description: "health/workspace_brief tuning" },
           nodeLimit: { type: "integer", minimum: 1, maximum: 500, description: "health/workspace_brief tuning" },
+          types: { type: "array", items: { type: "string", enum: RELATION_TYPE_VALUES } },
+          pattern: { type: "array", items: { type: "string", enum: RELATION_TYPE_VALUES } },
+          type: { type: "string", enum: RELATION_TYPE_VALUES },
+          relation: { type: "string", enum: RELATION_TYPE_VALUES },
           dependencyTypes: { type: "array", items: { type: "string", enum: RELATION_TYPE_VALUES }, description: "health/workspace_brief tuning" },
           componentTypes: { type: "array", items: { type: "string", enum: RELATION_TYPE_VALUES }, description: "health/workspace_brief tuning" },
         };

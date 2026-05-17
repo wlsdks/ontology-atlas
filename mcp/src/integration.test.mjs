@@ -895,6 +895,14 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
           findTool("query_ontology")?.inputSchema?.properties?.dependencyTypes?.items?.type,
         dependencyTypesEnum:
           findTool("query_ontology")?.inputSchema?.properties?.dependencyTypes?.items?.enum,
+        typesEnum:
+          findTool("query_ontology")?.inputSchema?.properties?.types?.items?.enum,
+        patternEnum:
+          findTool("query_ontology")?.inputSchema?.properties?.pattern?.items?.enum,
+        typeEnum:
+          findTool("query_ontology")?.inputSchema?.properties?.type?.enum,
+        relationEnum:
+          findTool("query_ontology")?.inputSchema?.properties?.relation?.enum,
         componentTypesItem:
           findTool("query_ontology")?.inputSchema?.properties?.componentTypes?.items?.type,
         componentTypesEnum:
@@ -918,6 +926,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         orderLimitType: "integer",
         dependencyTypesItem: "string",
         dependencyTypesEnum: RELATION_TYPE_VALUES,
+        typesEnum: RELATION_TYPE_VALUES,
+        patternEnum: RELATION_TYPE_VALUES,
+        typeEnum: RELATION_TYPE_VALUES,
+        relationEnum: RELATION_TYPE_VALUES,
         componentTypesItem: "string",
         componentTypesEnum: RELATION_TYPE_VALUES,
         phasesEnum: MAINTENANCE_PHASE_VALUES,

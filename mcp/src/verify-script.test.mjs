@@ -629,6 +629,10 @@ describe('verify.mjs first-contact gates', () => {
               maximum: 500,
               description: 'components/communities/health/workspace_brief only: positive integer max node summaries.',
             },
+            types: { type: 'array', items: { type: 'string', enum: RELATION_TYPE_VALUES } },
+            pattern: { type: 'array', items: { type: 'string', enum: RELATION_TYPE_VALUES } },
+            type: { type: 'string', enum: RELATION_TYPE_VALUES },
+            relation: { type: 'string', enum: RELATION_TYPE_VALUES },
             dependencyTypes: {
               type: 'array',
               items: { type: 'string', enum: RELATION_TYPE_VALUES },
