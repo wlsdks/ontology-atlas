@@ -45,7 +45,9 @@ export function dogfoodVaultCensus(root) {
   return dogfoodVaultCensusFromDocs(docs, files.length);
 }
 
-export function dogfoodVaultCensusFromDocs(docs, fileCount = docs.length) {
+export function dogfoodVaultCensusFromDocs(docs, fileCount) {
+  const rows = Array.isArray(docs) ? docs : [];
+  const safeFileCount = Number.isInteger(fileCount) && fileCount >= 0 ? fileCount : rows.length;
   const byKind = {
     capabilities: 0,
     domains: 0,
@@ -53,7 +55,7 @@ export function dogfoodVaultCensusFromDocs(docs, fileCount = docs.length) {
     project: 0,
     "vault-readme": 0,
   };
-  for (const doc of docs) {
+  for (const doc of rows) {
     const kind = doc?.frontmatter?.kind;
     if (kind === "capability") byKind.capabilities += 1;
     if (kind === "domain") byKind.domains += 1;
@@ -64,7 +66,7 @@ export function dogfoodVaultCensusFromDocs(docs, fileCount = docs.length) {
   const total = Object.values(byKind).reduce((sum, count) => sum + count, 0);
 
   return {
-    files: fileCount,
+    files: safeFileCount,
     total,
     byKind,
   };

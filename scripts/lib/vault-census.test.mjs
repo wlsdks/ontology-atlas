@@ -150,4 +150,30 @@ describe("vault-census", () => {
       },
     });
   });
+
+  it("treats non-array loaded docs and invalid file counts as empty", () => {
+    assert.deepEqual(dogfoodVaultCensusFromDocs(null), {
+      files: 0,
+      total: 0,
+      byKind: {
+        capabilities: 0,
+        domains: 0,
+        elements: 0,
+        project: 0,
+        "vault-readme": 0,
+      },
+    });
+
+    assert.deepEqual(dogfoodVaultCensusFromDocs([{ frontmatter: { kind: "domain" } }], -1), {
+      files: 1,
+      total: 1,
+      byKind: {
+        capabilities: 0,
+        domains: 1,
+        elements: 0,
+        project: 0,
+        "vault-readme": 0,
+      },
+    });
+  });
 });
