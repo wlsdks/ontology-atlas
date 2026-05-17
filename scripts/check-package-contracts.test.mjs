@@ -463,7 +463,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /mcp-verify --help/);
     assert.match(verifySection, /graph-query smoke contract/);
     assert.match(verifySection, /direct read smoke set/);
-    assert.match(verifySection, /`query_concepts` and\s+limited `query_concepts`/);
+    assert.match(verifySection, /`get_concept`,\s+`get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited\s+`query_concepts`, `find_neighbors`, `find_path`, and `find_orphans`/);
+    assert.match(verifySection, /single-node, batch, search\/backlink, limit-semantics, neighborhood, shortest-path,\s+and orphan coverage/);
     assert.match(verifySection, /`tools\/list` schema contract/);
     assert.match(verifySection, /write-tool `postWriteMaintenance` `score` \/ executable\s+`proposedAction` \/ current-page next action pointer guidance/);
     assert.match(verifySection, /runtime negative smokes with invalid `list_concepts\.lmit`/);
@@ -977,6 +978,8 @@ describe('package contract helpers', () => {
     assert.match(regressionSection, /spawn-based integration suite/);
     assert.match(regressionSection, /Node `--test-name-pattern`/);
     assert.match(regressionSection, /`pnpm integration:cli:mcp-verify`/);
+    assert.match(regressionSection, /direct read smoke set\(`get_concept` \/ `get_concepts` \/ `find_evidence`/);
+    assert.match(regressionSection, /`mcp-verify --help` graph-query smoke \/ direct read smoke set\(`get_concept`, `get_concepts`, `query_concepts`, limited `query_concepts`, `find_neighbors`, `find_path` 포함\)/);
     assert.match(regressionSection, /write-tool post-write guidance/);
     assert.match(regressionSection, /maintenance filter enum/);
     assert.match(regressionSection, /ready cursor \/ missing cursor 계약/);
