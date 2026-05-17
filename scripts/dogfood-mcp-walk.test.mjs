@@ -2561,12 +2561,16 @@ describe("rpc response completion helpers", () => {
   it("prints dogfood help without requiring an MCP server", () => {
     assert.equal(shouldPrintDogfoodHelp(["--help"]), true);
     assert.equal(shouldPrintDogfoodHelp(["-h"]), true);
+    assert.equal(shouldPrintDogfoodHelp(["--", "--help"]), true);
     assert.equal(shouldPrintDogfoodHelp([]), false);
     assert.deepEqual(parseDogfoodArgs([]), { help: false, error: null });
+    assert.deepEqual(parseDogfoodArgs(["--"]), { help: false, error: null });
     assert.deepEqual(parseDogfoodArgs(["--help"]), { help: true, error: null });
     assert.deepEqual(parseDogfoodArgs(["-h"]), { help: true, error: null });
+    assert.deepEqual(parseDogfoodArgs(["--", "--help"]), { help: true, error: null });
     const usage = dogfoodUsage();
-    assert.match(usage, /Usage: pnpm dogfood:walk \[--help\]/);
+    assert.match(usage, /pnpm dogfood:walk -- \[--help\]/);
+    assert.match(usage, /node scripts\/dogfood-mcp-walk\.mjs \[--help\]/);
     assert.match(usage, /Print this help without starting the MCP server/);
     assert.match(usage, /No positional vault argument is accepted/);
     assert.match(usage, /OMOT_DOGFOOD_TIMEOUT_MS/);
@@ -2575,6 +2579,10 @@ describe("rpc response completion helpers", () => {
 
   it("rejects unsupported dogfood arguments before starting MCP", () => {
     assert.deepEqual(parseDogfoodArgs(["docs/ontology"]), {
+      help: false,
+      error: "dogfood:walk does not accept arguments: docs/ontology",
+    });
+    assert.deepEqual(parseDogfoodArgs(["--", "docs/ontology"]), {
       help: false,
       error: "dogfood:walk does not accept arguments: docs/ontology",
     });

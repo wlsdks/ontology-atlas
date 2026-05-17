@@ -54,7 +54,9 @@ const DOGFOOD_TIMEOUT_MS_RAW = process.env.OMOT_DOGFOOD_TIMEOUT_MS;
 
 export function dogfoodUsage() {
   return [
-    "Usage: pnpm dogfood:walk [--help]",
+    "Usage:",
+    "  pnpm dogfood:walk -- [--help]",
+    "  node scripts/dogfood-mcp-walk.mjs [--help]",
     "",
     "Runs the source-checkout MCP dogfood walk against this repo's docs/ontology vault.",
     "The walk starts the local MCP stdio server, exercises read/diagnosis/graph-query",
@@ -78,7 +80,7 @@ export function shouldPrintDogfoodHelp(argv = process.argv.slice(2)) {
 }
 
 export function parseDogfoodArgs(argv = process.argv.slice(2)) {
-  const args = Array.isArray(argv) ? argv : [];
+  const args = (Array.isArray(argv) ? argv : []).filter((arg) => arg !== "--");
   const help = args.includes("--help") || args.includes("-h");
   const unsupported = args.filter((arg) => arg !== "--help" && arg !== "-h");
   if (help) return { help: true, error: null };
