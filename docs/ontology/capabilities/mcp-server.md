@@ -401,7 +401,9 @@ root shortcut `pnpm integration:mcp:readme` 는 first-contact README read-only
 subset 만 실행해 agent onboarding 문서 변경을 빠르게 검증한다.
 package manifest / enum suggestion 류의 더 작은 변경은 root 의
 `pnpm test:mcp:package` / `pnpm test:mcp:suggestions` 로 파일 단위 검증을 먼저
-돌려 반복 dogfood 비용을 낮춘다. dogfood helper / structuredContent 출력 계약이나
+돌려 반복 dogfood 비용을 낮춘다. 설치 verify 를 dogfood vault 에 반복 적용할 때는
+`pnpm dogfood:verify` 가 repo root 의 짧은 gate 이고, 명시 인자가 필요할 때만
+`pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` 로 풀어 쓴다. dogfood helper / structuredContent 출력 계약이나
 vault warning / `validate_vault` problem gate, first-contact health gate,
 workspace_brief sample-shape gate, maintenance work-queue shape / formatter gate, initialize guidance gate,
 destructive dry-run gate, tools/list annotation coverage, strict relation filter, stderr warning filtering 을 만질 때는 `pnpm test:mcp:dogfood` 로 dogfood helper 와

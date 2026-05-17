@@ -1653,6 +1653,8 @@ describe('package contract helpers', () => {
     assert.match(doc, /`nextActions\[\]\.sample` 실행 액션 shape/);
     assert.match(doc, /직접 verify help 도 이 focused check 들을 같이 보여줘/);
     assert.match(doc, /verify helper 와\s+dogfood gate 의 maintenance 관련 subset 만 실행/);
+    assert.match(doc, /`pnpm dogfood:verify` 가 repo root 의 짧은 gate/);
+    assert.match(doc, /`pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000` 로 풀어 쓴다/);
     assert.match(doc, /dogfood helper \/ structuredContent 출력 계약/);
     assert.match(doc, /initialize guidance gate/);
     assert.match(doc, /tools\/list annotation coverage/);
