@@ -2819,6 +2819,41 @@ describe('queryCompiledOntology', () => {
     );
   });
 
+  it('labels scoped health component checks separately from full graph health', () => {
+    const graph = compileOntology(
+      [
+        doc('domains/auth', {
+          kind: 'domain',
+          title: 'Auth',
+          capabilities: ['capabilities/login'],
+        }),
+        doc('capabilities/login', {
+          kind: 'capability',
+          title: 'Login',
+          domain: 'domains/auth',
+        }),
+      ],
+      { includeIndexes: true },
+    );
+
+    const health = queryCompiledOntology(graph, {
+      operation: 'health',
+      componentTypes: ['dependencies'],
+    });
+
+    assert.equal(health.operation, 'health');
+    assert.equal(health.status, 'healthy');
+    assert.deepEqual(
+      health.checks.find((check) => check.id === 'components'),
+      {
+        id: 'components',
+        status: 'info',
+        count: 2,
+        message: 'The scoped ontology graph has disconnected actionable islands.',
+      },
+    );
+  });
+
   it('does not surface vault README singleton components as health next actions', () => {
     const withReadme = compileOntology(
       [
