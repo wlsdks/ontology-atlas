@@ -329,6 +329,9 @@ describe('package contract helpers', () => {
     assert.match(featureRow, /ready pages report `cursor\.found=true` with `cursor\.reason=null`/);
     assert.match(featureRow, /unknown cursors return an empty page with `cursor\.found=false`/);
     assert.match(featureRow, /zero remaining actions, and no next actions/);
+    assert.match(featureRow, /`relation_check` validates relation `type` before endpoint slug resolution/);
+    assert.match(featureRow, /relation typos such as `depend_on` still return nearest-value hints/);
+    assert.match(featureRow, /empty or project-less vaults/);
 
     for (const toolName of [
       'add_concept',
