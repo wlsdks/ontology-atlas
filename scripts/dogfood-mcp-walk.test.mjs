@@ -2920,7 +2920,7 @@ describe("rpc response completion helpers", () => {
     assert.match(usage, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
     assert.match(usage, /pnpm test:mcp:dogfood:timeout/);
     assert.match(usage, /Narrow dogfood timeout\/help retry diagnostics/);
-    assert.match(usage, /Dogfood helper, compile gate, row-label guidance, vault warning gates, health gates, initialize guidance, help, structuredContent, strict relation filters, stderr warning checks/);
+    assert.match(usage, /Dogfood helper, compile\/index gates, row-label guidance, vault warning and validate_vault problem gates, first-contact health\/growth\/sample-shape gates, maintenance work-queue shape, initialize guidance, destructive dry-run, help\/argument\/timeout handling, structuredContent, strict relation filters, stderr warning checks/);
     assertPnpmScriptsExist(usage);
   });
 
