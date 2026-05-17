@@ -881,6 +881,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /read-only diagnosis/);
     assert.match(verifySection, /`expected_mtime`/);
     assert.match(verifySection, /`force: true`/);
+    assert.match(verifySection, /batch relation type recovery/);
+    assert.match(verifySection, /Did you mean "depends_on"\?/);
     assert.match(verifySection, /strict-input typo recovery/);
     assert.match(verifySection, /`Did you mean "limit"\?` \/ `Did you mean "overview"\?`/);
     assert.match(verifySection, /runtime negative smoke calls with invalid `list_concepts\.lmit`/);
