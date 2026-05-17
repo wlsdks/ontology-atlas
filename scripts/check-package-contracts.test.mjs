@@ -297,7 +297,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`query_ontology\(\{operation:"neighbors"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"path"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"project_scope"\}\)`/);
-    assert.match(verifySection, /requires every exercised `query_ontology` graph-query response to include\s+`structuredContent` and compares that payload with the text JSON payload/);
+    assert.match(verifySection, /requires every exercised direct read, maintenance cursor, and\s+`query_ontology` graph-query response to include `structuredContent`, and\s+compares that payload with the text JSON payload/);
     assert.match(verifySection, /project-node `list_concepts` probe/);
     assert.match(verifySection, /`kind: project`/);
     assert.match(verifySection, /`list_kinds\.byKind\.project`/);

@@ -268,9 +268,10 @@ verify path exercises and gates the same first-contact graph diagnosis an agent 
 plus actual `query_ontology({operation:"neighbors"})`,
 `query_ontology({operation:"path"})`, and
 `query_ontology({operation:"project_scope"})` smoke calls.
-It also requires every exercised `query_ontology` graph-query response to include
-`structuredContent` and compares that payload with the text JSON payload, so
-agents can consume graph-engine results without reparsing text.
+It also requires every exercised direct read, maintenance cursor, and
+`query_ontology` graph-query response to include `structuredContent`, and
+compares that payload with the text JSON payload, so agents can consume MCP
+results without reparsing text.
 The `tools/list` gate also checks that every tool rejects unknown arguments via
 `additionalProperties:false`, that every tool exposes the expected
 `annotations.title` display name, `annotations.readOnlyHint` read/write split,
