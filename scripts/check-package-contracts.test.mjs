@@ -297,6 +297,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`query_ontology\(\{operation:"neighbors"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"path"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"project_scope"\}\)`/);
+    assert.match(verifySection, /exercised `query_ontology` graph-query text JSON payload\s+with its `structuredContent` payload/);
     assert.match(verifySection, /project-node `list_concepts` probe/);
     assert.match(verifySection, /`kind: project`/);
     assert.match(verifySection, /`list_kinds\.byKind\.project`/);
@@ -672,6 +673,7 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /`edges\[\]\.via`/);
     assert.match(dogfoodSection, /설치 verify 의 `query_ontology\(path\)` smoke/);
     assert.match(dogfoodSection, /hop\/edge alignment/);
+    assert.match(doc, /`query_ontology` graph-query 응답은 text JSON payload 와\s+`structuredContent` payload 의 일치 여부도 비교/);
     assert.match(dogfoodSection, /project-node `list_concepts` probe/);
     assert.match(dogfoodSection, /project-node `list_concepts` probe 도 fail-closed/);
     assert.match(dogfoodSection, /`kind: project`/);

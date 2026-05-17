@@ -419,6 +419,9 @@ invalid `maintenance_plan.phases` / `maintenance_plan.severities` /
 `maintenance_plan.kinds` rejection smoke 를
 함께 출력해, AI agent 가 첫 접촉에서 받는 graph diagnosis 와 traversal 품질을
 계속 확인한다.
+dogfood 에서 실행한 `query_ontology` graph-query 응답은 text JSON payload 와
+`structuredContent` payload 의 일치 여부도 비교해, agent 가 graph-engine 결과를
+text 재파싱 없이 구조화된 결과로 소비할 수 있는지 검증한다.
 직접 verify help(`npm run verify -- --help`) 도 strict unknown-argument /
 invalid-enum rejection, maintenance filter enum, ready `maintenance_plan` cursor 와
 missing `maintenance_plan.afterActionId` cursor handling 범위를 서버 시작 없이
