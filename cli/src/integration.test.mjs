@@ -2291,6 +2291,8 @@ await test('maintenance — supports cursor and enum filter flags', async () => 
     assert.equal(filtered.code, 0, `stdout: ${filtered.stdout}\nstderr: ${filtered.stderr}`);
     const clean = stripAnsi(filtered.stdout);
     assert.match(clean, /maintenance plan/);
+    assert.match(clean, /summary: compileIssues:0, cycles:1/);
+    assert.match(clean, /ignoredExternal:0/);
     assert.match(clean, /break_dependency_cycle/);
     assert.match(clean, /filters: phases=repair · severities=fail · kinds=break_dependency_cycle/);
     assert.match(clean, /buckets: phase repair:1 · severity fail:1 · kind break_dependency_cycle:1/);

@@ -94,6 +94,16 @@ function renderMaintenance(result) {
     formatListFilter('kinds', filters.kinds),
   ].filter(Boolean).join(' · ');
   if (filterText) process.stdout.write(`${COLORS.dim}filters:${COLORS.reset} ${filterText}\n`);
+  const summaryText = [
+    `compileIssues:${summary.compileIssues ?? 0}`,
+    `cycles:${summary.dependencyCycles ?? 0}`,
+    `canonicalize:${summary.canonicalizationActions ?? 0}`,
+    `dangling:${summary.danglingReferences ?? 0}`,
+    `relations:${summary.relationRecommendations ?? 0}`,
+    `external:${summary.externalElementRefs ?? 0}`,
+    `ignoredExternal:${summary.externalElementRefsIgnored ?? 0}`,
+  ].join(', ');
+  process.stdout.write(`${COLORS.dim}summary:${COLORS.reset} ${summaryText}\n`);
   const bucketText = [
     formatBucket('phase', result?.byPhase),
     formatBucket('severity', result?.bySeverity),
