@@ -777,6 +777,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`Did you mean "limit"\?`/);
     assert.match(verifySection, /`Did you mean "overview"\?`/);
     assert.match(verifySection, /`Received arguments: \.\.\.`/);
+    assert.match(verifySection, /Batch repair\s+guidance is gated as well/);
+    assert.match(verifySection, /`concepts\[n\] duplicate slug in input batch; first seen at concepts\[m\]`/);
     assert.match(verifySection, /Maintenance work-queue\s+guidance is gated too/);
     assert.match(verifySection, /enum-validated\s+`maintenance_plan` filters/);
     assert.match(verifySection, /ready cursor pages with `cursor\.found=true` plus\s+`cursor\.reason=null`/);
@@ -1331,6 +1333,8 @@ describe('package contract helpers', () => {
     assert.match(doc, /write row labels: pass/);
     assert.match(doc, /schema gate 도 같은 summary helper 를 공유/);
     assert.match(doc, /strict arguments \+ annotations \+ graph-query enums \+ graph kind enums \+ write relation enums\s+\+ health tuning \+ post-write bucket guidance/);
+    assert.match(doc, /batch repair 안내도\s+같은 gate 에 포함/);
+    assert.match(doc, /`concepts\[n\] duplicate slug in input batch; first seen at concepts\[m\]`/);
     assert.match(doc, /strict relation filter \/ `relation_check` row/);
     assert.match(doc, /`depend_on -> depends_on`/);
     assert.match(doc, /`Received arguments: \.\.\.`/);

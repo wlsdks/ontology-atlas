@@ -4539,6 +4539,7 @@ describe('verify.mjs first-contact gates', () => {
       'Unknown argument "lmit" for list_concepts. Did you mean "limit"?',
       'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)',
       'Batch add_concepts and add_relations isolate each non-object row and unknown row field as ok:false.',
+      'Duplicate add_concepts input slugs report concepts[n] duplicate slug in input batch; first seen at concepts[m].',
       'operation must be one of: overview, health. Invalid value: overveiw. Did you mean "overview"?',
       'maintenance_plan phases, severities, and kinds filters are enum-validated.',
       'health and workspace_brief tune probes with componentLimit, cycleLimit, recommendationLimit, orderLimit, nodeLimit, dependencyTypes, and componentTypes.',
@@ -4579,6 +4580,10 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('non-object row and unknown row field', 'bad rows') } }),
       'initialize instructions missing batch row isolation guidance',
+    );
+    assert.equal(
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('concepts[n] duplicate slug in input batch; first seen at concepts[m]', 'duplicate slug') } }),
+      'initialize instructions missing batch duplicate slug guidance',
     );
     assert.equal(
       initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('Did you mean "overview"?', '') } }),

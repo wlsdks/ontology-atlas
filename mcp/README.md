@@ -400,7 +400,11 @@ referrers safety. It also gates strict-input typo recovery guidance, including
 unknown argument rejection plus nearest argument/value hints such as
 `Did you mean "limit"?` and `Did you mean "overview"?`. Unknown-argument
 errors also include `Received arguments: ...` so an agent can repair the exact
-submitted key set instead of guessing from allowed fields alone. Maintenance work-queue
+submitted key set instead of guessing from allowed fields alone. Batch repair
+guidance is gated as well: duplicate `add_concepts` input slugs must surface
+`concepts[n] duplicate slug in input batch; first seen at concepts[m]` in
+first-contact instructions, so an agent knows which later row to remove or
+rename before retrying. Maintenance work-queue
 guidance is gated too: `initialize.instructions` must mention enum-validated
 `maintenance_plan` filters, ready cursor pages with `cursor.found=true` plus
 `cursor.reason=null`, and unknown `afterActionId` cursor misses with
@@ -530,7 +534,7 @@ If those read-only calls respond cleanly, the agent can see the vault and its gr
 - 0.10.0 — 23 tools. Added `get_concepts`, `add_concepts`, `add_relations`, `validate_vault`, `find_neighbors`, `compile_ontology`, and `query_ontology` (`neighbors` / `path` / `all_paths` / `query_plan` / `centrality` / `communities` / `similar_nodes` / `explain_relation` / `reachability` / `pattern_walk` / `impact` / `blast_radius` / `subgraph` / `overview` / `schema` / `facets` / `match_nodes` / `match_edges` / `node_profile` / `domain_profile` / `domain_matrix` / `project_scope` / `project_map` / `relation_check` / `components` / `lineage` / `containment_tree` / `cycles` / `topological_order` / `recommend_relations` / `growth_plan` / `maintenance_plan` / `workspace_brief` / `health`); current split is 15 read + 8 write.
 - 0.7.1 — 16 tools. Added `instructions` field on initialize response — Claude Code / Cursor see kind hierarchy + workflow + write-tool dry-run pattern + `expected_mtime` conflict guard guidance on connect, no per-session trial-and-error.
 - Current initialize instructions also surface destructive-write safety: `rename_concept` refuses an existing `newSlug` unless `overwrite: true`, and `delete_concept` needs `force: true` only after accepting dangling referrers.
-- Current initialize instructions also state that tool schemas are strict, unknown arguments are rejected with a nearest-argument hint, and invalid enum values surface a nearest-value hint when possible, so typo recovery is explicit at first contact.
+- Current initialize instructions also state that tool schemas are strict, unknown arguments are rejected with a nearest-argument hint, invalid enum values surface a nearest-value hint when possible, and `add_concepts` duplicate input slugs report `concepts[n] duplicate slug in input batch; first seen at concepts[m]`, so typo and batch repair are explicit at first contact.
 - 0.7.0 — 14 tools (8 read + 6 write). Added `rename_concept` and `merge_concepts` (graph-level write — atomic backlink redirect across all referrers).
 - 0.6.0 — 12 tools (8 read + 4 write). Added `query_concepts` (typed filter DSL).
 - 0.5.0 — 7 read + 4 write. Added `find_orphans`.
