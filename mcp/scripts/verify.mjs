@@ -794,6 +794,28 @@ export function toolsListSchemaFailure(tools) {
 
   const inferImportsTool = tools.find((tool) => tool?.name === 'infer_imports');
   if (!inferImportsTool) return 'tools/list response missing infer_imports tool';
+  if (
+    !/walk TS\/JS files in a code repo and infer file-level \+ module-level import edges/i.test(inferImportsTool.description || '') ||
+    !/side effect 0 \(vault frontmatter NOT modified\)/i.test(inferImportsTool.description || '') ||
+    !/reviews moduleEdges/i.test(inferImportsTool.description || '') ||
+    !/selectively passes accepted edges to add_relation as `depends_on`/i.test(inferImportsTool.description || '') ||
+    !/Use after analyze_repo_structure/i.test(inferImportsTool.description || '') ||
+    !/not just suggestedRelations heuristics/i.test(inferImportsTool.description || '') ||
+    !/Single source of truth preserved/i.test(inferImportsTool.description || '')
+  ) {
+    return 'infer_imports description missing dependency-ingest safety guidance';
+  }
+  const inferMaxFilesSchema = propertyAt(inferImportsTool, ['properties', 'maxFiles']);
+  if (
+    inferMaxFilesSchema?.type !== 'integer' ||
+    inferMaxFilesSchema.minimum !== 1 ||
+    inferMaxFilesSchema.maximum !== 50000 ||
+    !/default 5000/i.test(inferMaxFilesSchema.description || '') ||
+    !/max 50000/i.test(inferMaxFilesSchema.description || '') ||
+    !/avoid pathological monorepos/i.test(inferMaxFilesSchema.description || '')
+  ) {
+    return 'infer_imports maxFiles hard-stop guidance drift';
+  }
   if (inferImportsTool.outputSchema?.type !== 'object') {
     return 'infer_imports outputSchema root drift';
   }

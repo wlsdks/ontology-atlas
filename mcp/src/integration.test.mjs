@@ -461,6 +461,16 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(inferImports?.outputSchema?.properties?.edges?.items?.properties?.kind?.enum, ["static", "dynamic", "require", "reexport", "side"]);
     assert.deepEqual(inferImports?.outputSchema?.properties?.moduleEdges?.items?.required, ["from", "to", "count"]);
     assert.equal(inferImports?.outputSchema?.properties?.moduleEdges?.items?.properties?.count?.minimum, 1);
+    assert.match(
+      inferImports?.description ?? "",
+      /walk TS\/JS files in a code repo and infer file-level \+ module-level import edges[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*reviews moduleEdges[\s\S]*accepted edges to add_relation as `depends_on`[\s\S]*Use after analyze_repo_structure[\s\S]*not just suggestedRelations heuristics[\s\S]*Single source of truth preserved/i,
+      "infer_imports description documents dependency-ingest safety workflow",
+    );
+    assert.match(
+      inferImports?.inputSchema?.properties?.maxFiles?.description ?? "",
+      /default 5000[\s\S]*max 50000[\s\S]*avoid pathological monorepos/i,
+      "infer_imports maxFiles schema documents hard stop",
+    );
     assert.match(inferImports?.description ?? "", /common @\/\* aliases/);
     assert.match(inferImports?.description ?? "", /resolved to src\/ · lib\/ · app\//);
     assert.match(inferImports?.description ?? "", /alias-not-found/);

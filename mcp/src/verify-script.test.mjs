@@ -743,13 +743,20 @@ describe('verify.mjs first-contact gates', () => {
       },
       {
         name: 'infer_imports',
+        description:
+          'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. side effect 0 (vault frontmatter NOT modified). The agent reviews moduleEdges and selectively passes accepted edges to add_relation as `depends_on`. Use after analyze_repo_structure to pull real dependency edges from the code, not just suggestedRelations heuristics. Single source of truth preserved — only the user writes to the vault.',
         inputSchema: {
           additionalProperties: false,
           properties: {
             rootPath: { type: 'string' },
             sourceFolders: { type: 'array', items: { type: 'string' } },
             ignore: { type: 'array', items: { type: 'string' } },
-            maxFiles: { type: 'integer', minimum: 1, maximum: 50000 },
+            maxFiles: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 50000,
+              description: 'Positive integer cap on files walked (default 5000, max 50000). Hard stop to avoid pathological monorepos.',
+            },
           },
         },
         outputSchema: {
@@ -1124,6 +1131,11 @@ describe('verify.mjs first-contact gates', () => {
     const analyzeRepoTool = tools.find((tool) => tool.name === 'analyze_repo_structure');
     const withAnalyzeRepoTool = (tool) => [
       ...tools.filter((candidate) => candidate.name !== 'analyze_repo_structure'),
+      tool,
+    ];
+    const inferImportsTool = tools.find((tool) => tool.name === 'infer_imports');
+    const withInferImportsTool = (tool) => [
+      ...tools.filter((candidate) => candidate.name !== 'infer_imports'),
       tool,
     ];
     const listConceptsTool = tools.find((tool) => tool.name === 'list_concepts');
@@ -1834,6 +1846,31 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'infer_imports outputSchema edge kind drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withInferImportsTool({
+        ...inferImportsTool,
+        description: 'Infer imports.',
+      })),
+      'infer_imports description missing dependency-ingest safety guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withInferImportsTool({
+        ...inferImportsTool,
+        inputSchema: {
+          ...inferImportsTool.inputSchema,
+          properties: {
+            ...inferImportsTool.inputSchema.properties,
+            maxFiles: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 50000,
+              description: 'Positive integer cap on files walked.',
+            },
+          },
+        },
+      })),
+      'infer_imports maxFiles hard-stop guidance drift',
     );
     assert.equal(
       toolsListSchemaFailure([
