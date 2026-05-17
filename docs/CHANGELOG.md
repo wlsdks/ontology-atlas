@@ -6,6 +6,23 @@
 
 ---
 
+## 2026-05-18 — MCP first-contact and packed-smoke hardening
+
+MCP verification now keeps the installed agent surface, first-contact guidance,
+and release smoke in lockstep for batch relation failures.
+
+- **Batch relation type hints** — `add_relations` row-isolation checks now cover
+  invalid relation types as row-level `ok:false` results with closest-value
+  hints, not only non-object and unknown-field rows.
+- **First-contact guidance gate** — `initialize.instructions` must explain the
+  same invalid-type recovery path, so a newly attached agent sees the repair
+  contract before writing.
+- **Packed install smoke parity** — `scripts/smoke-packed-cli.mjs` now expects
+  the same invalid-type + closest-value hint output from installed CLI/MCP
+  verify paths, blocking source-checkout and tarball verification drift.
+- **Dogfood docs contract** — MCP/CLI capability docs and package-contract tests
+  now keep this verify scope visible in the project's own ontology.
+
 ## 2026-05-17 — CLI maintenance queue + focused verification
 
 The developer CLI now exposes the MCP maintenance work queue directly, closing

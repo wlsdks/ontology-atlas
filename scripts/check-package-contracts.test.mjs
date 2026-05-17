@@ -1048,6 +1048,7 @@ describe('package contract helpers', () => {
     const productChangelog = readFileSync('docs/CHANGELOG.md', 'utf-8');
     const verifySection = changelog.split('### Added — `mcp-verify` command')[1]?.split('### Added — `maintenance`')[0] ?? '';
     const maintenanceSection = changelog.split('### Added — `maintenance` 명령')[1]?.split('### Added — `compile`')[0] ?? '';
+    const productMcpHardeningSection = productChangelog.split('## 2026-05-18 — MCP first-contact and packed-smoke hardening')[1]?.split('## 2026-05-17')[0] ?? '';
     const productMaintenanceSection = productChangelog.split('## 2026-05-17 — CLI maintenance queue + focused verification')[1]?.split('## 2026-05-11')[0] ?? '';
 
     assert.match(changelog, /malformed `compile`, `cycles`, `path` hop\/edge payloads, `health\.checks`, `workspace_brief\.health\.checks`, and `workspace_brief\.nextActions` rows/);
@@ -1103,6 +1104,13 @@ describe('package contract helpers', () => {
     assert.match(productMaintenanceSection, /`workspace_brief\.nextActions\[\]\.sample` executable shapes/);
     assert.match(productMaintenanceSection, /real `add_relation` \/ `add_concept` inputs/);
     assert.match(productMaintenanceSection, /27-command CLI surface/);
+    assert.match(productMcpHardeningSection, /Batch relation type hints/);
+    assert.match(productMcpHardeningSection, /invalid relation types as row-level `ok:false` results with closest-value\s+hints/);
+    assert.match(productMcpHardeningSection, /First-contact guidance gate/);
+    assert.match(productMcpHardeningSection, /`initialize\.instructions` must explain/);
+    assert.match(productMcpHardeningSection, /Packed install smoke parity/);
+    assert.match(productMcpHardeningSection, /installed CLI\/MCP\s+verify paths/);
+    assert.match(productMcpHardeningSection, /Dogfood docs contract/);
   });
 
   it('documents dogfood validation as a release gate', () => {
