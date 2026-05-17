@@ -1199,7 +1199,9 @@ describe('package contract helpers', () => {
 
     assert.doesNotMatch(regressionSection, /\*\*\d+ spawn-based\*\* integration test/);
     assert.match(doc, /`cli\/src\/lib\/mcp-call\.mjs` 의 thin wrapper/);
-    assert.match(doc, /MCP `structuredContent` 를 먼저 사용하고 없는 경우에만 text JSON 으로 fallback/);
+    assert.match(doc, /MCP `structuredContent` 를 먼저 사용하고/);
+    assert.match(doc, /성공 응답은 text 없이 `structuredContent` 만 있어도 수용/);
+    assert.match(doc, /없는 경우에만 text JSON 으로 fallback/);
     assert.match(doc, /cli\/src\/lib\/mcp-call\.test\.mjs/);
     assert.match(regressionSection, /spawn-based integration suite/);
     assert.match(regressionSection, /Node `--test-name-pattern`/);

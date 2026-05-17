@@ -154,15 +154,19 @@ export function parseMcpToolResponse(toolResp) {
   if (toolResp?.error) {
     throw new Error(`mcp tool error: ${toolResp.error.message}`);
   }
-  const text = toolResp?.result?.content?.[0]?.text;
-  if (typeof text !== 'string') {
-    throw new Error('mcp tool response has no text content');
-  }
   if (toolResp.result?.isError) {
+    const text = toolResp.result?.content?.[0]?.text;
+    if (typeof text !== 'string') {
+      throw new Error('mcp tool response has no text content');
+    }
     throw new Error(text);
   }
   if (toolResp.result && Object.prototype.hasOwnProperty.call(toolResp.result, 'structuredContent')) {
     return toolResp.result.structuredContent;
+  }
+  const text = toolResp?.result?.content?.[0]?.text;
+  if (typeof text !== 'string') {
+    throw new Error('mcp tool response has no text content');
   }
   try {
     return JSON.parse(text);

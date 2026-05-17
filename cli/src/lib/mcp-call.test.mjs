@@ -16,6 +16,17 @@ describe('mcp-call response parsing', () => {
     );
   });
 
+  it('accepts successful structuredContent responses without text content', () => {
+    assert.deepEqual(
+      parseMcpToolResponse({
+        result: {
+          structuredContent: { ok: true, source: 'structured-only' },
+        },
+      }),
+      { ok: true, source: 'structured-only' },
+    );
+  });
+
   it('falls back to text JSON when structuredContent is absent', () => {
     assert.deepEqual(
       parseMcpToolResponse({
