@@ -603,10 +603,22 @@ describe('verify.mjs first-contact gates', () => {
       },
       {
         name: 'compile_ontology',
+        description:
+          'Compile the whole markdown vault into a deterministic graph artifact. Includes a stable semantic graphHash and maxMtime for cache invalidation. side effect 0. Large vaults (100+ nodes) can exceed the MCP token cap with the default full payload — use `summary: true` for cheap polling, or `nodesLimit/nodesOffset` / `edgesLimit/edgesOffset` to slice arrays.',
         inputSchema: {
           additionalProperties: false,
           properties: {
-            summary: { type: 'boolean' },
+            summary: {
+              type: 'boolean',
+              description:
+                'When true, omit `nodes` / `edges` / `aliases` / `ambiguousAliases` / `canonicalizationActions` / `indexes` arrays. Cheap polling for cache invalidation and graph-size assessment.',
+            },
+            nodesLimit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 500,
+              description: 'Positive integer max nodes to return. Pair with `nodesOffset` to paginate. Omit for unlimited (backward compat), max 500 when provided.',
+            },
           },
         },
         outputSchema: {
@@ -1089,6 +1101,11 @@ describe('verify.mjs first-contact gates', () => {
     const findBacklinksTool = tools.find((tool) => tool.name === 'find_backlinks');
     const withFindBacklinksTool = (tool) => [
       ...tools.filter((candidate) => candidate.name !== 'find_backlinks'),
+      tool,
+    ];
+    const compileOntologyTool = tools.find((tool) => tool.name === 'compile_ontology');
+    const withCompileOntologyTool = (tool) => [
+      ...tools.filter((candidate) => candidate.name !== 'compile_ontology'),
       tool,
     ];
     const listConceptsTool = tools.find((tool) => tool.name === 'list_concepts');
@@ -1648,6 +1665,44 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'compile_ontology outputSchema required drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withCompileOntologyTool({
+        ...compileOntologyTool,
+        description: 'Compile the vault.',
+      })),
+      'compile_ontology description missing large-vault guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withCompileOntologyTool({
+        ...compileOntologyTool,
+        inputSchema: {
+          ...compileOntologyTool.inputSchema,
+          properties: {
+            ...compileOntologyTool.inputSchema.properties,
+            summary: { type: 'boolean', description: 'Short result.' },
+          },
+        },
+      })),
+      'compile_ontology summary schema guidance drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withCompileOntologyTool({
+        ...compileOntologyTool,
+        inputSchema: {
+          ...compileOntologyTool.inputSchema,
+          properties: {
+            ...compileOntologyTool.inputSchema.properties,
+            nodesLimit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 500,
+              description: 'Positive integer max nodes to return.',
+            },
+          },
+        },
+      })),
+      'compile_ontology nodesLimit pagination guidance drift',
     );
     assert.equal(
       toolsListSchemaFailure([

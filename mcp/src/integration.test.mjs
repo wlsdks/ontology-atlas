@@ -740,6 +740,21 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       },
       "compile_ontology exposes advancing pagination schema",
     );
+    assert.match(
+      findTool("compile_ontology")?.description ?? "",
+      /deterministic graph artifact[\s\S]*stable semantic graphHash and maxMtime[\s\S]*Large vaults \(100\+ nodes\) can exceed the MCP token cap[\s\S]*summary: true[\s\S]*nodesLimit\/nodesOffset[\s\S]*edgesLimit\/edgesOffset/i,
+      "compile_ontology description documents cache and large-vault guidance",
+    );
+    assert.match(
+      findTool("compile_ontology")?.inputSchema?.properties?.summary?.description ?? "",
+      /omit `nodes` \/ `edges` \/ `aliases`[\s\S]*Cheap polling for cache invalidation/i,
+      "compile_ontology summary schema documents cheap polling behavior",
+    );
+    assert.match(
+      findTool("compile_ontology")?.inputSchema?.properties?.nodesLimit?.description ?? "",
+      /Pair with `nodesOffset` to paginate[\s\S]*max 500/i,
+      "compile_ontology nodesLimit schema documents pagination cap",
+    );
     assert.deepEqual(
       {
         type: findTool("query_concepts")?.inputSchema?.properties?.limit?.type,

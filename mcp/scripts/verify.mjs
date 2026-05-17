@@ -651,6 +651,34 @@ export function toolsListSchemaFailure(tools) {
 
   const compileTool = tools.find((tool) => tool?.name === 'compile_ontology');
   if (!compileTool) return 'tools/list response missing compile_ontology tool';
+  if (
+    !/deterministic graph artifact/i.test(compileTool.description || '') ||
+    !/stable semantic graphHash and maxMtime/i.test(compileTool.description || '') ||
+    !/Large vaults \(100\+ nodes\) can exceed the MCP token cap/i.test(compileTool.description || '') ||
+    !/summary: true/i.test(compileTool.description || '') ||
+    !/nodesLimit\/nodesOffset/i.test(compileTool.description || '') ||
+    !/edgesLimit\/edgesOffset/i.test(compileTool.description || '')
+  ) {
+    return 'compile_ontology description missing large-vault guidance';
+  }
+  const compileSummarySchema = propertyAt(compileTool, ['properties', 'summary']);
+  if (
+    compileSummarySchema?.type !== 'boolean' ||
+    !/omit `nodes` \/ `edges` \/ `aliases`/i.test(compileSummarySchema.description || '') ||
+    !/Cheap polling for cache invalidation/i.test(compileSummarySchema.description || '')
+  ) {
+    return 'compile_ontology summary schema guidance drift';
+  }
+  const compileNodesLimitSchema = propertyAt(compileTool, ['properties', 'nodesLimit']);
+  if (
+    compileNodesLimitSchema?.type !== 'integer' ||
+    compileNodesLimitSchema.minimum !== 1 ||
+    compileNodesLimitSchema.maximum !== 500 ||
+    !/Pair with `nodesOffset` to paginate/i.test(compileNodesLimitSchema.description || '') ||
+    !/max 500/i.test(compileNodesLimitSchema.description || '')
+  ) {
+    return 'compile_ontology nodesLimit pagination guidance drift';
+  }
   const compileRequired = [
     'version',
     'graphHash',
