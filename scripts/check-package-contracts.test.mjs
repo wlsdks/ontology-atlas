@@ -1009,8 +1009,10 @@ describe('package contract helpers', () => {
     assert.match(smoke, /'--silent', 'run', 'verify'/);
     assert.match(smoke, /assert\.equal\(invalidMcpVerifyTimeout\.stdout, ''\)/);
     assert.match(smoke, /assert\.equal\(invalidDirectMcpVerifyVault\.stdout, ''\)/);
+    assert.match(smoke, /Received: "1000ms"/);
     assert.match(smoke, /--timeout-ms N/);
     assert.match(smoke, /OMOT_VERIFY_TIMEOUT_MS=N/);
+    assert.match(smoke, /npm run verify -- --timeout-ms 15000/);
     assert.match(smoke, /health — \.\*compile_issues:\(pass\|warn\)/);
     assert.match(smoke, /health — \.\*checks/);
     assert.match(smoke, /workspace_brief_tuned — \.\*next actions, \.\*health checks/);

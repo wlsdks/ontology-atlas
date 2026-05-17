@@ -565,8 +565,10 @@ try {
   assert.equal(invalidMcpVerifyTimeout.status, 1);
   assert.equal(invalidMcpVerifyTimeout.stdout, '');
   assert.match(invalidMcpVerifyTimeout.stderr, /verify timeout must be a positive integer/);
+  assert.match(invalidMcpVerifyTimeout.stderr, /Received: "1000ms"/);
   assert.match(invalidMcpVerifyTimeout.stderr, /--timeout-ms N/);
   assert.match(invalidMcpVerifyTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
+  assert.match(invalidMcpVerifyTimeout.stderr, /npm run verify -- --timeout-ms 15000/);
 
   const invalidDirectMcpVerifyTimeout = runRaw(
     'npm',
@@ -586,8 +588,10 @@ try {
   assert.equal(invalidDirectMcpVerifyTimeout.status, 1);
   assert.equal(invalidDirectMcpVerifyTimeout.stdout, '');
   assert.match(invalidDirectMcpVerifyTimeout.stderr, /verify timeout must be a positive integer/);
+  assert.match(invalidDirectMcpVerifyTimeout.stderr, /Received: "1000ms"/);
   assert.match(invalidDirectMcpVerifyTimeout.stderr, /--timeout-ms N/);
   assert.match(invalidDirectMcpVerifyTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
+  assert.match(invalidDirectMcpVerifyTimeout.stderr, /npm run verify -- --timeout-ms 15000/);
 
   const invalidDirectMcpVerifyVault = runRaw(
     'npm',
