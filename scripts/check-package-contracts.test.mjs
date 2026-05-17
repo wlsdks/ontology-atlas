@@ -1310,6 +1310,8 @@ describe('package contract helpers', () => {
     assert.match(smokeSection, /cycles --json/);
     assert.match(smokeSection, /compile --json/);
     assert.match(smokeSection, /path --json/);
+    assert.match(smokeSection, /blocking `workspace-brief` non-json 의 `HEALTH CHECKS`/);
+    assert.match(smokeSection, /blocking `health` non-json 의 `dependency_cycles fail:1` coverage/);
     assert.match(smokeSection, /health check count/);
     assert.match(smokeSection, /`overview`\/`project_map` query_plan \/ `neighbors` \/ `path` \//);
     assert.match(smokeSection, /`project_scope` smoke/);
@@ -1317,6 +1319,10 @@ describe('package contract helpers', () => {
     assert.match(smokeSection, /bucket \/ current-page next-action summary/);
     assert.match(smokeSection, /project-less vault/);
     assert.match(smokeSection, /empty vault/);
+    assert.match(smoke, /installed CLI workspace-brief health coverage/);
+    assert.match(smoke, /dependency_cycles:fail:1/);
+    assert.match(smoke, /installed CLI health check coverage/);
+    assert.match(smoke, /dependency_cycles\\s\+fail:1/);
   });
 
   it('keeps MCP npm test runnable from the lean published tarball', () => {

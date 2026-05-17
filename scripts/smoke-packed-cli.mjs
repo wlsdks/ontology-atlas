@@ -57,6 +57,10 @@ function assertStatus(result, expectedStatus, label = result.label) {
   );
 }
 
+function stripAnsi(value) {
+  return String(value).replace(/\x1b\[[0-9;]*m/g, '');
+}
+
 function packPackage(packageDir, destination) {
   const result = run('npm', ['pack', '--pack-destination', destination], {
     cwd: packageDir,
@@ -796,6 +800,14 @@ try {
     )),
     true,
   );
+  const blockingBriefText = runRaw(cliBin, ['workspace-brief', cycleVault], { cwd: projectDir });
+  assertStatus(blockingBriefText, 1, 'installed CLI workspace-brief health coverage');
+  assert.match(blockingBriefText.stdout, /HEALTH CHECKS/);
+  assert.match(blockingBriefText.stdout, /dependency_cycles:fail:1/);
+
+  const blockingHealthText = runRaw(cliBin, ['health', cycleVault], { cwd: projectDir });
+  assertStatus(blockingHealthText, 1, 'installed CLI health check coverage');
+  assert.match(stripAnsi(blockingHealthText.stdout), /dependency_cycles\s+fail:1/);
 
   const blockingCycles = runRaw(cliBin, ['cycles', cycleVault, '--json'], { cwd: projectDir });
   assertStatus(blockingCycles, 1, 'installed CLI cycles fail gate');
