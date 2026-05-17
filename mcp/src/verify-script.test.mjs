@@ -3049,7 +3049,8 @@ describe('verify.mjs first-contact gates', () => {
       parseVerifyArgs({ env: { OMOT_VAULT: '   ' }, argv: ['node', 'verify.mjs', '--help'], cwd: '/tmp/cwd', isMain: true }),
       { error: null, help: true, timeoutMsRaw: undefined, vault: '/tmp/cwd' },
     );
-    assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--timeout-ms'], cwd: '/tmp/cwd', isMain: true }).error, /requires/);
+    assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--timeout-ms'], cwd: '/tmp/cwd', isMain: true }).error, /Received: undefined/);
+    assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--timeout-ms', '--vault'], cwd: '/tmp/cwd', isMain: true }).error, /Received: "--vault"/);
     assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--vault'], cwd: '/tmp/cwd', isMain: true }).error, /requires/);
     assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '   '], cwd: '/tmp/cwd', isMain: true }).error, /requires/);
     assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--vault', '   '], cwd: '/tmp/cwd', isMain: true }).error, /requires/);
@@ -3103,6 +3104,19 @@ describe('verify.mjs first-contact gates', () => {
       assert.match(result.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
       assert.match(result.stderr, /npm run verify -- --timeout-ms 15000/);
     }
+
+    const missing = spawnSync(
+      process.execPath,
+      [VERIFY_SCRIPT, '--timeout-ms'],
+      { cwd: join(__dirname, '..'), encoding: 'utf8' },
+    );
+
+    assert.equal(missing.status, 1);
+    assert.equal(missing.stdout, '');
+    assert.match(missing.stderr, /\[oh-my-ontology-mcp verify\]/);
+    assert.match(missing.stderr, /verify timeout must be a positive integer/);
+    assert.match(missing.stderr, /Received: undefined/);
+    assert.match(missing.stderr, /npm run verify -- --timeout-ms 15000/);
   });
 
   it('describes direct verify usage', () => {

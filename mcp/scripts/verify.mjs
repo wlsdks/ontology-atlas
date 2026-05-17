@@ -1999,7 +1999,7 @@ export function parseVerifyArgs({
     } else if (arg === '--timeout-ms') {
       const value = args[index + 1];
       if (typeof value !== 'string' || value.length === 0 || value.startsWith('-')) {
-        error = '--timeout-ms requires a positive integer value';
+        error = verifyTimeoutValueErrorMessage(value);
         break;
       }
       timeoutMsRaw = value;
@@ -2007,7 +2007,7 @@ export function parseVerifyArgs({
     } else if (arg.startsWith('--timeout-ms=')) {
       const value = arg.slice('--timeout-ms='.length);
       if (value.length === 0) {
-        error = '--timeout-ms requires a positive integer value';
+        error = verifyTimeoutValueErrorMessage(value);
         break;
       }
       timeoutMsRaw = value;
