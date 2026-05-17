@@ -607,6 +607,9 @@ Analysis 가 `strict arguments + annotations + graph-query enums + graph kind en
 최종 Analysis 의 strict relation filter / `relation_check` row 는 closest-value
 smoke 의 핵심 증거인 `depend_on -> depends_on` 까지 표시해, 단순히 rejected 여부만
 통과한 것인지 suggestion 품질까지 검증된 것인지 구분할 수 있게 한다.
+strict graph kind filter 도 `match_nodes.kind=capabilty` 런타임 smoke 로 확인해
+schema 에 enum 이 있어도 실제 `query_ontology` 경계가 typo 를 빈 결과로 삼키지
+않는지 dogfood / installed verify 양쪽에서 잡는다.
 `tools/list` 의 `annotations.title` 표시명과 `annotations.readOnlyHint` 도 15 read / 8 write split 과
 일치하게 노출하고, destructive multi-file/delete 도구는 `annotations.destructiveHint`,
 retry-safe relation writer 는 `annotations.idempotentHint`, 모든 도구는 local

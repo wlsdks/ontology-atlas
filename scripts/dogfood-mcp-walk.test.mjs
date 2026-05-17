@@ -2746,6 +2746,12 @@ const okShape = {
       content: [{ text: 'type must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
     },
   },
+  strictGraphKindFilter: {
+    result: {
+      isError: true,
+      content: [{ text: 'kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
+    },
+  },
 };
 
 for (const [resultField, structuredField] of [
@@ -3190,6 +3196,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(64), "merge_concepts_dry_run");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(65), "delete_concept_dry_run");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(66), "strict_relation_check");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(67), "strict_graph_kind_filter");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -3758,6 +3765,41 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["strict_relation_check: strict relation_check response did not suggest the closest type value"],
+    );
+  });
+
+  it("fails malformed strict graph kind filter dogfood responses", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictGraphKindFilter: { result: { isError: false, content: [{ text: "ok" }] } } }),
+      ["strict_graph_kind_filter: strict graph kind filter response was not rejected"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictGraphKindFilter: { result: { isError: true, content: [{ text: "different error" }] } } }),
+      ["strict_graph_kind_filter: strict graph kind filter response did not report the invalid kind filter"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictGraphKindFilter: {
+          result: {
+            isError: true,
+            content: [{ text: 'kind must be one of: project, domain, capability.' }],
+          },
+        },
+      }),
+      ["strict_graph_kind_filter: strict graph kind filter response did not report the invalid kind value"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictGraphKindFilter: {
+          result: {
+            isError: true,
+            content: [{ text: 'kind must be one of: project, domain, capability. Received: "capabilty".' }],
+          },
+        },
+      }),
+      ["strict_graph_kind_filter: strict graph kind filter response did not suggest the closest kind value"],
     );
   });
 

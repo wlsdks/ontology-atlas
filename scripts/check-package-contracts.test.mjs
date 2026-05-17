@@ -169,6 +169,7 @@ describe('package contract helpers', () => {
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /dogfood response labels/);
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /destructive dogfood dry-run/);
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /strict relation filters/);
+    assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /strict graph kind filter/);
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /strict closest-value smoke/);
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /malformed initialize/);
     assert.equal(
@@ -619,6 +620,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ strict enums — invalid query operation rejected with closest-value hint/);
     assert.match(verifySection, /✓ strict relation filters — invalid dependencyTypes rejected with closest-value hint/);
     assert.match(verifySection, /✓ strict relation_check — invalid type rejected with closest-value hint/);
+    assert.match(verifySection, /✓ strict graph kind filters — invalid match_nodes\.kind rejected with closest-value hint/);
     assert.match(verifySection, /✓ maintenance cursor — missing afterActionId reported .*phase none; severity none; kind none; executable none; review none/);
     assert.match(verifySection, /✓ maintenance cursor — ready page stable .*phase none; severity none; kind none; executable none; review none/);
     assert.match(verifySection, /✓ maintenance cursor — ready page stable/);

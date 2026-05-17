@@ -90,6 +90,7 @@ import {
   strictArgsFailure,
   strictMultiArgsFailure,
   strictEnumFailure,
+  strictGraphKindFilterFailure,
   strictMaintenanceFilterFailure,
   strictRelationFilterFailure,
   strictRelationCheckFailure,
@@ -3902,6 +3903,34 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
+  it('fails malformed strict graph kind filter smoke responses', () => {
+    assert.equal(
+      strictGraphKindFilterFailure({
+        result: {
+          isError: true,
+          content: [{ text: 'kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
+        },
+      }),
+      null,
+    );
+    assert.equal(
+      strictGraphKindFilterFailure({ result: { isError: false, content: [{ text: 'ok' }] } }),
+      'strict graph kind filter response was not rejected',
+    );
+    assert.equal(
+      strictGraphKindFilterFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
+      'strict graph kind filter response did not report the invalid kind filter',
+    );
+    assert.equal(
+      strictGraphKindFilterFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Did you mean "capability"?' }] } }),
+      'strict graph kind filter response did not report the invalid kind value',
+    );
+    assert.equal(
+      strictGraphKindFilterFailure({ result: { isError: true, content: [{ text: 'kind must be one of: project, domain, capability. Received: "capabilty".' }] } }),
+      'strict graph kind filter response did not suggest the closest kind value',
+    );
+  });
+
   it('fails malformed strict relation_check smoke responses', () => {
     assert.equal(
       strictRelationCheckFailure({
@@ -4536,6 +4565,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(44), 'merge_concepts_dry_run');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(45), 'delete_concept_dry_run');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(46), 'strict_relation_check');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(47), 'strict_graph_kind_filter');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15, 30, 31, 33, 35, 36, 37, 43, 44, 45].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),

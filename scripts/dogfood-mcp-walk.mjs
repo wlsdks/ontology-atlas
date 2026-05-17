@@ -37,6 +37,7 @@ import {
   strictArgsFailure,
   strictMultiArgsFailure,
   strictEnumFailure,
+  strictGraphKindFilterFailure,
   strictMaintenanceFilterFailure,
   strictRelationFilterFailure,
   structuredContentMismatchSummary,
@@ -172,6 +173,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [64, "merge_concepts_dry_run"],
   [65, "delete_concept_dry_run"],
   [66, "strict_relation_check"],
+  [67, "strict_graph_kind_filter"],
 ]);
 
 const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
@@ -636,6 +638,10 @@ export function buildDogfoodRequests() {
       to: "domains/ai-agent-partner",
       type: "depend_on",
     }),
+    call(67, "query_ontology", {
+      operation: "match_nodes",
+      kind: "capabilty",
+    }),
     call(24, "query_ontology", {
       operation: "growth_plan",
       limit: 5,
@@ -953,6 +959,7 @@ export function evaluateDogfoodGate({
   strictMaintenanceKindFilter,
   strictRelationFilter,
   strictRelationCheck,
+  strictGraphKindFilter,
   toolsList,
 }) {
   const failures = [];
@@ -1028,6 +1035,8 @@ export function evaluateDogfoodGate({
   if (strictRelationFilterError) failures.push(`strict_relation_filter: ${strictRelationFilterError}`);
   const strictRelationCheckError = strictRelationCheckFailure(strictRelationCheck);
   if (strictRelationCheckError) failures.push(`strict_relation_check: ${strictRelationCheckError}`);
+  const strictGraphKindFilterError = strictGraphKindFilterFailure(strictGraphKindFilter);
+  if (strictGraphKindFilterError) failures.push(`strict_graph_kind_filter: ${strictGraphKindFilterError}`);
   const initializeInstructionsError = initializeInstructionsFailure({ result: initialize });
   if (initializeInstructionsError) failures.push(`initialize: ${initializeInstructionsError}`);
 
@@ -5311,6 +5320,15 @@ async function main() {
     console.log(`  ${strictRelationCheckText}`);
   }
 
+  // 51. strict graph kind filter rejection
+  header("strict graph kind filters — invalid match_nodes.kind rejection");
+  const strictGraphKindFilter = responses.find((response) => response.id === 67);
+  const strictGraphKindFilterText = strictGraphKindFilter?.result?.content?.[0]?.text || "";
+  console.log(`  match_nodes.kind rejected: ${strictGraphKindFilter?.result?.isError === true}`);
+  if (strictGraphKindFilterText) {
+    console.log(`  ${strictGraphKindFilterText}`);
+  }
+
   const graphStructuredContentRows = [
     ["workspace_brief", brief, briefStructured],
     ["workspace_brief_tuned", tunedBrief, tunedBriefStructured],
@@ -5489,6 +5507,7 @@ async function main() {
     strictMaintenanceKindFilter,
     strictRelationFilter,
     strictRelationCheck,
+    strictGraphKindFilter,
     toolsList,
   });
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
@@ -5589,6 +5608,7 @@ async function main() {
   console.log(`  strict_maintenance_kind_filter: rejected ${strictMaintenanceKindFilter?.result?.isError === true}`);
   console.log(`  strict_relation_filter: ${strictClosestValueSummary(strictRelationFilter)}`);
   console.log(`  strict_relation_check: ${strictClosestValueSummary(strictRelationCheck)}`);
+  console.log(`  strict_graph_kind_filter: ${strictClosestValueSummary(strictGraphKindFilter)}`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   const stderrWarnings = stderrWarningLines(stderr);

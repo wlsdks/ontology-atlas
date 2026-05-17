@@ -31,7 +31,7 @@
  *   16. tools/call compile_ontology(summary + paginated full artifact) — compiler graph contract
  *   17. tools/call query_ontology overview + query_plan(overview/project_map) — graph-query smoke contract
  *   18. tools/call query_ontology neighbors/node-to-project path/project_scope — core graph query smoke contract
- *   19. tools/call query_ontology relation_check typo rejection — write preflight fail-closed smoke
+ *   19. tools/call query_ontology relation_check + graph kind typo rejection — write/query preflight fail-closed smoke
  *
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
  */
@@ -1750,6 +1750,23 @@ export function strictRelationFilterFailure(response) {
   return null;
 }
 
+export function strictGraphKindFilterFailure(response) {
+  if (response?.result?.isError !== true) {
+    return 'strict graph kind filter response was not rejected';
+  }
+  const text = response.result.content?.[0]?.text || '';
+  if (!/kind must be one of/i.test(text)) {
+    return 'strict graph kind filter response did not report the invalid kind filter';
+  }
+  if (!/Received: "capabilty"/i.test(text)) {
+    return 'strict graph kind filter response did not report the invalid kind value';
+  }
+  if (!/Did you mean "capability"\?/i.test(text)) {
+    return 'strict graph kind filter response did not suggest the closest kind value';
+  }
+  return null;
+}
+
 export function strictRelationCheckFailure(response) {
   if (response?.result?.isError !== true) {
     return 'strict relation_check response was not rejected';
@@ -2195,6 +2212,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [44, 'merge_concepts_dry_run'],
   [45, 'delete_concept_dry_run'],
   [46, 'strict_relation_check'],
+  [47, 'strict_graph_kind_filter'],
 ]);
 
 function log(level, msg) {
@@ -2709,6 +2727,18 @@ export function buildFirstContactRequests() {
           from: 'project',
           to: 'project',
           type: 'depend_on',
+        },
+      },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 47,
+      method: 'tools/call',
+      params: {
+        name: 'query_ontology',
+        arguments: {
+          operation: 'match_nodes',
+          kind: 'capabilty',
         },
       },
     },
@@ -4879,6 +4909,7 @@ async function step2BootAndCall() {
       const strictMaintenanceKindFilterRes = responses.find((r) => r.id === 24);
       const strictRelationFilterRes = responses.find((r) => r.id === 40);
       const strictRelationCheckRes = responses.find((r) => r.id === 46);
+      const strictGraphKindFilterRes = responses.find((r) => r.id === 47);
       const maintenanceMissingCursorRes = responses.find((r) => r.id === 25);
       const maintenanceReadyCursorRes = responses.find((r) => r.id === 26);
       const maintenanceResumeCursorRes = responses.find((r) => r.id === 30);
@@ -5014,6 +5045,12 @@ async function step2BootAndCall() {
         return res(false);
       }
       log('ok', 'strict relation_check — invalid type rejected with closest-value hint');
+      const strictGraphKindFilter = strictGraphKindFilterFailure(strictGraphKindFilterRes);
+      if (strictGraphKindFilter) {
+        log('fail', strictGraphKindFilter);
+        return res(false);
+      }
+      log('ok', 'strict graph kind filters — invalid match_nodes.kind rejected with closest-value hint');
 
       if (!maintenanceMissingCursorRes || !maintenanceMissingCursorRes.result) {
         log('fail', 'no query_ontology maintenance missing-cursor response');
