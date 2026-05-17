@@ -802,7 +802,7 @@ function makeDogfoodToolsList() {
         };
       }
       if (name === "add_concepts") {
-        tool.description += " Batch rows isolate non-object row shape and unknown row field as ok:false rows.";
+        tool.description += " Batch rows isolate non-object row shape and unknown row field as ok:false rows with concepts[n] labels.";
         tool.inputSchema.required = ["concepts"];
         tool.inputSchema.properties.concepts = { type: "array", maxItems: 50 };
         tool.outputSchema = {
@@ -843,7 +843,7 @@ function makeDogfoodToolsList() {
         };
       }
       if (name === "add_relations") {
-        tool.description += " Batch rows isolate non-object row shape and unknown row field as ok:false rows.";
+        tool.description += " Batch rows isolate non-object row shape and unknown row field as ok:false rows with relations[n] labels.";
         tool.inputSchema.required = ["relations"];
         tool.inputSchema.properties.relations = {
           type: "array",
@@ -3231,11 +3231,25 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, toolsList: addConceptsOutputSchemaDrifted }),
       ["tools/list: add_concepts outputSchema rows drift"],
     );
+    const addConceptsRowLabelGuidanceDrifted = makeDogfoodToolsList();
+    addConceptsRowLabelGuidanceDrifted.tools.find((tool) => tool.name === "add_concepts").description =
+      "Batch rows isolate non-object row shape and unknown row field as ok:false rows.";
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: addConceptsRowLabelGuidanceDrifted }),
+      ["tools/list: add_concepts description missing row label guidance"],
+    );
     const addRelationsOutputSchemaDrifted = makeDogfoodToolsList();
     addRelationsOutputSchemaDrifted.tools.find((tool) => tool.name === "add_relations").outputSchema.properties.relations.items.properties.alreadyExists.type = "string";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: addRelationsOutputSchemaDrifted }),
       ["tools/list: add_relations outputSchema row alreadyExists drift"],
+    );
+    const addRelationsRowLabelGuidanceDrifted = makeDogfoodToolsList();
+    addRelationsRowLabelGuidanceDrifted.tools.find((tool) => tool.name === "add_relations").description =
+      "Batch rows isolate non-object row shape and unknown row field as ok:false rows.";
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: addRelationsRowLabelGuidanceDrifted }),
+      ["tools/list: add_relations description missing row label guidance"],
     );
     const addConceptOutputSchemaDrifted = makeDogfoodToolsList();
     addConceptOutputSchemaDrifted.tools.find((tool) => tool.name === "add_concept").outputSchema.properties.warnings.items.type = "number";
