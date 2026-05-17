@@ -82,9 +82,11 @@ It also performs runtime negative smokes with invalid `list_concepts.lmit` and
 `query_ontology.operation="overveiw"` inputs, so CLI users catch schema/runtime
 strictness drift in the installed MCP package.
 It also verifies the `maintenance_plan` cursor contract: the ready page must
-report `cursor.found=true` with `cursor.reason=null`, while a missing
-`afterActionId` must report `cursor.found=false`, include the cursor miss
-reason, return zero remaining actions, and expose no next action.
+report `cursor.found=true` with `cursor.reason=null`, `nextAfterActionId`
+matching the last returned action, and `hasMore` matching the remaining page
+state, while a missing `afterActionId` must report `cursor.found=false`, include
+the cursor miss reason, return zero remaining actions, expose
+`nextAfterActionId=null` / `hasMore=false`, and expose no next action.
 For ready pages it also verifies `nextExecutableAction` / `nextReviewAction`
 point only at the first executable/review action in the current returned page.
 Successful maintenance cursor lines also print bucket summaries and

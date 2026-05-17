@@ -214,7 +214,10 @@ strict unknown-argument / invalid-enum rejection, enum-validated
 unknown row field inputs, and maintenance_plan cursor handling (ready page +
 missing `afterActionId`): the ready page must keep `cursor.found=true`,
 `cursor.reason=null`, and the missing cursor still reports `cursor.found=false`,
-reason, empty page. Ready pages also verify `nextExecutableAction` /
+reason, empty page, `cursor.nextAfterActionId=null`, and `cursor.hasMore=false`.
+Ready pages also verify cursor metadata: `nextAfterActionId` must match the last
+returned action, and `hasMore` must match the remaining page state.
+Ready pages also verify `nextExecutableAction` /
 `nextReviewAction` point only at the first executable/review action in the
 current returned page, including the action id, executable flag, `phase`, `kind`,
 and `severity`.
@@ -342,10 +345,11 @@ unknown row fields, and fails unless those inputs return row-level `ok:false`
 results instead of a top-level tool error, without `postWriteMaintenance`. It also calls
 `maintenance_plan.afterActionId="maint_missing"` and fails unless the response
 reports `cursor.found=false`, the cursor miss reason, zero remaining actions,
-and no next actions. A companion ready-page smoke calls `maintenance_plan`
+`cursor.nextAfterActionId=null`, `cursor.hasMore=false`, and no next actions. A companion ready-page smoke calls `maintenance_plan`
 without `afterActionId` and fails unless the response keeps the stable cursor
 shape, including `cursor.found=true`, explicit `cursor.reason=null`,
-`startIndex=0`, `remainingActions`, and next-action pointers. Those pointers
+`startIndex=0`, `remainingActions`, cursor `nextAfterActionId`/`hasMore`
+alignment, and next-action pointers. Those pointers
 must match the current page action `id`, `executable`, `phase`, `kind`, and
 `severity`. Both cursor
 smokes also validate the maintenance summary counts (`totalActions`,

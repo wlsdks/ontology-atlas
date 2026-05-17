@@ -1186,6 +1186,12 @@ export function maintenanceMissingCursorFailure(parsed) {
   if (parsed.cursor?.startIndex !== null) {
     return 'maintenance missing-cursor smoke should not expose a startIndex';
   }
+  if (!Object.hasOwn(parsed.cursor || {}, 'nextAfterActionId') || parsed.cursor.nextAfterActionId !== null) {
+    return 'maintenance missing-cursor smoke should expose cursor.nextAfterActionId=null';
+  }
+  if (parsed.cursor?.hasMore !== false) {
+    return 'maintenance missing-cursor smoke should expose cursor.hasMore=false';
+  }
   if (!Array.isArray(parsed.actions)) {
     return 'maintenance missing-cursor smoke response missing actions array';
   }
@@ -1224,6 +1230,9 @@ export function maintenanceReadyCursorFailure(parsed) {
   if (parsed.cursor?.startIndex !== 0) {
     return 'maintenance ready-cursor smoke should start at index 0';
   }
+  if (typeof parsed.cursor?.hasMore !== 'boolean') {
+    return 'maintenance ready-cursor smoke should expose cursor.hasMore';
+  }
   if (!Array.isArray(parsed.actions)) {
     return 'maintenance ready-cursor smoke response missing actions array';
   }
@@ -1233,6 +1242,15 @@ export function maintenanceReadyCursorFailure(parsed) {
   if (bucketFailure) return bucketFailure;
   if (parsed.actions.length > parsed.summary.remainingActions) {
     return 'maintenance ready-cursor smoke actions exceed remainingActions';
+  }
+  const expectedNextAfterActionId = parsed.actions.length > 0
+    ? parsed.actions[parsed.actions.length - 1]?.id
+    : null;
+  if (parsed.cursor?.nextAfterActionId !== expectedNextAfterActionId) {
+    return 'maintenance ready-cursor smoke cursor.nextAfterActionId did not match last page action';
+  }
+  if (parsed.cursor?.hasMore !== (parsed.summary.remainingActions > parsed.actions.length)) {
+    return 'maintenance ready-cursor smoke cursor.hasMore did not match remaining page state';
   }
   if (!Object.hasOwn(parsed, 'nextExecutableAction') || !Object.hasOwn(parsed, 'nextReviewAction')) {
     return 'maintenance ready-cursor smoke missing next action pointers';
@@ -1565,8 +1583,9 @@ export function verifyUsage() {
     'Also checks strict unknown-argument / invalid-enum rejection, maintenance_plan filter enums,\n' +
     'batch writer row isolation for non-object rows and unknown row fields,\n' +
     'and maintenance_plan cursor handling: ready page (cursor.found=true, cursor.reason=null)\n' +
-    'plus missing afterActionId (cursor.found=false, reason, empty page).\n' +
+    'plus missing afterActionId (cursor.found=false, reason, empty page, nextAfterActionId=null, hasMore=false).\n' +
     'Ready cursor smoke also verifies nextExecutableAction / nextReviewAction point only at the first executable/review action in the current returned page.\n' +
+    'Ready cursor metadata verifies nextAfterActionId matches the last returned action and hasMore matches the remaining page state.\n' +
     'Successful cursor lines print bucket summaries plus current-page executable/review next-action summaries.\n'
   );
 }

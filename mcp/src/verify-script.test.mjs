@@ -2341,6 +2341,8 @@ describe('verify.mjs first-contact gates', () => {
         found: false,
         reason: 'afterActionId not found in filtered maintenance actions',
         startIndex: null,
+        nextAfterActionId: null,
+        hasMore: false,
       },
       actions: [],
       byPhase: {},
@@ -2366,6 +2368,14 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       maintenanceMissingCursorFailure({ ...clean, cursor: { ...clean.cursor, reason: null } }),
       'maintenance missing-cursor smoke did not report the cursor miss reason',
+    );
+    assert.equal(
+      maintenanceMissingCursorFailure({ ...clean, cursor: { ...clean.cursor, nextAfterActionId: 'maint_link' } }),
+      'maintenance missing-cursor smoke should expose cursor.nextAfterActionId=null',
+    );
+    assert.equal(
+      maintenanceMissingCursorFailure({ ...clean, cursor: { ...clean.cursor, hasMore: true } }),
+      'maintenance missing-cursor smoke should expose cursor.hasMore=false',
     );
     assert.equal(
       maintenanceMissingCursorFailure({ ...clean, actions: [{ id: 'maint_link' }] }),
@@ -2425,6 +2435,8 @@ describe('verify.mjs first-contact gates', () => {
         found: true,
         reason: null,
         startIndex: 0,
+        nextAfterActionId: null,
+        hasMore: false,
       },
       actions: [],
       byPhase: {},
@@ -2458,6 +2470,10 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       maintenanceReadyCursorFailure({ ...clean, cursor: { ...clean.cursor, startIndex: null } }),
       'maintenance ready-cursor smoke should start at index 0',
+    );
+    assert.equal(
+      maintenanceReadyCursorFailure({ ...clean, cursor: { ...clean.cursor, hasMore: undefined } }),
+      'maintenance ready-cursor smoke should expose cursor.hasMore',
     );
     assert.equal(
       maintenanceReadyCursorFailure({ ...clean, actions: null }),
@@ -2499,6 +2515,7 @@ describe('verify.mjs first-contact gates', () => {
       byPhase: { link: 1, review: 1 },
       bySeverity: { warn: 1, info: 1 },
       byKind: { add_missing_relation: 1, unassigned_node: 1 },
+      cursor: { ...clean.cursor, nextAfterActionId: 'maint_review' },
       nextExecutableAction: { id: 'maint_link', executable: true, phase: 'link', kind: 'add_missing_relation', severity: 'warn' },
       nextReviewAction: { id: 'maint_review', executable: false, phase: 'review', kind: 'unassigned_node', severity: 'info' },
     };
@@ -2511,6 +2528,25 @@ describe('verify.mjs first-contact gates', () => {
       'maintenance ready-cursor smoke actions exceed remainingActions',
     );
     assert.equal(
+      maintenanceReadyCursorFailure({ ...withActions, cursor: { ...withActions.cursor, nextAfterActionId: 'maint_link' } }),
+      'maintenance ready-cursor smoke cursor.nextAfterActionId did not match last page action',
+    );
+    assert.equal(
+      maintenanceReadyCursorFailure({ ...withActions, cursor: { ...withActions.cursor, hasMore: true } }),
+      'maintenance ready-cursor smoke cursor.hasMore did not match remaining page state',
+    );
+    assert.equal(
+      maintenanceReadyCursorFailure({
+        ...withActions,
+        summary: { ...summary, remainingActions: 3 },
+        byPhase: { link: 1, review: 1, repair: 1 },
+        bySeverity: { warn: 1, info: 2 },
+        byKind: { add_missing_relation: 1, unassigned_node: 1, canonicalize_graph_arrays: 1 },
+        cursor: { ...withActions.cursor, hasMore: true },
+      }),
+      null,
+    );
+    assert.equal(
       maintenanceReadyCursorFailure({ ...withActions, nextExecutableAction: { id: 'maint_later', executable: true } }),
       'maintenance ready-cursor smoke nextExecutableAction did not match first page action',
     );
@@ -2519,7 +2555,16 @@ describe('verify.mjs first-contact gates', () => {
       'maintenance ready-cursor smoke missing nextReviewAction',
     );
     assert.equal(
-      maintenanceReadyCursorFailure({ ...withActions, actions: [], nextExecutableAction: { id: 'maint_link', executable: true } }),
+      maintenanceReadyCursorFailure({
+        ...withActions,
+        actions: [],
+        summary: { ...summary, remainingActions: 0 },
+        byPhase: {},
+        bySeverity: {},
+        byKind: {},
+        cursor: { ...withActions.cursor, nextAfterActionId: null },
+        nextExecutableAction: { id: 'maint_link', executable: true },
+      }),
       'maintenance ready-cursor smoke unexpected nextExecutableAction',
     );
     assert.equal(

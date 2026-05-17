@@ -273,7 +273,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /reports multiple unknown tool arguments together/);
     assert.match(verifySection, /maintenance_plan cursor handling \(ready page \+\s+missing `afterActionId`\)/);
     assert.match(verifySection, /ready page must keep `cursor\.found=true`,\s+`cursor\.reason=null`/);
-    assert.match(verifySection, /missing cursor still reports `cursor\.found=false`,\s+reason, empty page/);
+    assert.match(verifySection, /missing cursor still reports `cursor\.found=false`,\s+reason, empty page, `cursor\.nextAfterActionId=null`, and `cursor\.hasMore=false`/);
+    assert.match(verifySection, /`nextAfterActionId` must match the last\s+returned action, and `hasMore` must match the remaining page state/);
     assert.match(verifySection, /`nextExecutableAction` \/\s+`nextReviewAction` point only at the first executable\/review action in the\s+current returned page/);
     assert.match(verifySection, /including the action id, executable flag, `phase`, `kind`,\s+and `severity`/);
     assert.match(verifySection, /maintenance summary counts \(`totalActions`,\s+`filteredActions`, `remainingActions`, `executableActions`, `reviewActions`\)/);
@@ -412,6 +413,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /validates the installed `find_orphans\.excludeKinds` schema and default description/);
     assert.match(verifySection, /write tools must keep their `expected_mtime` \/ `confirm` \/ `rename_concept\.overwrite` \/ `delete_concept\.force` safety schemas/);
     assert.match(verifySection, /validates `maintenance_plan\.summary` count fields and relationships plus `byPhase` \/ `bySeverity` \/ `byKind` bucket totals/);
+    assert.match(verifySection, /validates `maintenance_plan\.cursor\.nextAfterActionId` and `cursor\.hasMore`/);
     assert.match(verifySection, /write tool descriptions keep compact `postWriteMaintenance` action `score`/);
     assert.match(verifySection, /executable `proposedAction`/);
     assert.match(verifySection, /current-page next action pointer guidance/);
@@ -448,7 +450,9 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`query_ontology\.operation="overveiw"` inputs/);
     assert.match(verifySection, /`maintenance_plan` cursor contract/);
     assert.match(verifySection, /`cursor\.found=true` with `cursor\.reason=null`/);
+    assert.match(verifySection, /`nextAfterActionId`\s+matching the last returned action, and `hasMore` matching the remaining page\s+state/);
     assert.match(verifySection, /`cursor\.found=false`/);
+    assert.match(verifySection, /`nextAfterActionId=null` \/ `hasMore=false`/);
     assert.match(verifySection, /`nextExecutableAction` \/ `nextReviewAction`\s+point only at the first executable\/review action in the current returned page/);
     assert.match(verifySection, /Successful maintenance cursor lines also print bucket summaries and\s+current-page executable\/review next-action summaries/);
     assert.match(verifySection, /enum-validated\s+`maintenance_plan\.phases` \/ `maintenance_plan\.severities` \/\s+`maintenance_plan\.kinds` filters/);
@@ -653,6 +657,7 @@ describe('package contract helpers', () => {
     assert.match(mcpVerifyRow, /invalid-only smoke 에 `postWriteMaintenance` 가 없는지도 확인/);
     assert.match(mcpVerifyRow, /write-tool `postWriteMaintenance` `score` \/ executable `proposedAction` \/ current-page next-action guidance/);
     assert.match(mcpVerifyRow, /ready `maintenance_plan` cursor \+ missing `maintenance_plan\.afterActionId` cursor smoke/);
+    assert.match(mcpVerifyRow, /`nextAfterActionId`\/`hasMore` page-state alignment/);
     assert.match(mcpVerifyRow, /maintenance bucket \/ current-page next-action summaries/);
     assert.match(mcpVerifyRow, /`maintenance_plan\.phases` \/ `maintenance_plan\.severities` \/ `maintenance_plan\.kinds` enum filter/);
     assert.match(mcpVerifyRow, /`cursor\.found=false`/);
@@ -751,6 +756,8 @@ describe('package contract helpers', () => {
     assert.match(doc, /MCP `initialize\.instructions` 의 `query_ontology\.operation`\s+안내와 `query_plan\.targetOperation` 안내도 같은 allow-list 에서 생성/);
     assert.match(doc, /`maintenance_plan` work-queue 안내도 first-contact 에 포함/);
     assert.match(doc, /ready cursor 의 `cursor\.found=true` \/ `cursor\.reason=null`/);
+    assert.match(doc, /ready cursor 의 `nextAfterActionId` 가 마지막\s+page action 과 맞고 `hasMore` 가 remaining page state 와 맞는지/);
+    assert.match(doc, /`nextAfterActionId=null` \/ `hasMore=false`/);
     assert.match(doc, /unknown `afterActionId` cursor 의 `cursor\.found=false`/);
     assert.match(doc, /`cursor\.reason` 계약/);
     assert.match(doc, /compact `postWriteMaintenance` 반환 \(`operation` \/ `sideEffect:false` \/ `filters` \/ `limited` \/ cursor \/ action `score` \/ executable `proposedAction` 포함\)/);

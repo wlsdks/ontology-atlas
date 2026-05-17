@@ -206,7 +206,9 @@ post-write work queue summary 가 drift 나도 설치 경로에서 fail-fast 한
 `byPhase` / `bySeverity` / `byKind` bucket 합계와 `remainingActions` 관계도 확인한다.
 성공 로그도 같은 bucket 요약과 현재 page 의 executable/review next-action 요약을
 함께 출력해 installed verify 사용자가 JSON payload 를 다시 파싱하지 않아도 다음 cleanup
-shape 를 볼 수 있게 한다.
+shape 를 볼 수 있게 한다. 같은 smoke 는 ready cursor 의 `nextAfterActionId` 가 마지막
+page action 과 맞고 `hasMore` 가 remaining page state 와 맞는지, missing cursor 의
+`nextAfterActionId=null` / `hasMore=false` 도 확인해 cleanup queue resume metadata drift 를 막는다.
 dogfood walk 출력도 같은 bucket 을 phase / severity / kind 요약으로 보여줘
 agent 가 maintenance queue 구성을 눈으로 확인하면서 다음 cleanup action 을 고를 수 있게 한다.
 같은 출력은 현재 page 의 `nextExecutableAction` / `nextReviewAction` 도
