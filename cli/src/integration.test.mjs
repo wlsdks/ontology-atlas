@@ -419,6 +419,18 @@ await test('mcp-verify — rejects invalid timeout values', async () => {
   assert.match(stripAnsi(partial.stderr), /OMOT_VERIFY_TIMEOUT_MS=N/);
   assert.match(stripAnsi(partial.stderr), /oh-my-ontology mcp-verify --timeout-ms 15000/);
 
+  const missing = await run(['mcp-verify', '--timeout-ms']);
+  assert.equal(missing.code, 1);
+  assert.match(stripAnsi(missing.stderr), /--timeout-ms requires a value/);
+  assert.match(stripAnsi(missing.stderr), /Received: undefined/);
+  assert.match(stripAnsi(missing.stderr), /oh-my-ontology mcp-verify --timeout-ms 15000/);
+
+  const nextFlag = await run(['mcp-verify', '--timeout-ms', '--vault', 'ontology']);
+  assert.equal(nextFlag.code, 1);
+  assert.match(stripAnsi(nextFlag.stderr), /--timeout-ms requires a value/);
+  assert.match(stripAnsi(nextFlag.stderr), /Received: "--vault"/);
+  assert.match(stripAnsi(nextFlag.stderr), /oh-my-ontology mcp-verify --timeout-ms 15000/);
+
   const typo = await run(['mcp-verify', '--timout-ms=1000']);
   assert.equal(typo.code, 1);
   assert.match(stripAnsi(typo.stderr), /unknown flag: --timout-ms=1000\. Did you mean --timeout-ms\?/);
