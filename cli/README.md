@@ -40,7 +40,7 @@ These wrap the MCP server (`oh-my-ontology-mcp`) so the developer has the same a
 | `oh-my-ontology orphans [vault]` | Lists isolated nodes — docs no other node references in their frontmatter (MCP `find_orphans`). Options: `--kind X` (filter), `--exclude-kinds A,B` (skip; MCP default excludes `project,vault-readme`), `--json`. Quick "what should I clean up" surface for vault maintenance. |
 | `oh-my-ontology path <from> <to> [vault]` | Shortest path (BFS, undirected) between two slugs. Each hop is annotated with the frontmatter key (`capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`) that linked the pair, so you see *why* A and B are connected. (`--max-hops N --json`) |
 | `oh-my-ontology query "<filter>"` | Typed filter DSL — `kind=X AND has(Y) AND NOT domain=Z`, parens / OR / NOT supported. (`--limit N --json`) |
-| `oh-my-ontology maintenance [vault]` | Inspect MCP `maintenance_plan` cleanup/repair work queue without writing. Human output includes cursor state, active filters, phase/severity/kind bucket summaries, and current-page next action pointers. Supports `--limit`, `--after-action-id`, `--executable-only`, `--phases`, `--severities`, `--kinds`, and `--json` for cursor/filter dogfood. |
+| `oh-my-ontology maintenance [vault]` | Inspect MCP `maintenance_plan` cleanup/repair work queue without writing. Human output includes cursor state, active filters, compile/cycle/canonicalize/dangling/relation/external/ignored-external summary counts, phase/severity/kind bucket summaries, and current-page next action pointers. Supports `--limit`, `--after-action-id`, `--executable-only`, `--phases`, `--severities`, `--kinds`, and `--json` for cursor/filter dogfood. |
 | `oh-my-ontology rename <oldSlug> <newSlug>` | Atomic rename — moves the `.md`, updates `slug:`, rewrites every backlink (frontmatter array entries, inline strings, body links). Default dry-run preview; `--confirm` to apply. Refuses an existing target slug unless `--overwrite` is passed. |
 | `oh-my-ontology merge <fromSlug> <intoSlug>` | Atomic merge — redirects every backlink `from → into`, then deletes `from.md`. Default dry-run; `--confirm` to apply. The `into` node's frontmatter / body are **not** auto-combined — edit by hand if needed. |
 | `oh-my-ontology delete <slug>` | Permanent delete. Default refuses if any backlinks remain — preview them with the bare command, then `--confirm` to apply (or `--force` to delete anyway). |
@@ -175,7 +175,10 @@ unknown status strings are treated as malformed payloads rather than clean
 vaults. Non-JSON `health` and `workspace-brief` output prints health-check
 coverage as `id:status:count` rows (`compile_issues:pass:0`,
 `components:pass:1`) so agents can see which probes actually ran without
-parsing JSON.
+parsing JSON. Non-JSON `workspace-brief` also prints a `GROWTH` line with
+`actions`, `relations`, `dangling`, `external`, and `ignoredExternal` counts so
+`.omotignore`-suppressed external refs remain visible even when the vault is
+healthy.
 
 The vault is a plain folder of `.md` files. **Frontmatter is the graph.**
 

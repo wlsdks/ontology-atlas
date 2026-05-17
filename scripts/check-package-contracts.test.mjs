@@ -792,6 +792,7 @@ describe('package contract helpers', () => {
     assert.match(tableRow, /`neighbors`\/`path`\/`project_scope` graph-query smoke/);
     assert.match(maintenanceRow, /MCP `maintenance_plan` cleanup\/repair work queue/);
     assert.match(maintenanceRow, /`--after-action-id`/);
+    assert.match(maintenanceRow, /compile\/cycle\/canonicalize\/dangling\/relation\/external\/ignored-external summary counts/);
     assert.match(maintenanceRow, /phase\/severity\/kind bucket summaries/);
     assert.match(maintenanceRow, /current-page next action pointers/);
     assert.match(maintenanceRow, /cursor\/filter dogfood/);
@@ -1119,6 +1120,8 @@ describe('package contract helpers', () => {
     assert.match(doc, /`workspace-brief` non-json 의 `HEALTH CHECKS` id:status:count coverage 출력 계약/);
     assert.match(doc, /`health` non-json 의 `pass:count` 출력/);
     assert.match(doc, /`HEALTH CHECKS` 라인에 `compile_issues:pass:0` 같은 id:status:count coverage/);
+    assert.match(readme, /Non-JSON `workspace-brief` also prints a `GROWTH` line/);
+    assert.match(readme, /`actions`, `relations`, `dangling`, `external`, and `ignoredExternal` counts/);
   });
 
   it('keeps dogfood MCP docs explicit about workspace brief health checks', () => {
