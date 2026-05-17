@@ -849,6 +849,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`compile_ontology` 도 `outputSchema` 와 동일한 `structuredContent` graph-summary payload/);
     assert.match(doc, /`analyze_repo_structure` 도 `outputSchema` 와 동일한 `structuredContent` bootstrap-candidate payload/);
     assert.match(doc, /`infer_imports` 도 `outputSchema` 와 동일한 `structuredContent` import-graph payload/);
+    assert.match(doc, /상위 module edge 의 `kindCounts` 도 출력/);
     assert.match(inferImportsRow, /common `@\/\*` alias/);
     assert.match(inferImportsRow, /내부 edge 로 resolve/);
     assert.match(inferImportsRow, /`alias-not-found` unresolved/);

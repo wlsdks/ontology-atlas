@@ -12,6 +12,7 @@ import {
   formatWorkspaceNextActionRows,
   graphStructuredContentSummary,
   healthCheckStatusSummary,
+  importModuleEdgeKindSummary,
   maintenanceBucketSummary,
   maintenanceNextActionSummary,
   missingResponseLabels,
@@ -2471,6 +2472,35 @@ describe("rpc response completion helpers", () => {
       ], 2),
       "compile_issues:pass:0, components:info:6, +1 more",
     );
+  });
+
+  it("summarizes infer_imports module edge kind evidence", () => {
+    assert.equal(
+      importModuleEdgeKindSummary([
+        {
+          from: "capabilities/auth",
+          to: "capabilities/user",
+          count: 3,
+          kindCounts: { static: 2, dynamic: 1 },
+        },
+        {
+          from: "capabilities/billing",
+          to: "elements/src/shared/api",
+          count: 1,
+          kindCounts: { reexport: 1 },
+        },
+      ]),
+      "capabilities/auth->capabilities/user x3 (static:2/dynamic:1), capabilities/billing->elements/src/shared/api x1 (reexport:1)",
+    );
+    assert.equal(
+      importModuleEdgeKindSummary([
+        { from: "a", to: "b", count: 1, kindCounts: { static: 1 } },
+        { from: "c", to: "d", count: 1, kindCounts: { require: 1 } },
+        { from: "e", to: "f", count: 1, kindCounts: { side: 1 } },
+      ], 2),
+      "a->b x1 (static:1), c->d x1 (require:1), +1 more",
+    );
+    assert.equal(importModuleEdgeKindSummary([]), "none");
   });
 
   it("summarizes component rows for the final dogfood analysis", () => {

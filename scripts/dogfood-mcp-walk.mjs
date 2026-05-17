@@ -292,6 +292,34 @@ export function healthCheckStatusSummary(checks, limit = 5) {
   return `${shown.join(", ")}${suffix}`;
 }
 
+export function importModuleEdgeKindSummary(moduleEdges, limit = 3) {
+  if (!Array.isArray(moduleEdges) || moduleEdges.length === 0) return "none";
+  const shown = moduleEdges.slice(0, limit).map((edge) => {
+    const from = typeof edge?.from === "string" && edge.from.length > 0 ? edge.from : "unknown";
+    const to = typeof edge?.to === "string" && edge.to.length > 0 ? edge.to : "unknown";
+    const count = Number.isInteger(edge?.count) ? edge.count : "n/a";
+    const kindSummary = importKindCountSummary(edge?.kindCounts);
+    const kindSuffix = kindSummary === "none" ? "" : ` (${kindSummary})`;
+    return `${from}->${to} x${count}${kindSuffix}`;
+  });
+  const suffix = moduleEdges.length > shown.length ? `, +${moduleEdges.length - shown.length} more` : "";
+  return `${shown.join(", ")}${suffix}`;
+}
+
+function importKindCountSummary(kindCounts) {
+  if (!kindCounts || typeof kindCounts !== "object" || Array.isArray(kindCounts)) return "none";
+  const ordered = ["static", "dynamic", "require", "reexport", "side"];
+  const known = ordered
+    .filter((kind) => Number.isInteger(kindCounts[kind]) && kindCounts[kind] > 0)
+    .map((kind) => `${kind}:${kindCounts[kind]}`);
+  const extra = Object.entries(kindCounts)
+    .filter(([kind, count]) => !ordered.includes(kind) && Number.isInteger(count) && count > 0)
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([kind, count]) => `${kind}:${count}`);
+  const entries = [...known, ...extra];
+  return entries.length > 0 ? entries.join("/") : "none";
+}
+
 export function componentSummary(result, limit = 3) {
   if (!result || !Array.isArray(result.components) || result.components.length === 0) return "none";
   const shown = result.components.slice(0, limit).map((component) => {
@@ -4396,6 +4424,7 @@ async function main() {
     console.log(
       `  files ${inferredImports.filesScanned ?? "n/a"} · file edges ${inferredImports.edges?.length ?? "n/a"} · module edges ${inferredImports.moduleEdges?.length ?? "n/a"} · external ${inferredImports.externalImports?.length ?? "n/a"} · unresolved ${inferredImports.unresolved?.length ?? "n/a"}`,
     );
+    console.log(`  top module edge kinds: ${importModuleEdgeKindSummary(inferredImports.moduleEdges)}`);
   }
 
   // 8. validate_vault
@@ -5212,7 +5241,7 @@ async function main() {
   console.log(`  query_concepts: ${queryConcepts ? `${queryConcepts.matches?.length ?? 0} matches · limited ${queryConcepts.limited === true}` : "n/a"}`);
   console.log(`  query_concepts_limited: ${queryConceptsLimited ? `${queryConceptsLimited.matches?.length ?? 0} matches · total ${queryConceptsLimited.total ?? "n/a"} · limited ${queryConceptsLimited.limited === true}` : "n/a"}`);
   console.log(`  analyze_repo_structure: ${analyzedRepo ? `${analyzedRepo.framework} · ${analyzedRepo.capabilities?.length ?? 0} capabilities · ${analyzedRepo.elements?.length ?? 0} elements` : "n/a"}`);
-  console.log(`  infer_imports: ${inferredImports ? `${inferredImports.filesScanned ?? 0} files · ${inferredImports.moduleEdges?.length ?? 0} module edges` : "n/a"}`);
+  console.log(`  infer_imports: ${inferredImports ? `${inferredImports.filesScanned ?? 0} files · ${inferredImports.moduleEdges?.length ?? 0} module edges · ${importModuleEdgeKindSummary(inferredImports.moduleEdges, 2)}` : "n/a"}`);
   console.log(
     `  validate_vault: ${validation ? formatCount(validation.summary?.problemFiles ?? 0, "problem file") : "n/a"}`,
   );
