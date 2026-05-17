@@ -1271,9 +1271,11 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /health\.checks/);
     assert.match(doc, /`orderLimit`, `nodeLimit`, `dependencyTypes`, `componentTypes`/);
     assert.match(doc, /`dependencyTypes` \/ `componentTypes` 도 relation type enum 을 MCP\s+schema 로 노출/);
+    assert.match(doc, /`match_nodes\.kind`, `match_edges\.fromKind`, `match_edges\.toKind` 도 표준\s+ontology kind enum/);
     assert.match(doc, /cursor miss `reason`/);
     assert.match(queryOntologyRow, /ready page 의 `cursor\.found=true` \/ `cursor\.reason=null`/);
     assert.match(queryOntologyRow, /현재 page 안의 첫 executable\/review action/);
+    assert.match(queryOntologyRow, /`match_nodes\.kind`, `match_edges\.fromKind`, and `match_edges\.toKind` are enum-validated/);
     assert.match(queryOntologyRow, /unknown cursor 의 `cursor\.found=false` \/ cursor miss `reason`/);
     assert.match(queryOntologyRow, /count-safe summary fields/);
     assert.match(queryOntologyRow, /`byPhase` \/ `bySeverity` \/ `byKind` remaining-queue buckets/);
@@ -1751,7 +1753,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /initialize guidance gate/);
     assert.match(doc, /tools\/list annotation coverage/);
     assert.match(doc, /row-label guidance summary/);
-    assert.match(doc, /focused subset, workspace_brief sample-shape gate, maintenance work-queue shape \/ formatter, initialize guidance, tools\/list annotation coverage, row-label guidance summary 를 fixture 로 검증/);
+    assert.match(doc, /focused subset, workspace_brief sample-shape gate, maintenance work-queue shape \/ formatter, initialize guidance, tools\/list annotation coverage, row-label guidance summary, strict closest-value summary 를 fixture 로 검증/);
     assert.match(doc, /전체 helper 회귀가 필요할 때만\s+`pnpm dogfood:test`/);
     assert.match(doc, /strict relation filter/);
     assert.match(doc, /stderr warning filtering/);

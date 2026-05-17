@@ -5,6 +5,19 @@ const DEFAULT_LIMIT = 100;
 const DOWNWARD_CONTAINMENT_TYPES = new Set(['domains', 'capabilities', 'elements', 'contains']);
 const UPWARD_CONTAINMENT_TYPES = new Set(['domain']);
 const HEALTH_IGNORED_COMPONENT_KINDS = new Set(['vault-readme']);
+export const NODE_KIND_VALUES = Object.freeze([
+  'project',
+  'domain',
+  'capability',
+  'element',
+  'document',
+  'vault-readme',
+]);
+export const EDGE_TARGET_KIND_VALUES = Object.freeze([
+  ...NODE_KIND_VALUES,
+  'external',
+  'unresolved',
+]);
 export const RELATION_TYPE_VALUES = Object.freeze([
   'domains',
   'domain',
@@ -1061,7 +1074,7 @@ export function createOntologyEngine(artifact, options = {}) {
 
   function matchNodes(options = {}) {
     const limit = normalizeLimit(options.limit);
-    const kind = normalizeOptionalString(options.kind, 'kind');
+    const kind = normalizeNodeKind(options.kind, 'kind');
     const domain = normalizeOptionalString(options.domain, 'domain');
     const slugContains =
       normalizeOptionalString(options.slugContains, 'slugContains')?.toLowerCase() || null;
@@ -1126,8 +1139,8 @@ export function createOntologyEngine(artifact, options = {}) {
     const toInput = normalizeOptionalString(options.to, 'to');
     const from = fromInput ? resolve(fromInput, 'from') : null;
     const to = toInput ? resolve(toInput, 'to') : null;
-    const fromKind = normalizeOptionalString(options.fromKind, 'fromKind');
-    const toKind = normalizeOptionalString(options.toKind, 'toKind');
+    const fromKind = normalizeNodeKind(options.fromKind, 'fromKind');
+    const toKind = normalizeEdgeTargetKind(options.toKind, 'toKind');
     const includeExternal = normalizeOptionalBoolean(options.includeExternal, 'includeExternal', false);
     const includeUnresolved = normalizeOptionalBoolean(options.includeUnresolved, 'includeUnresolved', false);
     const matches = [];
@@ -3401,6 +3414,24 @@ function normalizeRecommendRelationKind(value) {
   if (kind === null) return null;
   if (kind !== 'capability' && kind !== 'element') {
     throw new Error(formatAllowedValueError('kind', kind, ['capability', 'element']));
+  }
+  return kind;
+}
+
+function normalizeNodeKind(value, name) {
+  const kind = normalizeOptionalString(value, name);
+  if (kind === null) return null;
+  if (!NODE_KIND_VALUES.includes(kind)) {
+    throw new Error(formatAllowedValueError(name, kind, NODE_KIND_VALUES));
+  }
+  return kind;
+}
+
+function normalizeEdgeTargetKind(value, name) {
+  const kind = normalizeOptionalString(value, name);
+  if (kind === null) return null;
+  if (!EDGE_TARGET_KIND_VALUES.includes(kind)) {
+    throw new Error(formatAllowedValueError(name, kind, EDGE_TARGET_KIND_VALUES));
   }
   return kind;
 }

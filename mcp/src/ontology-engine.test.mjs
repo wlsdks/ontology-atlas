@@ -1531,6 +1531,21 @@ describe('queryCompiledOntology', () => {
     );
   });
 
+  it('rejects typoed graph kind filters with nearest-value hints', () => {
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'match_nodes', kind: 'capabilty' }),
+      /kind must be one of:[\s\S]*Received: "capabilty"\.[\s\S]*Did you mean "capability"\?/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'match_edges', fromKind: 'capabilty' }),
+      /fromKind must be one of:[\s\S]*Received: "capabilty"\.[\s\S]*Did you mean "capability"\?/,
+    );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), { operation: 'match_edges', toKind: 'externl' }),
+      /toKind must be one of:[\s\S]*Received: "externl"\.[\s\S]*Did you mean "external"\?/,
+    );
+  });
+
   it('rejects invalid optional scalar filters instead of ignoring them', () => {
     assert.throws(
       () => queryCompiledOntology(artifact(), { operation: 'match_nodes', kind: 123 }),

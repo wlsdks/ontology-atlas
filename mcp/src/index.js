@@ -82,9 +82,11 @@ import {
 } from './infer-imports.mjs';
 import { compileOntology } from './ontology-compiler.mjs';
 import {
+  EDGE_TARGET_KIND_VALUES,
   MAINTENANCE_KIND_VALUES,
   MAINTENANCE_PHASE_VALUES,
   MAINTENANCE_SEVERITY_VALUES,
+  NODE_KIND_VALUES,
   QUERY_ONTOLOGY_OPERATIONS,
   QUERY_PLAN_TARGET_OPERATIONS,
   RELATION_TYPE_VALUES,
@@ -1424,9 +1426,12 @@ const TOOLS = [
           ),
           enum: RELATION_TYPE_VALUES,
         },
-        kind: nonBlankStringSchema(
-          'match_nodes/recommend_relations: optional node kind filter. recommend_relations currently supports capability or element.',
-        ),
+        kind: {
+          ...nonBlankStringSchema(
+            'match_nodes/recommend_relations: optional node kind filter. recommend_relations currently supports capability or element.',
+          ),
+          enum: NODE_KIND_VALUES,
+        },
         domain: nonBlankStringSchema(
           'match_nodes: optional exact domain filter. domain_profile: domain root slug or unique alias.',
         ),
@@ -1467,12 +1472,18 @@ const TOOLS = [
           description:
             'match_nodes only: sort rows by degree, inDegree, outDegree, or slug. Defaults to degree.',
         },
-        fromKind: nonBlankStringSchema(
-          'match_edges only: optional source node kind filter, e.g. capability, domain, project, element.',
-        ),
-        toKind: nonBlankStringSchema(
-          'match_edges only: optional target kind filter. Use external or unresolved for non-node refs.',
-        ),
+        fromKind: {
+          ...nonBlankStringSchema(
+            'match_edges only: optional source node kind filter, e.g. capability, domain, project, element.',
+          ),
+          enum: NODE_KIND_VALUES,
+        },
+        toKind: {
+          ...nonBlankStringSchema(
+            'match_edges only: optional target kind filter. Use external or unresolved for non-node refs.',
+          ),
+          enum: EDGE_TARGET_KIND_VALUES,
+        },
         relation: {
           ...nonBlankStringSchema('Alias for type when operation is relation_check.'),
           enum: RELATION_TYPE_VALUES,
@@ -3203,6 +3214,12 @@ function validateQueryOntologyArgs(args = {}) {
   requireOptionalEnum(args.sort, 'sort', ['degree', 'inDegree', 'outDegree', 'slug']);
   if (args.operation === 'recommend_relations') {
     requireOptionalEnum(args.kind, 'kind', ['capability', 'element']);
+  } else if (args.operation === 'match_nodes') {
+    requireOptionalEnum(args.kind, 'kind', NODE_KIND_VALUES);
+  }
+  if (args.operation === 'match_edges') {
+    requireOptionalEnum(args.fromKind, 'fromKind', NODE_KIND_VALUES);
+    requireOptionalEnum(args.toKind, 'toKind', EDGE_TARGET_KIND_VALUES);
   }
   for (const key of [
     'includeExternal',

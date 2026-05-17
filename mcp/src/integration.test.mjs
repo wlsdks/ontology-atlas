@@ -24,9 +24,11 @@ import {
   expectedToolTitle,
 } from "../scripts/verify.mjs";
 import {
+  EDGE_TARGET_KIND_VALUES,
   MAINTENANCE_KIND_VALUES,
   MAINTENANCE_PHASE_VALUES,
   MAINTENANCE_SEVERITY_VALUES,
+  NODE_KIND_VALUES,
   QUERY_ONTOLOGY_OPERATIONS,
   QUERY_PLAN_TARGET_OPERATIONS,
   RELATION_TYPE_VALUES,
@@ -904,6 +906,9 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
           findTool("query_ontology")?.inputSchema?.properties?.type?.enum,
         relationEnum:
           findTool("query_ontology")?.inputSchema?.properties?.relation?.enum,
+        kindEnum: findTool("query_ontology")?.inputSchema?.properties?.kind?.enum,
+        fromKindEnum: findTool("query_ontology")?.inputSchema?.properties?.fromKind?.enum,
+        toKindEnum: findTool("query_ontology")?.inputSchema?.properties?.toKind?.enum,
         componentTypesItem:
           findTool("query_ontology")?.inputSchema?.properties?.componentTypes?.items?.type,
         componentTypesEnum:
@@ -931,6 +936,9 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         patternEnum: RELATION_TYPE_VALUES,
         typeEnum: RELATION_TYPE_VALUES,
         relationEnum: RELATION_TYPE_VALUES,
+        kindEnum: NODE_KIND_VALUES,
+        fromKindEnum: NODE_KIND_VALUES,
+        toKindEnum: EDGE_TARGET_KIND_VALUES,
         componentTypesItem: "string",
         componentTypesEnum: RELATION_TYPE_VALUES,
         phasesEnum: MAINTENANCE_PHASE_VALUES,
@@ -2668,12 +2676,15 @@ await test("MCP read/query tools — invalid numeric and direction options are r
         to: "b",
         type: "depend_on",
       }),
+      callTool(66, "query_ontology", { operation: "match_nodes", kind: "capabilty" }),
+      callTool(67, "query_ontology", { operation: "match_edges", fromKind: "capabilty" }),
+      callTool(68, "query_ontology", { operation: "match_edges", toKind: "externl" }),
     ]);
     for (const id of [
       2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
       21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
       38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
-      55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65,
+      55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68,
     ]) {
       assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
     }
@@ -2728,6 +2739,15 @@ await test("MCP read/query tools — invalid numeric and direction options are r
     assert.match(responses.find((r) => r.id === 65).result.content[0].text, /type must be one of/i);
     assert.match(responses.find((r) => r.id === 65).result.content[0].text, /Received: "depend_on"/i);
     assert.match(responses.find((r) => r.id === 65).result.content[0].text, /Did you mean "depends_on"\?/i);
+    assert.match(responses.find((r) => r.id === 66).result.content[0].text, /kind must be one of/i);
+    assert.match(responses.find((r) => r.id === 66).result.content[0].text, /Received: "capabilty"/i);
+    assert.match(responses.find((r) => r.id === 66).result.content[0].text, /Did you mean "capability"\?/i);
+    assert.match(responses.find((r) => r.id === 67).result.content[0].text, /fromKind must be one of/i);
+    assert.match(responses.find((r) => r.id === 67).result.content[0].text, /Received: "capabilty"/i);
+    assert.match(responses.find((r) => r.id === 67).result.content[0].text, /Did you mean "capability"\?/i);
+    assert.match(responses.find((r) => r.id === 68).result.content[0].text, /toKind must be one of/i);
+    assert.match(responses.find((r) => r.id === 68).result.content[0].text, /Received: "externl"/i);
+    assert.match(responses.find((r) => r.id === 68).result.content[0].text, /Did you mean "external"\?/i);
     assert.match(responses.find((r) => r.id === 16).result.content[0].text, /pattern must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 17).result.content[0].text, /phases must be an array of strings/i);
     assert.match(responses.find((r) => r.id === 18).result.content[0].text, /types items must be non-empty strings/i);
