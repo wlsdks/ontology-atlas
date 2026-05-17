@@ -243,8 +243,8 @@ describe('package contract helpers', () => {
     assert.match(readme, /runs `workspace_brief`, tuned `workspace_brief`, `health`, and tuned `health`/);
     assert.match(readme, /`health` and `workspace-brief` also accept focused diagnosis tuning flags/);
     assert.match(readme, /`--dependency-types A,B`, `--component-types A,B`, `--component-limit N`/);
-    assert.match(readme, /graph-query, destructive\s+dry-run, post-write bucket guidance, and strict argument\/enum\s+smoke scope/);
-    assert.match(readme, /graph-query, destructive dry-run, post-write bucket,\s+and strict argument\/enum smoke scope/);
+    assert.match(readme, /graph-query, destructive\s+dry-run, post-write bucket guidance, strict argument \/ enum rejection,\s+annotations, write relation enums, and health tuning schema scope/);
+    assert.match(readme, /graph-query, destructive dry-run, post-write bucket, strict argument \/ enum,\s+annotation, write relation enum, and health tuning smoke scope/);
   });
 
   it('keeps the root README mcp-verify shortcut executable from source checkout', () => {
@@ -1076,7 +1076,7 @@ describe('package contract helpers', () => {
     assert.match(releaseChecks, /get_concepts` with discovered slugs plus one\s+missing slug/);
     assert.match(releaseChecks, /batch-read\s+partial-row contract/);
     assert.match(releaseChecks, /mcp-verify --help/);
-    assert.match(releaseChecks, /graph-query, destructive\s+dry-run, post-write bucket guidance, and strict argument\/enum\s+smoke scope/);
+    assert.match(releaseChecks, /graph-query, destructive\s+dry-run, post-write bucket guidance, strict argument \/ enum rejection,\s+annotations, write relation enums, and health tuning schema scope/);
     assert.match(releaseChecks, /actual `neighbors`, node→project `path`, and\s+`project_scope` calls/);
     assert.match(releaseChecks, /project-less and empty-vault\s+verify paths/);
     assert.match(releaseChecks, /flow\/help\/failure/);
