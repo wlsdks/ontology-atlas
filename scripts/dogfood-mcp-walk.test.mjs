@@ -6328,8 +6328,8 @@ describe("evaluateDogfoodGate", () => {
       health: { ...okShape.health, status: "needs_attention" },
     });
     assert.deepEqual(failures, [
-      "workspace_brief: status needs_attention",
-      "health: status needs_attention",
+      "workspace_brief: status needs_attention (1 node, 0 next actions, 1 health check, growth actions:0 external:0 ignoredExternal:0)",
+      "health: status needs_attention (issues:0, unresolved:0, cycles:0, 1 check)",
     ]);
   });
 

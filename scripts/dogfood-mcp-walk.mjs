@@ -1267,7 +1267,7 @@ export function evaluateDogfoodGate({
   const consistencyFailures = crossToolConsistencyFailures({ kinds, list, validation, compiled, overview });
   failures.push(...consistencyFailures);
   if (brief && !briefShapeFailure && brief.status !== "healthy") {
-    failures.push(`workspace_brief: status ${brief.status}`);
+    failures.push(`workspace_brief: status ${brief.status} (${workspaceBriefSummary(brief)})`);
   }
   const briefFailedChecks = failedHealthChecks(brief?.health?.checks);
   if (briefFailedChecks.length > 0) {
@@ -1278,7 +1278,7 @@ export function evaluateDogfoodGate({
     failures.push(`workspace_brief: actionable nextActions ${blockingActions.join(", ")}`);
   }
   if (tunedBrief && !tunedBriefShapeFailure && tunedBrief.status !== "healthy") {
-    failures.push(`workspace_brief_tuned: status ${tunedBrief.status}`);
+    failures.push(`workspace_brief_tuned: status ${tunedBrief.status} (${workspaceBriefSummary(tunedBrief)})`);
   }
   const tunedBriefFailedChecks = failedHealthChecks(tunedBrief?.health?.checks);
   if (tunedBriefFailedChecks.length > 0) {
@@ -1289,14 +1289,14 @@ export function evaluateDogfoodGate({
     failures.push(`workspace_brief_tuned: actionable nextActions ${tunedBlockingActions.join(", ")}`);
   }
   if (health && !healthShapeFailure && health.status !== "healthy") {
-    failures.push(`health: status ${health.status}`);
+    failures.push(`health: status ${health.status} (${healthStatusSummary(health)})`);
   }
   const healthFailedChecks = failedHealthChecks(health?.checks);
   if (healthFailedChecks.length > 0) {
     failures.push(`health: failing health checks ${healthFailedChecks.join(", ")}`);
   }
   if (tunedHealth && !tunedHealthShapeFailure && tunedHealth.status !== "healthy") {
-    failures.push(`health_tuned: status ${tunedHealth.status}`);
+    failures.push(`health_tuned: status ${tunedHealth.status} (${healthStatusSummary(tunedHealth)})`);
   }
   const tunedHealthFailedChecks = failedHealthChecks(tunedHealth?.checks);
   if (tunedHealthFailedChecks.length > 0) {
@@ -4351,6 +4351,15 @@ function failedHealthChecks(checks) {
   return Array.isArray(checks)
     ? checks.filter((check) => check?.status === "fail").map(healthCheckDiagnosticLabel)
     : [];
+}
+
+function healthStatusSummary(result) {
+  return [
+    `issues:${result?.summary?.issues ?? 0}`,
+    `unresolved:${result?.summary?.unresolvedEdges ?? 0}`,
+    `cycles:${result?.summary?.dependencyCycles ?? 0}`,
+    `${formatCount((result?.checks || []).length, "check")}`,
+  ].join(", ");
 }
 
 function healthCheckDiagnosticLabel(check) {

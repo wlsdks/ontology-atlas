@@ -295,7 +295,10 @@ label:severity:count 형태로 다시 출력해 긴 dogfood 로그의 끝만 봐
 조치의 종류와 규모를 알 수 있게 한다. verify / dogfood blocking failure 도
 같은 label:severity:count 요약을 써서 실패 직후 우선 조치와 규모가 숨지
 않게 한다. failing health check gate 도 같은 id:status:count 요약을 써서
-실패한 health 축의 상태와 규모를 바로 보이게 한다. 같은 요약에서 `health checks` /
+실패한 health 축의 상태와 규모를 바로 보이게 한다. dogfood status gate 도
+workspace brief 의 node/nextAction/health-check/growth count 와 health 의
+issues/unresolved/cycle/check count 를 함께 출력해 top-level status 실패의
+맥락을 숨기지 않는다. 같은 요약에서 `health checks` /
 `health_tuned checks` 도 id:status:count 형태로 출력해 tuned probe 가 info
 상태를 낸 축을 끝부분에서도 확인할 수 있게 한다. `components` probe 는
 마지막 Analysis 에 `component rows` 를 componentId:size:firstSlug 형태로
