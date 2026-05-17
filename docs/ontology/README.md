@@ -2,6 +2,8 @@
 slug: README
 kind: vault-readme
 title: oh-my-ontology — 자기 ontology vault
+describes:
+  - project
 ---
 
 # oh-my-ontology — 자기 ontology vault
