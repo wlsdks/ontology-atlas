@@ -213,7 +213,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm test:contracts\s+# focused cross-package contract tests/);
     assert.match(readme, /pnpm test:mcp:docs/);
     assert.match(readme, /pnpm test:mcp:dogfood/);
-    assert.match(readme, /structuredContent\/compile\/row-label\/vault-warning\/health\/sample-shape\/maintenance work-queue\+formatter\/initialize\/destructive dry-run\/help\/argument\/timeout\/strict relation\/closest-value\/stderr checks/);
+    assert.match(readme, /structuredContent\/compile\/row-label\/vault-warning\/health\/sample-shape\/maintenance work-queue\+formatter\/initialize\+batch-relation\/destructive dry-run\/help\/argument\/timeout\/strict relation\/closest-value\/stderr checks/);
     assert.match(readme, /pnpm test:mcp:dogfood:timeout\s+# narrow dogfood timeout\/help retry diagnostics/);
     assert.match(readme, /pnpm test:mcp:maintenance\s+# narrow maintenance_plan filter\/cursor\/work-queue\+formatter gates/);
     assert.match(readme, /pnpm test:mcp:package\s+# focused MCP\/CLI package-script\/dependency\/tarball contract checks/);
@@ -530,12 +530,13 @@ describe('package contract helpers', () => {
     assert.match(section, /documentation drift/);
     assert.match(section, /help output/);
     assert.match(section, /row-label guidance summary/);
+    assert.match(section, /initialize\/batch relation type guidance gate/);
     assert.match(section, /workspace_brief\.nextActions\[\]\.sample` shape drift/);
     assert.match(section, /dogfood timeout parsing, missing\s+response labels, and retry help/);
     assert.match(section, /maintenance_plan filter enums, ready\/missing\s+cursor handling, resume-cursor behavior, dogfood work-queue shape gates, and\s+bucket \/ next-action formatter checks/);
     assert.match(section, /unsupported-argument\s+rejection/);
     assert.match(section, /strict relation filter\s+rejection/);
-    assert.match(section, /strict closest-value summary/);
+    assert.match(section, /strict closest-value\s+summary/);
     assert.match(section, /stderr warning filtering/);
     assert.match(section, /verify helper contract/);
     assert.match(section, /workspace_brief\.nextActions\[\]\.sample` shape drift/);
@@ -1340,9 +1341,9 @@ describe('package contract helpers', () => {
     assert.match(doc, /`query_ontology` graph-query 응답은 `structuredContent`\s+누락을 실패로 처리하고 text JSON payload 와 `structuredContent` payload 의\s+구조적 일치 여부도 비교/);
     assert.match(doc, /positional vault argument 는 받지 않고 이 repo 의 dogfood vault 만\s+검증하므로 잘못된 인자는 MCP server 를 띄우기 전에 실패/);
     assert.match(doc, /`pnpm dogfood:walk -- --help`[\s\S]*MCP server 를 띄우지 않고 usage 와\s+focused check 경로를 출력/);
-    assert.match(doc, /도움말의 `pnpm test:mcp:dogfood` 설명도 compile\/index gate, tools\/list annotation coverage, row-label guidance,\s+strict closest-value summary, vault warning \/ `validate_vault` problem gate, first-contact health\/growth\/sample-shape gate, maintenance work-queue shape \/ formatter, initialize guidance, destructive dry-run, structuredContent, strict relation filter, stderr warning 범위/);
+    assert.match(doc, /도움말의 `pnpm test:mcp:dogfood` 설명도 compile\/index gate, tools\/list annotation coverage, row-label guidance,\s+strict closest-value summary, vault warning \/ `validate_vault` problem gate, first-contact health\/growth\/sample-shape gate, maintenance work-queue shape \/ formatter, initialize\/batch relation type guidance, destructive dry-run, structuredContent, strict relation filter, stderr warning 범위/);
     assert.match(dogfoodSection, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
-    assert.match(doc, /`pnpm test:mcp:dogfood` 는 이 gate 판정의 focused subset, workspace_brief sample-shape gate, maintenance work-queue shape \/ formatter, initialize guidance, tools\/list annotation coverage, row-label guidance summary, strict closest-value summary, strict add_relation type-preflight 를 fixture 로 검증/);
+    assert.match(doc, /`pnpm test:mcp:dogfood` 는 이 gate 판정의 focused subset, workspace_brief sample-shape gate, maintenance work-queue shape \/ formatter, initialize\/batch relation type guidance, tools\/list annotation coverage, row-label guidance summary, strict closest-value summary, strict add_relation type-preflight 를 fixture 로 검증/);
     assert.match(doc, /전체 helper 회귀가 필요할 때만\s+`pnpm dogfood:test`/);
     assert.match(doc, /진짜 timeout 실패도 `npm run verify -- --timeout-ms 15000` 재시도 예시를\s+같이 보여준다/);
     assert.match(doc, /오류 출력은\s+`Received: "1000ms"` 와 `npm run verify -- --timeout-ms 15000` 같은 재시도 예시/);
@@ -1807,10 +1808,10 @@ describe('package contract helpers', () => {
     assert.match(doc, /`pnpm dogfood:verify` 가 repo root 의 짧은 gate/);
     assert.match(doc, /`pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000` 로 풀어 쓴다/);
     assert.match(doc, /dogfood helper \/ structuredContent 출력 계약/);
-    assert.match(doc, /initialize guidance gate/);
+    assert.match(doc, /initialize\/batch relation type guidance gate/);
     assert.match(doc, /tools\/list annotation coverage/);
     assert.match(doc, /row-label guidance summary/);
-    assert.match(doc, /focused subset, workspace_brief sample-shape gate, maintenance work-queue shape \/ formatter, initialize guidance, tools\/list annotation coverage, row-label guidance summary, strict closest-value summary, strict add_relation type-preflight 를 fixture 로 검증/);
+    assert.match(doc, /focused subset, workspace_brief sample-shape gate, maintenance work-queue shape \/ formatter, initialize\/batch relation type guidance, tools\/list annotation coverage, row-label guidance summary, strict closest-value summary, strict add_relation type-preflight 를 fixture 로 검증/);
     assert.match(doc, /전체 helper 회귀가 필요할 때만\s+`pnpm dogfood:test`/);
     assert.match(doc, /strict relation filter/);
     assert.match(doc, /stderr warning filtering/);

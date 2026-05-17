@@ -70,7 +70,7 @@ indexed `compile_ontology` gate, tools/list annotation coverage, batch writer
 row-label guidance summary, vault warning / `validate_vault` problem gates,
 first-contact health summary / advisory / next-action gates, `workspace_brief.nextActions[].sample`
 shape drift, maintenance_plan malformed payload and work-queue formatter drift,
-initialize guidance gate, destructive dry-run request/gate
+initialize/batch relation type guidance gate, destructive dry-run request/gate
 contract, help output, unsupported-argument rejection, strict relation filter
 rejection, strict add_relation type-preflight rejection, strict closest-value
 summary, stderr warning filtering, and gate
@@ -83,7 +83,7 @@ bucket / next-action formatter checks.
 `test:mcp:suggestions` covers strict enum / argument suggestion behavior.
 `test:mcp:verify` covers the MCP verify helper contract without spawning the
 full integration suite. `test:mcp:verify:first-contact` narrows that to
-initialize guidance, read-smoke request inventory, vault warning /
+initialize/batch relation type guidance, read-smoke request inventory, vault warning /
 `validate_vault`, first-contact health summary / advisory / next-action gates, and
 `workspace_brief.nextActions[].sample` shape drift.
 `test:mcp:verify:timeout` narrows verify timeout parsing, startup failure
