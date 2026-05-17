@@ -1354,6 +1354,7 @@ export function initializeInstructionsFailure(response) {
     ['expected_mtime conflict guard', /expected_mtime/],
     ['strict arguments guidance', /unknown arguments are rejected/i],
     ['nearest argument hint guidance', /Did you mean "limit"\?/],
+    ['multiple unknown arguments guidance', /Unknown arguments for list_concepts[\s\S]*"summry"[\s\S]*did you mean "summary"\?/i],
     ['nearest enum hint guidance', /Did you mean "overview"\?/],
     ['maintenance filter enum guidance', /phases.*severities.*kinds/],
     ['health tuning guidance', /componentLimit[\s\S]*cycleLimit[\s\S]*recommendationLimit[\s\S]*orderLimit[\s\S]*nodeLimit[\s\S]*dependencyTypes[\s\S]*componentTypes/],

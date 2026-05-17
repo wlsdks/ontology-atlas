@@ -1048,6 +1048,8 @@ await test("initialize — instructions 필드 (#45) AI agent 안내 노출", as
     assert.match(instructions, /unknown arguments are rejected/i);
     assert.match(instructions, /Unknown argument "lmit" for list_concepts/);
     assert.match(instructions, /Did you mean "limit"\?/);
+    assert.match(instructions, /Unknown arguments for list_concepts/);
+    assert.match(instructions, /"summry" \(did you mean "summary"\?\)/);
     assert.match(instructions, /maintenance_plan/);
     assert.match(instructions, /phases.*severities.*kinds/);
     assert.match(instructions, /totalActions/);

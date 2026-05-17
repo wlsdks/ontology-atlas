@@ -2475,6 +2475,7 @@ describe('verify.mjs first-contact gates', () => {
       'Tool schemas reject unknown arguments with nearest hints.',
       'unknown arguments are rejected instead of being ignored.',
       'Unknown argument "lmit" for list_concepts. Did you mean "limit"?',
+      'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)',
       'operation must be one of: overview, health. Invalid value: overveiw. Did you mean "overview"?',
       'maintenance_plan phases, severities, and kinds filters are enum-validated.',
       'health and workspace_brief tune probes with componentLimit, cycleLimit, recommendationLimit, orderLimit, nodeLimit, dependencyTypes, and componentTypes.',
@@ -2504,6 +2505,10 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('unknown arguments are rejected', '') } }),
       'initialize instructions missing strict arguments guidance',
+    );
+    assert.equal(
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('"summry" (did you mean "summary"?)', '"summry"') } }),
+      'initialize instructions missing multiple unknown arguments guidance',
     );
     assert.equal(
       initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('Did you mean "overview"?', '') } }),

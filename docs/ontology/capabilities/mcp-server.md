@@ -307,7 +307,8 @@ destructive write 안내도 first-contact 에 포함한다. `rename_concept` 는
 `delete_concept` 의 `force: true` 는 dangling referrers 를 감수할 때만 쓰도록
 명시한다.
 또한 모든 tool input schema 가 strict 하며 `Unknown argument "lmit" for list_concepts.
-Did you mean "limit"?` 또는 `operation must be one of: ... Received: "overveiw".
+Did you mean "limit"?`, `Unknown arguments for list_concepts: "lmit" (did you mean
+"limit"?), "summry" (did you mean "summary"?)` 또는 `operation must be one of: ... Received: "overveiw".
 Did you mean "overview"?` 같은 오류가 기본값 fallback 이 아니라 즉시 고쳐야 하는
 인자명/값 오류임을 agent-facing instructions 와 verify/dogfood smoke 에서 직접 안내한다.
 여러 unknown argument 를 한 번에 보낸 경우에도 첫 번째 오타만 보고하지 않고
