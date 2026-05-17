@@ -17,6 +17,8 @@ const COLORS = {
   reset: '\x1b[0m',
 };
 const STATUS_COLORS = {
+  healthy: COLORS.green,
+  needs_attention: COLORS.yellow,
   pass: COLORS.green,
   fail: COLORS.red,
   warn: COLORS.yellow,

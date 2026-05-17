@@ -2267,6 +2267,7 @@ await test('health — prints check status and count coverage', async () => {
     const r = await run(['health', root]);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
+    assert.match(r.stdout, /\x1b\[32mhealthy\x1b\[0m/);
     assert.match(clean, /compile_issues\s+pass:0/);
     assert.match(clean, /components\s+pass:1/);
   } finally {
