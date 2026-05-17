@@ -79,7 +79,7 @@ bucket / next-action formatter checks.
 `test:mcp:verify` covers the MCP verify helper contract without spawning the
 full integration suite. `test:mcp:verify:first-contact` narrows that to
 initialize guidance, read-smoke request inventory, vault warning /
-`validate_vault`, first-contact health / next-action gates, and
+`validate_vault`, first-contact health summary / next-action gates, and
 `workspace_brief.nextActions[].sample` shape drift.
 `test:mcp:verify:timeout` narrows verify timeout parsing, usage, and retry
 diagnostics.

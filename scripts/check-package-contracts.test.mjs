@@ -195,7 +195,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm test:mcp:package\s+# focused MCP\/CLI package-script\/dependency\/tarball contract checks/);
     assert.match(readme, /pnpm test:mcp:suggestions/);
     assert.match(readme, /pnpm test:mcp:verify/);
-    assert.match(readme, /pnpm test:mcp:verify:first-contact\s+# narrow MCP verify first-contact health\/read\/sample gates/);
+    assert.match(readme, /pnpm test:mcp:verify:first-contact\s+# narrow MCP verify first-contact health-summary\/read\/sample gates/);
     assert.match(readme, /pnpm test:mcp:verify:timeout\s+# narrow MCP verify timeout\/help diagnostics/);
     assert.match(readme, /timeout mistakes, the error reports the\s+received value/);
     assert.match(readme, /`npm run verify -- --timeout-ms 15000`/);
@@ -433,6 +433,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm test:mcp:suggestions/);
     assert.match(section, /pnpm test:mcp:verify/);
     assert.match(section, /pnpm test:mcp:verify:first-contact/);
+    assert.match(section, /first-contact health summary \/ next-action gates/);
     assert.match(section, /pnpm test:mcp:verify:timeout/);
     assert.match(readme, /invalid timeout values fail before the server\s+starts and print\s+the received value plus a concrete retry example/i);
     assert.match(readme, /`npm run verify -- --timeout-ms 15000`/);
@@ -867,6 +868,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm test:mcp:package/);
     assert.match(section, /pnpm test:mcp:verify/);
     assert.match(section, /pnpm test:mcp:verify:first-contact/);
+    assert.match(section, /health summary \/ next-action gates/);
     assert.match(section, /pnpm test:mcp:verify:timeout/);
     assert.match(section, /shared CLI helper contracts/);
     assert.match(section, /argument parsing/);
