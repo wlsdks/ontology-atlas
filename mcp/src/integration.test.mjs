@@ -26,6 +26,7 @@ import {
   MAINTENANCE_SEVERITY_VALUES,
   QUERY_ONTOLOGY_OPERATIONS,
   QUERY_PLAN_TARGET_OPERATIONS,
+  RELATION_TYPE_VALUES,
 } from "./ontology-engine.mjs";
 import {
   formatNoTestMatchMessage,
@@ -874,8 +875,12 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         orderLimitType: findTool("query_ontology")?.inputSchema?.properties?.orderLimit?.type,
         dependencyTypesItem:
           findTool("query_ontology")?.inputSchema?.properties?.dependencyTypes?.items?.type,
+        dependencyTypesEnum:
+          findTool("query_ontology")?.inputSchema?.properties?.dependencyTypes?.items?.enum,
         componentTypesItem:
           findTool("query_ontology")?.inputSchema?.properties?.componentTypes?.items?.type,
+        componentTypesEnum:
+          findTool("query_ontology")?.inputSchema?.properties?.componentTypes?.items?.enum,
         phasesEnum:
           findTool("query_ontology")?.inputSchema?.properties?.phases?.items?.enum,
         severitiesEnum:
@@ -894,7 +899,9 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         recommendationLimitType: "integer",
         orderLimitType: "integer",
         dependencyTypesItem: "string",
+        dependencyTypesEnum: RELATION_TYPE_VALUES,
         componentTypesItem: "string",
+        componentTypesEnum: RELATION_TYPE_VALUES,
         phasesEnum: MAINTENANCE_PHASE_VALUES,
         severitiesEnum: MAINTENANCE_SEVERITY_VALUES,
         maintenanceKindsEnum: MAINTENANCE_KIND_VALUES,
