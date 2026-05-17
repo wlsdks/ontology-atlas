@@ -541,10 +541,10 @@ try {
     },
   );
   assert.equal(invalidMcpVerifyTimeout.status, 1);
-  assert.match(
-    `${invalidMcpVerifyTimeout.stdout}\n${invalidMcpVerifyTimeout.stderr}`,
-    /verify timeout must be a positive integer/,
-  );
+  assert.equal(invalidMcpVerifyTimeout.stdout, '');
+  assert.match(invalidMcpVerifyTimeout.stderr, /verify timeout must be a positive integer/);
+  assert.match(invalidMcpVerifyTimeout.stderr, /--timeout-ms N/);
+  assert.match(invalidMcpVerifyTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
 
   const invalidDirectMcpVerifyTimeout = runRaw(
     'npm',
@@ -561,10 +561,10 @@ try {
     { cwd: projectDir },
   );
   assert.equal(invalidDirectMcpVerifyTimeout.status, 1);
-  assert.match(
-    `${invalidDirectMcpVerifyTimeout.stdout}\n${invalidDirectMcpVerifyTimeout.stderr}`,
-    /verify timeout must be a positive integer/,
-  );
+  assert.equal(invalidDirectMcpVerifyTimeout.stdout, '');
+  assert.match(invalidDirectMcpVerifyTimeout.stderr, /verify timeout must be a positive integer/);
+  assert.match(invalidDirectMcpVerifyTimeout.stderr, /--timeout-ms N/);
+  assert.match(invalidDirectMcpVerifyTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
 
   const invalidDirectMcpVerifyVault = runRaw(
     'npm',

@@ -993,6 +993,9 @@ describe('package contract helpers', () => {
     assert.match(smoke, /npm run verify -- --vault path --timeout-ms 15000/);
     assert.match(smoke, /Explicit \\\[vault\\\] or --vault arguments take precedence over OMOT_VAULT/);
     assert.match(smoke, /verify timeout must be a positive integer/);
+    assert.match(smoke, /assert\.equal\(invalidMcpVerifyTimeout\.stdout, ''\)/);
+    assert.match(smoke, /--timeout-ms N/);
+    assert.match(smoke, /OMOT_VERIFY_TIMEOUT_MS=N/);
     assert.match(smoke, /health — \.\*compile_issues:\(pass\|warn\)/);
     assert.match(smoke, /health — \.\*checks/);
     assert.match(smoke, /workspace_brief_tuned — \.\*next actions, \.\*health checks/);
