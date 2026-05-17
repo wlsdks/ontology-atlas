@@ -6,10 +6,12 @@ import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertQueryOperation } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
-  parsePositiveIntegerFlag,
+  parseBoundedPositiveIntegerFlag,
   parseVaultFlag,
   resolveExclusiveVaultArg,
 } from '../lib/cli-args.mjs';
+
+const LIMIT_CAP = 500;
 
 const COLORS = {
   green: '\x1b[32m',
@@ -152,9 +154,9 @@ function parseArgs(args) {
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
-    else if (a === '--limit') flags.hubsLimit = parsePositiveIntegerFlag('--limit', args[++i]);
+    else if (a === '--limit') flags.hubsLimit = parseBoundedPositiveIntegerFlag('--limit', args[++i], { max: LIMIT_CAP });
     else if (a.startsWith('--limit='))
-      flags.hubsLimit = parsePositiveIntegerFlag('--limit', a.slice('--limit='.length));
+      flags.hubsLimit = parseBoundedPositiveIntegerFlag('--limit', a.slice('--limit='.length), { max: LIMIT_CAP });
     else if (a.startsWith('--')) return { error: `unknown flag: ${a}` };
     else positional.push(a);
   }
@@ -174,6 +176,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  oh-my-ontology overview [vault] [--vault path] [--limit N] [--json]\n\n` +
+      `--limit range 1-${LIMIT_CAP}.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
       `  oh-my-ontology overview\n` +
       `  oh-my-ontology overview ./docs/ontology\n` +

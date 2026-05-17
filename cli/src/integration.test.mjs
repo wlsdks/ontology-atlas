@@ -1799,12 +1799,24 @@ await test('graph diagnostic commands — reject invalid option values before MC
       pattern: /--limit must be a positive integer/,
     },
     {
+      args: ['query', 'kind=capability', '--limit=501'],
+      pattern: /--limit must be <= 500/,
+    },
+    {
       args: ['overview', '--limit=0'],
       pattern: /--limit must be a positive integer/,
     },
     {
+      args: ['overview', '--limit=501'],
+      pattern: /--limit must be <= 500/,
+    },
+    {
       args: ['hubs', '--limit=abc'],
       pattern: /--limit must be a positive integer/,
+    },
+    {
+      args: ['hubs', '--limit=501'],
+      pattern: /--limit must be <= 500/,
     },
     {
       args: ['path', 'capabilities/foo', 'capabilities/bar', '--max-hops=2x'],
@@ -1849,6 +1861,10 @@ await test('graph diagnostic commands — reject invalid option values before MC
     {
       args: ['similar', 'auth', '--limit=0'],
       pattern: /--limit must be a positive integer/,
+    },
+    {
+      args: ['similar', 'auth', '--limit=501'],
+      pattern: /--limit must be <= 500/,
     },
     {
       args: ['similar', 'auth', '--kind'],

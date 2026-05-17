@@ -6,11 +6,13 @@ import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertQueryOperation } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
-  parsePositiveIntegerFlag,
+  parseBoundedPositiveIntegerFlag,
   parseRequiredFlagValue,
   parseVaultFlag,
   resolveTrailingVaultArg,
 } from '../lib/cli-args.mjs';
+
+const LIMIT_CAP = 500;
 
 const COLORS = {
   green: '\x1b[32m',
@@ -128,8 +130,8 @@ function parseArgs(args) {
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
-    else if (a === '--limit') flags.limit = parsePositiveIntegerFlag('--limit', args[++i]);
-    else if (a.startsWith('--limit=')) flags.limit = parsePositiveIntegerFlag('--limit', a.slice('--limit='.length));
+    else if (a === '--limit') flags.limit = parseBoundedPositiveIntegerFlag('--limit', args[++i], { max: LIMIT_CAP });
+    else if (a.startsWith('--limit=')) flags.limit = parseBoundedPositiveIntegerFlag('--limit', a.slice('--limit='.length), { max: LIMIT_CAP });
     else if (a === '--kind') flags.kind = parseRequiredFlagValue('--kind', args[++i]);
     else if (a.startsWith('--kind=')) flags.kind = parseRequiredFlagValue('--kind', a.slice('--kind='.length));
     else if (a === '--slug') flags.slug = parseRequiredFlagValue('--slug', args[++i]);
@@ -160,6 +162,7 @@ function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  oh-my-ontology similar "<title>" [vault] [--slug X] [--kind K] [--limit N] [--json]\n\n` +
+      `--limit range 1-${LIMIT_CAP}.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
       `  oh-my-ontology similar "사용자 로그인"\n` +
       `  oh-my-ontology similar "auth flow" --kind capability\n` +
