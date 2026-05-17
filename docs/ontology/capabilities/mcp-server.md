@@ -392,7 +392,7 @@ package manifest / enum suggestion 류의 더 작은 변경은 root 의
 `pnpm test:mcp:package` / `pnpm test:mcp:suggestions` 로 파일 단위 검증을 먼저
 돌려 반복 dogfood 비용을 낮춘다. dogfood helper / structuredContent 출력 계약이나
 vault warning / `validate_vault` problem gate, first-contact health gate,
-workspace_brief sample-shape gate, maintenance work-queue shape gate, initialize guidance gate,
+workspace_brief sample-shape gate, maintenance work-queue shape / formatter gate, initialize guidance gate,
 destructive dry-run gate, strict relation filter, stderr warning filtering 을 만질 때는 `pnpm test:mcp:dogfood` 로 dogfood helper 와
 관련 문서 계약만 먼저 확인한다. dogfood timeout / retry help 만 만질 때는
 `pnpm test:mcp:dogfood:timeout` 으로 더 좁게 확인한다. 직접 verify help 는
@@ -502,7 +502,7 @@ MCP schema 에서 노출한다. `componentLimit`, `cycleLimit`, `recommendationL
 검증하므로 잘못된 인자는 MCP server 를 띄우기 전에 실패한다. `pnpm dogfood:walk -- --help`
 는 MCP server 를 띄우지 않고 usage 와 focused check 경로를 출력해 dogfood 범위 확인 비용을 낮춘다.
 도움말의 `pnpm test:mcp:dogfood` 설명도 compile/index gate, row-label guidance,
-vault warning / `validate_vault` problem gate, first-contact health/growth/sample-shape gate, maintenance work-queue shape, initialize guidance, destructive dry-run, structuredContent, strict relation filter, stderr warning 범위를 함께 보여줘 실행 전 검증 surface 를 숨기지 않는다. 기본 census / backlink / path 질의에 더해 `validate_vault`,
+vault warning / `validate_vault` problem gate, first-contact health/growth/sample-shape gate, maintenance work-queue shape / formatter, initialize guidance, destructive dry-run, structuredContent, strict relation filter, stderr warning 범위를 함께 보여줘 실행 전 검증 surface 를 숨기지 않는다. 기본 census / backlink / path 질의에 더해 `validate_vault`,
 `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology`, `overview`, `pattern_walk`,
 project-node `list_concepts` probe, `all_paths`, `all_paths query_plan`, `neighbors`, `path`, `project_map query_plan`, `project_scope`, `project_map`,
 `domain_profile`, `domain_matrix`, `components`, `reachability`, `impact`,
@@ -632,6 +632,6 @@ timeout 출력도 같은 env 이름과 `OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfo
 핵심 응답 누락, vault warning, `validate_vault` problemFiles, 예상 graph path 부재,
 `workspace_brief` / `health` 비정상 상태, top-level status 와 별개로 내부 health
 check 의 `fail` 상태, warn·fail `workspace_brief.nextActions` 는 exit 1 로 처리한다.
-`pnpm test:mcp:dogfood` 는 이 gate 판정의 focused subset, workspace_brief sample-shape gate, maintenance work-queue shape, initialize guidance, row-label guidance summary 를 fixture 로 검증해
+`pnpm test:mcp:dogfood` 는 이 gate 판정의 focused subset, workspace_brief sample-shape gate, maintenance work-queue shape / formatter, initialize guidance, row-label guidance summary 를 fixture 로 검증해
 dogfood walk 의 실패 조건이 조용히 약해지지 않게 막고, 전체 helper 회귀가 필요할 때만
 `pnpm dogfood:test` 로 넓힌다.
