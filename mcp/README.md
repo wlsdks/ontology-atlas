@@ -76,7 +76,8 @@ cursor handling, resume-cursor behavior, and dogfood work-queue shape gates.
 `test:mcp:verify` covers the MCP verify helper contract without spawning the
 full integration suite. `test:mcp:verify:first-contact` narrows that to
 initialize guidance, read-smoke request inventory, vault warning /
-`validate_vault`, and first-contact health / next-action gates.
+`validate_vault`, first-contact health / next-action gates, and
+`workspace_brief.nextActions[].sample` shape drift.
 `test:mcp:verify:timeout` narrows verify timeout parsing, usage, and retry
 diagnostics.
 Use `OMOT_TEST_NAME_PATTERN` or Node `--test-name-pattern` with

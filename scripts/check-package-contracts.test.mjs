@@ -442,6 +442,7 @@ describe('package contract helpers', () => {
     assert.match(section, /strict relation filter\s+rejection/);
     assert.match(section, /stderr warning filtering/);
     assert.match(section, /verify helper contract/);
+    assert.match(section, /workspace_brief\.nextActions\[\]\.sample` shape drift/);
     assert.match(section, /timeout parsing, usage, and retry\s+diagnostics/);
     assert.match(section, /OMOT_TEST_NAME_PATTERN/);
     assert.match(section, /Node `--test-name-pattern`/);
