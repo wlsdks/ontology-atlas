@@ -393,6 +393,10 @@ describe('package contract helpers', () => {
       slug: 'elements/file-system-access-api',
     });
     const neighborSmokeLine = `elements/file-system-access-api \\(${neighborSmoke.edges.length}/${neighborSmoke.total} edges, limited ${neighborSmoke.limited}\\)`;
+    const projectScope = queryCompiledOntology(compiled, {
+      operation: 'project_scope',
+      slug: 'project',
+    });
 
     assert.match(verifySection, /npm run verify -- \.\.\/docs\/ontology/);
     assert.match(verifySection, /npm run verify -- --vault \.\.\/docs\/ontology/);
@@ -468,7 +472,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, new RegExp(`✓ neighbors — ${neighborSmokeLine}`));
     assert.match(verifySection, /✓ path — elements\/file-system-access-api → project \(2 hops, 2 edges\)/);
     assert.doesNotMatch(verifySection, /✓ path — project → project/);
-    assert.match(verifySection, new RegExp(`✓ project_scope — project \\(${scopedNodes} nodes, internalEdges`));
+    assert.match(verifySection, new RegExp(`✓ project_scope — project \\(${scopedNodes} nodes, internalEdges ${projectScope.summary.internalEdges}\\)`));
     assert.match(verifySection, /✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
     assert.match(verifySection, /✓ structuredContent — direct 16\/16, write 5\/5, maintenance 2\/2, graph 11\/11/);
     assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,\s+`query_concepts`, limited `query_concepts`, `analyze_repo_structure`,\s+`infer_imports`, `find_neighbors`, `find_path`, `find_orphans`,\s+`list_kinds`, `validate_vault`/);
