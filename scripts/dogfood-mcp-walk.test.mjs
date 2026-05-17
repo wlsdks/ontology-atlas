@@ -3067,7 +3067,7 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(evaluateDogfoodGate(okShape), []);
   });
 
-  it("fails malformed destructive dry-run dogfood responses", () => {
+  it("fails malformed destructive dogfood dry-run responses", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, renameDryRunRes: null }),
       ["rename_concept_dry_run: no rename_concept dry-run response"],
