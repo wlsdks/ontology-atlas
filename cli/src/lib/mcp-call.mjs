@@ -16,6 +16,7 @@
 
 import { spawn } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
+import { isDeepStrictEqual } from 'node:util';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
@@ -178,7 +179,7 @@ export function parseMcpToolResponse(toolResp) {
     } catch {
       throw new Error('mcp tool structuredContent text is not JSON');
     }
-    if (!sameJsonValue(textPayload, result.structuredContent)) {
+    if (!isDeepStrictEqual(textPayload, result.structuredContent)) {
       throw new Error('mcp tool structuredContent mismatch');
     }
     return result.structuredContent;
@@ -191,21 +192,4 @@ export function parseMcpToolResponse(toolResp) {
   } catch {
     return { text };
   }
-}
-
-function sameJsonValue(left, right) {
-  return stableJsonStringify(left) === stableJsonStringify(right);
-}
-
-function stableJsonStringify(value) {
-  if (Array.isArray(value)) {
-    return `[${value.map((item) => stableJsonStringify(item)).join(',')}]`;
-  }
-  if (value && typeof value === 'object') {
-    return `{${Object.keys(value)
-      .sort()
-      .map((key) => `${JSON.stringify(key)}:${stableJsonStringify(value[key])}`)
-      .join(',')}}`;
-  }
-  return JSON.stringify(value);
 }
