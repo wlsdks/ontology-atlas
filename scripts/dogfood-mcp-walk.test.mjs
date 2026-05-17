@@ -21,6 +21,7 @@ import {
   rpcTimeoutFailure,
   shouldFinishRpc,
   stderrWarningFailures,
+  structuredContentStatus,
   workspaceNextActionSummary,
 } from "./dogfood-mcp-walk.mjs";
 import {
@@ -2330,6 +2331,13 @@ describe("rpc response completion helpers", () => {
       ]),
       "fail 0/3 (missing 2: overview, health; mismatch 1: path)",
     );
+  });
+
+  it("formats per-section structuredContent status distinctly", () => {
+    assert.match(structuredContentStatus({ ok: true }, { ok: true }), /pass/);
+    assert.match(structuredContentStatus({ ok: true }, null), /missing/);
+    assert.match(structuredContentStatus({ ok: true }, undefined), /missing/);
+    assert.match(structuredContentStatus({ ok: true }, { ok: false }), /mismatch/);
   });
 
   it("parses dogfood timeout env as a strict positive integer", () => {

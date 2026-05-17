@@ -231,6 +231,16 @@ export function graphStructuredContentSummary(rows) {
   return `fail ${passed}/${expected.length} (${details.join("; ")})`;
 }
 
+export function structuredContentStatus(parsed, structured) {
+  if (structured == null) {
+    return `${COLORS.yellow}missing${COLORS.reset}`;
+  }
+  if (JSON.stringify(structured) !== JSON.stringify(parsed)) {
+    return `${COLORS.yellow}mismatch${COLORS.reset}`;
+  }
+  return `${COLORS.green}pass${COLORS.reset}`;
+}
+
 export function rpcTimeoutFailure(timeoutMs, missingLabels) {
   return `rpc: timed out after ${timeoutMs}ms waiting for ${missingLabels.join(", ")}`;
 }
@@ -4312,7 +4322,7 @@ async function main() {
   const kindsStructured = getRpcResult(responses, 2)?.structuredContent ?? null;
   if (kinds) {
     console.log(`  total: ${kinds.total}`);
-    console.log(`  structuredContent: ${JSON.stringify(kindsStructured) === JSON.stringify(kinds) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(kinds, kindsStructured)}`);
     console.log(`  byKind:`);
     for (const [k, n] of Object.entries(kinds.byKind || {})) {
       console.log(`    ${k.padEnd(15)} ${n}`);
@@ -4325,7 +4335,7 @@ async function main() {
   const listStructured = getRpcResult(responses, 3)?.structuredContent ?? null;
   if (list) {
     console.log(`  total: ${list.total}`);
-    console.log(`  structuredContent: ${JSON.stringify(listStructured) === JSON.stringify(list) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(list, listStructured)}`);
     for (const node of (list.nodes || []).slice(0, 8)) {
       console.log(
         `  ${node.kind?.padEnd(13) || ""} ${(node.slug || "").padEnd(40)} ${node.title || ""}`,
@@ -4349,7 +4359,7 @@ async function main() {
   const projectProbeStructured = getRpcResult(responses, 48)?.structuredContent ?? null;
   if (projectProbe) {
     const projectSlugs = (projectProbe.nodes || []).map((node) => node.slug).join(", ") || "none";
-    console.log(`  structuredContent: ${JSON.stringify(projectProbeStructured) === JSON.stringify(projectProbe) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(projectProbe, projectProbeStructured)}`);
     console.log(`  ${formatCount(projectProbe.total ?? 0, "project node")} · ${projectSlugs}`);
   }
 
@@ -4358,7 +4368,7 @@ async function main() {
   const batch = getResult(responses, 16);
   const batchStructured = getRpcResult(responses, 16)?.structuredContent ?? null;
   if (batch) {
-    console.log(`  structuredContent: ${JSON.stringify(batchStructured) === JSON.stringify(batch) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(batch, batchStructured)}`);
     for (const row of batch.concepts || []) {
       if (row.ok === false) {
         console.log(`  ${COLORS.yellow}missing${COLORS.reset} ${String(row.slug).padEnd(40)} ${row.error || ""}`);
@@ -4375,7 +4385,7 @@ async function main() {
   const ev = getResult(responses, 4);
   const evStructured = getRpcResult(responses, 4)?.structuredContent ?? null;
   if (ev) {
-    console.log(`  structuredContent: ${JSON.stringify(evStructured) === JSON.stringify(ev) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(ev, evStructured)}`);
     console.log(`  matches: ${ev.matches?.length || 0}`);
     for (const m of (ev.matches || []).slice(0, 5)) {
       console.log(`  ${m.kind?.padEnd(13) || ""} ${m.slug.padEnd(40)} (${m.matchedIn})`);
@@ -4387,7 +4397,7 @@ async function main() {
   const path = getResult(responses, 5);
   const pathStructured = getRpcResult(responses, 5)?.structuredContent ?? null;
   if (path) {
-    console.log(`  structuredContent: ${JSON.stringify(pathStructured) === JSON.stringify(path) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(path, pathStructured)}`);
     if (path.found) {
       console.log(`  hops: ${path.hopCount}`);
       console.log(`  ${path.hops.join(" → ")}`);
@@ -4401,7 +4411,7 @@ async function main() {
   const bl = getResult(responses, 6);
   const blStructured = getRpcResult(responses, 6)?.structuredContent ?? null;
   if (bl) {
-    console.log(`  structuredContent: ${JSON.stringify(blStructured) === JSON.stringify(bl) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(bl, blStructured)}`);
     console.log(`  matches: ${bl.total}`);
     for (const m of (bl.matches || []).slice(0, 5)) {
       console.log(
@@ -4415,7 +4425,7 @@ async function main() {
   const orph = getResult(responses, 7);
   const orphStructured = getRpcResult(responses, 7)?.structuredContent ?? null;
   if (orph) {
-    console.log(`  structuredContent: ${JSON.stringify(orphStructured) === JSON.stringify(orph) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(orph, orphStructured)}`);
     console.log(`  total: ${orph.total}`);
     for (const m of (orph.orphans || []).slice(0, 8)) {
       console.log(`  ${m.kind?.padEnd(13) || ""} ${m.slug.padEnd(40)} ${m.title || ""}`);
@@ -4427,7 +4437,7 @@ async function main() {
   const queryConcepts = getResult(responses, 56);
   const queryConceptsStructured = getRpcResult(responses, 56)?.structuredContent ?? null;
   if (queryConcepts) {
-    console.log(`  structuredContent: ${JSON.stringify(queryConceptsStructured) === JSON.stringify(queryConcepts) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(queryConcepts, queryConceptsStructured)}`);
     console.log(`  matches: ${queryConcepts.matches?.length ?? 0} / total ${queryConcepts.total}`);
     for (const m of (queryConcepts.matches || []).slice(0, 5)) {
       console.log(`  ${m.kind?.padEnd(13) || ""} ${m.slug.padEnd(40)} ${m.title || ""}`);
@@ -4439,7 +4449,7 @@ async function main() {
   const analyzedRepo = getResult(responses, 57);
   const analyzedRepoStructured = getRpcResult(responses, 57)?.structuredContent ?? null;
   if (analyzedRepo) {
-    console.log(`  structuredContent: ${JSON.stringify(analyzedRepoStructured) === JSON.stringify(analyzedRepo) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(analyzedRepo, analyzedRepoStructured)}`);
     console.log(
       `  framework ${analyzedRepo.framework || "n/a"} · domains ${analyzedRepo.domains?.length ?? "n/a"} · capabilities ${analyzedRepo.capabilities?.length ?? "n/a"} · elements ${analyzedRepo.elements?.length ?? "n/a"} · relations ${analyzedRepo.suggestedRelations?.length ?? "n/a"}`,
     );
@@ -4450,7 +4460,7 @@ async function main() {
   const inferredImports = getResult(responses, 58);
   const inferredImportsStructured = getRpcResult(responses, 58)?.structuredContent ?? null;
   if (inferredImports) {
-    console.log(`  structuredContent: ${JSON.stringify(inferredImportsStructured) === JSON.stringify(inferredImports) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(inferredImports, inferredImportsStructured)}`);
     console.log(
       `  files ${inferredImports.filesScanned ?? "n/a"} · file edges ${inferredImports.edges?.length ?? "n/a"} · module edges ${inferredImports.moduleEdges?.length ?? "n/a"} · external ${inferredImports.externalImports?.length ?? "n/a"} · unresolved ${inferredImports.unresolved?.length ?? "n/a"}`,
     );
@@ -4461,7 +4471,7 @@ async function main() {
   const validation = getResult(responses, 8);
   const validationStructured = getRpcResult(responses, 8)?.structuredContent ?? null;
   if (validation) {
-    console.log(`  structuredContent: ${JSON.stringify(validationStructured) === JSON.stringify(validation) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(validation, validationStructured)}`);
     console.log(
       `  ${formatCount(validation.scanned ?? 0, "file")} · ${formatCount(validation.summary?.problemFiles ?? 0, "problem file")} · errors ${validation.summary?.errorFiles ?? "n/a"} · warnings ${validation.summary?.warningFiles ?? "n/a"}`,
     );
@@ -4530,7 +4540,7 @@ async function main() {
   const compiled = getResult(responses, 11);
   const compiledStructured = getRpcResult(responses, 11)?.structuredContent ?? null;
   if (compiled) {
-    console.log(`  structuredContent: ${JSON.stringify(compiledStructured) === JSON.stringify(compiled) ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}mismatch${COLORS.reset}`}`);
+    console.log(`  structuredContent: ${structuredContentStatus(compiled, compiledStructured)}`);
     console.log(`  graphHash: ${compiled.graphHash || "n/a"}`);
     console.log(
       `  nodes ${compiled.nodeCount ?? "n/a"} · edges ${compiled.edgeCount ?? "n/a"} · issues ${compiled.issueCount ?? "n/a"} · canonicalization ${compiled.canonicalizationActionCount ?? "n/a"}`,
