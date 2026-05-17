@@ -292,12 +292,14 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ path — elements\/file-system-access-api → project \(2 hops, 2 edges\)/);
     assert.doesNotMatch(verifySection, /✓ path — project → project/);
     assert.match(verifySection, new RegExp(`✓ project_scope — project \\(${scopedNodes} nodes, internalEdges`));
+    assert.match(verifySection, /✓ structuredContent — direct 7\/7, maintenance 2\/2, graph 10\/10/);
     assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concepts`, `find_orphans`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /batch success rows\s+and partial rows are verified during installation checks/);
     assert.match(verifySection, /`query_ontology\(\{operation:"neighbors"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"path"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"project_scope"\}\)`/);
     assert.match(verifySection, /requires every exercised direct read, maintenance cursor, and\s+`query_ontology` graph-query response to include `structuredContent`, and\s+compares that payload with the text JSON payload/);
+    assert.match(verifySection, /summarizes the\s+direct-read, maintenance-cursor, and graph-query `structuredContent` coverage/);
     assert.match(verifySection, /project-node `list_concepts` probe/);
     assert.match(verifySection, /`kind: project`/);
     assert.match(verifySection, /`list_kinds\.byKind\.project`/);

@@ -1363,6 +1363,13 @@ export function structuredContentFailure(response, parsed, label) {
   return null;
 }
 
+export function structuredContentVerifySummary({ hasNode = false, hasProject = false } = {}) {
+  const direct = 7;
+  const maintenance = 2;
+  const graph = 7 + (hasNode ? 2 : 0) + (hasProject ? 1 : 0);
+  return `direct ${direct}/${direct}, maintenance ${maintenance}/${maintenance}, graph ${graph}/${graph}`;
+}
+
 export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [1, 'initialize'],
   [2, 'tools/list'],
@@ -3301,6 +3308,13 @@ async function step2BootAndCall() {
         log('fail', countFailure);
         return res(false);
       }
+      log(
+        'ok',
+        `structuredContent — ${structuredContentVerifySummary({
+          hasNode: Boolean(graphSmokeArgs?.hasNode),
+          hasProject: Boolean(graphSmokeArgs?.hasProject),
+        })}`,
+      );
       res(true);
     });
 

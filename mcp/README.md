@@ -250,6 +250,7 @@ A successful run looks like this:
 ✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ project_scope — project (27 nodes, internalEdges 92)
+✓ structuredContent — direct 7/7, maintenance 2/2, graph 10/10
 
 All passed — register .mcp.json with Claude Code and restart to use the 23 tools.
 ```
@@ -271,7 +272,9 @@ plus actual `query_ontology({operation:"neighbors"})`,
 It also requires every exercised direct read, maintenance cursor, and
 `query_ontology` graph-query response to include `structuredContent`, and
 compares that payload with the text JSON payload, so agents can consume MCP
-results without reparsing text.
+results without reparsing text. Successful verify output summarizes the
+direct-read, maintenance-cursor, and graph-query `structuredContent` coverage
+that was enforced in the run.
 The `tools/list` gate also checks that every tool rejects unknown arguments via
 `additionalProperties:false`, that every tool exposes the expected
 `annotations.title` display name, `annotations.readOnlyHint` read/write split,

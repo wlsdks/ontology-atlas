@@ -60,6 +60,7 @@ import {
   strictEnumFailure,
   strictMaintenanceFilterFailure,
   structuredContentFailure,
+  structuredContentVerifySummary,
   toolsListSchemaFailure,
   validationCodeSummary,
   validateVaultFailure,
@@ -3518,6 +3519,21 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       structuredContentFailure({ result: { structuredContent: parsed } }, parsed, 'overview'),
       null,
+    );
+  });
+
+  it('summarizes structuredContent coverage for verify output', () => {
+    assert.equal(
+      structuredContentVerifySummary(),
+      'direct 7/7, maintenance 2/2, graph 7/7',
+    );
+    assert.equal(
+      structuredContentVerifySummary({ hasNode: true }),
+      'direct 7/7, maintenance 2/2, graph 9/9',
+    );
+    assert.equal(
+      structuredContentVerifySummary({ hasNode: true, hasProject: true }),
+      'direct 7/7, maintenance 2/2, graph 10/10',
     );
   });
 
