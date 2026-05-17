@@ -111,7 +111,30 @@ describe('verify.mjs first-contact gates', () => {
     const tools = [
       {
         name: 'list_concepts',
-        inputSchema: { additionalProperties: false, properties: {} },
+        inputSchema: {
+          additionalProperties: false,
+          properties: {
+            kind: { type: 'string' },
+            domain: { type: 'string' },
+            since: {
+              type: 'number',
+              minimum: 0,
+              description:
+                'Non-negative mtime threshold. Filter to nodes with `mtime > since` (ms). Pair with the `mtime` returned in earlier `list_concepts` / `get_concept` responses for incremental sync — "what changed since I last looked". Strict greater-than (mtime === since 는 제외) so re-passing the max from a previous response does not double-fetch.',
+            },
+            summary: {
+              type: 'boolean',
+              description:
+                'When true, each node row includes a `summary` (max 200 chars, prose-only — heading / 표 / 코드블록 / 리스트 / 인용 skip 후 첫 단락만, same `extractSummaryExcerpt` helper as `get_concept` / `find_evidence`). Useful for "scan + overview" without N follow-up `get_concept` calls. Default false to keep payload small.',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 500,
+              description: 'Positive integer max rows to return. Defaults to 100, max 500.',
+            },
+          },
+        },
         outputSchema: {
           type: 'object',
           required: ['total', 'vaultRoot', 'nodes'],
@@ -984,6 +1007,11 @@ describe('verify.mjs first-contact gates', () => {
       queryTool,
     ];
     const queryOntologyTool = tools.find((tool) => tool.name === 'query_ontology');
+    const listConceptsTool = tools.find((tool) => tool.name === 'list_concepts');
+    const withListConceptsTool = (tool) => [
+      ...tools.filter((candidate) => candidate.name !== 'list_concepts'),
+      tool,
+    ];
     const findNeighborsTool = tools.find((tool) => tool.name === 'find_neighbors');
     const withFindNeighborsTool = (tool) => [
       ...tools.filter((candidate) => candidate.name !== 'find_neighbors'),
@@ -1019,6 +1047,63 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       toolsListSchemaFailure([{ name: 'list_concepts', inputSchema: { properties: {} } }]),
       'tools/list schema missing additionalProperties:false: list_concepts',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withListConceptsTool(
+        {
+          ...listConceptsTool,
+          inputSchema: {
+            ...listConceptsTool.inputSchema,
+            properties: {
+              ...listConceptsTool.inputSchema.properties,
+              since: {
+                type: 'number',
+                minimum: 0,
+                description: 'Non-negative mtime threshold.',
+              },
+            },
+          },
+        },
+      )),
+      'list_concepts inputSchema since incremental-sync guidance drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withListConceptsTool(
+        {
+          ...listConceptsTool,
+          inputSchema: {
+            ...listConceptsTool.inputSchema,
+            properties: {
+              ...listConceptsTool.inputSchema.properties,
+              summary: {
+                type: 'boolean',
+                description: 'When true, each node row includes a summary.',
+              },
+            },
+          },
+        },
+      )),
+      'list_concepts inputSchema summary preview guidance drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withListConceptsTool(
+        {
+          ...listConceptsTool,
+          inputSchema: {
+            ...listConceptsTool.inputSchema,
+            properties: {
+              ...listConceptsTool.inputSchema.properties,
+              limit: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 500,
+                description: 'Positive integer max rows to return.',
+              },
+            },
+          },
+        },
+      )),
+      'list_concepts inputSchema limit default description drift',
     );
     assert.equal(
       toolsListSchemaFailure(tools.map((tool) => (

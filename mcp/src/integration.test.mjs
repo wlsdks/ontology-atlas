@@ -620,6 +620,21 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       0,
       "list_concepts exposes non-negative since schema",
     );
+    assert.match(
+      findTool("list_concepts")?.inputSchema?.properties?.since?.description ?? "",
+      /mtime > since[\s\S]*incremental sync[\s\S]*does not double-fetch/i,
+      "list_concepts since schema documents incremental sync semantics",
+    );
+    assert.match(
+      findTool("list_concepts")?.inputSchema?.properties?.summary?.description ?? "",
+      /summary[\s\S]*max 200 chars[\s\S]*without N follow-up `get_concept` calls[\s\S]*Default false/i,
+      "list_concepts summary schema documents preview and payload tradeoff",
+    );
+    assert.match(
+      findTool("list_concepts")?.inputSchema?.properties?.limit?.description ?? "",
+      /Defaults to 100, max 500/,
+      "list_concepts limit schema documents default and cap",
+    );
     assert.deepEqual(
       {
         type: findTool("find_neighbors")?.inputSchema?.properties?.limit?.type,

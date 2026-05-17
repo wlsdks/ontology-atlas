@@ -196,6 +196,35 @@ export function toolsListSchemaFailure(tools) {
 
   const listConceptsTool = tools.find((tool) => tool?.name === 'list_concepts');
   if (!listConceptsTool) return 'tools/list response missing list_concepts tool';
+  const listSinceSchema = propertyAt(listConceptsTool, ['properties', 'since']);
+  if (
+    listSinceSchema?.type !== 'number' ||
+    listSinceSchema.minimum !== 0 ||
+    !/mtime > since/i.test(listSinceSchema?.description ?? '') ||
+    !/incremental sync/i.test(listSinceSchema?.description ?? '') ||
+    !/does not double-fetch/i.test(listSinceSchema?.description ?? '')
+  ) {
+    return 'list_concepts inputSchema since incremental-sync guidance drift';
+  }
+  const listSummarySchema = propertyAt(listConceptsTool, ['properties', 'summary']);
+  if (
+    listSummarySchema?.type !== 'boolean' ||
+    !/summary.*max 200 chars/i.test(listSummarySchema?.description ?? '') ||
+    !/without N follow-up `get_concept` calls/i.test(listSummarySchema?.description ?? '') ||
+    !/Default false/i.test(listSummarySchema?.description ?? '')
+  ) {
+    return 'list_concepts inputSchema summary preview guidance drift';
+  }
+  const listLimitSchema = propertyAt(listConceptsTool, ['properties', 'limit']);
+  if (
+    listLimitSchema?.type !== 'integer' ||
+    listLimitSchema.minimum !== 1 ||
+    listLimitSchema.maximum !== 500 ||
+    !/Defaults to 100/i.test(listLimitSchema?.description ?? '') ||
+    !/max 500/i.test(listLimitSchema?.description ?? '')
+  ) {
+    return 'list_concepts inputSchema limit default description drift';
+  }
   if (listConceptsTool.outputSchema?.type !== 'object') {
     return 'list_concepts outputSchema root drift';
   }
