@@ -33,21 +33,28 @@ assert.ok(mcpToolMetadata, 'mcp/package.json description must include the curren
 
 function run(cmd, args, options = {}) {
   const result = runRaw(cmd, args, options);
-  const label = options.label ? `[${options.label}]\n` : '';
-  assert.equal(
-    result.status,
-    0,
-    `${label}${cmd} ${args.join(' ')} failed\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
-  );
+  assertStatus(result, 0);
   return result;
 }
 
 function runRaw(cmd, args, options = {}) {
-  return spawnSync(cmd, args, {
+  const result = spawnSync(cmd, args, {
     cwd: options.cwd,
     env: { ...process.env, ...options.env },
     encoding: 'utf-8',
   });
+  result.commandText = `${cmd} ${args.join(' ')}`;
+  result.label = options.label;
+  return result;
+}
+
+function assertStatus(result, expectedStatus, label = result.label) {
+  const labelText = label ? `[${label}]\n` : '';
+  assert.equal(
+    result.status,
+    expectedStatus,
+    `${labelText}${result.commandText} expected exit ${expectedStatus}, got ${result.status}\nstdout:\n${result.stdout}\nstderr:\n${result.stderr}`,
+  );
 }
 
 function packPackage(packageDir, destination) {
@@ -306,7 +313,7 @@ try {
     cliMcpVerifyArgs(['--timeout-ms=1000ms']),
     { cwd: projectDir },
   );
-  assert.equal(invalidCliMcpVerifyTimeout.status, 1);
+  assertStatus(invalidCliMcpVerifyTimeout, 1, 'installed CLI mcp-verify invalid timeout flag');
   assert.equal(invalidCliMcpVerifyTimeout.stdout, '');
   assert.match(invalidCliMcpVerifyTimeout.stderr, /--timeout-ms must be a positive integer/);
   assert.match(invalidCliMcpVerifyTimeout.stderr, /Received: "1000ms"/);
@@ -319,7 +326,7 @@ try {
     cliMcpVerifyArgs(['--timeout-ms']),
     { cwd: projectDir },
   );
-  assert.equal(missingCliMcpVerifyTimeout.status, 1);
+  assertStatus(missingCliMcpVerifyTimeout, 1, 'installed CLI mcp-verify missing timeout');
   assert.equal(missingCliMcpVerifyTimeout.stdout, '');
   assert.match(missingCliMcpVerifyTimeout.stderr, /--timeout-ms requires a value/);
   assert.match(missingCliMcpVerifyTimeout.stderr, /Received: undefined/);
@@ -330,7 +337,7 @@ try {
     cliMcpVerifyArgs(['--timeout-ms', '--vault', 'ontology']),
     { cwd: projectDir },
   );
-  assert.equal(nextFlagCliMcpVerifyTimeout.status, 1);
+  assertStatus(nextFlagCliMcpVerifyTimeout, 1, 'installed CLI mcp-verify timeout captured next flag');
   assert.equal(nextFlagCliMcpVerifyTimeout.stdout, '');
   assert.match(nextFlagCliMcpVerifyTimeout.stderr, /--timeout-ms requires a value/);
   assert.match(nextFlagCliMcpVerifyTimeout.stderr, /Received: "--vault"/);
@@ -341,7 +348,7 @@ try {
     cliMcpVerifyArgs(['--vault']),
     { cwd: projectDir },
   );
-  assert.equal(missingCliMcpVerifyVault.status, 1);
+  assertStatus(missingCliMcpVerifyVault, 1, 'installed CLI mcp-verify missing vault');
   assert.equal(missingCliMcpVerifyVault.stdout, '');
   assert.match(missingCliMcpVerifyVault.stderr, /--vault requires a path/);
 
@@ -350,7 +357,7 @@ try {
     cliMcpVerifyArgs(['--vault', '--timeout-ms', '1000']),
     { cwd: projectDir },
   );
-  assert.equal(nextFlagCliMcpVerifyVault.status, 1);
+  assertStatus(nextFlagCliMcpVerifyVault, 1, 'installed CLI mcp-verify vault captured next flag');
   assert.equal(nextFlagCliMcpVerifyVault.stdout, '');
   assert.match(nextFlagCliMcpVerifyVault.stderr, /--vault requires a path/);
 
@@ -359,7 +366,7 @@ try {
     cliMcpVerifyArgs(['ontology', '--vault', 'docs/ontology']),
     { cwd: projectDir },
   );
-  assert.equal(duplicateCliMcpVerifyVault.status, 1);
+  assertStatus(duplicateCliMcpVerifyVault, 1, 'installed CLI mcp-verify duplicate vault');
   assert.equal(duplicateCliMcpVerifyVault.stdout, '');
   assert.match(duplicateCliMcpVerifyVault.stderr, /pass vault as either positional argument or --vault, not both/);
 
@@ -368,7 +375,7 @@ try {
     cliMcpVerifyArgs(['--timout-ms=1000']),
     { cwd: projectDir },
   );
-  assert.equal(typoCliMcpVerifyTimeout.status, 1);
+  assertStatus(typoCliMcpVerifyTimeout, 1, 'installed CLI mcp-verify timeout typo');
   assert.equal(typoCliMcpVerifyTimeout.stdout, '');
   assert.match(typoCliMcpVerifyTimeout.stderr, /unknown flag: --timout-ms=1000\. Did you mean --timeout-ms\?/);
 
@@ -380,7 +387,7 @@ try {
       env: { OMOT_VERIFY_TIMEOUT_MS: '1000ms' },
     },
   );
-  assert.equal(invalidCliMcpVerifyEnvTimeout.status, 1);
+  assertStatus(invalidCliMcpVerifyEnvTimeout, 1, 'installed CLI mcp-verify invalid env timeout');
   assert.equal(invalidCliMcpVerifyEnvTimeout.stdout, '');
   assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS must be a positive integer/);
   assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /Received: "1000ms"/);
@@ -662,7 +669,7 @@ try {
       env: { OMOT_VAULT: '   ' },
     },
   );
-  assert.equal(invalidEnvDirectMcpVerifyVault.status, 1);
+  assertStatus(invalidEnvDirectMcpVerifyVault, 1, 'installed MCP verify invalid env vault');
   assert.equal(invalidEnvDirectMcpVerifyVault.stdout, '');
   assert.match(invalidEnvDirectMcpVerifyVault.stderr, /OMOT_VAULT requires a path value/);
 
@@ -677,7 +684,7 @@ try {
       },
     },
   );
-  assert.equal(invalidMcpVerifyTimeout.status, 1);
+  assertStatus(invalidMcpVerifyTimeout, 1, 'installed MCP verify invalid env timeout');
   assert.equal(invalidMcpVerifyTimeout.stdout, '');
   assert.match(invalidMcpVerifyTimeout.stderr, /verify timeout must be a positive integer/);
   assert.match(invalidMcpVerifyTimeout.stderr, /Received: "1000ms"/);
@@ -690,7 +697,7 @@ try {
     mcpVerifyArgs([join(projectDir, 'ontology'), '--timeout-ms', '1000ms'], { silent: true }),
     { cwd: projectDir },
   );
-  assert.equal(invalidDirectMcpVerifyTimeout.status, 1);
+  assertStatus(invalidDirectMcpVerifyTimeout, 1, 'installed MCP verify invalid timeout flag');
   assert.equal(invalidDirectMcpVerifyTimeout.stdout, '');
   assert.match(invalidDirectMcpVerifyTimeout.stderr, /verify timeout must be a positive integer/);
   assert.match(invalidDirectMcpVerifyTimeout.stderr, /Received: "1000ms"/);
@@ -703,7 +710,7 @@ try {
     mcpVerifyArgs([join(projectDir, 'ontology'), '--timeout-ms'], { silent: true }),
     { cwd: projectDir },
   );
-  assert.equal(missingDirectMcpVerifyTimeout.status, 1);
+  assertStatus(missingDirectMcpVerifyTimeout, 1, 'installed MCP verify missing timeout');
   assert.equal(missingDirectMcpVerifyTimeout.stdout, '');
   assert.match(missingDirectMcpVerifyTimeout.stderr, /verify timeout must be a positive integer/);
   assert.match(missingDirectMcpVerifyTimeout.stderr, /Received: undefined/);
@@ -714,7 +721,7 @@ try {
     mcpVerifyArgs(['--vault', '--timeout-ms', '1000'], { silent: true }),
     { cwd: projectDir },
   );
-  assert.equal(invalidDirectMcpVerifyVault.status, 1);
+  assertStatus(invalidDirectMcpVerifyVault, 1, 'installed MCP verify missing vault');
   assert.equal(invalidDirectMcpVerifyVault.stdout, '');
   assert.match(invalidDirectMcpVerifyVault.stderr, /--vault requires a path value/);
 
@@ -723,7 +730,7 @@ try {
     mcpVerifyArgs(['--timout-ms=1000'], { silent: true }),
     { cwd: projectDir },
   );
-  assert.equal(typoDirectMcpVerifyTimeout.status, 1);
+  assertStatus(typoDirectMcpVerifyTimeout, 1, 'installed MCP verify timeout typo');
   assert.equal(typoDirectMcpVerifyTimeout.stdout, '');
   assert.match(typoDirectMcpVerifyTimeout.stderr, /Unknown option: --timout-ms=1000\. Did you mean --timeout-ms\?/);
 
@@ -732,7 +739,7 @@ try {
     mcpVerifyArgs(['--vualt'], { silent: true }),
     { cwd: projectDir },
   );
-  assert.equal(typoDirectMcpVerifyVault.status, 1);
+  assertStatus(typoDirectMcpVerifyVault, 1, 'installed MCP verify vault typo');
   assert.equal(typoDirectMcpVerifyVault.stdout, '');
   assert.match(typoDirectMcpVerifyVault.stderr, /Unknown option: --vualt\. Did you mean --vault\?/);
 
@@ -741,7 +748,7 @@ try {
     mcpVerifyArgs([join(projectDir, 'ontology'), '--vault', emptyVault], { silent: true }),
     { cwd: projectDir },
   );
-  assert.equal(duplicateFlagDirectMcpVerifyVault.status, 1);
+  assertStatus(duplicateFlagDirectMcpVerifyVault, 1, 'installed MCP verify duplicate flag vault');
   assert.equal(duplicateFlagDirectMcpVerifyVault.stdout, '');
   assert.match(duplicateFlagDirectMcpVerifyVault.stderr, /Unexpected extra vault argument:/);
 
@@ -750,7 +757,7 @@ try {
     mcpVerifyArgs([join(projectDir, 'ontology'), emptyVault], { silent: true }),
     { cwd: projectDir },
   );
-  assert.equal(duplicatePositionalDirectMcpVerifyVault.status, 1);
+  assertStatus(duplicatePositionalDirectMcpVerifyVault, 1, 'installed MCP verify duplicate positional vault');
   assert.equal(duplicatePositionalDirectMcpVerifyVault.stdout, '');
   assert.match(duplicatePositionalDirectMcpVerifyVault.stderr, /Unexpected extra vault argument:/);
 
