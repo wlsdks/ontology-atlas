@@ -2906,6 +2906,7 @@ describe("rpc response completion helpers", () => {
     assert.match(structuredContentStatus({ ok: true }, null), /missing/);
     assert.match(structuredContentStatus({ ok: true }, undefined), /missing/);
     assert.match(structuredContentStatus({ ok: true }, { ok: false }), /mismatch/);
+    assert.match(structuredContentStatus({ ok: true }, { ok: false }), /\$\.ok: parsed true, structuredContent false/);
   });
 
   it("parses dogfood timeout env as a strict positive integer", () => {

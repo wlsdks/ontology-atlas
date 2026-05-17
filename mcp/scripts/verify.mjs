@@ -1970,7 +1970,7 @@ export function structuredContentFailure(response, parsed, label) {
     return `${label} structuredContent missing`;
   }
   if (status === 'mismatch') {
-    return `${label} structuredContent mismatch`;
+    return `${label} structuredContent mismatch — ${structuredContentMismatchSummary(parsed, structured)}`;
   }
   return null;
 }
@@ -1978,6 +1978,51 @@ export function structuredContentFailure(response, parsed, label) {
 export function structuredContentParityStatus(parsed, structured) {
   if (structured == null) return 'missing';
   return isDeepStrictEqual(structured, parsed) ? 'pass' : 'mismatch';
+}
+
+export function structuredContentMismatchSummary(parsed, structured) {
+  const mismatch = firstMismatch(parsed, structured);
+  if (!mismatch) return 'values differ';
+  return `${mismatch.path}: parsed ${previewValue(mismatch.expected)}, structuredContent ${previewValue(mismatch.actual)}`;
+}
+
+function firstMismatch(expected, actual, path = '$') {
+  if (isDeepStrictEqual(expected, actual)) return null;
+  if (!expected || !actual || typeof expected !== 'object' || typeof actual !== 'object') {
+    return { path, expected, actual };
+  }
+  const expectedIsArray = Array.isArray(expected);
+  const actualIsArray = Array.isArray(actual);
+  if (expectedIsArray !== actualIsArray) {
+    return { path, expected, actual };
+  }
+  if (expectedIsArray) {
+    const maxLength = Math.max(expected.length, actual.length);
+    for (let index = 0; index < maxLength; index += 1) {
+      if (!(index in expected) || !(index in actual)) {
+        return { path: `${path}[${index}]`, expected: expected[index], actual: actual[index] };
+      }
+      const childMismatch = firstMismatch(expected[index], actual[index], `${path}[${index}]`);
+      if (childMismatch) return childMismatch;
+    }
+    return { path, expected, actual };
+  }
+  const keys = [...new Set([...Object.keys(expected), ...Object.keys(actual)])].sort();
+  for (const key of keys) {
+    if (!(key in expected) || !(key in actual)) {
+      return { path: `${path}.${key}`, expected: expected[key], actual: actual[key] };
+    }
+    const childMismatch = firstMismatch(expected[key], actual[key], `${path}.${key}`);
+    if (childMismatch) return childMismatch;
+  }
+  return { path, expected, actual };
+}
+
+function previewValue(value) {
+  if (value === undefined) return 'undefined';
+  const preview = JSON.stringify(value);
+  if (preview == null) return String(value);
+  return preview.length > 96 ? `${preview.slice(0, 93)}...` : preview;
 }
 
 export function structuredContentVerifySummary({

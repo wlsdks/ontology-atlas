@@ -85,6 +85,7 @@ import {
   strictMaintenanceFilterFailure,
   strictRelationFilterFailure,
   structuredContentFailure,
+  structuredContentMismatchSummary,
   structuredContentParityStatus,
   structuredContentVerifySummary,
   tunedHealthScopeOutputSummary,
@@ -5840,7 +5841,7 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       structuredContentFailure({ result: { structuredContent: { operation: 'overview', graph: { nodes: 2 } } } }, parsed, 'overview'),
-      'overview structuredContent mismatch',
+      'overview structuredContent mismatch — $.graph.nodes: parsed 1, structuredContent 2',
     );
     assert.equal(
       structuredContentFailure({ result: { structuredContent: { graph: { nodes: 1 }, operation: 'overview' } } }, parsed, 'overview'),
@@ -5894,6 +5895,20 @@ describe('verify.mjs first-contact gates', () => {
         destructiveDryRunCount: 3,
       }),
       'direct 16/16, write 5/5, maintenance 3/3, graph 11/11',
+    );
+  });
+
+  it('summarizes the first structuredContent mismatch path', () => {
+    assert.equal(
+      structuredContentMismatchSummary(
+        { rows: [{ slug: 'capabilities/mcp-server', total: 2 }] },
+        { rows: [{ slug: 'capabilities/mcp-server', total: 3 }] },
+      ),
+      '$.rows[0].total: parsed 2, structuredContent 3',
+    );
+    assert.equal(
+      structuredContentMismatchSummary({ total: 1 }, { total: 1, extra: true }),
+      '$.extra: parsed undefined, structuredContent true',
     );
   });
 

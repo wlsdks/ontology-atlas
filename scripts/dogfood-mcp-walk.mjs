@@ -39,6 +39,7 @@ import {
   strictEnumFailure,
   strictMaintenanceFilterFailure,
   strictRelationFilterFailure,
+  structuredContentMismatchSummary,
   structuredContentParityStatus,
   toolsListAnnotationSummary,
   toolsListSchemaFailure,
@@ -304,7 +305,7 @@ export function structuredContentStatus(parsed, structured) {
     return `${COLORS.yellow}missing${COLORS.reset}`;
   }
   if (status === "mismatch") {
-    return `${COLORS.yellow}mismatch${COLORS.reset}`;
+    return `${COLORS.yellow}mismatch${COLORS.reset} (${structuredContentMismatchSummary(parsed, structured)})`;
   }
   return `${COLORS.green}pass${COLORS.reset}`;
 }
