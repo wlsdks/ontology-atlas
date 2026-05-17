@@ -33,7 +33,7 @@
     "test:mcp:dogfood": "node --test --test-name-pattern \"structuredContent|compile_ontology|row-label guidance|stderr warnings|dogfood help|dogfood arguments|dogfood timeout|timeout failures|dogfood response labels|destructive dogfood dry-run|dogfood MCP docs explicit\" scripts/dogfood-mcp-walk.test.mjs scripts/check-package-contracts.test.mjs",
     "test:mcp:dogfood:timeout": "node --test --test-name-pattern \"dogfood timeout|timeout failures|dogfood response labels|dogfood help\" scripts/dogfood-mcp-walk.test.mjs",
     "test:mcp:docs": "node --test --test-name-pattern \"README|dogfood CLI capability|dogfood MCP docs|dogfood MCP capability|filtered integration scripts\" scripts/check-package-contracts.test.mjs",
-    "test:mcp:package": "node --test --test-name-pattern \"MCP npm test|allows only the parser smoke fixture|CLI MCP dependency\" scripts/check-package-contracts.test.mjs",
+    "test:mcp:package": "node --test --test-name-pattern \"MCP npm test|CLI npm test|allows only the parser smoke fixture|CLI MCP dependency\" scripts/check-package-contracts.test.mjs",
     "test:mcp:suggestions": "node --test --test-name-pattern \"suggestions|suggests close enum values\" mcp/src/suggestions.test.mjs mcp/src/ontology-engine.test.mjs",
     "test:mcp:verify": "node --test mcp/src/verify-script.test.mjs",
     "test:mcp:verify:timeout": "node --test --test-name-pattern \"verify timeout|timeout failures|direct verify usage|direct verify timeout|direct verify CLI args\" mcp/src/verify-script.test.mjs",

@@ -140,6 +140,8 @@ describe('package contract helpers', () => {
       pkg.scripts?.['test:mcp:package'] ?? '',
       /^node --test --test-name-pattern "[^"]+" scripts\/check-package-contracts\.test\.mjs$/,
     );
+    assert.match(pkg.scripts?.['test:mcp:package'] ?? '', /MCP npm test/);
+    assert.match(pkg.scripts?.['test:mcp:package'] ?? '', /CLI npm test/);
     assert.match(pkg.scripts?.['test:mcp:package'] ?? '', /CLI MCP dependency/);
     assert.match(
       pkg.scripts?.['test:mcp:suggestions'] ?? '',
@@ -151,7 +153,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm test:mcp:dogfood/);
     assert.match(readme, /structuredContent\/compile\/row-label\/destructive dry-run\/help\/argument\/timeout\/stderr checks/);
     assert.match(readme, /pnpm test:mcp:dogfood:timeout\s+# narrow dogfood timeout\/help retry diagnostics/);
-    assert.match(readme, /pnpm test:mcp:package\s+# focused package-script\/dependency\/tarball contract checks/);
+    assert.match(readme, /pnpm test:mcp:package\s+# focused MCP\/CLI package-script\/dependency\/tarball contract checks/);
     assert.match(readme, /pnpm test:mcp:suggestions/);
     assert.match(readme, /pnpm test:mcp:verify/);
     assert.match(readme, /pnpm test:mcp:verify:timeout\s+# narrow MCP verify timeout\/help diagnostics/);

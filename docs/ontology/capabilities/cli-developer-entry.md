@@ -93,7 +93,7 @@ scripts/check-package-contracts.mjs — publish 전 package manifest gate. `mcp/
 tarball 에 포함되는 parser smoke 만 실행하고, CLI package 의 `npm test` 는 packed
 tarball 내부에서도 닫힌 `src/lib/*.test.mjs` helper suite 를 실행한다. source checkout 용
 전체 suite 는 별도 workspace script 로 분리해 lean tarball 에서 빠진 test 파일을 참조하지
-않게 한다. root workspace 의 `pnpm test:mcp:package` 는 이 package-script/dependency/tarball
+않게 한다. root workspace 의 `pnpm test:mcp:package` 는 MCP/CLI package-script/dependency/tarball
 계약만 빠르게 재검증한다. 반대로 `files` 항목이 실제 package 파일/디렉토리/glob 과
 매치되는지도 확인하고, CLI 의 `oh-my-ontology-mcp` dependency 가 현재 MCP package
 version 을 추적하는지 본다. CLI runtime dispatcher 가 command registry 기반 dynamic
