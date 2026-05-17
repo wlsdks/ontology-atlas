@@ -359,6 +359,24 @@ export function writeRowLabelGuidanceSummary(tools) {
   return missing.length > 0 ? `missing ${missing.join(", ")}` : "pass";
 }
 
+export function toolsListAnnotationSummary(tools) {
+  if (!Array.isArray(tools)) return "missing tools/list";
+  const titleCount = tools.filter((tool) => tool?.annotations?.title === expectedToolTitle(tool?.name)).length;
+  const readCount = tools.filter((tool) => tool?.annotations?.readOnlyHint === true).length;
+  const writeCount = tools.filter((tool) => tool?.annotations?.readOnlyHint === false).length;
+  const destructiveCount = tools.filter((tool) => tool?.annotations?.destructiveHint === true).length;
+  const idempotentCount = tools.filter((tool) => tool?.annotations?.idempotentHint === true).length;
+  const localOnlyCount = tools.filter((tool) => tool?.annotations?.openWorldHint === false).length;
+  return [
+    `${titleCount}/${EXPECTED_TOOLS.length} titled`,
+    `${readCount}/${EXPECTED_READ_TOOLS.length} read`,
+    `${writeCount}/${EXPECTED_WRITE_TOOLS.length} write`,
+    `${destructiveCount}/${EXPECTED_DESTRUCTIVE_TOOLS.length} destructive`,
+    `${idempotentCount}/${EXPECTED_IDEMPOTENT_TOOLS.length} idempotent`,
+    `${localOnlyCount}/${EXPECTED_TOOLS.length} local-only`,
+  ].join("; ");
+}
+
 export function healthCheckStatusSummary(checks, limit = 5) {
   if (!Array.isArray(checks) || checks.length === 0) return "none";
   const shown = checks.slice(0, limit).map((check) => {
@@ -4407,13 +4425,7 @@ async function main() {
   if (toolsList) {
     const tools = Array.isArray(toolsList.tools) ? toolsList.tools : [];
     const schemaFailure = toolsListSchemaFailure(tools);
-    const readCount = tools.filter((tool) => tool?.annotations?.readOnlyHint === true).length;
-    const writeCount = tools.filter((tool) => tool?.annotations?.readOnlyHint === false).length;
-    const destructiveCount = tools.filter((tool) => tool?.annotations?.destructiveHint === true).length;
-    const idempotentCount = tools.filter((tool) => tool?.annotations?.idempotentHint === true).length;
-    const titleCount = tools.filter((tool) => tool?.annotations?.title === expectedToolTitle(tool?.name)).length;
-    const expectedSplit = `${EXPECTED_READ_TOOLS.length} read + ${EXPECTED_WRITE_TOOLS.length} write`;
-    console.log(`  tools: ${tools.length} (${titleCount} titled; ${readCount} read + ${writeCount} write; ${destructiveCount} destructive; ${idempotentCount} idempotent; expected ${EXPECTED_TOOLS.length} titled, ${expectedSplit}, ${EXPECTED_DESTRUCTIVE_TOOLS.length} destructive, ${EXPECTED_IDEMPOTENT_TOOLS.length} idempotent)`);
+    console.log(`  tools: ${tools.length} (${toolsListAnnotationSummary(tools)})`);
     console.log(`  schema: ${schemaFailure ? `${COLORS.yellow}${schemaFailure}${COLORS.reset}` : `${COLORS.green}pass${COLORS.reset}`}`);
     console.log(`  write row labels: ${writeRowLabelGuidanceSummary(tools)}`);
   }
@@ -5423,6 +5435,7 @@ async function main() {
   const orphRatio = total > 0 ? ((orphCount / total) * 100).toFixed(0) : 0;
   console.log(`  vault size: ${total} 노드`);
   console.log(`  tools/list schema: ${toolsListSchemaFailure(toolsList?.tools) || "pass"}`);
+  console.log(`  tools/list annotations: ${toolsListAnnotationSummary(toolsList?.tools)}`);
   console.log(`  tools/list write row labels: ${writeRowLabelGuidanceSummary(toolsList?.tools)}`);
   console.log(`  orphans: ${orphCount} (${orphRatio}%)`);
   console.log(

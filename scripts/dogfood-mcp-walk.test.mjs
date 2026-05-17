@@ -30,6 +30,7 @@ import {
   stderrWarningLines,
   stderrWarningFailures,
   structuredContentStatus,
+  toolsListAnnotationSummary,
   tunedHealthScopeSummary,
   workspaceNextActionSummary,
   writeRowLabelGuidanceSummary,
@@ -2792,6 +2793,22 @@ describe("rpc response completion helpers", () => {
     assert.equal(writeRowLabelGuidanceSummary(missingRelations), "missing add_relations relations[n]");
 
     assert.equal(writeRowLabelGuidanceSummary(null), "missing tools/list");
+  });
+
+  it("summarizes tools/list annotation coverage for dogfood output", () => {
+    const tools = makeDogfoodToolsList().tools;
+    assert.equal(
+      toolsListAnnotationSummary(tools),
+      "23/23 titled; 15/15 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 23/23 local-only",
+    );
+
+    const drifted = makeDogfoodToolsList().tools;
+    drifted.find((tool) => tool.name === "list_concepts").annotations.openWorldHint = true;
+    assert.equal(
+      toolsListAnnotationSummary(drifted),
+      "23/23 titled; 15/15 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 22/23 local-only",
+    );
+    assert.equal(toolsListAnnotationSummary(null), "missing tools/list");
   });
 
   it("summarizes health check statuses for the final dogfood analysis", () => {
