@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 import { checkMcpLeanTarballFiles } from './check-package-contracts.mjs';
 import { parseMcpToolMetadataFromDescription } from '../cli/src/lib/mcp-metadata.mjs';
 import {
+  structuredContentVerifySummary,
   tunedHealthScopeOutputSummary,
   tunedWorkspaceBriefScopeOutputSummary,
 } from '../mcp/scripts/verify.mjs';
@@ -34,6 +35,17 @@ const expectedToolCount = mcpToolMetadata?.toolCount;
 const expectedToolSplitRe = mcpToolMetadata?.splitPattern;
 const tunedDiagnosisScopeRe = new RegExp(regexEscape(tunedHealthScopeOutputSummary()));
 const tunedWorkspaceBriefScopeRe = new RegExp(regexEscape(tunedWorkspaceBriefScopeOutputSummary()));
+const installedVerifyStructuredContentRe = new RegExp(regexEscape(`structuredContent — ${structuredContentVerifySummary({
+  hasNode: true,
+  hasProject: true,
+  hasGetConcept: true,
+  hasFindBacklinks: true,
+  hasDirectGraphReads: true,
+  hasLimitedQueryConcepts: true,
+  hasCompileIndexes: true,
+  hasMaintenanceResume: true,
+  destructiveDryRunCount: 3,
+})}`));
 
 assert.ok(mcpToolMetadata, 'mcp/package.json description must include the current tool count and split');
 
@@ -332,7 +344,7 @@ try {
   assert.match(cliMcpVerify.stdout, /neighbors — elements\/example/);
   assert.match(cliMcpVerify.stdout, /path — elements\/example → project \(1 hop, 1 edge\)/);
   assert.match(cliMcpVerify.stdout, /project_scope/);
-  assert.match(cliMcpVerify.stdout, /structuredContent — direct 16\/16, write 5\/5, maintenance 3\/3, graph 11\/11/);
+  assert.match(cliMcpVerify.stdout, installedVerifyStructuredContentRe);
 
   const invalidCliMcpVerifyTimeout = runRaw(
     cliBin,
@@ -436,7 +448,7 @@ try {
   assert.match(cliMaintenanceResumeMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(
     cliMaintenanceResumeMcpVerify.stdout,
-    /structuredContent — direct 16\/16, write 5\/5, maintenance 3\/3, graph 11\/11/,
+    installedVerifyStructuredContentRe,
   );
 
   const projectlessVault = join(projectDir, 'projectless-vault');
@@ -604,7 +616,7 @@ try {
   assert.match(mcpVerify.stdout, /neighbors — elements\/example/);
   assert.match(mcpVerify.stdout, /path — elements\/example → project \(1 hop, 1 edge\)/);
   assert.match(mcpVerify.stdout, /project_scope/);
-  assert.match(mcpVerify.stdout, /structuredContent — direct 16\/16, write 5\/5, maintenance 3\/3, graph 11\/11/);
+  assert.match(mcpVerify.stdout, installedVerifyStructuredContentRe);
 
   const directMcpVerify = run(
     'npm',
@@ -629,7 +641,7 @@ try {
   assert.match(directMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(directMcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(directMcpVerify.stdout, /maintenance cursor — ready page stable/);
-  assert.match(directMcpVerify.stdout, /structuredContent — direct 16\/16, write 5\/5, maintenance 3\/3, graph 11\/11/);
+  assert.match(directMcpVerify.stdout, installedVerifyStructuredContentRe);
 
   const directMcpMaintenanceResumeVerify = run(
     'npm',
@@ -648,7 +660,7 @@ try {
   assert.match(directMcpMaintenanceResumeVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(
     directMcpMaintenanceResumeVerify.stdout,
-    /structuredContent — direct 16\/16, write 5\/5, maintenance 3\/3, graph 11\/11/,
+    installedVerifyStructuredContentRe,
   );
 
   const directMcpVerifyVaultFlag = run(
@@ -672,7 +684,7 @@ try {
   assert.match(directMcpVerifyVaultFlag.stdout, /add_relations — non-object and unknown-field rows isolated with input indexes/);
   assert.match(directMcpVerifyVaultFlag.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(directMcpVerifyVaultFlag.stdout, /maintenance cursor — ready page stable/);
-  assert.match(directMcpVerifyVaultFlag.stdout, /structuredContent — direct 16\/16, write 5\/5, maintenance 3\/3, graph 11\/11/);
+  assert.match(directMcpVerifyVaultFlag.stdout, installedVerifyStructuredContentRe);
 
   const directMcpVerifyHelp = run(
     'npm',
