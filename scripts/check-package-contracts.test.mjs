@@ -219,7 +219,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm test:mcp:package\s+# focused MCP\/CLI package-script\/dependency\/tarball contract checks/);
     assert.match(readme, /pnpm test:mcp:suggestions/);
     assert.match(readme, /pnpm test:mcp:verify/);
-    assert.match(readme, /pnpm test:mcp:verify:first-contact\s+# narrow MCP verify first-contact health-summary\/advisory\/read\/sample gates/);
+    assert.match(readme, /pnpm test:mcp:verify:first-contact\s+# narrow MCP verify first-contact initialize-hint\/health-summary\/advisory\/read\/sample gates/);
     assert.match(readme, /pnpm test:mcp:verify:timeout\s+# narrow MCP verify timeout\/startup\/help diagnostics/);
     assert.match(readme, /pnpm dogfood:verify\s+# root checkout installed-style verify over docs\/ontology/);
     assert.match(readme, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000\s+# root checkout dogfood verify/);
@@ -261,7 +261,7 @@ describe('package contract helpers', () => {
     assert.match(result.stdout, /pnpm dogfood:verify\s+Root checkout dogfood vault verify shortcut/);
     assert.match(result.stdout, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000\s+Source-checkout dogfood verify with explicit args/);
     assert.match(result.stdout, /pnpm cli:mcp-verify -- --help\s+Source-checkout shortcut for this help from the repo root/);
-    assert.match(result.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health-summary\/advisory\/read\/sample-shape helper gates/);
+    assert.match(result.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact initialize-hint\/health-summary\/advisory\/read\/sample-shape helper gates/);
     assert.equal(result.stderr, '');
   });
 
@@ -531,7 +531,7 @@ describe('package contract helpers', () => {
     assert.match(section, /help output/);
     assert.match(section, /row-label guidance summary/);
     assert.match(section, /initialize\/batch relation type guidance gate/);
-    assert.match(section, /workspace_brief\.nextActions\[\]\.sample` shape drift/);
+    assert.match(section, /workspace_brief\.nextActions\[\]\.sample`\s+shape drift/);
     assert.match(section, /dogfood timeout parsing, missing\s+response labels, and retry help/);
     assert.match(section, /maintenance_plan filter enums, ready\/missing\s+cursor handling, resume-cursor behavior, dogfood work-queue shape gates, and\s+bucket \/ next-action formatter checks/);
     assert.match(section, /unsupported-argument\s+rejection/);
@@ -539,7 +539,7 @@ describe('package contract helpers', () => {
     assert.match(section, /strict closest-value\s+summary/);
     assert.match(section, /stderr warning filtering/);
     assert.match(section, /verify helper contract/);
-    assert.match(section, /workspace_brief\.nextActions\[\]\.sample` shape drift/);
+    assert.match(section, /workspace_brief\.nextActions\[\]\.sample`\s+shape drift/);
     assert.match(section, /timeout parsing, startup failure\s+retry guidance, usage, and retry diagnostics/);
     assert.match(section, /OMOT_TEST_NAME_PATTERN/);
     assert.match(section, /Node `--test-name-pattern`/);
@@ -991,10 +991,10 @@ describe('package contract helpers', () => {
     assert.match(section, /documentation drift/);
     assert.match(section, /maintenance_plan filter, cursor, resume,\s+work-queue shape, and bucket \/ next-action formatter contracts/);
     assert.match(section, /shared MCP verify helper contract/);
-    assert.match(section, /first-contact read smoke/);
+    assert.match(section, /first-contact initialize\s+batch relation type guidance, read smoke/);
     assert.match(section, /vault warning \/ `validate_vault`/);
     assert.match(section, /health summary \/ advisory \/ next-action gates/);
-    assert.match(section, /workspace_brief\.nextActions\[\]\.sample` shape drift/);
+    assert.match(section, /workspace_brief\.nextActions\[\]\.sample`\s+shape drift/);
     assert.match(section, /timeout parsing, startup failure retry\s+guidance, usage, and retry diagnostics/);
     assert.match(section, /OMOT_TEST_NAME_PATTERN/);
     assert.match(section, /Node `--test-name-pattern`/);
@@ -1540,7 +1540,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /from the repo root, use the node mcp\\\/scripts\\\/verify\\\.mjs form/);
     assert.match(smoke, /Explicit \\\[vault\\\] or --vault arguments take precedence over OMOT_VAULT/);
     assert.match(smoke, /pnpm test:mcp:verify\\s\+MCP verify helper contract without the full integration suite/);
-    assert.match(smoke, /pnpm test:mcp:verify:first-contact\\s\+Narrow first-contact health-summary\\\/advisory\\\/read\\\/sample-shape helper gates/);
+    assert.match(smoke, /pnpm test:mcp:verify:first-contact\\s\+Narrow first-contact initialize-hint\\\/health-summary\\\/advisory\\\/read\\\/sample-shape helper gates/);
     assert.match(smoke, /pnpm test:mcp:verify:timeout/);
     assert.match(smoke, /Narrow MCP verify timeout\\\/startup\\\/help diagnostics/);
     assert.match(smoke, /verify timeout must be a positive integer/);
@@ -1643,7 +1643,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /pnpm cli:mcp-verify -- --help\\s\+Source-checkout shortcut for this help from the repo root/);
     assert.match(smoke, /Installed CLI mcp-verify wrapper flow\\\/help\\\/failure checks/);
     assert.match(smoke, /pnpm test:mcp:verify\\s\+MCP verify helper contract without the full integration suite/);
-    assert.match(smoke, /pnpm test:mcp:verify:first-contact\\s\+Narrow first-contact health-summary\\\/advisory\\\/read\\\/sample-shape helper gates/);
+    assert.match(smoke, /pnpm test:mcp:verify:first-contact\\s\+Narrow first-contact initialize-hint\\\/health-summary\\\/advisory\\\/read\\\/sample-shape helper gates/);
     assert.match(smoke, /pnpm test:mcp:verify:timeout/);
     assert.match(smoke, /Narrow MCP verify timeout\\\/startup\\\/help diagnostics/);
     assert.match(smoke, /Successful cursor lines print bucket summaries plus current-page executable\\\/review next-action summaries/);

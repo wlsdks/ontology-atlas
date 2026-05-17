@@ -83,9 +83,10 @@ gates. `test:mcp:maintenance` checks maintenance_plan filter, cursor, resume,
 work-queue shape, and bucket / next-action formatter contracts without the full
 verify or dogfood suites.
 `test:mcp:verify` checks the shared MCP verify helper contract, and
-`test:mcp:verify:first-contact` narrows that to first-contact read smoke,
-vault warning / `validate_vault`, health summary / advisory / next-action gates, and
-`workspace_brief.nextActions[].sample` shape drift.
+`test:mcp:verify:first-contact` narrows that to first-contact initialize
+batch relation type guidance, read smoke, vault warning / `validate_vault`,
+health summary / advisory / next-action gates, and `workspace_brief.nextActions[].sample`
+shape drift.
 `test:mcp:verify:timeout` narrows timeout parsing, startup failure retry
 guidance, usage, and retry diagnostics that `mcp-verify` exposes through the CLI. Use
 `OMOT_TEST_NAME_PATTERN` or Node `--test-name-pattern` with

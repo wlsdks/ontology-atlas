@@ -422,7 +422,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000\s+Source-checkout dogfood verify with explicit args/);
   assert.match(clean, /pnpm cli:mcp-verify -- --help\s+Source-checkout shortcut for this help from the repo root/);
   assert.match(clean, /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
-  assert.match(clean, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health-summary\/advisory\/read\/sample-shape helper gates/);
+  assert.match(clean, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact initialize-hint\/health-summary\/advisory\/read\/sample-shape helper gates/);
   assert.match(clean, /pnpm test:mcp:verify:timeout/);
   assert.match(clean, /Narrow MCP verify timeout\/startup\/help diagnostics/);
   assertPnpmScriptsExist(clean);
