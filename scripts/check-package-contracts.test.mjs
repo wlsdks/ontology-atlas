@@ -474,7 +474,9 @@ describe('package contract helpers', () => {
     assert.match(section, /`pnpm dogfood:verify` is the shortest dogfood vault\s+gate/);
     assert.match(readme, /invalid timeout values fail before the server\s+starts and print\s+the received value plus a concrete retry example/i);
     assert.match(readme, /`npm run verify -- --timeout-ms 15000`/);
-    assert.match(readme, /CLI wrapper starts\s+this verifier with an explicit vault, timeout retry hints preserve\s+that vault as `oh-my-ontology mcp-verify --vault <path> --timeout-ms 15000`/);
+    assert.match(readme, /verifier is called with an\s+explicit vault, timeout retry hints preserve that vault/);
+    assert.match(readme, /`npm run verify -- --vault <path> --timeout-ms 15000`/);
+    assert.match(readme, /`oh-my-ontology mcp-verify --vault <path>\s+--timeout-ms 15000`/);
     assert.match(readme, /From the repo root, prefer the CLI wrapper for the dogfood vault/);
     assert.match(readme, /pnpm dogfood:verify/);
     assert.match(readme, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000/);
@@ -892,7 +894,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`overview`, `overview`\/`project_map` query_plan, and actual `neighbors`/);
     assert.match(verifySection, /Invalid timeout values print the received value/);
     assert.match(verifySection, /`oh-my-ontology mcp-verify --timeout-ms 15000`/);
-    assert.match(verifySection, /explicit vault, timeout retry hints preserve that\s+vault in the retry command as `--vault <path>`/);
+    assert.match(verifySection, /wrapper was called with an explicit vault, timeout retry hints preserve that\s+vault in the retry command as `--vault <path>`/);
     assert.match(verifySection, /node-to-project `path`/);
     assert.match(verifySection, /`path` hop\/edge alignment/);
     assert.match(verifySection, /`path` \/ `project_scope` calls/);
@@ -1239,6 +1241,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /전체 helper 회귀가 필요할 때만\s+`pnpm dogfood:test`/);
     assert.match(doc, /진짜 timeout 실패도 `npm run verify -- --timeout-ms 15000` 재시도 예시를\s+같이 보여준다/);
     assert.match(doc, /오류 출력은\s+`Received: "1000ms"` 와 `npm run verify -- --timeout-ms 15000` 같은 재시도 예시/);
+    assert.match(doc, /`npm run verify -- --vault <path> --timeout-ms 15000` 형태로 같은 vault 를 보존/);
     assert.match(doc, /key 순서 차이를 false mismatch 로 보지 않으며/);
     assert.match(doc, /dogfood 의 direct read \/ analysis tool 응답도 `structuredContent` 누락과\s+text JSON 구조 drift 를 같은 fail-closed 계약으로 검증/);
     assert.match(doc, /verify helper 와 dogfood helper 는 같은\s+`structuredContentParityStatus` 판정 helper 를 공유/);
@@ -1635,6 +1638,7 @@ describe('package contract helpers', () => {
     assert.match(regressionSection, /`pnpm cli:mcp-verify -- --help`/);
     assert.match(regressionSection, /vault 인자는 추가 `--` 없이 넘기고 help flag 에만 `-- --help`/);
     assert.match(regressionSection, /timeout retry hint 는 `--vault <path>` 를 보존/);
+    assert.match(regressionSection, /직접 `npm run verify -- --vault <path>` 경로도 같은 vault-preserving retry 계약/);
     assert.match(regressionSection, /write-tool post-write bucket guidance/);
     assert.match(regressionSection, /maintenance filter enum/);
     assert.match(regressionSection, /ready cursor \/ missing cursor 계약/);

@@ -96,6 +96,7 @@ import {
   validateVaultFailure,
   VERIFY_TUNED_HEALTH_ARGS,
   verifyCountConsistencyFailure,
+  verifyRetryEnvForVault,
   verifyRetryExample,
   verifySuccessMessage,
   verifyTimeoutFailure,
@@ -3181,6 +3182,14 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--timeout-ms'], cwd: '/tmp/cwd', isMain: true }).error, /Received: undefined/);
     assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--timeout-ms', '--vault'], cwd: '/tmp/cwd', isMain: true }).error, /Received: "--vault"/);
+    assert.match(
+      parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '/tmp/vault', '--timeout-ms'], cwd: '/tmp/cwd', isMain: true }).error,
+      /npm run verify -- --vault \/tmp\/vault --timeout-ms 15000/,
+    );
+    assert.doesNotMatch(
+      parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--timeout-ms', '--vault', '/tmp/vault'], cwd: '/tmp/cwd', isMain: true }).error,
+      /--vault \/tmp\/vault --timeout-ms 15000/,
+    );
     assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--vault'], cwd: '/tmp/cwd', isMain: true }).error, /requires/);
     assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '   '], cwd: '/tmp/cwd', isMain: true }).error, /requires/);
     assert.match(parseVerifyArgs({ env: {}, argv: ['node', 'verify.mjs', '--vault', '   '], cwd: '/tmp/cwd', isMain: true }).error, /requires/);
@@ -3247,6 +3256,17 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(missing.stderr, /verify timeout must be a positive integer/);
     assert.match(missing.stderr, /Received: undefined/);
     assert.match(missing.stderr, /npm run verify -- --timeout-ms 15000/);
+
+    const explicitVault = spawnSync(
+      process.execPath,
+      [VERIFY_SCRIPT, '--vault', '../docs/ontology', '--timeout-ms=abc'],
+      { cwd: join(__dirname, '..'), encoding: 'utf8' },
+    );
+
+    assert.equal(explicitVault.status, 1);
+    assert.equal(explicitVault.stdout, '');
+    assert.match(explicitVault.stderr, /Received: "abc"/);
+    assert.match(explicitVault.stderr, /npm run verify -- --vault \.\.\/docs\/ontology --timeout-ms 15000/);
   });
 
   it('describes direct verify usage', () => {
@@ -4172,6 +4192,10 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(parseVerifyTimeoutMs('nope'), false);
     assert.match(verifyTimeoutValueErrorMessage('1000ms'), /Received: "1000ms"/);
     assert.match(verifyTimeoutValueErrorMessage('1000ms'), /npm run verify -- --timeout-ms 15000/);
+    assert.match(
+      verifyTimeoutValueErrorMessage('1000ms', verifyRetryEnvForVault('../docs/ontology', {}, '/tmp/cwd')),
+      /npm run verify -- --vault \.\.\/docs\/ontology --timeout-ms 15000/,
+    );
   });
 
   it('formats actionable timeout failures', () => {
@@ -4187,6 +4211,11 @@ describe('verify.mjs first-contact gates', () => {
       verifyRetryExample({ OMOT_VERIFY_RETRY_EXAMPLE: ' oh-my-ontology mcp-verify --timeout-ms 15000 ' }),
       'oh-my-ontology mcp-verify --timeout-ms 15000',
     );
+    assert.equal(
+      verifyRetryExample(verifyRetryEnvForVault('../vault with space', {}, '/tmp/cwd')),
+      "npm run verify -- --vault '../vault with space' --timeout-ms 15000",
+    );
+    assert.equal(verifyRetryEnvForVault('.', {}, '/tmp/cwd').OMOT_VERIFY_RETRY_EXAMPLE, undefined);
     assert.equal(verifyRetryExample({ OMOT_VERIFY_RETRY_EXAMPLE: '   ' }), 'npm run verify -- --timeout-ms 15000');
   });
 

@@ -319,6 +319,9 @@ dogfood timeout 출력은 `OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk`
 `1000ms` 같은 부분 숫자 값은 조용히 truncate 하지 않고 실패하며, 오류 출력은
 `Received: "1000ms"` 와 `npm run verify -- --timeout-ms 15000` 같은 재시도 예시를
 함께 보여줘 agent 가 허용 형식을 추측하지 않게 한다.
+명시 vault 로 실행한 verify timeout / timeout 인자 오류는
+`npm run verify -- --vault <path> --timeout-ms 15000` 형태로 같은 vault 를 보존해
+agent 가 다른 vault 로 재시도하지 않게 한다.
 `--help` 와 명시적 vault argument 는 malformed `OMOT_VAULT` 보다 우선해,
 잘못된 shell 환경에서도 usage 확인이나 직접 지정한 vault 검증이 막히지 않는다.
 first-contact 응답들이 모두 도착하면 timeout 까지 기다리지 않고 즉시 종료하며,

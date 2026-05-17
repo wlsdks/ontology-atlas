@@ -2140,7 +2140,7 @@ export function parseVerifyArgs({
     } else if (arg === '--timeout-ms') {
       const value = args[index + 1];
       if (typeof value !== 'string' || value.length === 0 || value.startsWith('-')) {
-        error = verifyTimeoutValueErrorMessage(value);
+        error = verifyTimeoutValueErrorMessage(value, verifyRetryEnvForVault(positionalVault));
         break;
       }
       timeoutMsRaw = value;
@@ -2148,7 +2148,7 @@ export function parseVerifyArgs({
     } else if (arg.startsWith('--timeout-ms=')) {
       const value = arg.slice('--timeout-ms='.length);
       if (value.length === 0) {
-        error = verifyTimeoutValueErrorMessage(value);
+        error = verifyTimeoutValueErrorMessage(value, verifyRetryEnvForVault(positionalVault));
         break;
       }
       timeoutMsRaw = value;
@@ -2267,6 +2267,23 @@ export function verifyTimeoutFailure(timeoutMs, env = process.env) {
 export function verifyRetryExample(env = process.env) {
   const value = typeof env.OMOT_VERIFY_RETRY_EXAMPLE === 'string' ? env.OMOT_VERIFY_RETRY_EXAMPLE.trim() : '';
   return value || DEFAULT_VERIFY_RETRY_EXAMPLE;
+}
+
+export function verifyRetryEnvForVault(vaultArg, env = process.env, cwd = process.cwd()) {
+  const existing = typeof env.OMOT_VERIFY_RETRY_EXAMPLE === 'string' ? env.OMOT_VERIFY_RETRY_EXAMPLE.trim() : '';
+  if (existing) return { ...env, OMOT_VERIFY_RETRY_EXAMPLE: existing };
+  const vault = typeof vaultArg === 'string' ? vaultArg.trim() : '';
+  if (!vault || vault === '.' || vault === cwd) return env;
+  return {
+    ...env,
+    OMOT_VERIFY_RETRY_EXAMPLE: `npm run verify -- --vault ${shellArg(vault)} --timeout-ms 15000`,
+  };
+}
+
+function shellArg(value) {
+  const raw = String(value);
+  if (/^[A-Za-z0-9_./:-]+$/.test(raw)) return raw;
+  return `'${raw.replaceAll("'", "'\\''")}'`;
 }
 
 export function verifyTimeoutValueErrorMessage(value, env = process.env) {
@@ -5673,7 +5690,7 @@ async function main() {
     process.exit(1);
   }
   if (verifyTimeoutMs() === false) {
-    process.stderr.write(`\n[oh-my-ontology-mcp verify]\n\n\x1b[31m✗\x1b[0m ${verifyTimeoutValueErrorMessage(VERIFY_TIMEOUT_MS_RAW)}\n`);
+    process.stderr.write(`\n[oh-my-ontology-mcp verify]\n\n\x1b[31m✗\x1b[0m ${verifyTimeoutValueErrorMessage(VERIFY_TIMEOUT_MS_RAW, verifyRetryEnvForVault(VAULT))}\n`);
     process.exit(1);
   }
   console.log('\n[oh-my-ontology-mcp verify]\n');
