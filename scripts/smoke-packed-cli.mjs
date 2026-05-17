@@ -305,6 +305,28 @@ try {
   assert.match(invalidCliMcpVerifyTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
   assert.match(invalidCliMcpVerifyTimeout.stderr, /oh-my-ontology mcp-verify --timeout-ms 15000/);
 
+  const missingCliMcpVerifyTimeout = runRaw(
+    cliBin,
+    ['mcp-verify', '--timeout-ms'],
+    { cwd: projectDir },
+  );
+  assert.equal(missingCliMcpVerifyTimeout.status, 1);
+  assert.equal(missingCliMcpVerifyTimeout.stdout, '');
+  assert.match(missingCliMcpVerifyTimeout.stderr, /--timeout-ms requires a value/);
+  assert.match(missingCliMcpVerifyTimeout.stderr, /Received: undefined/);
+  assert.match(missingCliMcpVerifyTimeout.stderr, /oh-my-ontology mcp-verify --timeout-ms 15000/);
+
+  const nextFlagCliMcpVerifyTimeout = runRaw(
+    cliBin,
+    ['mcp-verify', '--timeout-ms', '--vault', 'ontology'],
+    { cwd: projectDir },
+  );
+  assert.equal(nextFlagCliMcpVerifyTimeout.status, 1);
+  assert.equal(nextFlagCliMcpVerifyTimeout.stdout, '');
+  assert.match(nextFlagCliMcpVerifyTimeout.stderr, /--timeout-ms requires a value/);
+  assert.match(nextFlagCliMcpVerifyTimeout.stderr, /Received: "--vault"/);
+  assert.match(nextFlagCliMcpVerifyTimeout.stderr, /oh-my-ontology mcp-verify --timeout-ms 15000/);
+
   const invalidCliMcpVerifyEnvTimeout = runRaw(
     cliBin,
     ['mcp-verify', 'ontology'],
