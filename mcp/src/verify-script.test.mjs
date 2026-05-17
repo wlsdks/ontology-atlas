@@ -25,6 +25,7 @@ import {
   buildGraphQuerySmokeRequests,
   compileFullArtifactFailure,
   compileIndexesFailure,
+  compileIndexesSummary,
   compileSummaryFailure,
   diagnosisBlockingFailure,
   diagnosisIssueCount,
@@ -4928,6 +4929,7 @@ describe('verify.mjs first-contact gates', () => {
       },
     };
 
+    assert.equal(compileIndexesSummary(clean), 'out 1, in 1, edgeById 1, aliases 1, edges 1/0/0');
     assert.equal(compileIndexesFailure({ ...clean, indexes: undefined }), 'compile_ontology indexes response missing indexes');
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, out: { project: edgeId } } }), 'compile_ontology.indexes.out malformed row');
     assert.equal(compileIndexesFailure({ ...clean, indexes: { ...clean.indexes, edgeById: {} } }), 'compile_ontology.indexes.edgeById count mismatch — index 0, edgeCount 1');

@@ -3483,6 +3483,10 @@ export function compileIndexesFailure(parsed) {
   return null;
 }
 
+export function compileIndexesSummary(parsed) {
+  return `out ${Object.keys(parsed.indexes.out).length}, in ${Object.keys(parsed.indexes.in).length}, edgeById ${Object.keys(parsed.indexes.edgeById).length}, aliases ${Object.keys(parsed.indexes.aliasToSlug).length}, edges ${parsed.resolvedEdgeCount}/${parsed.externalEdgeCount}/${parsed.unresolvedEdgeCount}`;
+}
+
 export function overviewFailure(parsed) {
   if (parsed?.operation !== 'overview') {
     return `overview returned unexpected operation: ${parsed?.operation}`;
@@ -5005,7 +5009,7 @@ async function step2BootAndCall() {
         }
         log(
           'ok',
-          `compile_ontology indexes — out ${Object.keys(parsed.indexes.out).length}, edgeById ${Object.keys(parsed.indexes.edgeById).length}, aliases ${Object.keys(parsed.indexes.aliasToSlug).length}`,
+          `compile_ontology indexes — ${compileIndexesSummary(parsed)}`,
         );
       } catch (err) {
         log('fail', `failed to parse compile_ontology indexes response: ${err.message}`);
