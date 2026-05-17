@@ -2798,7 +2798,7 @@ export function getConceptsFailure(parsed) {
     if (row.ok !== true) {
       return `get_concepts response expected success row at index ${index}`;
     }
-    if (typeof row.slug !== 'string' || row.slug.length === 0) {
+    if (!hasNonEmptyString(row.slug)) {
       return `get_concepts response missing success slug at index ${index}`;
     }
     if (!row.frontmatter || typeof row.frontmatter !== 'object' || Array.isArray(row.frontmatter)) {
@@ -2815,7 +2815,7 @@ export function getConceptsFailure(parsed) {
     }
   }
   if (!missing || typeof missing !== 'object' || Array.isArray(missing)) {
-    return 'get_concepts response malformed partial row';
+    return `get_concepts response malformed partial row at index ${parsed.concepts.length - 1}`;
   }
   if (missing.ok !== false) {
     return 'get_concepts response expected partial row to be ok:false';

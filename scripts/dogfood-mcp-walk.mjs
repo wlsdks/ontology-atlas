@@ -1366,7 +1366,7 @@ function getConceptsShapeFailure(result) {
     if (row.ok !== true) {
       return `get_concepts response expected success row at index ${index}`;
     }
-    if (typeof row.slug !== "string" || row.slug.length === 0) {
+    if (!isNonBlankString(row.slug)) {
       return `get_concepts response missing success slug at index ${index}`;
     }
     if (!row.frontmatter || typeof row.frontmatter !== "object" || Array.isArray(row.frontmatter)) {
@@ -1377,7 +1377,7 @@ function getConceptsShapeFailure(result) {
     }
   }
   if (!missing || typeof missing !== "object" || Array.isArray(missing)) {
-    return "get_concepts response malformed missing row";
+    return "get_concepts response malformed missing row at index 2";
   }
   if (missing.ok !== false) {
     return "get_concepts response expected missing row to be ok:false";

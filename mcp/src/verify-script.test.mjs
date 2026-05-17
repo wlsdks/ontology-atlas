@@ -4576,6 +4576,10 @@ describe('verify.mjs first-contact gates', () => {
       'get_concepts response expected success row at index 0',
     );
     assert.equal(
+      getConceptsFailure({ concepts: [{ ...okConcepts[0], slug: '  ' }, okConcepts[1], okConcepts[2]] }),
+      'get_concepts response missing success slug at index 0',
+    );
+    assert.equal(
       getConceptsFailure({ concepts: [okConcepts[0], { ...okConcepts[1], frontmatter: null }, okConcepts[2]] }),
       'get_concepts response missing frontmatter: capabilities/mcp-server',
     );
@@ -4590,6 +4594,10 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       getConceptsFailure({ concepts: [okConcepts[0], okConcepts[1], { slug: 'missing-verify-slug', ok: true }] }),
       'get_concepts response expected partial row to be ok:false',
+    );
+    assert.equal(
+      getConceptsFailure({ concepts: [okConcepts[0], okConcepts[1], null] }),
+      'get_concepts response malformed partial row at index 2',
     );
   });
 

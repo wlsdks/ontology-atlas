@@ -3500,6 +3500,20 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
+        batch: { concepts: [{ ...okShape.batch.concepts[0], slug: "  " }, okShape.batch.concepts[1], okShape.batch.concepts[2]] },
+      }),
+      ["get_concepts response missing success slug at index 0"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        batch: { concepts: [okShape.batch.concepts[0], okShape.batch.concepts[1], null] },
+      }),
+      ["get_concepts response malformed missing row at index 2"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
         batch: { concepts: [okShape.batch.concepts[0], okShape.batch.concepts[1], { slug: "missing-dogfood-slug", ok: true }] },
       }),
       ["get_concepts response expected missing row to be ok:false"],
