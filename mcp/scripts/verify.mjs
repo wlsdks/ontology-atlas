@@ -1496,9 +1496,14 @@ export function structuredContentVerifySummary({
   hasGetConcept = false,
   hasFindBacklinks = false,
   hasDirectGraphReads = false,
+  hasLimitedQueryConcepts = false,
   hasMaintenanceResume = false,
 } = {}) {
-  const direct = 9 + (hasGetConcept ? 1 : 0) + (hasFindBacklinks ? 1 : 0) + (hasDirectGraphReads ? 2 : 0);
+  const direct = 9
+    + (hasGetConcept ? 1 : 0)
+    + (hasFindBacklinks ? 1 : 0)
+    + (hasDirectGraphReads ? 2 : 0)
+    + (hasLimitedQueryConcepts ? 1 : 0);
   const write = 2;
   const maintenance = 2 + (hasMaintenanceResume ? 1 : 0);
   const graph = 7 + (hasNode ? 2 : 0) + (hasProject ? 1 : 0);
@@ -1542,6 +1547,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [34, 'query_concepts'],
   [35, 'find_neighbors'],
   [36, 'find_path'],
+  [37, 'query_concepts_limited'],
 ]);
 
 function log(level, msg) {
@@ -2008,6 +2014,23 @@ export function buildDirectGraphReadSmokeRequests(graphSmoke) {
   return { requests, expectedResponseIds };
 }
 
+export function buildLimitedQueryConceptsSmokeRequest(listPayload) {
+  const nodes = Array.isArray(listPayload?.nodes) ? listPayload.nodes : [];
+  const slug = nodes.find((node) => typeof node?.slug === 'string' && node.slug.length > 0)?.slug;
+  const total = Number.isInteger(listPayload?.total) ? listPayload.total : nodes.length;
+  if (!slug || total <= 2) return null;
+  return {
+    request: {
+      jsonrpc: '2.0',
+      id: 37,
+      method: 'tools/call',
+      params: { name: 'query_concepts', arguments: { filter: `slug!=${slug}`, limit: 1 } },
+    },
+    excludedSlug: slug,
+    expectedTotal: total - 1,
+  };
+}
+
 function allGraphQuerySmokeResponseIds() {
   return buildGraphQuerySmokeRequests({
     slug: 'verify-smoke-node',
@@ -2307,6 +2330,27 @@ export function queryConceptsFailure(parsed) {
   for (const [index, row] of parsed.matches.entries()) {
     const failure = readMatchRowFailure('query_concepts', row, index);
     if (failure) return failure;
+  }
+  return null;
+}
+
+export function limitedQueryConceptsFailure(parsed, excludedSlug, expectedTotal) {
+  const baseFailure = queryConceptsFailure(parsed);
+  if (baseFailure) return baseFailure;
+  if (parsed.filter !== `slug!=${excludedSlug}`) {
+    return `query_concepts limited filter mismatch — expected slug!=${excludedSlug}, got ${parsed.filter}`;
+  }
+  if (parsed.total !== expectedTotal) {
+    return `query_concepts limited total mismatch — expected ${expectedTotal}, got ${parsed.total}`;
+  }
+  if (parsed.matches.length !== 1) {
+    return `query_concepts limited match count mismatch — expected 1, got ${parsed.matches.length}`;
+  }
+  if (parsed.limited !== true) {
+    return 'query_concepts limited response did not set limited=true';
+  }
+  if (parsed.matches.some((row) => row?.slug === excludedSlug)) {
+    return `query_concepts limited response included excluded slug: ${excludedSlug}`;
   }
   return null;
 }
@@ -3110,6 +3154,7 @@ async function step2BootAndCall() {
     let sentGetConceptsSmoke = false;
     let sentFindBacklinksSmoke = false;
     let sentDirectGraphReadSmoke = false;
+    let sentLimitedQueryConceptsSmoke = false;
     let sentGraphQuerySmoke = false;
     let sentMaintenanceResumeSmoke = false;
     const expectedFirstContactIds = new Set(FIRST_CONTACT_RESPONSE_LABELS.keys());
@@ -3118,10 +3163,12 @@ async function step2BootAndCall() {
     expectedFirstContactIds.delete(33);
     expectedFirstContactIds.delete(35);
     expectedFirstContactIds.delete(36);
+    expectedFirstContactIds.delete(37);
+    let limitedQueryConceptsSmoke = null;
     let timer = null;
     proc.stdout.on('data', (b) => {
       stdout += b.toString();
-      if (!sentGetConceptsSmoke || !sentFindBacklinksSmoke || !sentDirectGraphReadSmoke || !sentGraphQuerySmoke) {
+      if (!sentGetConceptsSmoke || !sentFindBacklinksSmoke || !sentDirectGraphReadSmoke || !sentLimitedQueryConceptsSmoke || !sentGraphQuerySmoke) {
         const listResponse = parseJsonRpcResponses(stdout).find((response) => response?.id === 3 && response?.result);
         const projectResponse = parseJsonRpcResponses(stdout).find((response) => response?.id === 18 && response?.result);
         if (listResponse) {
@@ -3181,6 +3228,14 @@ async function step2BootAndCall() {
                   arguments: { slug },
                 },
               }) + '\n');
+            }
+          }
+          if (!sentLimitedQueryConceptsSmoke) {
+            sentLimitedQueryConceptsSmoke = true;
+            limitedQueryConceptsSmoke = buildLimitedQueryConceptsSmokeRequest(listPayload);
+            if (limitedQueryConceptsSmoke?.request) {
+              expectedFirstContactIds.add(37);
+              proc.stdin.write(JSON.stringify(limitedQueryConceptsSmoke.request) + '\n');
             }
           }
           if (!sentGraphQuerySmoke && projectResponse) {
@@ -3264,6 +3319,7 @@ async function step2BootAndCall() {
       const findEvidenceRes = responses.find((r) => r.id === 32);
       const findBacklinksRes = responses.find((r) => r.id === 33);
       const queryConceptsRes = responses.find((r) => r.id === 34);
+      const limitedQueryConceptsRes = responses.find((r) => r.id === 37);
       const findNeighborsRes = responses.find((r) => r.id === 35);
       const findPathRes = responses.find((r) => r.id === 36);
       const projectMapPlanRes = responses.find((r) => r.id === 12);
@@ -3622,6 +3678,37 @@ async function step2BootAndCall() {
       } catch (err) {
         log('fail', `failed to parse query_concepts response: ${err.message}`);
         return res(false);
+      }
+
+      let limitedQueryConceptsVerified = false;
+      if (limitedQueryConceptsSmoke) {
+        if (!limitedQueryConceptsRes || !limitedQueryConceptsRes.result) {
+          log('fail', 'no query_concepts_limited response');
+          return res(false);
+        }
+        try {
+          const text = limitedQueryConceptsRes.result.content?.[0]?.text || '';
+          const parsed = JSON.parse(text);
+          const failure = limitedQueryConceptsFailure(
+            parsed,
+            limitedQueryConceptsSmoke.excludedSlug,
+            limitedQueryConceptsSmoke.expectedTotal,
+          );
+          if (failure) {
+            log('fail', failure);
+            return res(false);
+          }
+          const structuredFailure = structuredContentFailure(limitedQueryConceptsRes, parsed, 'query_concepts_limited');
+          if (structuredFailure) {
+            log('fail', structuredFailure);
+            return res(false);
+          }
+          limitedQueryConceptsVerified = true;
+          log('ok', `query_concepts limited — ${formatCount(parsed.matches.length, 'query result')} / ${formatCount(parsed.total, 'total query result')} (limited ${parsed.limited})`);
+        } catch (err) {
+          log('fail', `failed to parse query_concepts_limited response: ${err.message}`);
+          return res(false);
+        }
       }
 
       if (graphSmokeArgs?.hasNode) {
@@ -4084,6 +4171,7 @@ async function step2BootAndCall() {
           hasGetConcept: getConceptVerified,
           hasFindBacklinks: findBacklinksVerified,
           hasDirectGraphReads: directGraphReadsVerified,
+          hasLimitedQueryConcepts: limitedQueryConceptsVerified,
           hasMaintenanceResume: maintenanceResumeVerified,
         })}`,
       );

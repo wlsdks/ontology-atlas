@@ -109,8 +109,8 @@ does not get skipped just because the project node was outside the first
 The project probe also verifies returned rows are `kind: project` and that its
 total matches `list_kinds.byKind.project`.
 It also checks `get_concept` for one discovered node, `get_concepts` with discovered vault slugs plus one missing slug,
-and `find_evidence` / `find_backlinks` / `query_concepts` / `find_neighbors` / `find_path` with live vault results,
-so installed CLI users catch batch-reader success, partial-row contract drift, and search/backlink/filter/local-graph read-tool drift.
+and `find_evidence` / `find_backlinks` / `query_concepts` / limited `query_concepts` / `find_neighbors` / `find_path` with live vault results,
+so installed CLI users catch batch-reader success, partial-row contract drift, search/backlink/filter/local-graph read-tool drift, and `limited:true` query semantics.
 Node census totals are cross-checked across `list_kinds`, `list_concepts`,
 `compile_ontology`, and `overview`; `validate_vault.scanned` remains file-level
 health so a file-count issue is not mistaken for graph node-count drift.

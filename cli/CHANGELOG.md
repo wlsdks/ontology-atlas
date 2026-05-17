@@ -17,7 +17,7 @@
 - `mcp-verify` now inherits the MCP package `project_map` query_plan smoke, so installed CLI checks prove widened `query_plan.targetOperation` support beyond the original `overview` target.
 - `mcp-verify` now inherits the MCP package `get_concept` smoke, so installed CLI checks prove single-node detail payloads before agents depend on frontmatter, prose excerpts, neighbors, outgoing edges, and mtime.
 - `mcp-verify` now inherits the MCP package `get_concepts` smoke: discovered vault slugs plus one missing slug catch batch-reader success and partial-row contract drift in installed CLI checks.
-- `mcp-verify` now inherits MCP package runtime smokes for `find_evidence`, `find_backlinks`, and `query_concepts`, so installed CLI checks prove search, backlink-impact, and typed-filter row shapes plus `structuredContent`.
+- `mcp-verify` now inherits MCP package runtime smokes for `find_evidence`, `find_backlinks`, and `query_concepts`, including a `limit:1` query that must report `limited:true`, so installed CLI checks prove search, backlink-impact, typed-filter row shapes, limit semantics, and `structuredContent`.
 - `mcp-verify` now inherits MCP package runtime smokes for direct `find_neighbors` and `find_path`, so installed CLI checks prove daily local-neighborhood and shortest-path read tools separately from graph-engine `query_ontology` operations.
 - `mcp-verify` now inherits the MCP package `find_orphans` smoke, including root/sentinel default exclusions, so installed CLI checks catch stale orphan-cleanup semantics before agents act on them.
 - `mcp-verify` now inherits the MCP package runtime unknown-argument and invalid-enum rejection smoke, so installed CLI checks prove strict schema behavior beyond `tools/list` metadata.

@@ -252,6 +252,7 @@ A successful run looks like this:
 ✓ find_evidence — 13 evidence results for "project"
 ✓ find_backlinks — project (0 backlinks)
 ✓ query_concepts — 1 query result / 1 total query result
+✓ query_concepts limited — 1 query result / 27 total query results (limited true)
 ✓ find_neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ find_path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
@@ -270,7 +271,7 @@ A successful run looks like this:
 ✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ project_scope — project (27 nodes, internalEdges 92)
-✓ structuredContent — direct 13/13, write 2/2, maintenance 2/2, graph 10/10
+✓ structuredContent — direct 14/14, write 2/2, maintenance 2/2, graph 10/10
 
 All passed — register .mcp.json with Claude Code and restart to use the 23 tools.
 ```
@@ -279,7 +280,7 @@ On failure, it tells you which step blocked progress and prints a diagnostic mes
 verify path exercises and gates the same first-contact graph diagnosis an agent should run:
 `tools/list`, `list_concepts`, a project-node `list_concepts` probe,
 `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,
-`query_concepts`, `find_neighbors`, `find_path`, `find_orphans`,
+`query_concepts`, limited `query_concepts`, `find_neighbors`, `find_path`, `find_orphans`,
 `list_kinds`, `validate_vault`,
 `query_ontology({operation:"workspace_brief"})`, tuned
 `query_ontology({operation:"workspace_brief"})`,

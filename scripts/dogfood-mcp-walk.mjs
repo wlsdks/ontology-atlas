@@ -108,6 +108,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [57, "analyze_repo_structure"],
   [58, "infer_imports"],
   [59, "strict_multi_args"],
+  [60, "query_concepts_limited"],
 ]);
 
 const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
@@ -368,6 +369,7 @@ export function buildDogfoodRequests() {
     call(6, "find_backlinks", { slug: "capabilities/mcp-server" }),
     call(7, "find_orphans", {}),
     call(56, "query_concepts", { filter: "kind=capability AND domain=ai-agent-partner", limit: 5 }),
+    call(60, "query_concepts", { filter: "slug!=project", limit: 1 }),
     call(57, "analyze_repo_structure", { rootPath: ROOT, maxDepth: 2 }),
     call(58, "infer_imports", { rootPath: ROOT, maxFiles: 5000 }),
     call(8, "validate_vault", {}),
@@ -655,6 +657,8 @@ export function evaluateDogfoodGate({
   orphStructured,
   queryConcepts,
   queryConceptsStructured,
+  queryConceptsLimited,
+  queryConceptsLimitedStructured,
   analyzedRepo,
   analyzedRepoStructured,
   inferredImports,
@@ -760,6 +764,7 @@ export function evaluateDogfoodGate({
   recordResult(failures, "find_backlinks", bl);
   recordResult(failures, "find_orphans", orph);
   recordResult(failures, "query_concepts", queryConcepts);
+  recordResult(failures, "query_concepts_limited", queryConceptsLimited);
   recordResult(failures, "analyze_repo_structure", analyzedRepo);
   recordResult(failures, "infer_imports", inferredImports);
   recordResult(failures, "validate_vault", validation);
@@ -887,6 +892,17 @@ export function evaluateDogfoodGate({
     const queryConceptsFailure = matchesShapeFailure("query_concepts", queryConcepts);
     if (queryConceptsFailure) failures.push(queryConceptsFailure);
     else recordStructuredContentFailure(failures, "query_concepts", queryConcepts, queryConceptsStructured);
+  }
+  if (queryConceptsLimited) {
+    const queryConceptsLimitedFailure = matchesShapeFailure("query_concepts_limited", queryConceptsLimited);
+    if (queryConceptsLimitedFailure) failures.push(queryConceptsLimitedFailure);
+    else {
+      if (queryConceptsLimited.limited !== true) failures.push("query_concepts_limited: expected limited=true");
+      if ((queryConceptsLimited.matches || []).some((row) => row?.slug === "project")) {
+        failures.push("query_concepts_limited: excluded project slug was returned");
+      }
+      recordStructuredContentFailure(failures, "query_concepts_limited", queryConceptsLimited, queryConceptsLimitedStructured);
+    }
   }
   if (analyzedRepo) {
     const analyzedRepoFailure = analyzeRepoStructureFailure(analyzedRepo);
@@ -4450,6 +4466,17 @@ async function main() {
     }
   }
 
+  header(`query_concepts(slug!=project, limit=1)`);
+  const queryConceptsLimited = getResult(responses, 60);
+  const queryConceptsLimitedStructured = getRpcResult(responses, 60)?.structuredContent ?? null;
+  if (queryConceptsLimited) {
+    console.log(`  structuredContent: ${structuredContentStatus(queryConceptsLimited, queryConceptsLimitedStructured)}`);
+    console.log(`  matches: ${queryConceptsLimited.matches?.length ?? 0} / total ${queryConceptsLimited.total} · limited ${queryConceptsLimited.limited === true}`);
+    for (const m of (queryConceptsLimited.matches || []).slice(0, 3)) {
+      console.log(`  ${m.kind?.padEnd(13) || ""} ${m.slug.padEnd(40)} ${m.title || ""}`);
+    }
+  }
+
   // 7c. analyze_repo_structure
   header(`analyze_repo_structure(repo bootstrap candidates)`);
   const analyzedRepo = getResult(responses, 57);
@@ -5134,6 +5161,7 @@ async function main() {
     ["find_backlinks", bl, blStructured],
     ["find_orphans", orph, orphStructured],
     ["query_concepts", queryConcepts, queryConceptsStructured],
+    ["query_concepts_limited", queryConceptsLimited, queryConceptsLimitedStructured],
     ["analyze_repo_structure", analyzedRepo, analyzedRepoStructured],
     ["infer_imports", inferredImports, inferredImportsStructured],
     ["validate_vault", validation, validationStructured],
@@ -5156,6 +5184,8 @@ async function main() {
     orphStructured,
     queryConcepts,
     queryConceptsStructured,
+    queryConceptsLimited,
+    queryConceptsLimitedStructured,
     analyzedRepo,
     analyzedRepoStructured,
     inferredImports,
@@ -5271,6 +5301,7 @@ async function main() {
   console.log(`  project_probe: ${projectProbe ? formatCount(projectProbe.total ?? 0, "project node") : "n/a"}`);
   console.log(`  get_concepts: ${(batch?.concepts || []).filter((row) => row?.ok === true).length} ok · ${(batch?.concepts || []).filter((row) => row?.ok === false).length} partial`);
   console.log(`  query_concepts: ${queryConcepts ? `${queryConcepts.matches?.length ?? 0} matches · limited ${queryConcepts.limited === true}` : "n/a"}`);
+  console.log(`  query_concepts_limited: ${queryConceptsLimited ? `${queryConceptsLimited.matches?.length ?? 0} matches · total ${queryConceptsLimited.total ?? "n/a"} · limited ${queryConceptsLimited.limited === true}` : "n/a"}`);
   console.log(`  analyze_repo_structure: ${analyzedRepo ? `${analyzedRepo.framework} · ${analyzedRepo.capabilities?.length ?? 0} capabilities · ${analyzedRepo.elements?.length ?? 0} elements` : "n/a"}`);
   console.log(`  infer_imports: ${inferredImports ? `${inferredImports.filesScanned ?? 0} files · ${inferredImports.moduleEdges?.length ?? 0} module edges` : "n/a"}`);
   console.log(

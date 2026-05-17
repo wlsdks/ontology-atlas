@@ -18,6 +18,7 @@ import {
   buildGetConceptSmokeSlug,
   buildGetConceptsSmokeSlugs,
   buildDirectGraphReadSmokeRequests,
+  buildLimitedQueryConceptsSmokeRequest,
   buildGraphQuerySmokeArgs,
   buildGraphQuerySmokeRequests,
   compileSummaryFailure,
@@ -48,6 +49,7 @@ import {
   initializeInstructionsFailure,
   listConceptsFailure,
   listKindsFailure,
+  limitedQueryConceptsFailure,
   maintenanceFilterEnumSummary,
   maintenanceBucketOutputSummary,
   maintenanceMissingCursorFailure,
@@ -2905,8 +2907,9 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(34), 'query_concepts');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(35), 'find_neighbors');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(36), 'find_path');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(37), 'query_concepts_limited');
     assert.deepEqual(
-      [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15, 30, 31, 33, 35, 36].sort((a, b) => a - b),
+      [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15, 30, 31, 33, 35, 36, 37].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
     );
     const responsesWithoutGetConcepts = [...FIRST_CONTACT_RESPONSE_LABELS.keys()]
@@ -2949,6 +2952,26 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
+  it('builds limited query_concepts smoke request for non-trivial vaults', () => {
+    assert.equal(buildLimitedQueryConceptsSmokeRequest({ total: 2, nodes: [{ slug: 'project' }] }), null);
+    assert.deepEqual(
+      buildLimitedQueryConceptsSmokeRequest({
+        total: 3,
+        nodes: [{ slug: 'project' }, { slug: 'domains/core' }, { slug: 'capabilities/search' }],
+      }),
+      {
+        request: {
+          jsonrpc: '2.0',
+          id: 37,
+          method: 'tools/call',
+          params: { name: 'query_concepts', arguments: { filter: 'slug!=project', limit: 1 } },
+        },
+        excludedSlug: 'project',
+        expectedTotal: 2,
+      },
+    );
+  });
+
   it('accepts clean find_evidence, find_backlinks, and query_concepts payloads', () => {
     const match = {
       slug: 'project',
@@ -2979,6 +3002,16 @@ describe('verify.mjs first-contact gates', () => {
         matches: [match],
         limited: false,
       }),
+      null,
+    );
+    assert.equal(
+      limitedQueryConceptsFailure({
+        filter: 'slug!=project',
+        parsedAs: 'slug != project',
+        total: 2,
+        matches: [{ ...match, slug: 'domains/core', kind: 'domain' }],
+        limited: true,
+      }, 'project', 2),
       null,
     );
   });
@@ -3337,6 +3370,14 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       queryConceptsFailure({ filter: 'kind=project', parsedAs: 'kind = project', total: 0, matches: [match], limited: false }),
       'query_concepts response match count exceeds total — matches 1, total 0',
+    );
+    assert.equal(
+      limitedQueryConceptsFailure({ filter: 'slug!=project', parsedAs: 'slug != project', total: 2, matches: [match], limited: true }, 'project', 2),
+      'query_concepts limited response included excluded slug: project',
+    );
+    assert.equal(
+      limitedQueryConceptsFailure({ filter: 'slug!=project', parsedAs: 'slug != project', total: 1, matches: [{ ...match, slug: 'domains/core', kind: 'domain' }], limited: false }, 'project', 1),
+      'query_concepts limited response did not set limited=true',
     );
   });
 
@@ -4120,8 +4161,9 @@ describe('verify.mjs first-contact gates', () => {
         hasGetConcept: true,
         hasFindBacklinks: true,
         hasDirectGraphReads: true,
+        hasLimitedQueryConcepts: true,
       }),
-      'direct 13/13, write 2/2, maintenance 2/2, graph 10/10',
+      'direct 14/14, write 2/2, maintenance 2/2, graph 10/10',
     );
     assert.equal(
       structuredContentVerifySummary({
@@ -4130,9 +4172,10 @@ describe('verify.mjs first-contact gates', () => {
         hasGetConcept: true,
         hasFindBacklinks: true,
         hasDirectGraphReads: true,
+        hasLimitedQueryConcepts: true,
         hasMaintenanceResume: true,
       }),
-      'direct 13/13, write 2/2, maintenance 3/3, graph 10/10',
+      'direct 14/14, write 2/2, maintenance 3/3, graph 10/10',
     );
   });
 

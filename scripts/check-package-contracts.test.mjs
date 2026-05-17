@@ -299,6 +299,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ find_evidence — \d+ evidence results for "project"/);
     assert.match(verifySection, /✓ find_backlinks — project \(\d+ backlinks\)/);
     assert.match(verifySection, /✓ query_concepts — \d+ query results? \/ \d+ total query results?/);
+    assert.match(verifySection, /✓ query_concepts limited — \d+ query results? \/ \d+ total query results? \(limited true\)/);
     assert.match(verifySection, /✓ find_neighbors — elements\/file-system-access-api/);
     assert.match(verifySection, /✓ find_path — elements\/file-system-access-api → project \(2 hops, 2 edges\)/);
     assert.match(verifySection, /✓ find_orphans — 0 orphans \(root\/sentinel defaults excluded\)/);
@@ -315,8 +316,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ path — elements\/file-system-access-api → project \(2 hops, 2 edges\)/);
     assert.doesNotMatch(verifySection, /✓ path — project → project/);
     assert.match(verifySection, new RegExp(`✓ project_scope — project \\(${scopedNodes} nodes, internalEdges`));
-    assert.match(verifySection, /✓ structuredContent — direct 13\/13, write 2\/2, maintenance 2\/2, graph 10\/10/);
-    assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,\s+`query_concepts`, `find_neighbors`, `find_path`, `find_orphans`,\s+`list_kinds`, `validate_vault`/);
+    assert.match(verifySection, /✓ structuredContent — direct 14\/14, write 2\/2, maintenance 2\/2, graph 10\/10/);
+    assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,\s+`query_concepts`, limited `query_concepts`, `find_neighbors`, `find_path`, `find_orphans`,\s+`list_kinds`, `validate_vault`/);
     assert.match(verifySection, /batch success rows\s+and partial rows are verified during installation checks/);
     assert.match(verifySection, /`query_ontology\(\{operation:"neighbors"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"path"\}\)`/);
@@ -395,7 +396,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /single-node detail payload drift/);
     assert.match(verifySection, /success-row \/ partial-row contract drift/);
     assert.match(verifySection, /`find_evidence`, `find_backlinks`, and `query_concepts`/);
-    assert.match(verifySection, /search, backlink-impact, and typed-filter row-shape drift/);
+    assert.match(verifySection, /limit:1` query that must report `limited:true`/);
+    assert.match(verifySection, /search, backlink-impact, typed-filter row-shape, limit-semantics, and `structuredContent` drift/);
     assert.match(verifySection, /direct `find_neighbors` and `find_path`/);
     assert.match(verifySection, /local-neighborhood and shortest-path read-tool drift/);
     assert.match(verifySection, /`compile_ontology`, `overview`, `overview`\/`project_map` query_plan, and actual `neighbors` \/ `path` \/ `project_scope` graph-query smoke/);
@@ -537,7 +539,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`get_concept` smoke/);
     assert.match(verifySection, /partial-row contract drift/);
     assert.match(verifySection, /runtime smokes for `find_evidence`, `find_backlinks`, and `query_concepts`/);
-    assert.match(verifySection, /search, backlink-impact, and typed-filter row shapes plus `structuredContent`/);
+    assert.match(verifySection, /search, backlink-impact, typed-filter row shapes, limit semantics, and `structuredContent`/);
     assert.match(verifySection, /runtime smokes for direct `find_neighbors` and `find_path`/);
     assert.match(verifySection, /daily local-neighborhood and shortest-path read tools/);
     assert.match(verifySection, /split between node census checks/);
@@ -763,6 +765,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`find_path` 도 `outputSchema` 와 동일한 `structuredContent` shortest-path payload/);
     assert.match(doc, /`find_orphans` 도 `outputSchema` 와 동일한 `structuredContent` orphan-list payload/);
     assert.match(doc, /`query_concepts` 도 `outputSchema` 와 동일한 `structuredContent` typed-filter payload/);
+    assert.match(doc, /dogfood walk 는 `slug!=project, limit=1` 도 직접 호출해 `limited:true` query semantics/);
     assert.match(doc, /`compile_ontology` 도 `outputSchema` 와 동일한 `structuredContent` graph-summary payload/);
     assert.match(doc, /`analyze_repo_structure` 도 `outputSchema` 와 동일한 `structuredContent` bootstrap-candidate payload/);
     assert.match(doc, /`infer_imports` 도 `outputSchema` 와 동일한 `structuredContent` import-graph payload/);
@@ -895,7 +898,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /strict arguments — multiple unknown tool arguments reported together/);
     assert.match(smoke, /add_concepts — non-object and unknown-field rows isolated at row level/);
     assert.match(smoke, /add_relations — non-object and unknown-field rows isolated at row level/);
-    assert.match(smoke, /structuredContent — direct 13\\\/13, write 2\\\/2, maintenance 3\\\/3, graph 10\\\/10/);
+    assert.match(smoke, /structuredContent — direct 14\\\/14, write 2\\\/2, maintenance 3\\\/3, graph 10\\\/10/);
     assert.match(smoke, /writeMaintenanceResumeVault/);
     assert.match(smoke, /cliMaintenanceResumeMcpVerify/);
     assert.match(smoke, /directMcpMaintenanceResumeVerify/);
