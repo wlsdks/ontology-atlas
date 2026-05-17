@@ -1037,10 +1037,16 @@ export function toolsListSchemaFailure(tools) {
     return 'infer_imports outputSchema moduleEdges count drift';
   }
   const moduleKindCountsSchema = moduleEdgesSchema.items?.properties?.kindCounts;
+  const moduleKindCountKeys = ['static', 'dynamic', 'require', 'reexport', 'side'];
   if (
     moduleKindCountsSchema?.type !== 'object' ||
-    moduleKindCountsSchema.additionalProperties?.type !== 'integer' ||
-    moduleKindCountsSchema.additionalProperties?.minimum !== 1
+    moduleKindCountsSchema.additionalProperties !== false ||
+    moduleKindCountsSchema.minProperties !== 1 ||
+    !moduleKindCountsSchema.properties ||
+    moduleKindCountKeys.some((kind) => (
+      moduleKindCountsSchema.properties?.[kind]?.type !== 'integer' ||
+      moduleKindCountsSchema.properties?.[kind]?.minimum !== 1
+    ))
   ) {
     return 'infer_imports outputSchema moduleEdges kindCounts drift';
   }

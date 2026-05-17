@@ -836,7 +836,15 @@ function makeDogfoodToolsList() {
                   count: { type: "integer", minimum: 1 },
                   kindCounts: {
                     type: "object",
-                    additionalProperties: { type: "integer", minimum: 1 },
+                    properties: {
+                      static: { type: "integer", minimum: 1 },
+                      dynamic: { type: "integer", minimum: 1 },
+                      require: { type: "integer", minimum: 1 },
+                      reexport: { type: "integer", minimum: 1 },
+                      side: { type: "integer", minimum: 1 },
+                    },
+                    additionalProperties: false,
+                    minProperties: 1,
                   },
                 },
               },
@@ -3335,7 +3343,7 @@ describe("evaluateDogfoodGate", () => {
       ["tools/list: infer_imports outputSchema edge kind drift"],
     );
     const inferModuleKindCountsDrifted = makeDogfoodToolsList();
-    inferModuleKindCountsDrifted.tools.find((tool) => tool.name === "infer_imports").outputSchema.properties.moduleEdges.items.properties.kindCounts.additionalProperties.type = "number";
+    inferModuleKindCountsDrifted.tools.find((tool) => tool.name === "infer_imports").outputSchema.properties.moduleEdges.items.properties.kindCounts.properties.side.type = "number";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: inferModuleKindCountsDrifted }),
       ["tools/list: infer_imports outputSchema moduleEdges kindCounts drift"],

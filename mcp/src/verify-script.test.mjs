@@ -1032,7 +1032,15 @@ describe('verify.mjs first-contact gates', () => {
                   count: { type: 'integer', minimum: 1 },
                   kindCounts: {
                     type: 'object',
-                    additionalProperties: { type: 'integer', minimum: 1 },
+                    properties: {
+                      static: { type: 'integer', minimum: 1 },
+                      dynamic: { type: 'integer', minimum: 1 },
+                      require: { type: 'integer', minimum: 1 },
+                      reexport: { type: 'integer', minimum: 1 },
+                      side: { type: 'integer', minimum: 1 },
+                    },
+                    additionalProperties: false,
+                    minProperties: 1,
                   },
                 },
               },
@@ -2300,7 +2308,15 @@ describe('verify.mjs first-contact gates', () => {
                     ...tools.find((tool) => tool.name === 'infer_imports').outputSchema.properties.moduleEdges.items.properties,
                     kindCounts: {
                       type: 'object',
-                      additionalProperties: { type: 'number', minimum: 1 },
+                      properties: {
+                        static: { type: 'integer', minimum: 1 },
+                        dynamic: { type: 'integer', minimum: 1 },
+                        require: { type: 'integer', minimum: 1 },
+                        reexport: { type: 'integer', minimum: 1 },
+                        side: { type: 'number', minimum: 1 },
+                      },
+                      additionalProperties: false,
+                      minProperties: 1,
                     },
                   },
                 },

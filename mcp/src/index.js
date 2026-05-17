@@ -1784,12 +1784,17 @@ const TOOLS = [
               count: { type: 'integer', minimum: 1 },
               kindCounts: {
                 type: 'object',
-                additionalProperties: {
-                  type: 'integer',
-                  minimum: 1,
+                properties: {
+                  static: { type: 'integer', minimum: 1 },
+                  dynamic: { type: 'integer', minimum: 1 },
+                  require: { type: 'integer', minimum: 1 },
+                  reexport: { type: 'integer', minimum: 1 },
+                  side: { type: 'integer', minimum: 1 },
                 },
+                additionalProperties: false,
+                minProperties: 1,
                 description:
-                  'Import kind histogram for this collapsed module edge, e.g. { static: 2, dynamic: 1 }.',
+                  'Import kind histogram for this collapsed module edge. Allowed keys: static, dynamic, require, reexport, side.',
               },
             },
             required: ['from', 'to', 'count', 'kindCounts'],

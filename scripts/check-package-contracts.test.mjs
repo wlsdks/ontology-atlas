@@ -392,12 +392,14 @@ describe('package contract helpers', () => {
     assert.match(analyzeLine, /`?\{ rootPath\?, maxDepth\?, ignore\? \}`?/);
     assert.match(inferLine, /`?\{ rootPath\?, sourceFolders\?, ignore\?, maxFiles\? \}`?/);
     assert.match(inferLine, /`kindCounts`/);
+    assert.match(inferLine, /`static`, `dynamic`, `require`, `reexport`, and `side`/);
     assert.match(inferLine, /`tsconfig\.json` paths/);
     assert.match(inferLine, /fallback common `@\/\*` aliases/);
     assert.match(mcpInferRow, /relative imports/);
     assert.match(mcpInferRow, /`tsconfig\.json` `compilerOptions\.paths` aliases/);
     assert.match(mcpInferRow, /fallback common `@\/\*` aliases/);
     assert.match(mcpInferRow, /`alias-not-found`/);
+    assert.match(mcpInferRow, /`outputSchema` restricts `kindCounts` to `static`, `dynamic`, `require`, `reexport`, and `side`/);
     assert.doesNotMatch(analyzeLine + inferLine, /repoRoot/);
   });
 
@@ -1293,6 +1295,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`analyze_repo_structure` 도 `outputSchema` 와 동일한 `structuredContent` bootstrap-candidate payload/);
     assert.match(doc, /`infer_imports` 도 `outputSchema` 와 동일한 `structuredContent` import-graph payload/);
     assert.match(doc, /verify \/ dogfood walk 는 상위 module edge 의 `kindCounts` 도 출력/);
+    assert.match(doc, /`kindCounts` `outputSchema` 도 같은 5개 import kind key 로 닫혀 있는지 확인/);
     assert.match(inferImportsRow, /`tsconfig\.json` `compilerOptions\.paths`/);
     assert.match(inferImportsRow, /fallback common `@\/\*` alias/);
     assert.match(inferImportsRow, /내부 edge 로 resolve/);
