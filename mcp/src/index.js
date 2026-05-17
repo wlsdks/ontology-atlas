@@ -2525,6 +2525,7 @@ const RELATION_KEY = {
   elements: 'elements',
   domain: 'domain',
 };
+const RELATION_TYPES = Object.freeze(Object.keys(RELATION_KEY));
 
 function addRelation({ from, to, type, expected_mtime }, options = {}) {
   requireNonBlankString(from, 'from');
@@ -2533,7 +2534,7 @@ function addRelation({ from, to, type, expected_mtime }, options = {}) {
   requireOptionalNonNegativeNumber(expected_mtime, 'expected_mtime');
   const key = RELATION_KEY[type];
   if (!key) {
-    throw new Error(`Unknown relation type: ${type}`);
+    throw new Error(formatAllowedValueError('type', type, RELATION_TYPES));
   }
   const canonicalFrom = resolveExistingVaultSlug(from);
   const canonicalTo = resolveExistingVaultSlug(to);

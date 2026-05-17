@@ -30,8 +30,8 @@ relates: [capabilities/frontmatter-to-ontology, domains/ai-agent-partner]
 | `infer_imports` | **R17** TS/JS import graph 추출 → file/module-level edge + external (npm) imports 분리. **side effect 0** — vault frontmatter 는 수정하지 않는다. `analyze_repo_structure` 이후 실제 코드 import 기반 `depends_on` 후보를 보강하는 read tool 이며, agent 는 `moduleEdges` 를 검토한 뒤 채택한 edge 만 `add_relation` / `add_relations` 로 land 한다. relative import 와 common `@/*` alias 는 target 이 있으면 내부 edge 로 resolve 하고, alias target 이 없으면 `alias-not-found` unresolved 로 노출한다. moduleEdges 도 analyze 와 같은 folder-prefixed slug 를 사용해 add_relation endpoint mismatch 를 피함. `maxFiles` 는 default 5000 / max 50000 hard stop 으로 pathological monorepo walk 를 피한다. |
 | `add_concept` | 새 노드 (.md) 작성 — slug/kind/title/domain 은 blank 또는 앞뒤 공백이면 쓰기 전 reject, graph 배열은 trim + dedup + sort, body 는 생략 시에만 기본 본문 생성하고 명시한 빈 문자열은 보존, 기존 slug 면 throw, changed write 는 compact `postWriteMaintenance` 반환 (`operation` / `sideEffect:false` / `filters` / `limited` / cursor / action `score` / executable `proposedAction` 포함) |
 | `add_concepts` | **R+** 배치 writer — 여러 노드 한 호출에 (max 50, 입력 순서 보존, partial result, 입력 내 중복 slug 사전 감지). row-level non-object / blank / padded / unknown-field 입력은 해당 row 만 실패한다. `/ontology-bootstrap` 흐름이 5~15 노드를 한 번에 land. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / action `score` / executable `proposedAction` 포함). |
-| `add_relation` | depends_on / relates / contains / describes edge 추가. from/to/type 은 blank 또는 앞뒤 공백이면 쓰기 전 reject, changed write 는 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / action `score` / executable `proposedAction` 포함) |
-| `add_relations` | **R+** 배치 edge writer — 여러 edge 한 호출에 (max 50, 응답 row 순서 보존, 저장 배열은 dedup + sort, idempotent, partial result). row-level non-object / unknown-field 입력도 해당 row 만 실패한다. analyze_repo_structure suggestedRelations · infer_imports moduleEdges 수신 직후 적합. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / action `score` / executable `proposedAction` 포함). |
+| `add_relation` | depends_on / relates / contains / describes edge 추가. from/to/type 은 blank 또는 앞뒤 공백이면 쓰기 전 reject 하고, relation type 오타는 closest allowed value hint(`Did you mean "depends_on"?`) 와 함께 reject 한다. changed write 는 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / action `score` / executable `proposedAction` 포함) |
+| `add_relations` | **R+** 배치 edge writer — 여러 edge 한 호출에 (max 50, 응답 row 순서 보존, 저장 배열은 dedup + sort, idempotent, partial result). row-level non-object / unknown-field / relation type typo 입력도 해당 row 만 실패하고 nearest relation type hint 를 포함한다. analyze_repo_structure suggestedRelations · infer_imports moduleEdges 수신 직후 적합. changed batch 는 최종 graph 기준 compact `postWriteMaintenance` 반환 (`operation` / `filters` / cursor / action `score` / executable `proposedAction` 포함). |
 
 R+ follow-up: `add_relation` / `add_relations` 와 `rename_concept` / `merge_concepts`
 backlink redirect 는 relation 배열을 canonical set 으로 저장한다. 같은 edge 집합은
@@ -309,7 +309,7 @@ read-only first-contact diagnosis, `expected_mtime`, existing `newSlug` /
 `overwrite: true`, `force: true`, dangling referrers 안내를 잃으면 실패해,
 설치된 패키지의 agent-facing startup guidance 가 write 전에도 증명되도록 한다.
 strict-input typo recovery 안내도 같은 gate 에 포함되어 `Did you mean "limit"?`,
-`Did you mean "overview"?` 같은 nearest hint 가 first-contact 에서 사라지지 않게 한다.
+`Did you mean "overview"?`, `Did you mean "depends_on"?` 같은 nearest hint 가 first-contact 에서 사라지지 않게 한다.
 `health` / `workspace_brief` probe tuning 도 first-contact 안내에 포함해
 `componentLimit`, `cycleLimit`, `recommendationLimit`, `orderLimit`, `nodeLimit`,
 `dependencyTypes`, `componentTypes` 를 대형 vault 또는 focused diagnosis 에 바로 쓸 수 있게 한다.
@@ -332,6 +332,8 @@ Did you mean "limit"?`, `Unknown arguments for list_concepts: "lmit" (did you me
 "limit"?), "summry" (did you mean "summary"?)` 또는 `operation must be one of: ... Received: "overveiw".
 Did you mean "overview"?` 같은 오류가 기본값 fallback 이 아니라 즉시 고쳐야 하는
 인자명/값 오류임을 agent-facing instructions 와 verify/dogfood smoke 에서 직접 안내한다.
+`add_relations` first-contact smoke 는 non-object row, unknown field row,
+relation type typo row 를 함께 보내 row-level 격리와 relation type nearest hint 를 동시에 검증한다.
 여러 unknown argument 를 한 번에 보낸 경우에도 첫 번째 오타만 보고하지 않고
 각 unknown key 와 가까운 allowed argument hint 를 한 응답에 모아 보여줘 agent 의
 반복 retry 비용을 낮춘다.

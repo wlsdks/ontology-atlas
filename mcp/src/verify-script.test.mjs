@@ -2851,7 +2851,7 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       batchRowIsolationFailure({ result: { content: [{ text: JSON.stringify({ concepts: [{ ok: false }] }) }] } }, 'concepts', 'add_concepts'),
-      'add_concepts row-isolation response missing two result rows',
+      'add_concepts row-isolation response missing 2 result rows',
     );
     assert.equal(
       batchRowIsolationFailure({
@@ -2859,7 +2859,30 @@ describe('verify.mjs first-contact gates', () => {
           content: [{ text: JSON.stringify({ relations: [{ ok: true }, { ok: false, error: 'Unknown field "relation". Did you mean "type"?' }] }) }],
         },
       }, 'relations', 'add_relations'),
-      'add_relations row-isolation response missing non-object row error',
+      'add_relations row-isolation response missing 3 result rows',
+    );
+    assert.equal(
+      batchRowIsolationFailure({
+        result: {
+          content: [{
+            text: JSON.stringify({
+              relations: [
+                { ok: false, error: 'relations[0] must be an object.' },
+                { ok: false, error: 'Unknown field "relation". Did you mean "type"?' },
+                { ok: false, error: 'type must be one of: depends_on, relates. Received: "depend_on". Did you mean "depends_on"?' },
+              ],
+            }),
+          }],
+          structuredContent: {
+            relations: [
+              { ok: false, error: 'relations[0] must be an object.' },
+              { ok: false, error: 'Unknown field "relation". Did you mean "type"?' },
+              { ok: false, error: 'type must be one of: depends_on, relates. Received: "depend_on". Did you mean "depends_on"?' },
+            ],
+          },
+        },
+      }, 'relations', 'add_relations'),
+      null,
     );
     assert.equal(
       batchRowIsolationFailure({

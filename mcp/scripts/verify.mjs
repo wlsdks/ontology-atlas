@@ -39,6 +39,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve, join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
+import { StringDecoder } from 'node:string_decoder';
 import {
   hasAnyErrorResponse,
   hasAllResultResponses,
@@ -2147,7 +2148,13 @@ export function buildFirstContactRequests() {
       method: 'tools/call',
       params: {
         name: 'add_relations',
-        arguments: { relations: [null, { from: 'verify-row-isolation', to: 'verify-target', type: 'relates', relation: 'relates' }] },
+        arguments: {
+          relations: [
+            null,
+            { from: 'verify-row-isolation', to: 'verify-target', type: 'relates', relation: 'relates' },
+            { from: 'verify-row-isolation', to: 'verify-target', type: 'depend_on' },
+          ],
+        },
       },
     },
     {
@@ -2845,13 +2852,14 @@ export function batchRowIsolationFailure(response, key, label) {
     return `failed to parse ${label} row-isolation response: ${err.message}`;
   }
   const rows = parsed?.[key];
-  if (!Array.isArray(rows) || rows.length !== 2) {
-    return `${label} row-isolation response missing two result rows`;
+  const expectedRows = key === 'relations' ? 3 : 2;
+  if (!Array.isArray(rows) || rows.length !== expectedRows) {
+    return `${label} row-isolation response missing ${expectedRows} result rows`;
   }
   if (Object.prototype.hasOwnProperty.call(parsed, 'postWriteMaintenance')) {
     return `${label} row-isolation response unexpectedly included postWriteMaintenance`;
   }
-  const [nonObjectRow, unknownFieldRow] = rows;
+  const [nonObjectRow, unknownFieldRow, invalidTypeRow] = rows;
   if (nonObjectRow?.ok !== false || typeof nonObjectRow.error !== 'string' || !/must be an object/i.test(nonObjectRow.error)) {
     return `${label} row-isolation response missing non-object row error`;
   }
@@ -2869,6 +2877,17 @@ export function batchRowIsolationFailure(response, key, label) {
   }
   if (key === 'relations' && !/Did you mean "type"\?/i.test(unknownFieldRow.error)) {
     return `${label} row-isolation response missing relation field suggestion`;
+  }
+  if (
+    key === 'relations' &&
+    (
+      invalidTypeRow?.ok !== false ||
+      typeof invalidTypeRow.error !== 'string' ||
+      !/Received: "depend_on"/i.test(invalidTypeRow.error) ||
+      !/Did you mean "depends_on"\?/i.test(invalidTypeRow.error)
+    )
+  ) {
+    return `${label} row-isolation response missing relation type suggestion`;
   }
   const structuredFailure = structuredContentFailure(response, parsed, `${label} row isolation`);
   if (structuredFailure) {
@@ -3516,9 +3535,13 @@ async function step1ParserSmoke() {
     const proc = spawn('node', [PARSER_TEST], { stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
-    proc.stdout.on('data', (b) => (stdout += b.toString()));
-    proc.stderr.on('data', (b) => (stderr += b.toString()));
+    const stdoutDecoder = new StringDecoder('utf8');
+    const stderrDecoder = new StringDecoder('utf8');
+    proc.stdout.on('data', (b) => (stdout += stdoutDecoder.write(b)));
+    proc.stderr.on('data', (b) => (stderr += stderrDecoder.write(b)));
     proc.on('close', (code) => {
+      stdout += stdoutDecoder.end();
+      stderr += stderrDecoder.end();
       if (code === 0 && /passed/.test(stdout)) {
         log('ok', stdout.trim().split('\n').slice(-1)[0]);
         res(true);
@@ -3549,6 +3572,8 @@ async function step2BootAndCall() {
     });
     let stdout = '';
     let stderr = '';
+    const stdoutDecoder = new StringDecoder('utf8');
+    const stderrDecoder = new StringDecoder('utf8');
     let timedOut = false;
     let completed = false;
     let sentGetConceptSmoke = false;
@@ -3568,7 +3593,7 @@ async function step2BootAndCall() {
     let limitedQueryConceptsSmoke = null;
     let timer = null;
     proc.stdout.on('data', (b) => {
-      stdout += b.toString();
+      stdout += stdoutDecoder.write(b);
       if (!sentGetConceptsSmoke || !sentFindBacklinksSmoke || !sentDirectGraphReadSmoke || !sentLimitedQueryConceptsSmoke || !sentGraphQuerySmoke) {
         const listResponse = parseJsonRpcResponses(stdout).find((response) => response?.id === 3 && response?.result);
         const projectResponse = parseJsonRpcResponses(stdout).find((response) => response?.id === 18 && response?.result);
@@ -3691,7 +3716,7 @@ async function step2BootAndCall() {
         proc.kill('SIGTERM');
       }
     });
-    proc.stderr.on('data', (b) => (stderr += b.toString()));
+    proc.stderr.on('data', (b) => (stderr += stderrDecoder.write(b)));
 
     proc.stdin.write(lines.join('\n') + '\n');
     timer = setTimeout(() => {
@@ -3701,6 +3726,8 @@ async function step2BootAndCall() {
 
     proc.on('close', () => {
       if (timer) clearTimeout(timer);
+      stdout += stdoutDecoder.end();
+      stderr += stderrDecoder.end();
       const responses = parseJsonRpcResponses(stdout);
 
       const initRes = responses.find((r) => r.id === 1);

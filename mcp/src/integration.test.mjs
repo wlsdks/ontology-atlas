@@ -3547,13 +3547,15 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
           { from: "p", to: "missing", type: "contains" },
           // unknown type → ok:false
           { from: "p", to: "c1", type: "weird-type" },
+          // close type typo → ok:false with nearest-value hint
+          { from: "p", to: "c1", type: "depend_on" },
         ],
       }),
       callTool(3, "get_concept", { slug: "p" }),
     ]);
     const result = getCallParsed(responses, 2);
     assert.deepEqual(getCallStructured(responses, 2), result);
-    assert.equal(result.relations.length, 5, "relations row 수 = 입력 길이");
+    assert.equal(result.relations.length, 6, "relations row 수 = 입력 길이");
     // 순서 보존
     assert.equal(result.relations[0].ok, true);
     assert.equal(result.relations[0].to, "c2");
@@ -3567,7 +3569,13 @@ await test("add_relations — 배치 write, row 순서 보존 + canonical sort +
     assert.match(result.relations[3].error, /does not exist|missing/i);
     // unknown type
     assert.equal(result.relations[4].ok, false);
-    assert.match(result.relations[4].error, /Unknown relation type|weird-type/i);
+    assert.match(result.relations[4].error, /type must be one of/i);
+    assert.match(result.relations[4].error, /Received: "weird-type"/i);
+    // close type typo
+    assert.equal(result.relations[5].ok, false);
+    assert.match(result.relations[5].error, /type must be one of/i);
+    assert.match(result.relations[5].error, /Received: "depend_on"/i);
+    assert.match(result.relations[5].error, /Did you mean "depends_on"\?/i);
     assertPostWriteMaintenanceShape(result.postWriteMaintenance, "batch relation postWriteMaintenance");
     assert.equal(result.relations[0].postWriteMaintenance, undefined);
     // p.contains 는 edge set 기준으로 중복 제거 + 정렬되어 land
