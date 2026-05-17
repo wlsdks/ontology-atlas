@@ -478,6 +478,7 @@ try {
   const cliMcpVerifyHelp = run(cliBin, cliMcpVerifyArgs(['--help']), { cwd: projectDir });
   assert.equal(cliMcpVerifyHelp.stderr, '');
   assert.match(cliMcpVerifyHelp.stdout, /Usage:/);
+  assert.match(cliMcpVerifyHelp.stdout, /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
   assert.match(cliMcpVerifyHelp.stdout, /compile_ontology/);
   assert.match(cliMcpVerifyHelp.stdout, /neighbors\/node-to-project path\/project_scope graph-query smoke/);
   assert.match(cliMcpVerifyHelp.stdout, /tools\/list schema strictness/);
@@ -699,6 +700,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /Run npm run verify from the mcp\/ package directory/);
   assert.match(directMcpVerifyHelp.stdout, /from the repo root, use the node mcp\/scripts\/verify\.mjs form/);
   assert.match(directMcpVerifyHelp.stdout, /Explicit \[vault\] or --vault arguments take precedence over OMOT_VAULT/);
+  assert.match(directMcpVerifyHelp.stdout, /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
   assert.match(directMcpVerifyHelp.stdout, /project probe/);
   assert.match(directMcpVerifyHelp.stdout, /strict unknown-argument \/ invalid-enum rejection/);
   assert.match(directMcpVerifyHelp.stdout, /batch writer row isolation for non-object rows and unknown row fields with concepts\[n\]\/relations\[n\] error labels, plus invalid add_relations type closest-value hints/);

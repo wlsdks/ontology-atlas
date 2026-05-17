@@ -62,6 +62,7 @@
 - `npm run verify -- --help` now labels the narrow first-contact helper gate as `initialize-safety-recovery`, so the focused-check hint matches the full guidance gate instead of the older `initialize-hint` wording.
 - `npm run verify` now fails if the invalid-type `add_relation` strict smoke includes `changed` or `postWriteMaintenance` in the result or `structuredContent`, so the preflight rejection stays visibly non-writing.
 - `npm run verify` now fails if `tools/list` exposes duplicate tool names, so MCP clients never accept an ambiguous first-contact inventory.
+- `npm run verify -- --help` now names missing/extra/duplicate/invalid tool-name inventory checks, so the focused verify contract is visible before running the full smoke.
 - `npm run verify` now makes runtime negative smoke calls with invalid `list_concepts.lmit` and `query_ontology.operation="overveiw"` inputs, so installed packages prove unknown-argument and invalid-enum rejection before agents rely on the MCP surface.
 
 ## 0.11.0 — 2026-05-14

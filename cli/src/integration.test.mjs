@@ -389,7 +389,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   const clean = stripAnsi(r.stdout);
   assert.match(clean, /Usage:/);
   assert.match(clean, /server boot/);
-  assert.match(clean, /tool inventory/);
+  assert.match(clean, /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
   assert.match(clean, /get_concept/);
   assert.match(clean, /get_concepts/);
   assert.match(clean, /find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/analyze_repo_structure\/infer_imports/);

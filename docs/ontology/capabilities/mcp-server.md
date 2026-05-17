@@ -452,7 +452,8 @@ destructive dry-run gate, tools/list annotation coverage, strict relation filter
 를 포함한 focused direct read smoke set 도 설명한다. 별도 limited `query_concepts` smoke 로 `slug!=project, limit=1`
 semantics 를 확인해 typed-filter pagination 계약을 빠르게 점검한다.
 verify helper 자체를 만질 때는 `pnpm test:mcp:verify` 로
-`mcp/src/verify-script.test.mjs` 만 바로 실행한다. 설치 first-contact initialize safety/recovery guidance /
+`mcp/src/verify-script.test.mjs` 만 바로 실행한다. 이 helper gate 는
+missing / extra / duplicate / invalid `tools/list` name 같은 inventory 진단도 포함한다. 설치 first-contact initialize safety/recovery guidance /
 read smoke / vault warning / `validate_vault` / health gate / `nextActions[].sample` 실행 액션 shape 만 만질 때는
 `pnpm test:mcp:verify:first-contact` 로 좁게 확인하고, verify timeout / usage
 진단만 만질 때는 `pnpm test:mcp:verify:timeout` 으로 더 좁게 확인한다.

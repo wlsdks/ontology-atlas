@@ -81,7 +81,8 @@ response labels, and retry help.
 cursor handling, resume-cursor behavior, dogfood work-queue shape gates, and
 bucket / next-action formatter checks.
 `test:mcp:suggestions` covers strict enum / argument suggestion behavior.
-`test:mcp:verify` covers the MCP verify helper contract without spawning the
+`test:mcp:verify` covers the MCP verify helper contract, including
+missing/extra/duplicate/invalid `tools/list` names, without spawning the
 full integration suite. `test:mcp:verify:first-contact` narrows that to
 initialize safety/recovery guidance, read-smoke request inventory, vault warning /
 `validate_vault`, first-contact health summary / advisory / next-action gates, and

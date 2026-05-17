@@ -3569,6 +3569,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /Run npm run verify from the mcp\/ package directory/);
     assert.match(verifyUsage(), /from the repo root, use the node mcp\/scripts\/verify\.mjs form/);
     assert.match(verifyUsage(), /Explicit \[vault\] or --vault arguments take precedence over OMOT_VAULT/);
+    assert.match(verifyUsage(), /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
     assert.match(verifyUsage(), /project probe/);
     assert.match(verifyUsage(), /list\/project probe\/get_concept\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/analyze_repo_structure\/infer_imports\/find_neighbors\/find_path\/find_orphans/);
     assert.match(verifyUsage(), /compile_ontology summary \+ paginated full-artifact \+ indexed full-artifact smoke/);

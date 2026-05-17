@@ -256,6 +256,7 @@ describe('package contract helpers', () => {
     assert.equal(result.status, 0);
     assert.match(result.stdout, /Usage:/);
     assert.match(result.stdout, /oh-my-ontology mcp-verify \[vault\] \[--timeout-ms N\]/);
+    assert.match(result.stdout, /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
     assert.match(result.stdout, /Focused checks:/);
     assert.match(result.stdout, /pnpm integration:cli:mcp-verify/);
     assert.match(result.stdout, /pnpm dogfood:verify\s+Root checkout dogfood vault verify shortcut/);
@@ -897,6 +898,7 @@ describe('package contract helpers', () => {
     const verifySection = readme.split('`oh-my-ontology mcp-verify [vault]` is the fastest')[1]?.split('The vault is a plain folder')[0] ?? '';
 
     assert.match(tableRow, /project-node `list_concepts` probe/);
+    assert.match(tableRow, /23-tool inventory with missing\/extra\/duplicate\/invalid name checks/);
     assert.match(tableRow, /tools\/list annotation coverage/);
     assert.match(tableRow, /relation filter \/ `relation_check` closest-value rejection/);
     assert.match(tableRow, /destructive dry-run smoke for `rename_concept` \/ `merge_concepts` \/ `delete_concept`/);
