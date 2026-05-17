@@ -172,7 +172,13 @@ function printInitUsage(stream = stderr) {
 
 function resolveMcpServerCommand() {
   const envPath = process.env.OMOT_MCP_PATH;
-  if (envPath && existsSync(envPath)) {
+  if (envPath) {
+    if (!existsSync(envPath)) {
+      throw new Error(`OMOT_MCP_PATH does not exist: ${envPath}`);
+    }
+    if (!isFile(envPath)) {
+      throw new Error(`OMOT_MCP_PATH is not a file: ${envPath}`);
+    }
     return { command: 'node', args: [envPath] };
   }
 
@@ -189,6 +195,14 @@ function resolveMcpServerCommand() {
   }
 
   return { command: 'npx', args: ['-y', 'oh-my-ontology-mcp'] };
+}
+
+function isFile(path) {
+  try {
+    return statSync(path).isFile();
+  } catch {
+    return false;
+  }
 }
 
 function shellQuote(value) {
@@ -228,7 +242,13 @@ function copyTree(srcRoot, destRoot) {
 
 function runInit(targetArg) {
   const target = resolve(cwd(), targetArg ?? 'vault');
-  const serverCommand = resolveMcpServerCommand();
+  let serverCommand;
+  try {
+    serverCommand = resolveMcpServerCommand();
+  } catch (err) {
+    fail(err?.message ?? String(err));
+    exit(2);
+  }
   info(`scaffolding ontology vault at ${COLORS.bold}${target}${COLORS.reset}`);
 
   if (!existsSync(TEMPLATE_ROOT)) {

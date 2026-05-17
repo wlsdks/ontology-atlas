@@ -277,6 +277,32 @@ await test('init — rejects unknown flags and extra positional args before writ
   }
 });
 
+await test('init — rejects invalid OMOT_MCP_PATH overrides before writing', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-init-mcp-path-'));
+  try {
+    const missingPath = join(root, 'missing-mcp-entry.js');
+    const missing = await run(['init', 'ontology'], {
+      cwd: root,
+      env: { OMOT_MCP_PATH: missingPath },
+    });
+    assert.equal(missing.code, 2);
+    assert.equal(missing.stdout, '');
+    assert.match(stripAnsi(missing.stderr), /OMOT_MCP_PATH does not exist/);
+    assert.equal(existsSyncTest(join(root, 'ontology')), false);
+
+    const directory = await run(['init', 'ontology'], {
+      cwd: root,
+      env: { OMOT_MCP_PATH: root },
+    });
+    assert.equal(directory.code, 2);
+    assert.equal(directory.stdout, '');
+    assert.match(stripAnsi(directory.stderr), /OMOT_MCP_PATH is not a file/);
+    assert.equal(existsSyncTest(join(root, 'ontology')), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('mcp-verify — runs MCP package verify against a resolved vault', async () => {
   const root = mkdtempSync(join(tmpdir(), 'cli-mcp-verify-'));
   try {
