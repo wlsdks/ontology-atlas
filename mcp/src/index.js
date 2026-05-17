@@ -1248,7 +1248,47 @@ const TOOLS = [
             required: ['slug', 'keys', 'frontmatter', 'expected_mtime'],
           },
         },
-        indexes: { type: 'object' },
+        indexes: {
+          type: 'object',
+          properties: {
+            out: {
+              type: 'object',
+              additionalProperties: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            },
+            in: {
+              type: 'object',
+              additionalProperties: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            },
+            byKind: {
+              type: 'object',
+              additionalProperties: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            },
+            byDomain: {
+              type: 'object',
+              additionalProperties: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+            },
+            edgeById: {
+              type: 'object',
+              additionalProperties: {
+                type: 'object',
+                properties: {
+                  id: NON_BLANK_STRING_SCHEMA,
+                  from: NON_BLANK_STRING_SCHEMA,
+                  to: NON_BLANK_STRING_SCHEMA,
+                  via: NON_BLANK_STRING_SCHEMA,
+                  ref: NON_BLANK_STRING_SCHEMA,
+                  resolved: { type: 'boolean' },
+                  external: { type: 'boolean' },
+                },
+                required: ['id', 'from', 'to', 'via', 'ref', 'resolved', 'external'],
+              },
+            },
+            aliasToSlug: {
+              type: 'object',
+              additionalProperties: NON_BLANK_STRING_SCHEMA,
+            },
+          },
+        },
         summary: {
           type: 'object',
           properties: {

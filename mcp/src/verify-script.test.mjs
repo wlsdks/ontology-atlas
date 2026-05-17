@@ -764,6 +764,47 @@ describe('verify.mjs first-contact gates', () => {
                 },
               },
             },
+            indexes: {
+              type: 'object',
+              properties: {
+                out: {
+                  type: 'object',
+                  additionalProperties: { type: 'array', items: { type: 'string' } },
+                },
+                in: {
+                  type: 'object',
+                  additionalProperties: { type: 'array', items: { type: 'string' } },
+                },
+                byKind: {
+                  type: 'object',
+                  additionalProperties: { type: 'array', items: { type: 'string' } },
+                },
+                byDomain: {
+                  type: 'object',
+                  additionalProperties: { type: 'array', items: { type: 'string' } },
+                },
+                edgeById: {
+                  type: 'object',
+                  additionalProperties: {
+                    type: 'object',
+                    required: ['id', 'from', 'to', 'via', 'ref', 'resolved', 'external'],
+                    properties: {
+                      id: { type: 'string' },
+                      from: { type: 'string' },
+                      to: { type: 'string' },
+                      via: { type: 'string' },
+                      ref: { type: 'string' },
+                      resolved: { type: 'boolean' },
+                      external: { type: 'boolean' },
+                    },
+                  },
+                },
+                aliasToSlug: {
+                  type: 'object',
+                  additionalProperties: { type: 'string' },
+                },
+              },
+            },
             summary: {
               type: 'object',
               required: ['nodes', 'edges', 'graphHash', 'maxMtime', 'resolvedEdges', 'externalEdges', 'unresolvedEdges', 'aliases', 'ambiguousAliases', 'issues'],
@@ -1951,6 +1992,28 @@ describe('verify.mjs first-contact gates', () => {
         },
       })),
       'compile_ontology outputSchema canonicalizationActions drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withCompileOntologyTool({
+        ...compileOntologyTool,
+        outputSchema: {
+          ...compileOntologyTool.outputSchema,
+          properties: {
+            ...compileOntologyTool.outputSchema.properties,
+            indexes: {
+              ...compileOntologyTool.outputSchema.properties.indexes,
+              properties: {
+                ...compileOntologyTool.outputSchema.properties.indexes.properties,
+                aliasToSlug: {
+                  type: 'object',
+                  additionalProperties: { type: 'number' },
+                },
+              },
+            },
+          },
+        },
+      })),
+      'compile_ontology outputSchema indexes.aliasToSlug drift',
     );
     assert.equal(
       toolsListSchemaFailure(withCompileOntologyTool({

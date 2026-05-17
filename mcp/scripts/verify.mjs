@@ -793,6 +793,37 @@ export function toolsListSchemaFailure(tools) {
   ) {
     return 'compile_ontology outputSchema canonicalizationActions drift';
   }
+  const indexesSchema = outputPropertyAt(compileTool, ['properties', 'indexes']);
+  if (indexesSchema?.type !== 'object') {
+    return 'compile_ontology outputSchema indexes drift';
+  }
+  for (const propertyName of ['out', 'in', 'byKind', 'byDomain']) {
+    const indexSchema = indexesSchema.properties?.[propertyName];
+    if (
+      indexSchema?.type !== 'object' ||
+      indexSchema.additionalProperties?.type !== 'array' ||
+      indexSchema.additionalProperties?.items?.type !== 'string'
+    ) {
+      return `compile_ontology outputSchema indexes.${propertyName} drift`;
+    }
+  }
+  const edgeByIdSchema = indexesSchema.properties?.edgeById?.additionalProperties;
+  if (
+    indexesSchema.properties?.edgeById?.type !== 'object' ||
+    edgeByIdSchema?.type !== 'object' ||
+    !sameArray(edgeByIdSchema.required, ['id', 'from', 'to', 'via', 'ref', 'resolved', 'external']) ||
+    edgeByIdSchema.properties?.resolved?.type !== 'boolean' ||
+    edgeByIdSchema.properties?.external?.type !== 'boolean'
+  ) {
+    return 'compile_ontology outputSchema indexes.edgeById drift';
+  }
+  const aliasToSlugSchema = indexesSchema.properties?.aliasToSlug;
+  if (
+    aliasToSlugSchema?.type !== 'object' ||
+    aliasToSlugSchema.additionalProperties?.type !== 'string'
+  ) {
+    return 'compile_ontology outputSchema indexes.aliasToSlug drift';
+  }
   const compileOutputSummarySchema = outputPropertyAt(compileTool, ['properties', 'summary']);
   if (
     compileOutputSummarySchema?.type !== 'object' ||
