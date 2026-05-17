@@ -364,6 +364,16 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.deepEqual(findEvidence?.outputSchema?.properties?.matches?.items?.required, ["slug", "kind", "title", "mtime", "matchedIn", "excerpt"]);
     assert.deepEqual(findEvidence?.outputSchema?.properties?.matches?.items?.properties?.matchedIn?.enum, ["frontmatter", "body"]);
     const findBacklinks = findTool("find_backlinks");
+    assert.match(
+      findBacklinks?.description ?? "",
+      /Return every node that points to the target slug[\s\S]*Scans both frontmatter[\s\S]*wikilinks \/ markdown links in the body[\s\S]*walk the graph from a node to its dependents/i,
+      "find_backlinks description documents dependent-walk behavior",
+    );
+    assert.match(
+      findBacklinks?.inputSchema?.properties?.slug?.description ?? "",
+      /Target vault-relative slug[\s\S]*omit the \.md extension/i,
+      "find_backlinks slug schema documents target slug format",
+    );
     assert.equal(findBacklinks?.outputSchema?.type, "object");
     assert.deepEqual(findBacklinks?.outputSchema?.required, ["target", "total", "matches"]);
     assert.equal(findBacklinks?.outputSchema?.properties?.total?.type, "integer");

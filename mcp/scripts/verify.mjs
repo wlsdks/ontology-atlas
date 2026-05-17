@@ -399,6 +399,23 @@ export function toolsListSchemaFailure(tools) {
 
   const findBacklinksTool = tools.find((tool) => tool?.name === 'find_backlinks');
   if (!findBacklinksTool) return 'tools/list response missing find_backlinks tool';
+  if (
+    !/Return every node that points to the target slug/i.test(findBacklinksTool.description || '') ||
+    !/Scans both frontmatter/i.test(findBacklinksTool.description || '') ||
+    !/wikilinks \/ markdown links in the body/i.test(findBacklinksTool.description || '') ||
+    !/walk the graph from a node to its dependents/i.test(findBacklinksTool.description || '')
+  ) {
+    return 'find_backlinks description missing dependent-walk guidance';
+  }
+  const findBacklinksSlugSchema = propertyAt(findBacklinksTool, ['properties', 'slug']);
+  if (
+    findBacklinksSlugSchema?.type !== 'string' ||
+    findBacklinksSlugSchema.minLength !== 1 ||
+    !/Target vault-relative slug/i.test(findBacklinksSlugSchema.description || '') ||
+    !/omit the \.md extension/i.test(findBacklinksSlugSchema.description || '')
+  ) {
+    return 'find_backlinks inputSchema slug guidance drift';
+  }
   if (findBacklinksTool.outputSchema?.type !== 'object') {
     return 'find_backlinks outputSchema root drift';
   }

@@ -892,7 +892,19 @@ describe('verify.mjs first-contact gates', () => {
       },
       {
         name: 'find_backlinks',
-        inputSchema: { additionalProperties: false, required: ['slug'], properties: {} },
+        description:
+          'Return every node that points to the target slug. Scans both frontmatter array keys (capabilities / elements / dependencies / relates / contains / describes etc.) and the wikilinks / markdown links in the body. Used by AI agents to walk the graph from a node to its dependents.',
+        inputSchema: {
+          additionalProperties: false,
+          required: ['slug'],
+          properties: {
+            slug: {
+              type: 'string',
+              minLength: 1,
+              description: 'Target vault-relative slug (omit the .md extension).',
+            },
+          },
+        },
         outputSchema: {
           type: 'object',
           required: ['target', 'total', 'matches'],
@@ -1053,6 +1065,11 @@ describe('verify.mjs first-contact gates', () => {
     const findEvidenceTool = tools.find((tool) => tool.name === 'find_evidence');
     const withFindEvidenceTool = (tool) => [
       ...tools.filter((candidate) => candidate.name !== 'find_evidence'),
+      tool,
+    ];
+    const findBacklinksTool = tools.find((tool) => tool.name === 'find_backlinks');
+    const withFindBacklinksTool = (tool) => [
+      ...tools.filter((candidate) => candidate.name !== 'find_backlinks'),
       tool,
     ];
     const listConceptsTool = tools.find((tool) => tool.name === 'list_concepts');
@@ -1969,6 +1986,34 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'find_backlinks outputSchema required drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withFindBacklinksTool(
+        {
+          ...findBacklinksTool,
+          description: 'Return backlinks.',
+        },
+      )),
+      'find_backlinks description missing dependent-walk guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withFindBacklinksTool(
+        {
+          ...findBacklinksTool,
+          inputSchema: {
+            ...findBacklinksTool.inputSchema,
+            properties: {
+              ...findBacklinksTool.inputSchema.properties,
+              slug: {
+                type: 'string',
+                minLength: 1,
+                description: 'Target slug.',
+              },
+            },
+          },
+        },
+      )),
+      'find_backlinks inputSchema slug guidance drift',
     );
     assert.equal(
       toolsListSchemaFailure([
