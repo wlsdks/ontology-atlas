@@ -2475,6 +2475,7 @@ export function verifyUsage() {
     'tools/list annotation coverage (title/read/write/destructive/idempotent/local-only),\n' +
     'batch writer row isolation for non-object rows and unknown row fields with concepts[n]/relations[n] error labels,\n' +
     'destructive writer dry-runs for rename_concept/merge_concepts/delete_concept with every planned response present and no changed/postWriteMaintenance,\n' +
+    'structuredContent coverage summary splits direct reads, batch row-isolation writes, destructive dry-runs, maintenance cursor checks, and graph queries,\n' +
     'and maintenance_plan cursor handling: ready page (cursor.found=true, cursor.reason=null)\n' +
     'plus missing afterActionId (cursor.found=false, reason, empty page, nextAfterActionId=null, hasMore=false).\n' +
     'When the ready cursor has actions, verify resumes from the first returned action id and confirms the resumed page does not repeat it.\n' +

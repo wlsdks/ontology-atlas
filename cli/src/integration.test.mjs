@@ -270,7 +270,7 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, /path — elements\/example → project \(1 hop, 1 edge\)/);
     assert.match(clean, /project_scope/);
     assert.match(clean, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
-    assert.match(clean, /structuredContent — direct 16\/16, write 5\/5, maintenance 3\/3, graph 11\/11/);
+    assert.match(clean, /structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 11\/11/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -331,7 +331,7 @@ await test('mcp-verify — verifies maintenance cursor resume when actions exist
     assert.match(clean, /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 0 remaining actions/);
     assert.match(clean, /query_concepts limited — 1 query result \/ 2 total query results \(limited true\)/);
     assert.match(clean, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
-    assert.match(clean, /structuredContent — direct 16\/16, write 5\/5, maintenance 3\/3, graph 11\/11/);
+    assert.match(clean, /structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 11\/11/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -404,6 +404,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /tools\/list schema strictness/);
   assert.match(clean, /annotation coverage \(title\/read\/write\/destructive\/idempotent\/local-only\)/);
   assert.match(clean, /destructive writer dry-runs with every planned response present and no changed\/postWriteMaintenance/);
+  assert.match(clean, /structuredContent coverage split by direct reads \/ batch row-isolation writes \/ destructive dry-runs \/ maintenance cursor checks \/ graph queries/);
   assert.match(clean, /write-tool postWriteMaintenance byPhase\/bySeverity\/byKind buckets \+ score\/proposedAction\/next-action guidance/);
   assert.match(clean, /runtime unknown-argument \/ invalid-enum rejection/);
   assert.match(clean, /relation filter \/ relation_check closest-value rejection/);

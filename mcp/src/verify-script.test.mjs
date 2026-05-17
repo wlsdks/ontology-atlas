@@ -3531,6 +3531,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /strict unknown-argument \/ invalid-enum rejection/);
     assert.match(verifyUsage(), /tools\/list annotation coverage \(title\/read\/write\/destructive\/idempotent\/local-only\)/);
     assert.match(verifyUsage(), /batch writer row isolation for non-object rows and unknown row fields with concepts\[n\]\/relations\[n\] error labels/);
+    assert.match(verifyUsage(), /structuredContent coverage summary splits direct reads, batch row-isolation writes, destructive dry-runs, maintenance cursor checks, and graph queries/);
     assert.match(verifyUsage(), /maintenance_plan filter enums/);
     assert.match(verifyUsage(), /maintenance_plan cursor handling/);
     assert.match(verifyUsage(), /cursor\.found=true, cursor\.reason=null/);

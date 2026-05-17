@@ -1446,6 +1446,15 @@ describe('queryCompiledOntology', () => {
       }),
       /type must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
     );
+    assert.throws(
+      () => queryCompiledOntology(artifact(), {
+        operation: 'relation_check',
+        from: 'missing-source',
+        to: 'missing-target',
+        type: 'depend_on',
+      }),
+      /type must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
+    );
   });
 
   it('matches compiled nodes by graph-derived attributes', () => {
