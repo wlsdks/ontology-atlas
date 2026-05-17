@@ -117,7 +117,8 @@ describe('package contract helpers', () => {
     assert.match(readme, /integration:cli:mcp-verify/);
     assert.match(readme, /integration:mcp:readme/);
     assert.match(readme, /runs `workspace_brief`, tuned `workspace_brief`, `health`, and tuned `health`/);
-    assert.match(readme, /graph-query, post-write guidance, and strict argument\/enum smoke scope/);
+    assert.match(readme, /graph-query, destructive dry-run, post-write guidance, and strict argument\/enum\s+smoke scope/);
+    assert.match(readme, /graph-query, destructive dry-run, and strict\s+argument\/enum smoke scope/);
   });
 
   it('keeps the CLI MCP dependency aligned with the local MCP package version', () => {
@@ -698,13 +699,13 @@ describe('package contract helpers', () => {
     assert.match(releaseChecks, /get_concepts` with discovered slugs plus one\s+missing slug/);
     assert.match(releaseChecks, /batch-read\s+partial-row contract/);
     assert.match(releaseChecks, /mcp-verify --help/);
-    assert.match(releaseChecks, /graph-query and strict argument\/enum smoke scope/);
+    assert.match(releaseChecks, /graph-query, destructive dry-run, and strict\s+argument\/enum smoke scope/);
     assert.match(releaseChecks, /actual `neighbors`, node→project `path`, and\s+`project_scope` calls/);
     assert.match(releaseChecks, /project-less and empty-vault verify paths/);
     assert.match(releaseChecks, /flow\/help\/failure/);
     assert.match(releaseChecks, /dependency-cycle vault/);
     assert.match(releaseChecks, /get_concepts` success\/partial rows/);
-    assert.match(releaseChecks, /workspace-brief --json` exits 1/);
+    assert.match(releaseChecks, /workspace-brief --json`\s+exits 1/);
     assert.match(releaseChecks, /fail-severity nextActions/);
     assert.match(releaseChecks, /compile --json` exits 1/);
     assert.match(releaseChecks, /unresolved graph references/);
@@ -1111,6 +1112,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /strict arguments — multiple unknown tool arguments reported together/);
     assert.match(smoke, /add_concepts — non-object and unknown-field rows isolated at row level/);
     assert.match(smoke, /add_relations — non-object and unknown-field rows isolated at row level/);
+    assert.match(smoke, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
     assert.match(smoke, /structuredContent — direct 16\\\/16, write 5\\\/5, maintenance 3\\\/3, graph 11\\\/11/);
     assert.match(smoke, /writeMaintenanceResumeVault/);
     assert.match(smoke, /cliMaintenanceResumeMcpVerify/);
@@ -1122,6 +1124,8 @@ describe('package contract helpers', () => {
     assert.match(smoke, /neighbors\\\/node-to-project path\\\/project_scope graph-query smoke/);
     assert.match(smoke, /runtime unknown-argument/);
     assert.match(smoke, /invalid-enum rejection/);
+    assert.match(smoke, /destructive writer dry-runs with no changed\\\/postWriteMaintenance/);
+    assert.match(smoke, /destructive writer dry-runs for rename_concept\\\/merge_concepts\\\/delete_concept/);
     assert.match(smoke, /write-tool postWriteMaintenance score\\\/proposedAction\\\/next-action guidance/);
     assert.ok(smoke.includes('maintenance_plan cursor smoke'));
     assert.match(smoke, /Maintenance filters are enum-validated for phases\\\/severities\\\/kinds/);

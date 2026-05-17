@@ -301,6 +301,7 @@ try {
   assert.match(cliMcpVerify.stdout, /strict arguments — multiple unknown tool arguments reported together/);
   assert.match(cliMcpVerify.stdout, /add_concepts — non-object and unknown-field rows isolated at row level/);
   assert.match(cliMcpVerify.stdout, /add_relations — non-object and unknown-field rows isolated at row level/);
+  assert.match(cliMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(cliMcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(cliMcpVerify.stdout, /maintenance cursor — ready page stable/);
   assert.match(cliMcpVerify.stdout, /neighbors — elements\/example/);
@@ -407,6 +408,7 @@ try {
     cliMaintenanceResumeMcpVerify.stdout,
     /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 0 remaining actions/,
   );
+  assert.match(cliMaintenanceResumeMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(
     cliMaintenanceResumeMcpVerify.stdout,
     /structuredContent — direct 16\/16, write 5\/5, maintenance 3\/3, graph 11\/11/,
@@ -440,6 +442,7 @@ try {
   assert.match(cliMcpVerifyHelp.stdout, /compile_ontology/);
   assert.match(cliMcpVerifyHelp.stdout, /neighbors\/node-to-project path\/project_scope graph-query smoke/);
   assert.match(cliMcpVerifyHelp.stdout, /tools\/list schema strictness/);
+  assert.match(cliMcpVerifyHelp.stdout, /destructive writer dry-runs with no changed\/postWriteMaintenance/);
   assert.match(cliMcpVerifyHelp.stdout, /write-tool postWriteMaintenance score\/proposedAction\/next-action guidance/);
   assert.match(cliMcpVerifyHelp.stdout, /runtime unknown-argument \/ invalid-enum rejection/);
   assert.match(cliMcpVerifyHelp.stdout, /maintenance_plan cursor smoke/);
@@ -562,6 +565,7 @@ try {
   assert.match(mcpVerify.stdout, /strict arguments — multiple unknown tool arguments reported together/);
   assert.match(mcpVerify.stdout, /add_concepts — non-object and unknown-field rows isolated at row level/);
   assert.match(mcpVerify.stdout, /add_relations — non-object and unknown-field rows isolated at row level/);
+  assert.match(mcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(mcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(mcpVerify.stdout, /maintenance cursor — ready page stable/);
   assert.match(mcpVerify.stdout, /neighbors — elements\/example/);
@@ -587,6 +591,7 @@ try {
   assert.match(directMcpVerify.stdout, /strict arguments — multiple unknown tool arguments reported together/);
   assert.match(directMcpVerify.stdout, /add_concepts — non-object and unknown-field rows isolated at row level/);
   assert.match(directMcpVerify.stdout, /add_relations — non-object and unknown-field rows isolated at row level/);
+  assert.match(directMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(directMcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(directMcpVerify.stdout, /maintenance cursor — ready page stable/);
   assert.match(directMcpVerify.stdout, /structuredContent — direct 16\/16, write 5\/5, maintenance 3\/3, graph 11\/11/);
@@ -605,6 +610,7 @@ try {
     directMcpMaintenanceResumeVerify.stdout,
     /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 0 remaining actions/,
   );
+  assert.match(directMcpMaintenanceResumeVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(
     directMcpMaintenanceResumeVerify.stdout,
     /structuredContent — direct 16\/16, write 5\/5, maintenance 3\/3, graph 11\/11/,
@@ -647,6 +653,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /project probe/);
   assert.match(directMcpVerifyHelp.stdout, /strict unknown-argument \/ invalid-enum rejection/);
   assert.match(directMcpVerifyHelp.stdout, /batch writer row isolation for non-object rows and unknown row fields/);
+  assert.match(directMcpVerifyHelp.stdout, /destructive writer dry-runs for rename_concept\/merge_concepts\/delete_concept/);
   assert.match(directMcpVerifyHelp.stdout, /maintenance_plan filter enums/);
   assert.match(directMcpVerifyHelp.stdout, /maintenance_plan cursor handling/);
   assert.match(directMcpVerifyHelp.stdout, /cursor\.found=true, cursor\.reason=null/);
