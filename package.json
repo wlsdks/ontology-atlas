@@ -30,6 +30,7 @@
     "smoke:packed-cli": "node scripts/smoke-packed-cli.mjs",
     "benchmark": "node scripts/benchmark.mjs",
     "benchmark:scale": "node scripts/benchmark-scale.mjs",
+    "dogfood:verify": "node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000",
     "dogfood:walk": "node scripts/dogfood-mcp-walk.mjs",
     "dogfood:test": "node --test scripts/dogfood-mcp-walk.test.mjs",
     "test:mcp:dogfood": "node --test --test-name-pattern \"structuredContent|compile_ontology|row-label guidance|vault warnings|validate_vault problem|unhealthy first-contact|failing health checks|warn/fail next actions|malformed workspace_brief|malformed maintenance_plan payloads|remaining maintenance buckets|current-page maintenance next actions|stderr warnings|dogfood help|dogfood arguments|dogfood timeout|timeout failures|dogfood response labels|destructive dogfood dry-run|strict relation filters|malformed initialize|dogfood MCP docs explicit\" scripts/dogfood-mcp-walk.test.mjs scripts/check-package-contracts.test.mjs",

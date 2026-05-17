@@ -57,6 +57,7 @@ pnpm test:mcp:suggestions
 pnpm test:mcp:verify
 pnpm test:mcp:verify:first-contact
 pnpm test:mcp:verify:timeout
+pnpm dogfood:verify
 pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
 pnpm cli:mcp-verify -- --help
 ```
@@ -87,9 +88,10 @@ initialize guidance, read-smoke request inventory, vault warning /
 diagnostics.
 Use `OMOT_TEST_NAME_PATTERN` or Node `--test-name-pattern` with
 `pnpm integration:mcp` when the touched MCP integration case has a different
-name. From the repo root, `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000`
-runs the CLI wrapper against this repo's dogfood vault without changing into
-`mcp/`; use `pnpm cli:mcp-verify -- --help` only for the help flag.
+name. From the repo root, `pnpm dogfood:verify` is the shortest dogfood vault
+gate. Use `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` when you need
+the explicit CLI wrapper arguments without changing into `mcp/`; use
+`pnpm cli:mcp-verify -- --help` only for the help flag.
 
 ### 2. Restart Claude Code
 
@@ -227,6 +229,7 @@ if you change one, mirror the other.
 ```bash
 cd mcp && npm install
 # From the repo root, prefer the CLI wrapper for the dogfood vault:
+pnpm dogfood:verify
 pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
 # Inside mcp/, the package-local verifier has the same smoke scope:
 OMOT_VAULT=../docs/ontology npm run verify

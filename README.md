@@ -137,6 +137,7 @@ pnpm test:mcp:suggestions       # focused enum/argument suggestion checks
 pnpm test:mcp:verify            # focused MCP verify helper checks
 pnpm test:mcp:verify:first-contact # narrow MCP verify first-contact health-summary/read/sample gates
 pnpm test:mcp:verify:timeout    # narrow MCP verify timeout/help diagnostics
+pnpm dogfood:verify             # root checkout installed-style verify over docs/ontology
 pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 # root checkout dogfood verify
 pnpm cli:mcp-verify -- --help   # root checkout shortcut for installed mcp-verify help scope
 OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli
@@ -164,7 +165,8 @@ only the spawn-heavy integration cases touched by a small change. The
 `integration:cli:mcp-verify`, `integration:cli:maintenance`, and
 `integration:mcp:readme` shortcuts cover the common install-verification,
 CLI maintenance work-queue, and first-contact read-only checks. `cli:mcp-verify`
-is a source-checkout shortcut for the CLI wrapper, so
+is a source-checkout shortcut for the CLI wrapper. `dogfood:verify` is the
+shorter repeatable alias for the same dogfood vault check, while
 `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` runs the installed-style
 verify against this repo's dogfood vault from the repo root. Use
 `pnpm cli:mcp-verify -- --help` only for help output; vault arguments are passed

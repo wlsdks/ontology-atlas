@@ -62,6 +62,7 @@ pnpm test:mcp:package
 pnpm test:mcp:verify
 pnpm test:mcp:verify:first-contact
 pnpm test:mcp:verify:timeout
+pnpm dogfood:verify
 pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
 pnpm cli:mcp-verify -- --help
 ```
@@ -86,9 +87,10 @@ vault warning / `validate_vault`, health summary / next-action gates, and
 diagnostics that `mcp-verify` exposes through the CLI. Use
 `OMOT_TEST_NAME_PATTERN` or Node `--test-name-pattern` with
 `pnpm integration:cli` when the touched CLI integration case has a different
-name. `cli:mcp-verify` is the root-checkout shortcut for the CLI wrapper; use
-`pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` to verify the dogfood
-vault from the repo root, or `pnpm cli:mcp-verify -- --help` to inspect the
+name. `dogfood:verify` is the shortest root-checkout dogfood vault gate, and
+`cli:mcp-verify` is the root-checkout shortcut for the CLI wrapper; use
+`pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` when you need to pass
+explicit verify args, or `pnpm cli:mcp-verify -- --help` to inspect the
 installed-style verify scope without relying on a published `oh-my-ontology`
 bin link. Vault arguments are passed without the extra `--`; keep `-- --help`
 for the help flag.
