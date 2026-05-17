@@ -440,7 +440,7 @@ package manifest / enum suggestion 류의 더 작은 변경은 root 의
 `pnpm dogfood:verify` 가 repo root 의 짧은 gate 이고, 명시 인자가 필요할 때만
 `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` 로 풀어 쓴다. dogfood helper / structuredContent 출력 계약이나
 vault warning / `validate_vault` problem gate, first-contact health gate,
-workspace_brief sample-shape gate, maintenance work-queue shape / formatter gate, initialize/batch relation type guidance gate,
+workspace_brief sample-shape gate, maintenance work-queue shape / formatter gate, initialize safety/recovery guidance gate,
 destructive dry-run gate, tools/list annotation coverage, strict relation filter, stderr warning filtering 을 만질 때는 `pnpm test:mcp:dogfood` 로 dogfood helper 와
 관련 문서 계약만 먼저 확인한다. dogfood timeout / retry help 만 만질 때는
 `pnpm test:mcp:dogfood:timeout` 으로 더 좁게 확인한다. 직접 verify help 는
@@ -450,7 +450,7 @@ destructive dry-run gate, tools/list annotation coverage, strict relation filter
 를 포함한 focused direct read smoke set 도 설명한다. 별도 limited `query_concepts` smoke 로 `slug!=project, limit=1`
 semantics 를 확인해 typed-filter pagination 계약을 빠르게 점검한다.
 verify helper 자체를 만질 때는 `pnpm test:mcp:verify` 로
-`mcp/src/verify-script.test.mjs` 만 바로 실행한다. 설치 first-contact initialize batch relation type guidance /
+`mcp/src/verify-script.test.mjs` 만 바로 실행한다. 설치 first-contact initialize safety/recovery guidance /
 read smoke / vault warning / `validate_vault` / health gate / `nextActions[].sample` 실행 액션 shape 만 만질 때는
 `pnpm test:mcp:verify:first-contact` 로 좁게 확인하고, verify timeout / usage
 진단만 만질 때는 `pnpm test:mcp:verify:timeout` 으로 더 좁게 확인한다.
@@ -550,7 +550,7 @@ MCP schema 에서 노출한다. `componentLimit`, `cycleLimit`, `recommendationL
 검증하므로 잘못된 인자는 MCP server 를 띄우기 전에 실패한다. `pnpm dogfood:walk -- --help`
 는 MCP server 를 띄우지 않고 usage 와 focused check 경로를 출력해 dogfood 범위 확인 비용을 낮춘다.
 도움말의 `pnpm test:mcp:dogfood` 설명도 compile/index gate, tools/list annotation coverage, row-label guidance,
-strict closest-value summary, vault warning / `validate_vault` problem gate, first-contact health/growth/sample-shape gate, maintenance work-queue shape / formatter, initialize/batch relation type guidance, destructive dry-run, structuredContent, strict relation filter, stderr warning 범위를 함께 보여줘 실행 전 검증 surface 를 숨기지 않는다. 기본 census / backlink / path 질의에 더해 `validate_vault`,
+strict closest-value summary, vault warning / `validate_vault` problem gate, first-contact health/growth/sample-shape gate, maintenance work-queue shape / formatter, initialize safety/recovery guidance, destructive dry-run, structuredContent, strict relation filter, stderr warning 범위를 함께 보여줘 실행 전 검증 surface 를 숨기지 않는다. 기본 census / backlink / path 질의에 더해 `validate_vault`,
 `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology`, `overview`, `pattern_walk`,
 project-node `list_concepts` probe, `all_paths`, `all_paths query_plan`, `neighbors`, `path`, `project_map query_plan`, `project_scope`, `project_map`,
 `domain_profile`, `domain_matrix`, `components`, `reachability`, `impact`,
@@ -708,11 +708,11 @@ timeout 출력도 같은 env 이름과 `OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfo
 핵심 응답 누락, vault warning, `validate_vault` problemFiles, 예상 graph path 부재,
 `workspace_brief` / `health` 비정상 상태, top-level status 와 별개로 내부 health
 check 의 `fail` 상태, warn·fail `workspace_brief.nextActions` 는 exit 1 로 처리한다.
-`pnpm test:mcp:verify:first-contact` 는 first-contact initialize batch relation type guidance,
+`pnpm test:mcp:verify:first-contact` 는 first-contact initialize safety/recovery guidance,
 response label, diagnosis, health summary, failing health check, workspace_brief growth/sample/action gate 를 focused 로 확인한다.
 CLI `mcp-verify` 문서도 delegated verify output 의 non-blocking advisory 와
 issues/unresolved/cycles/checks health summary 를 설명해 설치 경로와 source checkout
 검증 경로의 기대 출력이 갈라지지 않게 한다.
-`pnpm test:mcp:dogfood` 는 이 gate 판정의 focused subset, workspace_brief sample-shape gate, maintenance work-queue shape / formatter, initialize/batch relation type guidance, tools/list annotation coverage, row-label guidance summary, strict closest-value summary, strict add_relation type-preflight 를 fixture 로 검증해
+`pnpm test:mcp:dogfood` 는 이 gate 판정의 focused subset, workspace_brief sample-shape gate, maintenance work-queue shape / formatter, initialize safety/recovery guidance, tools/list annotation coverage, row-label guidance summary, strict closest-value summary, strict add_relation type-preflight 를 fixture 로 검증해
 dogfood walk 의 실패 조건이 조용히 약해지지 않게 막고, 전체 helper 회귀가 필요할 때만
 `pnpm dogfood:test` 로 넓힌다.

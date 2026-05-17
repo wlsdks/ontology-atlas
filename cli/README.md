@@ -84,7 +84,7 @@ work-queue shape, and bucket / next-action formatter contracts without the full
 verify or dogfood suites.
 `test:mcp:verify` checks the shared MCP verify helper contract, and
 `test:mcp:verify:first-contact` narrows that to first-contact initialize
-batch relation type guidance, read smoke, vault warning / `validate_vault`,
+safety/recovery guidance, read smoke, vault warning / `validate_vault`,
 health summary / advisory / next-action gates, and `workspace_brief.nextActions[].sample`
 shape drift.
 `test:mcp:verify:timeout` narrows timeout parsing, startup failure retry

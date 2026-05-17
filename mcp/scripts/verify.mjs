@@ -5071,7 +5071,7 @@ async function step2BootAndCall() {
         log('fail', instructionFailure);
         return res(false);
       }
-      log('ok', 'initialize instructions — first-contact safety and batch relation type guidance present');
+      log('ok', 'initialize instructions — first-contact safety and recovery guidance present');
 
       if (!listRes || !listRes.result?.tools) {
         log('fail', 'no tools/list response');
