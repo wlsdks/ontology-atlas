@@ -829,6 +829,8 @@ describe('package contract helpers', () => {
     assert.match(smoke, /workspace_brief_tuned — \.\*next actions, \.\*health checks/);
     assert.match(smoke, /health_tuned — \.\*compile_issues:\(pass\|warn\)/);
     assert.match(smoke, /health_tuned — \.\*checks/);
+    assert.match(smoke, /strict arguments — unknown tool argument rejected at runtime/);
+    assert.match(smoke, /strict arguments — multiple unknown tool arguments reported together/);
     assert.match(smoke, /neighbors\\\/node-to-project path\\\/project_scope graph-query smoke/);
     assert.match(smoke, /runtime unknown-argument/);
     assert.match(smoke, /invalid-enum rejection/);

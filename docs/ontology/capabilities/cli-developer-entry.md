@@ -72,7 +72,8 @@ installed `mcp-verify --help`, invalid installed `OMOT_MCP_PATH` / vault root fa
 `cycles --json`, `compile --json`, `path --json` exit 를 실행하고 installed verify 의
 health check count 출력과 `overview`/`project_map` query_plan / `neighbors` / `path` /
 `project_scope` smoke 출력, project-less vault 의 `project_scope` skip, empty vault 의
-node-targeted graph smoke skip, typoed `maintenance_plan.phases` / `maintenance_plan.severities` /
+node-targeted graph smoke skip, single and multi unknown-argument runtime rejection,
+typoed `maintenance_plan.phases` / `maintenance_plan.severities` /
 `maintenance_plan.kinds` runtime rejection, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke,
 installed help 의 strict argument/enum smoke 와 maintenance work-queue filter/cursor 계약,
 bucket / current-page next-action summary 설명을 확인해 source checkout 에서는 안 보이는 bin/package/files drift 를

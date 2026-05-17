@@ -229,6 +229,8 @@ try {
   assert.match(cliMcpVerify.stdout, /overview/);
   assert.match(cliMcpVerify.stdout, /overview query_plan/);
   assert.match(cliMcpVerify.stdout, /project_map query_plan/);
+  assert.match(cliMcpVerify.stdout, /strict arguments — unknown tool argument rejected at runtime/);
+  assert.match(cliMcpVerify.stdout, /strict arguments — multiple unknown tool arguments reported together/);
   assert.match(cliMcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(cliMcpVerify.stdout, /maintenance cursor — ready page stable/);
   assert.match(cliMcpVerify.stdout, /neighbors — elements\/example/);
@@ -338,6 +340,8 @@ try {
   assert.match(mcpVerify.stdout, /overview/);
   assert.match(mcpVerify.stdout, /overview query_plan/);
   assert.match(mcpVerify.stdout, /project_map query_plan/);
+  assert.match(mcpVerify.stdout, /strict arguments — unknown tool argument rejected at runtime/);
+  assert.match(mcpVerify.stdout, /strict arguments — multiple unknown tool arguments reported together/);
   assert.match(mcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(mcpVerify.stdout, /maintenance cursor — ready page stable/);
   assert.match(mcpVerify.stdout, /neighbors — elements\/example/);
@@ -363,6 +367,7 @@ try {
   assert.match(directMcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
   assert.match(directMcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
   assert.match(directMcpVerify.stdout, /health_tuned — .*checks/);
+  assert.match(directMcpVerify.stdout, /strict arguments — multiple unknown tool arguments reported together/);
   assert.match(directMcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(directMcpVerify.stdout, /maintenance cursor — ready page stable/);
 
