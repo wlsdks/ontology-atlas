@@ -13,9 +13,9 @@ one more gap between agent-side graph repair guidance and terminal dogfood.
 
 - **`oh-my-ontology maintenance`** — thin wrapper around
   `query_ontology({operation:"maintenance_plan"})`. It shows remaining /
-  filtered / total queue counts, cursor state, active filters, action severity,
-  proposed tool hints, and next executable / review pointers without writing to
-  the vault.
+  filtered / total queue counts, cursor state, active filters, phase / severity
+  / kind bucket summaries, action severity, proposed tool hints, and next
+  executable / review pointers without writing to the vault.
 - **Focused CLI gate** — `pnpm integration:cli:maintenance` runs only the
   maintenance command and maintenance-related installed verify integration
   cases, so small work-queue changes no longer require the full CLI integration

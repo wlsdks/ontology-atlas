@@ -783,6 +783,8 @@ describe('package contract helpers', () => {
     assert.match(tableRow, /`neighbors`\/`path`\/`project_scope` graph-query smoke/);
     assert.match(maintenanceRow, /MCP `maintenance_plan` cleanup\/repair work queue/);
     assert.match(maintenanceRow, /`--after-action-id`/);
+    assert.match(maintenanceRow, /phase\/severity\/kind bucket summaries/);
+    assert.match(maintenanceRow, /current-page next action pointers/);
     assert.match(maintenanceRow, /cursor\/filter dogfood/);
     assert.match(inferImportsRow, /file edge kind summary/);
     assert.match(inferImportsRow, /per-module `kindCounts`/);
@@ -930,11 +932,14 @@ describe('package contract helpers', () => {
     assert.match(maintenanceSection, /`query_ontology\(\{operation: 'maintenance_plan'\}\)`/);
     assert.match(maintenanceSection, /remaining\/filtered\/total counts/);
     assert.match(maintenanceSection, /cursor state/);
+    assert.match(maintenanceSection, /phase\/severity\/kind bucket summaries/);
     assert.match(maintenanceSection, /current-page next executable\/review pointers/);
     assert.match(maintenanceSection, /`pnpm integration:cli:maintenance`/);
     assert.match(maintenanceSection, /maintenance-related installed verify cases/);
+    assert.match(maintenanceSection, /신규 integration test 3건/);
     assert.match(productMaintenanceSection, /`oh-my-ontology maintenance`/);
     assert.match(productMaintenanceSection, /`query_ontology\(\{operation:"maintenance_plan"\}\)`/);
+    assert.match(productMaintenanceSection, /phase \/ severity\s+\/ kind bucket summaries/);
     assert.match(productMaintenanceSection, /`pnpm integration:cli:maintenance`/);
     assert.match(productMaintenanceSection, /27-command CLI surface/);
   });
@@ -1498,6 +1503,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /cli\/src\/commands\/maintenance\.mjs/);
     assert.match(maintenanceRow, /MCP `query_ontology\(maintenance_plan\)`/);
     assert.match(maintenanceRow, /cursor miss 는 빈 page 와 `cursor\.found=false`/);
+    assert.match(maintenanceRow, /phase\/severity\/kind bucket summary/);
     assert.doesNotMatch(regressionSection, /\*\*\d+ spawn-based\*\* integration test/);
     assert.match(doc, /`cli\/src\/lib\/mcp-call\.mjs` 의 thin wrapper/);
     assert.match(doc, /MCP `structuredContent` 를 먼저 사용하되/);

@@ -94,6 +94,12 @@ function renderMaintenance(result) {
     formatListFilter('kinds', filters.kinds),
   ].filter(Boolean).join(' · ');
   if (filterText) process.stdout.write(`${COLORS.dim}filters:${COLORS.reset} ${filterText}\n`);
+  const bucketText = [
+    formatBucket('phase', result?.byPhase),
+    formatBucket('severity', result?.bySeverity),
+    formatBucket('kind', result?.byKind),
+  ].filter(Boolean).join(' · ');
+  if (bucketText) process.stdout.write(`${COLORS.dim}buckets:${COLORS.reset} ${bucketText}\n`);
   process.stdout.write('\n');
 
   if (actions.length === 0) {
@@ -132,6 +138,14 @@ function renderMaintenance(result) {
 
 function formatListFilter(label, value) {
   return Array.isArray(value) && value.length > 0 ? `${label}=${value.join(',')}` : null;
+}
+
+function formatBucket(label, value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const entries = Object.entries(value)
+    .filter(([, count]) => Number.isFinite(count) && count > 0)
+    .sort(([a], [b]) => a.localeCompare(b));
+  return entries.length > 0 ? `${label} ${entries.map(([key, count]) => `${key}:${count}`).join(',')}` : null;
 }
 
 function parseArgs(args) {

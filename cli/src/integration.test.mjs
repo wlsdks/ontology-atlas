@@ -2288,6 +2288,8 @@ await test('maintenance — supports cursor and enum filter flags', async () => 
     assert.match(clean, /maintenance plan/);
     assert.match(clean, /break_dependency_cycle/);
     assert.match(clean, /filters: phases=repair · severities=fail · kinds=break_dependency_cycle/);
+    assert.match(clean, /buckets: phase repair:1 · severity fail:1 · kind break_dependency_cycle:1/);
+    assert.match(clean, /next review: maint_/);
 
     const missingCursor = await run(['maintenance', root, '--after-action-id', 'missing-action', '--json']);
     assert.equal(missingCursor.code, 0, `stdout: ${missingCursor.stdout}\nstderr: ${missingCursor.stderr}`);
