@@ -161,7 +161,11 @@ export function parseMcpToolResponse(toolResp) {
     }
     throw new Error(text);
   }
-  if (toolResp.result && Object.prototype.hasOwnProperty.call(toolResp.result, 'structuredContent')) {
+  if (
+    toolResp.result &&
+    Object.prototype.hasOwnProperty.call(toolResp.result, 'structuredContent') &&
+    toolResp.result.structuredContent != null
+  ) {
     return toolResp.result.structuredContent;
   }
   const text = toolResp?.result?.content?.[0]?.text;

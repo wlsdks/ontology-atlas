@@ -38,6 +38,18 @@ describe('mcp-call response parsing', () => {
     );
   });
 
+  it('falls back to text JSON when structuredContent is null', () => {
+    assert.deepEqual(
+      parseMcpToolResponse({
+        result: {
+          content: [{ text: JSON.stringify({ ok: true, source: 'text' }) }],
+          structuredContent: null,
+        },
+      }),
+      { ok: true, source: 'text' },
+    );
+  });
+
   it('keeps plain text fallback and error handling stable', () => {
     assert.deepEqual(
       parseMcpToolResponse({ result: { content: [{ text: 'plain response' }] } }),
