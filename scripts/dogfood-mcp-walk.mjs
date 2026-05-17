@@ -6,7 +6,7 @@
 //
 // write 안 함 (dogfood vault 보존). list_kinds / list_concepts / project probe / get_concepts /
 // find_evidence / find_path / find_backlinks / find_orphans /
-// tools/list schema contract / strict unknown-argument and invalid-enum rejection / validate_vault / compile_ontology(summary) /
+// tools/list schema contract / strict unknown-argument, invalid-enum, and invalid-filter rejection / validate_vault / compile_ontology(summary) /
 // query_ontology overview / query_plan / neighbors / path / all_paths / pattern_walk / project_scope / centrality / communities / similar_nodes / explain_relation / reachability / impact / blast_radius / subgraph / schema / facets / match_nodes / match_edges / node_profile / lineage / containment_tree / cycles / topological_order / relation_check / components / recommend_relations / growth_plan / maintenance_plan / workspace_brief / health / health tuned.
 
 import { spawn } from "node:child_process";
@@ -39,6 +39,7 @@ import {
   strictMultiArgsFailure,
   strictEnumFailure,
   strictMaintenanceFilterFailure,
+  strictRelationFilterFailure,
   structuredContentParityStatus,
   toolsListSchemaFailure,
   validateVaultFailure,
@@ -112,6 +113,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [58, "infer_imports"],
   [59, "strict_multi_args"],
   [60, "query_concepts_limited"],
+  [61, "strict_relation_filter"],
 ]);
 
 const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
@@ -474,6 +476,10 @@ export function buildDogfoodRequests() {
       operation: "maintenance_plan",
       kinds: ["add_mising_relation"],
     }),
+    call(61, "query_ontology", {
+      operation: "health",
+      dependencyTypes: ["depend_on"],
+    }),
     call(24, "query_ontology", {
       operation: "growth_plan",
       limit: 5,
@@ -758,6 +764,7 @@ export function evaluateDogfoodGate({
   strictMaintenancePhaseFilter,
   strictMaintenanceSeverityFilter,
   strictMaintenanceKindFilter,
+  strictRelationFilter,
   toolsList,
 }) {
   const failures = [];
@@ -827,6 +834,8 @@ export function evaluateDogfoodGate({
   if (strictMaintenanceSeverityFilterError) failures.push(`strict_maintenance_severity_filter: ${strictMaintenanceSeverityFilterError}`);
   const strictMaintenanceKindFilterError = strictMaintenanceFilterFailure(strictMaintenanceKindFilter, "kinds");
   if (strictMaintenanceKindFilterError) failures.push(`strict_maintenance_kind_filter: ${strictMaintenanceKindFilterError}`);
+  const strictRelationFilterError = strictRelationFilterFailure(strictRelationFilter);
+  if (strictRelationFilterError) failures.push(`strict_relation_filter: ${strictRelationFilterError}`);
   if (toolsList) {
     const toolsListFailure = toolsListSchemaFailure(toolsList.tools);
     if (toolsListFailure) failures.push(`tools/list: ${toolsListFailure}`);
@@ -5001,6 +5010,15 @@ async function main() {
     console.log(`  ${strictMaintenanceKindFilterText}`);
   }
 
+  // 49. strict relation filter rejection
+  header("strict relation filters — invalid dependencyTypes rejection");
+  const strictRelationFilter = responses.find((response) => response.id === 61);
+  const strictRelationFilterText = strictRelationFilter?.result?.content?.[0]?.text || "";
+  console.log(`  dependencyTypes rejected: ${strictRelationFilter?.result?.isError === true}`);
+  if (strictRelationFilterText) {
+    console.log(`  ${strictRelationFilterText}`);
+  }
+
   const graphStructuredContentRows = [
     ["workspace_brief", brief, briefStructured],
     ["workspace_brief_tuned", tunedBrief, tunedBriefStructured],
@@ -5169,6 +5187,7 @@ async function main() {
     strictMaintenancePhaseFilter,
     strictMaintenanceSeverityFilter,
     strictMaintenanceKindFilter,
+    strictRelationFilter,
     toolsList,
   });
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
@@ -5257,6 +5276,7 @@ async function main() {
   console.log(`  strict_maintenance_phase_filter: rejected ${strictMaintenancePhaseFilter?.result?.isError === true}`);
   console.log(`  strict_maintenance_severity_filter: rejected ${strictMaintenanceSeverityFilter?.result?.isError === true}`);
   console.log(`  strict_maintenance_kind_filter: rejected ${strictMaintenanceKindFilter?.result?.isError === true}`);
+  console.log(`  strict_relation_filter: rejected ${strictRelationFilter?.result?.isError === true}`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   if (stderr.trim()) {

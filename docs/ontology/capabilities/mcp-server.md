@@ -341,7 +341,8 @@ relation type typo row 를 함께 보내 row-level 격리와 relation type neare
 allowed value hint 가 함께 유지되는지 검증한다.
 health/workspace_brief relation filter 도 `dependencyTypes: ["depend_on"]` 같은
 오타값을 실제로 보내 relation-type closest hint 가 유지되는지 first-contact 에서
-검증한다.
+검증하고, dogfood walk 도 같은 MCP 호출을 포함해 실제 agent 시뮬레이션에서
+회귀를 잡는다.
 여러 unknown argument 를 한 번에 보낸 경우에도 첫 번째 오타만 보고하지 않고
 각 unknown key 와 가까운 allowed argument hint 를 한 응답에 모아 보여줘 agent 의
 반복 retry 비용을 낮춘다.

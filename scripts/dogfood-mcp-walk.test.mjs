@@ -2469,6 +2469,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(57), "analyze_repo_structure");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(58), "infer_imports");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(59), "strict_multi_args");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(61), "strict_relation_filter");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
