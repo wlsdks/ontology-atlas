@@ -142,6 +142,9 @@ const QUERY_ONTOLOGY_OPERATION_UNION = QUERY_ONTOLOGY_OPERATIONS
 const QUERY_PLAN_TARGET_OPERATION_UNION = QUERY_PLAN_TARGET_OPERATIONS
   .map((operation) => `'${operation}'`)
   .join('|');
+const RELATION_TYPE_UNION = RELATION_TYPE_VALUES
+  .map((type) => `'${type}'`)
+  .join('|');
 
 // import-time throw 면 stdio transport 가 붙기 전 stack trace 가 stderr 로
 // 새고 클라이언트 (Claude Code 등) 에선 silent crash 로 보인다. 친절한 한
@@ -202,7 +205,7 @@ All read-tool match rows share the same shape \`{slug, kind, title, domain, mtim
 
 All tool input schemas are strict: unknown arguments are rejected instead of being ignored, and invalid enum values are rejected too. If you see an error like \`Unknown argument "lmit" for list_concepts. Did you mean "limit"?\`, \`Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)\`, or \`operation must be one of: ... Did you mean "overview"?\`, fix every reported key/value before retrying; do not assume the server fell back to a default.
 
-\`health\` and \`workspace_brief\` can tune their internal graph probes with \`componentLimit\`, \`cycleLimit\`, \`recommendationLimit\`, \`orderLimit\`, \`nodeLimit\`, \`dependencyTypes\`, and \`componentTypes\`. Use these controls for large vaults or focused diagnostics instead of pulling the full compile artifact.
+\`health\` and \`workspace_brief\` can tune their internal graph probes with \`componentLimit\`, \`cycleLimit\`, \`recommendationLimit\`, \`orderLimit\`, \`nodeLimit\`, \`dependencyTypes\`, and \`componentTypes\`. \`dependencyTypes\` / \`componentTypes\` accept relation types ${RELATION_TYPE_UNION}; typoed values fail with nearest-value hints. Use these controls for large vaults or focused diagnostics instead of pulling the full compile artifact.
 
 \`maintenance_plan\` is an agent work queue. Its \`phases\`, \`severities\`, and \`kinds\` filters are enum-validated, so typoed filters fail instead of returning an empty plan. Summary counts (\`totalActions\`, \`filteredActions\`, \`remainingActions\`, \`executableActions\`, \`reviewActions\`) and \`byPhase\` / \`bySeverity\` / \`byKind\` buckets are count-safe; bucket totals describe the remaining queue and match \`remainingActions\`. A ready page reports \`cursor.found=true\` with \`cursor.reason=null\`; \`cursor.nextAfterActionId\` is the last returned action id (or null for an empty page), and \`cursor.hasMore\` reflects whether more remaining actions exist after the current page. \`nextExecutableAction\` and \`nextReviewAction\` point only at the first executable/review action in the current returned page. When resuming with \`afterActionId\`, an unknown cursor returns an empty page with \`cursor.found=false\`, \`cursor.reason\`, zero remaining actions, \`cursor.nextAfterActionId=null\`, \`cursor.hasMore=false\`, and no next actions — surface that to the user instead of silently restarting the queue.
 

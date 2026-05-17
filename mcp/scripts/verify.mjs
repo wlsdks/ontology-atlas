@@ -1902,6 +1902,7 @@ export function initializeInstructionsFailure(response) {
     ['nearest enum hint guidance', /Did you mean "overview"\?/],
     ['maintenance filter enum guidance', /phases.*severities.*kinds/],
     ['health tuning guidance', /componentLimit[\s\S]*cycleLimit[\s\S]*recommendationLimit[\s\S]*orderLimit[\s\S]*nodeLimit[\s\S]*dependencyTypes[\s\S]*componentTypes/],
+    ['health relation filter enum guidance', /dependencyTypes[\s\S]*componentTypes[\s\S]*depends_on[\s\S]*contains[\s\S]*describes/],
     ['maintenance ready cursor guidance', /cursor\.found=true[\s\S]*cursor\.reason=null/],
     ['maintenance ready cursor pagination guidance', /cursor\.nextAfterActionId[\s\S]*last returned action id[\s\S]*cursor\.hasMore/],
     ['maintenance current-page pointer guidance', /nextExecutableAction[\s\S]*nextReviewAction[\s\S]*current returned page/],

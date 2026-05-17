@@ -341,6 +341,9 @@ strict-input typo recovery 안내도 같은 gate 에 포함되어 `Did you mean 
 `health` / `workspace_brief` probe tuning 도 first-contact 안내에 포함해
 `componentLimit`, `cycleLimit`, `recommendationLimit`, `orderLimit`, `nodeLimit`,
 `dependencyTypes`, `componentTypes` 를 대형 vault 또는 focused diagnosis 에 바로 쓸 수 있게 한다.
+`dependencyTypes` / `componentTypes` 는 허용 relation type enum 과 nearest-value
+hint 도 first-contact instructions 에 노출해 agent 가 schema 를 열기 전에도
+`depends_on` / `contains` / `describes` 같은 값을 정확히 고를 수 있게 한다.
 `maintenance_plan` work-queue 안내도 first-contact 에 포함해 `phases` / `severities` /
 `kinds` filter enum, ready cursor 의 `cursor.found=true` / `cursor.reason=null`,
 ready cursor 의 `cursor.nextAfterActionId` / `cursor.hasMore`, unknown `afterActionId`
