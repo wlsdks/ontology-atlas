@@ -2225,6 +2225,10 @@ await test('graph diagnostic commands — reject invalid option values before MC
       pattern: /--exclude-kinds requires a value/,
     },
     {
+      args: ['orphans', '--exclude-kinds=project,'],
+      pattern: /--exclude-kinds must not contain empty CSV items/,
+    },
+    {
       args: ['orphans', '--exclude-kinds=project,capabilty'],
       pattern: /--exclude-kinds items must be one of: project, domain, capability, element, document, vault-readme\. Received: "capabilty"\. Did you mean "capability"\?/,
     },
@@ -2518,6 +2522,10 @@ await test('maintenance — rejects malformed CLI flags before runtime work', as
   assert.match(stripAnsi(missingPhases.stderr), /--phases requires a value/);
   assert.match(stripAnsi(missingPhases.stderr), /oh-my-ontology maintenance/);
 
+  const emptyPhaseItem = await run(['maintenance', '--phases=repair,']);
+  assert.equal(emptyPhaseItem.code, 1);
+  assert.match(stripAnsi(emptyPhaseItem.stderr), /--phases must not contain empty CSV items/);
+
   const missingCursor = await run(['maintenance', '--after-action-id']);
   assert.equal(missingCursor.code, 1);
   assert.match(stripAnsi(missingCursor.stderr), /--after-action-id requires a value/);
@@ -2603,6 +2611,10 @@ await test('health/workspace-brief — reject malformed diagnosis tuning flags',
   const emptyTypes = await run(['workspace-brief', '--dependency-types=,']);
   assert.equal(emptyTypes.code, 1);
   assert.match(stripAnsi(emptyTypes.stderr), /--dependency-types requires at least one relation type/);
+
+  const trailingEmptyType = await run(['health', '--component-types=dependencies,']);
+  assert.equal(trailingEmptyType.code, 1);
+  assert.match(stripAnsi(trailingEmptyType.stderr), /--component-types must not contain empty CSV items/);
 
   const highLimit = await run(['health', '--component-limit=501']);
   assert.equal(highLimit.code, 1);

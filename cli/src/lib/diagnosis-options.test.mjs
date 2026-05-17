@@ -58,6 +58,10 @@ describe('diagnosis option parsers', () => {
       errorMessage(parseDiagnosisOption({}, '--component-types', ',')),
       '--component-types requires at least one relation type',
     );
+    assert.equal(
+      errorMessage(parseDiagnosisOption({}, '--dependency-types', 'dependencies,')),
+      '--dependency-types must not contain empty CSV items',
+    );
   });
 
   it('rejects unsupported diagnosis flags defensively', () => {

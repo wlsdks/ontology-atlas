@@ -93,6 +93,20 @@ export function parseRawRequiredFlagValue(flag, value) {
   return text;
 }
 
+export function parseCsvListFlag(flag, value, { itemName = 'value' } = {}) {
+  const text = parseRequiredFlagValue(flag, value);
+  if (text instanceof Error) return text;
+  const rawItems = text.split(',').map((item) => item.trim());
+  const values = rawItems.filter(Boolean);
+  if (values.length === 0) {
+    return new Error(`${flag} requires at least one ${itemName}`);
+  }
+  if (rawItems.length !== values.length) {
+    return new Error(`${flag} must not contain empty CSV items`);
+  }
+  return values;
+}
+
 export function formatUnknownFlagError(flag, allowedFlags = []) {
   const suggestion = closestAllowedFlag(flag, allowedFlags);
   const suggestionText = suggestion ? ` Did you mean ${suggestion}?` : '';

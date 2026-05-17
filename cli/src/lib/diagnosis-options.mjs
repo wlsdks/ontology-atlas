@@ -1,4 +1,4 @@
-import { parseBoundedPositiveIntegerFlag, parseRequiredFlagValue } from './cli-args.mjs';
+import { parseBoundedPositiveIntegerFlag, parseCsvListFlag } from './cli-args.mjs';
 
 export const DIAGNOSIS_OPTION_FLAGS = [
   '--component-limit',
@@ -42,14 +42,5 @@ export function parseDiagnosisOption(options, flag, value) {
 }
 
 function parseRelationTypeListFlag(flag, value) {
-  const text = parseRequiredFlagValue(flag, value);
-  if (text instanceof Error) return text;
-  const values = text
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean);
-  if (values.length === 0) {
-    return new Error(`${flag} requires at least one relation type`);
-  }
-  return values;
+  return parseCsvListFlag(flag, value, { itemName: 'relation type' });
 }

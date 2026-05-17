@@ -7,6 +7,7 @@ import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
   formatUnknownFlagError,
   parseBoundedPositiveIntegerFlag,
+  parseCsvListFlag,
   parseRequiredFlagValue,
   parseVaultFlag,
   resolveExclusiveVaultArg,
@@ -211,10 +212,7 @@ function parseArgs(args) {
 }
 
 function parseCsvFlag(flag, value) {
-  const parsed = parseRequiredFlagValue(flag, value);
-  if (parsed instanceof Error) return parsed;
-  const values = parsed.split(',').map((item) => item.trim()).filter(Boolean);
-  return values.length > 0 ? values : new Error(`${flag} requires at least one value`);
+  return parseCsvListFlag(flag, value);
 }
 
 function printUsage(stream = process.stderr) {

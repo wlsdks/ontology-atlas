@@ -6,6 +6,7 @@ import { callMcpTool } from '../lib/mcp-call.mjs';
 import { validateKindList, validateKindValue } from '../lib/kinds.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
+  parseCsvListFlag,
   formatUnknownFlagError,
   parseRequiredFlagValue,
   parseVaultFlag,
@@ -103,19 +104,13 @@ function parseArgs(args) {
     else if (a === '--kind') flags.kind = parseRequiredFlagValue('--kind', args[++i]);
     else if (a.startsWith('--kind=')) flags.kind = parseRequiredFlagValue('--kind', a.slice('--kind='.length));
     else if (a === '--exclude-kinds') {
-      const next = parseRequiredFlagValue('--exclude-kinds', args[++i]);
+      const next = parseCsvListFlag('--exclude-kinds', args[++i], { itemName: 'kind' });
       if (next instanceof Error) return { error: next.message };
-      flags.excludeKinds = next
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
+      flags.excludeKinds = next;
     } else if (a.startsWith('--exclude-kinds=')) {
-      const next = parseRequiredFlagValue('--exclude-kinds', a.slice('--exclude-kinds='.length));
+      const next = parseCsvListFlag('--exclude-kinds', a.slice('--exclude-kinds='.length), { itemName: 'kind' });
       if (next instanceof Error) return { error: next.message };
-      flags.excludeKinds = next
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean);
+      flags.excludeKinds = next;
     } else if (a.startsWith('--')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
     else positional.push(a);
   }

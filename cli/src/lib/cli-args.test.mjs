@@ -5,6 +5,7 @@ import {
   formatUnknownFlagError,
   parseBoundedNonNegativeIntegerFlag,
   parseBoundedPositiveIntegerFlag,
+  parseCsvListFlag,
   parseNonNegativeIntegerFlag,
   parsePositiveIntegerFlag,
   parseRawRequiredFlagValue,
@@ -66,6 +67,27 @@ describe('cli integer argument parsers', () => {
       'unknown flag: --lmit=1. Did you mean --limit?',
     );
     assert.equal(formatUnknownFlagError('--zzzz', ['--json', '--limit', '--vault']), 'unknown flag: --zzzz.');
+  });
+
+  it('parses comma-separated lists without accepting empty items', () => {
+    assert.deepEqual(parseCsvListFlag('--types', ' dependencies, contains '), ['dependencies', 'contains']);
+    assert.equal(errorMessage(parseCsvListFlag('--types', undefined)), '--types requires a value');
+    assert.equal(
+      errorMessage(parseCsvListFlag('--types', ',')),
+      '--types requires at least one value',
+    );
+    assert.equal(
+      errorMessage(parseCsvListFlag('--dependency-types', 'dependencies,')),
+      '--dependency-types must not contain empty CSV items',
+    );
+    assert.equal(
+      errorMessage(parseCsvListFlag('--dependency-types', 'dependencies,,contains')),
+      '--dependency-types must not contain empty CSV items',
+    );
+    assert.equal(
+      errorMessage(parseCsvListFlag('--dependency-types', ',', { itemName: 'relation type' })),
+      '--dependency-types requires at least one relation type',
+    );
   });
 });
 
