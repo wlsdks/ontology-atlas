@@ -496,6 +496,8 @@ describe('package contract helpers', () => {
     assert.match(statusSection, /overwrite: true/);
     assert.match(statusSection, /force: true/);
     assert.match(statusSection, /dangling referrers/);
+    assert.match(statusSection, /add_relations` unknown type row errors include a closest-value hint/);
+    assert.match(statusSection, /Did you mean "depends_on"\?/);
   });
 
   it('keeps the MCP README explicit about focused source-checkout verification', () => {
