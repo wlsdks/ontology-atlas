@@ -799,6 +799,7 @@ export function toolsListSchemaFailure(tools) {
     !/walk TS\/JS files in a code repo and infer file-level \+ module-level import edges/i.test(inferImportsTool.description || '') ||
     !/side effect 0 \(vault frontmatter NOT modified\)/i.test(inferImportsTool.description || '') ||
     !/reviews moduleEdges/i.test(inferImportsTool.description || '') ||
+    !/kindCounts/i.test(inferImportsTool.description || '') ||
     !/selectively passes accepted edges to add_relation as `depends_on`/i.test(inferImportsTool.description || '') ||
     !/Use after analyze_repo_structure/i.test(inferImportsTool.description || '') ||
     !/not just suggestedRelations heuristics/i.test(inferImportsTool.description || '') ||
@@ -861,12 +862,20 @@ export function toolsListSchemaFailure(tools) {
   if (
     moduleEdgesSchema?.type !== 'array' ||
     moduleEdgesSchema.items?.type !== 'object' ||
-    !sameArray(moduleEdgesSchema.items?.required, ['from', 'to', 'count'])
+    !sameArray(moduleEdgesSchema.items?.required, ['from', 'to', 'count', 'kindCounts'])
   ) {
     return 'infer_imports outputSchema moduleEdges drift';
   }
   if (moduleEdgesSchema.items?.properties?.count?.type !== 'integer' || moduleEdgesSchema.items?.properties?.count?.minimum !== 1) {
     return 'infer_imports outputSchema moduleEdges count drift';
+  }
+  const moduleKindCountsSchema = moduleEdgesSchema.items?.properties?.kindCounts;
+  if (
+    moduleKindCountsSchema?.type !== 'object' ||
+    moduleKindCountsSchema.additionalProperties?.type !== 'integer' ||
+    moduleKindCountsSchema.additionalProperties?.minimum !== 1
+  ) {
+    return 'infer_imports outputSchema moduleEdges kindCounts drift';
   }
 
   const queryTool = tools.find((tool) => tool?.name === 'query_ontology');
@@ -2780,6 +2789,16 @@ export function inferImportsFailure(parsed) {
     }
     if (!Number.isInteger(moduleEdge.count) || moduleEdge.count < 1) {
       return `infer_imports response missing module edge count at index ${index}`;
+    }
+    if (!moduleEdge.kindCounts || typeof moduleEdge.kindCounts !== 'object' || Array.isArray(moduleEdge.kindCounts)) {
+      return `infer_imports response missing module edge kindCounts at index ${index}`;
+    }
+    const kindTotal = Object.values(moduleEdge.kindCounts).reduce((sum, value) => {
+      if (!Number.isInteger(value) || value < 1) return NaN;
+      return sum + value;
+    }, 0);
+    if (kindTotal !== moduleEdge.count) {
+      return `infer_imports response module edge kindCounts mismatch at index ${index}`;
     }
   }
   return null;

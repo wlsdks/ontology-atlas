@@ -230,6 +230,7 @@ describe('package contract helpers', () => {
 
     assert.match(analyzeLine, /`?\{ rootPath\?, maxDepth\?, ignore\? \}`?/);
     assert.match(inferLine, /`?\{ rootPath\?, sourceFolders\?, ignore\?, maxFiles\? \}`?/);
+    assert.match(inferLine, /`kindCounts`/);
     assert.match(inferLine, /common `@\/\*` aliases/);
     assert.doesNotMatch(analyzeLine + inferLine, /repoRoot/);
   });
@@ -743,6 +744,7 @@ describe('package contract helpers', () => {
     const implementationSection = doc.split('## 구현 단일 진실원')[1]?.split('## 회귀 차단')[0] ?? '';
 
     assert.match(inferImportsRow, /file edge kind summary/);
+    assert.match(inferImportsRow, /module edge 별 `kindCounts`/);
     assert.match(inferImportsRow, /`static` \/ `dynamic` \/ `require` \/ `reexport` \/ `side`/);
     assert.match(mcpVerifyRow, /실제 `neighbors` \/ node→project `path` \/ `project_scope` graph smoke/);
     assert.match(mcpVerifyRow, /`workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`/);
@@ -804,6 +806,7 @@ describe('package contract helpers', () => {
     assert.match(queryOntologyRow, /unknown cursor 의 `cursor\.found=false` \/ cursor miss `reason`/);
     assert.match(queryOntologyRow, /count-safe summary fields/);
     assert.match(queryOntologyRow, /`byPhase` \/ `bySeverity` \/ `byKind` remaining-queue buckets/);
+    assert.match(inferImportsRow, /`kindCounts`/);
     assert.match(dogfoodSection, /identifier\/severity/);
     assert.match(dogfoodSection, /id\/status\/count/);
     assert.match(dogfoodSection, /`edges\[\]\.from`/);

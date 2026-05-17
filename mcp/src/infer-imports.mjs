@@ -93,7 +93,7 @@ const SIDE_IMPORT_RE = /\bimport\s+['"]([^'"]+)['"]/g;
  *   edges: Array<{ from: string, to: string, kind: 'static'|'dynamic'|'require'|'reexport'|'side' }>,
  *   externalImports: Array<{ from: string, spec: string }>,
  *   unresolved: Array<{ from: string, spec: string, reason: string }>,
- *   moduleEdges: Array<{ from: string, to: string, count: number }>,
+ *   moduleEdges: Array<{ from: string, to: string, count: number, kindCounts: Record<string, number> }>,
  * }}
  */
 export function inferImports(rootPath, options = {}) {
@@ -161,11 +161,24 @@ export function inferImports(rootPath, options = {}) {
     const tm = moduleOf(e.to, sourceFolders);
     if (!fm || !tm || fm === tm) continue;
     const key = `${fm} → ${tm}`;
-    moduleCount.set(key, (moduleCount.get(key) ?? 0) + 1);
+    const bucket = moduleCount.get(key) ?? {
+      count: 0,
+      kindCounts: new Map(),
+    };
+    bucket.count += 1;
+    bucket.kindCounts.set(e.kind, (bucket.kindCounts.get(e.kind) ?? 0) + 1);
+    moduleCount.set(key, bucket);
   }
-  const moduleEdges = [...moduleCount.entries()].map(([key, count]) => {
+  const moduleEdges = [...moduleCount.entries()].map(([key, bucket]) => {
     const [from, to] = key.split(' → ');
-    return { from, to, count };
+    return {
+      from,
+      to,
+      count: bucket.count,
+      kindCounts: Object.fromEntries(
+        [...bucket.kindCounts.entries()].sort(([a], [b]) => a.localeCompare(b)),
+      ),
+    };
   });
   moduleEdges.sort((a, b) => b.count - a.count);
 

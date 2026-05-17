@@ -2878,6 +2878,7 @@ await test('infer-imports preview — file edge kind summary exposed', async () 
     assert.match(clean, /dynamic=1/);
     assert.match(clean, /require=1/);
     assert.match(clean, /reexport=1/);
+    assert.match(clean, /capabilities\/a.*capabilities\/b.*static=1.*dynamic=1.*require=1.*reexport=1/s);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });

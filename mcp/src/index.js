@@ -1507,6 +1507,7 @@ const TOOLS = [
     description:
       'R17 (autonomous ingest deeper) — walk TS/JS files in a code repo and infer file-level + module-level import edges. ' +
       'side effect 0 (vault frontmatter NOT modified). The agent reviews moduleEdges (capability A → capability B from import count) and selectively passes accepted edges to add_relation as `depends_on`. ' +
+      'Each module edge includes `kindCounts` so the agent can distinguish static-heavy edges from dynamic/require/reexport/side-effect evidence before writing. ' +
       'Detects:\n' +
       '  - relative imports (./, ../) → resolved to file paths\n' +
       '  - dynamic import() / require() / export ... from\n' +
@@ -1595,8 +1596,17 @@ const TOOLS = [
               from: NON_BLANK_STRING_SCHEMA,
               to: NON_BLANK_STRING_SCHEMA,
               count: { type: 'integer', minimum: 1 },
+              kindCounts: {
+                type: 'object',
+                additionalProperties: {
+                  type: 'integer',
+                  minimum: 1,
+                },
+                description:
+                  'Import kind histogram for this collapsed module edge, e.g. { static: 2, dynamic: 1 }.',
+              },
             },
-            required: ['from', 'to', 'count'],
+            required: ['from', 'to', 'count', 'kindCounts'],
           },
         },
       },

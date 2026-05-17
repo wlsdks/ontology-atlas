@@ -107,8 +107,10 @@ export async function runInferImports(args) {
       `  ${COLORS.bold}module edges${COLORS.reset} ${COLORS.dim}(${modEdges.length}) — depends_on candidates${COLORS.reset}\n`,
     );
     for (const m of modEdges.slice(0, 16)) {
+      const kindSummary = formatKindCounts(m.kindCounts);
+      const kindSuffix = kindSummary ? ` ${COLORS.dim}(${kindSummary})${COLORS.reset}` : '';
       process.stdout.write(
-        `    ${COLORS.cyan}${m.from}${COLORS.reset} ${COLORS.dim}—depends_on→${COLORS.reset} ${COLORS.cyan}${m.to}${COLORS.reset} ${COLORS.dim}× ${m.count}${COLORS.reset}\n`,
+        `    ${COLORS.cyan}${m.from}${COLORS.reset} ${COLORS.dim}—depends_on→${COLORS.reset} ${COLORS.cyan}${m.to}${COLORS.reset} ${COLORS.dim}× ${m.count}${COLORS.reset}${kindSuffix}\n`,
       );
     }
     if (modEdges.length > 16)
@@ -270,6 +272,16 @@ function formatEdgeKindSummary(edges) {
   return ['static', 'dynamic', 'require', 'reexport', 'side', 'unknown']
     .filter((kind) => counts.has(kind))
     .map((kind) => `${kind}=${counts.get(kind)}`)
+    .join(' · ');
+}
+
+function formatKindCounts(kindCounts) {
+  if (!kindCounts || typeof kindCounts !== 'object' || Array.isArray(kindCounts)) {
+    return '';
+  }
+  return ['static', 'dynamic', 'require', 'reexport', 'side', 'unknown']
+    .filter((kind) => Number.isInteger(kindCounts[kind]) && kindCounts[kind] > 0)
+    .map((kind) => `${kind}=${kindCounts[kind]}`)
     .join(' · ');
 }
 

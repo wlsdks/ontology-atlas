@@ -99,6 +99,14 @@ test('dynamic import + require + reexport detected', () => {
       toX.map((edge) => edge.kind).sort(),
       ['dynamic', 'reexport', 'require'],
     );
+    const moduleEdge = r.moduleEdges.find(
+      (edge) => edge.from === 'capabilities/a' && edge.to === 'capabilities/b',
+    );
+    assert.deepEqual(moduleEdge?.kindCounts, {
+      dynamic: 1,
+      reexport: 1,
+      require: 1,
+    });
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
