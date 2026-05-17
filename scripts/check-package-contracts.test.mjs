@@ -785,11 +785,16 @@ describe('package contract helpers', () => {
     const readme = readFileSync('cli/README.md', 'utf-8');
     const section = readme.split('### Source-checkout verification')[1]?.split('`oh-my-ontology mcp-verify [vault]` is the fastest')[0] ?? '';
 
+    assert.match(section, /pnpm test:cli:lib/);
     assert.match(section, /pnpm integration:cli:mcp-verify/);
     assert.match(section, /pnpm test:mcp:docs/);
     assert.match(section, /pnpm test:mcp:package/);
     assert.match(section, /pnpm test:mcp:verify/);
     assert.match(section, /pnpm test:mcp:verify:timeout/);
+    assert.match(section, /shared CLI helper contracts/);
+    assert.match(section, /argument parsing/);
+    assert.match(section, /command registry metadata/);
+    assert.match(section, /MCP response unwrapping/);
     assert.match(section, /installed MCP verification wrapper/);
     assert.match(section, /documentation drift/);
     assert.match(section, /shared MCP verify helper contract/);

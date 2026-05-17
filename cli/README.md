@@ -52,6 +52,7 @@ When editing the CLI package from the monorepo, start with the focused root
 checks that match the touched surface:
 
 ```bash
+pnpm test:cli:lib
 pnpm integration:cli:mcp-verify
 pnpm test:mcp:docs
 pnpm test:mcp:package
@@ -59,6 +60,9 @@ pnpm test:mcp:verify
 pnpm test:mcp:verify:timeout
 ```
 
+`test:cli:lib` checks shared CLI helper contracts for argument parsing,
+command registry metadata, MCP response unwrapping, package metadata, and
+graph result fail-closed handling without spawning the full CLI.
 `integration:cli:mcp-verify` runs only the installed MCP verification wrapper
 subset inside the spawn-heavy CLI integration file. `test:mcp:docs` checks
 README and dogfood ontology documentation drift. `test:mcp:package` checks
