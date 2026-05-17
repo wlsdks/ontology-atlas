@@ -1336,7 +1336,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /from the repo root, use the node mcp\\\/scripts\\\/verify\\\.mjs form/);
     assert.match(smoke, /Explicit \\\[vault\\\] or --vault arguments take precedence over OMOT_VAULT/);
     assert.match(smoke, /pnpm test:mcp:verify\\s\+MCP verify helper contract without the full integration suite/);
-    assert.match(smoke, /pnpm test:mcp:verify:first-contact\\s\+Narrow first-contact health\\\/read-smoke helper gates/);
+    assert.match(smoke, /pnpm test:mcp:verify:first-contact\\s\+Narrow first-contact health\\\/read\\\/sample-shape helper gates/);
     assert.match(smoke, /pnpm test:mcp:verify:timeout/);
     assert.match(smoke, /Narrow MCP verify timeout\\\/help diagnostics/);
     assert.match(smoke, /verify timeout must be a positive integer/);
@@ -1413,7 +1413,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /invalid-enum rejection/);
     assert.match(smoke, /destructive writer dry-runs with every planned response present and no changed\\\/postWriteMaintenance/);
     assert.match(smoke, /destructive writer dry-runs for rename_concept\\\/merge_concepts\\\/delete_concept/);
-    assert.match(smoke, /write-tool postWriteMaintenance byPhase\\\/bySeverity\\\/byKind buckets \\+ score\\\/proposedAction\\\/next-action guidance/);
+    assert.ok(smoke.includes(String.raw`write-tool postWriteMaintenance byPhase\/bySeverity\/byKind buckets \+ score\/proposedAction\/next-action guidance`));
     assert.ok(smoke.includes('maintenance_plan cursor smoke'));
     assert.match(smoke, /Maintenance filters are enum-validated for phases\\\/severities\\\/kinds/);
     assert.match(smoke, /cursor smoke checks both cursor\\\.found=true with cursor\\\.reason=null and cursor\\\.found=false/);
@@ -1424,7 +1424,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /pnpm integration:cli:mcp-verify/);
     assert.match(smoke, /Installed CLI mcp-verify wrapper flow\\\/help\\\/failure checks/);
     assert.match(smoke, /pnpm test:mcp:verify\\s\+MCP verify helper contract without the full integration suite/);
-    assert.match(smoke, /pnpm test:mcp:verify:first-contact\\s\+Narrow first-contact health\\\/read-smoke helper gates/);
+    assert.match(smoke, /pnpm test:mcp:verify:first-contact\\s\+Narrow first-contact health\\\/read\\\/sample-shape helper gates/);
     assert.match(smoke, /pnpm test:mcp:verify:timeout/);
     assert.match(smoke, /Narrow MCP verify timeout\\\/help diagnostics/);
     assert.match(smoke, /Successful cursor lines print bucket summaries plus current-page executable\\\/review next-action summaries/);
