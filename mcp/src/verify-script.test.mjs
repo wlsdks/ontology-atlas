@@ -93,6 +93,7 @@ import {
   VERIFY_TUNED_HEALTH_ARGS,
   verifyCountConsistencyFailure,
   verifyRetryExample,
+  verifySuccessMessage,
   verifyTimeoutFailure,
   verifyTimeoutValueErrorMessage,
   verifyUsage,
@@ -3179,6 +3180,14 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
     assert.match(verifyUsage(), /pnpm test:mcp:verify:timeout/);
     assert.match(verifyUsage(), /Narrow MCP verify timeout\/help diagnostics/);
+  });
+
+  it('keeps the verify success message MCP-client neutral', () => {
+    assert.equal(
+      verifySuccessMessage(23),
+      'All passed — register .mcp.json with your MCP client and restart to use the 23 tools.',
+    );
+    assert.doesNotMatch(verifySuccessMessage(23), /Claude Code/);
   });
 
   it('fails malformed strict argument smoke responses', () => {

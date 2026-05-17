@@ -291,7 +291,7 @@ A successful run looks like this:
 ✓ project_scope — project (27 nodes, internalEdges 92)
 ✓ structuredContent — direct 16/16, write 5/5, maintenance 2/2, graph 11/11
 
-All passed — register .mcp.json with Claude Code and restart to use the 23 tools.
+All passed — register .mcp.json with your MCP client and restart to use the 23 tools.
 ```
 
 On failure, it tells you which step blocked progress and prints a diagnostic message. The

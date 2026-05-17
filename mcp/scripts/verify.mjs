@@ -2184,6 +2184,10 @@ export function verifyTimeoutValueErrorMessage(value, env = process.env) {
   ].join('\n');
 }
 
+export function verifySuccessMessage(toolCount = EXPECTED_TOOLS.length) {
+  return `All passed — register .mcp.json with your MCP client and restart to use the ${toolCount} tools.`;
+}
+
 export function verifyUsage() {
   return (
     '\nUsage:\n' +
@@ -5481,7 +5485,7 @@ async function main() {
   if (!ok1) process.exit(1);
   const ok2 = await step2BootAndCall();
   if (!ok2) process.exit(1);
-  console.log(`\n\x1b[32mAll passed\x1b[0m — register .mcp.json with Claude Code and restart to use the ${EXPECTED_TOOLS.length} tools.\n`);
+  console.log(`\n\x1b[32m${verifySuccessMessage()}\x1b[0m\n`);
   process.exit(0);
 }
 
