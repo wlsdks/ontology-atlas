@@ -226,6 +226,24 @@ describe('package contract helpers', () => {
     assert.doesNotMatch(analyzeLine + inferLine, /repoRoot/);
   });
 
+  it('keeps docs aligned with compile_ontology large-vault options', () => {
+    const features = readFileSync('docs/FEATURES.md', 'utf-8');
+    const dogfoodMcpDoc = readFileSync('docs/ontology/capabilities/mcp-server.md', 'utf-8');
+    const featureLine = features.split('11. **compile_ontology**')[1]?.split('\n')[0] ?? '';
+    const dogfoodRow = dogfoodMcpDoc.split('| `compile_ontology` |')[1]?.split('\n')[0] ?? '';
+
+    assert.match(featureLine, /includeIndexes\?/);
+    assert.match(featureLine, /summary\?/);
+    assert.match(featureLine, /nodesLimit\?/);
+    assert.match(featureLine, /nodesOffset\?/);
+    assert.match(featureLine, /edgesLimit\?/);
+    assert.match(featureLine, /edgesOffset\?/);
+    assert.match(featureLine, /node\/edge pagination for large vaults/);
+    assert.match(dogfoodRow, /`summary:true`/);
+    assert.match(dogfoodRow, /`nodesLimit` \/ `nodesOffset` \/ `edgesLimit` \/ `edgesOffset`/);
+    assert.match(dogfoodRow, /limit max 500/);
+  });
+
   it('keeps the MCP README explicit about destructive write safety switches', () => {
     const readme = readFileSync('mcp/README.md', 'utf-8');
     const deleteRow = readme.split('| `delete_concept` |')[1]?.split('\n')[0] ?? '';
