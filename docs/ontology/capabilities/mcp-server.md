@@ -484,7 +484,8 @@ strict unknown-argument / invalid-enum /
 invalid `maintenance_plan.phases` / `maintenance_plan.severities` /
 `maintenance_plan.kinds` rejection smoke 를
 함께 출력해, AI agent 가 첫 접촉에서 받는 graph diagnosis 와 traversal 품질을
-계속 확인한다.
+계속 확인한다. malformed indexed compile 응답도 출력 요약 단계에서 먼저 crash 하지 않고
+gate failure 로 남겨 원인 메시지를 보존한다.
 dogfood 에서 실행한 `query_ontology` graph-query 응답은 `structuredContent`
 누락을 실패로 처리하고 text JSON payload 와 `structuredContent` payload 의
 구조적 일치 여부도 비교해 key 순서 차이를 false mismatch 로 보지 않으며,

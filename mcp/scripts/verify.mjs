@@ -3642,7 +3642,28 @@ export function compileIndexesFailure(parsed) {
 }
 
 export function compileIndexesSummary(parsed) {
-  return `out ${Object.keys(parsed.indexes.out).length}, in ${Object.keys(parsed.indexes.in).length}, edgeById ${Object.keys(parsed.indexes.edgeById).length}, aliases ${Object.keys(parsed.indexes.aliasToSlug).length}, edges ${parsed.resolvedEdgeCount}/${parsed.externalEdgeCount}/${parsed.unresolvedEdgeCount}`;
+  const indexes = parsed?.indexes;
+  return [
+    `out ${objectKeyCount(indexes?.out)}`,
+    `in ${objectKeyCount(indexes?.in)}`,
+    `edgeById ${objectKeyCount(indexes?.edgeById)}`,
+    `aliases ${objectKeyCount(indexes?.aliasToSlug)}`,
+    `edges ${edgeBreakdownSummary(parsed)}`,
+  ].join(', ');
+}
+
+function objectKeyCount(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return 'n/a';
+  return Object.keys(value).length;
+}
+
+function edgeBreakdownSummary(parsed) {
+  const counts = [
+    parsed?.resolvedEdgeCount,
+    parsed?.externalEdgeCount,
+    parsed?.unresolvedEdgeCount,
+  ];
+  return counts.map((count) => (Number.isInteger(count) ? count : 'n/a')).join('/');
 }
 
 export function overviewFailure(parsed) {

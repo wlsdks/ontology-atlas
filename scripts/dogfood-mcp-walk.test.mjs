@@ -31,6 +31,7 @@ import {
   workspaceNextActionSummary,
 } from "./dogfood-mcp-walk.mjs";
 import {
+  compileIndexesSummary,
   EXPECTED_DESTRUCTIVE_TOOLS,
   EXPECTED_IDEMPOTENT_TOOLS,
   EXPECTED_TOOLS,
@@ -3934,6 +3935,10 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, compiledIndexes: { ...okShape.compiledIndexes, indexes: undefined } }),
       ["compile_ontology indexes response missing indexes"],
+    );
+    assert.equal(
+      compileIndexesSummary({ ...okShape.compiledIndexes, indexes: undefined }),
+      "out n/a, in n/a, edgeById n/a, aliases n/a, edges 1/1/0",
     );
     assert.deepEqual(
       evaluateDogfoodGate({
