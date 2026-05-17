@@ -90,6 +90,23 @@ test('No package.json — README H1 fallback for project title', () => {
   }
 });
 
+test('Malformed package.json — README fallback plus skipped parse diagnostic', () => {
+  const root = withRepo((r) => {
+    writeFileSync(join(r, 'package.json'), '{"name": ');
+    writeFileSync(join(r, 'README.md'), '# Recoverable App\n');
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.equal(r.project.title, 'Recoverable App');
+    assert.match(r.project.slug, /^omot-analyze-/);
+    assert.equal(r.skipped.length, 1);
+    assert.match(r.skipped[0].path, /package\.json$/);
+    assert.match(r.skipped[0].reason, /^package-json-parse-error:/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('Generic README sections (Usage / Installation / Tests) skipped from domains', () => {
   const root = withRepo((r) => {
     writeFileSync(

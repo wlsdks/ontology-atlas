@@ -80,7 +80,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   ]);
 
   const skipped = [];
-  const project = detectProject(rootPath);
+  const project = detectProject(rootPath, skipped);
   const { domains, readmePath } = detectDomainsFromReadme(rootPath);
   const domainSlugsByTail = new Map(
     domains.map((domain) => [tailSlug(domain.slug), domain.slug]),
@@ -221,7 +221,7 @@ export function analyzeRepoStructure(rootPath, options = {}) {
   };
 }
 
-function detectProject(rootPath) {
+function detectProject(rootPath, skipped = []) {
   const pkgPath = join(rootPath, 'package.json');
   if (existsSync(pkgPath)) {
     try {
@@ -232,8 +232,11 @@ function detectProject(rootPath) {
         (typeof pkg.description === 'string' && pkg.description.trim()) ||
         humanize(slug);
       return { slug, title };
-    } catch {
-      // fall through
+    } catch (err) {
+      skipped.push({
+        path: pkgPath,
+        reason: `package-json-parse-error: ${err.message}`,
+      });
     }
   }
   // README first H1
