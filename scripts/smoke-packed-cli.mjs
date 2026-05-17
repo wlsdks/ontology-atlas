@@ -810,6 +810,10 @@ try {
   assert.equal(installedMaintenancePayload.summary.dependencyCycles, 1);
   assert.equal(installedMaintenancePayload.cursor.found, true);
   assert.equal(installedMaintenancePayload.actions.some((action) => action.kind === 'break_dependency_cycle'), true);
+  const installedMaintenanceText = runRaw(cliBin, ['maintenance', cycleVault, '--limit=1'], { cwd: projectDir });
+  assertStatus(installedMaintenanceText, 0, 'installed CLI maintenance summary output');
+  assert.match(installedMaintenanceText.stdout, /summary:.*cycles:1/);
+  assert.match(installedMaintenanceText.stdout, /ignoredExternal:0/);
 
   const blockingBrief = runRaw(cliBin, ['workspace-brief', cycleVault, '--json'], { cwd: projectDir });
   assertStatus(blockingBrief, 1, 'installed CLI workspace-brief cycle gate');
@@ -825,6 +829,8 @@ try {
   assertStatus(blockingBriefText, 1, 'installed CLI workspace-brief health coverage');
   assert.match(blockingBriefText.stdout, /HEALTH CHECKS/);
   assert.match(blockingBriefText.stdout, /dependency_cycles:fail:1/);
+  assert.match(blockingBriefText.stdout, /GROWTH/);
+  assert.match(blockingBriefText.stdout, /ignoredExternal:0/);
 
   const blockingHealthText = runRaw(cliBin, ['health', cycleVault], { cwd: projectDir });
   assertStatus(blockingHealthText, 1, 'installed CLI health check coverage');

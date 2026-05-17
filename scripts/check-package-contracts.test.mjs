@@ -1372,6 +1372,9 @@ describe('package contract helpers', () => {
     assert.match(smoke, /installed CLI maintenance work queue/);
     assert.match(smoke, /installedMaintenancePayload\.operation, 'maintenance_plan'/);
     assert.match(smoke, /installedMaintenancePayload\.summary\.dependencyCycles, 1/);
+    assert.match(smoke, /installed CLI maintenance summary output/);
+    assert.match(smoke, /summary:\.\*cycles:1/);
+    assert.match(smoke, /ignoredExternal:0/);
     assert.match(smoke, /installed CLI workspace-brief cycle gate/);
     assert.match(smoke, /missingDirectMcpVerifyTimeout/);
     assert.match(smoke, /typoDirectMcpVerifyTimeout/);
@@ -1460,6 +1463,7 @@ describe('package contract helpers', () => {
     assert.match(smokeSection, /compile --json/);
     assert.match(smokeSection, /path --json/);
     assert.match(smokeSection, /blocking `workspace-brief` non-json 의 `HEALTH CHECKS`/);
+    assert.match(smoke, /assert\.match\(blockingBriefText\.stdout, \/GROWTH\/\)/);
     assert.match(smokeSection, /blocking `health` non-json 의 `dependency_cycles fail:1` coverage/);
     assert.match(smokeSection, /health check count/);
     assert.match(smokeSection, /`overview`\/`project_map` query_plan \/ `neighbors` \/ `path` \//);
