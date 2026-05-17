@@ -67,9 +67,9 @@ the 23 MCP tools — it needs ground-truth structure to give better answers,
 and without a developer maintaining it, the ontology rots. PM/designer
 friendliness is a side effect of plain markdown, not a target.
 
-## Three views, one vault
+## Four surfaces, one vault
 
-The same frontmatter graph rendered three ways:
+The same frontmatter graph rendered or exposed four ways:
 
 - **Topology** (`/topology`) — Sigma WebGL spatial network of projects
 - **Tree** (`/`, `/ontology`) — hierarchical drill-down (project → domain → capability → element)
