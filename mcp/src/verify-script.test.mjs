@@ -2861,6 +2861,8 @@ describe('verify.mjs first-contact gates', () => {
       assert.equal(result.stdout, '');
       assert.match(result.stderr, /\[oh-my-ontology-mcp verify\]/);
       assert.match(result.stderr, /verify timeout must be a positive integer/);
+      assert.match(result.stderr, /--timeout-ms N/);
+      assert.match(result.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
     }
   });
 

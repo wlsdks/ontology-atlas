@@ -4802,7 +4802,7 @@ async function main() {
     process.exit(1);
   }
   if (verifyTimeoutMs() === false) {
-    process.stderr.write(`\n[oh-my-ontology-mcp verify]\n\n\x1b[31m✗\x1b[0m verify timeout must be a positive integer\n`);
+    process.stderr.write(`\n[oh-my-ontology-mcp verify]\n\n\x1b[31m✗\x1b[0m verify timeout must be a positive integer. Set --timeout-ms N or OMOT_VERIFY_TIMEOUT_MS=N.\n`);
     process.exit(1);
   }
   console.log('\n[oh-my-ontology-mcp verify]\n');
