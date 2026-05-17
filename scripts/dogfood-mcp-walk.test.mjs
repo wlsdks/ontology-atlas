@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 import {
@@ -58,6 +59,13 @@ const WRITE_TOOL_NAMES = new Set([
   "rename_concept",
   "merge_concepts",
 ]);
+const ROOT_PKG = JSON.parse(readFileSync("package.json", "utf-8"));
+
+function assertPnpmScriptsExist(text) {
+  for (const [, script] of text.matchAll(/pnpm ([\w:-]+)/g)) {
+    assert.equal(typeof ROOT_PKG.scripts?.[script], "string", `${script} exists in package.json`);
+  }
+}
 
 function paginationSchemaFixture() {
   return {
@@ -2872,6 +2880,7 @@ describe("rpc response completion helpers", () => {
     assert.match(usage, /pnpm test:mcp:dogfood:timeout/);
     assert.match(usage, /Narrow dogfood timeout\/help retry diagnostics/);
     assert.match(usage, /Dogfood helper, compile gate, row-label guidance, help, structuredContent, stderr warning checks/);
+    assertPnpmScriptsExist(usage);
   });
 
   it("rejects unsupported dogfood arguments before starting MCP", () => {

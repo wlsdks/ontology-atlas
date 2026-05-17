@@ -104,7 +104,14 @@ import { expectedResponseIds, missingResponseLabels } from '../scripts/json-rpc-
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MCP_PKG = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
+const ROOT_PKG = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'));
 const VERIFY_SCRIPT = join(__dirname, '..', 'scripts', 'verify.mjs');
+
+function assertPnpmScriptsExist(text) {
+  for (const [, script] of text.matchAll(/pnpm ([\w:-]+)/g)) {
+    assert.equal(typeof ROOT_PKG.scripts?.[script], 'string', `${script} exists in package.json`);
+  }
+}
 
 describe('verify.mjs first-contact gates', () => {
   it('keeps package metadata tool count aligned with verify inventory', () => {
@@ -3180,6 +3187,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
     assert.match(verifyUsage(), /pnpm test:mcp:verify:timeout/);
     assert.match(verifyUsage(), /Narrow MCP verify timeout\/help diagnostics/);
+    assertPnpmScriptsExist(verifyUsage());
   });
 
   it('keeps the verify success message MCP-client neutral', () => {

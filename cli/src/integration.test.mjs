@@ -33,6 +33,7 @@ import { CLI_CLIENT_INFO } from './lib/mcp-call.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const CLI = join(__dirname, 'index.mjs');
+const ROOT_PKG = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf-8'));
 const CLI_PKG = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf-8'));
 const MCP_PKG = JSON.parse(readFileSync(join(__dirname, '..', '..', 'mcp', 'package.json'), 'utf-8'));
 const CLI_COMMAND_METADATA = parseCliCommandMetadataFromDescription(CLI_PKG.description);
@@ -61,6 +62,12 @@ function run(args, options = {}) {
 
 function stripAnsi(s) {
   return s.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
+function assertPnpmScriptsExist(text) {
+  for (const [, script] of text.matchAll(/pnpm ([\w:-]+)/g)) {
+    assert.equal(typeof ROOT_PKG.scripts?.[script], 'string', `${script} exists in package.json`);
+  }
 }
 
 function withVault(seed = []) {
@@ -409,6 +416,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
   assert.match(clean, /pnpm test:mcp:verify:timeout/);
   assert.match(clean, /Narrow MCP verify timeout\/help diagnostics/);
+  assertPnpmScriptsExist(clean);
 });
 
 await test('mcp-verify — rejects invalid timeout values', async () => {
