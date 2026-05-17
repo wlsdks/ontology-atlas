@@ -93,6 +93,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm test:mcp:verify/);
     assert.match(readme, /timeout mistakes, the error reports the\s+received value/);
     assert.match(readme, /`npm run verify -- --timeout-ms 15000`/);
+    assert.match(readme, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
     assert.match(readme, /OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli/);
     assert.match(readme, /pnpm integration:cli:mcp-verify/);
     assert.match(readme, /OMOT_TEST_NAME_PATTERN="tools\/list\|initialize" pnpm integration:mcp/);
@@ -663,6 +664,8 @@ describe('package contract helpers', () => {
     assert.match(releaseChecks, /pnpm dogfood:walk/);
     assert.match(releaseChecks, /pnpm dogfood:walk -- --help\s+# print dogfood usage without starting MCP/);
     assert.match(releaseChecks, /strict unknown-argument and invalid-enum rejection/);
+    assert.match(releaseChecks, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
+    assert.match(releaseChecks, /`--help` \/ timeout\s+failures print the same retry shape/);
     assert.match(releaseChecks, /pnpm smoke:packed-cli/);
     assert.match(releaseChecks, /get_concepts` with discovered slugs plus one\s+missing slug/);
     assert.match(releaseChecks, /batch-read\s+partial-row contract/);

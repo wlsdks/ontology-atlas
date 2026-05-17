@@ -71,6 +71,7 @@ export function dogfoodUsage() {
     "",
     "Environment:",
     "  OMOT_DOGFOOD_TIMEOUT_MS   Positive integer wait window in milliseconds.",
+    "                              Example: OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk",
     "",
     "Focused checks:",
     "  pnpm test:mcp:dogfood     Dogfood helper, compile gate, help, structuredContent, stderr warning checks.",

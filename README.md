@@ -181,8 +181,10 @@ top-level diagnosis `status` must be `healthy` or `needs_attention`.
 repo's own `docs/ontology` vault and exits non-zero if the core MCP
 responses, strict unknown-argument and invalid-enum rejection, `get_concepts` success/partial rows, path edge check, vault warnings, `validate_vault` problem files,
 `workspace_brief.nextActions`, `workspace_brief.health.checks`, `health`, or
-tuned `workspace_brief` / tuned `health` gates regress. Set `OMOT_DOGFOOD_TIMEOUT_MS=10000` for slower local
-filesystems; the value must be a positive integer in milliseconds.
+tuned `workspace_brief` / tuned `health` gates regress. Set
+`OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk` for slower local filesystems;
+the value must be a positive integer in milliseconds, and `--help` / timeout
+failures print the same retry shape.
 For `npm run verify` / `mcp-verify` timeout mistakes, the error reports the
 received value and a concrete retry example such as
 `npm run verify -- --timeout-ms 15000`, so agents can self-correct without
