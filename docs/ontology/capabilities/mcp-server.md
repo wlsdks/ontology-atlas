@@ -400,6 +400,9 @@ verify helper 자체를 만질 때는 `pnpm test:mcp:verify` 로
 vault warning / `validate_vault` / health gate 만 만질 때는
 `pnpm test:mcp:verify:first-contact` 로 좁게 확인하고, verify timeout / usage
 진단만 만질 때는 `pnpm test:mcp:verify:timeout` 으로 더 좁게 확인한다.
+`maintenance_plan` filter enum / ready·missing cursor / resume cursor / dogfood
+work-queue shape 만 바꿀 때는 `pnpm test:mcp:maintenance` 로 verify helper 와
+dogfood gate 의 maintenance 관련 subset 만 실행한다.
 직접 verify help 도 이 focused check 들을 같이 보여줘 설치 smoke 를 시작하기 전에
 기본 helper 계약, first-contact 계약, timeout/help 계약을 분리해 고를 수 있게 한다.
 또한 write tool schema 가 `expected_mtime` conflict guard 와 destructive

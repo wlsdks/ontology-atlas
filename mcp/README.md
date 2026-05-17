@@ -52,6 +52,7 @@ pnpm integration:mcp:readme
 pnpm test:mcp:docs
 pnpm test:mcp:dogfood
 pnpm test:mcp:dogfood:timeout
+pnpm test:mcp:maintenance
 pnpm test:mcp:suggestions
 pnpm test:mcp:verify
 pnpm test:mcp:verify:first-contact
@@ -69,6 +70,8 @@ rejection, stderr warning filtering, and gate contract without running the live
 MCP walk.
 `test:mcp:dogfood:timeout` narrows that to dogfood timeout parsing, missing
 response labels, and retry help.
+`test:mcp:maintenance` narrows maintenance_plan filter enums, ready/missing
+cursor handling, resume-cursor behavior, and dogfood work-queue shape gates.
 `test:mcp:suggestions` covers strict enum / argument suggestion behavior.
 `test:mcp:verify` covers the MCP verify helper contract without spawning the
 full integration suite. `test:mcp:verify:first-contact` narrows that to

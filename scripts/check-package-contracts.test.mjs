@@ -146,6 +146,10 @@ describe('package contract helpers', () => {
       pkg.scripts?.['test:mcp:dogfood:timeout'],
       'node --test --test-name-pattern "dogfood timeout|timeout failures|dogfood response labels|dogfood help" scripts/dogfood-mcp-walk.test.mjs',
     );
+    assert.equal(
+      pkg.scripts?.['test:mcp:maintenance'],
+      'node --test --test-name-pattern "maintenance filter|maintenance cursor|maintenance missing-cursor|maintenance ready-cursor|maintenance resume-cursor|malformed maintenance_plan payloads" mcp/src/verify-script.test.mjs scripts/dogfood-mcp-walk.test.mjs',
+    );
     assert.match(pkg.scripts?.['test:mcp:suggestions'] ?? '', /mcp\/src\/suggestions\.test\.mjs/);
     assert.match(pkg.scripts?.['test:mcp:suggestions'] ?? '', /mcp\/src\/ontology-engine\.test\.mjs/);
     assert.equal(pkg.scripts?.['test:mcp:verify'], 'node --test mcp/src/verify-script.test.mjs');
@@ -179,6 +183,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm test:mcp:dogfood/);
     assert.match(readme, /structuredContent\/compile\/row-label\/vault-warning\/health\/initialize\/destructive dry-run\/help\/argument\/timeout\/strict relation\/stderr checks/);
     assert.match(readme, /pnpm test:mcp:dogfood:timeout\s+# narrow dogfood timeout\/help retry diagnostics/);
+    assert.match(readme, /pnpm test:mcp:maintenance\s+# narrow maintenance_plan filter\/cursor\/work-queue gates/);
     assert.match(readme, /pnpm test:mcp:package\s+# focused MCP\/CLI package-script\/dependency\/tarball contract checks/);
     assert.match(readme, /pnpm test:mcp:suggestions/);
     assert.match(readme, /pnpm test:mcp:verify/);
@@ -414,6 +419,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm test:mcp:docs/);
     assert.match(section, /pnpm test:mcp:dogfood/);
     assert.match(section, /pnpm test:mcp:dogfood:timeout/);
+    assert.match(section, /pnpm test:mcp:maintenance/);
     assert.match(section, /pnpm test:mcp:suggestions/);
     assert.match(section, /pnpm test:mcp:verify/);
     assert.match(section, /pnpm test:mcp:verify:first-contact/);
@@ -425,6 +431,7 @@ describe('package contract helpers', () => {
     assert.match(section, /help output/);
     assert.match(section, /row-label guidance summary/);
     assert.match(section, /dogfood timeout parsing, missing\s+response labels, and retry help/);
+    assert.match(section, /maintenance_plan filter enums, ready\/missing\s+cursor handling, resume-cursor behavior, and dogfood work-queue shape gates/);
     assert.match(section, /unsupported-argument\s+rejection/);
     assert.match(section, /strict relation filter\s+rejection/);
     assert.match(section, /stderr warning filtering/);
@@ -826,6 +833,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm test:cli:lib/);
     assert.match(section, /pnpm integration:cli:mcp-verify/);
     assert.match(section, /pnpm test:mcp:docs/);
+    assert.match(section, /pnpm test:mcp:maintenance/);
     assert.match(section, /pnpm test:mcp:package/);
     assert.match(section, /pnpm test:mcp:verify/);
     assert.match(section, /pnpm test:mcp:verify:first-contact/);
@@ -836,6 +844,7 @@ describe('package contract helpers', () => {
     assert.match(section, /MCP response unwrapping/);
     assert.match(section, /installed MCP verification wrapper/);
     assert.match(section, /documentation drift/);
+    assert.match(section, /maintenance_plan filter, cursor, resume,\s+and work-queue shape contracts/);
     assert.match(section, /shared MCP verify helper contract/);
     assert.match(section, /first-contact read smoke/);
     assert.match(section, /vault warning \/ `validate_vault`/);
@@ -1465,7 +1474,10 @@ describe('package contract helpers', () => {
     assert.match(doc, /`structuredContent` 가 없는 경우에만 text JSON 으로 fallback/);
     assert.match(doc, /cli\/src\/lib\/mcp-call\.test\.mjs/);
     assert.match(regressionSection, /`pnpm test:cli:lib`/);
+    assert.match(regressionSection, /`pnpm test:mcp:maintenance`/);
     assert.match(regressionSection, /focused CLI shared helper unit contracts/);
+    assert.match(regressionSection, /focused MCP maintenance queue contract/);
+    assert.match(regressionSection, /full verify \/ dogfood suite 를 돌리지 않아도 된다/);
     assert.match(regressionSection, /`pnpm package:check` 도 이 gate 를 포함/);
     assert.match(regressionSection, /`cli\/src\/lib\/cli-args\.test\.mjs`/);
     assert.match(regressionSection, /`cli\/src\/lib\/cli-commands\.test\.mjs`/);
@@ -1495,10 +1507,12 @@ describe('package contract helpers', () => {
     assert.match(doc, /`pnpm integration:mcp:readme`/);
     assert.match(doc, /`pnpm test:mcp:dogfood`/);
     assert.match(doc, /`pnpm test:mcp:dogfood:timeout`/);
+    assert.match(doc, /`pnpm test:mcp:maintenance`/);
     assert.match(doc, /`pnpm test:mcp:verify`/);
     assert.match(doc, /`pnpm test:mcp:verify:first-contact`/);
     assert.match(doc, /`pnpm test:mcp:verify:timeout`/);
     assert.match(doc, /직접 verify help 도 이 focused check 들을 같이 보여줘/);
+    assert.match(doc, /verify helper 와\s+dogfood gate 의 maintenance 관련 subset 만 실행/);
     assert.match(doc, /dogfood helper \/ structuredContent 출력 계약/);
     assert.match(doc, /initialize guidance gate/);
     assert.match(doc, /row-label guidance summary/);

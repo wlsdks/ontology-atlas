@@ -63,6 +63,8 @@ cli/src/integration.test.mjs — spawn-based integration suite. 매 PR 마다 co
 
 `pnpm test:cli:lib` — focused CLI shared helper unit contracts. `cli/src/lib/cli-args.test.mjs` 는 vault / positional / required flag / bounded integer parsing 을, `cli/src/lib/cli-commands.test.mjs` 는 command registry / package description command count / runner module metadata 를, `cli/src/lib/mcp-call.test.mjs` 는 MCP `structuredContent` 와 text JSON parity 를 spawn 없이 검증한다. CLI argument / registry / MCP payload 계약을 바꿀 때는 integration 전체 대신 이 gate 를 먼저 돌린다. `pnpm package:check` 도 이 gate 를 포함해 package manifest / docs contract 확인에서 CLI helper drift 를 놓치지 않는다.
 
+`pnpm test:mcp:maintenance` — focused MCP maintenance queue contract. `maintenance_plan` filter enum, ready/missing cursor handling, valid resume cursor, dogfood work-queue shape failure 를 `mcp/src/verify-script.test.mjs` 와 `scripts/dogfood-mcp-walk.test.mjs` 에서 골라 실행해, maintenance queue 만 만질 때 full verify / dogfood suite 를 돌리지 않아도 된다.
+
 src/features/docs-vault-local/lib/ontology-starter.test.ts — web workbench starter 의 5개
 파일이 `cli/templates/vault/` 와 byte-for-byte 동일한지 검증. starter README 안에
 Claude Code/Cursor `.mcp.json` 경로와 Codex `codex mcp add ...` 경로가 모두 남아있는지도

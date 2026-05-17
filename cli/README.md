@@ -55,6 +55,7 @@ checks that match the touched surface:
 pnpm test:cli:lib
 pnpm integration:cli:mcp-verify
 pnpm test:mcp:docs
+pnpm test:mcp:maintenance
 pnpm test:mcp:package
 pnpm test:mcp:verify
 pnpm test:mcp:verify:first-contact
@@ -68,7 +69,9 @@ graph result fail-closed handling without spawning the full CLI.
 subset inside the spawn-heavy CLI integration file. `test:mcp:docs` checks
 README and dogfood ontology documentation drift. `test:mcp:package` checks
 package-script and tarball contract drift without running unrelated UI or E2E
-gates. `test:mcp:verify` checks the shared MCP verify helper contract, and
+gates. `test:mcp:maintenance` checks maintenance_plan filter, cursor, resume,
+and work-queue shape contracts without the full verify or dogfood suites.
+`test:mcp:verify` checks the shared MCP verify helper contract, and
 `test:mcp:verify:first-contact` narrows that to first-contact read smoke,
 vault warning / `validate_vault`, and health / next-action gates.
 `test:mcp:verify:timeout` narrows timeout parsing, usage, and retry
