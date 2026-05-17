@@ -919,6 +919,12 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
           findTool("query_ontology")?.inputSchema?.properties?.severities?.items?.enum,
         maintenanceKindsEnum:
           findTool("query_ontology")?.inputSchema?.properties?.kinds?.items?.enum,
+        kindDescription:
+          findTool("query_ontology")?.inputSchema?.properties?.kind?.description,
+        fromKindDescription:
+          findTool("query_ontology")?.inputSchema?.properties?.fromKind?.description,
+        toKindDescription:
+          findTool("query_ontology")?.inputSchema?.properties?.toKind?.description,
         afterActionIdDescription:
           findTool("query_ontology")?.inputSchema?.properties?.afterActionId?.description,
         componentTypesDescription:
@@ -944,6 +950,12 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         phasesEnum: MAINTENANCE_PHASE_VALUES,
         severitiesEnum: MAINTENANCE_SEVERITY_VALUES,
         maintenanceKindsEnum: MAINTENANCE_KIND_VALUES,
+        kindDescription:
+          "match_nodes: optional node kind filter (project, domain, capability, element, document, vault-readme). recommend_relations currently supports capability or element.",
+        fromKindDescription:
+          "match_edges only: optional source node kind filter (project, domain, capability, element, document, vault-readme). Source must be a real ontology node, not external/unresolved.",
+        toKindDescription:
+          "match_edges only: optional target kind filter (project, domain, capability, element, document, vault-readme, external, unresolved). Use external or unresolved for non-node refs.",
         afterActionIdDescription:
           "maintenance_plan only: stable action id cursor; return actions after this id. Without afterActionId the ready page reports cursor.found=true and cursor.reason=null; cursor.nextAfterActionId matches the last returned action id (or null for an empty page), and cursor.hasMore matches whether more remaining actions exist after this page. nextExecutableAction/nextReviewAction point only at the first executable/review action in the returned page and preserve that action id, executable flag, phase, kind, and severity. Bucket totals (byPhase, bySeverity, byKind) match remainingActions for the returned cursor. Unknown cursors return an empty page with cursor.found=false, cursor.reason, zero remaining actions, cursor.nextAfterActionId=null, cursor.hasMore=false, and no next actions.",
         componentTypesDescription:

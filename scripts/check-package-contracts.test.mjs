@@ -1347,11 +1347,13 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /health\.checks/);
     assert.match(doc, /`orderLimit`, `nodeLimit`, `dependencyTypes`, `componentTypes`/);
     assert.match(doc, /`dependencyTypes` \/ `componentTypes` 도 relation type enum 을 MCP\s+schema 로 노출/);
-    assert.match(doc, /`match_nodes\.kind`, `match_edges\.fromKind`, `match_edges\.toKind` 도 표준\s+ontology kind enum/);
+    assert.match(doc, /`match_nodes\.kind` \/ `match_edges\.fromKind` 는 표준 ontology kind enum/);
+    assert.match(doc, /`match_edges\.toKind` 는 여기에 `external` \/ `unresolved` target kind 까지 포함한\s+edge target enum/);
     assert.match(doc, /cursor miss `reason`/);
     assert.match(queryOntologyRow, /ready page 의 `cursor\.found=true` \/ `cursor\.reason=null`/);
     assert.match(queryOntologyRow, /현재 page 안의 첫 executable\/review action/);
-    assert.match(queryOntologyRow, /`match_nodes\.kind`, `match_edges\.fromKind`, and `match_edges\.toKind` are enum-validated/);
+    assert.match(queryOntologyRow, /`match_nodes\.kind` and `match_edges\.fromKind` use the ontology node-kind enum/);
+    assert.match(queryOntologyRow, /`match_edges\.toKind` also accepts `external` and `unresolved` target kinds/);
     assert.match(queryOntologyRow, /unknown cursor 의 `cursor\.found=false` \/ cursor miss `reason`/);
     assert.match(queryOntologyRow, /count-safe summary fields/);
     assert.match(queryOntologyRow, /`byPhase` \/ `bySeverity` \/ `byKind` remaining-queue buckets/);

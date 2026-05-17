@@ -125,6 +125,8 @@ const NON_BLANK_STRING_SCHEMA = Object.freeze({
 });
 const VAULT_ISSUE_CODE_DESCRIPTION = VAULT_ISSUE_CODE_VALUES.map((code) => `\`${code}\``).join(', ');
 const IMPORT_EDGE_KIND_DESCRIPTION = IMPORT_EDGE_KIND_VALUES.join(', ');
+const NODE_KIND_DESCRIPTION = NODE_KIND_VALUES.join(', ');
+const EDGE_TARGET_KIND_DESCRIPTION = EDGE_TARGET_KIND_VALUES.join(', ');
 const POST_WRITE_MAINTENANCE_GUIDANCE =
   'compact `postWriteMaintenance` (maintenance_plan) with count-safe `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers';
 const POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA = Object.freeze({
@@ -1428,7 +1430,7 @@ const TOOLS = [
         },
         kind: {
           ...nonBlankStringSchema(
-            'match_nodes/recommend_relations: optional node kind filter. recommend_relations currently supports capability or element.',
+            `match_nodes: optional node kind filter (${NODE_KIND_DESCRIPTION}). recommend_relations currently supports capability or element.`,
           ),
           enum: NODE_KIND_VALUES,
         },
@@ -1474,13 +1476,13 @@ const TOOLS = [
         },
         fromKind: {
           ...nonBlankStringSchema(
-            'match_edges only: optional source node kind filter, e.g. capability, domain, project, element.',
+            `match_edges only: optional source node kind filter (${NODE_KIND_DESCRIPTION}). Source must be a real ontology node, not external/unresolved.`,
           ),
           enum: NODE_KIND_VALUES,
         },
         toKind: {
           ...nonBlankStringSchema(
-            'match_edges only: optional target kind filter. Use external or unresolved for non-node refs.',
+            `match_edges only: optional target kind filter (${EDGE_TARGET_KIND_DESCRIPTION}). Use external or unresolved for non-node refs.`,
           ),
           enum: EDGE_TARGET_KIND_VALUES,
         },
