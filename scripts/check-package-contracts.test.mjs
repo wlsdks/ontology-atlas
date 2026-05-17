@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -85,6 +86,13 @@ function importKindSummary(kindCounts) {
 
 function healthCheckSummary(checks) {
   return checks.map((check) => `${check.id}:${check.status}:${check.count}`).join(', ');
+}
+
+function runNodeScript(args) {
+  return spawnSync(process.execPath, args, {
+    cwd: process.cwd(),
+    encoding: 'utf-8',
+  });
 }
 
 describe('package contract helpers', () => {
@@ -218,6 +226,18 @@ describe('package contract helpers', () => {
     assert.match(readme, /runs `workspace_brief`, tuned `workspace_brief`, `health`, and tuned `health`/);
     assert.match(readme, /graph-query, destructive\s+dry-run, post-write bucket guidance, and strict argument\/enum\s+smoke scope/);
     assert.match(readme, /graph-query, destructive dry-run, post-write bucket,\s+and strict argument\/enum smoke scope/);
+  });
+
+  it('keeps the root README mcp-verify shortcut executable from source checkout', () => {
+    const result = runNodeScript(['cli/src/index.mjs', 'mcp-verify', '--help']);
+
+    assert.equal(result.status, 0);
+    assert.match(result.stdout, /Usage:/);
+    assert.match(result.stdout, /oh-my-ontology mcp-verify \[vault\] \[--timeout-ms N\]/);
+    assert.match(result.stdout, /Focused checks:/);
+    assert.match(result.stdout, /pnpm integration:cli:mcp-verify/);
+    assert.match(result.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health-summary\/read\/sample-shape helper gates/);
+    assert.equal(result.stderr, '');
   });
 
   it('keeps the CLI MCP dependency aligned with the local MCP package version', () => {
