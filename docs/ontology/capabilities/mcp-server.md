@@ -559,8 +559,8 @@ dogfood 의 `list_concepts.vaultWarnings` / `validate_vault` 판정은
 `mcp/scripts/verify.mjs` 의 helper 를 재사용해 installed verify 와 dogfood gate 가
 서로 다른 first-contact payload 계약으로 갈라지지 않게 한다.
 dogfood walk 도 `tools/list` 를 직접 호출하고 installed verify 의 `toolsListSchemaFailure`
-helper 를 재사용해 `additionalProperties:false`, graph-query enum, health tuning option,
-write safety schema, post-write bucket guidance, maintenance next pointer description drift 를
+helper 를 재사용해 `additionalProperties:false`, tool annotations, graph-query enum,
+health tuning option, write safety schema, post-write bucket guidance, maintenance next pointer description drift 를
 source checkout 에서도 fail-closed 로 잡는다.
 dogfood 출력 상단과 최종 Analysis 는 `add_concepts` / `add_relations` description 의
 `concepts[n]` / `relations[n]` row-label guidance 도 `write row labels: pass` 로
