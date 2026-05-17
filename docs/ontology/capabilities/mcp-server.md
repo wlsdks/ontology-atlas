@@ -181,8 +181,9 @@ agent 작업 큐 요약이 실제 action row 와 갈라지지 않게 한다. dog
 `totalActions` / `filteredActions` / `remainingActions` summary 관계와
 `byPhase` / `bySeverity` / `byKind` bucket 합계도 검증해 source checkout MCP work
 queue count drift 를 fail-fast 로 잡는다.
-installed verify 도 compact `postWriteMaintenance` action `score`, executable `proposedAction`,
-and current-page next action pointer guidance 를 함께 확인해 write-tool 후속 안내가
+installed verify 도 compact `postWriteMaintenance` 의 `byPhase` / `bySeverity` /
+`byKind` bucket, action `score`, executable `proposedAction`, and current-page
+next action pointer guidance 를 함께 확인해 write-tool 후속 안내가
 agent 작업 큐 계약과 갈라지지 않게 한다.
 또한 `get_concepts` 를 실제 project / mcp-server slug 와 missing slug 를 섞어
 호출해 batch reader 의 성공 row 와 partial row 가 동시에 유지되는지 확인한다.

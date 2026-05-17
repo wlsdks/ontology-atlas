@@ -745,7 +745,9 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /write tools must keep their `expected_mtime` \/ `confirm` \/ `rename_concept\.overwrite` \/ `delete_concept\.force` safety schemas/);
     assert.match(verifySection, /validates `maintenance_plan\.summary` count fields and relationships plus `byPhase` \/ `bySeverity` \/ `byKind` bucket totals/);
     assert.match(verifySection, /validates `maintenance_plan\.cursor\.nextAfterActionId` and `cursor\.hasMore`/);
-    assert.match(verifySection, /write tool descriptions keep compact `postWriteMaintenance` action `score`/);
+    assert.match(verifySection, /write tool descriptions keep compact `postWriteMaintenance` bucket summaries/);
+    assert.match(verifySection, /`byPhase` \/ `bySeverity` \/ `byKind`/);
+    assert.match(verifySection, /action `score`/);
     assert.match(verifySection, /executable `proposedAction`/);
     assert.match(verifySection, /current-page next action pointer guidance/);
     assert.match(verifySection, /`concepts\[n\]` \/ `relations\[n\]` error labels/);
@@ -773,7 +775,7 @@ describe('package contract helpers', () => {
 
     assert.match(tableRow, /project-node `list_concepts` probe/);
     assert.match(tableRow, /destructive dry-run smoke for `rename_concept` \/ `merge_concepts` \/ `delete_concept`/);
-    assert.match(tableRow, /write-tool `postWriteMaintenance` `score`\/`proposedAction`\/next-action guidance/);
+    assert.match(tableRow, /write-tool `postWriteMaintenance` `byPhase`\/`bySeverity`\/`byKind` buckets \+ `score`\/`proposedAction`\/next-action guidance/);
     assert.match(tableRow, /enum-validated `maintenance_plan` filters/);
     assert.match(tableRow, /ready `maintenance_plan` cursor \+ missing `maintenance_plan\.afterActionId` cursor smoke/);
     assert.match(tableRow, /maintenance bucket \/ current-page next-action summaries/);
@@ -799,7 +801,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`get_concept`,\s+`get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited\s+`query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`,\s+`find_path`, and `find_orphans`/);
     assert.match(verifySection, /single-node, batch, search\/backlink,\s+limit-semantics, bootstrap\/import analysis, neighborhood, shortest-path, and\s+orphan coverage/);
     assert.match(verifySection, /`tools\/list` schema contract/);
-    assert.match(verifySection, /write-tool `postWriteMaintenance` `score` \/ executable\s+`proposedAction` \/ current-page next action pointer guidance/);
+    assert.match(verifySection, /write-tool `postWriteMaintenance` `byPhase` \/ `bySeverity` \/\s+`byKind` bucket summaries plus `score` \/ executable `proposedAction` \/\s+current-page next action pointer guidance/);
     assert.match(verifySection, /runtime negative smokes with invalid `list_concepts\.lmit`/);
     assert.match(verifySection, /`query_ontology\.operation="overveiw"` inputs/);
     assert.match(verifySection, /`maintenance_plan` cursor contract/);
@@ -1079,7 +1081,7 @@ describe('package contract helpers', () => {
     assert.match(mcpVerifyRow, /`concepts\[n\]` \/ `relations\[n\]` row label/);
     assert.match(mcpVerifyRow, /top-level tool error 가 아니라 row-level `ok:false`/);
     assert.match(mcpVerifyRow, /invalid-only smoke 에 `postWriteMaintenance` 가 없는지도 확인/);
-    assert.match(mcpVerifyRow, /write-tool `postWriteMaintenance` `score` \/ executable `proposedAction` \/ current-page next-action guidance/);
+    assert.match(mcpVerifyRow, /write-tool `postWriteMaintenance` `byPhase` \/ `bySeverity` \/ `byKind` bucket \+ `score` \/ executable `proposedAction` \/ current-page next-action guidance/);
     assert.match(mcpVerifyRow, /ready `maintenance_plan` cursor \+ missing `maintenance_plan\.afterActionId` cursor smoke/);
     assert.match(mcpVerifyRow, /`nextAfterActionId`\/`hasMore` page-state alignment/);
     assert.match(mcpVerifyRow, /maintenance bucket \/ current-page next-action summaries/);
@@ -1222,7 +1224,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`nextAfterActionId=null` \/ `hasMore=false`/);
     assert.match(doc, /unknown `afterActionId`\s+cursor 의 `cursor\.found=false`/);
     assert.match(doc, /`cursor\.reason`[\s\S]*계약/);
-    assert.match(doc, /compact `postWriteMaintenance` 반환 \(`operation` \/ `sideEffect:false` \/ `filters` \/ `limited` \/ cursor \/ action `score` \/ executable `proposedAction` 포함\)/);
+    assert.match(doc, /compact `postWriteMaintenance` 반환 \(`operation` \/ `sideEffect:false` \/ `filters` \/ `limited` \/ cursor \/ `byPhase`·`bySeverity`·`byKind` bucket \/ action `score` \/ executable `proposedAction` 포함\)/);
     assert.match(doc, /dogfood walk 는\s+`totalActions` \/ `filteredActions` \/ `remainingActions` summary 관계와/);
     assert.match(doc, /`byPhase` \/ `bySeverity` \/ `byKind` bucket 합계도 검증/);
     assert.match(doc, /source checkout MCP work\s+queue count drift 를 fail-fast/);
@@ -1296,7 +1298,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /project probe 덕분에 `project_scope`/);
     assert.match(verifySection, /빈 vault 는 node-targeted graph\s+smoke 를 skip/);
     assert.match(verifySection, /strict schema\/runtime unknown-argument and invalid-enum rejection/);
-    assert.match(verifySection, /compact `postWriteMaintenance` action `score`, executable `proposedAction`, and current-page next action pointer guidance/);
+    assert.match(verifySection, /compact `postWriteMaintenance` 의 `byPhase` \/ `bySeverity` \/ `byKind` bucket, action `score`, executable `proposedAction`, and current-page next action pointer guidance/);
     assert.match(dogfoodSection, /설치 verify 성공 로그도 허용된 phases \/\s+severities \/ kinds enum 목록을 함께 출력/);
   });
 
@@ -1406,7 +1408,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /invalid-enum rejection/);
     assert.match(smoke, /destructive writer dry-runs with every planned response present and no changed\\\/postWriteMaintenance/);
     assert.match(smoke, /destructive writer dry-runs for rename_concept\\\/merge_concepts\\\/delete_concept/);
-    assert.match(smoke, /write-tool postWriteMaintenance score\\\/proposedAction\\\/next-action guidance/);
+    assert.match(smoke, /write-tool postWriteMaintenance byPhase\\\/bySeverity\\\/byKind buckets \\+ score\\\/proposedAction\\\/next-action guidance/);
     assert.ok(smoke.includes('maintenance_plan cursor smoke'));
     assert.match(smoke, /Maintenance filters are enum-validated for phases\\\/severities\\\/kinds/);
     assert.match(smoke, /cursor smoke checks both cursor\\\.found=true with cursor\\\.reason=null and cursor\\\.found=false/);

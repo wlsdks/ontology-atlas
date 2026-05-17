@@ -402,7 +402,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /neighbors\/node-to-project path\/project_scope graph-query smoke/);
   assert.match(clean, /tools\/list schema strictness/);
   assert.match(clean, /destructive writer dry-runs with every planned response present and no changed\/postWriteMaintenance/);
-  assert.match(clean, /write-tool postWriteMaintenance score\/proposedAction\/next-action guidance/);
+  assert.match(clean, /write-tool postWriteMaintenance byPhase\/bySeverity\/byKind buckets \+ score\/proposedAction\/next-action guidance/);
   assert.match(clean, /runtime unknown-argument \/ invalid-enum rejection/);
   assert.match(clean, /maintenance_plan cursor smoke/);
   assert.match(clean, /Maintenance filters are enum-validated for phases\/severities\/kinds/);
