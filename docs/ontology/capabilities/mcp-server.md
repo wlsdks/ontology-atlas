@@ -622,6 +622,9 @@ Analysis 가 `strict arguments + annotations + graph-query enums + graph kind en
 최종 Analysis 의 strict relation filter / `relation_check` row 는 closest-value
 smoke 의 핵심 증거인 `depend_on -> depends_on` 까지 표시해, 단순히 rejected 여부만
 통과한 것인지 suggestion 품질까지 검증된 것인지 구분할 수 있게 한다.
+strict `add_relation` row 도 존재하지 않는 endpoint 와 `depend_on` typo 를 함께
+사용해 단일 writer 가 write 전 type enum 을 먼저 거절하는지 dogfood walk 에서
+보여준다.
 strict graph kind filter 도 `match_nodes.kind=capabilty` 런타임 smoke 로 확인해
 schema 에 enum 이 있어도 실제 `query_ontology` 경계가 typo 를 빈 결과로 삼키지
 않는지 dogfood / installed verify 양쪽에서 잡는다. 같은 gate 는
@@ -707,6 +710,6 @@ failing health check, workspace_brief growth/sample/action gate 를 focused 로 
 CLI `mcp-verify` 문서도 delegated verify output 의 non-blocking advisory 와
 issues/unresolved/cycles/checks health summary 를 설명해 설치 경로와 source checkout
 검증 경로의 기대 출력이 갈라지지 않게 한다.
-`pnpm test:mcp:dogfood` 는 이 gate 판정의 focused subset, workspace_brief sample-shape gate, maintenance work-queue shape / formatter, initialize guidance, tools/list annotation coverage, row-label guidance summary, strict closest-value summary 를 fixture 로 검증해
+`pnpm test:mcp:dogfood` 는 이 gate 판정의 focused subset, workspace_brief sample-shape gate, maintenance work-queue shape / formatter, initialize guidance, tools/list annotation coverage, row-label guidance summary, strict closest-value summary, strict add_relation type-preflight 를 fixture 로 검증해
 dogfood walk 의 실패 조건이 조용히 약해지지 않게 막고, 전체 helper 회귀가 필요할 때만
 `pnpm dogfood:test` 로 넓힌다.

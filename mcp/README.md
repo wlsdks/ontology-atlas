@@ -72,7 +72,8 @@ first-contact health summary / advisory / next-action gates, `workspace_brief.ne
 shape drift, maintenance_plan malformed payload and work-queue formatter drift,
 initialize guidance gate, destructive dry-run request/gate
 contract, help output, unsupported-argument rejection, strict relation filter
-rejection, strict closest-value summary, stderr warning filtering, and gate
+rejection, strict add_relation type-preflight rejection, strict closest-value
+summary, stderr warning filtering, and gate
 contract without running the live MCP walk.
 `test:mcp:dogfood:timeout` narrows that to dogfood timeout parsing, missing
 response labels, and retry help.

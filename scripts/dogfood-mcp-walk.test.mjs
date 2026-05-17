@@ -2747,6 +2747,12 @@ const okShape = {
       content: [{ text: 'type must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
     },
   },
+  strictAddRelation: {
+    result: {
+      isError: true,
+      content: [{ text: 'type must be one of: depends_on, relates, contains, describes, domains, capabilities, elements, domain. Received: "depend_on". Did you mean "depends_on"?' }],
+    },
+  },
   strictGraphKindFilter: {
     result: {
       isError: true,
@@ -3227,6 +3233,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(67), "strict_graph_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(68), "strict_graph_from_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(69), "strict_graph_to_kind_filter");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(70), "strict_add_relation");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -3271,6 +3278,18 @@ describe("rpc response completion helpers", () => {
         operation: "relation_check",
         from: "missing-relation-check-source",
         to: "missing-relation-check-target",
+        type: "depend_on",
+      },
+    });
+  });
+
+  it("keeps strict add_relation dogfood request endpoint-independent and non-writing", () => {
+    const requests = buildDogfoodRequests();
+    assert.deepEqual(requests.find((request) => request.id === 70)?.params, {
+      name: "add_relation",
+      arguments: {
+        from: "missing-add-relation-source",
+        to: "missing-add-relation-target",
         type: "depend_on",
       },
     });
@@ -3830,6 +3849,41 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["strict_relation_check: strict relation_check response did not suggest the closest type value"],
+    );
+  });
+
+  it("fails malformed strict add_relation dogfood responses", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictAddRelation: { result: { isError: false, content: [{ text: "ok" }] } } }),
+      ["strict_add_relation: strict add_relation response was not rejected"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictAddRelation: { result: { isError: true, content: [{ text: "different error" }] } } }),
+      ["strict_add_relation: strict add_relation response did not report the invalid type filter"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictAddRelation: {
+          result: {
+            isError: true,
+            content: [{ text: 'type must be one of: depends_on, relates, contains, describes.' }],
+          },
+        },
+      }),
+      ["strict_add_relation: strict add_relation response did not report the invalid type value"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictAddRelation: {
+          result: {
+            isError: true,
+            content: [{ text: 'type must be one of: depends_on, relates, contains, describes. Received: "depend_on".' }],
+          },
+        },
+      }),
+      ["strict_add_relation: strict add_relation response did not suggest the closest type value"],
     );
   });
 

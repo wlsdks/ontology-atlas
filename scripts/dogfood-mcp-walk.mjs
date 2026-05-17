@@ -39,6 +39,7 @@ import {
   strictEnumFailure,
   strictGraphKindFilterFailure,
   strictMaintenanceFilterFailure,
+  strictAddRelationFailure,
   strictRelationFilterFailure,
   structuredContentMismatchSummary,
   structuredContentParityStatus,
@@ -176,6 +177,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [67, "strict_graph_kind_filter"],
   [68, "strict_graph_from_kind_filter"],
   [69, "strict_graph_to_kind_filter"],
+  [70, "strict_add_relation"],
 ]);
 
 const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
@@ -649,6 +651,11 @@ export function buildDogfoodRequests() {
       to: "missing-relation-check-target",
       type: "depend_on",
     }),
+    call(70, "add_relation", {
+      from: "missing-add-relation-source",
+      to: "missing-add-relation-target",
+      type: "depend_on",
+    }),
     call(67, "query_ontology", {
       operation: "match_nodes",
       kind: "capabilty",
@@ -978,6 +985,7 @@ export function evaluateDogfoodGate({
   strictMaintenanceKindFilter,
   strictRelationFilter,
   strictRelationCheck,
+  strictAddRelation,
   strictGraphKindFilter,
   strictGraphFromKindFilter,
   strictGraphToKindFilter,
@@ -1056,6 +1064,8 @@ export function evaluateDogfoodGate({
   if (strictRelationFilterError) failures.push(`strict_relation_filter: ${strictRelationFilterError}`);
   const strictRelationCheckError = strictRelationCheckFailure(strictRelationCheck);
   if (strictRelationCheckError) failures.push(`strict_relation_check: ${strictRelationCheckError}`);
+  const strictAddRelationError = strictAddRelationFailure(strictAddRelation);
+  if (strictAddRelationError) failures.push(`strict_add_relation: ${strictAddRelationError}`);
   const strictGraphKindFilterError = strictGraphKindFilterFailure(strictGraphKindFilter);
   if (strictGraphKindFilterError) failures.push(`strict_graph_kind_filter: ${strictGraphKindFilterError}`);
   const strictGraphFromKindFilterError = strictGraphKindFilterFailure(strictGraphFromKindFilter, { field: "fromKind" });
@@ -5349,7 +5359,16 @@ async function main() {
     console.log(`  ${strictRelationCheckText}`);
   }
 
-  // 51. strict graph kind filter rejection
+  // 51. strict add_relation rejection
+  header("strict add_relation — invalid type rejection");
+  const strictAddRelation = responses.find((response) => response.id === 70);
+  const strictAddRelationText = strictAddRelation?.result?.content?.[0]?.text || "";
+  console.log(`  add_relation type rejected: ${strictAddRelation?.result?.isError === true}`);
+  if (strictAddRelationText) {
+    console.log(`  ${strictAddRelationText}`);
+  }
+
+  // 52. strict graph kind filter rejection
   header("strict graph kind filters — invalid match_nodes.kind rejection");
   const strictGraphKindFilter = responses.find((response) => response.id === 67);
   const strictGraphKindFilterText = strictGraphKindFilter?.result?.content?.[0]?.text || "";
@@ -5548,6 +5567,7 @@ async function main() {
     strictMaintenanceKindFilter,
     strictRelationFilter,
     strictRelationCheck,
+    strictAddRelation,
     strictGraphKindFilter,
     strictGraphFromKindFilter,
     strictGraphToKindFilter,
@@ -5651,6 +5671,7 @@ async function main() {
   console.log(`  strict_maintenance_kind_filter: rejected ${strictMaintenanceKindFilter?.result?.isError === true}`);
   console.log(`  strict_relation_filter: ${strictClosestValueSummary(strictRelationFilter)}`);
   console.log(`  strict_relation_check: ${strictClosestValueSummary(strictRelationCheck)}`);
+  console.log(`  strict_add_relation: ${strictClosestValueSummary(strictAddRelation)}`);
   console.log(`  strict_graph_kind_filter: ${strictClosestValueSummary(strictGraphKindFilter)}`);
   console.log(`  strict_graph_from_kind_filter: ${strictClosestValueSummary(strictGraphFromKindFilter)}`);
   console.log(`  strict_graph_to_kind_filter: ${strictClosestValueSummary(strictGraphToKindFilter)}`);
