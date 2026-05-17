@@ -546,12 +546,28 @@ describe('verify.mjs first-contact gates', () => {
       },
       {
         name: 'query_concepts',
+        description:
+          'Typed filter DSL — search vault nodes by predicate.\n\n' +
+          'Grammar (case-insensitive keywords, whitespace-tolerant):\n' +
+          '  filter    := atom (AND|OR atom)*\n' +
+          '  atom      := NOT? predicate\n' +
+          '  predicate := key=value | key!=value | has(key)\n\n' +
+          'Example: `kind=capability AND domain=auth AND NOT has(elements)`.',
         inputSchema: {
           additionalProperties: false,
           required: ['filter'],
           properties: {
-            filter: { type: 'string' },
-            limit: { type: 'integer', minimum: 1, maximum: 500 },
+            filter: {
+              type: 'string',
+              description:
+                'Filter expression. Example: kind=capability AND has(elements). Supports NOT / AND / OR. Wrap values containing whitespace or special characters with "..." or \'...\'.',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 500,
+              description: 'Positive integer max rows to return. Defaults to 100, max 500.',
+            },
           },
         },
         outputSchema: {
@@ -1017,6 +1033,11 @@ describe('verify.mjs first-contact gates', () => {
       queryTool,
     ];
     const queryOntologyTool = tools.find((tool) => tool.name === 'query_ontology');
+    const queryConceptsTool = tools.find((tool) => tool.name === 'query_concepts');
+    const withQueryConceptsTool = (tool) => [
+      ...tools.filter((candidate) => candidate.name !== 'query_concepts'),
+      tool,
+    ];
     const listConceptsTool = tools.find((tool) => tool.name === 'list_concepts');
     const withListConceptsTool = (tool) => [
       ...tools.filter((candidate) => candidate.name !== 'list_concepts'),
@@ -1451,6 +1472,53 @@ describe('verify.mjs first-contact gates', () => {
         },
       )),
       'query_ontology required schema drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryConceptsTool(
+        {
+          ...queryConceptsTool,
+          description: 'Typed filter DSL.',
+        },
+      )),
+      'query_concepts description missing typed filter DSL guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryConceptsTool(
+        {
+          ...queryConceptsTool,
+          inputSchema: {
+            ...queryConceptsTool.inputSchema,
+            properties: {
+              ...queryConceptsTool.inputSchema.properties,
+              filter: {
+                type: 'string',
+                description: 'Filter expression.',
+              },
+            },
+          },
+        },
+      )),
+      'query_concepts inputSchema filter DSL guidance drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryConceptsTool(
+        {
+          ...queryConceptsTool,
+          inputSchema: {
+            ...queryConceptsTool.inputSchema,
+            properties: {
+              ...queryConceptsTool.inputSchema.properties,
+              limit: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 500,
+                description: 'Positive integer max rows to return.',
+              },
+            },
+          },
+        },
+      )),
+      'query_concepts inputSchema limit default description drift',
     );
     assert.equal(
       toolsListSchemaFailure([

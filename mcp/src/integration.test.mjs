@@ -714,6 +714,21 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       { type: "integer", minimum: 1, maximum: 500 },
       "query_concepts exposes bounded integer limit schema",
     );
+    assert.match(
+      findTool("query_concepts")?.description ?? "",
+      /Typed filter DSL[\s\S]*filter\s*:=\s*atom[\s\S]*predicate\s*:=\s*key=value \| key!=value \| has\(key\)[\s\S]*kind=capability AND domain=auth AND NOT has\(elements\)/i,
+      "query_concepts description documents the typed filter grammar",
+    );
+    assert.match(
+      findTool("query_concepts")?.inputSchema?.properties?.filter?.description ?? "",
+      /Supports NOT \/ AND \/ OR[\s\S]*Wrap values containing whitespace or special characters/i,
+      "query_concepts filter schema documents operators and quoting",
+    );
+    assert.match(
+      findTool("query_concepts")?.inputSchema?.properties?.limit?.description ?? "",
+      /Defaults to 100, max 500/,
+      "query_concepts limit schema documents default and cap",
+    );
     assert.deepEqual(
       {
         type: findTool("query_ontology")?.inputSchema?.properties?.iterations?.type,

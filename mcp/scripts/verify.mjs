@@ -560,6 +560,32 @@ export function toolsListSchemaFailure(tools) {
 
   const queryConceptsTool = tools.find((tool) => tool?.name === 'query_concepts');
   if (!queryConceptsTool) return 'tools/list response missing query_concepts tool';
+  if (
+    !/Typed filter DSL/i.test(queryConceptsTool.description || '') ||
+    !/filter\s*:=\s*atom/i.test(queryConceptsTool.description || '') ||
+    !/predicate\s*:=\s*key=value \| key!=value \| has\(key\)/i.test(queryConceptsTool.description || '') ||
+    !/kind=capability AND domain=auth AND NOT has\(elements\)/i.test(queryConceptsTool.description || '')
+  ) {
+    return 'query_concepts description missing typed filter DSL guidance';
+  }
+  const queryFilterSchema = propertyAt(queryConceptsTool, ['properties', 'filter']);
+  if (
+    queryFilterSchema?.type !== 'string' ||
+    !/Supports NOT \/ AND \/ OR/i.test(queryFilterSchema.description || '') ||
+    !/Wrap values containing whitespace or special characters/i.test(queryFilterSchema.description || '')
+  ) {
+    return 'query_concepts inputSchema filter DSL guidance drift';
+  }
+  const queryLimitSchema = propertyAt(queryConceptsTool, ['properties', 'limit']);
+  if (
+    queryLimitSchema?.type !== 'integer' ||
+    queryLimitSchema.minimum !== 1 ||
+    queryLimitSchema.maximum !== 500 ||
+    !/Defaults to 100/i.test(queryLimitSchema.description || '') ||
+    !/max 500/i.test(queryLimitSchema.description || '')
+  ) {
+    return 'query_concepts inputSchema limit default description drift';
+  }
   if (queryConceptsTool.outputSchema?.type !== 'object') {
     return 'query_concepts outputSchema root drift';
   }
