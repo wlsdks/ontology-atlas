@@ -752,6 +752,43 @@ try {
   assert.equal(typoDirectMcpVerifyVault.stdout, '');
   assert.match(typoDirectMcpVerifyVault.stderr, /Unknown option: --vualt\. Did you mean --vault\?/);
 
+  const duplicateFlagDirectMcpVerifyVault = runRaw(
+    'npm',
+    [
+      '--prefix',
+      join(installDir, 'node_modules', 'oh-my-ontology-mcp'),
+      '--silent',
+      'run',
+      'verify',
+      '--',
+      join(projectDir, 'ontology'),
+      '--vault',
+      emptyVault,
+    ],
+    { cwd: projectDir },
+  );
+  assert.equal(duplicateFlagDirectMcpVerifyVault.status, 1);
+  assert.equal(duplicateFlagDirectMcpVerifyVault.stdout, '');
+  assert.match(duplicateFlagDirectMcpVerifyVault.stderr, /Unexpected extra vault argument:/);
+
+  const duplicatePositionalDirectMcpVerifyVault = runRaw(
+    'npm',
+    [
+      '--prefix',
+      join(installDir, 'node_modules', 'oh-my-ontology-mcp'),
+      '--silent',
+      'run',
+      'verify',
+      '--',
+      join(projectDir, 'ontology'),
+      emptyVault,
+    ],
+    { cwd: projectDir },
+  );
+  assert.equal(duplicatePositionalDirectMcpVerifyVault.status, 1);
+  assert.equal(duplicatePositionalDirectMcpVerifyVault.stdout, '');
+  assert.match(duplicatePositionalDirectMcpVerifyVault.stderr, /Unexpected extra vault argument:/);
+
   const compile = runRaw(cliBin, ['compile', 'ontology', '--summary'], { cwd: projectDir });
   assert.equal(compile.status, 1);
   assert.match(compile.stdout, /compiled ontology/);
