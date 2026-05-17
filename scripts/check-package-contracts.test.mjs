@@ -1020,6 +1020,9 @@ describe('package contract helpers', () => {
     assert.match(smoke, /invalidCliMcpVerifyTimeout/);
     assert.match(smoke, /missingCliMcpVerifyTimeout/);
     assert.match(smoke, /nextFlagCliMcpVerifyTimeout/);
+    assert.match(smoke, /missingCliMcpVerifyVault/);
+    assert.match(smoke, /nextFlagCliMcpVerifyVault/);
+    assert.match(smoke, /duplicateCliMcpVerifyVault/);
     assert.match(smoke, /invalidCliMcpVerifyEnvTimeout/);
     assert.match(smoke, /missingDirectMcpVerifyTimeout/);
     assert.match(smoke, /'--silent', 'run', 'verify'/);
@@ -1028,6 +1031,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /Received: "1000ms"/);
     assert.match(smoke, /Received: undefined/);
     assert.match(smoke, /Received: "--vault"/);
+    assert.match(smoke, /pass vault as either positional argument or --vault, not both/);
     assert.match(smoke, /--timeout-ms N/);
     assert.match(smoke, /OMOT_VERIFY_TIMEOUT_MS=N/);
     assert.match(smoke, /oh-my-ontology mcp-verify --timeout-ms 15000/);

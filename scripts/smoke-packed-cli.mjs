@@ -327,6 +327,33 @@ try {
   assert.match(nextFlagCliMcpVerifyTimeout.stderr, /Received: "--vault"/);
   assert.match(nextFlagCliMcpVerifyTimeout.stderr, /oh-my-ontology mcp-verify --timeout-ms 15000/);
 
+  const missingCliMcpVerifyVault = runRaw(
+    cliBin,
+    ['mcp-verify', '--vault'],
+    { cwd: projectDir },
+  );
+  assert.equal(missingCliMcpVerifyVault.status, 1);
+  assert.equal(missingCliMcpVerifyVault.stdout, '');
+  assert.match(missingCliMcpVerifyVault.stderr, /--vault requires a path/);
+
+  const nextFlagCliMcpVerifyVault = runRaw(
+    cliBin,
+    ['mcp-verify', '--vault', '--timeout-ms', '1000'],
+    { cwd: projectDir },
+  );
+  assert.equal(nextFlagCliMcpVerifyVault.status, 1);
+  assert.equal(nextFlagCliMcpVerifyVault.stdout, '');
+  assert.match(nextFlagCliMcpVerifyVault.stderr, /--vault requires a path/);
+
+  const duplicateCliMcpVerifyVault = runRaw(
+    cliBin,
+    ['mcp-verify', 'ontology', '--vault', 'docs/ontology'],
+    { cwd: projectDir },
+  );
+  assert.equal(duplicateCliMcpVerifyVault.status, 1);
+  assert.equal(duplicateCliMcpVerifyVault.stdout, '');
+  assert.match(duplicateCliMcpVerifyVault.stderr, /pass vault as either positional argument or --vault, not both/);
+
   const invalidCliMcpVerifyEnvTimeout = runRaw(
     cliBin,
     ['mcp-verify', 'ontology'],
