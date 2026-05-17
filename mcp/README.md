@@ -61,9 +61,10 @@ pnpm test:mcp:verify:timeout
 only. `test:mcp:docs` checks README and dogfood ontology documentation drift.
 `test:mcp:dogfood` covers the dogfood helper's structuredContent output,
 indexed `compile_ontology` gate, batch writer row-label guidance summary,
-initialize guidance gate, destructive dry-run request/gate contract, help
-output, unsupported-argument rejection, strict relation filter rejection, stderr
-warning filtering, and gate contract without running the live MCP walk.
+vault warning / `validate_vault` problem gates, initialize guidance gate,
+destructive dry-run request/gate contract, help output, unsupported-argument
+rejection, strict relation filter rejection, stderr warning filtering, and gate
+contract without running the live MCP walk.
 `test:mcp:dogfood:timeout` narrows that to dogfood timeout parsing, missing
 response labels, and retry help.
 `test:mcp:suggestions` covers strict enum / argument suggestion behavior.

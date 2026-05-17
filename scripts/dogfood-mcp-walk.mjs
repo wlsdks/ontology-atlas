@@ -84,7 +84,7 @@ export function dogfoodUsage() {
     "                              Example: OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk",
     "",
     "Focused checks:",
-    "  pnpm test:mcp:dogfood           Dogfood helper, compile gate, row-label guidance, initialize guidance, help, structuredContent, strict relation filters, stderr warning checks.",
+    "  pnpm test:mcp:dogfood           Dogfood helper, compile gate, row-label guidance, vault warning gates, initialize guidance, help, structuredContent, strict relation filters, stderr warning checks.",
     "  pnpm test:mcp:dogfood:timeout   Narrow dogfood timeout/help retry diagnostics.",
   ].join("\n");
 }

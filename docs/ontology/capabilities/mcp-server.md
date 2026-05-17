@@ -386,7 +386,8 @@ subset 만 실행해 agent onboarding 문서 변경을 빠르게 검증한다.
 package manifest / enum suggestion 류의 더 작은 변경은 root 의
 `pnpm test:mcp:package` / `pnpm test:mcp:suggestions` 로 파일 단위 검증을 먼저
 돌려 반복 dogfood 비용을 낮춘다. dogfood helper / structuredContent 출력 계약이나
-initialize guidance gate, destructive dry-run gate, strict relation filter, stderr warning filtering 을 만질 때는 `pnpm test:mcp:dogfood` 로 dogfood helper 와
+vault warning / `validate_vault` problem gate, initialize guidance gate,
+destructive dry-run gate, strict relation filter, stderr warning filtering 을 만질 때는 `pnpm test:mcp:dogfood` 로 dogfood helper 와
 관련 문서 계약만 먼저 확인한다. dogfood timeout / retry help 만 만질 때는
 `pnpm test:mcp:dogfood:timeout` 으로 더 좁게 확인한다. 직접 verify help 는
 `mcp/` package directory 의 `npm run verify -- --help` 또는 repo root 의
@@ -490,7 +491,7 @@ MCP schema 에서 노출한다. `componentLimit`, `cycleLimit`, `recommendationL
 검증하므로 잘못된 인자는 MCP server 를 띄우기 전에 실패한다. `pnpm dogfood:walk -- --help`
 는 MCP server 를 띄우지 않고 usage 와 focused check 경로를 출력해 dogfood 범위 확인 비용을 낮춘다.
 도움말의 `pnpm test:mcp:dogfood` 설명도 compile gate, row-label guidance,
-initialize guidance, structuredContent, strict relation filter, stderr warning 범위를 함께 보여줘 실행 전 검증 surface 를 숨기지 않는다. 기본 census / backlink / path 질의에 더해 `validate_vault`,
+vault warning gate, initialize guidance, structuredContent, strict relation filter, stderr warning 범위를 함께 보여줘 실행 전 검증 surface 를 숨기지 않는다. 기본 census / backlink / path 질의에 더해 `validate_vault`,
 `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology`, `overview`, `pattern_walk`,
 project-node `list_concepts` probe, `all_paths`, `all_paths query_plan`, `neighbors`, `path`, `project_map query_plan`, `project_scope`, `project_map`,
 `domain_profile`, `domain_matrix`, `components`, `reachability`, `impact`,
