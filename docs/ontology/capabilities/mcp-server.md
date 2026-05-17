@@ -115,7 +115,8 @@ compact `postWriteMaintenance` action `score`, executable `proposedAction`, and 
 도 설치 verify 범위에 포함해 write-tool 후속 안내가 agent 작업 큐 계약과 갈라지지 않게 한다.
 destructive dry-run smoke 는 실제 vault 의 기존 slug 로 `rename_concept` / `merge_concepts` /
 `delete_concept` preview 를 호출하되 디스크 write 없이 `changed` 와 `postWriteMaintenance` 가
-없는지 확인해, preview 응답이 confirmed write 로 오인되지 않게 한다.
+없는지 확인해, preview 응답이 confirmed write 로 오인되지 않게 한다. 계획한 destructive
+dry-run 응답 중 하나라도 누락되면 부분 성공으로 처리하지 않고 verify 를 실패시킨다.
 `get_concept` 는 `list_concepts` 에서 얻은 실제 slug 하나로 single-node detail 의
 frontmatter / excerpt / neighbors / outgoingEdges / mtime 과 `structuredContent` 계약을 확인한다.
 `get_concepts` 는 `list_concepts` 에서 얻은 실제 slug 최대 2개와 missing slug 를 섞어

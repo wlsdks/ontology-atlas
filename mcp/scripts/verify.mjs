@@ -2661,6 +2661,15 @@ export function destructiveDryRunFailure(response, toolName) {
   return null;
 }
 
+export function destructiveDryRunSmokeFailure(expectedResponses) {
+  const entries = Array.isArray(expectedResponses) ? expectedResponses : [];
+  for (const [toolName, response] of entries) {
+    const failure = destructiveDryRunFailure(response, toolName);
+    if (failure) return failure;
+  }
+  return null;
+}
+
 function allGraphQuerySmokeResponseIds() {
   return buildGraphQuerySmokeRequests({
     slug: 'verify-smoke-node',
@@ -4213,6 +4222,7 @@ async function step2BootAndCall() {
     let sentGraphQuerySmoke = false;
     let sentDestructiveDryRunSmoke = false;
     let sentMaintenanceResumeSmoke = false;
+    let destructiveDryRunExpectedResponses = [];
     const expectedFirstContactIds = new Set(FIRST_CONTACT_RESPONSE_LABELS.keys());
     expectedFirstContactIds.delete(30);
     expectedFirstContactIds.delete(31);
@@ -4301,6 +4311,10 @@ async function step2BootAndCall() {
             sentDestructiveDryRunSmoke = true;
             const destructiveDryRunPlan = buildDestructiveDryRunSmokeRequests(listPayload);
             for (const id of destructiveDryRunPlan.expectedResponseIds) expectedFirstContactIds.add(id);
+            destructiveDryRunExpectedResponses = destructiveDryRunPlan.requests.map((request) => [
+              request.params.name,
+              request.id,
+            ]);
             if (destructiveDryRunPlan.requests.length > 0) {
               proc.stdin.write(destructiveDryRunPlan.requests.map((request) => JSON.stringify(request)).join('\n') + '\n');
             }
@@ -4413,9 +4427,6 @@ async function step2BootAndCall() {
       const maintenanceResumeCursorRes = responses.find((r) => r.id === 30);
       const addConceptsRowIsolationRes = responses.find((r) => r.id === 28);
       const addRelationsRowIsolationRes = responses.find((r) => r.id === 29);
-      const renameDryRunRes = responses.find((r) => r.id === 43);
-      const mergeDryRunRes = responses.find((r) => r.id === 44);
-      const deleteDryRunRes = responses.find((r) => r.id === 45);
       let kindsPayload = null;
       let listPayload = null;
       let validationPayload = null;
@@ -4499,18 +4510,15 @@ async function step2BootAndCall() {
         return res(false);
       }
       log('ok', 'add_relations — non-object and unknown-field rows isolated at row level');
-      const destructiveDryRunResponses = [
-        ['rename_concept', renameDryRunRes],
-        ['merge_concepts', mergeDryRunRes],
-        ['delete_concept', deleteDryRunRes],
-      ].filter(([, response]) => response);
+      const destructiveDryRunResponses = destructiveDryRunExpectedResponses.map(([toolName, id]) => [
+        toolName,
+        responses.find((response) => response.id === id),
+      ]);
       if (destructiveDryRunResponses.length > 0) {
-        for (const [toolName, response] of destructiveDryRunResponses) {
-          const failure = destructiveDryRunFailure(response, toolName);
-          if (failure) {
-            log('fail', failure);
-            return res(false);
-          }
+        const destructiveFailure = destructiveDryRunSmokeFailure(destructiveDryRunResponses);
+        if (destructiveFailure) {
+          log('fail', destructiveFailure);
+          return res(false);
         }
         destructiveDryRunCount = destructiveDryRunResponses.length;
         log('ok', `destructive dry-runs — ${destructiveDryRunResponses.map(([toolName]) => toolName).join(' · ')} preview without write-maintenance`);

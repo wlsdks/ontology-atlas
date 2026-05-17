@@ -31,6 +31,7 @@ import {
   diagnosisBlockingFailure,
   diagnosisIssueCount,
   destructiveDryRunFailure,
+  destructiveDryRunSmokeFailure,
   EXPECTED_DESTRUCTIVE_TOOLS,
   EXPECTED_IDEMPOTENT_TOOLS,
   EXPECTED_READ_TOOLS,
@@ -3352,6 +3353,45 @@ describe('verify.mjs first-contact gates', () => {
         },
       }, 'delete_concept'),
       null,
+    );
+  });
+
+  it('fails missing destructive dry-run smoke responses', () => {
+    const deletePayload = {
+      ok: false,
+      dryRun: true,
+      slug: 'gone',
+      backlinks: [],
+      message: 'dry-run — force:true to apply',
+    };
+    assert.equal(
+      destructiveDryRunSmokeFailure([
+        [
+          'delete_concept',
+          {
+            result: {
+              content: [{ text: JSON.stringify(deletePayload) }],
+              structuredContent: deletePayload,
+            },
+          },
+        ],
+      ]),
+      null,
+    );
+    assert.equal(
+      destructiveDryRunSmokeFailure([
+        ['rename_concept', null],
+        [
+          'delete_concept',
+          {
+            result: {
+              content: [{ text: JSON.stringify(deletePayload) }],
+              structuredContent: deletePayload,
+            },
+          },
+        ],
+      ]),
+      'no rename_concept dry-run response',
     );
   });
 

@@ -454,7 +454,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`delete_concept\.force`/);
     assert.match(verifySection, /batch row isolation for non-object row shape and\s+unknown row field inputs/);
     assert.match(verifySection, /Destructive dry-run smoke calls `rename_concept`, `merge_concepts`, and\s+`delete_concept` against live vault slugs without writing/);
-    assert.match(verifySection, /preview includes `changed` or `postWriteMaintenance`/);
+    assert.match(verifySection, /preview is missing or includes `changed` or `postWriteMaintenance`/);
     assert.match(verifySection, /row-level `ok:false`\s+results instead of a top-level tool error/);
     assert.match(verifySection, /`initialize\.instructions` gate fails/);
     assert.match(verifySection, /read-only diagnosis flow/);

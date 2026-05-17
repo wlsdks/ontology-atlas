@@ -323,7 +323,7 @@ direct-read, write, maintenance-cursor, and graph-query `structuredContent` cove
 that was enforced in the run.
 Destructive dry-run smoke calls `rename_concept`, `merge_concepts`, and
 `delete_concept` against live vault slugs without writing, and fails if the
-preview includes `changed` or `postWriteMaintenance`.
+preview is missing or includes `changed` or `postWriteMaintenance`.
 The `tools/list` gate also checks that every tool rejects unknown arguments via
 `additionalProperties:false`, that every tool exposes the expected
 `annotations.title` display name, `annotations.readOnlyHint` read/write split,
