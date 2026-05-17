@@ -126,7 +126,7 @@ function printUsage(output = process.stderr) {
       `  oh-my-ontology mcp-verify --vault path --timeout-ms 15000\n\n` +
       `Runs the MCP package verify CLI against the resolved vault.\n` +
       `Checks parser smoke, server boot, tool inventory, list/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans/node census/file validation, workspace health,\n` +
-      `compile_ontology summary + paginated full-artifact smoke, overview, overview/project_map query_plan, and neighbors/node-to-project path/project_scope graph-query smoke.\n` +
+      `compile_ontology summary + paginated full-artifact + indexed full-artifact smoke, overview, overview/project_map query_plan, and neighbors/node-to-project path/project_scope graph-query smoke.\n` +
       `Node census is cross-checked across list_kinds/list_concepts/compile_ontology/overview; validate_vault.scanned stays file-level health.\n` +
       `Also checks tools/list schema strictness, write-tool postWriteMaintenance score/proposedAction/next-action guidance, runtime unknown-argument / invalid-enum rejection, and maintenance_plan cursor smoke.\n` +
       `Maintenance filters are enum-validated for phases/severities/kinds; cursor smoke checks both cursor.found=true with cursor.reason=null and cursor.found=false with the miss reason, zero remaining actions, and no next actions.\n` +

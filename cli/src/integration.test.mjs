@@ -388,7 +388,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /node census\/file validation/);
   assert.match(clean, /list_kinds\/list_concepts\/compile_ontology\/overview/);
   assert.match(clean, /validate_vault\.scanned stays file-level health/);
-  assert.match(clean, /compile_ontology summary \+ paginated full-artifact smoke/);
+  assert.match(clean, /compile_ontology summary \+ paginated full-artifact \+ indexed full-artifact smoke/);
   assert.match(clean, /neighbors\/node-to-project path\/project_scope graph-query smoke/);
   assert.match(clean, /tools\/list schema strictness/);
   assert.match(clean, /write-tool postWriteMaintenance score\/proposedAction\/next-action guidance/);
