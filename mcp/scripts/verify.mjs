@@ -1025,6 +1025,9 @@ export function toolsListSchemaFailure(tools) {
   ) {
     return 'infer_imports outputSchema unresolved drift';
   }
+  if (!sameArray(unresolvedSchema.items?.properties?.reason?.enum, ['empty', 'relative-not-found', 'alias-not-found'])) {
+    return 'infer_imports outputSchema unresolved reason drift';
+  }
   const moduleEdgesSchema = outputPropertyAt(inferImportsTool, ['properties', 'moduleEdges']);
   if (
     moduleEdgesSchema?.type !== 'array' ||

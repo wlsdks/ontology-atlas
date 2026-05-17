@@ -825,7 +825,13 @@ function makeDogfoodToolsList() {
             },
             unresolved: {
               type: "array",
-              items: { type: "object", required: ["from", "spec", "reason"] },
+              items: {
+                type: "object",
+                required: ["from", "spec", "reason"],
+                properties: {
+                  reason: { enum: ["empty", "relative-not-found", "alias-not-found"] },
+                },
+              },
             },
             moduleEdges: {
               type: "array",
@@ -3341,6 +3347,12 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: inferOutputSchemaDrifted }),
       ["tools/list: infer_imports outputSchema edge kind drift"],
+    );
+    const inferUnresolvedReasonDrifted = makeDogfoodToolsList();
+    inferUnresolvedReasonDrifted.tools.find((tool) => tool.name === "infer_imports").outputSchema.properties.unresolved.items.properties.reason = { type: "string" };
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: inferUnresolvedReasonDrifted }),
+      ["tools/list: infer_imports outputSchema unresolved reason drift"],
     );
     const inferModuleKindCountsDrifted = makeDogfoodToolsList();
     inferModuleKindCountsDrifted.tools.find((tool) => tool.name === "infer_imports").outputSchema.properties.moduleEdges.items.properties.kindCounts.properties.side.type = "number";

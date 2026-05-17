@@ -1020,7 +1020,9 @@ describe('verify.mjs first-contact gates', () => {
               items: {
                 type: 'object',
                 required: ['from', 'spec', 'reason'],
-                properties: {},
+                properties: {
+                  reason: { enum: ['empty', 'relative-not-found', 'alias-not-found'] },
+                },
               },
             },
             moduleEdges: {
@@ -2265,6 +2267,31 @@ describe('verify.mjs first-contact gates', () => {
         },
       })),
       'infer_imports maxFiles hard-stop guidance drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'infer_imports'),
+        {
+          ...tools.find((tool) => tool.name === 'infer_imports'),
+          outputSchema: {
+            ...tools.find((tool) => tool.name === 'infer_imports').outputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'infer_imports').outputSchema.properties,
+              unresolved: {
+                ...tools.find((tool) => tool.name === 'infer_imports').outputSchema.properties.unresolved,
+                items: {
+                  ...tools.find((tool) => tool.name === 'infer_imports').outputSchema.properties.unresolved.items,
+                  properties: {
+                    ...tools.find((tool) => tool.name === 'infer_imports').outputSchema.properties.unresolved.items.properties,
+                    reason: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ]),
+      'infer_imports outputSchema unresolved reason drift',
     );
     assert.equal(
       toolsListSchemaFailure([

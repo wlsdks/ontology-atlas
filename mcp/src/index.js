@@ -1769,7 +1769,12 @@ const TOOLS = [
             properties: {
               from: NON_BLANK_STRING_SCHEMA,
               spec: { type: 'string' },
-              reason: NON_BLANK_STRING_SCHEMA,
+              reason: {
+                type: 'string',
+                enum: ['empty', 'relative-not-found', 'alias-not-found'],
+                description:
+                  'Why the import could not resolve. `empty` may have an empty spec; other reasons preserve the original import spec.',
+              },
             },
             required: ['from', 'spec', 'reason'],
           },
