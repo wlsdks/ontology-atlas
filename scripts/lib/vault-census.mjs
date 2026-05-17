@@ -54,11 +54,12 @@ export function dogfoodVaultCensusFromDocs(docs, fileCount = docs.length) {
     "vault-readme": 0,
   };
   for (const doc of docs) {
-    if (doc.frontmatter.kind === "capability") byKind.capabilities += 1;
-    if (doc.frontmatter.kind === "domain") byKind.domains += 1;
-    if (doc.frontmatter.kind === "element") byKind.elements += 1;
-    if (doc.frontmatter.kind === "project") byKind.project += 1;
-    if (doc.frontmatter.kind === "vault-readme") byKind["vault-readme"] += 1;
+    const kind = doc?.frontmatter?.kind;
+    if (kind === "capability") byKind.capabilities += 1;
+    if (kind === "domain") byKind.domains += 1;
+    if (kind === "element") byKind.elements += 1;
+    if (kind === "project") byKind.project += 1;
+    if (kind === "vault-readme") byKind["vault-readme"] += 1;
   }
   const total = Object.values(byKind).reduce((sum, count) => sum + count, 0);
 

@@ -129,4 +129,25 @@ describe("vault-census", () => {
       },
     });
   });
+
+  it("ignores loaded docs without frontmatter instead of throwing", () => {
+    const docs = [
+      { frontmatter: { kind: "capability" } },
+      {},
+      null,
+      { frontmatter: null },
+    ];
+
+    assert.deepEqual(dogfoodVaultCensusFromDocs(docs), {
+      files: 4,
+      total: 1,
+      byKind: {
+        capabilities: 1,
+        domains: 0,
+        elements: 0,
+        project: 0,
+        "vault-readme": 0,
+      },
+    });
+  });
 });
