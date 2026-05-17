@@ -48,6 +48,7 @@ import {
   VAULT_ISSUE_CODE_VALUES,
   VERIFY_TUNED_HEALTH_ARGS,
   VERIFY_TUNED_WORKSPACE_BRIEF_NODE_LIMIT,
+  expectedToolsListAnnotationSummary,
   expectedToolTitle,
 } from "../mcp/scripts/verify.mjs";
 import {
@@ -2849,7 +2850,7 @@ describe("rpc response completion helpers", () => {
     const tools = makeDogfoodToolsList().tools;
     assert.equal(
       toolsListAnnotationSummary(tools),
-      "23/23 titled; 15/15 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 23/23 local-only",
+      expectedToolsListAnnotationSummary(),
     );
 
     const drifted = makeDogfoodToolsList().tools;
