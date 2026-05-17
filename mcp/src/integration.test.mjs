@@ -3357,6 +3357,7 @@ await test("add_concepts — unknown row field 는 row-level error 로 격리", 
     assert.equal(result.concepts[0].ok, true, "valid row still lands");
     assert.equal(result.concepts[1].ok, false);
     assert.match(result.concepts[1].error, /Unknown field "titel" in concepts\[1\]/i);
+    assert.match(result.concepts[1].error, /Did you mean "title"\?/i);
     const list = getCallParsed(responses, 3);
     assert.deepEqual(list.nodes.map((node) => node.slug), ["ok"]);
   } finally {
@@ -3695,6 +3696,7 @@ await test("add_relations — unknown row field 는 row-level error 로 격리",
     assert.equal(result.relations[0].ok, true, "valid row still lands");
     assert.equal(result.relations[1].ok, false);
     assert.match(result.relations[1].error, /Unknown field "relation" in relations\[1\]/i);
+    assert.match(result.relations[1].error, /Did you mean "type"\?/i);
     const concept = getCallParsed(responses, 3);
     assert.deepEqual(concept.frontmatter.relates, ["b"]);
     assert.equal(concept.frontmatter.contains, undefined);

@@ -2368,10 +2368,17 @@ function requireAllowedObjectKeys(value, name, allowedKeys) {
   const allowed = new Set(allowedKeys);
   for (const key of Object.keys(value)) {
     if (allowed.has(key)) continue;
+    const suggestion = closestAllowedObjectField(key, allowedKeys);
+    const suggestionText = suggestion ? ` Did you mean "${suggestion}"?` : '';
     throw new Error(
-      `Unknown field "${key}" in ${name}. Allowed fields: ${allowedKeys.join(', ')}.`,
+      `Unknown field "${key}" in ${name}.${suggestionText} Allowed fields: ${allowedKeys.join(', ')}.`,
     );
   }
+}
+
+function closestAllowedObjectField(key, allowedKeys) {
+  if (key === 'relation' && allowedKeys.includes('type')) return 'type';
+  return closestAllowedValue(key, allowedKeys);
 }
 
 function requireValidFrontmatterPatch(frontmatter) {
