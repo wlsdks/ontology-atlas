@@ -33,6 +33,13 @@
 - Delegated verify output now includes a compact advisory nextActions line when cleanup is recommended but not blocking.
 - 신규 integration test 2건 (`mcp-verify` runs against a fresh `init` vault with a short verify timeout and graph-query smoke output, invalid timeout rejected).
 
+### Added — `maintenance` 명령 (27th, maintenance_plan work queue)
+
+- `oh-my-ontology maintenance [vault] [--limit N] [--after-action-id ID] [--executable-only] [--phases ...] [--severities ...] [--kinds ...] [--json]` — MCP `query_ontology({operation: 'maintenance_plan'})` thin wrapper. Agents and developers can inspect the same ordered cleanup/repair queue without writing to the vault.
+- Human output prints remaining/filtered/total counts, cursor state, active filters, action severity/phase/kind/executable status, proposed tool/action hints, and current-page next executable/review pointers.
+- `pnpm integration:cli:maintenance` runs the CLI maintenance command plus maintenance-related installed verify cases without running the full spawn-heavy CLI integration suite.
+- 신규 integration test 2건 (`maintenance --json`, cursor/filter flags) plus package/docs contract checks for the focused shortcut.
+
 ### Added — `compile` 명령 (25th, compile_ontology wrap + canonicalization apply)
 
 - `oh-my-ontology compile [vault] [--summary] [--json]` — MCP `compile_ontology` thin wrapper. deterministic `graphHash`, node/edge counts, unresolved issue counts, and pagination metadata를 CLI에서 확인.

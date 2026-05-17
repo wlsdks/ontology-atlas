@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-05-17 — CLI maintenance queue + focused verification
+
+The developer CLI now exposes the MCP maintenance work queue directly, closing
+one more gap between agent-side graph repair guidance and terminal dogfood.
+
+- **`oh-my-ontology maintenance`** — thin wrapper around
+  `query_ontology({operation:"maintenance_plan"})`. It shows remaining /
+  filtered / total queue counts, cursor state, active filters, action severity,
+  proposed tool hints, and next executable / review pointers without writing to
+  the vault.
+- **Focused CLI gate** — `pnpm integration:cli:maintenance` runs only the
+  maintenance command and maintenance-related installed verify integration
+  cases, so small work-queue changes no longer require the full CLI integration
+  suite by default.
+- **Dogfood docs contract** — README, CLI docs, and the self-ontology
+  `cli-developer-entry` capability now document the 27-command CLI surface and
+  maintenance shortcut.
+
 ## 2026-05-11 — Ontology surface UX pass + 토폴로지 별자리 톤
 
 UI 점검 보고서 (`/`, `/topology`, `/ontology`, `/ontology/insights`,

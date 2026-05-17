@@ -892,7 +892,10 @@ describe('package contract helpers', () => {
 
   it('keeps the CLI changelog aligned with the mcp-verify census scope', () => {
     const changelog = readFileSync('cli/CHANGELOG.md', 'utf-8');
-    const verifySection = changelog.split('### Added — `mcp-verify` command')[1]?.split('### Added — `compile`')[0] ?? '';
+    const productChangelog = readFileSync('docs/CHANGELOG.md', 'utf-8');
+    const verifySection = changelog.split('### Added — `mcp-verify` command')[1]?.split('### Added — `maintenance`')[0] ?? '';
+    const maintenanceSection = changelog.split('### Added — `maintenance` 명령')[1]?.split('### Added — `compile`')[0] ?? '';
+    const productMaintenanceSection = productChangelog.split('## 2026-05-17 — CLI maintenance queue + focused verification')[1]?.split('## 2026-05-11')[0] ?? '';
 
     assert.match(changelog, /malformed `compile`, `cycles`, `path` hop\/edge payloads, `health\.checks`, `workspace_brief\.health\.checks`, and `workspace_brief\.nextActions` rows/);
     assert.match(verifySection, /`list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`/);
@@ -923,6 +926,17 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /repeated cursor actions or non-advancing `remainingActions`/);
     assert.match(verifySection, /`cursor\.found=false`/);
     assert.match(verifySection, /`cursor\.found=true` \/ `cursor\.reason=null`/);
+    assert.match(maintenanceSection, /`oh-my-ontology maintenance \[vault\]/);
+    assert.match(maintenanceSection, /`query_ontology\(\{operation: 'maintenance_plan'\}\)`/);
+    assert.match(maintenanceSection, /remaining\/filtered\/total counts/);
+    assert.match(maintenanceSection, /cursor state/);
+    assert.match(maintenanceSection, /current-page next executable\/review pointers/);
+    assert.match(maintenanceSection, /`pnpm integration:cli:maintenance`/);
+    assert.match(maintenanceSection, /maintenance-related installed verify cases/);
+    assert.match(productMaintenanceSection, /`oh-my-ontology maintenance`/);
+    assert.match(productMaintenanceSection, /`query_ontology\(\{operation:"maintenance_plan"\}\)`/);
+    assert.match(productMaintenanceSection, /`pnpm integration:cli:maintenance`/);
+    assert.match(productMaintenanceSection, /27-command CLI surface/);
   });
 
   it('documents dogfood validation as a release gate', () => {
