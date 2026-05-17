@@ -67,7 +67,7 @@ only. `test:mcp:docs` checks README and dogfood ontology documentation drift.
 `test:mcp:dogfood` covers the dogfood helper's structuredContent output,
 indexed `compile_ontology` gate, tools/list annotation coverage, batch writer
 row-label guidance summary, vault warning / `validate_vault` problem gates,
-first-contact health summary / next-action gates, `workspace_brief.nextActions[].sample`
+first-contact health summary / advisory / next-action gates, `workspace_brief.nextActions[].sample`
 shape drift, maintenance_plan malformed payload and work-queue formatter drift,
 initialize guidance gate, destructive dry-run request/gate
 contract, help output, unsupported-argument rejection, strict relation filter
@@ -82,7 +82,7 @@ bucket / next-action formatter checks.
 `test:mcp:verify` covers the MCP verify helper contract without spawning the
 full integration suite. `test:mcp:verify:first-contact` narrows that to
 initialize guidance, read-smoke request inventory, vault warning /
-`validate_vault`, first-contact health summary / next-action gates, and
+`validate_vault`, first-contact health summary / advisory / next-action gates, and
 `workspace_brief.nextActions[].sample` shape drift.
 `test:mcp:verify:timeout` narrows verify timeout parsing, startup failure
 retry guidance, usage, and retry diagnostics.

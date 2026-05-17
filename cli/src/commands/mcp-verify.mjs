@@ -186,7 +186,7 @@ function printUsage(output = process.stderr) {
       `                                      Source-checkout dogfood verify with explicit args.\n` +
       `  pnpm cli:mcp-verify -- --help     Source-checkout shortcut for this help from the repo root.\n` +
       `  pnpm test:mcp:verify              MCP verify helper contract without the full integration suite.\n` +
-      `  pnpm test:mcp:verify:first-contact Narrow first-contact health-summary/read/sample-shape helper gates.\n` +
+      `  pnpm test:mcp:verify:first-contact Narrow first-contact health-summary/advisory/read/sample-shape helper gates.\n` +
       `  pnpm test:mcp:verify:timeout       Narrow MCP verify timeout/startup/help diagnostics.\n`,
   );
 }

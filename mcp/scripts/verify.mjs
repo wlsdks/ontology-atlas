@@ -2345,7 +2345,7 @@ export function verifyUsage() {
     'Focused checks:\n' +
     '  pnpm test:mcp:verify            MCP verify helper contract without the full integration suite.\n' +
     '  pnpm test:mcp:verify:first-contact\n' +
-    '                                  Narrow first-contact health-summary/read/sample-shape helper gates.\n' +
+    '                                  Narrow first-contact health-summary/advisory/read/sample-shape helper gates.\n' +
     '  pnpm test:mcp:verify:timeout    Narrow MCP verify timeout/startup/help diagnostics.\n'
   );
 }
