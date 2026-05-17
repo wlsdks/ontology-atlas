@@ -7,6 +7,7 @@ import {
   parseBoundedPositiveIntegerFlag,
   parseNonNegativeIntegerFlag,
   parsePositiveIntegerFlag,
+  parseRawRequiredFlagValue,
   parseRequiredFlagValue,
   parseVaultFlag,
   resolveExclusiveVaultArg,
@@ -132,5 +133,12 @@ describe('cli vault and positional argument parsers', () => {
     assert.equal(parseRequiredFlagValue('--from', ' node '), 'node');
     assert.equal(errorMessage(parseRequiredFlagValue('--from', '')), '--from requires a value');
     assert.equal(errorMessage(parseRequiredFlagValue('--from', '--to')), '--from requires a value');
+  });
+
+  it('keeps raw required values available for commands that validate whitespace later', () => {
+    assert.equal(parseRawRequiredFlagValue('--title', ' node '), ' node ');
+    assert.equal(parseRawRequiredFlagValue('--body', ''), '');
+    assert.equal(errorMessage(parseRawRequiredFlagValue('--body', undefined)), '--body requires a value');
+    assert.equal(errorMessage(parseRawRequiredFlagValue('--body', '--vault')), '--body requires a value');
   });
 });

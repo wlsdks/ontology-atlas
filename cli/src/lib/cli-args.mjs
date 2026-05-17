@@ -86,6 +86,13 @@ export function parseRequiredFlagValue(flag, value) {
   return text;
 }
 
+export function parseRawRequiredFlagValue(flag, value) {
+  if (value === undefined) return new Error(`${flag} requires a value`);
+  const text = String(value);
+  if (text.startsWith('--')) return new Error(`${flag} requires a value`);
+  return text;
+}
+
 export function formatUnknownFlagError(flag, allowedFlags = []) {
   const suggestion = closestAllowedFlag(flag, allowedFlags);
   const suggestionText = suggestion ? ` Did you mean ${suggestion}?` : '';

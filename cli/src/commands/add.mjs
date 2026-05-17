@@ -7,7 +7,7 @@ import {
   folderForKind,
   missingExpectedFields,
 } from '../lib/schema.mjs';
-import { formatUnknownFlagError, parseVaultFlag } from '../lib/cli-args.mjs';
+import { formatUnknownFlagError, parseRawRequiredFlagValue, parseVaultFlag } from '../lib/cli-args.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--title', '--domain', '--body', '--auto-prefix', '--raw-slug', '--no-auto-prefix'];
 
@@ -104,12 +104,12 @@ function parseArgs(args) {
     const a = args[i];
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
-    else if (a === '--title') flags.title = parseRawFlagValue('--title', args[++i]);
-    else if (a.startsWith('--title=')) flags.title = parseRawFlagValue('--title', a.slice('--title='.length));
-    else if (a === '--domain') flags.domain = parseRawFlagValue('--domain', args[++i]);
-    else if (a.startsWith('--domain=')) flags.domain = parseRawFlagValue('--domain', a.slice('--domain='.length));
-    else if (a === '--body') flags.body = parseBodyFlagValue('--body', args[++i]);
-    else if (a.startsWith('--body=')) flags.body = parseBodyFlagValue('--body', a.slice('--body='.length));
+    else if (a === '--title') flags.title = parseRawRequiredFlagValue('--title', args[++i]);
+    else if (a.startsWith('--title=')) flags.title = parseRawRequiredFlagValue('--title', a.slice('--title='.length));
+    else if (a === '--domain') flags.domain = parseRawRequiredFlagValue('--domain', args[++i]);
+    else if (a.startsWith('--domain=')) flags.domain = parseRawRequiredFlagValue('--domain', a.slice('--domain='.length));
+    else if (a === '--body') flags.body = parseRawRequiredFlagValue('--body', args[++i]);
+    else if (a.startsWith('--body=')) flags.body = parseRawRequiredFlagValue('--body', a.slice('--body='.length));
     else if (a === '--auto-prefix') flags.autoPrefix = true;
     else if (a === '--raw-slug' || a === '--no-auto-prefix') flags.autoPrefix = false;
     else if (a.startsWith('--')) {
@@ -151,20 +151,6 @@ function parseArgs(args) {
     vault: flags.vault || '.',
     autoPrefix: flags.autoPrefix,
   };
-}
-
-function parseRawFlagValue(flag, value) {
-  if (value === undefined) return new Error(`${flag} requires a value`);
-  const text = String(value);
-  if (text.startsWith('--')) return new Error(`${flag} requires a value`);
-  return text;
-}
-
-function parseBodyFlagValue(flag, value) {
-  if (value === undefined) return new Error(`${flag} requires a value`);
-  const text = String(value);
-  if (text.startsWith('--')) return new Error(`${flag} requires a value`);
-  return text;
 }
 
 function validateCleanString(value, name) {
