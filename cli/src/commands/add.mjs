@@ -105,10 +105,10 @@ function parseArgs(args) {
     const a = args[i];
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
-    else if (a === '--title') flags.title = parseRawRequiredFlagValue('--title', args[++i]);
-    else if (a.startsWith('--title=')) flags.title = parseRawRequiredFlagValue('--title', a.slice('--title='.length));
-    else if (a === '--domain') flags.domain = parseRawRequiredFlagValue('--domain', args[++i]);
-    else if (a.startsWith('--domain=')) flags.domain = parseRawRequiredFlagValue('--domain', a.slice('--domain='.length));
+    else if (a === '--title') flags.title = parseRawRequiredFlagValue('--title', args[++i], { rejectSingleDash: true });
+    else if (a.startsWith('--title=')) flags.title = parseRawRequiredFlagValue('--title', a.slice('--title='.length), { rejectSingleDash: true });
+    else if (a === '--domain') flags.domain = parseRawRequiredFlagValue('--domain', args[++i], { rejectSingleDash: true });
+    else if (a.startsWith('--domain=')) flags.domain = parseRawRequiredFlagValue('--domain', a.slice('--domain='.length), { rejectSingleDash: true });
     else if (a === '--body') flags.body = parseRawRequiredFlagValue('--body', args[++i]);
     else if (a.startsWith('--body=')) flags.body = parseRawRequiredFlagValue('--body', a.slice('--body='.length));
     else if (a === '--auto-prefix') flags.autoPrefix = true;

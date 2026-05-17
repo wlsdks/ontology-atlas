@@ -164,8 +164,13 @@ describe('cli vault and positional argument parsers', () => {
 
   it('keeps raw required values available for commands that validate whitespace later', () => {
     assert.equal(parseRawRequiredFlagValue('--title', ' node '), ' node ');
+    assert.equal(parseRawRequiredFlagValue('--body', '- bullet'), '- bullet');
     assert.equal(parseRawRequiredFlagValue('--body', ''), '');
     assert.equal(errorMessage(parseRawRequiredFlagValue('--body', undefined)), '--body requires a value');
     assert.equal(errorMessage(parseRawRequiredFlagValue('--body', '--vault')), '--body requires a value');
+    assert.equal(
+      errorMessage(parseRawRequiredFlagValue('--title', '-vault', { rejectSingleDash: true })),
+      '--title requires a value',
+    );
   });
 });

@@ -1016,6 +1016,16 @@ await test('local/frontmatter commands — reject invalid vault and value argume
       stderr: /--title requires a value/,
     },
     {
+      args: ['add', 'capability', 'foo', '--title', '-vault'],
+      expectedCode: 1,
+      stderr: /--title requires a value/,
+    },
+    {
+      args: ['add', 'capability', 'foo', '--title', 'Foo', '--domain', '-json'],
+      expectedCode: 1,
+      stderr: /--domain requires a value/,
+    },
+    {
       args: ['add', 'capability', 'foo', 'extra', '--title', 'Foo'],
       expectedCode: 1,
       stderr: /too many arguments: extra/,
@@ -1095,6 +1105,20 @@ await test('add — --body= 명시 빈 문자열은 기본 본문으로 대체�
 
     const paddedText = readFileSync(join(root, 'padded-body.md'), 'utf-8');
     assert.match(paddedText, /---\n\n  keep padding  $/);
+
+    const dashBody = await run([
+      'add',
+      'document',
+      'dash-body',
+      '--title',
+      'Dash Body',
+      '--body',
+      '- keep dash',
+      '--vault',
+      root,
+    ]);
+    assert.equal(dashBody.code, 0, `stdout: ${dashBody.stdout}\nstderr: ${dashBody.stderr}`);
+    assert.match(readFileSync(join(root, 'dash-body.md'), 'utf-8'), /---\n\n- keep dash$/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

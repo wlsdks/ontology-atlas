@@ -86,10 +86,11 @@ export function parseRequiredFlagValue(flag, value) {
   return text;
 }
 
-export function parseRawRequiredFlagValue(flag, value) {
+export function parseRawRequiredFlagValue(flag, value, { rejectSingleDash = false } = {}) {
   if (value === undefined) return new Error(`${flag} requires a value`);
   const text = String(value);
   if (text.startsWith('--')) return new Error(`${flag} requires a value`);
+  if (rejectSingleDash && text.startsWith('-')) return new Error(`${flag} requires a value`);
   return text;
 }
 

@@ -1290,6 +1290,8 @@ describe('package contract helpers', () => {
     assert.match(listRow, /`--kind=capabilty`/);
     assert.match(listRow, /closest-value hint/);
     assert.match(addRow, /`kind` 는 enum-validated closest-value hint/);
+    assert.match(addRow, /`--title -vault` \/ `--domain -json` 같은 flag-looking scalar/);
+    assert.match(addRow, /dash-leading body text 는 보존/);
     assert.match(findRow, /enum-validated `--kind --json`/);
     assert.match(findRow, /`--kind=capabilty`/);
     assert.match(findRow, /closest-value hint/);
