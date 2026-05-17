@@ -1007,6 +1007,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /workspace_brief_tuned — \.\*next actions, \.\*health checks/);
     assert.match(smoke, /health_tuned — \.\*compile_issues:\(pass\|warn\)/);
     assert.match(smoke, /health_tuned — \.\*checks/);
+    assert.match(smoke, /compile_ontology page — 1\\\/5 nodes, 1\\\/\\d\+ edges/);
     assert.match(smoke, /strict arguments — unknown tool argument rejected at runtime/);
     assert.match(smoke, /strict arguments — multiple unknown tool arguments reported together/);
     assert.match(smoke, /add_concepts — non-object and unknown-field rows isolated at row level/);
@@ -1037,6 +1038,8 @@ describe('package contract helpers', () => {
     assert.ok(smoke.includes('directMcpVerifyVaultFlag.stdout, /maintenance cursor'));
     assert.match(smoke, /project_scope — skipped \\\(no project node in vault\\\)/);
     assert.match(smoke, /path — elements\\\/example → project \\\(1 hop, 1 edge\\\)/);
+    assert.ok(smoke.includes('directMcpVerify.stdout, /compile_ontology page'));
+    assert.ok(smoke.includes('directMcpVerifyVaultFlag.stdout, /compile_ontology page'));
     assert.match(smoke, /path — domains\\\/core → domains\\\/core \\\(0 hops, 0 edges\\\)/);
     assert.match(smoke, /neighbors\\\/path — skipped \\\(vault has no nodes\\\)/);
     assert.match(smokeSection, /cycles --json/);
@@ -1085,6 +1088,7 @@ describe('package contract helpers', () => {
     assert.match(regressionSection, /`pnpm integration:cli:mcp-verify`/);
     assert.match(regressionSection, /direct read smoke set\(`get_concept` \/ `get_concepts` \/ `find_evidence`/);
     assert.match(regressionSection, /limited `query_concepts` \/ `analyze_repo_structure` \/ `infer_imports` \/ `find_neighbors`/);
+    assert.match(regressionSection, /paginated `compile_ontology` full-artifact smoke/);
     assert.match(regressionSection, /`mcp-verify --help` graph-query smoke \/ direct read smoke set\(`get_concept`, `get_concepts`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`, `find_path` 포함\)/);
     assert.match(regressionSection, /write-tool post-write guidance/);
     assert.match(regressionSection, /maintenance filter enum/);

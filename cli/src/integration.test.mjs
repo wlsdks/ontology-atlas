@@ -249,6 +249,7 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, /compile_issues:warn/);
     assert.match(clean, /health/);
     assert.match(clean, /compile_ontology/);
+    assert.match(clean, /compile_ontology page — 1\/5 nodes, 1\/\d+ edges/);
     assert.match(clean, /overview/);
     assert.match(clean, /overview query_plan/);
     assert.match(clean, /project_map query_plan/);

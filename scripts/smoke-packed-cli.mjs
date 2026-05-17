@@ -273,6 +273,7 @@ try {
   assert.match(cliMcpVerify.stdout, /health_tuned — .*checks/);
   assert.match(cliMcpVerify.stdout, /health_tuned — .*compile_issues:(pass|warn)/);
   assert.match(cliMcpVerify.stdout, /compile_ontology/);
+  assert.match(cliMcpVerify.stdout, /compile_ontology page — 1\/5 nodes, 1\/\d+ edges/);
   assert.match(cliMcpVerify.stdout, /overview/);
   assert.match(cliMcpVerify.stdout, /overview query_plan/);
   assert.match(cliMcpVerify.stdout, /project_map query_plan/);
@@ -408,6 +409,7 @@ try {
   assert.match(mcpVerify.stdout, /health_tuned — .*checks/);
   assert.match(mcpVerify.stdout, /health_tuned — .*compile_issues:(pass|warn)/);
   assert.match(mcpVerify.stdout, /compile_ontology/);
+  assert.match(mcpVerify.stdout, /compile_ontology page — 1\/5 nodes, 1\/\d+ edges/);
   assert.match(mcpVerify.stdout, /overview/);
   assert.match(mcpVerify.stdout, /overview query_plan/);
   assert.match(mcpVerify.stdout, /project_map query_plan/);
@@ -441,6 +443,7 @@ try {
   assert.match(directMcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
   assert.match(directMcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
   assert.match(directMcpVerify.stdout, /health_tuned — .*checks/);
+  assert.match(directMcpVerify.stdout, /compile_ontology page — 1\/5 nodes, 1\/\d+ edges/);
   assert.match(directMcpVerify.stdout, /strict arguments — multiple unknown tool arguments reported together/);
   assert.match(directMcpVerify.stdout, /add_concepts — non-object and unknown-field rows isolated at row level/);
   assert.match(directMcpVerify.stdout, /add_relations — non-object and unknown-field rows isolated at row level/);
@@ -493,6 +496,7 @@ try {
   assert.match(directMcpVerifyVaultFlag.stdout, /timeout=1000ms/);
   assert.match(directMcpVerifyVaultFlag.stdout, /vault total 5 nodes/);
   assert.match(directMcpVerifyVaultFlag.stdout, /project probe — 1 project node/);
+  assert.match(directMcpVerifyVaultFlag.stdout, /compile_ontology page — 1\/5 nodes, 1\/\d+ edges/);
   assert.match(directMcpVerifyVaultFlag.stdout, /add_concepts — non-object and unknown-field rows isolated at row level/);
   assert.match(directMcpVerifyVaultFlag.stdout, /add_relations — non-object and unknown-field rows isolated at row level/);
   assert.match(directMcpVerifyVaultFlag.stdout, /maintenance cursor — missing afterActionId reported/);
