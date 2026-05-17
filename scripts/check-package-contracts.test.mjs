@@ -322,7 +322,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm test:mcp:suggestions/);
     assert.match(section, /pnpm test:mcp:verify/);
     assert.match(section, /pnpm test:mcp:verify:timeout/);
-    assert.match(readme, /Invalid timeout values fail before the server\s+starts and print the received value plus a concrete retry example/);
+    assert.match(readme, /invalid timeout values fail before the server\s+starts and print\s+the received value plus a concrete retry example/i);
     assert.match(readme, /`npm run verify -- --timeout-ms 15000`/);
     assert.match(section, /first-contact read-only MCP flow/);
     assert.match(section, /documentation drift/);
@@ -406,6 +406,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ path — elements\/file-system-access-api → project \(2 hops, 2 edges\)/);
     assert.doesNotMatch(verifySection, /✓ path — project → project/);
     assert.match(verifySection, new RegExp(`✓ project_scope — project \\(${scopedNodes} nodes, internalEdges`));
+    assert.match(verifySection, /✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
     assert.match(verifySection, /✓ structuredContent — direct 16\/16, write 5\/5, maintenance 2\/2, graph 11\/11/);
     assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,\s+`query_concepts`, limited `query_concepts`, `analyze_repo_structure`,\s+`infer_imports`, `find_neighbors`, `find_path`, `find_orphans`,\s+`list_kinds`, `validate_vault`/);
     assert.match(verifySection, /batch success rows\s+and partial rows are verified during installation checks/);
@@ -450,7 +451,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`rename_concept\.overwrite`/);
     assert.match(verifySection, /`delete_concept\.force`/);
     assert.match(verifySection, /batch row isolation for non-object row shape and\s+unknown row field inputs/);
-    assert.match(verifySection, /destructive dry-runs verify `rename_concept` \/ `merge_concepts` \/ `delete_concept` previews with no `changed` or `postWriteMaintenance`/);
+    assert.match(verifySection, /Destructive dry-run smoke calls `rename_concept`, `merge_concepts`, and\s+`delete_concept` against live vault slugs without writing/);
+    assert.match(verifySection, /preview includes `changed` or `postWriteMaintenance`/);
     assert.match(verifySection, /row-level `ok:false`\s+results instead of a top-level tool error/);
     assert.match(verifySection, /`initialize\.instructions` gate fails/);
     assert.match(verifySection, /read-only diagnosis flow/);
@@ -516,7 +518,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /supports `--timeout-ms` or `OMOT_VERIFY_TIMEOUT_MS`/);
     assert.match(verifySection, /suggest increasing `--timeout-ms` or `OMOT_VERIFY_TIMEOUT_MS`/);
     assert.match(verifySection, /Real timeout failures suggest the same\s+retry shape/);
-    assert.match(verifySection, /Invalid timeout values fail before the server\s+starts and print the received value plus a concrete retry example/);
+    assert.match(verifySection, /invalid timeout values fail before the server\s+starts and print\s+the received value plus a concrete retry example/i);
     assert.match(verifySection, /`npm run verify -- --timeout-ms 15000`/);
     assert.match(verifySection, /validates the installed `tools\/list` schema contract/);
     assert.match(verifySection, /`query_ontology\.operation` must stay required/);

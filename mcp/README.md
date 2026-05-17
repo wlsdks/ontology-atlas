@@ -243,7 +243,7 @@ A successful run looks like this:
 [oh-my-ontology-mcp verify]
 · step 1 — parser smoke test
 ✓ result: 7 passed, 0 failed
-· step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans/list_kinds (vault=../docs/ontology, timeout=8000ms)
+· step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=../docs/ontology, timeout=8000ms)
 ✓ initialize OK — server oh-my-ontology-mcp@0.12.0
 ✓ initialize instructions — first-contact safety guidance present
 ✓ tools/list 23/23 (15 read + 8 write) — add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
@@ -252,8 +252,10 @@ A successful run looks like this:
 ✓ strict arguments — multiple unknown tool arguments reported together
 ✓ add_concepts — non-object and unknown-field rows isolated at row level
 ✓ add_relations — non-object and unknown-field rows isolated at row level
+✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance
 ✓ strict enums — invalid query operation rejected with closest-value hint
 ✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain)
+✓ strict relation filters — invalid dependencyTypes rejected with closest-value hint
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
 ✓ maintenance cursor — ready page stable (0 remaining actions; phase none; severity none; kind none; executable none; review none)
 ✓ list_concepts — vault total 28 nodes (vaultRoot /path/to/docs/ontology)
@@ -285,7 +287,7 @@ A successful run looks like this:
 ✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ project_scope — project (27 nodes, internalEdges 92)
-✓ structuredContent — direct 16/16, write 2/2, maintenance 2/2, graph 11/11
+✓ structuredContent — direct 16/16, write 5/5, maintenance 2/2, graph 11/11
 
 All passed — register .mcp.json with Claude Code and restart to use the 23 tools.
 ```
@@ -312,12 +314,15 @@ plus actual `query_ontology({operation:"neighbors"})`,
 The indexed compile smoke verifies index shape, count alignment, edge membership,
 known-slug references, and resolved/external/unresolved edge breakdowns.
 It also requires every exercised direct read, write row-isolation smoke,
-maintenance cursor, and
+destructive dry-run smoke, maintenance cursor, and
 `query_ontology` graph-query response to include `structuredContent`, and
 compares that payload with the text JSON payload, so agents can consume MCP
 results without reparsing text. Successful verify output summarizes the
 direct-read, write, maintenance-cursor, and graph-query `structuredContent` coverage
 that was enforced in the run.
+Destructive dry-run smoke calls `rename_concept`, `merge_concepts`, and
+`delete_concept` against live vault slugs without writing, and fails if the
+preview includes `changed` or `postWriteMaintenance`.
 The `tools/list` gate also checks that every tool rejects unknown arguments via
 `additionalProperties:false`, that every tool exposes the expected
 `annotations.title` display name, `annotations.readOnlyHint` read/write split,
