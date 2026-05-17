@@ -374,6 +374,35 @@ export function toolsListSchemaFailure(tools) {
 
   const findNeighborsTool = tools.find((tool) => tool?.name === 'find_neighbors');
   if (!findNeighborsTool) return 'tools/list response missing find_neighbors tool';
+  const neighborsDirectionSchema = propertyAt(findNeighborsTool, ['properties', 'direction']);
+  if (!sameArray(neighborsDirectionSchema?.enum, ['outgoing', 'incoming', 'both']) || !/Defaults to both/i.test(neighborsDirectionSchema?.description ?? '')) {
+    return 'find_neighbors inputSchema direction default description drift';
+  }
+  const neighborsTypesInputSchema = propertyAt(findNeighborsTool, ['properties', 'types']);
+  if (
+    neighborsTypesInputSchema?.type !== 'array' ||
+    neighborsTypesInputSchema.items?.type !== 'string' ||
+    !/Public add_relation types are normalized to stored graph keys/i.test(neighborsTypesInputSchema?.description ?? '')
+  ) {
+    return 'find_neighbors inputSchema types alias guidance drift';
+  }
+  const neighborsIncludeNodesSchema = propertyAt(findNeighborsTool, ['properties', 'includeNodes']);
+  if (
+    neighborsIncludeNodesSchema?.type !== 'boolean' ||
+    !/true \(default\)|default.*true/i.test(neighborsIncludeNodesSchema?.description ?? '')
+  ) {
+    return 'find_neighbors inputSchema includeNodes default description drift';
+  }
+  const neighborsLimitInputSchema = propertyAt(findNeighborsTool, ['properties', 'limit']);
+  if (
+    neighborsLimitInputSchema?.type !== 'integer' ||
+    neighborsLimitInputSchema.minimum !== 1 ||
+    neighborsLimitInputSchema.maximum !== 500 ||
+    !/Defaults to 100/i.test(neighborsLimitInputSchema?.description ?? '') ||
+    !/max 500/i.test(neighborsLimitInputSchema?.description ?? '')
+  ) {
+    return 'find_neighbors inputSchema limit default description drift';
+  }
   if (findNeighborsTool.outputSchema?.type !== 'object') {
     return 'find_neighbors outputSchema root drift';
   }

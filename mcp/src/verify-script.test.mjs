@@ -858,7 +858,35 @@ describe('verify.mjs first-contact gates', () => {
       },
       {
         name: 'find_neighbors',
-        inputSchema: { additionalProperties: false, required: ['slug'], properties: {} },
+        inputSchema: {
+          additionalProperties: false,
+          required: ['slug'],
+          properties: {
+            slug: { type: 'string' },
+            direction: {
+              type: 'string',
+              enum: ['outgoing', 'incoming', 'both'],
+              description: 'Edge direction to include. Defaults to both.',
+            },
+            types: {
+              type: 'array',
+              items: { type: 'string' },
+              description:
+                'Optional relation types/frontmatter keys to include, e.g. ["domain", "depends_on", "contains"]. Public add_relation types are normalized to stored graph keys.',
+            },
+            includeNodes: {
+              type: 'boolean',
+              description:
+                'When true (default), include neighbor node summaries for resolved edges.',
+            },
+            limit: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 500,
+              description: 'Positive integer max edges to return. Defaults to 100, max 500.',
+            },
+          },
+        },
         outputSchema: {
           type: 'object',
           required: ['center', 'requested', 'direction', 'totalEdges', 'limited', 'edges'],
@@ -943,6 +971,11 @@ describe('verify.mjs first-contact gates', () => {
       queryTool,
     ];
     const queryOntologyTool = tools.find((tool) => tool.name === 'query_ontology');
+    const findNeighborsTool = tools.find((tool) => tool.name === 'find_neighbors');
+    const withFindNeighborsTool = (tool) => [
+      ...tools.filter((candidate) => candidate.name !== 'find_neighbors'),
+      tool,
+    ];
 
     assert.equal(toolsListSchemaFailure(tools), null);
     assert.equal(toolsListSchemaFailure(null), 'tools/list response missing tools array');
@@ -1754,6 +1787,82 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'find_neighbors outputSchema node mtime drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withFindNeighborsTool(
+        {
+          ...findNeighborsTool,
+          inputSchema: {
+            ...findNeighborsTool.inputSchema,
+            properties: {
+              ...findNeighborsTool.inputSchema.properties,
+              direction: {
+                type: 'string',
+                enum: ['outgoing', 'incoming', 'both'],
+                description: 'Edge direction to include.',
+              },
+            },
+          },
+        },
+      )),
+      'find_neighbors inputSchema direction default description drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withFindNeighborsTool(
+        {
+          ...findNeighborsTool,
+          inputSchema: {
+            ...findNeighborsTool.inputSchema,
+            properties: {
+              ...findNeighborsTool.inputSchema.properties,
+              types: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Optional relation types/frontmatter keys to include.',
+              },
+            },
+          },
+        },
+      )),
+      'find_neighbors inputSchema types alias guidance drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withFindNeighborsTool(
+        {
+          ...findNeighborsTool,
+          inputSchema: {
+            ...findNeighborsTool.inputSchema,
+            properties: {
+              ...findNeighborsTool.inputSchema.properties,
+              includeNodes: {
+                type: 'boolean',
+                description: 'Include neighbor node summaries for resolved edges.',
+              },
+            },
+          },
+        },
+      )),
+      'find_neighbors inputSchema includeNodes default description drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withFindNeighborsTool(
+        {
+          ...findNeighborsTool,
+          inputSchema: {
+            ...findNeighborsTool.inputSchema,
+            properties: {
+              ...findNeighborsTool.inputSchema.properties,
+              limit: {
+                type: 'integer',
+                minimum: 1,
+                maximum: 500,
+                description: 'Positive integer max edges to return.',
+              },
+            },
+          },
+        },
+      )),
+      'find_neighbors inputSchema limit default description drift',
     );
     assert.equal(
       toolsListSchemaFailure([

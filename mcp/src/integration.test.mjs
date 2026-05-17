@@ -629,6 +629,26 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       { type: "integer", minimum: 1, maximum: 500 },
       "find_neighbors exposes bounded integer limit schema",
     );
+    assert.match(
+      findTool("find_neighbors")?.inputSchema?.properties?.direction?.description ?? "",
+      /Defaults to both/,
+      "find_neighbors direction schema documents the default",
+    );
+    assert.match(
+      findTool("find_neighbors")?.inputSchema?.properties?.types?.description ?? "",
+      /Public add_relation types are normalized to stored graph keys/,
+      "find_neighbors types schema documents public alias normalization",
+    );
+    assert.match(
+      findTool("find_neighbors")?.inputSchema?.properties?.includeNodes?.description ?? "",
+      /true \(default\)|default.*true/i,
+      "find_neighbors includeNodes schema documents the default",
+    );
+    assert.match(
+      findTool("find_neighbors")?.inputSchema?.properties?.limit?.description ?? "",
+      /Defaults to 100, max 500/,
+      "find_neighbors limit schema documents default and cap",
+    );
     assert.deepEqual(
       {
         type: findTool("find_path")?.inputSchema?.properties?.maxHops?.type,
