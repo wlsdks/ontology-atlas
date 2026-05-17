@@ -726,6 +726,25 @@ export function toolsListSchemaFailure(tools) {
 
   const analyzeTool = tools.find((tool) => tool?.name === 'analyze_repo_structure');
   if (!analyzeTool) return 'tools/list response missing analyze_repo_structure tool';
+  if (
+    !/analyze a code repository and propose ontology node candidates/i.test(analyzeTool.description || '') ||
+    !/side effect 0 \(vault frontmatter NOT modified\)/i.test(analyzeTool.description || '') ||
+    !/Returns deterministic candidates/i.test(analyzeTool.description || '') ||
+    !/should review and selectively pass to add_concept/i.test(analyzeTool.description || '') ||
+    !/bootstrap the ontology/i.test(analyzeTool.description || '') ||
+    !/Single source of truth preserved/i.test(analyzeTool.description || '')
+  ) {
+    return 'analyze_repo_structure description missing bootstrap safety guidance';
+  }
+  const analyzeRootPathSchema = propertyAt(analyzeTool, ['properties', 'rootPath']);
+  if (
+    analyzeRootPathSchema?.type !== 'string' ||
+    analyzeRootPathSchema.minLength !== 1 ||
+    !/Repository root to analyze/i.test(analyzeRootPathSchema.description || '') ||
+    !/Defaults to the MCP server cwd/i.test(analyzeRootPathSchema.description || '')
+  ) {
+    return 'analyze_repo_structure rootPath schema guidance drift';
+  }
   if (analyzeTool.outputSchema?.type !== 'object') {
     return 'analyze_repo_structure outputSchema root drift';
   }

@@ -667,10 +667,16 @@ describe('verify.mjs first-contact gates', () => {
       },
       {
         name: 'analyze_repo_structure',
+        description:
+          'R16 (autonomous ingest base) — analyze a code repository and propose ontology node candidates. side effect 0 (vault frontmatter NOT modified). Returns deterministic candidates the agent should review and selectively pass to add_concept. Use this once when a user asks "bootstrap the ontology". Single source of truth preserved — only the user writes to the vault.',
         inputSchema: {
           additionalProperties: false,
           properties: {
-            rootPath: { type: 'string' },
+            rootPath: {
+              type: 'string',
+              minLength: 1,
+              description: 'Repository root to analyze. Defaults to the MCP server cwd.',
+            },
             maxDepth: { type: 'integer', minimum: 0, maximum: 10 },
           },
         },
@@ -1113,6 +1119,11 @@ describe('verify.mjs first-contact gates', () => {
     const compileOntologyTool = tools.find((tool) => tool.name === 'compile_ontology');
     const withCompileOntologyTool = (tool) => [
       ...tools.filter((candidate) => candidate.name !== 'compile_ontology'),
+      tool,
+    ];
+    const analyzeRepoTool = tools.find((tool) => tool.name === 'analyze_repo_structure');
+    const withAnalyzeRepoTool = (tool) => [
+      ...tools.filter((candidate) => candidate.name !== 'analyze_repo_structure'),
       tool,
     ];
     const listConceptsTool = tools.find((tool) => tool.name === 'list_concepts');
@@ -1752,6 +1763,30 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'analyze_repo_structure outputSchema framework drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withAnalyzeRepoTool({
+        ...analyzeRepoTool,
+        description: 'Analyze repository.',
+      })),
+      'analyze_repo_structure description missing bootstrap safety guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withAnalyzeRepoTool({
+        ...analyzeRepoTool,
+        inputSchema: {
+          ...analyzeRepoTool.inputSchema,
+          properties: {
+            ...analyzeRepoTool.inputSchema.properties,
+            rootPath: {
+              type: 'string',
+              minLength: 1,
+              description: 'Repository root.',
+            },
+          },
+        },
+      })),
+      'analyze_repo_structure rootPath schema guidance drift',
     );
     assert.equal(
       toolsListSchemaFailure([

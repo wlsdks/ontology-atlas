@@ -438,6 +438,16 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(compileOntology?.outputSchema?.properties?.nodeCount?.type, "integer");
     assert.equal(compileOntology?.outputSchema?.properties?.byKind?.additionalProperties?.type, "integer");
     const analyzeRepo = findTool("analyze_repo_structure");
+    assert.match(
+      analyzeRepo?.description ?? "",
+      /analyze a code repository and propose ontology node candidates[\s\S]*side effect 0 \(vault frontmatter NOT modified\)[\s\S]*Returns deterministic candidates[\s\S]*selectively pass to add_concept[\s\S]*bootstrap the ontology[\s\S]*Single source of truth preserved/i,
+      "analyze_repo_structure description documents bootstrap safety workflow",
+    );
+    assert.match(
+      analyzeRepo?.inputSchema?.properties?.rootPath?.description ?? "",
+      /Repository root to analyze[\s\S]*Defaults to the MCP server cwd/i,
+      "analyze_repo_structure rootPath schema documents default root",
+    );
     assert.equal(analyzeRepo?.outputSchema?.type, "object");
     assert.deepEqual(analyzeRepo?.outputSchema?.required, ["rootPath", "framework", "domains", "capabilities", "elements", "suggestedRelations", "skipped"]);
     assert.deepEqual(analyzeRepo?.outputSchema?.properties?.framework?.enum, ["fsd", "next", "generic"]);
