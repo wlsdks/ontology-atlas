@@ -498,6 +498,23 @@ await test('compile — rejects zero pagination limits', async () => {
   }
 });
 
+await test('compile — rejects pagination limits above MCP page cap', async () => {
+  const root = withVault([
+    { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },
+  ]);
+  try {
+    const nodes = await run(['compile', root, '--nodes-limit=501']);
+    assert.equal(nodes.code, 1);
+    assert.match(stripAnsi(nodes.stderr), /--nodes-limit must be <= 500/);
+
+    const edges = await run(['compile', root, '--edges-limit', '501']);
+    assert.equal(edges.code, 1);
+    assert.match(stripAnsi(edges.stderr), /--edges-limit must be <= 500/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('compile — rejects fractional pagination values', async () => {
   const root = withVault([
     { slug: 'a', content: '---\nkind: capability\ntitle: A\n---\n' },

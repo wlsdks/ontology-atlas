@@ -6,11 +6,13 @@ import { callMcpTool } from '../lib/mcp-call.mjs';
 import { compileResultExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
+  parseBoundedPositiveIntegerFlag,
   parseNonNegativeIntegerFlag,
-  parsePositiveIntegerFlag,
   parseVaultFlag,
   resolveExclusiveVaultArg,
 } from '../lib/cli-args.mjs';
+
+const PAGE_LIMIT_CAP = 500;
 
 const COLORS = {
   green: '\x1b[32m',
@@ -214,12 +216,12 @@ function parseArgs(args) {
     else if (a === '--summary') flags.summary = true;
     else if (a === '--indexes') flags.includeIndexes = true;
     else if (a === '--fix') flags.fix = true;
-    else if (a === '--nodes-limit') flags.nodesLimit = parsePositiveIntegerFlag(a, args[++i]);
-    else if (a.startsWith('--nodes-limit=')) flags.nodesLimit = parsePositiveIntegerFlag('--nodes-limit', a.slice('--nodes-limit='.length));
+    else if (a === '--nodes-limit') flags.nodesLimit = parseBoundedPositiveIntegerFlag(a, args[++i], { max: PAGE_LIMIT_CAP });
+    else if (a.startsWith('--nodes-limit=')) flags.nodesLimit = parseBoundedPositiveIntegerFlag('--nodes-limit', a.slice('--nodes-limit='.length), { max: PAGE_LIMIT_CAP });
     else if (a === '--nodes-offset') flags.nodesOffset = parseNonNegativeIntegerFlag(a, args[++i]);
     else if (a.startsWith('--nodes-offset=')) flags.nodesOffset = parseNonNegativeIntegerFlag('--nodes-offset', a.slice('--nodes-offset='.length));
-    else if (a === '--edges-limit') flags.edgesLimit = parsePositiveIntegerFlag(a, args[++i]);
-    else if (a.startsWith('--edges-limit=')) flags.edgesLimit = parsePositiveIntegerFlag('--edges-limit', a.slice('--edges-limit='.length));
+    else if (a === '--edges-limit') flags.edgesLimit = parseBoundedPositiveIntegerFlag(a, args[++i], { max: PAGE_LIMIT_CAP });
+    else if (a.startsWith('--edges-limit=')) flags.edgesLimit = parseBoundedPositiveIntegerFlag('--edges-limit', a.slice('--edges-limit='.length), { max: PAGE_LIMIT_CAP });
     else if (a === '--edges-offset') flags.edgesOffset = parseNonNegativeIntegerFlag(a, args[++i]);
     else if (a.startsWith('--edges-offset=')) flags.edgesOffset = parseNonNegativeIntegerFlag('--edges-offset', a.slice('--edges-offset='.length));
     else if (a.startsWith('--')) return { error: `unknown flag: ${a}` };
@@ -246,9 +248,9 @@ function printUsage(stream = process.stderr) {
       `  --fix                 apply compiler canonicalizationActions via patch_concept\n` +
       `  --summary             counts + graphHash only\n` +
       `  --indexes             include adjacency indexes in JSON/full payload\n` +
-      `  --nodes-limit N       paginate sorted nodes\n` +
+      `  --nodes-limit N       paginate sorted nodes (max ${PAGE_LIMIT_CAP})\n` +
       `  --nodes-offset N      node page offset\n` +
-      `  --edges-limit N       paginate sorted edges\n` +
+      `  --edges-limit N       paginate sorted edges (max ${PAGE_LIMIT_CAP})\n` +
       `  --edges-offset N      edge page offset\n` +
       `  --json                machine-readable output\n`,
   );
