@@ -3261,6 +3261,10 @@ describe("rpc response completion helpers", () => {
       help: false,
       error: "dogfood:walk does not accept arguments: --vault, docs/ontology",
     });
+    assert.deepEqual(parseDogfoodArgs(["--hlep"]), {
+      help: false,
+      error: "dogfood:walk does not accept arguments: --hlep. Did you mean --help?",
+    });
   });
 
   it("derives response ids from requests with JSON-RPC ids", () => {

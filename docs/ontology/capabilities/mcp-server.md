@@ -565,7 +565,8 @@ MCP schema 에서 노출한다. `componentLimit`, `cycleLimit`, `recommendationL
 
 `pnpm dogfood:walk` 는 이 repo 의 `docs/ontology` 를 대상으로 실제 MCP stdio 호출을
 연속 실행한다. positional vault argument 는 받지 않고 이 repo 의 dogfood vault 만
-검증하므로 잘못된 인자는 MCP server 를 띄우기 전에 실패한다. `pnpm dogfood:walk -- --help`
+검증하므로 잘못된 인자는 MCP server 를 띄우기 전에 실패하고, `--hlep` 같은 help flag 오타는
+nearest hint 로 복구 경로를 보여준다. `pnpm dogfood:walk -- --help`
 는 MCP server 를 띄우지 않고 usage 와 focused check 경로를 출력해 dogfood 범위 확인 비용을 낮춘다.
 도움말의 `pnpm test:mcp:dogfood` 설명도 compile/index gate, tools/list inventory name / annotation coverage, row-label guidance,
 strict closest-value summary, vault warning / `validate_vault` problem gate, first-contact health/growth/sample-shape gate, maintenance work-queue shape / formatter, initialize safety/recovery guidance, destructive dry-run, structuredContent, strict relation filter, stderr warning 범위를 함께 보여줘 실행 전 검증 surface 를 숨기지 않는다. 기본 census / backlink / path 질의에 더해 `validate_vault`,
