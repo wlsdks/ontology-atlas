@@ -674,6 +674,7 @@ describe('package contract helpers', () => {
     assert.match(dogfoodSection, /설치 verify 의 `query_ontology\(path\)` smoke/);
     assert.match(dogfoodSection, /hop\/edge alignment/);
     assert.match(doc, /`query_ontology` graph-query 응답은 `structuredContent`\s+누락을 실패로 처리하고 text JSON payload 와 `structuredContent` payload 의\s+일치 여부도 비교/);
+    assert.match(doc, /설치 verify 도 first-contact direct read \/ `query_ontology` smoke \/\s+maintenance cursor 응답의 `structuredContent` 누락과 text JSON drift 를 같은\s+fail-closed 계약으로 검증/);
     assert.match(dogfoodSection, /project-node `list_concepts` probe/);
     assert.match(dogfoodSection, /project-node `list_concepts` probe 도 fail-closed/);
     assert.match(dogfoodSection, /`kind: project`/);

@@ -59,6 +59,7 @@ import {
   strictArgsFailure,
   strictEnumFailure,
   strictMaintenanceFilterFailure,
+  structuredContentFailure,
   toolsListSchemaFailure,
   validationCodeSummary,
   validateVaultFailure,
@@ -3497,6 +3498,26 @@ describe('verify.mjs first-contact gates', () => {
         { id: 'c', status: 'pass', count: 1 },
       ], 2),
       'a:pass:0, b:pass, +1 more',
+    );
+  });
+
+  it('fails missing or mismatched structuredContent in verify smoke responses', () => {
+    const parsed = { operation: 'overview', graph: { nodes: 1 } };
+    assert.equal(
+      structuredContentFailure({ result: {} }, parsed, 'overview'),
+      'overview structuredContent missing',
+    );
+    assert.equal(
+      structuredContentFailure({ result: { structuredContent: null } }, parsed, 'overview'),
+      'overview structuredContent missing',
+    );
+    assert.equal(
+      structuredContentFailure({ result: { structuredContent: { operation: 'overview', graph: { nodes: 2 } } } }, parsed, 'overview'),
+      'overview structuredContent mismatch',
+    );
+    assert.equal(
+      structuredContentFailure({ result: { structuredContent: parsed } }, parsed, 'overview'),
+      null,
     );
   });
 

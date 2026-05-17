@@ -1352,6 +1352,17 @@ export function initializeInstructionsFailure(response) {
   return null;
 }
 
+export function structuredContentFailure(response, parsed, label) {
+  const structured = response?.result?.structuredContent;
+  if (structured == null) {
+    return `${label} structuredContent missing`;
+  }
+  if (JSON.stringify(structured) !== JSON.stringify(parsed)) {
+    return `${label} structuredContent mismatch`;
+  }
+  return null;
+}
+
 export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [1, 'initialize'],
   [2, 'tools/list'],
@@ -2799,6 +2810,11 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
+        const structuredFailure = structuredContentFailure(maintenanceMissingCursorRes, parsed, 'maintenance cursor');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
         log('ok', `maintenance cursor — missing afterActionId reported (${parsed.cursor.reason}; ${maintenanceBucketOutputSummary(parsed)}; ${maintenanceNextActionOutputSummary(parsed)})`);
       } catch (err) {
         log('fail', `failed to parse maintenance missing-cursor response: ${err.message}`);
@@ -2815,6 +2831,11 @@ async function step2BootAndCall() {
         const failure = maintenanceReadyCursorFailure(parsed);
         if (failure) {
           log('fail', failure);
+          return res(false);
+        }
+        const structuredFailure = structuredContentFailure(maintenanceReadyCursorRes, parsed, 'maintenance cursor');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
           return res(false);
         }
         log('ok', `maintenance cursor — ready page stable (${formatCount(parsed.summary.remainingActions, 'remaining action')}; ${maintenanceBucketOutputSummary(parsed)}; ${maintenanceNextActionOutputSummary(parsed)})`);
@@ -2835,8 +2856,9 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
-        if (JSON.stringify(callRes.result.structuredContent) !== JSON.stringify(parsed)) {
-          log('fail', 'list_concepts structuredContent mismatch');
+        const structuredFailure = structuredContentFailure(callRes, parsed, 'list_concepts');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
           return res(false);
         }
         listPayload = parsed;
@@ -2862,8 +2884,9 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
-        if (JSON.stringify(getConceptsRes.result.structuredContent) !== JSON.stringify(parsed)) {
-          log('fail', 'get_concepts structuredContent mismatch');
+        const structuredFailure = structuredContentFailure(getConceptsRes, parsed, 'get_concepts');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
           return res(false);
         }
         const okRows = parsed.concepts.filter((row) => row?.ok === true).length;
@@ -2886,6 +2909,11 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
+        const structuredFailure = structuredContentFailure(orphansRes, parsed, 'find_orphans');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
         log('ok', `find_orphans — ${formatCount(parsed.total, 'orphan')} (root/sentinel defaults excluded)`);
       } catch (err) {
         log('fail', `failed to parse find_orphans response: ${err.message}`);
@@ -2904,8 +2932,9 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
-        if (JSON.stringify(kindsRes.result.structuredContent) !== JSON.stringify(parsed)) {
-          log('fail', 'list_kinds structuredContent mismatch');
+        const structuredFailure = structuredContentFailure(kindsRes, parsed, 'list_kinds');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
           return res(false);
         }
         kindsPayload = parsed;
@@ -2931,8 +2960,9 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
-        if (JSON.stringify(validateRes.result.structuredContent) !== JSON.stringify(parsed)) {
-          log('fail', 'validate_vault structuredContent mismatch');
+        const structuredFailure = structuredContentFailure(validateRes, parsed, 'validate_vault');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
           return res(false);
         }
         validationPayload = parsed;
@@ -2961,6 +2991,11 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
+        const structuredFailure = structuredContentFailure(projectProbeRes, parsed, 'project probe');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
         log('ok', `project probe — ${formatCount(parsed.total, 'project node')}`);
       } catch (err) {
         log('fail', `failed to parse project probe response: ${err.message}`);
@@ -2977,6 +3012,11 @@ async function step2BootAndCall() {
         const failure = diagnosisBlockingFailure('workspace_brief', parsed, 'workspace_brief');
         if (failure) {
           log('fail', failure);
+          return res(false);
+        }
+        const structuredFailure = structuredContentFailure(briefRes, parsed, 'workspace_brief');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
           return res(false);
         }
         log(
@@ -3002,6 +3042,11 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
+        const structuredFailure = structuredContentFailure(tunedBriefRes, parsed, 'workspace_brief_tuned');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
         log(
           'ok',
           `workspace_brief_tuned — ${parsed.status} (${workspaceBriefSummary(parsed)})`,
@@ -3023,6 +3068,11 @@ async function step2BootAndCall() {
         const failure = diagnosisBlockingFailure('health', parsed, 'health');
         if (failure) {
           log('fail', failure);
+          return res(false);
+        }
+        const structuredFailure = structuredContentFailure(healthRes, parsed, 'health');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
           return res(false);
         }
         const checksSummary = healthChecksSummary(parsed.checks);
@@ -3049,6 +3099,11 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
+        const structuredFailure = structuredContentFailure(tunedHealthRes, parsed, 'health_tuned');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
         const checksSummary = healthChecksSummary(parsed.checks);
         log(
           'ok',
@@ -3073,8 +3128,9 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
-        if (JSON.stringify(compileRes.result.structuredContent) !== JSON.stringify(parsed)) {
-          log('fail', 'compile_ontology structuredContent mismatch');
+        const structuredFailure = structuredContentFailure(compileRes, parsed, 'compile_ontology');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
           return res(false);
         }
         compilePayload = parsed;
@@ -3096,6 +3152,11 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
+        const structuredFailure = structuredContentFailure(overviewRes, parsed, 'overview');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
         overviewPayload = parsed;
         log('ok', `overview — graph ${parsed.graph.graphHash.slice(0, 12)} (${parsed.graph.nodes} nodes, ${parsed.graph.edges} edges, hubs ${(parsed.hubs || []).length})`);
       } catch (err) {
@@ -3115,6 +3176,11 @@ async function step2BootAndCall() {
           log('fail', failure);
           return res(false);
         }
+        const structuredFailure = structuredContentFailure(overviewPlanRes, parsed, 'overview query_plan');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
         log('ok', `overview query_plan — ${parsed.estimate.strategy} (${parsed.estimate.costClass}, nodes ${parsed.estimate.nodeScans}, edges ${parsed.estimate.edgeScans})`);
       } catch (err) {
         log('fail', `failed to parse overview query_plan response: ${err.message}`);
@@ -3131,6 +3197,11 @@ async function step2BootAndCall() {
         const failure = projectMapQueryPlanFailure(parsed);
         if (failure) {
           log('fail', failure);
+          return res(false);
+        }
+        const structuredFailure = structuredContentFailure(projectMapPlanRes, parsed, 'project_map query_plan');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
           return res(false);
         }
         log('ok', `project_map query_plan — ${parsed.estimate.strategy} (${parsed.estimate.costClass}, nodes ${parsed.estimate.nodeScans}, edges ${parsed.estimate.edgeScans})`);
@@ -3153,6 +3224,11 @@ async function step2BootAndCall() {
             log('fail', failure);
             return res(false);
           }
+          const structuredFailure = structuredContentFailure(neighborsRes, parsed, 'neighbors');
+          if (structuredFailure) {
+            log('fail', structuredFailure);
+            return res(false);
+          }
           log('ok', `neighbors — ${parsed.center} (${parsed.edges.length}/${parsed.total} edges, limited ${parsed.limited})`);
         } catch (err) {
           log('fail', `failed to parse neighbors response: ${err.message}`);
@@ -3170,6 +3246,11 @@ async function step2BootAndCall() {
           const failure = pathQueryFailure(parsed, expectedSlug, graphSmokeArgs.pathTarget || expectedSlug);
           if (failure) {
             log('fail', failure);
+            return res(false);
+          }
+          const structuredFailure = structuredContentFailure(pathRes, parsed, 'path');
+          if (structuredFailure) {
+            log('fail', structuredFailure);
             return res(false);
           }
           log('ok', `path — ${parsed.from} → ${parsed.to} (${formatHopCount(parsed.hopCount)}, ${formatCount(parsed.edges.length, 'edge')})`);
@@ -3193,6 +3274,11 @@ async function step2BootAndCall() {
           const failure = projectScopeFailure(parsed, expectedProject);
           if (failure) {
             log('fail', failure);
+            return res(false);
+          }
+          const structuredFailure = structuredContentFailure(projectScopeRes, parsed, 'project_scope');
+          if (structuredFailure) {
+            log('fail', structuredFailure);
             return res(false);
           }
           log('ok', `project_scope — ${parsed.project} (${parsed.summary.nodes} nodes, internalEdges ${parsed.summary.internalEdges})`);
