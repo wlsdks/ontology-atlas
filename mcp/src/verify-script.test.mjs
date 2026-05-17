@@ -13,6 +13,7 @@ import {
 } from './ontology-engine.mjs';
 import {
   advisoryNextActionsSummary,
+  analyzeRepoStructureFailure,
   batchRowIsolationFailure,
   buildFirstContactRequests,
   buildGetConceptSmokeSlug,
@@ -46,6 +47,7 @@ import {
   hasAllFirstContactResponses,
   hasFirstContactErrorResponse,
   healthChecksSummary,
+  inferImportsFailure,
   initializeInstructionsFailure,
   listConceptsFailure,
   listKindsFailure,
@@ -2148,7 +2150,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /npm run verify -- --vault path --timeout-ms 15000/);
     assert.match(verifyUsage(), /Explicit \[vault\] or --vault arguments take precedence over OMOT_VAULT/);
     assert.match(verifyUsage(), /project probe/);
-    assert.match(verifyUsage(), /list\/project probe\/get_concept\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/find_neighbors\/find_path\/find_orphans/);
+    assert.match(verifyUsage(), /list\/project probe\/get_concept\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/analyze_repo_structure\/infer_imports\/find_neighbors\/find_path\/find_orphans/);
     assert.match(verifyUsage(), /strict unknown-argument \/ invalid-enum rejection/);
     assert.match(verifyUsage(), /batch writer row isolation for non-object rows and unknown row fields/);
     assert.match(verifyUsage(), /maintenance_plan filter enums/);
@@ -2910,6 +2912,8 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(35), 'find_neighbors');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(36), 'find_path');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(37), 'query_concepts_limited');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(38), 'analyze_repo_structure');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(39), 'infer_imports');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15, 30, 31, 33, 35, 36, 37].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -2921,6 +2925,17 @@ describe('verify.mjs first-contact gates', () => {
       missingResponseLabels(responsesWithoutGetConcepts, FIRST_CONTACT_RESPONSE_LABELS),
       ['get_concepts'],
     );
+  });
+
+  it('builds bootstrap and import-analysis read smokes into first-contact verify', () => {
+    const analyze = buildFirstContactRequests().find((request) => request.id === 38);
+    const infer = buildFirstContactRequests().find((request) => request.id === 39);
+    assert.equal(analyze?.params?.name, 'analyze_repo_structure');
+    assert.equal(analyze?.params?.arguments?.maxDepth, 2);
+    assert.match(analyze?.params?.arguments?.rootPath ?? '', /oh-my-ontology$/);
+    assert.equal(infer?.params?.name, 'infer_imports');
+    assert.equal(infer?.params?.arguments?.maxFiles, 5000);
+    assert.match(infer?.params?.arguments?.rootPath ?? '', /oh-my-ontology$/);
   });
 
   it('builds direct graph-read smoke requests only when a node exists', () => {
@@ -3047,6 +3062,32 @@ describe('verify.mjs first-contact gates', () => {
         hops: ['project', 'domains/core'],
         edges: [{ from: 'project', to: 'domains/core', via: 'domains' }],
       }, 'project', 'domains/core'),
+      null,
+    );
+  });
+
+  it('accepts clean bootstrap and import-analysis read smoke payloads', () => {
+    assert.equal(
+      analyzeRepoStructureFailure({
+        rootPath: '/repo',
+        framework: 'fsd',
+        domains: [{ slug: 'domains/app', title: 'App', evidence: { source: 'src/app' } }],
+        capabilities: [{ slug: 'capabilities/search', title: 'Search', evidence: { source: 'src/features/search' } }],
+        elements: [{ slug: 'elements/src/app/page.tsx', title: 'page.tsx', evidence: { source: 'app/page.tsx' } }],
+        suggestedRelations: [{ from: 'project', to: 'domains/app', type: 'domains' }],
+        skipped: [{ path: 'node_modules', reason: 'ignored' }],
+      }),
+      null,
+    );
+    assert.equal(
+      inferImportsFailure({
+        rootPath: '/repo',
+        filesScanned: 1,
+        edges: [{ from: 'src/a.ts', to: 'src/b.ts', kind: 'static' }],
+        externalImports: [{ from: 'src/a.ts', spec: 'react' }],
+        unresolved: [{ from: 'src/a.ts', spec: '@/missing', reason: 'unresolved-alias' }],
+        moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 1 }],
+      }),
       null,
     );
   });
@@ -3420,6 +3461,33 @@ describe('verify.mjs first-contact gates', () => {
         edges: [],
       }, 'project', 'domains/core'),
       'find_path response edge count mismatch',
+    );
+  });
+
+  it('fails malformed bootstrap and import-analysis read smoke payloads', () => {
+    assert.equal(
+      analyzeRepoStructureFailure({ rootPath: '/repo', framework: 'unknown' }),
+      'analyze_repo_structure response unknown framework: unknown',
+    );
+    assert.equal(
+      analyzeRepoStructureFailure({
+        rootPath: '/repo',
+        framework: 'generic',
+        domains: [{ slug: 'domains/app', title: 'App', evidence: {} }],
+        capabilities: [],
+        elements: [],
+        suggestedRelations: [],
+        skipped: [],
+      }),
+      'analyze_repo_structure response missing domains evidence source: domains/app',
+    );
+    assert.equal(
+      inferImportsFailure({ rootPath: '/repo', filesScanned: 1, edges: [{ from: 'a.ts', to: 'b.ts', kind: 'unknown' }], externalImports: [], unresolved: [], moduleEdges: [] }),
+      'infer_imports response unknown edge kind: unknown',
+    );
+    assert.equal(
+      inferImportsFailure({ rootPath: '/repo', filesScanned: 1, edges: [], externalImports: [], unresolved: [], moduleEdges: [{ from: 'capabilities/a', to: 'capabilities/b', count: 0 }] }),
+      'infer_imports response missing module edge count at index 0',
     );
   });
 
@@ -4157,11 +4225,11 @@ describe('verify.mjs first-contact gates', () => {
   it('summarizes structuredContent coverage for verify output', () => {
     assert.equal(
       structuredContentVerifySummary(),
-      'direct 9/9, write 2/2, maintenance 2/2, graph 7/7',
+      'direct 11/11, write 2/2, maintenance 2/2, graph 7/7',
     );
     assert.equal(
       structuredContentVerifySummary({ hasNode: true }),
-      'direct 9/9, write 2/2, maintenance 2/2, graph 9/9',
+      'direct 11/11, write 2/2, maintenance 2/2, graph 9/9',
     );
     assert.equal(
       structuredContentVerifySummary({
@@ -4172,7 +4240,7 @@ describe('verify.mjs first-contact gates', () => {
         hasDirectGraphReads: true,
         hasLimitedQueryConcepts: true,
       }),
-      'direct 14/14, write 2/2, maintenance 2/2, graph 10/10',
+      'direct 16/16, write 2/2, maintenance 2/2, graph 10/10',
     );
     assert.equal(
       structuredContentVerifySummary({
@@ -4184,7 +4252,7 @@ describe('verify.mjs first-contact gates', () => {
         hasLimitedQueryConcepts: true,
         hasMaintenanceResume: true,
       }),
-      'direct 14/14, write 2/2, maintenance 3/3, graph 10/10',
+      'direct 16/16, write 2/2, maintenance 3/3, graph 10/10',
     );
   });
 

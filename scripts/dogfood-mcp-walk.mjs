@@ -27,8 +27,10 @@ import {
   EXPECTED_READ_TOOLS,
   EXPECTED_TOOLS,
   EXPECTED_WRITE_TOOLS,
+  analyzeRepoStructureFailure,
   expectedToolTitle,
   formatCount,
+  inferImportsFailure,
   listConceptsFailure,
   listKindsFailure,
   overviewFailure,
@@ -3889,124 +3891,6 @@ function orphansShapeFailure(result) {
     return `find_orphans response orphan count exceeds total — orphans ${result.orphans.length}, total ${result.total}`;
   }
   return matchRowsFailure("find_orphans", result.orphans);
-}
-
-function analyzeRepoStructureFailure(result) {
-  if (typeof result.rootPath !== "string" || result.rootPath.length === 0) {
-    return "analyze_repo_structure response missing rootPath";
-  }
-  if (!["fsd", "next", "generic"].includes(result.framework)) {
-    return `analyze_repo_structure response unknown framework: ${result.framework}`;
-  }
-  for (const propertyName of ["domains", "capabilities", "elements", "suggestedRelations", "skipped"]) {
-    if (!Array.isArray(result[propertyName])) {
-      return `analyze_repo_structure response missing ${propertyName} array`;
-    }
-  }
-  for (const propertyName of ["domains", "capabilities", "elements"]) {
-    for (const [index, candidate] of result[propertyName].entries()) {
-      if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
-        return `analyze_repo_structure response malformed ${propertyName} row at index ${index}`;
-      }
-      if (typeof candidate.slug !== "string" || candidate.slug.length === 0) {
-        return `analyze_repo_structure response missing ${propertyName} slug at index ${index}`;
-      }
-      if (typeof candidate.title !== "string" || candidate.title.length === 0) {
-        return `analyze_repo_structure response missing ${propertyName} title: ${candidate.slug}`;
-      }
-      if (!candidate.evidence || typeof candidate.evidence.source !== "string" || candidate.evidence.source.length === 0) {
-        return `analyze_repo_structure response missing ${propertyName} evidence source: ${candidate.slug}`;
-      }
-    }
-  }
-  for (const [index, relation] of result.suggestedRelations.entries()) {
-    if (!relation || typeof relation !== "object" || Array.isArray(relation)) {
-      return `analyze_repo_structure response malformed suggestedRelations row at index ${index}`;
-    }
-    for (const propertyName of ["from", "to", "type"]) {
-      if (typeof relation[propertyName] !== "string" || relation[propertyName].length === 0) {
-        return `analyze_repo_structure response missing suggestedRelations ${propertyName} at index ${index}`;
-      }
-    }
-  }
-  for (const [index, skipped] of result.skipped.entries()) {
-    if (!skipped || typeof skipped !== "object" || Array.isArray(skipped)) {
-      return `analyze_repo_structure response malformed skipped row at index ${index}`;
-    }
-    if (typeof skipped.path !== "string" || skipped.path.length === 0) {
-      return `analyze_repo_structure response missing skipped path at index ${index}`;
-    }
-    if (typeof skipped.reason !== "string" || skipped.reason.length === 0) {
-      return `analyze_repo_structure response missing skipped reason: ${skipped.path}`;
-    }
-  }
-  return null;
-}
-
-function inferImportsFailure(result) {
-  if (typeof result.rootPath !== "string" || result.rootPath.length === 0) {
-    return "infer_imports response missing rootPath";
-  }
-  if (!Number.isInteger(result.filesScanned) || result.filesScanned < 0) {
-    return "infer_imports response missing filesScanned count";
-  }
-  for (const propertyName of ["edges", "externalImports", "unresolved", "moduleEdges"]) {
-    if (!Array.isArray(result[propertyName])) {
-      return `infer_imports response missing ${propertyName} array`;
-    }
-  }
-  const edgeKinds = new Set(["static", "dynamic", "require", "reexport", "side"]);
-  for (const [index, edge] of result.edges.entries()) {
-    if (!edge || typeof edge !== "object" || Array.isArray(edge)) {
-      return `infer_imports response malformed edge at index ${index}`;
-    }
-    for (const propertyName of ["from", "to"]) {
-      if (typeof edge[propertyName] !== "string" || edge[propertyName].length === 0) {
-        return `infer_imports response missing edge ${propertyName} at index ${index}`;
-      }
-    }
-    if (!edgeKinds.has(edge.kind)) {
-      return `infer_imports response unknown edge kind: ${edge.kind}`;
-    }
-  }
-  for (const [index, externalImport] of result.externalImports.entries()) {
-    if (!externalImport || typeof externalImport !== "object" || Array.isArray(externalImport)) {
-      return `infer_imports response malformed external import at index ${index}`;
-    }
-    for (const propertyName of ["from", "spec"]) {
-      if (typeof externalImport[propertyName] !== "string" || externalImport[propertyName].length === 0) {
-        return `infer_imports response missing external import ${propertyName} at index ${index}`;
-      }
-    }
-  }
-  for (const [index, unresolved] of result.unresolved.entries()) {
-    if (!unresolved || typeof unresolved !== "object" || Array.isArray(unresolved)) {
-      return `infer_imports response malformed unresolved import at index ${index}`;
-    }
-    if (typeof unresolved.from !== "string" || unresolved.from.length === 0) {
-      return `infer_imports response missing unresolved from at index ${index}`;
-    }
-    if (typeof unresolved.spec !== "string") {
-      return `infer_imports response missing unresolved spec at index ${index}`;
-    }
-    if (typeof unresolved.reason !== "string" || unresolved.reason.length === 0) {
-      return `infer_imports response missing unresolved reason at index ${index}`;
-    }
-  }
-  for (const [index, moduleEdge] of result.moduleEdges.entries()) {
-    if (!moduleEdge || typeof moduleEdge !== "object" || Array.isArray(moduleEdge)) {
-      return `infer_imports response malformed module edge at index ${index}`;
-    }
-    for (const propertyName of ["from", "to"]) {
-      if (typeof moduleEdge[propertyName] !== "string" || moduleEdge[propertyName].length === 0) {
-        return `infer_imports response missing module edge ${propertyName} at index ${index}`;
-      }
-    }
-    if (!Number.isInteger(moduleEdge.count) || moduleEdge.count < 1) {
-      return `infer_imports response missing module edge count at index ${index}`;
-    }
-  }
-  return null;
 }
 
 function matchRowsFailure(label, rows) {

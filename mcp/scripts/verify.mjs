@@ -22,14 +22,15 @@
  *   7. tools/call get_concepts — batch reader success + partial-row contract
  *   8. tools/call find_evidence/find_backlinks/query_concepts/limited query_concepts — search, backlink, typed-filter, and limit-semantics read smoke
  *   9. tools/call find_neighbors/find_path — daily graph-read smoke
- *   10. tools/call add_concepts/add_relations — invalid batch rows remain row-level, not top-level errors
- *   11. tools/call find_orphans — row shape + root/sentinel default-exclusion contract
- *   12. tools/call list_kinds — kind census aggregate
- *   13. tools/call validate_vault — whole-vault frontmatter / graph-reference health
- *   14. tools/call query_ontology workspace_brief + tuned workspace_brief + health + tuned health — agent first-contact graph diagnosis
- *   15. tools/call compile_ontology(summary) — compiler graph summary contract
- *   16. tools/call query_ontology overview + query_plan(overview/project_map) — graph-query smoke contract
- *   17. tools/call query_ontology neighbors/node-to-project path/project_scope — core graph query smoke contract
+ *   10. tools/call analyze_repo_structure/infer_imports — bootstrap/import analysis read smoke
+ *   11. tools/call add_concepts/add_relations — invalid batch rows remain row-level, not top-level errors
+ *   12. tools/call find_orphans — row shape + root/sentinel default-exclusion contract
+ *   13. tools/call list_kinds — kind census aggregate
+ *   14. tools/call validate_vault — whole-vault frontmatter / graph-reference health
+ *   15. tools/call query_ontology workspace_brief + tuned workspace_brief + health + tuned health — agent first-contact graph diagnosis
+ *   16. tools/call compile_ontology(summary) — compiler graph summary contract
+ *   17. tools/call query_ontology overview + query_plan(overview/project_map) — graph-query smoke contract
+ *   18. tools/call query_ontology neighbors/node-to-project path/project_scope — core graph query smoke contract
  *
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
  */
@@ -54,6 +55,7 @@ import {
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MCP_ROOT = resolve(__dirname, '..');
+const REPO_ROOT = resolve(MCP_ROOT, '..');
 const PARSER_TEST = join(MCP_ROOT, 'src', 'parser.test.mjs');
 const SERVER_ENTRY = join(MCP_ROOT, 'src', 'index.js');
 const IS_MAIN = fileURLToPath(import.meta.url) === resolve(process.argv[1] ?? '');
@@ -1506,7 +1508,7 @@ export function structuredContentVerifySummary({
   hasLimitedQueryConcepts = false,
   hasMaintenanceResume = false,
 } = {}) {
-  const direct = 9
+  const direct = 11
     + (hasGetConcept ? 1 : 0)
     + (hasFindBacklinks ? 1 : 0)
     + (hasDirectGraphReads ? 2 : 0)
@@ -1555,6 +1557,8 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [35, 'find_neighbors'],
   [36, 'find_path'],
   [37, 'query_concepts_limited'],
+  [38, 'analyze_repo_structure'],
+  [39, 'infer_imports'],
 ]);
 
 function log(level, msg) {
@@ -1689,7 +1693,7 @@ export function verifyUsage() {
     'Runs the MCP server first-contact verification against the resolved vault.\n' +
     'Explicit [vault] or --vault arguments take precedence over OMOT_VAULT.\n' +
     'Checks parser smoke, server boot, tool inventory, and direct read smokes,\n' +
-    'including list/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/find_neighbors/find_path/find_orphans.\n' +
+    'including list/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans.\n' +
     'It also checks node census, vault validation, workspace health, compile/overview, query plans, and graph-query smoke.\n' +
     'Also checks strict unknown-argument / invalid-enum rejection, maintenance_plan filter enums,\n' +
     'batch writer row isolation for non-object rows and unknown row fields,\n' +
@@ -1784,6 +1788,18 @@ export function buildFirstContactRequests() {
       id: 34,
       method: 'tools/call',
       params: { name: 'query_concepts', arguments: { filter: 'kind=project', limit: 5 } },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 38,
+      method: 'tools/call',
+      params: { name: 'analyze_repo_structure', arguments: { rootPath: REPO_ROOT, maxDepth: 2 } },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 39,
+      method: 'tools/call',
+      params: { name: 'infer_imports', arguments: { rootPath: REPO_ROOT, maxFiles: 5000 } },
     },
     {
       jsonrpc: '2.0',
@@ -2359,6 +2375,124 @@ export function limitedQueryConceptsFailure(parsed, excludedSlug, expectedTotal)
   }
   if (parsed.matches.some((row) => row?.slug === excludedSlug)) {
     return `query_concepts limited response included excluded slug: ${excludedSlug}`;
+  }
+  return null;
+}
+
+export function analyzeRepoStructureFailure(parsed) {
+  if (typeof parsed?.rootPath !== 'string' || parsed.rootPath.length === 0) {
+    return 'analyze_repo_structure response missing rootPath';
+  }
+  if (!['fsd', 'next', 'generic'].includes(parsed.framework)) {
+    return `analyze_repo_structure response unknown framework: ${parsed?.framework}`;
+  }
+  for (const propertyName of ['domains', 'capabilities', 'elements', 'suggestedRelations', 'skipped']) {
+    if (!Array.isArray(parsed[propertyName])) {
+      return `analyze_repo_structure response missing ${propertyName} array`;
+    }
+  }
+  for (const propertyName of ['domains', 'capabilities', 'elements']) {
+    for (const [index, candidate] of parsed[propertyName].entries()) {
+      if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
+        return `analyze_repo_structure response malformed ${propertyName} row at index ${index}`;
+      }
+      if (typeof candidate.slug !== 'string' || candidate.slug.length === 0) {
+        return `analyze_repo_structure response missing ${propertyName} slug at index ${index}`;
+      }
+      if (typeof candidate.title !== 'string' || candidate.title.length === 0) {
+        return `analyze_repo_structure response missing ${propertyName} title: ${candidate.slug}`;
+      }
+      if (!candidate.evidence || typeof candidate.evidence.source !== 'string' || candidate.evidence.source.length === 0) {
+        return `analyze_repo_structure response missing ${propertyName} evidence source: ${candidate.slug}`;
+      }
+    }
+  }
+  for (const [index, relation] of parsed.suggestedRelations.entries()) {
+    if (!relation || typeof relation !== 'object' || Array.isArray(relation)) {
+      return `analyze_repo_structure response malformed suggestedRelations row at index ${index}`;
+    }
+    for (const propertyName of ['from', 'to', 'type']) {
+      if (typeof relation[propertyName] !== 'string' || relation[propertyName].length === 0) {
+        return `analyze_repo_structure response missing suggestedRelations ${propertyName} at index ${index}`;
+      }
+    }
+  }
+  for (const [index, skipped] of parsed.skipped.entries()) {
+    if (!skipped || typeof skipped !== 'object' || Array.isArray(skipped)) {
+      return `analyze_repo_structure response malformed skipped row at index ${index}`;
+    }
+    if (typeof skipped.path !== 'string' || skipped.path.length === 0) {
+      return `analyze_repo_structure response missing skipped path at index ${index}`;
+    }
+    if (typeof skipped.reason !== 'string' || skipped.reason.length === 0) {
+      return `analyze_repo_structure response missing skipped reason: ${skipped.path}`;
+    }
+  }
+  return null;
+}
+
+export function inferImportsFailure(parsed) {
+  if (typeof parsed?.rootPath !== 'string' || parsed.rootPath.length === 0) {
+    return 'infer_imports response missing rootPath';
+  }
+  if (!Number.isInteger(parsed.filesScanned) || parsed.filesScanned < 0) {
+    return 'infer_imports response missing filesScanned count';
+  }
+  for (const propertyName of ['edges', 'externalImports', 'unresolved', 'moduleEdges']) {
+    if (!Array.isArray(parsed[propertyName])) {
+      return `infer_imports response missing ${propertyName} array`;
+    }
+  }
+  const edgeKinds = new Set(['static', 'dynamic', 'require', 'reexport', 'side']);
+  for (const [index, edge] of parsed.edges.entries()) {
+    if (!edge || typeof edge !== 'object' || Array.isArray(edge)) {
+      return `infer_imports response malformed edge at index ${index}`;
+    }
+    for (const propertyName of ['from', 'to']) {
+      if (typeof edge[propertyName] !== 'string' || edge[propertyName].length === 0) {
+        return `infer_imports response missing edge ${propertyName} at index ${index}`;
+      }
+    }
+    if (!edgeKinds.has(edge.kind)) {
+      return `infer_imports response unknown edge kind: ${edge.kind}`;
+    }
+  }
+  for (const [index, externalImport] of parsed.externalImports.entries()) {
+    if (!externalImport || typeof externalImport !== 'object' || Array.isArray(externalImport)) {
+      return `infer_imports response malformed external import at index ${index}`;
+    }
+    for (const propertyName of ['from', 'spec']) {
+      if (typeof externalImport[propertyName] !== 'string' || externalImport[propertyName].length === 0) {
+        return `infer_imports response missing external import ${propertyName} at index ${index}`;
+      }
+    }
+  }
+  for (const [index, unresolved] of parsed.unresolved.entries()) {
+    if (!unresolved || typeof unresolved !== 'object' || Array.isArray(unresolved)) {
+      return `infer_imports response malformed unresolved import at index ${index}`;
+    }
+    if (typeof unresolved.from !== 'string' || unresolved.from.length === 0) {
+      return `infer_imports response missing unresolved from at index ${index}`;
+    }
+    if (typeof unresolved.spec !== 'string') {
+      return `infer_imports response missing unresolved spec at index ${index}`;
+    }
+    if (typeof unresolved.reason !== 'string' || unresolved.reason.length === 0) {
+      return `infer_imports response missing unresolved reason at index ${index}`;
+    }
+  }
+  for (const [index, moduleEdge] of parsed.moduleEdges.entries()) {
+    if (!moduleEdge || typeof moduleEdge !== 'object' || Array.isArray(moduleEdge)) {
+      return `infer_imports response malformed module edge at index ${index}`;
+    }
+    for (const propertyName of ['from', 'to']) {
+      if (typeof moduleEdge[propertyName] !== 'string' || moduleEdge[propertyName].length === 0) {
+        return `infer_imports response missing module edge ${propertyName} at index ${index}`;
+      }
+    }
+    if (!Number.isInteger(moduleEdge.count) || moduleEdge.count < 1) {
+      return `infer_imports response missing module edge count at index ${index}`;
+    }
   }
   return null;
 }
@@ -3145,7 +3279,7 @@ async function step2BootAndCall() {
     log('fail', 'verify timeout must be a positive integer');
     return false;
   }
-  log('info', `step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/find_neighbors/find_path/find_orphans/list_kinds (vault=${VAULT}, timeout=${timeoutMs}ms)`);
+  log('info', `step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans/list_kinds (vault=${VAULT}, timeout=${timeoutMs}ms)`);
 
   const lines = buildFirstContactRequests().map((request) => JSON.stringify(request));
 
@@ -3328,6 +3462,8 @@ async function step2BootAndCall() {
       const findBacklinksRes = responses.find((r) => r.id === 33);
       const queryConceptsRes = responses.find((r) => r.id === 34);
       const limitedQueryConceptsRes = responses.find((r) => r.id === 37);
+      const analyzeRepoStructureRes = responses.find((r) => r.id === 38);
+      const inferImportsRes = responses.find((r) => r.id === 39);
       const findNeighborsRes = responses.find((r) => r.id === 35);
       const findPathRes = responses.find((r) => r.id === 36);
       const projectMapPlanRes = responses.find((r) => r.id === 12);
@@ -3717,6 +3853,52 @@ async function step2BootAndCall() {
           log('fail', `failed to parse query_concepts_limited response: ${err.message}`);
           return res(false);
         }
+      }
+
+      if (!analyzeRepoStructureRes || !analyzeRepoStructureRes.result) {
+        log('fail', 'no analyze_repo_structure response');
+        return res(false);
+      }
+      try {
+        const text = analyzeRepoStructureRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const failure = analyzeRepoStructureFailure(parsed);
+        if (failure) {
+          log('fail', failure);
+          return res(false);
+        }
+        const structuredFailure = structuredContentFailure(analyzeRepoStructureRes, parsed, 'analyze_repo_structure');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
+        log('ok', `analyze_repo_structure — ${parsed.framework} (${formatCount(parsed.domains.length, 'domain candidate')}, ${formatCount(parsed.capabilities.length, 'capability candidate')}, ${formatCount(parsed.elements.length, 'element candidate')})`);
+      } catch (err) {
+        log('fail', `failed to parse analyze_repo_structure response: ${err.message}`);
+        return res(false);
+      }
+
+      if (!inferImportsRes || !inferImportsRes.result) {
+        log('fail', 'no infer_imports response');
+        return res(false);
+      }
+      try {
+        const text = inferImportsRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const failure = inferImportsFailure(parsed);
+        if (failure) {
+          log('fail', failure);
+          return res(false);
+        }
+        const structuredFailure = structuredContentFailure(inferImportsRes, parsed, 'infer_imports');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
+        log('ok', `infer_imports — ${formatCount(parsed.filesScanned, 'file')} scanned, ${formatCount(parsed.moduleEdges.length, 'module edge')}`);
+      } catch (err) {
+        log('fail', `failed to parse infer_imports response: ${err.message}`);
+        return res(false);
       }
 
       if (graphSmokeArgs?.hasNode) {

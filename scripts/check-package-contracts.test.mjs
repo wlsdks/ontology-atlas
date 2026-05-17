@@ -268,7 +268,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /npm run verify -- --help/);
     assert.match(verifySection, /explicit positional vault or `--vault` argument takes\s+precedence over `OMOT_VAULT`/);
     assert.match(verifySection, /`npm run verify -- --help` prints the same first-contact scope/);
-    assert.match(verifySection, /direct read smokes for `list_concepts` project probe \/ `get_concept` \/\s+`get_concepts` \/ `find_evidence` \/ `find_backlinks` \/ `query_concepts` \/\s+limited `query_concepts` \/ `find_neighbors` \/ `find_path` \/ `find_orphans`/);
+    assert.match(verifySection, /direct read smokes for `list_concepts` project probe \/ `get_concept` \/\s+`get_concepts` \/ `find_evidence` \/ `find_backlinks` \/ `query_concepts` \/\s+limited `query_concepts` \/ `analyze_repo_structure` \/ `infer_imports` \/\s+`find_neighbors` \/ `find_path` \/ `find_orphans`/);
     assert.match(verifySection, /strict unknown-argument \/ invalid-enum rejection/);
     assert.match(verifySection, /`list_concepts\.lmit` plus `list_concepts\.summry`/);
     assert.match(verifySection, /reports multiple unknown tool arguments together/);
@@ -284,7 +284,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /`byPhase` \/ `bySeverity` \/ `byKind`\s+bucket totals against `remainingActions`/);
     assert.match(verifySection, /catches\s+work-queue drift/);
     assert.match(verifySection, /Successful\s+verify logs print the same bucket summary and current-page executable\/review\s+next-action summary/);
-    assert.match(verifySection, /list_concepts\/project probe\/get_concept\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/find_neighbors\/find_path\/find_orphans\/list_kinds/);
+    assert.match(verifySection, /list_concepts\/project probe\/get_concept\/get_concepts\/find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/analyze_repo_structure\/infer_imports\/find_neighbors\/find_path\/find_orphans\/list_kinds/);
     assert.match(verifySection, /✓ initialize instructions — first-contact safety guidance present/);
     assert.match(verifySection, /✓ tools\/list schema contract — strict arguments \+ read\/write hints \+ graph-query enums \+ health tuning \+ post-write guidance/);
     assert.match(verifySection, /✓ strict arguments — unknown tool argument rejected at runtime/);
@@ -301,6 +301,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ find_backlinks — project \(\d+ backlinks\)/);
     assert.match(verifySection, /✓ query_concepts — \d+ query results? \/ \d+ total query results?/);
     assert.match(verifySection, /✓ query_concepts limited — \d+ query results? \/ \d+ total query results? \(limited true\)/);
+    assert.match(verifySection, /✓ analyze_repo_structure — (fsd|next|generic) \(\d+ domain candidates?, \d+ capability candidates?, \d+ element candidates?\)/);
+    assert.match(verifySection, /✓ infer_imports — \d+ files? scanned, \d+ module edges?/);
     assert.match(verifySection, /✓ find_neighbors — elements\/file-system-access-api/);
     assert.match(verifySection, /✓ find_path — elements\/file-system-access-api → project \(2 hops, 2 edges\)/);
     assert.match(verifySection, /✓ find_orphans — 0 orphans \(root\/sentinel defaults excluded\)/);
@@ -317,8 +319,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /✓ path — elements\/file-system-access-api → project \(2 hops, 2 edges\)/);
     assert.doesNotMatch(verifySection, /✓ path — project → project/);
     assert.match(verifySection, new RegExp(`✓ project_scope — project \\(${scopedNodes} nodes, internalEdges`));
-    assert.match(verifySection, /✓ structuredContent — direct 14\/14, write 2\/2, maintenance 2\/2, graph 10\/10/);
-    assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,\s+`query_concepts`, limited `query_concepts`, `find_neighbors`, `find_path`, `find_orphans`,\s+`list_kinds`, `validate_vault`/);
+    assert.match(verifySection, /✓ structuredContent — direct 16\/16, write 2\/2, maintenance 2\/2, graph 10\/10/);
+    assert.match(verifySection, /`list_concepts`, a project-node `list_concepts` probe,\s+`get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,\s+`query_concepts`, limited `query_concepts`, `analyze_repo_structure`,\s+`infer_imports`, `find_neighbors`, `find_path`, `find_orphans`,\s+`list_kinds`, `validate_vault`/);
     assert.match(verifySection, /batch success rows\s+and partial rows are verified during installation checks/);
     assert.match(verifySection, /`query_ontology\(\{operation:"neighbors"\}\)`/);
     assert.match(verifySection, /`query_ontology\(\{operation:"path"\}\)`/);
@@ -779,6 +781,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`compile_ontology` 도 `outputSchema` 와 동일한 `structuredContent` graph-summary payload/);
     assert.match(doc, /`analyze_repo_structure` 도 `outputSchema` 와 동일한 `structuredContent` bootstrap-candidate payload/);
     assert.match(doc, /`infer_imports` 도 `outputSchema` 와 동일한 `structuredContent` import-graph payload/);
+    assert.match(doc, /`analyze_repo_structure` \/ `infer_imports` 도 실제 repo root 를 대상으로 호출해\s+bootstrap 후보와 import graph payload 의 shape \/ `structuredContent` 계약이\s+dogfood walk 뿐 아니라 설치 verify 에서도 깨지지 않게 한다/);
     assert.match(doc, /`add_concept` \/ `add_relation` \/ `patch_concept` 도 single writer `outputSchema`/);
     assert.match(doc, /`add_concepts` \/ `add_relations` 도 batch writer `outputSchema` row 계약/);
     assert.match(doc, /row-level non-object \/ blank \/ padded \/ unknown-field 입력은 해당 row 만 실패/);
@@ -908,7 +911,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /strict arguments — multiple unknown tool arguments reported together/);
     assert.match(smoke, /add_concepts — non-object and unknown-field rows isolated at row level/);
     assert.match(smoke, /add_relations — non-object and unknown-field rows isolated at row level/);
-    assert.match(smoke, /structuredContent — direct 14\\\/14, write 2\\\/2, maintenance 3\\\/3, graph 10\\\/10/);
+    assert.match(smoke, /structuredContent — direct 16\\\/16, write 2\\\/2, maintenance 3\\\/3, graph 10\\\/10/);
     assert.match(smoke, /writeMaintenanceResumeVault/);
     assert.match(smoke, /cliMaintenanceResumeMcpVerify/);
     assert.match(smoke, /directMcpMaintenanceResumeVerify/);

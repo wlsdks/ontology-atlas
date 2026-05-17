@@ -211,7 +211,8 @@ precedence over `OMOT_VAULT`.
 `npm run verify -- --help` prints the same first-contact scope, including
 direct read smokes for `list_concepts` project probe / `get_concept` /
 `get_concepts` / `find_evidence` / `find_backlinks` / `query_concepts` /
-limited `query_concepts` / `find_neighbors` / `find_path` / `find_orphans`,
+limited `query_concepts` / `analyze_repo_structure` / `infer_imports` /
+`find_neighbors` / `find_path` / `find_orphans`,
 strict unknown-argument / invalid-enum rejection, enum-validated
 `maintenance_plan` filters, batch row isolation for non-object row shape and
 unknown row field inputs, and maintenance_plan cursor handling (ready page +
@@ -236,7 +237,7 @@ A successful run looks like this:
 [oh-my-ontology-mcp verify]
 · step 1 — parser smoke test
 ✓ result: 7 passed, 0 failed
-· step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/find_neighbors/find_path/find_orphans/list_kinds (vault=../docs/ontology, timeout=8000ms)
+· step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans/list_kinds (vault=../docs/ontology, timeout=8000ms)
 ✓ initialize OK — server oh-my-ontology-mcp@0.12.0
 ✓ initialize instructions — first-contact safety guidance present
 ✓ tools/list 23/23 (15 read + 8 write) — add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
@@ -256,6 +257,8 @@ A successful run looks like this:
 ✓ find_backlinks — project (0 backlinks)
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 27 total query results (limited true)
+✓ analyze_repo_structure — fsd (7 domain candidates, 19 capability candidates, 28 element candidates)
+✓ infer_imports — 414 files scanned, 346 module edges
 ✓ find_neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ find_path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
@@ -274,7 +277,7 @@ A successful run looks like this:
 ✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ project_scope — project (27 nodes, internalEdges 92)
-✓ structuredContent — direct 14/14, write 2/2, maintenance 2/2, graph 10/10
+✓ structuredContent — direct 16/16, write 2/2, maintenance 2/2, graph 10/10
 
 All passed — register .mcp.json with Claude Code and restart to use the 23 tools.
 ```
@@ -283,7 +286,8 @@ On failure, it tells you which step blocked progress and prints a diagnostic mes
 verify path exercises and gates the same first-contact graph diagnosis an agent should run:
 `tools/list`, `list_concepts`, a project-node `list_concepts` probe,
 `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`,
-`query_concepts`, limited `query_concepts`, `find_neighbors`, `find_path`, `find_orphans`,
+`query_concepts`, limited `query_concepts`, `analyze_repo_structure`,
+`infer_imports`, `find_neighbors`, `find_path`, `find_orphans`,
 `list_kinds`, `validate_vault`,
 `query_ontology({operation:"workspace_brief"})`, tuned
 `query_ontology({operation:"workspace_brief"})`,

@@ -91,10 +91,10 @@ strict schema/runtime unknown-argument and invalid-enum rejection,
 `add_concepts` / `add_relations` row-isolation runtime smoke,
 `list_concepts`, project-node `list_concepts` probe,
 `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology({ summary: true })`,
-`query_ontology(overview)`, `query_plan(targetOperation:"overview")`,
+`analyze_repo_structure`, `infer_imports`, `query_ontology(overview)`, `query_plan(targetOperation:"overview")`,
 `query_plan(targetOperation:"project_map")`, 그리고 실제 `neighbors` /
 node→project `path` / `project_scope` 를 한 번에 호출해 agent first-contact graph diagnosis,
-compiler summary, graph-query smoke 경로까지 확인한다. project probe 덕분에 `project_scope` 는 project
+compiler summary, bootstrap/import analysis read smoke, graph-query smoke 경로까지 확인한다. project probe 덕분에 `project_scope` 는 project
 노드가 있을 때 containment hard gate 로 실행하고, 빈 vault 는 node-targeted graph
 smoke 를 skip 해 첫 설치 확인이 seed 작성 전에 막히지 않게 한다. vault warning / validate problem / `fail` health check /
 fail severity `workspace_brief.nextActions` 는 exit 1 로 처리하되, starter vault 의
@@ -119,6 +119,9 @@ frontmatter / excerpt / neighbors / outgoingEdges / mtime 과 `structuredContent
 `find_evidence` / `find_backlinks` / `query_concepts` 는 resolved vault 에 실제 호출하고,
 별도 limited `query_concepts` smoke 로 `slug!=project, limit=1` 도 확인해
 search, backlink 영향 범위, typed-filter row shape, `limited:true` query semantics 와 `structuredContent` 계약을 확인한다.
+`analyze_repo_structure` / `infer_imports` 도 실제 repo root 를 대상으로 호출해
+bootstrap 후보와 import graph payload 의 shape / `structuredContent` 계약이
+dogfood walk 뿐 아니라 설치 verify 에서도 깨지지 않게 한다.
 direct `find_neighbors` / `find_path` 도 resolved vault 에 실제 호출해 local-neighborhood 와
 shortest-path read tool 계약을 `query_ontology` graph operation 과 별도로 확인한다.
 `add_concepts` / `add_relations` 는 non-object row 와 unknown row field 를 넣어
