@@ -1271,10 +1271,12 @@ describe('package contract helpers', () => {
     const addRow = doc.split('| `oh-my-ontology add <kind> <slug> --title="..."` |')[1]?.split('\n')[0] ?? '';
     const findRow = doc.split('| `oh-my-ontology find <query> [vault]` |')[1]?.split('\n')[0] ?? '';
     const importRow = doc.split('| `oh-my-ontology import <path...>` |')[1]?.split('\n')[0] ?? '';
+    const orphansRow = doc.split('| `oh-my-ontology orphans` |')[1]?.split('\n')[0] ?? '';
     const cliListRow = readme.split('| `oh-my-ontology list [vault]` |')[1]?.split('\n')[0] ?? '';
     const cliAddRow = readme.split('| `oh-my-ontology add <kind> <slug> --title="..."` |')[1]?.split('\n')[0] ?? '';
     const cliFindRow = readme.split('| `oh-my-ontology find <query> [vault]` |')[1]?.split('\n')[0] ?? '';
     const cliImportRow = readme.split('| `oh-my-ontology import <path...>` |')[1]?.split('\n')[0] ?? '';
+    const cliOrphansRow = readme.split('| `oh-my-ontology orphans [vault]` |')[1]?.split('\n')[0] ?? '';
     const mcpVerifyRow = doc.split('| `oh-my-ontology mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
     const inferImportsRow = doc.split('| `oh-my-ontology infer-imports [rootPath]` |')[1]?.split('\n')[0] ?? '';
     const implementationSection = doc.split('## 구현 단일 진실원')[1]?.split('## 회귀 차단')[0] ?? '';
@@ -1287,10 +1289,15 @@ describe('package contract helpers', () => {
     assert.match(findRow, /`--kind=capabilty`/);
     assert.match(findRow, /closest-value hint/);
     assert.match(importRow, /fallback `--kind` 와 frontmatter `kind` typo 는 closest-value hint/);
+    assert.match(orphansRow, /enum-validated kind \/ exclude-kinds 필터/);
+    assert.match(orphansRow, /`--exclude-kinds=project,capabilty`/);
+    assert.match(orphansRow, /closest-value hint/);
     assert.match(cliListRow, /enum-validated `--kind X` filter with closest-value hints/);
     assert.match(cliAddRow, /`kind` is enum-validated with closest-value hints before writing/);
     assert.match(cliFindRow, /enum-validated `--kind X` filter with closest-value hints/);
     assert.match(cliImportRow, /Frontmatter `kind` typos and fallback `--kind` typos fail with closest-value hints/);
+    assert.match(cliOrphansRow, /enum-validated `--kind X`/);
+    assert.match(cliOrphansRow, /enum-validated `--exclude-kinds A,B`/);
     assert.match(inferImportsRow, /file edge kind summary/);
     assert.match(inferImportsRow, /module edge 별 `kindCounts`/);
     assert.match(inferImportsRow, /`tsconfig\.json` paths alias/);

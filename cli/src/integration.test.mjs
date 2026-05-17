@@ -2213,8 +2213,16 @@ await test('graph diagnostic commands — reject invalid option values before MC
       pattern: /--kind requires a value/,
     },
     {
+      args: ['orphans', '--kind=capabilty'],
+      pattern: /--kind must be one of: project, domain, capability, element, document, vault-readme\. Received: "capabilty"\. Did you mean "capability"\?/,
+    },
+    {
       args: ['orphans', '--exclude-kinds='],
       pattern: /--exclude-kinds requires a value/,
+    },
+    {
+      args: ['orphans', '--exclude-kinds=project,capabilty'],
+      pattern: /--exclude-kinds items must be one of: project, domain, capability, element, document, vault-readme\. Received: "capabilty"\. Did you mean "capability"\?/,
     },
     {
       args: ['orphans', '--exlude-kinds=domain'],
@@ -2231,6 +2239,10 @@ await test('graph diagnostic commands — reject invalid option values before MC
     {
       args: ['similar', 'auth', '--kind'],
       pattern: /--kind requires a value/,
+    },
+    {
+      args: ['similar', 'auth', '--kind=capabilty'],
+      pattern: /--kind must be one of: project, domain, capability, element, document\. Received: "capabilty"\. Did you mean "capability"\?/,
     },
     {
       args: ['similar', '--slug'],

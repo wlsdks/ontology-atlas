@@ -3,6 +3,7 @@
 // frontmatter. Thin wrapper over MCP find_orphans.
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
+import { validateKindList, validateKindValue } from '../lib/kinds.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
   formatUnknownFlagError,
@@ -121,6 +122,10 @@ function parseArgs(args) {
   for (const value of Object.values(flags)) {
     if (value instanceof Error) return { error: value.message };
   }
+  const kindError = validateKindValue('--kind', flags.kind);
+  if (kindError) return { error: kindError };
+  const excludeKindsError = validateKindList('--exclude-kinds', flags.excludeKinds);
+  if (excludeKindsError) return { error: excludeKindsError };
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;
   return {

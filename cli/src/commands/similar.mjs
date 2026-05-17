@@ -3,8 +3,10 @@
 // 만들기 전 *duplicate 회피* 와 `/ontology-extract` skill 의 핵심 cross-check.
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
+import { validateKindValue } from '../lib/kinds.mjs';
 import { assertQueryOperation } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
+import { VAULT_KINDS } from '../lib/schema.mjs';
 import {
   formatUnknownFlagError,
   parseBoundedPositiveIntegerFlag,
@@ -148,6 +150,8 @@ function parseArgs(args) {
   for (const value of Object.values(flags)) {
     if (value instanceof Error) return { error: value.message };
   }
+  const kindError = validateKindValue('--kind', flags.kind, VAULT_KINDS);
+  if (kindError) return { error: kindError };
   const vaultResult = resolveTrailingVaultArg({ vault: flags.vault, positional, vaultIndex: 1 });
   if (vaultResult.error) return vaultResult;
   return {

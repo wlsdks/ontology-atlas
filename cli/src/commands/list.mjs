@@ -1,8 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { parseFrontmatter } from '../lib/parse-frontmatter.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { READABLE_KIND_VALUES } from '../lib/kinds.mjs';
-import { formatAllowedValueError } from '../lib/suggestions.mjs';
+import { validateKindValue } from '../lib/kinds.mjs';
 import { walkMd, pathToSlug } from '../lib/walk-vault.mjs';
 import {
   formatUnknownFlagError,
@@ -121,9 +120,8 @@ function parseArgs(args) {
   for (const value of Object.values(flags)) {
     if (value instanceof Error) return { error: value.message };
   }
-  if (flags.kindFilter && !READABLE_KIND_VALUES.includes(flags.kindFilter)) {
-    return { error: formatAllowedValueError('--kind', flags.kindFilter, READABLE_KIND_VALUES) };
-  }
+  const kindError = validateKindValue('--kind', flags.kindFilter);
+  if (kindError) return { error: kindError };
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;
   return { vault: vaultResult.vault, kindFilter: flags.kindFilter, asJson: flags.asJson };
