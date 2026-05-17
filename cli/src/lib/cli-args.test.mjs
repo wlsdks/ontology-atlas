@@ -7,6 +7,11 @@ import {
   parseBoundedPositiveIntegerFlag,
   parseNonNegativeIntegerFlag,
   parsePositiveIntegerFlag,
+  parseRequiredFlagValue,
+  parseVaultFlag,
+  resolveExclusiveVaultArg,
+  resolveSingleRootPathArg,
+  resolveTrailingVaultArg,
 } from './cli-args.mjs';
 
 const errorMessage = (value) => {
@@ -60,5 +65,72 @@ describe('cli integer argument parsers', () => {
       'unknown flag: --lmit=1. Did you mean --limit?',
     );
     assert.equal(formatUnknownFlagError('--zzzz', ['--json', '--limit', '--vault']), 'unknown flag: --zzzz.');
+  });
+});
+
+describe('cli vault and positional argument parsers', () => {
+  it('normalizes --vault values without accepting empty paths or the next flag', () => {
+    assert.equal(parseVaultFlag(' docs/ontology '), 'docs/ontology');
+    assert.equal(parseVaultFlag(''), false);
+    assert.equal(parseVaultFlag(undefined), false);
+    assert.equal(parseVaultFlag('--timeout-ms'), false);
+  });
+
+  it('rejects ambiguous vault sources and extra positional arguments', () => {
+    assert.deepEqual(
+      resolveExclusiveVaultArg({ vault: false, positional: [] }),
+      { error: '--vault requires a path' },
+    );
+    assert.deepEqual(
+      resolveExclusiveVaultArg({ vault: 'docs/ontology', positional: ['other'] }),
+      { error: 'pass vault as either positional argument or --vault, not both' },
+    );
+    assert.deepEqual(
+      resolveExclusiveVaultArg({ vault: null, positional: ['one', 'two'] }),
+      { error: 'too many arguments: two' },
+    );
+    assert.deepEqual(
+      resolveExclusiveVaultArg({ vault: null, positional: [] }),
+      { vault: '.' },
+    );
+    assert.deepEqual(
+      resolveExclusiveVaultArg({ vault: null, positional: ['docs/ontology'] }),
+      { vault: 'docs/ontology' },
+    );
+  });
+
+  it('resolves trailing vault arguments for commands with leading root paths', () => {
+    assert.deepEqual(
+      resolveTrailingVaultArg({ vault: null, positional: ['src'], vaultIndex: 1 }),
+      { vault: '.' },
+    );
+    assert.deepEqual(
+      resolveTrailingVaultArg({ vault: null, positional: ['src', 'docs/ontology'], vaultIndex: 1 }),
+      { vault: 'docs/ontology' },
+    );
+    assert.deepEqual(
+      resolveTrailingVaultArg({ vault: 'docs/ontology', positional: ['src'], vaultIndex: 1 }),
+      { vault: 'docs/ontology' },
+    );
+    assert.deepEqual(
+      resolveTrailingVaultArg({ vault: 'docs/ontology', positional: ['src', 'other'], vaultIndex: 1 }),
+      { error: 'pass vault as either positional argument or --vault, not both' },
+    );
+    assert.deepEqual(
+      resolveTrailingVaultArg({ vault: null, positional: ['src', 'one', 'two'], vaultIndex: 1 }),
+      { error: 'too many arguments: two' },
+    );
+  });
+
+  it('keeps single root and required flag value parsing fail-closed', () => {
+    assert.deepEqual(resolveSingleRootPathArg({ positional: [] }), { rootPath: '.' });
+    assert.deepEqual(resolveSingleRootPathArg({ positional: ['src'] }), { rootPath: 'src' });
+    assert.deepEqual(
+      resolveSingleRootPathArg({ positional: ['src', 'extra'] }),
+      { error: 'too many arguments: extra' },
+    );
+    assert.equal(parseRequiredFlagValue('--from', ' node '), 'node');
+    assert.equal(errorMessage(parseRequiredFlagValue('--from', '')), '--from requires a value');
+    assert.equal(errorMessage(parseRequiredFlagValue('--from', '--to')), '--from requires a value');
   });
 });
