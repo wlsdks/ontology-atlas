@@ -1429,7 +1429,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /const installedCliDir =/);
     assert.match(smoke, /installed CLI package npm test/);
     assert.match(smoke, /node --test src\\\/lib\\\/\\\*\\\.test\\\.mjs/);
-    assert.match(smoke, /# pass 36/);
+    assert.match(smoke, /# fail 0/);
     assert.match(smoke, /workspace_brief — \.\*next actions, \.\*health checks/);
     assert.match(smoke, /directMcpVerify/);
     assert.match(smoke, /directMcpVerifyVaultFlag/);
@@ -1494,12 +1494,14 @@ describe('package contract helpers', () => {
     assert.match(smoke, /OMOT_VAULT requires a path value/);
     assert.match(smoke, /--timeout-ms N/);
     assert.match(smoke, /OMOT_VERIFY_TIMEOUT_MS=N/);
-    assert.match(smoke, /oh-my-ontology mcp-verify --timeout-ms 15000/);
+    assert.match(smoke, /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
     assert.match(smoke, /assert\.doesNotMatch\(invalidCliMcpVerifyEnvTimeout\.stderr, \/npm run verify -- --timeout-ms 15000\/\)/);
-    assert.match(smoke, /npm run verify -- --timeout-ms 15000/);
+    assert.match(smoke, /npm run verify -- --vault \.\+\[\/\\\\\]ontology --timeout-ms 15000/);
     assert.match(smoke, /health — \.\*compile_issues:\(pass\|warn\)/);
     assert.match(smoke, /health — \.\*checks/);
     assert.match(smoke, /workspace_brief_tuned — \.\*next actions, \.\*health checks/);
+    assert.match(smoke, /tunedDiagnosisScopeRe/);
+    assert.match(smoke, /componentTypes=domains\\\/domain\\\/capabilities\\\/dependencies/);
     assert.match(smoke, /health_tuned — \.\*compile_issues:\(pass\|warn\)/);
     assert.match(smoke, /health_tuned — \.\*checks/);
     assert.match(smoke, /compile_ontology page — 1\\\/5 nodes, 1\\\/\\d\+ edges/);
@@ -1563,6 +1565,8 @@ describe('package contract helpers', () => {
     assert.match(smoke, /assert\.match\(blockingBriefText\.stdout, \/GROWTH\/\)/);
     assert.match(smokeSection, /blocking `health` non-json 의 `dependency_cycles fail:1` coverage/);
     assert.match(smokeSection, /health check count/);
+    assert.match(smokeSection, /installed tuned diagnosis scope/);
+    assert.match(smokeSection, /componentTypes=domains\/domain\/capabilities\/dependencies/);
     assert.match(smokeSection, /`overview`\/`project_map` query_plan \/ `neighbors` \/ `path` \//);
     assert.match(smokeSection, /`project_scope` smoke/);
     assert.match(smokeSection, /strict argument\/enum smoke/);

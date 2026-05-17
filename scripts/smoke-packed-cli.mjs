@@ -28,6 +28,7 @@ const CLI_PKG = JSON.parse(readFileSync(join(CLI_DIR, 'package.json'), 'utf-8'))
 const mcpToolMetadata = parseMcpToolMetadataFromDescription(MCP_PKG.description);
 const expectedToolCount = mcpToolMetadata?.toolCount;
 const expectedToolSplitRe = mcpToolMetadata?.splitPattern;
+const tunedDiagnosisScopeRe = /dependencyTypes=dependencies; componentTypes=domains\/domain\/capabilities\/dependencies/;
 
 assert.ok(mcpToolMetadata, 'mcp/package.json description must include the current tool count and split');
 
@@ -260,7 +261,7 @@ try {
     label: 'installed CLI package npm test',
   });
   assert.match(installedCliPackageTest.stdout, /node --test src\/lib\/\*\.test\.mjs/);
-  assert.match(installedCliPackageTest.stdout, /# pass 36/);
+  assert.match(installedCliPackageTest.stdout, /# fail 0/);
   const cliMcpVerifyArgs = (args = []) => ['mcp-verify', ...args];
   assert.deepEqual(cliMcpVerifyArgs(['ontology', '--timeout-ms', '3000']), [
     'mcp-verify',
@@ -295,11 +296,13 @@ try {
   assert.match(cliMcpVerify.stdout, /workspace_brief/);
   assert.match(cliMcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
   assert.match(cliMcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
-  assert.match(cliMcpVerify.stdout, /workspace_brief advisory nextActions/);
+  assert.match(cliMcpVerify.stdout, tunedDiagnosisScopeRe);
+  assert.match(cliMcpVerify.stdout, /workspace_brief non-blocking advisory nextActions/);
   assert.match(cliMcpVerify.stdout, /compile_issues:warn/);
   assert.match(cliMcpVerify.stdout, /health — .*checks/);
   assert.match(cliMcpVerify.stdout, /health — .*compile_issues:(pass|warn)/);
   assert.match(cliMcpVerify.stdout, /health_tuned — .*checks/);
+  assert.match(cliMcpVerify.stdout, tunedDiagnosisScopeRe);
   assert.match(cliMcpVerify.stdout, /health_tuned — .*compile_issues:(pass|warn)/);
   assert.match(cliMcpVerify.stdout, /compile_ontology/);
   assert.match(cliMcpVerify.stdout, /compile_ontology page — 1\/5 nodes, 1\/\d+ edges/);
@@ -405,7 +408,7 @@ try {
   assert.equal(invalidCliMcpVerifyEnvTimeout.stdout, '');
   assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS must be a positive integer/);
   assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /Received: "1000ms"/);
-  assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /oh-my-ontology mcp-verify --timeout-ms 15000/);
+  assert.match(invalidCliMcpVerifyEnvTimeout.stderr, /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
   assert.doesNotMatch(invalidCliMcpVerifyEnvTimeout.stderr, /npm run verify -- --timeout-ms 15000/);
 
   const maintenanceResumeVault = join(projectDir, 'maintenance-resume-vault');
@@ -475,7 +478,7 @@ try {
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health-summary\/advisory\/read\/sample-shape helper gates/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:verify:timeout/);
-  assert.match(cliMcpVerifyHelp.stdout, /Narrow MCP verify timeout\/help diagnostics/);
+  assert.match(cliMcpVerifyHelp.stdout, /Narrow MCP verify timeout\/startup\/help diagnostics/);
 
   const missingVerifyOverride = runRaw(cliBin, cliMcpVerifyArgs(['ontology']), {
     cwd: projectDir,
@@ -565,11 +568,13 @@ try {
   assert.match(mcpVerify.stdout, /workspace_brief/);
   assert.match(mcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
   assert.match(mcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
-  assert.match(mcpVerify.stdout, /workspace_brief advisory nextActions/);
+  assert.match(mcpVerify.stdout, tunedDiagnosisScopeRe);
+  assert.match(mcpVerify.stdout, /workspace_brief non-blocking advisory nextActions/);
   assert.match(mcpVerify.stdout, /compile_issues:warn/);
   assert.match(mcpVerify.stdout, /health — .*checks/);
   assert.match(mcpVerify.stdout, /health — .*compile_issues:(pass|warn)/);
   assert.match(mcpVerify.stdout, /health_tuned — .*checks/);
+  assert.match(mcpVerify.stdout, tunedDiagnosisScopeRe);
   assert.match(mcpVerify.stdout, /health_tuned — .*compile_issues:(pass|warn)/);
   assert.match(mcpVerify.stdout, /compile_ontology/);
   assert.match(mcpVerify.stdout, /compile_ontology page — 1\/5 nodes, 1\/\d+ edges/);
@@ -601,7 +606,9 @@ try {
   assert.match(directMcpVerify.stdout, /project probe — 1 project node/);
   assert.match(directMcpVerify.stdout, /workspace_brief — .*next actions, .*health checks/);
   assert.match(directMcpVerify.stdout, /workspace_brief_tuned — .*next actions, .*health checks/);
+  assert.match(directMcpVerify.stdout, tunedDiagnosisScopeRe);
   assert.match(directMcpVerify.stdout, /health_tuned — .*checks/);
+  assert.match(directMcpVerify.stdout, tunedDiagnosisScopeRe);
   assert.match(directMcpVerify.stdout, /compile_ontology page — 1\/5 nodes, 1\/\d+ edges/);
   assert.match(
     directMcpVerify.stdout,
@@ -684,7 +691,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact health-summary\/advisory\/read\/sample-shape helper gates/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify:timeout/);
-  assert.match(directMcpVerifyHelp.stdout, /Narrow MCP verify timeout\/help diagnostics/);
+  assert.match(directMcpVerifyHelp.stdout, /Narrow MCP verify timeout\/startup\/help diagnostics/);
 
   const mcpEmptyVerify = run(
     'npm',
@@ -728,7 +735,7 @@ try {
   assert.match(invalidMcpVerifyTimeout.stderr, /Received: "1000ms"/);
   assert.match(invalidMcpVerifyTimeout.stderr, /--timeout-ms N/);
   assert.match(invalidMcpVerifyTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
-  assert.match(invalidMcpVerifyTimeout.stderr, /npm run verify -- --timeout-ms 15000/);
+  assert.match(invalidMcpVerifyTimeout.stderr, /npm run verify -- --vault .+[/\\]ontology --timeout-ms 15000/);
 
   const invalidDirectMcpVerifyTimeout = runRaw(
     'npm',
@@ -741,7 +748,7 @@ try {
   assert.match(invalidDirectMcpVerifyTimeout.stderr, /Received: "1000ms"/);
   assert.match(invalidDirectMcpVerifyTimeout.stderr, /--timeout-ms N/);
   assert.match(invalidDirectMcpVerifyTimeout.stderr, /OMOT_VERIFY_TIMEOUT_MS=N/);
-  assert.match(invalidDirectMcpVerifyTimeout.stderr, /npm run verify -- --timeout-ms 15000/);
+  assert.match(invalidDirectMcpVerifyTimeout.stderr, /npm run verify -- --vault .+[/\\]ontology --timeout-ms 15000/);
 
   const missingDirectMcpVerifyTimeout = runRaw(
     'npm',
@@ -752,7 +759,7 @@ try {
   assert.equal(missingDirectMcpVerifyTimeout.stdout, '');
   assert.match(missingDirectMcpVerifyTimeout.stderr, /verify timeout must be a positive integer/);
   assert.match(missingDirectMcpVerifyTimeout.stderr, /Received: undefined/);
-  assert.match(missingDirectMcpVerifyTimeout.stderr, /npm run verify -- --timeout-ms 15000/);
+  assert.match(missingDirectMcpVerifyTimeout.stderr, /npm run verify -- --vault .+[/\\]ontology --timeout-ms 15000/);
 
   const invalidDirectMcpVerifyVault = runRaw(
     'npm',

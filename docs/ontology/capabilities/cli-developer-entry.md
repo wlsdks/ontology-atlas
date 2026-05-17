@@ -83,6 +83,7 @@ blocking `workspace-brief --json`,
 blocking `workspace-brief` non-json 의 `HEALTH CHECKS` / `dependency_cycles:fail:1` coverage, blocking `health` non-json 의 `dependency_cycles fail:1` coverage,
 `cycles --json`, `compile --json`, `path --json` exit 를 실행하고 installed verify 의
 health check count 출력, paginated `compile_ontology` full-artifact smoke 와
+installed tuned diagnosis scope (`dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies`),
 `overview`/`project_map` query_plan / `neighbors` / `path` /
 `project_scope` smoke 출력, project-less vault 의 `project_scope` skip, empty vault 의
 node-targeted graph smoke skip, single and multi unknown-argument runtime rejection,
