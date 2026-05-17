@@ -57,6 +57,8 @@ pnpm test:mcp:suggestions
 pnpm test:mcp:verify
 pnpm test:mcp:verify:first-contact
 pnpm test:mcp:verify:timeout
+pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
+pnpm cli:mcp-verify -- --help
 ```
 
 `integration:mcp:readme` runs the documented first-contact read-only MCP flow
@@ -85,7 +87,9 @@ initialize guidance, read-smoke request inventory, vault warning /
 diagnostics.
 Use `OMOT_TEST_NAME_PATTERN` or Node `--test-name-pattern` with
 `pnpm integration:mcp` when the touched MCP integration case has a different
-name.
+name. From the repo root, `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000`
+runs the CLI wrapper against this repo's dogfood vault without changing into
+`mcp/`; use `pnpm cli:mcp-verify -- --help` only for the help flag.
 
 ### 2. Restart Claude Code
 
@@ -222,6 +226,9 @@ if you change one, mirror the other.
 
 ```bash
 cd mcp && npm install
+# From the repo root, prefer the CLI wrapper for the dogfood vault:
+pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
+# Inside mcp/, the package-local verifier has the same smoke scope:
 OMOT_VAULT=../docs/ontology npm run verify
 npm run verify -- ../docs/ontology
 npm run verify -- --vault ../docs/ontology

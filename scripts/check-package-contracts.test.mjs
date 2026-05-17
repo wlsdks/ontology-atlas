@@ -463,8 +463,14 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm test:mcp:verify:first-contact/);
     assert.match(section, /first-contact health summary \/ next-action gates/);
     assert.match(section, /pnpm test:mcp:verify:timeout/);
+    assert.match(section, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000/);
+    assert.match(section, /pnpm cli:mcp-verify -- --help/);
+    assert.match(section, /runs the CLI wrapper against this repo's dogfood vault/);
     assert.match(readme, /invalid timeout values fail before the server\s+starts and print\s+the received value plus a concrete retry example/i);
     assert.match(readme, /`npm run verify -- --timeout-ms 15000`/);
+    assert.match(readme, /From the repo root, prefer the CLI wrapper for the dogfood vault/);
+    assert.match(readme, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000/);
+    assert.match(readme, /Inside mcp\/, the package-local verifier has the same smoke scope/);
     assert.match(section, /first-contact read-only MCP flow/);
     assert.match(section, /documentation drift/);
     assert.match(section, /help output/);
