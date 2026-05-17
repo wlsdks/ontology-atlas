@@ -3392,7 +3392,7 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, listStructured: { ...okShape.list, total: 2 } }),
-      ["list_concepts structuredContent mismatch"],
+      ["list_concepts structuredContent mismatch — $.total: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, listStructured: undefined }),
@@ -3410,7 +3410,7 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, kindsStructured: { total: 1, byKind: { project: 2 } } }),
-      ["list_kinds structuredContent mismatch"],
+      ["list_kinds structuredContent mismatch — $.byKind.project: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, projectProbeStructured: undefined }),
@@ -3418,7 +3418,7 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, validationStructured: { ...okShape.validation, scanned: 2 } }),
-      ["validate_vault structuredContent mismatch"],
+      ["validate_vault structuredContent mismatch — $.scanned: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, validationStructured: undefined }),
@@ -3672,7 +3672,9 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, batchStructured: { concepts: [okShape.batch.concepts[0]] } }),
-      ["get_concepts structuredContent mismatch"],
+      [
+        'get_concepts structuredContent mismatch — $.concepts[1]: parsed {"ok":true,"slug":"capabilities/mcp-server","frontmatter":{"kind":"capability","title":"MCP S..., structuredContent undefined',
+      ],
     );
   });
 
@@ -3687,7 +3689,7 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, evStructured: { matches: [{ slug: "other" }] } }),
-      ["find_evidence structuredContent mismatch"],
+      ['find_evidence structuredContent mismatch — $.matches[0]: parsed undefined, structuredContent {"slug":"other"}'],
     );
   });
 
@@ -3743,7 +3745,7 @@ describe("evaluateDogfoodGate", () => {
         ...okShape,
         pathStructured: { found: true, hopCount: 1, hops: ["a", "c"], edges: [{ from: "a", to: "c", via: "relates" }] },
       }),
-      ["find_path structuredContent mismatch"],
+      ['find_path structuredContent mismatch — $.edges[0].to: parsed "b", structuredContent "c"'],
     );
   });
 
@@ -3762,7 +3764,7 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, blStructured: { total: 1, matches: [] } }),
-      ["find_backlinks structuredContent mismatch"],
+      ['find_backlinks structuredContent mismatch — $.matches[0]: parsed {"slug":"capabilities/mcp-server","kind":"capability","title":"MCP Server"}, structuredContent undefined'],
     );
   });
 
@@ -3781,15 +3783,18 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, orphStructured: { total: 1, orphans: [] } }),
-      ["find_orphans structuredContent mismatch"],
+      ["find_orphans structuredContent mismatch — $.total: parsed 0, structuredContent 1"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, queryConceptsStructured: { ...okShape.queryConcepts, total: 2 } }),
-      ["query_concepts structuredContent mismatch"],
+      ["query_concepts structuredContent mismatch — $.total: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, queryConceptsLimited: { ...okShape.queryConceptsLimited, limited: false } }),
-      ["query_concepts_limited: expected limited=true", "query_concepts_limited structuredContent mismatch"],
+      [
+        "query_concepts_limited: expected limited=true",
+        "query_concepts_limited structuredContent mismatch — $.limited: parsed false, structuredContent true",
+      ],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
@@ -3799,11 +3804,14 @@ describe("evaluateDogfoodGate", () => {
           matches: [{ slug: "project", kind: "project", title: "Project", mtime: 1 }],
         },
       }),
-      ["query_concepts_limited: excluded project slug was returned", "query_concepts_limited structuredContent mismatch"],
+      [
+        "query_concepts_limited: excluded project slug was returned",
+        'query_concepts_limited structuredContent mismatch — $.matches[0].kind: parsed "project", structuredContent "vault-readme"',
+      ],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, queryConceptsLimitedStructured: { ...okShape.queryConceptsLimited, total: 2 } }),
-      ["query_concepts_limited structuredContent mismatch"],
+      ["query_concepts_limited structuredContent mismatch — $.total: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, analyzedRepo: { ...okShape.analyzedRepo, framework: "unknown" } }),
@@ -3815,7 +3823,7 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, analyzedRepoStructured: { ...okShape.analyzedRepo, framework: "generic" } }),
-      ["analyze_repo_structure structuredContent mismatch"],
+      ['analyze_repo_structure structuredContent mismatch — $.framework: parsed "fsd", structuredContent "generic"'],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, inferredImports: { ...okShape.inferredImports, filesScanned: -1 } }),
@@ -3847,11 +3855,11 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, inferredImportsStructured: { ...okShape.inferredImports, filesScanned: 3 } }),
-      ["infer_imports structuredContent mismatch"],
+      ["infer_imports structuredContent mismatch — $.filesScanned: parsed 2, structuredContent 3"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, overviewStructured: { ...okShape.overview, graph: { ...okShape.overview.graph, nodes: 2 } } }),
-      ["overview structuredContent mismatch"],
+      ["overview structuredContent mismatch — $.graph.nodes: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, overviewStructured: undefined }),
@@ -4125,7 +4133,7 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, compiledStructured: { ...okShape.compiled, nodeCount: 2 } }),
-      ["compile_ontology structuredContent mismatch"],
+      ["compile_ontology structuredContent mismatch — $.nodeCount: parsed 1, structuredContent 2"],
     );
     assert.deepEqual(
       evaluateDogfoodGate(withCompiled({ ...okShape.compiled, maxMtime: -1 })),
@@ -4182,7 +4190,7 @@ describe("evaluateDogfoodGate", () => {
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, compiledIndexesStructured: { ...okShape.compiledIndexes, edgeCount: 3 } }),
-      ["compile_ontology_indexes structuredContent mismatch"],
+      ["compile_ontology_indexes structuredContent mismatch — $.edgeCount: parsed 2, structuredContent 3"],
     );
   });
 
@@ -4315,7 +4323,10 @@ describe("evaluateDogfoodGate", () => {
   it("fails on malformed all_paths query_plan payloads", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, allPathsPlan: { ...okShape.allPathsPlan, operation: "all_paths" } }),
-      ["all_paths query_plan response operation mismatch", "all_paths_query_plan structuredContent mismatch"],
+      [
+        "all_paths query_plan response operation mismatch",
+        'all_paths_query_plan structuredContent mismatch — $.operation: parsed "all_paths", structuredContent "query_plan"',
+      ],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
@@ -4325,7 +4336,10 @@ describe("evaluateDogfoodGate", () => {
           normalized: { ...okShape.allPathsPlan.normalized, limit: 100 },
         },
       }),
-      ["all_paths query_plan default limit mismatch — expected 25, got 100", "all_paths_query_plan structuredContent mismatch"],
+      [
+        "all_paths query_plan default limit mismatch — expected 25, got 100",
+        "all_paths_query_plan structuredContent mismatch — $.normalized.limit: parsed 100, structuredContent 25",
+      ],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
@@ -4337,7 +4351,7 @@ describe("evaluateDogfoodGate", () => {
       }),
       [
         "all_paths query_plan resultUpperBound exceeds limit — upper 26, limit 25",
-        "all_paths_query_plan structuredContent mismatch",
+        "all_paths_query_plan structuredContent mismatch — $.estimate.resultUpperBound: parsed 26, structuredContent 25",
       ],
     );
     assert.deepEqual(
@@ -4348,7 +4362,10 @@ describe("evaluateDogfoodGate", () => {
           warnings: null,
         },
       }),
-      ["all_paths query_plan missing warnings array", "all_paths_query_plan structuredContent mismatch"],
+      [
+        "all_paths query_plan missing warnings array",
+        'all_paths_query_plan structuredContent mismatch — $.warnings: parsed null, structuredContent ["all_paths may be truncated by limit; reduce maxHops or add relation types."]',
+      ],
     );
   });
 
@@ -4358,14 +4375,20 @@ describe("evaluateDogfoodGate", () => {
         ...okShape,
         projectMapPlan: { ...okShape.projectMapPlan, operation: "project_map" },
       }),
-      ["project_map query_plan returned unexpected operation: project_map", "project_map_query_plan structuredContent mismatch"],
+      [
+        "project_map query_plan returned unexpected operation: project_map",
+        'project_map_query_plan structuredContent mismatch — $.operation: parsed "project_map", structuredContent "query_plan"',
+      ],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
         projectMapPlan: { ...okShape.projectMapPlan, targetOperation: "overview" },
       }),
-      ["project_map query_plan returned unexpected targetOperation: overview", "project_map_query_plan structuredContent mismatch"],
+      [
+        "project_map query_plan returned unexpected targetOperation: overview",
+        'project_map_query_plan structuredContent mismatch — $.targetOperation: parsed "overview", structuredContent "project_map"',
+      ],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
@@ -4375,14 +4398,20 @@ describe("evaluateDogfoodGate", () => {
           estimate: { ...okShape.projectMapPlan.estimate, strategy: "bounded_bfs" },
         },
       }),
-      ["project_map query_plan missing aggregate_scan estimate", "project_map_query_plan structuredContent mismatch"],
+      [
+        "project_map query_plan missing aggregate_scan estimate",
+        'project_map_query_plan structuredContent mismatch — $.estimate.strategy: parsed "bounded_bfs", structuredContent "aggregate_scan"',
+      ],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
         ...okShape,
         projectMapPlan: { ...okShape.projectMapPlan, indexesUsed: [] },
       }),
-      ["project_map query_plan missing compiled_artifact index hint", "project_map_query_plan structuredContent mismatch"],
+      [
+        "project_map query_plan missing compiled_artifact index hint",
+        'project_map_query_plan structuredContent mismatch — $.indexesUsed[0]: parsed undefined, structuredContent "compiled_artifact"',
+      ],
     );
   });
 
@@ -4972,7 +5001,7 @@ describe("evaluateDogfoodGate", () => {
       }),
       [
         "maintenance_plan missing-cursor smoke did not report cursor.found=false",
-        "maintenance_plan_missing_cursor structuredContent mismatch",
+        "maintenance_plan_missing_cursor structuredContent mismatch — $.cursor.found: parsed true, structuredContent false",
       ],
     );
     assert.deepEqual(
@@ -4985,7 +5014,7 @@ describe("evaluateDogfoodGate", () => {
       }),
       [
         "missing-cursor smoke: maintenance_plan cursor not found without reason",
-        "maintenance_plan_missing_cursor structuredContent mismatch",
+        "maintenance_plan_missing_cursor structuredContent mismatch — $.cursor.reason: parsed null, structuredContent \"afterActionId not found in filtered maintenance actions\"",
       ],
     );
     assert.deepEqual(
@@ -5003,7 +5032,7 @@ describe("evaluateDogfoodGate", () => {
       }),
       [
         "maintenance_plan missing-cursor smoke returned actions",
-        "maintenance_plan_missing_cursor structuredContent mismatch",
+        "maintenance_plan_missing_cursor structuredContent mismatch — $.actions[0]: parsed {\"id\":\"maint_link\",\"phase\":\"link\",\"kind\":\"add_missing_relation\",\"severity\":\"warn\",\"score\":1,\"..., structuredContent undefined",
       ],
     );
   });
@@ -5041,7 +5070,10 @@ describe("evaluateDogfoodGate", () => {
           externalElementRefs: { ...okShape.growthPlan.externalElementRefs, rows: [] },
         },
       }),
-      ["growth_plan.externalElementRefs row count mismatch — rows 0, total 1", "growth_plan structuredContent mismatch"],
+      [
+        "growth_plan.externalElementRefs row count mismatch — rows 0, total 1",
+        'growth_plan structuredContent mismatch — $.externalElementRefs.rows[0]: parsed undefined, structuredContent {"kind":"materialize_external_element","score":0.8,"from":"capabilities/mcp-server","ref":"mc...',
+      ],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
@@ -5074,7 +5106,7 @@ describe("evaluateDogfoodGate", () => {
       }),
       [
         "growth_plan.externalElementRefs proposedAction slug mismatch: materialize_external_element",
-        "growth_plan structuredContent mismatch",
+        'growth_plan structuredContent mismatch — $.externalElementRefs.rows[0].proposedAction.args.slug: parsed "elements/other", structuredContent "elements/mcp-src-index"',
       ],
     );
     assert.deepEqual(
@@ -5090,7 +5122,7 @@ describe("evaluateDogfoodGate", () => {
       }),
       [
         "growth_plan.danglingReferences proposedAction missing tool: resolve_dangling_reference",
-        "growth_plan structuredContent mismatch",
+        'growth_plan structuredContent mismatch — $.danglingReferences.rows[0].proposedAction.args.kind: parsed undefined, structuredContent "capability"',
       ],
     );
     assert.deepEqual(
@@ -5114,7 +5146,7 @@ describe("evaluateDogfoodGate", () => {
       }),
       [
         "growth_plan.danglingReferences proposedAction kind mismatch: resolve_dangling_reference",
-        "growth_plan structuredContent mismatch",
+        'growth_plan structuredContent mismatch — $.danglingReferences.rows[0].proposedAction.args.kind: parsed "element", structuredContent "capability"',
       ],
     );
     assert.deepEqual(
@@ -5128,7 +5160,10 @@ describe("evaluateDogfoodGate", () => {
           },
         },
       }),
-      ["growth_plan.unassignedNodes row missing score: unassigned_node", "growth_plan structuredContent mismatch"],
+      [
+        "growth_plan.unassignedNodes row missing score: unassigned_node",
+        "growth_plan structuredContent mismatch — $.unassignedNodes.rows[0].score: parsed -1, structuredContent 0.5",
+      ],
     );
   });
 
@@ -6085,15 +6120,18 @@ describe("evaluateDogfoodGate", () => {
   it("fails when dogfood read surfaces disagree on counts", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, list: { ...okShape.list, total: 2 } }),
-      ["list_concepts structuredContent mismatch", "dogfood count mismatch — list_kinds.total 1, list_concepts.total 2"],
+      [
+        "list_concepts structuredContent mismatch — $.total: parsed 2, structuredContent 1",
+        "dogfood count mismatch — list_kinds.total 1, list_concepts.total 2",
+      ],
     );
     assert.deepEqual(evaluateDogfoodGate({ ...okShape, validation: { ...okShape.validation, scanned: 2 } }), [
-      "validate_vault structuredContent mismatch",
+      "validate_vault structuredContent mismatch — $.scanned: parsed 2, structuredContent 1",
     ]);
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, compiled: { ...okShape.compiled, nodeCount: 2, byKind: { project: 2 } } }),
       [
-        "compile_ontology structuredContent mismatch",
+        "compile_ontology structuredContent mismatch — $.byKind.project: parsed 2, structuredContent 1",
         "dogfood count mismatch — list_kinds.total 1, compile_ontology.nodeCount 2",
         "dogfood byKind mismatch — project: list_kinds 1, compile_ontology 2",
       ],
@@ -6106,7 +6144,7 @@ describe("evaluateDogfoodGate", () => {
       [
         "dogfood count mismatch — list_kinds.total 1, overview.graph.nodes 2",
         "dogfood byKind mismatch — project: list_kinds 1, overview 2",
-        "overview structuredContent mismatch",
+        "overview structuredContent mismatch — $.byKind.project: parsed 2, structuredContent 1",
       ],
     );
   });
@@ -6119,7 +6157,7 @@ describe("evaluateDogfoodGate", () => {
         compiled: { ...okShape.compiled, byKind: { project: 1 } },
       }),
       [
-        "list_kinds structuredContent mismatch",
+        "list_kinds structuredContent mismatch — $.byKind.capability: parsed 1, structuredContent undefined",
         "dogfood byKind mismatch — capability: list_kinds 1, compile_ontology 0",
         "dogfood byKind mismatch — project: list_kinds 0, compile_ontology 1",
         "dogfood byKind mismatch — capability: list_kinds 1, overview 0",
@@ -6133,8 +6171,8 @@ describe("evaluateDogfoodGate", () => {
         compiled: { ...okShape.compiled, byKind: { capability: 1 } },
       }),
       [
-        "list_kinds structuredContent mismatch",
-        "compile_ontology structuredContent mismatch",
+        "list_kinds structuredContent mismatch — $.byKind.capability: parsed 1, structuredContent undefined",
+        "compile_ontology structuredContent mismatch — $.byKind.capability: parsed 1, structuredContent undefined",
         "dogfood byKind mismatch — capability: list_kinds 1, overview 0",
         "dogfood byKind mismatch — project: list_kinds 0, overview 1",
       ],
@@ -6265,7 +6303,10 @@ describe("evaluateDogfoodGate", () => {
       ...okShape,
       path: { found: false, reason: "not connected" },
     });
-    assert.deepEqual(failures, ["find_path structuredContent mismatch", "find_path: expected mcp-server → vault-local-first path"]);
+    assert.deepEqual(failures, [
+      'find_path structuredContent mismatch — $.edges: parsed undefined, structuredContent [{"from":"a","to":"b","via":"relates"}]',
+      "find_path: expected mcp-server → vault-local-first path",
+    ]);
   });
 
   it("fails on unhealthy first-contact diagnosis", () => {

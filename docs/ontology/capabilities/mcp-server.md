@@ -124,8 +124,8 @@ destructive dry-run smoke 는 실제 vault 의 기존 slug 로 `rename_concept` 
 dry-run 응답 중 하나라도 누락되면 부분 성공으로 처리하지 않고 verify 를 실패시킨다.
 `get_concept` 는 `list_concepts` 에서 얻은 실제 slug 하나로 single-node detail 의
 frontmatter / excerpt / neighbors / outgoingEdges / mtime 과 `structuredContent` 계약을 확인한다.
-`structuredContent` parity 실패는 첫 불일치 JSON path 와 parsed/text JSON 값,
-`structuredContent` 값을 함께 출력해 agent 가 응답 contract drift 를 바로 좁힐 수 있게 한다.
+`structuredContent` parity 실패는 installed verify 와 dogfood gate 양쪽에서 첫 불일치 JSON path 와
+parsed/text JSON 값, `structuredContent` 값을 함께 출력해 agent 가 응답 contract drift 를 바로 좁힐 수 있게 한다.
 `get_concepts` 는 `list_concepts` 에서 얻은 실제 slug 최대 2개와 missing slug 를 섞어
 설치 검증에서도 batch reader 의 성공 row 와 partial row 계약을 확인한다.
 `find_evidence` / `find_backlinks` / `query_concepts` 는 resolved vault 에 실제 호출하고,

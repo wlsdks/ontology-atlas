@@ -1345,7 +1345,7 @@ export function evaluateDogfoodGate({
       if (status === "missing") {
         failures.push(`${label} structuredContent missing`);
       } else if (status === "mismatch") {
-        failures.push(`${label} structuredContent mismatch`);
+        failures.push(structuredContentMismatchFailure(label, parsed, structured));
       }
     }
   }
@@ -1360,8 +1360,12 @@ function recordStructuredContentFailure(failures, label, parsed, structured) {
     return;
   }
   if (status === "mismatch") {
-    failures.push(`${label} structuredContent mismatch`);
+    failures.push(structuredContentMismatchFailure(label, parsed, structured));
   }
+}
+
+function structuredContentMismatchFailure(label, parsed, structured) {
+  return `${label} structuredContent mismatch — ${structuredContentMismatchSummary(parsed, structured)}`;
 }
 
 function evidenceShapeFailure(result) {
