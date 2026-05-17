@@ -19,6 +19,7 @@
     "vault:audit": "node scripts/audit-vault-paths.mjs",
     "test:vault:audit": "node --test scripts/audit-vault-paths.test.mjs",
     "package:check": "node scripts/check-package-contracts.mjs && node --test scripts/check-package-contracts.test.mjs",
+    "test:cli:lib": "node --test cli/src/lib/*.test.mjs",
     "integration:cli": "node --test cli/src/integration.test.mjs",
     "integration:cli:mcp-verify": "node --test --test-name-pattern \"mcp-verify\" cli/src/integration.test.mjs",
     "integration:mcp": "node --test mcp/src/integration.test.mjs",

@@ -349,8 +349,7 @@ function summarize(conceptRows, relationRows) {
   };
 }
 
-// callMcpTool 의 1차 wrapper 가 mcp 호출의 result.content[0].text 를 JSON.parse
-// 해서 그대로 반환 — 우리도 그 shape 가정.
+// callMcpTool already unwraps MCP structuredContent/text fallback into the tool payload.
 async function callBatch(vaultRoot, name, args) {
   return callMcpTool(vaultRoot, name, args);
 }

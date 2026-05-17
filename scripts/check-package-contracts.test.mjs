@@ -59,6 +59,7 @@ describe('package contract helpers', () => {
       pkg.scripts?.['integration:mcp:readme'],
       'node --test --test-name-pattern "README first exploration" mcp/src/integration.test.mjs',
     );
+    assert.equal(pkg.scripts?.['test:cli:lib'], 'node --test cli/src/lib/*.test.mjs');
     assert.match(pkg.scripts?.['test:mcp:package'] ?? '', /check-package-contracts\.test\.mjs/);
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /check-package-contracts\.test\.mjs/);
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /scripts\/dogfood-mcp-walk\.test\.mjs/);
@@ -97,6 +98,7 @@ describe('package contract helpers', () => {
       pkg.scripts?.['test:mcp:suggestions'] ?? '',
       /^node --test --test-name-pattern "[^"]+" mcp\/src\/suggestions\.test\.mjs mcp\/src\/ontology-engine\.test\.mjs$/,
     );
+    assert.match(readme, /pnpm test:cli:lib\s+# focused CLI shared helper unit contracts/);
     assert.match(readme, /pnpm test:mcp:docs/);
     assert.match(readme, /pnpm test:mcp:dogfood/);
     assert.match(readme, /structuredContent\/compile\/destructive dry-run\/help\/argument\/timeout\/stderr checks/);
@@ -1196,6 +1198,9 @@ describe('package contract helpers', () => {
     const regressionSection = doc.split('## 회귀 차단')[1] ?? '';
 
     assert.doesNotMatch(regressionSection, /\*\*\d+ spawn-based\*\* integration test/);
+    assert.match(doc, /`cli\/src\/lib\/mcp-call\.mjs` 의 thin wrapper/);
+    assert.match(doc, /MCP `structuredContent` 를 먼저 사용하고 없는 경우에만 text JSON 으로 fallback/);
+    assert.match(doc, /cli\/src\/lib\/mcp-call\.test\.mjs/);
     assert.match(regressionSection, /spawn-based integration suite/);
     assert.match(regressionSection, /Node `--test-name-pattern`/);
     assert.match(regressionSection, /`pnpm integration:cli:mcp-verify`/);

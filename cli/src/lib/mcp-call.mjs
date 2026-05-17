@@ -60,7 +60,7 @@ function isFile(path) {
 /**
  * One-shot MCP tool call. Spawns the server, sends initialize +
  * notifications/initialized + tools/call, parses the JSON-RPC response,
- * resolves with the parsed result (the JSON in `content[0].text`).
+ * resolves with `structuredContent` first, then the JSON in `content[0].text`.
  *
  * @param {string} vaultRoot — passed as OMOT_VAULT env
  * @param {string} toolName — e.g. 'find_backlinks'
@@ -118,26 +118,7 @@ export function callMcpTool(vaultRoot, toolName, args = {}) {
           );
           return;
         }
-        if (toolResp.error) {
-          rejectP(new Error(`mcp tool error: ${toolResp.error.message}`));
-          return;
-        }
-        const text = toolResp.result?.content?.[0]?.text;
-        if (typeof text !== 'string') {
-          rejectP(new Error('mcp tool response has no text content'));
-          return;
-        }
-        if (toolResp.result?.isError) {
-          rejectP(new Error(text));
-          return;
-        }
-        // Server returns JSON.stringify(result) in text — parse back.
-        try {
-          resolveP(JSON.parse(text));
-        } catch {
-          // Some tools (errors) may return a plain string — pass through.
-          resolveP({ text });
-        }
+        resolveP(parseMcpToolResponse(toolResp));
       } catch (err) {
         rejectP(err);
       }
@@ -167,4 +148,25 @@ export function callMcpTool(vaultRoot, toolName, args = {}) {
     }
     proc.stdin.end();
   });
+}
+
+export function parseMcpToolResponse(toolResp) {
+  if (toolResp?.error) {
+    throw new Error(`mcp tool error: ${toolResp.error.message}`);
+  }
+  const text = toolResp?.result?.content?.[0]?.text;
+  if (typeof text !== 'string') {
+    throw new Error('mcp tool response has no text content');
+  }
+  if (toolResp.result?.isError) {
+    throw new Error(text);
+  }
+  if (toolResp.result && Object.prototype.hasOwnProperty.call(toolResp.result, 'structuredContent')) {
+    return toolResp.result.structuredContent;
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { text };
+  }
 }
