@@ -2342,11 +2342,15 @@ await test('repo analysis commands — reject invalid numeric option values befo
   const cases = [
     {
       args: ['analyze', '--max-depth'],
-      pattern: /--max-depth must be a positive integer/,
+      pattern: /--max-depth must be a non-negative integer/,
     },
     {
       args: ['analyze', '--max-depth=abc'],
-      pattern: /--max-depth must be a positive integer/,
+      pattern: /--max-depth must be a non-negative integer/,
+    },
+    {
+      args: ['analyze', '--max-depth=11'],
+      pattern: /--max-depth must be <= 10/,
     },
     {
       args: ['infer-imports', '--max-files', '--json'],
@@ -2366,7 +2370,11 @@ await test('repo analysis commands — reject invalid numeric option values befo
     },
     {
       args: ['bootstrap', '--max-depth', '--skip-imports'],
-      pattern: /--max-depth must be a positive integer/,
+      pattern: /--max-depth must be a non-negative integer/,
+    },
+    {
+      args: ['bootstrap', '--max-depth=11'],
+      pattern: /--max-depth must be <= 10/,
     },
     {
       args: ['bootstrap', '--max-files=abc'],

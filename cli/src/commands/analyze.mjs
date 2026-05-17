@@ -12,10 +12,12 @@ import {
 } from '../lib/prune-starters.mjs';
 import { getVaultCensus, writeVaultCensus } from '../lib/vault-census.mjs';
 import {
-  parsePositiveIntegerFlag,
+  parseBoundedNonNegativeIntegerFlag,
   parseVaultFlag,
   resolveSingleRootPathArg,
 } from '../lib/cli-args.mjs';
+
+const MAX_DEPTH_CAP = 10;
 
 const COLORS = {
   green: '\x1b[32m',
@@ -156,9 +158,9 @@ function parseArgs(args) {
     else if (a === '--json') flags.json = true;
     else if (a === '--apply') flags.apply = true;
     else if (a === '--max-depth')
-      flags.maxDepth = parsePositiveIntegerFlag('--max-depth', args[++i]);
+      flags.maxDepth = parseBoundedNonNegativeIntegerFlag('--max-depth', args[++i], { max: MAX_DEPTH_CAP });
     else if (a.startsWith('--max-depth='))
-      flags.maxDepth = parsePositiveIntegerFlag('--max-depth', a.slice('--max-depth='.length));
+      flags.maxDepth = parseBoundedNonNegativeIntegerFlag('--max-depth', a.slice('--max-depth='.length), { max: MAX_DEPTH_CAP });
     else if (a.startsWith('--')) return { error: `unknown flag: ${a}` };
     else positional.push(a);
   }
@@ -360,7 +362,8 @@ function printUsage(stream = process.stderr) {
       `  H2 sections / src/ folders, propose ontology node candidates.\n` +
       `  Default: ${COLORS.bold}side effect 0${COLORS.reset} — vault 변경 안 함, 후보만 출력.\n` +
       `  ${COLORS.bold}--apply${COLORS.reset}: 후보를 vault 에 batch land (add_concepts + add_relations).\n` +
-      `  partial result — 이미 존재하는 노드는 skip, 새 노드만 land.\n\n` +
+      `  partial result — 이미 존재하는 노드는 skip, 새 노드만 land.\n` +
+      `  ${COLORS.bold}--max-depth N${COLORS.reset}: default 2, range 0-${MAX_DEPTH_CAP}.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
       `  oh-my-ontology analyze                 # preview only (no writes)\n` +
       `  oh-my-ontology analyze ~/my-app --json # machine output\n` +

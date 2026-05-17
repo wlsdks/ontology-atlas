@@ -63,6 +63,15 @@ export function parseNonNegativeIntegerFlag(flag, value) {
   return Number.isSafeInteger(parsed) ? parsed : new Error(`${flag} must be a non-negative integer`);
 }
 
+export function parseBoundedNonNegativeIntegerFlag(flag, value, { max } = {}) {
+  const parsed = parseNonNegativeIntegerFlag(flag, value);
+  if (parsed instanceof Error) return parsed;
+  if (Number.isInteger(max) && parsed > max) {
+    return new Error(`${flag} must be <= ${max}`);
+  }
+  return parsed;
+}
+
 export function parseRequiredFlagValue(flag, value) {
   const text = String(value ?? '').trim();
   if (!text || text.startsWith('--')) return new Error(`${flag} requires a value`);

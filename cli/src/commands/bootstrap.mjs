@@ -28,12 +28,14 @@ import {
 } from '../lib/prune-starters.mjs';
 import { getVaultCensus, writeVaultCensus } from '../lib/vault-census.mjs';
 import {
+  parseBoundedNonNegativeIntegerFlag,
   parseBoundedPositiveIntegerFlag,
   parsePositiveIntegerFlag,
   parseVaultFlag,
   resolveSingleRootPathArg,
 } from '../lib/cli-args.mjs';
 
+const MAX_DEPTH_CAP = 10;
 const MAX_FILES_CAP = 50000;
 
 const COLORS = {
@@ -571,9 +573,9 @@ function parseArgs(args) {
     else if (a === '--json') flags.json = true;
     else if (a === '--skip-imports') flags.skipImports = true;
     else if (a === '--max-depth')
-      flags.maxDepth = parsePositiveIntegerFlag('--max-depth', args[++i]);
+      flags.maxDepth = parseBoundedNonNegativeIntegerFlag('--max-depth', args[++i], { max: MAX_DEPTH_CAP });
     else if (a.startsWith('--max-depth='))
-      flags.maxDepth = parsePositiveIntegerFlag('--max-depth', a.slice('--max-depth='.length));
+      flags.maxDepth = parseBoundedNonNegativeIntegerFlag('--max-depth', a.slice('--max-depth='.length), { max: MAX_DEPTH_CAP });
     else if (a === '--max-files')
       flags.maxFiles = parseBoundedPositiveIntegerFlag('--max-files', args[++i], { max: MAX_FILES_CAP });
     else if (a.startsWith('--max-files='))
@@ -616,6 +618,7 @@ function printUsage(stream = process.stderr) {
       `  1줄 full bootstrap. analyze --apply (노드 + suggested relations) +\n` +
       `  infer-imports --apply (depends_on edges) 를 합친 적용 명령.\n` +
       `  agent-less 환경 (CI · plain shell) 또는 새 repo 진입 직후 흐름.\n\n` +
+      `  --max-depth N: analyze folder walk default 2, range 0-${MAX_DEPTH_CAP}.\n` +
       `  --max-files N: import walk default 5000, max ${MAX_FILES_CAP} hard stop.\n\n` +
       `${COLORS.bold}Examples:${COLORS.reset}\n` +
       `  oh-my-ontology bootstrap                       # cwd → cwd vault\n` +
