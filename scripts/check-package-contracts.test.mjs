@@ -852,6 +852,9 @@ describe('package contract helpers', () => {
     assert.match(smoke, /health_tuned — \.\*checks/);
     assert.match(smoke, /strict arguments — unknown tool argument rejected at runtime/);
     assert.match(smoke, /strict arguments — multiple unknown tool arguments reported together/);
+    assert.match(smoke, /add_concepts — non-object and unknown-field rows isolated at row level/);
+    assert.match(smoke, /add_relations — non-object and unknown-field rows isolated at row level/);
+    assert.match(smoke, /structuredContent — direct 7\\\/7, write 2\\\/2, maintenance 2\\\/2, graph 10\\\/10/);
     assert.match(smoke, /neighbors\\\/node-to-project path\\\/project_scope graph-query smoke/);
     assert.match(smoke, /runtime unknown-argument/);
     assert.match(smoke, /invalid-enum rejection/);
