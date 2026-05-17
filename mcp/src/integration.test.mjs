@@ -658,6 +658,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       { type: "integer", minimum: 0, maximum: 20 },
       "find_path exposes bounded integer maxHops schema",
     );
+    assert.match(
+      findTool("find_path")?.inputSchema?.properties?.maxHops?.description ?? "",
+      /default 5, max 20/i,
+      "find_path maxHops schema documents default and cap",
+    );
     assert.deepEqual(
       {
         nodesLimitType: findTool("compile_ontology")?.inputSchema?.properties?.nodesLimit?.type,

@@ -930,7 +930,20 @@ describe('verify.mjs first-contact gates', () => {
       },
       {
         name: 'find_path',
-        inputSchema: { additionalProperties: false, required: ['from', 'to'], properties: {} },
+        inputSchema: {
+          additionalProperties: false,
+          required: ['from', 'to'],
+          properties: {
+            from: { type: 'string' },
+            to: { type: 'string' },
+            maxHops: {
+              type: 'integer',
+              minimum: 0,
+              maximum: 20,
+              description: 'Non-negative integer maximum hop count (default 5, max 20).',
+            },
+          },
+        },
         outputSchema: {
           type: 'object',
           required: ['from', 'to', 'found'],
@@ -1863,6 +1876,27 @@ describe('verify.mjs first-contact gates', () => {
         },
       )),
       'find_neighbors inputSchema limit default description drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'find_path'),
+        {
+          ...tools.find((tool) => tool.name === 'find_path'),
+          inputSchema: {
+            ...tools.find((tool) => tool.name === 'find_path').inputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'find_path').inputSchema.properties,
+              maxHops: {
+                type: 'integer',
+                minimum: 0,
+                maximum: 20,
+                description: 'Non-negative integer maximum hop count.',
+              },
+            },
+          },
+        },
+      ]),
+      'find_path inputSchema maxHops default description drift',
     );
     assert.equal(
       toolsListSchemaFailure([

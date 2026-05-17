@@ -465,6 +465,16 @@ export function toolsListSchemaFailure(tools) {
 
   const findPathTool = tools.find((tool) => tool?.name === 'find_path');
   if (!findPathTool) return 'tools/list response missing find_path tool';
+  const findPathMaxHopsSchema = propertyAt(findPathTool, ['properties', 'maxHops']);
+  if (
+    findPathMaxHopsSchema?.type !== 'integer' ||
+    findPathMaxHopsSchema.minimum !== 0 ||
+    findPathMaxHopsSchema.maximum !== 20 ||
+    !/default 5/i.test(findPathMaxHopsSchema?.description ?? '') ||
+    !/max 20/i.test(findPathMaxHopsSchema?.description ?? '')
+  ) {
+    return 'find_path inputSchema maxHops default description drift';
+  }
   if (findPathTool.outputSchema?.type !== 'object') {
     return 'find_path outputSchema root drift';
   }
