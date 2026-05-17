@@ -138,6 +138,9 @@ describe('package contract helpers', () => {
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /failing health checks/);
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /warn\/fail next actions/);
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /malformed workspace_brief/);
+    assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /malformed maintenance_plan payloads/);
+    assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /remaining maintenance buckets/);
+    assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /current-page maintenance next actions/);
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /stderr warnings/);
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /dogfood help/);
     assert.match(pkg.scripts?.['test:mcp:dogfood'] ?? '', /dogfood arguments/);
@@ -186,7 +189,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm test:cli:lib\s+# focused CLI shared helper unit contracts/);
     assert.match(readme, /pnpm test:mcp:docs/);
     assert.match(readme, /pnpm test:mcp:dogfood/);
-    assert.match(readme, /structuredContent\/compile\/row-label\/vault-warning\/health\/sample-shape\/initialize\/destructive dry-run\/help\/argument\/timeout\/strict relation\/stderr checks/);
+    assert.match(readme, /structuredContent\/compile\/row-label\/vault-warning\/health\/sample-shape\/maintenance work-queue\/initialize\/destructive dry-run\/help\/argument\/timeout\/strict relation\/stderr checks/);
     assert.match(readme, /pnpm test:mcp:dogfood:timeout\s+# narrow dogfood timeout\/help retry diagnostics/);
     assert.match(readme, /pnpm test:mcp:maintenance\s+# narrow maintenance_plan filter\/cursor\/work-queue gates/);
     assert.match(readme, /pnpm test:mcp:package\s+# focused MCP\/CLI package-script\/dependency\/tarball contract checks/);

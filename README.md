@@ -129,7 +129,7 @@ frontmatter issues so you know which docs aren't becoming graph nodes.
 pnpm package:check              # MCP/CLI package files contract + CLI lib + docs self-test
 pnpm test:cli:lib               # focused CLI shared helper unit contracts
 pnpm test:mcp:docs              # focused README + dogfood ontology docs contract
-pnpm test:mcp:dogfood           # focused dogfood helper + structuredContent/compile/row-label/vault-warning/health/sample-shape/initialize/destructive dry-run/help/argument/timeout/strict relation/stderr checks
+pnpm test:mcp:dogfood           # focused dogfood helper + structuredContent/compile/row-label/vault-warning/health/sample-shape/maintenance work-queue/initialize/destructive dry-run/help/argument/timeout/strict relation/stderr checks
 pnpm test:mcp:dogfood:timeout   # narrow dogfood timeout/help retry diagnostics
 pnpm test:mcp:maintenance       # narrow maintenance_plan filter/cursor/work-queue gates
 pnpm test:mcp:package           # focused MCP/CLI package-script/dependency/tarball contract checks

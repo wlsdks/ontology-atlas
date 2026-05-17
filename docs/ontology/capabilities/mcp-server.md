@@ -391,8 +391,9 @@ subset 만 실행해 agent onboarding 문서 변경을 빠르게 검증한다.
 package manifest / enum suggestion 류의 더 작은 변경은 root 의
 `pnpm test:mcp:package` / `pnpm test:mcp:suggestions` 로 파일 단위 검증을 먼저
 돌려 반복 dogfood 비용을 낮춘다. dogfood helper / structuredContent 출력 계약이나
-vault warning / `validate_vault` problem gate, first-contact health gate, initialize guidance gate,
-workspace_brief sample-shape gate, destructive dry-run gate, strict relation filter, stderr warning filtering 을 만질 때는 `pnpm test:mcp:dogfood` 로 dogfood helper 와
+vault warning / `validate_vault` problem gate, first-contact health gate,
+workspace_brief sample-shape gate, maintenance work-queue shape gate, initialize guidance gate,
+destructive dry-run gate, strict relation filter, stderr warning filtering 을 만질 때는 `pnpm test:mcp:dogfood` 로 dogfood helper 와
 관련 문서 계약만 먼저 확인한다. dogfood timeout / retry help 만 만질 때는
 `pnpm test:mcp:dogfood:timeout` 으로 더 좁게 확인한다. 직접 verify help 는
 `mcp/` package directory 의 `npm run verify -- --help` 또는 repo root 의
