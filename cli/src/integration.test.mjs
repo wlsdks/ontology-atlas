@@ -367,8 +367,10 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /Usage:/);
   assert.match(clean, /server boot/);
   assert.match(clean, /tool inventory/);
+  assert.match(clean, /get_concept/);
   assert.match(clean, /get_concepts/);
   assert.match(clean, /find_evidence\/find_backlinks\/query_concepts\/limited query_concepts/);
+  assert.match(clean, /find_neighbors\/find_path/);
   assert.match(clean, /find_orphans/);
   assert.match(clean, /project probe/);
   assert.match(clean, /node census\/file validation/);
