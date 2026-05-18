@@ -440,16 +440,15 @@ await test('mcp-verify — allows valid vaults without a project node', async ()
   }
 });
 
-await test('mcp-verify — allows an empty vault folder before graph smoke targets exist', async () => {
+await test('mcp-verify — fails an empty vault folder with a populated-vault hint', async () => {
   const root = withVault([]);
   try {
     const r = await run(['mcp-verify', root, '--timeout-ms', '3000']);
-    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /vault total 0 nodes/);
-    assert.match(clean, /maintenance cursor — ready page stable/);
-    assert.match(clean, /neighbors\/path — skipped \(vault has no nodes\)/);
-    assert.match(clean, /project_scope — skipped \(no project node in vault\)/);
+    assert.match(clean, /verify vault has 0 ontology nodes/);
+    assert.match(clean, /Point verify at a populated ontology vault/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

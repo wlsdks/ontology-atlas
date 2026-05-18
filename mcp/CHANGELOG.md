@@ -20,7 +20,7 @@
 - `npm run verify` now validates `path` hop/edge alignment, so an installed package cannot report a usable graph path when the edge payload no longer explains the hop sequence.
 - `npm run verify` now probes `kind: project` with a dedicated `list_concepts` call before graph smoke, so `project_scope` is not accidentally skipped when the project node is outside the first node sample.
 - `npm run verify` now skips only the containment-specific `project_scope` smoke when a valid vault has no `kind: project` node, while still gating `neighbors` and node-level `path`.
-- `npm run verify` now accepts empty vault folders by skipping node-targeted graph smoke until a first node exists, while still gating boot, inventory, validation, diagnosis, compile, overview, and query planning.
+- `npm run verify` now treats empty vault folders as a first-contact configuration failure after the `list_concepts` census, so package installs do not report a green MCP wiring check against the wrong folder.
 - `npm run verify` now gates a widened `query_plan.targetOperation` smoke with `project_map`, so installed packages prove non-`overview` aggregate targets before agents rely on the schema enum.
 - `npm run verify` now gates paginated `compile_ontology({nodesLimit:1, edgesLimit:1})` and indexed `compile_ontology({nodesLimit:1, edgesLimit:1, includeIndexes:true})` smoke, so installed packages catch large-vault pagination and graph-index payload drift before agents depend on partial artifacts.
 - `npm run verify` now checks one discovered node through `get_concept`, so installed packages catch single-node detail payload drift for frontmatter, prose excerpt, neighbors, outgoing edges, mtime, and `structuredContent`.

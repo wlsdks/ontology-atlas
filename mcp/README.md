@@ -578,9 +578,9 @@ checks are not skipped just because the project node was outside the first
 `list_concepts` sample. The probe also verifies that returned rows are
 `kind: project` and that its total matches `list_kinds.byKind.project`. Valid project-less vaults skip that one
 containment-specific check while still gating `neighbors` and `path`. Empty
-vaults skip node-targeted graph smoke until there is at least one node, but
-still gate boot, inventory, validation, diagnosis, compile, overview, and query
-planning. The `path` smoke also validates hop/edge alignment, so an installed
+vault folders fail immediately after the `list_concepts` census with a
+populated-vault recovery hint, so the verifier does not report a green MCP
+wiring check against the wrong folder. The `path` smoke also validates hop/edge alignment, so an installed
 package cannot report a usable path when the edge payload no longer explains the
 hop sequence.
 `get_concepts` reuses up to two slugs from `list_concepts` plus one missing slug

@@ -250,7 +250,9 @@ payloads fail closed before machine output. Standalone `overview`, `hubs`, and
 `blast-radius` commands also validate graph/count/ranking/page payloads before
 machine or human output. Vaults without a `kind: project`
 node skip only the containment-specific `project_scope` smoke; empty vault
-folders skip node-targeted graph smoke until a first node exists.
+folders fail immediately after the `list_concepts` census with a populated-vault
+recovery hint, so the wrapper does not report a green MCP wiring check against
+the wrong folder.
 Use `--timeout-ms 15000` when a large vault or slow filesystem needs a longer
 server wait window. Invalid timeout values print the received value and a
 retry example such as `oh-my-ontology mcp-verify --timeout-ms 15000`; when the

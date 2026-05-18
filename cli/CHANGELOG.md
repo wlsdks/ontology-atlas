@@ -13,7 +13,7 @@
 - `mcp-verify` now inherits the MCP package core graph-query smoke for `neighbors`, node→project `path`, and `project_scope`, so installed CLI checks prove more than aggregate query planning.
 - `mcp-verify` now inherits the MCP package project-node probe before graph smoke, so `project_scope` is not accidentally skipped when the project node is outside the first `list_concepts` sample.
 - `mcp-verify` now accepts valid project-less vaults by skipping only the containment-specific `project_scope` smoke while still proving `neighbors` and node-level `path`.
-- `mcp-verify` now accepts empty vault folders by skipping node-targeted graph smoke until a first node exists, while still proving the installed MCP boot, inventory, validation, diagnosis, compile, overview, and query planning path.
+- `mcp-verify` now treats empty vault folders as a first-contact configuration failure after the `list_concepts` census, so CLI installs do not report a green MCP wiring check against the wrong folder.
 - `mcp-verify` now inherits the MCP package `project_map` query_plan smoke, so installed CLI checks prove widened `query_plan.targetOperation` support beyond the original `overview` target.
 - `mcp-verify` now inherits the MCP package `get_concept` smoke, so installed CLI checks prove single-node detail payloads before agents depend on frontmatter, prose excerpts, neighbors, outgoing edges, and mtime.
 - `mcp-verify` now inherits the MCP package `get_concepts` smoke: discovered vault slugs plus one missing slug catch batch-reader success and partial-row contract drift in installed CLI checks.

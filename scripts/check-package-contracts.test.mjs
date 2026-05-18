@@ -1125,7 +1125,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /Successful verify output prints the\s+accepted `phases` \/ `severities` \/ `kinds` enum lists/);
     assert.match(readme, /strict maintenance filters — invalid phase\/severity\/kind rejected at runtime \(phases=validate\/repair\/link\/materialize\/review; severities=fail\/warn\/info; kinds=inspect_compile_issue\/break_dependency_cycle\/canonicalize_graph_arrays\/resolve_dangling_reference\/add_missing_relation\/materialize_external_element\/unassigned_node\/empty_domain\)/);
     assert.match(verifySection, /project-less vaults skip/);
-    assert.match(verifySection, /Empty\s+vaults skip node-targeted graph smoke/);
+    assert.match(verifySection, /Empty\s+vault folders fail immediately after the `list_concepts` census/);
+    assert.match(verifySection, /green MCP\s+wiring check against the wrong folder/);
     assert.match(verifySection, /`list_kinds` \/ `compile_ontology` \/ `overview`\s+census shape\/count mismatches/);
     assert.match(verifySection, /Missing or malformed first-contact diagnosis payloads/);
     assert.match(verifySection, /`workspace_brief\.nextActions`/);
@@ -1153,7 +1154,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /validates `path` hop\/edge alignment/);
     assert.match(verifySection, /dedicated `list_concepts` call before graph smoke/);
     assert.match(verifySection, /skips only the containment-specific `project_scope` smoke/);
-    assert.match(verifySection, /accepts empty vault folders by skipping node-targeted graph smoke/);
+    assert.match(verifySection, /treats empty vault folders as a first-contact configuration failure/);
+    assert.match(verifySection, /green MCP wiring check against the wrong folder/);
     assert.match(verifySection, /cross-checks node census totals across `list_kinds`, `list_concepts`, `compile_ontology`, and `overview`/);
     assert.match(verifySection, /keeping `validate_vault\.scanned` as file-level health/);
     assert.match(verifySection, /dedicated `read census consistency` pass line/);
@@ -1337,7 +1339,7 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /Standalone `overview`, `hubs`, and\s+`blast-radius` commands also validate graph\/count\/ranking\/page payloads/);
     assert.match(verifySection, /`path` \/ `project_scope` calls/);
     assert.match(verifySection, /Vaults without a `kind: project`\s+node skip/);
-    assert.match(verifySection, /empty vault\s+folders skip\s+node-targeted graph smoke/);
+    assert.match(verifySection, /empty vault\s+folders fail immediately after the `list_concepts` census/);
   });
 
   it('keeps the CLI README explicit about focused source-checkout verification', () => {
@@ -1499,10 +1501,10 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /core graph-query smoke for `neighbors`, node→project `path`, and `project_scope`/);
     assert.match(verifySection, /project-node probe before graph smoke/);
     assert.match(verifySection, /accepts valid project-less vaults/);
-    assert.match(verifySection, /accepts empty vault folders/);
+    assert.match(verifySection, /treats empty vault folders as a first-contact configuration failure/);
     assert.match(verifySection, /runtime unknown-tool, unknown-argument, and invalid-enum rejection smoke/);
     assert.match(verifySection, /batch writer row-isolation gate for `add_concepts` \/ `add_relations`/);
-    assert.match(verifySection, /non-object row shape, unknown row field inputs with single-field structured repair plus all offending fields reported/);
+    assert.match(verifySection, /non-object row shape, unknown row field inputs with all offending fields reported/);
     assert.match(verifySection, /input index, all offending unknown fields, and closest-value hints for invalid relation types/);
     assert.match(verifySection, /row-level `ok:false` results with `concepts\[n\]` \/ `relations\[n\]` error labels instead of top-level tool errors, with no `postWriteMaintenance`/);
     assert.match(verifySection, /destructive dry-run smoke for `rename_concept` \/ `merge_concepts` \/ `delete_concept`/);
@@ -1778,7 +1780,7 @@ describe('package contract helpers', () => {
     assert.match(mcpVerifyRow, /`project_scope` hard gate 를 놓치지 않는다/);
     assert.match(mcpVerifyRow, /project-less vault/);
     assert.match(mcpVerifyRow, /empty vault/);
-    assert.match(mcpVerifyRow, /node-targeted graph smoke/);
+    assert.match(mcpVerifyRow, /fail-fast/);
     assert.match(mcpVerifyRow, /잘못된 timeout 값은 `Received: "1000ms"`/);
     assert.match(mcpVerifyRow, /`oh-my-ontology mcp-verify --timeout-ms 15000`/);
     assert.match(implementationSection, /query-result-contract\.mjs/);
@@ -2237,7 +2239,8 @@ describe('package contract helpers', () => {
     assert.match(smoke, /directMcpVerify\.stdout,\s*\/compile_ontology indexes/);
     assert.match(smoke, /directMcpVerifyVaultFlag\.stdout,\s*\/compile_ontology indexes/);
     assert.match(smoke, /path — domains\\\/core → domains\\\/core \\\(0 hops, 0 edges\\\)/);
-    assert.match(smoke, /neighbors\\\/path — skipped \\\(vault has no nodes\\\)/);
+    assert.match(smoke, /verify vault has 0 ontology nodes/);
+    assert.match(smoke, /Point verify at a populated ontology vault/);
     assert.match(smokeSection, /cycles --json/);
     assert.match(smokeSection, /CLI package `npm test`/);
     assert.match(smokeSection, /compile --json/);

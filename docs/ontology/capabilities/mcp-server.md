@@ -97,8 +97,8 @@ runtime 에서 받아들이는지 dogfood한다. verify 는 graph smoke 전에 `
 전용 `list_concepts` probe 를 실행해 project 노드가 첫 샘플 밖에 있어도
 `project_scope` hard gate 를 놓치지 않는다. project-less vault 는
 containment-specific check 만 skip 한다.
-완전히 빈 vault 는 node-targeted graph smoke 를 skip 하되 boot / inventory /
-validation / diagnosis / compile / overview / query planning 은 계속 hard gate 로 검증한다.
+완전히 빈 vault 는 `list_concepts` census 직후 first-contact configuration failure 로
+실패해, 잘못된 폴더를 대상으로 green MCP wiring check 를 보고하지 않게 한다.
 | `patch_concept` | 기존 노드 frontmatter (key 단위 patch) + body 갱신 — graph 배열 patch 는 clean string array 만 허용하고 dedup + sort, 핵심 scalar(`kind`/`domain`/frontmatter `slug`/`body`) 도 strict 검증, changed write 는 compact `postWriteMaintenance` 반환 (`byPhase`·`bySeverity`·`byKind` bucket / `score` / executable `proposedAction` 으로 후속 정리 우선순위와 실행 의도 판단 가능) |
 | `delete_concept` | **⚠ DESTRUCTIVE** — 노드 영구 삭제. 안전 가드 2단: ① `confirm:true` 미지정 시 dry-run, ② backlinks 있으면 throw — `force:true` 만 강행. missing slug 는 `list_concepts()` / `find_evidence(query)` 복구 안내와 유사 slug 후보를 함께 반환한다. confirmed delete 응답은 복구용 `captured.frontmatter` / full `body` 와 prose-aware 빠른 확인용 `bodyExcerpt`, `backlinksAtDelete[]`, compact `postWriteMaintenance` (`byPhase`·`bySeverity`·`byKind` bucket / `score` / executable `proposedAction`) 를 함께 반환한다. |
 | `rename_concept` | **⚠ MULTI-FILE (R11)** — slug 변경 + 모든 backlink 의 array/body 자동 redirect. dry-run default. `newSlug` 가 이미 있으면 throw 하고, 의식적으로 `overwrite:true` 를 준 경우만 대체. missing source slug 는 `list_concepts()` / `find_evidence(query)` 복구 안내와 유사 slug 후보를 함께 반환한다. tail-only 참조도 새 tail 로 일관 갱신. `find_backlinks` + N 회 `patch_concept` 의 atomic 대체. confirmed rename 은 compact `postWriteMaintenance` 반환 (`byPhase`·`bySeverity`·`byKind` bucket / `score` / executable `proposedAction` 포함). |

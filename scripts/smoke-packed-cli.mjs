@@ -469,13 +469,14 @@ try {
 
   const emptyVault = join(projectDir, 'empty-vault');
   mkdirSync(emptyVault, { recursive: true });
-  const cliEmptyMcpVerify = run(cliBin, cliMcpVerifyArgs([emptyVault, '--timeout-ms', '3000']), {
+  const cliEmptyMcpVerify = runRaw(cliBin, cliMcpVerifyArgs([emptyVault, '--timeout-ms', '3000']), {
     cwd: projectDir,
     label: 'installed CLI mcp-verify empty vault',
   });
+  assertStatus(cliEmptyMcpVerify, 1, 'installed CLI mcp-verify empty vault');
   assert.match(cliEmptyMcpVerify.stdout, /vault total 0 nodes/);
-  assert.match(cliEmptyMcpVerify.stdout, /neighbors\/path — skipped \(vault has no nodes\)/);
-  assert.match(cliEmptyMcpVerify.stdout, /project_scope — skipped \(no project node in vault\)/);
+  assert.match(cliEmptyMcpVerify.stdout, /verify vault has 0 ontology nodes/);
+  assert.match(cliEmptyMcpVerify.stdout, /Point verify at a populated ontology vault/);
 
   const cliMcpVerifyHelp = run(cliBin, cliMcpVerifyArgs(['--help']), { cwd: projectDir });
   assert.equal(cliMcpVerifyHelp.stderr, '');
@@ -744,18 +745,19 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference contract/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:verify\s+Root checkout dogfood vault installed-style verify gate/);
 
-  const mcpEmptyVerify = run(
+  const mcpEmptyVerify = runRaw(
     'npm',
-    mcpVerifyArgs(),
+    mcpVerifyArgs([], { silent: true }),
     {
       cwd: projectDir,
       env: { OMOT_VAULT: emptyVault },
       label: 'installed MCP verify empty vault',
     },
   );
+  assertStatus(mcpEmptyVerify, 1, 'installed MCP verify empty vault');
   assert.match(mcpEmptyVerify.stdout, /vault total 0 nodes/);
-  assert.match(mcpEmptyVerify.stdout, /neighbors\/path — skipped \(vault has no nodes\)/);
-  assert.match(mcpEmptyVerify.stdout, /project_scope — skipped \(no project node in vault\)/);
+  assert.match(mcpEmptyVerify.stdout, /verify vault has 0 ontology nodes/);
+  assert.match(mcpEmptyVerify.stdout, /Point verify at a populated ontology vault/);
 
   const invalidEnvDirectMcpVerifyVault = runRaw(
     'npm',
