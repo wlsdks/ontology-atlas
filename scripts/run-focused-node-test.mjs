@@ -145,7 +145,7 @@ export function runFocusedNodeTest({
     const skippedText = skipped === null ? '' : ` skipped=${skipped}`;
     stdout.write(
       `[focused-node-test] pattern=${pattern} targets=${testTargets.join(',')} ` +
-      `pass=${pass} fail=${fail} cancelled=${cancelled}${skippedText}\n`,
+      `tests=${tests} pass=${pass} fail=${fail} cancelled=${cancelled}${skippedText}\n`,
     );
   }
 
