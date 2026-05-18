@@ -108,7 +108,7 @@ validation / diagnosis / compile / overview / query planning 은 계속 hard gat
 `npm run verify` (mcp/) — parser smoke, server boot, 23-tool inventory
 (`15 read + 8 write` split 포함), strict argument schema 와 graph-query enum schema,
 strict schema/runtime unknown-tool, unknown-argument, and invalid-enum rejection,
-unknown-tool / unknown-argument structured repair fields (`receivedTool`, `receivedArgument`, `unknownArguments`, `suggestion`, `allowedTools`, `allowedArguments`),
+unknown-tool / unknown-argument structured repair fields (`receivedTool`, `receivedArgument`, `unknownArguments`, `suggestion`, `allowedTools`, `allowedArguments` — 단일 unknown argument 도 `unknownArguments` 배열 포함),
 `add_concepts` / `add_relations` row-isolation runtime smoke (`concepts[n]` / `relations[n]` row label, `add_concepts` duplicate slug first-seen label 포함),
 row-level `errorCode` 와 field/value repair payload(`rowName`, `unknownFields`, `allowedFields`, `receivedFields`, `valueName`, `receivedValue`, `suggestion`, `allowedValues`, `conflictSlug`, `firstSeenAt`) 직접 검증,
 `get_concepts` / `add_concepts` / `add_relations` 50-row batch cap rejection smoke,

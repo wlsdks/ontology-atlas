@@ -217,9 +217,10 @@ so an agent can repair a misspelled `tools/call.params.name` without an extra
 `tools/list` round trip. The same repair data is present in
 `structuredContent` as `receivedTool`, `suggestion`, and `allowedTools`, so MCP
 clients do not need to parse the human-readable error text.
-Unknown argument errors likewise include `toolName`, `receivedArgument` or
+Unknown argument errors likewise include `toolName`, `receivedArgument`,
 `unknownArguments`, `receivedArguments`, `suggestion`, and `allowedArguments`
-when those fields apply.
+when those fields apply, so single-argument and multi-argument typos can share
+one structured repair path.
 Invalid enum / filter / type values include the same structured repair shape
 as `valueName`, `receivedValue`, `suggestion`, and `allowedValues`, so clients
 can correct `operation:"overveiw"` without scraping the text form.

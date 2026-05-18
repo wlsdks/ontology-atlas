@@ -2674,6 +2674,7 @@ function structuredErrorDetails(message) {
       toolName,
       receivedArgument,
       suggestion,
+      unknownArguments: [omitUndefined({ name: receivedArgument, suggestion })],
       allowedArguments: splitCommaList(allowedText),
       receivedArguments: splitCommaList(receivedText),
     });

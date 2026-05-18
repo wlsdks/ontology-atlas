@@ -2316,6 +2316,12 @@ export function strictArgsFailure(response) {
   if (structured?.receivedArgument !== 'lmit' || structured?.suggestion !== 'limit') {
     return 'strict arguments structured error missing repair hint';
   }
+  if (!Array.isArray(structured?.unknownArguments) || structured.unknownArguments.length !== 1) {
+    return 'strict arguments structured error missing unknown argument hint';
+  }
+  if (structured.unknownArguments[0]?.name !== 'lmit' || structured.unknownArguments[0]?.suggestion !== 'limit') {
+    return 'strict arguments structured error missing canonical unknown argument hint';
+  }
   if (!sameArray(structured?.allowedArguments, ['domain', 'kind', 'limit', 'since', 'summary'])) {
     return 'strict arguments structured error missing allowed arguments';
   }

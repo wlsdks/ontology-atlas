@@ -4591,6 +4591,7 @@ describe('verify.mjs first-contact gates', () => {
             toolName: 'list_concepts',
             receivedArgument: 'lmit',
             suggestion: 'limit',
+            unknownArguments: [{ name: 'lmit', suggestion: 'limit' }],
             allowedArguments: ['domain', 'kind', 'limit', 'since', 'summary'],
             receivedArguments: ['lmit'],
           },
@@ -4633,6 +4634,33 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       strictArgsFailure(strictErrorResponse(error, { structuredContent: { ok: false, errorCode: 'unknown_argument', error } })),
       'strict arguments structured error missing repair hint',
+    );
+    assert.equal(
+      strictArgsFailure(strictErrorResponse(error, {
+        structuredContent: {
+          ok: false,
+          errorCode: 'unknown_argument',
+          error,
+          receivedArgument: 'lmit',
+          suggestion: 'limit',
+          allowedArguments: ['domain', 'kind', 'limit', 'since', 'summary'],
+        },
+      })),
+      'strict arguments structured error missing unknown argument hint',
+    );
+    assert.equal(
+      strictArgsFailure(strictErrorResponse(error, {
+        structuredContent: {
+          ok: false,
+          errorCode: 'unknown_argument',
+          error,
+          receivedArgument: 'lmit',
+          suggestion: 'limit',
+          unknownArguments: [{ name: 'limit' }],
+          allowedArguments: ['domain', 'kind', 'limit', 'since', 'summary'],
+        },
+      })),
+      'strict arguments structured error missing canonical unknown argument hint',
     );
   });
 
