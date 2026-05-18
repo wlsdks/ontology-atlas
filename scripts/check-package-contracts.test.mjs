@@ -2440,6 +2440,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /설치형 `pnpm cli:mcp-verify` 성공 로그도 strict `relation_check` \/ `add_relation`/);
     assert.match(doc, /`structuredContent\.valueName` \/ `receivedValue` \/ `suggestion` \/ `allowedValues`/);
     assert.match(doc, /no-write metadata gate/);
+    assert.match(doc, /`write metadata: absent` \/ `strict_add_relation_write_metadata: absent`/);
     assert.match(doc, /stderr warning filtering/);
     assert.match(doc, /first-contact README read-only/);
     assert.match(doc, /직접 verify help 는\s+`mcp\/` package directory 의 `npm run verify -- --help` 또는 repo root 의\s+`node mcp\/scripts\/verify\.mjs --help`/);

@@ -43,6 +43,7 @@ import {
   tunedWorkspaceBriefScopeSummary,
   workspaceNextActionAnalysisLabel,
   workspaceNextActionSummary,
+  writeMetadataAbsenceSummary,
   writeRowLabelGuidanceSummary,
 } from "./dogfood-mcp-walk.mjs";
 import {
@@ -3878,6 +3879,20 @@ describe("rpc response completion helpers", () => {
     );
   });
 
+  it("summarizes strict add_relation no-write metadata evidence", () => {
+    assert.equal(writeMetadataAbsenceSummary(okShape.strictAddRelation), "absent");
+    assert.equal(
+      writeMetadataAbsenceSummary({
+        result: {
+          isError: true,
+          changed: false,
+          structuredContent: { ok: false, postWriteMaintenance: { summary: {} } },
+        },
+      }),
+      "present changed, postWriteMaintenance",
+    );
+  });
+
   it("summarizes health check statuses for the final dogfood analysis", () => {
     assert.equal(healthCheckStatusSummary(null), "none");
     assert.equal(healthCheckStatusSummary([]), "none");
@@ -5407,6 +5422,33 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["strict_add_relation: strict add_relation response did not suggest the closest type value"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictAddRelation: {
+          result: {
+            ...okShape.strictAddRelation.result,
+            changed: false,
+          },
+        },
+      }),
+      ["strict_add_relation: strict add_relation response included write metadata"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictAddRelation: {
+          result: {
+            ...okShape.strictAddRelation.result,
+            structuredContent: {
+              ...okShape.strictAddRelation.result.structuredContent,
+              postWriteMaintenance: { summary: {} },
+            },
+          },
+        },
+      }),
+      ["strict_add_relation: strict add_relation structuredContent included write metadata"],
     );
   });
 

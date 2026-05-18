@@ -505,6 +505,17 @@ export function strictRepairSummary(response) {
   return strictClosestValueSummary(response);
 }
 
+export function writeMetadataAbsenceSummary(response) {
+  const result = response?.result;
+  const structured = result?.structuredContent;
+  const keys = ["changed", "alreadyExists", "postWriteMaintenance"];
+  const present = keys.filter((key) => (
+    Object.prototype.hasOwnProperty.call(result || {}, key)
+    || Object.prototype.hasOwnProperty.call(structured || {}, key)
+  ));
+  return present.length > 0 ? `present ${present.join(", ")}` : "absent";
+}
+
 export function batchRowRepairSummary(rows) {
   if (!Array.isArray(rows) || rows.length === 0) return "n/a";
   const failedRows = rows.filter((row) => row?.ok === false).length;
@@ -5741,11 +5752,12 @@ async function main() {
   }
 
   // 52. strict add_relation rejection
-  header("strict add_relation — invalid type rejection");
+  header("strict add_relation — invalid type rejection + no-write metadata");
   const strictAddRelation = responses.find((response) => response.id === 70);
   const strictAddRelationText = strictAddRelation?.result?.content?.[0]?.text || "";
   console.log(`  add_relation type rejected: ${strictAddRelation?.result?.isError === true}`);
   console.log(`  repair: ${strictRepairSummary(strictAddRelation)}`);
+  console.log(`  write metadata: ${writeMetadataAbsenceSummary(strictAddRelation)}`);
   if (strictAddRelationText) {
     console.log(`  ${strictAddRelationText}`);
   }
@@ -6107,6 +6119,7 @@ async function main() {
   console.log(`  strict_list_concepts_kind_filter: ${strictRepairSummary(strictListConceptsKindFilter)}`);
   console.log(`  strict_relation_check: ${strictRepairSummary(strictRelationCheck)}`);
   console.log(`  strict_add_relation: ${strictRepairSummary(strictAddRelation)}`);
+  console.log(`  strict_add_relation_write_metadata: ${writeMetadataAbsenceSummary(strictAddRelation)}`);
   console.log(`  strict_graph_kind_filter: ${strictRepairSummary(strictGraphKindFilter)}`);
   console.log(`  strict_recommend_relations_kind_filter: ${strictRepairSummary(strictRecommendRelationsKindFilter)}`);
   console.log(`  strict_recommend_relations_unsupported_kind_filter: ${strictRepairSummary(strictRecommendRelationsUnsupportedKindFilter)}`);
