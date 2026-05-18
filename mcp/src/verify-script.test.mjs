@@ -681,6 +681,7 @@ describe('verify.mjs first-contact gates', () => {
             warnings: { type: 'array', items: { type: 'string' } },
             postWriteMaintenance: postWriteMaintenanceSchema,
           },
+          additionalProperties: false,
         },
       },
       {
@@ -709,10 +710,12 @@ describe('verify.mjs first-contact gates', () => {
                   warnings: { type: 'array', items: { type: 'string' } },
                   error: { type: 'string' },
                 },
+                additionalProperties: false,
               },
             },
             postWriteMaintenance: postWriteMaintenanceSchema,
           },
+          additionalProperties: false,
         },
       },
       {
@@ -757,10 +760,12 @@ describe('verify.mjs first-contact gates', () => {
                   changed: { type: 'boolean' },
                   error: { type: 'string' },
                 },
+                additionalProperties: false,
               },
             },
             postWriteMaintenance: postWriteMaintenanceSchema,
           },
+          additionalProperties: false,
         },
       },
       {
@@ -790,6 +795,7 @@ describe('verify.mjs first-contact gates', () => {
             alreadyExists: { type: 'boolean' },
             postWriteMaintenance: postWriteMaintenanceSchema,
           },
+          additionalProperties: false,
         },
       },
       {
@@ -810,6 +816,7 @@ describe('verify.mjs first-contact gates', () => {
             changed: { type: 'boolean' },
             postWriteMaintenance: postWriteMaintenanceSchema,
           },
+          additionalProperties: false,
         },
       },
       {

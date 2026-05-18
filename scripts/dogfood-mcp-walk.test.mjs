@@ -1342,10 +1342,12 @@ function makeDogfoodToolsList() {
                   warnings: { type: "array", items: { type: "string" } },
                   error: { type: "string" },
                 },
+                additionalProperties: false,
               },
             },
             postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
+          additionalProperties: false,
         };
       }
       if (name === "add_concept") {
@@ -1360,6 +1362,7 @@ function makeDogfoodToolsList() {
             warnings: { type: "array", items: { type: "string" } },
             postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
+          additionalProperties: false,
         };
       }
       if (name === "add_relations") {
@@ -1397,10 +1400,12 @@ function makeDogfoodToolsList() {
                   changed: { type: "boolean" },
                   error: { type: "string" },
                 },
+                additionalProperties: false,
               },
             },
             postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
+          additionalProperties: false,
         };
       }
       if (name === "add_relation") {
@@ -1421,6 +1426,7 @@ function makeDogfoodToolsList() {
             alreadyExists: { type: "boolean" },
             postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
+          additionalProperties: false,
         };
       }
       if (name === "patch_concept") {
@@ -1434,6 +1440,7 @@ function makeDogfoodToolsList() {
             changed: { type: "boolean" },
             postWriteMaintenance: postWriteMaintenanceSchemaFixture(),
           },
+          additionalProperties: false,
         };
       }
       if (["add_relation", "patch_concept", "rename_concept", "merge_concepts", "delete_concept"].includes(name)) {
@@ -4194,6 +4201,12 @@ describe("evaluateDogfoodGate", () => {
       evaluateDogfoodGate({ ...okShape, toolsList: addConceptsOutputSchemaDrifted }),
       ["tools/list: add_concepts outputSchema rows drift"],
     );
+    const addConceptsRowOpenSchemaDrifted = makeDogfoodToolsList();
+    delete addConceptsRowOpenSchemaDrifted.tools.find((tool) => tool.name === "add_concepts").outputSchema.properties.concepts.items.additionalProperties;
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: addConceptsRowOpenSchemaDrifted }),
+      ["tools/list: add_concepts outputSchema row openness drift"],
+    );
     const addConceptsRowLabelGuidanceDrifted = makeDogfoodToolsList();
     addConceptsRowLabelGuidanceDrifted.tools.find((tool) => tool.name === "add_concepts").description =
       "Batch rows isolate non-object row shape and unknown row field as ok:false rows.";
@@ -4213,6 +4226,12 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: addRelationsOutputSchemaDrifted }),
       ["tools/list: add_relations outputSchema row alreadyExists drift"],
+    );
+    const addRelationsRowOpenSchemaDrifted = makeDogfoodToolsList();
+    delete addRelationsRowOpenSchemaDrifted.tools.find((tool) => tool.name === "add_relations").outputSchema.properties.relations.items.additionalProperties;
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: addRelationsRowOpenSchemaDrifted }),
+      ["tools/list: add_relations outputSchema row openness drift"],
     );
     const addRelationsRowLabelGuidanceDrifted = makeDogfoodToolsList();
     addRelationsRowLabelGuidanceDrifted.tools.find((tool) => tool.name === "add_relations").description =
@@ -4247,6 +4266,12 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: addConceptOutputSchemaDrifted }),
       ["tools/list: add_concept outputSchema warnings drift"],
+    );
+    const addConceptOpenSchemaDrifted = makeDogfoodToolsList();
+    delete addConceptOpenSchemaDrifted.tools.find((tool) => tool.name === "add_concept").outputSchema.additionalProperties;
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: addConceptOpenSchemaDrifted }),
+      ["tools/list: add_concept outputSchema root openness drift"],
     );
     const addRelationOutputSchemaDrifted = makeDogfoodToolsList();
     addRelationOutputSchemaDrifted.tools.find((tool) => tool.name === "add_relation").outputSchema.properties.alreadyExists.type = "string";

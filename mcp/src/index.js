@@ -838,6 +838,7 @@ const TOOLS = [
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
       required: ['ok', 'slug', 'filePath', 'changed'],
+      additionalProperties: false,
     },
   },
   {
@@ -895,11 +896,13 @@ const TOOLS = [
               error: { type: 'string' },
             },
             required: ['slug', 'ok'],
+            additionalProperties: false,
           },
         },
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
       required: ['concepts'],
+      additionalProperties: false,
     },
   },
   {
@@ -943,6 +946,7 @@ const TOOLS = [
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
       required: ['ok', 'from', 'to', 'type'],
+      additionalProperties: false,
     },
   },
   {
@@ -997,11 +1001,13 @@ const TOOLS = [
               error: { type: 'string' },
             },
             required: ['ok', 'from', 'to', 'type'],
+            additionalProperties: false,
           },
         },
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
       required: ['relations'],
+      additionalProperties: false,
     },
   },
   {
@@ -1047,6 +1053,7 @@ const TOOLS = [
         postWriteMaintenance: POST_WRITE_MAINTENANCE_OUTPUT_SCHEMA,
       },
       required: ['ok', 'slug', 'filePath', 'changed', 'postWriteMaintenance'],
+      additionalProperties: false,
     },
   },
   {

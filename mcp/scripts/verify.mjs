@@ -1792,6 +1792,9 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(addConceptsTool.outputSchema?.required, ['concepts'])) {
     return 'add_concepts outputSchema required drift';
   }
+  if (addConceptsTool.outputSchema?.additionalProperties !== false) {
+    return 'add_concepts outputSchema root openness drift';
+  }
   const addConceptRowsSchema = outputPropertyAt(addConceptsTool, ['properties', 'concepts']);
   if (
     addConceptRowsSchema?.type !== 'array' ||
@@ -1799,6 +1802,9 @@ export function toolsListSchemaFailure(tools) {
     !sameArray(addConceptRowsSchema.items?.required, ['slug', 'ok'])
   ) {
     return 'add_concepts outputSchema rows drift';
+  }
+  if (addConceptRowsSchema.items?.additionalProperties !== false) {
+    return 'add_concepts outputSchema row openness drift';
   }
   if (addConceptRowsSchema.items?.properties?.slug?.type !== 'string') {
     return 'add_concepts outputSchema row slug drift';
@@ -1829,6 +1835,9 @@ export function toolsListSchemaFailure(tools) {
   }
   if (!sameArray(addConceptTool.outputSchema?.required, ['ok', 'slug', 'filePath', 'changed'])) {
     return 'add_concept outputSchema required drift';
+  }
+  if (addConceptTool.outputSchema?.additionalProperties !== false) {
+    return 'add_concept outputSchema root openness drift';
   }
   for (const propertyName of ['slug', 'filePath']) {
     if (outputPropertyAt(addConceptTool, ['properties', propertyName])?.type !== 'string') {
@@ -1872,6 +1881,9 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(addRelationsTool.outputSchema?.required, ['relations'])) {
     return 'add_relations outputSchema required drift';
   }
+  if (addRelationsTool.outputSchema?.additionalProperties !== false) {
+    return 'add_relations outputSchema root openness drift';
+  }
   const addRelationRowsSchema = outputPropertyAt(addRelationsTool, ['properties', 'relations']);
   if (
     addRelationRowsSchema?.type !== 'array' ||
@@ -1879,6 +1891,9 @@ export function toolsListSchemaFailure(tools) {
     !sameArray(addRelationRowsSchema.items?.required, ['ok', 'from', 'to', 'type'])
   ) {
     return 'add_relations outputSchema rows drift';
+  }
+  if (addRelationRowsSchema.items?.additionalProperties !== false) {
+    return 'add_relations outputSchema row openness drift';
   }
   for (const propertyName of ['from', 'to', 'type']) {
     if (addRelationRowsSchema.items?.properties?.[propertyName]?.type !== 'string') {
@@ -1916,6 +1931,9 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(addRelationTool.outputSchema?.required, ['ok', 'from', 'to', 'type'])) {
     return 'add_relation outputSchema required drift';
   }
+  if (addRelationTool.outputSchema?.additionalProperties !== false) {
+    return 'add_relation outputSchema root openness drift';
+  }
   for (const propertyName of ['from', 'to', 'type', 'key']) {
     if (outputPropertyAt(addRelationTool, ['properties', propertyName])?.type !== 'string') {
       return `add_relation outputSchema ${propertyName} drift`;
@@ -1937,6 +1955,9 @@ export function toolsListSchemaFailure(tools) {
   }
   if (!sameArray(patchConceptTool.outputSchema?.required, ['ok', 'slug', 'filePath', 'changed', 'postWriteMaintenance'])) {
     return 'patch_concept outputSchema required drift';
+  }
+  if (patchConceptTool.outputSchema?.additionalProperties !== false) {
+    return 'patch_concept outputSchema root openness drift';
   }
   for (const propertyName of ['slug', 'filePath']) {
     if (outputPropertyAt(patchConceptTool, ['properties', propertyName])?.type !== 'string') {
