@@ -45,6 +45,18 @@ describe('focused node test wrapper', () => {
     );
   });
 
+  it('passes through equals-form --test-name-pattern via the shared parser', () => {
+    withFixture(
+      "import test from 'node:test';\ntest('target case', () => {});\ntest('other case', () => {});\n",
+      (file) => {
+        const result = run([`--test-name-pattern=target case`, file]);
+
+        assert.equal(result.status, 0, result.stderr);
+        assert.match(result.stdout, /# pass 1/);
+      },
+    );
+  });
+
   it('fails when a focused pattern matches zero tests even though node exits cleanly', () => {
     withFixture("import test from 'node:test';\ntest('target case', () => {});\n", (file) => {
       const result = run(['--test-name-pattern', 'missing case', file]);

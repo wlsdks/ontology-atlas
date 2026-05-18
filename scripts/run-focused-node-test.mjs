@@ -1,18 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 
-function readNodeTestNamePattern(argv) {
-  for (let index = 0; index < argv.length; index += 1) {
-    const arg = argv[index];
-    if (arg === '--test-name-pattern') {
-      return argv[index + 1] || null;
-    }
-    if (arg.startsWith('--test-name-pattern=')) {
-      return arg.slice('--test-name-pattern='.length);
-    }
-  }
-  return null;
-}
+import { readNodeTestNamePattern } from './lib/test-name-pattern.mjs';
 
 function tapCount(output, label) {
   const match = String(output).match(new RegExp(`^# ${label} (\\d+)$`, 'm'));
