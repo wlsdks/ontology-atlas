@@ -247,7 +247,7 @@ function rpc(requests, timeoutMs = 3000) {
     const chunks = chunkRequests(requests, RPC_WRITE_BATCH_SIZE);
     const sentIds = new Set();
     let nextChunkIndex = 0;
-    const proc = spawn("node", [SERVER], {
+    const proc = spawn(process.execPath, [SERVER], {
       env: { ...process.env, OMOT_VAULT: VAULT },
       stdio: ["pipe", "pipe", "pipe"],
     });

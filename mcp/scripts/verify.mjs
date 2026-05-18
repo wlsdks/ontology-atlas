@@ -5112,7 +5112,7 @@ export function workspaceBriefSummary(parsed) {
 async function step1ParserSmoke() {
   log('info', 'step 1 — parser smoke test');
   return new Promise((res) => {
-    const proc = spawn('node', [PARSER_TEST], { stdio: ['ignore', 'pipe', 'pipe'] });
+    const proc = spawn(process.execPath, [PARSER_TEST], { stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
     let stderr = '';
     const stdoutDecoder = new StringDecoder('utf8');
@@ -5146,7 +5146,7 @@ async function step2BootAndCall() {
   const lines = buildFirstContactRequests().map((request) => JSON.stringify(request));
 
   return new Promise((res) => {
-    const proc = spawn('node', [SERVER_ENTRY], {
+    const proc = spawn(process.execPath, [SERVER_ENTRY], {
       env: { ...process.env, OMOT_VAULT: VAULT },
       stdio: ['pipe', 'pipe', 'pipe'],
     });

@@ -72,7 +72,7 @@ function isFile(path) {
 export function callMcpTool(vaultRoot, toolName, args = {}) {
   return new Promise((resolveP, rejectP) => {
     const entry = resolveMcpEntry();
-    const proc = spawn('node', [entry], {
+    const proc = spawn(process.execPath, [entry], {
       env: { ...process.env, OMOT_VAULT: vaultRoot },
       stdio: ['pipe', 'pipe', 'pipe'],
     });

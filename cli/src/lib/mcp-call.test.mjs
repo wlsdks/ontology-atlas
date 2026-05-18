@@ -1,9 +1,17 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { describe, it } from 'node:test';
 
 import { formatMcpSpawnError, parseMcpToolResponse } from './mcp-call.mjs';
 
 describe('mcp-call response parsing', () => {
+  it('spawns the MCP server with the current Node executable', () => {
+    const source = readFileSync('cli/src/lib/mcp-call.mjs', 'utf-8');
+
+    assert.match(source, /spawn\(process\.execPath, \[entry\]/);
+    assert.doesNotMatch(source, /spawn\('node', \[entry\]/);
+  });
+
   it('formats MCP spawn errors with tool, vault, and entry context', () => {
     assert.equal(
       formatMcpSpawnError(new Error('spawn node ENOENT'), {

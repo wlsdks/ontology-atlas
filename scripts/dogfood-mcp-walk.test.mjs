@@ -3252,6 +3252,8 @@ describe("rpc response completion helpers", () => {
     const source = readFileSync("scripts/dogfood-mcp-walk.mjs", "utf-8");
 
     assert.doesNotMatch(source, /\bprocess\.exit\s*\(/);
+    assert.doesNotMatch(source, /spawn\("node", \[SERVER\]/);
+    assert.match(source, /spawn\(process\.execPath, \[SERVER\]/);
     assert.match(source, /process\.exitCode\s*=\s*await main\(\)\.catch/);
     assert.match(source, /return 2/);
     assert.match(source, /return 1/);

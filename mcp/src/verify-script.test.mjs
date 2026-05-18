@@ -3704,6 +3704,9 @@ describe('verify.mjs first-contact gates', () => {
     const source = readFileSync(VERIFY_SCRIPT, 'utf-8');
 
     assert.doesNotMatch(source, /\bprocess\.exit\s*\(/);
+    assert.doesNotMatch(source, /spawn\('node', \[(PARSER_TEST|SERVER_ENTRY)\]/);
+    assert.match(source, /spawn\(process\.execPath, \[PARSER_TEST\]/);
+    assert.match(source, /spawn\(process\.execPath, \[SERVER_ENTRY\]/);
     assert.match(source, /process\.exitCode\s*=\s*await main\(\)/);
     assert.match(source, /return 1/);
     assert.match(source, /return 0/);
