@@ -3392,6 +3392,12 @@ await test('node --no-external/--no-unresolved — noisy refs can be hidden from
     const filteredData = JSON.parse(filtered.stdout);
     assert.equal(filteredData.edges.outgoing.total, 1);
     assert.deepEqual(filteredData.edges.outgoing.edges.map((edge) => edge.via), ['domain']);
+
+    const noMatches = await run(['node', 'capabilities/foo', root, '--types=elements', '--no-external']);
+    assert.equal(noMatches.code, 0, `stdout: ${noMatches.stdout}\nstderr: ${noMatches.stderr}`);
+    const clean = stripAnsi(noMatches.stdout);
+    assert.match(clean, /no matching edges — current filters: types=elements .* external=false/);
+    assert.doesNotMatch(clean, /isolated — 어떤 노드와도 연결 안 됨/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

@@ -80,11 +80,11 @@ export async function runNodeProfile(args) {
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
     return 0;
   }
-  render(result);
+  render(result, { types, includeExternal, includeUnresolved });
   return 0;
 }
 
-function render(result) {
+function render(result, filters = {}) {
   const n = result?.node;
   if (!n) {
     process.stdout.write(`${COLORS.dim}node not found${COLORS.reset}\n`);
@@ -147,8 +147,30 @@ function render(result) {
   }
 
   if ((incoming?.total ?? 0) === 0 && (outgoing?.total ?? 0) === 0) {
-    process.stdout.write(`\n${COLORS.dim}isolated — 어떤 노드와도 연결 안 됨${COLORS.reset}\n`);
+    if (hasActiveEdgeFilter(filters)) {
+      process.stdout.write(
+        `\n${COLORS.dim}no matching edges — current filters: ${formatActiveEdgeFilters(filters)}${COLORS.reset}\n`,
+      );
+    } else {
+      process.stdout.write(`\n${COLORS.dim}isolated — 어떤 노드와도 연결 안 됨${COLORS.reset}\n`);
+    }
   }
+}
+
+function hasActiveEdgeFilter({ types, includeExternal, includeUnresolved } = {}) {
+  return (
+    (Array.isArray(types) && types.length > 0) ||
+    includeExternal === false ||
+    includeUnresolved === false
+  );
+}
+
+function formatActiveEdgeFilters({ types, includeExternal, includeUnresolved } = {}) {
+  const parts = [];
+  if (Array.isArray(types) && types.length > 0) parts.push(`types=${types.join(',')}`);
+  if (includeExternal === false) parts.push('external=false');
+  if (includeUnresolved === false) parts.push('unresolved=false');
+  return parts.join(' · ') || 'none';
 }
 
 function renderEdgesByRelation(edges, peerField) {
