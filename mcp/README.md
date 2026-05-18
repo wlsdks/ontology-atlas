@@ -55,6 +55,7 @@ before escalating to the full integration suite:
 pnpm test:contracts
 pnpm integration:mcp:readme
 pnpm test:mcp:docs
+pnpm test:mcp:registration
 pnpm test:mcp:dogfood
 pnpm test:mcp:dogfood:timeout
 pnpm test:mcp:maintenance
@@ -83,6 +84,8 @@ pnpm cli:mcp-verify -- --help
 
 `integration:mcp:readme` runs the documented first-contact read-only MCP flow
 only. `test:mcp:docs` checks README and dogfood ontology documentation drift.
+`test:mcp:registration` checks only the tracked source-checkout `.mcp.json` and
+`.mcp.json.example` templates.
 `test:mcp:dogfood` covers the dogfood helper's structuredContent output,
 indexed `compile_ontology` gate, tools/list inventory names + annotation coverage, batch writer
 row-label guidance summary, vault warning / `validate_vault` problem gates,

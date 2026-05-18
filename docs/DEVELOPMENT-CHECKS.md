@@ -37,7 +37,8 @@ For user-facing UI changes, add the relevant Playwright route check.
 Firestore, Storage, emulators, or rewrites. `pnpm test:mcp:docs` also guards
 the tracked `.mcp.json` and `.mcp.json.example` source-checkout templates so
 local agent registration keeps pointing at `node ./mcp/src/index.js` with
-`OMOT_VAULT=./docs/ontology`.
+`OMOT_VAULT=./docs/ontology`. Use `pnpm test:mcp:registration` when only those
+MCP registration templates changed.
 
 ## Vault Checks
 
@@ -80,6 +81,7 @@ verify, or release behavior.
 | `pnpm integration:cli:growth` | CLI `growth_plan` wrapper, candidate rendering, malformed payload, and argument contracts |
 | `pnpm test:contracts` | Cross-package schema/parser contracts |
 | `pnpm test:mcp:docs` | Explicit root/MCP/CLI/dogfood docs contracts plus Firebase static-hosting and MCP registration-template guards |
+| `pnpm test:mcp:registration` | Source-checkout `.mcp.json` / `.mcp.json.example` registration templates |
 | `pnpm test:mcp:verify` | MCP verifier helper behavior |
 | `pnpm test:mcp:verify:first-contact` | First-contact MCP safety and unknown-tool recovery guidance |
 | `pnpm test:mcp:verify:timeout` | Timeout/startup retry diagnostics |

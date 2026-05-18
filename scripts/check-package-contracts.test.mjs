@@ -245,6 +245,10 @@ describe('package contract helpers', () => {
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /Firebase static hosting/);
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /docs-vault freshness check/);
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /dogfood MCP docs/);
+    assert.equal(
+      pkg.scripts?.['test:mcp:registration'],
+      `${focusedNode} --test-name-pattern "MCP registration templates" scripts/check-package-contracts.test.mjs`,
+    );
     assert.match(
       pkg.scripts?.['test:mcp:package'] ?? '',
       /^node scripts\/run-focused-node-test\.mjs --test-name-pattern "[^"]+" scripts\/check-package-contracts\.test\.mjs$/,
@@ -323,6 +327,7 @@ describe('package contract helpers', () => {
       'pnpm test:mcp:maintenance',
       'pnpm test:mcp:package',
       'pnpm test:mcp:dogfood',
+      'pnpm test:mcp:registration',
       'pnpm dogfood:compile',
       'pnpm dogfood:compile-fix',
       'pnpm dogfood:compile-fix -- --help',
@@ -389,6 +394,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /Use `pnpm test:mcp:maintenance` when only `maintenance_plan` filter, cursor,\s+resume, or formatter behavior changed/);
     assert.match(checksDoc, /`pnpm test:mcp:docs` also guards Firebase Hosting config as static-only/);
     assert.match(checksDoc, /`pnpm test:mcp:docs` also guards\s+the tracked `.mcp.json` and `.mcp.json.example` source-checkout templates/);
+    assert.match(checksDoc, /Use `pnpm test:mcp:registration` when only those\s+MCP registration templates changed/);
     assert.match(checksDoc, /Explicit root\/MCP\/CLI\/dogfood docs contracts plus Firebase static-hosting and MCP registration-template guards/);
     assert.match(checksDoc, /intentionally lists explicit test-name fragments/);
     assert.match(checksDoc, /instead\s+of a broad `README` token/);
@@ -804,6 +810,8 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm test:contracts/);
     assert.match(section, /pnpm integration:mcp:readme/);
     assert.match(section, /pnpm test:mcp:docs/);
+    assert.match(section, /pnpm test:mcp:registration/);
+    assert.match(section, /source-checkout `.mcp.json` and\s+`.mcp.json.example` templates/);
     assert.match(section, /pnpm test:mcp:dogfood/);
     assert.match(section, /pnpm test:mcp:dogfood:timeout/);
     assert.match(section, /pnpm test:mcp:maintenance/);
@@ -1411,6 +1419,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm integration:cli:mcp-verify/);
     assert.match(section, /pnpm integration:cli:growth/);
     assert.match(section, /pnpm test:mcp:docs/);
+    assert.match(section, /pnpm test:mcp:registration/);
     assert.match(section, /pnpm test:mcp:maintenance/);
     assert.match(section, /pnpm test:mcp:package/);
     assert.match(section, /package-script, CLI entrypoint, and tarball contract drift/);
@@ -1445,6 +1454,7 @@ describe('package contract helpers', () => {
     assert.match(section, /installed MCP verification wrapper/);
     assert.match(section, /CLI growth_plan wrapper/);
     assert.match(section, /documentation drift/);
+    assert.match(section, /source-checkout `.mcp.json` and `.mcp.json.example` templates/);
     assert.match(section, /maintenance_plan filter, cursor, resume,\s+work-queue shape, and bucket \/ next-action formatter contracts/);
     assert.match(section, /shared MCP verify helper contract/);
     assert.match(section, /first-contact initialize\s+safety\/recovery guidance, unknown-tool recovery, read smoke/);
@@ -2485,6 +2495,7 @@ describe('package contract helpers', () => {
     assert.match(regressionSection, /limited `query_concepts` \/ `analyze_repo_structure` \/ `infer_imports` \/ `find_neighbors`/);
     assert.match(regressionSection, /`pnpm test:mcp:docs` 는 bare `README` token 이 아니라/);
     assert.match(regressionSection, /명시적 test-name fragments 만 나열/);
+    assert.match(regressionSection, /`pnpm test:mcp:registration` 은 tracked `.mcp.json` \/ `.mcp.json.example` source-checkout template 만 좁게 검증/);
     assert.match(regressionSection, /`--test-concurrency 1` 또는 `--test-timeout 1000` 같은 Node test option value 를 target 으로 오인하지 않고, split option 값이 빠져도 다음 option value 를 target 으로 새지 않게 한다/);
     assert.match(
       doc,

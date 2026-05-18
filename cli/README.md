@@ -68,6 +68,7 @@ pnpm integration:cli:mcp-verify
 pnpm integration:cli:growth
 pnpm integration:cli:maintenance
 pnpm test:mcp:docs
+pnpm test:mcp:registration
 pnpm test:mcp:maintenance
 pnpm test:mcp:package
 pnpm test:mcp:verify
@@ -103,7 +104,9 @@ subset inside the spawn-heavy CLI integration file.
 `integration:cli:growth` runs only the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument-contract cases.
 `integration:cli:maintenance` runs only the CLI maintenance command and
 maintenance-related installed verify integration cases. `test:mcp:docs` checks
-README and dogfood ontology documentation drift. `test:mcp:package` checks
+README and dogfood ontology documentation drift. `test:mcp:registration` checks
+only the tracked source-checkout `.mcp.json` and `.mcp.json.example` templates.
+`test:mcp:package` checks
 package-script, CLI entrypoint, and tarball contract drift without running
 unrelated UI or E2E gates. `test:mcp:maintenance` checks maintenance_plan filter, cursor, resume,
 work-queue shape, and bucket / next-action formatter contracts without the full
