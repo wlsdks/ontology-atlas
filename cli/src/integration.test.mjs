@@ -3141,6 +3141,7 @@ await test('workspace-brief --help — documents health and growth output', asyn
   assert.match(clean, /project_scope 포함 노드 요약/);
   assert.match(clean, /HEALTH CHECKS id:status:count/);
   assert.match(clean, /GROWTH actions\/relations\/dangling\/external\/ignoredExternal counts/);
+  assert.match(clean, /NEXT ACTIONS labels use id\/kind/);
   assert.match(clean, /--dependency-types A,B/);
   assert.match(clean, /--component-types A,B/);
   assert.match(clean, /Tuning flags forward to query_ontology workspace_brief/);

@@ -1808,7 +1808,7 @@ describe('package contract helpers', () => {
     assert.match(implementationSection, /`health` \/ `workspace-brief` top-level diagnosis status/);
     assert.match(implementationSection, /`health\.checks` \/ `workspace-brief\.health\.checks` 의 non-empty id\/status\/count coverage/);
     assert.match(doc, /health check \/ nextAction shape 이 malformed 인 diagnosis payload 는 JSON 또는 human output 전 exit 2/);
-    assert.match(doc, /`--help` 도 `--json` snapshot \/ shell-gate 실패 조건, project_scope 포함 노드 요약과 health \/ growth 출력 계약, tuning flag 를 설명/);
+    assert.match(doc, /`--help` 도 `--json` snapshot \/ shell-gate 실패 조건, project_scope 포함 노드 요약, health \/ growth 출력 계약, `NEXT ACTIONS` id\/kind label, tuning flag 를 설명/);
     assert.match(readme, /`PROJECT별 포함 노드 수 \(project_scope\)`/);
     assert.match(readme, /cannot be\s+mistaken for a loose project summary/);
     assert.match(implementationSection, /MCP tool name, 첫 mismatch path, parsed value, structuredContent value/);

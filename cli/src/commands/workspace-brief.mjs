@@ -187,6 +187,7 @@ function printUsage(stream = process.stderr) {
       `Fail-severity nextActions or failing health checks exit non-zero for shell gates.\n` +
       `Non-JSON output includes HEALTH CHECKS id:status:count coverage and\n` +
       `GROWTH actions/relations/dangling/external/ignoredExternal counts.\n` +
+      `NEXT ACTIONS labels use id/kind when scoped ids differ from action kinds.\n` +
       `Tuning flags forward to query_ontology workspace_brief for focused diagnostics.\n`,
   );
 }
