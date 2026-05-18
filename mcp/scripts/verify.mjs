@@ -4176,8 +4176,43 @@ function destructiveBacklinkUpdatesFailure(backlinkUpdates, toolName) {
     ) {
       return `${toolName} dry-run response backlinkUpdates.updates[${index}] shape drift`;
     }
+    for (const propertyName of ['beforeKeys', 'afterKeys']) {
+      for (let keyIndex = 0; keyIndex < row[propertyName].length; keyIndex += 1) {
+        const keyRow = row[propertyName][keyIndex];
+        const keyRowFailure = backlinkKeyChangeFailure(keyRow);
+        if (keyRowFailure) {
+          return `${toolName} dry-run response backlinkUpdates.updates[${index}].${propertyName}[${keyIndex}] ${keyRowFailure}`;
+        }
+      }
+    }
   }
   return null;
+}
+
+function backlinkKeyChangeFailure(row) {
+  if (!row || typeof row.key !== 'string' || row.key.length === 0) {
+    return 'shape drift';
+  }
+  if (
+    row.before !== undefined &&
+    !isStringOrStringArray(row.before)
+  ) {
+    return 'before drift';
+  }
+  if (
+    row.after !== undefined &&
+    !isStringOrStringArray(row.after)
+  ) {
+    return 'after drift';
+  }
+  return null;
+}
+
+function isStringOrStringArray(value) {
+  return (
+    typeof value === 'string' ||
+    (Array.isArray(value) && value.every((item) => typeof item === 'string' && item.length > 0))
+  );
 }
 
 export function destructiveDryRunSmokeFailure(expectedResponses) {
