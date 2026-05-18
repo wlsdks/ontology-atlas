@@ -137,6 +137,40 @@ const EDGE_TARGET_KIND_DESCRIPTION = EDGE_TARGET_KIND_VALUES.join(', ');
 const POST_WRITE_MAINTENANCE_GUIDANCE =
   'compact `postWriteMaintenance` (maintenance_plan) with count-safe `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page `nextExecutableAction` / `nextReviewAction` pointers';
 const COMPACT_MAINTENANCE_PROPOSED_ACTION_TOOLS = Object.freeze(['add_concept', 'add_relation', 'patch_concept']);
+const COMPACT_MAINTENANCE_PROPOSED_ACTION_ARGS_OUTPUT_SCHEMA = Object.freeze({
+  oneOf: [
+    {
+      type: 'object',
+      properties: {
+        slug: NON_BLANK_STRING_SCHEMA,
+        kind: { ...NON_BLANK_STRING_SCHEMA, enum: NODE_KIND_VALUES },
+        title: NON_BLANK_STRING_SCHEMA,
+      },
+      required: ['slug', 'kind', 'title'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        from: NON_BLANK_STRING_SCHEMA,
+        to: NON_BLANK_STRING_SCHEMA,
+        type: { ...NON_BLANK_STRING_SCHEMA, enum: WRITE_RELATION_TYPE_VALUES },
+      },
+      required: ['from', 'to', 'type'],
+      additionalProperties: false,
+    },
+    {
+      type: 'object',
+      properties: {
+        slug: NON_BLANK_STRING_SCHEMA,
+        frontmatter: RELATION_ARRAY_PATCH_SCHEMA,
+        expected_mtime: { type: 'number', minimum: 0 },
+      },
+      required: ['slug', 'frontmatter', 'expected_mtime'],
+      additionalProperties: false,
+    },
+  ],
+});
 const COMPACT_MAINTENANCE_NODE_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
@@ -150,7 +184,7 @@ const COMPACT_MAINTENANCE_PROPOSED_ACTION_OUTPUT_SCHEMA = Object.freeze({
   type: ['object', 'null'],
   properties: {
     tool: { ...NON_BLANK_STRING_SCHEMA, enum: COMPACT_MAINTENANCE_PROPOSED_ACTION_TOOLS },
-    args: { type: 'object' },
+    args: COMPACT_MAINTENANCE_PROPOSED_ACTION_ARGS_OUTPUT_SCHEMA,
   },
   required: ['tool', 'args'],
 });

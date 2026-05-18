@@ -152,12 +152,46 @@ function relationArrayPatchSchemaFixture() {
 
 function postWriteMaintenanceSchemaFixture() {
   const compactProposedActionTools = ["add_concept", "add_relation", "patch_concept"];
+  const compactProposedActionArgsSchema = {
+    oneOf: [
+      {
+        type: "object",
+        required: ["slug", "kind", "title"],
+        properties: {
+          slug: { type: "string" },
+          kind: { type: "string", enum: NODE_KIND_VALUES },
+          title: { type: "string" },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: "object",
+        required: ["from", "to", "type"],
+        properties: {
+          from: { type: "string" },
+          to: { type: "string" },
+          type: { type: "string", enum: WRITE_RELATION_TYPE_VALUES },
+        },
+        additionalProperties: false,
+      },
+      {
+        type: "object",
+        required: ["slug", "frontmatter", "expected_mtime"],
+        properties: {
+          slug: { type: "string" },
+          frontmatter: relationArrayPatchSchemaFixture(),
+          expected_mtime: { type: "number", minimum: 0 },
+        },
+        additionalProperties: false,
+      },
+    ],
+  };
   const compactProposedActionSchema = {
     type: ["object", "null"],
     required: ["tool", "args"],
     properties: {
       tool: { type: "string", enum: compactProposedActionTools },
-      args: { type: "object" },
+      args: compactProposedActionArgsSchema,
     },
   };
   const compactNodeSchema = {

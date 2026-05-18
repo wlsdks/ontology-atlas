@@ -712,6 +712,20 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         ["add_concept", "add_relation", "patch_concept"],
         `${toolName} exposes proposedAction tool enum`,
       );
+      assert.deepEqual(
+        postWriteSchema?.properties?.actions?.items?.properties?.proposedAction?.properties?.args?.oneOf?.map((schema) => schema.required),
+        [
+          ["slug", "kind", "title"],
+          ["from", "to", "type"],
+          ["slug", "frontmatter", "expected_mtime"],
+        ],
+        `${toolName} exposes proposedAction args variants`,
+      );
+      assert.deepEqual(
+        postWriteSchema?.properties?.actions?.items?.properties?.proposedAction?.properties?.args?.oneOf?.[1]?.properties?.type?.enum,
+        ["depends_on", "relates", "contains", "describes", "domains", "capabilities", "elements", "domain"],
+        `${toolName} exposes add_relation proposedAction relation enum`,
+      );
       assert.equal(postWriteSchema?.properties?.actions?.items?.type, "object", `${toolName} exposes non-null action rows`);
       assert.deepEqual(
         postWriteSchema?.properties?.actions?.items?.properties?.node?.required,
@@ -753,6 +767,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         ["add_concept", "add_relation", "patch_concept"],
         `${toolName} exposes next executable proposedAction tool enum`,
       );
+      assert.equal(
+        postWriteSchema?.properties?.nextExecutableAction?.properties?.proposedAction?.properties?.args?.oneOf?.length,
+        3,
+        `${toolName} exposes next executable proposedAction args variants`,
+      );
       assert.deepEqual(
         postWriteSchema?.properties?.nextReviewAction?.type,
         ["object", "null"],
@@ -772,6 +791,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         postWriteSchema?.properties?.nextReviewAction?.properties?.proposedAction?.properties?.tool?.enum,
         ["add_concept", "add_relation", "patch_concept"],
         `${toolName} exposes next review proposedAction tool enum`,
+      );
+      assert.equal(
+        postWriteSchema?.properties?.nextReviewAction?.properties?.proposedAction?.properties?.args?.oneOf?.length,
+        3,
+        `${toolName} exposes next review proposedAction args variants`,
       );
     }
     const expectedMtimeTools = [

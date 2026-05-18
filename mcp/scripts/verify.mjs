@@ -282,6 +282,7 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
   }
   const compactActionRequired = ['id', 'phase', 'kind', 'severity', 'score', 'executable', 'reason', 'proposedAction'];
   const compactProposedActionTools = ['add_concept', 'add_relation', 'patch_concept'];
+  const proposedArgsSchemas = schema.properties?.actions?.items?.properties?.proposedAction?.properties?.args?.oneOf;
   const postWriteRequired = [
     'operation',
     'sideEffect',
@@ -338,7 +339,13 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
     !sameArray(schema.properties.actions.items?.properties?.proposedAction?.required, ['tool', 'args']) ||
     schema.properties.actions.items?.properties?.proposedAction?.properties?.tool?.type !== 'string' ||
     !sameArray(schema.properties.actions.items?.properties?.proposedAction?.properties?.tool?.enum, compactProposedActionTools) ||
-    schema.properties.actions.items?.properties?.proposedAction?.properties?.args?.type !== 'object' ||
+    !Array.isArray(proposedArgsSchemas) ||
+    proposedArgsSchemas.length !== 3 ||
+    !sameArray(proposedArgsSchemas[0]?.required, ['slug', 'kind', 'title']) ||
+    !sameArray(proposedArgsSchemas[1]?.required, ['from', 'to', 'type']) ||
+    !sameArray(proposedArgsSchemas[1]?.properties?.type?.enum, WRITE_RELATION_TYPE_VALUES) ||
+    !sameArray(proposedArgsSchemas[2]?.required, ['slug', 'frontmatter', 'expected_mtime']) ||
+    proposedArgsSchemas[2]?.properties?.frontmatter?.additionalProperties !== false ||
     schema.properties.actions.items?.properties?.node?.properties?.slug?.type !== 'string' ||
     !sameArray(schema.properties.actions.items?.properties?.nodes?.type, ['array', 'object']) ||
     schema.properties.actions.items?.properties?.nodes?.items?.properties?.slug?.type !== 'string' ||
@@ -355,7 +362,8 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
       actionSchema.properties?.executable?.type !== 'boolean' ||
       !sameArray(actionSchema.properties?.proposedAction?.type, ['object', 'null']) ||
       !sameArray(actionSchema.properties?.proposedAction?.required, ['tool', 'args']) ||
-      !sameArray(actionSchema.properties?.proposedAction?.properties?.tool?.enum, compactProposedActionTools)
+      !sameArray(actionSchema.properties?.proposedAction?.properties?.tool?.enum, compactProposedActionTools) ||
+      actionSchema.properties?.proposedAction?.properties?.args?.oneOf?.length !== 3
     ) {
       return `${toolName} outputSchema postWriteMaintenance ${key} drift`;
     }
