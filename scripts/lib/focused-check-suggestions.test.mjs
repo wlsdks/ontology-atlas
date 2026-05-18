@@ -155,6 +155,26 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests direct script helper unit tests before broader script-ref gates', () => {
+    const result = suggestFocusedChecks([
+      'scripts/lib/pnpm-script-refs.mjs',
+      'scripts/lib/test-name-pattern.mjs',
+      'scripts/lib/test-name-pattern.test.mjs',
+      'scripts/lib/vault-census.mjs',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test scripts/lib/pnpm-script-refs.test.mjs',
+      'pnpm exec node --test scripts/lib/test-name-pattern.test.mjs',
+      'pnpm exec node --test scripts/lib/vault-census.test.mjs',
+      'pnpm test:dogfood:script-refs',
+    ]);
+    assert.deepEqual(result.commands[1].paths, [
+      'scripts/lib/test-name-pattern.mjs',
+      'scripts/lib/test-name-pattern.test.mjs',
+    ]);
+  });
+
   it('suggests focused CLI and MCP verify gates without jumping straight to full suites', () => {
     const result = suggestFocusedChecks([
       'cli/src/commands/mcp-verify.mjs',

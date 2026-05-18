@@ -52,6 +52,7 @@ const RULES = [
     matches: [
       /^package\.json$/,
       /^scripts\/lib\/pnpm-script-refs\.(?:mjs|test\.mjs)$/,
+      /^scripts\/lib\/test-name-pattern\.(?:mjs|test\.mjs)$/,
       /^scripts\/run-focused-node-test\.(?:mjs|test\.mjs)$/,
     ],
   },
@@ -223,6 +224,14 @@ const CLI_DIRECT_LIB_TESTS = new Map([
 
 const CLI_DIRECT_LIB_TEST_FILES = new Set(CLI_DIRECT_LIB_TESTS.values());
 
+const SCRIPT_DIRECT_LIB_TESTS = new Map([
+  ['scripts/lib/pnpm-script-refs.mjs', 'scripts/lib/pnpm-script-refs.test.mjs'],
+  ['scripts/lib/test-name-pattern.mjs', 'scripts/lib/test-name-pattern.test.mjs'],
+  ['scripts/lib/vault-census.mjs', 'scripts/lib/vault-census.test.mjs'],
+]);
+
+const SCRIPT_DIRECT_LIB_TEST_FILES = new Set(SCRIPT_DIRECT_LIB_TESTS.values());
+
 export function normalizeChangedPath(path) {
   return String(path || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
 }
@@ -240,8 +249,13 @@ export function suggestFocusedChecks(paths = []) {
     directCliLibTestSuggestions(normalizedPaths),
     'pnpm test:cli:lib',
   );
+  const withScriptDirect = insertBeforeCommand(
+    commands,
+    directScriptLibTestSuggestions(normalizedPaths),
+    'pnpm test:dogfood:script-refs',
+  );
   const escalations = rulesToSuggestions(ESCALATIONS, normalizedPaths);
-  return { paths: normalizedPaths, commands, escalations };
+  return { paths: normalizedPaths, commands: withScriptDirect, escalations };
 }
 
 function directMcpUnitTestSuggestions(paths) {
@@ -268,6 +282,22 @@ function directCliLibTestSuggestions(paths) {
     const row = byTestFile.get(testFile) ?? {
       command: `pnpm exec node --test ${testFile}`,
       reason: 'direct CLI lib unit test for changed helper',
+      paths: [],
+    };
+    row.paths.push(path);
+    byTestFile.set(testFile, row);
+  }
+  return [...byTestFile.values()];
+}
+
+function directScriptLibTestSuggestions(paths) {
+  const byTestFile = new Map();
+  for (const path of paths) {
+    const testFile = SCRIPT_DIRECT_LIB_TESTS.get(path) ?? (SCRIPT_DIRECT_LIB_TEST_FILES.has(path) ? path : null);
+    if (!testFile) continue;
+    const row = byTestFile.get(testFile) ?? {
+      command: `pnpm exec node --test ${testFile}`,
+      reason: 'direct script helper unit test for changed helper',
       paths: [],
     };
     row.paths.push(path);
