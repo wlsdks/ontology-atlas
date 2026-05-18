@@ -9,17 +9,6 @@ const STATUS_COMMANDS = [
   { label: 'health', args: ['cli/src/index.mjs', 'health', 'docs/ontology'] },
   { label: 'workspace-brief', args: ['cli/src/index.mjs', 'workspace-brief', 'docs/ontology'] },
 ];
-const DOGFOOD_STATUS_USAGE = `Usage:
-  pnpm dogfood:status
-  pnpm dogfood:status -- --help
-
-Runs the cheap human-readable health + workspace-brief pair over this repo's
-docs/ontology vault, prints a final health/workspace-brief status summary, and
-preserves the first failing exit code. On failure it also prints a
-pnpm dogfood:verify follow-up hint.
-Use pnpm dogfood:verify when you need the full installed-style dogfood vault gate.
-`;
-
 export function runDogfoodStatus({
   spawn = spawnSync,
   cwd = process.cwd(),
@@ -62,7 +51,7 @@ export function handleDogfoodStatusArgs(argv = [], { stdout = process.stdout, st
   const args = normalizeDogfoodStatusArgs(argv);
   if (args.length === 0) return null;
   if (args.length === 1 && (args[0] === '--help' || args[0] === '-h')) {
-    stdout.write(DOGFOOD_STATUS_USAGE);
+    stdout.write(dogfoodStatusUsage());
     return 0;
   }
   const suggestion = args.length === 1 ? dogfoodStatusArgSuggestion(args[0]) : null;
@@ -96,6 +85,19 @@ export function dogfoodStatusSummary(results = []) {
 
 export function dogfoodStatusFailureHint() {
   return '[dogfood:status] run pnpm dogfood:verify for the full installed-style dogfood vault gate';
+}
+
+export function dogfoodStatusUsage() {
+  return `Usage:
+  pnpm dogfood:status
+  pnpm dogfood:status -- --help
+
+Runs the cheap human-readable health + workspace-brief pair over this repo's
+docs/ontology vault, prints a final health/workspace-brief status summary, and
+preserves the first failing exit code.
+On failure it prints:
+  ${dogfoodStatusFailureHint()}
+`;
 }
 
 export function dogfoodStatusDiagnostic(args, result) {

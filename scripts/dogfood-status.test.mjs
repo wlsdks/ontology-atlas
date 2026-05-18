@@ -7,6 +7,7 @@ import {
   dogfoodStatusExitCode,
   dogfoodStatusFailureHint,
   dogfoodStatusSummary,
+  dogfoodStatusUsage,
   handleDogfoodStatusArgs,
   normalizeDogfoodStatusArgs,
   runDogfoodStatus,
@@ -27,9 +28,9 @@ describe('dogfood status shortcut', () => {
     assert.match(output.join(''), /pnpm dogfood:status/);
     assert.match(output.join(''), /health \+ workspace-brief pair/);
     assert.match(output.join(''), /final health\/workspace-brief status summary/);
-    assert.match(output.join(''), /pnpm dogfood:verify follow-up hint/);
-    assert.match(output.join(''), /pnpm dogfood:verify/);
-    assert.match(output.join(''), /full installed-style dogfood vault gate/);
+    assert.match(output.join(''), /On failure it prints:/);
+    assert.match(output.join(''), new RegExp(dogfoodStatusFailureHint().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.equal(output.join(''), dogfoodStatusUsage());
   });
 
   it('normalizes the pnpm argument separator', () => {
