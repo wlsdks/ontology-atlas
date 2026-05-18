@@ -2542,12 +2542,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'delete_concept':
         return ok(deleteConcept(args));
       default:
-        throw new Error(`Unknown tool: ${name}`);
+        throw new Error(formatUnknownToolError(name));
     }
   } catch (err) {
     return error(err);
   }
 });
+
+function formatUnknownToolError(name) {
+  const allowedNames = [...TOOL_BY_NAME.keys()].sort();
+  const suggestion = closestAllowedValue(name, allowedNames);
+  const suggestionText = suggestion ? ` Did you mean "${suggestion}"?` : '';
+  return `Unknown tool: ${name}.${suggestionText} Allowed tools: ${allowedNames.join(', ')}.`;
+}
 
 function ok(result) {
   const response = {
