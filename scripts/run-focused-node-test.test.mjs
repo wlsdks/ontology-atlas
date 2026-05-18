@@ -51,7 +51,7 @@ describe('focused node test wrapper', () => {
 
       assert.equal(result.status, 1);
       assert.match(result.stdout, /# pass 0/);
-      assert.match(result.stderr, /no tests matched --test-name-pattern=missing case/);
+      assert.match(result.stderr, new RegExp(`no tests matched --test-name-pattern=missing case in ${file}`));
     });
   });
 });

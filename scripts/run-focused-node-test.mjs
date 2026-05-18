@@ -19,8 +19,24 @@ function tapCount(output, label) {
   return match ? Number.parseInt(match[1], 10) : null;
 }
 
+function focusedTestTargets(argv) {
+  const targets = [];
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--test-name-pattern') {
+      index += 1;
+      continue;
+    }
+    if (arg.startsWith('--test-name-pattern=')) continue;
+    if (arg.startsWith('-')) continue;
+    targets.push(arg);
+  }
+  return targets;
+}
+
 const args = process.argv.slice(2);
 const pattern = readNodeTestNamePattern(args);
+const testTargets = focusedTestTargets(args);
 const result = spawnSync(process.execPath, ['--test', ...args], {
   cwd: process.cwd(),
   env: process.env,
@@ -42,7 +58,8 @@ if (pattern) {
   const fail = tapCount(result.stdout, 'fail');
   const cancelled = tapCount(result.stdout, 'cancelled');
   if (pass === 0 && fail === 0 && cancelled === 0) {
-    console.error(`[focused-node-test] no tests matched --test-name-pattern=${pattern}`);
+    const targetSuffix = testTargets.length > 0 ? ` in ${testTargets.join(', ')}` : '';
+    console.error(`[focused-node-test] no tests matched --test-name-pattern=${pattern}${targetSuffix}`);
     process.exit(1);
   }
 }
