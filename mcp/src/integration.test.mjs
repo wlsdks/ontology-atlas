@@ -659,7 +659,8 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       assert.match(description, /postWriteMaintenance/, `${toolName} describes post-write maintenance`);
       assert.match(description, /score/, `${toolName} describes maintenance action score`);
       assert.match(description, /proposedAction/, `${toolName} describes executable proposedAction`);
-      assert.match(description, /next action pointers|nextExecutableAction/, `${toolName} describes next action pointers`);
+      assert.match(description, /nextExecutableAction/, `${toolName} describes next executable action pointer`);
+      assert.match(description, /nextReviewAction/, `${toolName} describes next review action pointer`);
       assert.match(description, /byPhase/, `${toolName} describes maintenance phase buckets`);
       assert.match(description, /bySeverity/, `${toolName} describes maintenance severity buckets`);
       assert.match(description, /byKind/, `${toolName} describes maintenance kind buckets`);

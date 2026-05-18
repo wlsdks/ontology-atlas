@@ -135,7 +135,7 @@ const IMPORT_EDGE_KIND_DESCRIPTION = IMPORT_EDGE_KIND_VALUES.join(', ');
 const NODE_KIND_DESCRIPTION = NODE_KIND_VALUES.join(', ');
 const EDGE_TARGET_KIND_DESCRIPTION = EDGE_TARGET_KIND_VALUES.join(', ');
 const POST_WRITE_MAINTENANCE_GUIDANCE =
-  'compact `postWriteMaintenance` (maintenance_plan) with count-safe `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page next action pointers';
+  'compact `postWriteMaintenance` (maintenance_plan) with count-safe `byPhase` / `bySeverity` / `byKind` queue buckets, action `score`, executable `proposedAction`, and current-page `nextExecutableAction` / `nextReviewAction` pointers';
 const COMPACT_MAINTENANCE_ACTION_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {

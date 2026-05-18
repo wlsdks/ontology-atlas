@@ -235,7 +235,7 @@ function makeDogfoodToolsList() {
       const tool = {
         name,
         description: WRITE_TOOL_NAMES.has(name)
-          ? "Write tool returns postWriteMaintenance with byPhase bySeverity byKind queue buckets, action score, executable proposedAction, and nextExecutableAction next action pointers."
+          ? "Write tool returns postWriteMaintenance with byPhase bySeverity byKind queue buckets, action score, executable proposedAction, and nextExecutableAction / nextReviewAction current-page pointers."
           : `${name} read tool.`,
         annotations: {
           title: expectedToolTitle(name),
@@ -3920,6 +3920,13 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: addRelationsClosestValueGuidanceDrifted }),
       ["tools/list: add_relations description missing closest-value type guidance"],
+    );
+    const writeNextReviewGuidanceDrifted = makeDogfoodToolsList();
+    writeNextReviewGuidanceDrifted.tools.find((tool) => tool.name === "add_concept").description =
+      "Write tool returns postWriteMaintenance with byPhase bySeverity byKind queue buckets, action score, executable proposedAction, and nextExecutableAction current-page pointers.";
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: writeNextReviewGuidanceDrifted }),
+      ["tools/list: add_concept description missing maintenance next action pointer guidance"],
     );
     const addConceptOutputSchemaDrifted = makeDogfoodToolsList();
     addConceptOutputSchemaDrifted.tools.find((tool) => tool.name === "add_concept").outputSchema.properties.warnings.items.type = "number";

@@ -1750,7 +1750,7 @@ export function toolsListSchemaFailure(tools) {
     if (!/proposedAction/.test(description)) {
       return `${toolName} description missing executable maintenance proposedAction guidance`;
     }
-    if (!/next action pointers|nextExecutableAction/.test(description)) {
+    if (!/nextExecutableAction/.test(description) || !/nextReviewAction/.test(description)) {
       return `${toolName} description missing maintenance next action pointer guidance`;
     }
     if (!/byPhase/.test(description) || !/bySeverity/.test(description) || !/byKind/.test(description)) {
