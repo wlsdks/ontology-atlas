@@ -154,6 +154,11 @@ const RULES = [
     matches: [/^cli\/src\/commands\/(?:analyze|infer-imports|bootstrap)\.mjs$/],
   },
   {
+    command: 'pnpm integration:cli:local-vault',
+    reason: 'CLI local vault/frontmatter command changed',
+    matches: [/^cli\/src\/commands\/(?:add|import|list|find|validate)\.mjs$/],
+  },
+  {
     command: 'pnpm integration:cli:growth',
     reason: 'CLI growth command changed',
     matches: [/^cli\/src\/commands\/growth\.mjs$/],

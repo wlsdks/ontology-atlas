@@ -32,6 +32,7 @@
     "integration:cli:graph-read": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(backlinks|path|orphans|query|overview|hubs|blast-radius|cycles|node|similar)\" cli/src/integration.test.mjs",
     "integration:cli:graph-write": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(rename|delete|merge|graph write commands)\" cli/src/integration.test.mjs",
     "integration:cli:repo-analysis": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(analyze|infer-imports|bootstrap|repo analysis commands)\" cli/src/integration.test.mjs",
+    "integration:cli:local-vault": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(list|add|find|import|validate|local/frontmatter commands)\" cli/src/integration.test.mjs",
     "integration:cli:growth": "node scripts/run-focused-node-test.mjs --test-name-pattern \"growth\" cli/src/integration.test.mjs",
     "integration:cli:maintenance": "node scripts/run-focused-node-test.mjs --test-name-pattern \"maintenance\" cli/src/integration.test.mjs",
     "cli:mcp-verify": "node cli/src/index.mjs mcp-verify",

@@ -154,6 +154,10 @@ describe('package contract helpers', () => {
       `${focusedNode} --test-name-pattern "^(analyze|infer-imports|bootstrap|repo analysis commands)" cli/src/integration.test.mjs`,
     );
     assert.equal(
+      pkg.scripts?.['integration:cli:local-vault'],
+      `${focusedNode} --test-name-pattern "^(list|add|find|import|validate|local/frontmatter commands)" cli/src/integration.test.mjs`,
+    );
+    assert.equal(
       pkg.scripts?.['integration:cli:growth'],
       `${focusedNode} --test-name-pattern "growth" cli/src/integration.test.mjs`,
     );
@@ -378,6 +382,7 @@ describe('package contract helpers', () => {
       'pnpm integration:cli:graph-read',
       'pnpm integration:cli:graph-write',
       'pnpm integration:cli:repo-analysis',
+      'pnpm integration:cli:local-vault',
       'pnpm integration:cli:growth',
       'pnpm integration:cli:maintenance',
       'OMOT_TEST_NAME_PATTERN="tools/list|initialize" pnpm integration:mcp',
@@ -405,6 +410,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm integration:cli:graph-read` \| CLI read-only graph command contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:graph-write` \| CLI graph write dry-run\/confirm safety contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:repo-analysis` \| CLI `analyze` \/ `infer-imports` \/ `bootstrap` code-to-vault contracts \|/);
+    assert.match(checksDoc, /\| `pnpm integration:cli:local-vault` \| CLI local vault `add` \/ `import` \/ `list` \/ `find` \/ `validate` contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:growth` \| CLI `growth_plan` wrapper, candidate rendering, malformed payload, and argument contracts \|/);
     assert.match(checksDoc, /\| Dogfood MCP smoke \| `pnpm dogfood:status` \| `pnpm dogfood:verify` \|/);
     assert.match(checksDoc, /pnpm test:dogfood:status/);
@@ -1526,6 +1532,7 @@ describe('package contract helpers', () => {
     assert.match(section, /`integration:cli:graph-read`\s+narrows read-only graph command contracts/);
     assert.match(section, /`integration:cli:graph-write`\s+narrows rename\/delete\/merge safety contracts/);
     assert.match(section, /`integration:cli:repo-analysis`\s+narrows analyze \/ infer-imports \/ bootstrap code-to-vault contracts/);
+    assert.match(section, /`integration:cli:local-vault`\s+narrows local vault add\/import\/list\/find\/validate contracts/);
     assert.match(section, /`integration:cli:growth`\s+narrows the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument contracts/);
     assert.match(section, /`dogfood:compile`\s+is the shortest root-checkout compiler summary JSON snapshot/);
     assert.match(section, /`dogfood:compile-fix`\s+runs root-checkout `compile --fix`, fails if canonicalization leaves a docs\/ontology diff,\s+points changed-vault failures at `pnpm docs-vault:build`, and ends successful runs\s+with `\[dogfood:compile-fix\] docs\/ontology unchanged`/);

@@ -70,6 +70,7 @@ pnpm integration:cli:diagnosis
 pnpm integration:cli:graph-read
 pnpm integration:cli:graph-write
 pnpm integration:cli:repo-analysis
+pnpm integration:cli:local-vault
 pnpm integration:cli:growth
 pnpm integration:cli:maintenance
 pnpm test:mcp:docs
@@ -118,6 +119,7 @@ subset inside the spawn-heavy CLI integration file.
 backlinks, path, orphans, query, overview, hubs, blast-radius, cycles, node, and similar.
 `integration:cli:graph-write` runs only rename/delete/merge dry-run and confirm safety contracts.
 `integration:cli:repo-analysis` runs only analyze / infer-imports / bootstrap code-to-vault contracts.
+`integration:cli:local-vault` runs only add/import/list/find/validate local vault and frontmatter contracts.
 `integration:cli:growth` runs only the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument-contract cases.
 `integration:cli:maintenance` runs only the CLI maintenance command and
 maintenance-related installed verify integration cases. `test:mcp:docs` checks
@@ -157,7 +159,7 @@ matched test fails, so the exact scoped test count is visible without
 subtracting skipped tests. File setup/import failures are reported separately as
 `setupFailures=N` instead of inflating the matched-test count.
 `integration:cli:compile` narrows CLI compile / `--fix` canonicalization contracts
-without running unrelated CLI routes. `integration:cli:diagnosis` narrows CLI health / workspace-brief diagnosis contracts. `integration:cli:graph-read` narrows read-only graph command contracts. `integration:cli:graph-write` narrows rename/delete/merge safety contracts. `integration:cli:repo-analysis` narrows analyze / infer-imports / bootstrap code-to-vault contracts. `integration:cli:growth` narrows the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument contracts. `dogfood:compile`
+without running unrelated CLI routes. `integration:cli:diagnosis` narrows CLI health / workspace-brief diagnosis contracts. `integration:cli:graph-read` narrows read-only graph command contracts. `integration:cli:graph-write` narrows rename/delete/merge safety contracts. `integration:cli:repo-analysis` narrows analyze / infer-imports / bootstrap code-to-vault contracts. `integration:cli:local-vault` narrows local vault add/import/list/find/validate contracts. `integration:cli:growth` narrows the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument contracts. `dogfood:compile`
 is the shortest root-checkout compiler summary JSON snapshot, `dogfood:compile-fix`
 runs root-checkout `compile --fix`, fails if canonicalization leaves a docs/ontology diff,
 points changed-vault failures at `pnpm docs-vault:build`, and ends successful runs
