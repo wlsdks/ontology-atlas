@@ -35,6 +35,17 @@ function nextCommandIndex(args, startIndex = 0) {
   return -1;
 }
 
+function stripMatchingQuotes(value) {
+  const text = String(value);
+  if (
+    text.length >= 2 &&
+    ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'")))
+  ) {
+    return text.slice(1, -1);
+  }
+  return text;
+}
+
 function scriptFromPnpmArgs(argsText) {
   const args = String(argsText).trim().split(/\s+/).filter(Boolean);
   const commandIndex = nextCommandIndex(args);
@@ -42,17 +53,17 @@ function scriptFromPnpmArgs(argsText) {
     return null;
   }
   if (args[commandIndex] !== "run") {
-    return args[commandIndex];
+    return stripMatchingQuotes(args[commandIndex]);
   }
   const scriptIndex = nextCommandIndex(args, commandIndex + 1);
-  return scriptIndex < 0 ? null : args[scriptIndex];
+  return scriptIndex < 0 ? null : stripMatchingQuotes(args[scriptIndex]);
 }
 
 function collectPnpmCommandCandidates(text) {
   const source = String(text);
   const candidates = [];
   const commandPattern =
-    /(?:^|\n|`|&&|\|\|)\s*(?:[$>]\s*)?(?:[A-Z_][A-Z0-9_]*=\S+\s+)*pnpm\s+([^\n`&|;]+)/g;
+    /(?:^|\n|`|&&|\|\||\()\s*(?:[$>]\s*)?(?:[A-Z_][A-Z0-9_]*=\S+\s+)*pnpm\s+([^\n`&|;)]+)/g;
   for (const match of source.matchAll(commandPattern)) {
     const script = scriptFromPnpmArgs(match[1]);
     if (script) {

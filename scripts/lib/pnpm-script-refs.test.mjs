@@ -53,6 +53,13 @@ describe("pnpm script reference helpers", () => {
     );
   });
 
+  it("extracts parenthesized and quoted script references", () => {
+    assert.deepEqual(
+      pnpmScriptsFromText("(pnpm test:mcp:docs)\npnpm \"dogfood:status\"\npnpm run 'test:cli:args'"),
+      ["test:mcp:docs", "dogfood:status", "test:cli:args"],
+    );
+  });
+
   it("reports missing package scripts", () => {
     const scripts = { "dogfood:help": "node scripts/dogfood-mcp-walk.mjs --help" };
 
