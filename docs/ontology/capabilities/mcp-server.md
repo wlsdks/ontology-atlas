@@ -118,7 +118,9 @@ row-level `errorCode` 와 field/value repair payload(`rowName`, `unknownFields`,
 `analyze_repo_structure`, `infer_imports`, `query_ontology(overview)`, `query_plan(targetOperation:"overview")`,
 `query_plan(targetOperation:"project_map")`, 그리고 실제 `neighbors` /
 node→project `path` / `project_scope` 를 한 번에 호출해 agent first-contact graph diagnosis,
-compiler summary, bootstrap/import analysis read smoke, graph-query smoke 경로까지 확인한다. project probe 덕분에 `project_scope` 는 project
+compiler summary, bootstrap/import analysis read smoke, graph-query smoke 경로까지 확인한다.
+parser smoke subprocess 가 signal 로 종료되면 `parser test failed (exit null)` 이 아니라
+`parser test terminated by SIGTERM` 같은 signal context 를 남긴다. project probe 덕분에 `project_scope` 는 project
 노드가 있을 때 containment hard gate 로 실행하고, 빈 vault 는 node-targeted graph
 smoke 를 skip 해 첫 설치 확인이 seed 작성 전에 막히지 않게 한다. vault warning / validate problem / `fail` health check /
 fail severity `workspace_brief.nextActions` 는 exit 1 로 처리하되, starter vault 의

@@ -83,6 +83,7 @@ import {
   maintenanceResumeCursorFailure,
   overviewFailure,
   overviewQueryPlanFailure,
+  parserSmokeFailure,
   parseVerifyArgs,
   parseVerifyKillGraceMs,
   parseVerifyTimeoutMs,
@@ -6523,6 +6524,11 @@ describe('verify.mjs first-contact gates', () => {
       serverSignalFailure('', '', {}),
       'server terminated by unknown signal before first-contact completed. Example: npm run verify -- --timeout-ms 15000',
     );
+  });
+
+  it('formats startup failures for parser smoke signal exits separately from numeric exits', () => {
+    assert.equal(parserSmokeFailure(1, null), 'parser test failed (exit 1)');
+    assert.equal(parserSmokeFailure(null, 'SIGTERM'), 'parser test terminated by SIGTERM');
   });
 
   it('detects when all first-contact JSON-RPC responses arrived', () => {

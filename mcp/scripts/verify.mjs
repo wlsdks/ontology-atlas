@@ -3515,6 +3515,11 @@ export function serverSignalFailure(signal, stderr, env = process.env) {
     : `server terminated by ${signalText} before first-contact completed. ${retry}`;
 }
 
+export function parserSmokeFailure(code, signal) {
+  if (signal) return `parser test terminated by ${signal}`;
+  return `parser test failed (exit ${code})`;
+}
+
 function firstContactLabelsForIds(ids) {
   const expectedIds = ids || FIRST_CONTACT_RESPONSE_LABELS.keys();
   return new Map(
@@ -6290,14 +6295,14 @@ async function step1ParserSmoke() {
     const stderrDecoder = new StringDecoder('utf8');
     proc.stdout.on('data', (b) => (stdout += stdoutDecoder.write(b)));
     proc.stderr.on('data', (b) => (stderr += stderrDecoder.write(b)));
-    proc.on('close', (code) => {
+    proc.on('close', (code, signal) => {
       stdout += stdoutDecoder.end();
       stderr += stderrDecoder.end();
       if (code === 0 && /passed/.test(stdout)) {
         log('ok', stdout.trim().split('\n').slice(-1)[0]);
         res(true);
       } else {
-        log('fail', `parser test failed (exit ${code})`);
+        log('fail', parserSmokeFailure(code, signal));
         if (stdout) console.error(stdout);
         if (stderr) console.error(stderr);
         res(false);
