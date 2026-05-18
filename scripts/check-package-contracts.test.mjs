@@ -1102,6 +1102,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /non-object row shape, unknown row field, and\s+duplicate `add_concepts` slug failures surfacing as row-level `ok:false`/);
     assert.match(verifySection, /instead of top-level tool errors/);
     assert.match(verifySection, /with no `postWriteMaintenance`/);
+    assert.match(verifySection, /structured `errorCode` values \(`unknown_argument` \/ `invalid_arguments`\)/);
+    assert.match(verifySection, /stale `patch_concept\.expected_mtime` rejection with\s+`vault_conflict`/);
     assert.match(verifySection, /destructive writer dry-runs for `rename_concept`,\s+`merge_concepts`, and `delete_concept`/);
     assert.match(verifySection, /every\s+planned response to be present/);
     assert.match(verifySection, /`ok:false` \/ `dryRun:true` preview\s+with no `changed` or `postWriteMaintenance`/);
