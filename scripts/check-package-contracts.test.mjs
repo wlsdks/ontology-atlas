@@ -591,7 +591,9 @@ describe('package contract helpers', () => {
     const addRelationsRow = readme.split('| `add_relations` |')[1]?.split('\n')[0] ?? '';
     assert.match(addConceptsFeature, /non-object row shape \/ unknown row field errors are isolated as `\{ok:false, error\}` rows, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every offending field/);
     assert.match(addConceptsFeature, /structured `rowName` \/ `firstSeenAt`/);
-    assert.match(addRelationsFeature, /non-object row shape \/ unknown row field errors are isolated as `\{ok:false, error\}` rows, single unknown-field rows include `receivedField` plus one-row `unknownFields`, and multi unknown-field rows report every offending field/);
+    assert.match(addRelationsFeature, /non-object row shape \/ unknown row field errors are isolated as `\{ok:false, error\}` rows, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every offending field/);
+    assert.match(addRelationsFeature, /structured `rowName` \/ `allowedFields` \/ `receivedFields`/);
+    assert.match(addRelationsFeature, /structured `valueName` \/ `receivedValue` \/ `suggestion` \/ `allowedValues`/);
     assert.match(addRelationFeature, /type enum:/, 'FEATURES must label add_relation write relation enum values');
     assert.match(addRelationRow, /`type`:/, 'MCP README must label add_relation write relation enum values');
     assert.match(addRelationsRow, /`type`:/, 'MCP README must label add_relations write relation enum values');
@@ -603,8 +605,11 @@ describe('package contract helpers', () => {
     assert.match(addRelationsRow, /`relations\[n\]` row label/);
     assert.match(addRelationsRow, /closest-value hint/);
     assert.match(addRelationsRow, /unknown row fields surface/);
+    assert.match(addRelationsRow, /`rowName`/);
     assert.match(addRelationsRow, /Single unknown-field rows include `receivedField` plus one-row `unknownFields`/);
     assert.match(addRelationsRow, /multi unknown-field rows report every unknown field with nearest hints and `Received fields: \.\.\.`/);
+    assert.match(addRelationsRow, /`allowedFields`, `receivedFields`/);
+    assert.match(addRelationsRow, /structured `valueName` \/ `receivedValue` \/ `suggestion` \/ `allowedValues`/);
     for (const value of WRITE_RELATION_TYPE_VALUES) {
       assert.match(addRelationFeature, new RegExp(`\`${value}\``), `FEATURES documents add_relation type ${value}`);
       assert.match(addRelationRow, new RegExp(`\`${value}\``), `MCP README documents add_relation type ${value}`);
@@ -1875,7 +1880,8 @@ describe('package contract helpers', () => {
     assert.match(doc, /maintenance next pointer description drift/);
     assert.match(doc, /row-label guidance/);
     assert.match(doc, /단일 unknown-field row 의\s+`receivedField` \+ 1-row `unknownFields` repair 안내/);
-    assert.match(doc, /multi unknown-field row 의 모든\s+offending field \/ `Received fields: \.\.\.` 안내/);
+    assert.match(doc, /multi unknown-field row 의 모든\s+offending field \/ `allowedFields` \/ `receivedFields` \/ `Received fields: \.\.\.` 안내/);
+    assert.match(doc, /`add_relations` type typo 의 structured `valueName` \/ `receivedValue` \/ `suggestion` \/ `allowedValues`/);
     assert.match(doc, /`add_concepts` duplicate slug\s+first-seen 안내/);
     assert.match(doc, /write row labels: pass/);
     assert.match(doc, /single\/multi-field 복구 안내가 살아 있는지 확인/);

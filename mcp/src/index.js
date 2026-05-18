@@ -997,7 +997,7 @@ const TOOLS = [
       'Use after `analyze_repo_structure` (suggestedRelations) / `infer_imports` (moduleEdges) ' +
       'when the agent has K accepted edges from the user — replaces K×`add_relation` round-trips. ' +
       'Each row is processed independently and idempotently: existing edges return `{ok: true, alreadyExists: true}`; ' +
-      'missing source/target slugs / unknown type / non-object row shape / unknown row fields surface as `{ok: false, error}` with a `relations[n]` row label; unknown type rows include a closest-value hint; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints and `Received fields: ...`. ' +
+      'missing source/target slugs / unknown type / non-object row shape / unknown row fields surface as `{ok: false, error}` with a `relations[n]` row label and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and `Received fields: ...`. ' +
       '`relations[]` order in the response matches the input. Cap = 50 per call. ' +
       'NO atomic rollback — for all-or-nothing semantics use single `add_relation` calls. ' +
       'Tip: avoid `expected_mtime` in batch when multiple rows share the same `from` slug — ' +

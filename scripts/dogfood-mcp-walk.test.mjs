@@ -1436,7 +1436,7 @@ function makeDogfoodToolsList() {
         };
       }
       if (name === "add_relations") {
-        tool.description += " Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels; unknown type rows include a closest-value hint; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints and Received fields.";
+        tool.description += " Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields.";
         tool.inputSchema.required = ["relations"];
         tool.inputSchema.properties.relations = {
           type: "array",
@@ -3689,27 +3689,37 @@ describe("rpc response completion helpers", () => {
     const missingRelations = makeDogfoodToolsList().tools;
     missingRelations.find((tool) => tool.name === "add_relations").description =
       "Batch rows isolate non-object row shape and unknown row fields as ok:false rows.";
-    assert.equal(writeRowLabelGuidanceSummary(missingRelations), "missing add_relations relations[n], add_relations single-field repair, add_relations multi-field Received fields, add_relations closest-value type hint");
+    assert.equal(writeRowLabelGuidanceSummary(missingRelations), "missing add_relations relations[n], add_relations structured rowName, add_relations single-field repair, add_relations multi-field Received fields, add_relations structured field lists, add_relations closest-value type hint, add_relations structured value repair");
 
     const missingRelationsReceivedFields = makeDogfoodToolsList().tools;
     missingRelationsReceivedFields.find((tool) => tool.name === "add_relations").description =
       "Batch rows isolate non-object row shape and unknown row fields as ok:false rows with relations[n] labels.";
-    assert.equal(writeRowLabelGuidanceSummary(missingRelationsReceivedFields), "missing add_relations single-field repair, add_relations multi-field Received fields, add_relations closest-value type hint");
+    assert.equal(writeRowLabelGuidanceSummary(missingRelationsReceivedFields), "missing add_relations structured rowName, add_relations single-field repair, add_relations multi-field Received fields, add_relations structured field lists, add_relations closest-value type hint, add_relations structured value repair");
 
     const missingRelationsSingleFieldRepair = makeDogfoodToolsList().tools;
     missingRelationsSingleFieldRepair.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels; unknown type rows include a closest-value hint; multi unknown-field rows report every unknown field with nearest hints and Received fields.";
+      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields.";
     assert.equal(writeRowLabelGuidanceSummary(missingRelationsSingleFieldRepair), "missing add_relations single-field repair");
 
     const missingRelationsEveryUnknownField = makeDogfoodToolsList().tools;
     missingRelationsEveryUnknownField.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels; unknown type rows include a closest-value hint; single unknown-field rows include `receivedField` plus one-row `unknownFields`; unknown-field rows include Received fields.";
-    assert.equal(writeRowLabelGuidanceSummary(missingRelationsEveryUnknownField), "missing add_relations multi-field Received fields");
+      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; unknown-field rows include Received fields.";
+    assert.equal(writeRowLabelGuidanceSummary(missingRelationsEveryUnknownField), "missing add_relations multi-field Received fields, add_relations structured field lists");
+
+    const missingRelationsStructuredFieldLists = makeDogfoodToolsList().tools;
+    missingRelationsStructuredFieldLists.find((tool) => tool.name === "add_relations").description =
+      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints and Received fields.";
+    assert.equal(writeRowLabelGuidanceSummary(missingRelationsStructuredFieldLists), "missing add_relations structured field lists");
 
     const missingRelationsClosestValue = makeDogfoodToolsList().tools;
     missingRelationsClosestValue.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints and Received fields.";
-    assert.equal(writeRowLabelGuidanceSummary(missingRelationsClosestValue), "missing add_relations closest-value type hint");
+      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields.";
+    assert.equal(writeRowLabelGuidanceSummary(missingRelationsClosestValue), "missing add_relations closest-value type hint, add_relations structured value repair");
+
+    const missingRelationsStructuredValueRepair = makeDogfoodToolsList().tools;
+    missingRelationsStructuredValueRepair.find((tool) => tool.name === "add_relations").description =
+      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields.";
+    assert.equal(writeRowLabelGuidanceSummary(missingRelationsStructuredValueRepair), "missing add_relations structured value repair");
 
     assert.equal(writeRowLabelGuidanceSummary(null), "missing tools/list");
   });
@@ -4698,28 +4708,49 @@ describe("evaluateDogfoodGate", () => {
       "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and closest-value hints.";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: addRelationsReceivedFieldsGuidanceDrifted }),
+      ["tools/list: add_relations description missing structured rowName guidance"],
+    );
+    const addRelationsStructuredRowNameGuidanceDrifted = makeDogfoodToolsList();
+    addRelationsStructuredRowNameGuidanceDrifted.tools.find((tool) => tool.name === "add_relations").description =
+      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`.";
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: addRelationsStructuredRowNameGuidanceDrifted }),
       ["tools/list: add_relations description missing single-field repair guidance"],
     );
     const addRelationsSingleRepairGuidanceDrifted = makeDogfoodToolsList();
     addRelationsSingleRepairGuidanceDrifted.tools.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels; unknown type rows include a closest-value hint; multi unknown-field rows report every unknown field with nearest hints and Received fields.";
+      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields.";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: addRelationsSingleRepairGuidanceDrifted }),
       ["tools/list: add_relations description missing single-field repair guidance"],
     );
     const addRelationsMultiFieldGuidanceDrifted = makeDogfoodToolsList();
     addRelationsMultiFieldGuidanceDrifted.tools.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels; unknown type rows include a closest-value hint; single unknown-field rows include `receivedField` plus one-row `unknownFields`; unknown-field rows include Received fields.";
+      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; unknown-field rows include Received fields.";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: addRelationsMultiFieldGuidanceDrifted }),
       ["tools/list: add_relations description missing multi-field received fields guidance"],
     );
+    const addRelationsStructuredFieldListGuidanceDrifted = makeDogfoodToolsList();
+    addRelationsStructuredFieldListGuidanceDrifted.tools.find((tool) => tool.name === "add_relations").description =
+      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints and Received fields.";
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: addRelationsStructuredFieldListGuidanceDrifted }),
+      ["tools/list: add_relations description missing structured field-list guidance"],
+    );
     const addRelationsClosestValueGuidanceDrifted = makeDogfoodToolsList();
     addRelationsClosestValueGuidanceDrifted.tools.find((tool) => tool.name === "add_relations").description =
-      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels, single unknown-field rows include `receivedField` plus one-row `unknownFields`, and multi unknown-field rows report every unknown field with nearest hints and Received fields.";
+      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`, single unknown-field rows include `receivedField` plus one-row `unknownFields`, and multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields.";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: addRelationsClosestValueGuidanceDrifted }),
       ["tools/list: add_relations description missing closest-value type guidance"],
+    );
+    const addRelationsStructuredValueRepairGuidanceDrifted = makeDogfoodToolsList();
+    addRelationsStructuredValueRepairGuidanceDrifted.tools.find((tool) => tool.name === "add_relations").description =
+      "Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`, unknown type rows include a closest-value hint, single unknown-field rows include `receivedField` plus one-row `unknownFields`, and multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields.";
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: addRelationsStructuredValueRepairGuidanceDrifted }),
+      ["tools/list: add_relations description missing structured value repair guidance"],
     );
     const writeNextReviewGuidanceDrifted = makeDogfoodToolsList();
     writeNextReviewGuidanceDrifted.tools.find((tool) => tool.name === "add_concept").description =

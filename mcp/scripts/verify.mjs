@@ -1992,14 +1992,23 @@ export function toolsListSchemaFailure(tools) {
   if (!/relations\[n\]/.test(addRelationsTool?.description || '')) {
     return 'add_relations description missing row label guidance';
   }
+  if (!/structured `rowName`/.test(addRelationsTool?.description || '')) {
+    return 'add_relations description missing structured rowName guidance';
+  }
   if (!/single unknown-field rows include `receivedField` plus one-row `unknownFields`/.test(addRelationsTool?.description || '')) {
     return 'add_relations description missing single-field repair guidance';
   }
   if (!/multi unknown-field rows report every unknown field/.test(addRelationsTool?.description || '') || !/Received fields/.test(addRelationsTool?.description || '')) {
     return 'add_relations description missing multi-field received fields guidance';
   }
+  if (!/`allowedFields`, `receivedFields`/.test(addRelationsTool?.description || '')) {
+    return 'add_relations description missing structured field-list guidance';
+  }
   if (!/closest-value hint/.test(addRelationsTool?.description || '')) {
     return 'add_relations description missing closest-value type guidance';
+  }
+  if (!/structured `valueName` \/ `receivedValue` \/ `suggestion` \/ `allowedValues`/.test(addRelationsTool?.description || '')) {
+    return 'add_relations description missing structured value repair guidance';
   }
   if (addRelationsTool.outputSchema?.type !== 'object') {
     return 'add_relations outputSchema root drift';

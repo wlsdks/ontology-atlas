@@ -427,14 +427,23 @@ export function writeRowLabelGuidanceSummary(tools) {
   if (!/relations\[n\]/.test(addRelations?.description || "")) {
     missing.push("add_relations relations[n]");
   }
+  if (!/structured `rowName`/.test(addRelations?.description || "")) {
+    missing.push("add_relations structured rowName");
+  }
   if (!/single unknown-field rows include `receivedField` plus one-row `unknownFields`/.test(addRelations?.description || "")) {
     missing.push("add_relations single-field repair");
   }
   if (!/multi unknown-field rows report every unknown field/.test(addRelations?.description || "") || !/Received fields/.test(addRelations?.description || "")) {
     missing.push("add_relations multi-field Received fields");
   }
+  if (!/`allowedFields`, `receivedFields`/.test(addRelations?.description || "")) {
+    missing.push("add_relations structured field lists");
+  }
   if (!/unknown type/.test(addRelations?.description || "") || !/closest-value hint/.test(addRelations?.description || "")) {
     missing.push("add_relations closest-value type hint");
+  }
+  if (!/structured `valueName` \/ `receivedValue` \/ `suggestion` \/ `allowedValues`/.test(addRelations?.description || "")) {
+    missing.push("add_relations structured value repair");
   }
 
   return missing.length > 0 ? `missing ${missing.join(", ")}` : "pass";
