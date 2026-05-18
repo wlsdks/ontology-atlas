@@ -4295,10 +4295,27 @@ describe('verify.mjs first-contact gates', () => {
       strictMultiArgsFailure(strictErrorResponse(error, { structuredContent: { ok: false, errorCode: 'unknown_argument', error } })),
       'strict multi-argument structured error missing received arguments',
     );
+    assert.equal(
+      strictMultiArgsFailure(strictErrorResponse(error, {
+        structuredContent: {
+          ok: false,
+          errorCode: 'unknown_argument',
+          error,
+          receivedArguments: ['lmit', 'summry'],
+          unknownArguments: [
+            { name: 'lmit', suggestion: 'limit' },
+            { name: 'summry', suggestion: 'summary' },
+          ],
+          allowedArguments: ['limit', 'summary'],
+        },
+      })),
+      'strict multi-argument structured error missing allowed arguments',
+    );
   });
 
   it('fails malformed strict unknown-tool smoke responses', () => {
-    const error = 'Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concept, list_concepts.';
+    const allowedTools = [...EXPECTED_TOOLS].sort();
+    const error = `Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: ${allowedTools.join(', ')}.`;
     assert.equal(
       strictUnknownToolFailure({
         result: {
@@ -4310,7 +4327,7 @@ describe('verify.mjs first-contact gates', () => {
             error,
             receivedTool: 'list_concept',
             suggestion: 'list_concepts',
-            allowedTools: ['add_concept', 'list_concepts'],
+            allowedTools,
           },
         },
       }),
@@ -4373,6 +4390,16 @@ describe('verify.mjs first-contact gates', () => {
         },
       }),
       'strict unknown-tool structured error missing repair hint',
+    );
+    assert.equal(
+      strictUnknownToolFailure({
+        result: {
+          isError: true,
+          content: [{ text: `Error: ${error}` }],
+          structuredContent: { ok: false, errorCode: 'unknown_tool', error, receivedTool: 'list_concept', suggestion: 'list_concepts', allowedTools: ['add_concept', 'list_concepts'] },
+        },
+      }),
+      'strict unknown-tool structured error missing allowed tools',
     );
   });
 

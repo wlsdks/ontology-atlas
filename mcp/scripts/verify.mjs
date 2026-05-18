@@ -2245,6 +2245,9 @@ export function strictMultiArgsFailure(response) {
   if (!sameArray(structured?.receivedArguments, ['lmit', 'summry'])) {
     return 'strict multi-argument structured error missing received arguments';
   }
+  if (!sameArray(structured?.allowedArguments, ['domain', 'kind', 'limit', 'since', 'summary'])) {
+    return 'strict multi-argument structured error missing allowed arguments';
+  }
   if (!Array.isArray(structured?.unknownArguments) || structured.unknownArguments.length !== 2) {
     return 'strict multi-argument structured error missing unknown argument hints';
   }
@@ -2277,7 +2280,7 @@ export function strictUnknownToolFailure(response) {
   if (structured?.receivedTool !== 'list_concept' || structured?.suggestion !== 'list_concepts') {
     return 'strict unknown-tool structured error missing repair hint';
   }
-  if (!Array.isArray(structured?.allowedTools) || !structured.allowedTools.includes('list_concepts')) {
+  if (!sameArray(structured?.allowedTools, [...EXPECTED_TOOLS].sort())) {
     return 'strict unknown-tool structured error missing allowed tools';
   }
   return null;

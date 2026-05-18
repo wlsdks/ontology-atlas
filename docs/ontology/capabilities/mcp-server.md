@@ -150,6 +150,8 @@ tool-level 실패 응답도 `structuredContent: { ok:false, errorCode, error }` 
 `structuredContent.valueName`, `receivedValue`, `suggestion`, `allowedValues` 도 직접 확인해,
 human-readable text hint 와 MCP client 용 repair payload 가 따로 drift 나지 않게 한다. `allowedValues` 는
 일부 대표값이 아니라 해당 입력의 전체 enum 순서와 정확히 일치해야 통과한다.
+설치 verify 의 strict unknown-tool / multi-argument smoke 도 전체 `allowedTools` / `allowedArguments` 를
+정확히 비교해 MCP client 가 받을 repair 후보 목록이 축약되거나 순서 drift 나는 것을 막는다.
 JSON-RPC integration test 도 unknown tool 의 전체 `allowedTools` 와 invalid enum / filter repair 의
 전체 `allowedValues` 를 직접 비교해 runtime 응답 contract 를 설치 verify 와 같은 수준으로 고정한다.
 dogfood walk 의 strict tool-name / argument / multi-argument / enum / filter 섹션은 `structuredContent` 의
