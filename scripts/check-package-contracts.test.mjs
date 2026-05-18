@@ -166,7 +166,7 @@ describe('package contract helpers', () => {
     assert.equal(pkg.scripts?.['test:dogfood:args'], 'node --test scripts/lib/dogfood-args.test.mjs');
     assert.equal(
       pkg.scripts?.['test:dogfood:script-refs'],
-      `${nodeTest} scripts/lib/pnpm-script-refs.test.mjs scripts/run-focused-node-test.test.mjs && ${focusedNode} --test-name-pattern "filtered integration scripts discoverable" scripts/check-package-contracts.test.mjs`,
+      `${nodeTest} scripts/lib/pnpm-script-refs.test.mjs scripts/lib/test-name-pattern.test.mjs scripts/run-focused-node-test.test.mjs && ${focusedNode} --test-name-pattern "filtered integration scripts discoverable" scripts/check-package-contracts.test.mjs`,
     );
     assert.equal(pkg.scripts?.['checks:changed'], 'node scripts/suggest-focused-checks.mjs');
     assert.equal(
@@ -389,7 +389,8 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /does change the vault, it tells you to run `pnpm docs-vault:build` before rerunning\s+the shortcut/);
     assert.match(checksDoc, /`pnpm test:dogfood:args` checks the shared pnpm separator and nearest\s+`--help` hint helper without invoking any dogfood gate/);
     assert.match(checksDoc, /`pnpm\s+test:dogfood:script-refs` checks that help text and package script body\s+`pnpm \.\.\.` references still resolve to root package scripts/);
-    assert.match(checksDoc, /focused\s+Node test wrappers fail when a pattern matches 0 tests, print matched counts\s+for failed focused runs, and split setup\/import failures into `setupFailures=N`/);
+    assert.match(checksDoc, /`scripts\/lib\/test-name-pattern\.mjs` keeps focused filter parsing stable/);
+    assert.match(checksDoc, /focused\s+Node test wrappers fail when a pattern matches 0 tests, print\s+matched counts for failed focused runs, and split setup\/import failures into\s+`setupFailures=N`/);
     assert.match(checksDoc, /scripts\/run-focused-node-test\.mjs/);
     assert.match(checksDoc, /focused\s+Node test wrappers fail when a pattern matches 0 tests/);
     assert.match(checksDoc, /signal-killed `node --test`\s+subprocess reports the signal plus target path/);
@@ -859,7 +860,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm cli:mcp-verify -- --help/);
     assert.match(section, /`dogfood:compile` prints the dogfood vault `compile_ontology` summary JSON\s+snapshot/);
     assert.match(section, /`pnpm dogfood:compile-fix` runs dogfood `compile --fix`, fails if canonicalization leaves a docs\/ontology diff,\s+tells you to run `pnpm docs-vault:build`, and ends successful runs with `\[dogfood:compile-fix\] docs\/ontology unchanged`/);
-    assert.match(section, /`pnpm test:dogfood:script-refs` checks help text and package script body `pnpm \.\.\.` references against root package scripts plus focused wrapper summaries/);
+    assert.match(section, /`pnpm test:dogfood:script-refs` checks help text and package script body `pnpm \.\.\.` references against root package scripts plus focused filter parsing and wrapper summaries/);
     assert.match(section, /`dogfood:health` prints the dogfood vault fail-closed `health` JSON gate/);
     assert.match(section, /`dogfood:brief` prints the dogfood vault `workspace_brief` JSON snapshot/);
     assert.match(section, /`dogfood:growth` prints the dogfood vault `growth_plan` JSON snapshot/);
@@ -1500,7 +1501,7 @@ describe('package contract helpers', () => {
     assert.match(section, /`dogfood:compile`\s+is the shortest root-checkout compiler summary JSON snapshot/);
     assert.match(section, /`dogfood:compile-fix`\s+runs root-checkout `compile --fix`, fails if canonicalization leaves a docs\/ontology diff,\s+points changed-vault failures at `pnpm docs-vault:build`, and ends successful runs\s+with `\[dogfood:compile-fix\] docs\/ontology unchanged`/);
     assert.match(section, /`test:dogfood:args`\s+checks shared dogfood shortcut argument helpers without invoking any gate/);
-    assert.match(section, /`test:dogfood:script-refs`\s+checks help text and package script body `pnpm \.\.\.` references against root package scripts plus focused wrapper summaries/);
+    assert.match(section, /`test:dogfood:script-refs`\s+checks help text and package script body `pnpm \.\.\.` references against root package scripts plus focused filter parsing and wrapper summaries/);
     assert.match(section, /`test:dogfood:compile-fix`\s+checks that idempotence guard without invoking the full dogfood suite/);
     assert.match(section, /`dogfood:health`\s+is the shortest root-checkout fail-closed health JSON gate/);
     assert.match(section, /`dogfood:brief`\s+is\s+the shortest root-checkout first-contact JSON snapshot/);

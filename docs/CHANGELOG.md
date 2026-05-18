@@ -40,8 +40,8 @@ can inspect ontology write candidates without raw JSON-RPC.
   without manual skip-count math. File setup/import failures are split out as
   `setupFailures=N` instead of inflating `matched`.
 - **Focused wrapper discovery** — dogfood and MCP verify help now describe
-  `pnpm test:dogfood:script-refs` as the focused wrapper summary contract too,
-  not only the help/package-script reference check.
+  `pnpm test:dogfood:script-refs` as the focused filter parser + wrapper
+  summary contract too, not only the help/package-script reference check.
 - **MCP registration template guard** — `pnpm test:mcp:docs` now locks the
   tracked `.mcp.json` and `.mcp.json.example` source-checkout templates to
   `node ./mcp/src/index.js` with `OMOT_VAULT=./docs/ontology`, so local agent

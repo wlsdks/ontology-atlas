@@ -41,7 +41,7 @@
     "dogfood:compile": "node cli/src/index.mjs compile docs/ontology --summary --json",
     "dogfood:compile-fix": "node scripts/dogfood-compile-fix.mjs",
     "test:dogfood:args": "node --test scripts/lib/dogfood-args.test.mjs",
-    "test:dogfood:script-refs": "node --test scripts/lib/pnpm-script-refs.test.mjs scripts/run-focused-node-test.test.mjs && node scripts/run-focused-node-test.mjs --test-name-pattern \"filtered integration scripts discoverable\" scripts/check-package-contracts.test.mjs",
+    "test:dogfood:script-refs": "node --test scripts/lib/pnpm-script-refs.test.mjs scripts/lib/test-name-pattern.test.mjs scripts/run-focused-node-test.test.mjs && node scripts/run-focused-node-test.mjs --test-name-pattern \"filtered integration scripts discoverable\" scripts/check-package-contracts.test.mjs",
     "checks:changed": "node scripts/suggest-focused-checks.mjs",
     "test:checks:changed": "node --test scripts/lib/focused-check-suggestions.test.mjs scripts/suggest-focused-checks.test.mjs",
     "test:dogfood:compile-fix": "node --test scripts/dogfood-compile-fix.test.mjs",
