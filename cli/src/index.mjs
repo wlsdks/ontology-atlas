@@ -82,6 +82,7 @@ ${COLORS.bold}Bootstrap${COLORS.reset} ${COLORS.dim}(R16/R17 — autonomous inge
        --apply --threshold N --max-files N    ${COLORS.dim}or land · weak filter · default 5000 max${COLORS.reset}
 
 ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps the MCP server, same authority as an AI agent)${COLORS.reset}
+  ${COLORS.dim}Set OMOT_CLI_MCP_TIMEOUT_MS=N when a large / slow vault needs a longer one-shot MCP call window.${COLORS.reset}
   npx oh-my-ontology backlinks <slug>         Every node referencing the slug (--json)
   npx oh-my-ontology orphans [vault]          Isolated nodes (어떤 다른 노드도 reference 안 함)
        --kind X --exclude-kinds A,B --json    ${COLORS.dim}filter / skip / machine output${COLORS.reset}

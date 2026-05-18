@@ -169,6 +169,8 @@ await test('help — current setup contract and default slug layout are not stal
   assert.match(clean, /Recommends 'bootstrap'/);
   assert.match(clean, /mcp-verify/);
   assert.match(clean, /graph-query smoke/);
+  assert.match(clean, /OMOT_CLI_MCP_TIMEOUT_MS=N/);
+  assert.match(clean, /longer one-shot MCP call window/);
 });
 
 await test('help <command> — delegates to focused subcommand usage and fails unknown topics on stderr', async () => {
