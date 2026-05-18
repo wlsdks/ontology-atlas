@@ -86,7 +86,7 @@ indexed `compile_ontology` gate, tools/list inventory names + annotation coverag
 row-label guidance summary, vault warning / `validate_vault` problem gates,
 first-contact health summary / advisory / next-action gates, `workspace_brief.nextActions[].sample`
 shape drift, maintenance_plan malformed payload and work-queue formatter drift,
-initialize safety/recovery guidance gate, destructive dry-run request/gate
+initialize tool-inventory + safety/recovery guidance gate, destructive dry-run request/gate
 contract, help output, unsupported-argument rejection, strict relation filter
 rejection, strict add_relation type-preflight rejection + no-write metadata
 evidence, strict closest-value summary, stderr warning filtering, and gate
@@ -102,7 +102,7 @@ tarball contract drift without running unrelated UI or E2E gates.
 `test:mcp:verify` covers the MCP verify helper contract, including
 missing/extra/duplicate/invalid `tools/list` names, without spawning the
 full integration suite. `test:mcp:verify:first-contact` narrows that to
-initialize safety/recovery guidance, unknown-tool recovery, read-smoke request
+initialize tool-inventory + safety/recovery guidance, unknown-tool recovery, read-smoke request
 inventory, destructive dry-run / `patch_concept` conflict guard helper gates,
 vault warning / `validate_vault`, first-contact health summary / advisory / next-action gates, and
 `workspace_brief.nextActions[].sample` shape drift.
@@ -384,7 +384,7 @@ A successful run looks like this:
 ✓ result: 7 passed, 0 failed
 · step 2 — server boot + tools/list + list_concepts/project probe/get_concept/get_concepts/find_evidence/find_backlinks/query_concepts/limited query_concepts/analyze_repo_structure/infer_imports/find_neighbors/find_path/find_orphans/list_kinds/destructive dry-runs (vault=../docs/ontology, timeout=8000ms)
 ✓ initialize OK — server oh-my-ontology-mcp@0.12.0
-✓ initialize instructions — first-contact safety and recovery guidance present
+✓ initialize instructions — tool inventory plus first-contact safety and recovery guidance present
 ✓ tools/list 23/23 (23/23 titled; 15/15 read; 8/8 write; 3/3 destructive; 2/2 idempotent; 23/23 local-only) — add_concept · add_concepts · add_relation · add_relations · analyze_repo_structure · compile_ontology · delete_concept · find_backlinks · find_evidence · find_neighbors · find_orphans · find_path · get_concept · get_concepts · infer_imports · list_concepts · list_kinds · merge_concepts · patch_concept · query_concepts · query_ontology · rename_concept · validate_vault
 ✓ tools/list inventory names — missing/extra/duplicate/invalid checks passed
 ✓ tools/list schema contract — strict arguments + annotations + graph-query enums + graph kind enums/descriptions + write relation enums + health tuning + post-write maintenance schema
