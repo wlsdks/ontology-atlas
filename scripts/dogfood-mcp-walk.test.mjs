@@ -832,9 +832,11 @@ function makeDogfoodToolsList() {
                         severity: { type: "string", enum: ["error", "warning"] },
                         message: { type: "string" },
                       },
+                      additionalProperties: false,
                     },
                   },
                 },
+                additionalProperties: false,
               },
             },
             summary: {
@@ -855,11 +857,14 @@ function makeDogfoodToolsList() {
                       count: { type: "integer", minimum: 0 },
                       files: { type: "array", items: { type: "string" } },
                     },
+                    additionalProperties: false,
                   },
                 },
               },
+              additionalProperties: false,
             },
           },
+          additionalProperties: false,
         };
       }
       if (name === "find_orphans") {

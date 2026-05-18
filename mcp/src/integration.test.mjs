@@ -567,10 +567,15 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.equal(validateVault?.outputSchema?.type, "object");
     assert.deepEqual(validateVault?.outputSchema?.required, ["scanned", "problems", "summary"]);
+    assert.equal(validateVault?.outputSchema?.additionalProperties, false);
     assert.equal(validateVault?.outputSchema?.properties?.scanned?.type, "integer");
     assert.equal(validateVault?.outputSchema?.properties?.problems?.type, "array");
+    assert.equal(validateVault?.outputSchema?.properties?.problems?.items?.additionalProperties, false);
     assert.deepEqual(validateVault?.outputSchema?.properties?.problems?.items?.properties?.issues?.items?.properties?.code?.enum, VAULT_ISSUE_CODE_VALUES);
+    assert.equal(validateVault?.outputSchema?.properties?.problems?.items?.properties?.issues?.items?.additionalProperties, false);
+    assert.equal(validateVault?.outputSchema?.properties?.summary?.additionalProperties, false);
     assert.deepEqual(validateVault?.outputSchema?.properties?.summary?.properties?.byCode?.propertyNames?.enum, VAULT_ISSUE_CODE_VALUES);
+    assert.equal(validateVault?.outputSchema?.properties?.summary?.properties?.byCode?.additionalProperties?.additionalProperties, false);
     assert.equal(validateVault?.outputSchema?.properties?.summary?.properties?.byCode?.additionalProperties?.properties?.files?.items?.type, "string");
     const addConcepts = findTool("add_concepts");
     assert.equal(addConcepts?.outputSchema?.type, "object");

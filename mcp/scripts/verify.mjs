@@ -1495,6 +1495,9 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(validateTool.outputSchema?.required, ['scanned', 'problems', 'summary'])) {
     return 'validate_vault outputSchema required drift';
   }
+  if (validateTool.outputSchema?.additionalProperties !== false) {
+    return 'validate_vault outputSchema root openness drift';
+  }
   const scannedSchema = outputPropertyAt(validateTool, ['properties', 'scanned']);
   if (scannedSchema?.type !== 'integer' || scannedSchema.minimum !== 0) {
     return 'validate_vault outputSchema scanned drift';
@@ -1503,17 +1506,24 @@ export function toolsListSchemaFailure(tools) {
   if (problemsSchema?.type !== 'array' || problemsSchema.items?.type !== 'object' || !sameArray(problemsSchema.items?.required, ['slug', 'issues'])) {
     return 'validate_vault outputSchema problems drift';
   }
+  if (problemsSchema.items?.additionalProperties !== false) {
+    return 'validate_vault outputSchema problem openness drift';
+  }
   const issueSchema = problemsSchema.items?.properties?.issues?.items;
   if (
     issueSchema?.type !== 'object' ||
     !sameArray(issueSchema.required, ['code', 'severity', 'message']) ||
-    !sameArray(issueSchema.properties?.code?.enum, VAULT_ISSUE_CODE_VALUES)
+    !sameArray(issueSchema.properties?.code?.enum, VAULT_ISSUE_CODE_VALUES) ||
+    issueSchema.additionalProperties !== false
   ) {
     return 'validate_vault outputSchema issue code drift';
   }
   const summarySchema = outputPropertyAt(validateTool, ['properties', 'summary']);
   if (summarySchema?.type !== 'object' || !sameArray(summarySchema.required, ['problemFiles', 'errorFiles', 'warningFiles', 'byCode'])) {
     return 'validate_vault outputSchema summary drift';
+  }
+  if (summarySchema.additionalProperties !== false) {
+    return 'validate_vault outputSchema summary openness drift';
   }
   for (const countName of ['problemFiles', 'errorFiles', 'warningFiles']) {
     const countSchema = summarySchema.properties?.[countName];
@@ -1530,6 +1540,9 @@ export function toolsListSchemaFailure(tools) {
   }
   if (!sameArray(byCodeSchema.additionalProperties?.required, ['severity', 'count', 'files'])) {
     return 'validate_vault outputSchema byCode entry required drift';
+  }
+  if (byCodeSchema.additionalProperties?.additionalProperties !== false) {
+    return 'validate_vault outputSchema byCode entry openness drift';
   }
   if (!sameArray(byCodeSchema.additionalProperties?.properties?.severity?.enum, ['error', 'warning'])) {
     return 'validate_vault outputSchema byCode severity drift';

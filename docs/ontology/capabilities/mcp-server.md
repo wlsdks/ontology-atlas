@@ -773,6 +773,8 @@ discovery 단계에서 agent 가 응답 계약 밖의 필드를 상태로 착각
 root 와 graph-row object 를 닫아 graph navigation 단계의 임의 필드 가정을 막는다.
 `analyze_repo_structure` / `infer_imports` 도 후보 row, evidence, import edge row 를
 닫아 bootstrap/import-ingest 단계의 승인 근거가 schema 밖 필드로 새지 않게 한다.
+`validate_vault` 의 problem / issue / byCode entry object 도 닫아 first-contact health
+payload 에서 schema 밖 진단 필드가 조용히 신뢰되지 않게 한다.
 요청한 JSON-RPC 응답이 모두 도착하거나 error 응답이 오면 timeout 까지 기다리지 않고
 즉시 종료해 반복 dogfood 비용을 낮춘다. timeout 으로 끝나면 누락된 응답 label 을
 gate failure 에 함께 출력한다. 느린 환경에서는 양의 정수 millisecond 값인
