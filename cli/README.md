@@ -78,8 +78,8 @@ subset inside the spawn-heavy CLI integration file.
 `integration:cli:maintenance` runs only the CLI maintenance command and
 maintenance-related installed verify integration cases. `test:mcp:docs` checks
 README and dogfood ontology documentation drift. `test:mcp:package` checks
-package-script and tarball contract drift without running unrelated UI or E2E
-gates. `test:mcp:maintenance` checks maintenance_plan filter, cursor, resume,
+package-script, CLI entrypoint, and tarball contract drift without running
+unrelated UI or E2E gates. `test:mcp:maintenance` checks maintenance_plan filter, cursor, resume,
 work-queue shape, and bucket / next-action formatter contracts without the full
 verify or dogfood suites.
 `test:mcp:verify` checks the shared MCP verify helper contract, including

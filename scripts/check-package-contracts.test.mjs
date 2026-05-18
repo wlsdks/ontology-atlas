@@ -205,6 +205,7 @@ describe('package contract helpers', () => {
     assert.match(pkg.scripts?.['test:mcp:package'] ?? '', /MCP npm test/);
     assert.match(pkg.scripts?.['test:mcp:package'] ?? '', /CLI npm test/);
     assert.match(pkg.scripts?.['test:mcp:package'] ?? '', /CLI MCP dependency/);
+    assert.match(pkg.scripts?.['test:mcp:package'] ?? '', /CLI entrypoint/);
     assert.match(
       pkg.scripts?.['test:mcp:suggestions'] ?? '',
       /^node --test --test-name-pattern "[^"]+" mcp\/src\/suggestions\.test\.mjs mcp\/src\/ontology-engine\.test\.mjs$/,
@@ -217,7 +218,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /structuredContent\/compile\/tools-list\/row-label\/vault-warning\/health\/sample-shape\/maintenance work-queue\+formatter\/initialize\+batch-relation\/destructive dry-run\/help\/argument\/timeout\/strict relation\/closest-value\/stderr checks/);
     assert.match(readme, /pnpm test:mcp:dogfood:timeout\s+# narrow dogfood argument\/timeout\/help retry diagnostics/);
     assert.match(readme, /pnpm test:mcp:maintenance\s+# narrow maintenance_plan filter\/cursor\/work-queue\+formatter gates/);
-    assert.match(readme, /pnpm test:mcp:package\s+# focused MCP\/CLI package-script\/dependency\/tarball contract checks/);
+    assert.match(readme, /pnpm test:mcp:package\s+# focused MCP\/CLI package-script\/entrypoint\/dependency\/tarball contract checks/);
     assert.match(readme, /pnpm test:mcp:suggestions/);
     assert.match(readme, /pnpm test:mcp:verify/);
     assert.match(readme, /pnpm test:mcp:verify:first-contact\s+# narrow MCP verify first-contact initialize-safety-recovery\/health-summary\/advisory\/read\/sample gates/);
@@ -266,6 +267,15 @@ describe('package contract helpers', () => {
     assert.match(result.stdout, /pnpm cli:mcp-verify -- --help\s+Source-checkout shortcut for this help from the repo root/);
     assert.match(result.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact initialize-safety-recovery\/health-summary\/advisory\/read\/sample-shape helper gates/);
     assert.equal(result.stderr, '');
+  });
+
+  it('keeps the CLI entrypoint on natural exit so large stdout can flush', () => {
+    const source = readFileSync('cli/src/index.mjs', 'utf-8');
+
+    assert.doesNotMatch(source, /import\s*\{[^}]*\bexit\b[^}]*\}\s+from ['"]node:process['"]/);
+    assert.doesNotMatch(source, /\bexit\s*\(/);
+    assert.match(source, /process\.exitCode\s*=\s*await main\(\)/);
+    assert.match(source, /return runInit\(parsed\.target\)/);
   });
 
   it('keeps the CLI MCP dependency aligned with the local MCP package version', () => {
@@ -1012,6 +1022,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm test:mcp:docs/);
     assert.match(section, /pnpm test:mcp:maintenance/);
     assert.match(section, /pnpm test:mcp:package/);
+    assert.match(section, /package-script, CLI entrypoint, and tarball contract drift/);
     assert.match(section, /pnpm test:mcp:verify/);
     assert.match(section, /pnpm test:mcp:verify:first-contact/);
     assert.match(section, /health summary \/ advisory \/ next-action gates/);

@@ -133,7 +133,7 @@ pnpm test:mcp:docs              # focused README + dogfood ontology docs contrac
 pnpm test:mcp:dogfood           # focused dogfood helper + structuredContent/compile/tools-list/row-label/vault-warning/health/sample-shape/maintenance work-queue+formatter/initialize+batch-relation/destructive dry-run/help/argument/timeout/strict relation/closest-value/stderr checks
 pnpm test:mcp:dogfood:timeout   # narrow dogfood argument/timeout/help retry diagnostics
 pnpm test:mcp:maintenance       # narrow maintenance_plan filter/cursor/work-queue+formatter gates
-pnpm test:mcp:package           # focused MCP/CLI package-script/dependency/tarball contract checks
+pnpm test:mcp:package           # focused MCP/CLI package-script/entrypoint/dependency/tarball contract checks
 pnpm test:mcp:suggestions       # focused enum/argument suggestion checks
 pnpm test:mcp:verify            # focused MCP verify helper checks, including tool inventory names
 pnpm test:mcp:verify:first-contact # narrow MCP verify first-contact initialize-safety-recovery/health-summary/advisory/read/sample gates
