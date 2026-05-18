@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-18T07:04:53.260Z",
+  "generatedAt": "2026-05-18T09:08:14.991Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -3823,8 +3823,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 701,
-      "updatedAt": "2026-05-18T07:03:59.624Z",
+      "wordCount": 793,
+      "updatedAt": "2026-05-18T09:05:18.217Z",
       "linksOut": []
     },
     {
@@ -4807,8 +4807,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, maintenance, 그리고 설치된 MCP surface 를 확인하는 mcpverify 명령 추가 — 총 27 명령. 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP 등록 불필요. ",
-      "wordCount": 5006,
-      "updatedAt": "2026-05-18T06:46:12.502Z",
+      "wordCount": 5119,
+      "updatedAt": "2026-05-18T09:00:52.265Z",
       "linksOut": []
     },
     {
@@ -4864,8 +4864,8 @@
         }
       ],
       "excerpt": "vault 의 .md 파일 frontmatter 를 직접 읽어 OntologyStub (nodes + edges + warnings) 으로 변환. AI 추출 / 검수 큐 거치지 않는 fastpath. 이게 mission \"frontmatter 가 자기승인\" 의 코드 표현. 지원 frontmatter 키: kind: — canonical 5: project / domain / capability / element / document title:, domain: capabilities: [], elements: [] — 배열 노드 relates: [], dependenc",
-      "wordCount": 129,
-      "updatedAt": "2026-05-13T00:02:55.338Z",
+      "wordCount": 151,
+      "updatedAt": "2026-05-18T09:08:11.191Z",
       "linksOut": []
     },
     {
@@ -4963,8 +4963,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 9683,
-      "updatedAt": "2026-05-18T07:02:14.234Z",
+      "wordCount": 9982,
+      "updatedAt": "2026-05-18T08:35:36.205Z",
       "linksOut": []
     },
     {

@@ -24,6 +24,31 @@ const MANIFEST_OUT = path.join(
   'manifest.json',
 );
 
+export function usage() {
+  return [
+    'Usage: node scripts/build-docs-vault.mjs [--check]',
+    '',
+    'Builds the static docs-vault manifest and public markdown copies.',
+    '',
+    'Options:',
+    '  --check     Verify generated outputs are current without writing.',
+    '  -h, --help  Show this help text.',
+  ].join('\n');
+}
+
+function parseArgs(argv = process.argv.slice(2)) {
+  if (argv.includes('--help') || argv.includes('-h')) {
+    return { help: true };
+  }
+  if (argv.length > 1) {
+    return { error: `Unexpected argument: ${argv[1]}` };
+  }
+  if (argv[0] && argv[0] !== '--check') {
+    return { error: `Unknown option: ${argv[0]}` };
+  }
+  return { check: argv[0] === '--check' };
+}
+
 async function walk(dir) {
   const out = [];
   const entries = await readdir(dir, { withFileTypes: true });
@@ -187,21 +212,109 @@ async function ensureDir(dir) {
   if (!existsSync(dir)) await mkdir(dir, { recursive: true });
 }
 
-async function main() {
+function comparableManifest(manifest) {
+  return {
+    ...manifest,
+    docs: (manifest.docs ?? []).map((doc) => ({
+      ...doc,
+      updatedAt: '<ignored>',
+    })),
+    generatedAt: '<ignored>',
+  };
+}
+
+async function readJsonIfExists(file) {
+  try {
+    return JSON.parse(await readFile(file, 'utf8'));
+  } catch (err) {
+    if (err?.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
+function stableStringify(value) {
+  return JSON.stringify(value, null, 2);
+}
+
+function comparableDoc(doc) {
+  return {
+    ...doc,
+    updatedAt: '<ignored>',
+  };
+}
+
+async function assertOutputsCurrent({ manifest, publicFiles }) {
+  const issues = [];
+  const currentManifest = await readJsonIfExists(MANIFEST_OUT);
+  if (!currentManifest) {
+    issues.push(`missing ${path.relative(ROOT, MANIFEST_OUT)}`);
+  } else if (
+    stableStringify(comparableManifest(currentManifest)) !==
+    stableStringify(comparableManifest(manifest))
+  ) {
+    issues.push(`stale ${path.relative(ROOT, MANIFEST_OUT)}`);
+  }
+
+  const expectedPublic = new Map(publicFiles.map((file) => [file.relativePath, file.raw]));
+  const currentPublicFiles = existsSync(PUBLIC_OUT)
+    ? (await walk(PUBLIC_OUT)).map((file) => path.relative(PUBLIC_OUT, file).replace(/\\/g, '/'))
+    : [];
+  for (const relativePath of currentPublicFiles) {
+    if (relativePath.endsWith('.md') && !expectedPublic.has(relativePath)) {
+      issues.push(`extra ${path.posix.join('public/docs-vault', relativePath)}`);
+    }
+  }
+  for (const [relativePath, raw] of expectedPublic) {
+    const outPath = path.join(PUBLIC_OUT, relativePath);
+    try {
+      const current = await readFile(outPath, 'utf8');
+      if (current !== raw) {
+        issues.push(`stale ${path.posix.join('public/docs-vault', relativePath)}`);
+      }
+    } catch (err) {
+      if (err?.code === 'ENOENT') {
+        issues.push(`missing ${path.posix.join('public/docs-vault', relativePath)}`);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  if (issues.length > 0) {
+    console.error('[docs-vault] generated outputs are stale:');
+    for (const issue of issues.slice(0, 20)) {
+      console.error(`  - ${issue}`);
+    }
+    if (issues.length > 20) {
+      console.error(`  - ... ${issues.length - 20} more`);
+    }
+    console.error('[docs-vault] run `pnpm docs-vault:build` to refresh them.');
+    process.exit(1);
+  }
+}
+
+async function buildDocsVault({ check = false } = {}) {
   if (!existsSync(DOCS_DIR)) {
     console.error(`[docs-vault] docs/ 디렉터리가 없음: ${DOCS_DIR}`);
     process.exit(1);
   }
 
-  // public/docs-vault 를 먼저 비움 — 삭제된 문서가 stale 로 남지 않게
-  if (existsSync(PUBLIC_OUT)) {
-    await rm(PUBLIC_OUT, { recursive: true, force: true });
+  if (!check) {
+    // public/docs-vault 를 먼저 비움 — 삭제된 문서가 stale 로 남지 않게
+    if (existsSync(PUBLIC_OUT)) {
+      await rm(PUBLIC_OUT, { recursive: true, force: true });
+    }
+    await ensureDir(PUBLIC_OUT);
+    await ensureDir(path.dirname(MANIFEST_OUT));
   }
-  await ensureDir(PUBLIC_OUT);
-  await ensureDir(path.dirname(MANIFEST_OUT));
 
   const files = await walk(DOCS_DIR);
+  const previousManifest = await readJsonIfExists(MANIFEST_OUT);
+  const previousDocsBySlug = new Map(
+    (previousManifest?.docs ?? []).map((doc) => [doc.slug, doc]),
+  );
   const docs = [];
+  const publicFiles = [];
   // backlinksDetail 만 유지 — 단순 backlinks (deprecated) 는 manifest 에서 제거.
   const backlinksDetailMap = new Map(); // slug -> Array<{ fromSlug, context, linkText }>
   const tagsMap = new Map(); // tag -> Set<slug>
@@ -241,7 +354,7 @@ async function main() {
       tagsMap.get(tag).add(slug);
     }
     const st = await stat(full);
-    docs.push({
+    const nextDoc = {
       slug,
       path: path.relative(ROOT, full).replace(/\\/g, '/'),
       title,
@@ -253,12 +366,25 @@ async function main() {
       wordCount: body.split(/\s+/).filter(Boolean).length,
       updatedAt: st.mtime.toISOString(),
       linksOut,
-    });
+    };
+    const previousDoc = previousDocsBySlug.get(slug);
+    if (
+      previousDoc &&
+      stableStringify(comparableDoc(previousDoc)) ===
+        stableStringify(comparableDoc(nextDoc))
+    ) {
+      nextDoc.updatedAt = previousDoc.updatedAt;
+    }
+    docs.push(nextDoc);
 
-    // raw md 를 public/docs-vault 아래 slug 로 복사. 경로의 서브디렉토리까지 생성.
-    const outPath = path.join(PUBLIC_OUT, `${slug}.md`);
-    await ensureDir(path.dirname(outPath));
-    await writeFile(outPath, raw, 'utf8');
+    publicFiles.push({ relativePath: `${slug}.md`, raw });
+
+    if (!check) {
+      // raw md 를 public/docs-vault 아래 slug 로 복사. 경로의 서브디렉토리까지 생성.
+      const outPath = path.join(PUBLIC_OUT, `${slug}.md`);
+      await ensureDir(path.dirname(outPath));
+      await writeFile(outPath, raw, 'utf8');
+    }
   }
 
   docs.sort((a, b) => a.slug.localeCompare(b.slug, 'ko'));
@@ -292,11 +418,40 @@ async function main() {
     tags,
     tree,
   };
+  if (
+    previousManifest &&
+    stableStringify(comparableManifest(previousManifest)) ===
+      stableStringify(comparableManifest(manifest))
+  ) {
+    manifest.generatedAt = previousManifest.generatedAt;
+  }
+
+  if (check) {
+    await assertOutputsCurrent({ manifest, publicFiles });
+    console.log(
+      `[docs-vault] current · ${docs.length} docs · ${Object.keys(backlinksDetail).length} backlinked · ${Object.keys(tags).length} tags`,
+    );
+    return;
+  }
 
   await writeFile(MANIFEST_OUT, JSON.stringify(manifest, null, 2), 'utf8');
   console.log(
     `[docs-vault] ${docs.length} docs · ${Object.keys(backlinksDetail).length} backlinked · ${Object.keys(tags).length} tags → ${path.relative(ROOT, MANIFEST_OUT)}`,
   );
+}
+
+async function main() {
+  const args = parseArgs();
+  if (args.help) {
+    console.log(usage());
+    return;
+  }
+  if (args.error) {
+    console.error(args.error);
+    console.error(usage());
+    process.exit(2);
+  }
+  await buildDocsVault({ check: args.check });
 }
 
 main().catch((err) => {

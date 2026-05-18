@@ -30,3 +30,5 @@ CLI/MCP writer 가 남기는 folder-prefixed ref (`domains/foo`,
 중복이 생기므로 contract test 로 고정한다.
 
 scripts/build-docs-vault.mjs 와 src/shared/lib/parse-frontmatter.ts 가 capability 동기화.
+`pnpm docs-vault:check` 는 generatedAt / unchanged-doc updatedAt 노이즈를 제외하고
+static dogfood manifest + public markdown copy 가 현재 docs/ 입력과 일치하는지 확인한다.

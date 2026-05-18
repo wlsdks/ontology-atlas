@@ -146,6 +146,8 @@ describe('package contract helpers', () => {
       pkg.scripts?.['package:check'],
       'node scripts/check-package-contracts.mjs && pnpm test:cli:lib && node --test scripts/check-package-contracts.test.mjs',
     );
+    assert.equal(pkg.scripts?.['docs-vault:build'], 'node scripts/build-docs-vault.mjs');
+    assert.equal(pkg.scripts?.['docs-vault:check'], 'node scripts/build-docs-vault.mjs --check');
     assert.equal(pkg.scripts?.['dogfood:compile'], 'node cli/src/index.mjs compile docs/ontology --summary --json');
     assert.equal(pkg.scripts?.['dogfood:health'], 'node cli/src/index.mjs health docs/ontology --json');
     assert.equal(pkg.scripts?.['dogfood:brief'], 'node cli/src/index.mjs workspace-brief docs/ontology --json');
@@ -218,6 +220,7 @@ describe('package contract helpers', () => {
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /MCP README explicit/);
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /CLI README explicit/);
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /Firebase static hosting/);
+    assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /docs-vault freshness check/);
     assert.match(pkg.scripts?.['test:mcp:docs'] ?? '', /dogfood MCP docs/);
     assert.match(
       pkg.scripts?.['test:mcp:package'] ?? '',
@@ -251,6 +254,8 @@ describe('package contract helpers', () => {
       'pnpm exec tsc --noEmit',
       'pnpm build',
       'pnpm bundle:check',
+      'pnpm docs-vault:check',
+      'pnpm docs-vault:build',
       'pnpm package:check',
       'pnpm test:cli:args',
       'pnpm test:cli:lib',
@@ -282,6 +287,9 @@ describe('package contract helpers', () => {
     }
 
     assert.match(checksDoc, /\| CLI argument parsing \| `pnpm test:cli:args` \| `pnpm test:cli:lib` \|/);
+    assert.match(checksDoc, /\| Static dogfood manifest \| `pnpm docs-vault:check` \| `pnpm docs-vault:build` \|/);
+    assert.match(checksDoc, /pnpm docs-vault:check\s+# static dogfood manifest freshness/);
+    assert.match(checksDoc, /pnpm docs-vault:build\s+# refresh static dogfood manifest and public md/);
     assert.match(checksDoc, /Use `pnpm dogfood:test` only when the dogfood helper itself changed/);
     assert.match(checksDoc, /`pnpm test:mcp:docs` also guards Firebase Hosting config as static-only/);
     assert.match(checksDoc, /Explicit root\/MCP\/CLI\/dogfood docs contracts plus Firebase static-hosting guard/);
@@ -332,6 +340,19 @@ describe('package contract helpers', () => {
     assert.match(skill, /pnpm test:mcp:docs/);
     assert.match(capability, /static host only/);
     assert.match(capability, /Functions, Firestore, Storage, Auth, or committed credentials/);
+  });
+
+  it('keeps the docs-vault freshness check executable from source checkout', () => {
+    const help = runNodeScript(['scripts/build-docs-vault.mjs', '--help']);
+    assert.equal(help.status, 0);
+    assert.match(help.stdout, /Usage: node scripts\/build-docs-vault\.mjs \[--check\]/);
+    assert.match(help.stdout, /Verify generated outputs are current without writing/);
+    assert.equal(help.stderr, '');
+
+    const check = runNodeScript(['scripts/build-docs-vault.mjs', '--check']);
+    assert.equal(check.status, 0, check.stderr);
+    assert.match(check.stdout, /\[docs-vault\] current · \d+ docs/);
+    assert.equal(check.stderr, '');
   });
 
   it('keeps the root README mcp-verify shortcut executable from source checkout', () => {
