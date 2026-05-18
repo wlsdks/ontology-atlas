@@ -2441,6 +2441,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /설치형 `pnpm cli:mcp-verify` 성공 로그도 strict `relation_check` \/ `add_relation`/);
     assert.match(doc, /`structuredContent\.valueName` \/ `receivedValue` \/ `suggestion` \/ `allowedValues`/);
     assert.match(doc, /no-write metadata gate/);
+    assert.match(doc, /`batch no-write metadata 2\/2`/);
     assert.match(doc, /`write metadata: absent` \/ `strict_add_relation_write_metadata: absent`/);
     assert.match(doc, /stderr warning filtering/);
     assert.match(doc, /first-contact README read-only/);

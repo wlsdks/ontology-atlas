@@ -3186,7 +3186,7 @@ export function structuredContentVerifySummary({
   const maintenance = 2 + (hasMaintenanceResume ? 1 : 0);
   const maintenanceSuffix = hasMaintenanceResumeSkipped ? ' (resume skipped: no actions)' : '';
   const graph = 7 + (hasNode ? 2 : 0) + (hasProject ? 1 : 0) + (hasCompileIndexes ? 1 : 0);
-  return `direct ${direct}/${direct}, write ${write}/${write} (batch row-isolation 2/2, destructive dry-run ${destructiveDryRunCount}/${destructiveDryRunCount}), maintenance ${maintenance}/${maintenance}${maintenanceSuffix}, graph ${graph}/${graph}`;
+  return `direct ${direct}/${direct}, write ${write}/${write} (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run ${destructiveDryRunCount}/${destructiveDryRunCount}), maintenance ${maintenance}/${maintenance}${maintenanceSuffix}, graph ${graph}/${graph}`;
 }
 
 export const FIRST_CONTACT_RESPONSE_LABELS = new Map([

@@ -8735,19 +8735,19 @@ describe('verify.mjs first-contact gates', () => {
   it('summarizes structuredContent coverage for verify output', () => {
     assert.equal(
       structuredContentVerifySummary(),
-      'direct 11/11, write 2/2 (batch row-isolation 2/2, destructive dry-run 0/0), maintenance 2/2, graph 7/7',
+      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 7/7',
     );
     assert.equal(
       structuredContentVerifySummary({ hasNode: true }),
-      'direct 11/11, write 2/2 (batch row-isolation 2/2, destructive dry-run 0/0), maintenance 2/2, graph 9/9',
+      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 9/9',
     );
     assert.equal(
       structuredContentVerifySummary({ hasCompileIndexes: true }),
-      'direct 11/11, write 2/2 (batch row-isolation 2/2, destructive dry-run 0/0), maintenance 2/2, graph 8/8',
+      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 8/8',
     );
     assert.equal(
       structuredContentVerifySummary({ hasMaintenanceResumeSkipped: true }),
-      'direct 11/11, write 2/2 (batch row-isolation 2/2, destructive dry-run 0/0), maintenance 2/2 (resume skipped: no actions), graph 7/7',
+      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2 (resume skipped: no actions), graph 7/7',
     );
     assert.equal(
       structuredContentVerifySummary({
@@ -8760,7 +8760,7 @@ describe('verify.mjs first-contact gates', () => {
         hasCompileIndexes: true,
         destructiveDryRunCount: 3,
       }),
-      'direct 16/16, write 5/5 (batch row-isolation 2/2, destructive dry-run 3/3), maintenance 2/2, graph 11/11',
+      'direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2, graph 11/11',
     );
     assert.equal(
       structuredContentVerifySummary({
@@ -8774,7 +8774,7 @@ describe('verify.mjs first-contact gates', () => {
         hasMaintenanceResume: true,
         destructiveDryRunCount: 3,
       }),
-      'direct 16/16, write 5/5 (batch row-isolation 2/2, destructive dry-run 3/3), maintenance 3/3, graph 11/11',
+      'direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 11/11',
     );
   });
 
