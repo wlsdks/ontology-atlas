@@ -196,8 +196,8 @@ helper itself changed or the focused `test:mcp:dogfood` subset is not enough.
 Use `pnpm test:mcp:maintenance` when only `maintenance_plan` filter, cursor,
 resume, or formatter behavior changed.
 `pnpm checks:changed` routes dogfood shortcut helper changes to
-`pnpm test:dogfood:args` or `pnpm test:dogfood:compile-fix` before broader
-dogfood gates.
+`pnpm test:dogfood:args`, `pnpm test:dogfood:script-refs`, or
+`pnpm test:dogfood:compile-fix` before broader dogfood gates.
 Use `pnpm dogfood:compile-fix -- --help` / `pnpm dogfood:status -- --help`
 when you need shortcut usage without running those gates; unsupported shortcut
 arguments fail with exit 2 before any child check starts, and close `--help`

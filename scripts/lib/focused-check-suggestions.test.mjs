@@ -175,6 +175,16 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests script-reference checks when dogfood help text changes', () => {
+    const result = suggestFocusedChecks(['scripts/dogfood-mcp-walk.mjs']);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm test:dogfood:script-refs',
+      'pnpm test:mcp:dogfood',
+      'pnpm dogfood:status',
+    ]);
+  });
+
   it('suggests focused CLI and MCP verify gates without jumping straight to full suites', () => {
     const result = suggestFocusedChecks([
       'cli/src/commands/mcp-verify.mjs',
