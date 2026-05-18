@@ -217,6 +217,9 @@ when those fields apply.
 Invalid enum / filter / type values include the same structured repair shape
 as `valueName`, `receivedValue`, `suggestion`, and `allowedValues`, so clients
 can correct `operation:"overveiw"` without scraping the text form.
+Missing node errors include `missingSlug`, `similarSlugs`, `recoveryTools`, and
+optional `createTool`, so clients can choose between lookup, search, or
+`add_concept` without parsing prose.
 String-array options are strict too: relation filters such as
 `find_neighbors.types` / `query_ontology.types`, `query_ontology.pattern`,
 `maintenance_plan` filters, and analysis scan lists such as
@@ -502,7 +505,9 @@ unknown argument rejection plus nearest argument/value hints such as
 errors also include `Received arguments: ...` so an agent can repair the exact
 submitted key set instead of guessing from allowed fields alone. Invalid enum
 errors expose `valueName`, `receivedValue`, `suggestion`, and `allowedValues`
-in `structuredContent` for the same reason. Batch repair
+in `structuredContent` for the same reason. Missing node errors expose
+`missingSlug`, `similarSlugs`, `recoveryTools`, and optional `createTool`.
+Batch repair
 guidance is gated as well: duplicate `add_concepts` input slugs must surface
 `concepts[n] duplicate slug in input batch; first seen at concepts[m]` in
 first-contact instructions, so an agent knows which later row to remove or

@@ -5025,6 +5025,22 @@ await test("add_relation — missing endpoints include recovery and create hints
     assert.match(responses.find((r) => r.id === 3).result.content[0].text, /Target slug does not exist in vault/);
     assert.match(responses.find((r) => r.id === 3).result.content[0].text, /Similar slugs in this vault: "capabilities\/mcp-server"/);
     assert.match(responses.find((r) => r.id === 4).result.content[0].text, /Target slug does not exist in vault/);
+
+    const missingSource = getCallStructured(responses, 2);
+    assert.equal(missingSource.errorCode, "not_found");
+    assert.equal(missingSource.missingSubject, "Source slug does not exist in vault");
+    assert.equal(missingSource.missingSlug, "mcp");
+    assert.deepEqual(missingSource.recoveryTools, ["list_concepts", "find_evidence"]);
+    assert.equal(missingSource.createTool, "add_concept");
+    assert.deepEqual(missingSource.similarSlugs, ["capabilities/mcp-server"]);
+
+    const missingTarget = getCallStructured(responses, 4);
+    assert.equal(missingTarget.errorCode, "not_found");
+    assert.equal(missingTarget.missingSubject, "Target slug does not exist in vault");
+    assert.equal(missingTarget.missingSlug, "missing-new-node");
+    assert.deepEqual(missingTarget.recoveryTools, ["list_concepts", "find_evidence"]);
+    assert.equal(missingTarget.createTool, "add_concept");
+    assert.deepEqual(missingTarget.similarSlugs, []);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

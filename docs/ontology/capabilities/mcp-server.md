@@ -161,7 +161,7 @@ frontmatter / excerpt / neighbors / outgoingEdges / mtime 과 `structuredContent
 `structuredContent` parity 실패는 installed verify 와 dogfood gate 양쪽에서 첫 불일치 JSON path 와
 parsed/text JSON 값, `structuredContent` 값을 함께 출력해 agent 가 응답 contract drift 를 바로 좁힐 수 있게 한다.
 tool-level 실패 응답도 `structuredContent: { ok:false, errorCode, error }` 를 함께 반환해 MCP 클라이언트가
-텍스트 파싱 없이 retry / 수정 / 사용자 보고 분기를 결정할 수 있고, strict argument / enum / filter / type / write-safety verify 와 dogfood gate 가 `errorCode` 까지 확인한다.
+텍스트 파싱 없이 retry / 수정 / 사용자 보고 분기를 결정할 수 있고, missing slug 는 `missingSlug` / `similarSlugs` / `recoveryTools` / optional `createTool` 로 구조화한다. strict argument / enum / filter / type / write-safety verify 와 dogfood gate 가 `errorCode` 까지 확인한다.
 설치 verify 는 strict enum / maintenance filter / relation filter / graph kind filter / sort / type smoke 의
 `structuredContent.valueName`, `receivedValue`, `suggestion`, `allowedValues` 도 직접 확인해,
 human-readable text hint 와 MCP client 용 repair payload 가 따로 drift 나지 않게 한다. `allowedValues` 는
@@ -485,7 +485,7 @@ invalid enum 오류는 `receivedTool`, `receivedArgument`, `unknownArguments`,
 같은 구조화 repair field 도 함께 제공해 MCP client 가 human-readable error text 를
 파싱하지 않아도 한 번에 재시도할 수 있게 한다. initialize instructions 와 verify
 smoke 는 unknown argument 의 `unknown_argument`, enum/filter/type 값 오류의
-`invalid_arguments` 를 agent 가 텍스트 파싱 대신 우선 사용할 수 있게 안내한다.
+`invalid_arguments`, missing node 오류의 `missingSlug` / `similarSlugs` / `recoveryTools` / optional `createTool` 를 agent 가 텍스트 파싱 대신 우선 사용할 수 있게 안내한다.
 존재하지 않는 tool name 도 `unknown_tool` 로 fail-closed 하며,
 `Did you mean "list_concepts"?` 같은 가장 가까운 tool-name hint 와 allowed tool
 list 를 함께 반환해 agent 가 추가 `tools/list` 왕복 없이 `tools/call.params.name`
