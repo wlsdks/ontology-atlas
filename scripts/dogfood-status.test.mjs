@@ -1,12 +1,52 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { dogfoodStatusDiagnostic, dogfoodStatusExitCode, runDogfoodStatus } from './dogfood-status.mjs';
+import {
+  dogfoodStatusDiagnostic,
+  dogfoodStatusExitCode,
+  handleDogfoodStatusArgs,
+  normalizeDogfoodStatusArgs,
+  runDogfoodStatus,
+} from './dogfood-status.mjs';
 
 describe('dogfood status shortcut', () => {
+  it('prints help without running health or workspace-brief', () => {
+    const output = [];
+    const exitCode = runDogfoodStatus({
+      argv: ['--', '--help'],
+      stdout: { write: (text) => output.push(text) },
+      spawn() {
+        throw new Error('spawn should not run for help');
+      },
+    });
+
+    assert.equal(exitCode, 0);
+    assert.match(output.join(''), /pnpm dogfood:status/);
+    assert.match(output.join(''), /health \+ workspace-brief pair/);
+  });
+
+  it('normalizes the pnpm argument separator', () => {
+    assert.deepEqual(normalizeDogfoodStatusArgs(['--', '--help']), ['--help']);
+    assert.deepEqual(normalizeDogfoodStatusArgs(['--help']), ['--help']);
+  });
+
+  it('rejects unknown arguments before running health or workspace-brief', () => {
+    const diagnostics = [];
+    const exitCode = handleDogfoodStatusArgs(['docs/ontology'], {
+      stderr: { write: (text) => diagnostics.push(text) },
+    });
+
+    assert.equal(exitCode, 2);
+    assert.deepEqual(diagnostics, [
+      '[dogfood:status] unknown argument: docs/ontology\n' +
+      'Run pnpm dogfood:status -- --help for usage.\n',
+    ]);
+  });
+
   it('runs workspace-brief even when health fails and preserves the first non-zero exit', () => {
     const calls = [];
     const exitCode = runDogfoodStatus({
+      argv: [],
       cwd: '/repo',
       stdio: 'pipe',
       spawn(command, args, options) {

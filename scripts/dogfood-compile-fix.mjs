@@ -5,13 +5,25 @@ import { fileURLToPath } from 'node:url';
 
 const COMPILE_FIX_ARGS = ['cli/src/index.mjs', 'compile', 'docs/ontology', '--fix', '--summary', '--json'];
 const DIFF_ARGS = ['diff', '--', 'docs/ontology'];
+const DOGFOOD_COMPILE_FIX_USAGE = `Usage:
+  pnpm dogfood:compile-fix
+  pnpm dogfood:compile-fix -- --help
+
+Runs compile --fix against this repo's docs/ontology vault and fails if
+canonicalization leaves a docs/ontology git diff.
+`;
 
 export function runDogfoodCompileFix({
   spawn = spawnSync,
   cwd = process.cwd(),
   stdio = 'inherit',
   stderr = process.stderr,
+  stdout = process.stdout,
+  argv = process.argv.slice(2),
 } = {}) {
+  const argsStatus = handleDogfoodCompileFixArgs(argv, { stdout, stderr });
+  if (argsStatus !== null) return argsStatus;
+
   const before = captureDogfoodOntologyDiff({ spawn, cwd, stderr });
   if (!before.ok) return before.exitCode;
 
@@ -34,6 +46,24 @@ export function runDogfoodCompileFix({
     return 1;
   }
   return 0;
+}
+
+export function handleDogfoodCompileFixArgs(argv = [], { stdout = process.stdout, stderr = process.stderr } = {}) {
+  const args = normalizeDogfoodCompileFixArgs(argv);
+  if (args.length === 0) return null;
+  if (args.length === 1 && (args[0] === '--help' || args[0] === '-h')) {
+    stdout.write(DOGFOOD_COMPILE_FIX_USAGE);
+    return 0;
+  }
+  stderr.write(
+    `[dogfood:compile-fix] unknown argument: ${args[0]}\n` +
+    'Run pnpm dogfood:compile-fix -- --help for usage.\n',
+  );
+  return 2;
+}
+
+export function normalizeDogfoodCompileFixArgs(argv = []) {
+  return argv[0] === '--' ? argv.slice(1) : argv;
 }
 
 export function captureDogfoodOntologyDiff({ spawn = spawnSync, cwd = process.cwd(), stderr = process.stderr } = {}) {

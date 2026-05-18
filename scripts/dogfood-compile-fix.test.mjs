@@ -6,13 +6,49 @@ import {
   dogfoodCompileFixDiagnostic,
   dogfoodCompileFixExitCode,
   dogfoodDiffFileSummary,
+  handleDogfoodCompileFixArgs,
+  normalizeDogfoodCompileFixArgs,
   runDogfoodCompileFix,
 } from './dogfood-compile-fix.mjs';
 
 describe('dogfood compile-fix shortcut', () => {
+  it('prints help without running compile --fix', () => {
+    const output = [];
+    const exitCode = runDogfoodCompileFix({
+      argv: ['--', '--help'],
+      stdout: { write: (text) => output.push(text) },
+      spawn() {
+        throw new Error('spawn should not run for help');
+      },
+    });
+
+    assert.equal(exitCode, 0);
+    assert.match(output.join(''), /pnpm dogfood:compile-fix/);
+    assert.match(output.join(''), /canonicalization leaves a docs\/ontology git diff/);
+  });
+
+  it('normalizes the pnpm argument separator', () => {
+    assert.deepEqual(normalizeDogfoodCompileFixArgs(['--', '--help']), ['--help']);
+    assert.deepEqual(normalizeDogfoodCompileFixArgs(['--help']), ['--help']);
+  });
+
+  it('rejects unknown arguments before running compile --fix', () => {
+    const diagnostics = [];
+    const exitCode = handleDogfoodCompileFixArgs(['docs/ontology'], {
+      stderr: { write: (text) => diagnostics.push(text) },
+    });
+
+    assert.equal(exitCode, 2);
+    assert.deepEqual(diagnostics, [
+      '[dogfood:compile-fix] unknown argument: docs/ontology\n' +
+      'Run pnpm dogfood:compile-fix -- --help for usage.\n',
+    ]);
+  });
+
   it('runs compile --fix before checking the dogfood vault is unchanged', () => {
     const calls = [];
     const exitCode = runDogfoodCompileFix({
+      argv: [],
       cwd: '/repo',
       stdio: 'pipe',
       spawn(command, args, options) {

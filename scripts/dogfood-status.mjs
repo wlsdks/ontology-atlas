@@ -7,13 +7,25 @@ const STATUS_COMMANDS = [
   ['cli/src/index.mjs', 'health', 'docs/ontology'],
   ['cli/src/index.mjs', 'workspace-brief', 'docs/ontology'],
 ];
+const DOGFOOD_STATUS_USAGE = `Usage:
+  pnpm dogfood:status
+  pnpm dogfood:status -- --help
+
+Runs the cheap human-readable health + workspace-brief pair over this repo's
+docs/ontology vault and preserves the first failing exit code.
+`;
 
 export function runDogfoodStatus({
   spawn = spawnSync,
   cwd = process.cwd(),
   stdio = 'inherit',
   stderr = process.stderr,
+  stdout = process.stdout,
+  argv = process.argv.slice(2),
 } = {}) {
+  const argsStatus = handleDogfoodStatusArgs(argv, { stdout, stderr });
+  if (argsStatus !== null) return argsStatus;
+
   let exitCode = 0;
 
   for (const args of STATUS_COMMANDS) {
@@ -30,6 +42,24 @@ export function runDogfoodStatus({
   }
 
   return exitCode;
+}
+
+export function handleDogfoodStatusArgs(argv = [], { stdout = process.stdout, stderr = process.stderr } = {}) {
+  const args = normalizeDogfoodStatusArgs(argv);
+  if (args.length === 0) return null;
+  if (args.length === 1 && (args[0] === '--help' || args[0] === '-h')) {
+    stdout.write(DOGFOOD_STATUS_USAGE);
+    return 0;
+  }
+  stderr.write(
+    `[dogfood:status] unknown argument: ${args[0]}\n` +
+    'Run pnpm dogfood:status -- --help for usage.\n',
+  );
+  return 2;
+}
+
+export function normalizeDogfoodStatusArgs(argv = []) {
+  return argv[0] === '--' ? argv.slice(1) : argv;
 }
 
 export function dogfoodStatusExitCode(result) {
