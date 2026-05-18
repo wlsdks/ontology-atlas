@@ -1528,6 +1528,17 @@ function makeDogfoodToolsList() {
   };
 }
 
+function batchCapError(noun) {
+  const text = `Too many ${noun}: 51. Max 50 per call.`;
+  return {
+    result: {
+      isError: true,
+      content: [{ text }],
+      structuredContent: { ok: false, errorCode: "invalid_arguments", error: text },
+    },
+  };
+}
+
 const okShape = {
   initialize: makeDogfoodInitialize(),
   toolsList: makeDogfoodToolsList(),
@@ -3279,6 +3290,9 @@ const okShape = {
       content: [{ text: 'toKind must be one of: project, domain, capability, element, document, vault-readme, external, unresolved. Received: "externl". Did you mean "external"?' }],
     },
   },
+  getConceptsBatchCap: batchCapError("slugs"),
+  addConceptsBatchCap: batchCapError("concepts"),
+  addRelationsBatchCap: batchCapError("relations"),
 };
 
 for (const value of Object.values(okShape)) {
@@ -3693,7 +3707,7 @@ describe("rpc response completion helpers", () => {
     assert.match(usage, /pnpm test:mcp:dogfood:timeout/);
     assert.match(usage, /Narrow dogfood timeout\/help retry diagnostics/);
     assert.match(usage, /pnpm dogfood:test\s+Full dogfood helper regression suite when focused checks are not enough/);
-    assert.match(usage, /Dogfood helper, compile\/index gates, tools\/list inventory names \+ annotation coverage, row-label guidance, strict closest-value summary, vault warning and validate_vault problem gates, first-contact health\/growth\/sample-shape gates, maintenance work-queue shape \+ formatter checks, initialize safety\/recovery guidance, destructive dry-run, help\/argument\/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight, strict graph kind filters, stderr warning checks/);
+    assert.match(usage, /Dogfood helper, compile\/index gates, tools\/list inventory names \+ annotation coverage, row-label guidance, batch cap gates, strict closest-value summary, vault warning and validate_vault problem gates, first-contact health\/growth\/sample-shape gates, maintenance work-queue shape \+ formatter checks, initialize safety\/recovery guidance, destructive dry-run, help\/argument\/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight, strict graph kind filters, stderr warning checks/);
     assertPnpmScriptsExist(usage);
   });
 
@@ -3845,6 +3859,9 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(78), "strict_query_concepts_kind_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(79), "strict_query_concepts_has_key_filter");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(80), "strict_list_concepts_kind_filter");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(81), "get_concepts_batch_cap");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(82), "add_concepts_batch_cap");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(83), "add_relations_batch_cap");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -3857,6 +3874,20 @@ describe("rpc response completion helpers", () => {
     const failure = rpcTimeoutFailure(5000, missing);
     assert.match(failure, /rpc: timed out after 5000ms waiting for get_concepts\./);
     assert.match(failure, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
+  });
+
+  it("keeps dogfood batch cap requests read-safe or rejected before writes", () => {
+    const requests = buildDogfoodRequests();
+    const getConceptsBatchCap = requests.find((request) => request.id === 81);
+    const addConceptsBatchCap = requests.find((request) => request.id === 82);
+    const addRelationsBatchCap = requests.find((request) => request.id === 83);
+
+    assert.equal(getConceptsBatchCap?.params?.name, "get_concepts");
+    assert.equal(getConceptsBatchCap?.params?.arguments?.slugs?.length, 51);
+    assert.equal(addConceptsBatchCap?.params?.name, "add_concepts");
+    assert.equal(addConceptsBatchCap?.params?.arguments?.concepts?.length, 51);
+    assert.equal(addRelationsBatchCap?.params?.name, "add_relations");
+    assert.equal(addRelationsBatchCap?.params?.arguments?.relations?.length, 51);
   });
 
   it("keeps destructive dogfood dry-run requests non-writing", () => {
@@ -5042,6 +5073,30 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["strict_graph_to_kind_filter: strict graph kind filter response did not suggest the closest toKind value"],
+    );
+  });
+
+  it("fails malformed dogfood batch cap responses", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, getConceptsBatchCap: { result: { isError: false, content: [{ text: "ok" }] } } }),
+      ["get_concepts_batch_cap: get_concepts batch-cap smoke did not reject over-cap batch"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, addConceptsBatchCap: { result: { isError: true, content: [{ text: "Too many concepts: 51. Max 50 per call." }] } } }),
+      ["add_concepts_batch_cap: add_concepts batch cap structured error missing"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        addRelationsBatchCap: {
+          result: {
+            isError: true,
+            content: [{ text: "Too many relations: 51. Max 50 per call." }],
+            structuredContent: { ok: false, errorCode: "unknown_argument", error: "Too many relations: 51. Max 50 per call." },
+          },
+        },
+      }),
+      ["add_relations_batch_cap: add_relations batch cap structured error code mismatch — expected invalid_arguments, got unknown_argument"],
     );
   });
 

@@ -26,6 +26,7 @@ import {
   compileIndexesSummary,
   destructiveDryRunFailure,
   analyzeRepoStructureFailure,
+  batchCapFailure,
   formatCount,
   inferImportsFailure,
   initializeInstructionsFailure,
@@ -98,7 +99,7 @@ export function dogfoodUsage() {
     "  pnpm dogfood:verify        Installed-style verify gate over docs/ontology before the full walk.",
     "",
     "Focused checks:",
-    "  pnpm test:mcp:dogfood           Dogfood helper, compile/index gates, tools/list inventory names + annotation coverage, row-label guidance, strict closest-value summary, vault warning and validate_vault problem gates, first-contact health/growth/sample-shape gates, maintenance work-queue shape + formatter checks, initialize safety/recovery guidance, destructive dry-run, help/argument/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight, strict graph kind filters, stderr warning checks.",
+    "  pnpm test:mcp:dogfood           Dogfood helper, compile/index gates, tools/list inventory names + annotation coverage, row-label guidance, batch cap gates, strict closest-value summary, vault warning and validate_vault problem gates, first-contact health/growth/sample-shape gates, maintenance work-queue shape + formatter checks, initialize safety/recovery guidance, destructive dry-run, help/argument/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight, strict graph kind filters, stderr warning checks.",
     "  pnpm test:mcp:dogfood:timeout   Narrow dogfood timeout/help retry diagnostics.",
     "  pnpm dogfood:test               Full dogfood helper regression suite when focused checks are not enough.",
   ].join("\n");
@@ -243,6 +244,9 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [78, "strict_query_concepts_kind_filter"],
   [79, "strict_query_concepts_has_key_filter"],
   [80, "strict_list_concepts_kind_filter"],
+  [81, "get_concepts_batch_cap"],
+  [82, "add_concepts_batch_cap"],
+  [83, "add_relations_batch_cap"],
 ]);
 
 const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
@@ -610,6 +614,9 @@ export function buildDogfoodRequests() {
     call(16, "get_concepts", {
       slugs: ["project", "capabilities/mcp-server", "missing-dogfood-slug"],
     }),
+    call(81, "get_concepts", {
+      slugs: Array.from({ length: 51 }, (_, index) => `dogfood-slug-${index}`),
+    }),
     call(4, "find_evidence", { title: "vault" }),
     call(5, "find_path", {
       from: "capabilities/mcp-server",
@@ -630,6 +637,21 @@ export function buildDogfoodRequests() {
       intoSlug: "domains/ai-agent-partner",
     }),
     call(65, "delete_concept", { slug: "capabilities/mcp-server" }),
+    call(82, "add_concepts", {
+      concepts: Array.from({ length: 51 }, (_, index) => ({
+        slug: `capabilities/dogfood-batch-cap-${index}`,
+        kind: "capability",
+        title: `Dogfood Batch Cap ${index}`,
+        domain: "ai-agent-partner",
+      })),
+    }),
+    call(83, "add_relations", {
+      relations: Array.from({ length: 51 }, (_, index) => ({
+        from: "capabilities/mcp-server",
+        to: `capabilities/dogfood-batch-cap-${index}`,
+        type: "relates",
+      })),
+    }),
     call(8, "validate_vault", {}),
     call(9, "query_ontology", { operation: "workspace_brief", limit: 5 }),
     call(10, "query_ontology", { operation: "health" }),
@@ -1110,6 +1132,9 @@ export function evaluateDogfoodGate({
   strictMatchEdgesTypeFilter,
   strictGraphFromKindFilter,
   strictGraphToKindFilter,
+  getConceptsBatchCap,
+  addConceptsBatchCap,
+  addRelationsBatchCap,
   toolsList,
 }) {
   const failures = [];
@@ -1231,6 +1256,12 @@ export function evaluateDogfoodGate({
     suggestion: "external",
   });
   if (strictGraphToKindFilterError) failures.push(`strict_graph_to_kind_filter: ${strictGraphToKindFilterError}`);
+  const getConceptsBatchCapError = batchCapFailure(getConceptsBatchCap, "get_concepts", "slugs");
+  if (getConceptsBatchCapError) failures.push(`get_concepts_batch_cap: ${getConceptsBatchCapError}`);
+  const addConceptsBatchCapError = batchCapFailure(addConceptsBatchCap, "add_concepts", "concepts");
+  if (addConceptsBatchCapError) failures.push(`add_concepts_batch_cap: ${addConceptsBatchCapError}`);
+  const addRelationsBatchCapError = batchCapFailure(addRelationsBatchCap, "add_relations", "relations");
+  if (addRelationsBatchCapError) failures.push(`add_relations_batch_cap: ${addRelationsBatchCapError}`);
   const initializeInstructionsError = initializeInstructionsFailure({ result: initialize });
   if (initializeInstructionsError) failures.push(`initialize: ${initializeInstructionsError}`);
 
@@ -4761,6 +4792,22 @@ async function main() {
       }
     }
   }
+  const getConceptsBatchCap = getRpcResponse(responses, 81);
+  const addConceptsBatchCap = getRpcResponse(responses, 82);
+  const addRelationsBatchCap = getRpcResponse(responses, 83);
+
+  header("batch caps — reader/writer 51-row rejection");
+  for (const [toolName, response] of [
+    ["get_concepts", getConceptsBatchCap],
+    ["add_concepts", addConceptsBatchCap],
+    ["add_relations", addRelationsBatchCap],
+  ]) {
+    const text = response?.result?.content?.[0]?.text || "";
+    console.log(`  ${toolName}: rejected ${response?.result?.isError === true}`);
+    if (text) {
+      console.log(`  ${text}`);
+    }
+  }
 
   // 4. find_evidence
   header(`find_evidence(title="vault")`);
@@ -5802,6 +5849,9 @@ async function main() {
     strictMatchEdgesTypeFilter,
     strictGraphFromKindFilter,
     strictGraphToKindFilter,
+    getConceptsBatchCap,
+    addConceptsBatchCap,
+    addRelationsBatchCap,
     toolsList,
   });
   const missingLabels = missingResponseLabels(responses, DOGFOOD_RESPONSE_LABELS);
@@ -5918,6 +5968,7 @@ async function main() {
   console.log(`  strict_match_edges_type_filter: ${strictClosestValueSummary(strictMatchEdgesTypeFilter)}`);
   console.log(`  strict_graph_from_kind_filter: ${strictClosestValueSummary(strictGraphFromKindFilter)}`);
   console.log(`  strict_graph_to_kind_filter: ${strictClosestValueSummary(strictGraphToKindFilter)}`);
+  console.log(`  batch caps: get_concepts ${getConceptsBatchCap?.result?.isError === true} · add_concepts ${addConceptsBatchCap?.result?.isError === true} · add_relations ${addRelationsBatchCap?.result?.isError === true}`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   const stderrWarnings = stderrWarningLines(stderr);
