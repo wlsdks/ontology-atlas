@@ -49,6 +49,20 @@ describe('import-analysis-results', () => {
     );
   });
 
+  it('rejects unresolved import reasons outside the MCP output schema enum', () => {
+    assert.throws(
+      () =>
+        assertInferImportsResult({
+          filesScanned: 1,
+          edges: [],
+          externalImports: [],
+          unresolved: [{ from: 'src/a.ts', spec: '@/missing', reason: 'unresolved-alias' }],
+          moduleEdges: [],
+        }),
+      /infer_imports\.unresolved\[0\]\.reason must be one of empty, relative-not-found, alias-not-found/,
+    );
+  });
+
   it('rejects malformed module edges before apply turns them into relations', () => {
     assert.throws(
       () =>

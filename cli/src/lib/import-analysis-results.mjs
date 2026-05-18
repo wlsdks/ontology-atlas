@@ -1,4 +1,5 @@
 const EDGE_KINDS = new Set(['static', 'dynamic', 'require', 'reexport', 'side']);
+const UNRESOLVED_REASONS = new Set(['empty', 'relative-not-found', 'alias-not-found']);
 
 export function assertInferImportsResult(payload, context = 'infer_imports') {
   assertObject(payload, context);
@@ -20,7 +21,7 @@ export function assertInferImportsResult(payload, context = 'infer_imports') {
     assertObject(row, rowPath);
     assertNonEmptyString(row.from, `${rowPath}.from`);
     assertNonEmptyString(row.spec, `${rowPath}.spec`);
-    assertNonEmptyString(row.reason, `${rowPath}.reason`);
+    assertUnresolvedReason(row.reason, `${rowPath}.reason`);
   });
   payload.moduleEdges.forEach((row, index) => assertModuleEdge(row, `${context}.moduleEdges[${index}]`));
 }
@@ -82,5 +83,11 @@ function assertPositiveInteger(value, path) {
 function assertEdgeKind(value, path) {
   if (typeof value !== 'string' || !EDGE_KINDS.has(value)) {
     throw new Error(`${path} must be one of ${[...EDGE_KINDS].join(', ')}`);
+  }
+}
+
+function assertUnresolvedReason(value, path) {
+  if (typeof value !== 'string' || !UNRESOLVED_REASONS.has(value)) {
+    throw new Error(`${path} must be one of ${[...UNRESOLVED_REASONS].join(', ')}`);
   }
 }

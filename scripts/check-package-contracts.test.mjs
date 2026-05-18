@@ -971,6 +971,7 @@ describe('package contract helpers', () => {
     assert.match(inferImportsRow, /fallback common `@\/\*` aliases/);
     assert.match(inferImportsRow, /`static` \/ `dynamic` \/ `require` \/ `reexport` \/ `side`/);
     assert.match(inferImportsRow, /static-heavy dependencies/);
+    assert.match(inferImportsRow, /Malformed unresolved `reason` enum or `kindCounts` payloads fail closed/);
     assert.match(inferImportsRow, /`--threshold N`/);
     assert.match(compileRow, /Large `--json` output is safe to consume through stdout pipes/);
     assert.match(verifySection, /mcp-verify --help/);
@@ -1922,7 +1923,7 @@ describe('package contract helpers', () => {
     assert.match(regressionSection, /`cli\/src\/lib\/repo-analysis-results\.test\.mjs`/);
     assert.match(regressionSection, /`analyze_repo_structure` 후보 배열 shape fail-closed 계약/);
     assert.match(regressionSection, /`cli\/src\/lib\/import-analysis-results\.test\.mjs`/);
-    assert.match(regressionSection, /`infer_imports` import graph \/ `moduleEdges` shape fail-closed 계약/);
+    assert.match(regressionSection, /`infer_imports` import graph \/ unresolved `reason` enum \/ `moduleEdges` shape fail-closed 계약/);
     assert.match(regressionSection, /`cli\/src\/lib\/batch-results\.test\.mjs`/);
     assert.match(regressionSection, /batch writer 응답 row count \/ row shape fail-closed 계약/);
     assert.match(regressionSection, /`cli\/src\/lib\/cli-commands\.test\.mjs`/);

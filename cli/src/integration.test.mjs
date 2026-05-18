@@ -4428,6 +4428,45 @@ await test('infer-imports — fails closed when infer_imports module edge payloa
   }
 });
 
+await test('infer-imports --json — fails closed when unresolved reason payload drifts', async () => {
+  const vault = withVault([]);
+  const repo = makeImportRepo();
+  const fakeMcp = join(vault, 'fake-mcp-infer-unresolved-reason-drift.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.method === 'initialize') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'infer_imports') {",
+      "    const payload = { rootPath: '/repo', filesScanned: 1, edges: [], externalImports: [], unresolved: [{ from: 'src/a.ts', spec: '@/missing', reason: 'unresolved-alias' }], moduleEdges: [] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['infer-imports', repo, '--vault', vault, '--json'], {
+      env: { OMOT_MCP_PATH: fakeMcp },
+    });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(
+      stripAnsi(r.stderr),
+      /infer_imports\.unresolved\[0\]\.reason must be one of empty, relative-not-found, alias-not-found/,
+    );
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
 // ── infer-imports --threshold N (R+ — weak edge 차단) ────────────────────
 
 function makeStrongImportRepo() {
