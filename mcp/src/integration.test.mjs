@@ -4723,6 +4723,48 @@ await test("rename_concept confirm:true — 파일 이동 + backlink redirect", 
   }
 });
 
+await test("graph destructive writes — missing slug errors include recovery hints", async () => {
+  const root = makeVault([
+    { slug: "capabilities/mcp-server", content: "---\nkind: capability\ntitle: MCP Server\n---\n" },
+    { slug: "into", content: "---\nkind: capability\ntitle: Into\n---\n" },
+    { slug: "from", content: "---\nkind: capability\ntitle: From\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "rename_concept", {
+        oldSlug: "mcp-server",
+        newSlug: "capabilities/agent-server",
+      }),
+      callTool(3, "merge_concepts", {
+        fromSlug: "mcp-server",
+        intoSlug: "into",
+      }),
+      callTool(4, "merge_concepts", {
+        fromSlug: "from",
+        intoSlug: "mcp-server",
+      }),
+      callTool(5, "delete_concept", {
+        slug: "mcp-server",
+        confirm: true,
+      }),
+    ]);
+
+    for (const id of [2, 3, 4, 5]) {
+      assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
+      const text = responses.find((r) => r.id === id).result.content[0].text;
+      assert.match(text, /Use list_concepts\(\) to see all slugs/);
+      assert.match(text, /Similar slugs in this vault: "capabilities\/mcp-server"/);
+    }
+    assert.match(responses.find((r) => r.id === 2).result.content[0].text, /Source slug does not exist in vault/);
+    assert.match(responses.find((r) => r.id === 3).result.content[0].text, /fromSlug does not exist in vault/);
+    assert.match(responses.find((r) => r.id === 4).result.content[0].text, /intoSlug does not exist in vault/);
+    assert.match(responses.find((r) => r.id === 5).result.content[0].text, /Doc not found/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("merge_concepts confirm:true — fromSlug 삭제 + backlink redirect", async () => {
   const root = makeVault([
     { slug: "from", content: "---\nkind: capability\ntitle: From\n---\n# From\n\nMerge body for captured excerpt." },

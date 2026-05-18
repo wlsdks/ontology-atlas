@@ -3995,7 +3995,7 @@ function renameConcept({ oldSlug, newSlug, confirm = false, overwrite = false, e
     throw new Error('oldSlug and newSlug are identical.');
   }
   if (!vaultSlugExists(VAULT_ROOT, oldSlug)) {
-    throw new Error(`Source slug does not exist in vault: "${oldSlug}"`);
+    throw new Error(missingSlugMessage('Source slug does not exist in vault', oldSlug));
   }
   if (!overwrite && vaultSlugExists(VAULT_ROOT, newSlug)) {
     throw new Error(
@@ -4068,10 +4068,10 @@ function mergeConcepts({ fromSlug, intoSlug, confirm = false, expected_mtime }) 
     throw new Error('fromSlug and intoSlug are identical.');
   }
   if (!vaultSlugExists(VAULT_ROOT, fromSlug)) {
-    throw new Error(`fromSlug does not exist in vault: "${fromSlug}"`);
+    throw new Error(missingSlugMessage('fromSlug does not exist in vault', fromSlug));
   }
   if (!vaultSlugExists(VAULT_ROOT, intoSlug)) {
-    throw new Error(`intoSlug does not exist in vault: "${intoSlug}"`);
+    throw new Error(missingSlugMessage('intoSlug does not exist in vault', intoSlug));
   }
 
   const fromPath = slugToPath(VAULT_ROOT, fromSlug);
@@ -4131,7 +4131,7 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   // deleteDoc 까지 가지 않으므로 별도 확인.)
   const filePath = slugToPath(VAULT_ROOT, slug);
   if (!existsSync(filePath)) {
-    throw new Error(`Doc not found: ${slug}`);
+    throw new Error(missingSlugMessage('Doc not found', slug));
   }
   const backlinks = findBacklinks(VAULT_ROOT, slug);
 
@@ -4174,6 +4174,17 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
     },
     postWriteMaintenance: compactPostWriteMaintenance(),
   };
+}
+
+function missingSlugMessage(prefix, slug) {
+  const suggestions = suggestSimilarSlugs(VAULT_ROOT, slug);
+  const lines = [
+    `${prefix}: "${slug}". Use list_concepts() to see all slugs, or find_evidence(query) to search by title.`,
+  ];
+  if (suggestions.length > 0) {
+    lines.push(`Similar slugs in this vault: ${suggestions.map((s) => `"${s}"`).join(', ')}.`);
+  }
+  return lines.join(' ');
 }
 
 // ── 부팅 ──────────────────────────────────────────────────────────────────
