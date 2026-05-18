@@ -15,7 +15,8 @@ const DOGFOOD_STATUS_USAGE = `Usage:
 
 Runs the cheap human-readable health + workspace-brief pair over this repo's
 docs/ontology vault, prints a final health/workspace-brief status summary, and
-preserves the first failing exit code.
+preserves the first failing exit code. On failure it also prints a
+pnpm dogfood:verify follow-up hint.
 Use pnpm dogfood:verify when you need the full installed-style dogfood vault gate.
 `;
 
