@@ -1589,6 +1589,7 @@ describe('package contract helpers', () => {
     const readme = readFileSync('README.md', 'utf-8');
     const agentsGuide = readFileSync('AGENTS.md', 'utf-8');
     const dogfoodRow = readme.split('| **Dogfooding** |')[1]?.split('\n')[0] ?? '';
+    const agentWorkflow = readme.split('## Agent Workflow')[1]?.split('## Web Routes')[0] ?? '';
     const helpfulCommands = readme.split('Helpful vault commands:')[1]?.split('### Vault tooling')[0] ?? '';
     const census = dogfoodVaultCensus(process.cwd());
 
@@ -1616,6 +1617,10 @@ describe('package contract helpers', () => {
     assert.match(helpfulCommands, /pnpm test:dogfood:args/);
     assert.match(helpfulCommands, /pnpm dogfood:status -- --help/);
     assert.match(helpfulCommands, /pnpm test:dogfood:status/);
+    assert.match(agentWorkflow, /`workspace-brief` is the cheap first-contact dashboard/);
+    assert.match(agentWorkflow, /`PROJECT별 포함 노드 수 \(project_scope\)`/);
+    assert.match(agentWorkflow, /health-check coverage as\s+`id:status:count`/);
+    assert.match(agentWorkflow, /growth counts before the agent chooses where to read\s+deeper/);
   });
 
   it('keeps current dogfood vault count docs aligned with the vault census', () => {

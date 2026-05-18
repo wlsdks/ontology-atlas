@@ -150,6 +150,11 @@ oh-my-ontology backlinks capabilities/token-issue ./ontology
 oh-my-ontology blast-radius capabilities/token-issue ./ontology
 ```
 
+`workspace-brief` is the cheap first-contact dashboard: it shows hotspots,
+`PROJECT별 포함 노드 수 (project_scope)`, health-check coverage as
+`id:status:count`, and growth counts before the agent chooses where to read
+deeper.
+
 Then let the agent sync memory after non-trivial changes:
 
 - New code capability: add a `kind: capability` node.
