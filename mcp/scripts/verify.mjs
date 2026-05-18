@@ -4132,15 +4132,49 @@ export function destructiveDryRunFailure(response, toolName) {
     if (parsed.moved !== false || typeof parsed.oldSlug !== 'string' || typeof parsed.newSlug !== 'string') {
       return 'rename_concept dry-run response missing rename preview fields';
     }
+    const backlinkFailure = destructiveBacklinkUpdatesFailure(parsed.backlinkUpdates, toolName);
+    if (backlinkFailure) return backlinkFailure;
   }
   if (toolName === 'merge_concepts') {
     if (parsed.deleted !== false || typeof parsed.fromSlug !== 'string' || typeof parsed.intoSlug !== 'string') {
       return 'merge_concepts dry-run response missing merge preview fields';
     }
+    const backlinkFailure = destructiveBacklinkUpdatesFailure(parsed.backlinkUpdates, toolName);
+    if (backlinkFailure) return backlinkFailure;
   }
   if (toolName === 'delete_concept') {
     if (typeof parsed.slug !== 'string' || !Array.isArray(parsed.backlinks)) {
       return 'delete_concept dry-run response missing delete preview fields';
+    }
+  }
+  return null;
+}
+
+function destructiveBacklinkUpdatesFailure(backlinkUpdates, toolName) {
+  if (
+    !backlinkUpdates ||
+    !Number.isInteger(backlinkUpdates.totalUpdated) ||
+    backlinkUpdates.totalUpdated < 0 ||
+    !Array.isArray(backlinkUpdates.updates)
+  ) {
+    return `${toolName} dry-run response missing backlinkUpdates plan`;
+  }
+  if (backlinkUpdates.totalUpdated !== backlinkUpdates.updates.length) {
+    return `${toolName} dry-run response backlinkUpdates total mismatch`;
+  }
+  for (let index = 0; index < backlinkUpdates.updates.length; index += 1) {
+    const row = backlinkUpdates.updates[index];
+    if (
+      !row ||
+      typeof row.slug !== 'string' ||
+      row.slug.length === 0 ||
+      typeof row.title !== 'string' ||
+      row.title.length === 0 ||
+      !Array.isArray(row.beforeKeys) ||
+      !Array.isArray(row.afterKeys) ||
+      typeof row.bodyChanged !== 'boolean'
+    ) {
+      return `${toolName} dry-run response backlinkUpdates.updates[${index}] shape drift`;
     }
   }
   return null;

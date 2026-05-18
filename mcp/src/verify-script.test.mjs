@@ -4719,7 +4719,7 @@ describe('verify.mjs first-contact gates', () => {
       oldSlug: 'old',
       newSlug: 'new',
       moved: false,
-      backlinkUpdates: { totalUpdated: 0 },
+      backlinkUpdates: { totalUpdated: 0, updates: [] },
       message: 'dry-run — confirm:true to apply',
     };
     assert.equal(
@@ -4727,6 +4727,22 @@ describe('verify.mjs first-contact gates', () => {
         result: {
           content: [{ text: JSON.stringify(renamePayload) }],
           structuredContent: renamePayload,
+        },
+      }, 'rename_concept'),
+      null,
+    );
+    const renamePayloadWithUpdate = {
+      ...renamePayload,
+      backlinkUpdates: {
+        totalUpdated: 1,
+        updates: [{ slug: 'ref', title: 'Ref', beforeKeys: [], afterKeys: [], bodyChanged: false }],
+      },
+    };
+    assert.equal(
+      destructiveDryRunFailure({
+        result: {
+          content: [{ text: JSON.stringify(renamePayloadWithUpdate) }],
+          structuredContent: renamePayloadWithUpdate,
         },
       }, 'rename_concept'),
       null,
@@ -4757,6 +4773,49 @@ describe('verify.mjs first-contact gates', () => {
         },
       }, 'rename_concept'),
       'rename_concept dry-run response must be ok:false with dryRun:true',
+    );
+    assert.equal(
+      destructiveDryRunFailure({
+        result: {
+          content: [{ text: JSON.stringify({ ...renamePayload, backlinkUpdates: { totalUpdated: 0 } }) }],
+          structuredContent: { ...renamePayload, backlinkUpdates: { totalUpdated: 0 } },
+        },
+      }, 'rename_concept'),
+      'rename_concept dry-run response missing backlinkUpdates plan',
+    );
+    assert.equal(
+      destructiveDryRunFailure({
+        result: {
+          content: [{ text: JSON.stringify({ ...renamePayload, backlinkUpdates: { totalUpdated: 1, updates: [] } }) }],
+          structuredContent: { ...renamePayload, backlinkUpdates: { totalUpdated: 1, updates: [] } },
+        },
+      }, 'rename_concept'),
+      'rename_concept dry-run response backlinkUpdates total mismatch',
+    );
+    assert.equal(
+      destructiveDryRunFailure({
+        result: {
+          content: [
+            {
+              text: JSON.stringify({
+                ...renamePayload,
+                backlinkUpdates: {
+                  totalUpdated: 1,
+                  updates: [{ slug: 'ref', beforeKeys: [], afterKeys: [], bodyChanged: false }],
+                },
+              }),
+            },
+          ],
+          structuredContent: {
+            ...renamePayload,
+            backlinkUpdates: {
+              totalUpdated: 1,
+              updates: [{ slug: 'ref', beforeKeys: [], afterKeys: [], bodyChanged: false }],
+            },
+          },
+        },
+      }, 'rename_concept'),
+      'rename_concept dry-run response backlinkUpdates.updates[0] shape drift',
     );
     assert.equal(
       destructiveDryRunFailure({
