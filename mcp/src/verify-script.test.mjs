@@ -144,6 +144,17 @@ function assertPnpmScriptsExist(text) {
   }
 }
 
+function strictErrorResponse(text, extraResult = {}) {
+  return {
+    result: {
+      isError: true,
+      content: [{ text }],
+      structuredContent: { ok: false, error: text },
+      ...extraResult,
+    },
+  };
+}
+
 describe('verify.mjs first-contact gates', () => {
   it('keeps package metadata tool count aligned with verify inventory', () => {
     const described = MCP_PKG.description.match(/(\d+) tools \((\d+) read \+ (\d+) write\)/);
@@ -4556,12 +4567,7 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict enum smoke responses', () => {
     assert.equal(
-      strictEnumFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'operation must be one of: overview, health. Invalid value: overveiw. Did you mean "overview"?' }],
-        },
-      }),
+      strictEnumFailure(strictErrorResponse('operation must be one of: overview, health. Invalid value: overveiw. Did you mean "overview"?')),
       null,
     );
     assert.equal(
@@ -4580,30 +4586,15 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict maintenance filter smoke responses', () => {
     assert.equal(
-      strictMaintenanceFilterFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'phases items must be one of: validate, repair, link, materialize, review. Received: "repiar". Did you mean "repair"?' }],
-        },
-      }, 'phases'),
+      strictMaintenanceFilterFailure(strictErrorResponse('phases items must be one of: validate, repair, link, materialize, review. Received: "repiar". Did you mean "repair"?'), 'phases'),
       null,
     );
     assert.equal(
-      strictMaintenanceFilterFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'severities items must be one of: fail, warn, info. Received: "fatal". Did you mean "fail"?' }],
-        },
-      }, 'severities'),
+      strictMaintenanceFilterFailure(strictErrorResponse('severities items must be one of: fail, warn, info. Received: "fatal". Did you mean "fail"?'), 'severities'),
       null,
     );
     assert.equal(
-      strictMaintenanceFilterFailure({
-        result: {
-          isError: true,
-          content: [{ text: `kinds items must be one of: ${MAINTENANCE_KIND_VALUES.join(', ')}. Received: "add_mising_relation". Did you mean "add_missing_relation"?` }],
-        },
-      }, 'kinds'),
+      strictMaintenanceFilterFailure(strictErrorResponse(`kinds items must be one of: ${MAINTENANCE_KIND_VALUES.join(', ')}. Received: "add_mising_relation". Did you mean "add_missing_relation"?`), 'kinds'),
       null,
     );
     assert.equal(
@@ -4638,12 +4629,7 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict relation filter smoke responses', () => {
     assert.equal(
-      strictRelationFilterFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'dependencyTypes items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
-        },
-      }),
+      strictRelationFilterFailure(strictErrorResponse('dependencyTypes items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?')),
       null,
     );
     assert.equal(
@@ -4666,12 +4652,7 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict find_neighbors types smoke responses', () => {
     assert.equal(
-      strictFindNeighborsTypeFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'types items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
-        },
-      }),
+      strictFindNeighborsTypeFailure(strictErrorResponse('types items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?')),
       null,
     );
     assert.equal(
@@ -4694,21 +4675,11 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict find_orphans kind smoke responses', () => {
     assert.equal(
-      strictFindOrphansKindFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
-        },
-      }),
+      strictFindOrphansKindFailure(strictErrorResponse('kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?')),
       null,
     );
     assert.equal(
-      strictFindOrphansKindFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'excludeKinds items must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
-        },
-      }, { field: 'excludeKinds items' }),
+      strictFindOrphansKindFailure(strictErrorResponse('excludeKinds items must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?'), { field: 'excludeKinds items' }),
       null,
     );
     assert.equal(
@@ -4731,21 +4702,11 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict query_concepts filter smoke responses', () => {
     assert.equal(
-      strictQueryConceptsFilterFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
-        },
-      }),
+      strictQueryConceptsFilterFailure(strictErrorResponse('kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?')),
       null,
     );
     assert.equal(
-      strictQueryConceptsFilterFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'has key must be one of: domains, capabilities, elements, dependencies, relates, contains, describes, depends_on. Received: "capabilties". Did you mean "capabilities"?' }],
-        },
-      }, { field: 'has key', received: 'capabilties', suggestion: 'capabilities' }),
+      strictQueryConceptsFilterFailure(strictErrorResponse('has key must be one of: domains, capabilities, elements, dependencies, relates, contains, describes, depends_on. Received: "capabilties". Did you mean "capabilities"?'), { field: 'has key', received: 'capabilties', suggestion: 'capabilities' }),
       null,
     );
     assert.equal(
@@ -4768,12 +4729,7 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict list_concepts kind smoke responses', () => {
     assert.equal(
-      strictListConceptsKindFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
-        },
-      }),
+      strictListConceptsKindFailure(strictErrorResponse('kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?')),
       null,
     );
     assert.equal(
@@ -4796,12 +4752,7 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict graph kind filter smoke responses', () => {
     assert.equal(
-      strictGraphKindFilterFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
-        },
-      }),
+      strictGraphKindFilterFailure(strictErrorResponse('kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?')),
       null,
     );
     assert.equal(
@@ -4822,24 +4773,14 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       strictGraphKindFilterFailure(
-        {
-          result: {
-            isError: true,
-            content: [{ text: 'fromKind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
-          },
-        },
+        strictErrorResponse('fromKind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?'),
         { field: 'fromKind' },
       ),
       null,
     );
     assert.equal(
       strictGraphKindFilterFailure(
-        {
-          result: {
-            isError: true,
-            content: [{ text: 'toKind must be one of: project, domain, capability, element, document, vault-readme, external, unresolved. Received: "externl". Did you mean "external"?' }],
-          },
-        },
+        strictErrorResponse('toKind must be one of: project, domain, capability, element, document, vault-readme, external, unresolved. Received: "externl". Did you mean "external"?'),
         { field: 'toKind', received: 'externl', suggestion: 'external' },
       ),
       null,
@@ -4862,22 +4803,12 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict recommend_relations kind filter smoke responses', () => {
     assert.equal(
-      strictRecommendRelationsKindFilterFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'kind must be one of: capability, element. Received: "capabilty". Did you mean "capability"?' }],
-        },
-      }),
+      strictRecommendRelationsKindFilterFailure(strictErrorResponse('kind must be one of: capability, element. Received: "capabilty". Did you mean "capability"?')),
       null,
     );
     assert.equal(
       strictRecommendRelationsKindFilterFailure(
-        {
-          result: {
-            isError: true,
-            content: [{ text: 'kind must be one of: capability, element. Received: "domain".' }],
-          },
-        },
+        strictErrorResponse('kind must be one of: capability, element. Received: "domain".'),
         { received: 'domain', requireSuggestion: false },
       ),
       null,
@@ -4906,12 +4837,7 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict match_nodes sort smoke responses', () => {
     assert.equal(
-      strictMatchNodesSortFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'sort must be one of: degree, inDegree, outDegree, slug. Received: "outDegre". Did you mean "outDegree"?' }],
-        },
-      }),
+      strictMatchNodesSortFailure(strictErrorResponse('sort must be one of: degree, inDegree, outDegree, slug. Received: "outDegre". Did you mean "outDegree"?')),
       null,
     );
     assert.equal(
@@ -4938,12 +4864,7 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict relation_check smoke responses', () => {
     assert.equal(
-      strictRelationCheckFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'type must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
-        },
-      }),
+      strictRelationCheckFailure(strictErrorResponse('type must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?')),
       null,
     );
     assert.equal(
@@ -4966,12 +4887,7 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict match_edges type smoke responses', () => {
     assert.equal(
-      strictMatchEdgesTypeFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'type must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
-        },
-      }),
+      strictMatchEdgesTypeFailure(strictErrorResponse('type must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?')),
       null,
     );
     assert.equal(
@@ -4994,12 +4910,7 @@ describe('verify.mjs first-contact gates', () => {
 
   it('fails malformed strict add_relation smoke responses', () => {
     assert.equal(
-      strictAddRelationFailure({
-        result: {
-          isError: true,
-          content: [{ text: 'type must be one of: depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
-        },
-      }),
+      strictAddRelationFailure(strictErrorResponse('type must be one of: depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?')),
       null,
     );
     assert.equal(

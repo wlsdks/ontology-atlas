@@ -141,7 +141,7 @@ frontmatter / excerpt / neighbors / outgoingEdges / mtime 과 `structuredContent
 `structuredContent` parity 실패는 installed verify 와 dogfood gate 양쪽에서 첫 불일치 JSON path 와
 parsed/text JSON 값, `structuredContent` 값을 함께 출력해 agent 가 응답 contract drift 를 바로 좁힐 수 있게 한다.
 tool-level 실패 응답도 `structuredContent: { ok:false, error }` 를 함께 반환해 MCP 클라이언트가
-텍스트 파싱 없이 retry / 수정 / 사용자 보고 분기를 결정할 수 있고, strict argument verify 와 dogfood gate 가 이 계약을 확인한다.
+텍스트 파싱 없이 retry / 수정 / 사용자 보고 분기를 결정할 수 있고, strict argument / enum / filter / type / write-safety verify 와 dogfood gate 가 이 계약을 확인한다.
 `get_concepts` 는 `list_concepts` 에서 얻은 실제 slug 최대 2개와 missing slug 를 섞어
 설치 검증에서도 batch reader 의 성공 row 와 partial row 계약을 확인한다.
 `find_evidence` / `find_backlinks` / `query_concepts` 는 resolved vault 에 실제 호출하고,

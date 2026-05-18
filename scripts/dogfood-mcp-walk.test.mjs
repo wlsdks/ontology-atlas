@@ -3278,6 +3278,14 @@ const okShape = {
   },
 };
 
+for (const value of Object.values(okShape)) {
+  const result = value?.result;
+  const text = result?.content?.[0]?.text;
+  if (result?.isError === true && typeof text === "string" && !result.structuredContent) {
+    result.structuredContent = { ok: false, error: text };
+  }
+}
+
 for (const [resultField, structuredField] of [
   ["brief", "briefStructured"],
   ["tunedBrief", "tunedBriefStructured"],

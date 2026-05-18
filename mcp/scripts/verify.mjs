@@ -2260,7 +2260,7 @@ export function strictEnumFailure(response) {
   if (!/Did you mean "overview"\?/i.test(text)) {
     return 'strict enum response did not suggest the closest query_ontology operation';
   }
-  return null;
+  return structuredErrorFailure(response, 'strict enum');
 }
 
 export function strictMaintenanceFilterFailure(response, field = 'phases') {
@@ -2286,7 +2286,7 @@ export function strictMaintenanceFilterFailure(response, field = 'phases') {
   if (!new RegExp(`Did you mean "${expected.suggestion}"\\?`, 'i').test(text)) {
     return `strict maintenance filter response did not suggest the closest maintenance_plan ${field} value`;
   }
-  return null;
+  return structuredErrorFailure(response, 'strict maintenance filter');
 }
 
 export function strictRelationFilterFailure(response) {
@@ -2303,7 +2303,7 @@ export function strictRelationFilterFailure(response) {
   if (!/Did you mean "depends_on"\?/i.test(text)) {
     return 'strict relation filter response did not suggest the closest dependencyTypes value';
   }
-  return null;
+  return structuredErrorFailure(response, 'strict relation filter');
 }
 
 export function strictFindNeighborsTypeFailure(response) {
@@ -2320,7 +2320,7 @@ export function strictFindNeighborsTypeFailure(response) {
   if (!/Did you mean "depends_on"\?/i.test(text)) {
     return 'strict find_neighbors types response did not suggest the closest types value';
   }
-  return null;
+  return structuredErrorFailure(response, 'strict find_neighbors types');
 }
 
 export function strictFindOrphansKindFailure(
@@ -2340,7 +2340,7 @@ export function strictFindOrphansKindFailure(
   if (!new RegExp(`Did you mean "${escapeRegExp(suggestion)}"\\?`, 'i').test(text)) {
     return `strict find_orphans kind response did not suggest the closest ${field} value`;
   }
-  return null;
+  return structuredErrorFailure(response, 'strict find_orphans kind');
 }
 
 export function strictQueryConceptsFilterFailure(
@@ -2360,7 +2360,7 @@ export function strictQueryConceptsFilterFailure(
   if (!new RegExp(`Did you mean "${escapeRegExp(suggestion)}"\\?`, 'i').test(text)) {
     return `strict query_concepts filter response did not suggest the closest ${field} value`;
   }
-  return null;
+  return structuredErrorFailure(response, 'strict query_concepts filter');
 }
 
 export function strictListConceptsKindFailure(
@@ -2380,7 +2380,7 @@ export function strictListConceptsKindFailure(
   if (!new RegExp(`Did you mean "${escapeRegExp(suggestion)}"\\?`, 'i').test(text)) {
     return 'strict list_concepts kind response did not suggest the closest kind value';
   }
-  return null;
+  return structuredErrorFailure(response, 'strict list_concepts kind');
 }
 
 export function strictGraphKindFilterFailure(
@@ -2400,7 +2400,7 @@ export function strictGraphKindFilterFailure(
   if (!new RegExp(`Did you mean "${suggestion}"\\?`, 'i').test(text)) {
     return `strict graph kind filter response did not suggest the closest ${field} value`;
   }
-  return null;
+  return structuredErrorFailure(response, 'strict graph kind filter');
 }
 
 function escapeRegExp(value) {
@@ -2427,7 +2427,7 @@ export function strictRecommendRelationsKindFilterFailure(
   if (requireSuggestion && !new RegExp(`Did you mean "${escapeRegExp(suggestion)}"\\?`, 'i').test(text)) {
     return 'strict recommend_relations kind filter response did not suggest the closest kind value';
   }
-  return null;
+  return structuredErrorFailure(response, 'strict recommend_relations kind filter');
 }
 
 export function strictMatchNodesSortFailure(response) {
@@ -2447,7 +2447,7 @@ export function strictMatchNodesSortFailure(response) {
   if (!/Did you mean "outDegree"\?/i.test(text)) {
     return 'strict match_nodes sort response did not suggest the closest sort value';
   }
-  return null;
+  return structuredErrorFailure(response, 'strict match_nodes sort');
 }
 
 export function strictRelationCheckFailure(response) {
@@ -2464,7 +2464,7 @@ export function strictRelationCheckFailure(response) {
   if (!/Did you mean "depends_on"\?/i.test(text)) {
     return 'strict relation_check response did not suggest the closest type value';
   }
-  return null;
+  return structuredErrorFailure(response, 'strict relation_check');
 }
 
 export function strictMatchEdgesTypeFailure(response) {
@@ -2481,7 +2481,7 @@ export function strictMatchEdgesTypeFailure(response) {
   if (!/Did you mean "depends_on"\?/i.test(text)) {
     return 'strict match_edges type response did not suggest the closest type value';
   }
-  return null;
+  return structuredErrorFailure(response, 'strict match_edges type');
 }
 
 export function strictAddRelationFailure(response) {
@@ -2504,7 +2504,7 @@ export function strictAddRelationFailure(response) {
   if (!/Did you mean "depends_on"\?/i.test(text)) {
     return 'strict add_relation response did not suggest the closest type value';
   }
-  return null;
+  return structuredErrorFailure(response, 'strict add_relation');
 }
 
 export function maintenanceMissingCursorFailure(parsed) {
