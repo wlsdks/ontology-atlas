@@ -24,6 +24,8 @@ describe('dogfood status shortcut', () => {
     assert.equal(exitCode, 0);
     assert.match(output.join(''), /pnpm dogfood:status/);
     assert.match(output.join(''), /health \+ workspace-brief pair/);
+    assert.match(output.join(''), /pnpm dogfood:verify/);
+    assert.match(output.join(''), /full installed-style dogfood vault gate/);
   });
 
   it('normalizes the pnpm argument separator', () => {
