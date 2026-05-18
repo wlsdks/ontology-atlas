@@ -163,6 +163,47 @@ export function assertPathShape(result) {
   return result;
 }
 
+export function assertBacklinksShape(result) {
+  if (!isPlainObject(result)) {
+    throw new Error('find_backlinks response must be an object');
+  }
+  if (!hasNonEmptyString(result.target)) {
+    throw new Error('find_backlinks target must be a non-empty string');
+  }
+  if (!Array.isArray(result.matches)) {
+    throw new Error('find_backlinks matches must be an array');
+  }
+  const total = result.total ?? result.matches.length;
+  if (!validCount(total)) {
+    throw new Error('find_backlinks total must be a non-negative integer when present');
+  }
+  for (let index = 0; index < result.matches.length; index += 1) {
+    if (!validBacklinkRow(result.matches[index])) {
+      throw new Error(`find_backlinks matches[${index}] has an invalid backlink shape`);
+    }
+  }
+  return result;
+}
+
+export function assertOrphansShape(result) {
+  if (!isPlainObject(result)) {
+    throw new Error('find_orphans response must be an object');
+  }
+  if (!Array.isArray(result.orphans)) {
+    throw new Error('find_orphans orphans must be an array');
+  }
+  const total = result.total ?? result.orphans.length;
+  if (!validCount(total)) {
+    throw new Error('find_orphans total must be a non-negative integer when present');
+  }
+  for (let index = 0; index < result.orphans.length; index += 1) {
+    if (!validNodeSummary(result.orphans[index])) {
+      throw new Error(`find_orphans orphans[${index}] has an invalid orphan shape`);
+    }
+  }
+  return result;
+}
+
 export function assertOverviewShape(result) {
   assertQueryOperation(result, 'overview');
   if (!isPlainObject(result.graph)) {
@@ -342,6 +383,24 @@ function validMaintenanceAction(action) {
 
 function validMaintenanceActionPointer(action) {
   return Boolean(isPlainObject(action) && hasNonEmptyString(action.id));
+}
+
+function validNodeSummary(row) {
+  return Boolean(
+    isPlainObject(row)
+    && hasNonEmptyString(row.slug)
+    && hasNonEmptyString(row.kind)
+    && hasNonEmptyString(row.title)
+    && (row.mtime === undefined || Number.isFinite(row.mtime))
+  );
+}
+
+function validBacklinkRow(row) {
+  return Boolean(
+    validNodeSummary(row)
+    && Array.isArray(row.matchedKeys)
+    && row.matchedKeys.every((key) => hasNonEmptyString(key))
+  );
 }
 
 function validHubRow(row) {

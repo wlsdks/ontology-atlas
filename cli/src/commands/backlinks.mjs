@@ -2,6 +2,7 @@
 // Lists every node referencing the target. Thin wrapper over MCP find_backlinks.
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
+import { assertBacklinksShape } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { formatUnknownFlagError, parseVaultFlag, resolveTrailingVaultArg } from '../lib/cli-args.mjs';
 
@@ -32,6 +33,7 @@ export async function runBacklinks(args) {
   let result;
   try {
     result = await callMcpTool(vaultRoot, 'find_backlinks', { slug });
+    assertBacklinksShape(result);
   } catch (err) {
     process.stderr.write(
       `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,

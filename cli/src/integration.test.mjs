@@ -2144,6 +2144,35 @@ await test('backlinks --json — JSON 응답 파싱', async () => {
   }
 });
 
+await test('backlinks --json — fails closed on malformed find_backlinks payloads before output', async () => {
+  const root = withVault();
+  const fakeMcp = join(root, 'fake-mcp-backlinks-malformed.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
+      "  if (msg.id === 2) {",
+      "    const payload = { target: 'capabilities/foo', total: 1, matches: [{ slug: 'domains/auth', kind: 'domain', title: 'Auth', matchedKeys: [''] }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['backlinks', 'capabilities/foo', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /find_backlinks matches\[0\] has an invalid backlink shape/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('path — capabilities/bar → capabilities/foo (1 hop, via relates)', async () => {
   const root = await buildGraphFixture();
   try {
@@ -2645,6 +2674,35 @@ await test('orphans --json — JSON 응답 파싱', async () => {
     const data = JSON.parse(r.stdout);
     assert.ok(Array.isArray(data.orphans));
     assert.equal(data.orphans.some((o) => o.slug === 'domains/auth'), false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('orphans --json — fails closed on malformed find_orphans payloads before output', async () => {
+  const root = withVault();
+  const fakeMcp = join(root, 'fake-mcp-orphans-malformed.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
+      "  if (msg.id === 2) {",
+      "    const payload = { total: 1, orphans: [{ slug: 'capabilities/foo', kind: 'capability' }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['orphans', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /find_orphans orphans\[0\] has an invalid orphan shape/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

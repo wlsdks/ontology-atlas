@@ -1322,12 +1322,14 @@ describe('package contract helpers', () => {
     const findRow = doc.split('| `oh-my-ontology find <query> [vault]` |')[1]?.split('\n')[0] ?? '';
     const validateRow = doc.split('| `oh-my-ontology validate [vault]` |')[1]?.split('\n')[0] ?? '';
     const importRow = doc.split('| `oh-my-ontology import <path...>` |')[1]?.split('\n')[0] ?? '';
+    const backlinksRow = doc.split('| `oh-my-ontology backlinks <slug>` |')[1]?.split('\n')[0] ?? '';
     const orphansRow = doc.split('| `oh-my-ontology orphans` |')[1]?.split('\n')[0] ?? '';
     const cliListRow = readme.split('| `oh-my-ontology list [vault]` |')[1]?.split('\n')[0] ?? '';
     const cliAddRow = readme.split('| `oh-my-ontology add <kind> <slug> --title="..."` |')[1]?.split('\n')[0] ?? '';
     const cliFindRow = readme.split('| `oh-my-ontology find <query> [vault]` |')[1]?.split('\n')[0] ?? '';
     const cliValidateRow = readme.split('| `oh-my-ontology validate [vault]` |')[1]?.split('\n')[0] ?? '';
     const cliImportRow = readme.split('| `oh-my-ontology import <path...>` |')[1]?.split('\n')[0] ?? '';
+    const cliBacklinksRow = readme.split('| `oh-my-ontology backlinks <slug>` |')[1]?.split('\n')[0] ?? '';
     const cliOrphansRow = readme.split('| `oh-my-ontology orphans [vault]` |')[1]?.split('\n')[0] ?? '';
     const mcpVerifyRow = doc.split('| `oh-my-ontology mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
     const inferImportsRow = doc.split('| `oh-my-ontology infer-imports [rootPath]` |')[1]?.split('\n')[0] ?? '';
@@ -1347,7 +1349,9 @@ describe('package contract helpers', () => {
     assert.match(validateRow, /`--fail-on=empty-kind,`/);
     assert.match(validateRow, /fail-closed/);
     assert.match(importRow, /fallback `--kind` 와 frontmatter `kind` typo 는 closest-value hint/);
+    assert.match(backlinksRow, /backlink-match row shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2/);
     assert.match(orphansRow, /enum-validated kind \/ exclude-kinds 필터/);
+    assert.match(orphansRow, /orphan-list row shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2/);
     assert.match(orphansRow, /`--exclude-kinds=project,capabilty`/);
     assert.match(orphansRow, /closest-value hint/);
     assert.match(cliListRow, /enum-validated `--kind X` filter with closest-value hints/);
@@ -1355,8 +1359,10 @@ describe('package contract helpers', () => {
     assert.match(cliFindRow, /enum-validated `--kind X` filter with closest-value hints/);
     assert.match(cliValidateRow, /rejects empty CSV items such as `--fail-on=empty-kind,`/);
     assert.match(cliImportRow, /Frontmatter `kind` typos and fallback `--kind` typos fail with closest-value hints/);
+    assert.match(cliBacklinksRow, /Malformed backlink-match payloads fail closed before JSON or human output/);
     assert.match(cliOrphansRow, /enum-validated `--kind X`/);
     assert.match(cliOrphansRow, /enum-validated `--exclude-kinds A,B`/);
+    assert.match(cliOrphansRow, /Malformed orphan-list payloads fail closed before JSON or human output/);
     assert.match(inferImportsRow, /file edge kind summary/);
     assert.match(inferImportsRow, /module edge 별 `kindCounts`/);
     assert.match(inferImportsRow, /`tsconfig\.json` paths alias/);
@@ -1412,7 +1418,7 @@ describe('package contract helpers', () => {
     assert.match(implementationSection, /MCP spawn error \/ child process exit \/ missing `tools\/call` response 도 tool name \/ vault root \/ entry path/);
     assert.match(implementationSection, /`concepts\[n\]` \/ `relations\[n\]` fallback label/);
     assert.match(implementationSection, /`undefined` 를 노출하지 않고/);
-    assert.match(implementationSection, /malformed `compile` \/ `overview` \/ `hubs` \/ `blast-radius` \/ `cycles` \/ `path` \/ `health` \/ `workspace-brief` payload/);
+    assert.match(implementationSection, /malformed `compile` \/ `find_backlinks` \/ `find_orphans` \/ `overview` \/ `hubs` \/ `blast-radius` \/ `cycles` \/ `path` \/ `health` \/ `workspace-brief` payload/);
     assert.match(implementationSection, /fail-closed/);
     assert.match(doc, /`workspace-brief` non-json 의 `HEALTH CHECKS` id:status:count coverage 와 `GROWTH` action/);
     assert.match(doc, /`health` non-json 의 `pass:count` 출력/);

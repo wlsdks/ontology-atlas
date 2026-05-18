@@ -2,11 +2,13 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
+  assertBacklinksShape,
   assertBlastRadiusShape,
   assertCentralityShape,
   assertCyclesShape,
   assertHealthShape,
   assertMaintenancePlanShape,
+  assertOrphansShape,
   assertOverviewShape,
   assertPathShape,
   assertQueryOperation,
@@ -202,6 +204,58 @@ describe('query-result-contract', () => {
     assert.throws(
       () => assertPathShape({ found: true, hops: ['a', 'b'], edges: [{ from: 'b', to: 'a', via: 'relates' }] }),
       /find_path response edges\[0\] has an invalid path-edge shape/,
+    );
+  });
+
+  it('rejects malformed find_backlinks and find_orphans payloads before CLI output', () => {
+    const backlinks = {
+      target: 'capabilities/foo',
+      total: 1,
+      matches: [
+        {
+          slug: 'domains/auth',
+          kind: 'domain',
+          title: 'Auth',
+          mtime: 1,
+          matchedKeys: ['capabilities'],
+        },
+      ],
+    };
+    const orphans = {
+      total: 1,
+      orphans: [
+        {
+          slug: 'capabilities/foo',
+          kind: 'capability',
+          title: 'Foo',
+          mtime: 1,
+        },
+      ],
+    };
+
+    assert.equal(assertBacklinksShape(backlinks), backlinks);
+    assert.equal(assertBacklinksShape({ target: 'capabilities/foo', matches: [] }).total, undefined);
+    assert.equal(assertOrphansShape(orphans), orphans);
+    assert.equal(assertOrphansShape({ orphans: [] }).total, undefined);
+    assert.throws(
+      () => assertBacklinksShape({ target: '', total: 0, matches: [] }),
+      /find_backlinks target must be a non-empty string/,
+    );
+    assert.throws(
+      () => assertBacklinksShape({ target: 'capabilities/foo', total: -1, matches: [] }),
+      /find_backlinks total must be a non-negative integer/,
+    );
+    assert.throws(
+      () => assertBacklinksShape({ target: 'capabilities/foo', matches: [{ slug: 'domains/auth', kind: 'domain', title: 'Auth', matchedKeys: [''] }] }),
+      /find_backlinks matches\[0\] has an invalid backlink shape/,
+    );
+    assert.throws(
+      () => assertOrphansShape({ total: -1, orphans: [] }),
+      /find_orphans total must be a non-negative integer/,
+    );
+    assert.throws(
+      () => assertOrphansShape({ orphans: [{ slug: 'capabilities/foo', kind: 'capability' }] }),
+      /find_orphans orphans\[0\] has an invalid orphan shape/,
     );
   });
 

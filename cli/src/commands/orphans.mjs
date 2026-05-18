@@ -4,6 +4,7 @@
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { validateKindList, validateKindValue } from '../lib/kinds.mjs';
+import { assertOrphansShape } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
   parseCsvListFlag,
@@ -53,6 +54,7 @@ export async function runOrphans(args) {
   let result;
   try {
     result = await callMcpTool(vaultRoot, 'find_orphans', toolArgs);
+    assertOrphansShape(result);
   } catch (err) {
     process.stderr.write(
       `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
