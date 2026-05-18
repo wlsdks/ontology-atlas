@@ -2,8 +2,10 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
+  assertCyclesShape,
   assertHealthShape,
   assertMaintenancePlanShape,
+  assertPathShape,
   assertQueryOperation,
   assertWorkspaceBriefShape,
   compileBlockingCounts,
@@ -160,6 +162,46 @@ describe('query-result-contract', () => {
     );
   });
 
+  it('rejects malformed cycles and find_path payloads before CLI output', () => {
+    const cycles = {
+      operation: 'cycles',
+      totalCycles: 1,
+      cycles: [{ id: 'a>b>a', length: 2, nodes: ['a', 'b', 'a'], edges: [{ id: 'a->b' }, { id: 'b->a' }] }],
+    };
+    const path = {
+      found: true,
+      hopCount: 1,
+      hops: ['a', 'b'],
+      edges: [{ from: 'a', to: 'b', via: 'relates' }],
+    };
+
+    assert.equal(assertCyclesShape(cycles), cycles);
+    assert.equal(assertCyclesShape({ operation: 'cycles', cycles: [] }).totalCycles, undefined);
+    assert.equal(assertCyclesShape({ operation: 'cycles', cycles: [{ slugs: ['a', 'b', 'a'] }] }).cycles[0].slugs.length, 3);
+    assert.equal(assertPathShape(path), path);
+    assert.deepEqual(assertPathShape({ found: false }), { found: false });
+    assert.throws(
+      () => assertCyclesShape({ operation: 'cycles', totalCycles: -1, cycles: [] }),
+      /cycles query totalCycles must be a non-negative integer/,
+    );
+    assert.throws(
+      () => assertCyclesShape({ operation: 'cycles', totalCycles: 1, cycles: [{ slugs: ['a'] }] }),
+      /cycles query cycles\[0\] has an invalid cycle shape/,
+    );
+    assert.throws(
+      () => assertPathShape({ found: true, hops: ['a', 'b'], edges: [] }),
+      /find_path response edges length must match hops length/,
+    );
+    assert.throws(
+      () => assertPathShape({ found: true, hopCount: 2, hops: ['a', 'b'], edges: [{ from: 'a', to: 'b', via: 'relates' }] }),
+      /find_path response hopCount must match hops length/,
+    );
+    assert.throws(
+      () => assertPathShape({ found: true, hops: ['a', 'b'], edges: [{ from: 'b', to: 'a', via: 'relates' }] }),
+      /find_path response edges\[0\] has an invalid path-edge shape/,
+    );
+  });
+
   it('blocks compile results with graph issues or unresolved edges', () => {
     assert.deepEqual(compileBlockingCounts({ summary: { issues: 0, unresolvedEdges: 0 } }), {
       issues: 0,
@@ -178,6 +220,7 @@ describe('query-result-contract', () => {
   it('blocks graph query results that represent broken gates', () => {
     assert.equal(cyclesResultExitCode({ totalCycles: 0, cycles: [] }), 0);
     assert.equal(cyclesResultExitCode({ cycles: [] }), 0);
+    assert.equal(cyclesResultExitCode({ cycles: [{ nodes: ['a', 'b', 'a'], edges: [{}, {}] }] }), 1);
     assert.equal(cyclesResultExitCode({ cycles: [{ slugs: ['a', 'b', 'a'] }] }), 1);
     assert.equal(cyclesResultExitCode({}), 1);
     assert.equal(cyclesResultExitCode({ totalCycles: -1, cycles: [] }), 1);

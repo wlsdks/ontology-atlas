@@ -117,6 +117,51 @@ export function assertWorkspaceBriefShape(result) {
   return result;
 }
 
+export function assertCyclesShape(result) {
+  assertQueryOperation(result, 'cycles');
+  if (!Array.isArray(result.cycles)) {
+    throw new Error('cycles query cycles must be an array');
+  }
+  const total = result.totalCycles ?? result.cycles.length;
+  if (!validCount(total)) {
+    throw new Error('cycles query totalCycles must be a non-negative integer when present');
+  }
+  for (let index = 0; index < result.cycles.length; index += 1) {
+    if (!validCycle(result.cycles[index])) {
+      throw new Error(`cycles query cycles[${index}] has an invalid cycle shape`);
+    }
+  }
+  return result;
+}
+
+export function assertPathShape(result) {
+  if (!isPlainObject(result)) {
+    throw new Error('find_path response must be an object');
+  }
+  if (result.found === false) return result;
+  if (!Array.isArray(result.hops) || result.hops.length === 0) {
+    throw new Error('find_path response hops must be a non-empty array when found');
+  }
+  if (result.hops.some((hop) => !hasNonEmptyString(hop))) {
+    throw new Error('find_path response hops must contain non-empty strings');
+  }
+  if (typeof result.hopCount === 'number' && result.hopCount !== result.hops.length - 1) {
+    throw new Error('find_path response hopCount must match hops length');
+  }
+  if (!Array.isArray(result.edges)) {
+    throw new Error('find_path response edges must be an array when found');
+  }
+  if (result.edges.length !== result.hops.length - 1) {
+    throw new Error('find_path response edges length must match hops length');
+  }
+  for (let index = 0; index < result.edges.length; index += 1) {
+    if (!validPathEdge(result.edges[index], result.hops[index], result.hops[index + 1])) {
+      throw new Error(`find_path response edges[${index}] has an invalid path-edge shape`);
+    }
+  }
+  return result;
+}
+
 export function compileResultExitCode(artifact) {
   const counts = compileBlockingCounts(artifact);
   if (!validCount(counts.issues) || !validCount(counts.unresolvedEdges)) return 1;
@@ -225,8 +270,11 @@ function validCountBucket(value) {
 
 function validCycle(cycle) {
   if (!cycle || typeof cycle !== 'object' || Array.isArray(cycle)) return false;
-  if (!Array.isArray(cycle.slugs) || cycle.slugs.length < 2) return false;
-  return cycle.slugs.every((slug) => hasNonEmptyString(slug));
+  const nodes = Array.isArray(cycle.nodes) ? cycle.nodes : cycle.slugs;
+  if (!Array.isArray(nodes) || nodes.length < 2) return false;
+  if (!nodes.every((slug) => hasNonEmptyString(slug))) return false;
+  if (cycle.edges === undefined) return true;
+  return Array.isArray(cycle.edges) && cycle.edges.length === nodes.length - 1;
 }
 
 function validPathEdge(edge, from, to) {

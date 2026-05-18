@@ -2215,6 +2215,35 @@ await test('path --json — disconnected nodes exit non-zero', async () => {
   }
 });
 
+await test('path --json — fails closed on malformed find_path payloads before output', async () => {
+  const root = withVault();
+  const fakeMcp = join(root, 'fake-mcp-path-malformed.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
+      "  if (msg.id === 2) {",
+      "    const payload = { found: true, hopCount: 1, hops: ['a', 'b'], edges: [] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['path', 'a', 'b', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /find_path response edges length must match hops length/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('path — 두 인자 누락 시 usage + exit 1', async () => {
   const r = await run(['path', 'only-one']);
   assert.equal(r.code, 1);
@@ -3014,6 +3043,35 @@ await test('cycles --json — dependency cycles exit non-zero', async () => {
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'cycles');
     assert.equal(data.totalCycles, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('cycles --json — fails closed on malformed cycles payloads before output', async () => {
+  const root = withVault();
+  const fakeMcp = join(root, 'fake-mcp-cycles-malformed.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
+      "  if (msg.id === 2) {",
+      "    const payload = { operation: 'cycles', totalCycles: 1, cycles: [{ slugs: ['a'] }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['cycles', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /cycles query cycles\[0\] has an invalid cycle shape/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

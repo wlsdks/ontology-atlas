@@ -5,7 +5,7 @@
 // 한 줄로 본다.
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import { pathResultExitCode } from '../lib/query-result-contract.mjs';
+import { assertPathShape, pathResultExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
   formatUnknownFlagError,
@@ -47,6 +47,7 @@ export async function runPath(args) {
       to,
       ...(typeof maxHops === 'number' ? { maxHops } : {}),
     });
+    assertPathShape(result);
   } catch (err) {
     process.stderr.write(
       `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,

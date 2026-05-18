@@ -2,7 +2,7 @@
 // MCP `query_ontology({operation: 'cycles'})` thin wrapper.
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import { assertQueryOperation, cyclesResultExitCode } from '../lib/query-result-contract.mjs';
+import { assertCyclesShape, cyclesResultExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
   formatUnknownFlagError,
@@ -42,7 +42,7 @@ export async function runCycles(args) {
       operation: 'cycles',
       maxHops,
     });
-    assertQueryOperation(result, 'cycles');
+    assertCyclesShape(result);
   } catch (err) {
     process.stderr.write(
       `${COLORS.red}error${COLORS.reset}  ${err instanceof Error ? err.message : String(err)}\n`,
@@ -66,7 +66,7 @@ export async function runCycles(args) {
   for (let i = 0; i < cycles.length; i += 1) {
     const c = cycles[i];
     process.stdout.write(`${COLORS.bold}cycle ${i + 1}${COLORS.reset}\n`);
-    const slugs = Array.isArray(c?.slugs) ? c.slugs : [];
+    const slugs = Array.isArray(c?.nodes) ? c.nodes : Array.isArray(c?.slugs) ? c.slugs : [];
     for (let j = 0; j < slugs.length; j += 1) {
       process.stdout.write(`  ${COLORS.yellow}${slugs[j]}${COLORS.reset}\n`);
       if (j < slugs.length - 1) process.stdout.write(`    ${COLORS.dim}↓ depends_on${COLORS.reset}\n`);
