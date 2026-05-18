@@ -143,7 +143,7 @@ runs root-checkout `compile --fix`, fails if canonicalization leaves a docs/onto
 points changed-vault failures at `pnpm docs-vault:build`, and ends successful runs
 with `[dogfood:compile-fix] docs/ontology unchanged`,
 `test:dogfood:args` checks shared dogfood shortcut argument helpers without invoking any gate,
-`test:dogfood:script-refs` checks help text and package script body `pnpm ...` references against root package scripts,
+`test:dogfood:script-refs` checks help text and package script body `pnpm ...` references against root package scripts plus focused wrapper summaries,
 `test:dogfood:compile-fix` checks that idempotence guard without invoking the full dogfood suite,
 `dogfood:health` is the shortest root-checkout fail-closed health JSON gate, `dogfood:brief` is
 the shortest root-checkout first-contact JSON snapshot, `dogfood:growth` is the

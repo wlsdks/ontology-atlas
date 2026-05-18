@@ -4744,7 +4744,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /pnpm test:mcp:verify:timeout/);
     assert.match(verifyUsage(), /Narrow MCP verify timeout\/startup\/help\/empty-vault diagnostics/);
     assert.match(verifyUsage(), /pnpm test:dogfood:args\s+Narrow dogfood shortcut argument helper contract/);
-    assert.match(verifyUsage(), /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference contract/);
+    assert.match(verifyUsage(), /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference \+ focused wrapper summary contract/);
     assert.match(verifyUsage(), /pnpm dogfood:compile\s+Cheap root checkout compile_ontology summary snapshot/);
     assert.match(verifyUsage(), /pnpm dogfood:compile-fix\s+Cheap root checkout compile --fix idempotence gate; changed vaults need pnpm docs-vault:build; success ends with \[dogfood:compile-fix\] docs\/ontology unchanged/);
     assert.match(verifyUsage(), /pnpm test:dogfood:compile-fix\s+Narrow dogfood compile --fix idempotence runner contract/);

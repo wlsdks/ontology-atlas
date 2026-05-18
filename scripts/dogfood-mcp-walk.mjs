@@ -108,7 +108,7 @@ export function dogfoodUsage() {
     "",
     "Focused checks:",
     "  pnpm test:dogfood:args          Shared dogfood shortcut argument helper contract.",
-    "  pnpm test:dogfood:script-refs   Shared help/package-script reference contract.",
+    "  pnpm test:dogfood:script-refs   Shared help/package-script reference + focused wrapper summary contract.",
     "  pnpm test:dogfood:compile-fix   Narrow dogfood compile --fix idempotence runner contract.",
     "  pnpm test:dogfood:status        Narrow dogfood status shortcut runner contract.",
     "  pnpm test:mcp:maintenance       Narrow maintenance_plan filter/cursor/resume/work-queue formatter gates.",

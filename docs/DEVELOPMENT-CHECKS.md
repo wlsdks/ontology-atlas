@@ -136,7 +136,8 @@ suite. `pnpm test:dogfood:args` checks the shared pnpm separator and nearest
 `--help` hint helper without invoking any dogfood gate. `pnpm
 test:dogfood:script-refs` checks that help text and package script body
 `pnpm ...` references still resolve to root package scripts, and that focused
-Node test wrappers fail when a pattern matches 0 tests.
+Node test wrappers fail when a pattern matches 0 tests, print matched counts
+for failed focused runs, and split setup/import failures into `setupFailures=N`.
 
 `pnpm dogfood:maintenance` snapshots the dogfood vault `maintenance_plan` JSON
 queue without running the full status preflight. `pnpm dogfood:status` runs the

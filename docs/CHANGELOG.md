@@ -39,6 +39,9 @@ can inspect ontology write candidates without raw JSON-RPC.
   test failures, so scoped runs show the actual number of pattern-matched tests
   without manual skip-count math. File setup/import failures are split out as
   `setupFailures=N` instead of inflating `matched`.
+- **Focused wrapper discovery** — dogfood and MCP verify help now describe
+  `pnpm test:dogfood:script-refs` as the focused wrapper summary contract too,
+  not only the help/package-script reference check.
 
 ## 2026-05-18 — MCP first-contact and packed-smoke hardening
 
