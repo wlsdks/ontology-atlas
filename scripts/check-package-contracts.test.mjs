@@ -1566,6 +1566,7 @@ describe('package contract helpers', () => {
 
   it('keeps the root README dogfood snapshot aligned with the vault census', () => {
     const readme = readFileSync('README.md', 'utf-8');
+    const agentsGuide = readFileSync('AGENTS.md', 'utf-8');
     const dogfoodRow = readme.split('| **Dogfooding** |')[1]?.split('\n')[0] ?? '';
     const helpfulCommands = readme.split('Helpful vault commands:')[1]?.split('### Vault tooling')[0] ?? '';
     const census = dogfoodVaultCensus(process.cwd());
@@ -1576,6 +1577,19 @@ describe('package contract helpers', () => {
     assert.match(dogfoodRow, new RegExp(`elements ${census.byKind.elements}`));
     assert.match(dogfoodRow, new RegExp(`project ${census.byKind.project}`));
     assert.match(dogfoodRow, new RegExp(`vault-readme ${census.byKind['vault-readme']}`));
+    assert.match(
+      agentsGuide,
+      new RegExp(
+        `${census.total} nodes \\(capability ${census.byKind.capabilities} · domain ${census.byKind.domains} · element ${census.byKind.elements} · project ${census.byKind.project} · vault-readme ${census.byKind['vault-readme']}\\)`,
+      ),
+    );
+    assert.match(agentsGuide, new RegExp(`dogfood — ${census.total} nodes`));
+    assert.match(
+      agentsGuide,
+      new RegExp(
+        `${census.total} 노드 \\(capability ${census.byKind.capabilities} · domain ${census.byKind.domains} · element ${census.byKind.elements} · project ${census.byKind.project} · vault-readme ${census.byKind['vault-readme']}\\)`,
+      ),
+    );
     assert.match(helpfulCommands, /pnpm dogfood:status/);
     assert.match(helpfulCommands, /pnpm dogfood:compile-fix -- --help/);
     assert.match(helpfulCommands, /pnpm test:dogfood:args/);
