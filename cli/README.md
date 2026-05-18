@@ -119,7 +119,7 @@ without running unrelated CLI routes. `dogfood:compile`
 is the shortest root-checkout compiler summary JSON snapshot, `dogfood:health`
 is the shortest root-checkout fail-closed health JSON gate, `dogfood:brief` is
 the shortest root-checkout first-contact JSON snapshot, `dogfood:status` always
-runs both human-readable status outputs before escalating, `test:dogfood:status`
+runs health + workspace-brief and preserves the first failing exit before escalating, `test:dogfood:status`
 checks that always-run shortcut contract without the full dogfood suite, `dogfood:verify` is
 the full root-checkout dogfood vault gate, `dogfood:test` is the full dogfood
 helper regression suite to use only when focused helper checks are not enough, and

@@ -686,12 +686,13 @@ describe('package contract helpers', () => {
     assert.match(section, /`dogfood:compile` prints the dogfood vault `compile_ontology` summary JSON\s+snapshot/);
     assert.match(section, /`dogfood:health` prints the dogfood vault fail-closed `health` JSON gate/);
     assert.match(section, /`dogfood:brief` prints the dogfood vault `workspace_brief` JSON snapshot/);
-    assert.match(section, /`dogfood:status` always runs their human-readable status output together before escalating/);
+    assert.match(section, /`dogfood:status` always runs health \+ workspace-brief and preserves the first failing exit before escalating/);
     assert.match(section, /`test:dogfood:status` checks that always-run shortcut contract without the full dogfood suite/);
     assert.match(section, /`pnpm dogfood:compile` is the shortest dogfood vault compiler snapshot/);
     assert.match(section, /`pnpm dogfood:health` is the shortest dogfood vault health gate/);
     assert.match(section, /`pnpm dogfood:brief` is the shortest dogfood vault first-contact snapshot/);
-    assert.match(section, /`pnpm dogfood:status` for the cheap human-readable health \+ first-contact pair before\s+escalating/);
+    assert.match(section, /`pnpm dogfood:status` for the cheap human-readable health \+ first-contact pair/);
+    assert.match(section, /it still prints the brief after health fails and preserves the first failing exit/);
     assert.match(section, /Use\s+`pnpm dogfood:verify` for the full installed-style dogfood vault gate/);
     assert.match(section, /`pnpm dogfood:test` only when the dogfood helper itself needs the full\s+regression suite beyond the focused `test:mcp:dogfood` gate/);
     assert.match(readme, /invalid timeout values fail before the server\s+starts and print\s+the received value plus a concrete retry example/i);
@@ -1249,7 +1250,7 @@ describe('package contract helpers', () => {
     assert.match(section, /`dogfood:compile`\s+is the shortest root-checkout compiler summary JSON snapshot/);
     assert.match(section, /`dogfood:health`\s+is the shortest root-checkout fail-closed health JSON gate/);
     assert.match(section, /`dogfood:brief`\s+is\s+the shortest root-checkout first-contact JSON snapshot/);
-    assert.match(section, /`dogfood:status` always\s+runs both human-readable status outputs before escalating/);
+    assert.match(section, /`dogfood:status` always\s+runs health \+ workspace-brief and preserves the first failing exit before escalating/);
     assert.match(section, /`test:dogfood:status`\s+checks that always-run shortcut contract without the full dogfood suite/);
     assert.match(section, /`dogfood:verify` is\s+the full root-checkout dogfood vault gate/);
     assert.match(section, /`dogfood:test` is the full dogfood\s+helper regression suite to use only when focused helper checks are not enough/);
@@ -1458,6 +1459,7 @@ describe('package contract helpers', () => {
   it('keeps the root README dogfood snapshot aligned with the vault census', () => {
     const readme = readFileSync('README.md', 'utf-8');
     const dogfoodRow = readme.split('| **Dogfooding** |')[1]?.split('\n')[0] ?? '';
+    const helpfulCommands = readme.split('Helpful vault commands:')[1]?.split('### Vault tooling')[0] ?? '';
     const census = dogfoodVaultCensus(process.cwd());
 
     assert.match(dogfoodRow, new RegExp(`\\*\\*${census.total} nodes\\*\\*`));
@@ -1466,6 +1468,8 @@ describe('package contract helpers', () => {
     assert.match(dogfoodRow, new RegExp(`elements ${census.byKind.elements}`));
     assert.match(dogfoodRow, new RegExp(`project ${census.byKind.project}`));
     assert.match(dogfoodRow, new RegExp(`vault-readme ${census.byKind['vault-readme']}`));
+    assert.match(helpfulCommands, /pnpm dogfood:status/);
+    assert.match(helpfulCommands, /pnpm test:dogfood:status/);
   });
 
   it('keeps current dogfood vault count docs aligned with the vault census', () => {

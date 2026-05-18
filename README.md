@@ -210,6 +210,8 @@ pnpm vault:audit
 pnpm dogfood:compile
 pnpm dogfood:health
 pnpm dogfood:brief
+pnpm dogfood:status
+pnpm test:dogfood:status
 ```
 
 ### Vault tooling
