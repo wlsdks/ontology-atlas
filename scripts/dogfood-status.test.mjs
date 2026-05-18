@@ -125,6 +125,26 @@ describe('dogfood status shortcut', () => {
     assert.equal(calls.length, 2);
   });
 
+  it('prints the verify follow-up hint when only workspace-brief fails', () => {
+    const calls = [];
+    const output = [];
+    const diagnostics = [];
+    const exitCode = runDogfoodStatus({
+      stdout: { write: (text) => output.push(text) },
+      stderr: { write: (text) => diagnostics.push(text) },
+      spawn(_command, args) {
+        calls.push(args);
+        return { status: calls.length === 1 ? 0 : 2 };
+      },
+    });
+
+    assert.equal(exitCode, 2);
+    assert.deepEqual(output, ['[dogfood:status] health:0 · workspace-brief:2\n']);
+    assert.deepEqual(diagnostics, [
+      '[dogfood:status] run pnpm dogfood:verify for the full installed-style dogfood vault gate\n',
+    ]);
+  });
+
   it('treats spawn errors and signals as failures while still running both checks', () => {
     const calls = [];
     const diagnostics = [];
