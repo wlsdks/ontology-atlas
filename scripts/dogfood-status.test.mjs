@@ -93,6 +93,23 @@ describe('dogfood status shortcut', () => {
     ]);
   });
 
+  it('does not print the verify follow-up hint when both checks pass', () => {
+    const output = [];
+    const diagnostics = [];
+    const exitCode = runDogfoodStatus({
+      argv: [],
+      stdout: { write: (text) => output.push(text) },
+      stderr: { write: (text) => diagnostics.push(text) },
+      spawn() {
+        return { status: 0 };
+      },
+    });
+
+    assert.equal(exitCode, 0);
+    assert.deepEqual(output, ['[dogfood:status] health:0 · workspace-brief:0\n']);
+    assert.deepEqual(diagnostics, []);
+  });
+
   it('returns the workspace-brief failure when health passes first', () => {
     const calls = [];
     const exitCode = runDogfoodStatus({
