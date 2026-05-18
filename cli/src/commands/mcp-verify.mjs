@@ -256,7 +256,7 @@ function printUsage(output = process.stderr) {
       `  pnpm test:cli:mcp-call          CLI MCP wrapper parser/spawn/structuredContent contract checks.\n` +
       `  pnpm integration:cli:mcp-verify    Installed CLI mcp-verify wrapper flow/help/failure checks.\n` +
       `  pnpm dogfood:compile              Root checkout dogfood vault compile_ontology summary.\n` +
-      `  pnpm dogfood:compile-fix          Root checkout dogfood vault compile --fix idempotence gate; success ends with [dogfood:compile-fix] docs/ontology unchanged.\n` +
+      `  pnpm dogfood:compile-fix          Root checkout dogfood vault compile --fix idempotence gate; changed vaults need pnpm docs-vault:build; success ends with [dogfood:compile-fix] docs/ontology unchanged.\n` +
       `  pnpm test:dogfood:args            Narrow dogfood shortcut argument helper contract.\n` +
       `  pnpm test:dogfood:script-refs     Narrow help/package-script reference contract.\n` +
       `  pnpm test:dogfood:compile-fix     Narrow dogfood compile --fix idempotence runner contract.\n` +

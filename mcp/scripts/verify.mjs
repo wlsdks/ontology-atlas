@@ -3590,7 +3590,7 @@ export function verifyUsage() {
     '  pnpm test:dogfood:args          Narrow dogfood shortcut argument helper contract.\n' +
     '  pnpm test:dogfood:script-refs   Narrow help/package-script reference contract.\n' +
     '  pnpm dogfood:compile            Cheap root checkout compile_ontology summary snapshot.\n' +
-    '  pnpm dogfood:compile-fix        Cheap root checkout compile --fix idempotence gate; success ends with [dogfood:compile-fix] docs/ontology unchanged.\n' +
+    '  pnpm dogfood:compile-fix        Cheap root checkout compile --fix idempotence gate; changed vaults need pnpm docs-vault:build; success ends with [dogfood:compile-fix] docs/ontology unchanged.\n' +
     '  pnpm test:dogfood:compile-fix   Narrow dogfood compile --fix idempotence runner contract.\n' +
     '  pnpm dogfood:health             Cheap root checkout health gate.\n' +
     '  pnpm dogfood:brief              Cheap root checkout workspace_brief snapshot.\n' +

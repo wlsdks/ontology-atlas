@@ -472,7 +472,7 @@ describe('package contract helpers', () => {
     assert.match(result.stdout, /pnpm dogfood:compile\s+Root checkout dogfood vault compile_ontology summary/);
     assert.match(
       result.stdout,
-      /pnpm dogfood:compile-fix\s+Root checkout dogfood vault compile --fix idempotence gate; success ends with \[dogfood:compile-fix\] docs\/ontology unchanged/,
+      /pnpm dogfood:compile-fix\s+Root checkout dogfood vault compile --fix idempotence gate; changed vaults need pnpm docs-vault:build; success ends with \[dogfood:compile-fix\] docs\/ontology unchanged/,
     );
     assert.match(result.stdout, /pnpm test:dogfood:args\s+Narrow dogfood shortcut argument helper contract/);
     assert.match(result.stdout, /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference contract/);
@@ -2170,7 +2170,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /pnpm test:dogfood:args\\s\+Narrow dogfood shortcut argument helper contract/);
     assert.match(smoke, /pnpm test:dogfood:script-refs\\s\+Narrow help\\\/package-script reference contract/);
     assert.match(smoke, /pnpm dogfood:compile\\s\+Cheap root checkout compile_ontology summary snapshot/);
-    assert.match(smoke, /pnpm dogfood:compile-fix\\s\+Cheap root checkout compile --fix idempotence gate; success ends with \\\[dogfood:compile-fix\\\] docs\\\/ontology unchanged/);
+    assert.match(smoke, /pnpm dogfood:compile-fix\\s\+Cheap root checkout compile --fix idempotence gate; changed vaults need pnpm docs-vault:build; success ends with \\\[dogfood:compile-fix\\\] docs\\\/ontology unchanged/);
     assert.match(smoke, /pnpm test:dogfood:compile-fix\\s\+Narrow dogfood compile --fix idempotence runner contract/);
     assert.match(smoke, /pnpm dogfood:health\\s\+Cheap root checkout health gate/);
     assert.match(smoke, /pnpm dogfood:brief\\s\+Cheap root checkout workspace_brief snapshot/);
@@ -2281,7 +2281,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /pnpm test:cli:mcp-call\\s\+CLI MCP wrapper parser\\\/spawn\\\/structuredContent contract checks/);
     assert.match(smoke, /pnpm integration:cli:mcp-verify/);
     assert.match(smoke, /pnpm dogfood:compile\\s\+Root checkout dogfood vault compile_ontology summary/);
-    assert.match(smoke, /pnpm dogfood:compile-fix\\s\+Root checkout dogfood vault compile --fix idempotence gate; success ends with \\\[dogfood:compile-fix\\\] docs\\\/ontology unchanged/);
+    assert.match(smoke, /pnpm dogfood:compile-fix\\s\+Root checkout dogfood vault compile --fix idempotence gate; changed vaults need pnpm docs-vault:build; success ends with \\\[dogfood:compile-fix\\\] docs\\\/ontology unchanged/);
     assert.match(smoke, /pnpm test:dogfood:script-refs\\s\+Narrow help\\\/package-script reference contract/);
     assert.match(smoke, /pnpm test:dogfood:compile-fix\\s\+Narrow dogfood compile --fix idempotence runner contract/);
     assert.match(smoke, /pnpm dogfood:health\\s\+Root checkout dogfood vault health gate/);

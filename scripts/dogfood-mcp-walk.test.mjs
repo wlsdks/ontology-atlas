@@ -4114,7 +4114,7 @@ describe("rpc response completion helpers", () => {
     assert.match(usage, /pnpm dogfood:compile\s+Fast compile_ontology summary over docs\/ontology/);
     assert.match(
       usage,
-      /pnpm dogfood:compile-fix\s+compile --fix idempotence gate over docs\/ontology; success ends with \[dogfood:compile-fix\] docs\/ontology unchanged/,
+      /pnpm dogfood:compile-fix\s+compile --fix idempotence gate over docs\/ontology; changed vaults need pnpm docs-vault:build; success ends with \[dogfood:compile-fix\] docs\/ontology unchanged/,
     );
     assert.match(usage, /pnpm dogfood:health\s+Fail-closed health JSON gate over docs\/ontology/);
     assert.match(usage, /pnpm dogfood:brief\s+First-contact workspace_brief JSON snapshot over docs\/ontology/);

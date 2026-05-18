@@ -498,7 +498,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /pnpm dogfood:compile\s+Root checkout dogfood vault compile_ontology summary/);
   assert.match(
     clean,
-    /pnpm dogfood:compile-fix\s+Root checkout dogfood vault compile --fix idempotence gate; success ends with \[dogfood:compile-fix\] docs\/ontology unchanged/,
+    /pnpm dogfood:compile-fix\s+Root checkout dogfood vault compile --fix idempotence gate; changed vaults need pnpm docs-vault:build; success ends with \[dogfood:compile-fix\] docs\/ontology unchanged/,
   );
   assert.match(clean, /pnpm test:dogfood:args\s+Narrow dogfood shortcut argument helper contract/);
   assert.match(clean, /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference contract/);
