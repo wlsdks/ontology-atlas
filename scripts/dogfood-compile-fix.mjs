@@ -35,7 +35,8 @@ export function runDogfoodCompileFix({
     stderr.write(
       '[dogfood:compile-fix] compile --fix changed docs/ontology; ' +
       'review and commit the canonicalized vault files.\n' +
-      `[dogfood:compile-fix] changed files: ${files}\n`,
+      `[dogfood:compile-fix] changed files: ${files}\n` +
+      '[dogfood:compile-fix] run pnpm docs-vault:build, then rerun pnpm dogfood:compile-fix.\n',
     );
     return 1;
   }

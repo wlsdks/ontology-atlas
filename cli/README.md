@@ -136,7 +136,8 @@ value cannot leak the following option value into the target list.
 without running unrelated CLI routes. `integration:cli:growth` narrows the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument contracts. `dogfood:compile`
 is the shortest root-checkout compiler summary JSON snapshot, `dogfood:compile-fix`
 runs root-checkout `compile --fix`, fails if canonicalization leaves a docs/ontology diff,
-and ends successful runs with `[dogfood:compile-fix] docs/ontology unchanged`,
+points changed-vault failures at `pnpm docs-vault:build`, and ends successful runs
+with `[dogfood:compile-fix] docs/ontology unchanged`,
 `test:dogfood:args` checks shared dogfood shortcut argument helpers without invoking any gate,
 `test:dogfood:script-refs` checks help text and package script body `pnpm ...` references against root package scripts,
 `test:dogfood:compile-fix` checks that idempotence guard without invoking the full dogfood suite,

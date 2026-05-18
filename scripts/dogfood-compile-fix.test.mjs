@@ -141,7 +141,8 @@ describe('dogfood compile-fix shortcut', () => {
     assert.equal(exitCode, 1);
     assert.deepEqual(diagnostics, [
       '[dogfood:compile-fix] compile --fix changed docs/ontology; review and commit the canonicalized vault files.\n' +
-      '[dogfood:compile-fix] changed files: docs/ontology/a.md\n',
+      '[dogfood:compile-fix] changed files: docs/ontology/a.md\n' +
+      '[dogfood:compile-fix] run pnpm docs-vault:build, then rerun pnpm dogfood:compile-fix.\n',
     ]);
   });
 
