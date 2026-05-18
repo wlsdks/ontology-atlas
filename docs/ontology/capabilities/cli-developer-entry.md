@@ -41,7 +41,7 @@ post-publish architectural audit 발견 — *위험한-그러나-필수* 작업 
 
 | Command | What it does |
 |---|---|
-| `oh-my-ontology backlinks <slug>` | MCP `find_backlinks` — every node referencing the target. backlink-match row shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2 로 fail-closed 한다. positional vault 와 `--vault` 중복 / 빈 `--vault` / 초과 positional 을 MCP 호출 전에 거부한다. |
+| `oh-my-ontology backlinks <slug>` | MCP `find_backlinks` — every node referencing the target. human output 은 referrer slug 옆에 title 을 함께 보여줘 rename / merge / delete 전 backlink 의미를 추가 조회 없이 읽을 수 있다. backlink-match row shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2 로 fail-closed 한다. positional vault 와 `--vault` 중복 / 빈 `--vault` / 초과 positional 을 MCP 호출 전에 거부한다. |
 | `oh-my-ontology overview [vault]` | MCP `query_ontology(overview)` — graph count, kind/domain/relation bucket, hub row dashboard. graph / count bucket / hub row shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2 로 fail-closed 한다. |
 | `oh-my-ontology hubs [vault]` | MCP `query_ontology(centrality)` — PageRank / bridge / authority / hub ranking. ranking row shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2 로 fail-closed 한다. |
 | `oh-my-ontology blast-radius <slug>` | MCP `query_ontology(blast_radius)` — refactor-safety impact view. summary count / affected node page / edge page shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2 로 fail-closed 한다. |

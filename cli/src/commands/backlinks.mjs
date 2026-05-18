@@ -59,9 +59,10 @@ export async function runBacklinks(args) {
   );
   for (const bl of matches) {
     const keys = Array.isArray(bl.matchedKeys) ? bl.matchedKeys.join(', ') : '';
+    const titleText = bl.title && bl.title !== bl.slug ? ` ${COLORS.dim}— ${bl.title}${COLORS.reset}` : '';
     process.stdout.write(
       `  ${COLORS.cyan}${bl.kind ?? '?'}${COLORS.reset}  ` +
-        `${bl.slug}` +
+        `${bl.slug}${titleText}` +
         (keys ? ` ${COLORS.dim}(${keys})${COLORS.reset}` : '') +
         `\n`,
     );

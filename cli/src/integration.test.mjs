@@ -2170,8 +2170,8 @@ await test('backlinks — capabilities/foo 의 backlinks (bar relates + auth cap
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /backlink/);
-    assert.match(clean, /capabilities\/bar/);
-    assert.match(clean, /domains\/auth/);
+    assert.match(clean, /capabilities\/bar\s+— Bar/);
+    assert.match(clean, /domains\/auth\s+— Auth/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
