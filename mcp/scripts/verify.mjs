@@ -1876,7 +1876,10 @@ export function toolsListSchemaFailure(tools) {
   if (!/concepts\[n\]/.test(addConceptsTool?.description || '')) {
     return 'add_concepts description missing row label guidance';
   }
-  if (!/every unknown field/.test(addConceptsTool?.description || '') || !/Received fields/.test(addConceptsTool?.description || '')) {
+  if (!/single unknown-field rows include `receivedField` plus one-row `unknownFields`/.test(addConceptsTool?.description || '')) {
+    return 'add_concepts description missing single-field repair guidance';
+  }
+  if (!/multi unknown-field rows report every unknown field/.test(addConceptsTool?.description || '') || !/Received fields/.test(addConceptsTool?.description || '')) {
     return 'add_concepts description missing multi-field received fields guidance';
   }
   if (!/duplicate input slugs/.test(addConceptsTool?.description || '') || !/first-seen `concepts\[m\]`/.test(addConceptsTool?.description || '')) {
@@ -1986,7 +1989,10 @@ export function toolsListSchemaFailure(tools) {
   if (!/relations\[n\]/.test(addRelationsTool?.description || '')) {
     return 'add_relations description missing row label guidance';
   }
-  if (!/every unknown field/.test(addRelationsTool?.description || '') || !/Received fields/.test(addRelationsTool?.description || '')) {
+  if (!/single unknown-field rows include `receivedField` plus one-row `unknownFields`/.test(addRelationsTool?.description || '')) {
+    return 'add_relations description missing single-field repair guidance';
+  }
+  if (!/multi unknown-field rows report every unknown field/.test(addRelationsTool?.description || '') || !/Received fields/.test(addRelationsTool?.description || '')) {
     return 'add_relations description missing multi-field received fields guidance';
   }
   if (!/closest-value hint/.test(addRelationsTool?.description || '')) {

@@ -589,18 +589,20 @@ describe('package contract helpers', () => {
     const addConceptsRow = readme.split('| `add_concepts` |')[1]?.split('\n')[0] ?? '';
     const addRelationRow = readme.split('| `add_relation` |')[1]?.split('\n')[0] ?? '';
     const addRelationsRow = readme.split('| `add_relations` |')[1]?.split('\n')[0] ?? '';
-    assert.match(addConceptsFeature, /non-object row shape \/ unknown row field errors are isolated as `\{ok:false, error\}` rows, unknown-field rows report every offending field/);
-    assert.match(addRelationsFeature, /non-object row shape \/ unknown row field errors are isolated as `\{ok:false, error\}` rows and unknown-field rows report every offending field/);
+    assert.match(addConceptsFeature, /non-object row shape \/ unknown row field errors are isolated as `\{ok:false, error\}` rows, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every offending field/);
+    assert.match(addRelationsFeature, /non-object row shape \/ unknown row field errors are isolated as `\{ok:false, error\}` rows, single unknown-field rows include `receivedField` plus one-row `unknownFields`, and multi unknown-field rows report every offending field/);
     assert.match(addRelationFeature, /type enum:/, 'FEATURES must label add_relation write relation enum values');
     assert.match(addRelationRow, /`type`:/, 'MCP README must label add_relation write relation enum values');
     assert.match(addRelationsRow, /`type`:/, 'MCP README must label add_relations write relation enum values');
     assert.match(addConceptsRow, /`concepts\[n\]` row label/);
     assert.match(addConceptsRow, /unknown row fields surface/);
-    assert.match(addConceptsRow, /report every unknown field with nearest hints and `Received fields: \.\.\.`/);
+    assert.match(addConceptsRow, /Single unknown-field rows include `receivedField` plus one-row `unknownFields`/);
+    assert.match(addConceptsRow, /multi unknown-field rows report every unknown field with nearest hints and `Received fields: \.\.\.`/);
     assert.match(addRelationsRow, /`relations\[n\]` row label/);
     assert.match(addRelationsRow, /closest-value hint/);
     assert.match(addRelationsRow, /unknown row fields surface/);
-    assert.match(addRelationsRow, /report every unknown field with nearest hints and `Received fields: \.\.\.`/);
+    assert.match(addRelationsRow, /Single unknown-field rows include `receivedField` plus one-row `unknownFields`/);
+    assert.match(addRelationsRow, /multi unknown-field rows report every unknown field with nearest hints and `Received fields: \.\.\.`/);
     for (const value of WRITE_RELATION_TYPE_VALUES) {
       assert.match(addRelationFeature, new RegExp(`\`${value}\``), `FEATURES documents add_relation type ${value}`);
       assert.match(addRelationRow, new RegExp(`\`${value}\``), `MCP README documents add_relation type ${value}`);
@@ -1168,7 +1170,8 @@ describe('package contract helpers', () => {
     assert.match(verifySection, /action `score`/);
     assert.match(verifySection, /executable `proposedAction`/);
     assert.match(verifySection, /current-page next action pointer guidance/);
-    assert.match(verifySection, /unknown-field rows report every offending field with nearest hints and `Received fields: \.\.\.`/);
+    assert.match(verifySection, /single unknown-field rows include `receivedField` plus one-row `unknownFields`/);
+    assert.match(verifySection, /multi unknown-field rows report every offending field with nearest hints and `Received fields: \.\.\.`/);
     assert.match(verifySection, /`concepts\[n\]` \/ `relations\[n\]` error labels/);
     assert.match(verifySection, /calls destructive dry-runs for `rename_concept` \/ `merge_concepts` \/ `delete_concept`/);
     assert.match(verifySection, /previews stay non-writing and do not include `changed` or `postWriteMaintenance`/);
@@ -1868,10 +1871,11 @@ describe('package contract helpers', () => {
     assert.match(doc, /`additionalProperties:false`, tool annotations, graph-query enum,\s+health tuning option/);
     assert.match(doc, /maintenance next pointer description drift/);
     assert.match(doc, /row-label guidance/);
-    assert.match(doc, /unknown-field row 의 모든\s+offending field \/ `Received fields: \.\.\.` 안내/);
+    assert.match(doc, /단일 unknown-field row 의\s+`receivedField` \+ 1-row `unknownFields` repair 안내/);
+    assert.match(doc, /multi unknown-field row 의 모든\s+offending field \/ `Received fields: \.\.\.` 안내/);
     assert.match(doc, /`add_concepts` duplicate slug\s+first-seen 안내/);
     assert.match(doc, /write row labels: pass/);
-    assert.match(doc, /multi-field 복구 안내가 살아 있는지 확인/);
+    assert.match(doc, /single\/multi-field 복구 안내가 살아 있는지 확인/);
     assert.match(doc, /schema gate 도 같은 summary helper 를 공유/);
     assert.match(doc, /strict arguments \+ annotations \+ graph-query enums \+ graph kind enums\/descriptions \+ write relation enums\s+\+ health tuning \+ post-write maintenance schema/);
     assert.match(doc, /batch repair 안내도\s+같은 gate 에 포함/);

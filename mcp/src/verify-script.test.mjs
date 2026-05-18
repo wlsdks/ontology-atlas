@@ -732,7 +732,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_concepts',
         description:
-          `Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later \`concepts[n]\` row plus first-seen \`concepts[m]\`, and return ${postWriteDescription}.`,
+          `Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, multi unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later \`concepts[n]\` row plus first-seen \`concepts[m]\`, and return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['concepts'],
@@ -792,7 +792,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_relations',
         description:
-          `Batch writes isolate non-object row shape, unknown type with closest-value hint, and unknown row fields as ok:false rows with relations[n] labels and unknown-field rows report every unknown field with nearest hints and Received fields and return ${postWriteDescription}.`,
+          `Batch writes isolate non-object row shape, unknown type with closest-value hint, and unknown row fields as ok:false rows with relations[n] labels, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, and multi unknown-field rows report every unknown field with nearest hints and Received fields and return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['relations'],
@@ -3744,6 +3744,26 @@ describe('verify.mjs first-contact gates', () => {
           description: 'Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
         },
       ]),
+      'add_concepts description missing single-field repair guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'add_concepts'),
+        {
+          ...tools.find((tool) => tool.name === 'add_concepts'),
+          description: 'Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, multi unknown-field rows report every unknown field with nearest hints and Received fields, and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+        },
+      ]),
+      'add_concepts description missing single-field repair guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'add_concepts'),
+        {
+          ...tools.find((tool) => tool.name === 'add_concepts'),
+          description: 'Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include `receivedField` plus one-row `unknownFields`, unknown-field rows report every unknown field with nearest hints and Received fields, and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+        },
+      ]),
       'add_concepts description missing multi-field received fields guidance',
     );
     assert.equal(
@@ -3751,7 +3771,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_concepts'),
         {
           ...tools.find((tool) => tool.name === 'add_concepts'),
-          description: 'Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, unknown-field rows report every unknown field with nearest hints and Received fields, and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+          description: 'Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every unknown field with nearest hints and Received fields, and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
         },
       ]),
       'add_concepts description missing duplicate row guidance',
@@ -3904,6 +3924,26 @@ describe('verify.mjs first-contact gates', () => {
           description: 'Batch writes isolate non-object row shape, unknown type with closest-value hint, and unknown row fields as ok:false rows with relations[n] labels and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
         },
       ]),
+      'add_relations description missing single-field repair guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'add_relations'),
+        {
+          ...tools.find((tool) => tool.name === 'add_relations'),
+          description: 'Batch writes isolate non-object row shape, unknown type with closest-value hint, and unknown row fields as ok:false rows with relations[n] labels, multi unknown-field rows report every unknown field with nearest hints and Received fields, and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+        },
+      ]),
+      'add_relations description missing single-field repair guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'add_relations'),
+        {
+          ...tools.find((tool) => tool.name === 'add_relations'),
+          description: 'Batch writes isolate non-object row shape, unknown type with closest-value hint, and unknown row fields as ok:false rows with relations[n] labels, single unknown-field rows include `receivedField` plus one-row `unknownFields`, and unknown-field rows report every unknown field with nearest hints and Received fields. Return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+        },
+      ]),
       'add_relations description missing multi-field received fields guidance',
     );
     assert.equal(
@@ -3911,7 +3951,7 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_relations'),
         {
           ...tools.find((tool) => tool.name === 'add_relations'),
-          description: 'Batch writes isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels, and unknown-field rows report every unknown field with nearest hints and Received fields. Return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+          description: 'Batch writes isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels, single unknown-field rows include `receivedField` plus one-row `unknownFields`, and multi unknown-field rows report every unknown field with nearest hints and Received fields. Return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
         },
       ]),
       'add_relations description missing closest-value type guidance',
