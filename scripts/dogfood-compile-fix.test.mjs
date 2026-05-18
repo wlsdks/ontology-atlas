@@ -89,6 +89,23 @@ describe('dogfood compile-fix shortcut', () => {
     assert.deepEqual(output, ['[dogfood:compile-fix] docs/ontology unchanged\n']);
   });
 
+  it('does not print the unchanged summary when stdio is not inherited', () => {
+    const output = [];
+    const calls = [];
+    const exitCode = runDogfoodCompileFix({
+      stdio: 'pipe',
+      stdout: { write: (text) => output.push(text) },
+      spawn(command, args) {
+        calls.push({ command, args });
+        return { status: 0, stdout: '' };
+      },
+    });
+
+    assert.equal(exitCode, 0);
+    assert.equal(calls.length, 3);
+    assert.deepEqual(output, []);
+  });
+
   it('skips the post-fix diff when compile --fix fails', () => {
     const calls = [];
     const exitCode = runDogfoodCompileFix({
