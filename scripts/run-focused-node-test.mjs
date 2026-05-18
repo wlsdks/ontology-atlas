@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { readNodeTestNamePattern } from './lib/test-name-pattern.mjs';
 
 const NODE_TEST_OPTIONS_WITH_VALUE = new Set([
+  '--test-concurrency',
   '--test-name-pattern',
   '--test-reporter',
   '--test-reporter-destination',

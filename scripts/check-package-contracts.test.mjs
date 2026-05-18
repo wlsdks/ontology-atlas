@@ -358,7 +358,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /signal-killed `node --test`\s+subprocess reports the signal plus target path/);
     assert.match(checksDoc, /wrapper also requires an\s+explicit pattern/);
     assert.match(checksDoc, /at least one test target/);
-    assert.match(checksDoc, /Node test option values such as `--test-timeout 1000`\s+are not counted as targets/);
+    assert.match(checksDoc, /Node test option values such as `--test-concurrency 1`\s+or `--test-timeout 1000` are not counted as targets/);
     assert.match(checksDoc, /`pnpm dogfood:status` runs the cheap human-readable health \+ workspace-brief\s+gates together/);
     assert.match(checksDoc, /still prints workspace-brief when health fails, then preserves\s+the first failing exit code/);
     assert.match(checksDoc, /Use `pnpm dogfood:compile-fix -- --help` \/ `pnpm dogfood:status -- --help`/);
@@ -819,7 +819,7 @@ describe('package contract helpers', () => {
     assert.match(section, /typoed patterns fail when they match 0\s+tests instead of silently passing as all skipped/);
     assert.match(section, /signal-killed `node --test`\s+subprocesses report the signal plus target path/);
     assert.match(section, /wrapper requires an\s+explicit pattern and at least one test target/);
-    assert.match(section, /Node test option values such as `--test-timeout 1000` are\s+not counted as targets/);
+    assert.match(section, /Node test option values such as `--test-concurrency 1`\s+or `--test-timeout 1000` are\s+not counted as targets/);
   });
 
   it('keeps the MCP verify README aligned with first-contact census gates', () => {
@@ -1354,7 +1354,7 @@ describe('package contract helpers', () => {
     assert.match(section, /typoed\s+patterns fail when they match 0\s+tests instead of silently passing as all skipped/);
     assert.match(section, /signal-killed `node --test`\s+subprocesses report the signal plus target path/);
     assert.match(section, /wrapper requires an\s+explicit pattern and at least one test target/);
-    assert.match(section, /Node test option values such as `--test-timeout 1000` are\s+not counted as targets/);
+    assert.match(section, /Node test option values such as `--test-concurrency 1`\s+or `--test-timeout 1000` are\s+not counted as targets/);
     assert.match(section, /`integration:cli:compile`\s+narrows CLI compile \/ `--fix` canonicalization contracts/);
     assert.match(section, /`dogfood:compile`\s+is the shortest root-checkout compiler summary JSON snapshot/);
     assert.match(section, /`dogfood:compile-fix`\s+runs root-checkout `compile --fix` and fails if canonicalization leaves a docs\/ontology diff/);
@@ -2320,7 +2320,7 @@ describe('package contract helpers', () => {
     assert.match(regressionSection, /limited `query_concepts` \/ `analyze_repo_structure` \/ `infer_imports` \/ `find_neighbors`/);
     assert.match(regressionSection, /`pnpm test:mcp:docs` 는 bare `README` token 이 아니라/);
     assert.match(regressionSection, /명시적 test-name fragments 만 나열/);
-    assert.match(regressionSection, /`--test-timeout 1000` 같은 Node test option value 를 target 으로 오인하지 않는다/);
+    assert.match(regressionSection, /`--test-concurrency 1` 또는 `--test-timeout 1000` 같은 Node test option value 를 target 으로 오인하지 않는다/);
     assert.match(
       doc,
       /`canonicalizationActions` 배열이 빠졌거나 `canonicalizationActionCount` 가 non-negative integer 가 아니거나 배열 길이와 갈라지거나 action row shape 이 malformed 인 compile 응답은 안전한 재정렬이 불가능하므로 patch 전 exit 2 로 실패/,
@@ -2363,7 +2363,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /pnpm integration:mcp -- --test-name-pattern/);
     assert.match(doc, /`pnpm integration:mcp:readme`/);
     assert.match(doc, /pattern 없는 wrapper 호출이나 target 없는 wrapper 호출도 exit 2 로 거부/);
-    assert.match(doc, /`--test-timeout 1000` 같은 Node test option value 를 target 으로 오인하지 않는다/);
+    assert.match(doc, /`--test-concurrency 1` 또는 `--test-timeout 1000` 같은 Node test option value 를 target 으로 오인하지 않는다/);
     assert.match(doc, /script 가 명시적 pattern 과 target 을 넘기는지도 고정/);
     assert.match(doc, /`pnpm test:mcp:dogfood`/);
     assert.match(doc, /`pnpm test:mcp:dogfood:timeout`/);

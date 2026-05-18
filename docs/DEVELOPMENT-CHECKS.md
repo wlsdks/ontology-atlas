@@ -93,8 +93,8 @@ Focused package scripts that call Node's `--test-name-pattern` go through
 fails instead of passing as all skipped, and a signal-killed `node --test`
 subprocess reports the signal plus target path. The wrapper also requires an
 explicit pattern and at least one test target, so accidental full-suite runs use
-`node --test` directly. Node test option values such as `--test-timeout 1000`
-are not counted as targets.
+`node --test` directly. Node test option values such as `--test-concurrency 1`
+or `--test-timeout 1000` are not counted as targets.
 
 ## Dogfood Shortcuts
 

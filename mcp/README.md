@@ -127,8 +127,8 @@ focused integration subset and `test:mcp:*` shortcuts use
 tests instead of silently passing as all skipped, and signal-killed `node --test`
 subprocesses report the signal plus target path. The wrapper requires an
 explicit pattern and at least one test target; use `node --test` directly for an
-intentional full run. Node test option values such as `--test-timeout 1000` are
-not counted as targets.
+intentional full run. Node test option values such as `--test-concurrency 1`
+or `--test-timeout 1000` are not counted as targets.
 `pnpm dogfood:compile` is the shortest dogfood vault compiler snapshot.
 `pnpm dogfood:compile-fix` runs dogfood `compile --fix` and fails if canonicalization leaves a docs/ontology diff.
 `pnpm test:dogfood:args` checks shared dogfood shortcut argument helpers without invoking any gate.

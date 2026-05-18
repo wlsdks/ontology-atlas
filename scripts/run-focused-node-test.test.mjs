@@ -40,6 +40,8 @@ describe('focused node test wrapper', () => {
       focusedTestTargets([
         '--test-name-pattern',
         'target case',
+        '--test-concurrency',
+        '1',
         '--test-timeout',
         '1000',
         '--test-reporter=spec',
@@ -71,7 +73,7 @@ describe('focused node test wrapper', () => {
   it('fails before spawning when no test target is provided', () => {
     const diagnostics = [];
     const exitCode = runFocusedNodeTest({
-      argv: ['--test-name-pattern', 'target case', '--test-timeout', '1000'],
+      argv: ['--test-name-pattern', 'target case', '--test-concurrency', '1', '--test-timeout', '1000'],
       stderr: { write: (text) => diagnostics.push(text) },
       stdout: { write() {} },
       spawn() {
