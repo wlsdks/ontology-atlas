@@ -473,14 +473,23 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       "byKind",
       "byDomain",
     ]);
+    assert.equal(compileOntology?.outputSchema?.additionalProperties, false);
     assert.equal(compileOntology?.outputSchema?.properties?.graphHash?.type, "string");
     assert.equal(compileOntology?.outputSchema?.properties?.nodeCount?.type, "integer");
     assert.equal(compileOntology?.outputSchema?.properties?.byKind?.additionalProperties?.type, "integer");
     assert.deepEqual(compileOntology?.outputSchema?.properties?.nodes?.items?.required, ["slug", "kind", "title", "mtime", "outDegree", "inDegree"]);
+    assert.equal(compileOntology?.outputSchema?.properties?.nodes?.items?.additionalProperties, false);
     assert.deepEqual(compileOntology?.outputSchema?.properties?.edges?.items?.required, ["id", "from", "to", "via", "ref", "resolved", "external"]);
+    assert.equal(compileOntology?.outputSchema?.properties?.edges?.items?.additionalProperties, false);
     assert.deepEqual(compileOntology?.outputSchema?.properties?.nodesPagination?.required, ["offset", "limit", "total", "returned", "hasMore", "nextOffset"]);
+    assert.equal(compileOntology?.outputSchema?.properties?.nodesPagination?.additionalProperties, false);
+    assert.equal(compileOntology?.outputSchema?.properties?.aliases?.items?.additionalProperties, false);
+    assert.equal(compileOntology?.outputSchema?.properties?.ambiguousAliases?.items?.additionalProperties, false);
+    assert.deepEqual(compileOntology?.outputSchema?.properties?.issues?.items?.required, ["code", "severity", "message"]);
+    assert.equal(compileOntology?.outputSchema?.properties?.issues?.items?.additionalProperties, false);
     const canonicalizationActionSchema = compileOntology?.outputSchema?.properties?.canonicalizationActions?.items;
     assert.deepEqual(canonicalizationActionSchema?.required, ["slug", "keys", "frontmatter", "expected_mtime"]);
+    assert.equal(canonicalizationActionSchema?.additionalProperties, false);
     assert.deepEqual(canonicalizationActionSchema?.properties?.keys?.items?.enum, GRAPH_ARRAY_KEYS);
     assert.equal(canonicalizationActionSchema?.properties?.frontmatter?.additionalProperties, false);
     assert.deepEqual(
@@ -489,7 +498,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.equal(canonicalizationActionSchema?.properties?.frontmatter?.properties?.contains?.items?.minLength, 1);
     assert.equal(canonicalizationActionSchema?.properties?.expected_mtime?.minimum, 0);
+    assert.equal(compileOntology?.outputSchema?.properties?.indexes?.additionalProperties, false);
+    assert.equal(compileOntology?.outputSchema?.properties?.indexes?.properties?.edgeById?.additionalProperties?.additionalProperties, false);
     assert.deepEqual(compileOntology?.outputSchema?.properties?.summary?.required, ["nodes", "edges", "graphHash", "maxMtime", "resolvedEdges", "externalEdges", "unresolvedEdges", "aliases", "ambiguousAliases", "issues"]);
+    assert.equal(compileOntology?.outputSchema?.properties?.summary?.additionalProperties, false);
     const analyzeRepo = findTool("analyze_repo_structure");
     assert.match(
       analyzeRepo?.description ?? "",

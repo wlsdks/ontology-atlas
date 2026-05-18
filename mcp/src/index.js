@@ -423,6 +423,7 @@ function paginationOutputSchema() {
       nextOffset: { type: ['integer', 'null'], minimum: 0 },
     },
     required: ['offset', 'limit', 'total', 'returned', 'hasMore', 'nextOffset'],
+    additionalProperties: false,
   };
 }
 
@@ -1460,6 +1461,7 @@ const TOOLS = [
               inDegree: { type: 'integer', minimum: 0 },
             },
             required: ['slug', 'kind', 'title', 'mtime', 'outDegree', 'inDegree'],
+            additionalProperties: false,
           },
         },
         edges: {
@@ -1476,6 +1478,7 @@ const TOOLS = [
               external: { type: 'boolean' },
             },
             required: ['id', 'from', 'to', 'via', 'ref', 'resolved', 'external'],
+            additionalProperties: false,
           },
         },
         nodesPagination: paginationOutputSchema(),
@@ -1489,6 +1492,7 @@ const TOOLS = [
               slug: NON_BLANK_STRING_SCHEMA,
             },
             required: ['alias', 'slug'],
+            additionalProperties: false,
           },
         },
         ambiguousAliases: {
@@ -1500,11 +1504,26 @@ const TOOLS = [
               slugs: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
             },
             required: ['alias', 'slugs'],
+            additionalProperties: false,
           },
         },
         issues: {
           type: 'array',
-          items: { type: 'object' },
+          items: {
+            type: 'object',
+            properties: {
+              code: { ...NON_BLANK_STRING_SCHEMA, enum: ['ambiguous-alias', 'dangling-graph-reference'] },
+              severity: { ...NON_BLANK_STRING_SCHEMA, enum: ['warning'] },
+              message: NON_BLANK_STRING_SCHEMA,
+              alias: NON_BLANK_STRING_SCHEMA,
+              slugs: { type: 'array', items: NON_BLANK_STRING_SCHEMA },
+              slug: NON_BLANK_STRING_SCHEMA,
+              via: NON_BLANK_STRING_SCHEMA,
+              ref: NON_BLANK_STRING_SCHEMA,
+            },
+            required: ['code', 'severity', 'message'],
+            additionalProperties: false,
+          },
         },
         canonicalizationActions: {
           type: 'array',
@@ -1517,6 +1536,7 @@ const TOOLS = [
               expected_mtime: { type: 'number', minimum: 0 },
             },
             required: ['slug', 'keys', 'frontmatter', 'expected_mtime'],
+            additionalProperties: false,
           },
         },
         indexes: {
@@ -1552,6 +1572,7 @@ const TOOLS = [
                   external: { type: 'boolean' },
                 },
                 required: ['id', 'from', 'to', 'via', 'ref', 'resolved', 'external'],
+                additionalProperties: false,
               },
             },
             aliasToSlug: {
@@ -1559,6 +1580,7 @@ const TOOLS = [
               additionalProperties: NON_BLANK_STRING_SCHEMA,
             },
           },
+          additionalProperties: false,
         },
         summary: {
           type: 'object',
@@ -1575,6 +1597,7 @@ const TOOLS = [
             issues: { type: 'integer', minimum: 0 },
           },
           required: ['nodes', 'edges', 'graphHash', 'maxMtime', 'resolvedEdges', 'externalEdges', 'unresolvedEdges', 'aliases', 'ambiguousAliases', 'issues'],
+          additionalProperties: false,
         },
       },
       required: [
@@ -1593,6 +1616,7 @@ const TOOLS = [
         'byKind',
         'byDomain',
       ],
+      additionalProperties: false,
     },
   },
   {

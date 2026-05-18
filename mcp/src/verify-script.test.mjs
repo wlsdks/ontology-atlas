@@ -1129,6 +1129,7 @@ describe('verify.mjs first-contact gates', () => {
                   outDegree: { type: 'integer', minimum: 0 },
                   inDegree: { type: 'integer', minimum: 0 },
                 },
+                additionalProperties: false,
               },
             },
             edges: {
@@ -1145,6 +1146,7 @@ describe('verify.mjs first-contact gates', () => {
                   resolved: { type: 'boolean' },
                   external: { type: 'boolean' },
                 },
+                additionalProperties: false,
               },
             },
             nodesPagination: {
@@ -1158,6 +1160,7 @@ describe('verify.mjs first-contact gates', () => {
                 hasMore: { type: 'boolean' },
                 nextOffset: { type: ['integer', 'null'], minimum: 0 },
               },
+              additionalProperties: false,
             },
             edgesPagination: {
               type: 'object',
@@ -1169,6 +1172,49 @@ describe('verify.mjs first-contact gates', () => {
                 returned: { type: 'integer', minimum: 0 },
                 hasMore: { type: 'boolean' },
                 nextOffset: { type: ['integer', 'null'], minimum: 0 },
+              },
+              additionalProperties: false,
+            },
+            aliases: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['alias', 'slug'],
+                properties: {
+                  alias: { type: 'string' },
+                  slug: { type: 'string' },
+                },
+                additionalProperties: false,
+              },
+            },
+            ambiguousAliases: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['alias', 'slugs'],
+                properties: {
+                  alias: { type: 'string' },
+                  slugs: { type: 'array', items: { type: 'string' } },
+                },
+                additionalProperties: false,
+              },
+            },
+            issues: {
+              type: 'array',
+              items: {
+                type: 'object',
+                required: ['code', 'severity', 'message'],
+                properties: {
+                  code: { type: 'string', enum: ['ambiguous-alias', 'dangling-graph-reference'] },
+                  severity: { type: 'string', enum: ['warning'] },
+                  message: { type: 'string' },
+                  alias: { type: 'string' },
+                  slugs: { type: 'array', items: { type: 'string' } },
+                  slug: { type: 'string' },
+                  via: { type: 'string' },
+                  ref: { type: 'string' },
+                },
+                additionalProperties: false,
               },
             },
             canonicalizationActions: {
@@ -1188,6 +1234,7 @@ describe('verify.mjs first-contact gates', () => {
                   },
                   expected_mtime: { type: 'number', minimum: 0 },
                 },
+                additionalProperties: false,
               },
             },
             indexes: {
@@ -1223,6 +1270,7 @@ describe('verify.mjs first-contact gates', () => {
                       resolved: { type: 'boolean' },
                       external: { type: 'boolean' },
                     },
+                    additionalProperties: false,
                   },
                 },
                 aliasToSlug: {
@@ -1230,6 +1278,7 @@ describe('verify.mjs first-contact gates', () => {
                   additionalProperties: { type: 'string' },
                 },
               },
+              additionalProperties: false,
             },
             summary: {
               type: 'object',
@@ -1246,8 +1295,10 @@ describe('verify.mjs first-contact gates', () => {
                 ambiguousAliases: { type: 'integer', minimum: 0 },
                 issues: { type: 'integer', minimum: 0 },
               },
+              additionalProperties: false,
             },
           },
+          additionalProperties: false,
         },
       },
       {
@@ -6571,8 +6622,14 @@ describe('verify.mjs first-contact gates', () => {
       edgesPagination: { offset: 0, limit: 1, total: 1, returned: 1, hasMore: false, nextOffset: null },
       aliases: [{ alias: 'Project', slug: 'project' }],
       ambiguousAliases: [{ alias: 'core', slugs: ['domains/core', 'capabilities/core'] }],
-      issues: [{ code: 'example' }],
-      canonicalizationActions: [{ slug: 'project', keys: ['domains'], frontmatter: {}, expected_mtime: 1 }],
+      issues: [{
+        code: 'ambiguous-alias',
+        severity: 'warning',
+        alias: 'core',
+        slugs: ['domains/core', 'capabilities/core'],
+        message: 'Alias "core" resolves to multiple nodes: domains/core, capabilities/core',
+      }],
+      canonicalizationActions: [{ slug: 'project', keys: ['domains'], frontmatter: { domains: ['domains/core'] }, expected_mtime: 1 }],
       summary: { nodes: 1, edges: 1, graphHash: 'abc123', maxMtime: 1, resolvedEdges: 1, externalEdges: 0, unresolvedEdges: 0, aliases: 1, ambiguousAliases: 1, issues: 1 },
     };
 

@@ -127,6 +127,7 @@ function paginationSchemaFixture() {
       hasMore: { type: "boolean" },
       nextOffset: { anyOf: [{ type: "integer", minimum: 0 }, { type: "null" }] },
     },
+    additionalProperties: false,
   };
 }
 
@@ -1008,6 +1009,7 @@ function makeDogfoodToolsList() {
                   outDegree: { type: "integer", minimum: 0 },
                   inDegree: { type: "integer", minimum: 0 },
                 },
+                additionalProperties: false,
               },
             },
             edges: {
@@ -1024,10 +1026,53 @@ function makeDogfoodToolsList() {
                   resolved: { type: "boolean" },
                   external: { type: "boolean" },
                 },
+                additionalProperties: false,
               },
             },
             nodesPagination: paginationSchemaFixture(),
             edgesPagination: paginationSchemaFixture(),
+            aliases: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["alias", "slug"],
+                properties: {
+                  alias: { type: "string" },
+                  slug: { type: "string" },
+                },
+                additionalProperties: false,
+              },
+            },
+            ambiguousAliases: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["alias", "slugs"],
+                properties: {
+                  alias: { type: "string" },
+                  slugs: { type: "array", items: { type: "string" } },
+                },
+                additionalProperties: false,
+              },
+            },
+            issues: {
+              type: "array",
+              items: {
+                type: "object",
+                required: ["code", "severity", "message"],
+                properties: {
+                  code: { type: "string", enum: ["ambiguous-alias", "dangling-graph-reference"] },
+                  severity: { type: "string", enum: ["warning"] },
+                  message: { type: "string" },
+                  alias: { type: "string" },
+                  slugs: { type: "array", items: { type: "string" } },
+                  slug: { type: "string" },
+                  via: { type: "string" },
+                  ref: { type: "string" },
+                },
+                additionalProperties: false,
+              },
+            },
             canonicalizationActions: {
               type: "array",
               items: {
@@ -1039,6 +1084,7 @@ function makeDogfoodToolsList() {
                   frontmatter: relationArrayPatchSchemaFixture(),
                   expected_mtime: { type: "number", minimum: 0 },
                 },
+                additionalProperties: false,
               },
             },
             indexes: {
@@ -1062,10 +1108,12 @@ function makeDogfoodToolsList() {
                       resolved: { type: "boolean" },
                       external: { type: "boolean" },
                     },
+                    additionalProperties: false,
                   },
                 },
                 aliasToSlug: { type: "object", additionalProperties: { type: "string" } },
               },
+              additionalProperties: false,
             },
             summary: {
               type: "object",
@@ -1082,8 +1130,10 @@ function makeDogfoodToolsList() {
                 ambiguousAliases: { type: "integer", minimum: 0 },
                 issues: { type: "integer", minimum: 0 },
               },
+              additionalProperties: false,
             },
           },
+          additionalProperties: false,
         };
       }
       if (name === "analyze_repo_structure") {
