@@ -146,6 +146,7 @@ describe('package contract helpers', () => {
     assert.equal(pkg.scripts?.['dogfood:health'], 'node cli/src/index.mjs health docs/ontology --json');
     assert.equal(pkg.scripts?.['dogfood:brief'], 'node cli/src/index.mjs workspace-brief docs/ontology --json');
     assert.equal(pkg.scripts?.['dogfood:verify'], 'node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000');
+    assert.equal(pkg.scripts?.['dogfood:help'], 'node scripts/dogfood-mcp-walk.mjs --help');
     assert.equal(pkg.scripts?.['test:cli:lib'], 'node --test cli/src/lib/*.test.mjs');
     assert.equal(pkg.scripts?.['test:cli:mcp-call'], 'node --test cli/src/lib/mcp-call.test.mjs');
     assert.equal(pkg.scripts?.['test:contracts'], 'vitest run tests/contract');
@@ -233,6 +234,7 @@ describe('package contract helpers', () => {
     assert.match(readme, /pnpm dogfood:health\s+# quick health gate over docs\/ontology/);
     assert.match(readme, /pnpm dogfood:brief\s+# quick workspace_brief health snapshot over docs\/ontology/);
     assert.match(readme, /pnpm dogfood:verify\s+# root checkout installed-style verify over docs\/ontology/);
+    assert.match(readme, /pnpm dogfood:help\s+# print dogfood usage without starting MCP/);
     assert.match(readme, /Use `pnpm dogfood:compile` when you only need the current dogfood vault\s+`compile_ontology` summary/);
     assert.match(readme, /`pnpm dogfood:health` when you need the\s+fail-closed health JSON gate/);
     assert.match(readme, /or `pnpm dogfood:brief` when you need the\s+`workspace_brief` JSON snapshot/);
@@ -1243,6 +1245,7 @@ describe('package contract helpers', () => {
     const releaseChecks = readme.split('### Package / MCP release checks')[1]?.split('## Verifiable promises')[0] ?? '';
 
     assert.match(releaseChecks, /pnpm dogfood:walk/);
+    assert.match(releaseChecks, /pnpm dogfood:help\s+# print dogfood usage without starting MCP/);
     assert.match(releaseChecks, /pnpm dogfood:walk -- --help\s+# print dogfood usage without starting MCP/);
     assert.match(releaseChecks, /strict unknown-argument and invalid-enum rejection/);
     assert.match(releaseChecks, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
@@ -1262,7 +1265,7 @@ describe('package contract helpers', () => {
     assert.match(releaseChecks, /compile --json` exits 1/);
     assert.match(releaseChecks, /unresolved graph references/);
     assert.match(releaseChecks, /flushes large raw artifacts safely through stdout pipes/);
-    assert.match(releaseChecks, /cycles --json` exits 1/);
+    assert.match(releaseChecks, /cycles --json`\s+exits\s+1/);
     assert.match(releaseChecks, /dependency cycles/);
     assert.match(releaseChecks, /path --json` exits 1/);
     assert.match(releaseChecks, /found:false/);

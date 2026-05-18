@@ -74,6 +74,7 @@ export const DOGFOOD_TUNED_WORKSPACE_BRIEF_NODE_LIMIT = VERIFY_TUNED_WORKSPACE_B
 export function dogfoodUsage() {
   return [
     "Usage:",
+    "  pnpm dogfood:help",
     "  pnpm dogfood:walk -- [--help]",
     "  node scripts/dogfood-mcp-walk.mjs [--help]",
     "",

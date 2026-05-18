@@ -153,6 +153,7 @@ pnpm integration:mcp:readme
 pnpm exec node --test --test-name-pattern "README first exploration" mcp/src/integration.test.mjs
 pnpm smoke:packed-cli           # pack/install MCP+CLI, verify installed flow/help/failure + tarball summary
 pnpm dogfood:walk               # actual MCP stdio walk over this repo's ontology
+pnpm dogfood:help               # print dogfood usage without starting MCP
 pnpm dogfood:walk -- --help     # print dogfood usage without starting MCP
 cd mcp && OMOT_VAULT=../docs/ontology npm run verify
 cd mcp && npm run verify -- ../docs/ontology

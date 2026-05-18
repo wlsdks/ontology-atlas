@@ -3667,6 +3667,7 @@ describe("rpc response completion helpers", () => {
     assert.deepEqual(parseDogfoodArgs(["-h"]), { help: true, error: null });
     assert.deepEqual(parseDogfoodArgs(["--", "--help"]), { help: true, error: null });
     const usage = dogfoodUsage();
+    assert.match(usage, /pnpm dogfood:help/);
     assert.match(usage, /pnpm dogfood:walk -- \[--help\]/);
     assert.match(usage, /node scripts\/dogfood-mcp-walk\.mjs \[--help\]/);
     assert.match(usage, /Print this help without starting the MCP server/);
