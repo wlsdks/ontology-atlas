@@ -20,6 +20,7 @@ import {
   missingResponseLabels,
   parseJsonRpcResponses,
 } from "../mcp/scripts/json-rpc-lines.mjs";
+import { closestDogfoodOption, stripLeadingPnpmSeparator } from "./lib/dogfood-args.mjs";
 import {
   compileSummaryFailure,
   compileIndexesFailure,
@@ -113,7 +114,7 @@ export function shouldPrintDogfoodHelp(argv = process.argv.slice(2)) {
 }
 
 export function parseDogfoodArgs(argv = process.argv.slice(2)) {
-  const args = (Array.isArray(argv) ? argv : []).filter((arg) => arg !== "--");
+  const args = stripLeadingPnpmSeparator(Array.isArray(argv) ? argv : []);
   const help = args.includes("--help") || args.includes("-h");
   const unsupported = args.filter((arg) => arg !== "--help" && arg !== "-h");
   if (help) return { help: true, error: null };
@@ -128,42 +129,9 @@ export function parseDogfoodArgs(argv = process.argv.slice(2)) {
 
 function formatUnsupportedDogfoodArgs(args) {
   const values = args.join(", ");
-  const suggestion = args.length === 1 ? closestDogfoodOption(args[0]) : null;
+  const suggestion = args.length === 1 ? closestDogfoodOption(args[0], ["--help", "-h"]) : null;
   const suffix = suggestion ? `. Did you mean ${suggestion}?` : "";
   return `dogfood:walk does not accept arguments: ${values}${suffix}`;
-}
-
-function closestDogfoodOption(arg) {
-  if (!arg || !String(arg).startsWith("-")) return null;
-  const allowed = ["--help", "-h"];
-  let best = null;
-  for (const option of allowed) {
-    const distance = levenshteinDistance(String(arg), option);
-    if (!best || distance < best.distance) {
-      best = { option, distance };
-    }
-  }
-  return best && best.distance <= 2 ? best.option : null;
-}
-
-function levenshteinDistance(a, b) {
-  const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
-  const current = Array.from({ length: b.length + 1 }, () => 0);
-  for (let i = 1; i <= a.length; i += 1) {
-    current[0] = i;
-    for (let j = 1; j <= b.length; j += 1) {
-      const substitutionCost = a[i - 1] === b[j - 1] ? 0 : 1;
-      current[j] = Math.min(
-        previous[j] + 1,
-        current[j - 1] + 1,
-        previous[j - 1] + substitutionCost,
-      );
-    }
-    for (let j = 0; j <= b.length; j += 1) {
-      previous[j] = current[j];
-    }
-  }
-  return previous[b.length];
 }
 
 const DOGFOOD_RESPONSE_LABELS = new Map([
