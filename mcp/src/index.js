@@ -145,6 +145,14 @@ const COMPACT_MAINTENANCE_NODE_OUTPUT_SCHEMA = Object.freeze({
   },
   required: ['slug', 'kind', 'title'],
 });
+const COMPACT_MAINTENANCE_PROPOSED_ACTION_OUTPUT_SCHEMA = Object.freeze({
+  type: ['object', 'null'],
+  properties: {
+    tool: NON_BLANK_STRING_SCHEMA,
+    args: { type: 'object' },
+  },
+  required: ['tool', 'args'],
+});
 const COMPACT_MAINTENANCE_ACTION_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
@@ -155,7 +163,7 @@ const COMPACT_MAINTENANCE_ACTION_OUTPUT_SCHEMA = Object.freeze({
     score: { type: 'number', minimum: 0 },
     executable: { type: 'boolean' },
     reason: NON_BLANK_STRING_SCHEMA,
-    proposedAction: { type: ['object', 'null'] },
+    proposedAction: COMPACT_MAINTENANCE_PROPOSED_ACTION_OUTPUT_SCHEMA,
     node: COMPACT_MAINTENANCE_NODE_OUTPUT_SCHEMA,
     nodes: {
       type: ['array', 'object'],

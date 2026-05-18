@@ -702,6 +702,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         ["id", "phase", "kind", "severity", "score", "executable", "reason", "proposedAction"],
         `${toolName} exposes compact action row schema`,
       );
+      assert.deepEqual(
+        postWriteSchema?.properties?.actions?.items?.properties?.proposedAction?.required,
+        ["tool", "args"],
+        `${toolName} exposes executable proposedAction call schema`,
+      );
       assert.equal(postWriteSchema?.properties?.actions?.items?.type, "object", `${toolName} exposes non-null action rows`);
       assert.deepEqual(
         postWriteSchema?.properties?.actions?.items?.properties?.node?.required,
@@ -734,6 +739,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         `${toolName} exposes compact next executable action schema`,
       );
       assert.deepEqual(
+        postWriteSchema?.properties?.nextExecutableAction?.properties?.proposedAction?.required,
+        ["tool", "args"],
+        `${toolName} exposes next executable proposedAction call schema`,
+      );
+      assert.deepEqual(
         postWriteSchema?.properties?.nextReviewAction?.type,
         ["object", "null"],
         `${toolName} exposes nullable next review action`,
@@ -742,6 +752,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         postWriteSchema?.properties?.nextReviewAction?.required,
         ["id", "phase", "kind", "severity", "score", "executable", "reason", "proposedAction"],
         `${toolName} exposes compact next review action schema`,
+      );
+      assert.deepEqual(
+        postWriteSchema?.properties?.nextReviewAction?.properties?.proposedAction?.required,
+        ["tool", "args"],
+        `${toolName} exposes next review proposedAction call schema`,
       );
     }
     const expectedMtimeTools = [

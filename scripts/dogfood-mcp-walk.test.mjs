@@ -151,6 +151,14 @@ function relationArrayPatchSchemaFixture() {
 }
 
 function postWriteMaintenanceSchemaFixture() {
+  const compactProposedActionSchema = {
+    type: ["object", "null"],
+    required: ["tool", "args"],
+    properties: {
+      tool: { type: "string" },
+      args: { type: "object" },
+    },
+  };
   const compactNodeSchema = {
     type: "object",
     required: ["slug", "kind", "title"],
@@ -168,7 +176,7 @@ function postWriteMaintenanceSchemaFixture() {
     score: { type: "number", minimum: 0 },
     executable: { type: "boolean" },
     reason: { type: "string" },
-    proposedAction: { type: ["object", "null"] },
+    proposedAction: compactProposedActionSchema,
     node: compactNodeSchema,
     nodes: {
       type: ["array", "object"],
@@ -3982,6 +3990,13 @@ describe("evaluateDogfoodGate", () => {
     postWriteActionsSchemaDrifted.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance.properties.actions.items.properties.executable.type = "string";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: postWriteActionsSchemaDrifted }),
+      ["tools/list: patch_concept outputSchema postWriteMaintenance actions drift"],
+    );
+    const postWriteProposedActionSchemaDrifted = makeDogfoodToolsList();
+    postWriteProposedActionSchemaDrifted.tools.find((tool) => tool.name === "patch_concept").outputSchema.properties.postWriteMaintenance.properties.actions.items.properties.proposedAction.required =
+      ["tool"];
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, toolsList: postWriteProposedActionSchemaDrifted }),
       ["tools/list: patch_concept outputSchema postWriteMaintenance actions drift"],
     );
     const postWriteNextExecutableSchemaDrifted = makeDogfoodToolsList();

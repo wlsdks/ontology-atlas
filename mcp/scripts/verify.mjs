@@ -333,6 +333,10 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
     !sameArray(schema.properties.actions.items?.required, compactActionRequired) ||
     schema.properties.actions.items?.properties?.score?.minimum !== 0 ||
     schema.properties.actions.items?.properties?.executable?.type !== 'boolean' ||
+    !sameArray(schema.properties.actions.items?.properties?.proposedAction?.type, ['object', 'null']) ||
+    !sameArray(schema.properties.actions.items?.properties?.proposedAction?.required, ['tool', 'args']) ||
+    schema.properties.actions.items?.properties?.proposedAction?.properties?.tool?.type !== 'string' ||
+    schema.properties.actions.items?.properties?.proposedAction?.properties?.args?.type !== 'object' ||
     schema.properties.actions.items?.properties?.node?.properties?.slug?.type !== 'string' ||
     !sameArray(schema.properties.actions.items?.properties?.nodes?.type, ['array', 'object']) ||
     schema.properties.actions.items?.properties?.nodes?.items?.properties?.slug?.type !== 'string' ||
@@ -346,7 +350,9 @@ function postWriteMaintenanceSchemaFailure(schema, toolName) {
       !sameArray(actionSchema?.type, ['object', 'null']) ||
       !sameArray(actionSchema?.required, compactActionRequired) ||
       actionSchema.properties?.score?.minimum !== 0 ||
-      actionSchema.properties?.executable?.type !== 'boolean'
+      actionSchema.properties?.executable?.type !== 'boolean' ||
+      !sameArray(actionSchema.properties?.proposedAction?.type, ['object', 'null']) ||
+      !sameArray(actionSchema.properties?.proposedAction?.required, ['tool', 'args'])
     ) {
       return `${toolName} outputSchema postWriteMaintenance ${key} drift`;
     }
