@@ -94,7 +94,7 @@ function render(result) {
   // Projects 요약
   const projects = result?.projects?.maps ?? [];
   if (projects.length > 0) {
-    process.stdout.write(`${COLORS.dim}PROJECT 별 노드 수${COLORS.reset}\n`);
+    process.stdout.write(`${COLORS.dim}PROJECT별 포함 노드 수 (project_scope)${COLORS.reset}\n`);
     for (const p of projects) {
       const pn = p.node?.title || p.project;
       const ps = p.summary ?? {};
@@ -172,7 +172,7 @@ function printUsage(stream = process.stderr) {
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
       `       [--order-limit N] [--node-limit N]\n\n` +
-      `first-contact dashboard: status + hotspots + project 요약 + next actions.\n` +
+      `first-contact dashboard: status + hotspots + project_scope 포함 노드 요약 + next actions.\n` +
       `Use --json for repeatable first-contact snapshots such as pnpm dogfood:brief.\n` +
       `Use pnpm dogfood:health first when you only need the fail-closed health gate.\n` +
       `Use pnpm dogfood:status for the cheap human-readable health + workspace-brief pair.\n` +

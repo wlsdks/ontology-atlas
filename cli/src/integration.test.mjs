@@ -3016,6 +3016,28 @@ await test('workspace-brief — prints health check coverage', async () => {
   }
 });
 
+await test('workspace-brief — labels project_scope contained counts clearly', async () => {
+  const root = withVault([
+    {
+      slug: 'project',
+      content: '---\nkind: project\nslug: project\ntitle: Project\ncontains: [domains/auth]\n---\n\n# Project\n',
+    },
+    {
+      slug: 'domains/auth',
+      content: '---\nkind: domain\nslug: domains/auth\ntitle: Auth\n---\n\n# Auth\n',
+    },
+  ]);
+  try {
+    const r = await run(['workspace-brief', root]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /PROJECT별 포함 노드 수 \(project_scope\)/);
+    assert.match(clean, /Project\s+2 노드/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('workspace-brief --json — forwards focused diagnosis tuning flags', async () => {
   const root = await buildGraphFixture();
   try {
@@ -3050,6 +3072,7 @@ await test('workspace-brief --help — documents health and growth output', asyn
   assert.match(clean, /Use pnpm dogfood:health first when you only need the fail-closed health gate/);
   assert.match(clean, /Use pnpm dogfood:status for the cheap human-readable health \+ workspace-brief pair/);
   assert.match(clean, /Fail-severity nextActions or failing health checks exit non-zero for shell gates/);
+  assert.match(clean, /project_scope 포함 노드 요약/);
   assert.match(clean, /HEALTH CHECKS id:status:count/);
   assert.match(clean, /GROWTH actions\/relations\/dangling\/external\/ignoredExternal counts/);
   assert.match(clean, /--dependency-types A,B/);
