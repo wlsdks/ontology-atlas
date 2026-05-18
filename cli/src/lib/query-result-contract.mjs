@@ -122,6 +122,53 @@ export function assertMaintenancePlanShape(result) {
   return result;
 }
 
+export function assertGrowthPlanShape(result) {
+  assertQueryOperation(result, 'growth_plan');
+  if (!isPlainObject(result.summary)) {
+    throw new Error('growth_plan summary must be an object');
+  }
+  for (const field of [
+    'relationRecommendations',
+    'externalElementRefs',
+    'externalElementRefsIgnored',
+    'danglingReferences',
+    'unassignedNodes',
+    'emptyDomains',
+    'totalActions',
+  ]) {
+    if (!validCount(result.summary[field])) {
+      throw new Error(`growth_plan summary.${field} must be a non-negative integer`);
+    }
+  }
+  const computedTotal = result.summary.relationRecommendations
+    + result.summary.externalElementRefs
+    + result.summary.danglingReferences
+    + result.summary.unassignedNodes
+    + result.summary.emptyDomains;
+  if (result.summary.totalActions !== computedTotal) {
+    throw new Error('growth_plan summary.totalActions must equal the actionable candidate totals');
+  }
+  assertRelationRecommendationsGroup(result.relationRecommendations, result.summary.relationRecommendations);
+  assertGrowthRowsGroup('externalElementRefs', result.externalElementRefs, result.summary.externalElementRefs);
+  if ((result.externalElementRefs.ignored ?? 0) !== result.summary.externalElementRefsIgnored) {
+    throw new Error('growth_plan externalElementRefs.ignored must equal summary.externalElementRefsIgnored');
+  }
+  assertGrowthRowsGroup('danglingReferences', result.danglingReferences, result.summary.danglingReferences);
+  assertGrowthRowsGroup('unassignedNodes', result.unassignedNodes, result.summary.unassignedNodes);
+  assertGrowthRowsGroup('emptyDomains', result.emptyDomains, result.summary.emptyDomains);
+  if (result.compiledSummary !== undefined) {
+    if (!isPlainObject(result.compiledSummary)) {
+      throw new Error('growth_plan compiledSummary must be an object when present');
+    }
+    for (const field of ['nodes', 'edges', 'issues']) {
+      if (result.compiledSummary[field] !== undefined && !validCount(result.compiledSummary[field])) {
+        throw new Error(`growth_plan compiledSummary.${field} must be a non-negative integer when present`);
+      }
+    }
+  }
+  return result;
+}
+
 export function assertHealthShape(result) {
   assertQueryOperation(result, 'health');
   if (!DIAGNOSIS_STATUSES.has(result.status)) {
@@ -601,6 +648,80 @@ function maintenanceActionPointerMismatch(expectedAction, pointer, label) {
     }
   }
   return null;
+}
+
+function assertRelationRecommendationsGroup(group, expectedTotal) {
+  if (!isPlainObject(group)) {
+    throw new Error('growth_plan relationRecommendations must be an object');
+  }
+  if (group.operation !== 'recommend_relations') {
+    throw new Error(`growth_plan relationRecommendations operation mismatch: ${group.operation}`);
+  }
+  if (!validCount(group.totalRecommendations)) {
+    throw new Error('growth_plan relationRecommendations.totalRecommendations must be a non-negative integer');
+  }
+  if (group.totalRecommendations !== expectedTotal) {
+    throw new Error('growth_plan relationRecommendations.totalRecommendations must equal summary.relationRecommendations');
+  }
+  if (typeof group.limited !== 'boolean') {
+    throw new Error('growth_plan relationRecommendations.limited must be a boolean');
+  }
+  if (!Array.isArray(group.recommendations)) {
+    throw new Error('growth_plan relationRecommendations.recommendations must be an array');
+  }
+  if (group.recommendations.length > group.totalRecommendations) {
+    throw new Error('growth_plan relationRecommendations recommendations length must not exceed totalRecommendations');
+  }
+  if (!group.limited && group.recommendations.length !== group.totalRecommendations) {
+    throw new Error('growth_plan relationRecommendations recommendations length must equal totalRecommendations when not limited');
+  }
+  for (let index = 0; index < group.recommendations.length; index += 1) {
+    if (!validGrowthCandidateRow(group.recommendations[index], { requireProposedAction: true })) {
+      throw new Error(`growth_plan relationRecommendations.recommendations[${index}] has an invalid growth-candidate shape`);
+    }
+  }
+}
+
+function assertGrowthRowsGroup(name, group, expectedTotal) {
+  if (!isPlainObject(group)) {
+    throw new Error(`growth_plan ${name} must be an object`);
+  }
+  if (!validCount(group.total)) {
+    throw new Error(`growth_plan ${name}.total must be a non-negative integer`);
+  }
+  if (group.total !== expectedTotal) {
+    throw new Error(`growth_plan ${name}.total must equal summary.${name}`);
+  }
+  if (typeof group.limited !== 'boolean') {
+    throw new Error(`growth_plan ${name}.limited must be a boolean`);
+  }
+  if (!Array.isArray(group.rows)) {
+    throw new Error(`growth_plan ${name}.rows must be an array`);
+  }
+  if (group.rows.length > group.total) {
+    throw new Error(`growth_plan ${name}.rows length must not exceed total`);
+  }
+  if (!group.limited && group.rows.length !== group.total) {
+    throw new Error(`growth_plan ${name}.rows length must equal total when not limited`);
+  }
+  for (let index = 0; index < group.rows.length; index += 1) {
+    if (!validGrowthCandidateRow(group.rows[index])) {
+      throw new Error(`growth_plan ${name}.rows[${index}] has an invalid growth-candidate shape`);
+    }
+  }
+}
+
+function validGrowthCandidateRow(row, { requireProposedAction = false } = {}) {
+  if (!isPlainObject(row) || !hasNonEmptyString(row.kind, row.reason) || !Number.isFinite(row.score) || row.score < 0) {
+    return false;
+  }
+  if (requireProposedAction && !isPlainObject(row.proposedAction)) return false;
+  if (row.proposedAction !== undefined && row.proposedAction !== null) {
+    if (!isPlainObject(row.proposedAction) || !hasNonEmptyString(row.proposedAction.tool) || !isPlainObject(row.proposedAction.args)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function validNodeSummary(row) {

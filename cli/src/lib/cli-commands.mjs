@@ -22,6 +22,7 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   cycles: runner('cycles.mjs', 'runCycles'),
   health: runner('health.mjs', 'runHealth'),
   'workspace-brief': runner('workspace-brief.mjs', 'runWorkspaceBrief'),
+  growth: runner('growth.mjs', 'runGrowth'),
   maintenance: runner('maintenance.mjs', 'runMaintenance'),
   node: runner('node-profile.mjs', 'runNodeProfile'),
   similar: runner('similar.mjs', 'runSimilar'),

@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-05-19 — CLI growth plan dogfood
+
+The developer CLI now exposes MCP `growth_plan` directly, so agents and humans
+can inspect ontology write candidates without raw JSON-RPC.
+
+- **`oh-my-ontology growth`** — read-only wrapper for relation recommendations,
+  external element refs, dangling references, unassigned nodes, empty domains,
+  and ignored external refs, with human output showing candidate reasons and
+  proposed tool calls.
+- **Growth payload gate** — CLI output now fail-closes on malformed
+  `growth_plan` summary/group/candidate rows before JSON or human output.
+- **Dogfood shortcut** — `pnpm dogfood:growth` snapshots the project ontology's
+  growth plan as a focused check.
+
 ## 2026-05-18 — MCP first-contact and packed-smoke hardening
 
 MCP verification now keeps the installed agent surface, first-contact guidance,

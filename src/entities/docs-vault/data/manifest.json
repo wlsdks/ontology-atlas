@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-18T19:07:40.472Z",
+  "generatedAt": "2026-05-18T20:39:44.304Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -1741,9 +1741,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 29 노드, CLI 27 commands, MCP 23 tools, compiler/query/health/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결과 | |||| | ",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 29 노드, CLI 28 commands, MCP 23 tools, compiler/query/health/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결과 | |||| | ",
       "wordCount": 1438,
-      "updatedAt": "2026-05-18T06:48:02.192Z",
+      "updatedAt": "2026-05-18T20:38:15.017Z",
       "linksOut": []
     },
     {
@@ -2354,6 +2354,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-05-19 — CLI growth plan dogfood",
+          "slug": "2026-05-19-cli-growth-plan-dogfood"
         },
         {
           "depth": 2,
@@ -3371,9 +3376,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. MCP verification now keeps the installed agent surface, firstcontact guidance, release smo",
-      "wordCount": 15399,
-      "updatedAt": "2026-05-18T06:46:12.501Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. The developer CLI now exposes MCP growthplan directly, so agents and humans can inspect on",
+      "wordCount": 15493,
+      "updatedAt": "2026-05-18T20:39:32.673Z",
       "linksOut": [
         "slug"
       ]
@@ -4362,8 +4367,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 5700,
-      "updatedAt": "2026-05-18T16:51:32.555Z",
+      "wordCount": 5702,
+      "updatedAt": "2026-05-18T20:37:58.961Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4706,12 +4711,12 @@
     {
       "slug": "ontology/capabilities/cli-developer-entry",
       "path": "docs/ontology/capabilities/cli-developer-entry.md",
-      "title": "CLI Developer Entry (27 commands — vault + MCP verify + maintenance queue + graph deep dive)",
+      "title": "CLI Developer Entry (28 commands — vault + MCP verify + growth/maintenance queue + graph deep dive)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
-        "title": "CLI Developer Entry (27 commands — vault + MCP verify + maintenance queue + graph deep dive)",
+        "title": "CLI Developer Entry (28 commands — vault + MCP verify + growth/maintenance queue + graph deep dive)",
         "domain": "onboarding-ux",
         "dependencies": [
           "capabilities/mcp-server",
@@ -4727,6 +4732,7 @@
           "cli/src/commands/cycles.mjs",
           "cli/src/commands/delete.mjs",
           "cli/src/commands/find.mjs",
+          "cli/src/commands/growth.mjs",
           "cli/src/commands/health.mjs",
           "cli/src/commands/hubs.mjs",
           "cli/src/commands/import.mjs",
@@ -4816,9 +4822,9 @@
           "slug": "회귀-차단"
         }
       ],
-      "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, maintenance, 그리고 설치된 MCP surface 를 확인하는 mcpverify 명령 추가 — 총 27 명령. 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP 등록 불필요. ",
-      "wordCount": 5985,
-      "updatedAt": "2026-05-18T19:07:23.382Z",
+      "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, 그리고 설치된 MCP surface 를 확인하는 mcpverify 명령 추가 — 총 28 명령. 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP ",
+      "wordCount": 6281,
+      "updatedAt": "2026-05-18T20:36:50.873Z",
       "linksOut": []
     },
     {
@@ -4975,8 +4981,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 11389,
-      "updatedAt": "2026-05-18T19:07:23.382Z",
+      "wordCount": 11474,
+      "updatedAt": "2026-05-18T20:26:08.931Z",
       "linksOut": []
     },
     {
@@ -6832,7 +6838,7 @@
                 "path": "ontology/capabilities/cli-developer-entry",
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
-                "title": "CLI Developer Entry (27 commands — vault + MCP verify + maintenance queue + graph deep dive)"
+                "title": "CLI Developer Entry (28 commands — vault + MCP verify + growth/maintenance queue + graph deep dive)"
               },
               {
                 "name": "firebase-deploy-skill",

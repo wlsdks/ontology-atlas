@@ -6,6 +6,7 @@ import {
   assertBlastRadiusShape,
   assertCentralityShape,
   assertCyclesShape,
+  assertGrowthPlanShape,
   assertHealthShape,
   assertMaintenancePlanShape,
   assertNodeProfileShape,
@@ -360,6 +361,86 @@ describe('query-result-contract', () => {
         nextReviewAction: { ...withReview.nextReviewAction, executable: true },
       }),
       /nextReviewAction\.executable must match the first page action/,
+    );
+  });
+
+  it('rejects malformed growth_plan payloads before CLI output', () => {
+    const valid = {
+      operation: 'growth_plan',
+      summary: {
+        relationRecommendations: 1,
+        externalElementRefs: 1,
+        externalElementRefsIgnored: 2,
+        danglingReferences: 0,
+        unassignedNodes: 0,
+        emptyDomains: 0,
+        totalActions: 2,
+      },
+      relationRecommendations: {
+        operation: 'recommend_relations',
+        mode: 'domain_containment',
+        totalRecommendations: 1,
+        limited: false,
+        recommendations: [
+          {
+            kind: 'add_missing_relation',
+            score: 0.7,
+            from: 'project',
+            to: 'domains/auth',
+            reason: 'Missing containment relation.',
+            proposedAction: { tool: 'add_relation', args: { from: 'project', to: 'domains/auth', type: 'contains' } },
+          },
+        ],
+      },
+      externalElementRefs: {
+        total: 1,
+        limited: false,
+        ignored: 2,
+        rows: [
+          {
+            kind: 'materialize_external_element',
+            score: 0.8,
+            from: 'capabilities/foo',
+            ref: 'src/foo.ts',
+            reason: 'Materialize external element.',
+            proposedAction: { tool: 'add_concept', args: { slug: 'elements/src/foo', kind: 'element', title: 'Foo' } },
+          },
+        ],
+      },
+      danglingReferences: { total: 0, limited: false, rows: [] },
+      unassignedNodes: { total: 0, limited: false, rows: [] },
+      emptyDomains: { total: 0, limited: false, rows: [] },
+      compiledSummary: { nodes: 2, edges: 1, issues: 0 },
+    };
+
+    assert.equal(assertGrowthPlanShape(valid), valid);
+    assert.throws(
+      () => assertGrowthPlanShape({ ...valid, summary: { ...valid.summary, totalActions: 3 } }),
+      /summary\.totalActions must equal the actionable candidate totals/,
+    );
+    assert.throws(
+      () => assertGrowthPlanShape({
+        ...valid,
+        relationRecommendations: { ...valid.relationRecommendations, recommendations: [] },
+      }),
+      /relationRecommendations recommendations length must equal totalRecommendations when not limited/,
+    );
+    assert.throws(
+      () => assertGrowthPlanShape({
+        ...valid,
+        externalElementRefs: { ...valid.externalElementRefs, ignored: 1 },
+      }),
+      /externalElementRefs\.ignored must equal summary\.externalElementRefsIgnored/,
+    );
+    assert.throws(
+      () => assertGrowthPlanShape({
+        ...valid,
+        externalElementRefs: {
+          ...valid.externalElementRefs,
+          rows: [{ ...valid.externalElementRefs.rows[0], score: -1 }],
+        },
+      }),
+      /externalElementRefs\.rows\[0\] has an invalid growth-candidate shape/,
     );
   });
 

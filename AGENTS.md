@@ -6,7 +6,7 @@
 
 ## Project overview
 
-`oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology` 27 commands — vault scaffold, MCP verify, deterministic graph compile, maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (23 tools).
+`oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology` 28 commands — vault scaffold, MCP verify, deterministic graph compile, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (23 tools).
 
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
@@ -65,7 +65,7 @@ src/                       FSD layers
   ├── entities/            business entities
   └── shared/              UI · lib · config primitives
 mcp/                       MCP server (the AI agent's surface) — npm pkg, 23 tools
-cli/                       CLI binary (developer's daily entry point) — npm pkg, 27 commands
+cli/                       CLI binary (developer's daily entry point) — npm pkg, 28 commands
                            init / add / import / list / find / validate / mcp-verify / query
                            analyze / infer-imports / bootstrap
                            backlinks / orphans / path / rename / merge / delete
@@ -217,7 +217,7 @@ A vault with no `kind: project` doc still works (no containment, all nodes orpha
 
 ### 프로젝트 개요
 
-`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology` 27 명령 — vault scaffold, MCP verify, deterministic graph compile, maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (23 tools) 로 같은 `.md` 파일을 read/write.
+`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology` 28 명령 — vault scaffold, MCP verify, deterministic graph compile, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (23 tools) 로 같은 `.md` 파일을 read/write.
 
 핵심 원칙 한 줄 (v3, R11 fire #25):
 

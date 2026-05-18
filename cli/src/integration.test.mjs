@@ -2857,7 +2857,7 @@ await test('query — rejects MCP graph operation flags with CLI command guidanc
     const clean = stripAnsi(r.stderr);
     assert.match(clean, /unknown flag: --operation\./);
     assert.match(clean, /query is the typed filter DSL/);
-    assert.match(clean, /overview, health, workspace-brief, maintenance, path, blast-radius, cycles, or hubs/);
+    assert.match(clean, /overview, health, workspace-brief, growth, maintenance, path, blast-radius, cycles, or hubs/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3160,6 +3160,76 @@ await test('workspace-brief --help — documents health and growth output', asyn
   assert.match(clean, /--dependency-types A,B/);
   assert.match(clean, /--component-types A,B/);
   assert.match(clean, /Tuning flags forward to query_ontology workspace_brief/);
+});
+
+await test('growth --json — exposes growth_plan candidate groups', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['growth', root, '--json', '--limit', '2']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'growth_plan');
+    assert.equal(data.summary.externalElementRefs, 1);
+    assert.equal(data.summary.totalActions, 1);
+    assert.equal(data.externalElementRefs.rows[0].kind, 'materialize_external_element');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('growth — human output summarizes growth candidates and ignored refs', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['growth', root, '--limit=2']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /growth plan/);
+    assert.match(clean, /summary: relations:0, external:1, ignoredExternal:0, dangling:0, unassigned:0, emptyDomains:0/);
+    assert.match(clean, /external element refs/);
+    assert.match(clean, /materialize_external_element/);
+    assert.match(clean, /add_concept/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('growth --json — fails closed on malformed growth_plan payloads', async () => {
+  const root = withVault();
+  const fakeMcp = join(root, 'fake-mcp-growth-malformed.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
+      "  if (msg.id === 2) {",
+      "    const payload = { operation: 'growth_plan', summary: { relationRecommendations: 0, externalElementRefs: 1, externalElementRefsIgnored: 0, danglingReferences: 0, unassignedNodes: 0, emptyDomains: 0, totalActions: 1 }, relationRecommendations: { operation: 'recommend_relations', mode: 'domain_containment', totalRecommendations: 0, limited: false, recommendations: [] }, externalElementRefs: { total: 1, limited: false, rows: [] }, danglingReferences: { total: 0, limited: false, rows: [] }, unassignedNodes: { total: 0, limited: false, rows: [] }, emptyDomains: { total: 0, limited: false, rows: [] } };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['growth', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /growth_plan externalElementRefs.rows length must equal total when not limited/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('growth — rejects malformed CLI flags before runtime work', async () => {
+  const highLimit = await run(['growth', '--limit=501']);
+  assert.equal(highLimit.code, 1);
+  assert.match(stripAnsi(highLimit.stderr), /--limit must be <= 500/);
+
+  const typo = await run(['growth', '--lmit=1']);
+  assert.equal(typo.code, 1);
+  assert.match(stripAnsi(typo.stderr), /unknown flag: --lmit=1\. Did you mean --limit\?/);
 });
 
 await test('maintenance --json — exposes maintenance_plan work queue', async () => {

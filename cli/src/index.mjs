@@ -104,6 +104,8 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --json --component-types A,B          ${COLORS.dim}focused diagnosis tuning 지원${COLORS.reset}
   npx oh-my-ontology workspace-brief [vault]  Status + hotspots + project_scope 포함 노드 + next actions 한 화면
        --json --dependency-types A,B         ${COLORS.dim}health/workspace_brief tuning forwarding${COLORS.reset}
+  npx oh-my-ontology growth [vault]           Growth candidates from MCP growth_plan
+       --limit N --json                       ${COLORS.dim}relations · external refs · dangling refs · ignored refs${COLORS.reset}
   npx oh-my-ontology maintenance [vault]      Ordered graph cleanup/repair work queue
        --limit N --after-action-id ID --json  ${COLORS.dim}cursor page · filterable maintenance_plan${COLORS.reset}
   npx oh-my-ontology node <slug> [vault]      한 노드 deep dive — header · lineage · incoming/outgoing edges

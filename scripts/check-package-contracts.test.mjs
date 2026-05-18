@@ -1240,6 +1240,7 @@ describe('package contract helpers', () => {
   it('keeps the CLI README explicit about mcp-verify help scope', () => {
     const readme = readFileSync('cli/README.md', 'utf-8');
     const tableRow = readme.split('| `oh-my-ontology mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
+    const growthRow = readme.split('| `oh-my-ontology growth [vault]` |')[1]?.split('\n')[0] ?? '';
     const maintenanceRow = readme.split('| `oh-my-ontology maintenance [vault]` |')[1]?.split('\n')[0] ?? '';
     const analyzeRow = readme.split('| `oh-my-ontology analyze [rootPath]` |')[1]?.split('\n')[0] ?? '';
     const inferImportsRow = readme.split('| `oh-my-ontology infer-imports [rootPath]` |')[1]?.split('\n')[0] ?? '';
@@ -1261,6 +1262,10 @@ describe('package contract helpers', () => {
     assert.match(tableRow, /`neighbors`\/`path`\/`project_scope` graph-query smoke/);
     assert.match(readme, /Successful output prints a `read census consistency` line/);
     assert.match(readme, /listing, compiler, and overview read surfaces agree/);
+    assert.match(growthRow, /MCP `growth_plan` candidates/);
+    assert.match(growthRow, /relation recommendations, external element refs, dangling references, unassigned nodes, empty domains, and ignored external refs/);
+    assert.match(growthRow, /candidate reasons, and proposed tool calls/);
+    assert.match(growthRow, /Malformed growth candidate payloads fail closed before JSON or human output/);
     assert.match(maintenanceRow, /MCP `maintenance_plan` cleanup\/repair work queue/);
     assert.match(maintenanceRow, /`--after-action-id`/);
     assert.match(maintenanceRow, /compile\/cycle\/canonicalize\/dangling\/relation\/external\/ignored-external summary counts/);
@@ -2344,10 +2349,12 @@ describe('package contract helpers', () => {
     const nodeRow = doc.split('| `oh-my-ontology node <slug>` |')[1]?.split('\n')[0] ?? '';
     const similarRow = doc.split('| `oh-my-ontology similar "<query>"` |')[1]?.split('\n')[0] ?? '';
     const pathRow = doc.split('| `oh-my-ontology path <from> <to>` |')[1]?.split('\n')[0] ?? '';
+    const growthRow = doc.split('| `oh-my-ontology growth` |')[1]?.split('\n')[0] ?? '';
     const cyclesRow = doc.split('| `oh-my-ontology cycles` |')[1]?.split('\n')[0] ?? '';
 
-    assert.match(doc, /CLI Developer Entry \(27 commands/);
-    assert.match(doc, /총 27 명령/);
+    assert.match(doc, /CLI Developer Entry \(28 commands/);
+    assert.match(doc, /총 28 명령/);
+    assert.match(doc, /cli\/src\/commands\/growth\.mjs/);
     assert.match(doc, /cli\/src\/commands\/maintenance\.mjs/);
     assert.match(maintenanceRow, /MCP `query_ontology\(maintenance_plan\)`/);
     assert.match(maintenanceRow, /cursor miss 는 빈 page 와 `cursor\.found=false`/);
@@ -2362,6 +2369,10 @@ describe('package contract helpers', () => {
     assert.match(nodeRow, /node summary \/ degree \/ edge group \/ lineage page shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2/);
     assert.match(similarRow, /match node \/ score \/ signal \/ shared-neighbor shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2/);
     assert.match(pathRow, /hop \/ edge alignment 가 malformed 인 `find_path` payload 는 JSON 또는 human output 전 exit 2/);
+    assert.match(growthRow, /MCP `query_ontology\(growth_plan\)`/);
+    assert.match(growthRow, /relation recommendation \/ external element ref \/ dangling reference \/ unassigned node \/ empty domain \/ ignored external ref count/);
+    assert.match(growthRow, /proposed tool call/);
+    assert.match(growthRow, /malformed 인 growth payload 는 JSON 또는 human output 전 exit 2/);
     assert.match(cyclesRow, /malformed cycle row 는 JSON 또는 human output 전 exit 2/);
     assert.doesNotMatch(regressionSection, /\*\*\d+ spawn-based\*\* integration test/);
     assert.match(doc, /`cli\/src\/lib\/mcp-call\.mjs` 의 thin wrapper/);
