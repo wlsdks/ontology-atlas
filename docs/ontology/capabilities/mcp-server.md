@@ -532,7 +532,8 @@ Node `--test-name-pattern` 이 필요하면 `pnpm integration:mcp -- --test-name
 `pnpm exec node --test --test-name-pattern "..." mcp/src/integration.test.mjs` 를 직접 실행한다.
 root focused integration subset / `test:mcp:*` package scripts 는 `scripts/run-focused-node-test.mjs` wrapper 를 통해 Node `--test-name-pattern` 이 0개 테스트와 매칭되어도 exit 0 으로 지나가는 silent skip 을 `# pass 0` summary 에서 감지해 실패시키고, pattern 없는 wrapper 호출이나 target 없는 wrapper 호출도 exit 2 로 거부해 accidental full-suite/default-discovery run 을 막으며, `--test-concurrency 1` 또는 `--test-timeout 1000` 같은 Node test option value 를 target 으로 오인하지 않고, split option 값이 빠져도 다음 option value 를 target 으로 새지 않게 한다. TAP summary 가 있으면 실패한 matched test 에서도 `[focused-node-test] pattern=... targets=... matched=N tests=N pass=N fail=N cancelled=N skipped=N` 요약을 끝에 남기고, 파일 setup/import 실패는 `setupFailures=N` 으로 분리하며, 실패 메시지에는 pattern 과 test target 파일을 함께 보여준다. wrapper 는 default TAP summary 의 `# tests` / `# pass` / `# fail` / `# cancelled` counts 를 요구하므로 argv 또는 `NODE_OPTIONS` 의 custom reporter 옵션은 spawn 전에 거부한다.
 package contract 는 `--test-name-pattern` 을 쓰는 root script 를 전부 스캔해 반드시 이 wrapper 를 거치도록 고정하고, wrapper 를 쓰는 script 가 명시적 pattern 과 target 을 넘기는지도 고정한다. CLI / MCP integration runner 자체도 non-matching `OMOT_TEST_NAME_PATTERN` 으로 exit 1 을 내는지 smoke 한다.
-root shortcut `pnpm integration:mcp:readme` 는 first-contact README read-only
+root shortcut `pnpm integration:mcp:surface` 는 JSON-RPC `tools/list` / `initialize` / `tools/call`
+server surface subset 만, `pnpm integration:mcp:readme` 는 first-contact README read-only
 subset 만 실행해 agent onboarding 문서 변경을 빠르게 검증한다.
 package manifest / enum suggestion 류의 더 작은 변경은 root 의
 `pnpm test:mcp:package` / `pnpm test:mcp:suggestions` 로 파일 단위 검증을 먼저

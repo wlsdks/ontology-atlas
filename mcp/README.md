@@ -54,6 +54,7 @@ before escalating to the full integration suite:
 ```bash
 pnpm test:contracts
 pnpm test:mcp:unit
+pnpm integration:mcp:surface
 pnpm integration:mcp:readme
 pnpm test:mcp:docs
 pnpm test:mcp:registration
@@ -83,8 +84,9 @@ pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
 pnpm cli:mcp-verify -- --help
 ```
 
-`integration:mcp:readme` runs the documented first-contact read-only MCP flow
-only. `test:mcp:unit` runs the MCP core parser, vault, compiler, query,
+`integration:mcp:surface` narrows the JSON-RPC `tools/list`, `initialize`, and
+`tools/call` server surface. `integration:mcp:readme` runs the documented
+first-contact read-only MCP flow only. `test:mcp:unit` runs the MCP core parser, vault, compiler, query,
 import-analysis, ignore-file, and JSON-RPC line helper unit contracts without
 spawning the full integration suite; when `pnpm checks:changed` prints a direct
 `pnpm exec node --test mcp/src/<name>.test.mjs` command, run that first for the

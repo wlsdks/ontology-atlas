@@ -47,6 +47,11 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm integration:mcp:surface',
+    reason: 'MCP JSON-RPC tool registry or handler surface changed',
+    matches: [/^mcp\/src\/index\.js$/, /^mcp\/src\/integration\.test\.mjs$/],
+  },
+  {
     command: 'pnpm test:dogfood:script-refs',
     reason: 'help text, package-script references, or focused wrapper behavior changed',
     matches: [

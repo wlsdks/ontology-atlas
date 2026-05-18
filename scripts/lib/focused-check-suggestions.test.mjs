@@ -76,6 +76,20 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
 
+  it('suggests focused MCP surface integration for server entrypoint changes', () => {
+    const result = suggestFocusedChecks([
+      'mcp/src/index.js',
+      'mcp/src/integration.test.mjs',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm test:mcp:unit',
+      'pnpm integration:mcp:surface',
+      'pnpm dogfood:status',
+    ]);
+    assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
+  });
+
   it('deduplicates direct MCP unit tests when source and test both changed', () => {
     const result = suggestFocusedChecks([
       'mcp/src/infer-imports.mjs',

@@ -175,6 +175,10 @@ describe('package contract helpers', () => {
     assert.match(pkg.scripts?.['test:mcp:unit'] ?? '', /mcp\/src\/json-rpc-lines\.test\.mjs/);
     assert.equal(pkg.scripts?.['integration:mcp'], 'node --test mcp/src/integration.test.mjs');
     assert.equal(
+      pkg.scripts?.['integration:mcp:surface'],
+      `${focusedNode} --test-name-pattern "^(tools/list|initialize|tools/call)" mcp/src/integration.test.mjs`,
+    );
+    assert.equal(
       pkg.scripts?.['integration:mcp:readme'],
       `${focusedNode} --test-name-pattern "README first exploration" mcp/src/integration.test.mjs`,
     );
@@ -390,6 +394,7 @@ describe('package contract helpers', () => {
       'pnpm integration:cli:local-vault',
       'pnpm integration:cli:growth',
       'pnpm integration:cli:maintenance',
+      'pnpm integration:mcp:surface',
       'OMOT_TEST_NAME_PATTERN="tools/list|initialize" pnpm integration:mcp',
       'pnpm integration:mcp:readme',
       'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
@@ -418,6 +423,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm integration:cli:repo-analysis` \| CLI `analyze` \/ `infer-imports` \/ `bootstrap` code-to-vault contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:local-vault` \| CLI local vault `add` \/ `import` \/ `list` \/ `find` \/ `validate` contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:growth` \| CLI `growth_plan` wrapper, candidate rendering, malformed payload, and argument contracts \|/);
+    assert.match(checksDoc, /\| `pnpm integration:mcp:surface` \| MCP JSON-RPC `tools\/list`, `initialize`, and `tools\/call` surface contracts \|/);
     assert.match(checksDoc, /\| Dogfood MCP smoke \| `pnpm dogfood:status` \| `pnpm dogfood:verify` \|/);
     assert.match(checksDoc, /pnpm test:dogfood:status/);
     assert.match(checksDoc, /`pnpm dogfood:compile-fix` runs `compile --fix` against docs\/ontology and fails\s+if it leaves a git diff/);
@@ -866,7 +872,9 @@ describe('package contract helpers', () => {
     const section = readme.split('### Source-checkout verification')[1]?.split('### 2. Restart Claude Code')[0] ?? '';
 
     assert.match(section, /pnpm test:contracts/);
+    assert.match(section, /pnpm integration:mcp:surface/);
     assert.match(section, /pnpm integration:mcp:readme/);
+    assert.match(section, /JSON-RPC `tools\/list`, `initialize`, and\s+`tools\/call` server surface/);
     assert.match(section, /pnpm test:mcp:docs/);
     assert.match(section, /pnpm test:mcp:registration/);
     assert.match(section, /source-checkout `.mcp.json` and\s+`.mcp.json.example` templates/);
