@@ -210,6 +210,16 @@ describe('focused node test wrapper', () => {
     );
   });
 
+  it('separates setup failures from focused matched tests', () => {
+    withFixture("throw new Error('setup boom');\n", (file) => {
+      const result = run(['--test-name-pattern', 'target case', file]);
+
+      assert.equal(result.status, 1);
+      assert.match(result.stdout, /# fail 1/);
+      assert.match(result.stdout, /\[focused-node-test\] pattern=target case targets=.+fixture\.test\.mjs matched=0 tests=1 pass=0 fail=1 cancelled=0 skipped=0 setupFailures=1/);
+    });
+  });
+
   it('reports node --test signal exits with the focused target path', () => {
     const diagnostics = [];
     const exitCode = runFocusedNodeTest({

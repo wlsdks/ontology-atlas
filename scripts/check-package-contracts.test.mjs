@@ -374,6 +374,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /Node test option values such as `--test-concurrency 1`\s+or `--test-timeout 1000` are not counted as targets/);
     assert.match(checksDoc, /missing split option\s+value cannot leak the following option value into the target list/);
     assert.match(checksDoc, /Focused runs with TAP summaries end with `matched=N` before the\s+broader file-level `tests=N`, even when a matched test fails/);
+    assert.match(checksDoc, /File\s+setup\/import failures are reported separately as `setupFailures=N`/);
     assert.match(checksDoc, /`pnpm dogfood:status` runs the\s+cheap human-readable health \+ workspace-brief \+\s+maintenance gates together/);
     assert.match(checksDoc, /still prints workspace-brief and maintenance when\s+health fails, then preserves the first failing exit code/);
     assert.match(checksDoc, /\[dogfood:status\] health:N · workspace-brief:N · maintenance:N/);
@@ -871,6 +872,7 @@ describe('package contract helpers', () => {
     assert.match(section, /Node test option values such as `--test-concurrency 1`\s+or `--test-timeout 1000` are\s+not counted as targets/);
     assert.match(section, /missing split option\s+value cannot leak the following option value into the target list/);
     assert.match(section, /Focused runs\s+with TAP summaries end with `matched=N` before file-level `tests=N`, even when a\s+matched test fails/);
+    assert.match(section, /File setup\/import failures are reported separately as\s+`setupFailures=N`/);
   });
 
   it('keeps the MCP verify README aligned with first-contact census gates', () => {
@@ -1445,6 +1447,7 @@ describe('package contract helpers', () => {
     assert.match(section, /Node test option values such as `--test-concurrency 1`\s+or `--test-timeout 1000` are\s+not counted as targets/);
     assert.match(section, /missing split option\s+value cannot leak the following option value into the target list/);
     assert.match(section, /Focused runs\s+with TAP summaries end with `matched=N` before file-level `tests=N`, even when a\s+matched test fails/);
+    assert.match(section, /File setup\/import failures are reported separately as\s+`setupFailures=N`/);
     assert.match(section, /`integration:cli:compile`\s+narrows CLI compile \/ `--fix` canonicalization contracts/);
     assert.match(section, /`integration:cli:growth`\s+narrows the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument contracts/);
     assert.match(section, /`dogfood:compile`\s+is the shortest root-checkout compiler summary JSON snapshot/);

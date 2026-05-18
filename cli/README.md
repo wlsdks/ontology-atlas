@@ -134,7 +134,8 @@ or `--test-timeout 1000` are not counted as targets, and a missing split option
 value cannot leak the following option value into the target list. Focused runs
 with TAP summaries end with `matched=N` before file-level `tests=N`, even when a
 matched test fails, so the exact scoped test count is visible without
-subtracting skipped tests.
+subtracting skipped tests. File setup/import failures are reported separately as
+`setupFailures=N` instead of inflating the matched-test count.
 `integration:cli:compile` narrows CLI compile / `--fix` canonicalization contracts
 without running unrelated CLI routes. `integration:cli:growth` narrows the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument contracts. `dogfood:compile`
 is the shortest root-checkout compiler summary JSON snapshot, `dogfood:compile-fix`

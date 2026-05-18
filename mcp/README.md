@@ -138,7 +138,8 @@ or `--test-timeout 1000` are not counted as targets, and a missing split option
 value cannot leak the following option value into the target list. Focused runs
 with TAP summaries end with `matched=N` before file-level `tests=N`, even when a
 matched test fails, so the exact scoped test count is visible without
-subtracting skipped tests.
+subtracting skipped tests. File setup/import failures are reported separately as
+`setupFailures=N` instead of inflating the matched-test count.
 `pnpm dogfood:compile` is the shortest dogfood vault compiler snapshot.
 `pnpm dogfood:compile-fix` runs dogfood `compile --fix`, fails if canonicalization leaves a docs/ontology diff, tells you to run `pnpm docs-vault:build`, and ends successful runs with `[dogfood:compile-fix] docs/ontology unchanged`.
 `pnpm test:dogfood:args` checks shared dogfood shortcut argument helpers without invoking any gate.

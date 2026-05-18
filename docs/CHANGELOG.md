@@ -37,7 +37,8 @@ can inspect ontology write candidates without raw JSON-RPC.
 - **Focused test matched count** — `scripts/run-focused-node-test.mjs` now prints
   `matched=N` before file-level `tests=N` on TAP-summary runs, including matched
   test failures, so scoped runs show the actual number of pattern-matched tests
-  without manual skip-count math.
+  without manual skip-count math. File setup/import failures are split out as
+  `setupFailures=N` instead of inflating `matched`.
 
 ## 2026-05-18 — MCP first-contact and packed-smoke hardening
 

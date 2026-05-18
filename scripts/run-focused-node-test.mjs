@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
-import { resolve } from 'node:path';
+import { basename, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { readNodeTestNamePattern } from './lib/test-name-pattern.mjs';
@@ -63,6 +63,20 @@ export function disallowedReporterSource({ argv = [], env = process.env } = {}) 
   return envOption ? { option: envOption, source: 'NODE_OPTIONS' } : null;
 }
 
+function setupFailureCount(output, testTargets) {
+  const targetNames = new Set(testTargets.map((target) => basename(target)).filter(Boolean));
+  if (targetNames.size === 0) return 0;
+
+  let count = 0;
+  for (const line of String(output).split('\n')) {
+    const match = line.match(/^not ok \d+ - (.+)$/);
+    if (!match) continue;
+    const name = match[1].trim();
+    if (targetNames.has(basename(name))) count += 1;
+  }
+  return count;
+}
+
 function focusedTapSummary({ output, pattern, testTargets }) {
   const tests = tapCount(output, 'tests');
   const pass = tapCount(output, 'pass');
@@ -71,11 +85,13 @@ function focusedTapSummary({ output, pattern, testTargets }) {
   const skipped = tapCount(output, 'skipped');
   if (tests === null || pass === null || fail === null || cancelled === null) return null;
 
-  const matched = pass + fail + cancelled;
+  const setupFailures = setupFailureCount(output, testTargets);
+  const matched = Math.max(0, pass + fail + cancelled - setupFailures);
   const skippedText = skipped === null ? '' : ` skipped=${skipped}`;
+  const setupFailureText = setupFailures === 0 ? '' : ` setupFailures=${setupFailures}`;
   return (
     `[focused-node-test] pattern=${pattern} targets=${testTargets.join(',')} ` +
-    `matched=${matched} tests=${tests} pass=${pass} fail=${fail} cancelled=${cancelled}${skippedText}`
+    `matched=${matched} tests=${tests} pass=${pass} fail=${fail} cancelled=${cancelled}${skippedText}${setupFailureText}`
   );
 }
 

@@ -101,7 +101,9 @@ also rejects custom reporter options from argv or `NODE_OPTIONS` before spawning
 because it needs the default TAP summary to prove at least one focused test
 actually ran. Focused runs with TAP summaries end with `matched=N` before the
 broader file-level `tests=N`, even when a matched test fails, so reviewers can
-see the exact scoped-test count without subtracting skipped tests by hand.
+see the exact scoped-test count without subtracting skipped tests by hand. File
+setup/import failures are reported separately as `setupFailures=N` instead of
+inflating the matched-test count.
 
 ## Dogfood Shortcuts
 
