@@ -2533,7 +2533,7 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
     assert.match(wrapper, /proc\.kill\('SIGKILL'\)/);
     assert.match(wrapper, /oh-my-ontology mcp-verify\$\{vaultPart\} --timeout-ms 15000/);
     assert.match(wrapper, /--vault \$\{shellArg\(vaultArg\)\}/);
-    assert.match(wrapper, /String\(flags\.timeoutMsRaw \?\? ''\)\.startsWith\('--'\)/);
+    assert.doesNotMatch(wrapper, /String\(flags\.timeoutMsRaw \?\? ''\)\.startsWith\('--'\)/);
     assert.match(wrapper, /replaceAll\("'", "'\\\\''"\)/);
     assert.match(verify, /OMOT_VERIFY_RETRY_EXAMPLE/);
     assert.match(verify, /DEFAULT_VERIFY_RETRY_EXAMPLE = 'npm run verify -- --timeout-ms 15000'/);
@@ -2546,6 +2546,7 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
     assert.match(integration, /retry=\$\{process\.env\.OMOT_VERIFY_RETRY_EXAMPLE\}/);
     assert.match(integration, /oh-my-ontology mcp-verify --vault '.\+vault with space' --timeout-ms 15000/);
     assert.match(integration, /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
+    assert.match(integration, /--timeout-ms', '--vault', 'ontology'/);
     assert.match(integration, /doesNotMatch\(stripAnsi\(r\.stderr\), \/npm run verify -- --timeout-ms 15000\/\)/);
   });
 

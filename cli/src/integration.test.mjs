@@ -552,7 +552,7 @@ await test('mcp-verify — rejects invalid timeout values', async () => {
   assert.equal(nextFlag.code, 1);
   assert.match(stripAnsi(nextFlag.stderr), /--timeout-ms requires a value/);
   assert.match(stripAnsi(nextFlag.stderr), /Received: "--vault"/);
-  assert.match(stripAnsi(nextFlag.stderr), /oh-my-ontology mcp-verify --timeout-ms 15000/);
+  assert.match(stripAnsi(nextFlag.stderr), /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
 
   const envTimeout = await run(['mcp-verify', 'ontology'], {
     env: { OMOT_VERIFY_TIMEOUT_MS: '1000ms' },

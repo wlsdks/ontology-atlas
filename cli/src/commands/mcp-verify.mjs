@@ -177,9 +177,7 @@ function parseArgs(args) {
     else positional.push(a);
   }
   if (flags.timeoutMs instanceof Error) {
-    const vaultResult = String(flags.timeoutMsRaw ?? '').startsWith('--')
-      ? { vault: null, error: null }
-      : resolveExclusiveVaultArg({ vault: flags.vault, positional });
+    const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
     return {
       error: mcpVerifyTimeoutValueErrorMessage(
         flags.timeoutMs.message,

@@ -383,7 +383,7 @@ try {
   assert.equal(nextFlagCliMcpVerifyTimeout.stdout, '');
   assert.match(nextFlagCliMcpVerifyTimeout.stderr, /--timeout-ms requires a value/);
   assert.match(nextFlagCliMcpVerifyTimeout.stderr, /Received: "--vault"/);
-  assert.match(nextFlagCliMcpVerifyTimeout.stderr, /oh-my-ontology mcp-verify --timeout-ms 15000/);
+  assert.match(nextFlagCliMcpVerifyTimeout.stderr, /oh-my-ontology mcp-verify --vault ontology --timeout-ms 15000/);
 
   const missingCliMcpVerifyVault = runRaw(
     cliBin,
