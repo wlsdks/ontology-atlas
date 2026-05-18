@@ -1334,7 +1334,7 @@ export function toolsListSchemaFailure(tools) {
     return 'query_ontology maintenance kinds enum schema drift';
   }
   const afterActionId = propertyAt(queryTool, ['properties', 'afterActionId']);
-  if (!/nextExecutableAction\/nextReviewAction point only at the first executable\/review action in the returned page/.test(afterActionId?.description || '')) {
+  if (!/nextExecutableAction\/nextReviewAction point only at the first executable\/review action in the current returned page/.test(afterActionId?.description || '')) {
     return 'query_ontology afterActionId description missing current-page next pointers';
   }
   if (!/action id, executable flag, phase, kind, and severity/.test(afterActionId?.description || '')) {

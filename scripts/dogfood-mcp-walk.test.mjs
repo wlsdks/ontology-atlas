@@ -276,7 +276,7 @@ function makeDogfoodToolsList() {
           kinds: { items: { enum: MAINTENANCE_KIND_VALUES } },
           afterActionId: {
             description:
-              "nextExecutableAction/nextReviewAction point only at the first executable/review action in the returned page and preserve that action id, executable flag, phase, kind, and severity. cursor.nextAfterActionId matches the last returned action id, cursor.hasMore matches whether more remaining actions exist after this page, and unknown cursors return cursor.nextAfterActionId=null, cursor.hasMore=false.",
+              "nextExecutableAction/nextReviewAction point only at the first executable/review action in the current returned page and preserve that action id, executable flag, phase, kind, and severity. cursor.nextAfterActionId matches the last returned action id, cursor.hasMore matches whether more remaining actions exist after this page, and unknown cursors return cursor.nextAfterActionId=null, cursor.hasMore=false.",
           },
           componentLimit: { type: "integer", minimum: 1, maximum: 500, description: "health/workspace_brief tuning" },
           cycleLimit: { type: "integer", minimum: 1, maximum: 500, description: "health/workspace_brief tuning" },
@@ -4076,7 +4076,7 @@ describe("evaluateDogfoodGate", () => {
     );
     const drifted = makeDogfoodToolsList();
     drifted.tools.find((tool) => tool.name === "query_ontology").inputSchema.properties.afterActionId.description =
-      "nextExecutableAction/nextReviewAction point only at the first executable/review action in the returned page.";
+      "nextExecutableAction/nextReviewAction point only at the first executable/review action in the current returned page.";
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, toolsList: drifted }),
       ["tools/list: query_ontology afterActionId description missing current-page next pointer detail fields"],
