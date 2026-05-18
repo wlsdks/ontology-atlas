@@ -671,6 +671,7 @@ const TOOLS = [
         },
       },
       required: ['slug', 'frontmatter', 'excerpt', 'neighbors', 'outgoingEdges', 'mtime'],
+      additionalProperties: false,
     },
   },
   {
@@ -732,10 +733,12 @@ const TOOLS = [
               },
             },
             required: ['ok', 'slug'],
+            additionalProperties: false,
           },
         },
       },
       required: ['concepts'],
+      additionalProperties: false,
     },
   },
   {

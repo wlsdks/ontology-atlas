@@ -587,9 +587,11 @@ function makeDogfoodToolsList() {
                   mtime: { type: "number", minimum: 0 },
                   warnings: vaultWarningsSchemaFixture(),
                 },
+                additionalProperties: false,
               },
             },
           },
+          additionalProperties: false,
         };
       }
       if (name === "get_concept") {
@@ -605,6 +607,7 @@ function makeDogfoodToolsList() {
             mtime: { type: "number", minimum: 0 },
             warnings: vaultWarningsSchemaFixture(),
           },
+          additionalProperties: false,
         };
       }
       if (name === "find_evidence") {

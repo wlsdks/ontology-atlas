@@ -608,9 +608,11 @@ describe('verify.mjs first-contact gates', () => {
                   mtime: { type: 'number', minimum: 0 },
                   warnings: vaultWarningsSchema,
                 },
+                additionalProperties: false,
               },
             },
           },
+          additionalProperties: false,
         },
       },
       {
@@ -1471,6 +1473,7 @@ describe('verify.mjs first-contact gates', () => {
             mtime: { type: 'number', minimum: 0 },
             warnings: vaultWarningsSchema,
           },
+          additionalProperties: false,
         },
       },
       {

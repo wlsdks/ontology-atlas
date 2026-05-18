@@ -344,6 +344,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     const getConceptTool = findTool("get_concept");
     assert.equal(getConceptTool?.outputSchema?.type, "object");
     assert.deepEqual(getConceptTool?.outputSchema?.required, ["slug", "frontmatter", "excerpt", "neighbors", "outgoingEdges", "mtime"]);
+    assert.equal(getConceptTool?.outputSchema?.additionalProperties, false);
     assert.equal(getConceptTool?.outputSchema?.properties?.frontmatter?.type, "object");
     assert.deepEqual(getConceptTool?.outputSchema?.properties?.neighbors?.required, ["domains", "domain", "capabilities", "elements", "dependencies", "relates", "contains", "describes"]);
     assert.equal(getConceptTool?.outputSchema?.properties?.neighbors?.additionalProperties, false);
@@ -355,8 +356,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     const getConceptsTool = findTool("get_concepts");
     assert.equal(getConceptsTool?.outputSchema?.type, "object");
     assert.deepEqual(getConceptsTool?.outputSchema?.required, ["concepts"]);
+    assert.equal(getConceptsTool?.outputSchema?.additionalProperties, false);
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.type, "array");
     assert.deepEqual(getConceptsTool?.outputSchema?.properties?.concepts?.items?.required, ["ok", "slug"]);
+    assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.additionalProperties, false);
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.ok?.type, "boolean");
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.frontmatter?.type, "object");
     assert.equal(getConceptsTool?.outputSchema?.properties?.concepts?.items?.properties?.excerpt?.type, "string");

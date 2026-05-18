@@ -654,6 +654,9 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(getConceptTool.outputSchema?.required, ['slug', 'frontmatter', 'excerpt', 'neighbors', 'outgoingEdges', 'mtime'])) {
     return 'get_concept outputSchema required drift';
   }
+  if (getConceptTool.outputSchema?.additionalProperties !== false) {
+    return 'get_concept outputSchema root openness drift';
+  }
   for (const propertyName of ['slug', 'excerpt']) {
     if (outputPropertyAt(getConceptTool, ['properties', propertyName])?.type !== 'string') {
       return `get_concept outputSchema ${propertyName} drift`;
@@ -705,12 +708,18 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(getConceptsTool.outputSchema?.required, ['concepts'])) {
     return 'get_concepts outputSchema required drift';
   }
+  if (getConceptsTool.outputSchema?.additionalProperties !== false) {
+    return 'get_concepts outputSchema root openness drift';
+  }
   const getConceptsItemsSchema = outputPropertyAt(getConceptsTool, ['properties', 'concepts', 'items']);
   if (outputPropertyAt(getConceptsTool, ['properties', 'concepts'])?.type !== 'array' || getConceptsItemsSchema?.type !== 'object') {
     return 'get_concepts outputSchema concepts drift';
   }
   if (!sameArray(getConceptsItemsSchema.required, ['ok', 'slug'])) {
     return 'get_concepts outputSchema row required drift';
+  }
+  if (getConceptsItemsSchema.additionalProperties !== false) {
+    return 'get_concepts outputSchema row openness drift';
   }
   if (getConceptsItemsSchema.properties?.ok?.type !== 'boolean') {
     return 'get_concepts outputSchema row ok drift';

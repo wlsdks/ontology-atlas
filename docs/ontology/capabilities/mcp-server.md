@@ -744,6 +744,7 @@ destructive writer 의 `backlinkUpdates` / `capturedFrom` / `backlinksAtDelete` 
 payload 구조로 닫아 rename / merge / delete 결과를 agent 가 추측 없이 후속 검토할 수 있게 한다.
 read tool 의 핵심 진입점인 `get_concept` / `get_concepts` 도 `neighbors` / `outgoingEdges` /
 `warnings` 구조를 닫아 vault issue 와 graph edge payload 를 안전하게 파싱할 수 있게 한다.
+두 tool 의 root / batch-row object 도 닫혀 응답에 없는 필드를 agent 가 후속 상태로 가정하지 못한다.
 verify / dogfood gate 도 `nextExecutableAction` / `nextReviewAction` nullable pointer
 shape drift 를 별도 실패로 잡아 current-page next action 안내가 느슨해지지 않게 한다.
 write-tool description 도 두 pointer 이름을 모두 포함해야 통과하므로 agent-facing 안내와
