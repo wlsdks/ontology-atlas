@@ -4988,6 +4988,48 @@ await test("get_concept — dangling outgoing graph reference 를 warnings 에 �
   }
 });
 
+await test("add_relation — missing endpoints include recovery and create hints", async () => {
+  const root = makeVault([
+    { slug: "project", content: "---\nkind: project\ntitle: Project\n---\n" },
+    { slug: "capabilities/mcp-server", content: "---\nkind: capability\ntitle: MCP Server\n---\n" },
+  ]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_relation", {
+        from: "mcp",
+        to: "project",
+        type: "relates",
+      }),
+      callTool(3, "add_relation", {
+        from: "project",
+        to: "mcp",
+        type: "relates",
+      }),
+      callTool(4, "add_relation", {
+        from: "project",
+        to: "missing-new-node",
+        type: "relates",
+      }),
+    ]);
+
+    for (const id of [2, 3, 4]) {
+      assert.equal(isErrorResponse(responses, id), true, `request ${id} should be rejected`);
+      const text = responses.find((r) => r.id === id).result.content[0].text;
+      assert.match(text, /Use list_concepts\(\) to see all slugs/);
+      assert.match(text, /find_evidence\(query\)/);
+      assert.match(text, /add_concept\(slug, kind, title\)/);
+    }
+    assert.match(responses.find((r) => r.id === 2).result.content[0].text, /Source slug does not exist in vault/);
+    assert.match(responses.find((r) => r.id === 2).result.content[0].text, /Similar slugs in this vault: "capabilities\/mcp-server"/);
+    assert.match(responses.find((r) => r.id === 3).result.content[0].text, /Target slug does not exist in vault/);
+    assert.match(responses.find((r) => r.id === 3).result.content[0].text, /Similar slugs in this vault: "capabilities\/mcp-server"/);
+    assert.match(responses.find((r) => r.id === 4).result.content[0].text, /Target slug does not exist in vault/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("add_relation — 같은 edge 두번 추가 시 alreadyExists:true (idempotent)", async () => {
   const root = makeVault([
     { slug: "a", content: "---\nkind: project\ntitle: A\n---\n" },

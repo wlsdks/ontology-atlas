@@ -537,7 +537,7 @@ Throughout: the user (via your add_concepts / add_relations calls) is the single
 Every error message ends with the canonical fix tool. Examples:
 - \`Doc already exists at "X". To update fields, use **patch_concept**(...).\`
 - \`Doc not found: "Y". Use **list_concepts**() to see all slugs, or **find_evidence**(query) to search by title. Similar slugs in this vault: ...\`
-- \`Source slug does not exist in vault: "Z". Did you mean: ...?\`
+- \`Source slug does not exist in vault: "Z". Use list_concepts() to see all slugs, or find_evidence(query) to search by title. If the endpoint is real but absent, create it first with add_concept(slug, kind, title). Similar slugs in this vault: ...\`
 
 Don't retry blindly — parse the suffix and pivot to the suggested tool.
 
@@ -3243,18 +3243,14 @@ function addRelation({ from, to, type, expected_mtime }, options = {}) {
   // hallucinated slug 보낼 때 깔끔한 에러로 노출). direct slug 뿐 아니라
   // read/path 와 같은 tail/frontmatter slug alias 도 canonical slug 로 저장.
   if (!canonicalFrom) {
-    const suggestions = suggestSimilarSlugs(VAULT_ROOT, from);
-    const suffix = suggestions.length > 0
-      ? ` Did you mean: ${suggestions.map((s) => `"${s}"`).join(', ')}?`
-      : ' Use list_concepts() to see all slugs, or add_concept(slug, kind, title) to create it first.';
-    throw new Error(`Source slug does not exist in vault: "${from}".${suffix}`);
+    throw new Error(missingSlugMessage('Source slug does not exist in vault', from, {
+      createHint: true,
+    }));
   }
   if (!canonicalTo) {
-    const suggestions = suggestSimilarSlugs(VAULT_ROOT, to);
-    const suffix = suggestions.length > 0
-      ? ` Did you mean: ${suggestions.map((s) => `"${s}"`).join(', ')}?`
-      : ' Use list_concepts() to see all slugs, or add_concept(slug, kind, title) to create it first.';
-    throw new Error(`Target slug does not exist in vault: "${to}".${suffix}`);
+    throw new Error(missingSlugMessage('Target slug does not exist in vault', to, {
+      createHint: true,
+    }));
   }
   const doc = readDoc(VAULT_ROOT, slugToPath(VAULT_ROOT, canonicalFrom));
   if (key === 'domain') {
@@ -4176,11 +4172,14 @@ function deleteConcept({ slug, confirm = false, force = false, expected_mtime })
   };
 }
 
-function missingSlugMessage(prefix, slug) {
+function missingSlugMessage(prefix, slug, { createHint = false } = {}) {
   const suggestions = suggestSimilarSlugs(VAULT_ROOT, slug);
   const lines = [
     `${prefix}: "${slug}". Use list_concepts() to see all slugs, or find_evidence(query) to search by title.`,
   ];
+  if (createHint) {
+    lines.push('If the endpoint is real but absent, create it first with add_concept(slug, kind, title).');
+  }
   if (suggestions.length > 0) {
     lines.push(`Similar slugs in this vault: ${suggestions.map((s) => `"${s}"`).join(', ')}.`);
   }
