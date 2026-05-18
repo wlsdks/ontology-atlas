@@ -732,7 +732,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_concepts',
         description:
-          `Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, multi unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later \`concepts[n]\` row plus first-seen \`concepts[m]\`, and return ${postWriteDescription}.`,
+          `Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, multi unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later \`concepts[n]\` row plus first-seen \`concepts[m]\` with structured \`rowName\` / \`firstSeenAt\`, and return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['concepts'],
@@ -3775,6 +3775,16 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'add_concepts description missing duplicate row guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'add_concepts'),
+        {
+          ...tools.find((tool) => tool.name === 'add_concepts'),
+          description: 'Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later `concepts[n]` row plus first-seen `concepts[m]`, and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+        },
+      ]),
+      'add_concepts description missing duplicate structured row repair guidance',
     );
     assert.equal(
       toolsListSchemaFailure([

@@ -421,6 +421,9 @@ export function writeRowLabelGuidanceSummary(tools) {
   if (!/duplicate input slugs/.test(addConcepts?.description || "") || !/first-seen `concepts\[m\]`/.test(addConcepts?.description || "")) {
     missing.push("add_concepts duplicate first-seen");
   }
+  if (!/structured `rowName` \/ `firstSeenAt`/.test(addConcepts?.description || "")) {
+    missing.push("add_concepts duplicate structured row repair");
+  }
   if (!/relations\[n\]/.test(addRelations?.description || "")) {
     missing.push("add_relations relations[n]");
   }

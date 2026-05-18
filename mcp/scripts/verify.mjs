@@ -1885,6 +1885,9 @@ export function toolsListSchemaFailure(tools) {
   if (!/duplicate input slugs/.test(addConceptsTool?.description || '') || !/first-seen `concepts\[m\]`/.test(addConceptsTool?.description || '')) {
     return 'add_concepts description missing duplicate row guidance';
   }
+  if (!/structured `rowName` \/ `firstSeenAt`/.test(addConceptsTool?.description || '')) {
+    return 'add_concepts description missing duplicate structured row repair guidance';
+  }
   if (addConceptsTool.outputSchema?.type !== 'object') {
     return 'add_concepts outputSchema root drift';
   }

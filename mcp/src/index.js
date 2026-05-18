@@ -863,7 +863,7 @@ const TOOLS = [
       'Use after `analyze_repo_structure` / `infer_imports` (or any bootstrap flow) ' +
       'when the agent has K accepted candidates from the user — replaces K×`add_concept` ' +
       'round-trips. Each row is processed independently: existing-slug / invalid-kind / ' +
-      'missing-required-fields / non-object row shape / unknown row fields surface as `{ slug, ok: false, error }` rows whose errors include a `concepts[n]` row label, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every unknown field with nearest hints and `Received fields: ...`, and duplicate input slugs report the later `concepts[n]` row plus first-seen `concepts[m]`; the rest ' +
+      'missing-required-fields / non-object row shape / unknown row fields surface as `{ slug, ok: false, error }` rows whose errors include a `concepts[n]` row label, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every unknown field with nearest hints and `Received fields: ...`, and duplicate input slugs report the later `concepts[n]` row plus first-seen `concepts[m]` with structured `rowName` / `firstSeenAt`; the rest ' +
       'still land. `concepts[]` order in the response matches the input. Cap = 50 per ' +
       'call (split into multiple batches for larger sets). NO atomic rollback — if you ' +
       'need all-or-nothing semantics use single `add_concept` calls. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.',
