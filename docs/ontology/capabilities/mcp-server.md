@@ -146,9 +146,9 @@ frontmatter / excerpt / neighbors / outgoingEdges / mtime 과 `structuredContent
 parsed/text JSON 값, `structuredContent` 값을 함께 출력해 agent 가 응답 contract drift 를 바로 좁힐 수 있게 한다.
 tool-level 실패 응답도 `structuredContent: { ok:false, errorCode, error }` 를 함께 반환해 MCP 클라이언트가
 텍스트 파싱 없이 retry / 수정 / 사용자 보고 분기를 결정할 수 있고, strict argument / enum / filter / type / write-safety verify 와 dogfood gate 가 `errorCode` 까지 확인한다.
-dogfood walk 의 strict argument / multi-argument / enum 섹션은 `structuredContent` 의
+dogfood walk 의 strict tool-name / argument / multi-argument / enum 섹션은 `structuredContent` 의
 repair field 를 읽어 `arg lmit->limit`, `args lmit->limit, summry->summary`,
-`operation overveiw->overview` 형태의 compact repair summary 도 함께 출력한다.
+`operation overveiw->overview`, `tool list_concept->list_concepts` 형태의 compact repair summary 도 함께 출력한다.
 `get_concepts` 는 `list_concepts` 에서 얻은 실제 slug 최대 2개와 missing slug 를 섞어
 설치 검증에서도 batch reader 의 성공 row 와 partial row 계약을 확인한다.
 `find_evidence` / `find_backlinks` / `query_concepts` 는 resolved vault 에 실제 호출하고,
@@ -607,7 +607,7 @@ nearest hint 로 복구 경로를 보여준다. `pnpm dogfood:walk -- --help`
 `pnpm dogfood:brief` / `pnpm dogfood:verify` 순서의 더 가벼운 dogfood gate, installed-style verify gate,
 focused check 경로를 출력해 dogfood 범위 확인 비용을 낮춘다.
 도움말의 `pnpm test:mcp:dogfood` 설명도 compile/index gate, tools/list inventory name / annotation coverage, row-label guidance,
-batch cap gates, strict closest-value summary, vault warning / `validate_vault` problem gate, first-contact health/growth/sample-shape gate, maintenance work-queue shape / formatter, initialize safety/recovery guidance, destructive dry-run, structuredContent, strict relation filter, strict add_relation type-preflight, strict graph kind filter, stderr warning 범위를 함께 보여줘 실행 전 검증 surface 를 숨기지 않는다. 기본 census / backlink / path 질의에 더해 `validate_vault`,
+batch cap gates, strict closest-value / unknown-tool repair summary, vault warning / `validate_vault` problem gate, first-contact health/growth/sample-shape gate, maintenance work-queue shape / formatter, initialize safety/recovery guidance, destructive dry-run, structuredContent, strict relation filter, strict add_relation type-preflight, strict graph kind filter, stderr warning 범위를 함께 보여줘 실행 전 검증 surface 를 숨기지 않는다. 기본 census / backlink / path 질의에 더해 `validate_vault`,
 `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology`, `overview`, `pattern_walk`,
 project-node `list_concepts` probe, `all_paths`, `all_paths query_plan`, `neighbors`, `path`, `project_map query_plan`, `project_scope`, `project_map`,
 `domain_profile`, `domain_matrix`, `components`, `reachability`, `impact`,
@@ -834,6 +834,6 @@ health summary, failing health check, workspace_brief growth/sample/action gate 
 CLI `mcp-verify` 문서도 delegated verify output 의 non-blocking advisory 와
 issues/unresolved/cycles/checks health summary 를 설명해 설치 경로와 source checkout
 검증 경로의 기대 출력이 갈라지지 않게 한다.
-`pnpm test:mcp:dogfood` 는 이 gate 판정의 focused subset, workspace_brief sample-shape gate, maintenance work-queue shape / formatter, initialize safety/recovery guidance, tools/list inventory name / annotation coverage, row-label guidance summary, strict closest-value summary, strict add_relation type-preflight 를 fixture 로 검증해
+`pnpm test:mcp:dogfood` 는 이 gate 판정의 focused subset, workspace_brief sample-shape gate, maintenance work-queue shape / formatter, initialize safety/recovery guidance, tools/list inventory name / annotation coverage, row-label guidance summary, strict closest-value / unknown-tool repair summary, strict add_relation type-preflight 를 fixture 로 검증해
 dogfood walk 의 실패 조건이 조용히 약해지지 않게 막고, 전체 helper 회귀가 필요할 때만
 `pnpm dogfood:test` 로 넓힌다.

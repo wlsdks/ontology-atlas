@@ -6,7 +6,7 @@
 //
 // write 안 함 (dogfood vault 보존). destructive tools are dry-run only. list_kinds / list_concepts / project probe / get_concepts /
 // find_evidence / find_path / find_backlinks / find_orphans /
-// tools/list schema contract / strict unknown-argument, invalid-enum, and invalid-filter rejection / validate_vault / compile_ontology(summary + indexed full artifact) /
+// tools/list schema contract / strict unknown-tool, unknown-argument, invalid-enum, and invalid-filter rejection / validate_vault / compile_ontology(summary + indexed full artifact) /
 // query_ontology overview / query_plan / neighbors / path / all_paths / pattern_walk / project_scope / centrality / communities / similar_nodes / explain_relation / reachability / impact / blast_radius / subgraph / schema / facets / match_nodes / match_edges / node_profile / lineage / containment_tree / cycles / topological_order / relation_check / components / recommend_relations / growth_plan / maintenance_plan / workspace_brief / health / health tuned.
 
 import { spawn } from "node:child_process";
@@ -37,6 +37,7 @@ import {
   strictArgsFailure,
   strictMultiArgsFailure,
   strictEnumFailure,
+  strictUnknownToolFailure,
   strictGraphKindFilterFailure,
   strictRecommendRelationsKindFilterFailure,
   strictMatchNodesSortFailure,
@@ -99,7 +100,7 @@ export function dogfoodUsage() {
     "  pnpm dogfood:verify        Installed-style verify gate over docs/ontology before the full walk.",
     "",
     "Focused checks:",
-    "  pnpm test:mcp:dogfood           Dogfood helper, compile/index gates, tools/list inventory names + annotation coverage, row-label guidance, batch cap gates, strict closest-value summary, vault warning and validate_vault problem gates, first-contact health/growth/sample-shape gates, maintenance work-queue shape + formatter checks, initialize safety/recovery guidance, destructive dry-run, help/argument/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight, strict graph kind filters, stderr warning checks.",
+    "  pnpm test:mcp:dogfood           Dogfood helper, compile/index gates, tools/list inventory names + annotation coverage, row-label guidance, batch cap gates, strict closest-value and unknown-tool repair summary, vault warning and validate_vault problem gates, first-contact health/growth/sample-shape gates, maintenance work-queue shape + formatter checks, initialize safety/recovery guidance, destructive dry-run, help/argument/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight, strict graph kind filters, stderr warning checks.",
     "  pnpm test:mcp:dogfood:timeout   Narrow dogfood timeout/help retry diagnostics.",
     "  pnpm dogfood:test               Full dogfood helper regression suite when focused checks are not enough.",
   ].join("\n");
@@ -247,6 +248,7 @@ const DOGFOOD_RESPONSE_LABELS = new Map([
   [81, "get_concepts_batch_cap"],
   [82, "add_concepts_batch_cap"],
   [83, "add_relations_batch_cap"],
+  [84, "strict_unknown_tool"],
 ]);
 
 const HEALTH_CHECK_STATUSES = new Set(["pass", "warn", "fail", "info"]);
@@ -962,6 +964,7 @@ export function buildDogfoodRequests() {
     call(46, "list_concepts", { lmit: 1 }),
     call(59, "list_concepts", { lmit: 1, summry: true }),
     call(47, "query_ontology", { operation: "overveiw" }),
+    call(84, "list_concept", { limit: 1 }),
   ];
 }
 
@@ -1149,6 +1152,7 @@ export function evaluateDogfoodGate({
   strictArgs,
   strictMultiArgs,
   strictEnum,
+  strictUnknownTool,
   strictMaintenancePhaseFilter,
   strictMaintenanceSeverityFilter,
   strictMaintenanceKindFilter,
@@ -1236,6 +1240,8 @@ export function evaluateDogfoodGate({
   if (strictMultiFailure) failures.push(`strict_multi_args: ${strictMultiFailure}`);
   const strictEnumError = strictEnumFailure(strictEnum);
   if (strictEnumError) failures.push(`strict_enum: ${strictEnumError}`);
+  const strictUnknownToolError = strictUnknownToolFailure(strictUnknownTool);
+  if (strictUnknownToolError) failures.push(`strict_unknown_tool: ${strictUnknownToolError}`);
   const strictMaintenancePhaseFilterError = strictMaintenanceFilterFailure(strictMaintenancePhaseFilter, "phases");
   if (strictMaintenancePhaseFilterError) failures.push(`strict_maintenance_phase_filter: ${strictMaintenancePhaseFilterError}`);
   const strictMaintenanceSeverityFilterError = strictMaintenanceFilterFailure(strictMaintenanceSeverityFilter, "severities");
@@ -5567,7 +5573,17 @@ async function main() {
     console.log(`  ${strictEnumText}`);
   }
 
-  // 48. strict maintenance filter rejection
+  // 48. strict unknown tool rejection
+  header("strict tool names — unknown tool rejection");
+  const strictUnknownTool = responses.find((response) => response.id === 84);
+  const strictUnknownToolText = strictUnknownTool?.result?.content?.[0]?.text || "";
+  console.log(`  rejected: ${strictUnknownTool?.result?.isError === true}`);
+  console.log(`  repair: ${strictRepairSummary(strictUnknownTool)}`);
+  if (strictUnknownToolText) {
+    console.log(`  ${strictUnknownToolText}`);
+  }
+
+  // 49. strict maintenance filter rejection
   header("strict maintenance filters — invalid phase/severity/kind rejection");
   const strictMaintenancePhaseFilter = responses.find((response) => response.id === 51);
   const strictMaintenancePhaseFilterText = strictMaintenancePhaseFilter?.result?.content?.[0]?.text || "";
@@ -5588,7 +5604,7 @@ async function main() {
     console.log(`  ${strictMaintenanceKindFilterText}`);
   }
 
-  // 49. strict relation filter rejection
+  // 50. strict relation filter rejection
   header("strict relation filters — invalid dependencyTypes rejection");
   const strictRelationFilter = responses.find((response) => response.id === 61);
   const strictRelationFilterText = strictRelationFilter?.result?.content?.[0]?.text || "";
@@ -5633,7 +5649,7 @@ async function main() {
     console.log(`  ${strictListConceptsKindFilterText}`);
   }
 
-  // 50. strict relation_check rejection
+  // 51. strict relation_check rejection
   header("strict relation_check — invalid type rejection");
   const strictRelationCheck = responses.find((response) => response.id === 66);
   const strictRelationCheckText = strictRelationCheck?.result?.content?.[0]?.text || "";
@@ -5642,7 +5658,7 @@ async function main() {
     console.log(`  ${strictRelationCheckText}`);
   }
 
-  // 51. strict add_relation rejection
+  // 52. strict add_relation rejection
   header("strict add_relation — invalid type rejection");
   const strictAddRelation = responses.find((response) => response.id === 70);
   const strictAddRelationText = strictAddRelation?.result?.content?.[0]?.text || "";
@@ -5651,7 +5667,7 @@ async function main() {
     console.log(`  ${strictAddRelationText}`);
   }
 
-  // 52. strict graph kind filter rejection
+  // 53. strict graph kind filter rejection
   header("strict graph filters — invalid match_nodes.kind/sort, match_edges.type, and recommend_relations.kind rejection");
   const strictGraphKindFilter = responses.find((response) => response.id === 67);
   const strictGraphKindFilterText = strictGraphKindFilter?.result?.content?.[0]?.text || "";
@@ -5869,6 +5885,7 @@ async function main() {
     strictArgs,
     strictMultiArgs,
     strictEnum,
+    strictUnknownTool,
     strictMaintenancePhaseFilter,
     strictMaintenanceSeverityFilter,
     strictMaintenanceKindFilter,
@@ -5988,6 +6005,7 @@ async function main() {
   console.log(`  strict_args: ${strictRepairSummary(strictArgs)}`);
   console.log(`  strict_multi_args: ${strictRepairSummary(strictMultiArgs)}`);
   console.log(`  strict_enum: ${strictRepairSummary(strictEnum)}`);
+  console.log(`  strict_unknown_tool: ${strictRepairSummary(strictUnknownTool)}`);
   console.log(`  strict_maintenance_phase_filter: rejected ${strictMaintenancePhaseFilter?.result?.isError === true}`);
   console.log(`  strict_maintenance_severity_filter: rejected ${strictMaintenanceSeverityFilter?.result?.isError === true}`);
   console.log(`  strict_maintenance_kind_filter: rejected ${strictMaintenanceKindFilter?.result?.isError === true}`);

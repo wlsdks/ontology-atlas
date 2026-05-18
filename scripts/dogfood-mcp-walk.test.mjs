@@ -3200,6 +3200,20 @@ const okShape = {
       },
     },
   },
+  strictUnknownTool: {
+    result: {
+      isError: true,
+      content: [{ text: 'Error: Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concept, list_concepts.' }],
+      structuredContent: {
+        ok: false,
+        errorCode: "unknown_tool",
+        error: 'Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concept, list_concepts.',
+        receivedTool: "list_concept",
+        suggestion: "list_concepts",
+        allowedTools: ["add_concept", "list_concepts"],
+      },
+    },
+  },
   strictMaintenancePhaseFilter: {
     result: {
       isError: true,
@@ -3542,6 +3556,10 @@ describe("rpc response completion helpers", () => {
       "rejected true (operation overveiw->overview; allowed 2)",
     );
     assert.equal(
+      strictRepairSummary(okShape.strictUnknownTool),
+      "rejected true (tool list_concept->list_concepts; allowed 2)",
+    );
+    assert.equal(
       strictClosestValueSummary(okShape.strictRelationFilter),
       "rejected true (depend_on -> depends_on)",
     );
@@ -3747,7 +3765,7 @@ describe("rpc response completion helpers", () => {
     assert.match(usage, /pnpm test:mcp:dogfood:timeout/);
     assert.match(usage, /Narrow dogfood timeout\/help retry diagnostics/);
     assert.match(usage, /pnpm dogfood:test\s+Full dogfood helper regression suite when focused checks are not enough/);
-    assert.match(usage, /Dogfood helper, compile\/index gates, tools\/list inventory names \+ annotation coverage, row-label guidance, batch cap gates, strict closest-value summary, vault warning and validate_vault problem gates, first-contact health\/growth\/sample-shape gates, maintenance work-queue shape \+ formatter checks, initialize safety\/recovery guidance, destructive dry-run, help\/argument\/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight, strict graph kind filters, stderr warning checks/);
+    assert.match(usage, /Dogfood helper, compile\/index gates, tools\/list inventory names \+ annotation coverage, row-label guidance, batch cap gates, strict closest-value and unknown-tool repair summary, vault warning and validate_vault problem gates, first-contact health\/growth\/sample-shape gates, maintenance work-queue shape \+ formatter checks, initialize safety\/recovery guidance, destructive dry-run, help\/argument\/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight, strict graph kind filters, stderr warning checks/);
     assertPnpmScriptsExist(usage);
   });
 
@@ -3902,6 +3920,7 @@ describe("rpc response completion helpers", () => {
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(81), "get_concepts_batch_cap");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(82), "add_concepts_batch_cap");
     assert.equal(DOGFOOD_RESPONSE_LABELS.get(83), "add_relations_batch_cap");
+    assert.equal(DOGFOOD_RESPONSE_LABELS.get(84), "strict_unknown_tool");
     assert.deepEqual(
       [...expectedResponseIds(buildDogfoodRequests())].sort((a, b) => a - b),
       [...DOGFOOD_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -4681,6 +4700,51 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["strict_enum: strict enum structured error missing repair hint"],
+    );
+  });
+
+  it("fails malformed strict unknown-tool dogfood responses", () => {
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictUnknownTool: { result: { isError: false, content: [{ text: "ok" }] } } }),
+      ["strict_unknown_tool: strict unknown-tool response was not rejected"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({ ...okShape, strictUnknownTool: { result: { isError: true, content: [{ text: "different error" }] } } }),
+      ["strict_unknown_tool: strict unknown-tool structured error missing"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictUnknownTool: {
+          result: {
+            isError: true,
+            content: [{ text: 'Error: Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concept, list_concepts.' }],
+            structuredContent: {
+              ok: false,
+              errorCode: "unknown_argument",
+              error: 'Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concept, list_concepts.',
+            },
+          },
+        },
+      }),
+      ["strict_unknown_tool: strict unknown-tool structured error code mismatch — expected unknown_tool, got unknown_argument"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictUnknownTool: {
+          result: {
+            isError: true,
+            content: [{ text: 'Error: Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concept, list_concepts.' }],
+            structuredContent: {
+              ok: false,
+              errorCode: "unknown_tool",
+              error: 'Unknown tool: list_concept. Did you mean "list_concepts"? Allowed tools: add_concept, list_concepts.',
+            },
+          },
+        },
+      }),
+      ["strict_unknown_tool: strict unknown-tool structured error missing repair hint"],
     );
   });
 
