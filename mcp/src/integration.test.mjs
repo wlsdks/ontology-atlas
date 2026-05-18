@@ -337,10 +337,13 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     const listConcepts = findTool("list_concepts");
     assert.equal(listConcepts?.outputSchema?.type, "object");
     assert.deepEqual(listConcepts?.outputSchema?.required, ["total", "vaultRoot", "nodes"]);
+    assert.equal(listConcepts?.outputSchema?.additionalProperties, false);
     assert.equal(listConcepts?.outputSchema?.properties?.total?.type, "integer");
     assert.equal(listConcepts?.outputSchema?.properties?.vaultRoot?.type, "string");
     assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.properties?.mtime?.type, "number");
+    assert.equal(listConcepts?.outputSchema?.properties?.nodes?.items?.additionalProperties, false);
     assert.deepEqual(listConcepts?.outputSchema?.properties?.vaultWarnings?.required, ["errorCount", "warningCount"]);
+    assert.equal(listConcepts?.outputSchema?.properties?.vaultWarnings?.additionalProperties, false);
     const getConceptTool = findTool("get_concept");
     assert.equal(getConceptTool?.outputSchema?.type, "object");
     assert.deepEqual(getConceptTool?.outputSchema?.required, ["slug", "frontmatter", "excerpt", "neighbors", "outgoingEdges", "mtime"]);
@@ -383,8 +386,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.equal(findEvidence?.outputSchema?.type, "object");
     assert.deepEqual(findEvidence?.outputSchema?.required, ["query", "matches"]);
+    assert.equal(findEvidence?.outputSchema?.additionalProperties, false);
     assert.equal(findEvidence?.outputSchema?.properties?.matches?.type, "array");
     assert.deepEqual(findEvidence?.outputSchema?.properties?.matches?.items?.required, ["slug", "kind", "title", "mtime", "matchedIn", "excerpt"]);
+    assert.equal(findEvidence?.outputSchema?.properties?.matches?.items?.additionalProperties, false);
     assert.deepEqual(findEvidence?.outputSchema?.properties?.matches?.items?.properties?.matchedIn?.enum, ["frontmatter", "body"]);
     const findBacklinks = findTool("find_backlinks");
     assert.match(
@@ -399,8 +404,10 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.equal(findBacklinks?.outputSchema?.type, "object");
     assert.deepEqual(findBacklinks?.outputSchema?.required, ["target", "total", "matches"]);
+    assert.equal(findBacklinks?.outputSchema?.additionalProperties, false);
     assert.equal(findBacklinks?.outputSchema?.properties?.total?.type, "integer");
     assert.deepEqual(findBacklinks?.outputSchema?.properties?.matches?.items?.required, ["slug", "kind", "title", "mtime"]);
+    assert.equal(findBacklinks?.outputSchema?.properties?.matches?.items?.additionalProperties, false);
     assert.equal(findBacklinks?.outputSchema?.properties?.matches?.items?.properties?.matchedKeys?.items?.type, "string");
     const findNeighbors = findTool("find_neighbors");
     assert.equal(findNeighbors?.outputSchema?.type, "object");

@@ -614,6 +614,9 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(listConceptsTool.outputSchema?.required, ['total', 'vaultRoot', 'nodes'])) {
     return 'list_concepts outputSchema required drift';
   }
+  if (listConceptsTool.outputSchema?.additionalProperties !== false) {
+    return 'list_concepts outputSchema root openness drift';
+  }
   const listTotalSchema = outputPropertyAt(listConceptsTool, ['properties', 'total']);
   if (listTotalSchema?.type !== 'integer' || listTotalSchema.minimum !== 0) {
     return 'list_concepts outputSchema total drift';
@@ -625,6 +628,9 @@ export function toolsListSchemaFailure(tools) {
   const listNodesSchema = outputPropertyAt(listConceptsTool, ['properties', 'nodes']);
   if (listNodesSchema?.type !== 'array' || listNodesSchema.items?.type !== 'object' || !sameArray(listNodesSchema.items?.required, ['slug', 'kind', 'title', 'mtime'])) {
     return 'list_concepts outputSchema nodes drift';
+  }
+  if (listNodesSchema.items?.additionalProperties !== false) {
+    return 'list_concepts outputSchema node openness drift';
   }
   for (const propertyName of ['slug', 'kind', 'title']) {
     if (listNodesSchema.items?.properties?.[propertyName]?.type !== 'string') {
@@ -638,6 +644,9 @@ export function toolsListSchemaFailure(tools) {
   const vaultWarningsSchema = outputPropertyAt(listConceptsTool, ['properties', 'vaultWarnings']);
   if (vaultWarningsSchema?.type !== 'object' || !sameArray(vaultWarningsSchema.required, ['errorCount', 'warningCount'])) {
     return 'list_concepts outputSchema vaultWarnings drift';
+  }
+  if (vaultWarningsSchema.additionalProperties !== false) {
+    return 'list_concepts outputSchema vaultWarnings openness drift';
   }
   for (const propertyName of ['errorCount', 'warningCount']) {
     const countSchema = vaultWarningsSchema.properties?.[propertyName];
@@ -775,6 +784,9 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(findEvidenceTool.outputSchema?.required, ['query', 'matches'])) {
     return 'find_evidence outputSchema required drift';
   }
+  if (findEvidenceTool.outputSchema?.additionalProperties !== false) {
+    return 'find_evidence outputSchema root openness drift';
+  }
   if (outputPropertyAt(findEvidenceTool, ['properties', 'query'])?.type !== 'string') {
     return 'find_evidence outputSchema query drift';
   }
@@ -785,6 +797,9 @@ export function toolsListSchemaFailure(tools) {
     !sameArray(evidenceMatchesSchema.items?.required, ['slug', 'kind', 'title', 'mtime', 'matchedIn', 'excerpt'])
   ) {
     return 'find_evidence outputSchema matches drift';
+  }
+  if (evidenceMatchesSchema.items?.additionalProperties !== false) {
+    return 'find_evidence outputSchema match openness drift';
   }
   for (const propertyName of ['slug', 'kind', 'title', 'excerpt']) {
     if (evidenceMatchesSchema.items?.properties?.[propertyName]?.type !== 'string') {
@@ -823,6 +838,9 @@ export function toolsListSchemaFailure(tools) {
   if (!sameArray(findBacklinksTool.outputSchema?.required, ['target', 'total', 'matches'])) {
     return 'find_backlinks outputSchema required drift';
   }
+  if (findBacklinksTool.outputSchema?.additionalProperties !== false) {
+    return 'find_backlinks outputSchema root openness drift';
+  }
   if (outputPropertyAt(findBacklinksTool, ['properties', 'target'])?.type !== 'string') {
     return 'find_backlinks outputSchema target drift';
   }
@@ -837,6 +855,9 @@ export function toolsListSchemaFailure(tools) {
     !sameArray(backlinksMatchesSchema.items?.required, ['slug', 'kind', 'title', 'mtime'])
   ) {
     return 'find_backlinks outputSchema matches drift';
+  }
+  if (backlinksMatchesSchema.items?.additionalProperties !== false) {
+    return 'find_backlinks outputSchema match openness drift';
   }
   for (const propertyName of ['slug', 'kind', 'title']) {
     if (backlinksMatchesSchema.items?.properties?.[propertyName]?.type !== 'string') {

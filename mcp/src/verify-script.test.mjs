@@ -559,6 +559,7 @@ describe('verify.mjs first-contact gates', () => {
                   title: { type: 'string' },
                   mtime: { type: 'number', minimum: 0 },
                 },
+                additionalProperties: false,
               },
             },
             vaultWarnings: {
@@ -568,8 +569,10 @@ describe('verify.mjs first-contact gates', () => {
                 errorCount: { type: 'integer', minimum: 0 },
                 warningCount: { type: 'integer', minimum: 0 },
               },
+              additionalProperties: false,
             },
           },
+          additionalProperties: false,
         },
       },
       {
@@ -1509,9 +1512,11 @@ describe('verify.mjs first-contact gates', () => {
                   matchedIn: { enum: ['frontmatter', 'body'] },
                   excerpt: { type: 'string' },
                 },
+                additionalProperties: false,
               },
             },
           },
+          additionalProperties: false,
         },
       },
       {
@@ -1548,9 +1553,11 @@ describe('verify.mjs first-contact gates', () => {
                   matchedKeys: { type: 'array', items: { type: 'string' } },
                   matchedInBody: { type: 'boolean' },
                 },
+                additionalProperties: false,
               },
             },
           },
+          additionalProperties: false,
         },
       },
       {

@@ -544,6 +544,7 @@ function makeDogfoodToolsList() {
                   title: { type: "string" },
                   mtime: { type: "number", minimum: 0 },
                 },
+                additionalProperties: false,
               },
             },
             vaultWarnings: {
@@ -553,8 +554,10 @@ function makeDogfoodToolsList() {
                 errorCount: { type: "integer", minimum: 0 },
                 warningCount: { type: "integer", minimum: 0 },
               },
+              additionalProperties: false,
             },
           },
+          additionalProperties: false,
         };
       }
       if (name === "get_concepts") {
@@ -637,9 +640,11 @@ function makeDogfoodToolsList() {
                   matchedIn: { enum: ["frontmatter", "body"] },
                   excerpt: { type: "string" },
                 },
+                additionalProperties: false,
               },
             },
           },
+          additionalProperties: false,
         };
       }
       if (name === "find_backlinks") {
@@ -670,9 +675,11 @@ function makeDogfoodToolsList() {
                   matchedKeys: { type: "array", items: { type: "string" } },
                   matchedInBody: { type: "boolean" },
                 },
+                additionalProperties: false,
               },
             },
           },
+          additionalProperties: false,
         };
       }
       if (name === "find_neighbors") {
