@@ -277,6 +277,20 @@ function outputPropertyAt(tool, path) {
   return path.reduce((value, key) => value?.[key], tool?.outputSchema);
 }
 
+function unknownFieldsItemSchemaFailure(schema, toolName) {
+  const items = schema?.items;
+  if (
+    items?.type !== 'object' ||
+    items?.additionalProperties !== false ||
+    !sameArray(items?.required, ['name']) ||
+    items?.properties?.name?.type !== 'string' ||
+    items?.properties?.suggestion?.type !== 'string'
+  ) {
+    return `${toolName} outputSchema row unknownFields item drift`;
+  }
+  return null;
+}
+
 const NON_BLANK_STRING_PATTERN = '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$';
 
 function nonBlankStringSchemaFailure(schema) {
@@ -1913,6 +1927,11 @@ export function toolsListSchemaFailure(tools) {
   if (addConceptRowsSchema.items?.properties?.unknownFields?.type !== 'array') {
     return 'add_concepts outputSchema row unknownFields drift';
   }
+  const addConceptsUnknownFieldsFailure = unknownFieldsItemSchemaFailure(
+    addConceptRowsSchema.items?.properties?.unknownFields,
+    'add_concepts',
+  );
+  if (addConceptsUnknownFieldsFailure) return addConceptsUnknownFieldsFailure;
   for (const propertyName of ['allowedValues', 'allowedFields', 'receivedFields', 'recoveryTools', 'avoidTools']) {
     if (addConceptRowsSchema.items?.properties?.[propertyName]?.type !== 'array') {
       return `add_concepts outputSchema row ${propertyName} drift`;
@@ -2020,6 +2039,11 @@ export function toolsListSchemaFailure(tools) {
   if (addRelationRowsSchema.items?.properties?.unknownFields?.type !== 'array') {
     return 'add_relations outputSchema row unknownFields drift';
   }
+  const addRelationsUnknownFieldsFailure = unknownFieldsItemSchemaFailure(
+    addRelationRowsSchema.items?.properties?.unknownFields,
+    'add_relations',
+  );
+  if (addRelationsUnknownFieldsFailure) return addRelationsUnknownFieldsFailure;
   for (const propertyName of ['allowedValues', 'allowedFields', 'receivedFields', 'similarSlugs', 'recoveryTools']) {
     if (addRelationRowsSchema.items?.properties?.[propertyName]?.type !== 'array') {
       return `add_relations outputSchema row ${propertyName} drift`;
