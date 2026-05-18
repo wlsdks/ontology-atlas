@@ -118,7 +118,7 @@ full verification suite. Use
 integration case has a different name. For Node's `--test-name-pattern`, use
 `pnpm exec node --test --test-name-pattern "..." cli/src/integration.test.mjs`
 instead of appending the flag after `pnpm integration:cli --`.
-From the repo root, focused `test:mcp:*` shortcuts use
+From the repo root, focused integration subset and `test:mcp:*` shortcuts use
 `scripts/run-focused-node-test.mjs` so typoed patterns fail when they match 0
 tests instead of silently passing as all skipped, and signal-killed `node --test`
 subprocesses report the signal plus target path.

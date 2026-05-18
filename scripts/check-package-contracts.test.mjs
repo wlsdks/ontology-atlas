@@ -130,21 +130,21 @@ describe('package contract helpers', () => {
     assert.equal(pkg.scripts?.['integration:cli'], 'node --test cli/src/integration.test.mjs');
     assert.equal(
       pkg.scripts?.['integration:cli:compile'],
-      'node --test --test-name-pattern "compile" cli/src/integration.test.mjs',
+      `${focusedNode} --test-name-pattern "compile" cli/src/integration.test.mjs`,
     );
     assert.equal(
       pkg.scripts?.['integration:cli:mcp-verify'],
-      'node --test --test-name-pattern "mcp-verify" cli/src/integration.test.mjs',
+      `${focusedNode} --test-name-pattern "mcp-verify" cli/src/integration.test.mjs`,
     );
     assert.equal(
       pkg.scripts?.['integration:cli:maintenance'],
-      'node --test --test-name-pattern "maintenance" cli/src/integration.test.mjs',
+      `${focusedNode} --test-name-pattern "maintenance" cli/src/integration.test.mjs`,
     );
     assert.equal(pkg.scripts?.['cli:mcp-verify'], 'node cli/src/index.mjs mcp-verify');
     assert.equal(pkg.scripts?.['integration:mcp'], 'node --test mcp/src/integration.test.mjs');
     assert.equal(
       pkg.scripts?.['integration:mcp:readme'],
-      'node --test --test-name-pattern "README first exploration" mcp/src/integration.test.mjs',
+      `${focusedNode} --test-name-pattern "README first exploration" mcp/src/integration.test.mjs`,
     );
     assert.equal(
       pkg.scripts?.['package:check'],
@@ -251,22 +251,8 @@ describe('package contract helpers', () => {
       /^node scripts\/run-focused-node-test\.mjs --test-name-pattern "[^"]+" mcp\/src\/suggestions\.test\.mjs mcp\/src\/ontology-engine\.test\.mjs$/,
     );
 
-    const customZeroMatchGuards = new Set([
-      'integration:cli:compile',
-      'integration:cli:mcp-verify',
-      'integration:cli:maintenance',
-      'integration:mcp:readme',
-    ]);
     for (const [scriptName, scriptBody] of Object.entries(pkg.scripts ?? {})) {
       if (!scriptBody.includes('--test-name-pattern')) continue;
-      if (customZeroMatchGuards.has(scriptName)) {
-        assert.match(
-          scriptBody,
-          /^(node --test --test-name-pattern "[^"]+" (cli|mcp)\/src\/integration\.test\.mjs)$/,
-          `${scriptName} must stay on an integration runner with its own zero-match guard`,
-        );
-        continue;
-      }
       assert.match(
         scriptBody,
         /(?:^|&& )node scripts\/run-focused-node-test\.mjs --test-name-pattern "[^"]+"/,
@@ -343,7 +329,6 @@ describe('package contract helpers', () => {
       'pnpm integration:cli:maintenance',
       'OMOT_TEST_NAME_PATTERN="tools/list|initialize" pnpm integration:mcp',
       'pnpm integration:mcp:readme',
-      'pnpm exec node --test --test-name-pattern "README first exploration" mcp/src/integration.test.mjs',
       'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
       'pnpm cli:mcp-verify -- --help',
       'npm run verify -- --vault <path> --timeout-ms 15000',
@@ -376,6 +361,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /intentionally lists explicit test-name fragments/);
     assert.match(checksDoc, /instead\s+of a broad `README` token/);
     assert.match(checksDoc, /Do not append it after `pnpm integration:\* --`/);
+    assert.match(checksDoc, /Committed root shortcuts that use `--test-name-pattern` should go through\s+`scripts\/run-focused-node-test\.mjs`/);
     assert.match(checksDoc, /strict argument\/enum handling/);
 
     const rootReadme = readFileSync('README.md', 'utf-8');
@@ -820,8 +806,8 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm exec node --test --test-name-pattern/);
     assert.match(section, /instead of appending the flag after `pnpm integration:mcp --`/);
     assert.match(section, /scripts\/run-focused-node-test\.mjs/);
-    assert.match(section, /typoed\s+patterns fail when they match 0 tests instead of silently passing as all skipped/);
-    assert.match(section, /signal-killed `node --test` subprocesses report the signal plus target path/);
+    assert.match(section, /typoed patterns fail when they match 0\s+tests instead of silently passing as all skipped/);
+    assert.match(section, /signal-killed `node --test`\s+subprocesses report the signal plus target path/);
   });
 
   it('keeps the MCP verify README aligned with first-contact census gates', () => {

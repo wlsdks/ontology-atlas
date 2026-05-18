@@ -148,12 +148,14 @@ pnpm integration:cli:mcp-verify
 pnpm integration:cli:maintenance
 OMOT_TEST_NAME_PATTERN="tools/list|initialize" pnpm integration:mcp
 pnpm integration:mcp:readme
-pnpm exec node --test --test-name-pattern "README first exploration" mcp/src/integration.test.mjs
 ```
 
 When using Node's `--test-name-pattern`, call `pnpm exec node --test ...`
 directly. Do not append it after `pnpm integration:* --`; pnpm forwards `--`
 as a test file.
+Committed root shortcuts that use `--test-name-pattern` should go through
+`scripts/run-focused-node-test.mjs`, so a stale pattern fails instead of
+reporting an all-skipped pass.
 
 ## Source-Checkout Verify
 
