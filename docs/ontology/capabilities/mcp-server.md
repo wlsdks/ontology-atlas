@@ -643,7 +643,7 @@ MCP schema 에서 노출한다. `componentLimit`, `cycleLimit`, `recommendationL
 `pnpm dogfood:walk` 는 이 repo 의 `docs/ontology` 를 대상으로 실제 MCP stdio 호출을
 연속 실행한다. positional vault argument 는 받지 않고 이 repo 의 dogfood vault 만
 검증하므로 잘못된 인자는 MCP server 를 띄우기 전에 실패하고, `--hlep` 같은 help flag 오타는
-nearest hint 로 복구 경로를 보여준다. `pnpm dogfood:walk -- --help`
+nearest hint 와 `Run pnpm dogfood:walk -- --help for usage.` 복구 경로를 보여준다. `pnpm dogfood:walk -- --help`
 는 MCP server 를 띄우지 않고 usage, `pnpm dogfood:compile` / `pnpm dogfood:compile-fix` /
 `pnpm dogfood:health` / `pnpm dogfood:brief` / `pnpm dogfood:status` / `pnpm dogfood:verify` 순서의 더 가벼운 dogfood gate, installed-style verify gate,
 focused check 경로를 출력하고 `pnpm test:dogfood:args` / `pnpm test:dogfood:script-refs` / `pnpm test:dogfood:compile-fix` / `pnpm test:dogfood:status` 로 shared shortcut argument helper, help/package-script reference, compile-fix idempotence runner, status shortcut runner 만 좁게 검증할 수 있음을 보여줘 dogfood 범위 확인 비용을 낮춘다.

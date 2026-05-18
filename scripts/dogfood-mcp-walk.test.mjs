@@ -3726,19 +3726,19 @@ describe("rpc response completion helpers", () => {
   it("rejects unsupported dogfood arguments before starting MCP", () => {
     assert.deepEqual(parseDogfoodArgs(["docs/ontology"]), {
       help: false,
-      error: "dogfood:walk does not accept arguments: docs/ontology",
+      error: "dogfood:walk does not accept arguments: docs/ontology\nRun pnpm dogfood:walk -- --help for usage.",
     });
     assert.deepEqual(parseDogfoodArgs(["--", "docs/ontology"]), {
       help: false,
-      error: "dogfood:walk does not accept arguments: docs/ontology",
+      error: "dogfood:walk does not accept arguments: docs/ontology\nRun pnpm dogfood:walk -- --help for usage.",
     });
     assert.deepEqual(parseDogfoodArgs(["--vault", "docs/ontology"]), {
       help: false,
-      error: "dogfood:walk does not accept arguments: --vault, docs/ontology",
+      error: "dogfood:walk does not accept arguments: --vault, docs/ontology\nRun pnpm dogfood:walk -- --help for usage.",
     });
     assert.deepEqual(parseDogfoodArgs(["--hlep"]), {
       help: false,
-      error: "dogfood:walk does not accept arguments: --hlep. Did you mean --help?",
+      error: "dogfood:walk does not accept arguments: --hlep. Did you mean --help?\nRun pnpm dogfood:walk -- --help for usage.",
     });
   });
 

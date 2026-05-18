@@ -135,7 +135,10 @@ function formatUnsupportedDogfoodArgs(args) {
   const values = args.join(", ");
   const suggestion = args.length === 1 ? closestDogfoodOption(args[0], ["--help", "-h"]) : null;
   const suffix = suggestion ? `. Did you mean ${suggestion}?` : "";
-  return `dogfood:walk does not accept arguments: ${values}${suffix}`;
+  return [
+    `dogfood:walk does not accept arguments: ${values}${suffix}`,
+    "Run pnpm dogfood:walk -- --help for usage.",
+  ].join("\n");
 }
 
 const DOGFOOD_RESPONSE_LABELS = new Map([
