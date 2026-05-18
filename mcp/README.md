@@ -86,7 +86,9 @@ pnpm cli:mcp-verify -- --help
 `integration:mcp:readme` runs the documented first-contact read-only MCP flow
 only. `test:mcp:unit` runs the MCP core parser, vault, compiler, query,
 import-analysis, ignore-file, and JSON-RPC line helper unit contracts without
-spawning the full integration suite. `test:mcp:docs` checks README and dogfood ontology documentation drift.
+spawning the full integration suite; when `pnpm checks:changed` prints a direct
+`pnpm exec node --test mcp/src/<name>.test.mjs` command, run that first for the
+smallest matching MCP core check. `test:mcp:docs` checks README and dogfood ontology documentation drift.
 `test:mcp:registration` checks only the tracked source-checkout `.mcp.json` and
 `.mcp.json.example` templates.
 `test:mcp:dogfood` covers the dogfood helper's structuredContent output,

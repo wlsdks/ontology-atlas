@@ -185,15 +185,71 @@ const ESCALATIONS = [
   },
 ];
 
+const MCP_DIRECT_UNIT_TESTS = new Map([
+  ['mcp/src/analyze.mjs', 'mcp/src/analyze.test.mjs'],
+  ['mcp/src/infer-imports.mjs', 'mcp/src/infer-imports.test.mjs'],
+  ['mcp/src/omot-ignore.mjs', 'mcp/src/omot-ignore.test.mjs'],
+  ['mcp/src/ontology-compiler.mjs', 'mcp/src/ontology-compiler.test.mjs'],
+  ['mcp/src/ontology-engine.mjs', 'mcp/src/ontology-engine.test.mjs'],
+  ['mcp/src/parser.mjs', 'mcp/src/parser.test.mjs'],
+  ['mcp/src/query.mjs', 'mcp/src/query.test.mjs'],
+  ['mcp/src/validate.mjs', 'mcp/src/validate.test.mjs'],
+  ['mcp/src/vault.mjs', 'mcp/src/vault.test.mjs'],
+]);
+
+const MCP_DIRECT_UNIT_TEST_FILES = new Set([
+  ...MCP_DIRECT_UNIT_TESTS.values(),
+  'mcp/src/redirect-backlinks.test.mjs',
+  'mcp/src/conflict-detection.test.mjs',
+  'mcp/src/json-rpc-lines.test.mjs',
+]);
+
 export function normalizeChangedPath(path) {
   return String(path || '').trim().replace(/\\/g, '/').replace(/^\.\//, '');
 }
 
 export function suggestFocusedChecks(paths = []) {
   const normalizedPaths = [...new Set(paths.map(normalizeChangedPath).filter(Boolean))];
-  const commands = rulesToSuggestions(RULES, normalizedPaths);
+  const commands = insertBeforeCommand(
+    rulesToSuggestions(RULES, normalizedPaths),
+    directMcpUnitTestSuggestions(normalizedPaths),
+    'pnpm test:mcp:unit',
+  );
   const escalations = rulesToSuggestions(ESCALATIONS, normalizedPaths);
   return { paths: normalizedPaths, commands, escalations };
+}
+
+function directMcpUnitTestSuggestions(paths) {
+  const byTestFile = new Map();
+  for (const path of paths) {
+    const testFile = MCP_DIRECT_UNIT_TESTS.get(path) ?? (MCP_DIRECT_UNIT_TEST_FILES.has(path) ? path : null);
+    if (!testFile) continue;
+    const row = byTestFile.get(testFile) ?? {
+      command: `pnpm exec node --test ${testFile}`,
+      reason: 'direct MCP unit test for changed core file',
+      paths: [],
+    };
+    row.paths.push(path);
+    byTestFile.set(testFile, row);
+  }
+  return [...byTestFile.values()];
+}
+
+function insertBeforeCommand(suggestions, additions, command) {
+  if (additions.length === 0) return suggestions;
+  const seen = new Set();
+  const uniqueAdditions = additions.filter((item) => {
+    if (seen.has(item.command)) return false;
+    seen.add(item.command);
+    return true;
+  });
+  const index = suggestions.findIndex((item) => item.command === command);
+  if (index === -1) return [...uniqueAdditions, ...suggestions];
+  return [
+    ...suggestions.slice(0, index),
+    ...uniqueAdditions,
+    ...suggestions.slice(index),
+  ];
 }
 
 function rulesToSuggestions(rules, paths) {

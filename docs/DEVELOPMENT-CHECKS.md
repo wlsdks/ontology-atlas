@@ -88,8 +88,9 @@ the touched behavior needs them. Vault helper changes route to their narrow
 checks first: `pnpm test:docs-vault`, `pnpm test:vault:validate`, or
 `pnpm test:vault:audit`. Parser/schema/validator parity changes route to
 `pnpm test:contracts` before broader package or app checks. MCP core source
-changes route to `pnpm test:mcp:unit` before readme-flow integration or full
-dogfood verification.
+changes first print the direct sibling unit command (`pnpm exec node --test
+mcp/src/<name>.test.mjs` when one exists), then `pnpm test:mcp:unit` before
+readme-flow integration or full dogfood verification.
 
 | Command | Use when |
 |---|---|
@@ -104,7 +105,7 @@ dogfood verification.
 | `pnpm test:contracts` | Cross-package schema/parser contracts |
 | `pnpm test:mcp:docs` | Explicit root/MCP/CLI/dogfood docs contracts plus Firebase static-hosting and MCP registration-template guards |
 | `pnpm test:mcp:registration` | Source-checkout `.mcp.json` / `.mcp.json.example` registration templates |
-| `pnpm test:mcp:unit` | MCP core parser, vault, compiler, query, import-analysis, and JSON-RPC line helpers |
+| `pnpm test:mcp:unit` | MCP core parser, vault, compiler, query, import-analysis, and JSON-RPC line helpers; use the direct sibling `pnpm exec node --test mcp/src/<name>.test.mjs` first when `pnpm checks:changed` prints one |
 | `pnpm test:mcp:verify` | MCP verifier helper behavior |
 | `pnpm test:mcp:verify:first-contact` | First-contact MCP safety and unknown-tool recovery guidance |
 | `pnpm test:mcp:verify:timeout` | Timeout/startup retry diagnostics |

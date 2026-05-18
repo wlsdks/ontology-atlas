@@ -102,7 +102,9 @@ spawning the full CLI.
 parity without running unrelated UI or E2E gates.
 `test:mcp:unit` runs MCP core parser, vault, compiler, query, import-analysis,
 ignore-file, and JSON-RPC line helper unit contracts without spawning the full
-MCP integration suite.
+MCP integration suite. If `pnpm checks:changed` prints a direct `pnpm exec node
+--test mcp/src/<name>.test.mjs` command for a touched MCP core file, run that
+first before the aggregate unit gate.
 `integration:cli:mcp-verify` runs only the installed MCP verification wrapper
 subset inside the spawn-heavy CLI integration file.
 `integration:cli:growth` runs only the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument-contract cases.

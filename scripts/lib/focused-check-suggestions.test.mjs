@@ -67,10 +67,30 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test mcp/src/analyze.test.mjs',
+      'pnpm exec node --test mcp/src/ontology-compiler.test.mjs',
+      'pnpm exec node --test mcp/src/vault.test.mjs',
       'pnpm test:mcp:unit',
       'pnpm dogfood:status',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
+  });
+
+  it('deduplicates direct MCP unit tests when source and test both changed', () => {
+    const result = suggestFocusedChecks([
+      'mcp/src/infer-imports.mjs',
+      'mcp/src/infer-imports.test.mjs',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test mcp/src/infer-imports.test.mjs',
+      'pnpm test:mcp:unit',
+      'pnpm dogfood:status',
+    ]);
+    assert.deepEqual(result.commands[0].paths, [
+      'mcp/src/infer-imports.mjs',
+      'mcp/src/infer-imports.test.mjs',
+    ]);
   });
 
   it('suggests narrow dogfood helper tests before broader dogfood gates', () => {

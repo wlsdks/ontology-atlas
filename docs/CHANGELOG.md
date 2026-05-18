@@ -58,7 +58,8 @@ can inspect ontology write candidates without raw JSON-RPC.
   `pnpm test:docs-vault`, `pnpm test:vault:validate`, or
   `pnpm test:vault:audit` before broader docs/package gates; parser/schema/
   validator parity files route to `pnpm test:contracts`; MCP core source/test
-  changes route to `pnpm test:mcp:unit`; dogfood helper scripts route to `pnpm test:dogfood:args` or
+  changes print direct sibling `pnpm exec node --test mcp/src/<name>.test.mjs`
+  commands before `pnpm test:mcp:unit`; dogfood helper scripts route to `pnpm test:dogfood:args` or
   `pnpm test:dogfood:compile-fix` before broader dogfood gates.
 
 ## 2026-05-18 — MCP first-contact and packed-smoke hardening
