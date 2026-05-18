@@ -539,6 +539,46 @@ function maintenanceActionFailure(action, index) {
     if (!isPlainObject(action.proposedAction.args)) {
       return `maintenance_plan action ${action.id} proposedAction.args must be an object`;
     }
+    const proposedActionFailure = maintenanceProposedActionFailure(action);
+    if (proposedActionFailure) return proposedActionFailure;
+  }
+  return null;
+}
+
+function maintenanceProposedActionFailure(action) {
+  const { tool, args } = action.proposedAction;
+  if (action.kind === 'add_missing_relation') {
+    if (tool !== 'add_relation') {
+      return `maintenance_plan action ${action.id} proposedAction.tool must be add_relation`;
+    }
+    if (!isPlainObject(action.nodes) || !isPlainObject(action.nodes.from) || !isPlainObject(action.nodes.to)) {
+      return `maintenance_plan action ${action.id} add_missing_relation must include from/to node summaries`;
+    }
+    if (args.from !== action.nodes.from.slug || args.to !== action.nodes.to.slug) {
+      return `maintenance_plan action ${action.id} proposedAction endpoints must match node summaries`;
+    }
+    if (!hasNonEmptyString(args.type)) {
+      return `maintenance_plan action ${action.id} proposedAction.type must be a non-empty string`;
+    }
+  }
+  if (action.kind === 'canonicalize_graph_arrays') {
+    if (tool !== 'patch_concept') {
+      return `maintenance_plan action ${action.id} proposedAction.tool must be patch_concept`;
+    }
+    if (isPlainObject(action.node) && hasNonEmptyString(action.node.slug) && args.slug !== action.node.slug) {
+      return `maintenance_plan action ${action.id} proposedAction.slug must match node summary`;
+    }
+  }
+  if (action.kind === 'materialize_external_element' || action.kind === 'resolve_dangling_reference') {
+    if (tool !== 'add_concept') {
+      return `maintenance_plan action ${action.id} proposedAction.tool must be add_concept`;
+    }
+    if (!hasNonEmptyString(args.slug)) {
+      return `maintenance_plan action ${action.id} proposedAction.slug must be a non-empty string`;
+    }
+    if (action.kind === 'materialize_external_element' && args.kind !== 'element') {
+      return `maintenance_plan action ${action.id} proposedAction.kind must be element`;
+    }
   }
   return null;
 }

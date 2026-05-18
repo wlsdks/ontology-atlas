@@ -87,6 +87,7 @@ describe('query-result-contract', () => {
           executable: true,
           score: 100,
           reason: 'Canonicalize graph arrays.',
+          node: { slug: 'capabilities/foo' },
           proposedAction: {
             tool: 'patch_concept',
             args: { slug: 'capabilities/foo', frontmatter: { dependencies: [] } },
@@ -216,6 +217,67 @@ describe('query-result-contract', () => {
         actions: [{ ...valid.actions[0], proposedAction: { tool: 'patch_concept' } }],
       }),
       /action maint_1 proposedAction\.args must be an object/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({
+        ...valid,
+        actions: [{ ...valid.actions[0], proposedAction: { tool: 'add_relation', args: valid.actions[0].proposedAction.args } }],
+      }),
+      /action maint_1 proposedAction\.tool must be patch_concept/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({
+        ...valid,
+        actions: [{
+          ...valid.actions[0],
+          proposedAction: { ...valid.actions[0].proposedAction, args: { slug: 'capabilities/bar' } },
+        }],
+      }),
+      /action maint_1 proposedAction\.slug must match node summary/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({
+        ...valid,
+        byKind: { add_missing_relation: 1 },
+        actions: [{
+          ...valid.actions[0],
+          kind: 'add_missing_relation',
+          node: undefined,
+          nodes: { from: { slug: 'domains/auth' }, to: { slug: 'capabilities/login' } },
+          proposedAction: { tool: 'patch_concept', args: { from: 'domains/auth', to: 'capabilities/login', type: 'capabilities' } },
+        }],
+        nextExecutableAction: { ...valid.nextExecutableAction, kind: 'add_missing_relation' },
+      }),
+      /action maint_1 proposedAction\.tool must be add_relation/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({
+        ...valid,
+        byKind: { add_missing_relation: 1 },
+        actions: [{
+          ...valid.actions[0],
+          kind: 'add_missing_relation',
+          node: undefined,
+          nodes: { from: { slug: 'domains/auth' }, to: { slug: 'capabilities/login' } },
+          proposedAction: { tool: 'add_relation', args: { from: 'domains/auth', to: 'capabilities/other', type: 'capabilities' } },
+        }],
+        nextExecutableAction: { ...valid.nextExecutableAction, kind: 'add_missing_relation' },
+      }),
+      /action maint_1 proposedAction endpoints must match node summaries/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({
+        ...valid,
+        byKind: { materialize_external_element: 1 },
+        actions: [{
+          ...valid.actions[0],
+          kind: 'materialize_external_element',
+          node: undefined,
+          proposedAction: { tool: 'add_concept', args: { slug: 'elements/src/foo', kind: 'capability' } },
+        }],
+        nextExecutableAction: { ...valid.nextExecutableAction, kind: 'materialize_external_element' },
+      }),
+      /action maint_1 proposedAction\.kind must be element/,
     );
     assert.throws(
       () => assertMaintenancePlanShape({ ...valid, summary: { ...valid.summary, remainingActions: 0 } }),
