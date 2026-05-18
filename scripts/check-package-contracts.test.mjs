@@ -939,6 +939,7 @@ describe('package contract helpers', () => {
     const readme = readFileSync('cli/README.md', 'utf-8');
     const tableRow = readme.split('| `oh-my-ontology mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
     const maintenanceRow = readme.split('| `oh-my-ontology maintenance [vault]` |')[1]?.split('\n')[0] ?? '';
+    const analyzeRow = readme.split('| `oh-my-ontology analyze [rootPath]` |')[1]?.split('\n')[0] ?? '';
     const inferImportsRow = readme.split('| `oh-my-ontology infer-imports [rootPath]` |')[1]?.split('\n')[0] ?? '';
     const compileRow = readme.split('| `oh-my-ontology compile [vault]` |')[1]?.split('\n')[0] ?? '';
     const verifySection = readme.split('`oh-my-ontology mcp-verify [vault]` is the fastest')[1]?.split('The vault is a plain folder')[0] ?? '';
@@ -965,6 +966,9 @@ describe('package contract helpers', () => {
     assert.match(maintenanceRow, /current-page next action pointers/);
     assert.match(maintenanceRow, /cursor\/filter dogfood/);
     assert.match(maintenanceRow, /Malformed work-queue payloads fail closed before JSON or human output/);
+    assert.match(analyzeRow, /Top-level `rootPath` \/ `framework` \/ `skipped`/);
+    assert.match(analyzeRow, /candidate `evidence\.source` payloads are validated before JSON or human output/);
+    assert.match(analyzeRow, /MCP outputSchema drift fails closed/);
     assert.match(inferImportsRow, /file edge kind summary/);
     assert.match(inferImportsRow, /per-module `kindCounts`/);
     assert.match(inferImportsRow, /`tsconfig\.json` paths aliases/);
@@ -1921,7 +1925,7 @@ describe('package contract helpers', () => {
     assert.match(regressionSection, /`pnpm package:check` 도 이 gate 를 포함/);
     assert.match(regressionSection, /`cli\/src\/lib\/cli-args\.test\.mjs`/);
     assert.match(regressionSection, /`cli\/src\/lib\/repo-analysis-results\.test\.mjs`/);
-    assert.match(regressionSection, /`analyze_repo_structure` 후보 배열 shape fail-closed 계약/);
+    assert.match(regressionSection, /`analyze_repo_structure` top-level \/ 후보 배열 \/ evidence \/ skipped shape fail-closed 계약/);
     assert.match(regressionSection, /`cli\/src\/lib\/import-analysis-results\.test\.mjs`/);
     assert.match(regressionSection, /`infer_imports` import graph \/ unresolved `reason` enum \/ `moduleEdges` shape fail-closed 계약/);
     assert.match(regressionSection, /`cli\/src\/lib\/batch-results\.test\.mjs`/);

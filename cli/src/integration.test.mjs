@@ -3931,7 +3931,7 @@ await test('analyze --apply — labels row-level failures without slug or relati
       "    return;",
       "  }",
       "  if (msg.params?.name === 'analyze_repo_structure') {",
-      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core' }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }] };",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'README.md' } }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }], skipped: [] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "    return;",
       "  }",
@@ -3979,7 +3979,7 @@ await test('analyze --apply — fails closed when add_concepts response rows dri
       "    return;",
       "  }",
       "  if (msg.params?.name === 'analyze_repo_structure') {",
-      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [], capabilities: [], elements: [], suggestedRelations: [] };",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [], capabilities: [], elements: [], suggestedRelations: [], skipped: [] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "    return;",
       "  }",
@@ -4020,7 +4020,7 @@ await test('analyze --apply — fails closed when add_relations response row cou
       "    return;",
       "  }",
       "  if (msg.params?.name === 'analyze_repo_structure') {",
-      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core' }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }] };",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'README.md' } }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }], skipped: [] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "    return;",
       "  }",
@@ -4066,7 +4066,7 @@ await test('analyze — fails closed when analyze_repo_structure candidate paylo
       "    return;",
       "  }",
       "  if (msg.params?.name === 'analyze_repo_structure') {",
-      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: {}, capabilities: [], elements: [], suggestedRelations: [] };",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: {}, capabilities: [], elements: [], suggestedRelations: [], skipped: [] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
       "});",
@@ -4080,6 +4080,42 @@ await test('analyze — fails closed when analyze_repo_structure candidate paylo
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /analyze_repo_structure\.domains must be an array/);
+  } finally {
+    rmSync(vault, { recursive: true, force: true });
+    rmSync(repo, { recursive: true, force: true });
+  }
+});
+
+await test('analyze --json — fails closed when analyze_repo_structure framework drifts', async () => {
+  const vault = withVault([]);
+  const repo = makeRepoFixture();
+  const fakeMcp = join(vault, 'fake-mcp-analyze-framework-drift.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.method === 'initialize') {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: {} }));",
+      "    return;",
+      "  }",
+      "  if (msg.params?.name === 'analyze_repo_structure') {",
+      "    const payload = { rootPath: '/repo', framework: 'unknown', project: { slug: 'demo', title: 'Demo' }, domains: [], capabilities: [], elements: [], suggestedRelations: [], skipped: [] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['analyze', repo, '--vault', vault, '--json'], {
+      env: { OMOT_MCP_PATH: fakeMcp },
+    });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /analyze_repo_structure\.framework must be one of fsd, next, generic/);
   } finally {
     rmSync(vault, { recursive: true, force: true });
     rmSync(repo, { recursive: true, force: true });
@@ -4951,7 +4987,7 @@ await test('bootstrap --skip-imports — labels row-level failures without slug 
       "    return;",
       "  }",
       "  if (msg.params?.name === 'analyze_repo_structure') {",
-      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core' }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }] };",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'README.md' } }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }], skipped: [] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "    return;",
       "  }",
@@ -4999,7 +5035,7 @@ await test('bootstrap — fails closed when add_concepts response rows drift', a
       "    return;",
       "  }",
       "  if (msg.params?.name === 'analyze_repo_structure') {",
-      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [], capabilities: [], elements: [], suggestedRelations: [] };",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [], capabilities: [], elements: [], suggestedRelations: [], skipped: [] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "    return;",
       "  }",
@@ -5040,7 +5076,7 @@ await test('bootstrap — fails closed when add_relations response rows drift', 
       "    return;",
       "  }",
       "  if (msg.params?.name === 'analyze_repo_structure') {",
-      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core' }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }] };",
+      "    const payload = { rootPath: '/repo', framework: 'generic', project: { slug: 'demo', title: 'Demo' }, domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'README.md' } }], capabilities: [], elements: [], suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }], skipped: [] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: msg.id, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "    return;",
       "  }",

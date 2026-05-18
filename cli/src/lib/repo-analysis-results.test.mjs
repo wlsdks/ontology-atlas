@@ -10,29 +10,109 @@ describe('repo-analysis-results', () => {
         rootPath: '/repo',
         framework: 'fsd',
         project: { slug: 'demo', title: 'Demo' },
-        domains: [{ slug: 'domains/core', title: 'Core' }],
-        capabilities: [{ slug: 'capabilities/auth', title: 'Auth', domain: 'domains/core' }],
-        elements: [{ slug: 'elements/src/app', title: 'App', domain: 'domains/core' }],
+        domains: [{ slug: 'domains/core', title: 'Core', evidence: { source: 'README.md', line: 3 } }],
+        capabilities: [{ slug: 'capabilities/auth', title: 'Auth', domain: 'domains/core', evidence: { source: 'src/features/auth' } }],
+        elements: [{ slug: 'elements/src/app', title: 'App', domain: 'domains/core', evidence: { source: 'src/app/index.ts' } }],
         suggestedRelations: [{ from: 'demo', to: 'domains/core', type: 'contains' }],
+        skipped: [{ path: 'node_modules', reason: 'ignored' }],
       }),
+    );
+  });
+
+  it('rejects top-level fields that drift from the MCP output schema', () => {
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.rootPath must be a non-empty string/,
+    );
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'svelte',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.framework must be one of fsd, next, generic/,
+    );
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          suggestedRelations: [],
+        }),
+      /analyze_repo_structure\.skipped must be an array/,
     );
   });
 
   it('rejects malformed candidate arrays before CLI output or apply trusts them', () => {
     assert.throws(
-      () => assertAnalyzeRepoStructureResult({ project: { slug: 'demo', title: 'Demo' }, domains: {} }),
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          project: { slug: 'demo', title: 'Demo' },
+          domains: {},
+          capabilities: [],
+          elements: [],
+          suggestedRelations: [],
+          skipped: [],
+        }),
       /analyze_repo_structure\.domains must be an array/,
     );
     assert.throws(
       () =>
         assertAnalyzeRepoStructureResult({
-          capabilities: [{ slug: 'capabilities/auth', title: 'Auth', domain: '' }],
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [{ slug: 'capabilities/auth', title: 'Auth', domain: '', evidence: { source: 'src/features/auth' } }],
+          elements: [],
+          suggestedRelations: [],
+          skipped: [],
         }),
       /analyze_repo_structure\.capabilities\[0\]\.domain must be a non-empty string/,
     );
     assert.throws(
-      () => assertAnalyzeRepoStructureResult({ elements: [{ slug: 'elements/a' }] }),
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [{ slug: 'elements/a' }],
+          suggestedRelations: [],
+          skipped: [],
+        }),
       /analyze_repo_structure\.elements\[0\]\.title must be a non-empty string/,
+    );
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [{ slug: 'domains/core', title: 'Core' }],
+          capabilities: [],
+          elements: [],
+          suggestedRelations: [],
+          skipped: [],
+        }),
+      /analyze_repo_structure\.domains\[0\]\.evidence must be an object/,
     );
   });
 
@@ -40,9 +120,31 @@ describe('repo-analysis-results', () => {
     assert.throws(
       () =>
         assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
           suggestedRelations: [{ from: 'demo', to: 'domains/core', type: '' }],
+          skipped: [],
         }),
       /analyze_repo_structure\.suggestedRelations\[0\]\.type must be a non-empty string/,
+    );
+  });
+
+  it('rejects malformed skipped rows', () => {
+    assert.throws(
+      () =>
+        assertAnalyzeRepoStructureResult({
+          rootPath: '/repo',
+          framework: 'generic',
+          domains: [],
+          capabilities: [],
+          elements: [],
+          suggestedRelations: [],
+          skipped: [{ path: 'package.json', reason: '' }],
+        }),
+      /analyze_repo_structure\.skipped\[0\]\.reason must be a non-empty string/,
     );
   });
 });
