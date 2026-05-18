@@ -126,7 +126,8 @@ focused integration subset and `test:mcp:*` shortcuts use
 `scripts/run-focused-node-test.mjs` so typoed patterns fail when they match 0
 tests instead of silently passing as all skipped, and signal-killed `node --test`
 subprocesses report the signal plus target path. The wrapper requires an
-explicit pattern; use `node --test` directly for an intentional full run.
+explicit pattern and at least one test target; use `node --test` directly for an
+intentional full run.
 `pnpm dogfood:compile` is the shortest dogfood vault compiler snapshot.
 `pnpm dogfood:compile-fix` runs dogfood `compile --fix` and fails if canonicalization leaves a docs/ontology diff.
 `pnpm test:dogfood:args` checks shared dogfood shortcut argument helpers without invoking any gate.

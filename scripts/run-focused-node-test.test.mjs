@@ -52,6 +52,23 @@ describe('focused node test wrapper', () => {
     ]);
   });
 
+  it('fails before spawning when no test target is provided', () => {
+    const diagnostics = [];
+    const exitCode = runFocusedNodeTest({
+      argv: ['--test-name-pattern', 'target case'],
+      stderr: { write: (text) => diagnostics.push(text) },
+      stdout: { write() {} },
+      spawn() {
+        throw new Error('spawn should not run without a test target');
+      },
+    });
+
+    assert.equal(exitCode, 2);
+    assert.deepEqual(diagnostics, [
+      '[focused-node-test] at least one test target is required; use node --test directly for a full test run\n',
+    ]);
+  });
+
   it('passes through a focused run that executes at least one test', () => {
     withFixture(
       "import test from 'node:test';\ntest('target case', () => {});\ntest('other case', () => {});\n",

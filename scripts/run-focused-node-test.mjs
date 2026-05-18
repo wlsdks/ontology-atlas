@@ -43,6 +43,13 @@ export function runFocusedNodeTest({
     );
     return 2;
   }
+  if (testTargets.length === 0) {
+    stderr.write(
+      '[focused-node-test] at least one test target is required; ' +
+      'use node --test directly for a full test run\n',
+    );
+    return 2;
+  }
   const result = spawn(process.execPath, ['--test', ...argv], {
     cwd,
     env,
