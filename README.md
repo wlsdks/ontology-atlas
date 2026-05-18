@@ -10,8 +10,11 @@
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org)
 [![MCP](https://img.shields.io/badge/MCP-23_tools-5e6ad2)](mcp/README.md)
 
-**Live demo:** https://oh-my-ontology.web.app
-**GitHub:** https://github.com/wlsdks/oh-my-ontology
+| Open it | Link |
+|---|---|
+| **Web workbench** | **https://oh-my-ontology.web.app** |
+| **GitHub repository** | https://github.com/wlsdks/oh-my-ontology |
+| **MCP docs** | [`mcp/README.md`](mcp/README.md) |
 
 `oh-my-ontology` is a local-first workbench for the shared memory between a
 developer and their AI coding agent. The graph is not stored in a hosted

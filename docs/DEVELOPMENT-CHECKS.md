@@ -1,158 +1,162 @@
 # Development Checks
 
-This page keeps the maintainer-only command matrix out of the public README.
-Use it when changing `mcp/`, `cli/`, package manifests, release scripts, or the
-dogfood ontology contract.
+Maintainer-only checks live here so the public README stays readable. Use this
+page when you touch `mcp/`, `cli/`, package manifests, release scripts, or the
+dogfood ontology.
 
-## Everyday Checks
+## Default Gate
+
+Run this before pushing broad docs, package, MCP, or web changes:
 
 ```bash
+pnpm test:mcp:docs
+pnpm vault:validate
 pnpm exec tsc --noEmit
-pnpm lint
-pnpm test:run
 pnpm build
 pnpm bundle:check
 ```
+
+For user-facing UI changes, add the relevant Playwright route check.
+
+## Quick Matrix
+
+| Area | First check | Escalate when needed |
+|---|---|---|
+| App/type safety | `pnpm exec tsc --noEmit` | `pnpm build` |
+| Lint/style | `pnpm lint` | `pnpm test:run` |
+| Static deploy safety | `pnpm build` | `pnpm bundle:check` |
+| Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
+| MCP/docs contract | `pnpm test:mcp:docs` | `pnpm package:check` |
+| Dogfood MCP smoke | `pnpm dogfood:verify` | `pnpm dogfood:walk` |
+| Packed CLI release | `pnpm smoke:packed-cli` | `pnpm test:mcp:package` |
 
 ## Vault Checks
 
 ```bash
 pnpm vault:validate              # frontmatter integrity audit
-pnpm vault:validate /your/vault  # validate any folder, not just dogfood
+pnpm vault:validate /your/vault  # validate any folder
 pnpm vault:validate -- --help    # print validator usage without scanning
 pnpm test:vault:validate         # focused validator CLI argument contract
-pnpm vault:audit                 # capability/element path drift guard
+pnpm vault:audit                 # dogfood path drift guard
 pnpm test:vault:audit            # focused vault audit CLI argument contract
-pnpm vault:migrate --list        # see registered schema migrations
-pnpm vault:migrate <id>          # dry-run a migration
-pnpm vault:migrate <id> --write  # apply a migration to disk
+pnpm vault:migrate --list        # registered migrations
 ```
 
-`health --json` and `workspace-brief --json` validate the diagnosis payload
-shape before writing machine output. Workspace next actions need a valid
-severity. Non-JSON `workspace-brief` also prints a `GROWTH` line with
-`actions`, `relations`, `dangling`, `external`, and `ignoredExternal` counts.
-Both commands forward focused diagnosis tuning flags to MCP `query_ontology`,
-including `--dependency-types A,B`, `--component-types A,B`,
-`--component-limit N`, and `--node-limit N`.
+`health --json` and `workspace-brief --json` are fail-closed machine outputs:
+malformed diagnosis payloads are command failures, not clean vaults.
 
-## Package / MCP Release Checks
+Focused diagnosis flags are forwarded to MCP `query_ontology`:
 
 ```bash
-pnpm package:check              # MCP/CLI package files contract + CLI lib + docs self-test
-pnpm test:cli:lib               # focused CLI shared helper unit contracts
-pnpm test:cli:mcp-call          # narrow CLI MCP wrapper parser/spawn contracts
-pnpm test:contracts             # focused cross-package contract tests
-pnpm test:mcp:docs              # focused README + dogfood ontology docs contract
-pnpm test:mcp:dogfood           # focused structuredContent/compile/tools-list/row-label/vault-warning/health/sample-shape/maintenance work-queue+formatter/initialize+batch-relation/destructive dry-run/help/argument/timeout/strict relation/closest-value/stderr checks
-pnpm test:mcp:dogfood:timeout   # narrow dogfood argument/timeout/help retry diagnostics
-pnpm test:mcp:maintenance       # narrow maintenance_plan filter/cursor/work-queue+formatter gates
-pnpm test:mcp:package           # focused MCP/CLI package-script/entrypoint/dependency/tarball contract checks
-pnpm test:mcp:suggestions       # focused enum/argument suggestion checks
-pnpm test:mcp:verify            # focused MCP verify helper checks, including tool inventory names
-pnpm test:mcp:verify:first-contact # narrow MCP verify first-contact initialize-safety-recovery/write-safety/health-summary/advisory/read/sample gates
-pnpm test:mcp:verify:timeout    # narrow MCP verify timeout/startup/help diagnostics
-pnpm dogfood:compile            # quick compile_ontology summary over docs/ontology
-pnpm dogfood:health             # quick health gate over docs/ontology
-pnpm dogfood:brief              # quick workspace_brief health snapshot over docs/ontology
-pnpm dogfood:verify             # root checkout installed-style verify over docs/ontology
-pnpm dogfood:test               # full dogfood helper regression suite when focused checks are not enough
-pnpm dogfood:walk               # actual MCP stdio walk over this repo's ontology
-pnpm dogfood:help               # print dogfood usage without starting MCP
-pnpm dogfood:walk -- --help     # print dogfood usage without starting MCP
-pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 # root checkout dogfood verify
-pnpm cli:mcp-verify -- --help   # root checkout shortcut for installed mcp-verify help scope
+oh-my-ontology health ./ontology --dependency-types dependencies
+oh-my-ontology workspace-brief ./ontology --component-types domains,domain,capabilities
+oh-my-ontology workspace-brief ./ontology --component-limit 5 --node-limit 10
+```
+
+## MCP And CLI Checks
+
+Use focused scripts first. Escalate only when you touched shared package,
+verify, or release behavior.
+
+| Command | Use when |
+|---|---|
+| `pnpm package:check` | Package files, entrypoints, docs contracts |
+| `pnpm test:cli:lib` | CLI shared helper contracts |
+| `pnpm test:cli:mcp-call` | CLI MCP wrapper parser/spawn behavior |
+| `pnpm test:contracts` | Cross-package schema/parser contracts |
+| `pnpm test:mcp:docs` | README, MCP docs, dogfood docs |
+| `pnpm test:mcp:verify` | MCP verifier helper behavior |
+| `pnpm test:mcp:verify:first-contact` | First-contact MCP safety guidance |
+| `pnpm test:mcp:verify:timeout` | Timeout/startup retry diagnostics |
+| `pnpm test:mcp:maintenance` | `maintenance_plan` cursor/filter behavior |
+| `pnpm test:mcp:suggestions` | Enum and argument suggestion quality |
+| `pnpm test:mcp:package` | MCP/CLI package and tarball checks |
+| `pnpm test:mcp:dogfood` | Focused live dogfood helper contracts |
+| `pnpm dogfood:test` | Full dogfood helper regression suite |
+
+## Dogfood Shortcuts
+
+These target this repo's own `docs/ontology` vault:
+
+```bash
+pnpm dogfood:compile
+pnpm dogfood:health
+pnpm dogfood:brief
+pnpm dogfood:verify
+pnpm dogfood:walk
+pnpm dogfood:help
+```
+
+Use `pnpm dogfood:test` only when the dogfood helper itself changed or the
+focused `test:mcp:dogfood` subset is not enough.
+
+For slower filesystems:
+
+```bash
 OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk
+```
+
+## Filtered Integration Runs
+
+Use these when the full integration suite is more than the change needs:
+
+```bash
 OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli
 pnpm integration:cli:mcp-verify
-pnpm integration:cli:maintenance # narrow CLI maintenance command integration gates
+pnpm integration:cli:maintenance
 OMOT_TEST_NAME_PATTERN="tools/list|initialize" pnpm integration:mcp
 pnpm integration:mcp:readme
 pnpm exec node --test --test-name-pattern "README first exploration" mcp/src/integration.test.mjs
-pnpm smoke:packed-cli
-cd mcp && OMOT_VAULT=../docs/ontology npm run verify
-cd mcp && npm run verify -- ../docs/ontology
-cd mcp && npm run verify -- --vault ../docs/ontology
-cd mcp && npm run verify -- ../docs/ontology --timeout-ms 15000
 ```
 
-Use these when changing MCP, CLI, package, or release behavior. Prefer focused
-`test:mcp:*` scripts before escalating to broader checks. Use `pnpm dogfood:test` only when the dogfood helper
-itself needs the full regression suite beyond `test:mcp:dogfood`.
-Use the dogfood-helper checks when the live MCP walk or its retry diagnostics
-change.
+When using Node's `--test-name-pattern`, call `pnpm exec node --test ...`
+directly. Do not append it after `pnpm integration:* --`; pnpm forwards `--`
+as a test file.
 
-`integration:cli` and `integration:mcp` accept `OMOT_TEST_NAME_PATTERN`, so you
-can run only the spawn-heavy integration cases touched by a small change. When
-you need Node's `--test-name-pattern`, call `pnpm exec node --test --test-name-pattern ... <file>`; do not append it after `pnpm integration:* --`,
-because pnpm forwards `--` as a test file.
+## Source-Checkout Verify
 
-`test:cli:mcp-call`, `integration:cli:mcp-verify`,
-`integration:cli:maintenance`, and `integration:mcp:readme` cover the common
-CLI MCP wrapper, install verification, CLI maintenance work-queue, and
-first-contact read-only checks. `cli:mcp-verify` is a source-checkout shortcut for the CLI wrapper.
+From the repo root:
 
-Use `pnpm dogfood:compile` when you only need the current dogfood vault
-`compile_ontology` summary, `pnpm dogfood:health` when you need the
-fail-closed health JSON gate, or `pnpm dogfood:brief` when you need the
-`workspace_brief` JSON snapshot before choosing the next focused gate.
-`dogfood:compile` is the fastest repeatable compiler summary for the dogfood vault. `dogfood:health` is
-the fastest repeatable fail-closed health gate for the dogfood vault.
-`dogfood:brief` is the fastest repeatable first-contact snapshot for the dogfood vault. `dogfood:verify`
-runs the full installed-style dogfood vault gate. `dogfood:test` is the full dogfood helper regression suite to reserve for helper-level
-changes that outgrow `test:mcp:dogfood`.
+```bash
+pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
+pnpm cli:mcp-verify -- --help
+```
 
-`pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` runs the same full
-verify against this repo's dogfood vault from the repo root. Use
-`pnpm cli:mcp-verify -- --help` only for help output; vault arguments are passed
-without the extra `--`.
+From `mcp/`:
 
-`npm run verify` calls `get_concepts` with discovered slugs plus one missing
-slug, then runs `workspace_brief`, tuned `workspace_brief`, `health`, and tuned `health`. That covers the batch-read partial-row contract and first-contact
-diagnosis an AI agent should run. It also checks `overview` and `project_map`
-`query_plan` targets plus actual `neighbors`, node to project `path`, and
-`project_scope` calls. Project-less vaults skip only the containment-specific
-`project_scope` smoke, and empty vaults skip node-targeted graph smoke until a
-first node exists.
+```bash
+cd mcp
+OMOT_VAULT=../docs/ontology npm run verify
+npm run verify -- ../docs/ontology
+npm run verify -- --vault ../docs/ontology
+npm run verify -- ../docs/ontology --timeout-ms 15000
+```
 
-`smoke:packed-cli` runs the installed CLI package `npm test`, checks installed
-`mcp-verify --help`, and verifies project-less and empty-vault paths. Its scope
-includes graph-query, destructive dry-run, post-write maintenance schema,
-strict argument / enum rejection, annotations, write relation enums, and health
-tuning schema scope. It also covers graph-query, destructive dry-run,
-post-write maintenance schema, strict argument / enum, annotation, write
-relation enum, and health tuning smoke scope without assuming every valid vault
-has containment roots. It creates a dependency-cycle vault and checks installed
-`workspace-brief --json` exits 1 on fail-severity nextActions.
+Timeout mistakes include a concrete retry hint, for example:
 
-For local CLI gates, `compile --json` exits 1 on unresolved graph references,
-flushes large raw artifacts safely through stdout pipes, `cycles --json` exits
-1 on dependency cycles, and `path --json` exits 1 when `found:false`.
+```bash
+npm run verify -- --timeout-ms 15000
+npm run verify -- --vault <path> --timeout-ms 15000
+oh-my-ontology mcp-verify --vault <path> --timeout-ms 15000
+```
 
-The graph diagnostic exit contract is fail-closed: malformed `compile`,
-`cycles`, `path`, `health`, or `workspace-brief` payloads are treated as command
-failures instead of clean vaults. For `health --json` and
-`workspace-brief --json`, top-level diagnosis `status` must be `healthy` or
-`needs_attention`. `health` and `workspace-brief` also accept focused diagnosis
-tuning flags such as `--dependency-types A,B`, `--component-types A,B`,
-`--component-limit N`, and `--node-limit N`, forwarding them to MCP
-`query_ontology`.
+## Release Smoke
 
-`dogfood:walk` runs that diagnosis plus graph lookup tasks against this repo's
-own `docs/ontology` vault and exits non-zero if core MCP responses, strict
-unknown-argument and invalid-enum rejection, `get_concepts` success/partial
-rows, path edge check, vault warnings, `validate_vault` problem files,
-`workspace_brief.nextActions`, `workspace_brief.nextActions[].sample`
-executable shapes, `workspace_brief.health.checks`, `health`, or tuned
-`workspace_brief` / tuned `health` gates regress. Set
-`OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk` for slower local filesystems;
-the value must be a positive integer in milliseconds, and `--help` / timeout
-failures print the same retry shape.
+Use this before publishing package artifacts:
 
-For `npm run verify` / `mcp-verify` timeout mistakes, the error reports the
-received value or the true timeout, plus a concrete retry example such as
-`npm run verify -- --timeout-ms 15000`, so agents can self-correct without
-guessing the accepted format. Direct verifier and CLI wrapper retry hints
-preserve an explicit vault, for example
-`npm run verify -- --vault <path> --timeout-ms 15000` or
-`oh-my-ontology mcp-verify --vault <path> --timeout-ms 15000`.
+```bash
+pnpm smoke:packed-cli
+```
+
+It checks installed CLI/MCP behavior, `mcp-verify --help`, project-less and
+empty-vault paths, strict argument/enum handling, destructive dry-runs, health
+tuning, and dependency-cycle failure behavior.
+
+Key dogfood coverage:
+
+- `get_concepts` success and partial rows
+- `workspace_brief.nextActions[]` and `workspace_brief.health.checks`
+- `health` and `workspace_brief` tuned diagnosis flags
+- graph lookup smoke for `neighbors`, `path`, and `project_scope`
+- fail-closed JSON behavior for malformed `compile`, `cycles`, `path`,
+  `health`, and `workspace-brief` payloads

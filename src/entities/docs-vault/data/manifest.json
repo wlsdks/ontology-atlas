@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-18T06:46:47.965Z",
+  "generatedAt": "2026-05-18T06:53:25.032Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -57,7 +57,7 @@
       ],
       "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 20260518. A reponative memory layer for Claude Code, Cursor, and Codex. ohmyontology keeps a local, gitbacked mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, but th",
       "wordCount": 591,
-      "updatedAt": "2026-05-18T06:46:12.562Z",
+      "updatedAt": "2026-05-18T06:48:02.192Z",
       "linksOut": []
     },
     {
@@ -141,7 +141,7 @@
       ],
       "excerpt": "20260518 update — the current architecture is a localfirst, gitbacked memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graphengine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloudmode de",
       "wordCount": 1125,
-      "updatedAt": "2026-05-18T06:46:12.562Z",
+      "updatedAt": "2026-05-18T06:48:02.192Z",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -1743,7 +1743,7 @@
       ],
       "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 29 노드, CLI 27 commands, MCP 23 tools, compiler/query/health/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결과 | |||| | ",
       "wordCount": 1438,
-      "updatedAt": "2026-05-18T06:46:12.563Z",
+      "updatedAt": "2026-05-18T06:48:02.192Z",
       "linksOut": []
     },
     {
@@ -3438,7 +3438,7 @@
       ],
       "excerpt": "202605 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (Firebase Hosting, Vercel, Netlify, GitHub Pages, S3 + CloudFront, …). The detailed Firebasespecific guide is archived in docs/archive/DEPLOYFIREBASE.md for reference. Th",
       "wordCount": 404,
-      "updatedAt": "2026-05-18T06:46:12.518Z",
+      "updatedAt": "2026-05-18T06:48:02.151Z",
       "linksOut": [
         "archive/DEPLOY-FIREBASE"
       ]
@@ -3783,8 +3783,13 @@
         },
         {
           "depth": 2,
-          "text": "Everyday Checks",
-          "slug": "everyday-checks"
+          "text": "Default Gate",
+          "slug": "default-gate"
+        },
+        {
+          "depth": 2,
+          "text": "Quick Matrix",
+          "slug": "quick-matrix"
         },
         {
           "depth": 2,
@@ -3793,13 +3798,33 @@
         },
         {
           "depth": 2,
-          "text": "Package / MCP Release Checks",
-          "slug": "package-mcp-release-checks"
+          "text": "MCP And CLI Checks",
+          "slug": "mcp-and-cli-checks"
+        },
+        {
+          "depth": 2,
+          "text": "Dogfood Shortcuts",
+          "slug": "dogfood-shortcuts"
+        },
+        {
+          "depth": 2,
+          "text": "Filtered Integration Runs",
+          "slug": "filtered-integration-runs"
+        },
+        {
+          "depth": 2,
+          "text": "Source-Checkout Verify",
+          "slug": "source-checkout-verify"
+        },
+        {
+          "depth": 2,
+          "text": "Release Smoke",
+          "slug": "release-smoke"
         }
       ],
-      "excerpt": "This page keeps the maintaineronly command matrix out of the public README. Use it when changing mcp/, cli/, package manifests, release scripts, or the dogfood ontology contract. health json and workspacebrief json validate the diagnosis payload shape before writing machine output. Workspace next actions need a valid s",
-      "wordCount": 1137,
-      "updatedAt": "2026-05-18T06:46:12.563Z",
+      "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
+      "wordCount": 676,
+      "updatedAt": "2026-05-18T06:52:49.589Z",
       "linksOut": []
     },
     {
@@ -4338,7 +4363,7 @@
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
       "wordCount": 5603,
-      "updatedAt": "2026-05-18T06:46:12.563Z",
+      "updatedAt": "2026-05-18T06:48:02.193Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4400,7 +4425,7 @@
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ohmyontology 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성. ",
       "wordCount": 414,
-      "updatedAt": "2026-05-18T06:46:12.536Z",
+      "updatedAt": "2026-05-18T06:48:02.168Z",
       "linksOut": []
     },
     {
@@ -4438,7 +4463,7 @@
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ohmyontology – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ohmyontology (Word count: ~280. HN expects substantive Show HN posts, not oneliners.) Best",
       "wordCount": 446,
-      "updatedAt": "2026-05-18T06:46:12.536Z",
+      "updatedAt": "2026-05-18T06:48:02.168Z",
       "linksOut": []
     },
     {
@@ -4809,7 +4834,7 @@
       ],
       "excerpt": ".claude/skills/firebasedeploy/SKILL.md is the agentrunbook for publishing the static web workbench to Firebase Hosting. It reads local .env.prod identifiers, runs the docs/type/build/bundle gates, deploys with firebase deploy only hosting, and verifies the live web.app URL. The skill explicitly keeps Firebase as a stat",
       "wordCount": 60,
-      "updatedAt": "2026-05-18T06:46:12.536Z",
+      "updatedAt": "2026-05-18T06:48:02.168Z",
       "linksOut": []
     },
     {
@@ -4938,8 +4963,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 9665,
-      "updatedAt": "2026-05-18T06:46:12.503Z",
+      "wordCount": 9670,
+      "updatedAt": "2026-05-18T06:48:02.137Z",
       "linksOut": []
     },
     {
@@ -5401,7 +5426,7 @@
       ],
       "excerpt": "Claude Code 같은 LLM agent 가 같은 ontology 를 read/write 하는 surface. MCP 서버 (mcp/) 가 23 도구 (read 15 + write 8) 를 stdin/stdout JSONRPC 로 노출. 등록 가이드: mcp/README.md. 사용자 LLM 비용을 cloud 로 옮기지 않음 — agent 가 자기 LLM 으로 호출.",
       "wordCount": 49,
-      "updatedAt": "2026-05-18T06:46:12.537Z",
+      "updatedAt": "2026-05-18T06:48:02.168Z",
       "linksOut": []
     },
     {
@@ -5777,7 +5802,7 @@
       ],
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 총 29 노드. 정확한 census 는 ohmyontology list 또는 mcp listkinds 호출. 파일을 직접 열거나, pnpm dev 후 /docs/ 에서 vault picker 로 이 디렉토리 선택. MCP 서버 등록 — mcp/README.md 의 .mcp.json 예시 참고. 23 도구 (read 15 + write 8): read — listcon",
       "wordCount": 270,
-      "updatedAt": "2026-05-18T06:46:12.536Z",
+      "updatedAt": "2026-05-18T06:48:02.168Z",
       "linksOut": []
     },
     {
@@ -5960,7 +5985,7 @@
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
       "wordCount": 2064,
-      "updatedAt": "2026-05-18T06:46:12.563Z",
+      "updatedAt": "2026-05-18T06:48:02.193Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -6093,7 +6118,7 @@
       ],
       "excerpt": "Current as of 20260518. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontologyengine.mjs, and cli/src/index.mjs first. ohmyontology is now best described as a reponative memory layer for Claude Code, Cursor, and C",
       "wordCount": 517,
-      "updatedAt": "2026-05-18T06:46:12.563Z",
+      "updatedAt": "2026-05-18T06:48:02.193Z",
       "linksOut": [
         "../README",
         "PRODUCT-DIRECTION",

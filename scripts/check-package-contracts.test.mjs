@@ -121,7 +121,7 @@ describe('package contract helpers', () => {
 
   it('keeps filtered integration scripts discoverable from development checks docs', () => {
     const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
-    const readme = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');
+    const checksDoc = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');
 
     assert.equal(pkg.scripts?.['integration:cli'], 'node --test cli/src/integration.test.mjs');
     assert.equal(
@@ -217,63 +217,57 @@ describe('package contract helpers', () => {
       pkg.scripts?.['test:mcp:suggestions'] ?? '',
       /^node --test --test-name-pattern "[^"]+" mcp\/src\/suggestions\.test\.mjs mcp\/src\/ontology-engine\.test\.mjs$/,
     );
-    assert.match(readme, /pnpm package:check\s+# MCP\/CLI package files contract \+ CLI lib \+ docs self-test/);
-    assert.match(readme, /pnpm test:cli:lib\s+# focused CLI shared helper unit contracts/);
-    assert.match(readme, /pnpm test:cli:mcp-call\s+# narrow CLI MCP wrapper parser\/spawn contracts/);
-    assert.match(readme, /pnpm test:contracts\s+# focused cross-package contract tests/);
-    assert.match(readme, /pnpm test:mcp:docs/);
-    assert.match(readme, /pnpm test:mcp:dogfood/);
-    assert.match(readme, /structuredContent\/compile\/tools-list\/row-label\/vault-warning\/health\/sample-shape\/maintenance work-queue\+formatter\/initialize\+batch-relation\/destructive dry-run\/help\/argument\/timeout\/strict relation\/closest-value\/stderr checks/);
-    assert.match(readme, /pnpm test:mcp:dogfood:timeout\s+# narrow dogfood argument\/timeout\/help retry diagnostics/);
-    assert.match(readme, /pnpm test:mcp:maintenance\s+# narrow maintenance_plan filter\/cursor\/work-queue\+formatter gates/);
-    assert.match(readme, /pnpm test:mcp:package\s+# focused MCP\/CLI package-script\/entrypoint\/dependency\/tarball contract checks/);
-    assert.match(readme, /pnpm test:mcp:suggestions/);
-    assert.match(readme, /pnpm test:mcp:verify/);
-    assert.match(readme, /pnpm test:mcp:verify:first-contact\s+# narrow MCP verify first-contact initialize-safety-recovery\/write-safety\/health-summary\/advisory\/read\/sample gates/);
-    assert.match(readme, /pnpm test:mcp:verify:timeout\s+# narrow MCP verify timeout\/startup\/help diagnostics/);
-    assert.match(readme, /pnpm dogfood:compile\s+# quick compile_ontology summary over docs\/ontology/);
-    assert.match(readme, /pnpm dogfood:health\s+# quick health gate over docs\/ontology/);
-    assert.match(readme, /pnpm dogfood:brief\s+# quick workspace_brief health snapshot over docs\/ontology/);
-    assert.match(readme, /pnpm dogfood:verify\s+# root checkout installed-style verify over docs\/ontology/);
-    assert.match(readme, /pnpm dogfood:test\s+# full dogfood helper regression suite when focused checks are not enough/);
-    assert.match(readme, /pnpm dogfood:help\s+# print dogfood usage without starting MCP/);
-    assert.match(readme, /Use `pnpm dogfood:test` only when the dogfood helper\s+itself needs the full regression suite beyond `test:mcp:dogfood`/);
-    assert.match(readme, /Use `pnpm dogfood:compile` when you only need the current dogfood vault\s+`compile_ontology` summary/);
-    assert.match(readme, /`pnpm dogfood:health` when you need the\s+fail-closed health JSON gate/);
-    assert.match(readme, /or `pnpm dogfood:brief` when you need the\s+`workspace_brief` JSON snapshot/);
-    assert.match(readme, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000\s+# root checkout dogfood verify/);
-    assert.match(readme, /pnpm cli:mcp-verify -- --help\s+# root checkout shortcut for installed mcp-verify help scope/);
-    assert.match(readme, /timeout mistakes, the error reports the\s+received value/);
-    assert.match(readme, /`npm run verify -- --timeout-ms 15000`/);
-    assert.match(readme, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
-    assert.match(readme, /OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli/);
-    assert.match(readme, /pnpm integration:cli:mcp-verify/);
-    assert.match(readme, /pnpm integration:cli:maintenance\s+# narrow CLI maintenance command integration gates/);
-    assert.match(readme, /OMOT_TEST_NAME_PATTERN="tools\/list\|initialize" pnpm integration:mcp/);
-    assert.match(readme, /pnpm integration:mcp:readme/);
-    assert.match(readme, /pnpm exec node --test --test-name-pattern "README first exploration" mcp\/src\/integration\.test\.mjs/);
-    assert.match(readme, /dogfood-helper/);
-    assert.match(readme, /call `pnpm exec node --test --test-name-pattern \.\.\. <file>`/);
-    assert.match(readme, /do not append it after `pnpm integration:\* --`/);
-    assert.match(readme, /test:cli:mcp-call/);
-    assert.match(readme, /integration:cli:mcp-verify/);
-    assert.match(readme, /integration:cli:maintenance/);
-    assert.match(readme, /integration:mcp:readme/);
-    assert.match(readme, /CLI MCP wrapper/);
-    assert.equal(normalizedMarkdownIncludes(readme, '`cli:mcp-verify` is a source-checkout shortcut for the CLI wrapper'), true);
-    assert.equal(normalizedMarkdownIncludes(readme, '`dogfood:compile` is the fastest repeatable compiler summary for the dogfood vault'), true);
-    assert.equal(normalizedMarkdownIncludes(readme, '`dogfood:health` is the fastest repeatable fail-closed health gate for the dogfood vault'), true);
-    assert.equal(normalizedMarkdownIncludes(readme, '`dogfood:brief` is the fastest repeatable first-contact snapshot for the dogfood vault'), true);
-    assert.equal(normalizedMarkdownIncludes(readme, '`dogfood:verify` runs the full installed-style dogfood vault gate'), true);
-    assert.equal(normalizedMarkdownIncludes(readme, '`dogfood:test` is the full dogfood helper regression suite to reserve for helper-level changes that outgrow `test:mcp:dogfood`'), true);
-    assert.equal(normalizedMarkdownIncludes(readme, "`pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` runs the same full verify against this repo's dogfood vault from the repo root"), true);
-    assert.match(readme, /`pnpm cli:mcp-verify -- --help` only for help output/);
-    assert.equal(normalizedMarkdownIncludes(readme, 'vault arguments are passed without the extra `--`'), true);
-    assert.equal(normalizedMarkdownIncludes(readme, 'runs `workspace_brief`, tuned `workspace_brief`, `health`, and tuned `health`'), true);
-    assert.equal(normalizedMarkdownIncludes(readme, '`health` and `workspace-brief` also accept focused diagnosis tuning flags'), true);
-    assert.equal(normalizedMarkdownIncludes(readme, '`--dependency-types A,B`, `--component-types A,B`, `--component-limit N`'), true);
-    assert.equal(normalizedMarkdownIncludes(readme, 'graph-query, destructive dry-run, post-write maintenance schema, strict argument / enum rejection, annotations, write relation enums, and health tuning schema scope'), true);
-    assert.equal(normalizedMarkdownIncludes(readme, 'graph-query, destructive dry-run, post-write maintenance schema, strict argument / enum, annotation, write relation enum, and health tuning smoke scope'), true);
+    for (const heading of [
+      '## Default Gate',
+      '## Quick Matrix',
+      '## Vault Checks',
+      '## MCP And CLI Checks',
+      '## Dogfood Shortcuts',
+      '## Filtered Integration Runs',
+      '## Source-Checkout Verify',
+      '## Release Smoke',
+    ]) {
+      assert.match(checksDoc, new RegExp(heading.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    }
+
+    for (const command of [
+      'pnpm test:mcp:docs',
+      'pnpm vault:validate',
+      'pnpm exec tsc --noEmit',
+      'pnpm build',
+      'pnpm bundle:check',
+      'pnpm package:check',
+      'pnpm test:cli:lib',
+      'pnpm test:cli:mcp-call',
+      'pnpm test:contracts',
+      'pnpm test:mcp:verify:first-contact',
+      'pnpm test:mcp:maintenance',
+      'pnpm test:mcp:package',
+      'pnpm test:mcp:dogfood',
+      'pnpm dogfood:compile',
+      'pnpm dogfood:health',
+      'pnpm dogfood:brief',
+      'pnpm dogfood:verify',
+      'pnpm dogfood:walk',
+      'pnpm dogfood:help',
+      'pnpm smoke:packed-cli',
+      'OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk',
+      'OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli',
+      'pnpm integration:cli:mcp-verify',
+      'pnpm integration:cli:maintenance',
+      'OMOT_TEST_NAME_PATTERN="tools/list|initialize" pnpm integration:mcp',
+      'pnpm integration:mcp:readme',
+      'pnpm exec node --test --test-name-pattern "README first exploration" mcp/src/integration.test.mjs',
+      'pnpm cli:mcp-verify docs/ontology --timeout-ms 15000',
+      'pnpm cli:mcp-verify -- --help',
+      'npm run verify -- --vault <path> --timeout-ms 15000',
+    ]) {
+      assert.match(checksDoc, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    }
+
+    assert.match(checksDoc, /Use `pnpm dogfood:test` only when the dogfood helper itself changed/);
+    assert.match(checksDoc, /Do not append it after `pnpm integration:\* --`/);
+    assert.match(checksDoc, /strict argument\/enum handling/);
   });
 
   it('keeps the root README mcp-verify shortcut executable from source checkout', () => {
@@ -1261,43 +1255,22 @@ describe('package contract helpers', () => {
 
   it('documents dogfood validation as a release gate', () => {
     const readme = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');
-    const releaseChecks = readme.split('## Package / MCP Release Checks')[1] ?? '';
+    const releaseChecks = readme.split('## Release Smoke')[1] ?? '';
 
-    assert.match(releaseChecks, /pnpm dogfood:walk/);
-    assert.match(releaseChecks, /pnpm dogfood:help\s+# print dogfood usage without starting MCP/);
-    assert.match(releaseChecks, /pnpm dogfood:walk -- --help\s+# print dogfood usage without starting MCP/);
-    assert.match(releaseChecks, /strict unknown-argument and invalid-enum rejection/);
-    assert.match(releaseChecks, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
-    assert.match(releaseChecks, /`--help` \/ timeout\s+failures print the same retry shape/);
     assert.match(releaseChecks, /pnpm smoke:packed-cli/);
-    assert.match(releaseChecks, /get_concepts` with discovered slugs plus one\s+missing slug/);
-    assert.match(releaseChecks, /batch-read\s+partial-row contract/);
     assert.match(releaseChecks, /mcp-verify --help/);
-    assert.match(releaseChecks, /graph-query, destructive\s+dry-run, post-write maintenance schema, strict argument \/ enum rejection,\s+annotations, write relation enums, and health tuning schema scope/);
-    assert.match(releaseChecks, /actual `neighbors`, node→project `path`, and\s+`project_scope` calls/);
-    assert.match(releaseChecks, /project-less and empty-vault\s+verify paths/);
-    assert.match(releaseChecks, /flow\/help\/failure/);
-    assert.match(releaseChecks, /dependency-cycle vault/);
-    assert.match(releaseChecks, /get_concepts` success\/partial rows/);
-    assert.match(releaseChecks, /workspace-brief --json`\s+exits 1/);
-    assert.match(releaseChecks, /fail-severity nextActions/);
-    assert.match(releaseChecks, /compile --json` exits 1/);
-    assert.match(releaseChecks, /unresolved graph references/);
-    assert.match(releaseChecks, /flushes large raw artifacts safely through stdout pipes/);
-    assert.match(releaseChecks, /cycles --json`\s+exits\s+1/);
-    assert.match(releaseChecks, /dependency cycles/);
-    assert.match(releaseChecks, /path --json` exits 1/);
-    assert.match(releaseChecks, /found:false/);
-    assert.match(releaseChecks, /fail-closed/);
-    assert.match(releaseChecks, /malformed `compile`,\s+`cycles`/);
-    assert.match(releaseChecks, /`path`, `health`, or `workspace-brief` payloads/);
-    assert.match(releaseChecks, /top-level diagnosis `status` must be `healthy` or `needs_attention`/);
-    assert.match(releaseChecks, /workspace_brief\.nextActions/);
-    assert.match(releaseChecks, /workspace_brief\.nextActions\[\]\.sample` executable shapes/);
+    assert.match(releaseChecks, /project-less and\s+empty-vault paths/);
+    assert.match(releaseChecks, /strict argument\/enum handling/);
+    assert.match(releaseChecks, /destructive dry-runs/);
+    assert.match(releaseChecks, /health\s+tuning/);
+    assert.match(releaseChecks, /dependency-cycle failure behavior/);
+    assert.match(releaseChecks, /get_concepts` success and partial rows/);
+    assert.match(releaseChecks, /workspace_brief\.nextActions\[\]/);
     assert.match(releaseChecks, /workspace_brief\.health\.checks/);
-    assert.match(releaseChecks, /path edge check/);
-    assert.match(releaseChecks, /tuned `workspace_brief` \/ tuned `health` gates regress/);
-    assert.match(releaseChecks, /validate_vault` problem files/);
+    assert.match(releaseChecks, /`health` and `workspace_brief` tuned diagnosis flags/);
+    assert.match(releaseChecks, /`neighbors`, `path`, and `project_scope`/);
+    assert.match(releaseChecks, /fail-closed/);
+    assert.match(releaseChecks, /malformed `compile`, `cycles`, `path`,\s+`health`, and `workspace-brief` payloads/);
   });
 
   it('keeps development docs explicit about vault validator help', () => {
@@ -1308,7 +1281,7 @@ describe('package contract helpers', () => {
     const prTemplate = readFileSync('.github/PULL_REQUEST_TEMPLATE.md', 'utf-8');
     const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
     const workflow = readFileSync('.github/workflows/ci.yml', 'utf-8');
-    const vaultTooling = checksDoc.split('## Vault Checks')[1]?.split('## Package / MCP Release Checks')[0] ?? '';
+    const vaultTooling = checksDoc.split('## Vault Checks')[1]?.split('## MCP And CLI Checks')[0] ?? '';
 
     assert.equal(pkg.scripts['test:vault:validate'], 'node --test scripts/validate-vault-script.test.mjs');
     assert.equal(pkg.scripts['test:vault:audit'], 'node --test scripts/audit-vault-paths.test.mjs');
@@ -1381,6 +1354,7 @@ describe('package contract helpers', () => {
   it('keeps dogfood CLI docs explicit about fail-closed graph diagnostics', () => {
     const doc = readFileSync('docs/ontology/capabilities/cli-developer-entry.md', 'utf-8');
     const readme = readFileSync('cli/README.md', 'utf-8');
+    const checksDoc = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');
     const initRow = doc.split('| `oh-my-ontology init [folder]` |')[1]?.split('\n')[0] ?? '';
     const listRow = doc.split('| `oh-my-ontology list [vault]` |')[1]?.split('\n')[0] ?? '';
     const addRow = doc.split('| `oh-my-ontology add <kind> <slug> --title="..."` |')[1]?.split('\n')[0] ?? '';
@@ -1498,18 +1472,18 @@ describe('package contract helpers', () => {
     assert.match(doc, /`workspace-brief --help` 의 `pnpm dogfood:health` 선행 안내/);
     assert.match(doc, /`HEALTH CHECKS` 라인에 `compile_issues:pass:0` 같은 id:status:count coverage/);
     assert.match(doc, /mismatch path diagnostics/);
-    assert.match(checksDoc, /diagnosis payload shape before writing machine output/);
-    assert.match(checksDoc, /Workspace next actions need a valid severity/);
-    assert.match(checksDoc, /Non-JSON `workspace-brief` also prints a `GROWTH` line/);
-    assert.match(checksDoc, /`actions`, `relations`, `dangling`, `external`, and `ignoredExternal` counts/);
-    assert.match(checksDoc, /Both commands forward focused diagnosis tuning flags to MCP `query_ontology`/);
-    assert.match(checksDoc, /`--dependency-types A,B`, `--component-types A,B`,\s+`--component-limit N`/);
+    assert.match(checksDoc, /`health --json` and `workspace-brief --json` are fail-closed machine outputs/);
+    assert.match(checksDoc, /malformed diagnosis payloads are command failures/);
+    assert.match(checksDoc, /Focused diagnosis flags are forwarded to MCP `query_ontology`/);
+    assert.match(checksDoc, /--dependency-types dependencies/);
+    assert.match(checksDoc, /--component-types domains,domain,capabilities/);
+    assert.match(checksDoc, /--component-limit 5 --node-limit 10/);
   });
 
   it('keeps dogfood MCP docs explicit about workspace brief health checks', () => {
     const readme = readFileSync('docs/DEVELOPMENT-CHECKS.md', 'utf-8');
     const doc = readFileSync('docs/ontology/capabilities/mcp-server.md', 'utf-8');
-    const releaseChecks = readme.split('## Package / MCP Release Checks')[1] ?? '';
+    const releaseChecks = readme.split('## Release Smoke')[1] ?? '';
     const dogfoodSection = doc.split('dogfood walk 는 `find_evidence.matches`')[1]?.split('기본 server wait')[0] ?? '';
     const queryOntologyRow = doc.split('| `query_ontology` |')[1]?.split('\n')[0] ?? '';
     const inferImportsRow = doc.split('| `infer_imports` |')[1]?.split('\n')[0] ?? '';
