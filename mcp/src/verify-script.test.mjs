@@ -4834,6 +4834,31 @@ describe('verify.mjs first-contact gates', () => {
                 ...renamePayload,
                 backlinkUpdates: {
                   totalUpdated: 1,
+                  updates: [{ slug: ' ref', title: 'Ref', beforeKeys: [], afterKeys: [], bodyChanged: false }],
+                },
+              }),
+            },
+          ],
+          structuredContent: {
+            ...renamePayload,
+            backlinkUpdates: {
+              totalUpdated: 1,
+              updates: [{ slug: ' ref', title: 'Ref', beforeKeys: [], afterKeys: [], bodyChanged: false }],
+            },
+          },
+        },
+      }, 'rename_concept'),
+      'rename_concept dry-run response backlinkUpdates.updates[0] shape drift',
+    );
+    assert.equal(
+      destructiveDryRunFailure({
+        result: {
+          content: [
+            {
+              text: JSON.stringify({
+                ...renamePayload,
+                backlinkUpdates: {
+                  totalUpdated: 1,
                   updates: [
                     {
                       slug: 'ref',
@@ -4898,6 +4923,47 @@ describe('verify.mjs first-contact gates', () => {
                   title: 'Ref',
                   beforeKeys: [],
                   afterKeys: [{ key: 'dependencies', after: [42] }],
+                  bodyChanged: false,
+                },
+              ],
+            },
+          },
+        },
+      }, 'rename_concept'),
+      'rename_concept dry-run response backlinkUpdates.updates[0].afterKeys[0] after drift',
+    );
+    assert.equal(
+      destructiveDryRunFailure({
+        result: {
+          content: [
+            {
+              text: JSON.stringify({
+                ...renamePayload,
+                backlinkUpdates: {
+                  totalUpdated: 1,
+                  updates: [
+                    {
+                      slug: 'ref',
+                      title: 'Ref',
+                      beforeKeys: [],
+                      afterKeys: [{ key: 'dependencies', after: [' new'] }],
+                      bodyChanged: false,
+                    },
+                  ],
+                },
+              }),
+            },
+          ],
+          structuredContent: {
+            ...renamePayload,
+            backlinkUpdates: {
+              totalUpdated: 1,
+              updates: [
+                {
+                  slug: 'ref',
+                  title: 'Ref',
+                  beforeKeys: [],
+                  afterKeys: [{ key: 'dependencies', after: [' new'] }],
                   bodyChanged: false,
                 },
               ],

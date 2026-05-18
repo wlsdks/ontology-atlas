@@ -4166,10 +4166,8 @@ function destructiveBacklinkUpdatesFailure(backlinkUpdates, toolName) {
     const row = backlinkUpdates.updates[index];
     if (
       !row ||
-      typeof row.slug !== 'string' ||
-      row.slug.length === 0 ||
-      typeof row.title !== 'string' ||
-      row.title.length === 0 ||
+      !isCleanNonBlankString(row.slug) ||
+      !isCleanNonBlankString(row.title) ||
       !Array.isArray(row.beforeKeys) ||
       !Array.isArray(row.afterKeys) ||
       typeof row.bodyChanged !== 'boolean'
@@ -4190,7 +4188,7 @@ function destructiveBacklinkUpdatesFailure(backlinkUpdates, toolName) {
 }
 
 function backlinkKeyChangeFailure(row) {
-  if (!row || typeof row.key !== 'string' || row.key.length === 0) {
+  if (!row || !isCleanNonBlankString(row.key)) {
     return 'shape drift';
   }
   if (
@@ -4210,9 +4208,13 @@ function backlinkKeyChangeFailure(row) {
 
 function isStringOrStringArray(value) {
   return (
-    typeof value === 'string' ||
-    (Array.isArray(value) && value.every((item) => typeof item === 'string' && item.length > 0))
+    isCleanNonBlankString(value) ||
+    (Array.isArray(value) && value.every((item) => isCleanNonBlankString(item)))
   );
+}
+
+function isCleanNonBlankString(value) {
+  return typeof value === 'string' && value.length > 0 && value.trim() === value && !value.includes('\u0000');
 }
 
 export function destructiveDryRunSmokeFailure(expectedResponses) {

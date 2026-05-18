@@ -147,7 +147,7 @@ destructive dry-run smoke 는 실제 vault 의 기존 slug 로 `rename_concept` 
 없는지 확인해, preview 응답이 confirmed write 로 오인되지 않게 한다. `rename_concept` /
 `merge_concepts` preview 의 `backlinkUpdates.updates[]` 도 `slug` / `title` /
 `beforeKeys` / `afterKeys` 내부 key-change row (`key`, optional `before` / `after`)
-와 `bodyChanged` shape, `totalUpdated` count alignment 를
+와 `bodyChanged` shape, clean non-blank string contract, `totalUpdated` count alignment 를
 검증해 설치된 MCP 가 깨진 backlink rewrite plan 을 통과시키지 않는다. 계획한 destructive
 dry-run 응답 중 하나라도 누락되면 부분 성공으로 처리하지 않고 verify 를 실패시킨다.
 `patch_concept` conflict guard smoke 는 기존 slug 에 stale `expected_mtime` 을 보내
