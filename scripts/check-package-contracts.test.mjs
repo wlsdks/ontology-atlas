@@ -1089,6 +1089,7 @@ describe('package contract helpers', () => {
     const section = readme.split('### Source-checkout verification')[1]?.split('`oh-my-ontology mcp-verify [vault]` is the fastest')[0] ?? '';
 
     assert.match(section, /pnpm test:cli:lib/);
+    assert.match(section, /pnpm test:cli:mcp-call/);
     assert.match(section, /pnpm test:contracts/);
     assert.match(section, /pnpm integration:cli:mcp-verify/);
     assert.match(section, /pnpm test:mcp:docs/);

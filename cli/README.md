@@ -59,6 +59,7 @@ checks that match the touched surface:
 
 ```bash
 pnpm test:cli:lib
+pnpm test:cli:mcp-call
 pnpm test:contracts
 pnpm integration:cli:mcp-verify
 pnpm integration:cli:maintenance
