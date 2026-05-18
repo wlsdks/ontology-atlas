@@ -26,6 +26,7 @@ import {
   buildGetConceptSmokeSlug,
   buildGetConceptsSmokeSlugs,
   buildDestructiveDryRunSmokeRequests,
+  buildPatchConflictGuardSmokeRequest,
   buildDirectGraphReadSmokeRequests,
   buildLimitedQueryConceptsSmokeRequest,
   buildGraphQuerySmokeArgs,
@@ -38,6 +39,7 @@ import {
   diagnosisIssueCount,
   destructiveDryRunFailure,
   destructiveDryRunSmokeFailure,
+  patchConflictGuardFailure,
   EXPECTED_DESTRUCTIVE_TOOLS,
   EXPECTED_IDEMPOTENT_TOOLS,
   EXPECTED_READ_TOOLS,
@@ -4573,6 +4575,49 @@ describe('verify.mjs first-contact gates', () => {
     );
   });
 
+  it('fails malformed patch_concept conflict guard smoke responses', () => {
+    const error = 'VaultConflictError: expected_mtime conflict — file was modified externally';
+    assert.equal(
+      patchConflictGuardFailure({
+        result: {
+          isError: true,
+          content: [{ text: `Error: ${error}` }],
+          structuredContent: { ok: false, errorCode: 'vault_conflict', error },
+        },
+      }),
+      null,
+    );
+    assert.equal(
+      patchConflictGuardFailure({
+        result: {
+          isError: false,
+          content: [{ text: 'ok' }],
+        },
+      }),
+      'patch_concept conflict guard structured error missing',
+    );
+    assert.equal(
+      patchConflictGuardFailure({
+        result: {
+          isError: true,
+          content: [{ text: `Error: ${error}` }],
+          structuredContent: { ok: false, errorCode: 'conflict', error },
+        },
+      }),
+      'patch_concept conflict guard structured error code mismatch — expected vault_conflict, got conflict',
+    );
+    assert.equal(
+      patchConflictGuardFailure({
+        result: {
+          isError: true,
+          content: [{ text: 'Error: stale read' }],
+          structuredContent: { ok: false, errorCode: 'vault_conflict', error: 'stale read' },
+        },
+      }),
+      'patch_concept conflict guard response did not explain the stale expected_mtime conflict',
+    );
+  });
+
   it('fails malformed strict enum smoke responses', () => {
     assert.equal(
       strictEnumFailure(strictErrorResponse('operation must be one of: overview, health. Invalid value: overveiw. Did you mean "overview"?')),
@@ -5718,6 +5763,21 @@ describe('verify.mjs first-contact gates', () => {
     assert.deepEqual(multi.requests[1].params.arguments, {
       fromSlug: 'project',
       intoSlug: 'capabilities/mcp-server',
+    });
+  });
+
+  it('builds patch_concept conflict guard smoke request from a listed node', () => {
+    assert.equal(buildPatchConflictGuardSmokeRequest({ nodes: [] }), null);
+
+    const request = buildPatchConflictGuardSmokeRequest({
+      nodes: [{ slug: 'capabilities/mcp-server' }],
+    });
+    assert.equal(request.id, 61);
+    assert.equal(request.params.name, 'patch_concept');
+    assert.deepEqual(request.params.arguments, {
+      slug: 'capabilities/mcp-server',
+      frontmatter: { title: '__omot_verify_conflict_probe__' },
+      expected_mtime: 1,
     });
   });
 

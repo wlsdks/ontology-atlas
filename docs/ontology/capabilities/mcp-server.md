@@ -101,7 +101,7 @@ validation / diagnosis / compile / overview / query planning 은 계속 hard gat
 (`15 read + 8 write` split 포함), strict argument schema 와 graph-query enum schema,
 strict schema/runtime unknown-argument and invalid-enum rejection,
 `add_concepts` / `add_relations` row-isolation runtime smoke (`concepts[n]` / `relations[n]` row label, `add_concepts` duplicate slug first-seen label 포함),
-`rename_concept` / `merge_concepts` / `delete_concept` destructive dry-run smoke,
+`rename_concept` / `merge_concepts` / `delete_concept` destructive dry-run smoke, stale `patch_concept.expected_mtime` conflict guard smoke (`vault_conflict`),
 `list_concepts`, project-node `list_concepts` probe,
 `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology({ summary: true })`, paginated `compile_ontology({ nodesLimit: 1, edgesLimit: 1 })`, indexed `compile_ontology({ nodesLimit: 1, edgesLimit: 1, includeIndexes: true })`,
 `analyze_repo_structure`, `infer_imports`, `query_ontology(overview)`, `query_plan(targetOperation:"overview")`,
@@ -136,6 +136,8 @@ destructive dry-run smoke 는 실제 vault 의 기존 slug 로 `rename_concept` 
 `delete_concept` preview 를 호출하되 디스크 write 없이 `changed` 와 `postWriteMaintenance` 가
 없는지 확인해, preview 응답이 confirmed write 로 오인되지 않게 한다. 계획한 destructive
 dry-run 응답 중 하나라도 누락되면 부분 성공으로 처리하지 않고 verify 를 실패시킨다.
+`patch_concept` conflict guard smoke 는 기존 slug 에 stale `expected_mtime` 을 보내
+디스크 write 없이 `structuredContent.errorCode: "vault_conflict"` 로 거부되는지 확인한다.
 `get_concept` 는 `list_concepts` 에서 얻은 실제 slug 하나로 single-node detail 의
 frontmatter / excerpt / neighbors / outgoingEdges / mtime 과 `structuredContent` 계약을 확인한다.
 `structuredContent` parity 실패는 installed verify 와 dogfood gate 양쪽에서 첫 불일치 JSON path 와

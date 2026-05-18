@@ -2960,6 +2960,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [58, 'strict_query_concepts_kind_filter'],
   [59, 'strict_query_concepts_has_key_filter'],
   [60, 'strict_list_concepts_kind_filter'],
+  [61, 'patch_concept_conflict_guard'],
 ]);
 
 function log(level, msg) {
@@ -3826,6 +3827,37 @@ export function buildDestructiveDryRunSmokeRequests(listPayload) {
     expectedResponseIds.splice(1, 0, 44);
   }
   return { requests, expectedResponseIds };
+}
+
+export function buildPatchConflictGuardSmokeRequest(listPayload) {
+  const nodes = Array.isArray(listPayload?.nodes) ? listPayload.nodes : [];
+  const slug = nodes
+    .map((node) => node?.slug)
+    .find((candidate) => typeof candidate === 'string' && candidate.length > 0);
+  if (!slug) return null;
+  return {
+    jsonrpc: '2.0',
+    id: 61,
+    method: 'tools/call',
+    params: {
+      name: 'patch_concept',
+      arguments: {
+        slug,
+        frontmatter: { title: '__omot_verify_conflict_probe__' },
+        expected_mtime: 1,
+      },
+    },
+  };
+}
+
+export function patchConflictGuardFailure(response) {
+  const structuredFailure = structuredErrorFailure(response, 'patch_concept conflict guard', { errorCode: 'vault_conflict' });
+  if (structuredFailure) return structuredFailure;
+  const text = response?.result?.content?.[0]?.text || '';
+  if (!/expected_mtime|mtime|conflict|modified externally/i.test(text)) {
+    return 'patch_concept conflict guard response did not explain the stale expected_mtime conflict';
+  }
+  return null;
 }
 
 export function destructiveDryRunFailure(response, toolName) {
@@ -5833,6 +5865,11 @@ async function step2BootAndCall() {
             if (destructiveDryRunPlan.requests.length > 0) {
               proc.stdin.write(destructiveDryRunPlan.requests.map((request) => JSON.stringify(request)).join('\n') + '\n');
             }
+            const patchConflictGuardRequest = buildPatchConflictGuardSmokeRequest(listPayload);
+            if (patchConflictGuardRequest) {
+              expectedFirstContactIds.add(patchConflictGuardRequest.id);
+              proc.stdin.write(JSON.stringify(patchConflictGuardRequest) + '\n');
+            }
           }
           if (!sentGraphQuerySmoke && projectResponse) {
             sentGraphQuerySmoke = true;
@@ -5951,6 +5988,7 @@ async function step2BootAndCall() {
       const strictQueryConceptsKindFilterRes = responses.find((r) => r.id === 58);
       const strictQueryConceptsHasKeyFilterRes = responses.find((r) => r.id === 59);
       const strictListConceptsKindFilterRes = responses.find((r) => r.id === 60);
+      const patchConflictGuardRes = responses.find((r) => r.id === 61);
       const strictGraphFromKindFilterRes = responses.find((r) => r.id === 48);
       const strictGraphToKindFilterRes = responses.find((r) => r.id === 49);
       const maintenanceMissingCursorRes = responses.find((r) => r.id === 25);
@@ -6052,6 +6090,14 @@ async function step2BootAndCall() {
         }
         destructiveDryRunCount = destructiveDryRunResponses.length;
         log('ok', `destructive dry-runs — ${destructiveDryRunResponses.map(([toolName]) => toolName).join(' · ')} preview without write-maintenance`);
+      }
+      if (patchConflictGuardRes) {
+        const patchConflictFailure = patchConflictGuardFailure(patchConflictGuardRes);
+        if (patchConflictFailure) {
+          log('fail', patchConflictFailure);
+          return res(false);
+        }
+        log('ok', 'patch_concept conflict guard — stale expected_mtime rejected with vault_conflict');
       }
       const strictEnum = strictEnumFailure(strictEnumRes);
       if (strictEnum) {
