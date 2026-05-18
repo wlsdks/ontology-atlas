@@ -223,6 +223,7 @@ pnpm dogfood:brief
 pnpm dogfood:status
 pnpm dogfood:status -- --help
 pnpm test:dogfood:status
+pnpm dogfood:verify
 ```
 
 ### Vault tooling

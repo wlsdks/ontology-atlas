@@ -1617,6 +1617,7 @@ describe('package contract helpers', () => {
     assert.match(helpfulCommands, /pnpm test:dogfood:args/);
     assert.match(helpfulCommands, /pnpm dogfood:status -- --help/);
     assert.match(helpfulCommands, /pnpm test:dogfood:status/);
+    assert.match(helpfulCommands, /pnpm dogfood:verify/);
     assert.match(agentWorkflow, /`workspace-brief` is the cheap first-contact dashboard/);
     assert.match(agentWorkflow, /`PROJECT별 포함 노드 수 \(project_scope\)`/);
     assert.match(agentWorkflow, /health-check coverage as\s+`id:status:count`/);
