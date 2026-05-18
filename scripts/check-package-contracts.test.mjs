@@ -1807,6 +1807,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /pnpm test:mcp:verify:first-contact\\s\+Narrow first-contact initialize-safety-recovery\\\/write-safety\\\/health-summary\\\/advisory\\\/read\\\/sample-shape helper gates/);
     assert.match(smoke, /pnpm test:mcp:verify:timeout/);
     assert.match(smoke, /Narrow MCP verify timeout\\\/startup\\\/help diagnostics/);
+    assert.match(smoke, /pnpm dogfood:verify\\s\+Root checkout dogfood vault installed-style verify gate/);
     assert.match(smoke, /verify timeout must be a positive integer/);
     assert.match(smoke, /invalidCliMcpVerifyTimeout/);
     assert.match(smoke, /missingCliMcpVerifyTimeout/);
