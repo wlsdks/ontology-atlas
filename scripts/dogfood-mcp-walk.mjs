@@ -103,7 +103,7 @@ export function dogfoodUsage() {
     "  pnpm dogfood:brief         First-contact workspace_brief JSON snapshot over docs/ontology.",
     "  pnpm dogfood:growth        growth_plan JSON snapshot over docs/ontology.",
     "  pnpm dogfood:maintenance   maintenance_plan JSON snapshot over docs/ontology.",
-    "  pnpm dogfood:status        Human-readable health + workspace_brief + maintenance over docs/ontology; ends with [dogfood:status] health:N · workspace-brief:N · maintenance:N and hints pnpm dogfood:verify on failure.",
+    "  pnpm dogfood:status        Human-readable health + workspace_brief + maintenance over docs/ontology; ends with [dogfood:status] health:N · workspace-brief:N · maintenance:N and focused hints before pnpm dogfood:verify on failure.",
     "  pnpm dogfood:verify        Installed-style verify gate over docs/ontology before the full walk.",
     "",
     "Focused checks:",

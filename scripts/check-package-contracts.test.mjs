@@ -1940,7 +1940,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /positional vault argument 는 받지 않고 이 repo 의 dogfood vault 만\s+검증하므로 잘못된 인자는 MCP server 를 띄우기 전에 실패/);
     assert.match(doc, /Run pnpm dogfood:walk -- --help for usage/);
     assert.match(doc, /`pnpm dogfood:walk -- --help`[\s\S]*MCP server 를 띄우지 않고 usage, `pnpm dogfood:compile` \/ `pnpm dogfood:compile-fix` \/\s+`pnpm dogfood:health` \/ `pnpm dogfood:brief` \/ `pnpm dogfood:growth` \/ `pnpm dogfood:maintenance` \/ `pnpm dogfood:status` \/ `pnpm dogfood:verify` 순서의 더 가벼운 dogfood gate, installed-style verify gate,\s+focused check 경로를 출력/);
-    assert.match(doc, /`dogfood:compile-fix` 성공 마지막 줄 `\[dogfood:compile-fix\] docs\/ontology unchanged` 와 `dogfood:status` 마지막 줄 `\[dogfood:status\] health:N · workspace-brief:N · maintenance:N` 및 실패 시 `pnpm dogfood:verify` hint/);
+    assert.match(doc, /`dogfood:compile-fix` 성공 마지막 줄 `\[dogfood:compile-fix\] docs\/ontology unchanged` 와 `dogfood:status` 마지막 줄 `\[dogfood:status\] health:N · workspace-brief:N · maintenance:N` 및 실패 시 focused hint 후 `pnpm dogfood:verify` hint/);
     assert.match(doc, /`pnpm test:dogfood:args` \/ `pnpm test:dogfood:script-refs` \/ `pnpm test:dogfood:compile-fix` \/ `pnpm test:dogfood:status` \/ `pnpm test:mcp:maintenance`/);
     assert.match(doc, /maintenance-only queue contract 만 좁게 검증/);
     assert.match(doc, /도움말의 `pnpm test:mcp:dogfood` 설명도 compile\/index gate, tools\/list inventory name \/ annotation coverage, row-label guidance,\s+batch cap gates, invalid-only batch row repair \+ no-write metadata smoke, strict closest-value \/ unknown-tool repair summary, vault warning \/ `validate_vault` problem gate, first-contact health\/growth\/sample-shape gate, maintenance work-queue shape \/ formatter, initialize tool-inventory \+ safety\/recovery guidance, destructive dry-run, structuredContent, strict relation filter, strict add_relation type-preflight \+ no-write metadata, strict graph kind filter, stderr warning 범위/);
@@ -2175,7 +2175,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /pnpm dogfood:brief\\s\+Cheap root checkout workspace_brief snapshot/);
     assert.match(smoke, /pnpm dogfood:growth\\s\+Cheap root checkout growth_plan snapshot/);
     assert.match(smoke, /pnpm dogfood:maintenance\\s\+Cheap root checkout maintenance_plan snapshot/);
-    assert.match(smoke, /pnpm dogfood:status\\s\+Cheap root checkout health \\\+ workspace-brief \\\+ maintenance preflight before full verify/);
+    assert.match(smoke, /pnpm dogfood:status\\s\+Cheap root checkout health \\\+ workspace-brief \\\+ maintenance preflight with focused hints before full verify/);
     assert.match(smoke, /pnpm test:dogfood:status\\s\+Narrow dogfood status shortcut runner contract/);
     assert.match(smoke, /pnpm dogfood:verify\\s\+Root checkout dogfood vault installed-style verify gate/);
     assert.match(smoke, /verify timeout must be a positive integer/);

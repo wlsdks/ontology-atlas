@@ -755,7 +755,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:brief\s+Cheap root checkout workspace_brief snapshot/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:growth\s+Cheap root checkout growth_plan snapshot/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:maintenance\s+Cheap root checkout maintenance_plan snapshot/);
-  assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:status\s+Cheap root checkout health \+ workspace-brief \+ maintenance preflight before full verify/);
+  assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:status\s+Cheap root checkout health \+ workspace-brief \+ maintenance preflight with focused hints before full verify/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:verify\s+Root checkout dogfood vault installed-style verify gate/);
 

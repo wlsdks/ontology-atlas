@@ -4752,7 +4752,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /pnpm dogfood:brief\s+Cheap root checkout workspace_brief snapshot/);
     assert.match(verifyUsage(), /pnpm dogfood:growth\s+Cheap root checkout growth_plan snapshot/);
     assert.match(verifyUsage(), /pnpm dogfood:maintenance\s+Cheap root checkout maintenance_plan snapshot/);
-    assert.match(verifyUsage(), /pnpm dogfood:status\s+Cheap root checkout health \+ workspace-brief \+ maintenance preflight before full verify/);
+    assert.match(verifyUsage(), /pnpm dogfood:status\s+Cheap root checkout health \+ workspace-brief \+ maintenance preflight with focused hints before full verify/);
     assert.match(verifyUsage(), /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
     assert.match(verifyUsage(), /pnpm dogfood:verify\s+Root checkout dogfood vault installed-style verify gate/);
     assertPnpmScriptsExist(verifyUsage(), ROOT_PKG.scripts, { filteredScripts: { './mcp': MCP_PKG.scripts } });

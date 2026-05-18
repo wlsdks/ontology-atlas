@@ -3596,7 +3596,7 @@ export function verifyUsage() {
     '  pnpm dogfood:brief              Cheap root checkout workspace_brief snapshot.\n' +
     '  pnpm dogfood:growth             Cheap root checkout growth_plan snapshot.\n' +
     '  pnpm dogfood:maintenance        Cheap root checkout maintenance_plan snapshot.\n' +
-    '  pnpm dogfood:status             Cheap root checkout health + workspace-brief + maintenance preflight before full verify.\n' +
+    '  pnpm dogfood:status             Cheap root checkout health + workspace-brief + maintenance preflight with focused hints before full verify.\n' +
     '  pnpm test:dogfood:status        Narrow dogfood status shortcut runner contract.\n' +
     '  pnpm dogfood:verify             Root checkout dogfood vault installed-style verify gate.\n'
   );
