@@ -125,7 +125,10 @@ runs root-checkout `compile --fix` and fails if canonicalization leaves a docs/o
 the shortest root-checkout first-contact JSON snapshot, `dogfood:status` always
 runs health + workspace-brief and preserves the first failing exit before escalating, `test:dogfood:status`
 checks that always-run shortcut contract without the full dogfood suite, `dogfood:verify` is
-the full root-checkout dogfood vault gate, `dogfood:test` is the full dogfood
+the full root-checkout dogfood vault gate. `pnpm dogfood:compile-fix -- --help`
+and `pnpm dogfood:status -- --help` print shortcut usage without running those
+gates; unsupported shortcut arguments fail with exit 2 before any child check starts.
+`dogfood:test` is the full dogfood
 helper regression suite to use only when focused helper checks are not enough, and
 `cli:mcp-verify` is the root-checkout shortcut for the CLI wrapper; use
 `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` when you need to pass

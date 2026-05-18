@@ -209,10 +209,12 @@ pnpm vault:validate
 pnpm vault:audit
 pnpm dogfood:compile
 pnpm dogfood:compile-fix
+pnpm dogfood:compile-fix -- --help
 pnpm test:dogfood:compile-fix
 pnpm dogfood:health
 pnpm dogfood:brief
 pnpm dogfood:status
+pnpm dogfood:status -- --help
 pnpm test:dogfood:status
 ```
 

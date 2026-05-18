@@ -273,10 +273,12 @@ describe('package contract helpers', () => {
       'pnpm test:mcp:dogfood',
       'pnpm dogfood:compile',
       'pnpm dogfood:compile-fix',
+      'pnpm dogfood:compile-fix -- --help',
       'pnpm test:dogfood:compile-fix',
       'pnpm dogfood:health',
       'pnpm dogfood:brief',
       'pnpm dogfood:status',
+      'pnpm dogfood:status -- --help',
       'pnpm test:dogfood:status',
       'pnpm dogfood:verify',
       'pnpm dogfood:walk',
@@ -306,6 +308,8 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /`pnpm dogfood:compile-fix` runs `compile --fix` against docs\/ontology and fails\s+if it leaves a git diff/);
     assert.match(checksDoc, /`pnpm dogfood:status` runs the cheap human-readable health \+ workspace-brief\s+gates together/);
     assert.match(checksDoc, /still prints workspace-brief when health fails, then preserves\s+the first failing exit code/);
+    assert.match(checksDoc, /Use `pnpm dogfood:compile-fix -- --help` \/ `pnpm dogfood:status -- --help`/);
+    assert.match(checksDoc, /unsupported shortcut\s+arguments fail with exit 2 before any child check starts/);
     assert.match(checksDoc, /Use `pnpm dogfood:verify` for the full\s+installed-style dogfood vault gate/);
     assert.match(checksDoc, /`pnpm dogfood:test` only when the dogfood\s+helper itself changed/);
     assert.match(checksDoc, /`pnpm test:mcp:docs` also guards Firebase Hosting config as static-only/);
@@ -704,6 +708,9 @@ describe('package contract helpers', () => {
     assert.match(section, /`pnpm dogfood:brief` is the shortest dogfood vault first-contact snapshot/);
     assert.match(section, /`pnpm dogfood:status` for the cheap human-readable health \+ first-contact pair/);
     assert.match(section, /it still prints the brief after health fails and preserves the first failing exit/);
+    assert.match(section, /`pnpm dogfood:compile-fix -- --help` \/ `pnpm dogfood:status -- --help`/);
+    assert.match(section, /shortcut usage without running those gates/);
+    assert.match(section, /unsupported shortcut arguments fail\s+with exit 2 before starting the underlying checks/);
     assert.match(section, /Use\s+`pnpm dogfood:verify` for the full installed-style dogfood vault gate/);
     assert.match(section, /`pnpm dogfood:test` only when the dogfood helper itself needs the full\s+regression suite beyond the focused `test:mcp:dogfood` gate/);
     assert.match(readme, /invalid timeout values fail before the server\s+starts and print\s+the received value plus a concrete retry example/i);
@@ -1268,6 +1275,8 @@ describe('package contract helpers', () => {
     assert.match(section, /`dogfood:status` always\s+runs health \+ workspace-brief and preserves the first failing exit before escalating/);
     assert.match(section, /`test:dogfood:status`\s+checks that always-run shortcut contract without the full dogfood suite/);
     assert.match(section, /`dogfood:verify` is\s+the full root-checkout dogfood vault gate/);
+    assert.match(section, /`pnpm dogfood:compile-fix -- --help`\s+and `pnpm dogfood:status -- --help` print shortcut usage without running those\s+gates/);
+    assert.match(section, /unsupported shortcut arguments fail with exit 2 before any child check starts/);
     assert.match(section, /`dogfood:test` is the full dogfood\s+helper regression suite to use only when focused helper checks are not enough/);
     assert.match(section, /`cli:mcp-verify` is the root-checkout shortcut for the CLI wrapper/);
     assert.match(section, /`pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000` when you need to pass\s+explicit verify args/);
@@ -1484,6 +1493,8 @@ describe('package contract helpers', () => {
     assert.match(dogfoodRow, new RegExp(`project ${census.byKind.project}`));
     assert.match(dogfoodRow, new RegExp(`vault-readme ${census.byKind['vault-readme']}`));
     assert.match(helpfulCommands, /pnpm dogfood:status/);
+    assert.match(helpfulCommands, /pnpm dogfood:compile-fix -- --help/);
+    assert.match(helpfulCommands, /pnpm dogfood:status -- --help/);
     assert.match(helpfulCommands, /pnpm test:dogfood:status/);
   });
 
