@@ -169,6 +169,7 @@ describe('focused node test wrapper', () => {
 
         assert.equal(result.status, 0, result.stderr);
         assert.match(result.stdout, /# pass 1/);
+        assert.match(result.stdout, /\[focused-node-test\] pattern=target case targets=.+fixture\.test\.mjs pass=1 fail=0 cancelled=0 skipped=1/);
       },
     );
   });
@@ -181,6 +182,7 @@ describe('focused node test wrapper', () => {
 
         assert.equal(result.status, 0, result.stderr);
         assert.match(result.stdout, /# pass 1/);
+        assert.match(result.stdout, /\[focused-node-test\] pattern=target case targets=.+fixture\.test\.mjs pass=1 fail=0 cancelled=0 skipped=1/);
       },
     );
   });

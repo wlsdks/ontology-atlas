@@ -128,6 +128,7 @@ export function runFocusedNodeTest({
     const pass = tapCount(result.stdout, 'pass');
     const fail = tapCount(result.stdout, 'fail');
     const cancelled = tapCount(result.stdout, 'cancelled');
+    const skipped = tapCount(result.stdout, 'skipped');
     if (tests === null || pass === null || fail === null || cancelled === null) {
       const targetSuffix = testTargets.length > 0 ? ` in ${testTargets.join(', ')}` : '';
       stderr.write(
@@ -141,6 +142,11 @@ export function runFocusedNodeTest({
       stderr.write(`[focused-node-test] no tests matched --test-name-pattern=${pattern}${targetSuffix}\n`);
       return 1;
     }
+    const skippedText = skipped === null ? '' : ` skipped=${skipped}`;
+    stdout.write(
+      `[focused-node-test] pattern=${pattern} targets=${testTargets.join(',')} ` +
+      `pass=${pass} fail=${fail} cancelled=${cancelled}${skippedText}\n`,
+    );
   }
 
   return 0;
