@@ -91,7 +91,11 @@ export function callMcpTool(vaultRoot, toolName, args = {}) {
       if (settled) return;
       settled = true;
       clearTimeout(timer);
-      fn();
+      try {
+        fn();
+      } catch (err) {
+        rejectP(err);
+      }
     };
     timer = setTimeout(() => {
       timedOut = true;
@@ -239,10 +243,20 @@ export function formatMcpSpawnError(err, { entry, toolName, vaultRoot } = {}) {
   return new Error(`failed to spawn MCP server while calling ${tool} (vault ${vault}, entry ${entryLabel}): ${cause}`);
 }
 
+export function formatMcpJsonRpcError(error, { toolName } = {}) {
+  const toolLabel = toolName ? ` (${toolName})` : '';
+  const message = typeof error?.message === 'string' && error.message ? error.message : '(no message)';
+  const code = Number.isInteger(error?.code) ? ` code=${error.code}` : '';
+  const data = Object.prototype.hasOwnProperty.call(error || {}, 'data')
+    ? ` data=${previewValue(error.data)}`
+    : '';
+  return new Error(`mcp tool error${toolLabel}:${code} ${message}${data}`);
+}
+
 export function parseMcpToolResponse(toolResp, { toolName } = {}) {
   const toolLabel = toolName ? ` (${toolName})` : '';
   if (toolResp?.error) {
-    throw new Error(`mcp tool error${toolLabel}: ${toolResp.error.message}`);
+    throw formatMcpJsonRpcError(toolResp.error, { toolName });
   }
   if (toolResp.result?.isError) {
     const text = toolResp.result?.content?.[0]?.text;

@@ -7,6 +7,7 @@ import { describe, it } from 'node:test';
 import {
   callMcpTool,
   formatMcpCallTimeoutError,
+  formatMcpJsonRpcError,
   formatMcpMissingResponseError,
   formatMcpProcessExitError,
   formatMcpSpawnError,
@@ -80,6 +81,16 @@ describe('mcp-call response parsing', () => {
     );
   });
 
+  it('formats JSON-RPC tool errors with code and data context', () => {
+    assert.equal(
+      formatMcpJsonRpcError(
+        { code: -32602, message: 'Invalid params', data: { field: 'operation', received: 'overveiw' } },
+        { toolName: 'query_ontology' },
+      ).message,
+      'mcp tool error (query_ontology): code=-32602 Invalid params data={"field":"operation","received":"overveiw"}',
+    );
+  });
+
   it('times out one-shot MCP calls that never answer', async () => {
     const root = mkdtempSync(join(tmpdir(), 'omot-mcp-call-timeout-'));
     const server = join(root, 'silent-mcp.mjs');
@@ -134,6 +145,43 @@ describe('mcp-call response parsing', () => {
         /mcp call timed out after 25ms while calling list_kinds[\s\S]*ignore term server ready/,
       );
       assert.ok(Date.now() - started < 750, 'timeout rejection should not wait for process exit');
+    } finally {
+      if (previousPath === undefined) delete process.env.OMOT_MCP_PATH;
+      else process.env.OMOT_MCP_PATH = previousPath;
+      if (previousTimeout === undefined) delete process.env.OMOT_CLI_MCP_TIMEOUT_MS;
+      else process.env.OMOT_CLI_MCP_TIMEOUT_MS = previousTimeout;
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('rejects one-shot JSON-RPC tool errors instead of leaving the call unsettled', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'omot-mcp-call-json-rpc-error-'));
+    const server = join(root, 'json-rpc-error-mcp.mjs');
+    const previousPath = process.env.OMOT_MCP_PATH;
+    const previousTimeout = process.env.OMOT_CLI_MCP_TIMEOUT_MS;
+    writeFileSync(
+      server,
+      [
+        "import readline from 'node:readline';",
+        "const rl = readline.createInterface({ input: process.stdin });",
+        "rl.on('line', (line) => {",
+        "  const msg = JSON.parse(line);",
+        "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
+        "  if (msg.id === 2) {",
+        "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, error: { code: -32602, message: 'Invalid params', data: { field: 'operation' } } }));",
+        "    rl.close();",
+        "  }",
+        "});",
+      ].join('\n'),
+      'utf-8',
+    );
+    process.env.OMOT_MCP_PATH = server;
+    process.env.OMOT_CLI_MCP_TIMEOUT_MS = '1000';
+    try {
+      await assert.rejects(
+        () => callMcpTool(root, 'query_ontology', { operation: 'overveiw' }),
+        /mcp tool error \(query_ontology\): code=-32602 Invalid params data=\{"field":"operation"\}/,
+      );
     } finally {
       if (previousPath === undefined) delete process.env.OMOT_MCP_PATH;
       else process.env.OMOT_MCP_PATH = previousPath;
@@ -222,8 +270,8 @@ describe('mcp-call response parsing', () => {
     );
 
     assert.throws(
-      () => parseMcpToolResponse({ error: { message: 'tool exploded' } }, { toolName: 'query_ontology' }),
-      /mcp tool error \(query_ontology\): tool exploded/,
+      () => parseMcpToolResponse({ error: { code: -32603, message: 'tool exploded' } }, { toolName: 'query_ontology' }),
+      /mcp tool error \(query_ontology\): code=-32603 tool exploded/,
     );
   });
 

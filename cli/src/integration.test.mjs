@@ -2306,6 +2306,37 @@ await test('graph MCP calls — label missing tools/call responses with tool and
   }
 });
 
+await test('graph MCP calls — label JSON-RPC tool errors with code and data context', async () => {
+  const root = withVault();
+  const fakeMcp = join(root, 'fake-json-rpc-error-mcp.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
+      "  if (msg.id === 2) {",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, error: { code: -32602, message: 'Invalid params', data: { field: 'operation', received: 'overveiw' } } }));",
+      "    rl.close();",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['overview', root], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const stderr = stripAnsi(r.stderr);
+    assert.match(stderr, /mcp tool error \(query_ontology\): code=-32602 Invalid params/);
+    assert.match(stderr, /"field":"operation"/);
+    assert.match(stderr, /"received":"overveiw"/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('graph MCP calls — reject invalid explicit vault roots before spawning MCP', async () => {
   const missing = await run(['overview', './not-a-vault']);
   assert.equal(missing.code, 2);
