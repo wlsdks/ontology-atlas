@@ -1618,7 +1618,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /row-level non-object \/ unknown-field 입력도 해당 row 만 실패/);
     assert.match(doc, /`concepts\[n\]` \/ `relations\[n\]` row label/);
     assert.match(doc, /`Received fields: \.\.\.`/);
-    assert.match(doc, /`add_concepts` \/ `add_relations` 는 non-object row 와 unknown row field, invalid relation type row 를 넣어\s+top-level tool error 가 아니라 row-level `ok:false` 로 격리되는지 설치 검증에서\s+실제 호출로 확인/);
+    assert.match(doc, /`add_concepts` \/ `add_relations` 는 non-object row 와 unknown row fields, invalid relation type row 를 넣어\s+top-level tool error 가 아니라 row-level `ok:false` 로 격리되는지 설치 검증에서\s+실제 호출로 확인/);
     assert.match(doc, /relation type row 에 closest-value hint 가 남는지와\s+invalid-only smoke 에 `postWriteMaintenance` 가 없는지도 확인/);
     assert.match(doc, /initialize first-contact 안내도 같은 batch relation type closest-value hint 를 설명해야 하며,\s+verify helper 가 안내 문구 drift 를 별도 실패로 처리/);
     assert.match(doc, /`rename_concept` \/ `merge_concepts` \/ `delete_concept` 도 destructive writer\s+dry-run\/confirm `outputSchema`/);

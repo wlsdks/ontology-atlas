@@ -164,7 +164,7 @@ paths(`@/app-providers/*`, root `@/*`) 를 읽어 `app/[locale]/layout.tsx`
 import graph unresolved count 를 3 에서 0 으로 줄였다.
 direct `find_neighbors` / `find_path` 도 resolved vault 에 실제 호출해 local-neighborhood 와
 shortest-path read tool 계약을 `query_ontology` graph operation 과 별도로 확인한다.
-`add_concepts` / `add_relations` 는 non-object row 와 unknown row field, invalid relation type row 를 넣어
+`add_concepts` / `add_relations` 는 non-object row 와 unknown row fields, invalid relation type row 를 넣어
 top-level tool error 가 아니라 row-level `ok:false` 로 격리되는지 설치 검증에서
 실제 호출로 확인하고, relation type row 에 closest-value hint 가 남는지와
 invalid-only smoke 에 `postWriteMaintenance` 가 없는지도 확인한다.
@@ -510,7 +510,7 @@ row partial-failure 경로까지 `mcp/src/integration.test.mjs` 의 spawn 기반
 `add_concepts` / `add_relations` 의 batch row 도 object shape 와 허용 field set 을
 먼저 검증해, 잘못된 row 는 index 가 포함된 row-level error 로 격리하고 나머지 유효
 row 는 계속 land 한다. row-level non-object / unknown-field 입력도 해당 row 만 실패한다.
-first-contact instructions 도 non-object row 와 unknown row field 가
+first-contact instructions 도 non-object row 와 unknown row fields 가
 batch 전체 실패가 아니라 `{ok:false, error}` row 로 돌아온다는 점을 안내한다.
 `tools/call.arguments` 자체도 생략은 빈 object 로 처리하되, null / 배열 /
 문자열처럼 object 가 아닌 값은 SDK 또는 server 경계에서 명확한 MCP error 로

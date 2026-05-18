@@ -2944,14 +2944,25 @@ function requireAllowedObjectKeys(value, name, allowedKeys) {
   const allowed = new Set(allowedKeys);
   const receivedFields = Object.keys(value).sort();
   const receivedText = receivedFields.length > 0 ? receivedFields.join(', ') : 'none';
-  for (const key of Object.keys(value)) {
-    if (allowed.has(key)) continue;
+  const unknownFields = Object.keys(value).filter((key) => !allowed.has(key));
+  if (unknownFields.length === 0) return;
+  if (unknownFields.length === 1) {
+    const [key] = unknownFields;
     const suggestion = closestAllowedObjectField(key, allowedKeys);
     const suggestionText = suggestion ? ` Did you mean "${suggestion}"?` : '';
     throw new Error(
       `Unknown field "${key}" in ${name}.${suggestionText} Allowed fields: ${allowedKeys.join(', ')}. Received fields: ${receivedText}.`,
     );
   }
+  const unknownText = unknownFields
+    .map((key) => {
+      const suggestion = closestAllowedObjectField(key, allowedKeys);
+      return suggestion ? `"${key}" (did you mean "${suggestion}"?)` : `"${key}"`;
+    })
+    .join(', ');
+  throw new Error(
+    `Unknown fields in ${name}: ${unknownText}. Allowed fields: ${allowedKeys.join(', ')}. Received fields: ${receivedText}.`,
+  );
 }
 
 function closestAllowedObjectField(key, allowedKeys) {

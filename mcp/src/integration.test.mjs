@@ -3830,6 +3830,14 @@ await test("add_concepts — unknown row field 는 row-level error 로 격리", 
             domain: "x",
             titel: "ignored typo",
           },
+          {
+            slug: "multi-typo",
+            kind: "capability",
+            title: "Multi Typo",
+            domain: "x",
+            titel: "ignored typo",
+            domian: "ignored typo",
+          },
         ],
       }),
       callTool(3, "list_concepts"),
@@ -3840,6 +3848,11 @@ await test("add_concepts — unknown row field 는 row-level error 로 격리", 
     assert.match(result.concepts[1].error, /Unknown field "titel" in concepts\[1\]/i);
     assert.match(result.concepts[1].error, /Did you mean "title"\?/i);
     assert.match(result.concepts[1].error, /Received fields: domain, kind, slug, titel, title/i);
+    assert.equal(result.concepts[2].ok, false);
+    assert.match(result.concepts[2].error, /Unknown fields in concepts\[2\]/i);
+    assert.match(result.concepts[2].error, /"titel" \(did you mean "title"\?\)/i);
+    assert.match(result.concepts[2].error, /"domian" \(did you mean "domain"\?\)/i);
+    assert.match(result.concepts[2].error, /Received fields: domain, domian, kind, slug, titel, title/i);
     const list = getCallParsed(responses, 3);
     assert.deepEqual(list.nodes.map((node) => node.slug), ["ok"]);
   } finally {
@@ -4180,6 +4193,7 @@ await test("add_relations — unknown row field 는 row-level error 로 격리",
         relations: [
           { from: "a", to: "b", type: "relates" },
           { from: "a", to: "b", type: "contains", relation: "relates" },
+          { from: "a", to: "b", type: "contains", relation: "relates", frm: "a" },
         ],
       }),
       callTool(3, "get_concept", { slug: "a" }),
@@ -4190,6 +4204,11 @@ await test("add_relations — unknown row field 는 row-level error 로 격리",
     assert.match(result.relations[1].error, /Unknown field "relation" in relations\[1\]/i);
     assert.match(result.relations[1].error, /Did you mean "type"\?/i);
     assert.match(result.relations[1].error, /Received fields: from, relation, to, type/i);
+    assert.equal(result.relations[2].ok, false);
+    assert.match(result.relations[2].error, /Unknown fields in relations\[2\]/i);
+    assert.match(result.relations[2].error, /"relation" \(did you mean "type"\?\)/i);
+    assert.match(result.relations[2].error, /"frm" \(did you mean "from"\?\)/i);
+    assert.match(result.relations[2].error, /Received fields: frm, from, relation, to, type/i);
     const concept = getCallParsed(responses, 3);
     assert.deepEqual(concept.frontmatter.relates, ["b"]);
     assert.equal(concept.frontmatter.contains, undefined);
