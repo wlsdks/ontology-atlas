@@ -139,12 +139,17 @@ function renderMaintenance(result) {
   if (result?.nextExecutableAction || result?.nextReviewAction) {
     process.stdout.write('\n');
     if (result.nextExecutableAction) {
-      process.stdout.write(`${COLORS.dim}next executable:${COLORS.reset} ${result.nextExecutableAction.id}\n`);
+      process.stdout.write(`${COLORS.dim}next executable:${COLORS.reset} ${formatActionPointer(result.nextExecutableAction)}\n`);
     }
     if (result.nextReviewAction) {
-      process.stdout.write(`${COLORS.dim}next review:${COLORS.reset} ${result.nextReviewAction.id}\n`);
+      process.stdout.write(`${COLORS.dim}next review:${COLORS.reset} ${formatActionPointer(result.nextReviewAction)}\n`);
     }
   }
+}
+
+function formatActionPointer(pointer) {
+  const mode = pointer.executable ? 'exec' : 'review';
+  return `${pointer.id} ${COLORS.dim}${pointer.phase}/${pointer.kind} · ${pointer.severity} · ${mode}${COLORS.reset}`;
 }
 
 function formatListFilter(label, value) {

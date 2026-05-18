@@ -1265,6 +1265,7 @@ describe('package contract helpers', () => {
     assert.match(maintenanceRow, /compile\/cycle\/canonicalize\/dangling\/relation\/external\/ignored-external summary counts/);
     assert.match(maintenanceRow, /phase\/severity\/kind bucket summaries/);
     assert.match(maintenanceRow, /current-page next action pointers/);
+    assert.match(maintenanceRow, /`phase\/kind · severity · exec\|review` detail/);
     assert.match(maintenanceRow, /cursor\/filter dogfood/);
     assert.match(maintenanceRow, /Malformed work-queue payloads fail closed before JSON or human output/);
     assert.match(analyzeRow, /Top-level `rootPath` \/ `framework` \/ `skipped`/);
@@ -1823,6 +1824,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`NEXT ACTIONS` label 은 `id` 와 `kind` 가 다르면 `components\/health_check`/);
     assert.match(readme, /`NEXT ACTIONS` labels use `id\/kind` when those fields differ/);
     assert.match(doc, /`workspace-brief` non-json 의 `PROJECT별 포함 노드 수 \(project_scope\)` label/);
+    assert.match(doc, /current-page next action pointer 와 `phase\/kind · severity · exec\|review` detail/);
     assert.match(doc, /`workspace-brief --help` 의 `project_scope 포함 노드 요약`/);
     assert.match(doc, /`health` non-json 의 `pass:count` 출력/);
     assert.match(doc, /`health --help` 의 `pnpm dogfood:health` automation gate \/ failing health non-zero \/ `pnpm dogfood:status` 설명/);
