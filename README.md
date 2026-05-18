@@ -182,7 +182,7 @@ browser receives permission to access a local folder on your machine.
 | **No backend** | `pnpm bundle:check` keeps Firebase/server chunks out of local-first routes. |
 | **Static deploy** | `pnpm build` exports to `out/`; Firebase Hosting serves only static files. |
 | **Vault integrity** | `pnpm vault:validate`, `test:vault:validate`, `vault:audit`, and `test:vault:audit` run in CI. |
-| **MCP/CLI contracts** | `pnpm test:mcp:docs`, `pnpm package:check`, `pnpm test:contracts`, and focused `test:mcp:*` scripts cover the agent surface. |
+| **MCP/CLI contracts** | `pnpm test:cli:args`, `pnpm test:mcp:docs`, `pnpm package:check`, `pnpm test:contracts`, and focused `test:mcp:*` scripts cover the agent surface. |
 | **Dogfooding** | This repo's own vault has **29 nodes**: capabilities 17, domains 6, elements 4, project 1, vault-readme 1. |
 
 For the detailed maintainer command matrix, see

@@ -26,6 +26,7 @@ For user-facing UI changes, add the relevant Playwright route check.
 | Lint/style | `pnpm lint` | `pnpm test:run` |
 | Static deploy safety | `pnpm build` | `pnpm bundle:check` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
+| CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
 | MCP/docs contract | `pnpm test:mcp:docs` | `pnpm package:check` |
 | Dogfood MCP smoke | `pnpm dogfood:verify` | `pnpm dogfood:walk` |
 | Packed CLI release | `pnpm smoke:packed-cli` | `pnpm test:mcp:package` |

@@ -277,6 +277,7 @@ describe('package contract helpers', () => {
       assert.match(checksDoc, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     }
 
+    assert.match(checksDoc, /\| CLI argument parsing \| `pnpm test:cli:args` \| `pnpm test:cli:lib` \|/);
     assert.match(checksDoc, /Use `pnpm dogfood:test` only when the dogfood helper itself changed/);
     assert.match(checksDoc, /`pnpm test:mcp:docs` also guards Firebase Hosting config as static-only/);
     assert.match(checksDoc, /Explicit root\/MCP\/CLI\/dogfood docs contracts plus Firebase static-hosting guard/);
