@@ -185,6 +185,21 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests script-reference checks for docs whose pnpm references are scanned', () => {
+    const result = suggestFocusedChecks([
+      'README.md',
+      'docs/DEVELOPMENT-CHECKS.md',
+      'mcp/README.md',
+      'cli/README.md',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm test:dogfood:script-refs',
+      'pnpm test:mcp:docs',
+      'pnpm dogfood:status',
+    ]);
+  });
+
   it('suggests focused CLI and MCP verify gates without jumping straight to full suites', () => {
     const result = suggestFocusedChecks([
       'cli/src/commands/mcp-verify.mjs',

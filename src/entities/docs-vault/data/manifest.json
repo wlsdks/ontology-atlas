@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-18T23:13:58.744Z",
+  "generatedAt": "2026-05-18T23:16:32.138Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -3828,8 +3828,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 1682,
-      "updatedAt": "2026-05-18T23:13:30.798Z",
+      "wordCount": 1701,
+      "updatedAt": "2026-05-18T23:16:22.729Z",
       "linksOut": []
     },
     {
@@ -4827,8 +4827,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, 그리고 설치된 MCP surface 를 확인하는 mcpverify 명령 추가 — 총 28 명령. 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP ",
-      "wordCount": 6734,
-      "updatedAt": "2026-05-18T23:13:36.206Z",
+      "wordCount": 6741,
+      "updatedAt": "2026-05-18T23:16:28.224Z",
       "linksOut": []
     },
     {

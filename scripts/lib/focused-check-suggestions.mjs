@@ -57,6 +57,10 @@ const RULES = [
       /^scripts\/dogfood-mcp-walk\.(?:mjs|test\.mjs)$/,
       /^cli\/src\/commands\/mcp-verify\.mjs$/,
       /^mcp\/scripts\/verify\.mjs$/,
+      /^README\.md$/,
+      /^docs\/DEVELOPMENT-CHECKS\.md$/,
+      /^mcp\/README\.md$/,
+      /^cli\/README\.md$/,
     ],
   },
   {

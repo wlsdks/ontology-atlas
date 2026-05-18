@@ -96,6 +96,8 @@ do the same for `cli/src/lib/<name>.test.mjs`, so run the printed direct
 helper moved.
 CLI/MCP verify help changes route to `pnpm test:dogfood:script-refs` too,
 because those help surfaces list root `pnpm ...` shortcuts.
+Root/MCP/CLI README changes and this file also route to that gate when they may
+change scanned `pnpm ...` references.
 Changes to `scripts/check-package-contracts.test.mjs` also route to
 `pnpm test:mcp:docs`, because that mixed contract file owns public docs and
 dogfood docs assertions as well as package/release assertions.
