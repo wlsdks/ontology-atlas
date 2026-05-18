@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-18T21:15:57.117Z",
+  "generatedAt": "2026-05-18T21:18:57.827Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -3377,8 +3377,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. The developer CLI now exposes MCP growthplan directly, so agents and humans can inspect on",
-      "wordCount": 15550,
-      "updatedAt": "2026-05-18T21:15:47.894Z",
+      "wordCount": 15577,
+      "updatedAt": "2026-05-18T21:18:52.667Z",
       "linksOut": [
         "slug"
       ]
@@ -4981,8 +4981,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 11535,
-      "updatedAt": "2026-05-18T21:15:47.895Z",
+      "wordCount": 11538,
+      "updatedAt": "2026-05-18T21:18:52.668Z",
       "linksOut": []
     },
     {

@@ -25,6 +25,9 @@ can inspect ontology write candidates without raw JSON-RPC.
 - **Direct MCP verify help** — `npm run verify -- --help` now lists the same
   narrow dogfood shortcuts for arguments, compile-fix idempotence, health,
   brief, growth, maintenance, and status before the full installed-style gate.
+- **Maintenance focused gate discovery** — CLI and direct MCP verify help now
+  point to `pnpm test:mcp:maintenance` when only the `maintenance_plan` queue,
+  cursor, and formatter contracts changed.
 
 ## 2026-05-18 — MCP first-contact and packed-smoke hardening
 

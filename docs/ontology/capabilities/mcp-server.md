@@ -573,7 +573,7 @@ empty-vault fail-fast 진단만 만질 때는 `pnpm test:mcp:verify:timeout` 으
 work-queue shape / bucket·next-action formatter 만 바꿀 때는 `pnpm test:mcp:maintenance` 로
 verify helper 와 dogfood gate 의 maintenance 관련 subset 만 실행한다.
 직접 verify help 도 이 focused check 들을 같이 보여줘 설치 smoke 를 시작하기 전에
-기본 helper 계약, first-contact 계약, timeout/help 계약을 분리해 고를 수 있게 한다.
+기본 helper 계약, first-contact 계약, maintenance queue 계약, timeout/help 계약을 분리해 고를 수 있게 한다.
 또한 write tool schema 가 `expected_mtime` conflict guard 와 destructive
 tool 의 `confirm` dry-run safety switch, `rename_concept.overwrite`, `delete_concept.force` 를 계속 노출하는지 `tools/list`
 응답에서 직접 검증해, agent-facing MCP schema 가 실제 동시 편집 보호

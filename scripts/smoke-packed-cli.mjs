@@ -523,6 +523,7 @@ try {
   assert.match(cliMcpVerifyHelp.stdout, /pnpm cli:mcp-verify -- --help\s+Source-checkout shortcut for this help from the repo root/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact initialize-tool-inventory\/initialize-safety-recovery\/unknown-tool\/write-safety\/health-summary\/advisory\/read\/sample-shape helper gates/);
+  assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:maintenance\s+Narrow maintenance_plan filter\/cursor\/resume\/work-queue formatter gates/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:verify:timeout/);
   assert.match(cliMcpVerifyHelp.stdout, /Narrow MCP verify timeout\/startup\/help\/empty-vault diagnostics/);
 
@@ -742,6 +743,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /Focused checks:/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact initialize-tool-inventory\/initialize-safety-recovery\/unknown-tool\/write-safety\/health-summary\/advisory\/read\/sample-shape helper gates/);
+  assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:maintenance\s+Narrow maintenance_plan filter\/cursor\/resume\/work-queue formatter gates/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify:timeout/);
   assert.match(directMcpVerifyHelp.stdout, /Narrow MCP verify timeout\/startup\/help\/empty-vault diagnostics/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:dogfood:args\s+Narrow dogfood shortcut argument helper contract/);

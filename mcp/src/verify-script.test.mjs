@@ -4740,6 +4740,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /pnpm test:mcp:verify\s+MCP verify helper contract without the full integration suite/);
     assert.match(verifyUsage(), /pnpm test:mcp:verify:first-contact/);
     assert.match(verifyUsage(), /Narrow first-contact initialize-tool-inventory\/initialize-safety-recovery\/unknown-tool\/write-safety\/health-summary\/advisory\/read\/sample-shape helper gates/);
+    assert.match(verifyUsage(), /pnpm test:mcp:maintenance\s+Narrow maintenance_plan filter\/cursor\/resume\/work-queue formatter gates/);
     assert.match(verifyUsage(), /pnpm test:mcp:verify:timeout/);
     assert.match(verifyUsage(), /Narrow MCP verify timeout\/startup\/help\/empty-vault diagnostics/);
     assert.match(verifyUsage(), /pnpm test:dogfood:args\s+Narrow dogfood shortcut argument helper contract/);
