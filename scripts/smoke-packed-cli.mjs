@@ -497,6 +497,7 @@ try {
   assert.match(cliMcpVerifyHelp.stdout, /Focused checks:/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm integration:cli:mcp-verify/);
   assert.match(cliMcpVerifyHelp.stdout, /Installed CLI mcp-verify wrapper flow\/help\/failure checks/);
+  assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:brief\s+Root checkout dogfood vault workspace_brief snapshot/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:verify\s+Root checkout dogfood vault verify shortcut/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000\s+Source-checkout dogfood verify with explicit args/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm cli:mcp-verify -- --help\s+Source-checkout shortcut for this help from the repo root/);

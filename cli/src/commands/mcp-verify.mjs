@@ -247,6 +247,7 @@ function printUsage(output = process.stderr) {
       `Successful maintenance cursor lines print bucket summaries plus current-page executable/review next-action summaries.\n\n` +
       `Focused checks:\n` +
       `  pnpm integration:cli:mcp-verify    Installed CLI mcp-verify wrapper flow/help/failure checks.\n` +
+      `  pnpm dogfood:brief                Root checkout dogfood vault workspace_brief snapshot.\n` +
       `  pnpm dogfood:verify               Root checkout dogfood vault verify shortcut.\n` +
       `  pnpm cli:mcp-verify docs/ontology --timeout-ms 15000\n` +
       `                                      Source-checkout dogfood verify with explicit args.\n` +
