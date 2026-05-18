@@ -733,7 +733,8 @@ Analysis 가 `strict arguments + annotations + graph-query enums + graph kind en
 열어보지 않아도 된다.
 최종 Analysis 의 strict relation filter / `relation_check` row 는 `structuredContent`
 기반 repair summary 로 closest-value smoke 의 핵심 증거인
-`dependencyTypes items depend_on->depends_on; allowed 9` 까지 표시해, 단순히 rejected 여부만
+`dependencyTypes items depend_on->depends_on; allowed 9` 과
+`type depend_on->depends_on; allowed 9` 까지 표시해, 단순히 rejected 여부만
 통과한 것인지 suggestion 품질과 허용 enum 폭까지 검증된 것인지 구분할 수 있게 한다.
 strict `list_concepts.kind` row 는 `kind:"capabilty"` typo 를 사용해 첫 목록 필터가
 빈 결과로 숨지 않고 node-kind enum 에서 먼저 거절되는지 보여준다.

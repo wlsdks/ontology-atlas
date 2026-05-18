@@ -1505,6 +1505,7 @@ function makeDogfoodToolsList() {
         };
       }
       if (name === "add_relation") {
+        tool.description += " Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields.";
         tool.inputSchema.properties.type = {
           type: "string",
           enum: WRITE_RELATION_TYPE_VALUES,
@@ -3792,6 +3793,14 @@ describe("rpc response completion helpers", () => {
       "rejected true (dependencyTypes items depend_on->depends_on; allowed 9)",
     );
     assert.equal(
+      strictRepairSummary(okShape.strictRelationCheck),
+      "rejected true (type depend_on->depends_on; allowed 9)",
+    );
+    assert.equal(
+      strictRepairSummary(okShape.strictAddRelation),
+      "rejected true (type depend_on->depends_on; allowed 8)",
+    );
+    assert.equal(
       strictRepairSummary(okShape.strictFindOrphansKindFilter),
       "rejected true (kind capabilty->capability; allowed 6)",
     );
@@ -5342,6 +5351,27 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["strict_relation_check: strict relation_check response did not suggest the closest type value"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        strictRelationCheck: {
+          result: {
+            isError: true,
+            content: [{ text: 'type must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
+            structuredContent: {
+              ok: false,
+              errorCode: "invalid_arguments",
+              error: 'type must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?',
+              valueName: "type",
+              receivedValue: "depend_on",
+              suggestion: "depends_on",
+              allowedValues: ["domains", "domain"],
+            },
+          },
+        },
+      }),
+      ["strict_relation_check: strict relation_check structured error missing allowed values"],
     );
   });
 

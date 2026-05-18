@@ -50,6 +50,7 @@ import {
   strictListConceptsKindFailure,
   strictMaintenanceFilterFailure,
   strictAddRelationFailure,
+  strictRelationCheckFailure as verifyStrictRelationCheckFailure,
   strictRelationFilterFailure,
   structuredContentMismatchSummary,
   structuredContentParityStatus,
@@ -1091,23 +1092,6 @@ export function stderrWarningLines(stderr) {
     .filter((line) => /Warning:/.test(line));
 }
 
-export function strictRelationCheckFailure(response) {
-  if (response?.result?.isError !== true) {
-    return "strict relation_check response was not rejected";
-  }
-  const text = response.result.content?.[0]?.text || "";
-  if (!/type must be one of/i.test(text)) {
-    return "strict relation_check response did not report the invalid type filter";
-  }
-  if (!/Received: "depend_on"/i.test(text)) {
-    return "strict relation_check response did not report the invalid type value";
-  }
-  if (!/Did you mean "depends_on"\?/i.test(text)) {
-    return "strict relation_check response did not suggest the closest type value";
-  }
-  return null;
-}
-
 export function evaluateDogfoodGate({
   initialize,
   kinds,
@@ -1339,7 +1323,7 @@ export function evaluateDogfoodGate({
   if (strictQueryConceptsHasKeyFilterError) failures.push(`strict_query_concepts_has_key_filter: ${strictQueryConceptsHasKeyFilterError}`);
   const strictListConceptsKindFilterError = strictListConceptsKindFailure(strictListConceptsKindFilter);
   if (strictListConceptsKindFilterError) failures.push(`strict_list_concepts_kind_filter: ${strictListConceptsKindFilterError}`);
-  const strictRelationCheckError = strictRelationCheckFailure(strictRelationCheck);
+  const strictRelationCheckError = verifyStrictRelationCheckFailure(strictRelationCheck);
   if (strictRelationCheckError) failures.push(`strict_relation_check: ${strictRelationCheckError}`);
   const strictAddRelationError = strictAddRelationFailure(strictAddRelation);
   if (strictAddRelationError) failures.push(`strict_add_relation: ${strictAddRelationError}`);
@@ -5751,6 +5735,7 @@ async function main() {
   const strictRelationCheck = responses.find((response) => response.id === 66);
   const strictRelationCheckText = strictRelationCheck?.result?.content?.[0]?.text || "";
   console.log(`  relation_check type rejected: ${strictRelationCheck?.result?.isError === true}`);
+  console.log(`  repair: ${strictRepairSummary(strictRelationCheck)}`);
   if (strictRelationCheckText) {
     console.log(`  ${strictRelationCheckText}`);
   }
