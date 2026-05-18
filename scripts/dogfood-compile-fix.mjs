@@ -7,15 +7,6 @@ import { closestDogfoodOption, stripLeadingPnpmSeparator } from './lib/dogfood-a
 
 const COMPILE_FIX_ARGS = ['cli/src/index.mjs', 'compile', 'docs/ontology', '--fix', '--summary', '--json'];
 const DIFF_ARGS = ['diff', '--', 'docs/ontology'];
-const DOGFOOD_COMPILE_FIX_USAGE = `Usage:
-  pnpm dogfood:compile-fix
-  pnpm dogfood:compile-fix -- --help
-
-Runs compile --fix against this repo's docs/ontology vault and fails if
-canonicalization leaves a docs/ontology git diff. Successful runs end with
-[dogfood:compile-fix] docs/ontology unchanged.
-`;
-
 export function runDogfoodCompileFix({
   spawn = spawnSync,
   cwd = process.cwd(),
@@ -58,7 +49,7 @@ export function handleDogfoodCompileFixArgs(argv = [], { stdout = process.stdout
   const args = normalizeDogfoodCompileFixArgs(argv);
   if (args.length === 0) return null;
   if (args.length === 1 && (args[0] === '--help' || args[0] === '-h')) {
-    stdout.write(DOGFOOD_COMPILE_FIX_USAGE);
+    stdout.write(dogfoodCompileFixUsage());
     return 0;
   }
   const suggestion = args.length === 1 ? dogfoodCompileFixArgSuggestion(args[0]) : null;
@@ -99,6 +90,17 @@ export function dogfoodCompileFixExitCode(result) {
 
 export function dogfoodCompileFixSummary() {
   return '[dogfood:compile-fix] docs/ontology unchanged';
+}
+
+export function dogfoodCompileFixUsage() {
+  return `Usage:
+  pnpm dogfood:compile-fix
+  pnpm dogfood:compile-fix -- --help
+
+Runs compile --fix against this repo's docs/ontology vault and fails if
+canonicalization leaves a docs/ontology git diff. Successful runs end with:
+  ${dogfoodCompileFixSummary()}
+`;
 }
 
 export function dogfoodCompileFixDiagnostic(args, result) {

@@ -7,6 +7,7 @@ import {
   dogfoodCompileFixDiagnostic,
   dogfoodCompileFixExitCode,
   dogfoodCompileFixSummary,
+  dogfoodCompileFixUsage,
   dogfoodDiffFileSummary,
   handleDogfoodCompileFixArgs,
   normalizeDogfoodCompileFixArgs,
@@ -27,7 +28,9 @@ describe('dogfood compile-fix shortcut', () => {
     assert.equal(exitCode, 0);
     assert.match(output.join(''), /pnpm dogfood:compile-fix/);
     assert.match(output.join(''), /canonicalization leaves a docs\/ontology git diff/);
-    assert.match(output.join(''), /\[dogfood:compile-fix\] docs\/ontology unchanged/);
+    assert.match(output.join(''), /Successful runs end with:/);
+    assert.match(output.join(''), new RegExp(dogfoodCompileFixSummary().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.equal(output.join(''), dogfoodCompileFixUsage());
   });
 
   it('normalizes the pnpm argument separator', () => {
