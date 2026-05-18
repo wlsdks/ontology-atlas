@@ -3393,7 +3393,7 @@ export function verifyUsage() {
     '  pnpm test:mcp:verify:first-contact\n' +
     '                                  Narrow first-contact initialize-safety-recovery/unknown-tool/write-safety/health-summary/advisory/read/sample-shape helper gates.\n' +
     '  pnpm test:mcp:verify:timeout    Narrow MCP verify timeout/startup/help diagnostics.\n' +
-    '  pnpm test:dogfood:script-refs   Narrow documented pnpm script reference contract.\n' +
+    '  pnpm test:dogfood:script-refs   Narrow help/package-script reference contract.\n' +
     '  pnpm dogfood:verify             Root checkout dogfood vault installed-style verify gate.\n'
   );
 }

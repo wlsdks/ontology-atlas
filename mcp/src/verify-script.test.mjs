@@ -4161,7 +4161,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /Narrow first-contact initialize-safety-recovery\/unknown-tool\/write-safety\/health-summary\/advisory\/read\/sample-shape helper gates/);
     assert.match(verifyUsage(), /pnpm test:mcp:verify:timeout/);
     assert.match(verifyUsage(), /Narrow MCP verify timeout\/startup\/help diagnostics/);
-    assert.match(verifyUsage(), /pnpm test:dogfood:script-refs\s+Narrow documented pnpm script reference contract/);
+    assert.match(verifyUsage(), /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference contract/);
     assert.match(verifyUsage(), /pnpm dogfood:verify\s+Root checkout dogfood vault installed-style verify gate/);
     assertPnpmScriptsExist(verifyUsage(), ROOT_PKG.scripts);
   });

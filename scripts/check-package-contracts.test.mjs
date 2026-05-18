@@ -407,7 +407,7 @@ describe('package contract helpers', () => {
     assert.match(result.stdout, /pnpm dogfood:compile\s+Root checkout dogfood vault compile_ontology summary/);
     assert.match(result.stdout, /pnpm dogfood:compile-fix\s+Root checkout dogfood vault compile --fix idempotence gate/);
     assert.match(result.stdout, /pnpm test:dogfood:args\s+Narrow dogfood shortcut argument helper contract/);
-    assert.match(result.stdout, /pnpm test:dogfood:script-refs\s+Narrow documented pnpm script reference contract/);
+    assert.match(result.stdout, /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference contract/);
     assert.match(result.stdout, /pnpm test:dogfood:compile-fix\s+Narrow dogfood compile --fix idempotence runner contract/);
     assert.match(result.stdout, /pnpm dogfood:health\s+Root checkout dogfood vault health gate/);
     assert.match(result.stdout, /pnpm dogfood:brief\s+Root checkout dogfood vault workspace_brief snapshot/);
@@ -1937,7 +1937,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /pnpm test:mcp:verify:first-contact\\s\+Narrow first-contact initialize-safety-recovery\\\/unknown-tool\\\/write-safety\\\/health-summary\\\/advisory\\\/read\\\/sample-shape helper gates/);
     assert.match(smoke, /pnpm test:mcp:verify:timeout/);
     assert.match(smoke, /Narrow MCP verify timeout\\\/startup\\\/help diagnostics/);
-    assert.match(smoke, /pnpm test:dogfood:script-refs\\s\+Narrow documented pnpm script reference contract/);
+    assert.match(smoke, /pnpm test:dogfood:script-refs\\s\+Narrow help\\\/package-script reference contract/);
     assert.match(smoke, /pnpm dogfood:verify\\s\+Root checkout dogfood vault installed-style verify gate/);
     assert.match(smoke, /verify timeout must be a positive integer/);
     assert.match(smoke, /invalidCliMcpVerifyTimeout/);
@@ -2039,7 +2039,7 @@ describe('package contract helpers', () => {
     assert.match(smoke, /pnpm integration:cli:mcp-verify/);
     assert.match(smoke, /pnpm dogfood:compile\\s\+Root checkout dogfood vault compile_ontology summary/);
     assert.match(smoke, /pnpm dogfood:compile-fix\\s\+Root checkout dogfood vault compile --fix idempotence gate/);
-    assert.match(smoke, /pnpm test:dogfood:script-refs\\s\+Narrow documented pnpm script reference contract/);
+    assert.match(smoke, /pnpm test:dogfood:script-refs\\s\+Narrow help\\\/package-script reference contract/);
     assert.match(smoke, /pnpm test:dogfood:compile-fix\\s\+Narrow dogfood compile --fix idempotence runner contract/);
     assert.match(smoke, /pnpm dogfood:health\\s\+Root checkout dogfood vault health gate/);
     assert.match(smoke, /pnpm dogfood:brief\\s\+Root checkout dogfood vault workspace_brief snapshot/);

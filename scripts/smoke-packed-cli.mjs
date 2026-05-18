@@ -503,7 +503,7 @@ try {
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:compile\s+Root checkout dogfood vault compile_ontology summary/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:compile-fix\s+Root checkout dogfood vault compile --fix idempotence gate/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:dogfood:args\s+Narrow dogfood shortcut argument helper contract/);
-  assert.match(cliMcpVerifyHelp.stdout, /pnpm test:dogfood:script-refs\s+Narrow documented pnpm script reference contract/);
+  assert.match(cliMcpVerifyHelp.stdout, /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference contract/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:dogfood:compile-fix\s+Narrow dogfood compile --fix idempotence runner contract/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:health\s+Root checkout dogfood vault health gate/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:brief\s+Root checkout dogfood vault workspace_brief snapshot/);
@@ -733,7 +733,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify:first-contact\s+Narrow first-contact initialize-safety-recovery\/unknown-tool\/write-safety\/health-summary\/advisory\/read\/sample-shape helper gates/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify:timeout/);
   assert.match(directMcpVerifyHelp.stdout, /Narrow MCP verify timeout\/startup\/help diagnostics/);
-  assert.match(directMcpVerifyHelp.stdout, /pnpm test:dogfood:script-refs\s+Narrow documented pnpm script reference contract/);
+  assert.match(directMcpVerifyHelp.stdout, /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference contract/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:verify\s+Root checkout dogfood vault installed-style verify gate/);
 
   const mcpEmptyVerify = run(

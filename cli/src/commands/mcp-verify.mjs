@@ -252,7 +252,7 @@ function printUsage(output = process.stderr) {
       `  pnpm dogfood:compile              Root checkout dogfood vault compile_ontology summary.\n` +
       `  pnpm dogfood:compile-fix          Root checkout dogfood vault compile --fix idempotence gate.\n` +
       `  pnpm test:dogfood:args            Narrow dogfood shortcut argument helper contract.\n` +
-      `  pnpm test:dogfood:script-refs     Narrow documented pnpm script reference contract.\n` +
+      `  pnpm test:dogfood:script-refs     Narrow help/package-script reference contract.\n` +
       `  pnpm test:dogfood:compile-fix     Narrow dogfood compile --fix idempotence runner contract.\n` +
       `  pnpm dogfood:health               Root checkout dogfood vault health gate.\n` +
       `  pnpm dogfood:brief                Root checkout dogfood vault workspace_brief snapshot.\n` +
