@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-18T18:58:01.330Z",
+  "generatedAt": "2026-05-18T19:01:05.698Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -4817,8 +4817,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, maintenance, 그리고 설치된 MCP surface 를 확인하는 mcpverify 명령 추가 — 총 27 명령. 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP 등록 불필요. ",
-      "wordCount": 5952,
-      "updatedAt": "2026-05-18T18:56:52.286Z",
+      "wordCount": 5984,
+      "updatedAt": "2026-05-18T19:00:27.345Z",
       "linksOut": []
     },
     {
@@ -4975,8 +4975,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 11383,
-      "updatedAt": "2026-05-18T18:57:58.287Z",
+      "wordCount": 11388,
+      "updatedAt": "2026-05-18T19:00:27.344Z",
       "linksOut": []
     },
     {

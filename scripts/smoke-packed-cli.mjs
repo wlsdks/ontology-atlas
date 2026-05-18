@@ -513,7 +513,7 @@ try {
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:brief\s+Root checkout dogfood vault workspace_brief snapshot/);
   assert.match(
     cliMcpVerifyHelp.stdout,
-    /pnpm dogfood:status\s+Root checkout dogfood vault human-readable health \+ brief; ends with \[dogfood:status\] health:N · workspace-brief:N/,
+    /pnpm dogfood:status\s+Root checkout dogfood vault human-readable health \+ brief; ends with \[dogfood:status\] health:N · workspace-brief:N and hints dogfood:verify on failure/,
   );
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:verify\s+Root checkout dogfood vault verify shortcut/);

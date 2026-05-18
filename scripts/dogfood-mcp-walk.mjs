@@ -101,7 +101,7 @@ export function dogfoodUsage() {
     "  pnpm dogfood:compile-fix   compile --fix idempotence gate over docs/ontology; success ends with [dogfood:compile-fix] docs/ontology unchanged.",
     "  pnpm dogfood:health        Fail-closed health JSON gate over docs/ontology.",
     "  pnpm dogfood:brief         First-contact workspace_brief JSON snapshot over docs/ontology.",
-    "  pnpm dogfood:status        Human-readable health + workspace_brief over docs/ontology; ends with [dogfood:status] health:N · workspace-brief:N.",
+    "  pnpm dogfood:status        Human-readable health + workspace_brief over docs/ontology; ends with [dogfood:status] health:N · workspace-brief:N and hints dogfood:verify on failure.",
     "  pnpm dogfood:verify        Installed-style verify gate over docs/ontology before the full walk.",
     "",
     "Focused checks:",
