@@ -90,8 +90,9 @@ verify or dogfood suites.
 `test:mcp:verify` checks the shared MCP verify helper contract, including
 missing/extra/duplicate/invalid `tools/list` names, and
 `test:mcp:verify:first-contact` narrows that to first-contact initialize
-safety/recovery guidance, read smoke, vault warning / `validate_vault`,
-health summary / advisory / next-action gates, and `workspace_brief.nextActions[].sample`
+safety/recovery guidance, read smoke, destructive dry-run / `patch_concept`
+conflict guard write-safety smoke, vault warning / `validate_vault`, health
+summary / advisory / next-action gates, and `workspace_brief.nextActions[].sample`
 shape drift.
 `test:mcp:verify:timeout` narrows timeout parsing, startup failure retry
 guidance, usage, and retry diagnostics that `mcp-verify` exposes through the CLI. Use

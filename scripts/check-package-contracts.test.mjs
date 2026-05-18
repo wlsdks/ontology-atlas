@@ -1063,7 +1063,8 @@ describe('package contract helpers', () => {
     assert.match(section, /package-script, CLI entrypoint, and tarball contract drift/);
     assert.match(section, /pnpm test:mcp:verify/);
     assert.match(section, /pnpm test:mcp:verify:first-contact/);
-    assert.match(section, /health summary \/ advisory \/ next-action gates/);
+    assert.match(section, /destructive dry-run \/ `patch_concept`\s+conflict guard write-safety smoke/);
+    assert.match(section, /health\s+summary \/ advisory \/ next-action gates/);
     assert.match(section, /pnpm test:mcp:verify:timeout/);
     assert.match(section, /test:cli:mcp-call/);
     assert.match(section, /pnpm dogfood:verify/);
@@ -1079,9 +1080,9 @@ describe('package contract helpers', () => {
     assert.match(section, /documentation drift/);
     assert.match(section, /maintenance_plan filter, cursor, resume,\s+work-queue shape, and bucket \/ next-action formatter contracts/);
     assert.match(section, /shared MCP verify helper contract/);
-    assert.match(section, /first-contact initialize\s+safety\/recovery guidance, read smoke/);
+    assert.match(section, /first-contact initialize\s+safety\/recovery guidance, read smoke, destructive dry-run/);
     assert.match(section, /vault warning \/ `validate_vault`/);
-    assert.match(section, /health summary \/ advisory \/ next-action gates/);
+    assert.match(section, /health\s+summary \/ advisory \/ next-action gates/);
     assert.match(section, /workspace_brief\.nextActions\[\]\.sample`\s+shape drift/);
     assert.match(section, /timeout parsing, startup failure retry\s+guidance, usage, and retry diagnostics/);
     assert.match(section, /OMOT_TEST_NAME_PATTERN/);
