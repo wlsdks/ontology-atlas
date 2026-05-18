@@ -2200,6 +2200,8 @@ export function strictArgsFailure(response) {
   if (response?.result?.isError !== true) {
     return 'strict arguments response was not rejected';
   }
+  const structuredFailure = structuredErrorFailure(response, 'strict arguments');
+  if (structuredFailure) return structuredFailure;
   const text = response.result.content?.[0]?.text || '';
   if (!/Unknown argument "lmit" for list_concepts/i.test(text)) {
     return 'strict arguments response did not report the unknown list_concepts argument';
@@ -2217,6 +2219,8 @@ export function strictMultiArgsFailure(response) {
   if (response?.result?.isError !== true) {
     return 'strict multi-argument response was not rejected';
   }
+  const structuredFailure = structuredErrorFailure(response, 'strict multi-argument');
+  if (structuredFailure) return structuredFailure;
   const text = response.result.content?.[0]?.text || '';
   if (!/Unknown arguments for list_concepts/i.test(text)) {
     return 'strict multi-argument response did not report all unknown list_concepts arguments';
@@ -2229,6 +2233,18 @@ export function strictMultiArgsFailure(response) {
   }
   if (!/Received arguments: lmit, summry/i.test(text)) {
     return 'strict multi-argument response did not report all received list_concepts arguments';
+  }
+  return null;
+}
+
+export function structuredErrorFailure(response, label) {
+  const structured = response?.result?.structuredContent;
+  if (structured?.ok !== false || typeof structured.error !== 'string' || structured.error.trim() === '') {
+    return `${label} structured error missing`;
+  }
+  const text = response?.result?.content?.[0]?.text || '';
+  if (text && !text.includes(structured.error)) {
+    return `${label} structured error mismatch`;
   }
   return null;
 }

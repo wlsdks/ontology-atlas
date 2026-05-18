@@ -2545,10 +2545,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         throw new Error(`Unknown tool: ${name}`);
     }
   } catch (err) {
-    return {
-      content: [{ type: 'text', text: `Error: ${err.message}` }],
-      isError: true,
-    };
+    return error(err);
   }
 });
 
@@ -2560,6 +2557,18 @@ function ok(result) {
     response.structuredContent = result;
   }
   return response;
+}
+
+function error(err) {
+  const message = err instanceof Error ? err.message : String(err);
+  return {
+    content: [{ type: 'text', text: `Error: ${message}` }],
+    isError: true,
+    structuredContent: {
+      ok: false,
+      error: message,
+    },
+  };
 }
 
 // ── 도구 구현 ─────────────────────────────────────────────────────────────

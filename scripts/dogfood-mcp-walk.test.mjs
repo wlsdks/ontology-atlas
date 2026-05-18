@@ -3140,12 +3140,20 @@ const okShape = {
     result: {
       isError: true,
       content: [{ text: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: kind, limit. Received arguments: lmit.' }],
+      structuredContent: {
+        ok: false,
+        error: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: kind, limit. Received arguments: lmit.',
+      },
     },
   },
   strictMultiArgs: {
     result: {
       isError: true,
       content: [{ text: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit, summry.' }],
+      structuredContent: {
+        ok: false,
+        error: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit, summry.',
+      },
     },
   },
   strictEnum: {
@@ -4449,39 +4457,53 @@ describe("evaluateDogfoodGate", () => {
   });
 
   it("fails malformed strict argument dogfood responses", () => {
+    const structuredError = (text) => ({
+      result: {
+        isError: true,
+        content: [{ text }],
+        structuredContent: { ok: false, error: text },
+      },
+    });
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, strictArgs: { result: { isError: false, content: [{ text: "ok" }] } } }),
       ["strict_args: strict arguments response was not rejected"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, strictArgs: { result: { isError: true, content: [{ text: "different error" }] } } }),
-      ["strict_args: strict arguments response did not report the unknown list_concepts argument"],
+      ["strict_args: strict arguments structured error missing"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictArgs: { result: { isError: true, content: [{ text: 'Unknown argument "lmit" for list_concepts.' }] } } }),
+      evaluateDogfoodGate({ ...okShape, strictArgs: structuredError('Unknown argument "lmit" for list_concepts.') }),
       ["strict_args: strict arguments response did not suggest the closest list_concepts argument"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictArgs: { result: { isError: true, content: [{ text: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"?' }] } } }),
+      evaluateDogfoodGate({ ...okShape, strictArgs: structuredError('Unknown argument "lmit" for list_concepts. Did you mean "limit"?') }),
       ["strict_args: strict arguments response did not report the received list_concepts arguments"],
     );
   });
 
   it("fails malformed strict multi-argument dogfood responses", () => {
+    const structuredError = (text) => ({
+      result: {
+        isError: true,
+        content: [{ text }],
+        structuredContent: { ok: false, error: text },
+      },
+    });
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, strictMultiArgs: { result: { isError: false, content: [{ text: "ok" }] } } }),
       ["strict_multi_args: strict multi-argument response was not rejected"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, strictMultiArgs: { result: { isError: true, content: [{ text: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"?' }] } } }),
-      ["strict_multi_args: strict multi-argument response did not report all unknown list_concepts arguments"],
+      ["strict_multi_args: strict multi-argument structured error missing"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictMultiArgs: { result: { isError: true, content: [{ text: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry".' }] } } }),
+      evaluateDogfoodGate({ ...okShape, strictMultiArgs: structuredError('Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry".') }),
       ["strict_multi_args: strict multi-argument response did not suggest the closest summary argument"],
     );
     assert.deepEqual(
-      evaluateDogfoodGate({ ...okShape, strictMultiArgs: { result: { isError: true, content: [{ text: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)' }] } } }),
+      evaluateDogfoodGate({ ...okShape, strictMultiArgs: structuredError('Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)') }),
       ["strict_multi_args: strict multi-argument response did not report all received list_concepts arguments"],
     );
   });

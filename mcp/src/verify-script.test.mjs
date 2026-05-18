@@ -4157,11 +4157,13 @@ describe('verify.mjs first-contact gates', () => {
   });
 
   it('fails malformed strict argument smoke responses', () => {
+    const error = 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit.';
     assert.equal(
       strictArgsFailure({
         result: {
           isError: true,
-          content: [{ text: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"? Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit.' }],
+          content: [{ text: `Error: ${error}` }],
+          structuredContent: { ok: false, error },
         },
       }),
       null,
@@ -4172,24 +4174,34 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       strictArgsFailure({ result: { isError: true, content: [{ text: 'different error' }] } }),
+      'strict arguments structured error missing',
+    );
+    assert.equal(
+      strictArgsFailure({ result: { isError: true, content: [{ text: `Error: ${error}` }], structuredContent: { ok: false, error: 'different error' } } }),
+      'strict arguments structured error mismatch',
+    );
+    assert.equal(
+      strictArgsFailure({ result: { isError: true, content: [{ text: 'different error' }], structuredContent: { ok: false, error: 'different error' } } }),
       'strict arguments response did not report the unknown list_concepts argument',
     );
     assert.equal(
-      strictArgsFailure({ result: { isError: true, content: [{ text: 'Unknown argument "lmit" for list_concepts.' }] } }),
+      strictArgsFailure({ result: { isError: true, content: [{ text: 'Unknown argument "lmit" for list_concepts.' }], structuredContent: { ok: false, error: 'Unknown argument "lmit" for list_concepts.' } } }),
       'strict arguments response did not suggest the closest list_concepts argument',
     );
     assert.equal(
-      strictArgsFailure({ result: { isError: true, content: [{ text: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"?' }] } }),
+      strictArgsFailure({ result: { isError: true, content: [{ text: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"?' }], structuredContent: { ok: false, error: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"?' } } }),
       'strict arguments response did not report the received list_concepts arguments',
     );
   });
 
   it('fails malformed strict multi-argument smoke responses', () => {
+    const error = 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit, summry.';
     assert.equal(
       strictMultiArgsFailure({
         result: {
           isError: true,
-          content: [{ text: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?). Allowed arguments: domain, kind, limit, since, summary. Received arguments: lmit, summry.' }],
+          content: [{ text: `Error: ${error}` }],
+          structuredContent: { ok: false, error },
         },
       }),
       null,
@@ -4200,14 +4212,18 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       strictMultiArgsFailure({ result: { isError: true, content: [{ text: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"?' }] } }),
+      'strict multi-argument structured error missing',
+    );
+    assert.equal(
+      strictMultiArgsFailure({ result: { isError: true, content: [{ text: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"?' }], structuredContent: { ok: false, error: 'Unknown argument "lmit" for list_concepts. Did you mean "limit"?' } } }),
       'strict multi-argument response did not report all unknown list_concepts arguments',
     );
     assert.equal(
-      strictMultiArgsFailure({ result: { isError: true, content: [{ text: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry".' }] } }),
+      strictMultiArgsFailure({ result: { isError: true, content: [{ text: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry".' }], structuredContent: { ok: false, error: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry".' } } }),
       'strict multi-argument response did not suggest the closest summary argument',
     );
     assert.equal(
-      strictMultiArgsFailure({ result: { isError: true, content: [{ text: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)' }] } }),
+      strictMultiArgsFailure({ result: { isError: true, content: [{ text: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)' }], structuredContent: { ok: false, error: 'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)' } } }),
       'strict multi-argument response did not report all received list_concepts arguments',
     );
   });

@@ -1721,6 +1721,11 @@ await test("tools/call — arguments 생략은 빈 object, non-object 는 명시
     assert.equal(isErrorResponse(responses, 6), true);
     assert.match(getCallText(responses, 6), /Unknown argument "lmit" for list_concepts/i);
     assert.match(getCallText(responses, 6), /Did you mean "limit"\?/i);
+    assert.equal(responses.find((r) => r.id === 6)?.result?.structuredContent?.ok, false);
+    assert.match(
+      responses.find((r) => r.id === 6)?.result?.structuredContent?.error ?? "",
+      /Unknown argument "lmit" for list_concepts/i,
+    );
     assert.equal(isErrorResponse(responses, 7), true);
     assert.match(getCallText(responses, 7), /Unknown argument "limit" for list_kinds/i);
     assert.doesNotMatch(getCallText(responses, 7), /Did you mean/i);
