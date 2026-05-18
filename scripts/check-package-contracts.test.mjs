@@ -278,6 +278,16 @@ describe('package contract helpers', () => {
     assert.match(source, /return runInit\(parsed\.target\)/);
   });
 
+  it('keeps the MCP npm test verify entrypoint on natural exit so large stdout can flush', () => {
+    const source = readFileSync('mcp/scripts/verify.mjs', 'utf-8');
+
+    assert.doesNotMatch(source, /import\s*\{[^}]*\bexit\b[^}]*\}\s+from ['"]node:process['"]/);
+    assert.doesNotMatch(source, /\bprocess\.exit\s*\(/);
+    assert.match(source, /process\.exitCode\s*=\s*await main\(\)/);
+    assert.match(source, /return 1/);
+    assert.match(source, /return 0/);
+  });
+
   it('keeps the CLI MCP dependency aligned with the local MCP package version', () => {
     const cliPkg = JSON.parse(readFileSync('cli/package.json', 'utf-8'));
     const mcpPkg = JSON.parse(readFileSync('mcp/package.json', 'utf-8'));
