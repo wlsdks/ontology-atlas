@@ -3135,7 +3135,7 @@ await test('maintenance --json — fails closed on malformed maintenance_plan pa
       "  const msg = JSON.parse(line);",
       "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
       "  if (msg.id === 2) {",
-      "    const payload = { operation: 'maintenance_plan', summary: { totalActions: 1, filteredActions: 1, remainingActions: '1', executableActions: 0, reviewActions: 1 }, cursor: { afterActionId: null, found: true, reason: null, startIndex: 0, nextAfterActionId: null, hasMore: false }, byPhase: {}, bySeverity: {}, byKind: {}, nextExecutableAction: null, nextReviewAction: null, actions: [] };",
+      "    const payload = { operation: 'maintenance_plan', summary: { totalActions: 1, filteredActions: 1, remainingActions: 2, executableActions: 0, reviewActions: 1 }, cursor: { afterActionId: null, found: true, reason: null, startIndex: 0, nextAfterActionId: null, hasMore: false }, byPhase: {}, bySeverity: {}, byKind: {}, nextExecutableAction: null, nextReviewAction: null, actions: [] };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
       "});",
@@ -3146,7 +3146,7 @@ await test('maintenance --json — fails closed on malformed maintenance_plan pa
     const r = await run(['maintenance', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
-    assert.match(stripAnsi(r.stderr), /maintenance_plan summary\.remainingActions must be a non-negative integer/);
+    assert.match(stripAnsi(r.stderr), /maintenance_plan summary\.remainingActions must not exceed filteredActions/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

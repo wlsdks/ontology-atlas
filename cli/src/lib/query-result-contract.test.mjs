@@ -65,7 +65,7 @@ describe('query-result-contract', () => {
         reason: null,
         startIndex: 0,
         nextAfterActionId: 'maint_1',
-        hasMore: true,
+        hasMore: false,
       },
       byPhase: { repair: 1 },
       bySeverity: { warn: 1 },
@@ -88,6 +88,7 @@ describe('query-result-contract', () => {
     assert.equal(
       assertMaintenancePlanShape({
         ...valid,
+        summary: { ...valid.summary, totalActions: 0, filteredActions: 0, remainingActions: 0, executableActions: 0 },
         cursor: {
           afterActionId: null,
           found: true,
@@ -95,6 +96,11 @@ describe('query-result-contract', () => {
           nextAfterActionId: null,
           hasMore: false,
         },
+        byPhase: {},
+        bySeverity: {},
+        byKind: {},
+        nextExecutableAction: null,
+        actions: [],
       }).cursor.startIndex,
       undefined,
     );
@@ -113,20 +119,56 @@ describe('query-result-contract', () => {
       /summary\.remainingActions must be a non-negative integer/,
     );
     assert.throws(
+      () => assertMaintenancePlanShape({ ...valid, summary: { ...valid.summary, executableActions: 0 } }),
+      /summary executableActions \+ reviewActions must equal totalActions/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({ ...valid, summary: { ...valid.summary, filteredActions: 2 } }),
+      /summary\.filteredActions must not exceed totalActions/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({ ...valid, summary: { ...valid.summary, remainingActions: 2 } }),
+      /summary\.remainingActions must not exceed filteredActions/,
+    );
+    assert.throws(
       () => assertMaintenancePlanShape({ ...valid, cursor: { ...valid.cursor, hasMore: 'no' } }),
       /cursor\.hasMore must be a boolean/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({ ...valid, cursor: { ...valid.cursor, nextAfterActionId: 'maint_other' } }),
+      /cursor\.nextAfterActionId must match the last returned action id/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({ ...valid, cursor: { ...valid.cursor, hasMore: true } }),
+      /cursor\.hasMore must match remaining actions after the current page/,
     );
     assert.throws(
       () => assertMaintenancePlanShape({ ...valid, actions: [{ ...valid.actions[0], score: '100' }] }),
       /actions\[0\] has an invalid action shape/,
     );
     assert.throws(
+      () => assertMaintenancePlanShape({ ...valid, summary: { ...valid.summary, remainingActions: 0 } }),
+      /actions length must not exceed summary\.remainingActions/,
+    );
+    assert.throws(
       () => assertMaintenancePlanShape({ ...valid, byPhase: { repair: -1 } }),
       /byPhase must be an object of non-negative integer counts/,
     );
     assert.throws(
+      () => assertMaintenancePlanShape({ ...valid, byPhase: { repair: 2 } }),
+      /byPhase total must equal summary\.remainingActions/,
+    );
+    assert.throws(
       () => assertMaintenancePlanShape({ ...valid, nextExecutableAction: {} }),
       /nextExecutableAction must be null or an action pointer with an id/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({ ...valid, nextExecutableAction: { id: 'maint_other' } }),
+      /nextExecutableAction must match the first executable action on the page/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({ ...valid, nextReviewAction: { id: 'maint_review' } }),
+      /nextReviewAction must be null when the page has no review actions/,
     );
   });
 

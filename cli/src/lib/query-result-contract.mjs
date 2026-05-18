@@ -30,6 +30,15 @@ export function assertMaintenancePlanShape(result) {
       throw new Error(`maintenance_plan summary.${field} must be a non-negative integer`);
     }
   }
+  if (result.summary.executableActions + result.summary.reviewActions !== result.summary.totalActions) {
+    throw new Error('maintenance_plan summary executableActions + reviewActions must equal totalActions');
+  }
+  if (result.summary.filteredActions > result.summary.totalActions) {
+    throw new Error('maintenance_plan summary.filteredActions must not exceed totalActions');
+  }
+  if (result.summary.remainingActions > result.summary.filteredActions) {
+    throw new Error('maintenance_plan summary.remainingActions must not exceed filteredActions');
+  }
   if (!isPlainObject(result.cursor)) {
     throw new Error('maintenance_plan cursor must be an object');
   }
@@ -50,6 +59,9 @@ export function assertMaintenancePlanShape(result) {
   if (!Array.isArray(result.actions)) {
     throw new Error('maintenance_plan actions must be an array');
   }
+  if (result.actions.length > result.summary.remainingActions) {
+    throw new Error('maintenance_plan actions length must not exceed summary.remainingActions');
+  }
   for (let index = 0; index < result.actions.length; index += 1) {
     const action = result.actions[index];
     if (!validMaintenanceAction(action)) {
@@ -60,11 +72,37 @@ export function assertMaintenancePlanShape(result) {
     if (!validCountBucket(result[field])) {
       throw new Error(`maintenance_plan ${field} must be an object of non-negative integer counts`);
     }
+    if (sumCountBucket(result[field]) !== result.summary.remainingActions) {
+      throw new Error(`maintenance_plan ${field} total must equal summary.remainingActions`);
+    }
+  }
+  const expectedNextAfterActionId = result.actions.length > 0
+    ? result.actions[result.actions.length - 1].id
+    : null;
+  if (result.cursor.nextAfterActionId !== expectedNextAfterActionId) {
+    throw new Error('maintenance_plan cursor.nextAfterActionId must match the last returned action id');
+  }
+  if (result.cursor.hasMore !== (result.summary.remainingActions > result.actions.length)) {
+    throw new Error('maintenance_plan cursor.hasMore must match remaining actions after the current page');
   }
   for (const field of ['nextExecutableAction', 'nextReviewAction']) {
     if (result[field] !== null && !validMaintenanceActionPointer(result[field])) {
       throw new Error(`maintenance_plan ${field} must be null or an action pointer with an id`);
     }
+  }
+  const firstExecutableAction = result.actions.find((action) => action.executable === true) ?? null;
+  if (firstExecutableAction && result.nextExecutableAction?.id !== firstExecutableAction.id) {
+    throw new Error('maintenance_plan nextExecutableAction must match the first executable action on the page');
+  }
+  if (!firstExecutableAction && result.nextExecutableAction !== null) {
+    throw new Error('maintenance_plan nextExecutableAction must be null when the page has no executable actions');
+  }
+  const firstReviewAction = result.actions.find((action) => action.executable === false) ?? null;
+  if (firstReviewAction && result.nextReviewAction?.id !== firstReviewAction.id) {
+    throw new Error('maintenance_plan nextReviewAction must match the first review action on the page');
+  }
+  if (!firstReviewAction && result.nextReviewAction !== null) {
+    throw new Error('maintenance_plan nextReviewAction must be null when the page has no review actions');
   }
   return result;
 }
@@ -638,6 +676,10 @@ function validBlastRadiusEdgeRow(row) {
 function validCountBucket(value) {
   if (!isPlainObject(value)) return false;
   return Object.values(value).every((count) => validCount(count));
+}
+
+function sumCountBucket(value) {
+  return Object.values(value).reduce((sum, count) => sum + count, 0);
 }
 
 function validCycle(cycle) {
