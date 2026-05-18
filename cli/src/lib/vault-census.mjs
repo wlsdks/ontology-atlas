@@ -19,9 +19,9 @@ const COLORS = {
  * mcp list_kinds 호출 → { total, byKind } | null.
  * 에러 시 silent null — caller 가 census 누락도 허용.
  */
-export async function getVaultCensus(vaultRoot) {
+export async function getVaultCensus(vaultRoot, { call = callMcpTool } = {}) {
   try {
-    const result = await callMcpTool(vaultRoot, 'list_kinds', {});
+    const result = await call(vaultRoot, 'list_kinds', {});
     if (
       result
       && typeof result.total === 'number'

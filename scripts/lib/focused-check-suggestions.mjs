@@ -227,6 +227,7 @@ const CLI_DIRECT_LIB_TESTS = new Map([
   ['cli/src/lib/query-result-contract.mjs', 'cli/src/lib/query-result-contract.test.mjs'],
   ['cli/src/lib/repo-analysis-results.mjs', 'cli/src/lib/repo-analysis-results.test.mjs'],
   ['cli/src/lib/resolve-vault.mjs', 'cli/src/lib/resolve-vault.test.mjs'],
+  ['cli/src/lib/vault-census.mjs', 'cli/src/lib/vault-census.test.mjs'],
 ]);
 
 const CLI_DIRECT_LIB_TEST_FILES = new Set(CLI_DIRECT_LIB_TESTS.values());

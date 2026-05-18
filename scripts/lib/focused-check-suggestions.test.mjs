@@ -142,6 +142,23 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests the direct CLI vault census helper test', () => {
+    const result = suggestFocusedChecks([
+      'cli/src/lib/vault-census.mjs',
+      'cli/src/lib/vault-census.test.mjs',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test cli/src/lib/vault-census.test.mjs',
+      'pnpm test:cli:lib',
+      'pnpm dogfood:status',
+    ]);
+    assert.deepEqual(result.commands[0].paths, [
+      'cli/src/lib/vault-census.mjs',
+      'cli/src/lib/vault-census.test.mjs',
+    ]);
+  });
+
   it('suggests narrow dogfood helper tests before broader dogfood gates', () => {
     const result = suggestFocusedChecks([
       'scripts/lib/dogfood-args.mjs',
