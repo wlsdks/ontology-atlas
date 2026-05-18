@@ -2360,6 +2360,18 @@ await test('read-only graph commands — reject ambiguous vault arguments before
       pattern: /unknown flag: --jsson\. Did you mean --json\?/,
     },
     {
+      args: ['node', 'capabilities/foo', '--lmit=1'],
+      pattern: /unknown flag: --lmit=1\. Did you mean --limit\?/,
+    },
+    {
+      args: ['node', 'capabilities/foo', '--limit=0'],
+      pattern: /--limit must be a positive integer/,
+    },
+    {
+      args: ['node', 'capabilities/foo', '--limit=501'],
+      pattern: /--limit must be <= 500/,
+    },
+    {
       args: ['node', 'capabilities/foo', '-json'],
       pattern: /unknown flag: -json\. Did you mean --json\?/,
     },
@@ -3291,6 +3303,25 @@ await test('node --json — JSON 응답 node/edges/lineage 키 노출', async ()
     assert.ok(data.edges);
     assert.ok(data.edges.incoming);
     assert.ok(data.edges.outgoing);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('node --limit — high-degree edge groups are tunable', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['node', 'capabilities/foo', root, '--limit=1', '--json']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'node_profile');
+    assert.equal(data.edges.incoming.total, 2);
+    assert.equal(data.edges.incoming.edges.length, 1);
+    assert.equal(data.edges.incoming.limited, true);
+
+    const human = await run(['node', 'capabilities/foo', root, '--limit=1']);
+    assert.equal(human.code, 0, `stdout: ${human.stdout}\nstderr: ${human.stderr}`);
+    assert.match(stripAnsi(human.stdout), /incoming edges limited: showing 1\/2; use --limit N for more/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

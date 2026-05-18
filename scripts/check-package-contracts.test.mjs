@@ -2209,6 +2209,8 @@ describe('package contract helpers', () => {
     assert.match(overviewRow, /graph \/ count bucket \/ hub row shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2/);
     assert.match(hubsRow, /ranking row shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2/);
     assert.match(blastRadiusRow, /summary count \/ affected node page \/ edge page shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2/);
+    assert.match(nodeRow, /`--limit N` 으로 hotspot 노드의 incoming\/outgoing edge, lineage, containment rows 를 1\.\.500 범위에서 조절/);
+    assert.match(nodeRow, /use --limit N for more/);
     assert.match(nodeRow, /node summary \/ degree \/ edge group \/ lineage page shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2/);
     assert.match(similarRow, /match node \/ score \/ signal \/ shared-neighbor shape 이 malformed 인 payload 는 JSON 또는 human output 전 exit 2/);
     assert.match(pathRow, /hop \/ edge alignment 가 malformed 인 `find_path` payload 는 JSON 또는 human output 전 exit 2/);

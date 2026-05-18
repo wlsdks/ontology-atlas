@@ -5,9 +5,14 @@
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertNodeProfileShape } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { formatUnknownFlagError, parseVaultFlag, resolveTrailingVaultArg } from '../lib/cli-args.mjs';
+import {
+  formatUnknownFlagError,
+  parseBoundedPositiveIntegerFlag,
+  parseVaultFlag,
+  resolveTrailingVaultArg,
+} from '../lib/cli-args.mjs';
 
-const ALLOWED_FLAGS = ['--vault', '--json'];
+const ALLOWED_FLAGS = ['--vault', '--json', '--limit'];
 
 const COLORS = {
   green: '\x1b[32m',
@@ -31,7 +36,7 @@ const KIND_COLORS = {
 };
 
 export async function runNodeProfile(args) {
-  const { slug, vault, json, error, help } = parseArgs(args);
+  const { slug, vault, json, limit, error, help } = parseArgs(args);
   if (help) {
     printUsage(process.stdout);
     return 0;
@@ -47,6 +52,7 @@ export async function runNodeProfile(args) {
     result = await callMcpTool(vaultRoot, 'query_ontology', {
       operation: 'node_profile',
       slug,
+      limit,
     });
     assertNodeProfileShape(result);
   } catch (err) {
@@ -111,6 +117,7 @@ function render(result) {
         ` ${COLORS.dim}— 어디가 이 노드를 reference 하나${COLORS.reset}\n`,
     );
     renderEdgesByRelation(incoming.edges, 'from');
+    renderLimitedHint(incoming, 'incoming');
   }
 
   // Outgoing edges
@@ -121,6 +128,7 @@ function render(result) {
         ` ${COLORS.dim}— 이 노드가 무엇을 reference 하나${COLORS.reset}\n`,
     );
     renderEdgesByRelation(outgoing.edges, 'to');
+    renderLimitedHint(outgoing, 'outgoing');
   }
 
   if ((incoming?.total ?? 0) === 0 && (outgoing?.total ?? 0) === 0) {
@@ -151,16 +159,32 @@ function renderEdgesByRelation(edges, peerField) {
   }
 }
 
+function renderLimitedHint(group, label) {
+  if (!group?.limited) return;
+  const shown = Array.isArray(group.edges) ? group.edges.length : 0;
+  process.stdout.write(
+    `  ${COLORS.dim}${label} edges limited: showing ${shown}/${group.total}; use --limit N for more.${COLORS.reset}\n`,
+  );
+}
+
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
-  const flags = { vault: null, json: false };
+  const flags = { vault: null, json: false, limit: undefined };
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
     const a = args[i];
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
-    else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
+    else if (a === '--limit') {
+      const limit = parseBoundedPositiveIntegerFlag('--limit', args[++i], { max: 500 });
+      if (limit instanceof Error) return { error: limit.message };
+      flags.limit = limit;
+    } else if (a.startsWith('--limit=')) {
+      const limit = parseBoundedPositiveIntegerFlag('--limit', a.slice('--limit='.length), { max: 500 });
+      if (limit instanceof Error) return { error: limit.message };
+      flags.limit = limit;
+    } else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
     else positional.push(a);
   }
   if (positional.length === 0) {
@@ -168,13 +192,14 @@ function parseArgs(args) {
   }
   const vaultResult = resolveTrailingVaultArg({ vault: flags.vault, positional, vaultIndex: 1 });
   if (vaultResult.error) return vaultResult;
-  return { slug: positional[0], vault: vaultResult.vault, json: flags.json };
+  return { slug: positional[0], vault: vaultResult.vault, json: flags.json, limit: flags.limit };
 }
 
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology node <slug> [vault] [--json]\n\n` +
-      `한 노드의 전체 deep dive — header · 도메인 · lineage · incoming/outgoing edges (relation 별 그룹).\n`,
+      `  oh-my-ontology node <slug> [vault] [--limit N] [--json]\n\n` +
+      `한 노드의 전체 deep dive — header · 도메인 · lineage · incoming/outgoing edges (relation 별 그룹).\n` +
+      `--limit N 은 incoming/outgoing edge, lineage, containment rows 를 1..500 범위로 조절합니다.\n`,
   );
 }
