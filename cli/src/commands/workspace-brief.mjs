@@ -172,6 +172,8 @@ function printUsage(stream = process.stderr) {
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
       `       [--order-limit N] [--node-limit N]\n\n` +
       `first-contact dashboard: status + hotspots + project 요약 + next actions.\n` +
+      `Use --json for repeatable first-contact snapshots such as pnpm dogfood:brief.\n` +
+      `Fail-severity nextActions or failing health checks exit non-zero for shell gates.\n` +
       `Non-JSON output includes HEALTH CHECKS id:status:count coverage and\n` +
       `GROWTH actions/relations/dangling/external/ignoredExternal counts.\n` +
       `Tuning flags forward to query_ontology workspace_brief for focused diagnostics.\n`,

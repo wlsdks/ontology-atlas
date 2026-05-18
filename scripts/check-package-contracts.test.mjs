@@ -1440,6 +1440,7 @@ describe('package contract helpers', () => {
     assert.match(implementationSection, /`health` \/ `workspace-brief` top-level diagnosis status/);
     assert.match(implementationSection, /`health\.checks` \/ `workspace-brief\.health\.checks` 의 non-empty id\/status\/count coverage/);
     assert.match(doc, /health check \/ nextAction shape 이 malformed 인 diagnosis payload 는 JSON 또는 human output 전 exit 2/);
+    assert.match(doc, /`--help` 도 `--json` snapshot \/ shell-gate 실패 조건, 두 라인의 출력 계약, tuning flag 를 설명/);
     assert.match(implementationSection, /MCP tool name, 첫 mismatch path, parsed value, structuredContent value/);
     assert.match(implementationSection, /MCP spawn error \/ stdin write error \/ child process exit \/ missing `tools\/call` response 도 tool name \/ vault root \/ entry path/);
     assert.match(implementationSection, /`concepts\[n\]` \/ `relations\[n\]` fallback label/);

@@ -2970,6 +2970,8 @@ await test('workspace-brief --help — documents health and growth output', asyn
   const r = await run(['workspace-brief', '--help']);
   assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
   const clean = stripAnsi(r.stdout);
+  assert.match(clean, /Use --json for repeatable first-contact snapshots such as pnpm dogfood:brief/);
+  assert.match(clean, /Fail-severity nextActions or failing health checks exit non-zero for shell gates/);
   assert.match(clean, /HEALTH CHECKS id:status:count/);
   assert.match(clean, /GROWTH actions\/relations\/dangling\/external\/ignoredExternal counts/);
   assert.match(clean, /--dependency-types A,B/);
