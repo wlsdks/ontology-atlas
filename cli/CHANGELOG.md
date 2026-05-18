@@ -89,7 +89,7 @@ mission v3 의 *dev primary surface* (CLI) 와 *AI agent primary surface* (MCP) 
 - `oh-my-ontology blast-radius <slug> [--depth N] [--direction incoming|outgoing|both]` — 이 노드 변경 시 영향받는 노드/관계 (refactor safety). risk low/medium/high + byKind/byDomain breakdown
 - `oh-my-ontology cycles [vault] [--max-hops N]` — depends_on dependency cycle 검출. 0 cycle 시 그린 "graph clean ✓", 그 외 cycle 별 슬러그 chain 출력
 - `oh-my-ontology health [vault]` — 5 graph 무결성 check (compile / unresolved / cycles / relation recommendations / components). exit 0 만 healthy
-- `oh-my-ontology workspace-brief [vault]` — status + hotspots top 5 + project 별 노드 수 + next actions 한 화면
+- `oh-my-ontology workspace-brief [vault]` — status + hotspots top 5 + `project_scope` 포함 노드 수 + next actions 한 화면
 
 전부 `--json` 옵션으로 raw query_ontology 응답 pass-through.
 

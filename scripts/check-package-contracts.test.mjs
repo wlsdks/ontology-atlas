@@ -1416,10 +1416,13 @@ describe('package contract helpers', () => {
     const productChangelog = readFileSync('docs/CHANGELOG.md', 'utf-8');
     const verifySection = changelog.split('### Added — `mcp-verify` command')[1]?.split('### Added — `maintenance`')[0] ?? '';
     const maintenanceSection = changelog.split('### Added — `maintenance` 명령')[1]?.split('### Added — `compile`')[0] ?? '';
+    const workspaceBriefSection = changelog.split('## 0.8.0 — 2026-05-14')[1]?.split('## 0.7.0')[0] ?? '';
     const productMcpHardeningSection = productChangelog.split('## 2026-05-18 — MCP first-contact and packed-smoke hardening')[1]?.split('## 2026-05-17')[0] ?? '';
     const productMaintenanceSection = productChangelog.split('## 2026-05-17 — CLI maintenance queue + focused verification')[1]?.split('## 2026-05-11')[0] ?? '';
 
     assert.match(changelog, /malformed `compile`, `cycles`, `path` hop\/edge payloads, `health\.checks`, `workspace_brief\.health\.checks`, and `workspace_brief\.nextActions` rows/);
+    assert.match(workspaceBriefSection, /`oh-my-ontology workspace-brief \[vault\]` — status \+ hotspots top 5 \+ `project_scope` 포함 노드 수 \+ next actions 한 화면/);
+    assert.doesNotMatch(workspaceBriefSection, /project 별 노드 수/);
     assert.match(verifySection, /`list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`/);
     assert.match(verifySection, /`get_concept` smoke/);
     assert.match(verifySection, /partial-row contract drift/);
