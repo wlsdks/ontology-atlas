@@ -447,6 +447,10 @@ unknown argument 오류는 `Received arguments: ...` 도 함께 포함해 agent 
 `structuredContent.errorCode` 도 함께 제공되며, initialize instructions 와 verify
 smoke 는 unknown argument 의 `unknown_argument`, enum/filter/type 값 오류의
 `invalid_arguments` 를 agent 가 텍스트 파싱 대신 우선 사용할 수 있게 안내한다.
+존재하지 않는 tool name 도 `unknown_tool` 로 fail-closed 하며,
+`Did you mean "list_concepts"?` 같은 가장 가까운 tool-name hint 와 allowed tool
+list 를 함께 반환해 agent 가 추가 `tools/list` 왕복 없이 `tools/call.params.name`
+오타를 고칠 수 있다.
 `add_relations` first-contact smoke 는 non-object row, unknown field row,
 relation type typo row 를 함께 보내 row-level 격리와 relation type nearest hint 를 동시에 검증한다.
 `maintenance_plan` filter smoke 도 `phases: ["repiar"]`, `severities: ["fatal"]`,

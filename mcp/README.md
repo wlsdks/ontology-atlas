@@ -176,6 +176,11 @@ marks each input schema with `additionalProperties:false`, so typos like
 `lmit` do not silently fall back to default behavior. Query limits above 500
 and traversal caps above 20 are rejected instead of silently clamped by the
 graph engine.
+Unknown tool names fail closed too. The runtime keeps the `unknown_tool`
+structured error code, adds the nearest tool-name hint when one is available
+(for example `Did you mean "list_concepts"?`), and prints the allowed tool list
+so an agent can repair a misspelled `tools/call.params.name` without an extra
+`tools/list` round trip.
 String-array options are strict too: relation filters such as
 `find_neighbors.types` / `query_ontology.types`, `query_ontology.pattern`,
 `maintenance_plan` filters, and analysis scan lists such as
@@ -596,6 +601,7 @@ If those read-only calls respond cleanly, the agent can see the vault and its gr
 - 0.7.1 — 16 tools. Added `instructions` field on initialize response — Claude Code / Cursor see kind hierarchy + workflow + write-tool dry-run pattern + `expected_mtime` conflict guard guidance on connect, no per-session trial-and-error.
 - Current initialize instructions also surface destructive-write safety: `rename_concept` refuses an existing `newSlug` unless `overwrite: true`, and `delete_concept` needs `force: true` only after accepting dangling referrers.
 - Current initialize instructions also state that tool schemas are strict, unknown arguments are rejected with a nearest-argument hint, invalid enum values surface a nearest-value hint when possible, `add_relations` unknown type row errors include a closest-value hint such as `Did you mean "depends_on"?`, and `add_concepts` duplicate input slugs report `concepts[n] duplicate slug in input batch; first seen at concepts[m]`, so typo and batch repair are explicit at first contact.
+- Runtime `unknown_tool` errors include the closest tool-name hint, such as `Did you mean "list_concepts"?`, plus the allowed tool list.
 - 0.7.0 — 14 tools (8 read + 6 write). Added `rename_concept` and `merge_concepts` (graph-level write — atomic backlink redirect across all referrers).
 - 0.6.0 — 12 tools (8 read + 4 write). Added `query_concepts` (typed filter DSL).
 - 0.5.0 — 7 read + 4 write. Added `find_orphans`.

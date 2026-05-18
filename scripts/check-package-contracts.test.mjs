@@ -411,6 +411,7 @@ describe('package contract helpers', () => {
     const addConceptRow = readme.split('| `add_concept` |')[1]?.split('\n')[0] ?? '';
     const featureRow = features.split('12. **query_ontology**')[1]?.split('\n')[0] ?? '';
     const strictInputSection = readme.split('String-array options are strict too:')[1]?.split('Scalar string options')[0] ?? '';
+    const toolNameSection = readme.split('Unknown tool names fail closed too.')[1]?.split('String-array options are strict too:')[0] ?? '';
     const scalarInputSection = readme.split('Scalar string options follow the same boundary across read and write tools:')[1]?.split('Boolean options are also validated explicitly')[0] ?? '';
 
     assert.match(row, /`health` \/ `workspace_brief` can tune their internal probes/);
@@ -428,6 +429,10 @@ describe('package contract helpers', () => {
     assert.match(addConceptRow, /`score`/);
     assert.match(addConceptRow, /executable `proposedAction`/);
     assert.match(featureRow, /explicit `cursor\.reason` metadata/);
+    assert.match(toolNameSection, /`unknown_tool`/);
+    assert.match(toolNameSection, /Did you mean "list_concepts"\?/);
+    assert.match(toolNameSection, /allowed tool list/);
+    assert.match(toolNameSection, /`tools\/call\.params\.name`/);
     assert.match(featureRow, /count-safe summary fields/);
     assert.match(featureRow, /`byPhase` \/ `bySeverity` \/ `byKind` remaining-queue buckets/);
     assert.match(featureRow, /current-page `nextExecutableAction`/);
@@ -609,6 +614,9 @@ describe('package contract helpers', () => {
     assert.match(statusSection, /dangling referrers/);
     assert.match(statusSection, /add_relations` unknown type row errors include a closest-value hint/);
     assert.match(statusSection, /Did you mean "depends_on"\?/);
+    assert.match(statusSection, /Runtime `unknown_tool` errors include the closest tool-name hint/);
+    assert.match(statusSection, /Did you mean "list_concepts"\?/);
+    assert.match(statusSection, /allowed tool list/);
   });
 
   it('keeps the MCP README explicit about focused source-checkout verification', () => {
@@ -2127,6 +2135,10 @@ describe('package contract helpers', () => {
     assert.match(doc, /initialize safety\/recovery guidance gate/);
     assert.match(doc, /tools\/list inventory name \/ annotation coverage/);
     assert.match(doc, /strict `list_concepts\.kind` row/);
+    assert.match(doc, /존재하지 않는 tool name 도 `unknown_tool` 로 fail-closed/);
+    assert.match(doc, /Did you mean "list_concepts"\?/);
+    assert.match(doc, /allowed tool\s+list/);
+    assert.match(doc, /`tools\/call\.params\.name`/);
     assert.match(doc, /strict `query_concepts\.kind` \/ `query_concepts\.has-key` row/);
     assert.match(doc, /strict `find_neighbors\.types` row/);
     assert.match(doc, /strict `find_orphans\.kind` \/ `find_orphans\.excludeKinds` row/);
