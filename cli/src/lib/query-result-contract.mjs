@@ -64,9 +64,8 @@ export function assertMaintenancePlanShape(result) {
   }
   for (let index = 0; index < result.actions.length; index += 1) {
     const action = result.actions[index];
-    if (!validMaintenanceAction(action)) {
-      throw new Error(`maintenance_plan actions[${index}] has an invalid action shape`);
-    }
+    const actionFailure = maintenanceActionFailure(action, index);
+    if (actionFailure) throw new Error(actionFailure);
   }
   for (const field of ['byPhase', 'bySeverity', 'byKind']) {
     if (!validCountBucket(result[field])) {
@@ -509,16 +508,39 @@ function validHealthCheck(check) {
   );
 }
 
-function validMaintenanceAction(action) {
-  return Boolean(
-    isPlainObject(action)
-    && hasNonEmptyString(action.id)
-    && hasNonEmptyString(action.phase)
-    && hasNonEmptyString(action.kind)
-    && MAINTENANCE_ACTION_SEVERITIES.has(action.severity)
-    && typeof action.executable === 'boolean'
-    && Number.isFinite(action.score)
-  );
+function maintenanceActionFailure(action, index) {
+  if (!isPlainObject(action)) {
+    return `maintenance_plan actions[${index}] must be an object`;
+  }
+  for (const field of ['id', 'phase', 'kind', 'reason']) {
+    if (!hasNonEmptyString(action[field])) {
+      return `maintenance_plan actions[${index}].${field} must be a non-empty string`;
+    }
+  }
+  if (!MAINTENANCE_ACTION_SEVERITIES.has(action.severity)) {
+    return `maintenance_plan actions[${index}].severity must be one of: ${[...MAINTENANCE_ACTION_SEVERITIES].join(', ')}`;
+  }
+  if (typeof action.executable !== 'boolean') {
+    return `maintenance_plan actions[${index}].executable must be a boolean`;
+  }
+  if (!Number.isFinite(action.score) || action.score < 0) {
+    return `maintenance_plan actions[${index}].score must be a non-negative number`;
+  }
+  if (action.executable && !isPlainObject(action.proposedAction)) {
+    return `maintenance_plan executable action ${action.id} must include proposedAction`;
+  }
+  if (action.proposedAction !== undefined && action.proposedAction !== null) {
+    if (!isPlainObject(action.proposedAction)) {
+      return `maintenance_plan action ${action.id} proposedAction must be an object when present`;
+    }
+    if (!hasNonEmptyString(action.proposedAction.tool)) {
+      return `maintenance_plan action ${action.id} proposedAction.tool must be a non-empty string`;
+    }
+    if (!isPlainObject(action.proposedAction.args)) {
+      return `maintenance_plan action ${action.id} proposedAction.args must be an object`;
+    }
+  }
+  return null;
 }
 
 function validMaintenanceActionPointer(action) {

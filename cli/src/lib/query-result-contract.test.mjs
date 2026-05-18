@@ -86,6 +86,11 @@ describe('query-result-contract', () => {
           severity: 'warn',
           executable: true,
           score: 100,
+          reason: 'Canonicalize graph arrays.',
+          proposedAction: {
+            tool: 'patch_concept',
+            args: { slug: 'capabilities/foo', frontmatter: { dependencies: [] } },
+          },
         },
       ],
     };
@@ -118,6 +123,7 @@ describe('query-result-contract', () => {
           severity: 'info',
           executable: false,
           score: 10,
+          reason: 'Review unassigned node.',
         },
       ],
     };
@@ -183,7 +189,33 @@ describe('query-result-contract', () => {
     );
     assert.throws(
       () => assertMaintenancePlanShape({ ...valid, actions: [{ ...valid.actions[0], score: '100' }] }),
-      /actions\[0\] has an invalid action shape/,
+      /actions\[0\]\.score must be a non-negative number/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({ ...valid, actions: [{ ...valid.actions[0], score: -1 }] }),
+      /actions\[0\]\.score must be a non-negative number/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({ ...valid, actions: [{ ...valid.actions[0], reason: '' }] }),
+      /actions\[0\]\.reason must be a non-empty string/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({ ...valid, actions: [{ ...valid.actions[0], proposedAction: null }] }),
+      /executable action maint_1 must include proposedAction/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({
+        ...valid,
+        actions: [{ ...valid.actions[0], proposedAction: { args: {} } }],
+      }),
+      /action maint_1 proposedAction\.tool must be a non-empty string/,
+    );
+    assert.throws(
+      () => assertMaintenancePlanShape({
+        ...valid,
+        actions: [{ ...valid.actions[0], proposedAction: { tool: 'patch_concept' } }],
+      }),
+      /action maint_1 proposedAction\.args must be an object/,
     );
     assert.throws(
       () => assertMaintenancePlanShape({ ...valid, summary: { ...valid.summary, remainingActions: 0 } }),
