@@ -716,9 +716,9 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(deleteConcept?.outputSchema?.type, "object");
     assert.deepEqual(deleteConcept?.outputSchema?.required, ["ok", "slug", "filePath"]);
     assert.equal(deleteConcept?.outputSchema?.additionalProperties, false);
-    assert.equal(deleteConcept?.outputSchema?.properties?.slug?.type, "string");
-    assert.equal(deleteConcept?.outputSchema?.properties?.filePath?.type, "string");
-    assert.equal(deleteConcept?.outputSchema?.properties?.message?.type, "string");
+    assertCleanStringSchema(deleteConcept?.outputSchema?.properties?.slug, "delete slug");
+    assertCleanStringSchema(deleteConcept?.outputSchema?.properties?.filePath, "delete filePath");
+    assertCleanStringSchema(deleteConcept?.outputSchema?.properties?.message, "delete message");
     assert.equal(deleteConcept?.outputSchema?.properties?.ok?.type, "boolean");
     assert.equal(deleteConcept?.outputSchema?.properties?.dryRun?.type, "boolean");
     assert.equal(deleteConcept?.outputSchema?.properties?.forced?.type, "boolean");
@@ -727,7 +727,13 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(deleteConcept?.outputSchema?.properties?.backlinksAtDelete?.items?.type, "object");
     assert.deepEqual(deleteConcept?.outputSchema?.properties?.backlinks?.items?.required, ["slug", "kind", "title", "mtime"]);
     assert.equal(deleteConcept?.outputSchema?.properties?.backlinks?.items?.additionalProperties, false);
-    assert.equal(deleteConcept?.outputSchema?.properties?.backlinksAtDelete?.items?.properties?.matchedInBody?.type, "boolean");
+    const deleteBacklinkRow = deleteConcept?.outputSchema?.properties?.backlinksAtDelete?.items;
+    assertCleanStringSchema(deleteBacklinkRow?.properties?.slug, "delete backlink slug");
+    assertCleanStringSchema(deleteBacklinkRow?.properties?.kind, "delete backlink kind");
+    assertCleanStringSchema(deleteBacklinkRow?.properties?.title, "delete backlink title");
+    assertCleanStringSchema(deleteBacklinkRow?.properties?.domain, "delete backlink domain");
+    assertCleanStringSchema(deleteBacklinkRow?.properties?.matchedKeys?.items, "delete backlink matchedKeys item");
+    assert.equal(deleteBacklinkRow?.properties?.matchedInBody?.type, "boolean");
     assert.equal(deleteConcept?.outputSchema?.properties?.captured?.type, "object");
     assert.deepEqual(deleteConcept?.outputSchema?.properties?.captured?.required, ["frontmatter"]);
     assert.equal(deleteConcept?.outputSchema?.properties?.captured?.additionalProperties, false);

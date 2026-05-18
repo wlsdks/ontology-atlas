@@ -382,14 +382,14 @@ function backlinkRowsSchemaFailure(schema, label) {
     row?.type !== 'object' ||
     !sameArray(row.required, ['slug', 'kind', 'title', 'mtime']) ||
     row.additionalProperties !== false ||
-    row.properties?.slug?.type !== 'string' ||
-    row.properties?.kind?.type !== 'string' ||
-    row.properties?.title?.type !== 'string' ||
-    row.properties?.domain?.type !== 'string' ||
+    nonBlankStringSchemaFailure(row.properties?.slug) ||
+    nonBlankStringSchemaFailure(row.properties?.kind) ||
+    nonBlankStringSchemaFailure(row.properties?.title) ||
+    nonBlankStringSchemaFailure(row.properties?.domain) ||
     row.properties?.mtime?.type !== 'number' ||
     row.properties?.mtime?.minimum !== 0 ||
     row.properties?.matchedKeys?.type !== 'array' ||
-    row.properties?.matchedKeys?.items?.type !== 'string' ||
+    nonBlankStringSchemaFailure(row.properties?.matchedKeys?.items) ||
     row.properties?.matchedInBody?.type !== 'boolean'
   ) {
     return `${label} drift`;
@@ -2127,7 +2127,7 @@ export function toolsListSchemaFailure(tools) {
     return 'delete_concept outputSchema root openness drift';
   }
   for (const propertyName of ['slug', 'filePath', 'message']) {
-    if (outputPropertyAt(deleteConceptTool, ['properties', propertyName])?.type !== 'string') {
+    if (nonBlankStringSchemaFailure(outputPropertyAt(deleteConceptTool, ['properties', propertyName]))) {
       return `delete_concept outputSchema ${propertyName} drift`;
     }
   }
@@ -4162,8 +4162,45 @@ export function destructiveDryRunFailure(response, toolName) {
     if (backlinkFailure) return backlinkFailure;
   }
   if (toolName === 'delete_concept') {
-    if (typeof parsed.slug !== 'string' || !Array.isArray(parsed.backlinks)) {
+    if (!isCleanNonBlankString(parsed.slug) || !Array.isArray(parsed.backlinks)) {
       return 'delete_concept dry-run response missing delete preview fields';
+    }
+    const backlinkRowsFailure = destructiveBacklinkRowsFailure(parsed.backlinks, toolName, 'backlinks');
+    if (backlinkRowsFailure) return backlinkRowsFailure;
+  }
+  return null;
+}
+
+function destructiveBacklinkRowsFailure(rows, toolName, propertyName) {
+  for (let index = 0; index < rows.length; index += 1) {
+    const row = rows[index];
+    if (
+      !row ||
+      !isCleanNonBlankString(row.slug) ||
+      !isCleanNonBlankString(row.kind) ||
+      !isCleanNonBlankString(row.title) ||
+      !Number.isFinite(row.mtime) ||
+      row.mtime < 0
+    ) {
+      return `${toolName} dry-run response ${propertyName}[${index}] shape drift`;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(row, 'domain') &&
+      !isCleanNonBlankString(row.domain)
+    ) {
+      return `${toolName} dry-run response ${propertyName}[${index}] domain drift`;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(row, 'matchedKeys') &&
+      (!Array.isArray(row.matchedKeys) || !row.matchedKeys.every((key) => isCleanNonBlankString(key)))
+    ) {
+      return `${toolName} dry-run response ${propertyName}[${index}] matchedKeys drift`;
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(row, 'matchedInBody') &&
+      typeof row.matchedInBody !== 'boolean'
+    ) {
+      return `${toolName} dry-run response ${propertyName}[${index}] matchedInBody drift`;
     }
   }
   return null;

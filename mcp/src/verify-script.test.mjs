@@ -414,12 +414,12 @@ describe('verify.mjs first-contact gates', () => {
       type: 'object',
       required: ['slug', 'kind', 'title', 'mtime'],
       properties: {
-        slug: { type: 'string' },
-        kind: { type: 'string' },
-        title: { type: 'string' },
-        domain: { type: 'string' },
+        slug: nonBlankStringSchema,
+        kind: nonBlankStringSchema,
+        title: nonBlankStringSchema,
+        domain: nonBlankStringSchema,
         mtime: { type: 'number', minimum: 0 },
-        matchedKeys: { type: 'array', items: { type: 'string' } },
+        matchedKeys: { type: 'array', items: nonBlankStringSchema },
         matchedInBody: { type: 'boolean' },
       },
       additionalProperties: false,
@@ -941,10 +941,10 @@ describe('verify.mjs first-contact gates', () => {
           properties: {
             ok: { type: 'boolean' },
             dryRun: { type: 'boolean' },
-            slug: { type: 'string' },
-            filePath: { type: 'string' },
+            slug: nonBlankStringSchema,
+            filePath: nonBlankStringSchema,
             backlinks: { type: 'array', items: backlinkRowSchema },
-            message: { type: 'string' },
+            message: nonBlankStringSchema,
             forced: { type: 'boolean' },
             backlinksAtDelete: { type: 'array', items: backlinkRowSchema },
             changed: { type: 'boolean' },
@@ -3968,6 +3968,47 @@ describe('verify.mjs first-contact gates', () => {
     );
     assert.equal(
       toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'delete_concept'),
+        {
+          ...tools.find((tool) => tool.name === 'delete_concept'),
+          outputSchema: {
+            ...tools.find((tool) => tool.name === 'delete_concept').outputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'delete_concept').outputSchema.properties,
+              slug: { type: 'string', minLength: 1 },
+            },
+          },
+        },
+      ]),
+      'delete_concept outputSchema slug drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'delete_concept'),
+        {
+          ...tools.find((tool) => tool.name === 'delete_concept'),
+          outputSchema: {
+            ...tools.find((tool) => tool.name === 'delete_concept').outputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'delete_concept').outputSchema.properties,
+              backlinksAtDelete: {
+                ...tools.find((tool) => tool.name === 'delete_concept').outputSchema.properties.backlinksAtDelete,
+                items: {
+                  ...tools.find((tool) => tool.name === 'delete_concept').outputSchema.properties.backlinksAtDelete.items,
+                  properties: {
+                    ...tools.find((tool) => tool.name === 'delete_concept').outputSchema.properties.backlinksAtDelete.items.properties,
+                    matchedKeys: { type: 'array', items: { type: 'string', minLength: 1 } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ]),
+      'delete_concept outputSchema backlinksAtDelete drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
         ...tools.filter((tool) => tool.name !== 'add_relation'),
         {
           ...tools.find((tool) => tool.name === 'add_relation'),
@@ -5075,6 +5116,56 @@ describe('verify.mjs first-contact gates', () => {
         },
       }, 'delete_concept'),
       null,
+    );
+    assert.equal(
+      destructiveDryRunFailure({
+        result: {
+          content: [
+            {
+              text: JSON.stringify({
+                ok: false,
+                dryRun: true,
+                slug: 'gone',
+                backlinks: [{ slug: ' ref', kind: 'capability', title: 'Ref', mtime: 1 }],
+                message: 'dry-run — force:true to apply',
+              }),
+            },
+          ],
+          structuredContent: {
+            ok: false,
+            dryRun: true,
+            slug: 'gone',
+            backlinks: [{ slug: ' ref', kind: 'capability', title: 'Ref', mtime: 1 }],
+            message: 'dry-run — force:true to apply',
+          },
+        },
+      }, 'delete_concept'),
+      'delete_concept dry-run response backlinks[0] shape drift',
+    );
+    assert.equal(
+      destructiveDryRunFailure({
+        result: {
+          content: [
+            {
+              text: JSON.stringify({
+                ok: false,
+                dryRun: true,
+                slug: 'gone',
+                backlinks: [{ slug: 'ref', kind: 'capability', title: 'Ref', mtime: 1, matchedKeys: [' relates'] }],
+                message: 'dry-run — force:true to apply',
+              }),
+            },
+          ],
+          structuredContent: {
+            ok: false,
+            dryRun: true,
+            slug: 'gone',
+            backlinks: [{ slug: 'ref', kind: 'capability', title: 'Ref', mtime: 1, matchedKeys: [' relates'] }],
+            message: 'dry-run — force:true to apply',
+          },
+        },
+      }, 'delete_concept'),
+      'delete_concept dry-run response backlinks[0] matchedKeys drift',
     );
   });
 

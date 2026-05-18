@@ -2437,10 +2437,10 @@ const TOOLS = [
       properties: {
         ok: { type: 'boolean' },
         dryRun: { type: 'boolean' },
-        slug: { type: 'string' },
-        filePath: { type: 'string' },
+        slug: NON_BLANK_STRING_SCHEMA,
+        filePath: NON_BLANK_STRING_SCHEMA,
         backlinks: { type: 'array', items: BACKLINK_ROW_OUTPUT_SCHEMA },
-        message: { type: 'string' },
+        message: NON_BLANK_STRING_SCHEMA,
         forced: { type: 'boolean' },
         backlinksAtDelete: { type: 'array', items: BACKLINK_ROW_OUTPUT_SCHEMA },
         changed: { type: 'boolean' },
