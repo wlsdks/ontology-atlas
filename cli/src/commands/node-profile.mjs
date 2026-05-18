@@ -108,6 +108,9 @@ function render(result, filters = {}) {
   if (extraAliases.length > 0) {
     process.stdout.write(`  ${COLORS.dim}aliases${COLORS.reset} ${extraAliases.join(', ')}\n`);
   }
+  if (hasActiveEdgeFilter(filters)) {
+    process.stdout.write(`  ${COLORS.dim}filters${COLORS.reset} ${formatActiveEdgeFilters(filters)}\n`);
+  }
 
   // Lineage (ancestor chain — project ← domain ← capability 흐름)
   const ancestors = result?.lineage?.ancestors?.nodes ?? [];
@@ -148,9 +151,7 @@ function render(result, filters = {}) {
 
   if ((incoming?.total ?? 0) === 0 && (outgoing?.total ?? 0) === 0) {
     if (hasActiveEdgeFilter(filters)) {
-      process.stdout.write(
-        `\n${COLORS.dim}no matching edges — current filters: ${formatActiveEdgeFilters(filters)}${COLORS.reset}\n`,
-      );
+      process.stdout.write(`\n${COLORS.dim}no matching edges for current filters${COLORS.reset}\n`);
     } else {
       process.stdout.write(`\n${COLORS.dim}isolated — 어떤 노드와도 연결 안 됨${COLORS.reset}\n`);
     }

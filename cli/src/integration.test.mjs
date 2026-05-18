@@ -3358,6 +3358,7 @@ await test('node --types — relation filters are forwarded before edge limits',
     const human = await run(['node', 'capabilities/foo', root, '--types=relates']);
     assert.equal(human.code, 0, `stdout: ${human.stdout}\nstderr: ${human.stderr}`);
     const clean = stripAnsi(human.stdout);
+    assert.match(clean, /filters types=relates/);
     assert.match(clean, /relates/);
     assert.match(clean, /capabilities\/bar/);
     assert.doesNotMatch(clean, /\n\s+domains\/auth/);
@@ -3396,7 +3397,8 @@ await test('node --no-external/--no-unresolved — noisy refs can be hidden from
     const noMatches = await run(['node', 'capabilities/foo', root, '--types=elements', '--no-external']);
     assert.equal(noMatches.code, 0, `stdout: ${noMatches.stdout}\nstderr: ${noMatches.stderr}`);
     const clean = stripAnsi(noMatches.stdout);
-    assert.match(clean, /no matching edges — current filters: types=elements .* external=false/);
+    assert.match(clean, /filters types=elements .* external=false/);
+    assert.match(clean, /no matching edges for current filters/);
     assert.doesNotMatch(clean, /isolated — 어떤 노드와도 연결 안 됨/);
   } finally {
     rmSync(root, { recursive: true, force: true });
