@@ -276,6 +276,25 @@ function outputPropertyAt(tool, path) {
   return path.reduce((value, key) => value?.[key], tool?.outputSchema);
 }
 
+const NON_BLANK_STRING_PATTERN = '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$';
+
+function nonBlankStringSchemaFailure(schema) {
+  return !(
+    schema?.type === 'string' &&
+    schema.minLength === 1 &&
+    schema.pattern === NON_BLANK_STRING_PATTERN
+  );
+}
+
+function nonBlankStringOrArraySchemaFailure(schema) {
+  return !(
+    sameArray(schema?.type, ['array', 'string']) &&
+    schema.minLength === 1 &&
+    schema.pattern === NON_BLANK_STRING_PATTERN &&
+    !nonBlankStringSchemaFailure(schema.items)
+  );
+}
+
 function inputArrayMaxItemsFailure(tools) {
   for (const tool of tools) {
     const stack = [{ schema: tool?.inputSchema, path: `${tool?.name || '(unknown)'}.inputSchema` }];
@@ -319,8 +338,8 @@ function backlinkRewritePlanSchemaFailure(schema, label) {
     row?.type !== 'object' ||
     !sameArray(row.required, ['slug', 'title', 'beforeKeys', 'afterKeys', 'bodyChanged']) ||
     row.additionalProperties !== false ||
-    row.properties?.slug?.type !== 'string' ||
-    row.properties?.title?.type !== 'string' ||
+    nonBlankStringSchemaFailure(row.properties?.slug) ||
+    nonBlankStringSchemaFailure(row.properties?.title) ||
     row.properties?.bodyChanged?.type !== 'boolean'
   ) {
     return `${label} outputSchema backlinkUpdates updates drift`;
@@ -332,9 +351,9 @@ function backlinkRewritePlanSchemaFailure(schema, label) {
       keyRows.items?.type !== 'object' ||
       !sameArray(keyRows.items?.required, ['key']) ||
       keyRows.items?.additionalProperties !== false ||
-      keyRows.items?.properties?.key?.type !== 'string' ||
-      !sameArray(keyRows.items?.properties?.before?.type, ['array', 'string']) ||
-      !sameArray(keyRows.items?.properties?.after?.type, ['array', 'string'])
+      nonBlankStringSchemaFailure(keyRows.items?.properties?.key) ||
+      nonBlankStringOrArraySchemaFailure(keyRows.items?.properties?.before) ||
+      nonBlankStringOrArraySchemaFailure(keyRows.items?.properties?.after)
     ) {
       return `${label} outputSchema backlinkUpdates ${propertyName} drift`;
     }

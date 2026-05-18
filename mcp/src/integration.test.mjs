@@ -346,6 +346,17 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       );
     }
     const findTool = (name) => tools.find((t) => t.name === name);
+    const assertCleanStringSchema = (schema, label) => {
+      assert.equal(schema?.type, "string", `${label} type`);
+      assert.equal(schema?.minLength, 1, `${label} minLength`);
+      assert.equal(schema?.pattern, "^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$", `${label} pattern`);
+    };
+    const assertCleanStringOrArraySchema = (schema, label) => {
+      assert.deepEqual(schema?.type, ["array", "string"], `${label} type`);
+      assert.equal(schema?.minLength, 1, `${label} minLength`);
+      assert.equal(schema?.pattern, "^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$", `${label} pattern`);
+      assertCleanStringSchema(schema?.items, `${label} items`);
+    };
     const listConcepts = findTool("list_concepts");
     assert.equal(listConcepts?.outputSchema?.type, "object");
     assert.deepEqual(listConcepts?.outputSchema?.required, ["total", "vaultRoot", "nodes"]);
@@ -669,8 +680,18 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     assert.equal(renameConcept?.outputSchema?.properties?.backlinkUpdates?.type, "object");
     assert.deepEqual(renameConcept?.outputSchema?.properties?.backlinkUpdates?.required, ["updates", "totalUpdated"]);
     assert.equal(renameConcept?.outputSchema?.properties?.backlinkUpdates?.additionalProperties, false);
-    assert.deepEqual(renameConcept?.outputSchema?.properties?.backlinkUpdates?.properties?.updates?.items?.required, ["slug", "title", "beforeKeys", "afterKeys", "bodyChanged"]);
-    assert.equal(renameConcept?.outputSchema?.properties?.backlinkUpdates?.properties?.updates?.items?.additionalProperties, false);
+    const renameBacklinkUpdate =
+      renameConcept?.outputSchema?.properties?.backlinkUpdates?.properties?.updates?.items;
+    assert.deepEqual(renameBacklinkUpdate?.required, ["slug", "title", "beforeKeys", "afterKeys", "bodyChanged"]);
+    assert.equal(renameBacklinkUpdate?.additionalProperties, false);
+    assertCleanStringSchema(renameBacklinkUpdate?.properties?.slug, "rename backlink update slug");
+    assertCleanStringSchema(renameBacklinkUpdate?.properties?.title, "rename backlink update title");
+    const renameBacklinkKeyChange = renameBacklinkUpdate?.properties?.beforeKeys?.items;
+    assert.deepEqual(renameBacklinkKeyChange?.required, ["key"]);
+    assert.equal(renameBacklinkKeyChange?.additionalProperties, false);
+    assertCleanStringSchema(renameBacklinkKeyChange?.properties?.key, "rename backlink key-change key");
+    assertCleanStringOrArraySchema(renameBacklinkKeyChange?.properties?.before, "rename backlink key-change before");
+    assertCleanStringOrArraySchema(renameBacklinkKeyChange?.properties?.after, "rename backlink key-change after");
     assert.equal(renameConcept?.outputSchema?.properties?.postWriteMaintenance?.type, "object");
     const mergeConcepts = findTool("merge_concepts");
     assert.equal(mergeConcepts?.outputSchema?.type, "object");

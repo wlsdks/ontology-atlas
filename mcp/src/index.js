@@ -123,6 +123,12 @@ const NON_BLANK_STRING_SCHEMA = Object.freeze({
   minLength: 1,
   pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$',
 });
+const NON_BLANK_STRING_OR_ARRAY_SCHEMA = Object.freeze({
+  type: ['array', 'string'],
+  minLength: NON_BLANK_STRING_SCHEMA.minLength,
+  pattern: NON_BLANK_STRING_SCHEMA.pattern,
+  items: NON_BLANK_STRING_SCHEMA,
+});
 const GRAPH_REF_ARRAY_MAX_ITEMS = 500;
 const IGNORE_ARRAY_MAX_ITEMS = 200;
 const SOURCE_FOLDER_ARRAY_MAX_ITEMS = 50;
@@ -140,8 +146,8 @@ const BACKLINK_REWRITE_KEY_CHANGE_OUTPUT_SCHEMA = Object.freeze({
   type: 'object',
   properties: {
     key: NON_BLANK_STRING_SCHEMA,
-    before: { type: ['array', 'string'], items: NON_BLANK_STRING_SCHEMA },
-    after: { type: ['array', 'string'], items: NON_BLANK_STRING_SCHEMA },
+    before: NON_BLANK_STRING_OR_ARRAY_SCHEMA,
+    after: NON_BLANK_STRING_OR_ARRAY_SCHEMA,
   },
   required: ['key'],
   additionalProperties: false,

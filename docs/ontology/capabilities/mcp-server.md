@@ -150,6 +150,8 @@ destructive dry-run smoke 는 실제 vault 의 기존 slug 로 `rename_concept` 
 와 `bodyChanged` shape, clean non-blank string contract, `totalUpdated` count alignment 를
 검증해 설치된 MCP 가 깨진 backlink rewrite plan 을 통과시키지 않는다. 계획한 destructive
 dry-run 응답 중 하나라도 누락되면 부분 성공으로 처리하지 않고 verify 를 실패시킨다.
+`tools/list` output schema 도 같은 clean string `minLength` / `pattern` 계약을 검증하므로
+MCP client 가 읽는 schema 와 dry-run runtime payload 검증이 어긋나지 않는다.
 `patch_concept` conflict guard smoke 는 기존 slug 에 stale `expected_mtime` 을 보내
 디스크 write 없이 `structuredContent.errorCode: "vault_conflict"` 로 거부되는지 확인한다.
 `get_concept` 는 `list_concepts` 에서 얻은 실제 slug 하나로 single-node detail 의

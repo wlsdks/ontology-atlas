@@ -356,13 +356,24 @@ describe('verify.mjs first-contact gates', () => {
         additionalProperties: false,
       },
     };
+    const nonBlankStringSchema = {
+      type: 'string',
+      minLength: 1,
+      pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$',
+    };
+    const nonBlankStringOrArraySchema = {
+      type: ['array', 'string'],
+      minLength: 1,
+      pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$',
+      items: nonBlankStringSchema,
+    };
     const backlinkKeyChangeSchema = {
       type: 'object',
       required: ['key'],
       properties: {
-        key: { type: 'string' },
-        before: { type: ['array', 'string'], items: { type: 'string' } },
-        after: { type: ['array', 'string'], items: { type: 'string' } },
+        key: nonBlankStringSchema,
+        before: nonBlankStringOrArraySchema,
+        after: nonBlankStringOrArraySchema,
       },
       additionalProperties: false,
     };
@@ -376,8 +387,8 @@ describe('verify.mjs first-contact gates', () => {
             type: 'object',
             required: ['slug', 'title', 'beforeKeys', 'afterKeys', 'bodyChanged'],
             properties: {
-              slug: { type: 'string' },
-              title: { type: 'string' },
+              slug: nonBlankStringSchema,
+              title: nonBlankStringSchema,
               beforeKeys: { type: 'array', items: backlinkKeyChangeSchema },
               afterKeys: { type: 'array', items: backlinkKeyChangeSchema },
               bodyChanged: { type: 'boolean' },
@@ -3851,6 +3862,80 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'rename_concept outputSchema backlinkUpdates drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'rename_concept'),
+        {
+          ...tools.find((tool) => tool.name === 'rename_concept'),
+          outputSchema: {
+            ...tools.find((tool) => tool.name === 'rename_concept').outputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties,
+              backlinkUpdates: {
+                ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates,
+                properties: {
+                  ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates.properties,
+                  updates: {
+                    ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates.properties.updates,
+                    items: {
+                      ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates.properties.updates.items,
+                      properties: {
+                        ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates.properties.updates.items.properties,
+                        slug: { type: 'string', minLength: 1 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ]),
+      'rename_concept outputSchema backlinkUpdates updates drift',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'rename_concept'),
+        {
+          ...tools.find((tool) => tool.name === 'rename_concept'),
+          outputSchema: {
+            ...tools.find((tool) => tool.name === 'rename_concept').outputSchema,
+            properties: {
+              ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties,
+              backlinkUpdates: {
+                ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates,
+                properties: {
+                  ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates.properties,
+                  updates: {
+                    ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates.properties.updates,
+                    items: {
+                      ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates.properties.updates.items,
+                      properties: {
+                        ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates.properties.updates.items.properties,
+                        beforeKeys: {
+                          ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates.properties.updates.items.properties.beforeKeys,
+                          items: {
+                            ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates.properties.updates.items.properties.beforeKeys.items,
+                            properties: {
+                              ...tools.find((tool) => tool.name === 'rename_concept').outputSchema.properties.backlinkUpdates.properties.updates.items.properties.beforeKeys.items.properties,
+                              before: {
+                                type: ['array', 'string'],
+                                items: { type: 'string', minLength: 1, pattern: '^(?!\\s)(?!.*\\s$)(?!.*\\u0000).+$' },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      ]),
+      'rename_concept outputSchema backlinkUpdates beforeKeys drift',
     );
     assert.equal(
       toolsListSchemaFailure([
