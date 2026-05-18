@@ -39,6 +39,14 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm test:mcp:unit',
+    reason: 'MCP core unit implementation changed',
+    matches: [
+      /^mcp\/src\/(?:analyze|infer-imports|omot-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|index)\.(?:mjs|js)$/,
+      /^mcp\/src\/(?:analyze|infer-imports|omot-ignore|ontology-compiler|ontology-engine|parser|query|validate|vault|redirect-backlinks|conflict-detection|json-rpc-lines)\.test\.mjs$/,
+    ],
+  },
+  {
     command: 'pnpm test:dogfood:script-refs',
     reason: 'help text, package-script references, or focused wrapper behavior changed',
     matches: [

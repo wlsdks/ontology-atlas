@@ -28,6 +28,7 @@ For user-facing UI changes, add the relevant Playwright route check.
 | Static dogfood manifest | `pnpm docs-vault:check` | `pnpm test:docs-vault` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
 | CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
+| MCP core units | `pnpm test:mcp:unit` | `pnpm integration:mcp:readme` |
 | MCP/docs contract | `pnpm test:mcp:docs` | `pnpm package:check` |
 | Dogfood MCP smoke | `pnpm dogfood:status` | `pnpm dogfood:verify` |
 | Packed CLI release | `pnpm smoke:packed-cli` | `pnpm test:mcp:package` |
@@ -86,7 +87,9 @@ escalation gates, and is only an advisor; still add runtime/browser checks when
 the touched behavior needs them. Vault helper changes route to their narrow
 checks first: `pnpm test:docs-vault`, `pnpm test:vault:validate`, or
 `pnpm test:vault:audit`. Parser/schema/validator parity changes route to
-`pnpm test:contracts` before broader package or app checks.
+`pnpm test:contracts` before broader package or app checks. MCP core source
+changes route to `pnpm test:mcp:unit` before readme-flow integration or full
+dogfood verification.
 
 | Command | Use when |
 |---|---|
@@ -101,6 +104,7 @@ checks first: `pnpm test:docs-vault`, `pnpm test:vault:validate`, or
 | `pnpm test:contracts` | Cross-package schema/parser contracts |
 | `pnpm test:mcp:docs` | Explicit root/MCP/CLI/dogfood docs contracts plus Firebase static-hosting and MCP registration-template guards |
 | `pnpm test:mcp:registration` | Source-checkout `.mcp.json` / `.mcp.json.example` registration templates |
+| `pnpm test:mcp:unit` | MCP core parser, vault, compiler, query, import-analysis, and JSON-RPC line helpers |
 | `pnpm test:mcp:verify` | MCP verifier helper behavior |
 | `pnpm test:mcp:verify:first-contact` | First-contact MCP safety and unknown-tool recovery guidance |
 | `pnpm test:mcp:verify:timeout` | Timeout/startup retry diagnostics |

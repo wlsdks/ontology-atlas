@@ -59,6 +59,20 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests MCP unit tests for core implementation drift', () => {
+    const result = suggestFocusedChecks([
+      'mcp/src/analyze.mjs',
+      'mcp/src/ontology-compiler.test.mjs',
+      'mcp/src/vault.mjs',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm test:mcp:unit',
+      'pnpm dogfood:status',
+    ]);
+    assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
+  });
+
   it('suggests narrow dogfood helper tests before broader dogfood gates', () => {
     const result = suggestFocusedChecks([
       'scripts/lib/dogfood-args.mjs',

@@ -64,6 +64,7 @@ pnpm test:cli:args
 pnpm test:cli:lib
 pnpm test:cli:mcp-call
 pnpm test:contracts
+pnpm test:mcp:unit
 pnpm integration:cli:mcp-verify
 pnpm integration:cli:growth
 pnpm integration:cli:maintenance
@@ -99,6 +100,9 @@ result fail-closed handling, and batch post-write maintenance metadata without
 spawning the full CLI.
 `test:contracts` checks cross-package parser, writer, schema, and validator
 parity without running unrelated UI or E2E gates.
+`test:mcp:unit` runs MCP core parser, vault, compiler, query, import-analysis,
+ignore-file, and JSON-RPC line helper unit contracts without spawning the full
+MCP integration suite.
 `integration:cli:mcp-verify` runs only the installed MCP verification wrapper
 subset inside the spawn-heavy CLI integration file.
 `integration:cli:growth` runs only the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument-contract cases.

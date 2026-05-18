@@ -53,6 +53,7 @@ before escalating to the full integration suite:
 
 ```bash
 pnpm test:contracts
+pnpm test:mcp:unit
 pnpm integration:mcp:readme
 pnpm test:mcp:docs
 pnpm test:mcp:registration
@@ -83,7 +84,9 @@ pnpm cli:mcp-verify -- --help
 ```
 
 `integration:mcp:readme` runs the documented first-contact read-only MCP flow
-only. `test:mcp:docs` checks README and dogfood ontology documentation drift.
+only. `test:mcp:unit` runs the MCP core parser, vault, compiler, query,
+import-analysis, ignore-file, and JSON-RPC line helper unit contracts without
+spawning the full integration suite. `test:mcp:docs` checks README and dogfood ontology documentation drift.
 `test:mcp:registration` checks only the tracked source-checkout `.mcp.json` and
 `.mcp.json.example` templates.
 `test:mcp:dogfood` covers the dogfood helper's structuredContent output,

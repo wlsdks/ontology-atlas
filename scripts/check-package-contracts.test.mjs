@@ -146,6 +146,9 @@ describe('package contract helpers', () => {
       `${focusedNode} --test-name-pattern "maintenance" cli/src/integration.test.mjs`,
     );
     assert.equal(pkg.scripts?.['cli:mcp-verify'], 'node cli/src/index.mjs mcp-verify');
+    assert.match(pkg.scripts?.['test:mcp:unit'] ?? '', /mcp\/src\/analyze\.test\.mjs/);
+    assert.match(pkg.scripts?.['test:mcp:unit'] ?? '', /mcp\/src\/vault\.test\.mjs/);
+    assert.match(pkg.scripts?.['test:mcp:unit'] ?? '', /mcp\/src\/json-rpc-lines\.test\.mjs/);
     assert.equal(pkg.scripts?.['integration:mcp'], 'node --test mcp/src/integration.test.mjs');
     assert.equal(
       pkg.scripts?.['integration:mcp:readme'],
@@ -1901,7 +1904,7 @@ describe('package contract helpers', () => {
     assert.match(implementationSection, /signal 종료는 missing-response fallback 이 아니라 `mcp terminated by SIGTERM` 같은 signal context/);
     assert.match(implementationSection, /`concepts\[n\]` \/ `relations\[n\]` fallback label/);
     assert.match(implementationSection, /`undefined` 를 노출하지 않고/);
-    assert.match(implementationSection, /malformed `compile` \/ `query_concepts` \/ `find_backlinks` \/ `find_orphans` \/ `overview` \/ `node_profile` \/ `similar_nodes` \/ `hubs` \/ `blast-radius` \/ `cycles` \/ `path` \/ `health` \/ `workspace-brief` payload/);
+    assert.match(implementationSection, /malformed `compile` \/ `query_concepts` \/ `find_backlinks` \/ `find_orphans` \/ `overview` \/ `node_profile` \/ `similar_nodes` \/ `hubs` \/ `blast-radius` \/ `cycles` \/ `path` \/ `growth_plan` \/ `maintenance_plan` \/ `health` \/ `workspace-brief` payload/);
     assert.match(implementationSection, /fail-closed/);
     assert.match(doc, /`workspace-brief` non-json 의 `PROJECT별 포함 노드 수 \(project_scope\)` label, `HEALTH CHECKS` id:status:count coverage 와 `GROWTH` action/);
     assert.match(doc, /`NEXT ACTIONS` label 은 `id` 와 `kind` 가 다르면 `components\/health_check`/);

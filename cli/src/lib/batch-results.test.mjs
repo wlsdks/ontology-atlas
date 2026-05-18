@@ -18,6 +18,12 @@ describe('batch-results', () => {
       executableActions: 1,
       reviewActions: 0,
     },
+    filters: {
+      executableOnly: false,
+      phases: [],
+      severities: [],
+      kinds: [],
+    },
     cursor: {
       afterActionId: null,
       found: true,
@@ -29,6 +35,7 @@ describe('batch-results', () => {
     byPhase: { repair: 1 },
     bySeverity: { warn: 1 },
     byKind: { canonicalize_graph_arrays: 1 },
+    limited: false,
     nextExecutableAction: {
       id: 'maint_1',
       phase: 'repair',
@@ -53,6 +60,11 @@ describe('batch-results', () => {
         },
       },
     ],
+    compiledSummary: {
+      nodes: 2,
+      edges: 1,
+      issues: 0,
+    },
   };
 
   it('accepts successful and row-level failed add_concepts rows', () => {
