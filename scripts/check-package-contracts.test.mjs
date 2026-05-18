@@ -248,6 +248,30 @@ describe('package contract helpers', () => {
       pkg.scripts?.['test:mcp:suggestions'] ?? '',
       /^node scripts\/run-focused-node-test\.mjs --test-name-pattern "[^"]+" mcp\/src\/suggestions\.test\.mjs mcp\/src\/ontology-engine\.test\.mjs$/,
     );
+
+    const customZeroMatchGuards = new Set([
+      'integration:cli:compile',
+      'integration:cli:mcp-verify',
+      'integration:cli:maintenance',
+      'integration:mcp:readme',
+    ]);
+    for (const [scriptName, scriptBody] of Object.entries(pkg.scripts ?? {})) {
+      if (!scriptBody.includes('--test-name-pattern')) continue;
+      if (customZeroMatchGuards.has(scriptName)) {
+        assert.match(
+          scriptBody,
+          /^(node --test --test-name-pattern "[^"]+" (cli|mcp)\/src\/integration\.test\.mjs)$/,
+          `${scriptName} must stay on an integration runner with its own zero-match guard`,
+        );
+        continue;
+      }
+      assert.match(
+        scriptBody,
+        /(?:^|&& )node scripts\/run-focused-node-test\.mjs --test-name-pattern "[^"]+"/,
+        `${scriptName} must use run-focused-node-test.mjs so zero matched tests fail`,
+      );
+    }
+
     for (const heading of [
       '## Default Gate',
       '## Quick Matrix',

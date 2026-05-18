@@ -494,6 +494,7 @@ spawn-heavy integration 은 `pnpm integration:mcp` 로 실행하고
 Node `--test-name-pattern` 이 필요하면 `pnpm integration:mcp -- --test-name-pattern ...` 형태로 붙이지 않고
 `pnpm exec node --test --test-name-pattern "..." mcp/src/integration.test.mjs` 를 직접 실행한다.
 root focused `test:mcp:*` package scripts 는 `scripts/run-focused-node-test.mjs` wrapper 를 통해 Node `--test-name-pattern` 이 0개 테스트와 매칭되어도 exit 0 으로 지나가는 silent skip 을 `# pass 0` summary 에서 감지해 실패시킨다.
+package contract 는 `--test-name-pattern` 을 쓰는 root script 를 전부 스캔해, 자체 zero-match guard 가 있는 integration runner 외에는 이 wrapper 를 거치도록 고정한다.
 root shortcut `pnpm integration:mcp:readme` 는 first-contact README read-only
 subset 만 실행해 agent onboarding 문서 변경을 빠르게 검증한다.
 package manifest / enum suggestion 류의 더 작은 변경은 root 의
