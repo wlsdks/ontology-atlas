@@ -292,7 +292,7 @@ strict unknown-argument / invalid-enum rejection with structured
 `errorCode` values (`unknown_argument` / `invalid_arguments`), enum-validated
 `maintenance_plan` filters, stale `patch_concept.expected_mtime` rejection with
 `vault_conflict`, batch row isolation for non-object row shape,
-unknown row field inputs with all offending fields reported, 50-row batch cap
+unknown row field inputs with all offending fields reported, reader/writer 50-row batch cap
 rejection with `invalid_arguments`, invalid `add_relations` type hints, and duplicate
 `add_concepts` slugs with `concepts[n]` / `relations[n]` error labels, and
 maintenance_plan cursor handling (ready page +
@@ -327,7 +327,7 @@ A successful run looks like this:
 ✓ strict arguments — multiple unknown tool arguments reported together
 ✓ add_concepts — non-object, all-unknown-field + Received fields, and duplicate-slug rows isolated with input indexes
 ✓ add_relations — non-object, all-unknown-field + Received fields, and invalid-type rows isolated with input indexes and closest-value hints
-✓ batch caps — add_concepts/add_relations reject 51 rows with invalid_arguments
+✓ batch caps — get_concepts/add_concepts/add_relations reject 51 rows with invalid_arguments
 ✓ destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance
 ✓ strict enums — invalid query operation rejected with closest-value hint
 ✓ strict maintenance filters — invalid phase/severity/kind rejected at runtime (phases=validate/repair/link/materialize/review; severities=fail/warn/info; kinds=inspect_compile_issue/break_dependency_cycle/canonicalize_graph_arrays/resolve_dangling_reference/add_missing_relation/materialize_external_element/unassigned_node/empty_domain)

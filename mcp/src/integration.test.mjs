@@ -3598,6 +3598,7 @@ await test("get_concepts — 빈 slugs[] → 빈 concepts[], 51개 → error", a
     // 우리 cap 메시지 ("Too many slugs") 가 있는지로만 검증.
     const text = JSON.stringify(r2.find((r) => r.id === 2));
     assert.match(text, /Too many slugs|50/i);
+    assert.equal(getCallStructured(r2, 2)?.errorCode, "invalid_arguments");
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

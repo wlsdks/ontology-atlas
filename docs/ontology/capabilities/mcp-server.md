@@ -168,8 +168,9 @@ shortest-path read tool 계약을 `query_ontology` graph operation 과 별도로
 top-level tool error 가 아니라 row-level `ok:false` 로 격리되는지 설치 검증에서
 실제 호출로 확인하고, unknown-field row 에 모든 offending field / nearest field hint /
 `Received fields: ...` 가 남는지, relation type row 에 closest-value hint 가 남는지와
-invalid-only smoke 에 `postWriteMaintenance` 가 없는지도 확인한다. 51-row batch 도
-실제 호출해 `invalid_arguments` 로 거절되는지 확인해 schema maxItems 와 런타임 cap 이 갈라지지 않게 한다.
+invalid-only smoke 에 `postWriteMaintenance` 가 없는지도 확인한다. `get_concepts` / `add_concepts` /
+`add_relations` 51-row batch 도 실제 호출해 `invalid_arguments` 로 거절되는지 확인해
+schema maxItems 와 런타임 cap 이 갈라지지 않게 한다.
 성공 로그도 `all-unknown-field + Received fields` 를 그대로 드러내
 green check 만 보고도 batch unknown-field 복구 품질과 batch cap 이 검증됐는지 알 수 있게 한다.
 initialize first-contact 안내도 같은 batch relation type closest-value hint 를 설명해야 하며,

@@ -341,7 +341,7 @@ try {
   assert.match(cliMcpVerify.stdout, /strict arguments — multiple unknown tool arguments reported together/);
   assert.match(cliMcpVerify.stdout, /add_concepts — non-object, all-unknown-field \+ Received fields, and duplicate-slug rows isolated with input indexes/);
   assert.match(cliMcpVerify.stdout, /add_relations — non-object, all-unknown-field \+ Received fields, and invalid-type rows isolated with input indexes and closest-value hints/);
-  assert.match(cliMcpVerify.stdout, /batch caps — add_concepts\/add_relations reject 51 rows with invalid_arguments/);
+  assert.match(cliMcpVerify.stdout, /batch caps — get_concepts\/add_concepts\/add_relations reject 51 rows with invalid_arguments/);
   assert.match(cliMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(cliMcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(cliMcpVerify.stdout, /maintenance cursor — ready page stable/);
@@ -619,7 +619,7 @@ try {
   assert.match(mcpVerify.stdout, /strict arguments — multiple unknown tool arguments reported together/);
   assert.match(mcpVerify.stdout, /add_concepts — non-object, all-unknown-field \+ Received fields, and duplicate-slug rows isolated with input indexes/);
   assert.match(mcpVerify.stdout, /add_relations — non-object, all-unknown-field \+ Received fields, and invalid-type rows isolated with input indexes and closest-value hints/);
-  assert.match(mcpVerify.stdout, /batch caps — add_concepts\/add_relations reject 51 rows with invalid_arguments/);
+  assert.match(mcpVerify.stdout, /batch caps — get_concepts\/add_concepts\/add_relations reject 51 rows with invalid_arguments/);
   assert.match(mcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(mcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(mcpVerify.stdout, /maintenance cursor — ready page stable/);
@@ -648,7 +648,7 @@ try {
   assert.match(directMcpVerify.stdout, /strict arguments — multiple unknown tool arguments reported together/);
   assert.match(directMcpVerify.stdout, /add_concepts — non-object, all-unknown-field \+ Received fields, and duplicate-slug rows isolated with input indexes/);
   assert.match(directMcpVerify.stdout, /add_relations — non-object, all-unknown-field \+ Received fields, and invalid-type rows isolated with input indexes and closest-value hints/);
-  assert.match(directMcpVerify.stdout, /batch caps — add_concepts\/add_relations reject 51 rows with invalid_arguments/);
+  assert.match(directMcpVerify.stdout, /batch caps — get_concepts\/add_concepts\/add_relations reject 51 rows with invalid_arguments/);
   assert.match(directMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(directMcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(directMcpVerify.stdout, /maintenance cursor — ready page stable/);
@@ -693,7 +693,7 @@ try {
   );
   assert.match(directMcpVerifyVaultFlag.stdout, /add_concepts — non-object, all-unknown-field \+ Received fields, and duplicate-slug rows isolated with input indexes/);
   assert.match(directMcpVerifyVaultFlag.stdout, /add_relations — non-object, all-unknown-field \+ Received fields, and invalid-type rows isolated with input indexes and closest-value hints/);
-  assert.match(directMcpVerifyVaultFlag.stdout, /batch caps — add_concepts\/add_relations reject 51 rows with invalid_arguments/);
+  assert.match(directMcpVerifyVaultFlag.stdout, /batch caps — get_concepts\/add_concepts\/add_relations reject 51 rows with invalid_arguments/);
   assert.match(directMcpVerifyVaultFlag.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(directMcpVerifyVaultFlag.stdout, /maintenance cursor — ready page stable/);
   assert.match(directMcpVerifyVaultFlag.stdout, installedVerifyStructuredContentRe);
@@ -712,7 +712,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
   assert.match(directMcpVerifyHelp.stdout, /project probe/);
   assert.match(directMcpVerifyHelp.stdout, /strict unknown-argument \/ invalid-enum rejection/);
-  assert.match(directMcpVerifyHelp.stdout, /batch writer row isolation for non-object rows and unknown row fields with concepts\[n\]\/relations\[n\] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection/);
+  assert.match(directMcpVerifyHelp.stdout, /batch reader\/writer row isolation for non-object rows and unknown row fields with concepts\[n\]\/relations\[n\] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection/);
   assert.match(directMcpVerifyHelp.stdout, /destructive writer dry-runs for rename_concept\/merge_concepts\/delete_concept/);
   assert.match(directMcpVerifyHelp.stdout, /maintenance_plan filter enums/);
   assert.match(directMcpVerifyHelp.stdout, /maintenance_plan cursor handling/);

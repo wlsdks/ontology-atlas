@@ -4129,7 +4129,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /strict unknown-argument \/ invalid-enum rejection/);
     assert.match(verifyUsage(), /query_concepts\.kind\/has-key, find_neighbors\.types, find_orphans\.kind\/excludeKinds, match_nodes\.kind\/sort, recommend_relations\.kind, and match_edges\.type\/fromKind\/toKind typo and unsupported-kind rejection/);
     assert.match(verifyUsage(), /tools\/list inventory names, schema strictness, and annotation coverage \(title\/read\/write\/destructive\/idempotent\/local-only\)/);
-    assert.match(verifyUsage(), /batch writer row isolation for non-object rows and unknown row fields with concepts\[n\]\/relations\[n\] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection/);
+    assert.match(verifyUsage(), /batch reader\/writer row isolation for non-object rows and unknown row fields with concepts\[n\]\/relations\[n\] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection/);
     assert.match(verifyUsage(), /structuredContent coverage summary splits direct reads, batch row-isolation writes, destructive dry-runs, maintenance cursor checks, and graph queries/);
     assert.match(verifyUsage(), /maintenance_plan filter enums/);
     assert.match(verifyUsage(), /maintenance_plan cursor handling/);
@@ -5692,6 +5692,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(61), 'patch_concept_conflict_guard');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(62), 'add_concepts_batch_cap');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(63), 'add_relations_batch_cap');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(64), 'get_concepts_batch_cap');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), 11, 13, 14, 15, 30, 31, 33, 35, 36, 37, 43, 44, 45, 61].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -5710,6 +5711,7 @@ describe('verify.mjs first-contact gates', () => {
     const infer = buildFirstContactRequests().find((request) => request.id === 39);
     const conceptBatchCap = buildFirstContactRequests().find((request) => request.id === 62);
     const relationBatchCap = buildFirstContactRequests().find((request) => request.id === 63);
+    const getConceptsBatchCap = buildFirstContactRequests().find((request) => request.id === 64);
     const compilePage = buildFirstContactRequests().find((request) => request.id === 41);
     const compileIndexes = buildFirstContactRequests().find((request) => request.id === 42);
     const strictRelationCheck = buildFirstContactRequests().find((request) => request.id === 46);
@@ -5724,6 +5726,8 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(conceptBatchCap?.params?.arguments?.concepts?.length, 51);
     assert.equal(relationBatchCap?.params?.name, 'add_relations');
     assert.equal(relationBatchCap?.params?.arguments?.relations?.length, 51);
+    assert.equal(getConceptsBatchCap?.params?.name, 'get_concepts');
+    assert.equal(getConceptsBatchCap?.params?.arguments?.slugs?.length, 51);
     assert.equal(compilePage?.params?.name, 'compile_ontology');
     assert.deepEqual(compilePage?.params?.arguments, { nodesLimit: 1, edgesLimit: 1 });
     assert.equal(compileIndexes?.params?.name, 'compile_ontology');

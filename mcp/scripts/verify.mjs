@@ -2963,6 +2963,7 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [61, 'patch_concept_conflict_guard'],
   [62, 'add_concepts_batch_cap'],
   [63, 'add_relations_batch_cap'],
+  [64, 'get_concepts_batch_cap'],
 ]);
 
 function log(level, msg) {
@@ -3219,7 +3220,7 @@ export function verifyUsage() {
     'Successful output prints read census consistency after cross-checking list_kinds/list_concepts/compile_ontology/overview.\n' +
     'Also checks strict unknown-argument / invalid-enum rejection, list_concepts.kind, query_concepts.kind/has-key, find_neighbors.types, find_orphans.kind/excludeKinds, match_nodes.kind/sort, recommend_relations.kind, and match_edges.type/fromKind/toKind typo and unsupported-kind rejection, maintenance_plan filter enums,\n' +
     'tools/list inventory names, schema strictness, and annotation coverage (title/read/write/destructive/idempotent/local-only),\n' +
-    'batch writer row isolation for non-object rows and unknown row fields with concepts[n]/relations[n] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection,\n' +
+    'batch reader/writer row isolation for non-object rows and unknown row fields with concepts[n]/relations[n] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection,\n' +
     'destructive writer dry-runs for rename_concept/merge_concepts/delete_concept with every planned response present and no changed/postWriteMaintenance,\n' +
     'structuredContent coverage summary splits direct reads, batch row-isolation writes, destructive dry-runs, maintenance cursor checks, and graph queries,\n' +
     'and maintenance_plan cursor handling: ready page (cursor.found=true, cursor.reason=null)\n' +
@@ -3477,6 +3478,17 @@ export function buildFirstContactRequests() {
             to: 'verify-target',
             type: 'relates',
           })),
+        },
+      },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 64,
+      method: 'tools/call',
+      params: {
+        name: 'get_concepts',
+        arguments: {
+          slugs: Array.from({ length: 51 }, (_, index) => `verify-slug-${index}`),
         },
       },
     },
@@ -6131,6 +6143,11 @@ async function step2BootAndCall() {
         return res(false);
       }
       log('ok', 'add_relations — non-object, all-unknown-field + Received fields, and invalid-type rows isolated with input indexes and closest-value hints');
+      const getConceptsBatchCapFailure = batchCapFailure(responses.find((r) => r.id === 64), 'get_concepts', 'slugs');
+      if (getConceptsBatchCapFailure) {
+        log('fail', getConceptsBatchCapFailure);
+        return res(false);
+      }
       const addConceptsBatchCapFailure = batchCapFailure(responses.find((r) => r.id === 62), 'add_concepts', 'concepts');
       if (addConceptsBatchCapFailure) {
         log('fail', addConceptsBatchCapFailure);
@@ -6141,7 +6158,7 @@ async function step2BootAndCall() {
         log('fail', addRelationsBatchCapFailure);
         return res(false);
       }
-      log('ok', 'batch caps — add_concepts/add_relations reject 51 rows with invalid_arguments');
+      log('ok', 'batch caps — get_concepts/add_concepts/add_relations reject 51 rows with invalid_arguments');
       const destructiveDryRunResponses = destructiveDryRunExpectedResponses.map(([toolName, id]) => [
         toolName,
         responses.find((response) => response.id === id),
