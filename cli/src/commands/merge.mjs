@@ -92,6 +92,7 @@ export async function runMerge(args) {
     `${COLORS.green}ok${COLORS.reset}    ${COLORS.bold}${fromSlug}${COLORS.reset} → ${COLORS.bold}${intoSlug}${COLORS.reset} ` +
       `${COLORS.dim}(${updates.length} file(s) updated, ${fromSlug}.md deleted)${COLORS.reset}\n`,
   );
+  writeCapturedSummary(result?.capturedFrom, 'deleted source');
   for (const u of updates) {
     process.stdout.write(`  ${COLORS.cyan}${u.slug}${COLORS.reset}${graphUpdateTitle(u)}\n`);
     for (const c of graphUpdateChanges(u)) {
@@ -125,6 +126,18 @@ function graphUpdateChanges(update) {
   const changes = [...keys].sort().map((key) => `${key} changed`);
   if (update?.bodyChanged) changes.push('body changed');
   return changes;
+}
+
+function writeCapturedSummary(captured, label) {
+  const title = captured?.frontmatter?.title;
+  const excerpt = typeof captured?.bodyExcerpt === 'string' ? captured.bodyExcerpt.trim() : '';
+  if (!title && !excerpt) return;
+  process.stdout.write(`  ${COLORS.dim}${label}${COLORS.reset}`);
+  if (title) process.stdout.write(` ${COLORS.cyan}${title}${COLORS.reset}`);
+  process.stdout.write('\n');
+  if (excerpt) {
+    process.stdout.write(`    ${COLORS.dim}${excerpt}${COLORS.reset}\n`);
+  }
 }
 
 function parseArgs(args) {

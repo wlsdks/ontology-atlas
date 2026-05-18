@@ -99,6 +99,7 @@ export async function runDelete(args) {
         : '') +
       `\n`,
   );
+  writeCapturedSummary(result?.captured, 'deleted node');
   for (const bl of backlinksAtDelete) {
     const titleText = bl.title && bl.title !== bl.slug ? ` ${COLORS.dim}— ${bl.title}${COLORS.reset}` : '';
     process.stdout.write(
@@ -110,6 +111,18 @@ export async function runDelete(args) {
     );
   }
   return 0;
+}
+
+function writeCapturedSummary(captured, label) {
+  const title = captured?.frontmatter?.title;
+  const excerpt = typeof captured?.bodyExcerpt === 'string' ? captured.bodyExcerpt.trim() : '';
+  if (!title && !excerpt) return;
+  process.stdout.write(`  ${COLORS.dim}${label}${COLORS.reset}`);
+  if (title) process.stdout.write(` ${COLORS.cyan}${title}${COLORS.reset}`);
+  process.stdout.write('\n');
+  if (excerpt) {
+    process.stdout.write(`    ${COLORS.dim}${excerpt}${COLORS.reset}\n`);
+  }
 }
 
 function parseArgs(args) {

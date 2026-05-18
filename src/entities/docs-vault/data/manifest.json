@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-18T13:19:15.936Z",
+  "generatedAt": "2026-05-18T13:23:35.940Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -4817,8 +4817,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, maintenance, 그리고 설치된 MCP surface 를 확인하는 mcpverify 명령 추가 — 총 27 명령. 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP 등록 불필요. ",
-      "wordCount": 5724,
-      "updatedAt": "2026-05-18T13:19:09.655Z",
+      "wordCount": 5746,
+      "updatedAt": "2026-05-18T13:23:24.949Z",
       "linksOut": []
     },
     {

@@ -3700,6 +3700,8 @@ await test('delete --confirm --force — 적용 출력에 dangling backlink 를 
     assert.equal(r.code, 0, `stderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /deleted/);
+    assert.match(clean, /deleted node\s+Foo/);
+    assert.match(clean, /# Foo/);
     assert.match(clean, /2 dangling backlink\(s\) left/);
     assert.match(clean, /capabilities\/bar\s+— Bar\s+\(relates\)/);
     assert.match(clean, /domains\/auth\s+— Auth\s+\(capabilities\)/);
@@ -3726,6 +3728,7 @@ await test('delete --confirm (no backlinks) — 파일 삭제', async () => {
       '--confirm',
     ]);
     assert.equal(r.code, 0, `stderr: ${r.stderr}`);
+    assert.match(stripAnsi(r.stdout), /deleted node\s+Lonely/);
     assert.equal(
       existsSyncTest(join(root, 'capabilities/lonely.md')),
       false,
@@ -3773,6 +3776,8 @@ await test('merge --confirm — 적용 출력에 변경 파일과 key 를 보여
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /[1-9]\d* file\(s\) updated/);
     assert.match(clean, /capabilities\/foo\.md deleted/);
+    assert.match(clean, /deleted source\s+Foo/);
+    assert.match(clean, /# Foo/);
     assert.match(clean, /domains\/auth\s+— Auth/);
     assert.match(clean, /capabilities changed/);
     assert.equal(existsSyncTest(join(root, 'capabilities/foo.md')), false);
