@@ -4215,6 +4215,10 @@ describe("rpc response completion helpers", () => {
     assert.match(failure, /rpc: timed out after 5000ms waiting for list_kinds, list_concepts\./);
     assert.match(failure, /Increase OMOT_DOGFOOD_TIMEOUT_MS for slow dogfood runs\./);
     assert.match(failure, /OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk/);
+    assert.match(
+      rpcTimeoutFailure(5000, []),
+      /rpc: timed out after 5000ms waiting for unknown JSON-RPC responses\./,
+    );
   });
 
   it("keeps dogfood response labels aligned with the get_concepts smoke", () => {

@@ -369,8 +369,11 @@ export function structuredContentStatus(parsed, structured) {
 }
 
 export function rpcTimeoutFailure(timeoutMs, missingLabels) {
+  const waitingFor = Array.isArray(missingLabels) && missingLabels.length > 0
+    ? missingLabels.join(", ")
+    : "unknown JSON-RPC responses";
   return [
-    `rpc: timed out after ${timeoutMs}ms waiting for ${missingLabels.join(", ")}.`,
+    `rpc: timed out after ${timeoutMs}ms waiting for ${waitingFor}.`,
     "Increase OMOT_DOGFOOD_TIMEOUT_MS for slow dogfood runs.",
     "Example: OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk",
   ].join(" ");

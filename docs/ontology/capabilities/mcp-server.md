@@ -905,7 +905,8 @@ destructive writer dry-run / confirm output root 도 닫아 rename / merge / del
 명시된 safety payload 안에서만 일어나게 한다.
 요청한 JSON-RPC 응답이 모두 도착하거나 error 응답이 오면 timeout 까지 기다리지 않고
 즉시 종료해 반복 dogfood 비용을 낮춘다. timeout 으로 끝나면 누락된 응답 label 을
-gate failure 에 함께 출력한다. 느린 환경에서는 양의 정수 millisecond 값인
+gate failure 에 함께 출력하고, label 목록이 비는 edge case 는 `unknown JSON-RPC responses`
+fallback 으로 진단한다. 느린 환경에서는 양의 정수 millisecond 값인
 `OMOT_DOGFOOD_TIMEOUT_MS` 로 dogfood wait 를 늘릴 수 있다.
 timeout 출력도 같은 env 이름과 `OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk`
 재시도 예시를 같이 노출한다.
