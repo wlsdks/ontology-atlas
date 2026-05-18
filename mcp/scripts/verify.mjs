@@ -2090,6 +2090,9 @@ export function toolsListSchemaFailure(tools) {
   if (!/structured `valueName` \/ `receivedValue` \/ `suggestion` \/ `allowedValues`/.test(addRelationTool?.description || '')) {
     return 'add_relation description missing structured value repair guidance';
   }
+  if (!/no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata/.test(addRelationTool?.description || '')) {
+    return 'add_relation description missing non-write preflight metadata guidance';
+  }
   if (addRelationTool.outputSchema?.type !== 'object') {
     return 'add_relation outputSchema root drift';
   }

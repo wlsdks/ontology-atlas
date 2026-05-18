@@ -767,6 +767,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     );
     assert.ok(addC && /add_concepts/.test(addC), "add_concept → add_concepts hint");
     assert.ok(addR && /add_relations/.test(addR), "add_relation → add_relations hint");
+    assert.match(
+      addR ?? "",
+      /Invalid relation `type`[\s\S]*no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata/,
+      "add_relation invalid-type preflight is visibly non-writing",
+    );
     for (const toolName of [
       "add_concept",
       "add_concepts",
