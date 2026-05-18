@@ -19,6 +19,14 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm test:checks:changed',
+    reason: 'changed-path focused-check advisor changed',
+    matches: [
+      /^scripts\/lib\/focused-check-suggestions\.(?:mjs|test\.mjs)$/,
+      /^scripts\/suggest-focused-checks\.(?:mjs|test\.mjs)$/,
+    ],
+  },
+  {
     command: 'pnpm test:dogfood:status',
     reason: 'dogfood status shortcut changed',
     matches: [/^scripts\/dogfood-status\.(?:mjs|test\.mjs)$/],
@@ -156,7 +164,7 @@ function rulesToSuggestions(rules, paths) {
 export function formatFocusedCheckSuggestions({ paths = [], commands = [], escalations = [] } = {}) {
   if (paths.length === 0) {
     return [
-      '[focused-checks] no tracked changes against HEAD',
+      '[focused-checks] no changed paths against HEAD or untracked files',
       'Use `pnpm checks:changed -- <path...>` to inspect a planned file set.',
     ].join('\n');
   }

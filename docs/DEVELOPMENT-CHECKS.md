@@ -78,10 +78,12 @@ pnpm checks:changed
 pnpm checks:changed -- cli/src/commands/mcp-verify.mjs mcp/scripts/verify.mjs
 ```
 
-`pnpm checks:changed` reads tracked changes from `git diff --name-only HEAD`.
-Pass paths after `--` to inspect a planned file set before editing. It prints
-first checks plus explicit escalation gates, and is only an advisor; still add
-runtime/browser checks when the touched behavior needs them.
+`pnpm checks:changed` reads tracked changes from `git diff --name-only HEAD`
+plus untracked files from `git ls-files --others --exclude-standard`, excluding
+local `.agents/` and `.codex/` agent state. Pass paths after `--` to inspect a
+planned file set before editing. It prints first checks plus explicit
+escalation gates, and is only an advisor; still add runtime/browser checks when
+the touched behavior needs them.
 
 | Command | Use when |
 |---|---|

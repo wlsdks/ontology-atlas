@@ -49,8 +49,17 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests the advisor self-test when the focused-check advisor changes', () => {
+    const result = suggestFocusedChecks([
+      'scripts/lib/focused-check-suggestions.mjs',
+      'scripts/suggest-focused-checks.test.mjs',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), ['pnpm test:checks:changed']);
+  });
+
   it('formats no-change and mapped suggestions for terminal use', () => {
-    assert.match(formatFocusedCheckSuggestions(suggestFocusedChecks([])), /no tracked changes/);
+    assert.match(formatFocusedCheckSuggestions(suggestFocusedChecks([])), /no changed paths/);
 
     const output = formatFocusedCheckSuggestions(suggestFocusedChecks(['scripts/dogfood-status.mjs']));
     assert.match(output, /\[focused-checks\] 1 changed path/);

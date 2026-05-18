@@ -6,6 +6,7 @@ import {
   runSuggestFocusedChecks,
   stripLeadingSeparator,
   suggestFocusedChecksUsage,
+  untrackedPathsForAdvisor,
 } from './suggest-focused-checks.mjs';
 
 describe('focused check suggestion CLI', () => {
@@ -23,7 +24,8 @@ describe('focused check suggestion CLI', () => {
 
     assert.equal(exitCode, 0);
     assert.match(output.join(''), /pnpm checks:changed/);
-    assert.match(output.join(''), /git diff --name-only HEAD/);
+    assert.match(output.join(''), /tracked changes from git diff plus untracked files from git ls-files/);
+    assert.match(output.join(''), /excluding local \.agents\/ and \.codex\/ agent state/);
     assert.equal(output.join(''), `${suggestFocusedChecksUsage()}\n`);
   });
 
@@ -41,7 +43,7 @@ describe('focused check suggestion CLI', () => {
     assert.match(output.join(''), /pnpm test:mcp:registration/);
   });
 
-  it('reads tracked changed paths from git by default', () => {
+  it('reads tracked and untracked changed paths from git by default', () => {
     const output = [];
     const calls = [];
     const exitCode = runSuggestFocusedChecks({
@@ -49,13 +51,16 @@ describe('focused check suggestion CLI', () => {
       stdout: { write: (text) => output.push(text) },
       spawn(command, args, options) {
         calls.push({ command, args, options });
-        return { status: 0, stdout: 'docs/ontology/project.md\n' };
+        if (args[0] === 'diff') return { status: 0, stdout: 'docs/ontology/project.md\n' };
+        return { status: 0, stdout: '.codex/config.toml\nscripts/suggest-focused-checks.mjs\n' };
       },
     });
 
     assert.equal(exitCode, 0);
     assert.deepEqual(calls[0].args, ['diff', '--name-only', 'HEAD', '--']);
+    assert.deepEqual(calls[1].args, ['ls-files', '--others', '--exclude-standard']);
     assert.match(output.join(''), /pnpm docs-vault:check/);
+    assert.match(output.join(''), /pnpm test:checks:changed/);
   });
 
   it('surfaces git failures as focused-check diagnostics', () => {
@@ -73,16 +78,34 @@ describe('focused check suggestion CLI', () => {
     assert.deepEqual(diagnostics, ['[focused-checks] not a git repo\n']);
   });
 
-  it('returns changed tracked paths from git', () => {
+  it('returns changed tracked and untracked paths from git without duplicates', () => {
+    const calls = [];
     assert.deepEqual(
       changedPathsFromGit({
         spawn(command, args) {
+          calls.push(args);
           assert.equal(command, 'git');
-          assert.deepEqual(args, ['diff', '--name-only', 'HEAD', '--']);
-          return { status: 0, stdout: 'a.js\n\nb.js\n' };
+          if (args[0] === 'diff') return { status: 0, stdout: 'a.js\n\nb.js\n' };
+          return { status: 0, stdout: '.agents/skills/local/SKILL.md\nb.js\nc.js\n' };
         },
       }),
-      ['a.js', 'b.js'],
+      ['a.js', 'b.js', 'c.js'],
+    );
+    assert.deepEqual(calls, [
+      ['diff', '--name-only', 'HEAD', '--'],
+      ['ls-files', '--others', '--exclude-standard'],
+    ]);
+  });
+
+  it('keeps untracked source files but ignores local agent state directories', () => {
+    assert.deepEqual(
+      untrackedPathsForAdvisor([
+        '.agents/skills/ontology-sync/SKILL.md',
+        '.codex/hooks.json',
+        '.mcp.json',
+        'scripts/new-helper.mjs',
+      ].join('\n')),
+      ['.mcp.json', 'scripts/new-helper.mjs'],
     );
   });
 });

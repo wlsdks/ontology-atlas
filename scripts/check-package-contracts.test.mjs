@@ -372,8 +372,8 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /pnpm test:docs-vault\s+# focused docs-vault build\/check helper contract/);
     assert.match(checksDoc, /pnpm docs-vault:build\s+# refresh static dogfood manifest and public md/);
     assert.match(checksDoc, /`pnpm checks:changed`\s+\| Suggest first focused checks from changed paths/);
-    assert.match(checksDoc, /`pnpm checks:changed` reads tracked changes from `git diff --name-only HEAD`/);
-    assert.match(checksDoc, /Pass paths after `--` to inspect a planned file set before editing/);
+    assert.match(checksDoc, /`pnpm checks:changed` reads tracked changes from `git diff --name-only HEAD`\s+plus untracked files from `git ls-files --others --exclude-standard`, excluding\s+local `\.agents\/` and `\.codex\/` agent state/);
+    assert.match(checksDoc, /Pass paths after `--` to inspect a\s+planned file set before editing/);
     assert.match(checksDoc, /\| `pnpm integration:cli:growth` \| CLI `growth_plan` wrapper, candidate rendering, malformed payload, and argument contracts \|/);
     assert.match(checksDoc, /\| Dogfood MCP smoke \| `pnpm dogfood:status` \| `pnpm dogfood:verify` \|/);
     assert.match(checksDoc, /pnpm test:dogfood:status/);
