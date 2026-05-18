@@ -29,7 +29,7 @@ For user-facing UI changes, add the relevant Playwright route check.
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
 | CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
 | MCP/docs contract | `pnpm test:mcp:docs` | `pnpm package:check` |
-| Dogfood MCP smoke | `pnpm dogfood:verify` | `pnpm dogfood:walk` |
+| Dogfood MCP smoke | `pnpm dogfood:status` | `pnpm dogfood:verify` |
 | Packed CLI release | `pnpm smoke:packed-cli` | `pnpm test:mcp:package` |
 
 `pnpm test:mcp:docs` also guards Firebase Hosting config as static-only:
@@ -97,12 +97,15 @@ These target this repo's own `docs/ontology` vault:
 pnpm dogfood:compile
 pnpm dogfood:health
 pnpm dogfood:brief
+pnpm dogfood:status
 pnpm dogfood:verify
 pnpm dogfood:walk
 pnpm dogfood:help
 ```
 
-Use `pnpm dogfood:test` only when the dogfood helper itself changed or the
+`pnpm dogfood:status` runs the cheap health + workspace-brief JSON gates
+together. Use `pnpm dogfood:verify` for the full installed-style dogfood vault
+gate, and `pnpm dogfood:test` only when the dogfood helper itself changed or the
 focused `test:mcp:dogfood` subset is not enough.
 
 For slower filesystems:
