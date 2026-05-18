@@ -541,7 +541,7 @@ package manifest / enum suggestion 류의 더 작은 변경은 root 의
 `pnpm dogfood:brief` 는 repo root 의 가장 짧은 first-contact snapshot 이며,
 `pnpm dogfood:growth` 는 repo root 의 가장 짧은 growth candidate snapshot 이며,
 `pnpm dogfood:maintenance` 는 repo root 의 가장 짧은 maintenance queue snapshot 이며,
-`pnpm dogfood:status` 는 health 가 non-zero 여도 workspace-brief 와 maintenance queue 까지 출력한 뒤 첫 실패 exit code 를 보존해 사람이 읽는 health + brief + maintenance snapshot 을 실패 상황에서도 보여주고 마지막에 `[dogfood:status] health:N · workspace-brief:N · maintenance:N` 요약, 실패 child 별 focused follow-up (`pnpm dogfood:health` / `pnpm dogfood:brief` / `pnpm dogfood:maintenance` + `pnpm test:mcp:maintenance`), `pnpm dogfood:verify` follow-up hint 를 남기며,
+`pnpm dogfood:status` 는 health 가 non-zero 여도 workspace-brief 와 maintenance queue 까지 출력한 뒤 첫 실패 exit code 를 보존해 사람이 읽는 health + brief + maintenance snapshot 을 실패 상황에서도 보여주고 마지막에 `[dogfood:status] health:N · workspace-brief:N · maintenance:N` 요약, 실패 child 별 focused follow-up (`pnpm dogfood:health` / `pnpm dogfood:brief` / `pnpm dogfood:maintenance` + `pnpm test:mcp:maintenance`), `pnpm dogfood:verify` follow-up hint 를 남기며, `--help` 에서도 child→focused gate mapping 을 미리 보여주고,
 `pnpm dogfood:compile-fix -- --help` / `pnpm dogfood:status -- --help` 는 실제 gate 를 실행하지 않는 usage path 이고 잘못된 인자는 exit 2 로 실패하며 `--help` 근접 오타는 `Did you mean --help?` 힌트를 주고,
 full 설치형 검증은 `pnpm dogfood:verify`, 명시 인자가 필요할 때만
 `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` 로 풀어 쓴다. dogfood helper / structuredContent 출력 계약이나

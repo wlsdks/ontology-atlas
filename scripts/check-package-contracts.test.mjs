@@ -2485,6 +2485,7 @@ describe('package contract helpers', () => {
     assert.match(regressionSection, /`pnpm dogfood:status` 는 health 가 non-zero 여도 workspace-brief 와 maintenance queue 를 계속 실행한 뒤 첫 실패 exit code 를 보존/);
     assert.match(regressionSection, /\[dogfood:status\] health:N · workspace-brief:N · maintenance:N/);
     assert.match(regressionSection, /`pnpm dogfood:status` 실패 출력은 `\[dogfood:status\] health:N · workspace-brief:N · maintenance:N` child status 요약 뒤에 실패 child 별 focused follow-up \(`pnpm dogfood:health` \/ `pnpm dogfood:brief` \/ `pnpm dogfood:maintenance` \+ `pnpm test:mcp:maintenance`\) 을 먼저 붙이고 `pnpm dogfood:verify` follow-up hint/);
+    assert.match(regressionSection, /`pnpm dogfood:status -- --help` 도 같은 child→focused gate mapping 을 미리 보여줘/);
     assert.match(regressionSection, /`pnpm cli:mcp-verify -- --help` 의 Focused checks 도 `pnpm dogfood:status` row 에 실패 시 focused hint 후 `pnpm dogfood:verify` hint/);
     assert.match(regressionSection, /`pnpm test:dogfood:status` 는 그 shortcut 계약만 spawn 없이 검증/);
     assert.match(regressionSection, /`workspace-brief --json` first-contact snapshot/);
@@ -2541,6 +2542,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`pnpm dogfood:status` 는 health 가 non-zero 여도 workspace-brief 와 maintenance queue 까지 출력한 뒤 첫 실패 exit code 를 보존/);
     assert.match(doc, /\[dogfood:status\] health:N · workspace-brief:N · maintenance:N/);
     assert.match(doc, /`\[dogfood:status\] health:N · workspace-brief:N · maintenance:N` 요약, 실패 child 별 focused follow-up \(`pnpm dogfood:health` \/ `pnpm dogfood:brief` \/ `pnpm dogfood:maintenance` \+ `pnpm test:mcp:maintenance`\), `pnpm dogfood:verify` follow-up hint/);
+    assert.match(doc, /`--help` 에서도 child→focused gate mapping 을 미리 보여주고/);
     assert.match(doc, /`--help` 근접 오타는 `Did you mean --help\?` 힌트/);
     assert.match(doc, /full 설치형 검증은 `pnpm dogfood:verify`/);
     assert.match(doc, /`pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000` 로 풀어 쓴다/);

@@ -31,6 +31,9 @@ describe('dogfood status shortcut', () => {
     assert.match(output.join(''), /final child status summary/);
     assert.match(output.join(''), /On failure it prints:/);
     assert.match(output.join(''), /\[dogfood:status\] focused follow-up: <failed child gate shortcuts>/);
+    assert.match(output.join(''), /health -> pnpm dogfood:health/);
+    assert.match(output.join(''), /workspace-brief -> pnpm dogfood:brief/);
+    assert.match(output.join(''), /maintenance -> pnpm dogfood:maintenance · pnpm test:mcp:maintenance/);
     assert.match(output.join(''), new RegExp(dogfoodStatusFailureHint().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.equal(output.join(''), dogfoodStatusUsage());
   });

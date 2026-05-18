@@ -110,6 +110,9 @@ this repo's docs/ontology vault, prints a final child status summary, and
 preserves the first failing exit code.
 On failure it prints:
   [dogfood:status] focused follow-up: <failed child gate shortcuts>
+    health -> pnpm dogfood:health
+    workspace-brief -> pnpm dogfood:brief
+    maintenance -> pnpm dogfood:maintenance · pnpm test:mcp:maintenance
   ${dogfoodStatusFailureHint()}
 `;
 }
