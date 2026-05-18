@@ -3339,6 +3339,17 @@ export function verifyVaultPathError(vault, cwd = process.cwd()) {
   }
 }
 
+export function emptyVerifyVaultFailure(parsed) {
+  if (!parsed || typeof parsed !== 'object' || parsed.total !== 0) return null;
+  const root = typeof parsed.vaultRoot === 'string' && parsed.vaultRoot.length > 0
+    ? ` (vaultRoot ${parsed.vaultRoot})`
+    : '';
+  return (
+    `verify vault has 0 ontology nodes${root}. ` +
+    'Point verify at a populated ontology vault; from the repo root with `pnpm --filter ./mcp verify -- ...`, use `../docs/ontology` for the dogfood vault.'
+  );
+}
+
 export function parseVerifyArgs({
   env = process.env,
   argv = process.argv,
@@ -7056,8 +7067,10 @@ async function step2BootAndCall() {
         }
         graphSmokeArgs = buildGraphQuerySmokeArgs(parsed, projectProbePayloadForSmoke);
         log('ok', `list_concepts — vault total ${parsed.total} nodes (vaultRoot ${parsed.vaultRoot})`);
-        if (parsed.total === 0) {
-          log('info', 'Warning: vault is empty. Make sure OMOT_VAULT points to the right folder (e.g. ./docs/ontology)');
+        const emptyVaultFailure = emptyVerifyVaultFailure(parsed);
+        if (emptyVaultFailure) {
+          log('fail', emptyVaultFailure);
+          return res(false);
         }
       } catch (err) {
         log('fail', `failed to parse list_concepts response: ${err.message}`);

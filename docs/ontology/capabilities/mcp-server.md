@@ -554,7 +554,8 @@ root 에서 실제 vault 를 검증할 때는 `pnpm --filter ./mcp verify -- [va
 semantics 를 확인해 typed-filter pagination 계약을 빠르게 점검한다.
 filtered package invocation 은 `mcp/` package cwd 에서 실행되므로 root dogfood vault 는
 `../docs/ontology` 로 넘겨야 한다. missing vault path 는 MCP server 시작 전에 실패하고,
-root-level filtered 호출에는 `../docs/ontology` 복구 힌트를 붙인다.
+empty vault 는 `list_concepts` census 직후 실패해 downstream read smoke 의 애매한
+실패로 넘어가지 않는다. root-level filtered 호출에는 `../docs/ontology` 복구 힌트를 붙인다.
 verify helper 자체를 만질 때는 `pnpm test:mcp:verify` 로
 `mcp/src/verify-script.test.mjs` 만 바로 실행한다. 이 helper gate 는
 missing / extra / duplicate / invalid `tools/list` name 같은 inventory 진단도 포함한다. 설치 first-contact initialize tool-inventory / safety/recovery guidance /

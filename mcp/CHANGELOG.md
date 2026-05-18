@@ -50,6 +50,7 @@
 - Real timeout failures suggest the same retry shape as timeout argument validation, so agents see `npm run verify -- --timeout-ms 15000` instead of guessing the accepted format.
 - Timeout cleanup sends `SIGTERM` and then `SIGKILL`; `OMOT_VERIFY_KILL_GRACE_MS=N` tunes only that post-timeout cleanup window.
 - `npm run verify` now rejects missing vault paths before starting the MCP server and, for root-level `pnpm --filter ./mcp verify -- ...` calls, hints `../docs/ontology` for the dogfood vault instead of leaking server-side `EPIPE` output.
+- `npm run verify` now fails empty vault folders immediately after the `list_concepts` census and, for root-level filtered package calls, points at `../docs/ontology` instead of continuing into misleading downstream read-smoke failures.
 - `npm run verify` now reports when the MCP server terminates by signal before first-contact completes and reports that signal separately from timeout and startup failures.
 - `npm run verify` now distinguishes server startup failures before `initialize` from timeout failures, preserving stderr such as invalid `OMOT_VAULT` diagnostics.
 - `npm run verify` now detects first-contact JSON-RPC error responses immediately and reports the failing step instead of waiting for timeout.

@@ -138,6 +138,7 @@ import {
   verifyTimeoutValueErrorMessage,
   verifyUsage,
   verifyVaultPathError,
+  emptyVerifyVaultFailure,
   vaultWarningsFailure,
   workspaceBriefSummary,
 } from '../scripts/verify.mjs';
@@ -4486,6 +4487,19 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(error, /pnpm --filter \.\/mcp verify -- \.\.\.`/);
     assert.match(error, /use `\.\.\/docs\/ontology` for the dogfood vault/);
     assert.equal(verifyVaultPathError(join(__dirname, '..')), null);
+  });
+
+  it('fails empty verify vaults with a populated-vault recovery hint', () => {
+    const error = emptyVerifyVaultFailure({
+      total: 0,
+      vaultRoot: '/repo/mcp',
+    });
+    assert.match(error, /verify vault has 0 ontology nodes/);
+    assert.match(error, /vaultRoot \/repo\/mcp/);
+    assert.match(error, /Point verify at a populated ontology vault/);
+    assert.match(error, /pnpm --filter \.\/mcp verify -- \.\.\.`/);
+    assert.match(error, /use `\.\.\/docs\/ontology` for the dogfood vault/);
+    assert.equal(emptyVerifyVaultFailure({ total: 1, vaultRoot: '/repo/docs/ontology' }), null);
   });
 
   it('parses direct verify CLI args for vault, timeout, and help', () => {
