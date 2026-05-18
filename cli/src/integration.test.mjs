@@ -3042,6 +3042,46 @@ await test('workspace-brief — prints health check coverage', async () => {
   }
 });
 
+await test('workspace-brief — prints next action id and kind when they differ', async () => {
+  const root = withVault();
+  const fakeMcp = join(root, 'fake-mcp-workspace-brief-actions.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
+      "  if (msg.id === 2) {",
+      "    const payload = {",
+      "      operation: 'workspace_brief',",
+      "      status: 'needs_attention',",
+      "      summary: { nodes: 1, edges: 0, projects: 0, domains: 0 },",
+      "      hotspots: [],",
+      "      projects: { maps: [] },",
+      "      growth: { totalActions: 1, relationRecommendations: 0, danglingReferences: 0, externalElementRefs: 0, externalElementRefsIgnored: 0 },",
+      "      nextActions: [{ id: 'components', kind: 'health_check', severity: 'info', count: 6, message: 'Scoped component check.' }],",
+      "      health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] },",
+      "    };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['workspace-brief', root], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /NEXT ACTIONS/);
+    assert.match(clean, /components\/health_check\s+× 6/);
+    assert.match(clean, /Scoped component check/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('workspace-brief — labels project_scope contained counts clearly', async () => {
   const root = withVault([
     {

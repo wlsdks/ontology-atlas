@@ -130,14 +130,22 @@ function render(result) {
     process.stdout.write(`${COLORS.dim}NEXT ACTIONS${COLORS.reset}\n`);
     for (const a of next) {
       const sev = SEVERITY_COLORS[a.severity] || COLORS.dim;
+      const label = nextActionLabel(a);
       process.stdout.write(
         `  ${sev}[${(a.severity || 'info').padEnd(4)}]${COLORS.reset}` +
-          ` ${COLORS.bold}${a.kind}${COLORS.reset}` +
+          ` ${COLORS.bold}${label}${COLORS.reset}` +
           ` ${COLORS.dim}× ${a.count ?? '?'}${COLORS.reset}\n`,
       );
       if (a.message) process.stdout.write(`         ${COLORS.dim}${a.message}${COLORS.reset}\n`);
     }
   }
+}
+
+function nextActionLabel(action) {
+  const id = typeof action?.id === 'string' && action.id.trim().length > 0 ? action.id : null;
+  const kind = typeof action?.kind === 'string' && action.kind.trim().length > 0 ? action.kind : null;
+  if (id && kind && id !== kind) return `${id}/${kind}`;
+  return id || kind || 'unknown';
 }
 
 function parseArgs(args) {

@@ -1820,6 +1820,8 @@ describe('package contract helpers', () => {
     assert.match(implementationSection, /malformed `compile` \/ `query_concepts` \/ `find_backlinks` \/ `find_orphans` \/ `overview` \/ `node_profile` \/ `similar_nodes` \/ `hubs` \/ `blast-radius` \/ `cycles` \/ `path` \/ `health` \/ `workspace-brief` payload/);
     assert.match(implementationSection, /fail-closed/);
     assert.match(doc, /`workspace-brief` non-json 의 `PROJECT별 포함 노드 수 \(project_scope\)` label, `HEALTH CHECKS` id:status:count coverage 와 `GROWTH` action/);
+    assert.match(doc, /`NEXT ACTIONS` label 은 `id` 와 `kind` 가 다르면 `components\/health_check`/);
+    assert.match(readme, /`NEXT ACTIONS` labels use `id\/kind` when those fields differ/);
     assert.match(doc, /`workspace-brief` non-json 의 `PROJECT별 포함 노드 수 \(project_scope\)` label/);
     assert.match(doc, /`workspace-brief --help` 의 `project_scope 포함 노드 요약`/);
     assert.match(doc, /`health` non-json 의 `pass:count` 출력/);
