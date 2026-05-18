@@ -866,7 +866,7 @@ const TOOLS = [
       'missing-required-fields / non-object row shape / unknown row fields surface as `{ slug, ok: false, error }` rows whose errors include a `concepts[n]` row label, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every unknown field with nearest hints and `Received fields: ...`, and duplicate input slugs report the later `concepts[n]` row plus first-seen `concepts[m]` with structured `rowName` / `firstSeenAt`; the rest ' +
       'still land. `concepts[]` order in the response matches the input. Cap = 50 per ' +
       'call (split into multiple batches for larger sets). NO atomic rollback — if you ' +
-      'need all-or-nothing semantics use single `add_concept` calls. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.',
+      'need all-or-nothing semantics use single `add_concept` calls. Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -1002,7 +1002,7 @@ const TOOLS = [
       '`relations[]` order in the response matches the input. Cap = 50 per call. ' +
       'NO atomic rollback — for all-or-nothing semantics use single `add_relation` calls. ' +
       'Tip: avoid `expected_mtime` in batch when multiple rows share the same `from` slug — ' +
-      'the first row mutates that file so the second would see a stale mtime. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.',
+      'the first row mutates that file so the second would see a stale mtime. Invalid-only batches return no row-level `changed` / `alreadyExists` write metadata and no top-level `postWriteMaintenance`. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.',
     inputSchema: {
       type: 'object',
       properties: {

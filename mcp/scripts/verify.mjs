@@ -1888,6 +1888,9 @@ export function toolsListSchemaFailure(tools) {
   if (!/structured `rowName` \/ `firstSeenAt`/.test(addConceptsTool?.description || '')) {
     return 'add_concepts description missing duplicate structured row repair guidance';
   }
+  if (!/Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`/.test(addConceptsTool?.description || '')) {
+    return 'add_concepts description missing invalid-only no-write metadata guidance';
+  }
   if (addConceptsTool.outputSchema?.type !== 'object') {
     return 'add_concepts outputSchema root drift';
   }
@@ -2009,6 +2012,9 @@ export function toolsListSchemaFailure(tools) {
   }
   if (!/structured `valueName` \/ `receivedValue` \/ `suggestion` \/ `allowedValues`/.test(addRelationsTool?.description || '')) {
     return 'add_relations description missing structured value repair guidance';
+  }
+  if (!/Invalid-only batches return no row-level `changed` \/ `alreadyExists` write metadata and no top-level `postWriteMaintenance`/.test(addRelationsTool?.description || '')) {
+    return 'add_relations description missing invalid-only no-write metadata guidance';
   }
   if (addRelationsTool.outputSchema?.type !== 'object') {
     return 'add_relations outputSchema root drift';
@@ -5007,6 +5013,14 @@ export function batchRowIsolationFailure(response, key, label) {
     return `${label} row-isolation response unexpectedly included postWriteMaintenance`;
   }
   const [nonObjectRow, unknownFieldRow, thirdRow, fourthRow, fifthRow] = rows;
+  const writeMetadataKeys = ['changed', 'alreadyExists', 'postWriteMaintenance'];
+  for (const [index, row] of rows.entries()) {
+    if (row?.ok !== false) continue;
+    const present = writeMetadataKeys.filter((keyName) => Object.prototype.hasOwnProperty.call(row || {}, keyName));
+    if (present.length > 0) {
+      return `${label} row-isolation failed row ${index} unexpectedly included write metadata: ${present.join(', ')}`;
+    }
+  }
   const singleUnknownFieldRow = key === 'relations' ? fourthRow : fifthRow;
   if (nonObjectRow?.ok !== false || typeof nonObjectRow.error !== 'string' || !/must be an object/i.test(nonObjectRow.error)) {
     return `${label} row-isolation response missing non-object row error`;

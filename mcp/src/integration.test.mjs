@@ -748,7 +748,9 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
     const query = findDesc("query_ontology");
     const validate = findDesc("validate_vault");
     const addC = findDesc("add_concept");
+    const addCs = findDesc("add_concepts");
     const addR = findDesc("add_relation");
+    const addRs = findDesc("add_relations");
     assert.ok(getC && /get_concepts/.test(getC), "get_concept → get_concepts hint");
     assert.ok(
       getCs && /Missing or invalid slug rows return/.test(getCs) && /later valid slugs still resolve/.test(getCs),
@@ -766,11 +768,21 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       "validate_vault first-contact before writes hint",
     );
     assert.ok(addC && /add_concepts/.test(addC), "add_concept → add_concepts hint");
+    assert.match(
+      addCs ?? "",
+      /Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`/,
+      "add_concepts invalid-only batches are visibly non-writing",
+    );
     assert.ok(addR && /add_relations/.test(addR), "add_relation → add_relations hint");
     assert.match(
       addR ?? "",
       /Invalid relation `type`[\s\S]*no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata/,
       "add_relation invalid-type preflight is visibly non-writing",
+    );
+    assert.match(
+      addRs ?? "",
+      /Invalid-only batches return no row-level `changed` \/ `alreadyExists` write metadata and no top-level `postWriteMaintenance`/,
+      "add_relations invalid-only batches are visibly non-writing",
     );
     for (const toolName of [
       "add_concept",

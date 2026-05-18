@@ -7,6 +7,7 @@ import { assertPnpmScriptsExist } from "./lib/pnpm-script-refs.mjs";
 
 import {
   batchRowRepairSummary,
+  batchWriteMetadataAbsenceSummary,
   buildDogfoodRequests,
   componentSummary,
   createUtf8Accumulator,
@@ -1367,7 +1368,7 @@ function makeDogfoodToolsList() {
         };
       }
       if (name === "add_concepts") {
-        tool.description += " Batch rows isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every unknown field with nearest hints and Received fields, and duplicate input slugs report the later concepts[n] row plus first-seen `concepts[m]` with structured `rowName` / `firstSeenAt`.";
+        tool.description += " Batch rows isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every unknown field with nearest hints and Received fields, and duplicate input slugs report the later concepts[n] row plus first-seen `concepts[m]` with structured `rowName` / `firstSeenAt`. Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`.";
         tool.inputSchema.required = ["concepts"];
         tool.inputSchema.properties.concepts = { type: "array", maxItems: 50 };
         tool.outputSchema = {
@@ -1437,7 +1438,7 @@ function makeDogfoodToolsList() {
         };
       }
       if (name === "add_relations") {
-        tool.description += " Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields.";
+        tool.description += " Batch rows isolate non-object row shape, unknown type, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`; unknown type rows include a closest-value hint with structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`; single unknown-field rows include `receivedField` plus one-row `unknownFields`; multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields. Invalid-only batches return no row-level `changed` / `alreadyExists` write metadata and no top-level `postWriteMaintenance`.";
         tool.inputSchema.required = ["relations"];
         tool.inputSchema.properties.relations = {
           type: "array",
@@ -1506,7 +1507,7 @@ function makeDogfoodToolsList() {
         };
       }
       if (name === "add_relation") {
-        tool.description += " Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields.";
+        tool.description += " Invalid relation `type` is rejected before endpoint slug resolution with a closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues` repair fields, with no `changed`, `alreadyExists`, or `postWriteMaintenance` write metadata.";
         tool.inputSchema.properties.type = {
           type: "string",
           enum: WRITE_RELATION_TYPE_VALUES,
@@ -3893,6 +3894,40 @@ describe("rpc response completion helpers", () => {
     );
   });
 
+  it("summarizes invalid-only batch no-write metadata evidence", () => {
+    assert.equal(
+      batchWriteMetadataAbsenceSummary(okShape.addRelationsRowRepair, okShape.addRelationsRowRepairStructured, "relations"),
+      "absent",
+    );
+    assert.equal(
+      batchWriteMetadataAbsenceSummary(
+        {
+          relations: [
+            okShape.addRelationsRowRepair.relations[0],
+            { ...okShape.addRelationsRowRepair.relations[1], changed: false },
+          ],
+        },
+        { relations: okShape.addRelationsRowRepair.relations.slice(0, 2) },
+        "relations",
+      ),
+      "present parsed.relations[1].changed",
+    );
+    assert.equal(
+      batchWriteMetadataAbsenceSummary(
+        { relations: okShape.addRelationsRowRepair.relations.slice(0, 2) },
+        {
+          relations: [
+            okShape.addRelationsRowRepair.relations[0],
+            { ...okShape.addRelationsRowRepair.relations[1], alreadyExists: false },
+          ],
+          postWriteMaintenance: {},
+        },
+        "relations",
+      ),
+      "present structuredContent.postWriteMaintenance, structuredContent.relations[1].alreadyExists",
+    );
+  });
+
   it("summarizes health check statuses for the final dogfood analysis", () => {
     assert.equal(healthCheckStatusSummary(null), "none");
     assert.equal(healthCheckStatusSummary([]), "none");
@@ -4043,7 +4078,7 @@ describe("rpc response completion helpers", () => {
     assert.match(usage, /pnpm test:mcp:dogfood:timeout/);
     assert.match(usage, /Narrow dogfood timeout\/help retry diagnostics/);
     assert.match(usage, /pnpm dogfood:test\s+Full dogfood helper regression suite when focused checks are not enough/);
-    assert.match(usage, /Dogfood helper, compile\/index gates, tools\/list inventory names \+ annotation coverage, row-label guidance, batch cap gates, invalid-only batch row repair smoke, strict closest-value and unknown-tool repair summary, vault warning and validate_vault problem gates, first-contact health\/growth\/sample-shape gates, maintenance work-queue shape \+ formatter checks, initialize safety\/recovery guidance, destructive dry-run, help\/argument\/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight \+ no-write metadata, strict graph kind filters, stderr warning checks/);
+    assert.match(usage, /Dogfood helper, compile\/index gates, tools\/list inventory names \+ annotation coverage, row-label guidance, batch cap gates, invalid-only batch row repair \+ no-write metadata smoke, strict closest-value and unknown-tool repair summary, vault warning and validate_vault problem gates, first-contact health\/growth\/sample-shape gates, maintenance work-queue shape \+ formatter checks, initialize safety\/recovery guidance, destructive dry-run, help\/argument\/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight \+ no-write metadata, strict graph kind filters, stderr warning checks/);
     assertPnpmScriptsExist(usage, ROOT_PKG.scripts);
   });
 

@@ -732,7 +732,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_concepts',
         description:
-          `Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, multi unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later \`concepts[n]\` row plus first-seen \`concepts[m]\` with structured \`rowName\` / \`firstSeenAt\`, and return ${postWriteDescription}.`,
+          `Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, multi unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later \`concepts[n]\` row plus first-seen \`concepts[m]\` with structured \`rowName\` / \`firstSeenAt\`. Invalid-only batches return no row-level write metadata and no top-level \`postWriteMaintenance\`, and changed batches return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['concepts'],
@@ -792,7 +792,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'add_relations',
         description:
-          `Batch writes isolate non-object row shape, unknown type with closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\`, and unknown row fields as ok:false rows with relations[n] labels and structured \`rowName\`, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, and multi unknown-field rows report every unknown field with nearest hints, \`allowedFields\`, \`receivedFields\`, and Received fields and return ${postWriteDescription}.`,
+          `Batch writes isolate non-object row shape, unknown type with closest-value hint and structured \`valueName\` / \`receivedValue\` / \`suggestion\` / \`allowedValues\`, and unknown row fields as ok:false rows with relations[n] labels and structured \`rowName\`, single unknown-field rows include \`receivedField\` plus one-row \`unknownFields\`, and multi unknown-field rows report every unknown field with nearest hints, \`allowedFields\`, \`receivedFields\`, and Received fields. Invalid-only batches return no row-level \`changed\` / \`alreadyExists\` write metadata and no top-level \`postWriteMaintenance\`, and changed batches return ${postWriteDescription}.`,
         inputSchema: {
           additionalProperties: false,
           required: ['relations'],
@@ -3791,6 +3791,16 @@ describe('verify.mjs first-contact gates', () => {
         ...tools.filter((tool) => tool.name !== 'add_concepts'),
         {
           ...tools.find((tool) => tool.name === 'add_concepts'),
+          description: 'Batch writes isolate non-object row shape and unknown row fields as ok:false rows with concepts[n] labels, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every unknown field with nearest hints and Received fields, duplicate input slugs report the later `concepts[n]` row plus first-seen `concepts[m]` with structured `rowName` / `firstSeenAt`, and return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+        },
+      ]),
+      'add_concepts description missing invalid-only no-write metadata guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'add_concepts'),
+        {
+          ...tools.find((tool) => tool.name === 'add_concepts'),
           inputSchema: {
             ...tools.find((tool) => tool.name === 'add_concepts').inputSchema,
             properties: { concepts: { type: 'array', maxItems: 51 } },
@@ -3995,6 +4005,16 @@ describe('verify.mjs first-contact gates', () => {
         },
       ]),
       'add_relations description missing structured value repair guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure([
+        ...tools.filter((tool) => tool.name !== 'add_relations'),
+        {
+          ...tools.find((tool) => tool.name === 'add_relations'),
+          description: 'Batch writes isolate non-object row shape, unknown type with closest-value hint and structured `valueName` / `receivedValue` / `suggestion` / `allowedValues`, and unknown row fields as ok:false rows with relations[n] labels and structured `rowName`, single unknown-field rows include `receivedField` plus one-row `unknownFields`, and multi unknown-field rows report every unknown field with nearest hints, `allowedFields`, `receivedFields`, and Received fields. Return postWriteMaintenance with byPhase bySeverity byKind score proposedAction and current-page nextExecutableAction / nextReviewAction pointers.',
+        },
+      ]),
+      'add_relations description missing invalid-only no-write metadata guidance',
     );
     assert.equal(
       toolsListSchemaFailure([
@@ -5248,6 +5268,41 @@ describe('verify.mjs first-contact gates', () => {
         },
       }, 'concepts', 'add_concepts'),
       'add_concepts row-isolation response unexpectedly included postWriteMaintenance',
+    );
+    assert.equal(
+      batchRowIsolationFailure({
+        result: {
+          content: [{
+            text: JSON.stringify({
+              concepts: [
+                conceptRows[0],
+                { ...conceptRows[1], changed: false },
+                conceptRows[2],
+                conceptRows[3],
+                conceptRows[4],
+              ],
+            }),
+          }],
+        },
+      }, 'concepts', 'add_concepts'),
+      'add_concepts row-isolation failed row 1 unexpectedly included write metadata: changed',
+    );
+    assert.equal(
+      batchRowIsolationFailure({
+        result: {
+          content: [{
+            text: JSON.stringify({
+              relations: [
+                relationRows[0],
+                relationRows[1],
+                { ...relationRows[2], alreadyExists: false },
+                relationRows[3],
+              ],
+            }),
+          }],
+        },
+      }, 'relations', 'add_relations'),
+      'add_relations row-isolation failed row 2 unexpectedly included write metadata: alreadyExists',
     );
     assert.equal(
       batchRowIsolationFailure({

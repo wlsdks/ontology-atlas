@@ -109,7 +109,7 @@ export function dogfoodUsage() {
     "  pnpm test:dogfood:script-refs   Shared help/package-script reference contract.",
     "  pnpm test:dogfood:compile-fix   Narrow dogfood compile --fix idempotence runner contract.",
     "  pnpm test:dogfood:status        Narrow dogfood status shortcut runner contract.",
-    "  pnpm test:mcp:dogfood           Dogfood helper, compile/index gates, tools/list inventory names + annotation coverage, row-label guidance, batch cap gates, invalid-only batch row repair smoke, strict closest-value and unknown-tool repair summary, vault warning and validate_vault problem gates, first-contact health/growth/sample-shape gates, maintenance work-queue shape + formatter checks, initialize safety/recovery guidance, destructive dry-run, help/argument/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight + no-write metadata, strict graph kind filters, stderr warning checks.",
+    "  pnpm test:mcp:dogfood           Dogfood helper, compile/index gates, tools/list inventory names + annotation coverage, row-label guidance, batch cap gates, invalid-only batch row repair + no-write metadata smoke, strict closest-value and unknown-tool repair summary, vault warning and validate_vault problem gates, first-contact health/growth/sample-shape gates, maintenance work-queue shape + formatter checks, initialize safety/recovery guidance, destructive dry-run, help/argument/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight + no-write metadata, strict graph kind filters, stderr warning checks.",
     "  pnpm test:mcp:dogfood:timeout   Narrow dogfood timeout/help retry diagnostics.",
     "  pnpm dogfood:test               Full dogfood helper regression suite when focused checks are not enough.",
   ].join("\n");
@@ -513,6 +513,29 @@ export function writeMetadataAbsenceSummary(response) {
     Object.prototype.hasOwnProperty.call(result || {}, key)
     || Object.prototype.hasOwnProperty.call(structured || {}, key)
   ));
+  return present.length > 0 ? `present ${present.join(", ")}` : "absent";
+}
+
+export function batchWriteMetadataAbsenceSummary(payload, structuredPayload, key) {
+  const keys = ["changed", "alreadyExists", "postWriteMaintenance"];
+  const present = [];
+  for (const [label, value] of [["parsed", payload], ["structuredContent", structuredPayload]]) {
+    if (!value || typeof value !== "object") continue;
+    for (const keyName of keys) {
+      if (Object.prototype.hasOwnProperty.call(value, keyName)) {
+        present.push(`${label}.${keyName}`);
+      }
+    }
+    const rows = Array.isArray(value[key]) ? value[key] : [];
+    for (const [index, row] of rows.entries()) {
+      if (row?.ok !== false) continue;
+      for (const keyName of keys) {
+        if (Object.prototype.hasOwnProperty.call(row || {}, keyName)) {
+          present.push(`${label}.${key}[${index}].${keyName}`);
+        }
+      }
+    }
+  }
   return present.length > 0 ? `present ${present.join(", ")}` : "absent";
 }
 
@@ -4941,6 +4964,7 @@ async function main() {
   ]) {
     console.log(`  ${toolName}: structuredContent ${structuredContentStatus(payload, structuredPayload)}`);
     console.log(`  ${toolName}: ${batchRowRepairSummary(payload?.[key])}`);
+    console.log(`  ${toolName}: write metadata ${batchWriteMetadataAbsenceSummary(payload, structuredPayload, key)}`);
   }
 
   // 4. find_evidence
@@ -6129,6 +6153,7 @@ async function main() {
   console.log(`  strict_graph_to_kind_filter: ${strictRepairSummary(strictGraphToKindFilter)}`);
   console.log(`  batch caps: get_concepts ${getConceptsBatchCap?.result?.isError === true} · add_concepts ${addConceptsBatchCap?.result?.isError === true} · add_relations ${addRelationsBatchCap?.result?.isError === true}`);
   console.log(`  batch row repair: add_concepts ${batchRowRepairSummary(addConceptsRowRepair?.concepts)} · add_relations ${batchRowRepairSummary(addRelationsRowRepair?.relations)}`);
+  console.log(`  batch row write metadata: add_concepts ${batchWriteMetadataAbsenceSummary(addConceptsRowRepair, addConceptsRowRepairStructured, "concepts")} · add_relations ${batchWriteMetadataAbsenceSummary(addRelationsRowRepair, addRelationsRowRepairStructured, "relations")}`);
   console.log(`  gate: ${failures.length === 0 ? `${COLORS.green}pass${COLORS.reset}` : `${COLORS.yellow}fail${COLORS.reset}`}`);
 
   const stderrWarnings = stderrWarningLines(stderr);
