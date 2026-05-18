@@ -1641,7 +1641,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /batch repair 안내도\s+같은 gate 에 포함/);
     assert.match(doc, /`concepts\[n\] duplicate slug in input batch; first seen at concepts\[m\]`/);
     assert.match(doc, /strict relation filter \/ `relation_check` row/);
-    assert.match(doc, /`depend_on -> depends_on`/);
+    assert.match(doc, /`dependencyTypes items depend_on->depends_on; allowed 9`/);
     assert.match(doc, /`Received arguments: \.\.\.`/);
     assert.match(doc, /`tools\/list` 의 `annotations\.title`/);
     assert.match(doc, /`annotations\.readOnlyHint`/);

@@ -1542,6 +1542,26 @@ function batchCapError(noun) {
   };
 }
 
+function strictValueErrorResponse(valueName, allowedValues, receivedValue, suggestion) {
+  const suggestionText = suggestion ? ` Did you mean "${suggestion}"?` : "";
+  const text = `${valueName} must be one of: ${allowedValues.join(", ")}. Received: "${receivedValue}".${suggestionText}`;
+  return {
+    result: {
+      isError: true,
+      content: [{ text }],
+      structuredContent: {
+        ok: false,
+        errorCode: "invalid_arguments",
+        error: text,
+        valueName,
+        receivedValue,
+        ...(suggestion ? { suggestion } : {}),
+        allowedValues,
+      },
+    },
+  };
+}
+
 const okShape = {
   initialize: makeDogfoodInitialize(),
   toolsList: makeDogfoodToolsList(),
@@ -3214,120 +3234,25 @@ const okShape = {
       },
     },
   },
-  strictMaintenancePhaseFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'phases items must be one of: validate, repair, link, materialize, review. Received: "repiar". Did you mean "repair"?' }],
-    },
-  },
-  strictMaintenanceSeverityFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'severities items must be one of: fail, warn, info. Received: "fatal". Did you mean "fail"?' }],
-    },
-  },
-  strictMaintenanceKindFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'kinds items must be one of: inspect_compile_issue, break_dependency_cycle, canonicalize_graph_arrays, resolve_dangling_reference, add_missing_relation, materialize_external_element, unassigned_node, empty_domain. Received: "add_mising_relation". Did you mean "add_missing_relation"?' }],
-    },
-  },
-  strictRelationFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'dependencyTypes items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
-    },
-  },
-  strictFindNeighborsTypeFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'types items must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
-    },
-  },
-  strictFindOrphansKindFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
-    },
-  },
-  strictFindOrphansExcludeKindFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'excludeKinds items must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
-    },
-  },
-  strictQueryConceptsKindFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
-    },
-  },
-  strictQueryConceptsHasKeyFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'has key must be one of: domains, capabilities, elements, dependencies, relates, contains, describes, depends_on. Received: "capabilties". Did you mean "capabilities"?' }],
-    },
-  },
-  strictListConceptsKindFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
-    },
-  },
-  strictRelationCheck: {
-    result: {
-      isError: true,
-      content: [{ text: 'type must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
-    },
-  },
-  strictAddRelation: {
-    result: {
-      isError: true,
-      content: [{ text: 'type must be one of: depends_on, relates, contains, describes, domains, capabilities, elements, domain. Received: "depend_on". Did you mean "depends_on"?' }],
-    },
-  },
-  strictGraphKindFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'kind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
-    },
-  },
-  strictRecommendRelationsKindFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'kind must be one of: capability, element. Received: "capabilty". Did you mean "capability"?' }],
-    },
-  },
-  strictRecommendRelationsUnsupportedKindFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'kind must be one of: capability, element. Received: "domain".' }],
-    },
-  },
-  strictMatchNodesSortFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'sort must be one of: degree, inDegree, outDegree, slug. Received: "outDegre". Did you mean "outDegree"?' }],
-    },
-  },
-  strictMatchEdgesTypeFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'type must be one of: domains, domain, capabilities, elements, dependencies, depends_on, relates, contains, describes. Received: "depend_on". Did you mean "depends_on"?' }],
-    },
-  },
-  strictGraphFromKindFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'fromKind must be one of: project, domain, capability, element, document, vault-readme. Received: "capabilty". Did you mean "capability"?' }],
-    },
-  },
-  strictGraphToKindFilter: {
-    result: {
-      isError: true,
-      content: [{ text: 'toKind must be one of: project, domain, capability, element, document, vault-readme, external, unresolved. Received: "externl". Did you mean "external"?' }],
-    },
-  },
+  strictMaintenancePhaseFilter: strictValueErrorResponse("phases items", ["validate", "repair", "link", "materialize", "review"], "repiar", "repair"),
+  strictMaintenanceSeverityFilter: strictValueErrorResponse("severities items", ["fail", "warn", "info"], "fatal", "fail"),
+  strictMaintenanceKindFilter: strictValueErrorResponse("kinds items", ["inspect_compile_issue", "break_dependency_cycle", "canonicalize_graph_arrays", "resolve_dangling_reference", "add_missing_relation", "materialize_external_element", "unassigned_node", "empty_domain"], "add_mising_relation", "add_missing_relation"),
+  strictRelationFilter: strictValueErrorResponse("dependencyTypes items", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
+  strictFindNeighborsTypeFilter: strictValueErrorResponse("types items", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
+  strictFindOrphansKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
+  strictFindOrphansExcludeKindFilter: strictValueErrorResponse("excludeKinds items", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
+  strictQueryConceptsKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
+  strictQueryConceptsHasKeyFilter: strictValueErrorResponse("has key", ["domains", "capabilities", "elements", "dependencies", "relates", "contains", "describes", "depends_on"], "capabilties", "capabilities"),
+  strictListConceptsKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
+  strictRelationCheck: strictValueErrorResponse("type", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
+  strictAddRelation: strictValueErrorResponse("type", ["depends_on", "relates", "contains", "describes", "domains", "capabilities", "elements", "domain"], "depend_on", "depends_on"),
+  strictGraphKindFilter: strictValueErrorResponse("kind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
+  strictRecommendRelationsKindFilter: strictValueErrorResponse("kind", ["capability", "element"], "capabilty", "capability"),
+  strictRecommendRelationsUnsupportedKindFilter: strictValueErrorResponse("kind", ["capability", "element"], "domain"),
+  strictMatchNodesSortFilter: strictValueErrorResponse("sort", ["degree", "inDegree", "outDegree", "slug"], "outDegre", "outDegree"),
+  strictMatchEdgesTypeFilter: strictValueErrorResponse("type", ["domains", "domain", "capabilities", "elements", "dependencies", "depends_on", "relates", "contains", "describes"], "depend_on", "depends_on"),
+  strictGraphFromKindFilter: strictValueErrorResponse("fromKind", ["project", "domain", "capability", "element", "document", "vault-readme"], "capabilty", "capability"),
+  strictGraphToKindFilter: strictValueErrorResponse("toKind", ["project", "domain", "capability", "element", "document", "vault-readme", "external", "unresolved"], "externl", "external"),
   getConceptsBatchCap: batchCapError("slugs"),
   addConceptsBatchCap: batchCapError("concepts"),
   addRelationsBatchCap: batchCapError("relations"),
@@ -3558,6 +3483,22 @@ describe("rpc response completion helpers", () => {
     assert.equal(
       strictRepairSummary(okShape.strictUnknownTool),
       "rejected true (tool list_concept->list_concepts; allowed 2)",
+    );
+    assert.equal(
+      strictRepairSummary(okShape.strictMaintenancePhaseFilter),
+      "rejected true (phases items repiar->repair; allowed 5)",
+    );
+    assert.equal(
+      strictRepairSummary(okShape.strictRelationFilter),
+      "rejected true (dependencyTypes items depend_on->depends_on; allowed 9)",
+    );
+    assert.equal(
+      strictRepairSummary(okShape.strictFindOrphansKindFilter),
+      "rejected true (kind capabilty->capability; allowed 6)",
+    );
+    assert.equal(
+      strictRepairSummary(okShape.strictRecommendRelationsUnsupportedKindFilter),
+      "rejected true (kind domain->?; allowed 2)",
     );
     assert.equal(
       strictClosestValueSummary(okShape.strictRelationFilter),

@@ -146,9 +146,10 @@ frontmatter / excerpt / neighbors / outgoingEdges / mtime 과 `structuredContent
 parsed/text JSON 값, `structuredContent` 값을 함께 출력해 agent 가 응답 contract drift 를 바로 좁힐 수 있게 한다.
 tool-level 실패 응답도 `structuredContent: { ok:false, errorCode, error }` 를 함께 반환해 MCP 클라이언트가
 텍스트 파싱 없이 retry / 수정 / 사용자 보고 분기를 결정할 수 있고, strict argument / enum / filter / type / write-safety verify 와 dogfood gate 가 `errorCode` 까지 확인한다.
-dogfood walk 의 strict tool-name / argument / multi-argument / enum 섹션은 `structuredContent` 의
+dogfood walk 의 strict tool-name / argument / multi-argument / enum / filter 섹션은 `structuredContent` 의
 repair field 를 읽어 `arg lmit->limit`, `args lmit->limit, summry->summary`,
-`operation overveiw->overview`, `tool list_concept->list_concepts` 형태의 compact repair summary 도 함께 출력한다.
+`operation overveiw->overview`, `tool list_concept->list_concepts`,
+`dependencyTypes items depend_on->depends_on` 형태의 compact repair summary 도 함께 출력한다.
 `get_concepts` 는 `list_concepts` 에서 얻은 실제 slug 최대 2개와 missing slug 를 섞어
 설치 검증에서도 batch reader 의 성공 row 와 partial row 계약을 확인한다.
 `find_evidence` / `find_backlinks` / `query_concepts` 는 resolved vault 에 실제 호출하고,
@@ -682,9 +683,10 @@ Analysis 가 `strict arguments + annotations + graph-query enums + graph kind en
 범위를 함께 출력한다. 그래서
 `schema: pass` 만 보고 어떤 schema 계약을 통과했는지 다시 README 나 verify script 를
 열어보지 않아도 된다.
-최종 Analysis 의 strict relation filter / `relation_check` row 는 closest-value
-smoke 의 핵심 증거인 `depend_on -> depends_on` 까지 표시해, 단순히 rejected 여부만
-통과한 것인지 suggestion 품질까지 검증된 것인지 구분할 수 있게 한다.
+최종 Analysis 의 strict relation filter / `relation_check` row 는 `structuredContent`
+기반 repair summary 로 closest-value smoke 의 핵심 증거인
+`dependencyTypes items depend_on->depends_on; allowed 9` 까지 표시해, 단순히 rejected 여부만
+통과한 것인지 suggestion 품질과 허용 enum 폭까지 검증된 것인지 구분할 수 있게 한다.
 strict `list_concepts.kind` row 는 `kind:"capabilty"` typo 를 사용해 첫 목록 필터가
 빈 결과로 숨지 않고 node-kind enum 에서 먼저 거절되는지 보여준다.
 strict `query_concepts.kind` / `query_concepts.has-key` row 는 `kind=capabilty` 와
