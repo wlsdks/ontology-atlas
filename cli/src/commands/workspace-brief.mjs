@@ -82,9 +82,10 @@ function render(result) {
       const h = hotspots[i];
       const kc = KIND_COLORS[h.kind] || COLORS.dim;
       const rank = String(i + 1).padStart(2);
+      const titleText = h.title && h.title !== h.slug ? ` ${COLORS.dim}— ${h.title}${COLORS.reset}` : '';
       process.stdout.write(
         `  ${COLORS.bold}${rank}${COLORS.reset} ${kc}${h.slug.padEnd(50)}${COLORS.reset}` +
-          ` ${COLORS.dim}deg ${h.degree}${COLORS.reset}\n`,
+          `${titleText} ${COLORS.dim}deg ${h.degree}${COLORS.reset}\n`,
       );
     }
     process.stdout.write('\n');

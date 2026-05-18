@@ -3003,6 +3003,7 @@ await test('workspace-brief — prints health check coverage', async () => {
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(r.stdout, /\x1b\[32mhealthy\x1b\[0m/);
+    assert.match(clean, /capabilities\/foo\s+— Foo/);
     assert.match(clean, /HEALTH CHECKS/);
     assert.match(clean, /compile_issues:pass:0/);
     assert.match(clean, /components:pass:1/);
