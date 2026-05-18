@@ -2447,6 +2447,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /dry validation evidence/);
     assert.match(doc, /initialize instruction gate 는 `EXPECTED_TOOLS`/);
     assert.match(doc, /agent-facing tool inventory/);
+    assert.match(doc, /`pass \(tool inventory \+ safety\/recovery guidance\)`/);
     assert.match(doc, /`write metadata: absent` \/ `strict_add_relation_write_metadata: absent`/);
     assert.match(doc, /stderr warning filtering/);
     assert.match(doc, /first-contact README read-only/);

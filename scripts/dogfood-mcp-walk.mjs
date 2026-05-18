@@ -466,6 +466,15 @@ export function toolsListInventoryStatus(inventoryFailure, options = {}) {
   return `${pass} (missing/extra/duplicate/invalid names)`;
 }
 
+export function initializeInstructionStatus(initialize, options = {}) {
+  const failure = initializeInstructionsFailure({ result: initialize });
+  if (failure) {
+    return options.color ? `${COLORS.yellow}${failure}${COLORS.reset}` : failure;
+  }
+  const pass = options.color ? `${COLORS.green}pass${COLORS.reset}` : "pass";
+  return `${pass} (tool inventory + safety/recovery guidance)`;
+}
+
 export function strictClosestValueSummary(response) {
   const rejected = response?.result?.isError === true;
   if (!rejected) return "rejected false";
@@ -4871,10 +4880,9 @@ async function main() {
   const initialize = getRpcResult(responses, 1);
 
   header("initialize — first-contact instructions");
-  const instructionFailure = initializeInstructionsFailure({ result: initialize });
   if (initialize) {
     console.log(`  server: ${initialize.serverInfo?.name || "unknown"}@${initialize.serverInfo?.version || "unknown"}`);
-    console.log(`  instructions: ${instructionFailure ? `${COLORS.yellow}${instructionFailure}${COLORS.reset}` : `${COLORS.green}pass${COLORS.reset}`}`);
+    console.log(`  instructions: ${initializeInstructionStatus(initialize, { color: true })}`);
   }
 
   header("tools/list — schema contract");
@@ -6065,6 +6073,7 @@ async function main() {
   console.log(`  vault size: ${total} 노드`);
   const inventoryFailure = toolsListInventoryFailure(toolsList?.tools);
   const schemaFailure = toolsListSchemaFailure(toolsList?.tools);
+  console.log(`  initialize instructions: ${initializeInstructionStatus(initialize)}`);
   console.log(`  tools/list inventory: ${toolsListInventoryStatus(inventoryFailure)}`);
   console.log(`  tools/list schema: ${toolsListSchemaStatus(schemaFailure)}`);
   console.log(`  tools/list annotations: ${toolsListAnnotationSummary(toolsList?.tools)}`);

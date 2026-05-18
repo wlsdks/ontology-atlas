@@ -23,6 +23,7 @@ import {
   graphStructuredContentSummary,
   healthCheckStatusSummary,
   importModuleEdgeKindSummary,
+  initializeInstructionStatus,
   maintenanceBucketSummary,
   maintenanceNextActionSummary,
   missingResponseLabels,
@@ -93,6 +94,7 @@ function makeDogfoodInitialize() {
     serverInfo: { name: "oh-my-ontology-mcp", version: "0.12.0" },
     instructions: [
       "Use read-only first-contact diagnosis before write tools.",
+      `Tool inventory includes ${EXPECTED_TOOLS.join(", ")}.`,
       "rename_concept refuses an existing `newSlug` unless overwrite: true is explicit.",
       "delete_concept force: true means accepting dangling referrers.",
       "Use expected_mtime when patching a previously-read concept.",
@@ -106,6 +108,8 @@ function makeDogfoodInitialize() {
       'Unknown argument "lmit" for list_concepts. Did you mean "limit"?',
       'Unknown arguments for list_concepts: "lmit" (did you mean "limit"?), "summry" (did you mean "summary"?)',
       "Batch add_concepts and add_relations isolate each non-object row and unknown row fields as ok:false.",
+      "Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`; if every row failed, treat the call as dry validation evidence and retry corrected rows.",
+      "Invalid-only batches return no row-level `changed` / `alreadyExists` write metadata and no top-level `postWriteMaintenance`; if every row failed, treat the call as dry validation evidence and retry corrected rows.",
       'Batch add_relations unknown type row errors include a closest-value hint such as Did you mean "depends_on"?',
       "Duplicate add_concepts input slugs report concepts[n] duplicate slug in input batch; first seen at concepts[m].",
       'operation must be one of: ... Invalid value: overveiw. Did you mean "overview"?',
@@ -3770,6 +3774,23 @@ describe("rpc response completion helpers", () => {
     );
   });
 
+  it("summarizes initialize instruction inventory and safety coverage for dogfood output", () => {
+    assert.equal(
+      initializeInstructionStatus(okShape.initialize),
+      "pass (tool inventory + safety/recovery guidance)",
+    );
+
+    assert.equal(
+      initializeInstructionStatus({
+        ...okShape.initialize,
+        instructions: okShape.initialize.instructions.replace("infer_imports", "infer imports"),
+      }),
+      "initialize instructions missing tool inventory entry: infer_imports",
+    );
+
+    assert.match(initializeInstructionStatus(okShape.initialize, { color: true }), /pass/);
+  });
+
   it("summarizes strict closest-value smoke details for final dogfood output", () => {
     assert.equal(
       strictRepairSummary(okShape.strictArgs),
@@ -4507,6 +4528,16 @@ describe("evaluateDogfoodGate", () => {
     assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, initialize: null }),
       ["initialize: missing response", "initialize: initialize instructions missing or too short"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        initialize: {
+          ...okShape.initialize,
+          instructions: okShape.initialize.instructions.replace("infer_imports", "infer imports"),
+        },
+      }),
+      ["initialize: initialize instructions missing tool inventory entry: infer_imports"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
