@@ -550,8 +550,8 @@ destructive dry-run gate, tools/list inventory name / annotation coverage, stric
 `pnpm test:mcp:dogfood:timeout` 으로 더 좁게 확인한다. 직접 verify help 는
 `mcp/` package directory 의 `npm run verify -- --help`, repo root 의
 `node mcp/scripts/verify.mjs --help`, 또는 root `pnpm --filter ./mcp verify -- --help` 로 확인하며,
-Focused checks 에 `pnpm dogfood:status` cheap preflight 를 먼저 보여줘 full installed-style
-verify 전에 health + workspace-brief 를 빠르게 고를 수 있게 하고,
+Focused checks 에 `pnpm dogfood:compile` compiler snapshot 과 `pnpm dogfood:status` health + brief
+cheap preflight 를 먼저 보여줘 full installed-style verify 전에 더 작은 gate 를 고를 수 있게 하고,
 root 에서 실제 vault 를 검증할 때는 `pnpm --filter ./mcp verify -- [vault] [--timeout-ms N]` 형태를 그대로 쓴다. pnpm separator `--` 는 직접 verify parser 에서 정규화한다. `list_concepts` project probe / `get_concept` / `get_concepts` /
 `query_concepts` / limited `query_concepts` / `analyze_repo_structure` / `infer_imports` / `find_neighbors`
 를 포함한 focused direct read smoke set 도 설명한다. 별도 limited `query_concepts` smoke 로 `slug!=project, limit=1`

@@ -743,6 +743,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:verify:timeout/);
   assert.match(directMcpVerifyHelp.stdout, /Narrow MCP verify timeout\/startup\/help\/empty-vault diagnostics/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference contract/);
+  assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:compile\s+Cheap root checkout compile_ontology summary snapshot/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:status\s+Cheap root checkout health \+ workspace-brief preflight before full verify/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:verify\s+Root checkout dogfood vault installed-style verify gate/);
 

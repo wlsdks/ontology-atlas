@@ -3587,6 +3587,7 @@ export function verifyUsage() {
     '                                  Narrow first-contact initialize-tool-inventory/initialize-safety-recovery/unknown-tool/write-safety/health-summary/advisory/read/sample-shape helper gates.\n' +
     '  pnpm test:mcp:verify:timeout    Narrow MCP verify timeout/startup/help/empty-vault diagnostics.\n' +
     '  pnpm test:dogfood:script-refs   Narrow help/package-script reference contract.\n' +
+    '  pnpm dogfood:compile            Cheap root checkout compile_ontology summary snapshot.\n' +
     '  pnpm dogfood:status             Cheap root checkout health + workspace-brief preflight before full verify.\n' +
     '  pnpm dogfood:verify             Root checkout dogfood vault installed-style verify gate.\n'
   );
