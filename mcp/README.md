@@ -68,6 +68,7 @@ pnpm dogfood:compile
 pnpm dogfood:health
 pnpm dogfood:brief
 pnpm dogfood:status
+pnpm test:dogfood:status
 pnpm dogfood:verify
 pnpm dogfood:test
 pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
@@ -111,7 +112,8 @@ snapshot without running the full installed-style MCP verify walk.
 without running the full installed-style MCP verify walk.
 `dogfood:brief` prints the dogfood vault `workspace_brief` JSON snapshot
 without running the full installed-style MCP verify walk.
-`dogfood:status` runs their human-readable status output together before escalating.
+`dogfood:status` always runs their human-readable status output together before escalating.
+`test:dogfood:status` checks that always-run shortcut contract without the full dogfood suite.
 Use `OMOT_TEST_NAME_PATTERN` with `pnpm integration:mcp` when the touched MCP
 integration case has a different name. For Node's `--test-name-pattern`, use
 `pnpm exec node --test --test-name-pattern "..." mcp/src/integration.test.mjs`
@@ -293,6 +295,7 @@ cd mcp && npm install
 pnpm dogfood:compile
 pnpm dogfood:health
 pnpm dogfood:brief
+pnpm dogfood:status
 pnpm dogfood:verify
 pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
 # Inside mcp/, the package-local verifier has the same smoke scope:

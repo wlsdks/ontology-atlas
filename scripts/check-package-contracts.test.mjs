@@ -152,10 +152,8 @@ describe('package contract helpers', () => {
     assert.equal(pkg.scripts?.['dogfood:compile'], 'node cli/src/index.mjs compile docs/ontology --summary --json');
     assert.equal(pkg.scripts?.['dogfood:health'], 'node cli/src/index.mjs health docs/ontology --json');
     assert.equal(pkg.scripts?.['dogfood:brief'], 'node cli/src/index.mjs workspace-brief docs/ontology --json');
-    assert.equal(
-      pkg.scripts?.['dogfood:status'],
-      'node cli/src/index.mjs health docs/ontology && node cli/src/index.mjs workspace-brief docs/ontology',
-    );
+    assert.equal(pkg.scripts?.['dogfood:status'], 'node scripts/dogfood-status.mjs');
+    assert.equal(pkg.scripts?.['test:dogfood:status'], 'node --test scripts/dogfood-status.test.mjs');
     assert.equal(pkg.scripts?.['dogfood:verify'], 'node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000');
     assert.equal(pkg.scripts?.['dogfood:help'], 'node scripts/dogfood-mcp-walk.mjs --help');
     assert.equal(pkg.scripts?.['dogfood:test'], 'node --test scripts/dogfood-mcp-walk.test.mjs');
@@ -275,6 +273,7 @@ describe('package contract helpers', () => {
       'pnpm dogfood:health',
       'pnpm dogfood:brief',
       'pnpm dogfood:status',
+      'pnpm test:dogfood:status',
       'pnpm dogfood:verify',
       'pnpm dogfood:walk',
       'pnpm dogfood:help',
@@ -299,9 +298,11 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /pnpm test:docs-vault\s+# focused docs-vault build\/check helper contract/);
     assert.match(checksDoc, /pnpm docs-vault:build\s+# refresh static dogfood manifest and public md/);
     assert.match(checksDoc, /\| Dogfood MCP smoke \| `pnpm dogfood:status` \| `pnpm dogfood:verify` \|/);
+    assert.match(checksDoc, /pnpm test:dogfood:status/);
     assert.match(checksDoc, /`pnpm dogfood:status` runs the cheap human-readable health \+ workspace-brief\s+gates together/);
-    assert.match(checksDoc, /Use `pnpm dogfood:verify` for the full installed-style dogfood\s+vault gate/);
-    assert.match(checksDoc, /`pnpm dogfood:test` only when the dogfood helper itself changed/);
+    assert.match(checksDoc, /still prints workspace-brief when health fails, then preserves\s+the first failing exit code/);
+    assert.match(checksDoc, /Use `pnpm dogfood:verify` for the full\s+installed-style dogfood vault gate/);
+    assert.match(checksDoc, /`pnpm dogfood:test` only when the dogfood\s+helper itself changed/);
     assert.match(checksDoc, /`pnpm test:mcp:docs` also guards Firebase Hosting config as static-only/);
     assert.match(checksDoc, /Explicit root\/MCP\/CLI\/dogfood docs contracts plus Firebase static-hosting guard/);
     assert.match(checksDoc, /intentionally lists explicit test-name fragments/);
@@ -677,6 +678,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm dogfood:health/);
     assert.match(section, /pnpm dogfood:brief/);
     assert.match(section, /pnpm dogfood:status/);
+    assert.match(section, /pnpm test:dogfood:status/);
     assert.match(section, /pnpm dogfood:verify/);
     assert.match(section, /pnpm dogfood:test/);
     assert.match(section, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000/);
@@ -684,7 +686,8 @@ describe('package contract helpers', () => {
     assert.match(section, /`dogfood:compile` prints the dogfood vault `compile_ontology` summary JSON\s+snapshot/);
     assert.match(section, /`dogfood:health` prints the dogfood vault fail-closed `health` JSON gate/);
     assert.match(section, /`dogfood:brief` prints the dogfood vault `workspace_brief` JSON snapshot/);
-    assert.match(section, /`dogfood:status` runs their human-readable status output together before escalating/);
+    assert.match(section, /`dogfood:status` always runs their human-readable status output together before escalating/);
+    assert.match(section, /`test:dogfood:status` checks that always-run shortcut contract without the full dogfood suite/);
     assert.match(section, /`pnpm dogfood:compile` is the shortest dogfood vault compiler snapshot/);
     assert.match(section, /`pnpm dogfood:health` is the shortest dogfood vault health gate/);
     assert.match(section, /`pnpm dogfood:brief` is the shortest dogfood vault first-contact snapshot/);
@@ -1220,6 +1223,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm dogfood:health/);
     assert.match(section, /pnpm dogfood:brief/);
     assert.match(section, /pnpm dogfood:status/);
+    assert.match(section, /pnpm test:dogfood:status/);
     assert.match(section, /pnpm dogfood:verify/);
     assert.match(section, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000/);
     assert.match(section, /pnpm cli:mcp-verify -- --help/);
@@ -1245,7 +1249,8 @@ describe('package contract helpers', () => {
     assert.match(section, /`dogfood:compile`\s+is the shortest root-checkout compiler summary JSON snapshot/);
     assert.match(section, /`dogfood:health`\s+is the shortest root-checkout fail-closed health JSON gate/);
     assert.match(section, /`dogfood:brief`\s+is\s+the shortest root-checkout first-contact JSON snapshot/);
-    assert.match(section, /`dogfood:status` runs\s+their human-readable status output together before escalating/);
+    assert.match(section, /`dogfood:status` always\s+runs both human-readable status outputs before escalating/);
+    assert.match(section, /`test:dogfood:status`\s+checks that always-run shortcut contract without the full dogfood suite/);
     assert.match(section, /`dogfood:verify` is\s+the full root-checkout dogfood vault gate/);
     assert.match(section, /`dogfood:test` is the full dogfood\s+helper regression suite to use only when focused helper checks are not enough/);
     assert.match(section, /`cli:mcp-verify` is the root-checkout shortcut for the CLI wrapper/);
@@ -2146,6 +2151,8 @@ describe('package contract helpers', () => {
     assert.match(regressionSection, /`compile --summary --json` compiler snapshot/);
     assert.match(regressionSection, /`pnpm dogfood:health` 는 docs\/ontology 의 `health --json` fail-closed health gate/);
     assert.match(regressionSection, /`pnpm dogfood:brief` 는 docs\/ontology 의 `workspace-brief --json` first-contact snapshot/);
+    assert.match(regressionSection, /`pnpm dogfood:status` 는 health 가 non-zero 여도 workspace-brief 를 계속 실행한 뒤 첫 실패 exit code 를 보존/);
+    assert.match(regressionSection, /`pnpm test:dogfood:status` 는 그 shortcut 계약만 spawn 없이 검증/);
     assert.match(regressionSection, /`workspace-brief --json` first-contact snapshot/);
     assert.match(regressionSection, /`pnpm dogfood:verify` 는 반복 dogfood vault 검증용 full gate/);
     assert.match(regressionSection, /`pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000`/);
@@ -2191,6 +2198,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`pnpm dogfood:compile` 은 repo root 의 가장 짧은 compiler snapshot/);
     assert.match(doc, /`pnpm dogfood:health` 는 repo root 의 가장 짧은 fail-closed health gate/);
     assert.match(doc, /`pnpm dogfood:brief` 는 repo root 의 가장 짧은 first-contact snapshot/);
+    assert.match(doc, /`pnpm dogfood:status` 는 health 가 non-zero 여도 workspace-brief 까지 출력한 뒤 첫 실패 exit code 를 보존/);
     assert.match(doc, /full 설치형 검증은 `pnpm dogfood:verify`/);
     assert.match(doc, /`pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000` 로 풀어 쓴다/);
     assert.match(doc, /dogfood helper \/ structuredContent 출력 계약/);

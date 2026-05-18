@@ -98,15 +98,17 @@ pnpm dogfood:compile
 pnpm dogfood:health
 pnpm dogfood:brief
 pnpm dogfood:status
+pnpm test:dogfood:status
 pnpm dogfood:verify
 pnpm dogfood:walk
 pnpm dogfood:help
 ```
 
 `pnpm dogfood:status` runs the cheap human-readable health + workspace-brief
-gates together. Use `pnpm dogfood:verify` for the full installed-style dogfood
-vault gate, and `pnpm dogfood:test` only when the dogfood helper itself changed or the
-focused `test:mcp:dogfood` subset is not enough.
+gates together. It still prints workspace-brief when health fails, then preserves
+the first failing exit code. Use `pnpm dogfood:verify` for the full
+installed-style dogfood vault gate, and `pnpm dogfood:test` only when the dogfood
+helper itself changed or the focused `test:mcp:dogfood` subset is not enough.
 
 For slower filesystems:
 
