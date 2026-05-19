@@ -83,6 +83,8 @@ can inspect ontology write candidates without raw JSON-RPC.
   i18n validator test changes now also print direct
   `pnpm exec node --test scripts/validate-messages.test.mjs` before the package
   shortcut.
+  GitHub issue/discussion community templates now route to `pnpm test:mcp:docs`
+  instead of having no focused advisor result.
   reference checks now resolve `pnpm -C <dir>` / `pnpm --dir <dir>` examples
   against the matching package scripts instead of the root package. CLI package
   lockfile changes now route to the same package-contract checks as MCP

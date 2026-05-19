@@ -495,6 +495,19 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm package:check']);
   });
 
+  it('suggests docs contracts for GitHub community templates', () => {
+    const result = suggestFocusedChecks([
+      '.github/DISCUSSIONS-CATEGORIES.md',
+      '.github/ISSUE_TEMPLATE/bug_report.yml',
+      '.github/ISSUE_TEMPLATE/config.yml',
+      '.github/ISSUE_TEMPLATE/feature_request.yml',
+      '.github/ISSUE_TEMPLATE/onboarding_friction.yml',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), ['pnpm test:mcp:docs']);
+    assert.deepEqual(result.escalations, []);
+  });
+
   it('suggests typecheck for the pre-push hook', () => {
     const result = suggestFocusedChecks(['.githooks/pre-push']);
 

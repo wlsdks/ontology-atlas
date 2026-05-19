@@ -18,8 +18,13 @@ const RULES = [
   },
   {
     command: 'pnpm test:mcp:docs',
-    reason: 'CI or PR quality-gate documentation changed',
-    matches: [/^\.github\/workflows\/ci\.yml$/, /^\.github\/PULL_REQUEST_TEMPLATE\.md$/],
+    reason: 'GitHub workflow or community template changed',
+    matches: [
+      /^\.github\/workflows\/ci\.yml$/,
+      /^\.github\/PULL_REQUEST_TEMPLATE\.md$/,
+      /^\.github\/DISCUSSIONS-CATEGORIES\.md$/,
+      /^\.github\/ISSUE_TEMPLATE\/[^/]+\.yml$/,
+    ],
   },
   {
     command: 'pnpm test:vault:validate',

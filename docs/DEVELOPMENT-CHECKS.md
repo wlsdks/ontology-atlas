@@ -145,6 +145,10 @@ GitHub quality-gate files (`.github/workflows/ci.yml`,
 `pnpm test:mcp:package`, with `pnpm package:check` as the escalation. The local
 `.githooks/pre-push` hook routes to `pnpm exec tsc --noEmit`, mirroring the
 hook's own enforced gate.
+GitHub community templates under `.github/ISSUE_TEMPLATE/*.yml` and
+`.github/DISCUSSIONS-CATEGORIES.md` route to `pnpm test:mcp:docs`, so issue and
+discussion intake copy is checked with the rest of the public agent workflow
+docs.
 CLI/MCP verify help changes route to `pnpm test:dogfood:script-refs` too,
 because those help surfaces list root `pnpm ...` shortcuts.
 Claude Code agent rules and skills under `.claude/LOOP-PRINCIPLES.md`,

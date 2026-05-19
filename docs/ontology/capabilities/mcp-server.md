@@ -551,6 +551,8 @@ Node test 를 package shortcut 앞에 먼저 보여줘 docs-vault / vault-audit 
 변경의 반복 검증 비용을 낮춘다.
 `scripts/validate-vault.mjs` 와 `scripts/validate-messages.test.mjs` 도 직접
 Node test 를 먼저 보여줘 validator 류 변경이 package shortcut 에서 시작하지 않게 한다.
+`.github/ISSUE_TEMPLATE/*.yml` 와 `.github/DISCUSSIONS-CATEGORIES.md` 도
+`pnpm test:mcp:docs` 로 라우팅해 community intake 문서가 no-mapping 상태로 남지 않게 한다.
 `pnpm dogfood:compile` 은 repo root 의 가장 짧은 compiler snapshot 이고,
 `pnpm dogfood:compile-fix` 는 repo root 의 `compile --fix` idempotence gate 로 canonicalization 이 docs/ontology diff 를 남기면 실패하고 `pnpm docs-vault:build` 후 재실행하라는 recovery 를 보여주며 성공 시 `[dogfood:compile-fix] docs/ontology unchanged` 요약으로 끝나며,
 `pnpm dogfood:health` 는 repo root 의 가장 짧은 fail-closed health gate 이며,
