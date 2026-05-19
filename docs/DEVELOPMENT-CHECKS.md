@@ -110,6 +110,9 @@ does not start from the entire E2E suite.
 `playwright.config.ts` changes route to the local-vault picker spec first,
 because it exercises the Playwright webServer startup path without beginning
 with every browser journey.
+`postcss.config.mjs` and `app/globals.css` route to the overflow sweep spec,
+which exercises global Tailwind/CSS output across the core responsive routes
+without starting from every Playwright journey.
 The local-first bundle guard is artifact-based: when `scripts/check-bundle.mjs`
 changes, run `pnpm build` first and then `pnpm bundle:check`.
 `next.config.ts` is static-export source-of-truth; changes route to
@@ -142,6 +145,7 @@ resolution changes are not left with a no-mapping advisor result.
 | `pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-schema.contract.test.ts` | Vitest config/setup smoke for jsdom setup plus contract discovery |
 | `pnpm exec playwright test tests/e2e/<name>.spec.ts` | Direct E2E spec printed by `pnpm checks:changed` for changed Playwright specs |
 | `pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts` | Playwright config/webServer smoke before broader E2E |
+| `pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts` | Global CSS/PostCSS responsive overflow smoke |
 | `pnpm lint` | ESLint and FSD boundary config |
 | `pnpm checks:changed` | Suggest first focused checks from changed paths |
 | `pnpm test:checks:changed` | Changed-path focused-check suggestion helper; use the direct `pnpm exec node --test scripts/lib/focused-check-suggestions.test.mjs` or `scripts/suggest-focused-checks.test.mjs` first when printed |

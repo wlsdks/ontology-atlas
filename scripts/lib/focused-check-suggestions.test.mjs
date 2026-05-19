@@ -477,6 +477,14 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests overflow smoke for global styling changes', () => {
+    const result = suggestFocusedChecks(['postcss.config.mjs', 'app/globals.css']);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts',
+    ]);
+  });
+
   it('suggests script-reference checks for docs whose pnpm references are scanned', () => {
     const result = suggestFocusedChecks([
       'README.md',

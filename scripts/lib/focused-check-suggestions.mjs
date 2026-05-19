@@ -136,6 +136,11 @@ const RULES = [
     matches: [/^playwright\.config\.ts$/],
   },
   {
+    command: 'pnpm exec playwright test tests/e2e/overflow-sweep.spec.ts',
+    reason: 'global CSS, Tailwind, or PostCSS styling behavior changed',
+    matches: [/^app\/globals\.css$/, /^postcss\.config\.mjs$/],
+  },
+  {
     command: 'pnpm test:dogfood:status',
     reason: 'dogfood status shortcut changed',
     matches: [/^scripts\/dogfood-status\.(?:mjs|test\.mjs)$/],

@@ -447,6 +447,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /E2E spec changes under `tests\/e2e\/` first print the exact Playwright command\s+\(`pnpm exec playwright test tests\/e2e\/<name>\.spec\.ts`\)/);
     assert.match(checksDoc, /`vitest\.config\.ts` \/ `vitest\.setup\.ts` changes route to a small config smoke:\s+`pnpm exec vitest run src\/shared\/lib\/cn\.test\.ts tests\/contract\/vault-schema\.contract\.test\.ts`/);
     assert.match(checksDoc, /`playwright\.config\.ts` changes route to the local-vault picker spec first/);
+    assert.match(checksDoc, /`postcss\.config\.mjs` and `app\/globals\.css` route to the overflow sweep spec/);
     assert.match(checksDoc, /when `scripts\/check-bundle\.mjs`\s+changes, run `pnpm build` first and then `pnpm bundle:check`/);
     assert.match(checksDoc, /`next\.config\.ts` is static-export source-of-truth; changes route to\s+`pnpm exec tsc --noEmit`, `pnpm build`, and then `pnpm bundle:check`/);
     assert.match(checksDoc, /`eslint\.config\.mjs` changes route to `pnpm lint`/);
@@ -461,6 +462,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm exec vitest run src\/shared\/lib\/cn\.test\.ts tests\/contract\/vault-schema\.contract\.test\.ts` \| Vitest config\/setup smoke for jsdom setup plus contract discovery \|/);
     assert.match(checksDoc, /\| `pnpm exec playwright test tests\/e2e\/<name>\.spec\.ts` \| Direct E2E spec printed by `pnpm checks:changed` for changed Playwright specs \|/);
     assert.match(checksDoc, /\| `pnpm exec playwright test tests\/e2e\/local-vault-picker\.spec\.ts` \| Playwright config\/webServer smoke before broader E2E \|/);
+    assert.match(checksDoc, /\| `pnpm exec playwright test tests\/e2e\/overflow-sweep\.spec\.ts` \| Global CSS\/PostCSS responsive overflow smoke \|/);
     assert.match(checksDoc, /\| `pnpm lint` \| ESLint and FSD boundary config \|/);
     assert.match(checksDoc, /\| `pnpm test:cli:lib` \| CLI shared helper contracts; use the direct sibling `pnpm exec node --test cli\/src\/lib\/<name>\.test\.mjs` first when `pnpm checks:changed` prints one \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli` \| Full CLI integration contracts; use when `cli\/src\/integration\.test\.mjs` itself changed \|/);
