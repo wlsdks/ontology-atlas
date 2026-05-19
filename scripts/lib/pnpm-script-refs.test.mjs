@@ -58,6 +58,26 @@ describe("pnpm script reference helpers", () => {
     );
   });
 
+  it("extracts package script references from pnpm directory options", () => {
+    assert.deepEqual(
+      pnpmScriptRefsFromText("pnpm -C mcp verify -- --help\npnpm --dir=cli test\npnpm --dir ./mcp run test:all"),
+      [
+        { script: "verify", filter: "./mcp" },
+        { script: "test", filter: "./cli" },
+        { script: "test:all", filter: "./mcp" },
+      ],
+    );
+    assert.deepEqual(
+      missingPnpmScripts("pnpm -C mcp verify -- --help\npnpm --dir cli missing", {}, {
+        filteredScripts: {
+          "./mcp": { verify: "node scripts/verify.mjs" },
+          "./cli": { test: "node --test src/lib/*.test.mjs" },
+        },
+      }),
+      ["./cli:missing"],
+    );
+  });
+
   it("extracts pnpm run script references", () => {
     assert.deepEqual(
       pnpmScriptsFromText("pnpm run dogfood:status\npnpm --silent run --if-present test:mcp:docs\npnpm run"),

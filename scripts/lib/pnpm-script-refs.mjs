@@ -47,9 +47,17 @@ function stripMatchingQuotes(value) {
   return text;
 }
 
+function normalizePackageSelector(value) {
+  const text = stripMatchingQuotes(value).replace(/\\/g, '/').replace(/\/+$/, '');
+  if (!text || text === '.') return null;
+  if (text.startsWith('./') || text.startsWith('../') || text.startsWith('/')) return text;
+  return `./${text}`;
+}
+
 function scriptRefFromPnpmArgs(argsText) {
   const args = String(argsText).trim().split(/\s+/).filter(Boolean);
   let filter = null;
+  let dir = null;
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
     if (arg === '--filter' || arg === '-F') {
@@ -57,17 +65,23 @@ function scriptRefFromPnpmArgs(argsText) {
       index += 1;
     } else if (arg.startsWith('--filter=')) {
       filter = stripMatchingQuotes(arg.slice('--filter='.length));
+    } else if (arg === '--dir' || arg === '-C') {
+      dir = normalizePackageSelector(args[index + 1] ?? '');
+      index += 1;
+    } else if (arg.startsWith('--dir=')) {
+      dir = normalizePackageSelector(arg.slice('--dir='.length));
     }
   }
+  const packageSelector = filter || dir;
   const commandIndex = nextCommandIndex(args);
   if (commandIndex < 0) {
     return null;
   }
   if (args[commandIndex] !== "run") {
-    return { script: stripMatchingQuotes(args[commandIndex]), filter };
+    return { script: stripMatchingQuotes(args[commandIndex]), filter: packageSelector };
   }
   const scriptIndex = nextCommandIndex(args, commandIndex + 1);
-  return scriptIndex < 0 ? null : { script: stripMatchingQuotes(args[scriptIndex]), filter };
+  return scriptIndex < 0 ? null : { script: stripMatchingQuotes(args[scriptIndex]), filter: packageSelector };
 }
 
 function collectPnpmCommandCandidates(text) {

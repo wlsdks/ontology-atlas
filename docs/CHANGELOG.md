@@ -73,7 +73,9 @@ can inspect ontology write candidates without raw JSON-RPC.
   smoke scripts now route to dry-run or small-input checks, and
   `benchmark:scale` now supports `--dry-run` without Codex spawn. Benchmark
   README updates also route through script-reference checks, so documented
-  benchmark commands cannot drift from `package.json` unnoticed. Script helper changes
+  benchmark commands cannot drift from `package.json` unnoticed. Package-script
+  reference checks now resolve `pnpm -C <dir>` / `pnpm --dir <dir>` examples
+  against the matching package scripts instead of the root package. Script helper changes
   for `focused-check-suggestions`,
   `pnpm-script-refs`, `test-name-pattern`, and `vault-census` now print direct
   `pnpm exec node --test scripts/lib/<name>.test.mjs` commands before broader

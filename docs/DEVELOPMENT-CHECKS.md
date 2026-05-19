@@ -262,6 +262,8 @@ suite. `pnpm test:dogfood:args` checks the shared pnpm separator and nearest
 `--help` hint helper without invoking any dogfood gate. `pnpm
 test:dogfood:script-refs` checks that help text and package script body
 `pnpm ...` references still resolve to root package scripts, that
+`pnpm -C mcp ...` / `pnpm --dir cli ...` directory-scoped examples resolve
+against the matching package scripts, that
 `scripts/lib/test-name-pattern.mjs` keeps focused filter parsing stable, and
 that focused Node test wrappers fail when a pattern matches 0 tests, print
 matched counts for failed focused runs, and split setup/import failures into
