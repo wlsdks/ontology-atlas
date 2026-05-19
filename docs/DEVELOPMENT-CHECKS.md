@@ -106,10 +106,13 @@ change scanned `pnpm ...` references.
 Changes to `scripts/check-package-contracts.test.mjs` also route to
 `pnpm test:mcp:docs`, because that mixed contract file owns public docs and
 dogfood docs assertions as well as package/release assertions.
+Root `pnpm-lock.yaml` and the MCP package lockfile route to
+`pnpm test:mcp:package` plus `pnpm package:check` escalation, so dependency
+resolution changes are not left with a no-mapping advisor result.
 
 | Command | Use when |
 |---|---|
-| `pnpm package:check` | Package files, entrypoints, docs contracts |
+| `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts |
 | `pnpm checks:changed` | Suggest first focused checks from changed paths |
 | `pnpm test:checks:changed` | Changed-path focused-check suggestion helper; use the direct `pnpm exec node --test scripts/lib/focused-check-suggestions.test.mjs` or `scripts/suggest-focused-checks.test.mjs` first when printed |
 | `pnpm test:cli:args` | CLI argument parser contracts |

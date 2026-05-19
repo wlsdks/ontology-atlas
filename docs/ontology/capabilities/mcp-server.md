@@ -584,6 +584,9 @@ empty-vault fail-fast 진단만 만질 때는 `pnpm test:mcp:verify:timeout` 으
 Focused checks 는 `mcp/src/integration.test.mjs` 변경 시 `pnpm integration:mcp` 로 broad integration harness 를 확인하게 하고, `mcp/scripts/verify.mjs` 또는 `mcp/src/verify-script.test.mjs` 변경 시
 `pnpm test:mcp:verify:first-contact` 와 `pnpm test:mcp:verify:timeout` 을
 `pnpm test:mcp:verify` 앞에 먼저 보여줘 설치 verify 수정 비용을 낮춘다.
+`mcp/package-lock.json` 변경도 package/release contract 인
+`pnpm test:mcp:package` 로 라우팅해 published MCP package 의 dependency
+resolution 변경이 focused-check advisor 의 no-mapping 결과로 빠지지 않게 한다.
 `maintenance_plan` filter enum / ready·missing cursor / resume cursor / dogfood
 work-queue shape / bucket·next-action formatter 만 바꿀 때는 `pnpm test:mcp:maintenance` 로
 verify helper 와 dogfood gate 의 maintenance 관련 subset 만 실행한다.

@@ -76,9 +76,11 @@ can inspect ontology write candidates without raw JSON-RPC.
   `pnpm exec node --test scripts/suggest-focused-checks.test.mjs` before
   `pnpm test:checks:changed`. CLI/MCP integration harness changes now route to
   `pnpm integration:cli` / `pnpm integration:mcp` instead of an unrelated
-  narrow subset. Changes to the shared package/docs contract test now also
-  route to `pnpm test:mcp:docs`, not only `pnpm test:mcp:package`, so docs
-  assertion edits do not get verified by a package-only subset that skips them.
+  narrow subset. Root and MCP lockfile changes now route to
+  `pnpm test:mcp:package` with package-check escalation instead of no focused
+  mapping. Changes to the shared package/docs contract test now also route to
+  `pnpm test:mcp:docs`, not only `pnpm test:mcp:package`, so docs assertion
+  edits do not get verified by a package-only subset that skips them.
 
 ## 2026-05-18 — MCP first-contact and packed-smoke hardening
 

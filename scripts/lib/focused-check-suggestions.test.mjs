@@ -416,6 +416,24 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests package contracts for lockfile changes', () => {
+    const rootLock = suggestFocusedChecks(['pnpm-lock.yaml']);
+
+    assert.deepEqual(rootLock.commands.map((row) => row.command), ['pnpm test:mcp:package']);
+    assert.deepEqual(rootLock.escalations.map((row) => row.command), ['pnpm package:check']);
+
+    const mcpLock = suggestFocusedChecks(['mcp/package-lock.json']);
+
+    assert.deepEqual(mcpLock.commands.map((row) => row.command), [
+      'pnpm test:mcp:package',
+      'pnpm dogfood:status',
+    ]);
+    assert.deepEqual(mcpLock.escalations.map((row) => row.command), [
+      'pnpm package:check',
+      'pnpm dogfood:verify',
+    ]);
+  });
+
   it('suggests narrow MCP verify tests before the full verify helper gate', () => {
     const result = suggestFocusedChecks([
       'mcp/scripts/verify.mjs',

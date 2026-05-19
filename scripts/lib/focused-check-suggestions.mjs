@@ -235,7 +235,9 @@ const RULES = [
     reason: 'package or release contract changed',
     matches: [
       /^package\.json$/,
+      /^pnpm-lock\.yaml$/,
       /^mcp\/package\.json$/,
+      /^mcp\/package-lock\.json$/,
       /^cli\/package\.json$/,
       /^scripts\/check-package-contracts\.(?:mjs|test\.mjs)$/,
       /^scripts\/smoke-packed-cli\.mjs$/,
@@ -270,7 +272,9 @@ const ESCALATIONS = [
     reason: 'package manifests, docs contracts, or release scripts changed',
     matches: [
       /^package\.json$/,
+      /^pnpm-lock\.yaml$/,
       /^mcp\/package\.json$/,
+      /^mcp\/package-lock\.json$/,
       /^cli\/package\.json$/,
       /^scripts\/check-package-contracts\.(?:mjs|test\.mjs)$/,
       /^scripts\/smoke-packed-cli\.mjs$/,
