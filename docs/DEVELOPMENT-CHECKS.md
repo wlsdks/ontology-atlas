@@ -90,7 +90,8 @@ checks first: `pnpm test:docs-vault`, `pnpm test:vault:validate`, or
 contracts, so `pnpm checks:changed` does not print a duplicate direct command
 for them. Any `docs/**/*.md` change routes to `pnpm docs-vault:check`, because
 the static docs vault indexes the whole docs tree, not only `docs/ontology`.
-Parser/schema/validator parity changes route to
+Parser/schema/validator parity changes, including the shared
+`tests/fixtures/vault-schema-cases.mjs` fixture, route to
 `pnpm test:contracts` before broader package or app checks. MCP core source
 changes first print the direct sibling unit command (`pnpm exec node --test
 mcp/src/<name>.test.mjs` when one exists), then `pnpm test:mcp:unit` before

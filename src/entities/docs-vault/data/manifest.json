@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-19T01:31:16.812Z",
+  "generatedAt": "2026-05-19T01:35:33.175Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -3377,8 +3377,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. The developer CLI now exposes MCP growthplan directly, so agents and humans can inspect on",
-      "wordCount": 16391,
-      "updatedAt": "2026-05-19T01:31:09.445Z",
+      "wordCount": 16393,
+      "updatedAt": "2026-05-19T01:35:13.525Z",
       "linksOut": [
         "slug"
       ]
@@ -3828,8 +3828,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 2542,
-      "updatedAt": "2026-05-19T01:29:17.841Z",
+      "wordCount": 2547,
+      "updatedAt": "2026-05-19T01:34:57.346Z",
       "linksOut": []
     },
     {
@@ -5405,8 +5405,8 @@
         }
       ],
       "excerpt": "frontmatter parser 가 lenient bydesign — 닫힘 빠짐 / 빈 키 / 잘못된 들여쓰기에서 조용히 빈 frontmatter 반환. 사용자가 .md 잘못 작성하면 노드가 graph 에서 조용히 사라짐. R11 에서 이 silent corruption 을 가시화. 1. CLI — pnpm vault:validate [vaultPath] validateVaultDocument(raw) — frontmatter corruption + graph array canonicality issue codes error 1+ 시 exit 1 (CI 게이트 가능",
-      "wordCount": 374,
-      "updatedAt": "2026-05-18T04:31:36.864Z",
+      "wordCount": 381,
+      "updatedAt": "2026-05-19T01:35:20.084Z",
       "linksOut": []
     },
     {

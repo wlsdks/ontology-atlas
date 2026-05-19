@@ -56,6 +56,7 @@ describe('focused check suggestions', () => {
       'cli/src/lib/parse-frontmatter.mjs',
       'src/shared/lib/validate-vault-document.ts',
       'tests/fixtures/validate-vault-cases.mjs',
+      'tests/fixtures/vault-schema-cases.mjs',
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [

@@ -57,7 +57,8 @@ can inspect ontology write candidates without raw JSON-RPC.
   narrower verification path is enough. Vault helper scripts now route to
   `pnpm test:docs-vault`, `pnpm test:vault:validate`, or
   `pnpm test:vault:audit` before broader docs/package gates; parser/schema/
-  validator parity files route to `pnpm test:contracts`; MCP core source/test
+  validator parity files, including `tests/fixtures/vault-schema-cases.mjs`,
+  route to `pnpm test:contracts`; MCP core source/test
   changes print direct sibling `pnpm exec node --test mcp/src/<name>.test.mjs`
   commands before `pnpm test:mcp:unit`; MCP suggestions source/test changes
   now print `pnpm exec node --test mcp/src/suggestions.test.mjs` before the

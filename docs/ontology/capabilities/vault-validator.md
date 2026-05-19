@@ -65,6 +65,6 @@ UI 측은 fast path 라 raw 의존 issue 와 whole-vault reference issue 는 det
 
 - `tests/contract/parse-frontmatter.contract.test.ts` — TS runtime / MCP package / scripts / CLI parser 4-way parity.
 - `tests/contract/frontmatter-writer.contract.test.ts` — MCP `buildMarkdown` / `serializeFrontmatter` 와 CLI writer 의 byte-for-byte markdown shape parity.
-- `pnpm test:contracts` — cross-package parser / writer / schema / validator parity contract suite 만 focused 실행한다.
+- `pnpm test:contracts` — cross-package parser / writer / schema / validator parity contract suite 만 focused 실행한다. `tests/fixtures/vault-schema-cases.mjs` 도 이 gate 로 route 된다.
 - `scripts/audit-vault-paths.test.mjs` — audit script argument parsing, pnpm separator, `--help`, invalid path regression.
 - `scripts/validate-vault-script.test.mjs` — script-level argument parsing, `--help`, unknown option regression. CI 에서는 `pnpm test:vault:validate` 로 focused 실행한다.

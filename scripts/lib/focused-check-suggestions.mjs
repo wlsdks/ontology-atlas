@@ -36,7 +36,7 @@ const RULES = [
     reason: 'cross-package parser/schema/validator contract changed',
     matches: [
       /^tests\/contract\//,
-      /^tests\/fixtures\/(?:frontmatter|frontmatter-writer|validate-vault)-cases\.mjs$/,
+      /^tests\/fixtures\/(?:frontmatter|frontmatter-writer|validate-vault|vault-schema)-cases\.mjs$/,
       /^mcp\/src\/(?:parser|schema|validate)\.mjs$/,
       /^cli\/src\/lib\/(?:parse-frontmatter|schema|validate)\.mjs$/,
       /^cli\/src\/commands\/validate\.mjs$/,
