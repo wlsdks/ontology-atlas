@@ -49,7 +49,12 @@ const RULES = [
   {
     command: 'pnpm integration:mcp:surface',
     reason: 'MCP JSON-RPC tool registry or handler surface changed',
-    matches: [/^mcp\/src\/index\.js$/, /^mcp\/src\/integration\.test\.mjs$/],
+    matches: [/^mcp\/src\/index\.js$/],
+  },
+  {
+    command: 'pnpm integration:mcp',
+    reason: 'MCP integration test harness or broad integration contract changed',
+    matches: [/^mcp\/src\/integration\.test\.mjs$/],
   },
   {
     command: 'pnpm integration:mcp:graph',
@@ -172,6 +177,11 @@ const RULES = [
     command: 'pnpm integration:cli:entry',
     reason: 'CLI entrypoint, help, or init dispatch changed',
     matches: [/^cli\/src\/index\.mjs$/, /^cli\/src\/lib\/cli-commands\.mjs$/],
+  },
+  {
+    command: 'pnpm integration:cli',
+    reason: 'CLI integration test harness or broad integration contract changed',
+    matches: [/^cli\/src\/integration\.test\.mjs$/],
   },
   {
     command: 'pnpm integration:cli:compile',

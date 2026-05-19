@@ -115,6 +115,7 @@ dogfood docs assertions as well as package/release assertions.
 | `pnpm test:cli:args` | CLI argument parser contracts |
 | `pnpm test:cli:lib` | CLI shared helper contracts; use the direct sibling `pnpm exec node --test cli/src/lib/<name>.test.mjs` first when `pnpm checks:changed` prints one |
 | `pnpm test:cli:mcp-call` | CLI MCP wrapper parser/spawn behavior |
+| `pnpm integration:cli` | Full CLI integration contracts; use when `cli/src/integration.test.mjs` itself changed |
 | `pnpm integration:cli:entry` | CLI entrypoint, help, command inventory, and `init` contracts |
 | `pnpm integration:cli:compile` | CLI compile / `--fix` canonicalization contracts |
 | `pnpm integration:cli:diagnosis` | CLI `health` / `workspace-brief` diagnosis contracts |
@@ -127,6 +128,7 @@ dogfood docs assertions as well as package/release assertions.
 | `pnpm test:mcp:docs` | Explicit root/MCP/CLI/dogfood docs contracts plus Firebase static-hosting and MCP registration-template guards |
 | `pnpm test:mcp:registration` | Source-checkout `.mcp.json` / `.mcp.json.example` registration templates |
 | `pnpm test:mcp:unit` | MCP core parser, vault, compiler, query, import-analysis, and JSON-RPC line helpers; use the direct sibling `pnpm exec node --test mcp/src/<name>.test.mjs` first when `pnpm checks:changed` prints one |
+| `pnpm integration:mcp` | Full MCP integration contracts; use when `mcp/src/integration.test.mjs` itself changed |
 | `pnpm integration:mcp:surface` | MCP JSON-RPC `tools/list`, `initialize`, and `tools/call` surface contracts |
 | `pnpm integration:mcp:repo-analysis` | MCP `analyze_repo_structure` / `infer_imports` code-to-vault contracts |
 | `pnpm integration:mcp:graph` | MCP `compile_ontology` / `query_ontology` graph artifact/query contracts |
@@ -242,6 +244,7 @@ Use these when the full integration suite is more than the change needs:
 
 ```bash
 OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli
+pnpm integration:cli
 pnpm integration:cli:entry
 pnpm integration:cli:compile
 pnpm integration:cli:mcp-verify
@@ -251,6 +254,7 @@ pnpm integration:cli:graph-write
 pnpm integration:cli:repo-analysis
 pnpm integration:cli:local-vault
 pnpm integration:cli:maintenance
+pnpm integration:mcp
 pnpm integration:mcp:surface
 pnpm integration:mcp:repo-analysis
 pnpm integration:mcp:graph

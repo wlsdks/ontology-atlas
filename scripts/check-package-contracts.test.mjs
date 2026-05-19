@@ -405,6 +405,7 @@ describe('package contract helpers', () => {
       'pnpm smoke:packed-cli',
       'OMOT_DOGFOOD_TIMEOUT_MS=12000 pnpm dogfood:walk',
       'OMOT_TEST_NAME_PATTERN="mcp-verify" pnpm integration:cli',
+      'pnpm integration:cli',
       'pnpm integration:cli:entry',
       'pnpm integration:cli:mcp-verify',
       'pnpm integration:cli:diagnosis',
@@ -414,6 +415,7 @@ describe('package contract helpers', () => {
       'pnpm integration:cli:local-vault',
       'pnpm integration:cli:growth',
       'pnpm integration:cli:maintenance',
+      'pnpm integration:mcp',
       'pnpm integration:mcp:surface',
       'pnpm integration:mcp:repo-analysis',
       'pnpm integration:mcp:graph',
@@ -442,6 +444,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /Parser\/schema\/validator parity changes route to\s+`pnpm test:contracts` before broader package or app checks/);
     assert.match(checksDoc, /CLI shared helper changes\s+do the same for `cli\/src\/lib\/<name>\.test\.mjs`, so run the printed direct\s+`pnpm exec node --test \.\.\.` command before `pnpm test:cli:lib`/);
     assert.match(checksDoc, /\| `pnpm test:cli:lib` \| CLI shared helper contracts; use the direct sibling `pnpm exec node --test cli\/src\/lib\/<name>\.test\.mjs` first when `pnpm checks:changed` prints one \|/);
+    assert.match(checksDoc, /\| `pnpm integration:cli` \| Full CLI integration contracts; use when `cli\/src\/integration\.test\.mjs` itself changed \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:entry` \| CLI entrypoint, help, command inventory, and `init` contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:diagnosis` \| CLI `health` \/ `workspace-brief` diagnosis contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:graph-read` \| CLI read-only graph command contracts \|/);
@@ -449,6 +452,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm integration:cli:repo-analysis` \| CLI `analyze` \/ `infer-imports` \/ `bootstrap` code-to-vault contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:local-vault` \| CLI local vault `add` \/ `import` \/ `list` \/ `find` \/ `validate` contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:growth` \| CLI `growth_plan` wrapper, candidate rendering, malformed payload, and argument contracts \|/);
+    assert.match(checksDoc, /\| `pnpm integration:mcp` \| Full MCP integration contracts; use when `mcp\/src\/integration\.test\.mjs` itself changed \|/);
     assert.match(checksDoc, /\| `pnpm integration:mcp:surface` \| MCP JSON-RPC `tools\/list`, `initialize`, and `tools\/call` surface contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:mcp:repo-analysis` \| MCP `analyze_repo_structure` \/ `infer_imports` code-to-vault contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:mcp:graph` \| MCP `compile_ontology` \/ `query_ontology` graph artifact\/query contracts \|/);

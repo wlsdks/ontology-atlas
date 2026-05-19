@@ -81,15 +81,22 @@ describe('focused check suggestions', () => {
   });
 
   it('suggests focused MCP surface integration for server entrypoint changes', () => {
-    const result = suggestFocusedChecks([
-      'mcp/src/index.js',
-      'mcp/src/integration.test.mjs',
-    ]);
+    const result = suggestFocusedChecks(['mcp/src/index.js']);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm test:mcp:unit',
       'pnpm integration:mcp:surface',
       'pnpm integration:mcp:write',
+      'pnpm dogfood:status',
+    ]);
+    assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
+  });
+
+  it('suggests broad MCP integration when the integration harness changes', () => {
+    const result = suggestFocusedChecks(['mcp/src/integration.test.mjs']);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm integration:mcp',
       'pnpm dogfood:status',
     ]);
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
@@ -299,6 +306,15 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test cli/src/lib/cli-commands.test.mjs',
       'pnpm test:cli:lib',
       'pnpm integration:cli:entry',
+      'pnpm dogfood:status',
+    ]);
+  });
+
+  it('suggests broad CLI integration when the integration harness changes', () => {
+    const result = suggestFocusedChecks(['cli/src/integration.test.mjs']);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm integration:cli',
       'pnpm dogfood:status',
     ]);
   });
