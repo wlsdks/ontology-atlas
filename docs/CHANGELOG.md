@@ -84,6 +84,8 @@ can inspect ontology write candidates without raw JSON-RPC.
   `pnpm bundle:check` instead of no focused mapping. `eslint.config.mjs`
   changes now route to `pnpm lint`; `tsconfig.json` changes route to
   `pnpm exec tsc --noEmit` plus CLI/MCP repo-analysis focused integrations.
+  GitHub CI / PR template changes now route to package-docs contract checks,
+  and the pre-push hook routes to its enforced `pnpm exec tsc --noEmit` gate.
   Changes to the shared package/docs contract test now also route to
   `pnpm test:mcp:docs`, not only `pnpm test:mcp:package`, so docs assertion
   edits do not get verified by a package-only subset that skips them.

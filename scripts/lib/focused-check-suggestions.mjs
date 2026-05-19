@@ -15,6 +15,11 @@ const RULES = [
     matches: [/^scripts\/build-docs-vault\.(?:mjs|test\.mjs)$/],
   },
   {
+    command: 'pnpm test:mcp:docs',
+    reason: 'CI or PR quality-gate documentation changed',
+    matches: [/^\.github\/workflows\/ci\.yml$/, /^\.github\/PULL_REQUEST_TEMPLATE\.md$/],
+  },
+  {
     command: 'pnpm test:vault:validate',
     reason: 'vault validator script changed',
     matches: [/^scripts\/validate-vault(?:-script)?\.test\.mjs$/, /^scripts\/validate-vault\.mjs$/],
@@ -126,7 +131,7 @@ const RULES = [
   {
     command: 'pnpm exec tsc --noEmit',
     reason: 'TypeScript or Next.js static export config changed',
-    matches: [/^next\.config\.ts$/, /^tsconfig\.json$/],
+    matches: [/^next\.config\.ts$/, /^tsconfig\.json$/, /^\.githooks\/pre-push$/],
   },
   {
     command: 'pnpm lint',
@@ -259,6 +264,8 @@ const RULES = [
       /^mcp\/package\.json$/,
       /^mcp\/package-lock\.json$/,
       /^cli\/package\.json$/,
+      /^\.github\/workflows\/ci\.yml$/,
+      /^\.github\/PULL_REQUEST_TEMPLATE\.md$/,
       /^scripts\/check-package-contracts\.(?:mjs|test\.mjs)$/,
       /^scripts\/smoke-packed-cli\.mjs$/,
     ],
@@ -296,6 +303,8 @@ const ESCALATIONS = [
       /^mcp\/package\.json$/,
       /^mcp\/package-lock\.json$/,
       /^cli\/package\.json$/,
+      /^\.github\/workflows\/ci\.yml$/,
+      /^\.github\/PULL_REQUEST_TEMPLATE\.md$/,
       /^scripts\/check-package-contracts\.(?:mjs|test\.mjs)$/,
       /^scripts\/smoke-packed-cli\.mjs$/,
     ],

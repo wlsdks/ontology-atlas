@@ -414,6 +414,25 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests docs and package contracts for GitHub quality-gate files', () => {
+    const result = suggestFocusedChecks([
+      '.github/workflows/ci.yml',
+      '.github/PULL_REQUEST_TEMPLATE.md',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm test:mcp:docs',
+      'pnpm test:mcp:package',
+    ]);
+    assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm package:check']);
+  });
+
+  it('suggests typecheck for the pre-push hook', () => {
+    const result = suggestFocusedChecks(['.githooks/pre-push']);
+
+    assert.deepEqual(result.commands.map((row) => row.command), ['pnpm exec tsc --noEmit']);
+  });
+
   it('suggests script-reference checks for docs whose pnpm references are scanned', () => {
     const result = suggestFocusedChecks([
       'README.md',

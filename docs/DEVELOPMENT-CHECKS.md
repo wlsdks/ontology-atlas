@@ -106,6 +106,11 @@ changes, run `pnpm build` first and then `pnpm bundle:check`.
 `eslint.config.mjs` changes route to `pnpm lint`. `tsconfig.json` changes route
 to `pnpm exec tsc --noEmit` plus the CLI/MCP repo-analysis focused integrations,
 because `infer_imports` also reads TypeScript path aliases.
+GitHub quality-gate files (`.github/workflows/ci.yml`,
+`.github/PULL_REQUEST_TEMPLATE.md`) route to `pnpm test:mcp:docs` and
+`pnpm test:mcp:package`, with `pnpm package:check` as the escalation. The local
+`.githooks/pre-push` hook routes to `pnpm exec tsc --noEmit`, mirroring the
+hook's own enforced gate.
 CLI/MCP verify help changes route to `pnpm test:dogfood:script-refs` too,
 because those help surfaces list root `pnpm ...` shortcuts.
 Root/MCP/CLI README changes and this file also route to that gate when they may
