@@ -101,6 +101,8 @@ focused-check advisor changes use the same pattern: direct
 `pnpm exec node --test scripts/...test.mjs` first, then the aggregate shortcut.
 The local-first bundle guard is artifact-based: when `scripts/check-bundle.mjs`
 changes, run `pnpm build` first and then `pnpm bundle:check`.
+`next.config.ts` is static-export source-of-truth; changes route to
+`pnpm exec tsc --noEmit`, `pnpm build`, and then `pnpm bundle:check`.
 CLI/MCP verify help changes route to `pnpm test:dogfood:script-refs` too,
 because those help surfaces list root `pnpm ...` shortcuts.
 Root/MCP/CLI README changes and this file also route to that gate when they may
@@ -116,6 +118,7 @@ resolution changes are not left with a no-mapping advisor result.
 |---|---|
 | `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts |
 | `pnpm bundle:check` | Local-first static export bundle guard; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
+| `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
 | `pnpm checks:changed` | Suggest first focused checks from changed paths |
 | `pnpm test:checks:changed` | Changed-path focused-check suggestion helper; use the direct `pnpm exec node --test scripts/lib/focused-check-suggestions.test.mjs` or `scripts/suggest-focused-checks.test.mjs` first when printed |
 | `pnpm test:cli:args` | CLI argument parser contracts |

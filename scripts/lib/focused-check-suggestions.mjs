@@ -124,14 +124,19 @@ const RULES = [
     matches: [/^scripts\/dogfood-status\.(?:mjs|test\.mjs)$/],
   },
   {
+    command: 'pnpm exec tsc --noEmit',
+    reason: 'Next.js static export config changed',
+    matches: [/^next\.config\.ts$/],
+  },
+  {
     command: 'pnpm build',
-    reason: 'static export artifact is needed before checking bundle guard changes',
-    matches: [/^scripts\/check-bundle\.mjs$/],
+    reason: 'static export artifact is needed before checking bundle-sensitive changes',
+    matches: [/^scripts\/check-bundle\.mjs$/, /^next\.config\.ts$/],
   },
   {
     command: 'pnpm bundle:check',
-    reason: 'local-first bundle guard changed',
-    matches: [/^scripts\/check-bundle\.mjs$/],
+    reason: 'local-first bundle or static export config changed',
+    matches: [/^scripts\/check-bundle\.mjs$/, /^next\.config\.ts$/],
   },
   {
     command: 'pnpm test:mcp:dogfood:timeout',

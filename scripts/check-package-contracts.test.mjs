@@ -444,9 +444,11 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /Parser\/schema\/validator parity changes route to\s+`pnpm test:contracts` before broader package or app checks/);
     assert.match(checksDoc, /CLI shared helper changes\s+do the same for `cli\/src\/lib\/<name>\.test\.mjs`, so run the printed direct\s+`pnpm exec node --test \.\.\.` command before `pnpm test:cli:lib`/);
     assert.match(checksDoc, /when `scripts\/check-bundle\.mjs`\s+changes, run `pnpm build` first and then `pnpm bundle:check`/);
+    assert.match(checksDoc, /`next\.config\.ts` is static-export source-of-truth; changes route to\s+`pnpm exec tsc --noEmit`, `pnpm build`, and then `pnpm bundle:check`/);
     assert.match(checksDoc, /Root `pnpm-lock\.yaml` and the MCP package lockfile route to\s+`pnpm test:mcp:package` plus `pnpm package:check` escalation/);
     assert.match(checksDoc, /\| `pnpm package:check` \| Package files, lockfiles, entrypoints, docs contracts \|/);
     assert.match(checksDoc, /\| `pnpm bundle:check` \| Local-first static export bundle guard; run after `pnpm build` when `scripts\/check-bundle\.mjs` changed \|/);
+    assert.match(checksDoc, /\| `pnpm exec tsc --noEmit` \| TypeScript and Next config type safety \|/);
     assert.match(checksDoc, /\| `pnpm test:cli:lib` \| CLI shared helper contracts; use the direct sibling `pnpm exec node --test cli\/src\/lib\/<name>\.test\.mjs` first when `pnpm checks:changed` prints one \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli` \| Full CLI integration contracts; use when `cli\/src\/integration\.test\.mjs` itself changed \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:entry` \| CLI entrypoint, help, command inventory, and `init` contracts \|/);

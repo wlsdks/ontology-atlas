@@ -388,6 +388,16 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests static export gates when Next config changes', () => {
+    const result = suggestFocusedChecks(['next.config.ts']);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec tsc --noEmit',
+      'pnpm build',
+      'pnpm bundle:check',
+    ]);
+  });
+
   it('suggests script-reference checks for docs whose pnpm references are scanned', () => {
     const result = suggestFocusedChecks([
       'README.md',
