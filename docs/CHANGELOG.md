@@ -89,6 +89,8 @@ can inspect ontology write candidates without raw JSON-RPC.
   Claude Code hook wiring and npm publish guard changes now route to
   `pnpm test:claude:hooks`, which exercises the real hook script and settings
   references without starting broader docs/package checks.
+  Any `docs/**/*.md` change now routes to `pnpm docs-vault:check`, matching the
+  static docs-vault builder's actual input scope.
   App/source TypeScript files under `app/` or `src/` now route to direct
   sibling Vitest tests when available, so small UI/helper changes get a narrow
   `pnpm exec vitest run <file>.test.ts[x]` first check instead of no mapping.

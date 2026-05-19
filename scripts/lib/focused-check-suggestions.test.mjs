@@ -30,6 +30,12 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests docs-vault freshness for any markdown doc indexed by the static docs vault', () => {
+    const result = suggestFocusedChecks(['docs/FEATURES.md']);
+
+    assert.deepEqual(result.commands.map((row) => row.command), ['pnpm docs-vault:check']);
+  });
+
   it('suggests narrow vault tooling tests for vault helper scripts', () => {
     const result = suggestFocusedChecks([
       'scripts/build-docs-vault.mjs',
@@ -545,6 +551,7 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm docs-vault:check',
       'pnpm test:dogfood:script-refs',
       'pnpm test:mcp:docs',
       'pnpm dogfood:status',

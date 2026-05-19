@@ -8,8 +8,8 @@ const RULES = [
   },
   {
     command: 'pnpm docs-vault:check',
-    reason: 'dogfood ontology docs or generated manifest changed',
-    matches: [/^docs\/ontology\//, /^src\/entities\/docs-vault\/data\/manifest\.json$/],
+    reason: 'static docs-vault input or generated manifest changed',
+    matches: [/^docs\/.+\.md$/, /^src\/entities\/docs-vault\/data\/manifest\.json$/],
   },
   {
     command: 'pnpm test:docs-vault',
