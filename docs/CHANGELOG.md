@@ -68,7 +68,9 @@ can inspect ontology write candidates without raw JSON-RPC.
   dogfood gates. Script helper changes for `focused-check-suggestions`,
   `pnpm-script-refs`, `test-name-pattern`, and `vault-census` now print direct
   `pnpm exec node --test scripts/lib/<name>.test.mjs` commands before broader
-  helper gates, and focused-check CLI changes print
+  helper gates; focused node-test runner changes print
+  `pnpm exec node --test scripts/run-focused-node-test.test.mjs` before the
+  script-reference aggregate; and focused-check CLI changes print
   `pnpm exec node --test scripts/suggest-focused-checks.test.mjs` before
   `pnpm test:checks:changed`. Changes to the shared package/docs contract test
   now also route to `pnpm test:mcp:docs`, not only `pnpm test:mcp:package`, so

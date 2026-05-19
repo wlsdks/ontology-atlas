@@ -94,8 +94,9 @@ readme-flow integration or full dogfood verification. CLI shared helper changes
 do the same for `cli/src/lib/<name>.test.mjs`, so run the printed direct
 `pnpm exec node --test ...` command before `pnpm test:cli:lib` when only one
 helper moved.
-Script helper and focused-check advisor changes use the same pattern: direct
-`pnpm exec node --test scripts/...test.mjs` first, then the aggregate shortcut.
+Script helper, focused node-test runner, and focused-check advisor changes use
+the same pattern: direct `pnpm exec node --test scripts/...test.mjs` first, then
+the aggregate shortcut.
 CLI/MCP verify help changes route to `pnpm test:dogfood:script-refs` too,
 because those help surfaces list root `pnpm ...` shortcuts.
 Root/MCP/CLI README changes and this file also route to that gate when they may
