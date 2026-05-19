@@ -484,7 +484,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /Use `pnpm test:mcp:maintenance` when only `maintenance_plan` filter, cursor,\s+resume, or formatter behavior changed/);
     assert.match(checksDoc, /\| `pnpm test:mcp:suggestions` \| Enum and argument suggestion quality; use the direct sibling `pnpm exec node --test mcp\/src\/suggestions\.test\.mjs` first when `pnpm checks:changed` prints one \|/);
     assert.match(checksDoc, /CLI\/MCP verify help changes route to `pnpm test:dogfood:script-refs` too,\s+because those help surfaces list root `pnpm \.\.\.` shortcuts/);
-    assert.match(checksDoc, /`pnpm checks:changed` routes dogfood shortcut helper changes to\s+`pnpm test:dogfood:args`, `pnpm test:dogfood:script-refs`, or\s+`pnpm test:dogfood:compile-fix` before broader dogfood gates/);
+    assert.match(checksDoc, /`pnpm checks:changed` routes dogfood shortcut helper changes to their direct\s+`pnpm exec node --test \.\.\.test\.mjs` test first, then `pnpm test:dogfood:args`,\s+`pnpm test:dogfood:script-refs`, or `pnpm test:dogfood:compile-fix` before\s+broader dogfood gates/);
     assert.match(checksDoc, /`pnpm test:mcp:docs` also guards Firebase Hosting config as static-only/);
     assert.match(checksDoc, /`pnpm test:mcp:docs` also guards\s+the tracked `.mcp.json` and `.mcp.json.example` source-checkout templates/);
     assert.match(checksDoc, /Use `pnpm test:mcp:registration` when only those\s+MCP registration templates changed/);

@@ -63,9 +63,11 @@ can inspect ontology write candidates without raw JSON-RPC.
   now print `pnpm exec node --test mcp/src/suggestions.test.mjs` before the
   broader `pnpm test:mcp:suggestions`; CLI shared helper source/test changes
   print direct sibling `pnpm exec node --test cli/src/lib/<name>.test.mjs`
-  commands before `pnpm test:cli:lib`; dogfood helper scripts route to
-  `pnpm test:dogfood:args` or `pnpm test:dogfood:compile-fix` before broader
-  dogfood gates. Script helper changes for `focused-check-suggestions`,
+  commands before `pnpm test:cli:lib`; dogfood helper scripts now print direct
+  `pnpm exec node --test scripts/...test.mjs` commands before
+  `pnpm test:dogfood:args`, `pnpm test:dogfood:compile-fix`, or
+  `pnpm test:dogfood:status` and broader dogfood gates. Script helper changes
+  for `focused-check-suggestions`,
   `pnpm-script-refs`, `test-name-pattern`, and `vault-census` now print direct
   `pnpm exec node --test scripts/lib/<name>.test.mjs` commands before broader
   helper gates; focused node-test runner changes print

@@ -94,9 +94,9 @@ readme-flow integration or full dogfood verification. CLI shared helper changes
 do the same for `cli/src/lib/<name>.test.mjs`, so run the printed direct
 `pnpm exec node --test ...` command before `pnpm test:cli:lib` when only one
 helper moved.
-Script helper, focused node-test runner, and focused-check advisor changes use
-the same pattern: direct `pnpm exec node --test scripts/...test.mjs` first, then
-the aggregate shortcut.
+Dogfood shortcut helpers, script helpers, focused node-test runner, and
+focused-check advisor changes use the same pattern: direct
+`pnpm exec node --test scripts/...test.mjs` first, then the aggregate shortcut.
 CLI/MCP verify help changes route to `pnpm test:dogfood:script-refs` too,
 because those help surfaces list root `pnpm ...` shortcuts.
 Root/MCP/CLI README changes and this file also route to that gate when they may
@@ -214,9 +214,10 @@ installed-style dogfood vault gate, and `pnpm dogfood:test` only when the dogfoo
 helper itself changed or the focused `test:mcp:dogfood` subset is not enough.
 Use `pnpm test:mcp:maintenance` when only `maintenance_plan` filter, cursor,
 resume, or formatter behavior changed.
-`pnpm checks:changed` routes dogfood shortcut helper changes to
-`pnpm test:dogfood:args`, `pnpm test:dogfood:script-refs`, or
-`pnpm test:dogfood:compile-fix` before broader dogfood gates.
+`pnpm checks:changed` routes dogfood shortcut helper changes to their direct
+`pnpm exec node --test ...test.mjs` test first, then `pnpm test:dogfood:args`,
+`pnpm test:dogfood:script-refs`, or `pnpm test:dogfood:compile-fix` before
+broader dogfood gates.
 It routes dogfood MCP helper changes to `pnpm test:mcp:dogfood:timeout`
 before the broader `pnpm test:mcp:dogfood` gate.
 It routes MCP verify helper changes to `pnpm test:mcp:verify:first-contact`

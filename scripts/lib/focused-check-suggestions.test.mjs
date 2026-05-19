@@ -307,11 +307,17 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks([
       'scripts/lib/dogfood-args.mjs',
       'scripts/dogfood-compile-fix.test.mjs',
+      'scripts/dogfood-status.mjs',
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test scripts/lib/dogfood-args.test.mjs',
+      'pnpm exec node --test scripts/dogfood-compile-fix.test.mjs',
+      'pnpm exec node --test scripts/dogfood-status.test.mjs',
       'pnpm test:dogfood:args',
       'pnpm test:dogfood:compile-fix',
+      'pnpm test:dogfood:status',
+      'pnpm test:mcp:maintenance',
       'pnpm dogfood:status',
     ]);
   });

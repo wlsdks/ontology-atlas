@@ -312,8 +312,14 @@ const CLI_DIRECT_LIB_TESTS = new Map([
 const CLI_DIRECT_LIB_TEST_FILES = new Set(CLI_DIRECT_LIB_TESTS.values());
 
 const SCRIPT_DIRECT_LIB_TESTS = new Map([
+  ['scripts/dogfood-compile-fix.mjs', 'scripts/dogfood-compile-fix.test.mjs'],
+  ['scripts/dogfood-compile-fix.test.mjs', 'scripts/dogfood-compile-fix.test.mjs'],
+  ['scripts/dogfood-status.mjs', 'scripts/dogfood-status.test.mjs'],
+  ['scripts/dogfood-status.test.mjs', 'scripts/dogfood-status.test.mjs'],
   ['scripts/run-focused-node-test.mjs', 'scripts/run-focused-node-test.test.mjs'],
   ['scripts/run-focused-node-test.test.mjs', 'scripts/run-focused-node-test.test.mjs'],
+  ['scripts/lib/dogfood-args.mjs', 'scripts/lib/dogfood-args.test.mjs'],
+  ['scripts/lib/dogfood-args.test.mjs', 'scripts/lib/dogfood-args.test.mjs'],
   ['scripts/lib/focused-check-suggestions.mjs', 'scripts/lib/focused-check-suggestions.test.mjs'],
   ['scripts/lib/pnpm-script-refs.mjs', 'scripts/lib/pnpm-script-refs.test.mjs'],
   ['scripts/lib/test-name-pattern.mjs', 'scripts/lib/test-name-pattern.test.mjs'],
