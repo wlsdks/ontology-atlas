@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-19T00:21:07.490Z",
+  "generatedAt": "2026-05-19T00:25:09.137Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -3828,8 +3828,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 1950,
-      "updatedAt": "2026-05-19T00:20:51.966Z",
+      "wordCount": 1970,
+      "updatedAt": "2026-05-19T00:24:58.839Z",
       "linksOut": []
     },
     {

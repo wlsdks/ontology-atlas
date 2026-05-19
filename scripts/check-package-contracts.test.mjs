@@ -438,6 +438,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /`pnpm checks:changed` reads tracked changes from `git diff --name-only HEAD`\s+plus untracked files from `git ls-files --others --exclude-standard`, excluding\s+local `\.agents\/` and `\.codex\/` agent state/);
     assert.match(checksDoc, /Pass paths after `--` to inspect a\s+planned file set before editing/);
     assert.match(checksDoc, /Vault helper changes route to their narrow\s+checks first: `pnpm test:docs-vault`, `pnpm test:vault:validate`, or\s+`pnpm test:vault:audit`/);
+    assert.match(checksDoc, /These shortcuts are already single-file `node --test`\s+contracts, so `pnpm checks:changed` does not print a duplicate direct command\s+for them/);
     assert.match(checksDoc, /Parser\/schema\/validator parity changes route to\s+`pnpm test:contracts` before broader package or app checks/);
     assert.match(checksDoc, /CLI shared helper changes\s+do the same for `cli\/src\/lib\/<name>\.test\.mjs`, so run the printed direct\s+`pnpm exec node --test \.\.\.` command before `pnpm test:cli:lib`/);
     assert.match(checksDoc, /\| `pnpm test:cli:lib` \| CLI shared helper contracts; use the direct sibling `pnpm exec node --test cli\/src\/lib\/<name>\.test\.mjs` first when `pnpm checks:changed` prints one \|/);

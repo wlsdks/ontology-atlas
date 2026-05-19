@@ -86,7 +86,9 @@ planned file set before editing. It prints first checks plus explicit
 escalation gates, and is only an advisor; still add runtime/browser checks when
 the touched behavior needs them. Vault helper changes route to their narrow
 checks first: `pnpm test:docs-vault`, `pnpm test:vault:validate`, or
-`pnpm test:vault:audit`. Parser/schema/validator parity changes route to
+`pnpm test:vault:audit`. These shortcuts are already single-file `node --test`
+contracts, so `pnpm checks:changed` does not print a duplicate direct command
+for them. Parser/schema/validator parity changes route to
 `pnpm test:contracts` before broader package or app checks. MCP core source
 changes first print the direct sibling unit command (`pnpm exec node --test
 mcp/src/<name>.test.mjs` when one exists), then `pnpm test:mcp:unit` before
