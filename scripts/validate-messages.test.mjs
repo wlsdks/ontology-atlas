@@ -1,0 +1,62 @@
+import assert from 'node:assert/strict';
+import { readdir, readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { describe, it } from 'node:test';
+
+const ROOT = process.cwd();
+const MESSAGES_DIR = path.join(ROOT, 'messages');
+const ROUTING_FILE = path.join(ROOT, 'src/i18n/routing.ts');
+
+describe('i18n message catalog', () => {
+  it('has one message file per configured locale', async () => {
+    const locales = await readRoutingLocales();
+    const messageLocales = (await readdir(MESSAGES_DIR))
+      .filter((file) => file.endsWith('.json'))
+      .map((file) => file.replace(/\.json$/, ''))
+      .sort();
+
+    assert.deepEqual(messageLocales, [...locales].sort());
+  });
+
+  it('keeps translation key shape identical across locales', async () => {
+    const locales = await readRoutingLocales();
+    const [baseLocale, ...otherLocales] = locales;
+    const baseMessages = await readJson(path.join(MESSAGES_DIR, `${baseLocale}.json`));
+    const baseKeys = flattenKeys(baseMessages);
+
+    for (const locale of otherLocales) {
+      const messages = await readJson(path.join(MESSAGES_DIR, `${locale}.json`));
+      assert.deepEqual(
+        flattenKeys(messages),
+        baseKeys,
+        `${locale}.json keys must match ${baseLocale}.json`,
+      );
+    }
+  });
+});
+
+async function readRoutingLocales() {
+  const source = await readFile(ROUTING_FILE, 'utf8');
+  const match = source.match(/locales:\s*\[([^\]]+)\]\s+as const/);
+  assert.ok(match, 'routing.ts must declare locales as a literal const array');
+
+  const locales = [...match[1].matchAll(/['"]([a-z][a-z-]*)['"]/g)].map((item) => item[1]);
+  assert.ok(locales.length > 0, 'routing.ts must declare at least one locale');
+  return locales;
+}
+
+async function readJson(file) {
+  return JSON.parse(await readFile(file, 'utf8'));
+}
+
+function flattenKeys(value, prefix = '') {
+  if (!isPlainObject(value)) return [prefix];
+
+  return Object.keys(value)
+    .sort()
+    .flatMap((key) => flattenKeys(value[key], prefix ? `${prefix}.${key}` : key));
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}

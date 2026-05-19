@@ -451,6 +451,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /when `scripts\/check-bundle\.mjs`\s+changes, run `pnpm build` first and then `pnpm bundle:check`/);
     assert.match(checksDoc, /`next\.config\.ts` is static-export source-of-truth; changes route to\s+`pnpm exec tsc --noEmit`, `pnpm build`, and then `pnpm bundle:check`/);
     assert.match(checksDoc, /Next App Router entries under `app\/\*\*\/\*\.ts\[x\]` and `next-env\.d\.ts` route to\s+`pnpm exec tsc --noEmit`/);
+    assert.match(checksDoc, /Locale routing under `src\/i18n\/\*\.ts` and message catalogs under\s+`messages\/\*\.json` route to `pnpm test:i18n:messages`/);
     assert.match(checksDoc, /`eslint\.config\.mjs` changes route to `pnpm lint`/);
     assert.match(checksDoc, /`tsconfig\.json` changes route\s+to `pnpm exec tsc --noEmit` plus the CLI\/MCP repo-analysis focused integrations/);
     assert.match(checksDoc, /GitHub quality-gate files \(`\.github\/workflows\/ci\.yml`,\s+`\.github\/PULL_REQUEST_TEMPLATE\.md`\) route to `pnpm test:mcp:docs` and\s+`pnpm test:mcp:package`, with `pnpm package:check` as the escalation/);
@@ -459,6 +460,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm package:check` \| Package files, lockfiles, entrypoints, docs contracts \|/);
     assert.match(checksDoc, /\| `pnpm bundle:check` \| Local-first static export bundle guard; run after `pnpm build` when `scripts\/check-bundle\.mjs` changed \|/);
     assert.match(checksDoc, /\| `pnpm exec tsc --noEmit` \| TypeScript and Next config type safety \|/);
+    assert.match(checksDoc, /\| `pnpm test:i18n:messages` \| Locale routing\/message catalog parity \|/);
     assert.match(checksDoc, /\| `pnpm exec vitest run <path>\.test\.ts\[x\]` \| Direct app\/source sibling test printed by `pnpm checks:changed` when available \|/);
     assert.match(checksDoc, /\| `pnpm exec vitest run src\/shared\/lib\/cn\.test\.ts tests\/contract\/vault-schema\.contract\.test\.ts` \| Vitest config\/setup smoke for jsdom setup plus contract discovery \|/);
     assert.match(checksDoc, /\| `pnpm exec playwright test tests\/e2e\/<name>\.spec\.ts` \| Direct E2E spec printed by `pnpm checks:changed` for changed Playwright specs \|/);

@@ -100,6 +100,9 @@ can inspect ontology write candidates without raw JSON-RPC.
   Next App Router entries under `app/**/*.ts[x]` and `next-env.d.ts` now route
   to `pnpm exec tsc --noEmit`, covering route exports and metadata types before
   broader browser/build checks.
+  Locale routing and `messages/*.json` changes now route to
+  `pnpm test:i18n:messages`, which checks configured locale files and
+  translation key parity before broader app verification.
   Changes to the shared package/docs contract test now also route to
   `pnpm test:mcp:docs`, not only `pnpm test:mcp:package`, so docs assertion
   edits do not get verified by a package-only subset that skips them.

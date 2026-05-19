@@ -411,6 +411,22 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.commands.map((row) => row.command), ['pnpm exec tsc --noEmit']);
   });
 
+  it('suggests i18n message parity and typecheck for locale routing changes', () => {
+    const result = suggestFocusedChecks([
+      'src/i18n/routing.ts',
+      'src/i18n/request.ts',
+      'src/i18n/navigation.ts',
+      'messages/en.json',
+      'messages/ko.json',
+      'scripts/validate-messages.test.mjs',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec tsc --noEmit',
+      'pnpm test:i18n:messages',
+    ]);
+  });
+
   it('suggests lint when ESLint config changes', () => {
     const result = suggestFocusedChecks(['eslint.config.mjs']);
 

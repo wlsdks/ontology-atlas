@@ -152,8 +152,18 @@ const RULES = [
       /^app\/.*\.(?:ts|tsx)$/,
       /^next\.config\.ts$/,
       /^next-env\.d\.ts$/,
+      /^src\/i18n\/.*\.ts$/,
       /^tsconfig\.json$/,
       /^\.githooks\/pre-push$/,
+    ],
+  },
+  {
+    command: 'pnpm test:i18n:messages',
+    reason: 'locale routing or message catalog changed',
+    matches: [
+      /^messages\/[^/]+\.json$/,
+      /^src\/i18n\/.*\.ts$/,
+      /^scripts\/validate-messages\.test\.mjs$/,
     ],
   },
   {

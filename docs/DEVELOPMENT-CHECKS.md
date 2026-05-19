@@ -120,6 +120,9 @@ changes, run `pnpm build` first and then `pnpm bundle:check`.
 Next App Router entries under `app/**/*.ts[x]` and `next-env.d.ts` route to
 `pnpm exec tsc --noEmit`, so route exports, metadata routes, and page/layout
 type drift are caught before broader browser or build checks.
+Locale routing under `src/i18n/*.ts` and message catalogs under
+`messages/*.json` route to `pnpm test:i18n:messages`; i18n TypeScript files
+also route to `pnpm exec tsc --noEmit`.
 `eslint.config.mjs` changes route to `pnpm lint`. `tsconfig.json` changes route
 to `pnpm exec tsc --noEmit` plus the CLI/MCP repo-analysis focused integrations,
 because `infer_imports` also reads TypeScript path aliases.
@@ -144,6 +147,7 @@ resolution changes are not left with a no-mapping advisor result.
 | `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts |
 | `pnpm bundle:check` | Local-first static export bundle guard; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
+| `pnpm test:i18n:messages` | Locale routing/message catalog parity |
 | `pnpm exec vitest run <path>.test.ts[x]` | Direct app/source sibling test printed by `pnpm checks:changed` when available |
 | `pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-schema.contract.test.ts` | Vitest config/setup smoke for jsdom setup plus contract discovery |
 | `pnpm exec playwright test tests/e2e/<name>.spec.ts` | Direct E2E spec printed by `pnpm checks:changed` for changed Playwright specs |
