@@ -157,9 +157,12 @@ change scanned `pnpm ...` references.
 Changes to `scripts/check-package-contracts.test.mjs` also route to
 `pnpm test:mcp:docs`, because that mixed contract file owns public docs and
 dogfood docs assertions as well as package/release assertions.
-Root `pnpm-lock.yaml` and the MCP package lockfile route to
+Root `pnpm-lock.yaml` and MCP/CLI package lockfiles route to
 `pnpm test:mcp:package` plus `pnpm package:check` escalation, so dependency
-resolution changes are not left with a no-mapping advisor result.
+resolution changes are not left with a no-mapping advisor result. MCP lockfile
+changes still show `pnpm dogfood:verify` as an escalation because they touch the
+agent runtime package directly; CLI lockfile changes stay on package contracts
+unless the changed behavior itself needs installed-style dogfood verification.
 
 | Command | Use when |
 |---|---|

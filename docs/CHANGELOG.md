@@ -75,7 +75,9 @@ can inspect ontology write candidates without raw JSON-RPC.
   README updates also route through script-reference checks, so documented
   benchmark commands cannot drift from `package.json` unnoticed. Package-script
   reference checks now resolve `pnpm -C <dir>` / `pnpm --dir <dir>` examples
-  against the matching package scripts instead of the root package. Script helper changes
+  against the matching package scripts instead of the root package. CLI package
+  lockfile changes now route to the same package-contract checks as MCP
+  lockfile changes. Script helper changes
   for `focused-check-suggestions`,
   `pnpm-script-refs`, `test-name-pattern`, and `vault-census` now print direct
   `pnpm exec node --test scripts/lib/<name>.test.mjs` commands before broader

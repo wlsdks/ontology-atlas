@@ -614,15 +614,22 @@ describe('focused check suggestions', () => {
     assert.deepEqual(rootLock.escalations.map((row) => row.command), ['pnpm package:check']);
 
     const mcpLock = suggestFocusedChecks(['mcp/package-lock.json']);
+    const cliLock = suggestFocusedChecks(['cli/package-lock.json']);
 
-    assert.deepEqual(mcpLock.commands.map((row) => row.command), [
+    const packageLockCommands = [
       'pnpm test:mcp:package',
       'pnpm dogfood:status',
-    ]);
-    assert.deepEqual(mcpLock.escalations.map((row) => row.command), [
+    ];
+    const mcpPackageLockEscalations = [
       'pnpm package:check',
       'pnpm dogfood:verify',
-    ]);
+    ];
+    const cliPackageLockEscalations = ['pnpm package:check'];
+
+    assert.deepEqual(mcpLock.commands.map((row) => row.command), packageLockCommands);
+    assert.deepEqual(mcpLock.escalations.map((row) => row.command), mcpPackageLockEscalations);
+    assert.deepEqual(cliLock.commands.map((row) => row.command), packageLockCommands);
+    assert.deepEqual(cliLock.escalations.map((row) => row.command), cliPackageLockEscalations);
   });
 
   it('suggests narrow MCP verify tests before the full verify helper gate', () => {

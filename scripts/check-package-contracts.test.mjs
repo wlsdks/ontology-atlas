@@ -461,7 +461,8 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /Claude Code hook wiring and publish guard changes under `\.claude\/hooks\/\*\.sh`\s+or `\.claude\/settings\.json` route to `pnpm test:claude:hooks`/);
     assert.match(checksDoc, /Vault migration runner or migration files route to\s+`pnpm vault:migrate --list` first, and migration implementations also route to\s+`pnpm test:contracts`/);
     assert.match(checksDoc, /Any\s+`docs\/\*\*\/\*\.md` change routes to `pnpm docs-vault:check`, because\s+the static docs vault indexes the whole docs tree/);
-    assert.match(checksDoc, /Root `pnpm-lock\.yaml` and the MCP package lockfile route to\s+`pnpm test:mcp:package` plus `pnpm package:check` escalation/);
+    assert.match(checksDoc, /Root `pnpm-lock\.yaml` and MCP\/CLI package lockfiles route to\s+`pnpm test:mcp:package` plus `pnpm package:check` escalation/);
+    assert.match(checksDoc, /MCP lockfile\s+changes still show `pnpm dogfood:verify` as an escalation because they touch the\s+agent runtime package directly; CLI lockfile changes stay on package contracts/);
     assert.match(checksDoc, /\| `pnpm package:check` \| Package files, lockfiles, entrypoints, docs contracts \|/);
     assert.match(checksDoc, /\| `pnpm bundle:check` \| Local-first static export bundle guard; run after `pnpm build` when `scripts\/check-bundle\.mjs` changed \|/);
     assert.match(checksDoc, /\| `pnpm exec tsc --noEmit` \| TypeScript and Next config type safety \|/);
