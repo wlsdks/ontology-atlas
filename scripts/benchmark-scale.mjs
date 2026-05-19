@@ -24,11 +24,13 @@ import { join, resolve } from "node:path";
 
 const args = process.argv.slice(2);
 const bypass = args.includes("--bypass");
+const dryRun = args.includes("--dry-run");
 const N = Number(args.find((a) => a.startsWith("--n="))?.slice(4) ?? 100);
 
-if (!bypass) {
+if (!bypass && !dryRun) {
   console.error("[benchmark-scale] requires --bypass (codex exec MCP path)");
   console.error("[benchmark-scale] read-only vault queries against tmp scale vault");
+  console.error("[benchmark-scale] or --dry-run to verify configuration without spawning codex");
   process.exit(2);
 }
 
@@ -36,6 +38,14 @@ const REPO = resolve(".");
 const today = new Date().toISOString().slice(0, 10);
 const outDir = resolve("docs/benchmark/results");
 mkdirSync(outDir, { recursive: true });
+
+console.log(`[benchmark-scale] repo: ${REPO}`);
+console.log(`[benchmark-scale] output: ${outDir}/`);
+console.log(`[benchmark-scale] N: ${N}`);
+if (dryRun) {
+  console.log("[benchmark-scale] --dry-run - exiting without tmp vault or codex spawn");
+  process.exit(0);
+}
 
 // Generate scale vault — N nodes with a "popular" hub that everyone references
 // (gives find_backlinks something interesting to find).

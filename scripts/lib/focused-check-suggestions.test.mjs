@@ -547,6 +547,22 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests focused benchmark and onboarding smoke checks', () => {
+    const result = suggestFocusedChecks([
+      'scripts/benchmark.mjs',
+      'scripts/benchmark-scale.mjs',
+      'scripts/perf-vault.mjs',
+      'scripts/smoke-clean-onboarding.mjs',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm benchmark --dry-run',
+      'pnpm benchmark:scale --dry-run',
+      'node scripts/perf-vault.mjs 10',
+      'pnpm smoke:onboarding',
+    ]);
+  });
+
   it('suggests script-reference checks for docs whose pnpm references are scanned', () => {
     const result = suggestFocusedChecks([
       'README.md',

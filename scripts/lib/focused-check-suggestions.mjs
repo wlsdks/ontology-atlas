@@ -168,6 +168,26 @@ const RULES = [
     matches: [/^scripts\/dogfood-status\.(?:mjs|test\.mjs)$/],
   },
   {
+    command: 'pnpm benchmark --dry-run',
+    reason: 'Codex benchmark runner config changed',
+    matches: [/^scripts\/benchmark\.mjs$/],
+  },
+  {
+    command: 'pnpm benchmark:scale --dry-run',
+    reason: 'Codex scale benchmark runner config changed',
+    matches: [/^scripts\/benchmark-scale\.mjs$/],
+  },
+  {
+    command: 'node scripts/perf-vault.mjs 10',
+    reason: 'vault parser perf smoke changed',
+    matches: [/^scripts\/perf-vault\.mjs$/],
+  },
+  {
+    command: 'pnpm smoke:onboarding',
+    reason: 'clean onboarding smoke changed',
+    matches: [/^scripts\/smoke-clean-onboarding\.mjs$/],
+  },
+  {
     command: 'pnpm exec tsc --noEmit',
     reason: 'TypeScript or Next.js static export config changed',
     matches: [

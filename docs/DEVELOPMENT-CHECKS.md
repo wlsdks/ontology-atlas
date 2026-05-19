@@ -105,6 +105,10 @@ helper moved.
 Dogfood shortcut helpers, script helpers, focused node-test runner, and
 focused-check advisor changes use the same pattern: direct
 `pnpm exec node --test scripts/...test.mjs` first, then the aggregate shortcut.
+Benchmark and smoke helpers use cheap command-level checks first:
+`pnpm benchmark --dry-run`, `pnpm benchmark:scale --dry-run`,
+`node scripts/perf-vault.mjs 10`, or `pnpm smoke:onboarding`, depending on the
+touched script.
 App/source TypeScript changes under `app/` or `src/` first print a direct
 Vitest sibling command (`pnpm exec vitest run <path>.test.ts[x]`) when that
 test file exists or is part of the same changed path set.
@@ -203,6 +207,10 @@ resolution changes are not left with a no-mapping advisor result.
 | `pnpm test:mcp:package` | MCP/CLI package and tarball checks |
 | `pnpm test:mcp:dogfood` | Focused live dogfood helper contracts |
 | `pnpm dogfood:test` | Full dogfood helper regression suite |
+| `pnpm benchmark --dry-run` | Benchmark runner config without spawning Codex |
+| `pnpm benchmark:scale --dry-run` | Scale benchmark config without tmp vault or Codex spawn |
+| `node scripts/perf-vault.mjs 10` | Small vault walk/read/parse perf smoke |
+| `pnpm smoke:onboarding` | Clean repo onboarding smoke |
 
 `pnpm test:mcp:docs` intentionally lists explicit test-name fragments instead
 of a broad `README` token, so documentation-only changes do not accidentally

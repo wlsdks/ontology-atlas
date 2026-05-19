@@ -533,6 +533,7 @@ describe('package contract helpers', () => {
     const rootReadme = readFileSync('README.md', 'utf-8');
     const mcpReadme = readFileSync('mcp/README.md', 'utf-8');
     const cliReadme = readFileSync('cli/README.md', 'utf-8');
+    const benchmarkReadme = readFileSync('docs/benchmark/README.md', 'utf-8');
     const migrationsReadme = readFileSync('scripts/migrations/README.md', 'utf-8');
     const claudeAgentDocs = [
       '.claude/LOOP-PRINCIPLES.md',
@@ -549,7 +550,7 @@ describe('package contract helpers', () => {
       '.claude/skills/ontology-sync/SKILL.md',
     ].map((file) => readFileSync(file, 'utf-8')).join('\n');
     assertPnpmScriptsExist(
-      [rootReadme, checksDoc, mcpReadme, cliReadme, migrationsReadme, claudeAgentDocs].join('\n'),
+      [rootReadme, checksDoc, mcpReadme, cliReadme, benchmarkReadme, migrationsReadme, claudeAgentDocs].join('\n'),
       pkg.scripts,
       { filteredScripts: { './mcp': mcpPkg.scripts } },
     );
@@ -1869,9 +1870,12 @@ describe('package contract helpers', () => {
   });
 
   it('keeps the benchmark script-list task unfrozen', () => {
+    const readme = readFileSync('docs/benchmark/README.md', 'utf-8');
     const tasks = readFileSync('docs/benchmark/tasks.md', 'utf-8');
     const section = tasks.split('### C2 — package.json scripts')[1]?.split('---')[0] ?? '';
 
+    assert.match(readme, /pnpm benchmark --dry-run/);
+    assert.match(readme, /pnpm benchmark:scale --dry-run/);
     assert.match(section, /Read `package\.json`, list all keys in `scripts`/);
     assert.match(section, /derive the count at measurement time/);
     assert.match(section, /`test:vault:validate`/);

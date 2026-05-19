@@ -36,6 +36,7 @@ Two paths, depending on which agent:
 pnpm benchmark --dry-run     # verify config without spawning codex
 pnpm benchmark --bypass      # full 14-cell run (~5-10 minutes)
 pnpm benchmark --bypass --on-only   # ON-only (faster re-test after vault change)
+pnpm benchmark:scale --dry-run      # verify scale benchmark config without spawning codex
 ```
 
 Why `--bypass` is required: Codex's `exec` mode default-denies all MCP tool calls, so without `--dangerously-bypass-approvals-and-sandbox` the ON column would be indistinguishable from OFF (Codex would just fall back to grep). The flag is required by-design — the script fails fast without it.
