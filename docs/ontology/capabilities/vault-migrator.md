@@ -40,3 +40,7 @@ shape: `migrate(file: { path, raw, relativePath }) → { raw } | null`. null = n
 ## Reference 마이그레이션
 
 `2026-05-04-trim-frontmatter-values` — frontmatter scalar 라인의 trailing whitespace 정리. 단위 test 8 케이스.
+
+## Focused verification
+
+`pnpm checks:changed` 는 `scripts/migrate-vault.mjs`, `scripts/migrations/README.md`, `scripts/migrations/*.mjs` 변경을 `pnpm vault:migrate --list` 로 먼저 안내한다. 마이그레이션 구현 파일은 추가로 `pnpm test:contracts` 로 route 되어 reference migration fixture 와 cross-package schema contract 를 같이 확인한다.

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-19T01:35:33.175Z",
+  "generatedAt": "2026-05-19T01:38:47.698Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -3377,8 +3377,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. The developer CLI now exposes MCP growthplan directly, so agents and humans can inspect on",
-      "wordCount": 16393,
-      "updatedAt": "2026-05-19T01:35:13.525Z",
+      "wordCount": 16410,
+      "updatedAt": "2026-05-19T01:38:23.280Z",
       "linksOut": [
         "slug"
       ]
@@ -3828,8 +3828,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 2547,
-      "updatedAt": "2026-05-19T01:34:57.346Z",
+      "wordCount": 2572,
+      "updatedAt": "2026-05-19T01:38:18.348Z",
       "linksOut": []
     },
     {
@@ -5345,11 +5345,16 @@
           "depth": 2,
           "text": "Reference 마이그레이션",
           "slug": "reference-마이그레이션"
+        },
+        {
+          "depth": 2,
+          "text": "Focused verification",
+          "slug": "focused-verification"
         }
       ],
       "excerpt": "frontmatter 가 schema 다 → 키 추가 / 이름 변경 / 값 정리 시 vault 의 N 파일을 일괄 수정해야 한다. R11 에서 마이그레이션 패턴 정립. 각 마이그레이션은 scripts/migrations/<YYYYMMDD<slug.mjs 한 파일. shape: migrate(file: { path, raw, relativePath }) → { raw } | null. null = noop. 1. Line 기반 변형 우선 — parse → reserialize 라운드트립은 주석/공백 손실 위험 2. idempotent — 두 번 적용해도 결과 동일 3.",
-      "wordCount": 140,
-      "updatedAt": "2026-05-04T02:37:26.315Z",
+      "wordCount": 175,
+      "updatedAt": "2026-05-19T01:38:28.589Z",
       "linksOut": []
     },
     {

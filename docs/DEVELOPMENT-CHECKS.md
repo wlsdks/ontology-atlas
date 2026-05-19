@@ -88,7 +88,10 @@ the touched behavior needs them. Vault helper changes route to their narrow
 checks first: `pnpm test:docs-vault`, `pnpm test:vault:validate`, or
 `pnpm test:vault:audit`. These shortcuts are already single-file `node --test`
 contracts, so `pnpm checks:changed` does not print a duplicate direct command
-for them. Any `docs/**/*.md` change routes to `pnpm docs-vault:check`, because
+for them. Vault migration runner or migration files route to
+`pnpm vault:migrate --list` first, and migration implementations also route to
+`pnpm test:contracts` so schema-evolution fixtures stay checked. Any
+`docs/**/*.md` change routes to `pnpm docs-vault:check`, because
 the static docs vault indexes the whole docs tree, not only `docs/ontology`.
 Parser/schema/validator parity changes, including the shared
 `tests/fixtures/vault-schema-cases.mjs` fixture, route to

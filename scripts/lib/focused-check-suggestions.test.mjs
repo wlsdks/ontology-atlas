@@ -41,12 +41,16 @@ describe('focused check suggestions', () => {
       'scripts/build-docs-vault.mjs',
       'scripts/validate-vault.mjs',
       'scripts/audit-vault-paths.test.mjs',
+      'scripts/migrate-vault.mjs',
+      'scripts/migrations/2026-05-04-trim-frontmatter-values.mjs',
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm test:docs-vault',
       'pnpm test:vault:validate',
       'pnpm test:vault:audit',
+      'pnpm vault:migrate --list',
+      'pnpm test:contracts',
     ]);
   });
 
@@ -549,6 +553,7 @@ describe('focused check suggestions', () => {
       'docs/DEVELOPMENT-CHECKS.md',
       'mcp/README.md',
       'cli/README.md',
+      'scripts/migrations/README.md',
       '.claude/LOOP-PRINCIPLES.md',
       '.claude/rules/testing.md',
       '.claude/skills/ontology-bootstrap/SKILL.md',
@@ -556,6 +561,7 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm docs-vault:check',
+      'pnpm vault:migrate --list',
       'pnpm test:dogfood:script-refs',
       'pnpm test:mcp:docs',
       'pnpm dogfood:status',

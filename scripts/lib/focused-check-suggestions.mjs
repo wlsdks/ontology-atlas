@@ -32,6 +32,14 @@ const RULES = [
     matches: [/^scripts\/audit-vault-paths\.(?:mjs|test\.mjs)$/],
   },
   {
+    command: 'pnpm vault:migrate --list',
+    reason: 'vault migration inventory or runner changed',
+    matches: [
+      /^scripts\/migrate-vault\.mjs$/,
+      /^scripts\/migrations\/(?:README\.md|[^/]+\.mjs)$/,
+    ],
+  },
+  {
     command: 'pnpm test:contracts',
     reason: 'cross-package parser/schema/validator contract changed',
     matches: [
@@ -41,8 +49,9 @@ const RULES = [
       /^cli\/src\/lib\/(?:parse-frontmatter|schema|validate)\.mjs$/,
       /^cli\/src\/commands\/validate\.mjs$/,
       /^scripts\/lib\/parse-frontmatter\.mjs$/,
-      /^scripts\/migrations\/2026-05-04-trim-frontmatter-values\.mjs$/,
       /^src\/shared\/lib\/(?:parse-frontmatter|validate-vault-document)\.ts$/,
+      /^scripts\/migrate-vault\.mjs$/,
+      /^scripts\/migrations\/[^/]+\.mjs$/,
     ],
   },
   {
@@ -105,6 +114,7 @@ const RULES = [
       /^docs\/DEVELOPMENT-CHECKS\.md$/,
       /^mcp\/README\.md$/,
       /^cli\/README\.md$/,
+      /^scripts\/migrations\/README\.md$/,
       /^\.claude\/LOOP-PRINCIPLES\.md$/,
       /^\.claude\/rules\/[^/]+\.md$/,
       /^\.claude\/skills\/[^/]+\/SKILL\.md$/,
