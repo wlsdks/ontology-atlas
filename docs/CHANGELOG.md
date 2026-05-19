@@ -69,8 +69,9 @@ can inspect ontology write candidates without raw JSON-RPC.
   print direct sibling `pnpm exec node --test cli/src/lib/<name>.test.mjs`
   commands before `pnpm test:cli:lib`; dogfood helper scripts now print direct
   `pnpm exec node --test scripts/...test.mjs` commands before
-  `pnpm test:dogfood:args`, `pnpm test:dogfood:compile-fix`, or
-  `pnpm test:dogfood:status` and broader dogfood gates. Benchmark/perf/onboarding
+  `pnpm test:dogfood:args`, `pnpm test:dogfood:compile-fix`,
+  `pnpm test:dogfood:status`, or `pnpm test:mcp:dogfood:*` and broader dogfood gates.
+  Benchmark/perf/onboarding
   smoke scripts now route to dry-run or small-input checks, and
   `benchmark:scale` now supports `--dry-run` without Codex spawn. Benchmark
   README updates also route through script-reference checks, so documented

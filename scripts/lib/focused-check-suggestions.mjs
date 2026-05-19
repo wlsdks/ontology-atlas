@@ -437,6 +437,8 @@ const CLI_DIRECT_LIB_TEST_FILES = new Set(CLI_DIRECT_LIB_TESTS.values());
 const SCRIPT_DIRECT_LIB_TESTS = new Map([
   ['scripts/dogfood-compile-fix.mjs', 'scripts/dogfood-compile-fix.test.mjs'],
   ['scripts/dogfood-compile-fix.test.mjs', 'scripts/dogfood-compile-fix.test.mjs'],
+  ['scripts/dogfood-mcp-walk.mjs', 'scripts/dogfood-mcp-walk.test.mjs'],
+  ['scripts/dogfood-mcp-walk.test.mjs', 'scripts/dogfood-mcp-walk.test.mjs'],
   ['scripts/dogfood-status.mjs', 'scripts/dogfood-status.test.mjs'],
   ['scripts/dogfood-status.test.mjs', 'scripts/dogfood-status.test.mjs'],
   ['scripts/run-focused-node-test.mjs', 'scripts/run-focused-node-test.test.mjs'],

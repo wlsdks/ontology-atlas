@@ -387,6 +387,7 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks(['scripts/dogfood-mcp-walk.mjs']);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test scripts/dogfood-mcp-walk.test.mjs',
       'pnpm test:dogfood:script-refs',
       'pnpm test:mcp:dogfood:timeout',
       'pnpm test:mcp:dogfood',

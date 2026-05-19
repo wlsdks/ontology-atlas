@@ -298,8 +298,9 @@ resume, or formatter behavior changed.
 `pnpm exec node --test ...test.mjs` test first, then `pnpm test:dogfood:args`,
 `pnpm test:dogfood:script-refs`, or `pnpm test:dogfood:compile-fix` before
 broader dogfood gates.
-It routes dogfood MCP helper changes to `pnpm test:mcp:dogfood:timeout`
-before the broader `pnpm test:mcp:dogfood` gate.
+It routes dogfood MCP helper changes to direct
+`pnpm exec node --test scripts/dogfood-mcp-walk.test.mjs` first, then
+`pnpm test:mcp:dogfood:timeout` before the broader `pnpm test:mcp:dogfood` gate.
 It routes MCP verify helper changes to `pnpm test:mcp:verify:first-contact`
 and `pnpm test:mcp:verify:timeout` before the broader `pnpm test:mcp:verify`
 gate.
