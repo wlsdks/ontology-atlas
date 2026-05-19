@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-19T02:10:10.351Z",
+  "generatedAt": "2026-05-19T02:13:19.124Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -3377,8 +3377,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. The developer CLI now exposes MCP growthplan directly, so agents and humans can inspect on",
-      "wordCount": 16519,
-      "updatedAt": "2026-05-19T02:09:57.881Z",
+      "wordCount": 16536,
+      "updatedAt": "2026-05-19T02:13:03.010Z",
       "linksOut": [
         "slug"
       ]
@@ -3828,8 +3828,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 2733,
-      "updatedAt": "2026-05-19T02:09:53.530Z",
+      "wordCount": 2747,
+      "updatedAt": "2026-05-19T02:12:56.769Z",
       "linksOut": []
     },
     {
@@ -4985,8 +4985,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 11936,
-      "updatedAt": "2026-05-19T02:10:03.566Z",
+      "wordCount": 11955,
+      "updatedAt": "2026-05-19T02:13:08.345Z",
       "linksOut": []
     },
     {

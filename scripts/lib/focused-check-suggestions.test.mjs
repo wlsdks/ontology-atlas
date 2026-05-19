@@ -47,12 +47,22 @@ describe('focused check suggestions', () => {
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm exec node --test scripts/build-docs-vault.test.mjs',
+      'pnpm exec node --test scripts/validate-vault-script.test.mjs',
       'pnpm exec node --test scripts/audit-vault-paths.test.mjs',
       'pnpm test:docs-vault',
       'pnpm test:vault:validate',
       'pnpm test:vault:audit',
       'pnpm vault:migrate --list',
       'pnpm test:contracts',
+    ]);
+  });
+
+  it('suggests direct locale message validation before the package shortcut', () => {
+    const result = suggestFocusedChecks(['scripts/validate-messages.test.mjs']);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test scripts/validate-messages.test.mjs',
+      'pnpm test:i18n:messages',
     ]);
   });
 
@@ -450,6 +460,7 @@ describe('focused check suggestions', () => {
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test scripts/validate-messages.test.mjs',
       'pnpm exec tsc --noEmit',
       'pnpm test:i18n:messages',
     ]);

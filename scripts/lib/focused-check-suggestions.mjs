@@ -453,6 +453,9 @@ const SCRIPT_DIRECT_LIB_TESTS = new Map([
   ['scripts/lib/pnpm-script-refs.mjs', 'scripts/lib/pnpm-script-refs.test.mjs'],
   ['scripts/lib/test-name-pattern.mjs', 'scripts/lib/test-name-pattern.test.mjs'],
   ['scripts/lib/vault-census.mjs', 'scripts/lib/vault-census.test.mjs'],
+  ['scripts/validate-messages.test.mjs', 'scripts/validate-messages.test.mjs'],
+  ['scripts/validate-vault.mjs', 'scripts/validate-vault-script.test.mjs'],
+  ['scripts/validate-vault-script.test.mjs', 'scripts/validate-vault-script.test.mjs'],
   ['scripts/check-package-contracts.mjs', 'scripts/check-package-contracts.test.mjs'],
   ['scripts/check-package-contracts.test.mjs', 'scripts/check-package-contracts.test.mjs'],
 ]);

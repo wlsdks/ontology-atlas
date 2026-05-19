@@ -133,8 +133,10 @@ Next App Router entries under `app/**/*.ts[x]` and `next-env.d.ts` route to
 `pnpm exec tsc --noEmit`, so route exports, metadata routes, and page/layout
 type drift are caught before broader browser or build checks.
 Locale routing under `src/i18n/*.ts` and message catalogs under
-`messages/*.json` route to `pnpm test:i18n:messages`; i18n TypeScript files
-also route to `pnpm exec tsc --noEmit`.
+`messages/*.json` route to `pnpm test:i18n:messages`; changes to the message
+validator test itself first print
+`pnpm exec node --test scripts/validate-messages.test.mjs`; i18n TypeScript
+files also route to `pnpm exec tsc --noEmit`.
 `eslint.config.mjs` changes route to `pnpm lint`. `tsconfig.json` changes route
 to `pnpm exec tsc --noEmit` plus the CLI/MCP repo-analysis focused integrations,
 because `infer_imports` also reads TypeScript path aliases.

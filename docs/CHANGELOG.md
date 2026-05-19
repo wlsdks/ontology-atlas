@@ -80,6 +80,9 @@ can inspect ontology write candidates without raw JSON-RPC.
   `benchmark:scale` now supports `--dry-run` without Codex spawn. Benchmark
   README updates also route through script-reference checks, so documented
   benchmark commands cannot drift from `package.json` unnoticed. Package-script
+  i18n validator test changes now also print direct
+  `pnpm exec node --test scripts/validate-messages.test.mjs` before the package
+  shortcut.
   reference checks now resolve `pnpm -C <dir>` / `pnpm --dir <dir>` examples
   against the matching package scripts instead of the root package. CLI package
   lockfile changes now route to the same package-contract checks as MCP
