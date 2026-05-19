@@ -379,6 +379,15 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests build and bundle check when the bundle guard changes', () => {
+    const result = suggestFocusedChecks(['scripts/check-bundle.mjs']);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm build',
+      'pnpm bundle:check',
+    ]);
+  });
+
   it('suggests script-reference checks for docs whose pnpm references are scanned', () => {
     const result = suggestFocusedChecks([
       'README.md',

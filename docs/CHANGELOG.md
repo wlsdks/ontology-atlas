@@ -78,9 +78,11 @@ can inspect ontology write candidates without raw JSON-RPC.
   `pnpm integration:cli` / `pnpm integration:mcp` instead of an unrelated
   narrow subset. Root and MCP lockfile changes now route to
   `pnpm test:mcp:package` with package-check escalation instead of no focused
-  mapping. Changes to the shared package/docs contract test now also route to
-  `pnpm test:mcp:docs`, not only `pnpm test:mcp:package`, so docs assertion
-  edits do not get verified by a package-only subset that skips them.
+  mapping. Bundle guard script changes now route to `pnpm build` followed by
+  `pnpm bundle:check`, because the guard is artifact-based. Changes to the
+  shared package/docs contract test now also route to `pnpm test:mcp:docs`, not
+  only `pnpm test:mcp:package`, so docs assertion edits do not get verified by
+  a package-only subset that skips them.
 
 ## 2026-05-18 — MCP first-contact and packed-smoke hardening
 

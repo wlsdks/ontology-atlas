@@ -124,6 +124,16 @@ const RULES = [
     matches: [/^scripts\/dogfood-status\.(?:mjs|test\.mjs)$/],
   },
   {
+    command: 'pnpm build',
+    reason: 'static export artifact is needed before checking bundle guard changes',
+    matches: [/^scripts\/check-bundle\.mjs$/],
+  },
+  {
+    command: 'pnpm bundle:check',
+    reason: 'local-first bundle guard changed',
+    matches: [/^scripts\/check-bundle\.mjs$/],
+  },
+  {
     command: 'pnpm test:mcp:dogfood:timeout',
     reason: 'MCP dogfood timeout/argument diagnostics changed',
     matches: [/^scripts\/dogfood-mcp-walk\.(?:mjs|test\.mjs)$/],
