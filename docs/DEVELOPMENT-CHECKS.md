@@ -154,8 +154,9 @@ Claude Code hook wiring and publish guard changes under `.claude/hooks/*.sh`
 or `.claude/settings.json` route to `pnpm test:claude:hooks`.
 Root/MCP/CLI README changes and this file also route to that gate when they may
 change scanned `pnpm ...` references.
-Changes to `scripts/check-package-contracts.test.mjs` also route to
-`pnpm test:mcp:docs`, because that mixed contract file owns public docs and
+Changes to `scripts/check-package-contracts.mjs` or its test first route to
+direct `pnpm exec node --test scripts/check-package-contracts.test.mjs`, then
+to `pnpm test:mcp:docs`, because that mixed contract file owns public docs and
 dogfood docs assertions as well as package/release assertions.
 Root `pnpm-lock.yaml` and MCP/CLI package lockfiles route to
 `pnpm test:mcp:package` plus `pnpm package:check` escalation, so dependency

@@ -71,6 +71,9 @@ can inspect ontology write candidates without raw JSON-RPC.
   `pnpm exec node --test scripts/...test.mjs` commands before
   `pnpm test:dogfood:args`, `pnpm test:dogfood:compile-fix`,
   `pnpm test:dogfood:status`, or `pnpm test:mcp:dogfood:*` and broader dogfood gates.
+  Package contract helper changes now print direct
+  `pnpm exec node --test scripts/check-package-contracts.test.mjs` before
+  package/docs contract subsets.
   Benchmark/perf/onboarding
   smoke scripts now route to dry-run or small-input checks, and
   `benchmark:scale` now supports `--dry-run` without Codex spawn. Benchmark

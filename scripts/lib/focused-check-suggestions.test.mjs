@@ -733,11 +733,19 @@ describe('focused check suggestions', () => {
   });
 
   it('suggests docs contracts when the shared package contract test changes', () => {
-    const result = suggestFocusedChecks(['scripts/check-package-contracts.test.mjs']);
+    const result = suggestFocusedChecks([
+      'scripts/check-package-contracts.mjs',
+      'scripts/check-package-contracts.test.mjs',
+    ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test scripts/check-package-contracts.test.mjs',
       'pnpm test:mcp:package',
       'pnpm test:mcp:docs',
+    ]);
+    assert.deepEqual(result.commands[0].paths, [
+      'scripts/check-package-contracts.mjs',
+      'scripts/check-package-contracts.test.mjs',
     ]);
   });
 
