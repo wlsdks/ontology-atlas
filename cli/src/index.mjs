@@ -313,8 +313,40 @@ function runInit(targetArg) {
     }
   }
 
+  function tomlString(value) {
+    return `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  }
+
+  function codexConfigForVault(omotVault) {
+    const args = serverCommand.args.map(tomlString).join(', ');
+    return [
+      '[mcp_servers.oh-my-ontology]',
+      `command = ${tomlString(serverCommand.command)}`,
+      `args = [${args}]`,
+      '',
+      '[mcp_servers.oh-my-ontology.env]',
+      `OMOT_VAULT = ${tomlString(omotVault)}`,
+      '',
+    ].join('\n');
+  }
+
+  function writeCodexConfig(dir, omotVault, label) {
+    const codexDir = join(dir, '.codex');
+    const codexConfig = join(codexDir, 'config.toml');
+    if (!existsSync(codexDir)) mkdirSync(codexDir, { recursive: true });
+    if (!existsSync(codexConfig)) {
+      writeFileSync(codexConfig, codexConfigForVault(omotVault));
+      ok(`  ${label}/.codex/config.toml (OMOT_VAULT=${omotVault})`);
+    } else {
+      warn(
+        `  ${label}/.codex/config.toml already exists — preserved (manual merge if needed)`,
+      );
+    }
+  }
+
   // 1. Vault target itself — vault is cwd, OMOT_VAULT='.'
   writeMcpJson(target, '.', 'vault');
+  writeCodexConfig(target, '.', 'vault');
 
   // 2. cwd (codebase root) — only if distinct from target. OMOT_VAULT is the
   //    relative path from cwd to target.
@@ -325,6 +357,7 @@ function runInit(targetArg) {
     if (!omotRel.startsWith('.')) omotRel = `./${omotRel}`;
     cwdVaultArg = omotRel;
     writeMcpJson(cwdPath, omotRel, 'cwd');
+    writeCodexConfig(cwdPath, omotRel, 'cwd');
   }
 
   const codexSetupCommand = [
@@ -382,8 +415,11 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        (${MCP_TOOL_SPLIT}).
 
        ${COLORS.bold}Codex${COLORS.reset}
+       Both your codebase root (cwd) and the vault folder now have a wired
+       ${COLORS.bold}.codex/config.toml${COLORS.reset}. Open either folder in Codex and restart it.
+       For a global Codex config instead, run:
        ${COLORS.cyan}${codexSetupCommand}${COLORS.reset}
-       ${COLORS.dim}Codex stores MCP servers in its own config, so run this once from a clean setup.${COLORS.reset}
+       ${COLORS.dim}Codex can store MCP servers globally too, so the command is optional when the repo-local config is enough.${COLORS.reset}
 
   ${COLORS.dim}6.${COLORS.reset} ${COLORS.bold}See the graph${COLORS.reset} (optional, web UI):
        ${COLORS.cyan}git clone https://github.com/wlsdks/oh-my-ontology${COLORS.reset}

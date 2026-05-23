@@ -236,6 +236,7 @@ await test('init — generated MCP config points at a runnable local server in s
     assert.doesNotMatch(clean, /bootstrap .*--apply/);
     assert.match(clean, /Codex/);
     assert.match(clean, /codex mcp add oh-my-ontology/);
+    assert.match(clean, /\.codex\/config\.toml/);
     assert.match(clean, /graph smoke/);
     assert.match(clean, /oh-my-ontology analyze \. --vault \.\/ontology/);
     assert.match(clean, /oh-my-ontology bootstrap \. --vault \.\/ontology/);
@@ -246,6 +247,14 @@ await test('init — generated MCP config points at a runnable local server in s
     assert.equal(server.env.OMOT_VAULT, './ontology');
     assert.equal(server.command, 'node');
     assert.match(server.args[0], /mcp\/src\/index\.js$/);
+
+    const codexConfig = readFileSync(join(root, '.codex', 'config.toml'), 'utf-8');
+    assert.match(codexConfig, /\[mcp_servers\.oh-my-ontology\]/);
+    assert.match(codexConfig, /command = "node"/);
+    assert.match(codexConfig, /OMOT_VAULT = "\.\/ontology"/);
+
+    const vaultCodexConfig = readFileSync(join(root, 'ontology', '.codex', 'config.toml'), 'utf-8');
+    assert.match(vaultCodexConfig, /OMOT_VAULT = "\."/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

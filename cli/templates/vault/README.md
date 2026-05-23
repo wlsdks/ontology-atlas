@@ -45,16 +45,21 @@ nodes. If you edited a starter file, it is preserved.
 
 ## AI agent setup
 
-If this vault came from `oh-my-ontology init`, the CLI already wrote wired
-`.mcp.json` files for Claude Code / Cursor and printed the exact Codex command.
+If this vault came from `oh-my-ontology init` or the web workbench starter,
+the vault folder already has:
 
-If this vault came from the web workbench, the browser cannot know the absolute
-path to your folder. Open `.mcp.json.example`, replace the `OMOT_VAULT`
-placeholder with the absolute path to this vault, then:
+- `.mcp.json` for Claude Code / Cursor
+- `.codex/config.toml` for Codex
 
-- **Claude Code / Cursor**: save it as `.mcp.json` in the repo or vault folder,
-  then restart the agent.
-- **Codex**: run this once, replacing the placeholder path:
+Open the vault folder itself in the agent and restart it. Both config files use
+`OMOT_VAULT=.`, so the agent reads and writes this folder directly.
+
+If you prefer to keep the agent opened at a separate codebase root, use the
+manual template instead: open `.mcp.json.example`, replace the
+`OMOT_VAULT` placeholder with the absolute path to this vault, then copy that
+server entry into your agent config.
+
+Codex can also be wired globally with one command:
 
   ```bash
   codex mcp add oh-my-ontology --env OMOT_VAULT=/absolute/path/to/this-vault -- npx -y oh-my-ontology-mcp

@@ -301,12 +301,19 @@ try {
   assert.match(init.stdout, new RegExp(`${expectedToolCount} tools`));
   assert.match(init.stdout, expectedToolSplitRe);
   assert.match(init.stdout, /codex mcp add oh-my-ontology/);
+  assert.match(init.stdout, /\.codex\/config\.toml/);
 
   const config = JSON.parse(readFileSync(join(projectDir, '.mcp.json'), 'utf-8'));
   const server = config.mcpServers['oh-my-ontology'];
   assert.equal(server.command, 'node');
   assert.match(server.args[0], /node_modules\/oh-my-ontology-mcp\/src\/index\.js$/);
   assert.equal(server.env.OMOT_VAULT, './ontology');
+
+  const codexConfig = readFileSync(join(projectDir, '.codex', 'config.toml'), 'utf-8');
+  assert.match(codexConfig, /\[mcp_servers\.oh-my-ontology\]/);
+  assert.match(codexConfig, /command = "node"/);
+  assert.match(codexConfig, /node_modules\/oh-my-ontology-mcp\/src\/index\.js/);
+  assert.match(codexConfig, /OMOT_VAULT = "\.\/ontology"/);
 
   const cliMcpVerify = run(cliBin, cliMcpVerifyArgs(['ontology', '--timeout-ms', '3000']), {
     cwd: projectDir,

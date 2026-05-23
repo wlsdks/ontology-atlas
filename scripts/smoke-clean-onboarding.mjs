@@ -62,6 +62,7 @@ writeFileSync(
 
 const init = run('node', [CLI, 'init', 'ontology'], { cwd: project });
 assert.match(init.stdout, /codex mcp add oh-my-ontology/);
+assert.match(init.stdout, /\.codex\/config\.toml/);
 assert.match(init.stdout, new RegExp(`${expectedToolCount} tools`));
 assert.match(init.stdout, expectedToolSplitRe);
 assert.match(init.stdout, /oh-my-ontology analyze \. --vault \.\/ontology/);
@@ -73,6 +74,14 @@ const server = mcpConfig.mcpServers['oh-my-ontology'];
 assert.equal(server.command, 'node');
 assert.ok(server.args[0].endsWith('/mcp/src/index.js'));
 assert.equal(server.env.OMOT_VAULT, './ontology');
+
+const codexConfig = readFileSync(join(project, '.codex', 'config.toml'), 'utf-8');
+assert.match(codexConfig, /\[mcp_servers\.oh-my-ontology\]/);
+assert.match(codexConfig, /command = "node"/);
+assert.match(codexConfig, /OMOT_VAULT = "\.\/ontology"/);
+
+const vaultCodexConfig = readFileSync(join(project, 'ontology', '.codex', 'config.toml'), 'utf-8');
+assert.match(vaultCodexConfig, /OMOT_VAULT = "\."/);
 
 run('node', [VERIFY], {
   cwd: ROOT,

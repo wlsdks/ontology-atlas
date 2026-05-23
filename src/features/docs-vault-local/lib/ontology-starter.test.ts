@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 import { parseMcpToolMetadataFromDescription } from "../../../../cli/src/lib/mcp-metadata.mjs";
 import {
   ONTOLOGY_STARTER_FILES,
+  buildCodexConfigToml,
   buildMcpConfigJson,
+  buildVaultMcpConfigJson,
 } from "./ontology-starter";
 
 const ROOT = path.resolve(__dirname, "../../../..");
@@ -58,6 +60,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain("## AI agent setup");
     expect(readme).toContain("Claude Code / Cursor");
     expect(readme).toContain("Codex");
+    expect(readme).toContain(".codex/config.toml");
     expect(readme).toContain("codex mcp add oh-my-ontology");
     expect(readme).toContain(".mcp.json.example");
     expect(readme).toContain("OMOT_VAULT");
@@ -110,5 +113,29 @@ describe("buildMcpConfigJson", () => {
     const json = buildMcpConfigJson("v");
     expect(json).toContain("  \"mcpServers\":");
     expect(json).toContain("    \"oh-my-ontology\":");
+  });
+});
+
+describe("buildVaultMcpConfigJson", () => {
+  it("vault 폴더 자체를 agent에서 열 때 바로 쓰는 OMOT_VAULT=. config 제공", () => {
+    const parsed = JSON.parse(buildVaultMcpConfigJson());
+    expect(parsed.mcpServers["oh-my-ontology"].command).toBe("npx");
+    expect(parsed.mcpServers["oh-my-ontology"].args).toEqual([
+      "-y",
+      "oh-my-ontology-mcp",
+    ]);
+    expect(parsed.mcpServers["oh-my-ontology"].env.OMOT_VAULT).toBe(".");
+  });
+});
+
+describe("buildCodexConfigToml", () => {
+  it("Codex repo-local MCP config 를 vault-relative 로 제공", () => {
+    const toml = buildCodexConfigToml();
+    expect(toml).toContain("[mcp_servers.oh-my-ontology]");
+    expect(toml).toContain('command = "npx"');
+    expect(toml).toContain('args = ["-y", "oh-my-ontology-mcp"]');
+    expect(toml).toContain("[mcp_servers.oh-my-ontology.env]");
+    expect(toml).toContain('OMOT_VAULT = "."');
+    expect(toml).toMatch(/\n$/);
   });
 });

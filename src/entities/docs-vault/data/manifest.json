@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-22T08:58:25.295Z",
+  "generatedAt": "2026-05-23T01:20:03.768Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -4372,8 +4372,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 5952,
-      "updatedAt": "2026-05-22T08:47:18.510Z",
+      "wordCount": 6030,
+      "updatedAt": "2026-05-23T01:17:50.253Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4875,8 +4875,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / allpaths / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, write 전 schema preflight 인 relationcheck, Claude Code/Codex handoff 를 보는 agentbrief, 그리고 설치된 M",
-      "wordCount": 8183,
-      "updatedAt": "2026-05-22T08:58:16.849Z",
+      "wordCount": 8209,
+      "updatedAt": "2026-05-23T01:18:27.773Z",
       "linksOut": []
     },
     {
@@ -5570,8 +5570,8 @@
         }
       ],
       "excerpt": "crosscutting. 라이트/다크 토글 (html[datatheme=\"light\"]), Sonner기반 toast, arialive 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefersreducedmotion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 web workbench starter 가 같은 5node vault README/setup 내용을 제공하고, Claude Code/Cursor .mc",
-      "wordCount": 102,
-      "updatedAt": "2026-05-13T00:02:55.340Z",
+      "wordCount": 104,
+      "updatedAt": "2026-05-23T01:18:38.910Z",
       "linksOut": []
     },
     {

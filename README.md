@@ -99,9 +99,10 @@ ontology vault with graph database behavior at runtime.
 npx oh-my-ontology init ./ontology
 ```
 
-The command scaffolds a git-friendly markdown vault and prints the MCP setup
-steps for your agent. Claude Code and Cursor can read the generated `.mcp.json`.
-Codex can use the printed `codex mcp add ...` command.
+The command scaffolds a git-friendly markdown vault and writes repo-local MCP
+configs for your agent. Claude Code and Cursor can read the generated
+`.mcp.json`; Codex can read the generated `.codex/config.toml`. A global
+`codex mcp add ...` fallback is printed too.
 
 ### 2. Draft the first graph
 

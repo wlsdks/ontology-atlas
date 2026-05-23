@@ -17,7 +17,9 @@ import {
 } from '@/entities/local-fs-handle';
 import {
   ONTOLOGY_STARTER_FILES,
+  buildCodexConfigToml,
   buildMcpConfigJson,
+  buildVaultMcpConfigJson,
 } from '../lib/ontology-starter';
 /** 탭 포커스 복귀 시 자동 refresh 의 최소 간격 (ms). 너무 자주 돌면
  *  사용자가 IDE 로 짧게 오갈 때마다 번쩍이므로 2초 간격으로 throttle. */
@@ -781,8 +783,9 @@ export function useLocalVaultInternal() {
 
   /**
    * mission v2 ontology starter — `npx oh-my-ontology init` 과 동일한
-   * 5 md + .mcp.json.example 시드를 vault 에 작성. 비개발자가 터미널 없이
-   * web workbench 의 picker → "starter 만들기" 버튼만으로 시작 가능하게.
+   * 5 md + .mcp.json / .mcp.json.example / .codex/config.toml 시드를 vault 에
+   * 작성. 비개발자가 터미널 없이 web workbench 의 picker → "starter 만들기"
+   * 버튼만으로 시작 가능하게.
    *
    * 이미 존재하는 파일은 덮어쓰지 않고 skip. 사용자가 기존 vault 에 호출해도
    * 안전.
@@ -791,7 +794,8 @@ export function useLocalVaultInternal() {
     if (!state.handle) {
       throw new Error('Vault is not open');
     }
-    await requireWritePermission(state.handle);
+    const vaultHandle = state.handle;
+    await requireWritePermission(vaultHandle);
     let created = 0;
     let skipped = 0;
     for (const { relPath, content } of ONTOLOGY_STARTER_FILES) {
@@ -815,35 +819,62 @@ export function useLocalVaultInternal() {
         skipped += 1;
       }
     }
-    // .mcp.json.example — 사용자가 AI agent 설정으로 복사. vault 폴더의
-    // 절대경로는 브라우저가 모르니 placeholder 로 두고 안내.
-    //
-    // overwrite guard: 사용자가 .mcp.json.example 을 customize 했을 수도
-    // 있으니 기존 파일이 있으면 skip. 처음 scaffold 일 때만 생성.
-    try {
-      let alreadyExists = false;
+    const writeRootFileIfMissing = async (fileName: string, content: string) => {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars -- existence probe
-        const _existing = await state.handle.getFileHandle('.mcp.json.example');
-        alreadyExists = true;
+        await vaultHandle.getFileHandle(fileName);
+        skipped += 1;
+        return;
       } catch {
         // NotFoundError — 파일 없음, 정상.
       }
-      if (alreadyExists) {
-        skipped += 1;
-      } else {
-        const fh = await state.handle.getFileHandle('.mcp.json.example', {
+      try {
+        const fh = await vaultHandle.getFileHandle(fileName, {
           create: true,
         });
         const writable = await fh.createWritable();
-        await writable.write(buildMcpConfigJson(state.handle.name));
+        await writable.write(content);
         await writable.close();
         created += 1;
+      } catch {
+        skipped += 1;
       }
-    } catch {
-      skipped += 1;
-    }
-    if (state.handle) await load(state.handle);
+    };
+
+    const writeCodexConfigIfMissing = async () => {
+      try {
+        const codexDir = await vaultHandle.getDirectoryHandle('.codex', {
+          create: true,
+        });
+        try {
+          await codexDir.getFileHandle('config.toml');
+          skipped += 1;
+          return;
+        } catch {
+          // NotFoundError — 파일 없음, 정상.
+        }
+        const fh = await codexDir.getFileHandle('config.toml', {
+          create: true,
+        });
+        const writable = await fh.createWritable();
+        await writable.write(buildCodexConfigToml());
+        await writable.close();
+        created += 1;
+      } catch {
+        skipped += 1;
+      }
+    };
+
+    // Ready-to-use agent configs for "open the vault folder itself" flows.
+    await writeRootFileIfMissing('.mcp.json', buildVaultMcpConfigJson());
+    await writeCodexConfigIfMissing();
+
+    // Manual template for users who keep the AI agent opened at a separate
+    // codebase root and need an absolute OMOT_VAULT path.
+    await writeRootFileIfMissing(
+      '.mcp.json.example',
+      buildMcpConfigJson(vaultHandle.name),
+    );
+    await load(vaultHandle);
     return { created, skipped };
   }, [
     state.fileHandles,

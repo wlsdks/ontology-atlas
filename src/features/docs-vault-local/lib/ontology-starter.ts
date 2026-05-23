@@ -1,5 +1,5 @@
 /**
- * mission v2 ontology starter — 5 .md files + .mcp.json scaffolded into an empty folder.
+ * mission v2 ontology starter — 5 .md files + agent MCP configs scaffolded into an empty folder.
  *
  * Mirrors cli/templates/vault/. Keep both in sync so the CLI and the web
  * workbench produce the same starter files.
@@ -58,16 +58,21 @@ nodes. If you edited a starter file, it is preserved.
 
 ## AI agent setup
 
-If this vault came from \`oh-my-ontology init\`, the CLI already wrote wired
-\`.mcp.json\` files for Claude Code / Cursor and printed the exact Codex command.
+If this vault came from \`oh-my-ontology init\` or the web workbench starter,
+the vault folder already has:
 
-If this vault came from the web workbench, the browser cannot know the absolute
-path to your folder. Open \`.mcp.json.example\`, replace the \`OMOT_VAULT\`
-placeholder with the absolute path to this vault, then:
+- \`.mcp.json\` for Claude Code / Cursor
+- \`.codex/config.toml\` for Codex
 
-- **Claude Code / Cursor**: save it as \`.mcp.json\` in the repo or vault folder,
-  then restart the agent.
-- **Codex**: run this once, replacing the placeholder path:
+Open the vault folder itself in the agent and restart it. Both config files use
+\`OMOT_VAULT=.\`, so the agent reads and writes this folder directly.
+
+If you prefer to keep the agent opened at a separate codebase root, use the
+manual template instead: open \`.mcp.json.example\`, replace the
+\`OMOT_VAULT\` placeholder with the absolute path to this vault, then copy that
+server entry into your agent config.
+
+Codex can also be wired globally with one command:
 
   \`\`\`bash
   codex mcp add oh-my-ontology --env OMOT_VAULT=/absolute/path/to/this-vault -- npx -y oh-my-ontology-mcp
@@ -235,11 +240,23 @@ export const ONTOLOGY_STARTER_FILES: ReadonlyArray<StarterFile> = [
 ];
 
 /**
- * MCP config to register an AI agent (Claude Code, Cursor, …). Users
- * copy this into their agent's config. `OMOT_VAULT` must be the
- * absolute path to the vault folder — the browser cannot know it.
+ * MCP config template to register an AI agent (Claude Code, Cursor, …) from
+ * a different working directory. `OMOT_VAULT` must be the absolute path to
+ * the vault folder — the browser cannot know it.
  */
 export function buildMcpConfigJson(vaultName: string): string {
+  return buildMcpConfigJsonForVault(`<absolute path to your ${vaultName} folder>`);
+}
+
+/**
+ * Ready-to-use MCP config for opening the vault folder itself in Claude Code
+ * or Cursor. `OMOT_VAULT=.` keeps the config portable inside the folder.
+ */
+export function buildVaultMcpConfigJson(): string {
+  return buildMcpConfigJsonForVault('.');
+}
+
+function buildMcpConfigJsonForVault(omotVault: string): string {
   return (
     JSON.stringify(
       {
@@ -248,7 +265,7 @@ export function buildMcpConfigJson(vaultName: string): string {
             command: 'npx',
             args: ['-y', 'oh-my-ontology-mcp'],
             env: {
-              OMOT_VAULT: `<absolute path to your ${vaultName} folder>`,
+              OMOT_VAULT: omotVault,
             },
           },
         },
@@ -257,4 +274,19 @@ export function buildMcpConfigJson(vaultName: string): string {
       2,
     ) + '\n'
   );
+}
+
+/**
+ * Ready-to-use Codex MCP config for opening the vault folder itself in Codex.
+ */
+export function buildCodexConfigToml(): string {
+  return [
+    '[mcp_servers.oh-my-ontology]',
+    'command = "npx"',
+    'args = ["-y", "oh-my-ontology-mcp"]',
+    '',
+    '[mcp_servers.oh-my-ontology.env]',
+    'OMOT_VAULT = "."',
+    '',
+  ].join('\n');
 }

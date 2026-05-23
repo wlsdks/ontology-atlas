@@ -15,7 +15,8 @@ interface Props {
 /**
  * mission v2 ontology starter CTA — vault 폴더 선택 후 비어 있으면 prominent
  * 카드, 이미 있으면 작은 보조 버튼. 사용자 비전 ("비개발자도 같이") 의
- * 핵심 진입점 — 터미널 / npm 없이 5 md 시드 + .mcp.json 작성.
+ * 핵심 진입점 — 터미널 / npm 없이 5 md 시드 + .mcp.json +
+ * .codex/config.toml 작성.
  *
  * AI agent (Claude Code 등) 등록 안내는 scaffold 후 toast 로 띄우는 게
  * 자연스럽지만 이 컴포넌트는 결과만 emit — 호출자 (DocsVaultPage) 가 toast.
