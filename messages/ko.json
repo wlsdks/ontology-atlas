@@ -904,6 +904,7 @@
       "agentCopyCli": "CLI 복사",
       "agentCopySlug": "slug 복사",
       "agentCopyStep": "step 복사",
+      "agentCopyRunOrder": "run order 복사",
       "agentCopyReadinessPrompt": "repair prompt 복사",
       "agentCopied": "복사됨",
       "agentCopyFailed": "복사 실패",

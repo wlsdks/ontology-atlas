@@ -904,6 +904,7 @@
       "agentCopyCli": "Copy CLI",
       "agentCopySlug": "Copy slug",
       "agentCopyStep": "Copy step",
+      "agentCopyRunOrder": "Copy run order",
       "agentCopyReadinessPrompt": "Copy repair prompt",
       "agentCopied": "Copied",
       "agentCopyFailed": "Copy failed",

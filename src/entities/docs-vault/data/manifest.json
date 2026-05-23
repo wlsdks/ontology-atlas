@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T01:24:40.524Z",
+  "generatedAt": "2026-05-23T01:29:32.816Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -2367,6 +2367,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-23 — Copyable agent run order",
+          "slug": "2026-05-23-copyable-agent-run-order"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-19 — CLI growth plan dogfood",
           "slug": "2026-05-19-cli-growth-plan-dogfood"
         },
@@ -3387,8 +3392,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. Fresh vault setup now gives Codex the same repolocal MCP path as Claude Code and Cursor. C",
-      "wordCount": 16762,
-      "updatedAt": "2026-05-23T01:24:23.137Z",
+      "wordCount": 16868,
+      "updatedAt": "2026-05-23T01:29:25.735Z",
       "linksOut": [
         "slug"
       ]
@@ -4377,8 +4382,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 6030,
-      "updatedAt": "2026-05-23T01:17:50.253Z",
+      "wordCount": 6035,
+      "updatedAt": "2026-05-23T01:28:11.594Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4678,8 +4683,8 @@
         }
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
-      "wordCount": 1329,
-      "updatedAt": "2026-05-22T08:11:36.457Z",
+      "wordCount": 1385,
+      "updatedAt": "2026-05-23T01:28:19.703Z",
       "linksOut": []
     },
     {

@@ -38,6 +38,7 @@ import {
   computeKindDistribution,
   formatAgentRecipeCliCommand,
   formatAgentRecipePayload,
+  formatAgentRunOrderPrompt,
   formatAgentTraversalStrategyPrompt,
   countCrossProjectEdges,
   selectAgentProjectEntrypoint,
@@ -569,7 +570,11 @@ function AgentQueryRecipesPanel({
     () => buildAgentHandoffPrompt(recipes, entrypoints, projectEntrypoint, traversalStrategies),
     [entrypoints, projectEntrypoint, recipes, traversalStrategies],
   );
-  const firstRunRecipes = recipes.slice(0, 5);
+  const firstRunRecipes = useMemo(() => recipes.slice(0, 5), [recipes]);
+  const firstRunPrompt = useMemo(
+    () => formatAgentRunOrderPrompt(firstRunRecipes),
+    [firstRunRecipes],
+  );
   const primaryRecipeCount = recipes.filter((recipe) => recipe.priority === "primary").length;
   const recipeStats = [
     {
@@ -760,6 +765,12 @@ function AgentQueryRecipesPanel({
               {t("agentRunOrderSubtitle")}
             </p>
           </div>
+          <CopyAgentTextButton
+            label={t("agentCopyRunOrder")}
+            copiedLabel={t("agentCopied")}
+            text={firstRunPrompt}
+            compact
+          />
         </div>
         <ol className="grid min-w-0 gap-2 sm:grid-cols-2 lg:grid-cols-5">
           {firstRunRecipes.map((recipe, index) => {

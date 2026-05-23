@@ -12,6 +12,7 @@ import {
   formatAgentPlaybookPrompt,
   formatAgentRecipeCliCommand,
   formatAgentRecipePayload,
+  formatAgentRunOrderPrompt,
   formatAgentTraversalStrategyPrompt,
   selectAgentProjectEntrypoint,
   selectAgentQueryEntrypoints,
@@ -201,6 +202,32 @@ describe("buildAgentQueryRecipes", () => {
       "oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "domain_matrix")!)).toBeNull();
+  });
+
+  it("formats the first-contact run order as one copyable prompt", () => {
+    const recipes = buildAgentQueryRecipes("ready", [
+      {
+        slug: "capabilities/mcp-server",
+        title: "MCP Server",
+        kind: "capability",
+        degree: 7,
+      },
+      {
+        slug: "domains/views",
+        title: "Views",
+        kind: "domain",
+        degree: 6,
+      },
+    ]).slice(0, 5);
+
+    const prompt = formatAgentRunOrderPrompt(recipes);
+
+    expect(prompt).toContain("Use this oh-my-ontology first-contact run order");
+    expect(prompt).toContain("1. query_ontology.agent_brief");
+    expect(prompt).toContain('"operation": "query_plan"');
+    expect(prompt).toContain("CLI fallback commands when the MCP connector is unavailable:");
+    expect(prompt).toContain("oh-my-ontology blast-radius capabilities/mcp-server [vault] --plan --depth 2");
+    expect(prompt).toContain("evidence.pathsComplete");
   });
 
   it("builds a handoff prompt with first-contact and sync guidance", () => {

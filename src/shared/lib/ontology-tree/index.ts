@@ -54,6 +54,7 @@ export {
   formatAgentPlaybookPrompt,
   formatAgentRecipeCliCommand,
   formatAgentRecipePayload,
+  formatAgentRunOrderPrompt,
   formatAgentTraversalStrategyPrompt,
   selectAgentProjectEntrypoint,
   selectAgentQueryEntrypoints,

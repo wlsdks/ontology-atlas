@@ -197,6 +197,32 @@ export function formatAgentRecipePayload(recipe: AgentQueryRecipe): string {
   return formatAgentMcpQueryPayload(recipe);
 }
 
+export function formatAgentRunOrderPrompt(recipes: readonly AgentQueryRecipe[]): string {
+  const payloads = recipes
+    .map((recipe, index) => `${index + 1}. ${recipe.operation}\n${formatAgentRecipePayload(recipe)}`)
+    .join("\n\n");
+  const cliCommands = recipes
+    .map(formatAgentRecipeCliCommand)
+    .filter((command): command is string => command !== null);
+  const cliFallback =
+    cliCommands.length > 0
+      ? [
+          "",
+          "CLI fallback commands when the MCP connector is unavailable:",
+          ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
+        ]
+      : [];
+
+  return [
+    "Use this oh-my-ontology first-contact run order before answering from the codebase graph.",
+    "Run the MCP calls in order. Report health, cite concrete slugs/edges, and run query_plan before heavier traversal or impact queries.",
+    ...ALL_PATHS_RESULT_CONTRACT,
+    "",
+    payloads,
+    ...cliFallback,
+  ].join("\n");
+}
+
 export function formatAgentRecipeCliCommand(recipe: AgentQueryRecipe): string | null {
   const args = recipe.arguments;
   switch (args.operation) {
@@ -359,20 +385,7 @@ export function buildAgentHandoffPrompt(
   projectEntrypoint: AgentProjectEntrypoint | null = null,
   traversalStrategies: readonly AgentTraversalStrategy[] = [],
 ): string {
-  const payloads = recipes
-    .map((recipe, index) => `${index + 1}. ${recipe.operation}\n${formatAgentRecipePayload(recipe)}`)
-    .join("\n\n");
-  const cliCommands = recipes
-    .map(formatAgentRecipeCliCommand)
-    .filter((command): command is string => command !== null);
-  const cliFallback =
-    cliCommands.length > 0
-      ? [
-          "",
-          "CLI fallback commands when the MCP connector is unavailable:",
-          ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
-        ]
-      : [];
+  const runOrder = formatAgentRunOrderPrompt(recipes);
   const suggestedSlugs =
     entrypoints.length > 0 || projectEntrypoint
       ? [
@@ -397,11 +410,9 @@ export function buildAgentHandoffPrompt(
     traversalStrategies.length > 0
       ? `Traversal strategy: ${traversalStrategies.map((strategy) => strategy.id).join(" -> ")}.`
       : "Traversal strategy: plan_before_enumeration -> bounded_path_evidence -> containment_cross_check.",
-    ...ALL_PATHS_RESULT_CONTRACT,
     "When code changes introduce or rename a domain, capability, element, or relation, sync the docs/ontology vault before finishing.",
     "",
-    payloads,
-    ...cliFallback,
+    runOrder,
     ...suggestedSlugs,
   ].join("\n");
 }

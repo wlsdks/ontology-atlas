@@ -24,6 +24,19 @@ and Cursor.
   smoke, packed CLI smoke, i18n, docs-vault freshness, typecheck, lint, and
   dogfood script-reference checks cover the new path.
 
+## 2026-05-23 — Copyable agent run order
+
+The `/ontology/insights` agent recipe panel now exposes the first-contact graph
+query sequence as one copyable runbook, not only as individual MCP calls.
+
+- **Copy run order** — copies the `agent_brief` / `workspace_brief` /
+  `query_plan` / `health` / `node_profile` MCP payload sequence with the same
+  all-paths evidence contract and CLI fallbacks used by the full handoff prompt.
+- **Shared formatter** — the run-order prompt is produced by
+  `formatAgentRunOrderPrompt`, so the UI button and handoff prompt stay aligned.
+- **UI regression gate** — the focused Playwright insights test now checks that
+  the run-order copy action is visible beside the first-contact rail.
+
 ## 2026-05-19 — CLI growth plan dogfood
 
 The developer CLI now exposes MCP `growth_plan` directly, so agents and humans
