@@ -20,6 +20,9 @@ loop works before the agent writes anything.
 - **Existing-vault path** — folders that already contain markdown now get the
   same copyable verification prompt beside the starter-add option, so users can
   prove MCP connectivity without adding starter files.
+- **Palette access** — the Docs command palette also exposes the same copyable
+  verification prompt whenever a local vault is loaded, with toast feedback for
+  copied / failed states.
 - **First-contact MCP prompt** — generated starter READMEs ask the agent to run
   `validate_vault`, `workspace_brief`, and `agent_brief`, then report whether
   the vault is readable and write tools are available.

@@ -25,8 +25,13 @@ import {
   Settings2,
   X,
 } from 'lucide-react';
-import { VaultConflictError, useLocalVault } from '@/features/docs-vault-local';
+import {
+  ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
+  VaultConflictError,
+  useLocalVault,
+} from '@/features/docs-vault-local';
 import { VaultToolsMenu } from '@/widgets/docs-vault';
+import { copyText } from '@/shared/lib/copy-text';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
@@ -217,6 +222,13 @@ function DocsVaultContent() {
       /* clipboard 권한 없음 — silent. */
     }
   }, []);
+  const handleCopyAgentVerifyPrompt = useCallback(async () => {
+    const copied = await copyText(ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT);
+    toast.show(
+      copied ? t('dialog.agentVerifyPromptCopied') : t('dialog.agentVerifyPromptCopyFailed'),
+      copied ? 'success' : 'error',
+    );
+  }, [t, toast]);
   useEffect(
     () => () => {
       if (copyResetRef.current) clearTimeout(copyResetRef.current);
@@ -1004,6 +1016,13 @@ function DocsVaultContent() {
         onRun: () => selectedSlug && void handleCopyUrl(selectedSlug),
       },
       {
+        id: 'copy-agent-verify-prompt',
+        label: t('commands.copyAgentVerifyPrompt'),
+        icon: '🤖',
+        visible: source === 'local' && localVault.status === 'loaded',
+        onRun: () => void handleCopyAgentVerifyPrompt(),
+      },
+      {
         id: 'print',
         label: t('commands.print'),
         icon: '🖨️',
@@ -1116,6 +1135,7 @@ function DocsVaultContent() {
     projectsListHref,
     localVault,
     handleCopyUrl,
+    handleCopyAgentVerifyPrompt,
     handleCreateNewDoc,
     handleCreateProject,
     handleDailyNote,

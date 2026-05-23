@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T05:08:51.300Z",
+  "generatedAt": "2026-05-23T05:52:11.640Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -3407,8 +3407,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. Starter vaults now tell users how to prove the Claude Code / Cursor / Codex MCP loop works",
-      "wordCount": 17275,
-      "updatedAt": "2026-05-23T05:04:16.188Z",
+      "wordCount": 17304,
+      "updatedAt": "2026-05-23T05:52:03.604Z",
       "linksOut": [
         "slug"
       ]
@@ -4397,8 +4397,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 6158,
-      "updatedAt": "2026-05-23T05:04:16.187Z",
+      "wordCount": 6173,
+      "updatedAt": "2026-05-23T05:52:03.603Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5596,8 +5596,8 @@
         }
       ],
       "excerpt": "crosscutting. 라이트/다크 토글 (html[datatheme=\"light\"]), Sonner기반 toast, arialive 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefersreducedmotion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 web workbench starter 가 같은 5node vault README/setup 내용을 제공하고, Claude Code/Cursor .mc",
-      "wordCount": 177,
-      "updatedAt": "2026-05-23T05:04:16.188Z",
+      "wordCount": 189,
+      "updatedAt": "2026-05-23T05:52:03.605Z",
       "linksOut": []
     },
     {
