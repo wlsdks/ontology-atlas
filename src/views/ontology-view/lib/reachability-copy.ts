@@ -95,6 +95,32 @@ export function buildNodeProfileCliCommand({
   ].join(" ");
 }
 
+export function buildAgentContextBundle({
+  slug,
+  direction,
+  depth,
+  reachabilityLimit,
+  profileLimit,
+}: {
+  slug: string;
+  direction: OntologyReachabilityDirection;
+  depth: 1 | 2 | 3;
+  reachabilityLimit: number;
+  profileLimit: number;
+}): string {
+  return [
+    "Use oh-my-ontology for this selected node before editing.",
+    "",
+    "MCP:",
+    `1. ${buildNodeProfileMcpCall({ slug, limit: profileLimit })}`,
+    `2. ${buildReachabilityMcpCall({ slug, direction, depth, limit: reachabilityLimit })}`,
+    "",
+    "CLI fallback:",
+    `1. ${buildNodeProfileCliCommand({ slug, limit: profileLimit })}`,
+    `2. ${buildReachabilityCliCommand({ slug, direction, depth, limit: reachabilityLimit })}`,
+  ].join("\n");
+}
+
 function shellQuote(value: string): string {
   if (/^[A-Za-z0-9_./:@+-]+$/.test(value)) return value;
   return `'${value.replace(/'/g, "'\\''")}'`;

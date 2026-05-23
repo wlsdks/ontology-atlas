@@ -32,7 +32,8 @@ reachable node 수, terminal node 수, relation 분포, BFS layer 별 도달 노
 preview 를 비교하고 바로 다음 노드로 이동할 수 있다. canonical frontmatter 노드라면
 MCP `query_ontology(node_profile)` / CLI `oh-my-ontology node` 로 현재 노드 맥락을
 복사하거나, 현재 방향/depth 를 반영한 MCP `query_ontology(reachability)` 호출과
-CLI `oh-my-ontology reachability` 명령을 바로 복사할 수 있어, 웹에서 잡은 탐색
+CLI `oh-my-ontology reachability` 명령을 바로 복사할 수 있다. `Copy agent bundle`
+은 profile + reachability 의 MCP 호출과 CLI fallback 을 한 번에 묶어, 웹에서 잡은 탐색
 방향을 Claude Code / Codex 세션으로 옮기기 쉽다. 웹 UI 에서도 graph DB식 탐색
 방향을 빠르게 잡을 수 있다. 계산은 edge 배열을 한 번 adjacency index 로 바꾼 뒤
 BFS 하므로 큰 local vault 에서도 패널 열기 비용을

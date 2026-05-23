@@ -23,6 +23,7 @@ import {
   type OntologyReachabilityDirection,
   type OntologyTreeBuildResult,
 } from "@/shared/lib/ontology-tree";
+import { copyText } from "@/shared/lib/copy-text";
 import { GlobalSearch, MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { OntologyEgoGraph } from "@/widgets/ontology-ego-graph";
 import { OntologyTreeView } from "@/widgets/ontology-tree-view";
@@ -34,6 +35,7 @@ import {
 import { OperationsNav } from "@/widgets/operations-nav";
 import { Tooltip, useToast } from "@/shared/ui";
 import {
+  buildAgentContextBundle,
   buildNodeProfileCliCommand,
   buildNodeProfileMcpCall,
   buildReachabilityCliCommand,
@@ -552,15 +554,13 @@ function CopyNodeLinkButton({
   const handleCopy = async () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const url = `${origin}${buildOntologyNodeHref(node.id)}`;
-    try {
-      await navigator.clipboard.writeText(url);
+    if (await copyText(url)) {
       setCopied(true);
       show(t('toastSuccess'), "success");
       window.setTimeout(() => setCopied(false), 1500);
-    } catch (err) {
-      console.warn("[CopyNodeLinkButton] clipboard write failed", err);
-      show(t('toastError'), "error");
+      return;
     }
+    show(t('toastError'), "error");
   };
 
   return (
@@ -595,21 +595,19 @@ function ReachabilityCopyActions({
   const { show } = useToast();
   const limit = 12;
 
-  const copyText = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
+  const handleCopy = async (text: string) => {
+    if (await copyText(text)) {
       show(t('reachabilityCopyToastSuccess'), "success");
-    } catch (err) {
-      console.warn("[ReachabilityCopyActions] clipboard write failed", err);
-      show(t('reachabilityCopyToastError'), "error");
+      return;
     }
+    show(t('reachabilityCopyToastError'), "error");
   };
 
   return (
     <div className="mt-3 grid grid-cols-2 gap-2">
       <button
         type="button"
-        onClick={() => void copyText(buildReachabilityMcpCall({ slug, direction, depth, limit }))}
+        onClick={() => void handleCopy(buildReachabilityMcpCall({ slug, direction, depth, limit }))}
         className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
       >
         <Clipboard size={12} aria-hidden />
@@ -617,7 +615,7 @@ function ReachabilityCopyActions({
       </button>
       <button
         type="button"
-        onClick={() => void copyText(buildReachabilityCliCommand({ slug, direction, depth, limit }))}
+        onClick={() => void handleCopy(buildReachabilityCliCommand({ slug, direction, depth, limit }))}
         className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
       >
         <Clipboard size={12} aria-hidden />
@@ -629,21 +627,28 @@ function ReachabilityCopyActions({
 
 function AgentContextCopyActions({
   slug,
+  reachabilityDirection,
+  reachabilityDepth,
 }: {
   slug: string;
+  reachabilityDirection: OntologyReachabilityDirection;
+  reachabilityDepth: 1 | 2 | 3;
 }) {
   const t = useTranslations('ontologyView.detail');
   const { show } = useToast();
-  const limit = 8;
+  const profileLimit = 8;
+  const reachabilityLimit = 12;
 
-  const copyText = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      show(t('agentContextCopyToastSuccess'), "success");
-    } catch (err) {
-      console.warn("[AgentContextCopyActions] clipboard write failed", err);
-      show(t('agentContextCopyToastError'), "error");
+  const handleCopy = async (
+    text: string,
+    successKey: "agentContextCopyToastSuccess" | "agentContextBundleToastSuccess",
+    errorKey: "agentContextCopyToastError" | "agentContextBundleToastError",
+  ) => {
+    if (await copyText(text)) {
+      show(t(successKey), "success");
+      return;
     }
+    show(t(errorKey), "error");
   };
 
   return (
@@ -654,7 +659,11 @@ function AgentContextCopyActions({
       <div className="mt-2 grid grid-cols-2 gap-2">
         <button
           type="button"
-          onClick={() => void copyText(buildNodeProfileMcpCall({ slug, limit }))}
+          onClick={() => void handleCopy(
+            buildNodeProfileMcpCall({ slug, limit: profileLimit }),
+            "agentContextCopyToastSuccess",
+            "agentContextCopyToastError",
+          )}
           className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
         >
           <Clipboard size={12} aria-hidden />
@@ -662,11 +671,33 @@ function AgentContextCopyActions({
         </button>
         <button
           type="button"
-          onClick={() => void copyText(buildNodeProfileCliCommand({ slug, limit }))}
+          onClick={() => void handleCopy(
+            buildNodeProfileCliCommand({ slug, limit: profileLimit }),
+            "agentContextCopyToastSuccess",
+            "agentContextCopyToastError",
+          )}
           className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
         >
           <Clipboard size={12} aria-hidden />
           <span className="truncate">{t('agentContextCopyCli')}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleCopy(
+            buildAgentContextBundle({
+              slug,
+              direction: reachabilityDirection,
+              depth: reachabilityDepth,
+              reachabilityLimit,
+              profileLimit,
+            }),
+            "agentContextBundleToastSuccess",
+            "agentContextBundleToastError",
+          )}
+          className="col-span-2 inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.10)] px-2.5 py-1.5 text-[10px] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:bg-[color:rgba(94,106,210,0.14)]"
+        >
+          <Clipboard size={12} aria-hidden />
+          <span className="truncate">{t('agentContextCopyBundle')}</span>
         </button>
       </div>
     </div>
@@ -812,7 +843,11 @@ function NodeDetailPanel({
         {node.id}
       </p>
       {reachabilityQuerySlug ? (
-        <AgentContextCopyActions slug={reachabilityQuerySlug} />
+        <AgentContextCopyActions
+          slug={reachabilityQuerySlug}
+          reachabilityDirection={reachabilityDirection}
+          reachabilityDepth={reachabilityDepth}
+        />
       ) : null}
 
       {reachability ? (

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
+  buildAgentContextBundle,
   buildNodeProfileCliCommand,
   buildNodeProfileMcpCall,
   buildReachabilityCliCommand,
@@ -86,6 +87,30 @@ describe("reachability copy helpers", () => {
     );
     expect(buildNodeProfileCliCommand(args)).toBe(
       "oh-my-ontology node capabilities/cli-developer-entry --limit 8",
+    );
+  });
+
+  it("builds an agent-ready node context bundle", () => {
+    expect(
+      buildAgentContextBundle({
+        slug: "capabilities/cli-developer-entry",
+        direction: "outgoing",
+        depth: 3,
+        reachabilityLimit: 12,
+        profileLimit: 8,
+      }),
+    ).toBe(
+      [
+        "Use oh-my-ontology for this selected node before editing.",
+        "",
+        "MCP:",
+        '1. query_ontology({"operation":"node_profile","slug":"capabilities/cli-developer-entry","limit":8})',
+        '2. query_ontology({"operation":"reachability","slug":"capabilities/cli-developer-entry","direction":"outgoing","depth":3,"limit":12})',
+        "",
+        "CLI fallback:",
+        "1. oh-my-ontology node capabilities/cli-developer-entry --limit 8",
+        "2. oh-my-ontology reachability capabilities/cli-developer-entry --direction outgoing --depth 3 --limit 12",
+      ].join("\n"),
     );
   });
 });
