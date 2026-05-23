@@ -15,7 +15,9 @@ export function formatQueryPlanLines(plan, colors, { fallbackHint } = {}) {
   const lines = [
     `${colors.bold}query_plan${colors.reset} ${runColor}${plan.execution.nextStep}${colors.reset}` +
       ` ${colors.dim}strategy=${plan.estimate.strategy} cost=${plan.estimate.costClass}` +
-      ` resultUpperBound=${plan.estimate.resultUpperBound ?? 'n/a'}${warningSuffix}${colors.reset}`,
+      ` resultUpperBound=${plan.estimate.resultUpperBound ?? 'n/a'}` +
+      (plan.estimate.totalMatches !== undefined ? ` totalMatches=${plan.estimate.totalMatches}` : '') +
+      `${warningSuffix}${colors.reset}`,
     `  ${plan.execution.recommendation}`,
   ];
 

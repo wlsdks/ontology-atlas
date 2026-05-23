@@ -569,19 +569,92 @@ export function createOntologyEngine(artifact, options = {}) {
         costClass: queryCostClass(traversal.edgeScans),
       };
     } else if (targetOperation === 'match_nodes') {
+      const kind = normalizeNodeKind(options.kind, 'kind');
+      const domain = normalizeOptionalString(options.domain, 'domain');
+      const slugContains = normalizeOptionalString(options.slugContains, 'slugContains')?.toLowerCase() ?? null;
+      const minDegree = normalizeNonNegativeInteger(options.minDegree, 'minDegree');
+      const maxDegree = normalizeNonNegativeInteger(options.maxDegree, 'maxDegree');
+      const minInDegree = normalizeNonNegativeInteger(options.minInDegree, 'minInDegree');
+      const minOutDegree = normalizeNonNegativeInteger(options.minOutDegree, 'minOutDegree');
+      const hasIncoming = normalizeOptionalBoolean(options.hasIncoming, 'hasIncoming', null);
+      const hasOutgoing = normalizeOptionalBoolean(options.hasOutgoing, 'hasOutgoing', null);
+      const sort = normalizeNodeSort(options.sort);
+      const matchingNodes = nodes.filter((node) => {
+        const inDegree = node.inDegree || 0;
+        const outDegree = node.outDegree || 0;
+        const degree = inDegree + outDegree;
+        if (kind && node.kind !== kind) return false;
+        if (domain && node.domain !== domain) return false;
+        if (slugContains && !node.slug.toLowerCase().includes(slugContains)) return false;
+        if (minDegree !== null && degree < minDegree) return false;
+        if (maxDegree !== null && degree > maxDegree) return false;
+        if (minInDegree !== null && inDegree < minInDegree) return false;
+        if (minOutDegree !== null && outDegree < minOutDegree) return false;
+        if (hasIncoming !== null && (inDegree > 0) !== hasIncoming) return false;
+        if (hasOutgoing !== null && (outDegree > 0) !== hasOutgoing) return false;
+        return true;
+      });
+      Object.assign(normalized, {
+        kind,
+        domain,
+        slugContains,
+        minDegree,
+        maxDegree,
+        minInDegree,
+        minOutDegree,
+        hasIncoming,
+        hasOutgoing,
+        sort,
+      });
       indexesUsed.push('nodes');
       estimate = {
         strategy: 'node_scan',
         nodeScans: nodes.length,
-        resultUpperBound: Math.min(nodes.length, limit),
+        totalMatches: matchingNodes.length,
+        resultUpperBound: Math.min(matchingNodes.length, limit),
         costClass: queryCostClass(nodes.length),
       };
     } else if (targetOperation === 'match_edges') {
+      const edgeTypeSet = normalizeMatchEdgesTypes(options);
+      const fromInput = normalizeOptionalString(options.from, 'from');
+      const toInput = normalizeOptionalString(options.to, 'to');
+      const from = fromInput ? resolve(fromInput, 'from') : null;
+      const to = toInput ? resolve(toInput, 'to') : null;
+      const fromKind = normalizeNodeKind(options.fromKind, 'fromKind');
+      const toKind = normalizeEdgeTargetKind(options.toKind, 'toKind');
+      const includeExternal = normalizeOptionalBoolean(options.includeExternal, 'includeExternal', false);
+      const includeUnresolved = normalizeOptionalBoolean(options.includeUnresolved, 'includeUnresolved', false);
+      const matchingEdges = edges.filter((edge) => {
+        if (!edgeAllowed(edge, edgeTypeSet, includeExternal, includeUnresolved)) return false;
+        if (from && edge.from !== from) return false;
+        if (to && edge.to !== to) return false;
+        const fromNode = nodeBySlug.get(edge.from);
+        const toNode = edge.resolved ? nodeBySlug.get(edge.to) : null;
+        if (fromKind && fromNode?.kind !== fromKind) return false;
+        if (toKind) {
+          if (edge.resolved) return toNode?.kind === toKind;
+          if (edge.external) return toKind === 'external';
+          return toKind === 'unresolved';
+        }
+        return true;
+      });
+      Object.assign(normalized, {
+        from,
+        to,
+        fromKind,
+        toKind,
+        types: edgeTypeSet ? [...edgeTypeSet].sort() : null,
+        includeExternal,
+        includeUnresolved,
+      });
       indexesUsed.push('edges');
+      if (edgeTypeSet) indexesUsed.push('edge.type filter');
+      if (from || to) indexesUsed.push('aliasToSlug');
       estimate = {
         strategy: 'edge_scan',
         edgeScans: edges.length,
-        resultUpperBound: Math.min(edges.length, limit),
+        totalMatches: matchingEdges.length,
+        resultUpperBound: Math.min(matchingEdges.length, limit),
         costClass: queryCostClass(edges.length),
       };
     } else if (targetOperation === 'centrality') {
@@ -4421,8 +4494,22 @@ function buildPlannedQuery(targetOperation, normalized) {
     'searchBudget',
     'iterations',
     'limit',
+    'kind',
+    'domain',
+    'slugContains',
+    'minDegree',
+    'maxDegree',
+    'minInDegree',
+    'minOutDegree',
+    'hasIncoming',
+    'hasOutgoing',
+    'sort',
+    'fromKind',
+    'toKind',
+    'includeExternal',
+    'includeUnresolved',
   ]) {
-    if (normalized[key] !== undefined) query[key] = normalized[key];
+    if (normalized[key] !== undefined && normalized[key] !== null) query[key] = normalized[key];
   }
   if (Array.isArray(normalized.types) && normalized.types.length > 0) {
     query.types = normalized.types;

@@ -423,6 +423,78 @@ describe('queryCompiledOntology', () => {
         types: ['dependencies'],
       },
     });
+
+    const matchNodesPlan = queryCompiledOntology(artifact(), {
+      operation: 'query_plan',
+      targetOperation: 'match_nodes',
+      kind: 'capability',
+      minInDegree: 1,
+      hasOutgoing: true,
+      sort: 'inDegree',
+      limit: 5,
+    });
+    assert.equal(matchNodesPlan.targetOperation, 'match_nodes');
+    assert.deepEqual(matchNodesPlan.normalized, {
+      targetOperation: 'match_nodes',
+      types: null,
+      limit: 5,
+      kind: 'capability',
+      domain: null,
+      slugContains: null,
+      minDegree: null,
+      maxDegree: null,
+      minInDegree: 1,
+      minOutDegree: null,
+      hasIncoming: null,
+      hasOutgoing: true,
+      sort: 'inDegree',
+    });
+    assert.equal(matchNodesPlan.estimate.nodeScans, 3);
+    assert.equal(matchNodesPlan.estimate.totalMatches, 1);
+    assert.equal(matchNodesPlan.estimate.resultUpperBound, 1);
+    assert.deepEqual(matchNodesPlan.execution.suggestedQuery, {
+      operation: 'match_nodes',
+      limit: 5,
+      kind: 'capability',
+      minInDegree: 1,
+      hasOutgoing: true,
+      sort: 'inDegree',
+    });
+
+    const matchEdgesPlan = queryCompiledOntology(artifact(), {
+      operation: 'query_plan',
+      targetOperation: 'match_edges',
+      fromKind: 'capability',
+      type: 'depends_on',
+      toKind: 'domain',
+      includeExternal: true,
+      limit: 5,
+    });
+    assert.equal(matchEdgesPlan.targetOperation, 'match_edges');
+    assert.deepEqual(matchEdgesPlan.normalized, {
+      targetOperation: 'match_edges',
+      types: ['dependencies'],
+      limit: 5,
+      from: null,
+      to: null,
+      fromKind: 'capability',
+      toKind: 'domain',
+      includeExternal: true,
+      includeUnresolved: false,
+    });
+    assert.deepEqual(matchEdgesPlan.indexesUsed, ['edge.type filter', 'edges']);
+    assert.equal(matchEdgesPlan.estimate.edgeScans, 4);
+    assert.equal(matchEdgesPlan.estimate.totalMatches, 1);
+    assert.equal(matchEdgesPlan.estimate.resultUpperBound, 1);
+    assert.deepEqual(matchEdgesPlan.execution.suggestedQuery, {
+      operation: 'match_edges',
+      limit: 5,
+      fromKind: 'capability',
+      toKind: 'domain',
+      includeExternal: true,
+      includeUnresolved: false,
+      types: ['dependencies'],
+    });
   });
 
   it('returns a safer executable query when query_plan detects expensive traversal', () => {

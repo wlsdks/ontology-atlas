@@ -48,7 +48,7 @@ test('formatQueryPlanLines renders warning count, safer query, and warnings', ()
         recommendation: 'Review warnings before running suggestedQuery.',
         saferQuery: { operation: 'all_paths', maxHops: 2 },
       },
-      estimate: { strategy: 'bounded_path_enumeration', costClass: 'medium' },
+      estimate: { strategy: 'bounded_path_enumeration', costClass: 'medium', totalMatches: 12 },
       warnings: ['all_paths may be truncated by limit.'],
     }),
     COLORS,
@@ -58,6 +58,7 @@ test('formatQueryPlanLines renders warning count, safer query, and warnings', ()
   assert.match(lines[0], /review/);
   assert.match(lines[0], /strategy=bounded_path_enumeration/);
   assert.match(lines[0], /cost=medium/);
+  assert.match(lines[0], /totalMatches=12/);
   assert.match(lines[0], /warnings=1/);
   assert.match(lines.join('\n'), /safer/);
   assert.match(lines.join('\n'), /"maxHops":2/);

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T16:28:34.549Z",
+  "generatedAt": "2026-05-23T16:37:24.327Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -4397,8 +4397,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 6235,
-      "updatedAt": "2026-05-23T16:28:24.629Z",
+      "wordCount": 6244,
+      "updatedAt": "2026-05-23T16:35:18.930Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4939,8 +4939,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / allpaths / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, write 전 schema preflight 인 relationcheck, Claude Code/Codex handoff 를 보는 agentbrief, 그리고 설치된 M",
-      "wordCount": 8353,
-      "updatedAt": "2026-05-23T15:59:51.854Z",
+      "wordCount": 8371,
+      "updatedAt": "2026-05-23T16:36:15.154Z",
       "linksOut": []
     },
     {
@@ -5097,8 +5097,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 12524,
-      "updatedAt": "2026-05-23T14:39:08.402Z",
+      "wordCount": 12553,
+      "updatedAt": "2026-05-23T16:36:01.707Z",
       "linksOut": []
     },
     {

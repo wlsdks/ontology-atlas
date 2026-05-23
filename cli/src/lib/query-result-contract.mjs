@@ -506,7 +506,7 @@ export function assertQueryPlanShape(result, expectedTargetOperation) {
   if (!QUERY_PLAN_COST_CLASSES.has(result.estimate.costClass)) {
     throw new Error('query_plan estimate.costClass must be low, medium, or high');
   }
-  for (const field of ['edgeScans', 'nodeScans', 'reachableWithinDepth', 'potentialPathUpperBound', 'resultUpperBound']) {
+  for (const field of ['edgeScans', 'nodeScans', 'reachableWithinDepth', 'potentialPathUpperBound', 'totalMatches', 'resultUpperBound']) {
     if (result.estimate[field] !== undefined && !validCount(result.estimate[field])) {
       throw new Error(`query_plan estimate.${field} must be a non-negative integer when present`);
     }
