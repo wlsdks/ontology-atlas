@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T23:09:02.287Z",
+  "generatedAt": "2026-05-23T23:14:17.878Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -4397,8 +4397,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 6670,
-      "updatedAt": "2026-05-23T22:31:43.467Z",
+      "wordCount": 6720,
+      "updatedAt": "2026-05-23T23:13:35.117Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4699,8 +4699,8 @@
         }
       ],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. web starter 와 CLI init 은 .mcp.json, .codex/config.toml, .mcp.json.example 을 생성하고, Docs vault tools menu 는 현재 로컬 폴더에 이 파일들이 있는지, 그리고 각 파일이 실제 ohmyontology MCP 서버와 OMOTVAULT 를 가리키는지 별도 agent setup 상태로 보여준다. 상태 헤더는 준비된 setup 파일 수",
-      "wordCount": 431,
-      "updatedAt": "2026-05-23T22:05:16.272Z",
+      "wordCount": 437,
+      "updatedAt": "2026-05-23T23:14:01.123Z",
       "linksOut": []
     },
     {
@@ -4945,8 +4945,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
-      "wordCount": 9070,
-      "updatedAt": "2026-05-23T22:24:03.316Z",
+      "wordCount": 9112,
+      "updatedAt": "2026-05-23T23:14:10.991Z",
       "linksOut": []
     },
     {

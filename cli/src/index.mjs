@@ -117,7 +117,8 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
   npx oh-my-ontology health [vault]           Graph 무결성 dashboard (5 checks)
        --json --component-types A,B          ${COLORS.dim}focused diagnosis tuning 지원${COLORS.reset}
   npx oh-my-ontology agent-brief [vault]      Claude Code/Codex handoff — readiness + first MCP calls
-       --json --verify-fallbacks             ${COLORS.dim}handoff snapshot · CLI fallback self-check${COLORS.reset}
+       --prompt --graph-db-pack --verify-fallbacks
+                                              ${COLORS.dim}pasteable handoff · shell Graph DB pack · fallback self-check${COLORS.reset}
   npx oh-my-ontology workspace-brief [vault]  Status + hotspots + project_scope 포함 노드 + next actions 한 화면
        --json --dependency-types A,B         ${COLORS.dim}health/workspace_brief tuning forwarding${COLORS.reset}
   npx oh-my-ontology growth [vault]           Growth candidates from MCP growth_plan

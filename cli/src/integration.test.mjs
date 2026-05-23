@@ -137,6 +137,8 @@ await test('command inventory — help and command modules stay aligned', async 
   for (const command of CLI_COMMANDS) {
     assert.match(clean, new RegExp(`oh-my-ontology ${command.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`));
   }
+  assert.match(clean, /--prompt --graph-db-pack --verify-fallbacks/);
+  assert.match(clean, /shell Graph DB pack/);
 
   for (const [command, runner] of Object.entries(CLI_COMMAND_RUNNERS)) {
     const mod = await import(runner.modulePath);

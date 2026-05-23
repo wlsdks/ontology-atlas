@@ -147,6 +147,7 @@ Use the graph before code work:
 ```bash
 oh-my-ontology workspace-brief ./ontology
 oh-my-ontology agent-brief ./ontology
+oh-my-ontology agent-brief ./ontology --graph-db-pack
 oh-my-ontology overview ./ontology
 oh-my-ontology backlinks capabilities/token-issue ./ontology
 oh-my-ontology blast-radius capabilities/token-issue ./ontology
@@ -155,7 +156,9 @@ oh-my-ontology blast-radius capabilities/token-issue ./ontology
 `agent-brief` is the Claude Code/Codex handoff: readiness score, graph
 entrypoints, first MCP calls, investigation playbooks, write guardrails,
 `relation_check` decision guide, health coverage, and the read-first write
-policy. `workspace-brief` is the cheap first-contact dashboard:
+policy. `agent-brief --graph-db-pack` prints a shell-pasteable graph scan pack
+for connector-less sessions, with the selected vault path already inserted.
+`workspace-brief` is the cheap first-contact dashboard:
 it shows hotspots,
 `PROJECT별 포함 노드 수 (project_scope)`, health-check coverage as
 `id:status:count`, and growth counts before the agent chooses where to read
@@ -317,6 +320,7 @@ oh-my-ontology analyze . --vault ./ontology
 oh-my-ontology bootstrap . --vault ./ontology
 oh-my-ontology workspace-brief ./ontology
 oh-my-ontology agent-brief ./ontology
+oh-my-ontology agent-brief ./ontology --graph-db-pack
 ```
 
 웹 workbench를 로컬에서 실행하려면:
