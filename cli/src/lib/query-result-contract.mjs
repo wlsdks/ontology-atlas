@@ -302,6 +302,9 @@ export function assertAgentBriefShape(result) {
   if (!agentToolCallsIncludeOperation(result.firstCalls, 'relation_check')) {
     throw new Error('agent_brief firstCalls must include relation_check preflight');
   }
+  if (!validAgentGraphDbQueryPack(result.graphDbQueryPack)) {
+    throw new Error('agent_brief graphDbQueryPack must include node scan, edge scan, domain coupling, and path evidence query packs');
+  }
   if (!Array.isArray(result.playbooks) || result.playbooks.length === 0) {
     throw new Error('agent_brief playbooks must be a non-empty array');
   }
@@ -1185,11 +1188,41 @@ function validAgentPlaybook(playbook) {
   );
 }
 
+function validAgentGraphDbQueryPack(pack) {
+  if (!Array.isArray(pack) || pack.length === 0) return false;
+  const byId = new Map();
+  for (const item of pack) {
+    if (
+      !isPlainObject(item) ||
+      !hasNonEmptyString(item.id, item.intent, item.goal) ||
+      !Array.isArray(item.calls) ||
+      item.calls.length === 0 ||
+      !item.calls.every((call) => validAgentToolCall(call))
+    ) {
+      return false;
+    }
+    byId.set(item.id, item);
+  }
+  const required = ['node_scan', 'edge_scan', 'domain_coupling', 'path_evidence'];
+  if (required.some((id) => !byId.has(id))) return false;
+  if (!agentToolCallsIncludeQueryPlanTarget(byId.get('node_scan').calls, 'match_nodes')) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('node_scan').calls, 'match_nodes')) return false;
+  if (!agentToolCallsIncludeQueryPlanTarget(byId.get('edge_scan').calls, 'match_edges')) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('edge_scan').calls, 'match_edges')) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('domain_coupling').calls, 'domain_matrix')) return false;
+  if (!agentToolCallsIncludeQueryPlanTarget(byId.get('domain_coupling').calls, 'centrality')) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('domain_coupling').calls, 'centrality')) return false;
+  if (!agentToolCallsIncludeQueryPlanTarget(byId.get('path_evidence').calls, 'all_paths')) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('path_evidence').calls, 'all_paths')) return false;
+  return agentToolCallsIncludeOperation(byId.get('path_evidence').calls, 'explain_relation');
+}
+
 function validAgentHandoffPrompt(value) {
   return hasNonEmptyString(value)
     && /oh-my-ontology MCP server/.test(value)
     && /first-contact MCP calls/i.test(value)
     && /CLI fallback commands/.test(value)
+    && /Graph DB query pack/.test(value)
     && /Investigation playbooks/.test(value)
     && /Traversal strategy/.test(value)
     && /Write guardrails/.test(value)

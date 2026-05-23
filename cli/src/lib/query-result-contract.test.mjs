@@ -575,6 +575,7 @@ describe('query-result-contract', () => {
         'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
         'Run these first-contact MCP calls in order:',
         'CLI fallback commands when the MCP connector is unavailable:',
+        'Graph DB query pack for local markdown graph scans:',
         'Investigation playbooks:',
         'Traversal strategy:',
         'Write guardrails:',
@@ -602,6 +603,46 @@ describe('query-result-contract', () => {
       firstCalls: [
         { tool: 'query_ontology', arguments: { operation: 'workspace_brief', limit: 5 } },
         { tool: 'query_ontology', arguments: { operation: 'relation_check', from: 'domains/auth', to: 'capabilities/login', type: 'contains' } },
+      ],
+      graphDbQueryPack: [
+        {
+          id: 'node_scan',
+          intent: 'MATCH (n:capability) WHERE degree(n) >= 2 RETURN n ORDER BY degree(n) DESC LIMIT 10',
+          goal: 'Find high-degree nodes.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_nodes', kind: 'capability', minDegree: 2, limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'match_nodes', kind: 'capability', minDegree: 2, limit: 10 } },
+          ],
+        },
+        {
+          id: 'edge_scan',
+          intent: 'MATCH ()-[r:depends_on]->() RETURN r LIMIT 20',
+          goal: 'Scan dependency edges.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_edges', types: ['depends_on'], limit: 20 } },
+            { tool: 'query_ontology', arguments: { operation: 'match_edges', types: ['depends_on'], limit: 20 } },
+          ],
+        },
+        {
+          id: 'domain_coupling',
+          intent: 'MATCH (domain)-[depends_on|relates]->(domain) RETURN coupling_matrix LIMIT 6',
+          goal: 'Compare domain coupling.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 } },
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'centrality', types: ['depends_on', 'relates'], limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'centrality', types: ['depends_on', 'relates'], limit: 10 } },
+          ],
+        },
+        {
+          id: 'path_evidence',
+          intent: 'MATCH p=(from)-[:depends_on|relates*..3]-(to) RETURN p LIMIT 10',
+          goal: 'Collect bounded path evidence.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'all_paths', from: 'domains/auth', to: 'capabilities/login', maxHops: 3, searchBudget: 1000, limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'all_paths', from: 'domains/auth', to: 'capabilities/login', maxHops: 3, searchBudget: 1000, limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'explain_relation', from: 'domains/auth', to: 'capabilities/login', maxHops: 5, limit: 10 } },
+          ],
+        },
       ],
       playbooks: [
         {
@@ -799,6 +840,10 @@ describe('query-result-contract', () => {
         firstCalls: valid.firstCalls.filter((call) => call.arguments.operation !== 'relation_check'),
       }),
       /agent_brief firstCalls must include relation_check preflight/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({ ...valid, graphDbQueryPack: valid.graphDbQueryPack.slice(1) }),
+      /agent_brief graphDbQueryPack must include node scan, edge scan, domain coupling, and path evidence query packs/,
     );
     assert.throws(
       () => assertAgentBriefShape({

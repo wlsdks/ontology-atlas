@@ -209,15 +209,17 @@ write 하기 전 read/preflight 를 작업 습관으로 복사하게 만드는 U
 
 같은 write safety gate 는 MCP `query_ontology(agent_brief)` 의
 `writeGuardrails` 와 `relationDecisionGuide` 로도 노출된다. `agent_brief` 는
-UI 와 같은 `graph_traversal` playbook, `plan_before_enumeration` →
-`bounded_path_evidence` → `containment_cross_check` 순서의 `traversalStrategy`,
-그리고 복사 가능한 `handoffPrompt` 도 반환한다.
+UI 와 같은 `graphDbQueryPack`, `graph_traversal` playbook,
+`plan_before_enumeration` → `bounded_path_evidence` → `containment_cross_check`
+순서의 `traversalStrategy`, 그리고 복사 가능한 `handoffPrompt` 도 반환한다.
+그래서 웹 UI 를 거치지 않는 MCP-only Claude Code/Codex 세션도 node scan,
+edge scan, domain coupling, path evidence pack 을 구조화된 JSON 으로 받는다.
 CLI `oh-my-ontology agent-brief --prompt` 는 이 prompt 만 출력해 JSON 파싱 없이
 Claude Code/Codex 세션에 바로 붙여 넣을 수 있다. CLI `oh-my-ontology agent-brief` 와
 `mcp/scripts/verify.mjs` 는 `preflight_relation` / `preflight_rename` /
 `post_change_sync` guardrail shape, playbook `evidence[]` / `stopWhen[]`,
-`handoffPrompt`, `graph_traversal` 의 `schema` / `all_paths` / `pattern_walk` /
-`project_map` coverage, `traversalStrategy` 의 plan-first bounded traversal coverage,
+`handoffPrompt`, `graphDbQueryPack`, `graph_traversal` 의 `schema` / `all_paths` /
+`pattern_walk` / `project_map` coverage, `traversalStrategy` 의 plan-first bounded traversal coverage,
 그리고 `skip_existing` / `review_inverse` / `safe_to_add` /
 `review_new_schema` decision coverage 를 fail-closed 로 검사하므로,
 웹 UI 에서 본 쓰기 안전 절차와 Claude Code/Codex handoff payload 가 같은 계약을

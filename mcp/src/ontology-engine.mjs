@@ -2874,7 +2874,20 @@ export function createOntologyEngine(artifact, options = {}) {
       (overviewResult.hubs.length > 0 ? 20 : 0);
     const readinessStatus = !shaped ? 'needs_shape' : !linked || !clean ? 'needs_attention' : 'ready';
     const impactSlug = topEntrypoint?.slug ?? '<slug>';
-    const pathTargetSlug = secondEntrypoint?.slug ?? '<other-slug>';
+    const graphDbPathTargetSlug =
+      edges.find(
+        (edge) =>
+          edge.from === impactSlug
+          && ['dependencies', 'depends_on', 'relates'].includes(edge.via)
+          && edge.to !== impactSlug,
+      )?.to ??
+      edges.find(
+        (edge) =>
+          edge.to === impactSlug
+          && ['dependencies', 'depends_on', 'relates'].includes(edge.via)
+          && edge.from !== impactSlug,
+      )?.from;
+    const pathTargetSlug = graphDbPathTargetSlug ?? secondEntrypoint?.slug ?? '<other-slug>';
     const relationPreflightCall = agentToolCall('query_ontology', {
       operation: 'relation_check',
       from: impactSlug,
@@ -2915,6 +2928,94 @@ export function createOntologyEngine(artifact, options = {}) {
       to: pathTargetSlug,
       ...traversalBudget,
     });
+    const graphDbQueryPack = [
+      {
+        id: 'node_scan',
+        intent: 'MATCH (n:capability) WHERE degree(n) >= 2 RETURN n ORDER BY degree(n) DESC LIMIT 10',
+        goal: 'Find high-degree capability nodes as onboarding or refactor starting points.',
+        calls: [
+          agentToolCall('query_ontology', {
+            operation: 'query_plan',
+            targetOperation: 'match_nodes',
+            kind: 'capability',
+            minDegree: 2,
+            sort: 'degree',
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'match_nodes',
+            kind: 'capability',
+            minDegree: 2,
+            sort: 'degree',
+            limit: 10,
+          }),
+        ],
+      },
+      {
+        id: 'edge_scan',
+        intent: 'MATCH ()-[r:depends_on]->() RETURN r LIMIT 20',
+        goal: 'Scan dependency edges before treating coupling rows as proof.',
+        calls: [
+          agentToolCall('query_ontology', {
+            operation: 'query_plan',
+            targetOperation: 'match_edges',
+            types: ['depends_on'],
+            limit: 20,
+          }),
+          agentToolCall('query_ontology', { operation: 'match_edges', types: ['depends_on'], limit: 20 }),
+        ],
+      },
+      {
+        id: 'domain_coupling',
+        intent: 'MATCH (domain)-[depends_on|relates]->(domain) RETURN coupling_matrix LIMIT 6',
+        goal: 'Compare domain coupling and centrality before making boundary claims.',
+        calls: [
+          agentToolCall('query_ontology', { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 }),
+          agentToolCall('query_ontology', {
+            operation: 'query_plan',
+            targetOperation: 'centrality',
+            types: ['depends_on', 'relates'],
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', { operation: 'centrality', types: ['depends_on', 'relates'], limit: 10 }),
+        ],
+      },
+      {
+        id: 'path_evidence',
+        intent: 'MATCH p=(from)-[:depends_on|relates*..3]-(to) RETURN p LIMIT 10',
+        goal: 'Collect bounded path evidence and relation explanation before writing or refactoring.',
+        calls: [
+          agentToolCall('query_ontology', {
+            operation: 'query_plan',
+            targetOperation: 'all_paths',
+            from: impactSlug,
+            to: pathTargetSlug,
+            maxHops: 3,
+            types: ['depends_on', 'relates'],
+            searchBudget: 1000,
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'all_paths',
+            from: impactSlug,
+            to: pathTargetSlug,
+            maxHops: 3,
+            types: ['depends_on', 'relates'],
+            searchBudget: 1000,
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'explain_relation',
+            from: impactSlug,
+            to: pathTargetSlug,
+            direction: 'undirected',
+            maxHops: 5,
+            types: ['depends_on', 'relates'],
+            limit: 10,
+          }),
+        ],
+      },
+    ];
     const traversalStrategy = [
       {
         id: 'plan_before_enumeration',
@@ -3066,6 +3167,7 @@ export function createOntologyEngine(artifact, options = {}) {
         }),
         relationPreflightCall,
       ],
+      graphDbQueryPack,
       traversalStrategy,
       playbooks: [
         {
@@ -3231,6 +3333,7 @@ export function createOntologyEngine(artifact, options = {}) {
     };
     brief.cliFallbackCommands = uniqueCliCommands([
       ...brief.firstCalls,
+      ...brief.graphDbQueryPack.flatMap((item) => item.calls),
       ...brief.playbooks.flatMap((playbook) => playbook.calls),
       ...brief.traversalStrategy.flatMap((strategy) => strategy.calls),
       ...brief.writeGuardrails.flatMap((guardrail) => guardrail.calls),
@@ -3992,6 +4095,7 @@ function formatAgentToolCallCliCommand(call) {
         const to = stringArg(args.to, '<to-slug>');
         return withCliFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
           '--plan',
+          Number.isInteger(args.maxHops) && args.maxHops > 1 ? '--force' : null,
           nonNegativeFlag('--max-hops', args.maxHops),
           csvFlag('--types', args.types),
           positiveFlag('--search-budget', args.searchBudget),
@@ -4040,6 +4144,7 @@ function formatAgentToolCallCliCommand(call) {
       const to = stringArg(args.to, '<to-slug>');
       return withCliFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         '--plan',
+        Number.isInteger(args.maxHops) && args.maxHops > 1 ? '--force' : null,
         nonNegativeFlag('--max-hops', args.maxHops),
         csvFlag('--types', args.types),
         positiveFlag('--search-budget', args.searchBudget),
@@ -4157,6 +4262,14 @@ function buildAgentBriefHandoffPrompt(brief) {
       return `- ${playbook.id}: ${playbook.goal}\n  calls: ${calls}\n${evidence}\n${stopWhen}`;
     })
     .join('\n');
+  const graphDbQueryPack = Array.isArray(brief.graphDbQueryPack)
+    ? brief.graphDbQueryPack
+        .map((item) => {
+          const calls = item.calls.map((call) => formatAgentToolCall(call)).join(' -> ');
+          return `- ${item.id}: ${item.intent}\n  goal: ${item.goal}\n  calls: ${calls}`;
+        })
+        .join('\n')
+    : '';
   const guardrails = brief.writeGuardrails
     .map((guardrail) => {
       const calls = guardrail.calls.map((call) => formatAgentToolCall(call)).join(' -> ');
@@ -4180,6 +4293,9 @@ function buildAgentBriefHandoffPrompt(brief) {
     ? brief.cliFallbackCommands
     : uniqueCliCommands([
         ...brief.firstCalls,
+        ...(Array.isArray(brief.graphDbQueryPack)
+          ? brief.graphDbQueryPack.flatMap((item) => item.calls)
+          : []),
         ...brief.playbooks.flatMap((playbook) => playbook.calls),
         ...(Array.isArray(brief.traversalStrategy)
           ? brief.traversalStrategy.flatMap((strategy) => strategy.calls)
@@ -4204,6 +4320,9 @@ function buildAgentBriefHandoffPrompt(brief) {
     'Suggested graph entrypoints:',
     entrypoints,
     ...cliFallback,
+    '',
+    'Graph DB query pack for local markdown graph scans:',
+    graphDbQueryPack,
     '',
     'Investigation playbooks:',
     playbooks,

@@ -2515,6 +2515,25 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10"));
     assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20"));
     assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology all-paths/.test(command)));
+    assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology explain/.test(command)));
+    assert.deepEqual(agentBrief.graphDbQueryPack.map((item) => item.id), [
+      "node_scan",
+      "edge_scan",
+      "domain_coupling",
+      "path_evidence",
+    ]);
+    assert.deepEqual(agentBrief.graphDbQueryPack.flatMap((item) => item.calls).map((call) => call.arguments.operation), [
+      "query_plan",
+      "match_nodes",
+      "query_plan",
+      "match_edges",
+      "domain_matrix",
+      "query_plan",
+      "centrality",
+      "query_plan",
+      "all_paths",
+      "explain_relation",
+    ]);
     assert.deepEqual(agentBrief.playbooks.map((playbook) => playbook.id), [
       "refactor_impact",
       "onboarding_map",

@@ -4205,6 +4205,10 @@ await test('agent-brief — prints agent handoff entrypoints and playbooks', asy
     assert.match(clean, /query_ontology\(\{"operation":"workspace_brief"/);
     assert.match(clean, /CLI FALLBACKS/);
     assert.match(clean, /oh-my-ontology hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
+    assert.match(clean, /GRAPH DB QUERY PACK/);
+    assert.match(clean, /MATCH \(n:capability\) WHERE degree\(n\) >= 2/);
+    assert.match(clean, /path_evidence/);
+    assert.match(clean, /query_ontology\(\{"operation":"explain_relation"/);
     assert.match(clean, /PLAYBOOKS/);
     assert.match(clean, /refactor_impact/);
     assert.match(clean, /evidence:/);
@@ -4266,6 +4270,25 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
       'containment_cross_check',
     ]);
     assert.match(data.handoffPrompt, /Traversal strategy/);
+    assert.match(data.handoffPrompt, /Graph DB query pack for local markdown graph scans/);
+    assert.deepEqual(data.graphDbQueryPack.map((item) => item.id), [
+      'node_scan',
+      'edge_scan',
+      'domain_coupling',
+      'path_evidence',
+    ]);
+    assert.deepEqual(data.graphDbQueryPack.flatMap((item) => item.calls).map((call) => call.arguments.operation), [
+      'query_plan',
+      'match_nodes',
+      'query_plan',
+      'match_edges',
+      'domain_matrix',
+      'query_plan',
+      'centrality',
+      'query_plan',
+      'all_paths',
+      'explain_relation',
+    ]);
     assert.ok(data.traversalStrategy[1].evidence.some((row) => /evidence\.pathsComplete/.test(row)));
     assert.deepEqual(data.resultContracts[0].operation, 'all_paths');
     assert.deepEqual(data.resultContracts[0].mustReport, [
@@ -4334,6 +4357,8 @@ await test('agent-brief --prompt — prints only the copyable handoff prompt', a
     assert.match(clean, /^Use the oh-my-ontology MCP server/);
     assert.match(clean, /Run these first-contact MCP calls in order:/);
     assert.match(clean, /CLI fallback commands when the MCP connector is unavailable:/);
+    assert.match(clean, /Graph DB query pack for local markdown graph scans:/);
+    assert.match(clean, /query_ontology \{"operation":"explain_relation"/);
     assert.match(clean, /oh-my-ontology hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
     assert.match(clean, /oh-my-ontology all-paths/);
     assert.match(clean, /Investigation playbooks:/);
@@ -4566,7 +4591,7 @@ await test('health/agent-brief/workspace-brief --json — fail closed on malform
       "    const operation = msg.params.arguments.operation;",
       "    let payload;",
       "    if (operation === 'health') payload = { operation: 'health', status: 'healthy', summary: { nodes: 1, edges: 0 }, checks: [{ id: 'compile_issues', status: 'pass' }] };",
-      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, handoffPrompt: 'Use the oh-my-ontology MCP server. Run these first-contact MCP calls in order. CLI fallback commands when the MCP connector is unavailable. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', cliFallbackCommands: ['oh-my-ontology health [vault]'], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
+      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, handoffPrompt: 'Use the oh-my-ontology MCP server. Run these first-contact MCP calls in order. CLI fallback commands when the MCP connector is unavailable. Graph DB query pack. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', cliFallbackCommands: ['oh-my-ontology health [vault]'], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
       "    else payload = { operation: 'workspace_brief', status: 'healthy', summary: { nodes: 1, edges: 0 }, nextActions: [{ kind: 'cleanup', severity: 'fatal' }], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",

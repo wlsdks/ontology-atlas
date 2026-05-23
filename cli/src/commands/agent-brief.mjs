@@ -197,6 +197,18 @@ function render(result) {
     process.stdout.write('\n');
   }
 
+  const graphDbQueryPack = Array.isArray(result.graphDbQueryPack) ? result.graphDbQueryPack : [];
+  if (graphDbQueryPack.length > 0) {
+    process.stdout.write(`${COLORS.dim}GRAPH DB QUERY PACK${COLORS.reset} ${COLORS.dim}(MCP + CLI fallback)${COLORS.reset}\n`);
+    for (const item of graphDbQueryPack) {
+      const calls = item.calls.map((call) => formatToolCall(call)).join(' → ');
+      process.stdout.write(`  ${COLORS.bold}${item.id}${COLORS.reset} ${COLORS.dim}${item.intent}${COLORS.reset}\n`);
+      process.stdout.write(`     ${COLORS.dim}${item.goal}${COLORS.reset}\n`);
+      process.stdout.write(`     ${COLORS.cyan}${calls}${COLORS.reset}\n`);
+    }
+    process.stdout.write('\n');
+  }
+
   process.stdout.write(`${COLORS.dim}PLAYBOOKS${COLORS.reset}\n`);
   for (const playbook of result.playbooks) {
     const calls = playbook.calls.map((call) => call.arguments.operation).join(' → ');

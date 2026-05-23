@@ -1803,19 +1803,45 @@ describe('queryCompiledOntology', () => {
 
     assert.match(result.handoffPrompt, /oh-my-ontology MCP server/);
     assert.match(result.handoffPrompt, /first-contact MCP calls/i);
+    assert.match(result.handoffPrompt, /Graph DB query pack for local markdown graph scans/);
+    assert.match(result.handoffPrompt, /MATCH \(n:capability\) WHERE degree\(n\) >= 2/);
+    assert.match(result.handoffPrompt, /query_ontology \{"operation":"explain_relation"/);
     assert.match(result.handoffPrompt, /Investigation playbooks/);
     assert.match(result.handoffPrompt, /CLI fallback commands when the MCP connector is unavailable/);
     assert.match(result.handoffPrompt, /oh-my-ontology hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
     assert.match(result.handoffPrompt, /oh-my-ontology domain-matrix \[vault\] --limit 10/);
     assert.match(result.handoffPrompt, /oh-my-ontology match-nodes \[vault\] --plan --kind capability --min-degree 2 --sort degree --limit 10/);
     assert.match(result.handoffPrompt, /oh-my-ontology match-edges \[vault\] --plan --types depends_on --limit 20/);
-    assert.match(result.handoffPrompt, /oh-my-ontology all-paths capabilities\/login domains\/auth \[vault\] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10/);
+    assert.match(result.handoffPrompt, /oh-my-ontology all-paths capabilities\/login domains\/auth \[vault\] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10/);
     assert.ok(Array.isArray(result.cliFallbackCommands));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates'));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology domain-matrix [vault] --limit 10'));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10'));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20'));
-    assert.ok(result.cliFallbackCommands.includes('oh-my-ontology all-paths capabilities/login domains/auth [vault] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10'));
+    assert.ok(result.cliFallbackCommands.includes('oh-my-ontology all-paths capabilities/login domains/auth [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10'));
+    assert.ok(result.cliFallbackCommands.includes('oh-my-ontology explain capabilities/login domains/auth [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10'));
+    assert.deepEqual(result.graphDbQueryPack.map((item) => item.id), [
+      'node_scan',
+      'edge_scan',
+      'domain_coupling',
+      'path_evidence',
+    ]);
+    assert.deepEqual(result.graphDbQueryPack.flatMap((item) => item.calls).map((call) => call.arguments.operation), [
+      'query_plan',
+      'match_nodes',
+      'query_plan',
+      'match_edges',
+      'domain_matrix',
+      'query_plan',
+      'centrality',
+      'query_plan',
+      'all_paths',
+      'explain_relation',
+    ]);
+    assert.equal(result.graphDbQueryPack[0].calls[0].arguments.targetOperation, 'match_nodes');
+    assert.equal(result.graphDbQueryPack[1].calls[0].arguments.targetOperation, 'match_edges');
+    assert.equal(result.graphDbQueryPack[2].calls[1].arguments.targetOperation, 'centrality');
+    assert.equal(result.graphDbQueryPack[3].calls[0].arguments.targetOperation, 'all_paths');
     assert.match(result.handoffPrompt, /Traversal strategy/);
     assert.match(result.handoffPrompt, /plan_before_enumeration/);
     assert.match(result.handoffPrompt, /Write guardrails/);
