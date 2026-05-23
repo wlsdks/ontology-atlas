@@ -81,6 +81,20 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).not.toContain("agent gets 20");
     expect(readme).not.toContain("**read 12**");
   });
+
+  it("starter README 는 첫 agent 연결 검증 루프를 안내", () => {
+    const readme = ONTOLOGY_STARTER_FILES.find(
+      (f) => f.relPath === "README.md",
+    )?.content;
+
+    expect(readme).toContain("## Verify the agent loop");
+    expect(readme).toContain("validate_vault");
+    expect(readme).toContain('"operation": "workspace_brief"');
+    expect(readme).toContain('"operation": "agent_brief"');
+    expect(readme).toContain("oh-my-ontology validate .");
+    expect(readme).toContain("oh-my-ontology mcp-verify . --timeout-ms 15000");
+    expect(readme).toMatch(/before it edits\s+anything/);
+  });
 });
 
 describe("buildMcpConfigJson", () => {

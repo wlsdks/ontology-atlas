@@ -6,6 +6,21 @@
 
 ---
 
+## 2026-05-23 — Starter agent loop verification
+
+Starter vaults now tell users how to prove the Claude Code / Cursor / Codex MCP
+loop works before the agent writes anything.
+
+- **First-contact MCP prompt** — generated starter READMEs ask the agent to run
+  `validate_vault`, `workspace_brief`, and `agent_brief`, then report whether
+  the vault is readable and write tools are available.
+- **CLI fallback** — the same section gives terminal checks for `validate`,
+  `workspace-brief`, `agent-brief --prompt`, and `mcp-verify --timeout-ms
+  15000`, with a codebase-root vault-path adjustment.
+- **Template parity gate** — web starter output and CLI vault templates remain
+  byte-for-byte aligned, with a focused assertion for the new verification
+  section.
+
 ## 2026-05-23 — 10-minute memory loop smoke
 
 Fresh-repo launch readiness now has an automated gate instead of only a

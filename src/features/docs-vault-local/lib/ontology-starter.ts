@@ -78,6 +78,28 @@ Codex can also be wired globally with one command:
   codex mcp add oh-my-ontology --env OMOT_VAULT=/absolute/path/to/this-vault -- npx -y oh-my-ontology-mcp
   \`\`\`
 
+## Verify the agent loop
+
+After restarting the agent, ask it to prove the connection before it edits
+anything:
+
+> Use the oh-my-ontology MCP server to run \`validate_vault\`, then
+> \`query_ontology({ "operation": "workspace_brief" })\`, then
+> \`query_ontology({ "operation": "agent_brief" })\`. Tell me whether this
+> vault is readable and the write tools are available before proposing changes.
+
+If you also have the CLI installed, the same first-contact check is:
+
+\`\`\`bash
+oh-my-ontology validate .
+oh-my-ontology workspace-brief .
+oh-my-ontology agent-brief . --prompt
+oh-my-ontology mcp-verify . --timeout-ms 15000
+\`\`\`
+
+For an agent opened at your codebase root instead of this vault folder, replace
+\`.\` with the vault path, for example \`./ontology\`.
+
 ## Relations (frontmatter keys)
 
 | Key | What it expresses |
