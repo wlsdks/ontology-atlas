@@ -3,6 +3,7 @@ slug: domains/onboarding-ux
 kind: domain
 title: Onboarding & UX (theme · toast · a11y · mobile · CLI)
 capabilities:
+  - agent-config-onboarding
   - cli-developer-entry
 elements:
   - src/features/theme-toggle
@@ -24,11 +25,13 @@ Claude Code/Cursor `.mcp.json`, Codex `.codex/config.toml`, global Codex `mcp ad
 흐름을 동시에 안내한다. 2026-05-23 follow-up 으로 빈 vault CTA 에 생성 전 agent 검증
 체크리스트와 copyable agent prompt 를 노출하고, 기존 markdown 이 있는 vault 에서도
 starter 파일 추가 없이 같은 검증 prompt 를 복사할 수 있게 했다. Docs command palette 도
-local vault loaded 상태에서 같은 prompt 를 노출한다. starter README 에도 첫 연결 검증
-루프를 추가했다: agent 에게 `validate_vault` → `workspace_brief` → `agent_brief` 를
-실행해 읽기 가능성과 write tool 노출 여부를 보고하게 하고, CLI 사용자는 `validate`,
-`workspace-brief`, `agent-brief --prompt`, `mcp-verify --timeout-ms 15000` 로 같은 경로를
-확인한다. 자세한 디자인 룰: `docs/DESIGN-SYSTEM.md`.
+local vault loaded 상태에서 같은 prompt 를 노출한다. 같은 tools menu 는 `.mcp.json`,
+`.codex/config.toml`, `.mcp.json.example` 존재 여부를 agent setup 상태로 보여주고, 누락된
+설정 파일만 생성하는 repair action 을 제공한다. starter README 에도 첫 연결 검증 루프를
+추가했다: agent 에게 `validate_vault` → `workspace_brief` → `agent_brief` 를 실행해 읽기
+가능성과 write tool 노출 여부를 보고하게 하고, CLI 사용자는 `validate`, `workspace-brief`,
+`agent-brief --prompt`, `mcp-verify --timeout-ms 15000` 로 같은 경로를 확인한다. 자세한 디자인
+룰: `docs/DESIGN-SYSTEM.md`.
 
 2026-05-09 large demo follow-up: `/docs` 에서 Topology 이동이 vault tools menu 안에만
 묻혀 있던 discoverability gap 을 수정. Docs header 에 direct Topology link 를 두고,

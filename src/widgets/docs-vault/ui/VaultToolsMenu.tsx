@@ -1,6 +1,7 @@
 'use client';
 
-import { FilePlus, Layers } from 'lucide-react';
+import { useState } from 'react';
+import { Bot, CheckCircle2, CircleAlert, FilePlus, Layers } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { LocalVaultPicker, OntologyStarterCta } from '@/features/docs-vault-local';
 import type { VaultManifest } from '@/entities/docs-vault';
@@ -31,9 +32,15 @@ interface LocalVaultLike {
     | 'error';
   handle: FileSystemDirectoryHandle | null;
   manifest: VaultManifest | null;
+  agentConfigStatus: {
+    mcpJson: boolean;
+    codexConfig: boolean;
+    mcpExample: boolean;
+  } | null;
   errorMessage: string | null;
   lastLoadedAt: number | null;
   scaffoldOntology: () => Promise<{ created: number; skipped: number }>;
+  ensureAgentConfigs: () => Promise<{ created: number; skipped: number }>;
   open: () => void;
   close: () => void;
   refresh: () => void;
@@ -60,6 +67,27 @@ export function VaultToolsMenu({
   onCreateNewDoc,
 }: Props) {
   const t = useTranslations('docsVault');
+  const [agentSetupBusy, setAgentSetupBusy] = useState(false);
+  const [agentSetupError, setAgentSetupError] = useState<string | null>(null);
+  const agentStatus = localVault.agentConfigStatus;
+  const agentSetupReady = Boolean(
+    agentStatus?.mcpJson && agentStatus.codexConfig && agentStatus.mcpExample,
+  );
+
+  async function handleEnsureAgentConfigs() {
+    setAgentSetupError(null);
+    setAgentSetupBusy(true);
+    try {
+      await localVault.ensureAgentConfigs();
+    } catch (err) {
+      setAgentSetupError(
+        err instanceof Error ? err.message : t('agentSetup.errorFallback'),
+      );
+    } finally {
+      setAgentSetupBusy(false);
+    }
+  }
+
   return (
     <div
       role="menu"
@@ -101,6 +129,107 @@ export function VaultToolsMenu({
           onRefresh={localVault.refresh}
           onRequestPermission={localVault.requestPermission}
         />
+        {localVault.status === 'loaded' && agentStatus ? (
+          <section
+            aria-label={t('agentSetup.ariaLabel')}
+            className="rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(94,106,210,0.06)] p-2.5"
+          >
+            <div className="flex items-start gap-2">
+              <Bot
+                size={14}
+                aria-hidden
+                className="mt-0.5 text-[color:var(--color-indigo-accent)]"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-[11.5px] font-medium text-[color:var(--color-text-primary)]">
+                    {t('agentSetup.title')}
+                  </h3>
+                  <span
+                    className={`rounded-sm px-1.5 py-0.5 font-mono text-[9.5px] uppercase tracking-[0.12em] ${
+                      agentSetupReady
+                        ? 'bg-[color:rgba(50,185,125,0.12)] text-[color:rgba(130,230,180,0.92)]'
+                        : 'bg-[color:rgba(239,180,120,0.12)] text-[color:rgba(244,196,130,0.92)]'
+                    }`}
+                  >
+                    {agentSetupReady
+                      ? t('agentSetup.ready')
+                      : t('agentSetup.missing')}
+                  </span>
+                </div>
+                <div className="mt-2 grid gap-1.5">
+                  {[
+                    ['mcpJson', '.mcp.json', t('agentSetup.mcpJson')],
+                    [
+                      'codexConfig',
+                      '.codex/config.toml',
+                      t('agentSetup.codexConfig'),
+                    ],
+                    [
+                      'mcpExample',
+                      '.mcp.json.example',
+                      t('agentSetup.mcpExample'),
+                    ],
+                  ].map(([key, path, label]) => {
+                    const present = Boolean(
+                      agentStatus[key as keyof typeof agentStatus],
+                    );
+                    return (
+                      <div
+                        key={key}
+                        className="grid grid-cols-[14px_1fr] items-start gap-1.5 text-[11px] leading-4 text-[color:var(--color-text-secondary)]"
+                      >
+                        {present ? (
+                          <CheckCircle2
+                            size={12}
+                            aria-hidden
+                            className="mt-0.5 text-[color:rgba(130,230,180,0.9)]"
+                          />
+                        ) : (
+                          <CircleAlert
+                            size={12}
+                            aria-hidden
+                            className="mt-0.5 text-[color:rgba(244,196,130,0.92)]"
+                          />
+                        )}
+                        <span>
+                          <code className="font-mono text-[10.5px] text-[color:var(--color-text-primary)]">
+                            {path}
+                          </code>{' '}
+                          <span className="text-[color:var(--color-text-tertiary)]">
+                            {label}
+                          </span>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {!agentSetupReady && canEditCurrent ? (
+                  <button
+                    type="button"
+                    onClick={() => void handleEnsureAgentConfigs()}
+                    disabled={agentSetupBusy}
+                    title={t('agentSetup.repairTitle')}
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.35)] bg-[color:rgba(94,106,210,0.1)] px-2 py-1.5 text-[11.5px] text-[color:rgba(200,210,255,0.94)] transition-colors hover:border-[color:rgba(139,151,255,0.55)] hover:bg-[color:rgba(94,106,210,0.16)] disabled:opacity-60"
+                  >
+                    <Bot size={12} aria-hidden />
+                    {agentSetupBusy
+                      ? t('agentSetup.repairing')
+                      : t('agentSetup.repair')}
+                  </button>
+                ) : null}
+                {agentSetupError ? (
+                  <p
+                    role="alert"
+                    className="mt-2 text-[11px] leading-4 text-[color:var(--color-status-danger)]"
+                  >
+                    {agentSetupError}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </section>
+        ) : null}
         {/* dogfood hint + ontology starter CTA — vault 가 *비어 있으면*
             scaffold 버튼 prominent 노출 (Option D), 기존 vault 면 작은
             보조 버튼. 사용자 비전 ("비개발자도 같이") 의 핵심 진입점 —

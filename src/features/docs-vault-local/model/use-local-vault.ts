@@ -79,6 +79,7 @@ interface State {
   status: Status;
   handle: FileSystemDirectoryHandle | null;
   manifest: VaultManifest | null;
+  agentConfigStatus: AgentConfigStatus | null;
   fileHandles: Map<string, FileSystemFileHandle>;
   imageHandles: Map<string, FileSystemFileHandle>;
   errorMessage: string | null;
@@ -86,11 +87,18 @@ interface State {
   lastLoadedAt: number | null;
 }
 
+export interface AgentConfigStatus {
+  mcpJson: boolean;
+  codexConfig: boolean;
+  mcpExample: boolean;
+}
+
 function emptyState(status: Status = 'idle'): State {
   return {
     status,
     handle: null,
     manifest: null,
+    agentConfigStatus: null,
     fileHandles: new Map(),
     imageHandles: new Map(),
     errorMessage: null,
@@ -208,6 +216,82 @@ function verifyRead(
   return verifyHandlePermission(handle, 'read', { ask });
 }
 
+async function hasRootFile(
+  handle: FileSystemDirectoryHandle,
+  fileName: string,
+): Promise<boolean> {
+  try {
+    await handle.getFileHandle(fileName);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function readAgentConfigStatus(
+  handle: FileSystemDirectoryHandle,
+): Promise<AgentConfigStatus> {
+  let codexConfig = false;
+  try {
+    const codexDir = await handle.getDirectoryHandle('.codex');
+    codexConfig = await hasRootFile(codexDir, 'config.toml');
+  } catch {
+    codexConfig = false;
+  }
+  return {
+    mcpJson: await hasRootFile(handle, '.mcp.json'),
+    codexConfig,
+    mcpExample: await hasRootFile(handle, '.mcp.json.example'),
+  };
+}
+
+async function writeRootFileIfMissing(
+  handle: FileSystemDirectoryHandle,
+  fileName: string,
+  content: string,
+): Promise<'created' | 'skipped'> {
+  if (await hasRootFile(handle, fileName)) return 'skipped';
+  const fh = await handle.getFileHandle(fileName, { create: true });
+  const writable = await fh.createWritable();
+  await writable.write(content);
+  await writable.close();
+  return 'created';
+}
+
+async function writeAgentConfigFiles(
+  handle: FileSystemDirectoryHandle,
+): Promise<{ created: number; skipped: number }> {
+  let created = 0;
+  let skipped = 0;
+  const count = (result: 'created' | 'skipped') => {
+    if (result === 'created') created += 1;
+    else skipped += 1;
+  };
+  count(await writeRootFileIfMissing(handle, '.mcp.json', buildVaultMcpConfigJson()));
+  count(
+    await writeRootFileIfMissing(
+      handle,
+      '.mcp.json.example',
+      buildMcpConfigJson(handle.name),
+    ),
+  );
+  try {
+    const codexDir = await handle.getDirectoryHandle('.codex', {
+      create: true,
+    });
+    count(
+      await writeRootFileIfMissing(
+        codexDir,
+        'config.toml',
+        buildCodexConfigToml(),
+      ),
+    );
+  } catch {
+    skipped += 1;
+  }
+  return { created, skipped };
+}
+
 /**
  * @internal — 직접 호출 금지. `useLocalVault()` (LocalVaultProvider 의
  * consumer) 를 통해서만 접근. 본 훅은 LocalVaultProvider 가 1 회 mount
@@ -264,11 +348,13 @@ export function useLocalVaultInternal() {
     try {
       const build: LocalVaultBuild = await buildLocalManifest(handle);
       const { manifest, fileHandles, imageHandles, fingerprint } = build;
+      const agentConfigStatus = await readAgentConfigStatus(handle);
       lastFingerprintRef.current = fingerprint;
       setState({
         status: 'loaded',
         handle,
         manifest,
+        agentConfigStatus,
         fileHandles,
         imageHandles,
         errorMessage: null,
@@ -283,6 +369,7 @@ export function useLocalVaultInternal() {
         status: 'error',
         handle,
         manifest: null,
+        agentConfigStatus: null,
         fileHandles: new Map(),
         imageHandles: new Map(),
         errorMessage: err instanceof Error ? err.message : null,
@@ -689,6 +776,7 @@ export function useLocalVaultInternal() {
           status: 'permission-needed',
           handle,
           manifest: null,
+          agentConfigStatus: null,
           fileHandles: new Map(),
           imageHandles: new Map(),
           errorMessage: null,
@@ -819,61 +907,10 @@ export function useLocalVaultInternal() {
         skipped += 1;
       }
     }
-    const writeRootFileIfMissing = async (fileName: string, content: string) => {
-      try {
-        await vaultHandle.getFileHandle(fileName);
-        skipped += 1;
-        return;
-      } catch {
-        // NotFoundError — 파일 없음, 정상.
-      }
-      try {
-        const fh = await vaultHandle.getFileHandle(fileName, {
-          create: true,
-        });
-        const writable = await fh.createWritable();
-        await writable.write(content);
-        await writable.close();
-        created += 1;
-      } catch {
-        skipped += 1;
-      }
-    };
-
-    const writeCodexConfigIfMissing = async () => {
-      try {
-        const codexDir = await vaultHandle.getDirectoryHandle('.codex', {
-          create: true,
-        });
-        try {
-          await codexDir.getFileHandle('config.toml');
-          skipped += 1;
-          return;
-        } catch {
-          // NotFoundError — 파일 없음, 정상.
-        }
-        const fh = await codexDir.getFileHandle('config.toml', {
-          create: true,
-        });
-        const writable = await fh.createWritable();
-        await writable.write(buildCodexConfigToml());
-        await writable.close();
-        created += 1;
-      } catch {
-        skipped += 1;
-      }
-    };
-
     // Ready-to-use agent configs for "open the vault folder itself" flows.
-    await writeRootFileIfMissing('.mcp.json', buildVaultMcpConfigJson());
-    await writeCodexConfigIfMissing();
-
-    // Manual template for users who keep the AI agent opened at a separate
-    // codebase root and need an absolute OMOT_VAULT path.
-    await writeRootFileIfMissing(
-      '.mcp.json.example',
-      buildMcpConfigJson(vaultHandle.name),
-    );
+    const agentConfigResult = await writeAgentConfigFiles(vaultHandle);
+    created += agentConfigResult.created;
+    skipped += agentConfigResult.skipped;
     await load(vaultHandle);
     return { created, skipped };
   }, [
@@ -884,10 +921,22 @@ export function useLocalVaultInternal() {
     requireWritePermission,
   ]);
 
+  const ensureAgentConfigs = useCallback(async () => {
+    if (!state.handle) {
+      throw new Error('Vault is not open');
+    }
+    const vaultHandle = state.handle;
+    await requireWritePermission(vaultHandle);
+    const result = await writeAgentConfigFiles(vaultHandle);
+    await load(vaultHandle);
+    return result;
+  }, [state.handle, load, requireWritePermission]);
+
   return {
     status: state.status,
     handle: state.handle,
     manifest: state.manifest,
+    agentConfigStatus: state.agentConfigStatus,
     fileHandles: state.fileHandles,
     imageHandles: state.imageHandles,
     errorMessage: state.errorMessage,
@@ -905,6 +954,7 @@ export function useLocalVaultInternal() {
     renameDoc,
     scaffoldTopology,
     scaffoldOntology,
+    ensureAgentConfigs,
     updateFrontmatter,
   };
 }

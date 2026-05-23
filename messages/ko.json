@@ -1140,6 +1140,19 @@
       "ontologyHintSuffix": "를 선택해 보세요 — 이 도구 자체의 ontology vault 가 즉시 트리에 등장합니다 (dogfood).",
       "newDoc": "새 문서"
     },
+    "agentSetup": {
+      "ariaLabel": "AI agent 설정 상태",
+      "title": "AI agent 설정",
+      "ready": "준비됨",
+      "missing": "누락",
+      "mcpJson": "Claude Code / Cursor workspace 설정",
+      "codexConfig": "Codex workspace 설정",
+      "mcpExample": "codebase root 세션용 템플릿",
+      "repair": "누락된 agent 설정 만들기",
+      "repairing": "설정 만드는 중…",
+      "repairTitle": "누락된 .mcp.json, .codex/config.toml, .mcp.json.example 파일만 만듭니다. starter markdown 파일은 추가하지 않습니다.",
+      "errorFallback": "agent 설정을 만들지 못했습니다"
+    },
     "mobileDrawer": {
       "title": "문서 트리",
       "closeAriaLabel": "트리 닫기"

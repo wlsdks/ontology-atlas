@@ -23,6 +23,9 @@ loop works before the agent writes anything.
 - **Palette access** — the Docs command palette also exposes the same copyable
   verification prompt whenever a local vault is loaded, with toast feedback for
   copied / failed states.
+- **Agent setup status** — the local vault tools menu now shows whether
+  `.mcp.json`, `.codex/config.toml`, and `.mcp.json.example` exist, and can
+  create only the missing agent config files without adding starter markdown.
 - **First-contact MCP prompt** — generated starter READMEs ask the agent to run
   `validate_vault`, `workspace_brief`, and `agent_brief`, then report whether
   the vault is readable and write tools are available.

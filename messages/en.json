@@ -1140,6 +1140,19 @@
       "ontologyHintSuffix": " — this tool's own ontology vault appears in the tree instantly (dogfooding).",
       "newDoc": "New doc"
     },
+    "agentSetup": {
+      "ariaLabel": "AI agent setup status",
+      "title": "AI agent setup",
+      "ready": "ready",
+      "missing": "missing",
+      "mcpJson": "Claude Code / Cursor workspace config",
+      "codexConfig": "Codex workspace config",
+      "mcpExample": "template for codebase-root sessions",
+      "repair": "Create missing agent configs",
+      "repairing": "Creating configs…",
+      "repairTitle": "Creates only the missing .mcp.json, .codex/config.toml, and .mcp.json.example files. It does not add starter markdown files.",
+      "errorFallback": "Could not create agent configs"
+    },
     "mobileDrawer": {
       "title": "Document tree",
       "closeAriaLabel": "Close tree"
