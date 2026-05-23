@@ -7,13 +7,15 @@ import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
   formatUnknownFlagError,
   parseBoundedPositiveIntegerFlag,
+  parseCsvListFlag,
   parseRequiredFlagValue,
   parseVaultFlag,
   resolveExclusiveVaultArg,
 } from '../lib/cli-args.mjs';
+import { validateRelationTypeList } from '../lib/relation-types.mjs';
 
 const LIMIT_CAP = 500;
-const ALLOWED_FLAGS = ['--vault', '--project', '--limit', '--json'];
+const ALLOWED_FLAGS = ['--vault', '--project', '--limit', '--types', '--json'];
 
 const COLORS = {
   red: '\x1b[31m',
@@ -67,6 +69,10 @@ function render(result) {
   );
   if (result.project) {
     process.stdout.write(`${COLORS.dim}project${COLORS.reset} ${result.project}\n`);
+  }
+  const types = Array.isArray(result.filters?.types) ? result.filters.types.join(',') : '';
+  if (types) {
+    process.stdout.write(`${COLORS.dim}types${COLORS.reset} ${types}\n`);
   }
   process.stdout.write(
     `${COLORS.dim}nodes${COLORS.reset} ${summary.assignedNodes}/${summary.nodes} assigned` +
@@ -128,6 +134,7 @@ function parseArgs(args) {
     json: false,
     limit: 100,
     project: undefined,
+    types: undefined,
   };
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
@@ -137,6 +144,8 @@ function parseArgs(args) {
     else if (a === '--json') flags.json = true;
     else if (a === '--project') flags.project = parseRequiredFlagValue('--project', args[++i]);
     else if (a.startsWith('--project=')) flags.project = parseRequiredFlagValue('--project', a.slice('--project='.length));
+    else if (a === '--types') flags.types = parseCsvListFlag('--types', args[++i], { itemName: 'relation type' });
+    else if (a.startsWith('--types=')) flags.types = parseCsvListFlag('--types', a.slice('--types='.length), { itemName: 'relation type' });
     else if (a === '--limit') flags.limit = parseBoundedPositiveIntegerFlag('--limit', args[++i], { max: LIMIT_CAP });
     else if (a.startsWith('--limit=')) flags.limit = parseBoundedPositiveIntegerFlag('--limit', a.slice('--limit='.length), { max: LIMIT_CAP });
     else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
@@ -145,6 +154,8 @@ function parseArgs(args) {
   for (const value of Object.values(flags)) {
     if (value instanceof Error) return { error: value.message };
   }
+  const typeError = validateRelationTypeList(flags.types ?? [], '--types items');
+  if (typeError) return { error: typeError.message };
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;
   return {
@@ -154,6 +165,7 @@ function parseArgs(args) {
       operation: 'domain_matrix',
       limit: flags.limit,
       ...(flags.project ? { project: flags.project } : {}),
+      ...(flags.types ? { types: flags.types } : {}),
     },
   };
 }
@@ -161,8 +173,9 @@ function parseArgs(args) {
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology domain-matrix [vault] [--project SLUG] [--limit N] [--json]\n\n` +
+      `  oh-my-ontology domain-matrix [vault] [--project SLUG] [--types A,B] [--limit N] [--json]\n\n` +
       `Domain coupling matrix over the compiled ontology graph. --limit range 1-${LIMIT_CAP}.\n` +
-      `Use --project to scope the matrix to one project containment tree.\n`,
+      `Use --project to scope the matrix to one project containment tree.\n` +
+      `Use --types to focus semantic coupling, e.g. --types depends_on,relates,describes.\n`,
   );
 }

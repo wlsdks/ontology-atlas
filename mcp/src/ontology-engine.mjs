@@ -1561,6 +1561,7 @@ export function createOntologyEngine(artifact, options = {}) {
   function domainMatrix(options = {}) {
     const limit = normalizeLimit(options.limit, 100);
     const project = normalizeOptionalString(options.project ?? options.slug, 'project');
+    const typeSet = normalizeTypes(options.types);
     const scope = project
       ? collectContainmentScope(resolveProjectRoot(project))
       : new Set(nodes.map((node) => node.slug));
@@ -1601,6 +1602,7 @@ export function createOntologyEngine(artifact, options = {}) {
 
     for (const edge of edges) {
       if (!scope.has(edge.from)) continue;
+      if (!typeAllowed(edge.via, typeSet)) continue;
       const fromDomain = domainForNode.get(edge.from);
       if (!fromDomain) continue;
       const fromStats = domainStats.get(fromDomain);
@@ -1656,6 +1658,9 @@ export function createOntologyEngine(artifact, options = {}) {
     return {
       operation: 'domain_matrix',
       project: project ? resolveProjectRoot(project) : null,
+      filters: {
+        types: typeSet ? [...typeSet].sort() : null,
+      },
       summary: {
         domains: domainSlugs.length,
         nodes: scopedNodes.length,
@@ -3896,6 +3901,7 @@ function formatAgentToolCallCliCommand(call) {
       return withCliFlags('oh-my-ontology domain-matrix [vault]', [
         stringFlag('--project', args.project),
         positiveFlag('--limit', args.limit),
+        csvFlag('--types', args.types),
       ]);
     default:
       return null;

@@ -3555,6 +3555,64 @@ await test('domain-matrix --json — exposes scoped summary and connection page'
   }
 });
 
+await test('domain-matrix --types — narrows semantic coupling before rendering', async () => {
+  const root = withVault([
+    {
+      slug: 'project',
+      content:
+        '---\nkind: project\nslug: project\ntitle: Project\ndomains: [domains/auth, domains/billing]\n---\n\n# Project\n',
+    },
+    {
+      slug: 'domains/auth',
+      content:
+        '---\nkind: domain\nslug: domains/auth\ntitle: Auth\ncapabilities: [capabilities/login, capabilities/session]\n---\n\n# Auth\n',
+    },
+    {
+      slug: 'domains/billing',
+      content:
+        '---\nkind: domain\nslug: domains/billing\ntitle: Billing\ncapabilities: [capabilities/invoice]\n---\n\n# Billing\n',
+    },
+    {
+      slug: 'capabilities/login',
+      content:
+        '---\nkind: capability\nslug: capabilities/login\ntitle: Login\ndomain: domains/auth\ndepends_on: [capabilities/invoice]\nrelates: [capabilities/session]\n---\n\n# Login\n',
+    },
+    {
+      slug: 'capabilities/session',
+      content:
+        '---\nkind: capability\nslug: capabilities/session\ntitle: Session\ndomain: domains/auth\n---\n\n# Session\n',
+    },
+    {
+      slug: 'capabilities/invoice',
+      content:
+        '---\nkind: capability\nslug: capabilities/invoice\ntitle: Invoice\ndomain: domains/billing\n---\n\n# Invoice\n',
+    },
+  ]);
+  try {
+    const r = await run(['domain-matrix', root, '--project=project', '--types=depends_on', '--limit=5']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /types dependencies/);
+    assert.match(clean, /domain_matrix 2 domain\(s\).*1 cross-domain edge\(s\).*0 self edge\(s\)/);
+    assert.match(clean, /domains\/auth → domains\/billing 1 dependencies:1/);
+    assert.doesNotMatch(clean, /relates:1/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('domain-matrix --types — rejects unknown relation types before MCP call', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['domain-matrix', root, '--types=depend_on']);
+    assert.equal(r.code, 1);
+    assert.match(stripAnsi(r.stderr), /--types items/);
+    assert.match(stripAnsi(r.stderr), /Did you mean "depends_on"/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('reachability — transitive reachable nodes are grouped by layer', async () => {
   const root = await buildGraphFixture();
   try {

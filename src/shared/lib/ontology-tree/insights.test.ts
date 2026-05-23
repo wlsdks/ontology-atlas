@@ -173,6 +173,32 @@ describe("computeDomainCouplingMatrix", () => {
     expect(matrix.unassignedNodeCount).toBe(2);
     expect(matrix.crossDomainEdgeCount).toBe(0);
   });
+
+  it("types 옵션으로 사람용 semantic coupling 을 재현 가능하게 좁힘", () => {
+    const nodes = [
+      node("domain:auth", "domain"),
+      node("domain:billing", "domain"),
+      node("capability:login", "capability"),
+      node("capability:invoice", "capability"),
+    ];
+    const edges: KnowledgeGraphEdge[] = [
+      { ...edge("e1", "domain:auth", "capability:login"), type: "contains" },
+      { ...edge("e2", "domain:billing", "capability:invoice"), type: "contains" },
+      { ...edge("e3", "capability:login", "capability:invoice"), type: "depends_on" },
+      { ...edge("e4", "capability:login", "capability:invoice"), type: "uses" },
+      { ...edge("e5", "capability:invoice", "capability:login"), type: "related_to" },
+    ];
+
+    const matrix = computeDomainCouplingMatrix(nodes, edges, 10, {
+      types: ["depends_on", "related_to"],
+    });
+
+    expect(matrix.crossDomainEdgeCount).toBe(2);
+    expect(matrix.connections.map((row) => row.relationCounts)).toEqual([
+      [{ type: "depends_on", count: 1 }],
+      [{ type: "related_to", count: 1 }],
+    ]);
+  });
 });
 
 describe("selectRecentNodes", () => {

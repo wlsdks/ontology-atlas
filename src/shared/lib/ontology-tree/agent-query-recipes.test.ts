@@ -265,6 +265,17 @@ describe("buildAgentQueryRecipes", () => {
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "domain_matrix")!)).toBe(
       "oh-my-ontology domain-matrix [vault]",
     );
+    expect(
+      formatAgentQueryCallCliCommand({
+        operation: "query_ontology.domain_matrix",
+        tool: "query_ontology",
+        arguments: {
+          operation: "domain_matrix",
+          types: ["depends_on", "relates"],
+          limit: 6,
+        },
+      }),
+    ).toBe("oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates");
   });
 
   it("formats the first-contact run order as one copyable prompt", () => {

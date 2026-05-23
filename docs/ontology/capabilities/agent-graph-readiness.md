@@ -202,7 +202,11 @@ containment tree 를 따라 노드를 가장 가까운 domain 에 배정하고, 
 semantic cross-domain edge, domain 내부 semantic edge, 미배정 노드, relation
 bucket, 예시 edge 를 보여준다. `contains` / `belongs_to` 는 domain 배정에는 쓰되
 coupling count 에서는 제외해, 계층 구조가 아니라 실제 경계 압력
-(`depends_on` / `uses` / `related_to` / `describes`) 만 사람이 읽게 한다. 그래서
-비개발자도 `query_ontology(domain_matrix)` 나 CLI `oh-my-ontology domain-matrix` 를
-모르더라도 `/ontology/insights` 에서 어느 도메인 경계가 실제로 연결되어 있는지
-바로 읽을 수 있다.
+(`depends_on` / `related_to` / `describes`) 만 사람이 읽게 한다. 패널 안의
+`Copy CLI matrix` / `Copy MCP JSON` 은 같은 semantic filter 를
+`oh-my-ontology domain-matrix --types depends_on,relates,describes` 와
+`query_ontology(domain_matrix)` payload 로 복사하게 해, 웹에서 본 분석을 Claude Code
+/ Codex / 터미널에서 그대로 재실행할 수 있다. 그래서 비개발자도
+`query_ontology(domain_matrix)` 나 CLI `oh-my-ontology domain-matrix` 를 모르더라도
+`/ontology/insights` 에서 어느 도메인 경계가 실제로 연결되어 있는지 바로 읽고
+agent 에게 같은 조건으로 넘길 수 있다.

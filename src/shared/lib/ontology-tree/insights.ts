@@ -72,6 +72,10 @@ export interface DomainCouplingMatrix {
   connections: DomainCouplingConnectionRow[];
 }
 
+export interface ComputeDomainCouplingMatrixOptions {
+  types?: readonly string[];
+}
+
 /**
  * degree 가 높은 순 top N 노드 — "이 ontology 의 허브" 식별. document / project
  * 는 기본 제외 (메타·구조 노드라 사용자 관심 단위가 아님). 호출자가 includeKinds
@@ -118,9 +122,11 @@ export function computeDomainCouplingMatrix(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
   limit = 8,
+  options: ComputeDomainCouplingMatrixOptions = {},
 ): DomainCouplingMatrix {
   const nodeById = new Map(nodes.map((node) => [node.id, node] as const));
   const parentOf = buildContainmentParents(edges, nodeById);
+  const typeSet = options.types ? new Set(options.types) : null;
   const domainByNode = new Map<string, string>();
   const domainRows = new Map<string, DomainCouplingDomainRow>();
 
@@ -159,6 +165,7 @@ export function computeDomainCouplingMatrix(
 
   for (const edge of edges) {
     if (edge.type === "contains" || edge.type === "belongs_to") continue;
+    if (typeSet && !typeSet.has(edge.type)) continue;
     const fromDomain = domainByNode.get(edge.from);
     const toDomain = domainByNode.get(edge.to);
     if (!fromDomain || !toDomain) continue;

@@ -2082,6 +2082,7 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       callTool(18, "query_ontology", {
         operation: "domain_matrix",
         project: "project",
+        types: ["depends_on"],
       }),
       callTool(19, "query_ontology", {
         operation: "project_scope",
@@ -2312,9 +2313,10 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     const domainMatrix = getCallParsed(responses, 18);
     assert.equal(domainMatrix.operation, "domain_matrix");
     assert.equal(domainMatrix.project, "project");
+    assert.deepEqual(domainMatrix.filters, { types: ["dependencies"] });
     assert.equal(domainMatrix.summary.domains, 1);
     assert.equal(domainMatrix.summary.crossDomainEdges, 0);
-    assert.equal(domainMatrix.summary.externalEdges, 1);
+    assert.equal(domainMatrix.summary.externalEdges, 0);
 
     const projectScope = getCallParsed(responses, 19);
     assert.equal(projectScope.operation, "project_scope");

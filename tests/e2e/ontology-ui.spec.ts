@@ -58,6 +58,20 @@ test.describe("ontology view UI", () => {
     await expect(domainCoupling).toContainText("Cross");
     await expect(domainCoupling).toContainText("Inside");
     await expect(domainCoupling).toContainText("Unassigned");
+    await expect(domainCoupling).toContainText("Re-run this semantic matrix");
+    await domainCoupling.getByRole("button", { name: "Copy CLI matrix" }).click();
+    const copiedCli = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
+    );
+    expect(copiedCli).toContain(
+      "oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
+    );
+    await domainCoupling.getByRole("button", { name: "Copy MCP JSON" }).click();
+    const copiedMcp = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
+    );
+    expect(copiedMcp).toContain('"operation": "domain_matrix"');
+    expect(copiedMcp).toContain('"relates"');
 
     const recipes = page.getByTestId("insights-agent-query-recipes");
     await expect(recipes).toBeVisible();

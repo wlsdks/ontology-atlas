@@ -317,6 +317,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       return withFlags("oh-my-ontology domain-matrix [vault]", [
         stringFlag("--project", args.project),
         positiveFlag("--limit", args.limit),
+        csvFlag("--types", args.types),
       ]);
     default:
       return null;

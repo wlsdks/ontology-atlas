@@ -104,6 +104,11 @@ const RELATION_DECISIONS = [
   },
 ] as const;
 
+const DOMAIN_COUPLING_LIMIT = 6;
+const DOMAIN_COUPLING_LOCAL_TYPES = ["depends_on", "related_to", "describes"] as const;
+const DOMAIN_COUPLING_CLI_TYPES = "depends_on,relates,describes";
+const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as const;
+
 /**
  * `/ontology/insights` — ontology 의 구조를 한눈에.
  *
@@ -228,8 +233,28 @@ export function OntologyInsightsPage() {
     [insight],
   );
   const domainCoupling = useMemo(
-    () => (insight ? computeDomainCouplingMatrix(insight.nodes, insight.edges, 6) : null),
+    () =>
+      insight
+        ? computeDomainCouplingMatrix(insight.nodes, insight.edges, DOMAIN_COUPLING_LIMIT, {
+            types: DOMAIN_COUPLING_LOCAL_TYPES,
+          })
+        : null,
     [insight],
+  );
+  const domainCouplingCliCommand =
+    `oh-my-ontology domain-matrix [vault] --limit ${DOMAIN_COUPLING_LIMIT} ` +
+    `--types ${DOMAIN_COUPLING_CLI_TYPES}`;
+  const domainCouplingMcpPayload = JSON.stringify(
+    {
+      tool: "query_ontology",
+      arguments: {
+        operation: "domain_matrix",
+        limit: DOMAIN_COUPLING_LIMIT,
+        types: DOMAIN_COUPLING_MCP_TYPES,
+      },
+    },
+    null,
+    2,
   );
 
   return (
@@ -428,6 +453,25 @@ export function OntologyInsightsPage() {
               })}
             >
               <div data-testid="insights-domain-coupling">
+                <div className="mb-3 flex flex-col gap-2 rounded-md border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.045)] px-2.5 py-2 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                    {t("domainCouplingReproduce")}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    <CopyAgentTextButton
+                      label={t("domainCouplingCopyCli")}
+                      copiedLabel={t("agentCopied")}
+                      text={domainCouplingCliCommand}
+                      compact
+                    />
+                    <CopyAgentTextButton
+                      label={t("domainCouplingCopyMcp")}
+                      copiedLabel={t("agentCopied")}
+                      text={domainCouplingMcpPayload}
+                      compact
+                    />
+                  </div>
+                </div>
                 <div className="mb-3 grid grid-cols-3 gap-2">
                   {[
                     {

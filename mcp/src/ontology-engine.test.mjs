@@ -2762,6 +2762,25 @@ describe('queryCompiledOntology', () => {
         },
       ],
     );
+
+    const filtered = queryCompiledOntology(matrix, {
+      operation: 'domain_matrix',
+      project: 'project',
+      types: ['depends_on'],
+    });
+
+    assert.deepEqual(filtered.filters, { types: ['dependencies'] });
+    assert.deepEqual(filtered.summary, {
+      domains: 2,
+      nodes: 7,
+      assignedNodes: 6,
+      unassignedNodes: 1,
+      crossDomainEdges: 1,
+      selfDomainEdges: 1,
+      externalEdges: 0,
+      unresolvedEdges: 0,
+    });
+    assert.deepEqual(filtered.connections.rows[0].byRelation, { dependencies: 1 });
   });
 
   it('detects directed dependency cycles deterministically', () => {
