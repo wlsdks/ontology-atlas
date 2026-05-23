@@ -28,13 +28,16 @@ export {
 } from "./insights";
 export type {
   AgentReadinessActionKey,
+  AgentReadinessCliCommand,
   AgentReadinessStatus,
   AgentReadinessSummary,
   AgentReadinessToolCall,
 } from "./agent-readiness";
 export {
+  buildAgentReadinessCliCommands,
   buildAgentReadinessPrompt,
   buildAgentReadinessSummary,
+  formatAgentReadinessCliCommands,
   validateAgentReadinessToolCall,
 } from "./agent-readiness";
 export type {

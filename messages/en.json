@@ -832,6 +832,8 @@
       "agentMetricBlockers": "Blockers",
       "agentMetricAvgDegree": "Avg degree",
       "agentNextActionsTitle": "Recommended next actions",
+      "agentTerminalFallbackTitle": "Terminal fallback",
+      "agentTerminalFallbackSubtitle": "If the MCP connector is not registered yet, run these local CLI checks against the same vault.",
       "agentNextAction": {
         "resolveUnknown": "Resolve unknown/stub nodes with get_concept, find_evidence, then patch_concept or merge_concepts.",
         "addConcepts": "Bootstrap the shape: add at least one domain, capability, and element before expecting useful graph answers.",
@@ -908,6 +910,7 @@
       "agentCopyStep": "Copy step",
       "agentCopyRunOrder": "Copy run order",
       "agentCopyReadinessPrompt": "Copy repair prompt",
+      "agentCopyTerminalFallback": "Copy CLI checks",
       "agentCopied": "Copied",
       "agentCopyFailed": "Copy failed",
       "agentCliCommandLabel": "CLI command",

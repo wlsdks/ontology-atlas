@@ -23,6 +23,7 @@ import { useOntologyInsight } from "@/features/vault-ontology";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   UNKNOWN_TONE,
+  buildAgentReadinessCliCommands,
   buildAgentReadinessPrompt,
   buildAgentReadinessSummary,
   buildAgentHandoffPrompt,
@@ -1505,6 +1506,11 @@ function AgentReadinessPanel({
 }) {
   const t = useTranslations("ontologyPages.insights");
   const readinessPrompt = useMemo(() => buildAgentReadinessPrompt(summary), [summary]);
+  const readinessCliCommands = useMemo(() => buildAgentReadinessCliCommands(summary), [summary]);
+  const readinessCliPrompt = useMemo(
+    () => readinessCliCommands.map((item, index) => `${index + 1}. ${item.command}`).join("\n"),
+    [readinessCliCommands],
+  );
   const statusLabel =
     status === "ready"
       ? t("agentStatusReady")
@@ -1611,6 +1617,39 @@ function AgentReadinessPanel({
             </li>
           ))}
         </ul>
+      </div>
+      <div
+        className="mt-3 rounded-lg border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] px-3 py-3"
+        data-testid="insights-agent-readiness-cli"
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(151,230,198,0.92)]">
+              {t("agentTerminalFallbackTitle")}
+            </p>
+            <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t("agentTerminalFallbackSubtitle")}
+            </p>
+          </div>
+          <CopyAgentTextButton
+            label={t("agentCopyTerminalFallback")}
+            copiedLabel={t("agentCopied")}
+            text={readinessCliPrompt}
+            compact
+          />
+        </div>
+        <ol className="mt-2 grid gap-1.5 md:grid-cols-2">
+          {readinessCliCommands.slice(0, 6).map((item, index) => (
+            <li
+              key={item.key}
+              className="min-w-0 rounded-md border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(3,7,18,0.16)] px-2 py-1.5"
+            >
+              <code className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                {index + 1}. {item.command}
+              </code>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   );

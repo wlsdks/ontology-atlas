@@ -27,6 +27,11 @@ export interface AgentReadinessToolCall {
   arguments: Record<string, unknown>;
 }
 
+export interface AgentReadinessCliCommand {
+  key: string;
+  command: string;
+}
+
 const AGENT_READINESS_TOOLS = new Set([
   "analyze_repo_structure",
   "find_evidence",
@@ -90,6 +95,88 @@ const ACTION_PAYLOADS: Record<AgentReadinessActionKey, AgentReadinessToolCall[]>
   ],
 };
 
+const BASELINE_CLI_COMMANDS: AgentReadinessCliCommand[] = [
+  { key: "agent_brief", command: "oh-my-ontology agent-brief [vault]" },
+  { key: "workspace_brief", command: "oh-my-ontology workspace-brief [vault]" },
+  { key: "health", command: "oh-my-ontology health [vault]" },
+];
+
+const ACTION_CLI_COMMANDS: Record<AgentReadinessActionKey, AgentReadinessCliCommand[]> = {
+  resolveUnknown: [
+    {
+      key: "match_unknown_nodes",
+      command: "oh-my-ontology match-nodes [vault] --kind unknown --limit 20",
+    },
+    {
+      key: "find_unknown_evidence",
+      command: "oh-my-ontology find <unknown-title-or-slug> [vault]",
+    },
+  ],
+  addConcepts: [
+    {
+      key: "analyze_repo",
+      command: "oh-my-ontology analyze [repo] --vault [vault]",
+    },
+  ],
+  linkOrphans: [
+    {
+      key: "find_orphans",
+      command: "oh-my-ontology orphans [vault] --exclude-kinds project,vault-readme",
+    },
+  ],
+  addRelations: [
+    {
+      key: "infer_imports",
+      command: "oh-my-ontology infer-imports [repo] --vault [vault] --max-files 5000",
+    },
+    {
+      key: "relation_check",
+      command: "oh-my-ontology relation-check <from-slug> <to-slug> depends_on [vault]",
+    },
+  ],
+  inspectHubs: [
+    {
+      key: "node_profile",
+      command: "oh-my-ontology node <hub-slug> [vault] --limit 12",
+    },
+    {
+      key: "blast_radius",
+      command: "oh-my-ontology blast-radius <hub-slug> [vault] --depth 2 --direction incoming",
+    },
+  ],
+  syncAfterChanges: [
+    {
+      key: "validate_vault",
+      command: "oh-my-ontology validate [vault]",
+    },
+  ],
+};
+
+export function buildAgentReadinessCliCommands(
+  summary: Pick<AgentReadinessSummary, "actionKeys">,
+): AgentReadinessCliCommand[] {
+  const commands = [...BASELINE_CLI_COMMANDS];
+  const seen = new Set(commands.map((item) => item.command));
+
+  for (const key of summary.actionKeys) {
+    for (const item of ACTION_CLI_COMMANDS[key]) {
+      if (seen.has(item.command)) continue;
+      commands.push(item);
+      seen.add(item.command);
+    }
+  }
+
+  return commands;
+}
+
+export function formatAgentReadinessCliCommands(
+  summary: Pick<AgentReadinessSummary, "actionKeys">,
+): string {
+  return buildAgentReadinessCliCommands(summary)
+    .map((item, index) => `${index + 1}. ${item.command}`)
+    .join("\n");
+}
+
 export function validateAgentReadinessToolCall(payload: AgentReadinessToolCall): string[] {
   const issues: string[] = [];
   if (!AGENT_READINESS_TOOLS.has(payload.tool)) {
@@ -138,6 +225,7 @@ export function buildAgentReadinessPrompt(summary: AgentReadinessSummary): strin
   const payloadLines = [...baselinePayloads, ...actionPayloads]
     .map((payload, index) => `${index + 1}. ${payload.tool}\n${formatPayload(payload)}`)
     .join("\n\n");
+  const cliLines = formatAgentReadinessCliCommands(summary);
 
   return [
     "Use the oh-my-ontology MCP server to improve this vault before or during code work.",
@@ -149,6 +237,9 @@ export function buildAgentReadinessPrompt(summary: AgentReadinessSummary): strin
     "",
     "Run these MCP calls first:",
     payloadLines,
+    "",
+    "If the MCP connector is unavailable, run these terminal fallbacks:",
+    cliLines,
     "",
     "Prefer read tools first (workspace_brief, health, get_concept, find_evidence, find_backlinks, node_profile).",
     "Only write after confirming the intended ontology change; use add_concept/add_relation/patch_concept/merge_concepts and keep docs/ontology synced.",

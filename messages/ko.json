@@ -832,6 +832,8 @@
       "agentMetricBlockers": "블로커",
       "agentMetricAvgDegree": "평균 degree",
       "agentNextActionsTitle": "추천 다음 작업",
+      "agentTerminalFallbackTitle": "Terminal fallback",
+      "agentTerminalFallbackSubtitle": "MCP connector 등록 전이라면 같은 vault를 대상으로 이 로컬 CLI 점검을 먼저 실행합니다.",
       "agentNextAction": {
         "resolveUnknown": "unknown/stub 노드는 get_concept, find_evidence 후 patch_concept 또는 merge_concepts로 정리.",
         "addConcepts": "먼저 domain, capability, element를 최소 1개씩 추가해 그래프 답변이 가능한 형태를 만듭니다.",
@@ -908,6 +910,7 @@
       "agentCopyStep": "step 복사",
       "agentCopyRunOrder": "run order 복사",
       "agentCopyReadinessPrompt": "repair prompt 복사",
+      "agentCopyTerminalFallback": "CLI 점검 복사",
       "agentCopied": "복사됨",
       "agentCopyFailed": "복사 실패",
       "agentCliCommandLabel": "CLI command",

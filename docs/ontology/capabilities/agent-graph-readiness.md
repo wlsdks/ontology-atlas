@@ -41,6 +41,15 @@ MCP 호출을 우선시한 뒤 확인된 변경만 `add_concept` / `add_relation
 payload 를 함께 넣어 Claude Code / Codex 가 MCP schema 를 다시 추측하지 않아도
 되게 한다.
 
+R+ follow-up 에서는 같은 readiness panel 에 terminal fallback 도 함께 노출한다.
+MCP connector 가 아직 등록되지 않았거나 Codex / Claude Code 세션이 shell 중심으로
+열렸을 때도 `oh-my-ontology agent-brief`, `workspace-brief`, `health` 로 같은
+first-contact 상태를 확인하고, 상태별로 `match-nodes --kind unknown`,
+`orphans --exclude-kinds project,vault-readme`, `infer-imports --vault`,
+`relation-check`, `node`, `blast-radius`, `validate` 같은 CLI 명령을 바로 복사할
+수 있다. repair prompt 안에도 같은 CLI fallback 순서를 넣어, MCP-first 세션과
+connector-less 세션이 동일한 graph readiness 판단에서 시작하게 한다.
+
 목표는 Claude Code / Codex 같은 agent 가 같은 vault 를 MCP 로 읽기 전에 사람도
 구조 품질을 같은 언어로 볼 수 있게 하는 것. `workspace_brief` / `health` 가 CLI
 와 MCP 의 첫 접점이라면, 이 패널은 웹 UI 의 첫 구조 품질 신호다.

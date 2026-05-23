@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
+  buildAgentReadinessCliCommands,
   buildAgentReadinessPrompt,
   buildAgentReadinessSummary,
+  formatAgentReadinessCliCommands,
   validateAgentReadinessToolCall,
 } from "./agent-readiness";
 
@@ -102,7 +104,43 @@ describe("buildAgentReadinessSummary", () => {
     expect(prompt).toContain('"tool": "find_orphans"');
     expect(prompt).toContain('"excludeKinds"');
     expect(prompt).not.toContain('"kinds"');
+    expect(prompt).toContain("If the MCP connector is unavailable");
+    expect(prompt).toContain("oh-my-ontology agent-brief [vault]");
+    expect(prompt).toContain("oh-my-ontology match-nodes [vault] --kind unknown --limit 20");
+    expect(prompt).toContain("oh-my-ontology infer-imports [repo] --vault [vault] --max-files 5000");
     expect(prompt).toContain("Only write after confirming");
+  });
+
+  it("builds de-duplicated terminal fallbacks for connector-less sessions", () => {
+    const readySummary = buildAgentReadinessSummary(
+      [
+        node("project:app", "project"),
+        node("domain:core", "domain"),
+        node("capability:mcp", "capability"),
+        node("element:sdk", "element"),
+      ],
+      [
+        edge("e1", "project:app", "domain:core"),
+        edge("e2", "domain:core", "capability:mcp"),
+        edge("e3", "capability:mcp", "element:sdk"),
+      ],
+      { orphans: [] },
+    );
+
+    const commands = buildAgentReadinessCliCommands(readySummary);
+    const formatted = formatAgentReadinessCliCommands(readySummary);
+
+    expect(commands.map((item) => item.command)).toEqual([
+      "oh-my-ontology agent-brief [vault]",
+      "oh-my-ontology workspace-brief [vault]",
+      "oh-my-ontology health [vault]",
+      "oh-my-ontology node <hub-slug> [vault] --limit 12",
+      "oh-my-ontology blast-radius <hub-slug> [vault] --depth 2 --direction incoming",
+      "oh-my-ontology validate [vault]",
+    ]);
+    expect(new Set(commands.map((item) => item.command)).size).toBe(commands.length);
+    expect(formatted).toContain("1. oh-my-ontology agent-brief [vault]");
+    expect(formatted).toContain("6. oh-my-ontology validate [vault]");
   });
 
   it("validates readiness repair MCP payloads before they are copied", () => {
