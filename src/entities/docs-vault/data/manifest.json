@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T19:33:20.754Z",
+  "generatedAt": "2026-05-23T19:38:58.896Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -4699,8 +4699,8 @@
         }
       ],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. web starter 와 CLI init 은 .mcp.json, .codex/config.toml, .mcp.json.example 을 생성하고, Docs vault tools menu 는 현재 로컬 폴더에 이 파일들이 있는지 별도 agent setup 상태로 보여준다. 상태 헤더는 준비된 setup 파일 수와 첫 누락 config 경로를 함께 보여주므로, 사용자는 파일별 체크리스트를 읽기 전에 다음에",
-      "wordCount": 285,
-      "updatedAt": "2026-05-23T19:02:09.818Z",
+      "wordCount": 391,
+      "updatedAt": "2026-05-23T19:38:55.290Z",
       "linksOut": []
     },
     {

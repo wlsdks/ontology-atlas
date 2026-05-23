@@ -8,6 +8,13 @@ import { copyText } from '@/shared/lib/copy-text';
 export const ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT =
   'Use the oh-my-ontology MCP server to run validate_vault, then query_ontology({ "operation": "workspace_brief" }), then query_ontology({ "operation": "agent_brief" }). Tell me whether this vault is readable and the write tools are available before proposing changes.';
 
+export const ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS = [
+  'oh-my-ontology validate .',
+  'oh-my-ontology workspace-brief .',
+  'oh-my-ontology agent-brief . --prompt',
+  'oh-my-ontology mcp-verify . --timeout-ms 15000',
+].join('\n');
+
 interface Props {
   /** 클릭 시 useLocalVault.scaffoldOntology() 호출. created/skipped 반환. */
   onScaffold: () => Promise<{ created: number; skipped: number }>;
@@ -30,11 +37,17 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [cliCopyState, setCliCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const isEmpty = docCount === 0;
   const verificationSteps = [
     t('verifyStepFiles'),
     t('verifyStepMcp'),
     t('verifyStepCli'),
+  ];
+  const proofCards = [
+    { label: t('proofLocalLabel'), body: t('proofLocalBody') },
+    { label: t('proofGraphLabel'), body: t('proofGraphBody') },
+    { label: t('proofAgentLabel'), body: t('proofAgentBody') },
   ];
 
   async function handleClick() {
@@ -54,12 +67,23 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
     setCopyState(copied ? 'copied' : 'failed');
   }
 
+  async function handleCopyCliVerify() {
+    const copied = await copyText(ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS);
+    setCliCopyState(copied ? 'copied' : 'failed');
+  }
+
   const copyPromptLabel =
     copyState === 'copied'
       ? t('copyPromptCopied')
       : copyState === 'failed'
         ? t('copyPromptFailed')
         : t('copyPromptLabel');
+  const copyCliLabel =
+    cliCopyState === 'copied'
+      ? t('copyCliCopied')
+      : cliCopyState === 'failed'
+        ? t('copyCliFailed')
+        : t('copyCliLabel');
 
   if (isEmpty) {
     // 빈 vault — 큰 카드로 "여기서 시작" 안내
@@ -85,6 +109,21 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
           <br />
           {t('emptyBodyLine2')}
         </p>
+        <div className="mx-auto mt-4 grid max-w-[520px] gap-2 sm:grid-cols-3">
+          {proofCards.map((card) => (
+            <div
+              key={card.label}
+              className="rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-left"
+            >
+              <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
+                {card.label}
+              </p>
+              <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-secondary)]">
+                {card.body}
+              </p>
+            </div>
+          ))}
+        </div>
         <div
           aria-label={t('verifyAriaLabel')}
           className="mx-auto mt-4 grid max-w-[420px] gap-2 text-left"
@@ -108,14 +147,24 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
             </div>
           ))}
         </div>
-        <button
-          type="button"
-          onClick={handleCopyPrompt}
-          className="mt-3 inline-flex items-center gap-2 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
-        >
-          <ClipboardCopy size={12} aria-hidden />
-          {copyPromptLabel}
-        </button>
+        <div className="mt-3 flex flex-wrap justify-center gap-2">
+          <button
+            type="button"
+            onClick={handleCopyPrompt}
+            className="inline-flex items-center gap-2 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+          >
+            <ClipboardCopy size={12} aria-hidden />
+            {copyPromptLabel}
+          </button>
+          <button
+            type="button"
+            onClick={handleCopyCliVerify}
+            className="inline-flex items-center gap-2 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+          >
+            <ClipboardCopy size={12} aria-hidden />
+            {copyCliLabel}
+          </button>
+        </div>
         <button
           type="button"
           onClick={handleClick}
@@ -158,6 +207,15 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
       >
         <ClipboardCopy size={12} aria-hidden />
         {copyPromptLabel}
+      </button>
+      <button
+        type="button"
+        onClick={handleCopyCliVerify}
+        title={t('secondaryCliTitle')}
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+      >
+        <ClipboardCopy size={12} aria-hidden />
+        {copyCliLabel}
       </button>
     </div>
   );

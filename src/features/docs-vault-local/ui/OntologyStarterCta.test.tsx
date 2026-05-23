@@ -2,7 +2,10 @@ import { fireEvent, render as rtlRender, screen, waitFor } from '@testing-librar
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
-import { OntologyStarterCta } from './OntologyStarterCta';
+import {
+  ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS,
+  OntologyStarterCta,
+} from './OntologyStarterCta';
 import { copyText } from '@/shared/lib/copy-text';
 
 vi.mock('@/shared/lib/copy-text', () => ({
@@ -34,12 +37,18 @@ describe('OntologyStarterCta', () => {
       screen.getByLabelText('starter에 포함된 AI agent 검증 단계'),
     ).toBeInTheDocument();
     expect(screen.getByText(/Claude Code, Cursor, Codex용/)).toBeInTheDocument();
+    expect(screen.getByText('local')).toBeInTheDocument();
+    expect(screen.getByText('graph proof')).toBeInTheDocument();
+    expect(screen.getByText('agent loop')).toBeInTheDocument();
     expect(screen.getByText(/validate_vault/)).toBeInTheDocument();
-    expect(screen.getByText(/workspace_brief/)).toBeInTheDocument();
-    expect(screen.getByText(/agent_brief/)).toBeInTheDocument();
+    expect(screen.getAllByText(/workspace_brief/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/agent_brief/).length).toBeGreaterThan(0);
     expect(screen.getByText(/mcp-verify/)).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'agent 검증 프롬프트 복사' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'CLI proof 복사' }),
     ).toBeInTheDocument();
   });
 
@@ -76,5 +85,19 @@ describe('OntologyStarterCta', () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(onScaffold).not.toHaveBeenCalled();
     expect(await screen.findByRole('button', { name: '프롬프트 복사됨' })).toBeInTheDocument();
+  });
+
+  it('agent 없이 재현 가능한 CLI proof packet 을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    render(<OntologyStarterCta docCount={3} onScaffold={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'CLI proof 복사' }));
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS);
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology mcp-verify . --timeout-ms 15000'),
+    );
+    expect(await screen.findByRole('button', { name: 'CLI proof 복사됨' })).toBeInTheDocument();
   });
 });
