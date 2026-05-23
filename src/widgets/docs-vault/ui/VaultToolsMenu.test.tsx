@@ -149,4 +149,34 @@ describe('VaultToolsMenu', () => {
       await screen.findByRole('button', { name: '검증 프롬프트 복사됨' }),
     ).toBeInTheDocument();
   });
+
+  it('AI agent 설정 패널에서 CLI fallback 검증 명령을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'CLI 검증 명령 복사' }));
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology validate .'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology workspace-brief .'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology agent-brief . --prompt'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology mcp-verify . --timeout-ms 15000'),
+    );
+    expect(
+      await screen.findByRole('button', { name: 'CLI 검증 명령 복사됨' }),
+    ).toBeInTheDocument();
+  });
 });

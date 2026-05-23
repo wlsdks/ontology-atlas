@@ -1155,6 +1155,10 @@
       "copyPromptCopied": "Verification prompt copied",
       "copyPromptFailed": "Copy failed",
       "copyPromptTitle": "Copy the read-first MCP prompt to verify Claude Code or Codex before edits.",
+      "copyCli": "Copy CLI verification",
+      "copyCliCopied": "CLI verification copied",
+      "copyCliFailed": "Copy failed",
+      "copyCliTitle": "Copy terminal commands to validate this vault from inside the opened folder.",
       "errorFallback": "Could not create agent configs"
     },
     "mobileDrawer": {

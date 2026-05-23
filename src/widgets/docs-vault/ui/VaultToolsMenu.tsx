@@ -1,7 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, CheckCircle2, CircleAlert, ClipboardCopy, FilePlus, Layers } from 'lucide-react';
+import {
+  Bot,
+  CheckCircle2,
+  CircleAlert,
+  ClipboardCopy,
+  FilePlus,
+  Layers,
+  Terminal,
+} from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
   LocalVaultPicker,
@@ -10,6 +18,13 @@ import {
 } from '@/features/docs-vault-local';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
+
+const AGENT_VERIFY_CLI_COMMAND = [
+  'oh-my-ontology validate .',
+  'oh-my-ontology workspace-brief .',
+  'oh-my-ontology agent-brief . --prompt',
+  'oh-my-ontology mcp-verify . --timeout-ms 15000',
+].join('\n');
 
 /**
  * R11 #16 step 1 — DocsVaultPage 의 advanced dropdown body 를 widget 으로 추출.
@@ -77,6 +92,9 @@ export function VaultToolsMenu({
   const [agentPromptCopyState, setAgentPromptCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle');
+  const [agentCliCopyState, setAgentCliCopyState] = useState<
+    'idle' | 'copied' | 'failed'
+  >('idle');
   const agentStatus = localVault.agentConfigStatus;
   const agentSetupReady = Boolean(
     agentStatus?.mcpJson && agentStatus.codexConfig && agentStatus.mcpExample,
@@ -101,12 +119,24 @@ export function VaultToolsMenu({
     setAgentPromptCopyState(copied ? 'copied' : 'failed');
   }
 
+  async function handleCopyAgentVerifyCli() {
+    const copied = await copyText(AGENT_VERIFY_CLI_COMMAND);
+    setAgentCliCopyState(copied ? 'copied' : 'failed');
+  }
+
   const copyPromptLabel =
     agentPromptCopyState === 'copied'
       ? t('agentSetup.copyPromptCopied')
       : agentPromptCopyState === 'failed'
         ? t('agentSetup.copyPromptFailed')
         : t('agentSetup.copyPrompt');
+
+  const copyCliLabel =
+    agentCliCopyState === 'copied'
+      ? t('agentSetup.copyCliCopied')
+      : agentCliCopyState === 'failed'
+        ? t('agentSetup.copyCliFailed')
+        : t('agentSetup.copyCli');
 
   return (
     <div
@@ -246,6 +276,15 @@ export function VaultToolsMenu({
                 >
                   <ClipboardCopy size={12} aria-hidden />
                   {copyPromptLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyAgentVerifyCli()}
+                  title={t('agentSetup.copyCliTitle')}
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  <Terminal size={12} aria-hidden />
+                  {copyCliLabel}
                 </button>
                 {agentSetupError ? (
                   <p

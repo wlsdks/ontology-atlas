@@ -28,8 +28,11 @@ relates:
 생성할 수 있다. 이 repair action 은 이미 사용자가 작성한 ontology 파일을 건드리지
 않고, agent 연결에 필요한 config surface 만 채운다.
 
-같은 화면은 read-first 검증 prompt 도 복사 가능하게 유지한다. 설정 상태 확인,
-누락 config 생성, 검증 prompt 복사가 한 패널 안에 있어 비개발자도 Claude Code /
-Codex 를 열기 전에 필요한 다음 행동을 놓치지 않는다. 새 agent 세션은
-`validate_vault`, `workspace_brief`, `agent_brief` 를 먼저 실행해 vault 가 읽히고
-write tools 가 노출되는지 보고한 뒤 변경을 제안한다.
+같은 화면은 read-first 검증 prompt 와 CLI fallback 검증 명령도 복사 가능하게
+유지한다. 설정 상태 확인, 누락 config 생성, MCP prompt 복사, 터미널 검증 명령
+복사가 한 패널 안에 있어 비개발자도 Claude Code / Codex 를 열기 전에 필요한 다음
+행동을 놓치지 않는다. 새 agent 세션은 `validate_vault`, `workspace_brief`,
+`agent_brief` 를 먼저 실행해 vault 가 읽히고 write tools 가 노출되는지 보고한 뒤
+변경을 제안한다. MCP 가 아직 붙지 않은 경우에는 `oh-my-ontology validate .`,
+`workspace-brief .`, `agent-brief . --prompt`, `mcp-verify . --timeout-ms 15000`
+순서로 같은 증거를 터미널에서 확인한다.
