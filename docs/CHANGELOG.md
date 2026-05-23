@@ -11,6 +11,9 @@
 Starter vaults now tell users how to prove the Claude Code / Cursor / Codex MCP
 loop works before the agent writes anything.
 
+- **Creation-time UX** — the empty-vault starter CTA now previews the three
+  things the starter creates for agent use: config files, read-first MCP checks,
+  and a CLI `mcp-verify` proof path.
 - **First-contact MCP prompt** — generated starter READMEs ask the agent to run
   `validate_vault`, `workspace_brief`, and `agent_brief`, then report whether
   the vault is readable and write tools are available.

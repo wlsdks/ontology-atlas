@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Sparkles } from 'lucide-react';
+import { CheckCircle2, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
 interface Props {
@@ -26,6 +26,11 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isEmpty = docCount === 0;
+  const verificationSteps = [
+    t('verifyStepFiles'),
+    t('verifyStepMcp'),
+    t('verifyStepCli'),
+  ];
 
   async function handleClick() {
     setError(null);
@@ -63,6 +68,29 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
           <br />
           {t('emptyBodyLine2')}
         </p>
+        <div
+          aria-label={t('verifyAriaLabel')}
+          className="mx-auto mt-4 grid max-w-[420px] gap-2 text-left"
+        >
+          {verificationSteps.map((step, index) => (
+            <div
+              key={step}
+              className="grid grid-cols-[18px_1fr] items-start gap-2 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(255,255,255,0.035)] px-3 py-2 text-[11.5px] leading-5 text-[color:var(--color-text-secondary)]"
+            >
+              <CheckCircle2
+                size={14}
+                aria-hidden
+                className="mt-0.5 text-[color:var(--color-indigo-accent)]"
+              />
+              <span>
+                <span className="font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                  {index + 1}.
+                </span>{' '}
+                {step}
+              </span>
+            </div>
+          ))}
+        </div>
         <button
           type="button"
           onClick={handleClick}
