@@ -37,6 +37,9 @@ loop works before the agent writes anything.
   `.mcp.json.example` body with the current vault name in the absolute-path
   placeholder, so Claude Code / Cursor sessions opened from a separate
   codebase root do not have to hunt for the template file first.
+- **Codebase-root Codex template copy** — Codex users get the same copy path
+  for `.codex/config.toml`, with the vault-name-specific absolute-path
+  placeholder in `OMOT_VAULT`.
 - **First-contact MCP prompt** — generated starter READMEs ask the agent to run
   `validate_vault`, `workspace_brief`, and `agent_brief`, then report whether
   the vault is readable and write tools are available.

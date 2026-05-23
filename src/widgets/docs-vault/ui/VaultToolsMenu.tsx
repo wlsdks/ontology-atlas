@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
+  buildCodexConfigTomlTemplate,
   buildMcpConfigJson,
   LocalVaultPicker,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
@@ -99,6 +100,8 @@ export function VaultToolsMenu({
   const [agentTemplateCopyState, setAgentTemplateCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle');
+  const [agentCodexTemplateCopyState, setAgentCodexTemplateCopyState] =
+    useState<'idle' | 'copied' | 'failed'>('idle');
   const agentStatus = localVault.agentConfigStatus;
   const agentSetupReady = Boolean(
     agentStatus?.mcpJson && agentStatus.codexConfig && agentStatus.mcpExample,
@@ -135,6 +138,13 @@ export function VaultToolsMenu({
     setAgentTemplateCopyState(copied ? 'copied' : 'failed');
   }
 
+  async function handleCopyCodexConfigTemplate() {
+    const copied = await copyText(
+      buildCodexConfigTomlTemplate(localVault.handle?.name ?? 'vault'),
+    );
+    setAgentCodexTemplateCopyState(copied ? 'copied' : 'failed');
+  }
+
   const copyPromptLabel =
     agentPromptCopyState === 'copied'
       ? t('agentSetup.copyPromptCopied')
@@ -155,6 +165,13 @@ export function VaultToolsMenu({
       : agentTemplateCopyState === 'failed'
         ? t('agentSetup.copyTemplateFailed')
         : t('agentSetup.copyTemplate');
+
+  const copyCodexTemplateLabel =
+    agentCodexTemplateCopyState === 'copied'
+      ? t('agentSetup.copyCodexTemplateCopied')
+      : agentCodexTemplateCopyState === 'failed'
+        ? t('agentSetup.copyCodexTemplateFailed')
+        : t('agentSetup.copyCodexTemplate');
 
   return (
     <div
@@ -312,6 +329,15 @@ export function VaultToolsMenu({
                 >
                   <ClipboardCopy size={12} aria-hidden />
                   {copyTemplateLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyCodexConfigTemplate()}
+                  title={t('agentSetup.copyCodexTemplateTitle')}
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  <ClipboardCopy size={12} aria-hidden />
+                  {copyCodexTemplateLabel}
                 </button>
                 {agentSetupError ? (
                   <p

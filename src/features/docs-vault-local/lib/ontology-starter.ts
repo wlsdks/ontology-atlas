@@ -299,16 +299,21 @@ function buildMcpConfigJsonForVault(omotVault: string): string {
 }
 
 /**
- * Ready-to-use Codex MCP config for opening the vault folder itself in Codex.
+ * Codex MCP config. Defaults to the vault folder itself, but can also render
+ * the codebase-root template where `OMOT_VAULT` must be an absolute path.
  */
-export function buildCodexConfigToml(): string {
+export function buildCodexConfigToml(omotVault = '.'): string {
   return [
     '[mcp_servers.oh-my-ontology]',
     'command = "npx"',
     'args = ["-y", "oh-my-ontology-mcp"]',
     '',
     '[mcp_servers.oh-my-ontology.env]',
-    'OMOT_VAULT = "."',
+    `OMOT_VAULT = ${JSON.stringify(omotVault)}`,
     '',
   ].join('\n');
+}
+
+export function buildCodexConfigTomlTemplate(vaultName: string): string {
+  return buildCodexConfigToml(`<absolute path to your ${vaultName} folder>`);
 }

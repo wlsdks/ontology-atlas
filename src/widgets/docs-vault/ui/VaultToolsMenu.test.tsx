@@ -183,7 +183,7 @@ describe('VaultToolsMenu', () => {
     ).toBeInTheDocument();
   });
 
-  it('AI agent 설정 패널에서 codebase-root MCP 템플릿을 복사한다', async () => {
+  it('AI agent 설정 패널에서 codebase-root MCP JSON 템플릿을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
     renderMenu({
       handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
@@ -195,7 +195,7 @@ describe('VaultToolsMenu', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: 'codebase-root 설정 복사' }),
+      screen.getByRole('button', { name: 'codebase-root MCP JSON 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -210,7 +210,41 @@ describe('VaultToolsMenu', () => {
     );
     expect(
       await screen.findByRole('button', {
-        name: 'codebase-root 설정 복사됨',
+        name: 'MCP JSON 복사됨',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('AI agent 설정 패널에서 codebase-root Codex TOML 템플릿을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'codebase-root Codex TOML 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('[mcp_servers.oh-my-ontology]'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'OMOT_VAULT = "<absolute path to your team-vault folder>"',
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('args = ["-y", "oh-my-ontology-mcp"]'),
+    );
+    expect(
+      await screen.findByRole('button', {
+        name: 'Codex TOML 복사됨',
       }),
     ).toBeInTheDocument();
   });

@@ -1159,10 +1159,14 @@
       "copyCliCopied": "CLI verification copied",
       "copyCliFailed": "Copy failed",
       "copyCliTitle": "Copy terminal commands for environments where the oh-my-ontology CLI is already installed.",
-      "copyTemplate": "Copy codebase-root config",
-      "copyTemplateCopied": "Codebase-root config copied",
+      "copyTemplate": "Copy codebase-root MCP JSON",
+      "copyTemplateCopied": "MCP JSON copied",
       "copyTemplateFailed": "Copy failed",
       "copyTemplateTitle": "Copy the .mcp.json template for agents opened at a separate codebase root. Replace the vault path placeholder before using it.",
+      "copyCodexTemplate": "Copy codebase-root Codex TOML",
+      "copyCodexTemplateCopied": "Codex TOML copied",
+      "copyCodexTemplateFailed": "Copy failed",
+      "copyCodexTemplateTitle": "Copy the .codex/config.toml template for Codex opened at a separate codebase root. Replace the vault path placeholder before using it.",
       "errorFallback": "Could not create agent configs"
     },
     "mobileDrawer": {
