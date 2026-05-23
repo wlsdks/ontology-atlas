@@ -12,6 +12,7 @@ export const ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS = [
   'oh-my-ontology validate .',
   'oh-my-ontology workspace-brief .',
   'oh-my-ontology agent-brief . --prompt',
+  'oh-my-ontology agent-brief . --verify-fallbacks',
   'oh-my-ontology mcp-verify . --timeout-ms 15000',
 ].join('\n');
 

@@ -96,6 +96,9 @@ describe('OntologyStarterCta', () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS);
     expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology agent-brief . --verify-fallbacks'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('oh-my-ontology mcp-verify . --timeout-ms 15000'),
     );
     expect(await screen.findByRole('button', { name: 'CLI proof 복사됨' })).toBeInTheDocument();
