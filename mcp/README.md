@@ -354,10 +354,14 @@ is rejected at the MCP boundary when omitted or unknown, instead of falling
 through to an empty result. `query_plan` responses also include an `execution`
 block with `shouldRun`, `nextStep`, `suggestedQuery`, and, when the plan should
 be narrowed, a `saferQuery` the agent can run instead of guessing lower-cost
-arguments. For `all_paths`, `limit` and `searchBudget` are schema-advertised
-too, so agents can cap path enumeration and inspect `evidence.status`,
-`evidence.pathsComplete`, `exhaustive`, and `truncatedByBudget` before treating
-returned paths or `totalPaths` as complete evidence.
+arguments. `centrality` plans use a PageRank-specific estimate with
+`iterations`, resolved edge count, dangling node count, and `rankingWorkUnits`
+instead of a generic aggregate scan, so coupling-audit agents can explain
+ranking cost before running graph centrality. For `all_paths`, `limit` and
+`searchBudget` are schema-advertised too, so agents can cap path enumeration
+and inspect `evidence.status`, `evidence.pathsComplete`, `exhaustive`, and
+`truncatedByBudget` before treating returned paths or `totalPaths` as complete
+evidence.
 
 ## Frontmatter shape per kind (R14)
 

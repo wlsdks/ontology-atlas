@@ -133,8 +133,8 @@ domain boundary 가 걸리면 `pattern_walk` / `project_map` 으로 containment 
 `blast_radius` → `path` → `relation_check` 순서로 변경 전 영향권과 relation
 preflight 를 확인하고, `Onboarding map` 은 `workspace_brief` / `domain_matrix` /
 `node_profile` 로 첫 mental map 을 만든다. `Coupling audit` 은 `health` /
-`domain_matrix` / `centrality` / `match_edges` 를 묶어 경계 변경 전에 결합과
-dependency edge 를 확인한다. `Graph traversal` 은 `schema` →
+`domain_matrix` / `query_plan(centrality)` / `centrality` / `match_edges` 를 묶어
+경계 변경 전에 ranking 비용과 결합, dependency edge 를 확인한다. `Graph traversal` 은 `schema` →
 `query_plan(all_paths)` → `all_paths` → `pattern_walk` → `project_map` 을 묶어,
 그래프 DB 식 탐색 근거가 필요한 답변에서 schema pattern, bounded paths,
 containment walk, project/domain map 을 한 번에 확인한다. 각 playbook 은

@@ -584,6 +584,24 @@ export function createOntologyEngine(artifact, options = {}) {
         resultUpperBound: Math.min(edges.length, limit),
         costClass: queryCostClass(edges.length),
       };
+    } else if (targetOperation === 'centrality') {
+      const iterations = normalizeIterations(options.iterations);
+      const resolvedEdges = edges.filter((edge) => edge.resolved && typeAllowed(edge.via, typeSet));
+      const sourcesWithOutgoingEdges = new Set(resolvedEdges.map((edge) => edge.from));
+      const rankingWorkUnits = (nodes.length + resolvedEdges.length) * iterations;
+      normalized.iterations = iterations;
+      indexesUsed.push('nodes', 'edges');
+      if (typeSet) indexesUsed.push('edge.type filter');
+      estimate = {
+        strategy: 'page_rank_centrality',
+        nodeScans: nodes.length,
+        edgeScans: resolvedEdges.length,
+        iterations,
+        danglingNodes: Math.max(0, nodes.length - sourcesWithOutgoingEdges.size),
+        rankingWorkUnits,
+        resultUpperBound: Math.min(nodes.length, limit),
+        costClass: queryCostClass(Math.ceil(rankingWorkUnits / 20)),
+      };
     } else {
       indexesUsed.push('compiled_artifact');
       estimate = {
@@ -2994,7 +3012,13 @@ export function createOntologyEngine(artifact, options = {}) {
           calls: [
             agentToolCall('query_ontology', { operation: 'health', limit }),
             agentToolCall('query_ontology', { operation: 'domain_matrix', limit: 10 }),
-            agentToolCall('query_ontology', { operation: 'centrality', limit: 10 }),
+            agentToolCall('query_ontology', {
+              operation: 'query_plan',
+              targetOperation: 'centrality',
+              types: ['depends_on', 'relates'],
+              limit: 10,
+            }),
+            agentToolCall('query_ontology', { operation: 'centrality', types: ['depends_on', 'relates'], limit: 10 }),
             agentToolCall('query_ontology', { operation: 'match_edges', limit: 20 }),
           ],
         },
@@ -4229,6 +4253,7 @@ function buildPlannedQuery(targetOperation, normalized) {
     'depth',
     'maxHops',
     'searchBudget',
+    'iterations',
     'limit',
   ]) {
     if (normalized[key] !== undefined) query[key] = normalized[key];
@@ -4268,6 +4293,13 @@ function buildSaferPlannedQuery(targetOperation, normalized, estimate, hasWarnin
 
   if (targetOperation === 'match_nodes' || targetOperation === 'match_edges') {
     safer.limit = Math.min(Number(safer.limit) || 25, 25);
+    return safer;
+  }
+
+  if (targetOperation === 'centrality') {
+    safer.limit = Math.min(Number(safer.limit) || 25, 25);
+    safer.iterations = Math.min(Number(safer.iterations) || 20, 20);
+    if (!Array.isArray(safer.types) || safer.types.length === 0) safer.types = ['depends_on', 'relates'];
     return safer;
   }
 

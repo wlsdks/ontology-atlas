@@ -22,6 +22,7 @@ const AGENT_QUERY_OPERATIONS = new Set([
 const AGENT_QUERY_PLAN_TARGETS = new Set([
   "all_paths",
   "blast_radius",
+  "centrality",
 ]);
 
 export type AgentQueryRecipeId =
@@ -914,6 +915,12 @@ export function buildAgentInvestigationPlaybooks(
       payloads: [
         recipe("health", { operation: "health" }),
         recipe("domain_matrix", { operation: "domain_matrix" }),
+        recipe("query_plan", {
+          operation: "query_plan",
+          targetOperation: "centrality",
+          types: ["depends_on", "relates"],
+          limit: 10,
+        }),
         recipe("centrality", {
           operation: "centrality",
           types: ["depends_on", "relates"],

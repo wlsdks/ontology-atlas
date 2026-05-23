@@ -386,6 +386,43 @@ describe('queryCompiledOntology', () => {
       },
     });
     assert.deepEqual(projectMapPlan.indexesUsed, ['compiled_artifact']);
+
+    const centralityPlan = queryCompiledOntology(artifact(), {
+      operation: 'query_plan',
+      targetOperation: 'centrality',
+      types: ['depends_on'],
+      limit: 3,
+    });
+    assert.equal(centralityPlan.operation, 'query_plan');
+    assert.equal(centralityPlan.targetOperation, 'centrality');
+    assert.deepEqual(centralityPlan.normalized, {
+      targetOperation: 'centrality',
+      types: ['dependencies'],
+      limit: 3,
+      iterations: 20,
+    });
+    assert.deepEqual(centralityPlan.indexesUsed, ['edge.type filter', 'edges', 'nodes']);
+    assert.deepEqual(centralityPlan.estimate, {
+      strategy: 'page_rank_centrality',
+      nodeScans: 3,
+      edgeScans: 2,
+      iterations: 20,
+      danglingNodes: 1,
+      rankingWorkUnits: 100,
+      resultUpperBound: 3,
+      costClass: 'low',
+    });
+    assert.deepEqual(centralityPlan.execution, {
+      shouldRun: true,
+      nextStep: 'run',
+      recommendation: 'Run suggestedQuery as planned.',
+      suggestedQuery: {
+        operation: 'centrality',
+        iterations: 20,
+        limit: 3,
+        types: ['dependencies'],
+      },
+    });
   });
 
   it('returns a safer executable query when query_plan detects expensive traversal', () => {

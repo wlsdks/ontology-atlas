@@ -338,10 +338,21 @@ describe("buildAgentQueryRecipes", () => {
     expect(playbooks[2]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
       "health",
       "domain_matrix",
+      "query_plan",
       "centrality",
       "match_edges",
     ]);
     expect(playbooks[2]?.payloads[2]).toEqual({
+      operation: "query_ontology.query_plan",
+      tool: "query_ontology",
+      arguments: {
+        operation: "query_plan",
+        targetOperation: "centrality",
+        types: ["depends_on", "relates"],
+        limit: 10,
+      },
+    });
+    expect(playbooks[2]?.payloads[3]).toEqual({
       operation: "query_ontology.centrality",
       tool: "query_ontology",
       arguments: {
