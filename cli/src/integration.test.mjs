@@ -4366,6 +4366,7 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
     assert.match(data.slowest.command, /^oh-my-ontology /);
     assert.ok(data.commands.every((row) => row.status === 'pass'));
     assert.ok(data.commands.every((row) => typeof row.elapsedMs === 'number'));
+    assert.ok(data.commands.every((row) => !Object.hasOwn(row, 'outputSample')));
     assert.ok(data.commands.some((row) => row.command === 'oh-my-ontology workspace-brief [vault] --limit 5'));
     assert.ok(data.commands.some((row) => row.resolvedCommand.includes(root)));
   } finally {

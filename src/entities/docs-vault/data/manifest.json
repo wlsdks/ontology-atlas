@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T23:44:22.046Z",
+  "generatedAt": "2026-05-23T23:48:13.513Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -4397,8 +4397,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 6774,
-      "updatedAt": "2026-05-23T23:43:34.365Z",
+      "wordCount": 6783,
+      "updatedAt": "2026-05-23T23:47:25.171Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4945,8 +4945,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
-      "wordCount": 9179,
-      "updatedAt": "2026-05-23T23:44:15.814Z",
+      "wordCount": 9197,
+      "updatedAt": "2026-05-23T23:48:04.696Z",
       "linksOut": []
     },
     {

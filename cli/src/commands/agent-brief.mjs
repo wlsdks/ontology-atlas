@@ -113,11 +113,12 @@ function buildFallbackVerificationReport(result, vaultRoot) {
       maxBuffer: 1024 * 1024 * 8,
     });
     const elapsedMs = Math.max(0, Math.round(performance.now() - startedAt));
-    const sample = String(child.stderr || child.stdout || '').split('\n').filter(Boolean).slice(0, 6).join('\n       ');
+    const failed = child.status !== 0;
+    const sample = failed ? sampleFallbackOutput(child.stderr || child.stdout) : '';
     rows.push({
       command: raw,
       resolvedCommand: command,
-      status: child.status === 0 ? 'pass' : 'fail',
+      status: failed ? 'fail' : 'pass',
       elapsedMs,
       exitCode: child.status,
       ...(sample ? { outputSample: sample } : {}),
@@ -165,6 +166,18 @@ function renderFallbackVerificationReport(report) {
 
 function formatFallbackTiming(elapsedMs) {
   return `${COLORS.dim}${elapsedMs}ms${COLORS.reset}`;
+}
+
+function sampleFallbackOutput(output) {
+  return stripAnsi(String(output || ''))
+    .split('\n')
+    .filter(Boolean)
+    .slice(0, 6)
+    .join('\n       ');
+}
+
+function stripAnsi(value) {
+  return String(value).replace(/\x1b\[[0-?]*[ -/]*[@-~]/g, '');
 }
 
 function parseFallbackCommand(command) {
