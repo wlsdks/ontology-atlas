@@ -1869,6 +1869,17 @@ describe('query-result-contract', () => {
     };
 
     assert.equal(assertRelationCheckShape(missing), missing);
+    assert.equal(
+      assertRelationCheckShape({
+        ...missing,
+        relation: 'dependencies',
+        proposedAction: {
+          tool: 'add_relation',
+          args: { from: 'capabilities/bar', to: 'domains/auth', type: 'depends_on' },
+        },
+      }).proposedAction.args.type,
+      'depends_on',
+    );
     assert.equal(assertRelationCheckShape(existing), existing);
     assert.throws(
       () => assertRelationCheckShape({ ...missing, exists: 'false' }),

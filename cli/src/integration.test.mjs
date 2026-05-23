@@ -4294,6 +4294,23 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
   }
 });
 
+await test('agent-brief --json — emits CLI fallback commands that run directly', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['agent-brief', root, '--json']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    const commands = data.cliFallbackCommands.map((command) => command.replace('[vault]', root));
+    for (const command of commands) {
+      const args = command.split(/\s+/).slice(1);
+      const result = await run(args);
+      assert.equal(result.code, 0, `${command}\nstdout: ${result.stdout}\nstderr: ${result.stderr}`);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('agent-brief --prompt — prints only the copyable handoff prompt', async () => {
   const root = await buildGraphFixture();
   try {
@@ -4583,6 +4600,7 @@ await test('health --help — documents focused diagnosis tuning flags', async (
   assert.match(clean, /--dependency-types A,B/);
   assert.match(clean, /--component-types A,B/);
   assert.match(clean, /--component-limit N/);
+  assert.match(clean, /--limit is a first-contact alias for --node-limit/);
   assert.match(clean, /Use --json for repeatable automation gates such as pnpm dogfood:health/);
   assert.match(clean, /Failing health checks exit non-zero; use workspace-brief when you also need hotspots and next actions/);
   assert.match(clean, /Use pnpm dogfood:status for the cheap human-readable health \+ workspace-brief \+ agent-brief \+ maintenance queue/);
@@ -4610,6 +4628,19 @@ await test('health --json — forwards focused diagnosis tuning flags', async ()
     assert.equal(components.status, 'info');
     assert.equal(components.count, 3);
     assert.match(components.message, /scoped ontology graph/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('health --limit — accepts agent_brief first-contact fallback alias', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['health', root, '--json', '--limit=1']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'health');
+    assert.equal(data.status, 'healthy');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

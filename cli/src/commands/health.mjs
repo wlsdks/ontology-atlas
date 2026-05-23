@@ -4,11 +4,16 @@
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertHealthShape, healthResultExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { formatUnknownFlagError, parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
+import {
+  formatUnknownFlagError,
+  parseBoundedPositiveIntegerFlag,
+  parseVaultFlag,
+  resolveExclusiveVaultArg,
+} from '../lib/cli-args.mjs';
 import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-options.mjs';
 import { diagnosisStatusColor, healthCheckStatusColor } from '../lib/diagnosis-colors.mjs';
 
-const ALLOWED_FLAGS = ['--vault', '--json', ...DIAGNOSIS_OPTION_FLAGS];
+const ALLOWED_FLAGS = ['--vault', '--json', '--limit', ...DIAGNOSIS_OPTION_FLAGS];
 
 const COLORS = {
   green: '\x1b[32m',
@@ -86,6 +91,15 @@ function parseArgs(args) {
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
+    else if (a === '--limit') {
+      const limit = parseBoundedPositiveIntegerFlag('--limit', args[++i], { max: 500 });
+      if (limit instanceof Error) return { error: limit.message };
+      options.nodeLimit = limit;
+    } else if (a.startsWith('--limit=')) {
+      const limit = parseBoundedPositiveIntegerFlag('--limit', a.slice('--limit='.length), { max: 500 });
+      if (limit instanceof Error) return { error: limit.message };
+      options.nodeLimit = limit;
+    }
     else if (DIAGNOSIS_OPTION_FLAGS.includes(a)) {
       const error = parseDiagnosisOption(options, a, args[++i]);
       if (error) return { error: error.message };
@@ -106,8 +120,9 @@ function printUsage(stream = process.stderr) {
       `  oh-my-ontology health [vault] [--json]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
-      `       [--order-limit N] [--node-limit N]\n\n` +
+      `       [--order-limit N] [--node-limit N] [--limit N]\n\n` +
       `pass=healthy / warn=info-only / fail=blocking. exit 0 만 healthy.\n` +
+      `--limit is a first-contact alias for --node-limit so agent_brief CLI fallbacks run directly.\n` +
       `Use --json for repeatable automation gates such as pnpm dogfood:health.\n` +
       `Failing health checks exit non-zero; use workspace-brief when you also need hotspots and next actions.\n` +
       `Use pnpm dogfood:status for the cheap human-readable health + workspace-brief + agent-brief + maintenance queue.\n` +

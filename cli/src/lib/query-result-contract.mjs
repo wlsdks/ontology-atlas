@@ -2043,8 +2043,13 @@ function validRelationCheckProposedAction(result) {
     && isPlainObject(action.args)
     && action.args.from === result.from
     && action.args.to === result.to
-    && action.args.type === result.relation
+    && relationTypesMatch(action.args.type, result.relation)
   );
+}
+
+function relationTypesMatch(writeType, readType) {
+  if (writeType === readType) return true;
+  return writeType === 'depends_on' && readType === 'dependencies';
 }
 
 function validCountBucket(value) {

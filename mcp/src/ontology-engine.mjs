@@ -2897,10 +2897,10 @@ export function createOntologyEngine(artifact, options = {}) {
     const healthGateCall = agentToolCall('query_ontology', { operation: 'health', limit });
     const validateVaultGateCall = agentToolCall('validate_vault', {});
     const traversalBudget = {
-      maxHops: 3,
+      maxHops: 1,
       limit: 10,
       searchBudget: 1000,
-      types: ['depends_on', 'relates'],
+      types: ['depends_on', 'relates', 'domain', 'capabilities', 'contains'],
     };
     const traversalPlanCall = agentToolCall('query_ontology', {
       operation: 'query_plan',
