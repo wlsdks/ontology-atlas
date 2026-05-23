@@ -828,26 +828,53 @@ function AgentQueryRecipesPanel({
           />
         </div>
         <div
-          className="mt-3 rounded-md border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(3,7,18,0.14)] px-2.5 py-2"
-          data-testid="insights-agent-traversal-contract"
+          className="mt-3 grid gap-2 lg:grid-cols-2"
+          data-testid="insights-agent-result-contracts"
         >
-          <p className="font-mono text-[10px] text-[color:rgba(151,230,198,0.92)]">
-            {t("agentTraversalContractTitle")}
-          </p>
-          <ul className="mt-1 grid gap-1 sm:grid-cols-3">
-            {[
-              "agentTraversalContractBudget",
-              "agentTraversalContractPartial",
-              "agentTraversalContractProof",
-            ].map((key) => (
-              <li
-                key={key}
-                className="break-keep rounded border border-[color:rgba(73,190,146,0.12)] bg-[color:rgba(73,190,146,0.035)] px-2 py-1.5 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
-              >
-                {t(key)}
-              </li>
-            ))}
-          </ul>
+          <div
+            className="rounded-md border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(3,7,18,0.14)] px-2.5 py-2"
+            data-testid="insights-agent-traversal-contract"
+          >
+            <p className="font-mono text-[10px] text-[color:rgba(151,230,198,0.92)]">
+              {t("agentTraversalContractTitle")}
+            </p>
+            <ul className="mt-1 grid gap-1">
+              {[
+                "agentTraversalContractBudget",
+                "agentTraversalContractPartial",
+                "agentTraversalContractProof",
+              ].map((key) => (
+                <li
+                  key={key}
+                  className="break-keep rounded border border-[color:rgba(73,190,146,0.12)] bg-[color:rgba(73,190,146,0.035)] px-2 py-1.5 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+                >
+                  {t(key)}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div
+            className="rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(3,7,18,0.14)] px-2.5 py-2"
+            data-testid="insights-agent-scan-contract"
+          >
+            <p className="font-mono text-[10px] text-[color:rgba(184,191,255,0.92)]">
+              {t("agentScanContractTitle")}
+            </p>
+            <ul className="mt-1 grid gap-1">
+              {[
+                "agentScanContractTotals",
+                "agentScanContractNodeFollowUp",
+                "agentScanContractEdgeFollowUp",
+              ].map((key) => (
+                <li
+                  key={key}
+                  className="break-keep rounded border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(139,151,255,0.04)] px-2 py-1.5 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+                >
+                  {t(key)}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
       <div

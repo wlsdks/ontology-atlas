@@ -157,6 +157,18 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("budget 1000");
     await expect(recipes).toContainText("report evidence.status");
     await expect(recipes).toContainText("check pathsComplete");
+    await expect(recipes.getByTestId("insights-agent-result-contracts")).toContainText(
+      "match_nodes / match_edges scan contract",
+    );
+    await expect(recipes.getByTestId("insights-agent-scan-contract")).toContainText(
+      "totalMatches",
+    );
+    await expect(recipes.getByTestId("insights-agent-scan-contract")).toContainText(
+      "followUp",
+    );
+    await expect(recipes.getByTestId("insights-agent-scan-contract")).toContainText(
+      "relation_check",
+    );
     await expect(recipes).toContainText("estimate rankingWorkUnits");
     await expect(recipes).toContainText("report danglingNodes");
     await expect(recipes).toContainText("maxHops 3");

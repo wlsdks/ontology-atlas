@@ -125,6 +125,12 @@ const ALL_PATHS_RESULT_CONTRACT = [
   "Do not use a single returned path as proof when all_paths is limited, budget-truncated, or evidence.pathsComplete is false.",
 ];
 
+const SCAN_RESULT_CONTRACT = [
+  "For match_nodes and match_edges, report totalMatches, limited, row count, and followUp details before treating scan rows as evidence.",
+  "Run match_nodes followUp calls such as node_profile, match_edges, and blast_radius before using a node row for onboarding or refactor decisions.",
+  "Run match_edges followUp calls such as explain_relation, path, and relation_check before using an edge row as write, refactor, or coupling evidence.",
+];
+
 export function validateAgentMcpQueryCall(payload: AgentMcpQueryCall): string[] {
   const issues: string[] = [];
   if (payload.tool !== "query_ontology") {
@@ -223,6 +229,7 @@ export function formatAgentRunOrderPrompt(recipes: readonly AgentQueryRecipe[]):
     "Use this oh-my-ontology first-contact run order before answering from the codebase graph.",
     "Run the MCP calls in order. Report health, cite concrete slugs/edges, and run query_plan before heavier traversal or impact queries.",
     ...ALL_PATHS_RESULT_CONTRACT,
+    ...SCAN_RESULT_CONTRACT,
     "",
     payloads,
     ...cliFallback,
@@ -436,6 +443,7 @@ export function formatAgentPlaybookPrompt(playbook: AgentInvestigationPlaybook):
     "Use the oh-my-ontology MCP server to answer this investigation intent before editing.",
     "Run the calls in order, cite the returned slugs/edges in your reasoning, and only write to the vault after the graph evidence is clear.",
     ...ALL_PATHS_RESULT_CONTRACT,
+    ...SCAN_RESULT_CONTRACT,
     "",
     "Evidence to report:",
     evidence,
@@ -515,6 +523,7 @@ export function formatAgentTraversalPacket(
     "Use this oh-my-ontology graph traversal packet before treating graph paths as evidence.",
     "Run query_plan before all_paths, keep traversal bounded, and cross-check containment before changing ownership, domain boundaries, or relation direction.",
     ...ALL_PATHS_RESULT_CONTRACT,
+    ...SCAN_RESULT_CONTRACT,
     "",
     "Execution gates:",
     gates,
@@ -567,6 +576,7 @@ export function buildAgentHandoffPrompt(
     "Use the oh-my-ontology MCP server as the codebase graph memory before editing.",
     "Start with the first-contact calls below, inspect health before writes, and run query_plan before heavier impact queries.",
     "For relation_check results, follow recommendation.decision before using proposedAction; review_inverse and review_new_schema require an explicit human-readable justification before add_relation.",
+    "For match_nodes and match_edges, run the returned followUp calls before treating scan rows as graph evidence.",
     traversalStrategies.length > 0
       ? `Traversal strategy: ${traversalStrategies.map((strategy) => strategy.id).join(" -> ")}.`
       : "Traversal strategy: plan_before_enumeration -> bounded_path_evidence -> containment_cross_check.",

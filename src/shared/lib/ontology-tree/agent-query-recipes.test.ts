@@ -329,6 +329,9 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("CLI fallback commands when the MCP connector is unavailable:");
     expect(prompt).toContain("oh-my-ontology blast-radius capabilities/mcp-server [vault] --plan --depth 2");
     expect(prompt).toContain("evidence.pathsComplete");
+    expect(prompt).toContain("For match_nodes and match_edges, report totalMatches");
+    expect(prompt).toContain("followUp details");
+    expect(prompt).toContain("explain_relation, path, and relation_check");
   });
 
   it("builds a handoff prompt with first-contact and sync guidance", () => {
@@ -365,6 +368,8 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("evidence.pathsComplete");
     expect(prompt).toContain("follow evidence.suggestedQuery or evidence.saferQuery");
     expect(prompt).toContain("budget-truncated");
+    expect(prompt).toContain("run the returned followUp calls");
+    expect(prompt).toContain("For match_nodes and match_edges, report totalMatches");
     expect(prompt).toContain("sync the docs/ontology vault");
     expect(prompt).toContain("query_ontology.query_plan");
     expect(prompt).toContain("query_ontology.node_profile");
@@ -699,6 +704,8 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("totalPathsExact");
     expect(prompt).toContain("evidence.pathsComplete");
     expect(prompt).toContain("evidence.saferQuery");
+    expect(prompt).toContain("For match_nodes and match_edges, report totalMatches");
+    expect(prompt).toContain("node_profile, match_edges, and blast_radius");
     expect(prompt).toContain("query_ontology.workspace_brief");
     expect(prompt).toContain("query_ontology.blast_radius");
     expect(prompt).toContain("query_ontology.explain_relation");
@@ -744,6 +751,7 @@ describe("buildAgentQueryRecipes", () => {
 
     expect(prompt).toContain("query_ontology.match_nodes");
     expect(prompt).toContain("Graph DB-style node scan");
+    expect(prompt).toContain("match_nodes followUp calls");
     expect(prompt).toContain(
       "oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10",
     );
