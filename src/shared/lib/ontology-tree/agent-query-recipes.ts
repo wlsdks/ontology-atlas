@@ -225,7 +225,14 @@ export function formatAgentRunOrderPrompt(recipes: readonly AgentQueryRecipe[]):
 }
 
 export function formatAgentRecipeCliCommand(recipe: AgentQueryRecipe): string | null {
-  const args = recipe.arguments;
+  return formatAgentQueryArgumentsCliCommand(recipe.arguments);
+}
+
+export function formatAgentQueryCallCliCommand(payload: AgentMcpQueryCall): string | null {
+  return formatAgentQueryArgumentsCliCommand(payload.arguments);
+}
+
+export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown>): string | null {
   switch (args.operation) {
     case "agent_brief":
       return "oh-my-ontology agent-brief [vault]";
@@ -240,6 +247,13 @@ export function formatAgentRecipeCliCommand(recipe: AgentQueryRecipe): string | 
           "--plan",
           nonNegativeFlag("--depth", args.depth),
           stringFlag("--direction", args.direction),
+        ]);
+      }
+      if (args.targetOperation === "centrality") {
+        return withFlags("oh-my-ontology hubs [vault]", [
+          "--plan",
+          positiveFlag("--limit", args.limit),
+          csvFlag("--types", args.types),
         ]);
       }
       return null;
@@ -281,6 +295,11 @@ export function formatAgentRecipeCliCommand(recipe: AgentQueryRecipe): string | 
         positiveFlag("--limit", args.limit),
       ]);
     }
+    case "centrality":
+      return withFlags("oh-my-ontology hubs [vault]", [
+        positiveFlag("--limit", args.limit),
+        csvFlag("--types", args.types),
+      ]);
     default:
       return null;
   }

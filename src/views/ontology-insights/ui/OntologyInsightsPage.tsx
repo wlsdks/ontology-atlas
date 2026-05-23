@@ -32,6 +32,7 @@ import {
   buildAgentWriteGuardrails,
   formatAgentGuardrailPrompt,
   formatAgentPlaybookPrompt,
+  formatAgentQueryCallCliCommand,
   buildOntologyTree,
   buildProjectOntologyCounts,
   computeEdgeTypeDistribution,
@@ -894,60 +895,86 @@ function AgentQueryRecipesPanel({
           </p>
         </div>
         <div className="grid min-w-0 gap-2 md:grid-cols-2 xl:grid-cols-4">
-          {playbooks.map((playbook) => (
-            <article
-              key={playbook.id}
-              className="flex min-w-0 flex-col gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2.5"
-              data-playbook={playbook.id}
-            >
-              <div className="min-w-0">
-                <p className="font-mono text-[11px] text-[color:var(--color-text-secondary)]">
-                  {t(playbook.titleKey)}
-                </p>
-                <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-                  {t(playbook.promptKey)}
-                </p>
-                <p className="mt-1 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                  {playbook.payloads.length} MCP calls
-                </p>
-                <div className="mt-2 grid gap-1.5">
-                  <PlaybookChecklist
-                    label={t("agentPlaybookEvidenceLabel")}
-                    items={playbook.evidence}
-                    tone="evidence"
-                  />
-                  <PlaybookChecklist
-                    label={t("agentPlaybookStopLabel")}
-                    items={playbook.stopWhen}
-                    tone="stop"
-                  />
-                </div>
-                <ol className="mt-2 flex flex-wrap gap-1" aria-label={t("agentPlaybookStepsLabel")}>
-                  {playbook.payloads.map((payload, index) => (
-                    <li
-                      key={`${playbook.id}-${payload.operation}-${index}`}
-                      className="rounded border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(139,151,255,0.055)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]"
-                    >
-                      {index + 1}. {payload.arguments.operation as string}
-                    </li>
-                  ))}
-                </ol>
-                {playbook.id === "graph_traversal" ? (
+          {playbooks.map((playbook) => {
+            const cliCommands = playbook.payloads
+              .map(formatAgentQueryCallCliCommand)
+              .filter((command): command is string => command !== null);
+
+            return (
+              <article
+                key={playbook.id}
+                className="flex min-w-0 flex-col gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2.5"
+                data-playbook={playbook.id}
+              >
+                <div className="min-w-0">
+                  <p className="font-mono text-[11px] text-[color:var(--color-text-secondary)]">
+                    {t(playbook.titleKey)}
+                  </p>
+                  <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                    {t(playbook.promptKey)}
+                  </p>
+                  <p className="mt-1 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                    {playbook.payloads.length} MCP calls
+                  </p>
+                  <div className="mt-2 grid gap-1.5">
+                    <PlaybookChecklist
+                      label={t("agentPlaybookEvidenceLabel")}
+                      items={playbook.evidence}
+                      tone="evidence"
+                    />
+                    <PlaybookChecklist
+                      label={t("agentPlaybookStopLabel")}
+                      items={playbook.stopWhen}
+                      tone="stop"
+                    />
+                  </div>
+                  <ol className="mt-2 flex flex-wrap gap-1" aria-label={t("agentPlaybookStepsLabel")}>
+                    {playbook.payloads.map((payload, index) => (
+                      <li
+                        key={`${playbook.id}-${payload.operation}-${index}`}
+                        className="rounded border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(139,151,255,0.055)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]"
+                      >
+                        {index + 1}. {payload.arguments.operation as string}
+                      </li>
+                    ))}
+                  </ol>
                   <TraversalGuardFacts
-                    argumentsPayload={playbook.payloads.find(
-                      (payload) => payload.arguments.operation === "all_paths",
-                    )?.arguments}
+                    argumentsPayload={
+                      playbook.id === "graph_traversal"
+                        ? playbook.payloads.find(
+                            (payload) => payload.arguments.operation === "all_paths",
+                          )?.arguments
+                        : playbook.payloads.find(
+                            (payload) => payload.arguments.operation === "query_plan",
+                          )?.arguments
+                    }
                   />
-                ) : null}
-              </div>
-              <CopyAgentTextButton
-                label={t("agentCopyPlaybook")}
-                copiedLabel={t("agentCopied")}
-                text={formatAgentPlaybookPrompt(playbook)}
-                compact
-              />
-            </article>
-          ))}
+                  {cliCommands.length > 0 ? (
+                    <div className="mt-2 min-w-0 rounded-md border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.045)] p-2">
+                      <p className="mb-1 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(151,230,198,0.92)]">
+                        {t("agentCliCommandLabel")}
+                      </p>
+                      <ul className="grid gap-1">
+                        {cliCommands.slice(0, 2).map((command) => (
+                          <li key={command}>
+                            <code className="block overflow-x-auto whitespace-nowrap font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                              {command}
+                            </code>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+                <CopyAgentTextButton
+                  label={t("agentCopyPlaybook")}
+                  copiedLabel={t("agentCopied")}
+                  text={formatAgentPlaybookPrompt(playbook)}
+                  compact
+                />
+              </article>
+            );
+          })}
         </div>
       </div>
       <div
@@ -1171,14 +1198,16 @@ function getTraversalGuardFacts(argumentsPayload?: Record<string, unknown>) {
   if (!argumentsPayload) return [];
   const operation = argumentsPayload.operation;
   const targetOperation = argumentsPayload.targetOperation;
+  const isCentralityPlan = operation === "query_plan" && targetOperation === "centrality";
   const isBoundedTraversal =
     operation === "all_paths" || (operation === "query_plan" && targetOperation === "all_paths");
-  if (!isBoundedTraversal) return [];
+  if (!isBoundedTraversal && !isCentralityPlan) return [];
 
   const facts: Array<{ key: string; label: string }> = [];
   const searchBudget = positiveInteger(argumentsPayload.searchBudget);
   const maxHops = nonNegativeInteger(argumentsPayload.maxHops);
   const limit = positiveInteger(argumentsPayload.limit);
+  const iterations = positiveInteger(argumentsPayload.iterations);
   const types = Array.isArray(argumentsPayload.types)
     ? argumentsPayload.types.filter(
         (value): value is string => typeof value === "string" && value.length > 0,
@@ -1186,12 +1215,17 @@ function getTraversalGuardFacts(argumentsPayload?: Record<string, unknown>) {
     : [];
 
   if (operation === "query_plan") facts.push({ key: "plan", label: "plan first" });
+  if (isCentralityPlan) {
+    facts.push({ key: "ranking-work", label: "estimate rankingWorkUnits" });
+    facts.push({ key: "dangling", label: "report danglingNodes" });
+  }
   if (operation === "all_paths") {
     facts.push({ key: "evidence-status", label: "report evidence.status" });
     facts.push({ key: "paths-complete", label: "check pathsComplete" });
   }
   if (searchBudget !== null) facts.push({ key: "budget", label: `budget ${searchBudget}` });
   if (maxHops !== null) facts.push({ key: "maxHops", label: `maxHops ${maxHops}` });
+  if (iterations !== null) facts.push({ key: "iterations", label: `iterations ${iterations}` });
   if (limit !== null) facts.push({ key: "limit", label: `limit ${limit}` });
   if (types.length > 0) facts.push({ key: "types", label: `types ${types.join(", ")}` });
   return facts;

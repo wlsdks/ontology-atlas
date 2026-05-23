@@ -10,6 +10,7 @@ import {
   buildAgentWriteGuardrails,
   formatAgentGuardrailPrompt,
   formatAgentPlaybookPrompt,
+  formatAgentQueryCallCliCommand,
   formatAgentRecipeCliCommand,
   formatAgentRecipePayload,
   formatAgentRunOrderPrompt,
@@ -201,6 +202,21 @@ describe("buildAgentQueryRecipes", () => {
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "all_paths")!)).toBe(
       "oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
     );
+    expect(
+      formatAgentRecipeCliCommand({
+        id: "query_plan",
+        operation: "query_ontology.query_plan",
+        promptKey: "agentRecipePromptQueryPlan",
+        tool: "query_ontology",
+        arguments: {
+          operation: "query_plan",
+          targetOperation: "centrality",
+          types: ["depends_on", "relates"],
+          limit: 10,
+        },
+        priority: "secondary",
+      }),
+    ).toBe("oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates");
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "domain_matrix")!)).toBeNull();
   });
 
@@ -352,6 +368,9 @@ describe("buildAgentQueryRecipes", () => {
         limit: 10,
       },
     });
+    expect(formatAgentQueryCallCliCommand(playbooks[2]!.payloads[2]!)).toBe(
+      "oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates",
+    );
     expect(playbooks[2]?.payloads[3]).toEqual({
       operation: "query_ontology.centrality",
       tool: "query_ontology",

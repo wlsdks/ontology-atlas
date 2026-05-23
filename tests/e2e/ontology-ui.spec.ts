@@ -125,8 +125,11 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("budget 1000");
     await expect(recipes).toContainText("report evidence.status");
     await expect(recipes).toContainText("check pathsComplete");
+    await expect(recipes).toContainText("estimate rankingWorkUnits");
+    await expect(recipes).toContainText("report danglingNodes");
     await expect(recipes).toContainText("maxHops 3");
     await expect(recipes).toContainText("CLI command");
+    await expect(recipes).toContainText("oh-my-ontology hubs");
     await expect(recipes).toContainText("oh-my-ontology all-paths");
     await expect(recipes).toContainText("--plan");
     await expect(recipes).toContainText("blast_radius");
