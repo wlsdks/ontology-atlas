@@ -524,6 +524,15 @@ describe("buildAgentQueryRecipes", () => {
 
     expect(packet).toContain("graph traversal packet");
     expect(packet).toContain("query_plan before all_paths");
+    expect(packet).toContain("Execution gates:");
+    expect(packet).toContain("1. plan_before_enumeration (first)");
+    expect(packet).toContain("2. bounded_path_evidence (evidence)");
+    expect(packet).toContain("3. containment_cross_check (confirm)");
+    expect(packet).toContain("Evidence to report:");
+    expect(packet).toContain("Stop and narrow before writing if:");
+    expect(packet).toContain("query_plan.execution.nextStep");
+    expect(packet).toContain("all_paths.totalPathsExact");
+    expect(packet).toContain("pattern_walk and project_map disagree");
     expect(packet).toContain("MCP calls:");
     expect(packet).toContain("1. plan_before_enumeration / query_ontology.query_plan");
     expect(packet).toContain("2. bounded_path_evidence / query_ontology.all_paths");

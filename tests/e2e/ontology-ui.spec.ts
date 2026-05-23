@@ -141,6 +141,15 @@ test.describe("ontology view UI", () => {
     await expect(recipes.getByRole("button", { name: "Copy traversal packet" })).toBeVisible();
     await expect(recipes).toContainText("MCP calls 4");
     await expect(recipes).toContainText("CLI fallbacks 1");
+    await recipes.getByRole("button", { name: "Copy traversal packet" }).click();
+    const copiedTraversalPacket = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
+    );
+    expect(copiedTraversalPacket).toContain("Execution gates:");
+    expect(copiedTraversalPacket).toContain("plan_before_enumeration (first)");
+    expect(copiedTraversalPacket).toContain("bounded_path_evidence (evidence)");
+    expect(copiedTraversalPacket).toContain("containment_cross_check (confirm)");
+    expect(copiedTraversalPacket).toContain("Stop and narrow before writing if:");
     await expect(recipes.getByRole("button", { name: "Copy run order" })).toBeVisible();
     await expect(recipes.getByTestId("insights-agent-guardrails")).toContainText(
       "Write safety gates",

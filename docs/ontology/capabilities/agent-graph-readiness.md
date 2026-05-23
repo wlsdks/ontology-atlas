@@ -122,7 +122,10 @@ step 을 하나씩 고르지 않아도 같은 graph evidence protocol 로 시작
 추가로 traversal strategy 전체도 `Copy traversal packet` 으로 한 번에 복사한다.
 이 packet 은 `query_plan(all_paths)` → bounded `all_paths` →
 `pattern_walk` / `project_map` 순서의 MCP payload 를 묶고, 가능한 CLI fallback
-명령도 함께 넣는다. 그래서 사용자가 graph DB 식 질문을 웹에서 고른 뒤 agent 에게
+명령도 함께 넣는다. packet 본문에는 각 strategy 의 priority, evidence to report,
+stop-and-narrow 조건도 같이 들어가므로 복사된 텍스트만 받은 agent 도 path 결과를
+무조건 증명처럼 쓰지 않고 plan / evidence / containment gate 를 먼저 통과한다.
+그래서 사용자가 graph DB 식 질문을 웹에서 고른 뒤 agent 에게
 넘길 때 개별 strategy 버튼을 세 번 누르지 않아도 plan-first / bounded evidence /
 containment cross-check 순서를 그대로 유지할 수 있다.
 화면은 packet 을 복사하기 전에 포함된 MCP 호출 수와 CLI fallback 수를 바로 보여줘,

@@ -388,6 +388,19 @@ export function formatAgentTraversalStrategyPrompt(strategy: AgentTraversalStrat
 export function formatAgentTraversalPacket(
   strategies: readonly AgentTraversalStrategy[],
 ): string {
+  const gates = strategies
+    .map((strategy, index) => {
+      const evidence = strategy.evidence.map((item) => `  - ${item}`).join("\n");
+      const stopWhen = strategy.stopWhen.map((item) => `  - ${item}`).join("\n");
+      return [
+        `${index + 1}. ${strategy.id} (${strategy.priority})`,
+        "Evidence to report:",
+        evidence,
+        "Stop and narrow before writing if:",
+        stopWhen,
+      ].join("\n");
+    })
+    .join("\n\n");
   const payloads = strategies
     .flatMap((strategy) =>
       strategy.payloads.map((payload) => ({
@@ -417,6 +430,9 @@ export function formatAgentTraversalPacket(
     "Use this oh-my-ontology graph traversal packet before treating graph paths as evidence.",
     "Run query_plan before all_paths, keep traversal bounded, and cross-check containment before changing ownership, domain boundaries, or relation direction.",
     ...ALL_PATHS_RESULT_CONTRACT,
+    "",
+    "Execution gates:",
+    gates,
     "",
     "MCP calls:",
     payloads,
