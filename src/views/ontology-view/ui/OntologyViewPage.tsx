@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Info, Link2, X } from "lucide-react";
+import { Clipboard, Info, Link2, X } from "lucide-react";
 import {
   buildOntologyNodeHref,
   type KnowledgeGraphNode,
@@ -33,6 +33,11 @@ import {
 } from "@/features/vault-ontology";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { Tooltip, useToast } from "@/shared/ui";
+import {
+  buildReachabilityCliCommand,
+  buildReachabilityMcpCall,
+  resolveReachabilityQuerySlug,
+} from "../lib/reachability-copy";
 
 /**
  * `/ontology` — ontology view.
@@ -575,6 +580,51 @@ function CopyNodeLinkButton({
   );
 }
 
+function ReachabilityCopyActions({
+  slug,
+  direction,
+  depth,
+}: {
+  slug: string;
+  direction: OntologyReachabilityDirection;
+  depth: 1 | 2 | 3;
+}) {
+  const t = useTranslations('ontologyView.detail');
+  const { show } = useToast();
+  const limit = 12;
+
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      show(t('reachabilityCopyToastSuccess'), "success");
+    } catch (err) {
+      console.warn("[ReachabilityCopyActions] clipboard write failed", err);
+      show(t('reachabilityCopyToastError'), "error");
+    }
+  };
+
+  return (
+    <div className="mt-3 grid grid-cols-2 gap-2">
+      <button
+        type="button"
+        onClick={() => void copyText(buildReachabilityMcpCall({ slug, direction, depth, limit }))}
+        className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+      >
+        <Clipboard size={12} aria-hidden />
+        <span className="truncate">{t('reachabilityCopyMcp')}</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => void copyText(buildReachabilityCliCommand({ slug, direction, depth, limit }))}
+        className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+      >
+        <Clipboard size={12} aria-hidden />
+        <span className="truncate">{t('reachabilityCopyCli')}</span>
+      </button>
+    </div>
+  );
+}
+
 /**
  * 트리 row 클릭 시 노출되는 노드 상세 패널.
  *
@@ -658,6 +708,7 @@ function NodeDetailPanel({
     ? evidenceList
     : evidenceList.slice(0, EVIDENCE_PREVIEW);
   const hiddenEvidenceCount = Math.max(0, evidenceList.length - visibleEvidence.length);
+  const reachabilityQuerySlug = resolveReachabilityQuerySlug(node);
   // evidenceId 는 vault `.md` slug. /docs/?slug=... viewer 가 대응 라우트라
   // 각 chip 을 그 viewer 로 가는 Link 로 노출 — ontology 그래프 → 원문 docs
   // 한 클릭 점프.
@@ -871,6 +922,13 @@ function NodeDetailPanel({
               {t('reachabilityEmpty')}
             </p>
           )}
+          {reachabilityQuerySlug ? (
+            <ReachabilityCopyActions
+              slug={reachabilityQuerySlug}
+              direction={reachabilityDirection}
+              depth={reachabilityDepth}
+            />
+          ) : null}
         </div>
       ) : null}
 
