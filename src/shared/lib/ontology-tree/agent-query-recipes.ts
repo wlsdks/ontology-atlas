@@ -1067,6 +1067,12 @@ export function buildAgentInvestigationPlaybooks(
           types: ["depends_on", "relates"],
           limit: 10,
         }),
+        recipe("query_plan", {
+          operation: "query_plan",
+          targetOperation: "match_edges",
+          types: ["depends_on"],
+          limit: 20,
+        }),
         recipe("match_edges", {
           operation: "match_edges",
           types: ["depends_on"],

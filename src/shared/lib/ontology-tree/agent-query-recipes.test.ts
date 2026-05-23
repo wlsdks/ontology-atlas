@@ -401,6 +401,7 @@ describe("buildAgentQueryRecipes", () => {
       "domain_matrix",
       "query_plan",
       "centrality",
+      "query_plan",
       "match_edges",
     ]);
     expect(playbooks[2]?.payloads[2]).toEqual({
@@ -425,6 +426,19 @@ describe("buildAgentQueryRecipes", () => {
         limit: 10,
       },
     });
+    expect(playbooks[2]?.payloads[4]).toEqual({
+      operation: "query_ontology.query_plan",
+      tool: "query_ontology",
+      arguments: {
+        operation: "query_plan",
+        targetOperation: "match_edges",
+        types: ["depends_on"],
+        limit: 20,
+      },
+    });
+    expect(formatAgentQueryCallCliCommand(playbooks[2]!.payloads[4]!)).toBe(
+      "oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20",
+    );
     expect(playbooks[3]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
       "schema",
       "query_plan",
@@ -632,6 +646,7 @@ describe("buildAgentQueryRecipes", () => {
 
     expect(prompt).toContain("oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates");
     expect(prompt).toContain("oh-my-ontology hubs [vault] --limit 10 --types depends_on,relates");
+    expect(prompt).toContain("oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20");
     expect(prompt).toContain("oh-my-ontology match-edges [vault] --types depends_on --limit 20");
   });
 

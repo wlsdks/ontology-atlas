@@ -145,9 +145,11 @@ domain boundary 가 걸리면 `pattern_walk` / `project_map` 으로 containment 
 `blast_radius` → `path` → `relation_check` 순서로 변경 전 영향권과 relation
 preflight 를 확인하고, `Onboarding map` 은 `workspace_brief` / `domain_matrix` /
 `node_profile` 로 첫 mental map 을 만든다. `Coupling audit` 은 `health` /
-`domain_matrix` / `query_plan(centrality)` / `centrality` / `match_edges` 를 묶어
+`domain_matrix` / `query_plan(centrality)` / `centrality` / `query_plan(match_edges)` /
+`match_edges` 를 묶어
 경계 변경 전에 ranking 비용과 결합, dependency edge 를 확인한다. 이 playbook 을
-복사하면 `hubs --plan`, `hubs`, `match-edges --types depends_on --limit 20`
+복사하면 `hubs --plan`, `hubs`, `match-edges --plan --types depends_on --limit 20`,
+`match-edges --types depends_on --limit 20`
 CLI fallback 도 함께 들어가 MCP connector 가 없는 Codex / Claude Code 세션도
 같은 coupling audit 증거를 터미널에서 재현할 수 있다. `Graph traversal` 은 `schema` →
 `query_plan(all_paths)` → `all_paths` → `pattern_walk` → `project_map` 을 묶어,
