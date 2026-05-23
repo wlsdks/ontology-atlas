@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T18:40:37.625Z",
+  "generatedAt": "2026-05-23T18:46:54.498Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -4397,8 +4397,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 6343,
-      "updatedAt": "2026-05-23T18:40:18.993Z",
+      "wordCount": 6358,
+      "updatedAt": "2026-05-23T18:46:31.145Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4699,8 +4699,8 @@
         }
       ],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. web starter 와 CLI init 은 .mcp.json, .codex/config.toml, .mcp.json.example 을 생성하고, Docs vault tools menu 는 현재 로컬 폴더에 이 파일들이 있는지 별도 agent setup 상태로 보여준다. 기존 vault 에서는 starter markdown 을 추가하지 않아도 누락된 agent 설정 파일만 생성할 수 있다. 이 repa",
-      "wordCount": 225,
-      "updatedAt": "2026-05-23T18:06:29.710Z",
+      "wordCount": 258,
+      "updatedAt": "2026-05-23T18:46:42.617Z",
       "linksOut": []
     },
     {

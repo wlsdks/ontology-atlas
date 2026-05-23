@@ -28,12 +28,14 @@ relates:
 생성할 수 있다. 이 repair action 은 이미 사용자가 작성한 ontology 파일을 건드리지
 않고, agent 연결에 필요한 config surface 만 채운다.
 
-같은 화면은 read-first 검증 prompt, 설치된 CLI graph runbook, codebase-root
-세션용 `.mcp.json.example` 템플릿, Codex `.codex/config.toml` 템플릿, 그리고
-`codex mcp add ...` 한 줄 등록 명령도 복사 가능하게 유지한다. 설정 상태 확인,
-누락 config 생성, 검증 액션 그룹의 MCP prompt / 터미널 graph runbook 복사, 별도
-codebase root 연결 그룹의 MCP JSON / Codex TOML / Codex CLI 등록 명령 복사가 한 패널
-안에 있어 비개발자도 Claude Code / Codex 를 열기 전에 필요한 다음 행동을 놓치지 않는다.
+같은 화면은 전체 setup packet, read-first 검증 prompt, 설치된 CLI graph runbook,
+codebase-root 세션용 `.mcp.json.example` 템플릿, Codex `.codex/config.toml` 템플릿,
+그리고 `codex mcp add ...` 한 줄 등록 명령도 복사 가능하게 유지한다. setup packet 은
+MCP/Codex 템플릿, 재시작 안내, 검증 prompt, CLI fallback 을 한 번에 묶어 별도 root 에서
+agent 를 여는 사용자가 순서를 조립하지 않아도 되게 한다. 설정 상태 확인, 누락 config 생성,
+검증 액션 그룹의 setup packet / MCP prompt / 터미널 graph runbook 복사, 별도 codebase root
+연결 그룹의 MCP JSON / Codex TOML / Codex CLI 등록 명령 복사가 한 패널 안에 있어
+비개발자도 Claude Code / Codex 를 열기 전에 필요한 다음 행동을 놓치지 않는다.
 새 agent 세션은 `validate_vault`,
 `workspace_brief`, `agent_brief` 를 먼저 실행해 vault 가 읽히고 write tools 가
 노출되는지 보고한 뒤 변경을 제안한다. MCP 가 아직 붙지 않았고 CLI 가 설치된 환경에서는

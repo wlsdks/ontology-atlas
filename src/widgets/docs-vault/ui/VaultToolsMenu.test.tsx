@@ -151,6 +151,46 @@ describe('VaultToolsMenu', () => {
     ).toBeInTheDocument();
   });
 
+  it('AI agent 설정 패널에서 전체 setup packet 을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '설정 패킷 복사' }));
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology agent setup packet'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('"oh-my-ontology-mcp"'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('[mcp_servers.oh-my-ontology]'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('codex mcp add oh-my-ontology'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('validate_vault'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology mcp-verify . --timeout-ms 15000'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('<absolute path to your team-vault folder>'),
+    );
+    expect(
+      await screen.findByRole('button', { name: '설정 패킷 복사됨' }),
+    ).toBeInTheDocument();
+  });
+
   it('AI agent 설정 패널에서 CLI graph runbook 을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
     renderMenu({

@@ -38,6 +38,30 @@ const AGENT_VERIFY_CLI_PREVIEW = [
   'hubs . --plan --limit 10',
 ];
 
+function buildAgentSetupPacket(vaultName: string): string {
+  return [
+    'oh-my-ontology agent setup packet',
+    '',
+    'Use this when Claude Code, Cursor, or Codex is opened at a separate codebase root.',
+    'Replace every <absolute path...> placeholder before using the config.',
+    '',
+    'Claude Code / Cursor .mcp.json:',
+    buildMcpConfigJson(vaultName),
+    '',
+    'Codex .codex/config.toml:',
+    buildCodexConfigTomlTemplate(vaultName),
+    '',
+    'Codex one-line registration:',
+    buildCodexMcpAddCommandTemplate(vaultName),
+    '',
+    'After registering, restart the agent and paste this verification prompt:',
+    ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
+    '',
+    'CLI fallback from the vault folder:',
+    AGENT_VERIFY_CLI_COMMAND,
+  ].join('\n');
+}
+
 /**
  * R11 #16 step 1 — DocsVaultPage 의 advanced dropdown body 를 widget 으로 추출.
  * presentational only — open/close state, ref, outside-click 처리는 caller
@@ -104,6 +128,9 @@ export function VaultToolsMenu({
   const [agentPromptCopyState, setAgentPromptCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle');
+  const [agentPacketCopyState, setAgentPacketCopyState] = useState<
+    'idle' | 'copied' | 'failed'
+  >('idle');
   const [agentCliCopyState, setAgentCliCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle');
@@ -139,6 +166,13 @@ export function VaultToolsMenu({
     setAgentPromptCopyState(copied ? 'copied' : 'failed');
   }
 
+  async function handleCopyAgentSetupPacket() {
+    const copied = await copyText(
+      buildAgentSetupPacket(localVault.handle?.name ?? 'vault'),
+    );
+    setAgentPacketCopyState(copied ? 'copied' : 'failed');
+  }
+
   async function handleCopyAgentVerifyCli() {
     const copied = await copyText(AGENT_VERIFY_CLI_COMMAND);
     setAgentCliCopyState(copied ? 'copied' : 'failed');
@@ -171,6 +205,13 @@ export function VaultToolsMenu({
       : agentPromptCopyState === 'failed'
         ? t('agentSetup.copyPromptFailed')
         : t('agentSetup.copyPrompt');
+
+  const copyPacketLabel =
+    agentPacketCopyState === 'copied'
+      ? t('agentSetup.copyPacketCopied')
+      : agentPacketCopyState === 'failed'
+        ? t('agentSetup.copyPacketFailed')
+        : t('agentSetup.copyPacket');
 
   const copyCliLabel =
     agentCliCopyState === 'copied'
@@ -333,6 +374,15 @@ export function VaultToolsMenu({
                 <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
                   {t('agentSetup.verifyGroup')}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyAgentSetupPacket()}
+                  title={t('agentSetup.copyPacketTitle')}
+                  className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.42)] bg-[color:rgba(94,106,210,0.10)] px-2 py-1.5 text-[11.5px] text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:rgba(94,106,210,0.62)] hover:bg-[color:rgba(94,106,210,0.15)]"
+                >
+                  <ClipboardCopy size={12} aria-hidden />
+                  {copyPacketLabel}
+                </button>
                 <button
                   type="button"
                   onClick={() => void handleCopyAgentVerifyPrompt()}
