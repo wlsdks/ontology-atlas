@@ -3072,6 +3072,14 @@ await test('graph diagnostic commands — reject invalid option values before MC
       pattern: /unknown flag: --lmit=1\. Did you mean --limit\?/,
     },
     {
+      args: ['hubs', '--types=dependencies,'],
+      pattern: /--types must not contain empty CSV items/,
+    },
+    {
+      args: ['hubs', '--types=depend_on'],
+      pattern: /--types items must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
+    },
+    {
       args: ['path', 'capabilities/foo', 'capabilities/bar', '--max-hops=2x'],
       pattern: /--max-hops must be a non-negative integer/,
     },
@@ -3460,6 +3468,24 @@ await test('hubs — human rankings include node titles for scanability', async 
     assert.match(clean, /PageRank/);
     assert.match(clean, /domains\/auth\s+— Auth/);
     assert.match(clean, /capabilities\/foo\s+— Foo/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('hubs --plan --types — plans PageRank cost before centrality ranking', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['hubs', root, '--plan', '--types=depends_on,relates', '--limit=2', '--json']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.plan.targetOperation, 'centrality');
+    assert.equal(data.plan.estimate.strategy, 'page_rank_centrality');
+    assert.equal(data.plan.normalized.limit, 2);
+    assert.deepEqual(data.plan.normalized.types, ['dependencies', 'relates']);
+    assert.equal(data.result.operation, 'centrality');
+    assert.equal(data.result.parameters.limit, 2);
+    assert.deepEqual(data.result.parameters.types, ['dependencies', 'relates']);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
