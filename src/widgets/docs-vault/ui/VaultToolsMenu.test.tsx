@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
+import { TooltipProvider } from '@/shared/ui';
 import { VaultToolsMenu } from './VaultToolsMenu';
 
 vi.mock('@/shared/lib/copy-text', () => ({
@@ -15,7 +16,7 @@ const copyTextMock = vi.mocked(copyText);
 function render(ui: React.ReactElement) {
   return rtlRender(
     <NextIntlClientProvider locale="ko" messages={koMessages}>
-      {ui}
+      <TooltipProvider>{ui}</TooltipProvider>
     </NextIntlClientProvider>,
   );
 }
@@ -179,6 +180,38 @@ describe('VaultToolsMenu', () => {
     );
     expect(
       await screen.findByRole('button', { name: 'CLI 검증 명령 복사됨' }),
+    ).toBeInTheDocument();
+  });
+
+  it('AI agent 설정 패널에서 codebase-root MCP 템플릿을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'codebase-root 설정 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('"oh-my-ontology"'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('<absolute path to your team-vault folder>'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('"oh-my-ontology-mcp"'),
+    );
+    expect(
+      await screen.findByRole('button', {
+        name: 'codebase-root 설정 복사됨',
+      }),
     ).toBeInTheDocument();
   });
 });

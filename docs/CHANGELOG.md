@@ -33,6 +33,10 @@ loop works before the agent writes anything.
   matching terminal verification sequence (`validate` → `workspace-brief` →
   `agent-brief --prompt` → `mcp-verify`) for users who already have the CLI
   installed and want proof before MCP is attached.
+- **Codebase-root MCP template copy** — the same panel now copies the
+  `.mcp.json.example` body with the current vault name in the absolute-path
+  placeholder, so Claude Code / Cursor sessions opened from a separate
+  codebase root do not have to hunt for the template file first.
 - **First-contact MCP prompt** — generated starter READMEs ask the agent to run
   `validate_vault`, `workspace_brief`, and `agent_brief`, then report whether
   the vault is readable and write tools are available.

@@ -27,11 +27,12 @@ Claude Code/Cursor `.mcp.json`, Codex `.codex/config.toml`, global Codex `mcp ad
 starter 파일 추가 없이 같은 검증 prompt 를 복사할 수 있게 했다. Docs command palette 도
 local vault loaded 상태에서 같은 prompt 를 노출한다. 같은 tools menu 는 `.mcp.json`,
 `.codex/config.toml`, `.mcp.json.example` 존재 여부를 agent setup 상태로 보여주고, 누락된
-설정 파일만 생성하는 repair action, 검증 prompt 복사, 설치된 CLI fallback 명령 복사를 함께
-제공한다. starter README 에도 첫 연결 검증 루프를 추가했다: agent 에게 `validate_vault` →
-`workspace_brief` → `agent_brief` 를 실행해 읽기 가능성과 write tool 노출 여부를 보고하게
-하고, CLI 가 설치된 사용자는 `validate`, `workspace-brief`,
-`agent-brief --prompt`, `mcp-verify --timeout-ms 15000` 로 같은 경로를 확인한다.
+설정 파일만 생성하는 repair action, 검증 prompt 복사, 설치된 CLI fallback 명령 복사,
+codebase-root `.mcp.json.example` 템플릿 복사를 함께 제공한다. starter README 에도 첫
+연결 검증 루프를 추가했다: agent 에게 `validate_vault` → `workspace_brief` →
+`agent_brief` 를 실행해 읽기 가능성과 write tool 노출 여부를 보고하게 하고, CLI 가
+설치된 사용자는 `validate`, `workspace-brief`, `agent-brief --prompt`,
+`mcp-verify --timeout-ms 15000` 로 같은 경로를 확인한다.
 자세한 디자인 룰:
 `docs/DESIGN-SYSTEM.md`.
 

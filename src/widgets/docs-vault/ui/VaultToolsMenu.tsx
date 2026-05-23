@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
+  buildMcpConfigJson,
   LocalVaultPicker,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
   OntologyStarterCta,
@@ -95,6 +96,9 @@ export function VaultToolsMenu({
   const [agentCliCopyState, setAgentCliCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle');
+  const [agentTemplateCopyState, setAgentTemplateCopyState] = useState<
+    'idle' | 'copied' | 'failed'
+  >('idle');
   const agentStatus = localVault.agentConfigStatus;
   const agentSetupReady = Boolean(
     agentStatus?.mcpJson && agentStatus.codexConfig && agentStatus.mcpExample,
@@ -124,6 +128,13 @@ export function VaultToolsMenu({
     setAgentCliCopyState(copied ? 'copied' : 'failed');
   }
 
+  async function handleCopyAgentConfigTemplate() {
+    const copied = await copyText(
+      buildMcpConfigJson(localVault.handle?.name ?? 'vault'),
+    );
+    setAgentTemplateCopyState(copied ? 'copied' : 'failed');
+  }
+
   const copyPromptLabel =
     agentPromptCopyState === 'copied'
       ? t('agentSetup.copyPromptCopied')
@@ -137,6 +148,13 @@ export function VaultToolsMenu({
       : agentCliCopyState === 'failed'
         ? t('agentSetup.copyCliFailed')
         : t('agentSetup.copyCli');
+
+  const copyTemplateLabel =
+    agentTemplateCopyState === 'copied'
+      ? t('agentSetup.copyTemplateCopied')
+      : agentTemplateCopyState === 'failed'
+        ? t('agentSetup.copyTemplateFailed')
+        : t('agentSetup.copyTemplate');
 
   return (
     <div
@@ -285,6 +303,15 @@ export function VaultToolsMenu({
                 >
                   <Terminal size={12} aria-hidden />
                   {copyCliLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyAgentConfigTemplate()}
+                  title={t('agentSetup.copyTemplateTitle')}
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  <ClipboardCopy size={12} aria-hidden />
+                  {copyTemplateLabel}
                 </button>
                 {agentSetupError ? (
                   <p

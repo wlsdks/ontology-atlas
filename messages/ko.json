@@ -1159,6 +1159,10 @@
       "copyCliCopied": "CLI 검증 명령 복사됨",
       "copyCliFailed": "복사 실패",
       "copyCliTitle": "oh-my-ontology CLI가 이미 설치된 환경에서 vault를 검증하는 터미널 명령을 복사합니다.",
+      "copyTemplate": "codebase-root 설정 복사",
+      "copyTemplateCopied": "codebase-root 설정 복사됨",
+      "copyTemplateFailed": "복사 실패",
+      "copyTemplateTitle": "별도 codebase root에서 agent를 열 때 쓰는 .mcp.json 템플릿을 복사합니다. 사용 전 vault 경로 placeholder를 바꿔야 합니다.",
       "errorFallback": "agent 설정을 만들지 못했습니다"
     },
     "mobileDrawer": {
