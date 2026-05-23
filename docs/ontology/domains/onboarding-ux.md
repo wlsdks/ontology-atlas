@@ -29,7 +29,8 @@ local vault loaded 상태에서 같은 prompt 를 노출한다. 같은 tools men
 `.codex/config.toml`, `.mcp.json.example` 존재 여부를 agent setup 상태로 보여주고, 누락된
 설정 파일만 생성하는 repair action, 검증 action group 의 prompt / 설치된 CLI fallback
 명령 복사, codebase-root 연결 action group 의 `.mcp.json.example` 템플릿 / Codex
-`.codex/config.toml` 템플릿 복사를 함께 제공한다. starter README 에도 첫 연결 검증 루프를
+`.codex/config.toml` 템플릿 / `codex mcp add ...` 한 줄 명령 복사를 함께 제공한다.
+starter README 에도 첫 연결 검증 루프를
 추가했다: agent 에게
 `validate_vault` → `workspace_brief` → `agent_brief` 를 실행해 읽기 가능성과 write tool
 노출 여부를 보고하게 하고, CLI 가 설치된 사용자는 `validate`, `workspace-brief`,

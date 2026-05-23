@@ -258,4 +258,38 @@ describe('VaultToolsMenu', () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it('AI agent 설정 패널에서 Codex mcp add 한 줄 명령을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Codex mcp add 명령 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('codex mcp add oh-my-ontology'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "OMOT_VAULT='<absolute path to your team-vault folder>'",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('npx -y oh-my-ontology-mcp'),
+    );
+    expect(
+      await screen.findByRole('button', {
+        name: 'Codex 명령 복사됨',
+      }),
+    ).toBeInTheDocument();
+  });
 });

@@ -317,3 +317,27 @@ export function buildCodexConfigToml(omotVault = '.'): string {
 export function buildCodexConfigTomlTemplate(vaultName: string): string {
   return buildCodexConfigToml(`<absolute path to your ${vaultName} folder>`);
 }
+
+/**
+ * One-line Codex CLI registration for users who prefer mutating their Codex
+ * MCP config through the CLI instead of editing `.codex/config.toml`.
+ */
+export function buildCodexMcpAddCommandTemplate(vaultName: string): string {
+  const vaultPath = `<absolute path to your ${vaultName} folder>`;
+  return [
+    'codex',
+    'mcp',
+    'add',
+    'oh-my-ontology',
+    '--env',
+    `OMOT_VAULT=${shellQuote(vaultPath)}`,
+    '--',
+    'npx',
+    '-y',
+    'oh-my-ontology-mcp',
+  ].join(' ');
+}
+
+function shellQuote(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}

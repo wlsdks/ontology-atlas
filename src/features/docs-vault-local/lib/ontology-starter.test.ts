@@ -6,6 +6,7 @@ import {
   ONTOLOGY_STARTER_FILES,
   buildCodexConfigToml,
   buildCodexConfigTomlTemplate,
+  buildCodexMcpAddCommandTemplate,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
 } from "./ontology-starter";
@@ -170,5 +171,25 @@ describe("buildCodexConfigToml", () => {
   it("Codex MCP config 는 OMOT_VAULT 값을 TOML string 으로 escape 한다", () => {
     const toml = buildCodexConfigToml('/tmp/vault "quoted"');
     expect(toml).toContain('OMOT_VAULT = "/tmp/vault \\"quoted\\""');
+  });
+});
+
+describe("buildCodexMcpAddCommandTemplate", () => {
+  it("Codex CLI one-line MCP 등록 명령을 절대경로 placeholder 로 제공", () => {
+    const command = buildCodexMcpAddCommandTemplate("team-vault");
+
+    expect(command).toContain("codex mcp add oh-my-ontology");
+    expect(command).toContain(
+      "OMOT_VAULT='<absolute path to your team-vault folder>'",
+    );
+    expect(command).toContain("npx -y oh-my-ontology-mcp");
+  });
+
+  it("vault 이름의 작은따옴표를 shell-safe 하게 escape 한다", () => {
+    const command = buildCodexMcpAddCommandTemplate("team's vault");
+
+    expect(command).toContain(
+      "OMOT_VAULT='<absolute path to your team'\\''s vault folder>'",
+    );
   });
 });

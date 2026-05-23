@@ -1170,6 +1170,10 @@
       "copyCodexTemplateCopied": "Codex TOML 복사됨",
       "copyCodexTemplateFailed": "복사 실패",
       "copyCodexTemplateTitle": "별도 codebase root에서 Codex를 열 때 쓰는 .codex/config.toml 템플릿을 복사합니다. 사용 전 vault 경로 placeholder를 바꿔야 합니다.",
+      "copyCodexCli": "Codex mcp add 명령 복사",
+      "copyCodexCliCopied": "Codex 명령 복사됨",
+      "copyCodexCliFailed": "복사 실패",
+      "copyCodexCliTitle": "어떤 codebase root 에서든 이 vault 를 등록할 수 있는 codex mcp add 한 줄 명령을 복사합니다. 실행 전 vault 경로 placeholder를 바꿔야 합니다.",
       "errorFallback": "agent 설정을 만들지 못했습니다"
     },
     "mobileDrawer": {

@@ -13,6 +13,7 @@ import {
 import { useTranslations } from 'next-intl';
 import {
   buildCodexConfigTomlTemplate,
+  buildCodexMcpAddCommandTemplate,
   buildMcpConfigJson,
   LocalVaultPicker,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
@@ -111,6 +112,9 @@ export function VaultToolsMenu({
   >('idle');
   const [agentCodexTemplateCopyState, setAgentCodexTemplateCopyState] =
     useState<'idle' | 'copied' | 'failed'>('idle');
+  const [agentCodexCliCopyState, setAgentCodexCliCopyState] = useState<
+    'idle' | 'copied' | 'failed'
+  >('idle');
   const agentStatus = localVault.agentConfigStatus;
   const agentSetupReady = Boolean(
     agentStatus?.mcpJson && agentStatus.codexConfig && agentStatus.mcpExample,
@@ -154,6 +158,13 @@ export function VaultToolsMenu({
     setAgentCodexTemplateCopyState(copied ? 'copied' : 'failed');
   }
 
+  async function handleCopyCodexMcpAddCommand() {
+    const copied = await copyText(
+      buildCodexMcpAddCommandTemplate(localVault.handle?.name ?? 'vault'),
+    );
+    setAgentCodexCliCopyState(copied ? 'copied' : 'failed');
+  }
+
   const copyPromptLabel =
     agentPromptCopyState === 'copied'
       ? t('agentSetup.copyPromptCopied')
@@ -181,6 +192,13 @@ export function VaultToolsMenu({
       : agentCodexTemplateCopyState === 'failed'
         ? t('agentSetup.copyCodexTemplateFailed')
         : t('agentSetup.copyCodexTemplate');
+
+  const copyCodexCliLabel =
+    agentCodexCliCopyState === 'copied'
+      ? t('agentSetup.copyCodexCliCopied')
+      : agentCodexCliCopyState === 'failed'
+        ? t('agentSetup.copyCodexCliFailed')
+        : t('agentSetup.copyCodexCli');
 
   return (
     <div
@@ -368,6 +386,15 @@ export function VaultToolsMenu({
                 >
                   <ClipboardCopy size={12} aria-hidden />
                   {copyCodexTemplateLabel}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyCodexMcpAddCommand()}
+                  title={t('agentSetup.copyCodexCliTitle')}
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  <Terminal size={12} aria-hidden />
+                  {copyCodexCliLabel}
                 </button>
                 {agentSetupError ? (
                   <p
