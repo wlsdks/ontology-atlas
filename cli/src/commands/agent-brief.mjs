@@ -6,12 +6,14 @@ import { fileURLToPath } from 'node:url';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertAgentBriefShape, agentBriefExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { formatUnknownFlagError, parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
+import { formatUnknownFlagError, parsePositiveIntegerFlag, parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
 import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-options.mjs';
 import { diagnosisStatusColor } from '../lib/diagnosis-colors.mjs';
 
 const CLI_ENTRYPOINT = fileURLToPath(new URL('../index.mjs', import.meta.url));
-const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', ...DIAGNOSIS_OPTION_FLAGS];
+const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--fallback-timeout-ms', ...DIAGNOSIS_OPTION_FLAGS];
+const DEFAULT_FALLBACK_TIMEOUT_MS = 15_000;
+const FALLBACK_TIMEOUT_ENV = 'OMOT_AGENT_FALLBACK_TIMEOUT_MS';
 
 const COLORS = {
   green: '\x1b[32m',
@@ -39,7 +41,7 @@ const READINESS_COLORS = {
 };
 
 export async function runAgentBrief(args) {
-  const { vault, json, prompt, graphDbPack, verifyFallbacks, options, error, help } = parseArgs(args);
+  const { vault, json, prompt, graphDbPack, verifyFallbacks, fallbackTimeoutMs, options, error, help } = parseArgs(args);
   if (help) {
     printUsage(process.stdout);
     return 0;
@@ -61,7 +63,13 @@ export async function runAgentBrief(args) {
     return 2;
   }
   if (verifyFallbacks) {
-    const report = verifyCliFallbacks(result, vaultRoot, { json });
+    const effectiveFallbackTimeoutMs = fallbackTimeoutMs ?? agentFallbackTimeoutMs();
+    if (effectiveFallbackTimeoutMs instanceof Error) {
+      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${effectiveFallbackTimeoutMs.message}\n`);
+      printUsage();
+      return 1;
+    }
+    const report = verifyCliFallbacks(result, vaultRoot, { json, timeoutMs: effectiveFallbackTimeoutMs });
     return Math.max(agentBriefExitCode(result), report.failed > 0 ? 1 : 0);
   }
   if (json) {
@@ -80,8 +88,8 @@ export async function runAgentBrief(args) {
   return agentBriefExitCode(result);
 }
 
-function verifyCliFallbacks(result, vaultRoot, { json = false } = {}) {
-  const report = buildFallbackVerificationReport(result, vaultRoot);
+function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS } = {}) {
+  const report = buildFallbackVerificationReport(result, vaultRoot, { timeoutMs });
   if (json) {
     process.stdout.write(JSON.stringify(report, null, 2) + '\n');
     return report;
@@ -90,7 +98,7 @@ function verifyCliFallbacks(result, vaultRoot, { json = false } = {}) {
   return report;
 }
 
-function buildFallbackVerificationReport(result, vaultRoot) {
+function buildFallbackVerificationReport(result, vaultRoot, { timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS } = {}) {
   const commands = Array.isArray(result.cliFallbackCommands) ? result.cliFallbackCommands : [];
   const rows = [];
   for (const raw of commands) {
@@ -111,9 +119,11 @@ function buildFallbackVerificationReport(result, vaultRoot) {
     const child = spawnSync(process.execPath, [CLI_ENTRYPOINT, ...parsed.args], {
       encoding: 'utf8',
       maxBuffer: 1024 * 1024 * 8,
+      timeout: timeoutMs,
     });
     const elapsedMs = Math.max(0, Math.round(performance.now() - startedAt));
-    const failed = child.status !== 0;
+    const timedOut = child.error?.code === 'ETIMEDOUT';
+    const failed = timedOut || child.status !== 0;
     const sample = failed ? sampleFallbackOutput(child.stderr || child.stdout) : '';
     rows.push({
       command: raw,
@@ -121,8 +131,11 @@ function buildFallbackVerificationReport(result, vaultRoot) {
       status: failed ? 'fail' : 'pass',
       elapsedMs,
       exitCode: child.status,
+      ...(child.signal ? { signal: child.signal } : {}),
+      ...(timedOut ? { timedOut: true } : {}),
       ...(sample ? { outputSample: sample } : {}),
-      ...(child.error ? { error: child.error.message } : {}),
+      ...(timedOut ? { error: `fallback command timed out after ${timeoutMs}ms` } : {}),
+      ...(!timedOut && child.error ? { error: child.error.message } : {}),
     });
   }
   const passed = rows.filter((row) => row.status === 'pass').length;
@@ -134,6 +147,7 @@ function buildFallbackVerificationReport(result, vaultRoot) {
   return {
     operation: 'agent_fallback_check',
     ok: failed === 0,
+    timeoutMs,
     total: rows.length,
     passed,
     failed,
@@ -150,7 +164,7 @@ function buildFallbackVerificationReport(result, vaultRoot) {
 }
 
 function renderFallbackVerificationReport(report) {
-  process.stdout.write(`${COLORS.bold}agent fallback check${COLORS.reset} ${COLORS.dim}${report.total} command(s)${COLORS.reset}\n`);
+  process.stdout.write(`${COLORS.bold}agent fallback check${COLORS.reset} ${COLORS.dim}${report.total} command(s), timeout ${report.timeoutMs}ms${COLORS.reset}\n`);
   for (const row of report.commands) {
     const color = row.status === 'pass' ? COLORS.green : COLORS.red;
     process.stdout.write(`  ${color}${row.status.toUpperCase()}${COLORS.reset} ${formatFallbackTiming(row.elapsedMs)} ${row.command}\n`);
@@ -162,6 +176,16 @@ function renderFallbackVerificationReport(report) {
   if (report.slowest) {
     process.stdout.write(`${COLORS.dim}timing:${COLORS.reset} total ${report.totalMs}ms; slowest ${report.slowest.elapsedMs}ms ${report.slowest.command}\n`);
   }
+}
+
+function agentFallbackTimeoutMs(env = process.env) {
+  const raw = env[FALLBACK_TIMEOUT_ENV];
+  if (raw == null || raw === '') return DEFAULT_FALLBACK_TIMEOUT_MS;
+  const parsed = parsePositiveIntegerFlag(FALLBACK_TIMEOUT_ENV, raw);
+  if (parsed instanceof Error) {
+    return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${FALLBACK_TIMEOUT_ENV}=N or --fallback-timeout-ms N.`);
+  }
+  return parsed;
 }
 
 function formatFallbackTiming(elapsedMs) {
@@ -533,7 +557,7 @@ function formatToolCall(call) {
 
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
-  const flags = { vault: null, json: false, prompt: false, graphDbPack: false, verifyFallbacks: false };
+  const flags = { vault: null, json: false, prompt: false, graphDbPack: false, verifyFallbacks: false, fallbackTimeoutMs: null, fallbackTimeoutRaw: null };
   const options = {};
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
@@ -545,6 +569,14 @@ function parseArgs(args) {
     else if (a === '--prompt') flags.prompt = true;
     else if (a === '--graph-db-pack') flags.graphDbPack = true;
     else if (a === '--verify-fallbacks') flags.verifyFallbacks = true;
+    else if (a === '--fallback-timeout-ms') {
+      flags.fallbackTimeoutRaw = args[i + 1];
+      flags.fallbackTimeoutMs = parsePositiveIntegerFlag('--fallback-timeout-ms', args[++i]);
+    }
+    else if (a.startsWith('--fallback-timeout-ms=')) {
+      flags.fallbackTimeoutRaw = a.slice('--fallback-timeout-ms='.length);
+      flags.fallbackTimeoutMs = parsePositiveIntegerFlag('--fallback-timeout-ms', flags.fallbackTimeoutRaw);
+    }
     else if (DIAGNOSIS_OPTION_FLAGS.includes(a)) {
       const error = parseDiagnosisOption(options, a, args[++i]);
       if (error) return { error: error.message };
@@ -565,9 +597,14 @@ function parseArgs(args) {
   if (flags.verifyFallbacks && (flags.prompt || flags.graphDbPack)) {
     return { error: `--verify-fallbacks cannot be used with ${outputFlags.map(([name]) => name).join(' or ')}` };
   }
+  if (flags.fallbackTimeoutMs instanceof Error) {
+    return {
+      error: `${flags.fallbackTimeoutMs.message}. Received: ${JSON.stringify(String(flags.fallbackTimeoutRaw))}. Set --fallback-timeout-ms N or ${FALLBACK_TIMEOUT_ENV}=N.`,
+    };
+  }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;
-  return { vault: vaultResult.vault, json: flags.json, prompt: flags.prompt, graphDbPack: flags.graphDbPack, verifyFallbacks: flags.verifyFallbacks, options };
+  return { vault: vaultResult.vault, json: flags.json, prompt: flags.prompt, graphDbPack: flags.graphDbPack, verifyFallbacks: flags.verifyFallbacks, fallbackTimeoutMs: flags.fallbackTimeoutMs, options };
 }
 
 function printUsage(stream = process.stderr) {
@@ -575,6 +612,7 @@ function printUsage(stream = process.stderr) {
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  oh-my-ontology agent-brief [vault] [--json|--prompt|--graph-db-pack|--verify-fallbacks]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
+      `       [--fallback-timeout-ms N]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
       `       [--order-limit N] [--node-limit N]\n\n` +
       `Claude Code/Codex handoff: readiness score, copyable handoffPrompt, graph entrypoints,\n` +
@@ -582,6 +620,7 @@ function printUsage(stream = process.stderr) {
       `Use --json for repeatable agent handoff snapshots; use --prompt to print only .handoffPrompt.\n` +
       `Use --graph-db-pack to print only executable CLI graph scan commands for connector-less sessions.\n` +
       `Use --verify-fallbacks to execute the generated CLI fallback commands against this vault; combine with --json for a machine-readable timing report.\n` +
+      `Use --fallback-timeout-ms N or ${FALLBACK_TIMEOUT_ENV}=N to bound each fallback command.\n` +
       `Exits non-zero when readiness is not ready, status is not healthy, a health check fails,\n` +
       `or a fail-severity nextAction is present.\n` +
       `Tuning flags forward to query_ontology agent_brief for focused diagnostics.\n`,
