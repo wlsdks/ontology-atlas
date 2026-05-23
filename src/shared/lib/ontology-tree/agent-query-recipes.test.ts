@@ -4,10 +4,13 @@ import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
   buildAgentHandoffPrompt,
+  buildAgentGraphDbQueryPack,
   buildAgentInvestigationPlaybooks,
   buildAgentQueryRecipes,
   buildAgentTraversalStrategies,
   buildAgentWriteGuardrails,
+  formatAgentGraphDbQueryPack,
+  formatAgentGraphDbQueryPackItemPrompt,
   formatAgentGuardrailPrompt,
   formatAgentPlaybookPrompt,
   formatAgentQueryCallCliCommand,
@@ -553,6 +556,109 @@ describe("buildAgentQueryRecipes", () => {
     expect(playbooks[3]?.evidence.join(" ")).toContain("evidence.pathsComplete");
     expect(playbooks[3]?.stopWhen.join(" ")).toContain("query_plan");
     expect(playbooks[3]?.stopWhen.join(" ")).toContain("evidence.suggestedQuery");
+  });
+
+  it("builds a graph DB-style query pack with plan-first scans and bounded evidence", () => {
+    const pack = buildAgentGraphDbQueryPack([
+      {
+        slug: "capabilities/mcp-server",
+        title: "MCP Server",
+        kind: "capability",
+        degree: 7,
+      },
+      {
+        slug: "domains/views",
+        title: "Views",
+        kind: "domain",
+        degree: 6,
+      },
+    ]);
+
+    expect(pack.map((item) => item.id)).toEqual([
+      "node_scan",
+      "edge_scan",
+      "domain_coupling",
+      "path_evidence",
+    ]);
+    expect(pack[0]?.intent).toContain("MATCH (n:capability)");
+    expect(pack[0]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
+      "query_plan",
+      "match_nodes",
+    ]);
+    expect(pack[0]?.payloads[0]?.arguments).toEqual({
+      operation: "query_plan",
+      targetOperation: "match_nodes",
+      kind: "capability",
+      minDegree: 2,
+      sort: "degree",
+      limit: 10,
+    });
+    expect(formatAgentQueryCallCliCommand(pack[0]!.payloads[0]!)).toBe(
+      "oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10",
+    );
+    expect(pack[1]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
+      "query_plan",
+      "match_edges",
+    ]);
+    expect(formatAgentQueryCallCliCommand(pack[1]!.payloads[1]!)).toBe(
+      "oh-my-ontology match-edges [vault] --types depends_on --limit 20",
+    );
+    expect(pack[2]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
+      "domain_matrix",
+      "query_plan",
+      "centrality",
+    ]);
+    expect(formatAgentQueryCallCliCommand(pack[2]!.payloads[0]!)).toBe(
+      "oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates",
+    );
+    expect(pack[3]?.payloads[0]?.arguments).toEqual({
+      operation: "query_plan",
+      targetOperation: "all_paths",
+      from: "capabilities/mcp-server",
+      to: "domains/views",
+      maxHops: 3,
+      types: ["depends_on", "relates"],
+      searchBudget: 1000,
+      limit: 10,
+    });
+    expect(formatAgentQueryCallCliCommand(pack[3]!.payloads[0]!)).toBe(
+      "oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
+    );
+  });
+
+  it("formats the graph DB query pack as copyable MCP plus CLI fallback evidence", () => {
+    const pack = buildAgentGraphDbQueryPack([
+      {
+        slug: "capabilities/mcp-server",
+        title: "MCP Server",
+        kind: "capability",
+        degree: 7,
+      },
+      {
+        slug: "domains/views",
+        title: "Views",
+        kind: "domain",
+        degree: 6,
+      },
+    ]);
+    const itemPrompt = formatAgentGraphDbQueryPackItemPrompt(pack[0]!);
+    const prompt = formatAgentGraphDbQueryPack(pack);
+
+    expect(itemPrompt).toContain("graph DB-style query pack");
+    expect(itemPrompt).toContain("Intent: MATCH (n:capability)");
+    expect(itemPrompt).toContain("MCP calls:");
+    expect(itemPrompt).toContain("query_ontology.query_plan");
+    expect(itemPrompt).toContain("query_ontology.match_nodes");
+    expect(itemPrompt).toContain("CLI fallback commands when the MCP connector is unavailable:");
+    expect(itemPrompt).toContain("oh-my-ontology match-nodes [vault] --plan");
+    expect(itemPrompt).toContain("For match_nodes and match_edges, report totalMatches");
+
+    expect(prompt).toContain("scan the local markdown vault like a graph database");
+    expect(prompt).toContain("## 1. node_scan");
+    expect(prompt).toContain("## 4. path_evidence");
+    expect(prompt).toContain("MATCH p=(from)-[:depends_on|relates*..3]-(to)");
+    expect(prompt).toContain("oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --max-hops 3");
+    expect(prompt).toContain("evidence.pathsComplete");
   });
 
   it("builds plan-first traversal strategies with bounded evidence and containment checks", () => {

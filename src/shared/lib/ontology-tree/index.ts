@@ -43,6 +43,8 @@ export {
 export type {
   AgentInvestigationPlaybook,
   AgentInvestigationPlaybookId,
+  AgentGraphDbQueryPackId,
+  AgentGraphDbQueryPackItem,
   AgentMcpQueryCall,
   AgentMcpToolCall,
   AgentProjectEntrypoint,
@@ -55,10 +57,13 @@ export type {
   AgentWriteGuardrailId,
 } from "./agent-query-recipes";
 export {
+  buildAgentGraphDbQueryPack,
   buildAgentTraversalStrategies,
   buildAgentWriteGuardrails,
   buildAgentHandoffPrompt,
   buildAgentInvestigationPlaybooks,
+  formatAgentGraphDbQueryPack,
+  formatAgentGraphDbQueryPackItemPrompt,
   buildAgentQueryRecipes,
   formatAgentMcpQueryPayload,
   formatAgentMcpToolPayload,

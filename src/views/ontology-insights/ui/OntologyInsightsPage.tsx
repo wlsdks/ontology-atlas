@@ -26,12 +26,15 @@ import {
   buildAgentReadinessCliCommands,
   buildAgentReadinessPrompt,
   buildAgentReadinessSummary,
+  buildAgentGraphDbQueryPack,
   buildAgentHandoffPrompt,
   buildAgentInvestigationPlaybooks,
   buildAgentQueryRecipes,
   buildAgentTraversalStrategies,
   buildAgentWriteGuardrails,
   formatAgentGuardrailPrompt,
+  formatAgentGraphDbQueryPack,
+  formatAgentGraphDbQueryPackItemPrompt,
   formatAgentPlaybookPrompt,
   formatAgentQueryCallCliCommand,
   buildOntologyTree,
@@ -177,6 +180,10 @@ export function OntologyInsightsPage() {
   const agentTraversalStrategies = useMemo(
     () => buildAgentTraversalStrategies(agentEntrypoints, agentProjectEntrypoint),
     [agentEntrypoints, agentProjectEntrypoint],
+  );
+  const agentGraphDbQueryPack = useMemo(
+    () => buildAgentGraphDbQueryPack(agentEntrypoints),
+    [agentEntrypoints],
   );
   const agentGuardrails = useMemo(
     () => buildAgentWriteGuardrails(agentEntrypoints),
@@ -328,6 +335,7 @@ export function OntologyInsightsPage() {
               projectEntrypoint={agentProjectEntrypoint}
               entrypoints={agentEntrypoints}
               playbooks={agentPlaybooks}
+              graphDbQueryPack={agentGraphDbQueryPack}
               traversalStrategies={agentTraversalStrategies}
               guardrails={agentGuardrails}
             />
@@ -710,6 +718,7 @@ export function OntologyInsightsPage() {
 function AgentQueryRecipesPanel({
   entrypoints,
   guardrails,
+  graphDbQueryPack,
   playbooks,
   projectEntrypoint,
   recipes,
@@ -717,6 +726,7 @@ function AgentQueryRecipesPanel({
 }: {
   entrypoints: ReturnType<typeof selectAgentQueryEntrypoints>;
   guardrails: ReturnType<typeof buildAgentWriteGuardrails>;
+  graphDbQueryPack: ReturnType<typeof buildAgentGraphDbQueryPack>;
   playbooks: ReturnType<typeof buildAgentInvestigationPlaybooks>;
   projectEntrypoint: ReturnType<typeof selectAgentProjectEntrypoint>;
   recipes: ReturnType<typeof buildAgentQueryRecipes>;
@@ -734,7 +744,17 @@ function AgentQueryRecipesPanel({
   const traversalCliFallbackCount = traversalStrategies
     .flatMap((strategy) => strategy.payloads)
     .map(formatAgentQueryCallCliCommand)
-    .filter((command): command is string => command !== null).length;
+    .filter((command): command is string => command !== null)
+    .filter(uniqueString).length;
+  const graphDbPayloadCount = graphDbQueryPack.reduce(
+    (count, item) => count + item.payloads.length,
+    0,
+  );
+  const graphDbCliFallbackCount = graphDbQueryPack
+    .flatMap((item) => item.payloads)
+    .map(formatAgentQueryCallCliCommand)
+    .filter((command): command is string => command !== null)
+    .filter(uniqueString).length;
   const firstRunRecipes = useMemo(() => recipes.slice(0, 5), [recipes]);
   const firstRunPrompt = useMemo(
     () => formatAgentRunOrderPrompt(firstRunRecipes),
@@ -811,6 +831,87 @@ function AgentQueryRecipesPanel({
           </div>
         ))}
       </dl>
+      <div
+        className="mb-3 rounded-lg border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.045)] px-3 py-3"
+        data-testid="insights-agent-graph-db-pack"
+      >
+        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[11px] text-[color:var(--color-text-secondary)]">
+              {t("agentGraphDbPackTitle")}
+            </p>
+            <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t("agentGraphDbPackSubtitle")}
+            </p>
+            <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {t("agentGraphDbPackMeta", {
+                mcp: graphDbPayloadCount,
+                cli: graphDbCliFallbackCount,
+              })}
+            </p>
+          </div>
+          <CopyAgentTextButton
+            label={t("agentCopyGraphDbPack")}
+            copiedLabel={t("agentCopied")}
+            text={formatAgentGraphDbQueryPack(graphDbQueryPack)}
+            compact
+          />
+        </div>
+        <div className="grid min-w-0 gap-2 lg:grid-cols-4">
+          {graphDbQueryPack.map((item) => {
+            const cliCommands = item.payloads
+              .map(formatAgentQueryCallCliCommand)
+              .filter((command): command is string => command !== null)
+              .filter(uniqueString);
+
+            return (
+              <article
+                key={item.id}
+                className="flex min-w-0 flex-col gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2.5"
+                data-pack={item.id}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="font-mono text-[11px] text-[color:var(--color-text-secondary)]">
+                    {t(item.titleKey)}
+                  </p>
+                  <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                    {t(item.promptKey)}
+                  </p>
+                  <code className="mt-2 block overflow-x-auto whitespace-nowrap rounded border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(3,7,18,0.22)] px-2 py-1.5 font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {item.intent}
+                  </code>
+                  <ol className="mt-2 flex flex-wrap gap-1" aria-label={t("agentGraphDbPackStepsLabel")}>
+                    {item.payloads.map((payload, index) => (
+                      <li
+                        key={`${item.id}-${payload.operation}-${index}`}
+                        className="rounded border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(139,151,255,0.055)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]"
+                      >
+                        {index + 1}. {payload.arguments.operation as string}
+                      </li>
+                    ))}
+                  </ol>
+                  {cliCommands.length > 0 ? (
+                    <div className="mt-2 min-w-0 rounded-md border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.045)] p-2">
+                      <p className="mb-1 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(151,230,198,0.92)]">
+                        {t("agentCliCommandLabel")}
+                      </p>
+                      <code className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                        {cliCommands[0]}
+                      </code>
+                    </div>
+                  ) : null}
+                </div>
+                <CopyAgentTextButton
+                  label={t("agentCopyGraphDbQuery")}
+                  copiedLabel={t("agentCopied")}
+                  text={formatAgentGraphDbQueryPackItemPrompt(item)}
+                  compact
+                />
+              </article>
+            );
+          })}
+        </div>
+      </div>
       <div className="mb-3 rounded-lg border border-[color:rgba(73,190,146,0.22)] bg-[color:rgba(73,190,146,0.055)] px-3 py-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
@@ -1104,7 +1205,8 @@ function AgentQueryRecipesPanel({
           {playbooks.map((playbook) => {
             const cliCommands = playbook.payloads
               .map(formatAgentQueryCallCliCommand)
-              .filter((command): command is string => command !== null);
+              .filter((command): command is string => command !== null)
+              .filter(uniqueString);
 
             return (
               <article
@@ -1443,6 +1545,10 @@ function positiveInteger(value: unknown): number | null {
 
 function nonNegativeInteger(value: unknown): number | null {
   return Number.isInteger(value) && Number(value) >= 0 ? Number(value) : null;
+}
+
+function uniqueString(value: string, index: number, values: string[]): boolean {
+  return values.indexOf(value) === index;
 }
 
 function CopyAgentTextButton({

@@ -87,6 +87,12 @@ export type AgentWriteGuardrailId =
   | "preflight_rename"
   | "post_change_sync";
 
+export type AgentGraphDbQueryPackId =
+  | "node_scan"
+  | "edge_scan"
+  | "domain_coupling"
+  | "path_evidence";
+
 export interface AgentInvestigationPlaybook {
   id: AgentInvestigationPlaybookId;
   titleKey: string;
@@ -117,6 +123,14 @@ export interface AgentWriteGuardrail {
   titleKey: string;
   promptKey: string;
   payloads: AgentMcpToolCall[];
+}
+
+export interface AgentGraphDbQueryPackItem {
+  id: AgentGraphDbQueryPackId;
+  titleKey: string;
+  promptKey: string;
+  intent: string;
+  payloads: AgentMcpQueryCall[];
 }
 
 const ALL_PATHS_RESULT_CONTRACT = [
@@ -215,7 +229,8 @@ export function formatAgentRunOrderPrompt(recipes: readonly AgentQueryRecipe[]):
     .join("\n\n");
   const cliCommands = recipes
     .map(formatAgentRecipeCliCommand)
-    .filter((command): command is string => command !== null);
+    .filter((command): command is string => command !== null)
+    .filter(uniqueString);
   const cliFallback =
     cliCommands.length > 0
       ? [
@@ -273,6 +288,17 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       }
       if (args.targetOperation === "match_nodes") {
         return formatMatchNodesCommand(args, { plan: true });
+      }
+      if (args.targetOperation === "all_paths") {
+        const from = stringArg(args.from, "<from-slug>");
+        const to = stringArg(args.to, "<to-slug>");
+        return withFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+          "--plan",
+          nonNegativeFlag("--max-hops", args.maxHops),
+          csvFlag("--types", args.types),
+          positiveFlag("--search-budget", args.searchBudget),
+          positiveFlag("--limit", args.limit),
+        ]);
       }
       return null;
     }
@@ -416,6 +442,10 @@ function booleanFlag(name: string, value: unknown): string | null {
   return value === true ? name : null;
 }
 
+function uniqueString(value: string, index: number, values: string[]): boolean {
+  return values.indexOf(value) === index;
+}
+
 function shellQuote(value: string): string {
   if (/^[A-Za-z0-9_/:=.,@%+-]+$/.test(value)) return value;
   return `'${value.replace(/'/g, "'\\''")}'`;
@@ -427,7 +457,8 @@ export function formatAgentPlaybookPrompt(playbook: AgentInvestigationPlaybook):
     .join("\n\n");
   const cliCommands = playbook.payloads
     .map(formatAgentQueryCallCliCommand)
-    .filter((command): command is string => command !== null);
+    .filter((command): command is string => command !== null)
+    .filter(uniqueString);
   const cliFallback =
     cliCommands.length > 0
       ? [
@@ -509,7 +540,8 @@ export function formatAgentTraversalPacket(
   const cliCommands = strategies
     .flatMap((strategy) => strategy.payloads)
     .map(formatAgentQueryCallCliCommand)
-    .filter((command): command is string => command !== null);
+    .filter((command): command is string => command !== null)
+    .filter(uniqueString);
   const cliFallback =
     cliCommands.length > 0
       ? [
@@ -531,6 +563,55 @@ export function formatAgentTraversalPacket(
     "MCP calls:",
     payloads,
     ...cliFallback,
+  ].join("\n");
+}
+
+export function formatAgentGraphDbQueryPackItemPrompt(
+  item: AgentGraphDbQueryPackItem,
+): string {
+  const payloads = item.payloads
+    .map((payload, index) => `${index + 1}. ${payload.operation}\n${formatAgentMcpQueryPayload(payload)}`)
+    .join("\n\n");
+  const cliCommands = item.payloads
+    .map(formatAgentQueryCallCliCommand)
+    .filter((command): command is string => command !== null)
+    .filter(uniqueString);
+  const cliFallback =
+    cliCommands.length > 0
+      ? [
+          "",
+          "CLI fallback commands when the MCP connector is unavailable:",
+          ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
+        ]
+      : [];
+
+  return [
+    "Use this oh-my-ontology graph DB-style query pack before treating graph scan rows as evidence.",
+    `Intent: ${item.intent}`,
+    ...ALL_PATHS_RESULT_CONTRACT,
+    ...SCAN_RESULT_CONTRACT,
+    "",
+    "MCP calls:",
+    payloads,
+    ...cliFallback,
+  ].join("\n");
+}
+
+export function formatAgentGraphDbQueryPack(
+  items: readonly AgentGraphDbQueryPackItem[],
+): string {
+  const sections = items
+    .map(
+      (item, index) =>
+        `## ${index + 1}. ${item.id}\n${formatAgentGraphDbQueryPackItemPrompt(item)}`,
+    )
+    .join("\n\n");
+
+  return [
+    "Use this oh-my-ontology graph DB query pack to scan the local markdown vault like a graph database, but keep evidence bounded and follow-up driven.",
+    "Run plan calls before scans when provided. Report totalMatches, limited, row count, followUp details, and traversal completeness before making claims or writes.",
+    "",
+    sections,
   ].join("\n");
 }
 
@@ -682,6 +763,128 @@ export function buildAgentTraversalStrategies(
           project: projectSlug,
           limit: 10,
           itemLimit: 20,
+        }),
+      ],
+    },
+  ];
+}
+
+export function buildAgentGraphDbQueryPack(
+  entrypoints: readonly AgentQueryEntrypoint[] = [],
+): AgentGraphDbQueryPackItem[] {
+  const impactSlug = entrypoints[0]?.slug ?? "<from-slug>";
+  const pathTargetSlug =
+    entrypoints.find((entrypoint) => entrypoint.slug !== impactSlug)?.slug ?? "<to-slug>";
+
+  const query = (
+    operation: string,
+    argumentsPayload: Record<string, unknown>,
+  ): AgentMcpQueryCall => ({
+    operation: `query_ontology.${operation}`,
+    tool: "query_ontology",
+    arguments: argumentsPayload,
+  });
+
+  return [
+    {
+      id: "node_scan",
+      titleKey: "agentGraphDbNodeScanTitle",
+      promptKey: "agentGraphDbNodeScanPrompt",
+      intent: "MATCH (n:capability) WHERE degree(n) >= 2 RETURN n ORDER BY degree(n) DESC LIMIT 10",
+      payloads: [
+        query("query_plan", {
+          operation: "query_plan",
+          targetOperation: "match_nodes",
+          kind: "capability",
+          minDegree: 2,
+          sort: "degree",
+          limit: 10,
+        }),
+        query("match_nodes", {
+          operation: "match_nodes",
+          kind: "capability",
+          minDegree: 2,
+          sort: "degree",
+          limit: 10,
+        }),
+      ],
+    },
+    {
+      id: "edge_scan",
+      titleKey: "agentGraphDbEdgeScanTitle",
+      promptKey: "agentGraphDbEdgeScanPrompt",
+      intent: "MATCH ()-[r:depends_on]->() RETURN r LIMIT 20",
+      payloads: [
+        query("query_plan", {
+          operation: "query_plan",
+          targetOperation: "match_edges",
+          types: ["depends_on"],
+          limit: 20,
+        }),
+        query("match_edges", {
+          operation: "match_edges",
+          types: ["depends_on"],
+          limit: 20,
+        }),
+      ],
+    },
+    {
+      id: "domain_coupling",
+      titleKey: "agentGraphDbDomainCouplingTitle",
+      promptKey: "agentGraphDbDomainCouplingPrompt",
+      intent: "MATCH (domain)-[depends_on|relates]->(domain) RETURN coupling_matrix LIMIT 6",
+      payloads: [
+        query("domain_matrix", {
+          operation: "domain_matrix",
+          types: ["depends_on", "relates"],
+          limit: 6,
+        }),
+        query("query_plan", {
+          operation: "query_plan",
+          targetOperation: "centrality",
+          types: ["depends_on", "relates"],
+          limit: 10,
+        }),
+        query("centrality", {
+          operation: "centrality",
+          types: ["depends_on", "relates"],
+          limit: 10,
+        }),
+      ],
+    },
+    {
+      id: "path_evidence",
+      titleKey: "agentGraphDbPathEvidenceTitle",
+      promptKey: "agentGraphDbPathEvidencePrompt",
+      intent: "MATCH p=(from)-[:depends_on|relates*..3]-(to) RETURN p LIMIT 10",
+      payloads: [
+        query("query_plan", {
+          operation: "query_plan",
+          targetOperation: "all_paths",
+          from: impactSlug,
+          to: pathTargetSlug,
+          maxHops: 3,
+          types: ["depends_on", "relates"],
+          searchBudget: 1000,
+          limit: 10,
+        }),
+        query("all_paths", {
+          operation: "all_paths",
+          from: impactSlug,
+          to: pathTargetSlug,
+          maxHops: 3,
+          types: ["depends_on", "relates"],
+          searchBudget: 1000,
+          limit: 10,
+        }),
+        query("explain_relation", {
+          operation: "explain_relation",
+          from: impactSlug,
+          to: pathTargetSlug,
+          direction: "undirected",
+          maxHops: 5,
+          types: ["depends_on", "relates"],
+          limit: 10,
         }),
       ],
     },

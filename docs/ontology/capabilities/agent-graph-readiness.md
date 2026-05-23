@@ -141,6 +141,19 @@ containment cross-check 순서를 그대로 유지할 수 있다.
 화면은 packet 을 복사하기 전에 포함된 MCP 호출 수와 CLI fallback 수를 바로 보여줘,
 비개발자도 이 버튼이 agent 에게 넘기는 실행 범위를 먼저 확인할 수 있다.
 
+Agent query recipes 상단에는 별도 `Graph DB query pack` 도 둔다. 이 pack 은
+비개발자가 "노드 스캔", "엣지 스캔", "도메인 결합", "경로 근거" 같은 graph DB
+질문을 Cypher 에 가까운 `MATCH ...` 의도문으로 먼저 이해하고, 같은 카드에서
+`query_plan(match_nodes)` / `match_nodes`, `query_plan(match_edges)` / `match_edges`,
+`domain_matrix` / `centrality`, `query_plan(all_paths)` / bounded `all_paths` /
+`explain_relation` MCP 호출을 복사할 수 있게 한다. 전체 pack 복사 텍스트에는
+CLI fallback 도 함께 들어가므로 MCP connector 가 없는 Codex / Claude Code 세션도
+`match-nodes --plan`, `match-edges --plan`, `domain-matrix`, `all-paths --plan`
+순서로 같은 local markdown graph 를 terminal 에서 스캔한다. 각 query 는 scan row 를
+근거로 쓰기 전에 `totalMatches`, `limited`, `followUp`, `evidence.pathsComplete` 를
+보고하라는 계약을 포함하므로 graph DB 스타일의 탐색을 하되 raw row 를 증명으로
+오인하지 않게 한다.
+
 Run order 앞에는 별도 `Traversal strategy` 레일도 둔다. 이는 MCP
 `agent_brief.traversalStrategy` 와 같은 `plan_before_enumeration` →
 `bounded_path_evidence` → `containment_cross_check` 순서를 화면에 그대로 노출한다.
