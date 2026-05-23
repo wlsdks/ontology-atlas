@@ -644,6 +644,7 @@ export function createOntologyEngine(artifact, options = {}) {
         fromKind,
         toKind,
         types: edgeTypeSet ? [...edgeTypeSet].sort() : null,
+        relationTypes: publicRelationTypes(edgeTypeSet),
         includeExternal,
         includeUnresolved,
       });
@@ -1354,6 +1355,7 @@ export function createOntologyEngine(artifact, options = {}) {
         fromKind,
         toKind,
         types: typeSet ? [...typeSet].sort() : null,
+        relationTypes: publicRelationTypes(typeSet),
         includeExternal,
         includeUnresolved,
       },
@@ -4898,6 +4900,14 @@ function normalizeIterations(value) {
 
 function normalizeRelationType(type) {
   return type === 'depends_on' ? 'dependencies' : type;
+}
+
+function publicRelationType(type) {
+  return type === 'dependencies' ? 'depends_on' : type;
+}
+
+function publicRelationTypes(typeSet) {
+  return typeSet ? [...typeSet].map(publicRelationType).sort() : null;
 }
 
 function requireRelationType(type, name) {

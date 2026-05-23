@@ -164,18 +164,25 @@ function render(result) {
 
 function formatFilters(filters = {}) {
   const parts = [];
+  const typeFilter = formatTypeFilter(filters);
   for (const [label, value] of [
     ['from', filters.from],
     ['to', filters.to],
     ['fromKind', filters.fromKind],
     ['toKind', filters.toKind],
-    ['types', Array.isArray(filters.types) ? filters.types.join(',') : filters.types],
+    ['types', typeFilter],
     ['includeExternal', filters.includeExternal],
     ['includeUnresolved', filters.includeUnresolved],
   ]) {
     if (value !== null && value !== undefined) parts.push(`${label}=${value}`);
   }
   return parts.join(' · ');
+}
+
+function formatTypeFilter(filters = {}) {
+  if (Array.isArray(filters.relationTypes)) return filters.relationTypes.join(',');
+  if (Array.isArray(filters.types)) return filters.types.join(',');
+  return filters.types;
 }
 
 function parseArgs(args) {

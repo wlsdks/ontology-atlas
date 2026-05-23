@@ -3617,6 +3617,26 @@ await test('match-edges — graph DB-style edge rows with kind/type filters', as
   }
 });
 
+await test('match-edges — renders depends_on filter using public relation name', async () => {
+  const root = buildCycleFixture();
+  try {
+    const r = await run([
+      'match-edges',
+      root,
+      '--type=depends_on',
+      '--limit=1',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /filters .*types=depends_on/);
+    assert.doesNotMatch(clean, /filters .*types=dependencies/);
+    assert.match(clean, /--dependencies-->/);
+    assert.match(clean, /oh-my-ontology explain .* --types depends_on --limit 10/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('match-edges --plan --json — preserves filters in query_plan and result', async () => {
   const root = await buildGraphFixture();
   try {
@@ -3634,9 +3654,11 @@ await test('match-edges --plan --json — preserves filters in query_plan and re
     assert.equal(data.plan.targetOperation, 'match_edges');
     assert.equal(data.plan.normalized.fromKind, 'capability');
     assert.deepEqual(data.plan.normalized.types, ['relates']);
+    assert.deepEqual(data.plan.normalized.relationTypes, ['relates']);
     assert.equal(data.plan.estimate.totalMatches, 1);
     assert.equal(data.result.operation, 'match_edges');
     assert.equal(data.result.totalMatches, 1);
+    assert.deepEqual(data.result.filters.relationTypes, ['relates']);
     assert.deepEqual(data.result.followUp.focusEdge, {
       from: 'capabilities/bar',
       to: 'capabilities/foo',

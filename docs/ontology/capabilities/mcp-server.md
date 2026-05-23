@@ -541,6 +541,9 @@ health/workspace_brief/agent_brief relation filter 도 `dependencyTypes: ["depen
 schema 로 노출해 client 가 `depend_on` 같은 오타를 호출 전에 잡을 수 있다.
 `match_nodes.kind` / `match_edges.fromKind` 는 표준 ontology kind enum, `match_edges.type` 도 relation type enum,
 `match_edges.toKind` 는 여기에 `external` / `unresolved` target kind 까지 포함한 edge target enum 으로 고정한다.
+`match_edges.filters` 와 `query_plan(match_edges).normalized` 는 canonical frontmatter key 인
+`types` 외에 `depends_on` 같은 공개 관계명 `relationTypes` 도 같이 노출해,
+CLI 와 MCP client 가 사용자가 입력한 관계명을 그대로 보여주면서 실행 가능한 graph key 도 잃지 않게 한다.
 여러 unknown argument 를 한 번에 보낸 경우에도 첫 번째 오타만 보고하지 않고
 각 unknown key 와 가까운 allowed argument hint 를 한 응답에 모아 보여줘 agent 의
 반복 retry 비용을 낮춘다.

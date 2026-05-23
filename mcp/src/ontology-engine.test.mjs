@@ -474,6 +474,7 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(matchEdgesPlan.normalized, {
       targetOperation: 'match_edges',
       types: ['dependencies'],
+      relationTypes: ['depends_on'],
       limit: 5,
       from: null,
       to: null,
@@ -2125,6 +2126,7 @@ describe('queryCompiledOntology', () => {
       fromKind: 'capability',
       toKind: 'domain',
       types: ['dependencies'],
+      relationTypes: ['depends_on'],
       includeExternal: false,
       includeUnresolved: false,
     });
