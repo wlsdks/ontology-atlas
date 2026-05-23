@@ -121,6 +121,9 @@ function makeDogfoodInitialize() {
       "maintenance_plan nextExecutableAction and nextReviewAction point only at the first executable/review action in the current returned page.",
       "maintenance_plan afterActionId cursor misses return cursor.found=false and cursor.reason.",
       "maintenance_plan missing cursors return cursor.nextAfterActionId=null and cursor.hasMore=false.",
+      "query_ontology agent_brief returns relationDecisionGuide for relation_check outcomes skip_existing, review_inverse, safe_to_add, and review_new_schema.",
+      "query_ontology agent_brief returns traversalStrategy plan_before_enumeration, bounded_path_evidence, and containment_cross_check.",
+      "query_ontology agent_brief resultContracts describe all_paths limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.",
     ].join("\n"),
   };
 }
@@ -483,7 +486,7 @@ function makeDogfoodToolsList() {
         },
       };
       if (name === "query_ontology") {
-        tool.description = "Graph query tool with current-page `nextExecutableAction` / `nextReviewAction` pointers and cursor `nextAfterActionId`/`hasMore` pagination metadata.";
+        tool.description = "Graph query tool with current-page `nextExecutableAction` / `nextReviewAction` pointers and cursor `nextAfterActionId`/`hasMore` pagination metadata. `agent_brief` includes traversalStrategy plan_before_enumeration, bounded_path_evidence, and containment_cross_check guidance plus resultContracts for all_paths completeness. `all_paths` responses include limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance.";
         tool.inputSchema.required = ["operation"];
         tool.inputSchema.properties = {
           operation: { enum: QUERY_ONTOLOGY_OPERATIONS },
@@ -2278,7 +2281,12 @@ const okShape = {
     found: true,
     direction: "undirected",
     maxHops: 4,
+    searchBudget: 5000,
+    expandedStates: 10,
+    exhaustive: true,
+    truncatedByBudget: false,
     totalPaths: 2,
+    totalPathsExact: true,
     limited: false,
     shortestHopCount: 2,
     byLength: { 2: 2 },
@@ -2307,6 +2315,7 @@ const okShape = {
       to: "domains/vault-local-first",
       direction: "undirected",
       maxHops: 4,
+      searchBudget: 5000,
     },
     indexesUsed: ["aliasToSlug", "in", "out"],
     estimate: {
@@ -2319,6 +2328,30 @@ const okShape = {
       costClass: "medium",
     },
     warnings: ["all_paths may be truncated by limit; reduce maxHops or add relation types."],
+    execution: {
+      shouldRun: false,
+      nextStep: "review",
+      recommendation: "Review warnings before running suggestedQuery.",
+      suggestedQuery: {
+        operation: "all_paths",
+        from: "capabilities/mcp-server",
+        to: "domains/vault-local-first",
+        direction: "undirected",
+        maxHops: 4,
+        searchBudget: 5000,
+        limit: 25,
+      },
+      saferQuery: {
+        operation: "all_paths",
+        from: "capabilities/mcp-server",
+        to: "domains/vault-local-first",
+        direction: "undirected",
+        maxHops: 3,
+        searchBudget: 1000,
+        limit: 10,
+        types: ["depends_on", "relates"],
+      },
+    },
   },
   projectMapPlan: {
     operation: "query_plan",
@@ -2337,6 +2370,15 @@ const okShape = {
       costClass: "low",
     },
     warnings: [],
+    execution: {
+      shouldRun: true,
+      nextStep: "run",
+      recommendation: "Run suggestedQuery as planned.",
+      suggestedQuery: {
+        operation: "project_map",
+        limit: 100,
+      },
+    },
   },
   projectMap: {
     operation: "project_map",
@@ -2508,6 +2550,11 @@ const okShape = {
     toKind: "domain",
     exists: true,
     verdict: "already_exists",
+    recommendation: {
+      decision: "skip_existing",
+      severity: "info",
+      reason: "Exact edge already exists; do not add another relation.",
+    },
     matchingEdges: [
       {
         from: "capabilities/mcp-server",
@@ -2515,6 +2562,7 @@ const okShape = {
         via: "domain",
       },
     ],
+    inverseEdges: [],
     schemaPattern: {
       fromKind: "capability",
       relation: "domain",
@@ -4117,6 +4165,7 @@ describe("rpc response completion helpers", () => {
       /pnpm dogfood:compile-fix\s+compile --fix idempotence gate over docs\/ontology; changed vaults need pnpm docs-vault:build; success ends with \[dogfood:compile-fix\] docs\/ontology unchanged/,
     );
     assert.match(usage, /pnpm dogfood:health\s+Fail-closed health JSON gate over docs\/ontology/);
+    assert.match(usage, /pnpm dogfood:agent\s+Claude Code\/Codex agent_brief JSON handoff over docs\/ontology/);
     assert.match(usage, /pnpm dogfood:brief\s+First-contact workspace_brief JSON snapshot over docs\/ontology/);
     assert.match(usage, /pnpm dogfood:growth\s+growth_plan JSON snapshot over docs\/ontology/);
     assert.match(usage, /pnpm dogfood:maintenance\s+maintenance_plan JSON snapshot over docs\/ontology/);
@@ -4129,7 +4178,7 @@ describe("rpc response completion helpers", () => {
     assert.match(usage, /pnpm test:dogfood:script-refs\s+Shared help\/package-script reference \+ focused filter parser\/wrapper summary contract/);
     assert.match(usage, /pnpm test:dogfood:compile-fix\s+Narrow dogfood compile --fix idempotence runner contract/);
     assert.match(usage, /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
-    assert.match(usage, /pnpm test:mcp:registration\s+Narrow source-checkout .mcp.json\/.mcp.json.example registration template contract/);
+    assert.match(usage, /pnpm test:mcp:registration\s+Narrow source-checkout .mcp.json\/.mcp.json.example\/.codex\/config.toml registration template contract/);
     assert.match(usage, /pnpm test:mcp:maintenance\s+Narrow maintenance_plan filter\/cursor\/resume\/work-queue formatter gates/);
     assert.match(usage, /pnpm test:mcp:dogfood:timeout/);
     assert.match(usage, /Narrow dogfood timeout\/help retry diagnostics/);
@@ -6627,6 +6676,19 @@ describe("evaluateDogfoodGate", () => {
         'all_paths_query_plan structuredContent mismatch — $.warnings: parsed null, structuredContent ["all_paths may be truncated by limit; reduce maxHops or add relation types."]',
       ],
     );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        allPathsPlan: {
+          ...okShape.allPathsPlan,
+          execution: null,
+        },
+      }),
+      [
+        "all_paths query_plan missing execution advice",
+        'all_paths_query_plan structuredContent mismatch — $.execution: parsed null, structuredContent {"shouldRun":false,"nextStep":"review","recommendation":"Review warnings before running sugge...',
+      ],
+    );
   });
 
   it("fails on malformed project_map query_plan payloads", () => {
@@ -6902,8 +6964,42 @@ describe("evaluateDogfoodGate", () => {
       ["relation_check response unknown verdict — maybe"],
     );
     assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        relationCheck: { ...okShape.relationCheck, recommendation: null },
+      }),
+      ["relation_check response missing recommendation"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        relationCheck: {
+          ...okShape.relationCheck,
+          recommendation: { ...okShape.relationCheck.recommendation, decision: "maybe" },
+        },
+      }),
+      ["relation_check response unknown recommendation decision — maybe"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        relationCheck: {
+          ...okShape.relationCheck,
+          recommendation: { ...okShape.relationCheck.recommendation, severity: "fail" },
+        },
+      }),
+      ["relation_check response unknown recommendation severity — fail"],
+    );
+    assert.deepEqual(
       evaluateDogfoodGate({ ...okShape, relationCheck: { ...okShape.relationCheck, matchingEdges: [] } }),
       ["relation_check exists without matchingEdges"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        relationCheck: { ...okShape.relationCheck, inverseEdges: "nope" },
+      }),
+      ["relation_check response missing inverseEdges array"],
     );
     assert.deepEqual(
       evaluateDogfoodGate({
@@ -6958,6 +7054,26 @@ describe("evaluateDogfoodGate", () => {
         },
       }),
       ["relation_check matching edge mismatch at index 0"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        relationCheck: {
+          ...okShape.relationCheck,
+          inverseEdges: [{ from: "domains/ai-agent-partner", to: "capabilities/mcp-server", via: "" }],
+        },
+      }),
+      ["relation_check inverse edge missing via at index 0"],
+    );
+    assert.deepEqual(
+      evaluateDogfoodGate({
+        ...okShape,
+        relationCheck: {
+          ...okShape.relationCheck,
+          inverseEdges: [{ from: "domains/other", to: "capabilities/mcp-server", via: "domain" }],
+        },
+      }),
+      ["relation_check inverse edge mismatch at index 0"],
     );
   });
 

@@ -21,6 +21,8 @@ import {
 import {
   advisoryHealthChecksSummary,
   advisoryNextActionsSummary,
+  agentBriefFailure,
+  agentBriefSummary,
   analyzeRepoStructureFailure,
   batchCapFailure,
   batchRowIsolationFailure,
@@ -90,6 +92,7 @@ import {
   parseVerifyTimeoutMs,
   normalizeVerifyArgs,
   resolveVerifyVault,
+  allPathsQueryFailure,
   neighborsFailure,
   pathQueryFailure,
   projectProbeFailure,
@@ -1015,7 +1018,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'query_ontology',
         description:
-          'Run graph queries including `maintenance_plan` with cursor `nextAfterActionId`/`hasMore` pagination metadata and current-page `nextExecutableAction` / `nextReviewAction` pointers.',
+          'Run graph queries including `all_paths` with limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance, `maintenance_plan` with cursor `nextAfterActionId`/`hasMore` pagination metadata and current-page `nextExecutableAction` / `nextReviewAction` pointers, and `agent_brief` with traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance and resultContracts for all_paths completeness.',
         inputSchema: {
           additionalProperties: false,
           required: ['operation'],
@@ -3087,6 +3090,33 @@ describe('verify.mjs first-contact gates', () => {
       toolsListSchemaFailure(withQueryTool(
         {
           ...queryOntologyTool,
+          description: queryOntologyTool.description.replace('resultContracts for all_paths completeness', 'result contract guidance'),
+        },
+      )),
+      'query_ontology description missing agent result contract guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryTool(
+        {
+          ...queryOntologyTool,
+          description: queryOntologyTool.description.replace('limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance', 'searchBudget metadata'),
+        },
+      )),
+      'query_ontology description missing agent result contract guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryTool(
+        {
+          ...queryOntologyTool,
+          description: queryOntologyTool.description.replace('traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance', 'traversal tips'),
+        },
+      )),
+      'query_ontology description missing agent traversal strategy guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryTool(
+        {
+          ...queryOntologyTool,
           inputSchema: {
             ...queryOntologyTool.inputSchema,
             properties: {
@@ -4745,7 +4775,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /Narrow MCP verify timeout\/startup\/help\/empty-vault diagnostics/);
     assert.match(verifyUsage(), /pnpm test:dogfood:args\s+Narrow dogfood shortcut argument helper contract/);
     assert.match(verifyUsage(), /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference \+ focused filter parser\/wrapper summary contract/);
-    assert.match(verifyUsage(), /pnpm test:mcp:registration\s+Narrow source-checkout .mcp.json\/.mcp.json.example registration template contract/);
+    assert.match(verifyUsage(), /pnpm test:mcp:registration\s+Narrow source-checkout .mcp.json\/.mcp.json.example\/.codex\/config.toml registration template contract/);
     assert.match(verifyUsage(), /pnpm dogfood:compile\s+Cheap root checkout compile_ontology summary snapshot/);
     assert.match(verifyUsage(), /pnpm dogfood:compile-fix\s+Cheap root checkout compile --fix idempotence gate; changed vaults need pnpm docs-vault:build; success ends with \[dogfood:compile-fix\] docs\/ontology unchanged/);
     assert.match(verifyUsage(), /pnpm test:dogfood:compile-fix\s+Narrow dogfood compile --fix idempotence runner contract/);
@@ -4753,7 +4783,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.match(verifyUsage(), /pnpm dogfood:brief\s+Cheap root checkout workspace_brief snapshot/);
     assert.match(verifyUsage(), /pnpm dogfood:growth\s+Cheap root checkout growth_plan snapshot/);
     assert.match(verifyUsage(), /pnpm dogfood:maintenance\s+Cheap root checkout maintenance_plan snapshot/);
-    assert.match(verifyUsage(), /pnpm dogfood:status\s+Cheap root checkout health \+ workspace-brief \+ maintenance preflight with focused hints before full verify/);
+    assert.match(verifyUsage(), /pnpm dogfood:status\s+Cheap root checkout health \+ workspace-brief \+ agent-brief \+ maintenance preflight with focused hints before full verify/);
     assert.match(verifyUsage(), /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
     assert.match(verifyUsage(), /pnpm dogfood:verify\s+Root checkout dogfood vault installed-style verify gate/);
     assertPnpmScriptsExist(verifyUsage(), ROOT_PKG.scripts, { filteredScripts: { './mcp': MCP_PKG.scripts } });
@@ -6733,6 +6763,9 @@ describe('verify.mjs first-contact gates', () => {
       'maintenance_plan nextExecutableAction and nextReviewAction point only at the first executable/review action in the current returned page.',
       'maintenance_plan afterActionId cursor misses return cursor.found=false and cursor.reason.',
       'maintenance_plan missing cursors return cursor.nextAfterActionId=null and cursor.hasMore=false.',
+      'query_ontology agent_brief returns relationDecisionGuide for relation_check outcomes skip_existing, review_inverse, safe_to_add, and review_new_schema.',
+      'query_ontology agent_brief returns traversalStrategy rows plan_before_enumeration, bounded_path_evidence, and containment_cross_check.',
+      'query_ontology agent_brief returns resultContracts for all_paths requiring callers to report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.',
       'This filler keeps the instructions representative of a real initialize response.',
     ].join('\n');
 
@@ -6841,6 +6874,10 @@ describe('verify.mjs first-contact gates', () => {
       initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('cursor.nextAfterActionId=null and cursor.hasMore=false', 'no pagination metadata') } }),
       'initialize instructions missing maintenance cursor miss pagination guidance',
     );
+    assert.equal(
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('relationDecisionGuide for relation_check outcomes skip_existing, review_inverse, safe_to_add, and review_new_schema', 'relation decision docs') } }),
+      'initialize instructions missing agent brief relation decision guide',
+    );
   });
 
   it('rejects partial or non-positive verify timeout env values', () => {
@@ -6934,7 +6971,7 @@ describe('verify.mjs first-contact gates', () => {
   it('keeps node-dependent first-contact smokes optional until their live target exists', () => {
     const ids = initialExpectedFirstContactIds();
     assert.deepEqual(OPTIONAL_FIRST_CONTACT_RESPONSE_IDS, [30, 31, 33, 35, 36, 37, 43, 44, 45, 61]);
-    assert.deepEqual(DYNAMIC_FIRST_CONTACT_RESPONSE_IDS, [11, 13, 14, 15, ...OPTIONAL_FIRST_CONTACT_RESPONSE_IDS]);
+    assert.deepEqual(DYNAMIC_FIRST_CONTACT_RESPONSE_IDS, [11, 13, 14, 15, 67, ...OPTIONAL_FIRST_CONTACT_RESPONSE_IDS]);
     for (const optionalId of OPTIONAL_FIRST_CONTACT_RESPONSE_IDS) {
       assert.equal(ids.has(optionalId), false, `${FIRST_CONTACT_RESPONSE_LABELS.get(optionalId)} starts optional`);
     }
@@ -6996,6 +7033,7 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(63), 'add_relations_batch_cap');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(64), 'get_concepts_batch_cap');
     assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(65), 'strict_unknown_tool');
+    assert.equal(FIRST_CONTACT_RESPONSE_LABELS.get(67), 'all_paths');
     assert.deepEqual(
       [...expectedResponseIds(buildFirstContactRequests()), ...DYNAMIC_FIRST_CONTACT_RESPONSE_IDS].sort((a, b) => a - b),
       [...FIRST_CONTACT_RESPONSE_LABELS.keys()].sort((a, b) => a - b),
@@ -7455,25 +7493,33 @@ describe('verify.mjs first-contact gates', () => {
       hasNode: true,
       hasProject: true,
     });
-    assert.deepEqual(projectSmoke.expectedResponseIds, [13, 14, 15]);
+    assert.deepEqual(projectSmoke.expectedResponseIds, [13, 14, 67, 15]);
     assert.deepEqual(
       projectSmoke.requests.map((request) => request.method),
-      ['tools/call', 'tools/call', 'tools/call'],
+      ['tools/call', 'tools/call', 'tools/call', 'tools/call'],
     );
     assert.deepEqual(
       projectSmoke.requests.map((request) => request.params.name),
-      ['query_ontology', 'query_ontology', 'query_ontology'],
+      ['query_ontology', 'query_ontology', 'query_ontology', 'query_ontology'],
     );
     assert.deepEqual(
       projectSmoke.requests.map((request) => request.params.arguments.operation),
-      ['neighbors', 'path', 'project_scope'],
+      ['neighbors', 'path', 'all_paths', 'project_scope'],
     );
     assert.deepEqual(projectSmoke.requests[1].params.arguments, {
       operation: 'path',
       from: 'capabilities/login',
       to: 'project',
     });
-    assert.equal(projectSmoke.requests[2].params.arguments.project, 'project');
+    assert.deepEqual(projectSmoke.requests[2].params.arguments, {
+      operation: 'all_paths',
+      from: 'capabilities/login',
+      to: 'project',
+      maxHops: 5,
+      searchBudget: 1000,
+      limit: 5,
+    });
+    assert.equal(projectSmoke.requests[3].params.arguments.project, 'project');
 
     const projectlessSmoke = buildGraphQuerySmokeRequests({
       slug: 'domains/core',
@@ -7481,10 +7527,10 @@ describe('verify.mjs first-contact gates', () => {
       hasNode: true,
       hasProject: false,
     });
-    assert.deepEqual(projectlessSmoke.expectedResponseIds, [13, 14]);
+    assert.deepEqual(projectlessSmoke.expectedResponseIds, [13, 14, 67]);
     assert.deepEqual(
       projectlessSmoke.requests.map((request) => request.params.arguments.operation),
-      ['neighbors', 'path'],
+      ['neighbors', 'path', 'all_paths'],
     );
 
     assert.deepEqual(
@@ -8226,6 +8272,12 @@ describe('verify.mjs first-contact gates', () => {
           costClass: 'low',
         },
         warnings: [],
+        execution: {
+          shouldRun: true,
+          nextStep: 'run',
+          recommendation: 'Run suggestedQuery as planned.',
+          suggestedQuery: { operation: 'overview', limit: 100 },
+        },
       }),
       null,
     );
@@ -8243,6 +8295,12 @@ describe('verify.mjs first-contact gates', () => {
           costClass: 'low',
         },
         warnings: [],
+        execution: {
+          shouldRun: true,
+          nextStep: 'run',
+          recommendation: 'Run suggestedQuery as planned.',
+          suggestedQuery: { operation: 'project_map', limit: 100 },
+        },
       }),
       null,
     );
@@ -8280,6 +8338,55 @@ describe('verify.mjs first-contact gates', () => {
           { slug: 'project', kind: 'project', title: 'Project' },
         ],
         edges: [{ from: 'project', to: 'capabilities/login', via: 'capabilities' }],
+      }, 'capabilities/login', 'project'),
+      null,
+    );
+    assert.equal(
+      allPathsQueryFailure({
+        operation: 'all_paths',
+        from: 'capabilities/login',
+        to: 'project',
+        found: true,
+        direction: 'undirected',
+        maxHops: 5,
+        limit: 5,
+        searchBudget: 1000,
+        expandedStates: 3,
+        exhaustive: true,
+        truncatedByBudget: false,
+        totalPaths: 1,
+        totalPathsExact: true,
+        limited: false,
+        shortestHopCount: 1,
+        byLength: { 1: 1 },
+        evidence: {
+          status: 'complete',
+          reason: 'complete',
+          totalPathsExact: true,
+          pathsComplete: true,
+          nextStep: 'use',
+          recommendation: 'Safe to treat paths and totalPaths as complete for the requested bounds.',
+          suggestedQuery: {
+            operation: 'all_paths',
+            from: 'capabilities/login',
+            to: 'project',
+            direction: 'undirected',
+            maxHops: 5,
+            limit: 5,
+            searchBudget: 1000,
+          },
+        },
+        paths: [
+          {
+            hopCount: 1,
+            hops: ['capabilities/login', 'project'],
+            nodes: [
+              { slug: 'capabilities/login', kind: 'capability', title: 'Login' },
+              { slug: 'project', kind: 'project', title: 'Project' },
+            ],
+            edges: [{ from: 'project', to: 'capabilities/login', via: 'capabilities' }],
+          },
+        ],
       }, 'capabilities/login', 'project'),
       null,
     );
@@ -8370,12 +8477,19 @@ describe('verify.mjs first-contact gates', () => {
         costClass: 'low',
       },
       warnings: [],
+      execution: {
+        shouldRun: true,
+        nextStep: 'run',
+        recommendation: 'Run suggestedQuery as planned.',
+        suggestedQuery: { operation: 'overview', limit: 100 },
+      },
     };
     assert.equal(overviewQueryPlanFailure({ ...cleanPlan, targetOperation: 'health' }), 'overview query_plan returned unexpected targetOperation: health');
     assert.equal(overviewQueryPlanFailure({ ...cleanPlan, sideEffect: true }), 'overview query_plan must be side-effect-free');
     assert.equal(overviewQueryPlanFailure({ ...cleanPlan, estimate: { ...cleanPlan.estimate, strategy: 'node_scan' } }), 'overview query_plan missing aggregate_scan estimate');
     assert.equal(overviewQueryPlanFailure({ ...cleanPlan, indexesUsed: [] }), 'overview query_plan missing compiled_artifact index hint');
     assert.equal(overviewQueryPlanFailure({ ...cleanPlan, warnings: null }), 'overview query_plan missing warnings array');
+    assert.equal(overviewQueryPlanFailure({ ...cleanPlan, execution: null }), 'overview query_plan missing execution advice');
     assert.equal(
       projectMapQueryPlanFailure({
         ...cleanPlan,
@@ -8492,6 +8606,70 @@ describe('verify.mjs first-contact gates', () => {
         edges: [{ from: 'project', to: 'capabilities/login', via: 'capabilities' }],
       }, 'capabilities/login', 'project'),
       'path response node/hop mismatch at index 1',
+    );
+    assert.equal(allPathsQueryFailure({ operation: 'path' }, 'project'), 'all_paths returned unexpected operation: path');
+    assert.equal(
+      allPathsQueryFailure({
+        operation: 'all_paths',
+        from: 'capabilities/login',
+        to: 'project',
+        found: true,
+        limit: 5,
+        searchBudget: 2,
+        expandedStates: 3,
+        exhaustive: false,
+        truncatedByBudget: true,
+        totalPaths: 0,
+        totalPathsExact: false,
+        limited: true,
+        paths: [],
+      }, 'capabilities/login', 'project'),
+      'all_paths response exceeded searchBudget — expanded 3, budget 2',
+    );
+    assert.equal(
+      allPathsQueryFailure({
+        operation: 'all_paths',
+        from: 'capabilities/login',
+        to: 'project',
+        found: true,
+        limit: 5,
+        searchBudget: 1000,
+        expandedStates: 1,
+        exhaustive: false,
+        truncatedByBudget: false,
+        totalPaths: 0,
+        totalPathsExact: false,
+        limited: false,
+        paths: [],
+      }, 'capabilities/login', 'project'),
+      'all_paths response exhaustive/truncatedByBudget mismatch',
+    );
+    assert.equal(
+      allPathsQueryFailure({
+        operation: 'all_paths',
+        from: 'capabilities/login',
+        to: 'project',
+        found: true,
+        limit: 5,
+        searchBudget: 1000,
+        expandedStates: 1,
+        exhaustive: true,
+        truncatedByBudget: false,
+        totalPaths: 2,
+        totalPathsExact: true,
+        limited: false,
+        evidence: {
+          status: 'complete',
+          reason: 'complete',
+          totalPathsExact: true,
+          pathsComplete: true,
+          nextStep: 'use',
+          recommendation: 'Safe to treat paths and totalPaths as complete for the requested bounds.',
+          suggestedQuery: { operation: 'all_paths' },
+        },
+        paths: [],
+      }, 'capabilities/login', 'project'),
+      'all_paths response total mismatch — paths 0, total 2',
     );
     assert.equal(projectScopeFailure({ operation: 'project_map' }, 'project'), 'project_scope returned unexpected operation: project_map');
     assert.equal(
@@ -8814,19 +8992,19 @@ describe('verify.mjs first-contact gates', () => {
   it('summarizes structuredContent coverage for verify output', () => {
     assert.equal(
       structuredContentVerifySummary(),
-      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 7/7',
-    );
-    assert.equal(
-      structuredContentVerifySummary({ hasNode: true }),
-      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 9/9',
-    );
-    assert.equal(
-      structuredContentVerifySummary({ hasCompileIndexes: true }),
       'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 8/8',
     );
     assert.equal(
+      structuredContentVerifySummary({ hasNode: true }),
+      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 10/10',
+    );
+    assert.equal(
+      structuredContentVerifySummary({ hasCompileIndexes: true }),
+      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2, graph 9/9',
+    );
+    assert.equal(
       structuredContentVerifySummary({ hasMaintenanceResumeSkipped: true }),
-      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2 (resume skipped: no actions), graph 7/7',
+      'direct 11/11, write 2/2 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 0/0), maintenance 2/2 (resume skipped: no actions), graph 8/8',
     );
     assert.equal(
       structuredContentVerifySummary({
@@ -8837,9 +9015,10 @@ describe('verify.mjs first-contact gates', () => {
         hasDirectGraphReads: true,
         hasLimitedQueryConcepts: true,
         hasCompileIndexes: true,
+        hasAllPaths: true,
         destructiveDryRunCount: 3,
       }),
-      'direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2, graph 11/11',
+      'direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2, graph 13/13',
     );
     assert.equal(
       structuredContentVerifySummary({
@@ -8850,10 +9029,11 @@ describe('verify.mjs first-contact gates', () => {
         hasDirectGraphReads: true,
         hasLimitedQueryConcepts: true,
         hasCompileIndexes: true,
+        hasAllPaths: true,
         hasMaintenanceResume: true,
         destructiveDryRunCount: 3,
       }),
-      'direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 11/11',
+      'direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 3/3, graph 13/13',
     );
   });
 
@@ -8911,6 +9091,334 @@ describe('verify.mjs first-contact gates', () => {
       '1 node, 1 next action, 2 health checks, growth actions:4 external:2 ignoredExternal:7',
     );
     assert.equal(workspaceBriefSummary({ summary: { nodes: 0 }, nextActions: [], health: { checks: [] } }), '0 nodes, 0 next actions, 0 health checks');
+  });
+
+  it('validates agent_brief handoff shape for first-contact MCP use', () => {
+    const payload = {
+      operation: 'agent_brief',
+      sideEffect: false,
+      status: 'healthy',
+      readiness: {
+        status: 'ready',
+        score: 100,
+        meaningfulNodes: 3,
+        relationCount: 3,
+        projects: 1,
+        domains: 1,
+        capabilities: 1,
+        elements: 1,
+        unresolvedEdges: 0,
+        externalEdges: 0,
+        growthActions: 0,
+        healthChecks: 1,
+      },
+      handoffPrompt: [
+        'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
+        'Run these first-contact MCP calls in order:',
+        'Investigation playbooks:',
+        'Traversal strategy:',
+        'plan_before_enumeration',
+        'Write guardrails:',
+        'Result contracts:',
+        'For all_paths, report totalPathsExact.',
+        'Run relation_check before add_relation.',
+      ].join('\n'),
+      health: {
+        checks: [{ id: 'compile_issues', status: 'pass', count: 0, message: 'ok' }],
+      },
+      nextActions: [],
+      entrypoints: [{ slug: 'capability:mcp-server', title: 'MCP Server', kind: 'capability', degree: 3 }],
+      firstCalls: [
+        { tool: 'query_ontology', arguments: { operation: 'workspace_brief' } },
+        { tool: 'query_ontology', arguments: { operation: 'health' } },
+        { tool: 'query_ontology', arguments: { operation: 'relation_check', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', type: 'depends_on' } },
+      ],
+      playbooks: [
+        {
+          id: 'refactor_impact',
+          goal: 'Check blast radius.',
+          evidence: ['Blast radius evidence.'],
+          stopWhen: ['relation_check needs review.'],
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'blast_radius' } },
+            { tool: 'query_ontology', arguments: { operation: 'relation_check', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', type: 'depends_on' } },
+          ],
+        },
+        {
+          id: 'graph_traversal',
+          goal: 'Gather traversal evidence.',
+          evidence: ['Path alternatives.'],
+          stopWhen: ['Traversal cost is high.'],
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'schema', limit: 20 } },
+            { tool: 'query_ontology', arguments: { operation: 'all_paths', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', maxHops: 5 } },
+            { tool: 'query_ontology', arguments: { operation: 'pattern_walk', slug: 'project:app', pattern: ['domains', 'capabilities'] } },
+            { tool: 'query_ontology', arguments: { operation: 'project_map', project: 'project:app' } },
+          ],
+        },
+      ],
+      traversalStrategy: [
+        {
+          id: 'plan_before_enumeration',
+          priority: 'first',
+          goal: 'Estimate traversal cost.',
+          useWhen: 'Need bounded traversal.',
+          evidence: ['query_plan.execution.nextStep', 'query_plan.execution.saferQuery when present'],
+          stopWhen: ['execution.nextStep is narrow.'],
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'all_paths', from: 'capability:mcp-server', to: 'domain:ai-agent-partner' } },
+          ],
+        },
+        {
+          id: 'bounded_path_evidence',
+          priority: 'evidence',
+          goal: 'Enumerate bounded path evidence.',
+          useWhen: 'Need multiple path alternatives.',
+          evidence: ['all_paths.evidence.pathsComplete', 'all_paths.totalPathsExact'],
+          stopWhen: ['evidence.pathsComplete is false.'],
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'all_paths', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', maxHops: 3, searchBudget: 1000, limit: 10 } },
+          ],
+        },
+        {
+          id: 'containment_cross_check',
+          priority: 'confirm',
+          goal: 'Cross-check containment.',
+          useWhen: 'Ownership or domain placement matters.',
+          evidence: ['pattern_walk rows.', 'project_map placement.'],
+          stopWhen: ['Containment disagrees.'],
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'pattern_walk', slug: 'project:app', pattern: ['domains', 'capabilities'] } },
+            { tool: 'query_ontology', arguments: { operation: 'project_map', project: 'project:app' } },
+          ],
+        },
+      ],
+      writeGuardrails: [
+        {
+          id: 'preflight_relation',
+          goal: 'Before add_relation.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'relation_check', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', type: 'depends_on' } },
+            { tool: 'query_ontology', arguments: { operation: 'path', from: 'capability:mcp-server', to: 'domain:ai-agent-partner' } },
+          ],
+        },
+        {
+          id: 'preflight_rename',
+          goal: 'Before rename.',
+          calls: [
+            { tool: 'find_backlinks', arguments: { slug: 'capability:mcp-server' } },
+            { tool: 'query_ontology', arguments: { operation: 'node_profile', slug: 'capability:mcp-server' } },
+          ],
+        },
+        {
+          id: 'post_change_sync',
+          goal: 'After changes.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'health' } },
+            { tool: 'validate_vault', arguments: {} },
+          ],
+        },
+      ],
+      writePolicy: [
+        'Run read tools first.',
+        'Run relation_check before add_relation.',
+        'For all_paths, report limit/searchBudget/expandedStates/exhaustive/truncatedByBudget/totalPathsExact plus evidence.status/evidence.reason/evidence.pathsComplete and treat non-exhaustive totals as partial evidence.',
+      ],
+      resultContracts: [
+        {
+          operation: 'all_paths',
+          mustReport: [
+            'limit',
+            'searchBudget',
+            'expandedStates',
+            'exhaustive',
+            'truncatedByBudget',
+            'totalPathsExact',
+            'evidence.status',
+            'evidence.reason',
+            'evidence.pathsComplete',
+          ],
+          partialWhen: ['exhaustive=false', 'truncatedByBudget=true', 'totalPathsExact=false', 'evidence.status=partial', 'evidence.pathsComplete=false'],
+          policy: 'Treat paths as partial evidence unless evidence.pathsComplete is true; treat totalPaths as partial evidence unless totalPathsExact is true; follow evidence.suggestedQuery or narrow maxHops/types before using paths as write evidence.',
+        },
+      ],
+      relationDecisionGuide: [
+        { decision: 'skip_existing', severity: 'info', meaning: 'Do not add duplicate edge.' },
+        { decision: 'review_inverse', severity: 'warn', meaning: 'Review reverse edge direction.' },
+        { decision: 'safe_to_add', severity: 'info', meaning: 'Schema is familiar.' },
+        { decision: 'review_new_schema', severity: 'warn', meaning: 'Explain new schema pattern.' },
+      ],
+    };
+
+    assert.equal(agentBriefFailure(payload), null);
+    assert.equal(agentBriefSummary(payload), 'ready 100/100, 1 entrypoint, 3 first calls, 2 playbooks, 3 write guardrails, 1 result contract');
+    assert.equal(
+      agentBriefFailure({ ...payload, readiness: { ...payload.readiness, score: 101 } }),
+      'agent_brief response malformed readiness score',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, handoffPrompt: 'missing useful handoff content' }),
+      'agent_brief response missing copyable handoffPrompt',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, firstCalls: [{ tool: 'query_ontology', arguments: { operation: 'not_real' } }] }),
+      'agent_brief firstCalls unsupported query_ontology operation at index 0: not_real',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, playbooks: [{ id: 'refactor_impact', goal: 'Check.', calls: [] }] }),
+      'agent_brief playbook refactor_impact missing evidence checklist',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, playbooks: [{ ...payload.playbooks[0], evidence: [] }, payload.playbooks[1]] }),
+      'agent_brief playbook refactor_impact missing evidence checklist',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, playbooks: [{ ...payload.playbooks[0], stopWhen: [] }, payload.playbooks[1]] }),
+      'agent_brief playbook refactor_impact missing stopWhen checklist',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, playbooks: [{ ...payload.playbooks[0], calls: [] }, payload.playbooks[1]] }),
+      'agent_brief playbook refactor_impact missing tool calls',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        firstCalls: payload.firstCalls.filter((call) => call.arguments.operation !== 'relation_check'),
+      }),
+      'agent_brief firstCalls missing relation_check preflight',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        playbooks: [
+          {
+            id: 'refactor_impact',
+            goal: 'Check blast radius.',
+            evidence: ['Blast radius evidence.'],
+            stopWhen: ['relation_check needs review.'],
+            calls: [{ tool: 'query_ontology', arguments: { operation: 'blast_radius' } }],
+          },
+          payload.playbooks[1],
+        ],
+      }),
+      'agent_brief refactor_impact playbook missing relation_check preflight',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        playbooks: payload.playbooks.filter((playbook) => playbook.id !== 'graph_traversal'),
+      }),
+      'agent_brief missing graph_traversal playbook',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        playbooks: payload.playbooks.map((playbook) =>
+          playbook.id === 'graph_traversal'
+            ? { ...playbook, calls: playbook.calls.filter((call) => call.arguments.operation !== 'pattern_walk') }
+            : playbook,
+        ),
+      }),
+      'agent_brief graph_traversal playbook missing pattern_walk',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, traversalStrategy: [] }),
+      'agent_brief response missing traversalStrategy',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        traversalStrategy: payload.traversalStrategy.filter((strategy) => strategy.id !== 'bounded_path_evidence'),
+      }),
+      'agent_brief traversalStrategy missing strategies: bounded_path_evidence',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        traversalStrategy: payload.traversalStrategy.map((strategy) =>
+          strategy.id === 'bounded_path_evidence'
+            ? { ...strategy, evidence: ['all_paths.totalPathsExact'] }
+            : strategy,
+        ),
+      }),
+      'agent_brief traversalStrategy bounded_path_evidence missing pathsComplete evidence',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, writePolicy: ['Run read tools first.'] }),
+      'agent_brief writePolicy missing relation_check add_relation guidance',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, resultContracts: [] }),
+      'agent_brief resultContracts missing all_paths contract',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        resultContracts: [
+          {
+            ...payload.resultContracts[0],
+            mustReport: ['searchBudget', 'expandedStates', 'exhaustive'],
+          },
+        ],
+      }),
+      'agent_brief all_paths resultContract missing mustReport fields: limit, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, evidence.pathsComplete',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        resultContracts: [
+          {
+            ...payload.resultContracts[0],
+            partialWhen: ['truncatedByBudget=true'],
+          },
+        ],
+      }),
+      'agent_brief all_paths resultContract missing partial evidence conditions',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        resultContracts: [
+          {
+            ...payload.resultContracts[0],
+            policy: 'Raise the budget.',
+          },
+        ],
+      }),
+      'agent_brief all_paths resultContract missing partial-evidence policy',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        relationDecisionGuide: payload.relationDecisionGuide.filter((row) => row.decision !== 'review_new_schema'),
+      }),
+      'agent_brief relationDecisionGuide missing decisions: review_new_schema',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, writeGuardrails: [] }),
+      'agent_brief response missing writeGuardrails',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        writeGuardrails: payload.writeGuardrails.filter((guardrail) => guardrail.id !== 'preflight_rename'),
+      }),
+      'agent_brief writeGuardrails missing preflight_rename find_backlinks',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        writeGuardrails: [{ id: 'post_change_sync', goal: 'After changes.', calls: [{ tool: 'validate_vault', arguments: { stale: true } }] }],
+      }),
+      'agent_brief writeGuardrail post_change_sync validate_vault must have empty arguments at index 0',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        nextActions: [{ id: 'resolve_dangling_references', kind: 'resolve_dangling_references', severity: 'fail', count: 1 }],
+      }),
+      'agent_brief has actionable nextActions: resolve_dangling_references:fail:1. Inspect agent_brief.nextActions before writing.',
+    );
   });
 
   it('fails unexpected diagnosis operations', () => {

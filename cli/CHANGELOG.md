@@ -9,8 +9,8 @@
 
 ### Added — `mcp-verify` command
 
-- `oh-my-ontology mcp-verify [vault] [--timeout-ms N]` — installed CLI wrapper around the MCP package verify script. Runs parser smoke, server boot, 23-tool inventory, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and actual `neighbors` / `path` / `project_scope` graph-query smoke against the resolved vault.
-- `mcp-verify` now inherits the MCP package core graph-query smoke for `neighbors`, node→project `path`, and `project_scope`, so installed CLI checks prove more than aggregate query planning.
+- `oh-my-ontology mcp-verify [vault] [--timeout-ms N]` — installed CLI wrapper around the MCP package verify script. Runs parser smoke, server boot, 23-tool inventory, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, `list_concepts`, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and actual `neighbors` / `path` / `all_paths` / `project_scope` graph-query smoke against the resolved vault.
+- `mcp-verify` now inherits the MCP package core graph-query smoke for `neighbors`, node→project `path`, bounded `all_paths`, and `project_scope`, so installed CLI checks prove more than aggregate query planning.
 - `mcp-verify` now inherits the MCP package project-node probe before graph smoke, so `project_scope` is not accidentally skipped when the project node is outside the first `list_concepts` sample.
 - `mcp-verify` now accepts valid project-less vaults by skipping only the containment-specific `project_scope` smoke while still proving `neighbors` and node-level `path`.
 - `mcp-verify` now treats empty vault folders as a first-contact configuration failure after the `list_concepts` census, so CLI installs do not report a green MCP wiring check against the wrong folder.
@@ -86,7 +86,7 @@
 mission v3 의 *dev primary surface* (CLI) 와 *AI agent primary surface* (MCP) 의 권한 격차 추가 축소. `overview` (0.7.0) 에 이어 `query_ontology` 의 5 operation 직접 노출.
 
 - `oh-my-ontology hubs [vault] [--limit N]` — centrality 4 rankings (PageRank / Bridges / Authorities / Hubs)
-- `oh-my-ontology blast-radius <slug> [--depth N] [--direction incoming|outgoing|both]` — 이 노드 변경 시 영향받는 노드/관계 (refactor safety). risk low/medium/high + byKind/byDomain breakdown
+- `oh-my-ontology blast-radius <slug> [--depth N] [--direction incoming|outgoing|both] [--plan] [--force]` — 이 노드 변경 시 영향받는 노드/관계 (refactor safety). `--plan` 은 `query_plan(blast_radius)` 를 먼저 실행해 비싼 impact traversal 을 사전 차단하고, risk low/medium/high + byKind/byDomain breakdown 을 보여준다.
 - `oh-my-ontology cycles [vault] [--max-hops N]` — depends_on dependency cycle 검출. 0 cycle 시 그린 "graph clean ✓", 그 외 cycle 별 슬러그 chain 출력
 - `oh-my-ontology health [vault]` — 5 graph 무결성 check (compile / unresolved / cycles / relation recommendations / components). exit 0 만 healthy
 - `oh-my-ontology workspace-brief [vault]` — status + hotspots top 5 + `project_scope` 포함 노드 수 + next actions 한 화면

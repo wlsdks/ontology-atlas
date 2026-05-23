@@ -27,10 +27,10 @@
  *   12. tools/call find_orphans — row shape + root/sentinel default-exclusion contract
  *   13. tools/call list_kinds — kind census aggregate
  *   14. tools/call validate_vault — whole-vault frontmatter / graph-reference health
- *   15. tools/call query_ontology workspace_brief + tuned workspace_brief + health + tuned health — agent first-contact graph diagnosis
+ *   15. tools/call query_ontology agent_brief + workspace_brief + tuned workspace_brief + health + tuned health — agent first-contact graph diagnosis
  *   16. tools/call compile_ontology(summary + paginated full artifact) — compiler graph contract
  *   17. tools/call query_ontology overview + query_plan(overview/project_map) — graph-query smoke contract
- *   18. tools/call query_ontology neighbors/node-to-project path/project_scope — core graph query smoke contract
+ *   18. tools/call query_ontology neighbors/node-to-project path/all_paths/project_scope — core graph query smoke contract
  *   19. tools/call query_ontology relation_check + graph kind typo rejection — write/query preflight fail-closed smoke
  *
  * 모두 PASS → exit 0, 실패 → exit 1 + 진단 메시지.
@@ -1742,6 +1742,16 @@ export function toolsListSchemaFailure(tools) {
   if (!/cursor `nextAfterActionId`\/`hasMore` pagination metadata/.test(queryTool.description || '')) {
     return 'query_ontology description missing maintenance cursor pagination metadata';
   }
+  if (
+    !/agent_brief[\s\S]*resultContracts[\s\S]*all_paths completeness/.test(queryTool.description || '') ||
+    !/all_paths[\s\S]*limit\/searchBudget\/exhaustive\/truncatedByBudget\/totalPathsExact metadata and evidence guidance/.test(queryTool.description || '')
+  ) {
+    return 'query_ontology description missing agent result contract guidance';
+  }
+
+  if (!/agent_brief[\s\S]*traversalStrategy[\s\S]*plan_before_enumeration[\s\S]*bounded_path_evidence[\s\S]*containment_cross_check/.test(queryTool.description || '')) {
+    return 'query_ontology description missing agent traversal strategy guidance';
+  }
 
   const phases = propertyAt(queryTool, ['properties', 'phases']);
   if (!sameArray(phases?.items?.enum, MAINTENANCE_PHASE_VALUES)) {
@@ -3100,6 +3110,9 @@ export function initializeInstructionsFailure(response) {
     ['maintenance current-page pointer guidance', /nextExecutableAction[\s\S]*nextReviewAction[\s\S]*current returned page/],
     ['maintenance cursor miss guidance', /afterActionId[\s\S]*cursor\.found=false[\s\S]*cursor\.reason/],
     ['maintenance cursor miss pagination guidance', /cursor\.nextAfterActionId=null[\s\S]*cursor\.hasMore=false/],
+    ['agent brief relation decision guide', /agent_brief[\s\S]*relationDecisionGuide[\s\S]*skip_existing[\s\S]*review_inverse[\s\S]*safe_to_add[\s\S]*review_new_schema/],
+    ['agent brief traversal strategy guidance', /agent_brief[\s\S]*traversalStrategy[\s\S]*plan_before_enumeration[\s\S]*bounded_path_evidence[\s\S]*containment_cross_check/],
+    ['agent brief result contracts guidance', /agent_brief[\s\S]*resultContracts[\s\S]*all_paths[\s\S]*limit[\s\S]*searchBudget[\s\S]*expandedStates[\s\S]*exhaustive[\s\S]*truncatedByBudget[\s\S]*totalPathsExact[\s\S]*evidence\.status[\s\S]*evidence\.reason[\s\S]*evidence\.pathsComplete/],
   ];
   for (const [label, pattern] of required) {
     if (!pattern.test(instructions)) {
@@ -3181,6 +3194,7 @@ export function structuredContentVerifySummary({
   hasDirectGraphReads = false,
   hasLimitedQueryConcepts = false,
   hasCompileIndexes = false,
+  hasAllPaths = false,
   hasMaintenanceResume = false,
   hasMaintenanceResumeSkipped = false,
   destructiveDryRunCount = 0,
@@ -3193,7 +3207,7 @@ export function structuredContentVerifySummary({
   const write = 2 + destructiveDryRunCount;
   const maintenance = 2 + (hasMaintenanceResume ? 1 : 0);
   const maintenanceSuffix = hasMaintenanceResumeSkipped ? ' (resume skipped: no actions)' : '';
-  const graph = 7 + (hasNode ? 2 : 0) + (hasProject ? 1 : 0) + (hasCompileIndexes ? 1 : 0);
+  const graph = 8 + (hasNode ? 2 : 0) + (hasProject ? 1 : 0) + (hasCompileIndexes ? 1 : 0) + (hasAllPaths ? 1 : 0);
   return `direct ${direct}/${direct}, write ${write}/${write} (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run ${destructiveDryRunCount}/${destructiveDryRunCount}), maintenance ${maintenance}/${maintenance}${maintenanceSuffix}, graph ${graph}/${graph}`;
 }
 
@@ -3263,6 +3277,8 @@ export const FIRST_CONTACT_RESPONSE_LABELS = new Map([
   [63, 'add_relations_batch_cap'],
   [64, 'get_concepts_batch_cap'],
   [65, 'strict_unknown_tool'],
+  [66, 'agent_brief'],
+  [67, 'all_paths'],
 ]);
 
 export const OPTIONAL_FIRST_CONTACT_RESPONSE_IDS = [
@@ -3283,6 +3299,7 @@ export const DYNAMIC_FIRST_CONTACT_RESPONSE_IDS = [
   13, // neighbors — sent after graph smoke target selection.
   14, // path — sent after graph smoke target selection.
   15, // project_scope — sent after project probe/listing discovers a project node.
+  67, // all_paths — sent after graph smoke target selection.
   ...OPTIONAL_FIRST_CONTACT_RESPONSE_IDS,
 ];
 
@@ -3589,7 +3606,7 @@ export function verifyUsage() {
     '  pnpm test:mcp:verify:timeout    Narrow MCP verify timeout/startup/help/empty-vault diagnostics.\n' +
     '  pnpm test:dogfood:args          Narrow dogfood shortcut argument helper contract.\n' +
     '  pnpm test:dogfood:script-refs   Narrow help/package-script reference + focused filter parser/wrapper summary contract.\n' +
-    '  pnpm test:mcp:registration      Narrow source-checkout .mcp.json/.mcp.json.example registration template contract.\n' +
+    '  pnpm test:mcp:registration      Narrow source-checkout .mcp.json/.mcp.json.example/.codex/config.toml registration template contract.\n' +
     '  pnpm dogfood:compile            Cheap root checkout compile_ontology summary snapshot.\n' +
     '  pnpm dogfood:compile-fix        Cheap root checkout compile --fix idempotence gate; changed vaults need pnpm docs-vault:build; success ends with [dogfood:compile-fix] docs/ontology unchanged.\n' +
     '  pnpm test:dogfood:compile-fix   Narrow dogfood compile --fix idempotence runner contract.\n' +
@@ -3597,7 +3614,7 @@ export function verifyUsage() {
     '  pnpm dogfood:brief              Cheap root checkout workspace_brief snapshot.\n' +
     '  pnpm dogfood:growth             Cheap root checkout growth_plan snapshot.\n' +
     '  pnpm dogfood:maintenance        Cheap root checkout maintenance_plan snapshot.\n' +
-    '  pnpm dogfood:status             Cheap root checkout health + workspace-brief + maintenance preflight with focused hints before full verify.\n' +
+    '  pnpm dogfood:status             Cheap root checkout health + workspace-brief + agent-brief + maintenance preflight with focused hints before full verify.\n' +
     '  pnpm test:dogfood:status        Narrow dogfood status shortcut runner contract.\n' +
     '  pnpm dogfood:verify             Root checkout dogfood vault installed-style verify gate.\n'
   );
@@ -3726,6 +3743,12 @@ export function buildFirstContactRequests() {
       id: 6,
       method: 'tools/call',
       params: { name: 'query_ontology', arguments: { operation: 'workspace_brief', limit: 3 } },
+    },
+    {
+      jsonrpc: '2.0',
+      id: 66,
+      method: 'tools/call',
+      params: { name: 'query_ontology', arguments: { operation: 'agent_brief', limit: 3 } },
     },
     {
       jsonrpc: '2.0',
@@ -4172,8 +4195,24 @@ export function buildGraphQuerySmokeRequests(graphSmoke) {
         method: 'tools/call',
         params: { name: 'query_ontology', arguments: { operation: 'path', from: graphSmoke.slug, to: graphSmoke.pathTarget || graphSmoke.slug } },
       },
+      {
+        jsonrpc: '2.0',
+        id: 67,
+        method: 'tools/call',
+        params: {
+          name: 'query_ontology',
+          arguments: {
+            operation: 'all_paths',
+            from: graphSmoke.slug,
+            to: graphSmoke.pathTarget || graphSmoke.slug,
+            maxHops: 5,
+            searchBudget: 1000,
+            limit: 5,
+          },
+        },
+      },
     );
-    expectedResponseIds.push(13, 14);
+    expectedResponseIds.push(13, 14, 67);
   }
   if (graphSmoke?.hasProject) {
     requests.push({
@@ -5808,6 +5847,30 @@ export function aggregateQueryPlanFailure(parsed, targetOperation, label = `${ta
   if (!Array.isArray(parsed.warnings)) {
     return `${label} missing warnings array`;
   }
+  const executionFailure = queryPlanExecutionFailure(parsed.execution, targetOperation, label);
+  if (executionFailure) return executionFailure;
+  return null;
+}
+
+export function queryPlanExecutionFailure(execution, targetOperation, label = `${targetOperation} query_plan`) {
+  if (!execution || typeof execution !== 'object') {
+    return `${label} missing execution advice`;
+  }
+  if (typeof execution.shouldRun !== 'boolean') {
+    return `${label} execution missing shouldRun`;
+  }
+  if (!['run', 'narrow', 'review'].includes(execution.nextStep)) {
+    return `${label} execution missing nextStep`;
+  }
+  if (typeof execution.recommendation !== 'string' || execution.recommendation.trim() === '') {
+    return `${label} execution missing recommendation`;
+  }
+  if (!execution.suggestedQuery || execution.suggestedQuery.operation !== targetOperation) {
+    return `${label} execution missing suggestedQuery`;
+  }
+  if (execution.nextStep === 'narrow' && !execution.saferQuery) {
+    return `${label} execution missing saferQuery for narrow advice`;
+  }
   return null;
 }
 
@@ -5901,6 +5964,122 @@ export function pathQueryFailure(parsed, expectedFrom, expectedTo = expectedFrom
     } else if (!((edge.from === fromHop && edge.to === toHop) || (edge.from === toHop && edge.to === fromHop))) {
       return `path response edge/hop mismatch at edge ${index}`;
     }
+  }
+  return null;
+}
+
+export function allPathsQueryFailure(parsed, expectedFrom, expectedTo = expectedFrom) {
+  if (parsed?.operation !== 'all_paths') {
+    return `all_paths returned unexpected operation: ${parsed?.operation}`;
+  }
+  if (parsed.from !== expectedFrom || parsed.to !== expectedTo) {
+    return `all_paths endpoint mismatch — expected ${expectedFrom}->${expectedTo}, got ${parsed.from}->${parsed.to}`;
+  }
+  if (typeof parsed.found !== 'boolean') {
+    return 'all_paths response missing found flag';
+  }
+  if (!Number.isInteger(parsed.searchBudget) || parsed.searchBudget < 1) {
+    return 'all_paths response missing searchBudget';
+  }
+  if (!Number.isInteger(parsed.limit) || parsed.limit < 1) {
+    return 'all_paths response missing limit';
+  }
+  if (!Number.isInteger(parsed.expandedStates) || parsed.expandedStates < 0) {
+    return 'all_paths response missing expandedStates';
+  }
+  if (parsed.expandedStates > parsed.searchBudget) {
+    return `all_paths response exceeded searchBudget — expanded ${parsed.expandedStates}, budget ${parsed.searchBudget}`;
+  }
+  if (typeof parsed.exhaustive !== 'boolean') {
+    return 'all_paths response missing exhaustive flag';
+  }
+  if (typeof parsed.truncatedByBudget !== 'boolean') {
+    return 'all_paths response missing truncatedByBudget flag';
+  }
+  if (parsed.exhaustive === parsed.truncatedByBudget) {
+    return 'all_paths response exhaustive/truncatedByBudget mismatch';
+  }
+  if (typeof parsed.totalPathsExact !== 'boolean' || parsed.totalPathsExact !== parsed.exhaustive) {
+    return 'all_paths response totalPathsExact/exhaustive mismatch';
+  }
+  if (!Number.isInteger(parsed.totalPaths) || parsed.totalPaths < 0) {
+    return 'all_paths response missing totalPaths';
+  }
+  if (typeof parsed.limited !== 'boolean') {
+    return 'all_paths response missing limited flag';
+  }
+  if (!Array.isArray(parsed.paths)) {
+    return 'all_paths response missing paths array';
+  }
+  if (parsed.paths.length > parsed.limit) {
+    return `all_paths response path count exceeds limit — paths ${parsed.paths.length}, limit ${parsed.limit}`;
+  }
+  if (parsed.paths.length > parsed.totalPaths) {
+    return `all_paths response path count exceeds total — paths ${parsed.paths.length}, total ${parsed.totalPaths}`;
+  }
+  if (!parsed.limited && parsed.paths.length !== parsed.totalPaths) {
+    return `all_paths response total mismatch — paths ${parsed.paths.length}, total ${parsed.totalPaths}`;
+  }
+  const evidenceFailure = allPathsEvidenceFailure(parsed.evidence, parsed);
+  if (evidenceFailure) return evidenceFailure;
+  for (const [index, row] of parsed.paths.entries()) {
+    if (!Number.isInteger(row?.hopCount) || row.hopCount < 0) {
+      return `all_paths path missing hopCount at index ${index}`;
+    }
+    if (!Array.isArray(row.hops) || row.hops.length !== row.hopCount + 1) {
+      return `all_paths path hop count mismatch at index ${index}`;
+    }
+    if (row.hops[0] !== expectedFrom || row.hops.at(-1) !== expectedTo) {
+      return `all_paths path endpoint mismatch at index ${index}`;
+    }
+    if (!Array.isArray(row.edges) || row.edges.length !== row.hopCount) {
+      return `all_paths path edge count mismatch at index ${index}`;
+    }
+    if (!Array.isArray(row.nodes) || row.nodes.length !== row.hops.length) {
+      return `all_paths path node count mismatch at index ${index}`;
+    }
+  }
+  return null;
+}
+
+function allPathsEvidenceFailure(evidence, parsed) {
+  if (!evidence || typeof evidence !== 'object') {
+    return 'all_paths response missing evidence guidance';
+  }
+  const pathsComplete = parsed.exhaustive && !parsed.limited;
+  const expectedReason = parsed.truncatedByBudget ? 'search_budget' : parsed.limited ? 'limit' : 'complete';
+  if (evidence.status !== (pathsComplete ? 'complete' : 'partial')) {
+    return 'all_paths evidence status mismatch';
+  }
+  if (evidence.reason !== expectedReason) {
+    return 'all_paths evidence reason mismatch';
+  }
+  if (evidence.totalPathsExact !== parsed.totalPathsExact) {
+    return 'all_paths evidence totalPathsExact mismatch';
+  }
+  if (evidence.pathsComplete !== pathsComplete) {
+    return 'all_paths evidence pathsComplete mismatch';
+  }
+  if (evidence.nextStep !== (pathsComplete ? 'use' : 'narrow')) {
+    return 'all_paths evidence nextStep mismatch';
+  }
+  if (typeof evidence.recommendation !== 'string' || evidence.recommendation.length === 0) {
+    return 'all_paths evidence missing recommendation';
+  }
+  if (!evidence.suggestedQuery || typeof evidence.suggestedQuery !== 'object') {
+    return 'all_paths evidence missing suggestedQuery';
+  }
+  if (pathsComplete && evidence.suggestedQuery.operation !== 'all_paths') {
+    return 'all_paths evidence suggestedQuery should reuse all_paths when complete';
+  }
+  if (!pathsComplete && evidence.suggestedQuery.operation !== 'query_plan') {
+    return 'all_paths evidence suggestedQuery should query_plan when partial';
+  }
+  if (!pathsComplete && evidence.suggestedQuery.targetOperation !== 'all_paths') {
+    return 'all_paths evidence suggestedQuery missing all_paths target';
+  }
+  if (!pathsComplete && (!evidence.saferQuery || evidence.saferQuery.operation !== 'all_paths')) {
+    return 'all_paths evidence missing saferQuery';
   }
   return null;
 }
@@ -6439,6 +6618,361 @@ export function workspaceBriefSummary(parsed) {
   )}, ${formatCount((parsed?.health?.checks || []).length, 'health check')}${growthText}`;
 }
 
+export function agentBriefSummary(parsed) {
+  return `${parsed?.readiness?.status || 'unknown'} ${parsed?.readiness?.score ?? 'n/a'}/100, ${formatCount(
+    (parsed?.entrypoints || []).length,
+    'entrypoint',
+  )}, ${formatCount((parsed?.firstCalls || []).length, 'first call')}, ${formatCount(
+    (parsed?.playbooks || []).length,
+    'playbook',
+  )}, ${formatCount(
+    (parsed?.writeGuardrails || []).length,
+    'write guardrail',
+  )}, ${formatCount(
+    (parsed?.resultContracts || []).length,
+    'result contract',
+  )}`;
+}
+
+export function agentBriefFailure(parsed) {
+  if (parsed?.operation !== 'agent_brief') {
+    return `agent_brief returned unexpected operation: ${parsed?.operation}`;
+  }
+  if (parsed?.sideEffect !== false) {
+    return 'agent_brief response must be side-effect free';
+  }
+  if (!DIAGNOSIS_STATUSES.has(parsed?.status)) {
+    return 'agent_brief response malformed status';
+  }
+  if (!parsed?.readiness || typeof parsed.readiness !== 'object' || Array.isArray(parsed.readiness)) {
+    return 'agent_brief response missing readiness';
+  }
+  if (!['ready', 'needs_attention', 'needs_shape'].includes(parsed.readiness.status)) {
+    return 'agent_brief response malformed readiness status';
+  }
+  if (!Number.isInteger(parsed.readiness.score) || parsed.readiness.score < 0 || parsed.readiness.score > 100) {
+    return 'agent_brief response malformed readiness score';
+  }
+  const readinessCountFailure = numericFieldsFailure('agent_brief readiness', parsed.readiness, [
+    'meaningfulNodes',
+    'relationCount',
+    'projects',
+    'domains',
+    'capabilities',
+    'elements',
+    'unresolvedEdges',
+    'externalEdges',
+    'growthActions',
+    'healthChecks',
+  ]);
+  if (readinessCountFailure) return readinessCountFailure;
+  if (
+    !hasNonEmptyString(parsed.handoffPrompt) ||
+    !/oh-my-ontology MCP server/.test(parsed.handoffPrompt) ||
+    !/first-contact MCP calls/i.test(parsed.handoffPrompt) ||
+    !/Investigation playbooks/.test(parsed.handoffPrompt) ||
+    !/Traversal strategy/.test(parsed.handoffPrompt) ||
+    !/plan_before_enumeration/.test(parsed.handoffPrompt) ||
+    !/Write guardrails/.test(parsed.handoffPrompt) ||
+    !/Result contracts/.test(parsed.handoffPrompt) ||
+    !/totalPathsExact/.test(parsed.handoffPrompt) ||
+    !/relation_check/.test(parsed.handoffPrompt) ||
+    !/add_relation/.test(parsed.handoffPrompt)
+  ) {
+    return 'agent_brief response missing copyable handoffPrompt';
+  }
+  if (!parsed?.health || !Array.isArray(parsed.health.checks)) {
+    return 'agent_brief response missing health checks';
+  }
+  for (const [index, check] of parsed.health.checks.entries()) {
+    const checkFailure = diagnosisHealthCheckFailure('agent_brief', check, index);
+    if (checkFailure) return checkFailure;
+  }
+  const failedChecks = parsed.health.checks.filter((check) => check.status === 'fail');
+  if (failedChecks.length > 0) {
+    return `agent_brief has failing health checks: ${healthChecksSummary(failedChecks)}. Inspect query_ontology({operation:"health"}) before writing.`;
+  }
+  if (!Array.isArray(parsed.nextActions)) {
+    return 'agent_brief response missing nextActions array';
+  }
+  for (const [index, action] of parsed.nextActions.entries()) {
+    const actionFailure = diagnosisNextActionFailure('agent_brief', action, index);
+    if (actionFailure) return actionFailure;
+  }
+  const blockingActions = blockingNextActions(parsed.nextActions);
+  if (blockingActions.length > 0) {
+    return `agent_brief has actionable nextActions: ${blockingActions.join(', ')}. Inspect agent_brief.nextActions before writing.`;
+  }
+  if (!Array.isArray(parsed.entrypoints)) {
+    return 'agent_brief response missing entrypoints array';
+  }
+  for (const [index, entrypoint] of parsed.entrypoints.entries()) {
+    if (!hasNonEmptyString(entrypoint?.slug, entrypoint?.title, entrypoint?.kind)) {
+      return `agent_brief response malformed entrypoint at index ${index}`;
+    }
+    if (!hasOptionalNonNegativeInteger(entrypoint.degree) || entrypoint.degree == null) {
+      return `agent_brief response malformed entrypoint degree at index ${index}`;
+    }
+  }
+  const firstCallFailure = agentToolCallsFailure('agent_brief firstCalls', parsed.firstCalls);
+  if (firstCallFailure) return firstCallFailure;
+  if (!agentToolCallsIncludeOperation(parsed.firstCalls, 'relation_check')) {
+    return 'agent_brief firstCalls missing relation_check preflight';
+  }
+  if (!Array.isArray(parsed.playbooks) || parsed.playbooks.length === 0) {
+    return 'agent_brief response missing playbooks';
+  }
+  for (const [index, playbook] of parsed.playbooks.entries()) {
+    if (!hasNonEmptyString(playbook?.id, playbook?.goal)) {
+      return `agent_brief response malformed playbook at index ${index}`;
+    }
+    if (
+      !Array.isArray(playbook.evidence) ||
+      playbook.evidence.length === 0 ||
+      playbook.evidence.some((item) => !hasNonEmptyString(item))
+    ) {
+      return `agent_brief playbook ${playbook.id} missing evidence checklist`;
+    }
+    if (
+      !Array.isArray(playbook.stopWhen) ||
+      playbook.stopWhen.length === 0 ||
+      playbook.stopWhen.some((item) => !hasNonEmptyString(item))
+    ) {
+      return `agent_brief playbook ${playbook.id} missing stopWhen checklist`;
+    }
+    const callFailure = agentToolCallsFailure(`agent_brief playbook ${playbook.id}`, playbook.calls);
+    if (callFailure) return callFailure;
+  }
+  const refactorPlaybook = parsed.playbooks.find((playbook) => playbook?.id === 'refactor_impact');
+  if (!refactorPlaybook) {
+    return 'agent_brief missing refactor_impact playbook';
+  }
+  if (!agentToolCallsIncludeOperation(refactorPlaybook.calls, 'relation_check')) {
+    return 'agent_brief refactor_impact playbook missing relation_check preflight';
+  }
+  const traversalPlaybook = parsed.playbooks.find((playbook) => playbook?.id === 'graph_traversal');
+  if (!traversalPlaybook) {
+    return 'agent_brief missing graph_traversal playbook';
+  }
+  for (const operation of ['schema', 'all_paths', 'pattern_walk', 'project_map']) {
+    if (!agentToolCallsIncludeOperation(traversalPlaybook.calls, operation)) {
+      return `agent_brief graph_traversal playbook missing ${operation}`;
+    }
+  }
+  const traversalStrategyFailure = agentTraversalStrategyFailure(parsed.traversalStrategy);
+  if (traversalStrategyFailure) return traversalStrategyFailure;
+  if (!Array.isArray(parsed.writeGuardrails) || parsed.writeGuardrails.length === 0) {
+    return 'agent_brief response missing writeGuardrails';
+  }
+  for (const [index, guardrail] of parsed.writeGuardrails.entries()) {
+    if (!hasNonEmptyString(guardrail?.id, guardrail?.goal)) {
+      return `agent_brief response malformed writeGuardrail at index ${index}`;
+    }
+    const callFailure = agentGuardrailCallsFailure(`agent_brief writeGuardrail ${guardrail.id}`, guardrail.calls);
+    if (callFailure) return callFailure;
+  }
+  const relationGuardrail = parsed.writeGuardrails.find((guardrail) => guardrail?.id === 'preflight_relation');
+  if (!relationGuardrail || !agentToolCallsIncludeOperation(relationGuardrail.calls, 'relation_check')) {
+    return 'agent_brief writeGuardrails missing preflight_relation relation_check';
+  }
+  const renameGuardrail = parsed.writeGuardrails.find((guardrail) => guardrail?.id === 'preflight_rename');
+  if (!renameGuardrail || !renameGuardrail.calls.some((call) => call?.tool === 'find_backlinks')) {
+    return 'agent_brief writeGuardrails missing preflight_rename find_backlinks';
+  }
+  const syncGuardrail = parsed.writeGuardrails.find((guardrail) => guardrail?.id === 'post_change_sync');
+  if (!syncGuardrail || !syncGuardrail.calls.some((call) => call?.tool === 'validate_vault')) {
+    return 'agent_brief writeGuardrails missing post_change_sync validate_vault';
+  }
+  if (!Array.isArray(parsed.writePolicy) || parsed.writePolicy.some((row) => typeof row !== 'string' || row.trim() === '')) {
+    return 'agent_brief response missing writePolicy guidance';
+  }
+  if (!parsed.writePolicy.some((row) => /relation_check/.test(row) && /add_relation/.test(row))) {
+    return 'agent_brief writePolicy missing relation_check add_relation guidance';
+  }
+  const resultContractsFailure = agentResultContractsFailure(parsed.resultContracts);
+  if (resultContractsFailure) return resultContractsFailure;
+  const decisionGuideFailure = agentRelationDecisionGuideFailure(parsed.relationDecisionGuide);
+  if (decisionGuideFailure) return decisionGuideFailure;
+  return null;
+}
+
+function agentTraversalStrategyFailure(strategies) {
+  if (!Array.isArray(strategies) || strategies.length === 0) {
+    return 'agent_brief response missing traversalStrategy';
+  }
+  const required = ['plan_before_enumeration', 'bounded_path_evidence', 'containment_cross_check'];
+  const seen = new Set();
+  for (const [index, strategy] of strategies.entries()) {
+    if (!hasNonEmptyString(strategy?.id, strategy?.priority, strategy?.goal, strategy?.useWhen)) {
+      return `agent_brief traversalStrategy malformed row at index ${index}`;
+    }
+    seen.add(strategy.id);
+    if (
+      !Array.isArray(strategy.evidence) ||
+      strategy.evidence.length === 0 ||
+      strategy.evidence.some((item) => !hasNonEmptyString(item))
+    ) {
+      return `agent_brief traversalStrategy ${strategy.id} missing evidence checklist`;
+    }
+    if (
+      !Array.isArray(strategy.stopWhen) ||
+      strategy.stopWhen.length === 0 ||
+      strategy.stopWhen.some((item) => !hasNonEmptyString(item))
+    ) {
+      return `agent_brief traversalStrategy ${strategy.id} missing stopWhen checklist`;
+    }
+    const callFailure = agentToolCallsFailure(`agent_brief traversalStrategy ${strategy.id}`, strategy.calls);
+    if (callFailure) return callFailure;
+  }
+  const missing = required.filter((id) => !seen.has(id));
+  if (missing.length > 0) {
+    return `agent_brief traversalStrategy missing strategies: ${missing.join(', ')}`;
+  }
+  const plan = strategies.find((strategy) => strategy.id === 'plan_before_enumeration');
+  if (!agentToolCallsIncludeOperation(plan?.calls, 'query_plan')) {
+    return 'agent_brief traversalStrategy plan_before_enumeration missing query_plan';
+  }
+  const paths = strategies.find((strategy) => strategy.id === 'bounded_path_evidence');
+  if (!agentToolCallsIncludeOperation(paths?.calls, 'all_paths')) {
+    return 'agent_brief traversalStrategy bounded_path_evidence missing all_paths';
+  }
+  if (!paths.evidence.some((item) => /evidence\.pathsComplete/.test(item))) {
+    return 'agent_brief traversalStrategy bounded_path_evidence missing pathsComplete evidence';
+  }
+  const containment = strategies.find((strategy) => strategy.id === 'containment_cross_check');
+  for (const operation of ['pattern_walk', 'project_map']) {
+    if (!agentToolCallsIncludeOperation(containment?.calls, operation)) {
+      return `agent_brief traversalStrategy containment_cross_check missing ${operation}`;
+    }
+  }
+  return null;
+}
+
+function agentResultContractsFailure(contracts) {
+  if (!Array.isArray(contracts)) {
+    return 'agent_brief response missing resultContracts';
+  }
+  const allPaths = contracts.find((contract) => contract?.operation === 'all_paths');
+  if (!allPaths || typeof allPaths !== 'object' || Array.isArray(allPaths)) {
+    return 'agent_brief resultContracts missing all_paths contract';
+  }
+  const requiredFields = [
+    'limit',
+    'searchBudget',
+    'expandedStates',
+    'exhaustive',
+    'truncatedByBudget',
+    'totalPathsExact',
+    'evidence.status',
+    'evidence.reason',
+    'evidence.pathsComplete',
+  ];
+  if (!Array.isArray(allPaths.mustReport)) {
+    return 'agent_brief all_paths resultContract missing mustReport';
+  }
+  const missingFields = requiredFields.filter((field) => !allPaths.mustReport.includes(field));
+  if (missingFields.length > 0) {
+    return `agent_brief all_paths resultContract missing mustReport fields: ${missingFields.join(', ')}`;
+  }
+  if (
+    !Array.isArray(allPaths.partialWhen) ||
+    !allPaths.partialWhen.some((condition) => /exhaustive=false/.test(condition)) ||
+    !allPaths.partialWhen.some((condition) => /totalPathsExact=false/.test(condition)) ||
+    !allPaths.partialWhen.some((condition) => /evidence\.status=partial/.test(condition)) ||
+    !allPaths.partialWhen.some((condition) => /evidence\.pathsComplete=false/.test(condition))
+  ) {
+    return 'agent_brief all_paths resultContract missing partial evidence conditions';
+  }
+  if (
+    !hasNonEmptyString(allPaths.policy) ||
+    !/partial evidence/.test(allPaths.policy) ||
+    !/maxHops\/types/.test(allPaths.policy)
+  ) {
+    return 'agent_brief all_paths resultContract missing partial-evidence policy';
+  }
+  return null;
+}
+
+function agentRelationDecisionGuideFailure(guide) {
+  const required = ['skip_existing', 'review_inverse', 'safe_to_add', 'review_new_schema'];
+  if (!Array.isArray(guide)) {
+    return 'agent_brief response missing relationDecisionGuide';
+  }
+  const seen = new Set();
+  for (const [index, row] of guide.entries()) {
+    if (!hasNonEmptyString(row?.decision, row?.severity, row?.meaning)) {
+      return `agent_brief relationDecisionGuide malformed row at index ${index}`;
+    }
+    if (!required.includes(row.decision)) {
+      return `agent_brief relationDecisionGuide unsupported decision at index ${index}: ${row.decision}`;
+    }
+    if (!['info', 'warn'].includes(row.severity)) {
+      return `agent_brief relationDecisionGuide unsupported severity at index ${index}: ${row.severity}`;
+    }
+    seen.add(row.decision);
+  }
+  const missing = required.filter((decision) => !seen.has(decision));
+  if (missing.length > 0) {
+    return `agent_brief relationDecisionGuide missing decisions: ${missing.join(', ')}`;
+  }
+  return null;
+}
+
+function agentToolCallsIncludeOperation(calls, operation) {
+  return Array.isArray(calls) && calls.some((call) => call?.tool === 'query_ontology' && call?.arguments?.operation === operation);
+}
+
+function agentToolCallsFailure(label, calls) {
+  if (!Array.isArray(calls) || calls.length === 0) {
+    return `${label} missing tool calls`;
+  }
+  for (const [index, call] of calls.entries()) {
+    if (call?.tool !== 'query_ontology') {
+      return `${label} tool mismatch at index ${index}`;
+    }
+    const operation = call?.arguments?.operation;
+    if (typeof operation !== 'string' || operation.trim() === '') {
+      return `${label} missing query_ontology operation at index ${index}`;
+    }
+    if (!QUERY_ONTOLOGY_OPERATIONS.includes(operation)) {
+      return `${label} unsupported query_ontology operation at index ${index}: ${operation}`;
+    }
+  }
+  return null;
+}
+
+function agentGuardrailCallsFailure(label, calls) {
+  if (!Array.isArray(calls) || calls.length === 0) {
+    return `${label} missing tool calls`;
+  }
+  for (const [index, call] of calls.entries()) {
+    if (call?.tool === 'query_ontology') {
+      const operation = call?.arguments?.operation;
+      if (typeof operation !== 'string' || operation.trim() === '') {
+        return `${label} missing query_ontology operation at index ${index}`;
+      }
+      if (!QUERY_ONTOLOGY_OPERATIONS.includes(operation)) {
+        return `${label} unsupported query_ontology operation at index ${index}: ${operation}`;
+      }
+      continue;
+    }
+    if (call?.tool === 'find_backlinks') {
+      if (typeof call?.arguments?.slug !== 'string' || call.arguments.slug.trim() === '') {
+        return `${label} missing find_backlinks slug at index ${index}`;
+      }
+      continue;
+    }
+    if (call?.tool === 'validate_vault') {
+      if (!call.arguments || typeof call.arguments !== 'object' || Array.isArray(call.arguments) || Object.keys(call.arguments).length > 0) {
+        return `${label} validate_vault must have empty arguments at index ${index}`;
+      }
+      continue;
+    }
+    return `${label} unsupported tool at index ${index}: ${call?.tool}`;
+  }
+  return null;
+}
+
 async function step1ParserSmoke() {
   log('info', 'step 1 — parser smoke test');
   return new Promise((res) => {
@@ -6673,6 +7207,7 @@ async function step2BootAndCall() {
       const kindsRes = responses.find((r) => r.id === 4);
       const validateRes = responses.find((r) => r.id === 5);
       const briefRes = responses.find((r) => r.id === 6);
+      const agentBriefRes = responses.find((r) => r.id === 66);
       const healthRes = responses.find((r) => r.id === 7);
       const tunedHealthRes = responses.find((r) => r.id === 20);
       const tunedBriefRes = responses.find((r) => r.id === 21);
@@ -6694,6 +7229,7 @@ async function step2BootAndCall() {
       const projectMapPlanRes = responses.find((r) => r.id === 12);
       const neighborsRes = responses.find((r) => r.id === 13);
       const pathRes = responses.find((r) => r.id === 14);
+      const allPathsRes = responses.find((r) => r.id === 67);
       const projectScopeRes = responses.find((r) => r.id === 15);
       const strictArgsRes = responses.find((r) => r.id === 16);
       const strictMultiArgsRes = responses.find((r) => r.id === 27);
@@ -6735,6 +7271,7 @@ async function step2BootAndCall() {
       let getConceptVerified = false;
       let findBacklinksVerified = false;
       let directGraphReadsVerified = false;
+      let allPathsVerified = false;
       let maintenanceResumeVerified = false;
       let destructiveDryRunCount = 0;
       const missingLabels = firstContactMissingResponseLabels(responses, expectedFirstContactIds);
@@ -7478,6 +8015,29 @@ async function step2BootAndCall() {
         return res(false);
       }
 
+      if (!agentBriefRes || !agentBriefRes.result) {
+        log('fail', 'no query_ontology agent_brief response');
+        return res(false);
+      }
+      try {
+        const text = agentBriefRes.result.content?.[0]?.text || '';
+        const parsed = JSON.parse(text);
+        const failure = agentBriefFailure(parsed);
+        if (failure) {
+          log('fail', failure);
+          return res(false);
+        }
+        const structuredFailure = structuredContentFailure(agentBriefRes, parsed, 'agent_brief');
+        if (structuredFailure) {
+          log('fail', structuredFailure);
+          return res(false);
+        }
+        log('ok', `agent_brief — ${parsed.status} (${agentBriefSummary(parsed)})`);
+      } catch (err) {
+        log('fail', `failed to parse agent_brief response: ${err.message}`);
+        return res(false);
+      }
+
       if (!tunedBriefRes || !tunedBriefRes.result) {
         log('fail', 'no query_ontology tuned workspace_brief response');
         return res(false);
@@ -7759,8 +8319,37 @@ async function step2BootAndCall() {
           log('fail', `failed to parse path response: ${err.message}`);
           return res(false);
         }
+
+        if (!allPathsRes || !allPathsRes.result) {
+          log('fail', 'no query_ontology all_paths response');
+          return res(false);
+        }
+        try {
+          const text = allPathsRes.result.content?.[0]?.text || '';
+          const parsed = JSON.parse(text);
+          const expectedSlug = graphSmokeArgs.slug;
+          const expectedTarget = graphSmokeArgs.pathTarget || expectedSlug;
+          const failure = allPathsQueryFailure(parsed, expectedSlug, expectedTarget);
+          if (failure) {
+            log('fail', failure);
+            return res(false);
+          }
+          const structuredFailure = structuredContentFailure(allPathsRes, parsed, 'all_paths');
+          if (structuredFailure) {
+            log('fail', structuredFailure);
+            return res(false);
+          }
+          allPathsVerified = true;
+          log(
+            'ok',
+            `all_paths — ${parsed.from} → ${parsed.to} (${parsed.paths.length}/${parsed.totalPaths} paths, budget ${parsed.searchBudget}, expanded ${parsed.expandedStates}, exhaustive ${parsed.exhaustive}, evidence ${parsed.evidence.status})`,
+          );
+        } catch (err) {
+          log('fail', `failed to parse all_paths response: ${err.message}`);
+          return res(false);
+        }
       } else {
-        log('info', 'neighbors/path — skipped (vault has no nodes)');
+        log('info', 'neighbors/path/all_paths — skipped (vault has no nodes)');
       }
 
       if (graphSmokeArgs?.hasProject) {
@@ -7821,6 +8410,7 @@ async function step2BootAndCall() {
           hasDirectGraphReads: directGraphReadsVerified,
           hasLimitedQueryConcepts: limitedQueryConceptsVerified,
           hasCompileIndexes: true,
+          hasAllPaths: allPathsVerified,
           hasMaintenanceResume: maintenanceResumeVerified,
           hasMaintenanceResumeSkipped: maintenanceResumeSkipped,
           destructiveDryRunCount,

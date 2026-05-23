@@ -2,6 +2,8 @@ import { refMatchesOmotIgnore } from './omot-ignore.mjs';
 import { formatAllowedValueError } from './suggestions.mjs';
 
 const DEFAULT_LIMIT = 100;
+const DEFAULT_ALL_PATHS_SEARCH_BUDGET = 5000;
+const MAX_ALL_PATHS_SEARCH_BUDGET = 50000;
 const DOWNWARD_CONTAINMENT_TYPES = new Set(['domains', 'capabilities', 'elements', 'contains']);
 const UPWARD_CONTAINMENT_TYPES = new Set(['domain']);
 const HEALTH_IGNORED_COMPONENT_KINDS = new Set(['vault-readme']);
@@ -88,6 +90,7 @@ export const QUERY_ONTOLOGY_OPERATIONS = Object.freeze([
   'recommend_relations',
   'growth_plan',
   'maintenance_plan',
+  'agent_brief',
   'workspace_brief',
   'health',
 ]);
@@ -194,6 +197,9 @@ export function queryCompiledOntology(artifact, query = {}, options = {}) {
   }
   if (operation === 'maintenance_plan') {
     return engine.maintenancePlan(query);
+  }
+  if (operation === 'agent_brief') {
+    return engine.agentBrief(query);
   }
   if (operation === 'workspace_brief') {
     return engine.workspaceBrief(query);
@@ -363,12 +369,20 @@ export function createOntologyEngine(artifact, options = {}) {
     const maxHops = normalizeDepth(options.maxHops, 5);
     const direction = normalizePathDirection(options.direction);
     const limit = normalizeLimit(options.limit, 25);
+    const searchBudget = normalizeSearchBudget(options.searchBudget);
     const typeSet = normalizeTypes(options.types);
     const matches = [];
+    let expandedStates = 0;
+    let truncatedByBudget = false;
 
     const stack = [{ slug: from, hops: [from], edges: [] }];
     while (stack.length > 0) {
+      if (expandedStates >= searchBudget) {
+        truncatedByBudget = true;
+        break;
+      }
       const current = stack.pop();
+      expandedStates += 1;
       const hopCount = current.hops.length - 1;
       if (current.slug === to) {
         matches.push(current);
@@ -403,6 +417,41 @@ export function createOntologyEngine(artifact, options = {}) {
       lengthCounts.set(key, (lengthCounts.get(key) || 0) + 1);
     }
     const visibleRows = rows.slice(0, limit);
+    const pathsComplete = !truncatedByBudget && rows.length <= limit;
+    const evidenceReason = truncatedByBudget ? 'search_budget' : rows.length > limit ? 'limit' : 'complete';
+    const baseQuery = {
+      from,
+      to,
+      direction,
+      maxHops,
+      limit,
+      searchBudget,
+    };
+    if (typeSet) baseQuery.types = [...typeSet].sort();
+    const evidence = {
+      status: pathsComplete ? 'complete' : 'partial',
+      reason: evidenceReason,
+      totalPathsExact: !truncatedByBudget,
+      pathsComplete,
+      nextStep: pathsComplete ? 'use' : 'narrow',
+      recommendation: pathsComplete
+        ? 'Safe to treat paths and totalPaths as complete for the requested bounds.'
+        : truncatedByBudget
+          ? 'Treat returned paths as partial evidence; reduce maxHops, add relation types, or raise searchBudget before relying on missing-path absence.'
+          : 'totalPaths is exact, but paths is truncated by limit; raise limit or narrow maxHops/types before comparing every path.',
+      suggestedQuery: pathsComplete
+        ? { operation: 'all_paths', ...baseQuery }
+        : { operation: 'query_plan', targetOperation: 'all_paths', ...baseQuery },
+    };
+    if (!pathsComplete) {
+      evidence.saferQuery = {
+        operation: 'all_paths',
+        ...baseQuery,
+        maxHops: maxHops > 1 ? maxHops - 1 : maxHops,
+        limit: Math.min(limit, 10),
+        searchBudget: Math.min(searchBudget, 1000),
+      };
+    }
 
     return {
       operation: 'all_paths',
@@ -411,10 +460,17 @@ export function createOntologyEngine(artifact, options = {}) {
       found: rows.length > 0,
       direction,
       maxHops,
+      limit,
+      searchBudget,
+      expandedStates,
+      exhaustive: !truncatedByBudget,
+      truncatedByBudget,
       totalPaths: rows.length,
-      limited: rows.length > limit,
+      totalPathsExact: !truncatedByBudget,
+      limited: rows.length > limit || truncatedByBudget,
       shortestHopCount: visibleRows[0]?.hopCount ?? null,
       byLength: sortedCountObject(lengthCounts),
+      evidence,
       paths: visibleRows,
     };
   }
@@ -464,10 +520,16 @@ export function createOntologyEngine(artifact, options = {}) {
       normalized.to = to;
       normalized.direction = direction;
       normalized.maxHops = maxHops;
+      if (targetOperation === 'all_paths') {
+        normalized.searchBudget = normalizeSearchBudget(options.searchBudget);
+      }
       indexesUsed.push(...adjacencyIndexesForDirection(direction), 'aliasToSlug');
       if (typeSet) indexesUsed.push('edge.type filter');
       if (targetOperation === 'all_paths' && traversal.potentialPathUpperBound > limit) {
         warnings.push('all_paths may be truncated by limit; reduce maxHops or add relation types.');
+      }
+      if (targetOperation === 'all_paths' && traversal.potentialPathUpperBound > normalized.searchBudget) {
+        warnings.push('all_paths may stop at searchBudget before exhaustive enumeration; reduce maxHops, add relation types, or raise searchBudget.');
       }
       estimate = {
         strategy: targetOperation === 'all_paths' ? 'bounded_path_enumeration' : 'bounded_bfs',
@@ -476,7 +538,7 @@ export function createOntologyEngine(artifact, options = {}) {
         frontierByDepth: traversal.frontierByDepth,
         potentialPathUpperBound: traversal.potentialPathUpperBound,
         resultUpperBound: targetOperation === 'all_paths'
-          ? Math.min(traversal.potentialPathUpperBound, limit)
+          ? Math.min(traversal.potentialPathUpperBound, limit, normalized.searchBudget ?? limit)
           : 1,
         costClass: queryCostClass(traversal.edgeScans + traversal.potentialPathUpperBound),
       };
@@ -532,6 +594,8 @@ export function createOntologyEngine(artifact, options = {}) {
       };
     }
 
+    const execution = queryPlanExecutionAdvice(targetOperation, normalized, estimate, warnings);
+
     return {
       operation: 'query_plan',
       targetOperation,
@@ -546,6 +610,7 @@ export function createOntologyEngine(artifact, options = {}) {
       indexesUsed: [...new Set(indexesUsed)].sort(),
       estimate,
       warnings,
+      execution,
     };
   }
 
@@ -1215,17 +1280,29 @@ export function createOntologyEngine(artifact, options = {}) {
     const existing = edges.filter(
       (edge) => edge.from === from && edge.to === to && edge.via === relation && edge.resolved,
     );
+    const inverse = edges.filter(
+      (edge) => edge.from === to && edge.to === from && edge.via === relation && edge.resolved,
+    );
     const matchedPattern = schemaPatterns().find(
       (pattern) =>
         pattern.fromKind === fromKind &&
         pattern.relation === relation &&
         pattern.toKind === toKind,
     );
+    const nearbyPatterns = nearbySchemaPatterns({ fromKind, relation, toKind, matchedPattern });
     const verdict = existing.length > 0
       ? 'already_exists'
       : matchedPattern
         ? 'matches_existing_schema'
         : 'new_schema_pattern';
+    const recommendation = relationCheckRecommendation({
+      existing,
+      inverse,
+      matchedPattern,
+      fromKind,
+      relation,
+      toKind,
+    });
 
     return {
       operation: 'relation_check',
@@ -1236,8 +1313,50 @@ export function createOntologyEngine(artifact, options = {}) {
       toKind,
       exists: existing.length > 0,
       verdict,
+      recommendation,
       matchingEdges: existing.map(formatCompiledEdge),
+      inverseEdges: inverse.map(formatCompiledEdge),
       schemaPattern: matchedPattern || null,
+      nearbyPatterns,
+      proposedAction: existing.length > 0
+        ? null
+        : {
+            tool: 'add_relation',
+            args: {
+              from,
+              to,
+              type: writeRelationType(relation),
+            },
+          },
+    };
+  }
+
+  function relationCheckRecommendation({ existing, inverse, matchedPattern, fromKind, relation, toKind }) {
+    if (existing.length > 0) {
+      return {
+        decision: 'skip_existing',
+        severity: 'info',
+        reason: 'Exact edge already exists; do not add another relation.',
+      };
+    }
+    if (inverse.length > 0) {
+      return {
+        decision: 'review_inverse',
+        severity: 'warn',
+        reason: 'Reverse edge with the same relation already exists; inspect direction before adding.',
+      };
+    }
+    if (matchedPattern) {
+      return {
+        decision: 'safe_to_add',
+        severity: 'info',
+        reason: `No exact or inverse edge found; ${fromKind} --${relation}--> ${toKind} is an existing schema pattern.`,
+      };
+    }
+    return {
+      decision: 'review_new_schema',
+      severity: 'warn',
+      reason: `No exact or inverse edge found; ${fromKind} --${relation}--> ${toKind} would introduce a new schema pattern.`,
     };
   }
 
@@ -2619,6 +2738,337 @@ export function createOntologyEngine(artifact, options = {}) {
     };
   }
 
+  function agentBrief(options = {}) {
+    const limit = normalizeLimit(options.limit, 5);
+    const workspace = workspaceBrief({
+      limit,
+      componentLimit: options.componentLimit ?? limit,
+      cycleLimit: options.cycleLimit ?? limit,
+      recommendationLimit: options.recommendationLimit ?? limit,
+      orderLimit: options.orderLimit ?? limit,
+      nodeLimit: options.nodeLimit ?? limit,
+      dependencyTypes: options.dependencyTypes,
+      componentTypes: options.componentTypes ?? options.types,
+    });
+    const overviewResult = overview({ limit });
+    const topEntrypoint = overviewResult.hubs[0] ?? nodes.find((node) => ['domain', 'capability', 'element'].includes(node.kind));
+    const secondEntrypoint = overviewResult.hubs.find((node) => node.slug !== topEntrypoint?.slug);
+    const projectSlug = projectRootSlugs()[0] ?? '<project-slug>';
+    const meaningfulNodes = nodes.filter((node) => ['domain', 'capability', 'element'].includes(node.kind)).length;
+    const relationCount = edges.length;
+    const shaped = meaningfulNodes >= 3;
+    const linked = relationCount >= Math.max(1, meaningfulNodes - 1);
+    const clean = workspace.status === 'healthy';
+    const score =
+      (shaped ? 30 : 0) +
+      (linked ? 25 : 0) +
+      (clean ? 25 : 0) +
+      (overviewResult.hubs.length > 0 ? 20 : 0);
+    const readinessStatus = !shaped ? 'needs_shape' : !linked || !clean ? 'needs_attention' : 'ready';
+    const impactSlug = topEntrypoint?.slug ?? '<slug>';
+    const pathTargetSlug = secondEntrypoint?.slug ?? '<other-slug>';
+    const relationPreflightCall = agentToolCall('query_ontology', {
+      operation: 'relation_check',
+      from: impactSlug,
+      to: pathTargetSlug,
+      type: 'depends_on',
+    });
+    const pathPreflightCall = agentToolCall('query_ontology', {
+      operation: 'path',
+      from: impactSlug,
+      to: pathTargetSlug,
+      maxHops: 5,
+    });
+    const backlinkPreflightCall = agentToolCall('find_backlinks', { slug: impactSlug });
+    const nodeProfilePreflightCall = agentToolCall('query_ontology', {
+      operation: 'node_profile',
+      slug: impactSlug,
+      depth: 1,
+      limit: Math.max(5, limit),
+    });
+    const healthGateCall = agentToolCall('query_ontology', { operation: 'health', limit });
+    const validateVaultGateCall = agentToolCall('validate_vault', {});
+    const traversalBudget = {
+      maxHops: 3,
+      limit: 10,
+      searchBudget: 1000,
+      types: ['depends_on', 'relates'],
+    };
+    const traversalPlanCall = agentToolCall('query_ontology', {
+      operation: 'query_plan',
+      targetOperation: 'all_paths',
+      from: impactSlug,
+      to: pathTargetSlug,
+      ...traversalBudget,
+    });
+    const traversalAllPathsCall = agentToolCall('query_ontology', {
+      operation: 'all_paths',
+      from: impactSlug,
+      to: pathTargetSlug,
+      ...traversalBudget,
+    });
+    const traversalStrategy = [
+      {
+        id: 'plan_before_enumeration',
+        priority: 'first',
+        goal: 'Estimate traversal cost before enumerating paths.',
+        useWhen: 'The question needs more than one shortest route or may touch high-degree hubs.',
+        evidence: ['query_plan.execution.nextStep', 'query_plan.execution.suggestedQuery', 'query_plan.execution.saferQuery when present'],
+        stopWhen: ['execution.nextStep is narrow or review and the saferQuery still lacks maxHops/types/searchBudget bounds.'],
+        calls: [traversalPlanCall],
+      },
+      {
+        id: 'bounded_path_evidence',
+        priority: 'evidence',
+        goal: 'Enumerate bounded alternatives without turning traversal into an unbounded graph scan.',
+        useWhen: 'A write, refactor, or architecture answer depends on whether multiple paths explain the relation.',
+        evidence: ['all_paths.evidence.status', 'all_paths.evidence.reason', 'all_paths.evidence.pathsComplete', 'all_paths.totalPathsExact'],
+        stopWhen: ['evidence.status is partial, evidence.pathsComplete is false, or totalPathsExact is false; follow evidence.suggestedQuery or evidence.saferQuery before writing.'],
+        calls: [traversalAllPathsCall],
+      },
+      {
+        id: 'containment_cross_check',
+        priority: 'confirm',
+        goal: 'Cross-check path evidence against project/domain containment instead of trusting edge proximity alone.',
+        useWhen: 'The answer changes ownership, domain boundaries, or add_relation direction.',
+        evidence: ['pattern_walk rows for project -> domains -> capabilities', 'project_map domain placement and boundary edges'],
+        stopWhen: ['pattern_walk and project_map disagree on project/domain placement.'],
+        calls: [
+          agentToolCall('query_ontology', {
+            operation: 'pattern_walk',
+            slug: projectSlug,
+            pattern: ['domains', 'capabilities'],
+            direction: 'outgoing',
+            limit: 20,
+          }),
+          agentToolCall('query_ontology', { operation: 'project_map', project: projectSlug, limit: 10, itemLimit: 20 }),
+        ],
+      },
+    ];
+    const relationDecisionGuide = [
+      {
+        decision: 'skip_existing',
+        severity: 'info',
+        meaning: 'Exact edge already exists; do not call add_relation for the same edge.',
+      },
+      {
+        decision: 'review_inverse',
+        severity: 'warn',
+        meaning: 'Reverse edge exists; inspect direction and explain before writing.',
+      },
+      {
+        decision: 'safe_to_add',
+        severity: 'info',
+        meaning: 'Schema pattern is familiar; add only when path evidence still supports the edge.',
+      },
+      {
+        decision: 'review_new_schema',
+        severity: 'warn',
+        meaning: 'This creates a new schema pattern; explain why the relation type belongs before writing.',
+      },
+    ];
+    const resultContracts = [
+      {
+        operation: 'all_paths',
+        mustReport: [
+          'limit',
+          'searchBudget',
+          'expandedStates',
+          'exhaustive',
+          'truncatedByBudget',
+          'totalPathsExact',
+          'evidence.status',
+          'evidence.reason',
+          'evidence.pathsComplete',
+        ],
+        partialWhen: ['exhaustive=false', 'truncatedByBudget=true', 'totalPathsExact=false', 'evidence.status=partial', 'evidence.pathsComplete=false'],
+        policy: 'Treat paths as partial evidence unless evidence.pathsComplete is true; treat totalPaths as partial evidence unless totalPathsExact is true; follow evidence.suggestedQuery or narrow maxHops/types before using paths as write evidence.',
+      },
+    ];
+
+    const brief = {
+      operation: 'agent_brief',
+      sideEffect: false,
+      status: workspace.status,
+      readiness: {
+        status: readinessStatus,
+        score,
+        meaningfulNodes,
+        relationCount,
+        projects: workspace.summary.projects,
+        domains: workspace.summary.domains,
+        capabilities: workspace.summary.capabilities,
+        elements: workspace.summary.elements,
+        unresolvedEdges: workspace.summary.unresolvedEdges,
+        externalEdges: workspace.summary.externalEdges,
+        growthActions: workspace.summary.growthActions,
+        healthChecks: workspace.health.checks.length,
+      },
+      graph: workspace.summary,
+      health: workspace.health,
+      nextActions: workspace.nextActions,
+      entrypoints: overviewResult.hubs.slice(0, limit).map((node) => ({
+        slug: node.slug,
+        title: node.title,
+        kind: node.kind,
+        degree: node.degree,
+        inDegree: node.inDegree,
+        outDegree: node.outDegree,
+      })),
+      firstCalls: [
+        agentToolCall('query_ontology', { operation: 'workspace_brief', limit }),
+        agentToolCall('query_ontology', { operation: 'health', limit }),
+        agentToolCall('query_ontology', {
+          operation: 'query_plan',
+          targetOperation: 'blast_radius',
+          slug: impactSlug,
+          depth: 2,
+        }),
+        agentToolCall('query_ontology', {
+          operation: 'node_profile',
+          slug: impactSlug,
+          depth: 2,
+          limit: Math.max(5, limit),
+        }),
+        relationPreflightCall,
+      ],
+      traversalStrategy,
+      playbooks: [
+        {
+          id: 'refactor_impact',
+          goal: 'Before changing a node or module, estimate dependency blast radius and cite affected slugs.',
+          evidence: [
+            'Target node profile, incoming blast radius groups, and the highest-risk affected slugs.',
+            'Whether an existing path already explains the proposed relation.',
+            'The relation_check recommendation.decision before any add_relation.',
+          ],
+          stopWhen: [
+            'health reports failing checks or actionable nextActions.',
+            'relation_check returns skip_existing, review_inverse, or review_new_schema.',
+            'blast radius crosses domains that are outside the requested change.',
+          ],
+          calls: [
+            agentToolCall('query_ontology', { operation: 'workspace_brief', limit }),
+            agentToolCall('query_ontology', {
+              operation: 'query_plan',
+              targetOperation: 'blast_radius',
+              slug: impactSlug,
+              depth: 2,
+            }),
+            agentToolCall('query_ontology', { operation: 'node_profile', slug: impactSlug, depth: 2, limit: 12 }),
+            agentToolCall('query_ontology', { operation: 'blast_radius', slug: impactSlug, depth: 2, direction: 'incoming' }),
+            pathPreflightCall,
+            relationPreflightCall,
+          ],
+        },
+        {
+          id: 'onboarding_map',
+          goal: 'Build a compact project/domain map before editing an unfamiliar vault.',
+          evidence: [
+            'Workspace status, project/domain map, and the main high-degree entrypoints.',
+            'Domain coupling rows that explain where codebase knowledge clusters.',
+            'One concrete hub profile to anchor the first mental model.',
+          ],
+          stopWhen: [
+            'workspace_brief reports unresolved graph health issues.',
+            'project_map cannot identify a project root for the current vault.',
+          ],
+          calls: [
+            agentToolCall('query_ontology', { operation: 'workspace_brief', limit }),
+            agentToolCall('query_ontology', { operation: 'domain_matrix', limit: 10 }),
+            agentToolCall('query_ontology', { operation: 'project_map', limit: 10 }),
+          ],
+        },
+        {
+          id: 'coupling_audit',
+          goal: 'Find high-coupling nodes and relation patterns before a modularity review.',
+          evidence: [
+            'Domain-to-domain coupling hot spots.',
+            'Central nodes and dependency edges that create boundary pressure.',
+            'Any cycles, disconnected components, or health failures that weaken the audit.',
+          ],
+          stopWhen: [
+            'health fails or reports dependency cycles.',
+            'centrality and match_edges point to conflicting boundary conclusions.',
+          ],
+          calls: [
+            agentToolCall('query_ontology', { operation: 'health', limit }),
+            agentToolCall('query_ontology', { operation: 'domain_matrix', limit: 10 }),
+            agentToolCall('query_ontology', { operation: 'centrality', limit: 10 }),
+            agentToolCall('query_ontology', { operation: 'match_edges', limit: 20 }),
+          ],
+        },
+        {
+          id: 'graph_traversal',
+          goal: 'Use graph-database-style traversal evidence when one shortest path is not enough.',
+          evidence: [
+            'Schema patterns that make the traversal legal and meaningful.',
+            'Bounded all_paths alternatives with the edges that distinguish them.',
+            'Pattern-walk containment evidence and the project_map domain placement.',
+          ],
+          stopWhen: [
+            'query_plan marks all_paths as high cost for the requested bounds.',
+            'all_paths returns too many plausible paths to justify a single edge without narrowing types or hops.',
+            'pattern_walk and project_map disagree on project/domain containment.',
+          ],
+          calls: [
+            agentToolCall('query_ontology', { operation: 'schema', limit: 20 }),
+            traversalPlanCall,
+            traversalAllPathsCall,
+            agentToolCall('query_ontology', {
+              operation: 'pattern_walk',
+              slug: projectSlug,
+              pattern: ['domains', 'capabilities'],
+              direction: 'outgoing',
+              limit: 20,
+            }),
+            agentToolCall('query_ontology', { operation: 'project_map', project: projectSlug, limit: 10, itemLimit: 20 }),
+          ],
+        },
+      ],
+      writeGuardrails: [
+        {
+          id: 'preflight_relation',
+          goal: 'Before add_relation, prove the target edge is not duplicated, inverted, or already explained by an existing path.',
+          calls: [
+            relationPreflightCall,
+            pathPreflightCall,
+          ],
+        },
+        {
+          id: 'preflight_rename',
+          goal: 'Before rename_concept or merge_concepts, inspect backlinks and local node context for the slug being rewritten.',
+          calls: [
+            backlinkPreflightCall,
+            nodeProfilePreflightCall,
+          ],
+        },
+        {
+          id: 'post_change_sync',
+          goal: 'After code changes or vault writes, gate the shared graph before handing work back to another agent.',
+          calls: [
+            healthGateCall,
+            validateVaultGateCall,
+          ],
+        },
+      ],
+      writePolicy: [
+        'Run read tools first and cite returned slugs/edges before editing.',
+        'Run relation_check before add_relation to confirm matchingEdges, inverseEdges, schema pattern, and proposedAction args.',
+        'For all_paths, report limit/searchBudget/expandedStates/exhaustive/truncatedByBudget/totalPathsExact plus evidence.status/evidence.reason/evidence.pathsComplete and treat incomplete paths as partial evidence.',
+        'Follow relationDecisionGuide: skip_existing blocks duplicate writes; review_inverse and review_new_schema require explicit justification before writing.',
+        'Run find_backlinks before rename_concept or merge_concepts so backlink rewrites are intentional.',
+        'Run health and validate_vault after code changes or vault writes before handing the graph to another agent.',
+        'Use add_concept/add_relation/patch_concept/merge_concepts only after the intended ontology change is clear.',
+        'After code changes introduce or rename a domain, capability, element, or relation, sync the vault before finishing.',
+      ],
+      resultContracts,
+      relationDecisionGuide,
+    };
+    brief.handoffPrompt = buildAgentBriefHandoffPrompt(brief);
+    return brief;
+  }
+
   function health(options = {}) {
     const limit = normalizeLimit(options.limit, 10);
     const overviewResult = overview({ limit });
@@ -2807,6 +3257,33 @@ export function createOntologyEngine(artifact, options = {}) {
         a.relation.localeCompare(b.relation) ||
         a.toKind.localeCompare(b.toKind),
     );
+  }
+
+  function nearbySchemaPatterns({ fromKind, relation, toKind, matchedPattern }) {
+    return schemaPatterns()
+      .filter((pattern) => pattern !== matchedPattern)
+      .map((pattern) => ({
+        ...pattern,
+        similarity:
+          (pattern.fromKind === fromKind ? 1 : 0) +
+          (pattern.relation === relation ? 1 : 0) +
+          (pattern.toKind === toKind ? 1 : 0),
+      }))
+      .filter((pattern) => pattern.similarity > 0)
+      .sort((a, b) => {
+        if (b.similarity !== a.similarity) return b.similarity - a.similarity;
+        if (b.count !== a.count) return b.count - a.count;
+        return (
+          a.fromKind.localeCompare(b.fromKind) ||
+          a.relation.localeCompare(b.relation) ||
+          a.toKind.localeCompare(b.toKind)
+        );
+      })
+      .slice(0, 5);
+  }
+
+  function writeRelationType(relation) {
+    return relation === 'dependencies' ? 'depends_on' : relation;
   }
 
   function resolvedEdgesBetween(from, to, typeSet) {
@@ -3171,9 +3648,80 @@ export function createOntologyEngine(artifact, options = {}) {
     recommendRelations,
     growthPlan,
     maintenancePlan,
+    agentBrief,
     workspaceBrief,
     health,
   };
+}
+
+function agentToolCall(tool, args) {
+  return { tool, arguments: args };
+}
+
+function formatAgentToolCall(call) {
+  return `${call.tool} ${JSON.stringify(call.arguments)}`;
+}
+
+function buildAgentBriefHandoffPrompt(brief) {
+  const firstCalls = brief.firstCalls
+    .map((call, index) => `${index + 1}. ${formatAgentToolCall(call)}`)
+    .join('\n');
+  const playbooks = brief.playbooks
+    .map((playbook) => {
+      const calls = playbook.calls.map((call) => formatAgentToolCall(call)).join(' -> ');
+      const evidence = playbook.evidence.map((item) => `   evidence: ${item}`).join('\n');
+      const stopWhen = playbook.stopWhen.map((item) => `   stop if: ${item}`).join('\n');
+      return `- ${playbook.id}: ${playbook.goal}\n  calls: ${calls}\n${evidence}\n${stopWhen}`;
+    })
+    .join('\n');
+  const guardrails = brief.writeGuardrails
+    .map((guardrail) => {
+      const calls = guardrail.calls.map((call) => formatAgentToolCall(call)).join(' -> ');
+      return `- ${guardrail.id}: ${guardrail.goal}\n  calls: ${calls}`;
+    })
+    .join('\n');
+  const traversalStrategy = Array.isArray(brief.traversalStrategy)
+    ? brief.traversalStrategy
+        .map((strategy) => {
+          const calls = strategy.calls.map((call) => formatAgentToolCall(call)).join(' -> ');
+          const evidence = strategy.evidence.map((item) => `   evidence: ${item}`).join('\n');
+          const stopWhen = strategy.stopWhen.map((item) => `   stop if: ${item}`).join('\n');
+          return `- ${strategy.id}: ${strategy.goal}\n  use when: ${strategy.useWhen}\n  calls: ${calls}\n${evidence}\n${stopWhen}`;
+        })
+        .join('\n')
+    : '';
+  const entrypoints = brief.entrypoints.length > 0
+    ? brief.entrypoints.map((entrypoint) => `- ${entrypoint.slug} (${entrypoint.kind}, degree ${entrypoint.degree})`).join('\n')
+    : '- <no concrete entrypoint; start with workspace_brief and health>';
+
+  return [
+    'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
+    `Current readiness: ${brief.readiness.status} ${brief.readiness.score}/100; graph ${brief.graph.nodes ?? 0} nodes, ${brief.graph.edges ?? 0} edges; status ${brief.status}.`,
+    '',
+    'Run these first-contact MCP calls in order:',
+    firstCalls,
+    '',
+    'Suggested graph entrypoints:',
+    entrypoints,
+    '',
+    'Investigation playbooks:',
+    playbooks,
+    '',
+    'Traversal strategy:',
+    traversalStrategy,
+    '',
+    'Write guardrails:',
+    guardrails,
+    '',
+    'Relation decision policy:',
+    ...brief.relationDecisionGuide.map((row) => `- ${row.decision}: ${row.meaning}`),
+    '',
+    'Result contracts:',
+    ...brief.resultContracts.map((contract) => `- ${contract.operation}: report ${contract.mustReport.join(', ')}; ${contract.policy}`),
+    '',
+    'Write policy:',
+    ...brief.writePolicy.map((line) => `- ${line}`),
+  ].join('\n');
 }
 
 function healthCheck({ id, status, count, message }) {
@@ -3636,6 +4184,91 @@ function queryCostClass(score) {
   return 'low';
 }
 
+function queryPlanExecutionAdvice(targetOperation, normalized, estimate, warnings = []) {
+  const suggestedQuery = buildPlannedQuery(targetOperation, normalized);
+  const costClass = estimate?.costClass ?? 'low';
+  const highCost = costClass === 'high';
+  const hasWarnings = Array.isArray(warnings) && warnings.length > 0;
+  const shouldRun = !highCost && !hasWarnings;
+  const nextStep = shouldRun ? 'run' : highCost ? 'narrow' : 'review';
+  const advice = {
+    shouldRun,
+    nextStep,
+    recommendation: shouldRun
+      ? 'Run suggestedQuery as planned.'
+      : highCost
+        ? 'Narrow the query before running it; reduce depth/hops, add relation types, or lower limit.'
+        : 'Review warnings before running suggestedQuery.',
+    suggestedQuery,
+  };
+
+  const saferQuery = buildSaferPlannedQuery(targetOperation, normalized, estimate, hasWarnings);
+  if (saferQuery) advice.saferQuery = saferQuery;
+  return advice;
+}
+
+function buildPlannedQuery(targetOperation, normalized) {
+  const query = { operation: targetOperation };
+  for (const key of [
+    'slug',
+    'seed',
+    'from',
+    'to',
+    'project',
+    'direction',
+    'depth',
+    'maxHops',
+    'searchBudget',
+    'limit',
+  ]) {
+    if (normalized[key] !== undefined) query[key] = normalized[key];
+  }
+  if (Array.isArray(normalized.types) && normalized.types.length > 0) {
+    query.types = normalized.types;
+  }
+  return query;
+}
+
+function buildSaferPlannedQuery(targetOperation, normalized, estimate, hasWarnings) {
+  const costClass = estimate?.costClass ?? 'low';
+  if (costClass !== 'high' && !hasWarnings) return null;
+  const safer = buildPlannedQuery(targetOperation, normalized);
+
+  if (targetOperation === 'all_paths' || targetOperation === 'path' || targetOperation === 'explain_relation') {
+    if (typeof safer.maxHops === 'number') safer.maxHops = Math.max(1, Math.min(safer.maxHops - 1, 3));
+    if (!Array.isArray(safer.types) || safer.types.length === 0) safer.types = ['depends_on', 'relates'];
+    if (targetOperation === 'all_paths') {
+      safer.limit = Math.min(Number(safer.limit) || 10, 10);
+      safer.searchBudget = Math.min(Number(safer.searchBudget) || 1000, 1000);
+    }
+    return safer;
+  }
+
+  if (
+    targetOperation === 'reachability' ||
+    targetOperation === 'impact' ||
+    targetOperation === 'blast_radius' ||
+    targetOperation === 'subgraph'
+  ) {
+    if (typeof safer.depth === 'number') safer.depth = Math.max(1, Math.min(safer.depth - 1, 2));
+    if (!Array.isArray(safer.types) || safer.types.length === 0) safer.types = ['depends_on', 'relates'];
+    safer.limit = Math.min(Number(safer.limit) || 25, 25);
+    return safer;
+  }
+
+  if (targetOperation === 'match_nodes' || targetOperation === 'match_edges') {
+    safer.limit = Math.min(Number(safer.limit) || 25, 25);
+    return safer;
+  }
+
+  if (safer.limit !== undefined) {
+    safer.limit = Math.min(Number(safer.limit) || 25, 25);
+    return safer;
+  }
+
+  return null;
+}
+
 function compareMaintenanceActions(left, right) {
   const severityRank = { fail: 0, warn: 1, info: 2 };
   const phaseRank = { validate: 0, repair: 1, link: 2, materialize: 3, review: 4 };
@@ -3785,15 +4418,24 @@ function normalizeDepth(value, fallback) {
   return value;
 }
 
-function normalizeLimit(value, fallback = DEFAULT_LIMIT, name = 'limit') {
+function normalizeLimit(value, fallback = DEFAULT_LIMIT, name = 'limit', maximum = 500) {
   if (value === undefined) return fallback;
   if (!Number.isInteger(value) || value < 1) {
     throw new Error(`${name} must be a positive integer.`);
   }
-  if (value > 500) {
-    throw new Error(`${name} must be <= 500.`);
+  if (value > maximum) {
+    throw new Error(`${name} must be <= ${maximum}.`);
   }
   return value;
+}
+
+function normalizeSearchBudget(value) {
+  return normalizeLimit(
+    value,
+    DEFAULT_ALL_PATHS_SEARCH_BUDGET,
+    'searchBudget',
+    MAX_ALL_PATHS_SEARCH_BUDGET,
+  );
 }
 
 function formatDirectedEdge({ direction, edge }) {

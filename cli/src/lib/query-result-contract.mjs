@@ -3,6 +3,23 @@ const HEALTH_CHECK_STATUSES = new Set(['pass', 'warn', 'fail', 'info']);
 const NEXT_ACTION_SEVERITIES = new Set(['info', 'warn', 'fail']);
 const MAINTENANCE_ACTION_SEVERITIES = new Set(['fail', 'warn', 'info']);
 const BLAST_RADIUS_RISKS = new Set(['low', 'medium', 'high']);
+const RELATION_CHECK_VERDICTS = new Set([
+  'already_exists',
+  'matches_existing_schema',
+  'new_schema_pattern',
+]);
+const RELATION_CHECK_DECISIONS = new Set([
+  'skip_existing',
+  'review_inverse',
+  'safe_to_add',
+  'review_new_schema',
+]);
+const RELATION_CHECK_RECOMMENDATION_SEVERITIES = new Set(['info', 'warn']);
+const ALL_PATHS_EVIDENCE_STATUSES = new Set(['complete', 'partial']);
+const ALL_PATHS_EVIDENCE_REASONS = new Set(['complete', 'limit', 'search_budget']);
+const ALL_PATHS_EVIDENCE_NEXT_STEPS = new Set(['use', 'narrow']);
+const QUERY_PLAN_COST_CLASSES = new Set(['low', 'medium', 'high']);
+const QUERY_PLAN_NEXT_STEPS = new Set(['run', 'review', 'narrow']);
 
 export function assertQueryOperation(result, expectedOperation) {
   if (!result || typeof result !== 'object' || Array.isArray(result)) {
@@ -222,6 +239,120 @@ export function assertWorkspaceBriefShape(result) {
   return result;
 }
 
+export function assertAgentBriefShape(result) {
+  assertQueryOperation(result, 'agent_brief');
+  if (result.sideEffect !== false) {
+    throw new Error('agent_brief sideEffect must be false');
+  }
+  if (!DIAGNOSIS_STATUSES.has(result.status)) {
+    throw new Error(`agent_brief status must be one of: ${[...DIAGNOSIS_STATUSES].join(', ')}`);
+  }
+  if (!validAgentReadiness(result.readiness)) {
+    throw new Error('agent_brief readiness must contain status, score, and non-negative graph counts');
+  }
+  if (!isPlainObject(result.graph)) {
+    throw new Error('agent_brief graph must be an object');
+  }
+  if (!validAgentHandoffPrompt(result.handoffPrompt)) {
+    throw new Error('agent_brief handoffPrompt must be a non-empty agent handoff string');
+  }
+  if (!isPlainObject(result.health) || !Array.isArray(result.health.checks) || result.health.checks.length === 0) {
+    throw new Error('agent_brief health.checks must be a non-empty array');
+  }
+  for (let index = 0; index < result.health.checks.length; index += 1) {
+    if (!validHealthCheck(result.health.checks[index])) {
+      throw new Error(`agent_brief health.checks[${index}] has an invalid health-check shape`);
+    }
+  }
+  if (!Array.isArray(result.nextActions)) {
+    throw new Error('agent_brief nextActions must be an array');
+  }
+  for (let index = 0; index < result.nextActions.length; index += 1) {
+    if (!validNextAction(result.nextActions[index])) {
+      throw new Error(`agent_brief nextActions[${index}] has an invalid next-action shape`);
+    }
+  }
+  if (!Array.isArray(result.entrypoints)) {
+    throw new Error('agent_brief entrypoints must be an array');
+  }
+  for (let index = 0; index < result.entrypoints.length; index += 1) {
+    if (!validAgentEntrypoint(result.entrypoints[index])) {
+      throw new Error(`agent_brief entrypoints[${index}] has an invalid entrypoint shape`);
+    }
+  }
+  if (!Array.isArray(result.firstCalls) || result.firstCalls.length === 0) {
+    throw new Error('agent_brief firstCalls must be a non-empty array');
+  }
+  for (let index = 0; index < result.firstCalls.length; index += 1) {
+    if (!validAgentToolCall(result.firstCalls[index])) {
+      throw new Error(`agent_brief firstCalls[${index}] has an invalid tool-call shape`);
+    }
+  }
+  if (!agentToolCallsIncludeOperation(result.firstCalls, 'relation_check')) {
+    throw new Error('agent_brief firstCalls must include relation_check preflight');
+  }
+  if (!Array.isArray(result.playbooks) || result.playbooks.length === 0) {
+    throw new Error('agent_brief playbooks must be a non-empty array');
+  }
+  for (let index = 0; index < result.playbooks.length; index += 1) {
+    if (!validAgentPlaybook(result.playbooks[index])) {
+      throw new Error(`agent_brief playbooks[${index}] has an invalid playbook shape`);
+    }
+  }
+  const refactorPlaybook = result.playbooks.find((playbook) => playbook.id === 'refactor_impact');
+  if (!refactorPlaybook) {
+    throw new Error('agent_brief playbooks must include refactor_impact');
+  }
+  if (!agentToolCallsIncludeOperation(refactorPlaybook.calls, 'relation_check')) {
+    throw new Error('agent_brief refactor_impact playbook must include relation_check preflight');
+  }
+  const traversalPlaybook = result.playbooks.find((playbook) => playbook.id === 'graph_traversal');
+  if (!traversalPlaybook) {
+    throw new Error('agent_brief playbooks must include graph_traversal');
+  }
+  for (const operation of ['schema', 'all_paths', 'pattern_walk', 'project_map']) {
+    if (!agentToolCallsIncludeOperation(traversalPlaybook.calls, operation)) {
+      throw new Error(`agent_brief graph_traversal playbook must include ${operation}`);
+    }
+  }
+  if (!validAgentTraversalStrategy(result.traversalStrategy)) {
+    throw new Error('agent_brief traversalStrategy must include plan, bounded path evidence, and containment cross-check guidance');
+  }
+  if (!Array.isArray(result.writeGuardrails) || result.writeGuardrails.length === 0) {
+    throw new Error('agent_brief writeGuardrails must be a non-empty array');
+  }
+  for (let index = 0; index < result.writeGuardrails.length; index += 1) {
+    if (!validAgentGuardrail(result.writeGuardrails[index])) {
+      throw new Error(`agent_brief writeGuardrails[${index}] has an invalid guardrail shape`);
+    }
+  }
+  const relationGuardrail = result.writeGuardrails.find((guardrail) => guardrail.id === 'preflight_relation');
+  if (!relationGuardrail || !agentToolCallsIncludeOperation(relationGuardrail.calls, 'relation_check')) {
+    throw new Error('agent_brief writeGuardrails must include preflight_relation relation_check');
+  }
+  const renameGuardrail = result.writeGuardrails.find((guardrail) => guardrail.id === 'preflight_rename');
+  if (!renameGuardrail || !renameGuardrail.calls.some((call) => call?.tool === 'find_backlinks')) {
+    throw new Error('agent_brief writeGuardrails must include preflight_rename find_backlinks');
+  }
+  const syncGuardrail = result.writeGuardrails.find((guardrail) => guardrail.id === 'post_change_sync');
+  if (!syncGuardrail || !syncGuardrail.calls.some((call) => call?.tool === 'validate_vault')) {
+    throw new Error('agent_brief writeGuardrails must include post_change_sync validate_vault');
+  }
+  if (!Array.isArray(result.writePolicy) || !result.writePolicy.every((row) => hasNonEmptyString(row))) {
+    throw new Error('agent_brief writePolicy must be an array of non-empty strings');
+  }
+  if (!result.writePolicy.some((row) => /relation_check/.test(row) && /add_relation/.test(row))) {
+    throw new Error('agent_brief writePolicy must mention relation_check before add_relation');
+  }
+  if (!validAgentResultContracts(result.resultContracts)) {
+    throw new Error('agent_brief resultContracts must include all_paths completeness fields and partial-evidence policy');
+  }
+  if (!validAgentRelationDecisionGuide(result.relationDecisionGuide)) {
+    throw new Error('agent_brief relationDecisionGuide must cover relation_check decision outcomes');
+  }
+  return result;
+}
+
 export function assertCyclesShape(result) {
   assertQueryOperation(result, 'cycles');
   if (!Array.isArray(result.cycles)) {
@@ -273,6 +404,125 @@ export function assertPathShape(result) {
         throw new Error(`find_path response nodes[${index}] has an invalid path-node shape`);
       }
     }
+  }
+  return result;
+}
+
+export function assertAllPathsShape(result) {
+  assertQueryOperation(result, 'all_paths');
+  for (const field of ['from', 'to', 'direction']) {
+    if (!hasNonEmptyString(result[field])) {
+      throw new Error(`all_paths ${field} must be a non-empty string`);
+    }
+  }
+  for (const field of ['maxHops', 'limit', 'searchBudget', 'expandedStates', 'totalPaths']) {
+    if (!validCount(result[field])) {
+      throw new Error(`all_paths ${field} must be a non-negative integer`);
+    }
+  }
+  if (result.limit < 1 || result.searchBudget < 1) {
+    throw new Error('all_paths limit and searchBudget must be positive integers');
+  }
+  if (result.expandedStates > result.searchBudget) {
+    throw new Error('all_paths expandedStates must not exceed searchBudget');
+  }
+  for (const field of ['found', 'exhaustive', 'truncatedByBudget', 'totalPathsExact', 'limited']) {
+    if (typeof result[field] !== 'boolean') {
+      throw new Error(`all_paths ${field} must be a boolean`);
+    }
+  }
+  if (result.exhaustive === result.truncatedByBudget) {
+    throw new Error('all_paths exhaustive/truncatedByBudget mismatch');
+  }
+  if (result.totalPathsExact !== result.exhaustive) {
+    throw new Error('all_paths totalPathsExact must match exhaustive');
+  }
+  if (result.shortestHopCount !== null && !validCount(result.shortestHopCount)) {
+    throw new Error('all_paths shortestHopCount must be null or a non-negative integer');
+  }
+  if (!validCountBucket(result.byLength)) {
+    throw new Error('all_paths byLength must be an object of non-negative integer counts');
+  }
+  if (!Array.isArray(result.paths)) {
+    throw new Error('all_paths paths must be an array');
+  }
+  if (result.paths.length > result.limit) {
+    throw new Error('all_paths paths length must not exceed limit');
+  }
+  if (result.totalPathsExact && result.paths.length > result.totalPaths) {
+    throw new Error('all_paths paths length must not exceed totalPaths when exact');
+  }
+  if (result.found === false && result.totalPaths !== 0) {
+    throw new Error('all_paths found=false must have totalPaths 0');
+  }
+  if (result.found === false && result.paths.length !== 0) {
+    throw new Error('all_paths found=false must not include path rows');
+  }
+  if (result.found === true && result.paths.length === 0 && result.totalPathsExact) {
+    throw new Error('all_paths found=true must include at least one path when totals are exact');
+  }
+  for (let index = 0; index < result.paths.length; index += 1) {
+    const failure = allPathsRowFailure(result.paths[index], index);
+    if (failure) throw new Error(failure);
+  }
+  if (result.totalPathsExact && sumCountBucket(result.byLength) !== result.totalPaths) {
+    throw new Error('all_paths byLength total must equal totalPaths when exact');
+  }
+  if (!validAllPathsEvidence(result.evidence, result)) {
+    throw new Error('all_paths evidence has an invalid completeness shape');
+  }
+  return result;
+}
+
+export function assertQueryPlanShape(result, expectedTargetOperation) {
+  assertQueryOperation(result, 'query_plan');
+  if (expectedTargetOperation && result.targetOperation !== expectedTargetOperation) {
+    throw new Error(`query_plan targetOperation must be ${expectedTargetOperation}`);
+  }
+  if (result.sideEffect !== false) {
+    throw new Error('query_plan sideEffect must be false');
+  }
+  if (!isPlainObject(result.graph) || !validCount(result.graph.nodes) || !validCount(result.graph.edges)) {
+    throw new Error('query_plan graph must include non-negative node and edge counts');
+  }
+  if (result.graph.resolvedEdges !== undefined && !validCount(result.graph.resolvedEdges)) {
+    throw new Error('query_plan graph.resolvedEdges must be a non-negative integer when present');
+  }
+  if (result.graph.graphHash !== undefined && !hasNonEmptyString(result.graph.graphHash)) {
+    throw new Error('query_plan graph.graphHash must be a non-empty string when present');
+  }
+  if (!isPlainObject(result.normalized) || result.normalized.targetOperation !== result.targetOperation) {
+    throw new Error('query_plan normalized.targetOperation must match targetOperation');
+  }
+  if (!Array.isArray(result.indexesUsed) || !result.indexesUsed.every((index) => hasNonEmptyString(index))) {
+    throw new Error('query_plan indexesUsed must be an array of non-empty strings');
+  }
+  if (!isPlainObject(result.estimate) || !hasNonEmptyString(result.estimate.strategy)) {
+    throw new Error('query_plan estimate must include a strategy');
+  }
+  if (!QUERY_PLAN_COST_CLASSES.has(result.estimate.costClass)) {
+    throw new Error('query_plan estimate.costClass must be low, medium, or high');
+  }
+  for (const field of ['edgeScans', 'nodeScans', 'reachableWithinDepth', 'potentialPathUpperBound', 'resultUpperBound']) {
+    if (result.estimate[field] !== undefined && !validCount(result.estimate[field])) {
+      throw new Error(`query_plan estimate.${field} must be a non-negative integer when present`);
+    }
+  }
+  if (result.estimate.frontierByDepth !== undefined) {
+    if (!Array.isArray(result.estimate.frontierByDepth)) {
+      throw new Error('query_plan estimate.frontierByDepth must be an array when present');
+    }
+    for (let index = 0; index < result.estimate.frontierByDepth.length; index += 1) {
+      if (!validFrontierRow(result.estimate.frontierByDepth[index])) {
+        throw new Error(`query_plan estimate.frontierByDepth[${index}] has an invalid frontier row shape`);
+      }
+    }
+  }
+  if (!Array.isArray(result.warnings) || !result.warnings.every((warning) => hasNonEmptyString(warning))) {
+    throw new Error('query_plan warnings must be an array of non-empty strings');
+  }
+  if (!validQueryPlanExecution(result.execution, result.targetOperation)) {
+    throw new Error('query_plan execution has an invalid advice shape');
   }
   return result;
 }
@@ -474,6 +724,58 @@ export function assertBlastRadiusShape(result) {
   return result;
 }
 
+export function assertRelationCheckShape(result) {
+  assertQueryOperation(result, 'relation_check');
+  for (const field of ['from', 'to', 'relation', 'fromKind', 'toKind', 'verdict']) {
+    if (!hasNonEmptyString(result[field])) {
+      throw new Error(`relation_check ${field} must be a non-empty string`);
+    }
+  }
+  if (typeof result.exists !== 'boolean') {
+    throw new Error('relation_check exists must be a boolean');
+  }
+  if (!RELATION_CHECK_VERDICTS.has(result.verdict)) {
+    throw new Error(`relation_check verdict must be one of: ${[...RELATION_CHECK_VERDICTS].join(', ')}`);
+  }
+  if (!validRelationCheckRecommendation(result.recommendation)) {
+    throw new Error('relation_check recommendation must include decision, severity, and reason');
+  }
+  if (!Array.isArray(result.matchingEdges)) {
+    throw new Error('relation_check matchingEdges must be an array');
+  }
+  for (let index = 0; index < result.matchingEdges.length; index += 1) {
+    if (!validRelationCheckEdge(result.matchingEdges[index])) {
+      throw new Error(`relation_check matchingEdges[${index}] has an invalid edge shape`);
+    }
+  }
+  if (!Array.isArray(result.inverseEdges)) {
+    throw new Error('relation_check inverseEdges must be an array');
+  }
+  for (let index = 0; index < result.inverseEdges.length; index += 1) {
+    if (!validRelationCheckEdge(result.inverseEdges[index])) {
+      throw new Error(`relation_check inverseEdges[${index}] has an invalid edge shape`);
+    }
+  }
+  if (result.schemaPattern !== null && result.schemaPattern !== undefined && !validRelationCheckPattern(result.schemaPattern)) {
+    throw new Error('relation_check schemaPattern must be a valid schema-pattern row when present');
+  }
+  if (!Array.isArray(result.nearbyPatterns)) {
+    throw new Error('relation_check nearbyPatterns must be an array');
+  }
+  for (let index = 0; index < result.nearbyPatterns.length; index += 1) {
+    if (!validRelationCheckPattern(result.nearbyPatterns[index], { requireSimilarity: true })) {
+      throw new Error(`relation_check nearbyPatterns[${index}] has an invalid schema-pattern shape`);
+    }
+  }
+  if (result.exists && result.proposedAction !== null && result.proposedAction !== undefined) {
+    throw new Error('relation_check existing edge must not include proposedAction');
+  }
+  if (!result.exists && !validRelationCheckProposedAction(result)) {
+    throw new Error('relation_check missing edge must include add_relation proposedAction with matching args');
+  }
+  return result;
+}
+
 export function compileResultExitCode(artifact) {
   const counts = compileBlockingCounts(artifact);
   if (!validCount(counts.issues) || !validCount(counts.unresolvedEdges)) return 1;
@@ -514,6 +816,10 @@ export function pathResultExitCode(result) {
   return 0;
 }
 
+export function allPathsResultExitCode(result) {
+  return result?.found === false ? 1 : 0;
+}
+
 export function healthResultExitCode(result) {
   const status = result?.status ?? 'unknown';
   if (!DIAGNOSIS_STATUSES.has(status)) return 1;
@@ -538,6 +844,22 @@ export function workspaceBriefExitCode(result) {
   return checks.some((check) => check?.status === 'fail') ? 1 : 0;
 }
 
+export function agentBriefExitCode(result) {
+  if (!DIAGNOSIS_STATUSES.has(result?.status)) return 1;
+  if (!validAgentReadiness(result?.readiness)) return 1;
+  if (!Array.isArray(result?.health?.checks)) return 1;
+  if (!Array.isArray(result?.nextActions)) return 1;
+  const checks = result.health.checks;
+  const next = result.nextActions;
+  if (checks.length === 0) return 1;
+  if (checks.some((check) => !validHealthCheck(check))) return 1;
+  if (next.some((action) => !validNextAction(action))) return 1;
+  if (checks.some((check) => check?.status === 'fail')) return 1;
+  if (next.some((action) => action?.severity === 'fail')) return 1;
+  if (result.status !== 'healthy') return 1;
+  return result.readiness.status === 'ready' ? 0 : 1;
+}
+
 function validNextAction(action) {
   return Boolean(
     action
@@ -545,6 +867,138 @@ function validNextAction(action) {
     && !Array.isArray(action)
     && hasNonEmptyString(action.id, action.kind)
     && NEXT_ACTION_SEVERITIES.has(action.severity)
+  );
+}
+
+function validAgentReadiness(readiness) {
+  return Boolean(
+    isPlainObject(readiness)
+    && hasNonEmptyString(readiness.status)
+    && validCount(readiness.score)
+    && readiness.score <= 100
+    && [
+      'meaningfulNodes',
+      'relationCount',
+      'projects',
+      'domains',
+      'capabilities',
+      'elements',
+      'unresolvedEdges',
+      'externalEdges',
+      'growthActions',
+      'healthChecks',
+    ].every((field) => validCount(readiness[field]))
+  );
+}
+
+function validAgentEntrypoint(row) {
+  return Boolean(
+    isPlainObject(row)
+    && hasNonEmptyString(row.slug)
+    && hasNonEmptyString(row.title)
+    && hasNonEmptyString(row.kind)
+    && validCount(row.degree)
+    && validCount(row.inDegree)
+    && validCount(row.outDegree)
+  );
+}
+
+function validAgentToolCall(call) {
+  return Boolean(
+    isPlainObject(call)
+    && call.tool === 'query_ontology'
+    && isPlainObject(call.arguments)
+    && hasNonEmptyString(call.arguments.operation)
+  );
+}
+
+function validAgentGuardrailToolCall(call) {
+  if (!isPlainObject(call) || !isPlainObject(call.arguments)) return false;
+  if (call.tool === 'query_ontology') {
+    return hasNonEmptyString(call.arguments.operation);
+  }
+  if (call.tool === 'find_backlinks') {
+    return hasNonEmptyString(call.arguments.slug);
+  }
+  if (call.tool === 'validate_vault') {
+    return Object.keys(call.arguments).length === 0;
+  }
+  return false;
+}
+
+function agentToolCallsIncludeOperation(calls, operation) {
+  return Array.isArray(calls)
+    && calls.some((call) => call?.tool === 'query_ontology' && call?.arguments?.operation === operation);
+}
+
+function validAgentPlaybook(playbook) {
+  return Boolean(
+    isPlainObject(playbook)
+    && hasNonEmptyString(playbook.id)
+    && hasNonEmptyString(playbook.goal)
+    && Array.isArray(playbook.evidence)
+    && playbook.evidence.length > 0
+    && playbook.evidence.every((item) => hasNonEmptyString(item))
+    && Array.isArray(playbook.stopWhen)
+    && playbook.stopWhen.length > 0
+    && playbook.stopWhen.every((item) => hasNonEmptyString(item))
+    && Array.isArray(playbook.calls)
+    && playbook.calls.length > 0
+    && playbook.calls.every((call) => validAgentToolCall(call))
+  );
+}
+
+function validAgentHandoffPrompt(value) {
+  return hasNonEmptyString(value)
+    && /oh-my-ontology MCP server/.test(value)
+    && /first-contact MCP calls/i.test(value)
+    && /Investigation playbooks/.test(value)
+    && /Traversal strategy/.test(value)
+    && /Write guardrails/.test(value)
+    && /relation_check/.test(value)
+    && /add_relation/.test(value);
+}
+
+function validAgentTraversalStrategy(strategies) {
+  if (!Array.isArray(strategies) || strategies.length === 0) return false;
+  const required = ['plan_before_enumeration', 'bounded_path_evidence', 'containment_cross_check'];
+  const byId = new Map();
+  for (const strategy of strategies) {
+    if (
+      !isPlainObject(strategy) ||
+      !hasNonEmptyString(strategy.id, strategy.priority, strategy.goal, strategy.useWhen) ||
+      !Array.isArray(strategy.evidence) ||
+      strategy.evidence.length === 0 ||
+      !strategy.evidence.every((item) => hasNonEmptyString(item)) ||
+      !Array.isArray(strategy.stopWhen) ||
+      strategy.stopWhen.length === 0 ||
+      !strategy.stopWhen.every((item) => hasNonEmptyString(item)) ||
+      !Array.isArray(strategy.calls) ||
+      strategy.calls.length === 0 ||
+      !strategy.calls.every((call) => validAgentToolCall(call))
+    ) {
+      return false;
+    }
+    byId.set(strategy.id, strategy);
+  }
+  if (required.some((id) => !byId.has(id))) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('plan_before_enumeration').calls, 'query_plan')) return false;
+  const bounded = byId.get('bounded_path_evidence');
+  if (!agentToolCallsIncludeOperation(bounded.calls, 'all_paths')) return false;
+  if (!bounded.evidence.some((item) => /evidence\.pathsComplete/.test(item))) return false;
+  const containment = byId.get('containment_cross_check');
+  return agentToolCallsIncludeOperation(containment.calls, 'pattern_walk') &&
+    agentToolCallsIncludeOperation(containment.calls, 'project_map');
+}
+
+function validAgentGuardrail(guardrail) {
+  return Boolean(
+    isPlainObject(guardrail)
+    && hasNonEmptyString(guardrail.id)
+    && hasNonEmptyString(guardrail.goal)
+    && Array.isArray(guardrail.calls)
+    && guardrail.calls.length > 0
+    && guardrail.calls.every((call) => validAgentGuardrailToolCall(call))
   );
 }
 
@@ -781,6 +1235,92 @@ function validPathNode(row, expectedSlug) {
   );
 }
 
+function allPathsRowFailure(row, index) {
+  const label = `all_paths paths[${index}]`;
+  if (!isPlainObject(row)) return `${label} must be an object`;
+  if (!validCount(row.hopCount)) return `${label}.hopCount must be a non-negative integer`;
+  if (!Array.isArray(row.hops) || row.hops.length === 0) return `${label}.hops must be a non-empty array`;
+  if (row.hops.some((hop) => !hasNonEmptyString(hop))) return `${label}.hops must contain non-empty strings`;
+  if (row.hopCount !== row.hops.length - 1) return `${label}.hopCount must match hops length`;
+  if (!Array.isArray(row.edges)) return `${label}.edges must be an array`;
+  if (row.edges.length !== row.hops.length - 1) return `${label}.edges length must match hops length`;
+  for (let edgeIndex = 0; edgeIndex < row.edges.length; edgeIndex += 1) {
+    if (!validUndirectedPathEdge(row.edges[edgeIndex], row.hops[edgeIndex], row.hops[edgeIndex + 1])) {
+      return `${label}.edges[${edgeIndex}] has an invalid path-edge shape`;
+    }
+  }
+  if (!Array.isArray(row.nodes) || row.nodes.length !== row.hops.length) {
+    return `${label}.nodes length must match hops length`;
+  }
+  for (let nodeIndex = 0; nodeIndex < row.nodes.length; nodeIndex += 1) {
+    if (!validPathNode(row.nodes[nodeIndex], row.hops[nodeIndex])) {
+      return `${label}.nodes[${nodeIndex}] has an invalid path-node shape`;
+    }
+  }
+  if (!validCountBucket(row.byRelation)) {
+    return `${label}.byRelation must be an object of non-negative integer counts`;
+  }
+  if (sumCountBucket(row.byRelation) !== row.edges.length) {
+    return `${label}.byRelation total must equal edge count`;
+  }
+  return null;
+}
+
+function validUndirectedPathEdge(edge, a, b) {
+  return validPathEdge(edge, a, b) || validPathEdge(edge, b, a);
+}
+
+function validFrontierRow(row) {
+  return Boolean(
+    isPlainObject(row)
+    && validCount(row.distance)
+    && validCount(row.frontierNodes)
+    && validCount(row.candidateEdges)
+    && validCount(row.newNodes)
+  );
+}
+
+function validQueryPlanExecution(execution, targetOperation) {
+  return Boolean(
+    isPlainObject(execution)
+    && typeof execution.shouldRun === 'boolean'
+    && QUERY_PLAN_NEXT_STEPS.has(execution.nextStep)
+    && hasNonEmptyString(execution.recommendation)
+    && validPlannedQuery(execution.suggestedQuery, targetOperation)
+    && (execution.saferQuery === undefined || validPlannedQuery(execution.saferQuery, targetOperation))
+    && ((execution.shouldRun && execution.nextStep === 'run') || (!execution.shouldRun && execution.nextStep !== 'run'))
+  );
+}
+
+function validPlannedQuery(query, targetOperation) {
+  return Boolean(
+    isPlainObject(query)
+    && query.operation === targetOperation
+  );
+}
+
+function validAllPathsEvidence(evidence, result) {
+  return Boolean(
+    isPlainObject(evidence)
+    && ALL_PATHS_EVIDENCE_STATUSES.has(evidence.status)
+    && ALL_PATHS_EVIDENCE_REASONS.has(evidence.reason)
+    && evidence.totalPathsExact === result.totalPathsExact
+    && typeof evidence.pathsComplete === 'boolean'
+    && ALL_PATHS_EVIDENCE_NEXT_STEPS.has(evidence.nextStep)
+    && hasNonEmptyString(evidence.recommendation)
+    && validAllPathsSuggestedQuery(evidence.suggestedQuery)
+    && (evidence.saferQuery === undefined || validAllPathsSuggestedQuery(evidence.saferQuery))
+    && ((evidence.pathsComplete && evidence.status === 'complete' && evidence.nextStep === 'use')
+      || (!evidence.pathsComplete && evidence.status === 'partial' && evidence.nextStep === 'narrow'))
+  );
+}
+
+function validAllPathsSuggestedQuery(query) {
+  if (!isPlainObject(query)) return false;
+  if (query.operation === 'all_paths') return true;
+  return query.operation === 'query_plan' && query.targetOperation === 'all_paths';
+}
+
 function validBacklinkRow(row) {
   return Boolean(
     validNodeSummary(row)
@@ -922,6 +1462,106 @@ function validBlastRadiusEdgeRow(row) {
     && (row.traversedFrom === undefined || hasNonEmptyString(row.traversedFrom))
     && (row.traversedTo === undefined || hasNonEmptyString(row.traversedTo))
     && (row.crossDomain === undefined || typeof row.crossDomain === 'boolean')
+  );
+}
+
+function validRelationCheckRecommendation(recommendation) {
+  return Boolean(
+    isPlainObject(recommendation)
+    && RELATION_CHECK_DECISIONS.has(recommendation.decision)
+    && RELATION_CHECK_RECOMMENDATION_SEVERITIES.has(recommendation.severity)
+    && hasNonEmptyString(recommendation.reason)
+  );
+}
+
+function validAgentRelationDecisionGuide(guide) {
+  if (!Array.isArray(guide)) return false;
+  const seen = new Set();
+  for (const row of guide) {
+    if (
+      !isPlainObject(row)
+      || !RELATION_CHECK_DECISIONS.has(row.decision)
+      || !RELATION_CHECK_RECOMMENDATION_SEVERITIES.has(row.severity)
+      || !hasNonEmptyString(row.meaning)
+    ) {
+      return false;
+    }
+    seen.add(row.decision);
+  }
+  return [...RELATION_CHECK_DECISIONS].every((decision) => seen.has(decision));
+}
+
+function validAgentResultContracts(contracts) {
+  if (!Array.isArray(contracts)) return false;
+  const allPaths = contracts.find((contract) => contract?.operation === 'all_paths');
+  if (!isPlainObject(allPaths)) return false;
+  const requiredFields = [
+    'limit',
+    'searchBudget',
+    'expandedStates',
+    'exhaustive',
+    'truncatedByBudget',
+    'totalPathsExact',
+    'evidence.status',
+    'evidence.reason',
+    'evidence.pathsComplete',
+  ];
+  return Array.isArray(allPaths.mustReport)
+    && requiredFields.every((field) => allPaths.mustReport.includes(field))
+    && Array.isArray(allPaths.partialWhen)
+    && allPaths.partialWhen.some((condition) => /exhaustive=false/.test(condition))
+    && allPaths.partialWhen.some((condition) => /totalPathsExact=false/.test(condition))
+    && allPaths.partialWhen.some((condition) => /evidence\.status=partial/.test(condition))
+    && allPaths.partialWhen.some((condition) => /evidence\.pathsComplete=false/.test(condition))
+    && hasNonEmptyString(allPaths.policy)
+    && /partial evidence/.test(allPaths.policy)
+    && /maxHops\/types/.test(allPaths.policy);
+}
+
+function validRelationCheckEdge(edge) {
+  return Boolean(
+    isPlainObject(edge)
+    && hasNonEmptyString(edge.from)
+    && hasNonEmptyString(edge.to)
+    && hasNonEmptyString(edge.via)
+    && (edge.ref === undefined || hasNonEmptyString(edge.ref))
+    && (edge.resolved === undefined || typeof edge.resolved === 'boolean')
+    && (edge.external === undefined || typeof edge.external === 'boolean')
+  );
+}
+
+function validRelationCheckPattern(pattern, { requireSimilarity = false } = {}) {
+  return Boolean(
+    isPlainObject(pattern)
+    && hasNonEmptyString(pattern.fromKind)
+    && hasNonEmptyString(pattern.relation)
+    && hasNonEmptyString(pattern.toKind)
+    && validCount(pattern.count)
+    && validCount(pattern.resolved ?? 0)
+    && validCount(pattern.external ?? 0)
+    && validCount(pattern.unresolved ?? 0)
+    && (!requireSimilarity || (Number.isFinite(pattern.similarity) && pattern.similarity >= 0))
+    && (pattern.examples === undefined || (
+      Array.isArray(pattern.examples)
+      && pattern.examples.every((example) => (
+        isPlainObject(example)
+        && hasNonEmptyString(example.from)
+        && hasNonEmptyString(example.to)
+        && (example.ref === undefined || hasNonEmptyString(example.ref))
+      ))
+    ))
+  );
+}
+
+function validRelationCheckProposedAction(result) {
+  const action = result.proposedAction;
+  return Boolean(
+    isPlainObject(action)
+    && action.tool === 'add_relation'
+    && isPlainObject(action.args)
+    && action.args.from === result.from
+    && action.args.to === result.to
+    && action.args.type === result.relation
   );
 }
 

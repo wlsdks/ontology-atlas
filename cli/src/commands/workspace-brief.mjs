@@ -183,7 +183,7 @@ function printUsage(stream = process.stderr) {
       `first-contact dashboard: status + hotspots + project_scope 포함 노드 요약 + next actions.\n` +
       `Use --json for repeatable first-contact snapshots such as pnpm dogfood:brief.\n` +
       `Use pnpm dogfood:health first when you only need the fail-closed health gate.\n` +
-      `Use pnpm dogfood:status for the cheap human-readable health + workspace-brief + maintenance queue.\n` +
+      `Use pnpm dogfood:status for the cheap human-readable health + workspace-brief + agent-brief + maintenance queue.\n` +
       `Fail-severity nextActions or failing health checks exit non-zero for shell gates.\n` +
       `Non-JSON output includes HEALTH CHECKS id:status:count coverage and\n` +
       `GROWTH actions/relations/dangling/external/ignoredExternal counts.\n` +

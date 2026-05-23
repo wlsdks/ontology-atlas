@@ -100,6 +100,7 @@ export function dogfoodUsage() {
     "  pnpm dogfood:compile       Fast compile_ontology summary over docs/ontology.",
     "  pnpm dogfood:compile-fix   compile --fix idempotence gate over docs/ontology; changed vaults need pnpm docs-vault:build; success ends with [dogfood:compile-fix] docs/ontology unchanged.",
     "  pnpm dogfood:health        Fail-closed health JSON gate over docs/ontology.",
+    "  pnpm dogfood:agent         Claude Code/Codex agent_brief JSON handoff over docs/ontology.",
     "  pnpm dogfood:brief         First-contact workspace_brief JSON snapshot over docs/ontology.",
     "  pnpm dogfood:growth        growth_plan JSON snapshot over docs/ontology.",
     "  pnpm dogfood:maintenance   maintenance_plan JSON snapshot over docs/ontology.",
@@ -111,7 +112,7 @@ export function dogfoodUsage() {
     "  pnpm test:dogfood:script-refs   Shared help/package-script reference + focused filter parser/wrapper summary contract.",
     "  pnpm test:dogfood:compile-fix   Narrow dogfood compile --fix idempotence runner contract.",
     "  pnpm test:dogfood:status        Narrow dogfood status shortcut runner contract.",
-    "  pnpm test:mcp:registration      Narrow source-checkout .mcp.json/.mcp.json.example registration template contract.",
+    "  pnpm test:mcp:registration      Narrow source-checkout .mcp.json/.mcp.json.example/.codex/config.toml registration template contract.",
     "  pnpm test:mcp:maintenance       Narrow maintenance_plan filter/cursor/resume/work-queue formatter gates.",
     "  pnpm test:mcp:dogfood           Dogfood helper, compile/index gates, tools/list inventory names + annotation coverage, row-label guidance, batch cap gates, invalid-only batch row repair + no-write metadata smoke, strict closest-value and unknown-tool repair summary, vault warning and validate_vault problem gates, first-contact health/growth/sample-shape gates, maintenance work-queue shape + formatter checks, initialize tool-inventory + safety/recovery guidance, destructive dry-run, help/argument/timeout handling, structuredContent, strict relation filters, strict add_relation type-preflight + no-write metadata, strict graph kind filters, stderr warning checks.",
     "  pnpm test:mcp:dogfood:timeout   Narrow dogfood timeout/help retry diagnostics.",
@@ -1939,6 +1940,33 @@ function allPathsShapeFailure(result) {
   if (typeof result.limited !== "boolean") {
     return "all_paths response missing limited flag";
   }
+  if (!Number.isInteger(result.searchBudget) || result.searchBudget < 1) {
+    return "all_paths response missing searchBudget";
+  }
+  if (!Number.isInteger(result.expandedStates) || result.expandedStates < 0) {
+    return "all_paths response missing expandedStates";
+  }
+  if (typeof result.exhaustive !== "boolean") {
+    return "all_paths response missing exhaustive flag";
+  }
+  if (typeof result.truncatedByBudget !== "boolean") {
+    return "all_paths response missing truncatedByBudget flag";
+  }
+  if (typeof result.totalPathsExact !== "boolean") {
+    return "all_paths response missing totalPathsExact flag";
+  }
+  if (result.expandedStates > result.searchBudget) {
+    return `all_paths response exceeded searchBudget — expanded ${result.expandedStates}, budget ${result.searchBudget}`;
+  }
+  if (result.truncatedByBudget && result.exhaustive) {
+    return "all_paths response cannot be both budget-truncated and exhaustive";
+  }
+  if (!result.truncatedByBudget && !result.exhaustive) {
+    return "all_paths response non-exhaustive without budget truncation";
+  }
+  if (result.totalPathsExact !== result.exhaustive) {
+    return "all_paths response totalPathsExact/exhaustive mismatch";
+  }
   if (!Array.isArray(result.paths)) {
     return "all_paths response missing paths array";
   }
@@ -1948,7 +1976,7 @@ function allPathsShapeFailure(result) {
   if (result.paths.length > result.totalPaths) {
     return `all_paths response row count exceeds total — rows ${result.paths.length}, total ${result.totalPaths}`;
   }
-  if (result.limited && result.totalPaths <= result.paths.length) {
+  if (result.limited && !result.truncatedByBudget && result.totalPaths <= result.paths.length) {
     return `all_paths response limited without hidden path — rows ${result.paths.length}, total ${result.totalPaths}`;
   }
   if (!result.limited && result.totalPaths !== result.paths.length) {
@@ -1992,6 +2020,9 @@ function allPathsPlanShapeFailure(result) {
   if (result.normalized.limit !== 25) {
     return `all_paths query_plan default limit mismatch — expected 25, got ${result.normalized.limit}`;
   }
+  if (result.normalized.searchBudget !== 5000) {
+    return `all_paths query_plan default searchBudget mismatch — expected 5000, got ${result.normalized.searchBudget}`;
+  }
   if (result.normalized.from !== "capabilities/mcp-server") {
     return `all_paths query_plan normalized from mismatch — ${result.normalized.from}`;
   }
@@ -2012,6 +2043,30 @@ function allPathsPlanShapeFailure(result) {
   }
   if (!Array.isArray(result.warnings)) {
     return "all_paths query_plan missing warnings array";
+  }
+  const executionFailure = queryPlanExecutionShapeFailure(result.execution, "all_paths", "all_paths query_plan");
+  if (executionFailure) return executionFailure;
+  return null;
+}
+
+function queryPlanExecutionShapeFailure(execution, targetOperation, label) {
+  if (!execution || typeof execution !== "object") {
+    return `${label} missing execution advice`;
+  }
+  if (typeof execution.shouldRun !== "boolean") {
+    return `${label} execution missing shouldRun`;
+  }
+  if (!["run", "narrow", "review"].includes(execution.nextStep)) {
+    return `${label} execution missing nextStep`;
+  }
+  if (typeof execution.recommendation !== "string" || execution.recommendation.trim() === "") {
+    return `${label} execution missing recommendation`;
+  }
+  if (!execution.suggestedQuery || execution.suggestedQuery.operation !== targetOperation) {
+    return `${label} execution missing suggestedQuery`;
+  }
+  if (execution.nextStep === "narrow" && !execution.saferQuery) {
+    return `${label} execution missing saferQuery for narrow advice`;
   }
   return null;
 }
@@ -2429,8 +2484,23 @@ function relationCheckShapeFailure(result) {
   if (!["already_exists", "matches_existing_schema", "new_schema_pattern"].includes(result.verdict)) {
     return `relation_check response unknown verdict — ${result.verdict}`;
   }
+  if (!result.recommendation || typeof result.recommendation !== "object" || Array.isArray(result.recommendation)) {
+    return "relation_check response missing recommendation";
+  }
+  if (!["skip_existing", "review_inverse", "safe_to_add", "review_new_schema"].includes(result.recommendation.decision)) {
+    return `relation_check response unknown recommendation decision — ${result.recommendation.decision}`;
+  }
+  if (!["info", "warn"].includes(result.recommendation.severity)) {
+    return `relation_check response unknown recommendation severity — ${result.recommendation.severity}`;
+  }
+  if (typeof result.recommendation.reason !== "string" || result.recommendation.reason.length === 0) {
+    return "relation_check recommendation missing reason";
+  }
   if (!Array.isArray(result.matchingEdges)) {
     return "relation_check response missing matchingEdges array";
+  }
+  if (!Array.isArray(result.inverseEdges)) {
+    return "relation_check response missing inverseEdges array";
   }
   if (result.exists && result.matchingEdges.length === 0) {
     return "relation_check exists without matchingEdges";
@@ -2472,6 +2542,19 @@ function relationCheckShapeFailure(result) {
     }
     if (edge.from !== result.from || edge.to !== result.to || edge.via !== result.relation) {
       return `relation_check matching edge mismatch at index ${index}`;
+    }
+  }
+  for (const [index, edge] of result.inverseEdges.entries()) {
+    if (!edge || typeof edge !== "object" || Array.isArray(edge)) {
+      return `relation_check malformed inverse edge at index ${index}`;
+    }
+    for (const key of ["from", "to", "via"]) {
+      if (typeof edge[key] !== "string" || edge[key].length === 0) {
+        return `relation_check inverse edge missing ${key} at index ${index}`;
+      }
+    }
+    if (edge.from !== result.to || edge.to !== result.from || edge.via !== result.relation) {
+      return `relation_check inverse edge mismatch at index ${index}`;
     }
   }
   return null;

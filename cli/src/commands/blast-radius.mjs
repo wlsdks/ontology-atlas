@@ -3,7 +3,14 @@
 // MCP `query_ontology({operation: 'blast_radius'})` thin wrapper.
 
 import { callMcpTool } from '../lib/mcp-call.mjs';
-import { assertBlastRadiusShape } from '../lib/query-result-contract.mjs';
+import {
+  assertBlastRadiusShape,
+  assertQueryPlanShape,
+} from '../lib/query-result-contract.mjs';
+import {
+  printQueryPlan,
+  shouldBlockPlannedExecution,
+} from '../lib/query-plan-output.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import { formatAllowedValueError } from '../lib/suggestions.mjs';
 import {
@@ -15,7 +22,7 @@ import {
 } from '../lib/cli-args.mjs';
 
 const DEPTH_CAP = 20;
-const ALLOWED_FLAGS = ['--vault', '--json', '--depth', '--direction'];
+const ALLOWED_FLAGS = ['--vault', '--json', '--depth', '--direction', '--plan', '--force'];
 const DIRECTION_VALUES = Object.freeze(['incoming', 'outgoing', 'both']);
 
 const COLORS = {
@@ -44,7 +51,7 @@ const RISK_COLORS = {
 };
 
 export async function runBlastRadius(args) {
-  const { slug, vault, json, depth, direction, error, help } = parseArgs(args);
+  const { slug, vault, json, depth, direction, plan: shouldPlan, force, error, help } = parseArgs(args);
   if (help) {
     printUsage(process.stdout);
     return 0;
@@ -55,14 +62,37 @@ export async function runBlastRadius(args) {
     return 1;
   }
   const vaultRoot = resolveVaultRoot(vault);
+  let plan = null;
   let result;
   try {
-    result = await callMcpTool(vaultRoot, 'query_ontology', {
+    const query = {
       operation: 'blast_radius',
       slug,
       depth,
       direction,
-    });
+    };
+    if (shouldPlan) {
+      plan = await callMcpTool(vaultRoot, 'query_ontology', {
+        ...query,
+        operation: 'query_plan',
+        targetOperation: 'blast_radius',
+      });
+      assertQueryPlanShape(plan, 'blast_radius');
+      if (shouldBlockPlannedExecution(plan) && !force) {
+        if (json) {
+          process.stdout.write(JSON.stringify({ plan, skipped: true }, null, 2) + '\n');
+        } else {
+          printQueryPlan(plan, COLORS, {
+            fallbackHint: 'narrow depth/direction or inspect node_profile first',
+          });
+          process.stdout.write(
+            `\n${COLORS.yellow}skipped${COLORS.reset} blast_radius blocked by query_plan. Re-run with --force to execute anyway.\n`,
+          );
+        }
+        return 1;
+      }
+    }
+    result = await callMcpTool(vaultRoot, 'query_ontology', query);
     assertBlastRadiusShape(result);
   } catch (err) {
     process.stderr.write(
@@ -71,8 +101,13 @@ export async function runBlastRadius(args) {
     return 2;
   }
   if (json) {
-    process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+    process.stdout.write(JSON.stringify(plan ? { plan, result } : result, null, 2) + '\n');
     return 0;
+  }
+  if (plan) {
+    printQueryPlan(plan, COLORS, {
+      fallbackHint: 'narrow depth/direction or inspect node_profile first',
+    });
   }
   render(result, slug);
   return 0;
@@ -124,6 +159,8 @@ function parseArgs(args) {
   const flags = {
     vault: null,
     json: false,
+    plan: false,
+    force: false,
     depth: undefined,
     direction: 'incoming',
   };
@@ -133,6 +170,8 @@ function parseArgs(args) {
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
+    else if (a === '--plan') flags.plan = true;
+    else if (a === '--force') flags.force = true;
     else if (a === '--depth') flags.depth = parseBoundedNonNegativeIntegerFlag('--depth', args[++i], { max: DEPTH_CAP });
     else if (a.startsWith('--depth=')) flags.depth = parseBoundedNonNegativeIntegerFlag('--depth', a.slice('--depth='.length), { max: DEPTH_CAP });
     else if (a === '--direction') flags.direction = parseRequiredFlagValue('--direction', args[++i]);
@@ -156,6 +195,8 @@ function parseArgs(args) {
     slug: positional[0],
     vault: vaultResult.vault,
     json: flags.json,
+    plan: flags.plan,
+    force: flags.force,
     depth: flags.depth,
     direction: flags.direction,
   };
@@ -163,8 +204,9 @@ function parseArgs(args) {
 
 function printUsage(stream = process.stderr) {
   stream.write(
-    `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology blast-radius <slug> [vault] [--depth N] [--direction incoming|outgoing|both] [--json]\n\n` +
-      `default depth 2, --depth range 0-${DEPTH_CAP}, direction incoming (이 노드를 의존하는 무엇).\n`,
+      `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
+      `  oh-my-ontology blast-radius <slug> [vault] [--depth N] [--direction incoming|outgoing|both] [--plan] [--force] [--json]\n\n` +
+      `default depth 2, --depth range 0-${DEPTH_CAP}, direction incoming (이 노드를 의존하는 무엇).\n` +
+      `Use --plan to run query_plan(blast_radius) first; expensive or warning plans skip execution unless --force is passed.\n`,
   );
 }

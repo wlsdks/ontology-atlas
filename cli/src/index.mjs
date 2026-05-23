@@ -88,6 +88,10 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --kind X --exclude-kinds A,B --json    ${COLORS.dim}filter / skip / machine output${COLORS.reset}
   npx oh-my-ontology path <from> <to>         Shortest path (BFS) with relation type per hop
        --max-hops N --json                    ${COLORS.dim}default 5${COLORS.reset}
+  npx oh-my-ontology all-paths <from> <to>    Bounded simple paths + completeness evidence
+       --max-hops N --limit N --search-budget N --types A,B --json
+  npx oh-my-ontology relation-check <from> <to> <type>
+                                             ${COLORS.dim}schema-aware add_relation preflight${COLORS.reset}
   npx oh-my-ontology query "<filter>"         Typed filter DSL (kind=X AND has(elements))
        --limit N --json                       ${COLORS.dim}default limit 100${COLORS.reset}
   npx oh-my-ontology compile [vault]         Deterministic graph compile + optional reorder
@@ -102,6 +106,8 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --max-hops N --json                    ${COLORS.dim}default maxDepth 8${COLORS.reset}
   npx oh-my-ontology health [vault]           Graph 무결성 dashboard (5 checks)
        --json --component-types A,B          ${COLORS.dim}focused diagnosis tuning 지원${COLORS.reset}
+  npx oh-my-ontology agent-brief [vault]      Claude Code/Codex handoff — readiness + first MCP calls
+       --json --dependency-types A,B         ${COLORS.dim}agent_brief tuning forwarding${COLORS.reset}
   npx oh-my-ontology workspace-brief [vault]  Status + hotspots + project_scope 포함 노드 + next actions 한 화면
        --json --dependency-types A,B         ${COLORS.dim}health/workspace_brief tuning forwarding${COLORS.reset}
   npx oh-my-ontology growth [vault]           Growth candidates from MCP growth_plan

@@ -15,7 +15,7 @@ import {
 const LIMIT_CAP = 500;
 const ALLOWED_FLAGS = ['--vault', '--json', '--limit'];
 const GRAPH_OPERATION_HINT =
-  'query is the typed filter DSL; for graph operations use dedicated commands such as overview, health, workspace-brief, growth, maintenance, path, blast-radius, cycles, or hubs.';
+  'query is the typed filter DSL; for graph operations use dedicated commands such as overview, health, agent-brief, workspace-brief, growth, maintenance, path, relation-check, blast-radius, cycles, or hubs.';
 
 const COLORS = {
   green: '\x1b[32m',

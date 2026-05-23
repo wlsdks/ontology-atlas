@@ -8,6 +8,7 @@ import { closestDogfoodOption, stripLeadingPnpmSeparator } from './lib/dogfood-a
 const STATUS_COMMANDS = [
   { label: 'health', args: ['cli/src/index.mjs', 'health', 'docs/ontology'] },
   { label: 'workspace-brief', args: ['cli/src/index.mjs', 'workspace-brief', 'docs/ontology'] },
+  { label: 'agent-brief', args: ['cli/src/index.mjs', 'agent-brief', 'docs/ontology'] },
   { label: 'maintenance', args: ['cli/src/index.mjs', 'maintenance', 'docs/ontology'] },
 ];
 export function runDogfoodStatus({
@@ -95,6 +96,7 @@ export function dogfoodStatusFocusedFailureHint(results = []) {
   const hints = [];
   if (failedLabels.has('health')) hints.push('pnpm dogfood:health');
   if (failedLabels.has('workspace-brief')) hints.push('pnpm dogfood:brief');
+  if (failedLabels.has('agent-brief')) hints.push('pnpm dogfood:agent');
   if (failedLabels.has('maintenance')) hints.push('pnpm dogfood:maintenance', 'pnpm test:mcp:maintenance');
   if (hints.length === 0) return '';
   return `[dogfood:status] focused follow-up: ${hints.join(' · ')}`;
@@ -105,13 +107,14 @@ export function dogfoodStatusUsage() {
   pnpm dogfood:status
   pnpm dogfood:status -- --help
 
-Runs the cheap human-readable health + workspace-brief + maintenance queue over
+Runs the cheap human-readable health + workspace-brief + agent-brief + maintenance queue over
 this repo's docs/ontology vault, prints a final child status summary, and
 preserves the first failing exit code.
 On failure it prints:
   [dogfood:status] focused follow-up: <failed child gate shortcuts>
     health -> pnpm dogfood:health
     workspace-brief -> pnpm dogfood:brief
+    agent-brief -> pnpm dogfood:agent
     maintenance -> pnpm dogfood:maintenance · pnpm test:mcp:maintenance
   ${dogfoodStatusFailureHint()}
 `;

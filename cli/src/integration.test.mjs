@@ -343,7 +343,8 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, /path — elements\/example → project \(1 hop, 1 edge\)/);
     assert.match(clean, /project_scope/);
     assert.match(clean, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
-    assert.match(clean, /structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 11\/11/);
+    assert.match(clean, /all_paths — elements\/example → project/);
+    assert.match(clean, /structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 13\/13/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -404,7 +405,8 @@ await test('mcp-verify — verifies maintenance cursor resume when actions exist
     assert.match(clean, /maintenance cursor — resume afterActionId advanced \(maint_[a-f0-9]{8}; 0 remaining actions/);
     assert.match(clean, /query_concepts limited — 1 query result \/ 2 total query results \(limited true\)/);
     assert.match(clean, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
-    assert.match(clean, /structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 11\/11/);
+    assert.match(clean, /all_paths — core → project/);
+    assert.match(clean, /structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 13\/13/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -462,7 +464,7 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /Usage:/);
   assert.match(clean, /server boot/);
   assert.match(clean, /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
-  assert.match(clean, /tools\/list inventory names, schema strictness, and annotation coverage/);
+  assert.match(clean, /tools\/list inventory names, tools\/list schema strictness, and annotation coverage/);
   assert.match(clean, /get_concept/);
   assert.match(clean, /get_concepts/);
   assert.match(clean, /find_evidence\/find_backlinks\/query_concepts\/limited query_concepts\/analyze_repo_structure\/infer_imports/);
@@ -474,8 +476,8 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /validate_vault\.scanned stays file-level health/);
   assert.match(clean, /Successful output prints read census consistency/);
   assert.match(clean, /compile_ontology summary \+ paginated full-artifact \+ indexed full-artifact smoke/);
-  assert.match(clean, /neighbors\/node-to-project path\/project_scope graph-query smoke/);
-  assert.match(clean, /tools\/list inventory names, schema strictness/);
+  assert.match(clean, /neighbors\/node-to-project path\/all_paths\/project_scope graph-query smoke/);
+  assert.match(clean, /tools\/list inventory names, tools\/list schema strictness/);
   assert.match(clean, /annotation coverage \(title\/read\/write\/destructive\/idempotent\/local-only\)/);
   assert.match(clean, /destructive writer dry-runs with every planned response present and no changed\/postWriteMaintenance/);
   assert.match(clean, /patch_concept stale expected_mtime conflict guard rejection with vault_conflict/);
@@ -503,14 +505,14 @@ await test('mcp-verify --help — describes the full graph-query smoke contract'
   assert.match(clean, /pnpm test:dogfood:args\s+Narrow dogfood shortcut argument helper contract/);
   assert.match(clean, /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference \+ focused filter parser\/wrapper summary contract/);
   assert.match(clean, /pnpm test:dogfood:compile-fix\s+Narrow dogfood compile --fix idempotence runner contract/);
-  assert.match(clean, /pnpm test:mcp:registration\s+Narrow source-checkout .mcp.json\/.mcp.json.example registration template contract/);
+  assert.match(clean, /pnpm test:mcp:registration\s+Narrow source-checkout .mcp.json\/.mcp.json.example\/.codex\/config.toml registration template contract/);
   assert.match(clean, /pnpm dogfood:health\s+Root checkout dogfood vault health gate/);
   assert.match(clean, /pnpm dogfood:brief\s+Root checkout dogfood vault workspace_brief snapshot/);
   assert.match(clean, /pnpm dogfood:growth\s+Root checkout dogfood vault growth_plan JSON snapshot/);
   assert.match(clean, /pnpm dogfood:maintenance\s+Root checkout dogfood vault maintenance_plan JSON snapshot/);
   assert.match(
     clean,
-    /pnpm dogfood:status\s+Root checkout dogfood vault human-readable health \+ brief \+ maintenance; ends with \[dogfood:status\] health:N · workspace-brief:N · maintenance:N and focused hints before pnpm dogfood:verify on failure/,
+    /pnpm dogfood:status\s+Root checkout dogfood vault human-readable health \+ brief \+ agent handoff \+ maintenance; ends with \[dogfood:status\] health:N · workspace-brief:N · agent-brief:N · maintenance:N and focused hints before pnpm dogfood:verify on failure/,
   );
   assert.match(clean, /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
   assert.match(clean, /pnpm dogfood:verify\s+Root checkout dogfood vault verify shortcut/);
@@ -2355,6 +2357,367 @@ await test('path --json — fails closed on malformed find_path payloads before 
   }
 });
 
+await test('all-paths — bounded alternatives with completeness evidence', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'all-paths',
+      'capabilities/bar',
+      'capabilities/foo',
+      root,
+      '--max-hops=3',
+      '--limit=5',
+      '--search-budget=1000',
+      '--types=relates',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /all_paths maxHops=3 limit=5 searchBudget=1000/);
+    assert.match(clean, /evidence complete/);
+    assert.match(clean, /pathsComplete=true/);
+    assert.match(clean, /totalPathsExact=true/);
+    assert.match(clean, /capabilities\/bar — Bar/);
+    assert.match(clean, /capabilities\/foo — Foo/);
+    assert.match(clean, /via relates/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('all-paths --json — exposes raw all_paths completeness contract', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'all-paths',
+      'capabilities/bar',
+      'capabilities/foo',
+      root,
+      '--max-hops',
+      '3',
+      '--limit',
+      '5',
+      '--search-budget',
+      '1000',
+      '--json',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'all_paths');
+    assert.equal(data.found, true);
+    assert.equal(data.limit, 5);
+    assert.equal(data.searchBudget, 1000);
+    assert.equal(data.totalPathsExact, true);
+    assert.equal(data.evidence.pathsComplete, true);
+    assert.ok(Array.isArray(data.paths));
+    assert.ok(data.paths.length >= 1);
+    assert.ok(Array.isArray(data.paths[0].nodes));
+    assert.ok(Array.isArray(data.paths[0].edges));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('all-paths --plan — blocks expensive enumeration unless forced', async () => {
+  const root = withVault([
+    {
+      slug: 'capabilities/start',
+      content: [
+        '---',
+        'kind: capability',
+        'slug: capabilities/start',
+        'title: Start',
+        `dependencies: [${Array.from({ length: 20 }, (_, index) => `capabilities/mid-${index}`).join(', ')}]`,
+        '---',
+        '',
+        '# Start',
+      ].join('\n'),
+    },
+    {
+      slug: 'capabilities/target',
+      content: '---\nkind: capability\nslug: capabilities/target\ntitle: Target\n---\n\n# Target\n',
+    },
+    ...Array.from({ length: 20 }, (_, index) => ({
+      slug: `capabilities/mid-${index}`,
+      content: `---\nkind: capability\nslug: capabilities/mid-${index}\ntitle: Mid ${index}\ndependencies: [capabilities/target]\n---\n\n# Mid ${index}\n`,
+    })),
+  ]);
+  try {
+    const planned = await run([
+      'all-paths',
+      'capabilities/start',
+      'capabilities/target',
+      root,
+      '--plan',
+      '--max-hops=4',
+      '--limit=100',
+    ]);
+    assert.equal(planned.code, 1, `stdout: ${planned.stdout}\nstderr: ${planned.stderr}`);
+    const clean = stripAnsi(planned.stdout);
+    assert.match(clean, /query_plan narrow/);
+    assert.match(clean, /strategy=bounded_path_enumeration/);
+    assert.match(clean, /skipped enumeration blocked by query_plan/);
+    assert.doesNotMatch(clean, /#1/);
+
+    const forced = await run([
+      'all-paths',
+      'capabilities/start',
+      'capabilities/target',
+      root,
+      '--plan',
+      '--force',
+      '--max-hops=4',
+      '--limit=100',
+    ]);
+    assert.equal(forced.code, 0, `stdout: ${forced.stdout}\nstderr: ${forced.stderr}`);
+    const forcedClean = stripAnsi(forced.stdout);
+    assert.match(forcedClean, /query_plan narrow/);
+    assert.match(forcedClean, /all_paths maxHops=4 limit=100/);
+    assert.match(forcedClean, /#1/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('all-paths --plan --json — returns plan-only skipped payload for expensive traversals', async () => {
+  const root = withVault([
+    {
+      slug: 'capabilities/start',
+      content: [
+        '---',
+        'kind: capability',
+        'slug: capabilities/start',
+        'title: Start',
+        `dependencies: [${Array.from({ length: 20 }, (_, index) => `capabilities/mid-${index}`).join(', ')}]`,
+        '---',
+        '',
+        '# Start',
+      ].join('\n'),
+    },
+    {
+      slug: 'capabilities/target',
+      content: '---\nkind: capability\nslug: capabilities/target\ntitle: Target\n---\n\n# Target\n',
+    },
+    ...Array.from({ length: 20 }, (_, index) => ({
+      slug: `capabilities/mid-${index}`,
+      content: `---\nkind: capability\nslug: capabilities/mid-${index}\ntitle: Mid ${index}\ndependencies: [capabilities/target]\n---\n\n# Mid ${index}\n`,
+    })),
+  ]);
+  try {
+    const r = await run([
+      'all-paths',
+      'capabilities/start',
+      'capabilities/target',
+      root,
+      '--plan',
+      '--max-hops=4',
+      '--limit=100',
+      '--json',
+    ]);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.skipped, true);
+    assert.equal(data.plan.operation, 'query_plan');
+    assert.equal(data.plan.targetOperation, 'all_paths');
+    assert.equal(data.plan.execution.shouldRun, false);
+    assert.equal(data.result, undefined);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('all-paths --plan — blocks warning-only traversal unless forced', async () => {
+  const root = withVault([
+    {
+      slug: 'capabilities/start',
+      content: [
+        '---',
+        'kind: capability',
+        'slug: capabilities/start',
+        'title: Start',
+        'dependencies: [capabilities/mid-a, capabilities/mid-b, capabilities/mid-c]',
+        '---',
+        '',
+        '# Start',
+      ].join('\n'),
+    },
+    {
+      slug: 'capabilities/target',
+      content: '---\nkind: capability\nslug: capabilities/target\ntitle: Target\n---\n\n# Target\n',
+    },
+    ...['a', 'b', 'c'].map((suffix) => ({
+      slug: `capabilities/mid-${suffix}`,
+      content: `---\nkind: capability\nslug: capabilities/mid-${suffix}\ntitle: Mid ${suffix}\ndependencies: [capabilities/target]\n---\n\n# Mid ${suffix}\n`,
+    })),
+  ]);
+  try {
+    const planned = await run([
+      'all-paths',
+      'capabilities/start',
+      'capabilities/target',
+      root,
+      '--plan',
+      '--max-hops=2',
+      '--limit=1',
+      '--search-budget=1000',
+    ]);
+    assert.equal(planned.code, 1, `stdout: ${planned.stdout}\nstderr: ${planned.stderr}`);
+    const clean = stripAnsi(planned.stdout);
+    assert.match(clean, /query_plan review/);
+    assert.match(clean, /warnings=1/);
+    assert.match(clean, /may be truncated by limit/);
+    assert.match(clean, /skipped enumeration blocked by query_plan/);
+    assert.doesNotMatch(clean, /#1/);
+
+    const forced = await run([
+      'all-paths',
+      'capabilities/start',
+      'capabilities/target',
+      root,
+      '--plan',
+      '--force',
+      '--max-hops=2',
+      '--limit=1',
+      '--search-budget=1000',
+    ]);
+    assert.equal(forced.code, 0, `stdout: ${forced.stdout}\nstderr: ${forced.stderr}`);
+    const forcedClean = stripAnsi(forced.stdout);
+    assert.match(forcedClean, /query_plan review/);
+    assert.match(forcedClean, /all_paths maxHops=2 limit=1/);
+    assert.match(forcedClean, /#1/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('all-paths --json — disconnected nodes exit non-zero with completeness metadata', async () => {
+  const root = withVault([
+    {
+      slug: 'capabilities/a',
+      content: '---\nkind: capability\nslug: capabilities/a\ntitle: A\n---\n\n# A\n',
+    },
+    {
+      slug: 'capabilities/b',
+      content: '---\nkind: capability\nslug: capabilities/b\ntitle: B\n---\n\n# B\n',
+    },
+  ]);
+  try {
+    const r = await run(['all-paths', 'capabilities/a', 'capabilities/b', root, '--json']);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'all_paths');
+    assert.equal(data.found, false);
+    assert.equal(data.totalPaths, 0);
+    assert.equal(data.evidence.pathsComplete, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('all-paths --json — fails closed on malformed all_paths payloads before output', async () => {
+  const root = withVault();
+  const fakeMcp = join(root, 'fake-mcp-all-paths-malformed.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
+      "  if (msg.id === 2) {",
+      "    const payload = { operation: 'all_paths', from: 'a', to: 'b', found: true, direction: 'undirected', maxHops: 2, limit: 10, searchBudget: 1000, expandedStates: 2, exhaustive: true, truncatedByBudget: false, totalPaths: 1, totalPathsExact: true, limited: false, shortestHopCount: 1, byLength: { 1: 1 }, evidence: { status: 'complete', reason: 'complete', totalPathsExact: true, pathsComplete: true, nextStep: 'use', recommendation: 'ok', suggestedQuery: { operation: 'all_paths' } }, paths: [{ hopCount: 1, hops: ['a', 'b'], nodes: [{ slug: 'a', kind: 'capability', title: 'A' }, { slug: 'b', kind: 'capability', title: 'B' }], edges: [], byRelation: {} }] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['all-paths', 'a', 'b', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /all_paths paths\[0\]\.edges length must match hops length/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('relation-check — prints schema preflight and proposed add_relation action', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['relation-check', 'capabilities/foo', 'capabilities/bar', 'relates', root]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /matches_existing_schema/);
+    assert.match(clean, /recommendation/);
+    assert.match(clean, /review_inverse/);
+    assert.match(clean, /capabilities\/foo --relates--> capabilities\/bar/);
+    assert.match(clean, /schema\s+capability --relates--> capability/);
+    assert.match(clean, /inverse edges/);
+    assert.match(clean, /capabilities\/bar --relates--> capabilities\/foo/);
+    assert.match(clean, /proposed add_relation/);
+    assert.match(clean, /"from":"capabilities\/foo"/);
+    assert.match(clean, /"to":"capabilities\/bar"/);
+    assert.match(clean, /"type":"relates"/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('relation-check --json — exposes raw MCP relation_check contract', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['relation-check', 'capabilities/foo', 'capabilities/bar', 'relates', root, '--json']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'relation_check');
+    assert.equal(data.exists, false);
+    assert.equal(data.verdict, 'matches_existing_schema');
+    assert.equal(data.recommendation.decision, 'review_inverse');
+    assert.equal(data.recommendation.severity, 'warn');
+    assert.deepEqual(data.proposedAction, {
+      tool: 'add_relation',
+      args: { from: 'capabilities/foo', to: 'capabilities/bar', type: 'relates' },
+    });
+    assert.deepEqual(
+      data.inverseEdges.map((edge) => `${edge.from}->${edge.to}:${edge.via}`),
+      ['capabilities/bar->capabilities/foo:relates'],
+    );
+    assert.ok(Array.isArray(data.nearbyPatterns));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('relation-check --json — fails closed on malformed relation_check payloads before output', async () => {
+  const root = withVault();
+  const fakeMcp = join(root, 'fake-mcp-relation-check-malformed.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
+      "  if (msg.id === 2) {",
+      "    const payload = { operation: 'relation_check', from: 'a', to: 'b', relation: 'depends_on', fromKind: 'capability', toKind: 'capability', exists: false, verdict: 'matches_existing_schema', recommendation: { decision: 'safe_to_add', severity: 'info', reason: 'ok' }, matchingEdges: [], inverseEdges: [], schemaPattern: null, nearbyPatterns: [] };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['relation-check', 'a', 'b', 'depends_on', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /relation_check missing edge must include add_relation proposedAction/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('path — 두 인자 누락 시 usage + exit 1', async () => {
   const r = await run(['path', 'only-one']);
   assert.equal(r.code, 1);
@@ -2382,6 +2745,50 @@ await test('read-only graph commands — reject ambiguous vault arguments before
     {
       args: ['path', 'capabilities/foo', 'capabilities/bar', 'ontology', '--vault', 'docs/ontology'],
       pattern: /either positional argument or --vault/,
+    },
+    {
+      args: ['all-paths', 'capabilities/foo', 'capabilities/bar', '--vault='],
+      pattern: /--vault requires a path/,
+    },
+    {
+      args: ['all-paths', 'capabilities/foo', 'capabilities/bar', 'ontology', '--vault', 'docs/ontology'],
+      pattern: /either positional argument or --vault/,
+    },
+    {
+      args: ['all-paths', 'capabilities/foo', 'capabilities/bar', '--max-hops=21'],
+      pattern: /--max-hops must be <= 20/,
+    },
+    {
+      args: ['all-paths', 'capabilities/foo', 'capabilities/bar', '--limit=501'],
+      pattern: /--limit must be <= 500/,
+    },
+    {
+      args: ['all-paths', 'capabilities/foo', 'capabilities/bar', '--search-budget=50001'],
+      pattern: /--search-budget must be <= 50000/,
+    },
+    {
+      args: ['all-paths', 'capabilities/foo', 'capabilities/bar', '--types=depend_on'],
+      pattern: /--types items must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
+    },
+    {
+      args: ['all-paths', 'capabilities/foo', 'capabilities/bar', '--jsson'],
+      pattern: /unknown flag: --jsson\. Did you mean --json\?/,
+    },
+    {
+      args: ['relation-check', 'capabilities/foo', 'domains/auth'],
+      pattern: /<from>, <to>, and <type> are required/,
+    },
+    {
+      args: ['relation-check', 'capabilities/foo', 'domains/auth', 'depend_on'],
+      pattern: /type must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
+    },
+    {
+      args: ['relation-check', 'capabilities/foo', 'domains/auth', 'domain', 'ontology', '--vault', 'docs/ontology'],
+      pattern: /either positional argument or --vault/,
+    },
+    {
+      args: ['relation-check', 'capabilities/foo', 'domains/auth', 'domain', '--jsson'],
+      pattern: /unknown flag: --jsson\. Did you mean --json\?/,
     },
     {
       args: ['orphans', '--vault', '--json'],
@@ -2445,6 +2852,18 @@ await test('read-only graph commands — reject ambiguous vault arguments before
     },
     {
       args: ['health', '-json'],
+      pattern: /unknown flag: -json\. Did you mean --json\?/,
+    },
+    {
+      args: ['agent-brief', 'ontology', '--vault', 'docs/ontology'],
+      pattern: /either positional argument or --vault/,
+    },
+    {
+      args: ['agent-brief', '--jsson'],
+      pattern: /unknown flag: --jsson\. Did you mean --json\?/,
+    },
+    {
+      args: ['agent-brief', '-json'],
       pattern: /unknown flag: -json\. Did you mean --json\?/,
     },
     {
@@ -2860,7 +3279,7 @@ await test('query — rejects MCP graph operation flags with CLI command guidanc
     const clean = stripAnsi(r.stderr);
     assert.match(clean, /unknown flag: --operation\./);
     assert.match(clean, /query is the typed filter DSL/);
-    assert.match(clean, /overview, health, workspace-brief, growth, maintenance, path, blast-radius, cycles, or hubs/);
+    assert.match(clean, /overview, health, agent-brief, workspace-brief, growth, maintenance, path, relation-check, blast-radius, cycles, or hubs/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -2988,6 +3407,23 @@ await test('blast-radius — affected node rows include node titles for scanabil
     assert.match(clean, /affected nodes/);
     assert.match(clean, /capabilities\/bar\s+— Bar/);
     assert.match(clean, /domains\/auth\s+— Auth/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('blast-radius --plan --json — returns query_plan evidence with result payload', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['blast-radius', 'capabilities/foo', root, '--plan', '--depth=1', '--json']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.plan.operation, 'query_plan');
+    assert.equal(data.plan.targetOperation, 'blast_radius');
+    assert.equal(data.plan.normalized.targetOperation, 'blast_radius');
+    assert.equal(data.plan.execution.shouldRun, true);
+    assert.equal(data.result.operation, 'blast_radius');
+    assert.equal(data.result.center, 'capabilities/foo');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3154,7 +3590,7 @@ await test('workspace-brief --help — documents health and growth output', asyn
   const clean = stripAnsi(r.stdout);
   assert.match(clean, /Use --json for repeatable first-contact snapshots such as pnpm dogfood:brief/);
   assert.match(clean, /Use pnpm dogfood:health first when you only need the fail-closed health gate/);
-  assert.match(clean, /Use pnpm dogfood:status for the cheap human-readable health \+ workspace-brief \+ maintenance queue/);
+  assert.match(clean, /Use pnpm dogfood:status for the cheap human-readable health \+ workspace-brief \+ agent-brief \+ maintenance queue/);
   assert.match(clean, /Fail-severity nextActions or failing health checks exit non-zero for shell gates/);
   assert.match(clean, /project_scope 포함 노드 요약/);
   assert.match(clean, /HEALTH CHECKS id:status:count/);
@@ -3163,6 +3599,132 @@ await test('workspace-brief --help — documents health and growth output', asyn
   assert.match(clean, /--dependency-types A,B/);
   assert.match(clean, /--component-types A,B/);
   assert.match(clean, /Tuning flags forward to query_ontology workspace_brief/);
+});
+
+await test('agent-brief — prints agent handoff entrypoints and playbooks', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['agent-brief', root]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(r.stdout, /\x1b\[32mhealthy\x1b\[0m/);
+    assert.match(clean, /agent brief/);
+    assert.match(clean, /readiness ready 100\/100/);
+    assert.match(clean, /HANDOFF PROMPT/);
+    assert.match(clean, /\.handoffPrompt/);
+    assert.match(clean, /ENTRYPOINTS/);
+    assert.match(clean, /capabilities\/foo\s+— Foo|domains\/auth\s+— Auth/);
+    assert.match(clean, /FIRST MCP CALLS/);
+    assert.match(clean, /query_ontology\(\{"operation":"workspace_brief"/);
+    assert.match(clean, /PLAYBOOKS/);
+    assert.match(clean, /refactor_impact/);
+    assert.match(clean, /evidence:/);
+    assert.match(clean, /stop if:/);
+    assert.match(clean, /TRAVERSAL STRATEGY/);
+    assert.match(clean, /plan_before_enumeration/);
+    assert.match(clean, /bounded_path_evidence/);
+    assert.match(clean, /containment_cross_check/);
+    assert.match(clean, /WRITE GUARDRAILS/);
+    assert.match(clean, /preflight_relation/);
+    assert.match(clean, /find_backlinks/);
+    assert.match(clean, /RELATION DECISION GUIDE/);
+    assert.match(clean, /review_inverse/);
+    assert.match(clean, /review_new_schema/);
+    assert.match(clean, /RESULT CONTRACTS/);
+    assert.match(clean, /all_paths\s+report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence\.status, evidence\.reason, evidence\.pathsComplete/);
+    assert.match(clean, /partial evidence/);
+    assert.match(clean, /WRITE POLICY/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-brief --json — forwards focused diagnosis tuning flags', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'agent-brief',
+      root,
+      '--json',
+      '--component-types=dependencies',
+      '--dependency-types',
+      'dependencies',
+      '--component-limit=2',
+      '--node-limit=1',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'agent_brief');
+    assert.equal(data.readiness.status, 'ready');
+    assert.ok(data.writeGuardrails.some((guardrail) => guardrail.id === 'preflight_rename'));
+    assert.ok(data.writeGuardrails.some((guardrail) => guardrail.calls.some((call) => call.tool === 'validate_vault')));
+    assert.deepEqual(data.relationDecisionGuide.map((row) => row.decision), [
+      'skip_existing',
+      'review_inverse',
+      'safe_to_add',
+      'review_new_schema',
+    ]);
+    assert.deepEqual(data.traversalStrategy.map((row) => row.id), [
+      'plan_before_enumeration',
+      'bounded_path_evidence',
+      'containment_cross_check',
+    ]);
+    assert.match(data.handoffPrompt, /Traversal strategy/);
+    assert.ok(data.traversalStrategy[1].evidence.some((row) => /evidence\.pathsComplete/.test(row)));
+    assert.deepEqual(data.resultContracts[0].operation, 'all_paths');
+    assert.deepEqual(data.resultContracts[0].mustReport, [
+      'limit',
+      'searchBudget',
+      'expandedStates',
+      'exhaustive',
+      'truncatedByBudget',
+      'totalPathsExact',
+      'evidence.status',
+      'evidence.reason',
+      'evidence.pathsComplete',
+    ]);
+    const components = data.health.checks.find((check) => check.id === 'components');
+    assert.equal(components.status, 'info');
+    assert.equal(components.count, 3);
+    assert.match(components.message, /scoped ontology graph/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-brief --prompt — prints only the copyable handoff prompt', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['agent-brief', root, '--prompt']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /^Use the oh-my-ontology MCP server/);
+    assert.match(clean, /Run these first-contact MCP calls in order:/);
+    assert.match(clean, /Investigation playbooks:/);
+    assert.match(clean, /Traversal strategy:/);
+    assert.match(clean, /plan_before_enumeration/);
+    assert.match(clean, /Write guardrails:/);
+    assert.match(clean, /Result contracts:/);
+    assert.match(clean, /totalPathsExact/);
+    assert.match(clean, /relation_check/);
+    assert.match(clean, /add_relation/);
+    assert.doesNotMatch(clean, /agent brief healthy/);
+    assert.doesNotMatch(clean, /^ENTRYPOINTS/m);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-brief --help — documents handoff and exit gates', async () => {
+  const r = await run(['agent-brief', '--help']);
+  assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+  const clean = stripAnsi(r.stdout);
+  assert.match(clean, /Claude Code\/Codex handoff/);
+  assert.match(clean, /traversal strategy/);
+  assert.match(clean, /Use --json for repeatable agent handoff snapshots/);
+  assert.match(clean, /use --prompt to print only \.handoffPrompt/);
+  assert.match(clean, /Exits non-zero when readiness is not ready/);
+  assert.match(clean, /Tuning flags forward to query_ontology agent_brief/);
 });
 
 await test('growth --json — exposes growth_plan candidate groups', async () => {
@@ -3352,7 +3914,7 @@ await test('health --json — unhealthy graph exits non-zero', async () => {
   }
 });
 
-await test('health/workspace-brief --json — fail closed on malformed diagnosis payloads', async () => {
+await test('health/agent-brief/workspace-brief --json — fail closed on malformed diagnosis payloads', async () => {
   const root = withVault();
   const fakeMcp = join(root, 'fake-mcp-diagnosis-malformed.mjs');
   writeFileSync(
@@ -3365,9 +3927,10 @@ await test('health/workspace-brief --json — fail closed on malformed diagnosis
       "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
       "  if (msg.id === 2) {",
       "    const operation = msg.params.arguments.operation;",
-      "    const payload = operation === 'health'",
-      "      ? { operation: 'health', status: 'healthy', summary: { nodes: 1, edges: 0 }, checks: [{ id: 'compile_issues', status: 'pass' }] }",
-      "      : { operation: 'workspace_brief', status: 'healthy', summary: { nodes: 1, edges: 0 }, nextActions: [{ kind: 'cleanup', severity: 'fatal' }], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] } };",
+      "    let payload;",
+      "    if (operation === 'health') payload = { operation: 'health', status: 'healthy', summary: { nodes: 1, edges: 0 }, checks: [{ id: 'compile_issues', status: 'pass' }] };",
+      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, handoffPrompt: 'Use the oh-my-ontology MCP server. Run these first-contact MCP calls in order. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
+      "    else payload = { operation: 'workspace_brief', status: 'healthy', summary: { nodes: 1, edges: 0 }, nextActions: [{ kind: 'cleanup', severity: 'fatal' }], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
       "});",
@@ -3379,6 +3942,11 @@ await test('health/workspace-brief --json — fail closed on malformed diagnosis
     assert.equal(health.code, 2, `stdout: ${health.stdout}\nstderr: ${health.stderr}`);
     assert.equal(health.stdout, '');
     assert.match(stripAnsi(health.stderr), /health checks\[0\] has an invalid health-check shape/);
+
+    const agent = await run(['agent-brief', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(agent.code, 2, `stdout: ${agent.stdout}\nstderr: ${agent.stderr}`);
+    assert.equal(agent.stdout, '');
+    assert.match(stripAnsi(agent.stderr), /agent_brief firstCalls\[0\] has an invalid tool-call shape/);
 
     const brief = await run(['workspace-brief', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
     assert.equal(brief.code, 2, `stdout: ${brief.stdout}\nstderr: ${brief.stderr}`);
@@ -3412,7 +3980,7 @@ await test('health --help — documents focused diagnosis tuning flags', async (
   assert.match(clean, /--component-limit N/);
   assert.match(clean, /Use --json for repeatable automation gates such as pnpm dogfood:health/);
   assert.match(clean, /Failing health checks exit non-zero; use workspace-brief when you also need hotspots and next actions/);
-  assert.match(clean, /Use pnpm dogfood:status for the cheap human-readable health \+ workspace-brief \+ maintenance queue/);
+  assert.match(clean, /Use pnpm dogfood:status for the cheap human-readable health \+ workspace-brief \+ agent-brief \+ maintenance queue/);
   assert.match(clean, /Tuning flags forward to query_ontology health/);
 });
 
@@ -3442,10 +4010,18 @@ await test('health --json — forwards focused diagnosis tuning flags', async ()
   }
 });
 
-await test('health/workspace-brief — reject malformed diagnosis tuning flags', async () => {
+await test('health/agent-brief/workspace-brief — reject malformed diagnosis tuning flags', async () => {
   const missing = await run(['health', '--component-types']);
   assert.equal(missing.code, 1);
   assert.match(stripAnsi(missing.stderr), /--component-types requires a value/);
+
+  const missingAgent = await run(['agent-brief', '--dependency-types']);
+  assert.equal(missingAgent.code, 1);
+  assert.match(stripAnsi(missingAgent.stderr), /--dependency-types requires a value/);
+
+  const conflictingAgentOutput = await run(['agent-brief', '--json', '--prompt']);
+  assert.equal(conflictingAgentOutput.code, 1);
+  assert.match(stripAnsi(conflictingAgentOutput.stderr), /--json and --prompt cannot be used together/);
 
   const emptyTypes = await run(['workspace-brief', '--dependency-types=,']);
   assert.equal(emptyTypes.code, 1);

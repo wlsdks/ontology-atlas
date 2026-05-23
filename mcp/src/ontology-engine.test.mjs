@@ -200,7 +200,29 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.operation, 'all_paths');
     assert.equal(result.found, true);
     assert.equal(result.totalPaths, 2);
+    assert.equal(result.totalPathsExact, true);
+    assert.equal(result.exhaustive, true);
+    assert.equal(result.truncatedByBudget, false);
+    assert.equal(result.searchBudget, 5000);
+    assert.equal(result.limit, 25);
     assert.equal(result.shortestHopCount, 2);
+    assert.deepEqual(result.evidence, {
+      status: 'complete',
+      reason: 'complete',
+      totalPathsExact: true,
+      pathsComplete: true,
+      nextStep: 'use',
+      recommendation: 'Safe to treat paths and totalPaths as complete for the requested bounds.',
+      suggestedQuery: {
+        operation: 'all_paths',
+        from: 'capabilities/session',
+        to: 'domains/auth',
+        direction: 'undirected',
+        maxHops: 3,
+        limit: 25,
+        searchBudget: 5000,
+      },
+    });
     assert.deepEqual(result.byLength, { 2: 2 });
     assert.deepEqual(
       result.paths.map((row) => ({
@@ -241,8 +263,13 @@ describe('queryCompiledOntology', () => {
       limit: 4,
     });
     assert.equal(exactLimit.totalPaths, 4);
+    assert.equal(exactLimit.totalPathsExact, true);
+    assert.equal(exactLimit.exhaustive, true);
     assert.equal(exactLimit.limited, false);
     assert.equal(exactLimit.paths.length, 4);
+    assert.equal(exactLimit.evidence.status, 'complete');
+    assert.equal(exactLimit.evidence.reason, 'complete');
+    assert.equal(exactLimit.evidence.pathsComplete, true);
 
     const truncated = queryCompiledOntology(branchingGraph, {
       operation: 'all_paths',
@@ -254,6 +281,34 @@ describe('queryCompiledOntology', () => {
     assert.equal(truncated.totalPaths, 4);
     assert.equal(truncated.limited, true);
     assert.equal(truncated.paths.length, 2);
+    assert.equal(truncated.evidence.status, 'partial');
+    assert.equal(truncated.evidence.reason, 'limit');
+    assert.equal(truncated.evidence.totalPathsExact, true);
+    assert.equal(truncated.evidence.pathsComplete, false);
+    assert.equal(truncated.evidence.nextStep, 'narrow');
+    assert.equal(truncated.evidence.suggestedQuery.operation, 'query_plan');
+    assert.equal(truncated.evidence.saferQuery.operation, 'all_paths');
+    assert.equal(truncated.evidence.saferQuery.limit, 2);
+
+    const budgeted = queryCompiledOntology(branchingGraph, {
+      operation: 'all_paths',
+      from: 'a',
+      to: 'd',
+      maxHops: 2,
+      limit: 4,
+      searchBudget: 2,
+    });
+    assert.equal(budgeted.searchBudget, 2);
+    assert.equal(budgeted.expandedStates, 2);
+    assert.equal(budgeted.truncatedByBudget, true);
+    assert.equal(budgeted.exhaustive, false);
+    assert.equal(budgeted.totalPathsExact, false);
+    assert.equal(budgeted.limited, true);
+    assert.equal(budgeted.evidence.status, 'partial');
+    assert.equal(budgeted.evidence.reason, 'search_budget');
+    assert.equal(budgeted.evidence.totalPathsExact, false);
+    assert.equal(budgeted.evidence.pathsComplete, false);
+    assert.equal(budgeted.evidence.saferQuery.searchBudget, 2);
   });
 
   it('plans bounded graph queries before execution', () => {
@@ -283,6 +338,20 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.estimate.edgeScans, 4);
     assert.equal(result.estimate.reachableWithinDepth, 2);
     assert.equal(result.estimate.costClass, 'low');
+    assert.deepEqual(result.execution, {
+      shouldRun: true,
+      nextStep: 'run',
+      recommendation: 'Run suggestedQuery as planned.',
+      suggestedQuery: {
+        operation: 'path',
+        from: 'capabilities/session',
+        to: 'domains/auth',
+        direction: 'undirected',
+        maxHops: 3,
+        limit: 100,
+        types: ['dependencies'],
+      },
+    });
     assert.deepEqual(result.estimate.frontierByDepth, [
       { distance: 1, frontierNodes: 1, candidateEdges: 1, newNodes: 1 },
       { distance: 2, frontierNodes: 1, candidateEdges: 2, newNodes: 1 },
@@ -297,6 +366,7 @@ describe('queryCompiledOntology', () => {
       maxHops: 3,
     });
     assert.equal(allPathsPlan.normalized.limit, 25);
+    assert.equal(allPathsPlan.normalized.searchBudget, 5000);
 
     const projectMapPlan = queryCompiledOntology(artifact(), {
       operation: 'query_plan',
@@ -306,7 +376,69 @@ describe('queryCompiledOntology', () => {
     assert.equal(projectMapPlan.operation, 'query_plan');
     assert.equal(projectMapPlan.targetOperation, 'project_map');
     assert.equal(projectMapPlan.estimate.strategy, 'aggregate_scan');
+    assert.deepEqual(projectMapPlan.execution, {
+      shouldRun: true,
+      nextStep: 'run',
+      recommendation: 'Run suggestedQuery as planned.',
+      suggestedQuery: {
+        operation: 'project_map',
+        limit: 5,
+      },
+    });
     assert.deepEqual(projectMapPlan.indexesUsed, ['compiled_artifact']);
+  });
+
+  it('returns a safer executable query when query_plan detects expensive traversal', () => {
+    const denseDocs = [
+      doc('domains/root', { kind: 'domain', title: 'Root' }),
+      doc('capabilities/start', {
+        kind: 'capability',
+        title: 'Start',
+        dependencies: Array.from({ length: 20 }, (_, index) => `capabilities/mid-${index}`),
+      }),
+      doc('capabilities/target', { kind: 'capability', title: 'Target' }),
+      ...Array.from({ length: 20 }, (_, index) =>
+        doc(`capabilities/mid-${index}`, {
+          kind: 'capability',
+          title: `Mid ${index}`,
+          dependencies: ['capabilities/target'],
+        }),
+      ),
+    ];
+    const graph = compileOntology(denseDocs, { includeIndexes: true });
+
+    const result = queryCompiledOntology(graph, {
+      operation: 'query_plan',
+      targetOperation: 'all_paths',
+      from: 'capabilities/start',
+      to: 'capabilities/target',
+      maxHops: 4,
+      limit: 100,
+    });
+
+    assert.equal(result.estimate.costClass, 'high');
+    assert.equal(result.execution.shouldRun, false);
+    assert.equal(result.execution.nextStep, 'narrow');
+    assert.match(result.execution.recommendation, /Narrow the query/);
+    assert.deepEqual(result.execution.suggestedQuery, {
+      operation: 'all_paths',
+      from: 'capabilities/start',
+      to: 'capabilities/target',
+      direction: 'undirected',
+      maxHops: 4,
+      searchBudget: 5000,
+      limit: 100,
+    });
+    assert.deepEqual(result.execution.saferQuery, {
+      operation: 'all_paths',
+      from: 'capabilities/start',
+      to: 'capabilities/target',
+      direction: 'undirected',
+      maxHops: 3,
+      searchBudget: 1000,
+      limit: 10,
+      types: ['depends_on', 'relates'],
+    });
   });
 
   it('ranks graph centrality for core nodes and bridges', () => {
@@ -1427,8 +1559,27 @@ describe('queryCompiledOntology', () => {
     assert.equal(existing.relation, 'dependencies');
     assert.equal(existing.exists, true);
     assert.equal(existing.verdict, 'already_exists');
+    assert.equal(existing.recommendation.decision, 'skip_existing');
+    assert.equal(existing.recommendation.severity, 'info');
     assert.equal(existing.schemaPattern.count, 1);
     assert.equal(existing.matchingEdges.length, 1);
+    assert.deepEqual(existing.inverseEdges, []);
+    assert.equal(existing.proposedAction, null);
+
+    const inverse = queryCompiledOntology(artifact(), {
+      operation: 'relation_check',
+      from: 'auth-domain',
+      to: 'capabilities/login',
+      type: 'depends_on',
+    });
+    assert.equal(inverse.exists, false);
+    assert.equal(inverse.verdict, 'new_schema_pattern');
+    assert.equal(inverse.recommendation.decision, 'review_inverse');
+    assert.equal(inverse.recommendation.severity, 'warn');
+    assert.deepEqual(
+      inverse.inverseEdges.map((edge) => `${edge.from}->${edge.to}:${edge.via}`),
+      ['capabilities/login->domains/auth:dependencies'],
+    );
 
     const schemaMatch = queryCompiledOntology(artifact(), {
       operation: 'relation_check',
@@ -1438,7 +1589,21 @@ describe('queryCompiledOntology', () => {
     });
     assert.equal(schemaMatch.exists, false);
     assert.equal(schemaMatch.verdict, 'matches_existing_schema');
+    assert.equal(schemaMatch.recommendation.decision, 'safe_to_add');
     assert.equal(schemaMatch.schemaPattern.toKind, 'domain');
+    assert.deepEqual(schemaMatch.proposedAction, {
+      tool: 'add_relation',
+      args: {
+        from: 'capabilities/session',
+        to: 'domains/auth',
+        type: 'depends_on',
+      },
+    });
+    assert.ok(
+      schemaMatch.nearbyPatterns.some(
+        (pattern) => pattern.relation === 'dependencies' && pattern.toKind === 'capability',
+      ),
+    );
 
     const newPattern = queryCompiledOntology(artifact(), {
       operation: 'relation_check',
@@ -1448,7 +1613,18 @@ describe('queryCompiledOntology', () => {
     });
     assert.equal(newPattern.exists, false);
     assert.equal(newPattern.verdict, 'new_schema_pattern');
+    assert.equal(newPattern.recommendation.decision, 'review_new_schema');
+    assert.equal(newPattern.recommendation.severity, 'warn');
     assert.equal(newPattern.schemaPattern, null);
+    assert.deepEqual(newPattern.proposedAction, {
+      tool: 'add_relation',
+      args: {
+        from: 'domains/auth',
+        to: 'capabilities/session',
+        type: 'relates',
+      },
+    });
+    assert.ok(newPattern.nearbyPatterns.every((pattern) => pattern.similarity > 0));
   });
 
   it('rejects typoed relation_check relation types with nearest-value hints', () => {
@@ -1470,6 +1646,102 @@ describe('queryCompiledOntology', () => {
       }),
       /type must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
     );
+  });
+
+  it('includes relation preflight in the agent_brief handoff', () => {
+    const result = queryCompiledOntology(artifact(), { operation: 'agent_brief' });
+    const relationCall = result.firstCalls.find((call) => call.arguments.operation === 'relation_check');
+
+    assert.match(result.handoffPrompt, /oh-my-ontology MCP server/);
+    assert.match(result.handoffPrompt, /first-contact MCP calls/i);
+    assert.match(result.handoffPrompt, /Investigation playbooks/);
+    assert.match(result.handoffPrompt, /Traversal strategy/);
+    assert.match(result.handoffPrompt, /plan_before_enumeration/);
+    assert.match(result.handoffPrompt, /Write guardrails/);
+    assert.match(result.handoffPrompt, /Result contracts/);
+    assert.match(result.handoffPrompt, /totalPathsExact/);
+    assert.match(result.handoffPrompt, /relation_check/);
+    assert.match(result.handoffPrompt, /add_relation/);
+    assert.ok(relationCall);
+    assert.equal(relationCall.tool, 'query_ontology');
+    assert.deepEqual(relationCall.arguments, {
+      operation: 'relation_check',
+      from: 'capabilities/login',
+      to: 'domains/auth',
+      type: 'depends_on',
+    });
+
+    const refactorPlaybook = result.playbooks.find((playbook) => playbook.id === 'refactor_impact');
+    const traversalPlaybook = result.playbooks.find((playbook) => playbook.id === 'graph_traversal');
+    assert.ok(refactorPlaybook);
+    assert.ok(refactorPlaybook.evidence.some((item) => item.includes('blast radius')));
+    assert.ok(refactorPlaybook.stopWhen.some((item) => item.includes('relation_check')));
+    assert.deepEqual(refactorPlaybook.calls.at(-1), relationCall);
+    assert.ok(traversalPlaybook);
+    assert.ok(traversalPlaybook.evidence.some((item) => item.includes('all_paths')));
+    assert.ok(traversalPlaybook.stopWhen.some((item) => item.includes('query_plan')));
+    assert.deepEqual(traversalPlaybook.calls.map((call) => call.arguments.operation), [
+      'schema',
+      'query_plan',
+      'all_paths',
+      'pattern_walk',
+      'project_map',
+    ]);
+    assert.equal(traversalPlaybook.calls[1].arguments.targetOperation, 'all_paths');
+    assert.equal(traversalPlaybook.calls[1].arguments.searchBudget, 1000);
+    assert.equal(traversalPlaybook.calls[2].arguments.searchBudget, 1000);
+    assert.equal(traversalPlaybook.calls[3].arguments.slug, '<project-slug>');
+    assert.deepEqual(traversalPlaybook.calls[3].arguments.pattern, ['domains', 'capabilities']);
+    const relationGuardrail = result.writeGuardrails.find((guardrail) => guardrail.id === 'preflight_relation');
+    const renameGuardrail = result.writeGuardrails.find((guardrail) => guardrail.id === 'preflight_rename');
+    const syncGuardrail = result.writeGuardrails.find((guardrail) => guardrail.id === 'post_change_sync');
+    assert.ok(relationGuardrail);
+    assert.deepEqual(relationGuardrail.calls[0], relationCall);
+    assert.ok(renameGuardrail);
+    assert.deepEqual(renameGuardrail.calls[0], {
+      tool: 'find_backlinks',
+      arguments: { slug: 'capabilities/login' },
+    });
+    assert.ok(syncGuardrail);
+    assert.deepEqual(syncGuardrail.calls.at(-1), {
+      tool: 'validate_vault',
+      arguments: {},
+    });
+    assert.deepEqual(result.traversalStrategy.map((strategy) => strategy.id), [
+      'plan_before_enumeration',
+      'bounded_path_evidence',
+      'containment_cross_check',
+    ]);
+    assert.deepEqual(result.traversalStrategy[0].calls[0].arguments, traversalPlaybook.calls[1].arguments);
+    assert.deepEqual(result.traversalStrategy[1].calls[0].arguments, traversalPlaybook.calls[2].arguments);
+    assert.ok(result.traversalStrategy[1].evidence.some((item) => item.includes('evidence.pathsComplete')));
+    assert.ok(result.traversalStrategy[1].stopWhen.some((item) => item.includes('evidence.saferQuery')));
+    assert.deepEqual(result.relationDecisionGuide.map((row) => row.decision), [
+      'skip_existing',
+      'review_inverse',
+      'safe_to_add',
+      'review_new_schema',
+    ]);
+    assert.ok(result.relationDecisionGuide.some((row) => row.decision === 'review_inverse' && row.severity === 'warn'));
+    assert.deepEqual(result.resultContracts[0].operation, 'all_paths');
+    assert.deepEqual(result.resultContracts[0].mustReport, [
+      'limit',
+      'searchBudget',
+      'expandedStates',
+      'exhaustive',
+      'truncatedByBudget',
+      'totalPathsExact',
+      'evidence.status',
+      'evidence.reason',
+      'evidence.pathsComplete',
+    ]);
+    assert.ok(result.resultContracts[0].partialWhen.includes('totalPathsExact=false'));
+    assert.ok(result.resultContracts[0].partialWhen.includes('evidence.status=partial'));
+    assert.match(result.resultContracts[0].policy, /partial evidence/);
+    assert.ok(result.writePolicy.some((line) => line.includes('relation_check before add_relation')));
+    assert.ok(result.writePolicy.some((line) => line.includes('all_paths') && line.includes('totalPathsExact')));
+    assert.ok(result.writePolicy.some((line) => line.includes('relationDecisionGuide')));
+    assert.ok(result.writePolicy.some((line) => line.includes('find_backlinks before rename_concept')));
   });
 
   it('matches compiled nodes by graph-derived attributes', () => {

@@ -110,7 +110,7 @@ function printUsage(stream = process.stderr) {
       `pass=healthy / warn=info-only / fail=blocking. exit 0 만 healthy.\n` +
       `Use --json for repeatable automation gates such as pnpm dogfood:health.\n` +
       `Failing health checks exit non-zero; use workspace-brief when you also need hotspots and next actions.\n` +
-      `Use pnpm dogfood:status for the cheap human-readable health + workspace-brief + maintenance queue.\n` +
+      `Use pnpm dogfood:status for the cheap human-readable health + workspace-brief + agent-brief + maintenance queue.\n` +
       `Tuning flags forward to query_ontology health for focused diagnostics.\n`,
   );
 }

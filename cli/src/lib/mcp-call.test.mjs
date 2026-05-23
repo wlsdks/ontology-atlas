@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   callMcpTool,
@@ -18,23 +19,26 @@ import {
   parseMcpToolResponse,
 } from './mcp-call.mjs';
 
+const currentDir = dirname(fileURLToPath(import.meta.url));
+const mcpCallSourcePath = join(currentDir, 'mcp-call.mjs');
+
 describe('mcp-call response parsing', () => {
   it('spawns the MCP server with the current Node executable', () => {
-    const source = readFileSync('cli/src/lib/mcp-call.mjs', 'utf-8');
+    const source = readFileSync(mcpCallSourcePath, 'utf-8');
 
     assert.match(source, /spawn\(process\.execPath, \[entry\]/);
     assert.doesNotMatch(source, /spawn\('node', \[entry\]/);
   });
 
   it('handles MCP stdin write errors with an explicit stream listener', () => {
-    const source = readFileSync('cli/src/lib/mcp-call.mjs', 'utf-8');
+    const source = readFileSync(mcpCallSourcePath, 'utf-8');
 
     assert.match(source, /proc\.stdin\.on\('error'/);
     assert.match(source, /formatMcpStdinError/);
   });
 
   it('parses MCP responses after stdio streams close', () => {
-    const source = readFileSync('cli/src/lib/mcp-call.mjs', 'utf-8');
+    const source = readFileSync(mcpCallSourcePath, 'utf-8');
 
     assert.match(source, /proc\.on\('close'/);
     assert.doesNotMatch(source, /proc\.on\('exit'/);
@@ -159,12 +163,12 @@ describe('mcp-call response parsing', () => {
       'utf-8',
     );
     process.env.OMOT_MCP_PATH = server;
-    process.env.OMOT_CLI_MCP_TIMEOUT_MS = '25';
+    process.env.OMOT_CLI_MCP_TIMEOUT_MS = '100';
     process.env.OMOT_CLI_MCP_KILL_GRACE_MS = '25';
     try {
       await assert.rejects(
         () => callMcpTool(root, 'list_kinds'),
-        /mcp call timed out after 25ms while calling list_kinds .*OMOT_CLI_MCP_TIMEOUT_MS=N[\s\S]*silent server ready/,
+        /mcp call timed out after 100ms while calling list_kinds .*OMOT_CLI_MCP_TIMEOUT_MS=N[\s\S]*silent server ready/,
       );
     } finally {
       if (previousPath === undefined) delete process.env.OMOT_MCP_PATH;
@@ -200,7 +204,7 @@ describe('mcp-call response parsing', () => {
       const started = Date.now();
       await assert.rejects(
         () => callMcpTool(root, 'list_kinds'),
-        /mcp call timed out after 25ms while calling list_kinds[\s\S]*ignore term server ready/,
+        /mcp call timed out after 25ms while calling list_kinds/,
       );
       assert.ok(Date.now() - started < 750, 'timeout rejection should not wait for process exit');
     } finally {

@@ -27,12 +27,13 @@ describe('dogfood status shortcut', () => {
 
     assert.equal(exitCode, 0);
     assert.match(output.join(''), /pnpm dogfood:status/);
-    assert.match(output.join(''), /health \+ workspace-brief \+ maintenance queue/);
+    assert.match(output.join(''), /health \+ workspace-brief \+ agent-brief \+ maintenance queue/);
     assert.match(output.join(''), /final child status summary/);
     assert.match(output.join(''), /On failure it prints:/);
     assert.match(output.join(''), /\[dogfood:status\] focused follow-up: <failed child gate shortcuts>/);
     assert.match(output.join(''), /health -> pnpm dogfood:health/);
     assert.match(output.join(''), /workspace-brief -> pnpm dogfood:brief/);
+    assert.match(output.join(''), /agent-brief -> pnpm dogfood:agent/);
     assert.match(output.join(''), /maintenance -> pnpm dogfood:maintenance · pnpm test:mcp:maintenance/);
     assert.match(output.join(''), new RegExp(dogfoodStatusFailureHint().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
     assert.equal(output.join(''), dogfoodStatusUsage());
@@ -71,7 +72,7 @@ describe('dogfood status shortcut', () => {
     assert.equal(dogfoodStatusArgSuggestion('docs/ontology'), null);
   });
 
-  it('runs workspace-brief and maintenance even when health fails and preserves the first non-zero exit', () => {
+  it('runs workspace-brief, agent-brief, and maintenance even when health fails and preserves the first non-zero exit', () => {
     const calls = [];
     const output = [];
     const diagnostics = [];
@@ -87,15 +88,16 @@ describe('dogfood status shortcut', () => {
     });
 
     assert.equal(exitCode, 1);
-    assert.equal(calls.length, 3);
+    assert.equal(calls.length, 4);
     assert.deepEqual(calls.map((call) => call.args.slice(1)), [
       ['health', 'docs/ontology'],
       ['workspace-brief', 'docs/ontology'],
+      ['agent-brief', 'docs/ontology'],
       ['maintenance', 'docs/ontology'],
     ]);
     assert.equal(calls[0].options.cwd, '/repo');
     assert.equal(calls[0].options.stdio, 'inherit');
-    assert.deepEqual(output, ['[dogfood:status] health:1 · workspace-brief:0 · maintenance:0\n']);
+    assert.deepEqual(output, ['[dogfood:status] health:1 · workspace-brief:0 · agent-brief:0 · maintenance:0\n']);
     assert.deepEqual(diagnostics, [
       '[dogfood:status] focused follow-up: pnpm dogfood:health\n',
       '[dogfood:status] run pnpm dogfood:verify for the full installed-style dogfood vault gate\n',
@@ -115,7 +117,7 @@ describe('dogfood status shortcut', () => {
     });
 
     assert.equal(exitCode, 0);
-    assert.deepEqual(output, ['[dogfood:status] health:0 · workspace-brief:0 · maintenance:0\n']);
+    assert.deepEqual(output, ['[dogfood:status] health:0 · workspace-brief:0 · agent-brief:0 · maintenance:0\n']);
     assert.deepEqual(diagnostics, []);
   });
 
@@ -134,8 +136,8 @@ describe('dogfood status shortcut', () => {
     });
 
     assert.equal(exitCode, 2);
-    assert.equal(calls.length, 3);
-    assert.deepEqual(output, ['[dogfood:status] health:0 · workspace-brief:2 · maintenance:0\n']);
+    assert.equal(calls.length, 4);
+    assert.deepEqual(output, ['[dogfood:status] health:0 · workspace-brief:2 · agent-brief:0 · maintenance:0\n']);
     assert.deepEqual(diagnostics, [
       '[dogfood:status] focused follow-up: pnpm dogfood:brief\n',
       '[dogfood:status] run pnpm dogfood:verify for the full installed-style dogfood vault gate\n',
@@ -156,8 +158,8 @@ describe('dogfood status shortcut', () => {
     });
 
     assert.equal(exitCode, 2);
-    assert.equal(calls.length, 3);
-    assert.deepEqual(output, ['[dogfood:status] health:0 · workspace-brief:2 · maintenance:0\n']);
+    assert.equal(calls.length, 4);
+    assert.deepEqual(output, ['[dogfood:status] health:0 · workspace-brief:2 · agent-brief:0 · maintenance:0\n']);
     assert.deepEqual(diagnostics, [
       '[dogfood:status] focused follow-up: pnpm dogfood:brief\n',
       '[dogfood:status] run pnpm dogfood:verify for the full installed-style dogfood vault gate\n',
@@ -181,8 +183,8 @@ describe('dogfood status shortcut', () => {
     });
 
     assert.equal(exitCode, 1);
-    assert.equal(calls.length, 3);
-    assert.deepEqual(output, ['[dogfood:status] health:1 · workspace-brief:1 · maintenance:0\n']);
+    assert.equal(calls.length, 4);
+    assert.deepEqual(output, ['[dogfood:status] health:1 · workspace-brief:1 · agent-brief:0 · maintenance:0\n']);
     assert.deepEqual(diagnostics, [
       '[dogfood:status] node cli/src/index.mjs health docs/ontology terminated by SIGTERM\n',
       '[dogfood:status] node cli/src/index.mjs workspace-brief docs/ontology failed to start: spawn failed\n',
@@ -204,9 +206,10 @@ describe('dogfood status shortcut', () => {
       dogfoodStatusSummary([
         { label: 'health', status: 0 },
         { label: 'workspace-brief', status: 2 },
+        { label: 'agent-brief', status: 0 },
         { label: 'maintenance', status: 0 },
       ]),
-      '[dogfood:status] health:0 · workspace-brief:2 · maintenance:0',
+      '[dogfood:status] health:0 · workspace-brief:2 · agent-brief:0 · maintenance:0',
     );
     assert.equal(
       dogfoodStatusFailureHint(),
@@ -216,9 +219,19 @@ describe('dogfood status shortcut', () => {
       dogfoodStatusFocusedFailureHint([
         { label: 'health', status: 0 },
         { label: 'workspace-brief', status: 0 },
+        { label: 'agent-brief', status: 0 },
         { label: 'maintenance', status: 2 },
       ]),
       '[dogfood:status] focused follow-up: pnpm dogfood:maintenance · pnpm test:mcp:maintenance',
+    );
+    assert.equal(
+      dogfoodStatusFocusedFailureHint([
+        { label: 'health', status: 0 },
+        { label: 'workspace-brief', status: 0 },
+        { label: 'agent-brief', status: 2 },
+        { label: 'maintenance', status: 0 },
+      ]),
+      '[dogfood:status] focused follow-up: pnpm dogfood:agent',
     );
     assert.equal(
       dogfoodStatusFocusedFailureHint([

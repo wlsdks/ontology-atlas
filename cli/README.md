@@ -22,7 +22,7 @@ uses the same Node floor.
 | `oh-my-ontology init [folder]` | Scaffold a new vault (project / domain / capability / element starter .md). **R15+**: also drops a wired `.mcp.json` in *both* cwd (codebase root, `OMOT_VAULT='./<vault>'`) and the vault folder (`OMOT_VAULT='.'`) — open either in an AI agent and the 23 MCP tools auto-register. Existing `.mcp.json` is preserved (`.mcp.json.example` falls back instead). |
 | `oh-my-ontology list [vault]` | List ontology nodes (color table; enum-validated `--kind X` filter with closest-value hints, `--json`) |
 | `oh-my-ontology validate [vault]` | Frontmatter integrity (includes `missing-expected-field`, `non-canonical-graph-array`, and `dangling-graph-reference`; `exit 1` on errors — usable as a CI gate). Same code 가 2+ file 에서 등장하면 끝에 *grouped by code* 요약 섹션이 자동으로 붙어 *어느 종류 경고가 얼마나 많은지* 한눈에 파악. `--fail-on=code,...` accepts explicit policy codes and rejects empty CSV items such as `--fail-on=empty-kind,`. |
-| `oh-my-ontology mcp-verify [vault]` | Runs the installed MCP package verify CLI against the resolved vault: parser smoke, server boot, 23-tool inventory with missing/extra/duplicate/invalid name checks plus tools/list schema strictness and annotation coverage, strict runtime unknown-argument and invalid-enum checks with structured `errorCode` values, stale `patch_concept.expected_mtime` rejection with `vault_conflict`, relation filter / `relation_check` closest-value rejection, destructive dry-run smoke for `rename_concept` / `merge_concepts` / `delete_concept`, write-tool `postWriteMaintenance` `byPhase`/`bySeverity`/`byKind` buckets + `score`/`proposedAction`/next-action guidance, enum-validated `maintenance_plan` filters, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, maintenance bucket / current-page next-action summaries, `list_concepts`, project-node `list_concepts` probe, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and `neighbors`/`path`/`project_scope` graph-query smoke. Use `--timeout-ms N` for large/slow vaults. |
+| `oh-my-ontology mcp-verify [vault]` | Runs the installed MCP package verify CLI against the resolved vault: parser smoke, server boot, 23-tool inventory with missing/extra/duplicate/invalid name checks plus tools/list schema strictness and annotation coverage, strict runtime unknown-argument and invalid-enum checks with structured `errorCode` values, stale `patch_concept.expected_mtime` rejection with `vault_conflict`, relation filter / `relation_check` closest-value rejection, destructive dry-run smoke for `rename_concept` / `merge_concepts` / `delete_concept`, write-tool `postWriteMaintenance` `byPhase`/`bySeverity`/`byKind` buckets + `score`/`proposedAction`/next-action guidance, enum-validated `maintenance_plan` filters, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, maintenance bucket / current-page next-action summaries, `list_concepts`, project-node `list_concepts` probe, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and `neighbors`/`path`/`all_paths`/`project_scope` graph-query smoke. Use `--timeout-ms N` for large/slow vaults. |
 | `oh-my-ontology add <kind> <slug> --title="..."` | Scaffold a new node (`--domain X --body "..." --vault path`); throws on duplicate slug. `kind` is enum-validated with closest-value hints before writing. `slug`, `--title`, and `--domain` must be non-empty strings without leading/trailing whitespace, so bad scalar input fails before writing. Body defaults to a starter only when `--body` is omitted, so `--body=` intentionally writes an empty body. **R15**: `--auto-prefix` is now **default on** (kind→folder, e.g. `add capability foo` → `capabilities/foo.md`) for consistency with the `init` starter layout. Use `--raw-slug` (or `--no-auto-prefix`) to opt out. |
 | `oh-my-ontology find <query> [vault]` | Search slug + title (case-insensitive, enum-validated `--kind X` filter with closest-value hints, `--json`) |
 | `oh-my-ontology import <path...>` | **R14** Import external `.md` into the vault. Reads each file's frontmatter, falls back to enum-validated `--kind K` when missing, derives `slug` from the filename and `title` from the first H1, then writes through the same schema as `add`. Frontmatter `kind` typos and fallback `--kind` typos fail with closest-value hints instead of silently skipping or writing the wrong shape. Options: `--vault path`, `--kind K`, `--auto-prefix` (R15 **default on**, kind→folder), `--raw-slug` (opt out), `--rename` (auto `-2`/`-3` on slug clash), `--dry-run` (preview only). Accepts files or directories (recursive, `.git`/`node_modules` skipped). |
@@ -40,14 +40,17 @@ These wrap the MCP server (`oh-my-ontology-mcp`) so the developer has the same a
 | `oh-my-ontology backlinks <slug>` | Lists every node referencing the target (`matches[]` from MCP `find_backlinks`, `--json` for raw). Malformed backlink-match payloads fail closed before JSON or human output. |
 | `oh-my-ontology overview [vault]` | First-contact graph dashboard from MCP `query_ontology(overview)`: graph counts, kind/domain/relation buckets, and hub rows. Malformed graph/count/hub payloads fail closed before JSON or human output. (`--limit N --json`) |
 | `oh-my-ontology hubs [vault]` | Centrality rankings from MCP `query_ontology(centrality)`: PageRank, bridges, authorities, and hubs. Malformed ranking payloads fail closed before JSON or human output. (`--limit N --json`) |
-| `oh-my-ontology blast-radius <slug> [vault]` | Refactor-safety impact view from MCP `query_ontology(blast_radius)`: risk, affected count buckets, and node/edge pages. Malformed summary/page payloads fail closed before JSON or human output. (`--depth N --direction incoming|outgoing|both --json`) |
+| `oh-my-ontology blast-radius <slug> [vault]` | Refactor-safety impact view from MCP `query_ontology(blast_radius)`: risk, affected count buckets, and node/edge pages. `--plan` runs `query_plan(blast_radius)` first and skips expensive/warning plans unless `--force` is passed, so agents can preflight impact cost before traversal. Malformed plan/summary/page payloads fail closed before JSON or human output. (`--depth N --direction incoming|outgoing|both --plan --force --json`) |
 | `oh-my-ontology node <slug> [vault]` | Single-node deep dive from MCP `query_ontology(node_profile)`: node header, degree, lineage, and incoming/outgoing edge groups. `--types A,B` filters relation groups before `--limit N` tunes edge/lineage/containment rows for hotspot nodes; `--no-external` / `--no-unresolved` hide noisy file refs or dangling refs from edge lists. Malformed node/degree/edge/lineage payloads fail closed before JSON or human output. (`--limit N --types A,B --no-external --no-unresolved --json`) |
 | `oh-my-ontology similar "<query>" [vault]` | Duplicate-avoidance search from MCP `query_ontology(similar_nodes)`: scored matches, signals, and shared neighbors. Malformed match/score/signal payloads fail closed before JSON or human output. (`--slug X --kind K --limit N --json`) |
 | `oh-my-ontology orphans [vault]` | Lists isolated nodes — docs no other node references in their frontmatter (MCP `find_orphans`). Options: enum-validated `--kind X` (filter), enum-validated `--exclude-kinds A,B` (skip; MCP default excludes `project,vault-readme`), `--json`. Malformed orphan-list payloads fail closed before JSON or human output. Quick "what should I clean up" surface for vault maintenance. |
 | `oh-my-ontology path <from> <to> [vault]` | Shortest path (BFS, undirected) between two slugs. Each hop is annotated with the frontmatter key (`capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`) that linked the pair, so you see *why* A and B are connected. Malformed hop/edge payloads fail closed before JSON output. (`--max-hops N --json`) |
+| `oh-my-ontology all-paths <from> <to> [vault]` | Bounded simple path enumeration from MCP `query_ontology(all_paths)`: returns alternative paths plus `limit`, `searchBudget`, `expandedStates`, `exhaustive`, `truncatedByBudget`, `totalPathsExact`, and `evidence.pathsComplete` so agents do not treat partial traversal as proof. `--plan` runs `query_plan(all_paths)` first and skips expensive/warning enumeration unless `--force` is passed. Malformed plan/completeness/path payloads fail closed before JSON or human output. (`--max-hops N --limit N --search-budget N --types A,B --plan --force --json`) |
+| `oh-my-ontology relation-check <from> <to> <type> [vault]` | Schema-aware preflight before `add_relation`, backed by MCP `query_ontology(relation_check)`. Shows whether the exact edge already exists, whether a reverse-direction edge exists, whether the kind/relation pattern is familiar, nearby schema patterns, a recommendation decision (`skip_existing`, `review_inverse`, `safe_to_add`, or `review_new_schema`), and the same `proposedAction` args an agent can pass to `add_relation`. Malformed relation-check payloads fail closed before JSON or human output. (`--json`) |
 | `oh-my-ontology query "<filter>"` | Typed filter DSL — `kind=X AND has(Y) AND NOT domain=Z`, parens / OR / NOT supported. `kind` and `has(...)` graph keys fail closed with closest-value hints. MCP-style `--operation` misuse prints graph-level CLI command guidance instead of a bare unknown flag. Malformed typed-filter result payloads fail closed before JSON or human output. (`--limit N --json`) |
 | `oh-my-ontology growth [vault]` | Inspect MCP `growth_plan` candidates without writing: relation recommendations, external element refs, dangling references, unassigned nodes, empty domains, and ignored external refs. Human output includes action totals, compiled graph counts, candidate reasons, and proposed tool calls. Malformed growth candidate payloads, including kind-specific `proposedAction` mismatches, fail closed before JSON or human output. (`--limit N --json`) |
 | `oh-my-ontology maintenance [vault]` | Inspect MCP `maintenance_plan` cleanup/repair work queue without writing. Human output includes cursor state, active filters, compile/cycle/canonicalize/dangling/relation/external/ignored-external summary counts, phase/severity/kind bucket summaries, and current-page next action pointers with `phase/kind · severity · exec|review` detail. Supports `--limit`, `--after-action-id`, `--executable-only`, `--phases`, `--severities`, `--kinds`, and `--json` for cursor/filter dogfood. Malformed work-queue payloads, filter echo drift, pagination `limited` drift, or compiled-summary drift fail closed before JSON or human output. |
+| `oh-my-ontology agent-brief [vault]` | Claude Code/Codex handoff from MCP `query_ontology(agent_brief)`: readiness score, copyable `handoffPrompt`, graph entrypoints, first MCP calls, investigation playbooks including `graph_traversal` (`schema` / `all_paths` / `pattern_walk` / `project_map`), `traversalStrategy` (`plan_before_enumeration` / `bounded_path_evidence` / `containment_cross_check`), playbook evidence + stop-condition checklists, write guardrails, `relation_check` decision guide, `all_paths` result contracts, health coverage, and read-first write policy. `--prompt` prints only the handoff prompt for direct paste into Claude Code/Codex. Malformed readiness, handoff prompt, tool-call, playbook, traversal strategy, guardrail, result contract, relation decision guide, next-action, or health-check payloads fail closed before JSON or human output. (`--json` plus the same focused diagnosis tuning flags as `health` / `workspace-brief`) |
 | `oh-my-ontology rename <oldSlug> <newSlug>` | Atomic rename — moves the `.md`, updates `slug:`, rewrites every backlink (frontmatter array entries, inline strings, body links). Default dry-run preview; `--confirm` to apply. Refuses an existing target slug unless `--overwrite` is passed. |
 | `oh-my-ontology merge <fromSlug> <intoSlug>` | Atomic merge — redirects every backlink `from → into`, then deletes `from.md`. Default dry-run; `--confirm` to apply. The `into` node's frontmatter / body are **not** auto-combined — edit by hand if needed. |
 | `oh-my-ontology delete <slug>` | Permanent delete. Default refuses if any backlinks remain — preview them with the bare command, then `--confirm` to apply (or `--force` to delete anyway). |
@@ -87,6 +90,7 @@ pnpm test:dogfood:args
 pnpm test:dogfood:script-refs
 pnpm test:dogfood:compile-fix
 pnpm dogfood:health
+pnpm dogfood:agent
 pnpm dogfood:brief
 pnpm dogfood:growth
 pnpm dogfood:maintenance
@@ -116,9 +120,9 @@ first before the aggregate unit gate.
 `integration:cli:entry` narrows CLI entrypoint, help, command inventory, and init contracts.
 `integration:cli:mcp-verify` runs only the installed MCP verification wrapper
 subset inside the spawn-heavy CLI integration file.
-`integration:cli:diagnosis` narrows CLI health / workspace-brief diagnosis contracts.
+`integration:cli:diagnosis` narrows CLI health / agent-brief / workspace-brief diagnosis contracts.
 `integration:cli:graph-read` runs only read-only graph command contracts for
-backlinks, path, orphans, query, overview, hubs, blast-radius, cycles, node, and similar.
+backlinks, path, all-paths, relation-check, orphans, query, overview, hubs, blast-radius, cycles, node, and similar.
 `integration:cli:graph-write` runs only rename/delete/merge dry-run and confirm safety contracts.
 `integration:cli:repo-analysis` runs only analyze / infer-imports / bootstrap code-to-vault contracts.
 `integration:cli:local-vault` runs only add/import/list/find/validate local vault and frontmatter contracts.
@@ -126,7 +130,8 @@ backlinks, path, orphans, query, overview, hubs, blast-radius, cycles, node, and
 `integration:cli:maintenance` runs only the CLI maintenance command and
 maintenance-related installed verify integration cases. `test:mcp:docs` checks
 README and dogfood ontology documentation drift. `test:mcp:registration` checks
-only the tracked source-checkout `.mcp.json` and `.mcp.json.example` templates.
+only the tracked source-checkout `.mcp.json`, `.mcp.json.example`, and
+`.codex/config.toml` templates.
 `test:mcp:package` checks
 package-script, CLI entrypoint, and tarball contract drift without running
 unrelated UI or E2E gates. `test:mcp:maintenance` checks maintenance_plan filter, cursor, resume,
@@ -161,7 +166,7 @@ matched test fails, so the exact scoped test count is visible without
 subtracting skipped tests. File setup/import failures are reported separately as
 `setupFailures=N` instead of inflating the matched-test count.
 `integration:cli:entry` narrows CLI entrypoint, help, command inventory, and init contracts. `integration:cli:compile` narrows CLI compile / `--fix` canonicalization contracts
-without running unrelated CLI routes. `integration:cli:diagnosis` narrows CLI health / workspace-brief diagnosis contracts. `integration:cli:graph-read` narrows read-only graph command contracts. `integration:cli:graph-write` narrows rename/delete/merge safety contracts. `integration:cli:repo-analysis` narrows analyze / infer-imports / bootstrap code-to-vault contracts. `integration:cli:local-vault` narrows local vault add/import/list/find/validate contracts. `integration:cli:growth` narrows the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument contracts. `dogfood:compile`
+without running unrelated CLI routes. `integration:cli:diagnosis` narrows CLI health / agent-brief / workspace-brief diagnosis contracts. `integration:cli:graph-read` narrows read-only graph command contracts. `integration:cli:graph-write` narrows rename/delete/merge safety contracts. `integration:cli:repo-analysis` narrows analyze / infer-imports / bootstrap code-to-vault contracts. `integration:cli:local-vault` narrows local vault add/import/list/find/validate contracts. `integration:cli:growth` narrows the CLI growth_plan wrapper, candidate rendering, malformed payload, and argument contracts. `dogfood:compile`
 is the shortest root-checkout compiler summary JSON snapshot, `dogfood:compile-fix`
 runs root-checkout `compile --fix`, fails if canonicalization leaves a docs/ontology diff,
 points changed-vault failures at `pnpm docs-vault:build`, and ends successful runs
@@ -169,13 +174,14 @@ with `[dogfood:compile-fix] docs/ontology unchanged`,
 `test:dogfood:args` checks shared dogfood shortcut argument helpers without invoking any gate,
 `test:dogfood:script-refs` checks help text and package script body `pnpm ...` references against root package scripts plus focused filter parsing and wrapper summaries,
 `test:dogfood:compile-fix` checks that idempotence guard without invoking the full dogfood suite,
-`dogfood:health` is the shortest root-checkout fail-closed health JSON gate, `dogfood:brief` is
+`dogfood:health` is the shortest root-checkout fail-closed health JSON gate, `dogfood:agent` is
+the shortest Claude Code/Codex handoff JSON snapshot, `dogfood:brief` is
 the shortest root-checkout first-contact JSON snapshot, `dogfood:growth` is the
 shortest root-checkout growth_plan JSON snapshot, `dogfood:maintenance` is the
 shortest root-checkout maintenance_plan JSON snapshot, `dogfood:status` always
-runs health + workspace-brief + maintenance, prints `[dogfood:status] health:N · workspace-brief:N · maintenance:N`,
+runs health + workspace-brief + agent-brief + maintenance, prints `[dogfood:status] health:N · workspace-brief:N · agent-brief:N · maintenance:N`,
 preserves the first failing exit before escalating, and prints failed-child focused
-follow-ups (`pnpm dogfood:health`, `pnpm dogfood:brief`, or `pnpm dogfood:maintenance`
+follow-ups (`pnpm dogfood:health`, `pnpm dogfood:brief`, `pnpm dogfood:agent`, or `pnpm dogfood:maintenance`
 + `pnpm test:mcp:maintenance`) before the `pnpm dogfood:verify` follow-up hint
 on failure, `test:dogfood:status` checks
 that always-run shortcut contract without the full dogfood suite, `dogfood:verify` is
@@ -310,14 +316,20 @@ large or slow vault needs a longer one-shot MCP call window. After timeout the
 wrapper sends `SIGTERM` and then `SIGKILL`; set `OMOT_CLI_MCP_KILL_GRACE_MS=N`
 only when that post-timeout cleanup window needs explicit tuning.
 
+`oh-my-ontology agent-brief [vault]` is the agent handoff gate. It validates
+`readiness`, `entrypoints`, `firstCalls`, `playbooks`, `traversalStrategy`, `writeGuardrails`, `resultContracts`, `writePolicy`,
+`nextActions`, and embedded `health.checks` before output. It exits non-zero
+when readiness is not `ready`, top-level status is not `healthy`, any health
+check fails, or any fail-severity nextAction is present.
+
 `oh-my-ontology workspace-brief [vault]` follows the same blocking distinction:
 warn/advisory next actions render as guidance, but fail-severity next actions
 or failing health checks return exit 1 so shell scripts do not miss broken
-first-contact graph state. `health --json` and `workspace-brief --json` validate
-diagnosis payload shape before writing machine output: top-level `status` must
-be `healthy` or `needs_attention`, health checks need `id`/`status`/`count`, and
-workspace next actions need a valid severity. Unknown or malformed diagnosis
-payloads are treated as errors rather than clean vaults. Non-JSON `health` and
+first-contact graph state. `health --json`, `agent-brief --json`, and
+`workspace-brief --json` validate diagnosis payload shape before writing machine
+output: top-level `status` must be `healthy` or `needs_attention`, health checks
+need `id`/`status`/`count`, and workspace next actions need a valid severity.
+Unknown or malformed diagnosis payloads are treated as errors rather than clean vaults. Non-JSON `health` and
 `workspace-brief` output prints health-check
 coverage as `id:status:count` rows (`compile_issues:pass:0`,
 `components:pass:1`) so agents can see which probes actually ran without

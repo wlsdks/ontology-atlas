@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
 import {
+  assertAllPathsShape,
   assertBacklinksShape,
+  assertAgentBriefShape,
   assertBlastRadiusShape,
   assertCentralityShape,
   assertCyclesShape,
@@ -15,8 +17,12 @@ import {
   assertPathShape,
   assertQueryConceptsShape,
   assertQueryOperation,
+  assertQueryPlanShape,
+  assertRelationCheckShape,
   assertSimilarNodesShape,
   assertWorkspaceBriefShape,
+  allPathsResultExitCode,
+  agentBriefExitCode,
   compileBlockingCounts,
   compileResultExitCode,
   cyclesResultExitCode,
@@ -47,6 +53,408 @@ describe('query-result-contract', () => {
     assert.throws(
       () => assertQueryOperation({ operation: 'workspace_brief' }, 'health'),
       /health query returned unexpected operation: workspace_brief/,
+    );
+  });
+
+  it('validates all_paths completeness payloads and exit status', () => {
+    const valid = {
+      operation: 'all_paths',
+      from: 'capabilities/session',
+      to: 'domains/auth',
+      found: true,
+      direction: 'undirected',
+      maxHops: 3,
+      limit: 10,
+      searchBudget: 1000,
+      expandedStates: 3,
+      exhaustive: true,
+      truncatedByBudget: false,
+      totalPaths: 1,
+      totalPathsExact: true,
+      limited: false,
+      shortestHopCount: 2,
+      byLength: { 2: 1 },
+      evidence: {
+        status: 'complete',
+        reason: 'complete',
+        totalPathsExact: true,
+        pathsComplete: true,
+        nextStep: 'use',
+        recommendation: 'Safe to treat paths and totalPaths as complete for the requested bounds.',
+        suggestedQuery: { operation: 'all_paths', from: 'capabilities/session', to: 'domains/auth' },
+      },
+      paths: [
+        {
+          hopCount: 2,
+          hops: ['capabilities/session', 'capabilities/login', 'domains/auth'],
+          nodes: [
+            { slug: 'capabilities/session', kind: 'capability', title: 'Session' },
+            { slug: 'capabilities/login', kind: 'capability', title: 'Login' },
+            { slug: 'domains/auth', kind: 'domain', title: 'Auth' },
+          ],
+          edges: [
+            { from: 'capabilities/session', to: 'capabilities/login', via: 'dependencies' },
+            { from: 'capabilities/login', to: 'domains/auth', via: 'domain' },
+          ],
+          byRelation: { dependencies: 1, domain: 1 },
+        },
+      ],
+    };
+
+    assert.equal(assertAllPathsShape(valid), valid);
+    assert.equal(allPathsResultExitCode(valid), 0);
+    assert.equal(allPathsResultExitCode({ ...valid, found: false, totalPaths: 0, shortestHopCount: null, byLength: {}, paths: [] }), 1);
+    assert.throws(
+      () => assertAllPathsShape({ ...valid, expandedStates: 1001 }),
+      /all_paths expandedStates must not exceed searchBudget/,
+    );
+    assert.throws(
+      () => assertAllPathsShape({
+        ...valid,
+        paths: [{ ...valid.paths[0], edges: [] }],
+      }),
+      /all_paths paths\[0\]\.edges length must match hops length/,
+    );
+    assert.throws(
+      () => assertAllPathsShape({
+        ...valid,
+        evidence: { ...valid.evidence, status: 'complete', pathsComplete: false },
+      }),
+      /all_paths evidence has an invalid completeness shape/,
+    );
+  });
+
+  it('validates query_plan execution advice payloads', () => {
+    const valid = {
+      operation: 'query_plan',
+      targetOperation: 'all_paths',
+      sideEffect: false,
+      graph: { nodes: 3, edges: 2, resolvedEdges: 2, graphHash: 'abc123' },
+      normalized: {
+        targetOperation: 'all_paths',
+        from: 'capabilities/start',
+        to: 'capabilities/target',
+        direction: 'undirected',
+        maxHops: 4,
+        limit: 100,
+        searchBudget: 5000,
+        types: null,
+      },
+      indexesUsed: ['aliasToSlug', 'in', 'out'],
+      estimate: {
+        strategy: 'bounded_path_enumeration',
+        edgeScans: 20,
+        reachableWithinDepth: 10,
+        potentialPathUpperBound: 100,
+        resultUpperBound: 100,
+        costClass: 'high',
+        frontierByDepth: [
+          { distance: 1, frontierNodes: 1, candidateEdges: 20, newNodes: 20 },
+        ],
+      },
+      warnings: ['all_paths may be truncated by limit; reduce maxHops or add relation types.'],
+      execution: {
+        shouldRun: false,
+        nextStep: 'narrow',
+        recommendation: 'Narrow the query before running it.',
+        suggestedQuery: { operation: 'all_paths', from: 'capabilities/start', to: 'capabilities/target' },
+        saferQuery: { operation: 'all_paths', from: 'capabilities/start', to: 'capabilities/target', maxHops: 3 },
+      },
+    };
+
+    assert.equal(assertQueryPlanShape(valid, 'all_paths'), valid);
+    assert.throws(
+      () => assertQueryPlanShape({ ...valid, targetOperation: 'path' }, 'all_paths'),
+      /query_plan targetOperation must be all_paths/,
+    );
+    assert.throws(
+      () => assertQueryPlanShape({ ...valid, execution: { ...valid.execution, shouldRun: true, nextStep: 'narrow' } }, 'all_paths'),
+      /query_plan execution has an invalid advice shape/,
+    );
+    assert.throws(
+      () => assertQueryPlanShape({ ...valid, estimate: { ...valid.estimate, costClass: 'huge' } }, 'all_paths'),
+      /query_plan estimate\.costClass must be low, medium, or high/,
+    );
+  });
+
+  it('validates agent_brief handoff payloads and exit status', () => {
+    const valid = {
+      operation: 'agent_brief',
+      sideEffect: false,
+      status: 'healthy',
+      readiness: {
+        status: 'ready',
+        score: 100,
+        meaningfulNodes: 3,
+        relationCount: 2,
+        projects: 1,
+        domains: 1,
+        capabilities: 1,
+        elements: 1,
+        unresolvedEdges: 0,
+        externalEdges: 0,
+        growthActions: 0,
+        healthChecks: 1,
+      },
+      graph: { nodes: 4, edges: 2 },
+      handoffPrompt: [
+        'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
+        'Run these first-contact MCP calls in order:',
+        'Investigation playbooks:',
+        'Traversal strategy:',
+        'Write guardrails:',
+        'Result contracts:',
+        'all_paths: report searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact.',
+        'Run relation_check before add_relation.',
+      ].join('\n'),
+      health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] },
+      nextActions: [],
+      entrypoints: [
+        {
+          slug: 'domains/auth',
+          title: 'Auth',
+          kind: 'domain',
+          degree: 2,
+          inDegree: 1,
+          outDegree: 1,
+        },
+      ],
+      firstCalls: [
+        { tool: 'query_ontology', arguments: { operation: 'workspace_brief', limit: 5 } },
+        { tool: 'query_ontology', arguments: { operation: 'relation_check', from: 'domains/auth', to: 'capabilities/login', type: 'contains' } },
+      ],
+      playbooks: [
+        {
+          id: 'refactor_impact',
+          goal: 'Estimate impact before edits.',
+          evidence: ['Blast radius evidence.'],
+          stopWhen: ['relation_check needs review.'],
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'blast_radius', slug: 'domains/auth' } },
+            { tool: 'query_ontology', arguments: { operation: 'relation_check', from: 'domains/auth', to: 'capabilities/login', type: 'contains' } },
+          ],
+        },
+        {
+          id: 'graph_traversal',
+          goal: 'Gather traversal evidence.',
+          evidence: ['Path alternatives.'],
+          stopWhen: ['Traversal cost is high.'],
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'schema', limit: 20 } },
+            { tool: 'query_ontology', arguments: { operation: 'all_paths', from: 'domains/auth', to: 'capabilities/login', maxHops: 5 } },
+            { tool: 'query_ontology', arguments: { operation: 'pattern_walk', slug: 'project/app', pattern: ['domains', 'capabilities'] } },
+            { tool: 'query_ontology', arguments: { operation: 'project_map', project: 'project/app' } },
+          ],
+        },
+      ],
+      traversalStrategy: [
+        {
+          id: 'plan_before_enumeration',
+          priority: 'first',
+          goal: 'Estimate traversal cost.',
+          useWhen: 'Traversal may be expensive.',
+          evidence: ['query_plan.execution.nextStep', 'query_plan.execution.saferQuery'],
+          stopWhen: ['execution.nextStep is narrow.'],
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'all_paths', from: 'domains/auth', to: 'capabilities/login' } },
+          ],
+        },
+        {
+          id: 'bounded_path_evidence',
+          priority: 'evidence',
+          goal: 'Enumerate bounded paths.',
+          useWhen: 'Multiple path alternatives matter.',
+          evidence: ['all_paths.evidence.pathsComplete', 'all_paths.totalPathsExact'],
+          stopWhen: ['evidence.pathsComplete is false.'],
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'all_paths', from: 'domains/auth', to: 'capabilities/login', maxHops: 3, searchBudget: 1000, limit: 10 } },
+          ],
+        },
+        {
+          id: 'containment_cross_check',
+          priority: 'confirm',
+          goal: 'Cross-check containment.',
+          useWhen: 'Project/domain placement matters.',
+          evidence: ['pattern_walk rows.', 'project_map placement.'],
+          stopWhen: ['Containment disagrees.'],
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'pattern_walk', slug: 'project/app', pattern: ['domains', 'capabilities'] } },
+            { tool: 'query_ontology', arguments: { operation: 'project_map', project: 'project/app' } },
+          ],
+        },
+      ],
+      writeGuardrails: [
+        {
+          id: 'preflight_relation',
+          goal: 'Before add_relation.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'relation_check', from: 'domains/auth', to: 'capabilities/login', type: 'contains' } },
+            { tool: 'query_ontology', arguments: { operation: 'path', from: 'domains/auth', to: 'capabilities/login' } },
+          ],
+        },
+        {
+          id: 'preflight_rename',
+          goal: 'Before rename.',
+          calls: [
+            { tool: 'find_backlinks', arguments: { slug: 'domains/auth' } },
+            { tool: 'query_ontology', arguments: { operation: 'node_profile', slug: 'domains/auth' } },
+          ],
+        },
+        {
+          id: 'post_change_sync',
+          goal: 'After changes.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'health' } },
+            { tool: 'validate_vault', arguments: {} },
+          ],
+        },
+      ],
+      writePolicy: [
+        'Run read tools first.',
+        'Run relation_check before add_relation.',
+        'For all_paths, report limit/searchBudget/expandedStates/exhaustive/truncatedByBudget/totalPathsExact plus evidence.status/evidence.reason/evidence.pathsComplete and treat incomplete paths as partial evidence.',
+        'Run find_backlinks before rename_concept.',
+      ],
+      resultContracts: [
+        {
+          operation: 'all_paths',
+          mustReport: [
+            'limit',
+            'searchBudget',
+            'expandedStates',
+            'exhaustive',
+            'truncatedByBudget',
+            'totalPathsExact',
+            'evidence.status',
+            'evidence.reason',
+            'evidence.pathsComplete',
+          ],
+          partialWhen: ['exhaustive=false', 'truncatedByBudget=true', 'totalPathsExact=false', 'evidence.status=partial', 'evidence.pathsComplete=false'],
+          policy: 'Treat paths as partial evidence unless evidence.pathsComplete is true; treat totalPaths as partial evidence unless totalPathsExact is true; follow evidence.suggestedQuery or narrow maxHops/types before using paths as write evidence.',
+        },
+      ],
+      relationDecisionGuide: [
+        { decision: 'skip_existing', severity: 'info', meaning: 'Do not add duplicate edge.' },
+        { decision: 'review_inverse', severity: 'warn', meaning: 'Review reverse edge direction.' },
+        { decision: 'safe_to_add', severity: 'info', meaning: 'Schema is familiar.' },
+        { decision: 'review_new_schema', severity: 'warn', meaning: 'Explain new schema pattern.' },
+      ],
+    };
+
+    assert.equal(assertAgentBriefShape(valid), valid);
+    assert.equal(agentBriefExitCode(valid), 0);
+    assert.equal(agentBriefExitCode({ ...valid, readiness: { ...valid.readiness, status: 'needs_attention' } }), 1);
+    assert.throws(
+      () => assertAgentBriefShape({ ...valid, handoffPrompt: 'missing useful handoff content' }),
+      /agent_brief handoffPrompt must be a non-empty agent handoff string/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({ ...valid, firstCalls: [{ tool: 'query_ontology', arguments: {} }] }),
+      /firstCalls\[0\] has an invalid tool-call shape/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        firstCalls: valid.firstCalls.filter((call) => call.arguments.operation !== 'relation_check'),
+      }),
+      /agent_brief firstCalls must include relation_check preflight/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        playbooks: [
+          { ...valid.playbooks[0], calls: valid.playbooks[0].calls.filter((call) => call.arguments.operation !== 'relation_check') },
+          valid.playbooks[1],
+        ],
+      }),
+      /agent_brief refactor_impact playbook must include relation_check preflight/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        playbooks: [{ ...valid.playbooks[0], evidence: [] }, valid.playbooks[1]],
+      }),
+      /agent_brief playbooks\[0\] has an invalid playbook shape/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        playbooks: [{ ...valid.playbooks[0], stopWhen: [] }, valid.playbooks[1]],
+      }),
+      /agent_brief playbooks\[0\] has an invalid playbook shape/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        playbooks: valid.playbooks.filter((playbook) => playbook.id !== 'graph_traversal'),
+      }),
+      /agent_brief playbooks must include graph_traversal/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        playbooks: valid.playbooks.map((playbook) =>
+          playbook.id === 'graph_traversal'
+            ? { ...playbook, calls: playbook.calls.filter((call) => call.arguments.operation !== 'all_paths') }
+            : playbook,
+        ),
+      }),
+      /agent_brief graph_traversal playbook must include all_paths/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({ ...valid, traversalStrategy: [] }),
+      /agent_brief traversalStrategy must include plan, bounded path evidence, and containment cross-check guidance/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        traversalStrategy: valid.traversalStrategy.filter((strategy) => strategy.id !== 'bounded_path_evidence'),
+      }),
+      /agent_brief traversalStrategy must include plan, bounded path evidence, and containment cross-check guidance/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({ ...valid, writePolicy: ['Run read tools first.'] }),
+      /agent_brief writePolicy must mention relation_check before add_relation/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({ ...valid, resultContracts: [] }),
+      /agent_brief resultContracts must include all_paths completeness fields and partial-evidence policy/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        resultContracts: [{ ...valid.resultContracts[0], mustReport: ['searchBudget'] }],
+      }),
+      /agent_brief resultContracts must include all_paths completeness fields and partial-evidence policy/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        relationDecisionGuide: valid.relationDecisionGuide.filter((row) => row.decision !== 'review_inverse'),
+      }),
+      /agent_brief relationDecisionGuide must cover relation_check decision outcomes/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({ ...valid, writeGuardrails: [] }),
+      /agent_brief writeGuardrails must be a non-empty array/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        writeGuardrails: valid.writeGuardrails.filter((guardrail) => guardrail.id !== 'preflight_rename'),
+      }),
+      /agent_brief writeGuardrails must include preflight_rename find_backlinks/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        writeGuardrails: [{ id: 'post_change_sync', goal: 'After changes.', calls: [{ tool: 'validate_vault', arguments: { extra: true } }] }],
+      }),
+      /agent_brief writeGuardrails\[0\] has an invalid guardrail shape/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({ ...valid, sideEffect: true }),
+      /agent_brief sideEffect must be false/,
     );
   });
 
@@ -880,6 +1288,103 @@ describe('query-result-contract', () => {
     assert.throws(
       () => assertBlastRadiusShape({ ...blastRadius, nodes: { total: 1, limited: false, rows: [{}] } }),
       /blast_radius nodes must be a page with valid node rows/,
+    );
+  });
+
+  it('rejects malformed relation_check payloads before CLI output', () => {
+    const missing = {
+      operation: 'relation_check',
+      from: 'capabilities/bar',
+      to: 'domains/auth',
+      relation: 'domain',
+      fromKind: 'capability',
+      toKind: 'domain',
+      exists: false,
+      verdict: 'matches_existing_schema',
+      recommendation: {
+        decision: 'safe_to_add',
+        severity: 'info',
+        reason: 'No exact or inverse edge found; capability --domain--> domain is an existing schema pattern.',
+      },
+      matchingEdges: [],
+      inverseEdges: [],
+      schemaPattern: {
+        fromKind: 'capability',
+        relation: 'domain',
+        toKind: 'domain',
+        count: 2,
+        resolved: 2,
+        external: 0,
+        unresolved: 0,
+        examples: [{ from: 'capabilities/foo', to: 'domains/auth', ref: 'capabilities/foo.domain' }],
+      },
+      nearbyPatterns: [
+        {
+          fromKind: 'capability',
+          relation: 'relates',
+          toKind: 'capability',
+          count: 1,
+          resolved: 1,
+          external: 0,
+          unresolved: 0,
+          similarity: 1,
+        },
+      ],
+      proposedAction: {
+        tool: 'add_relation',
+        args: { from: 'capabilities/bar', to: 'domains/auth', type: 'domain' },
+      },
+    };
+    const existing = {
+      ...missing,
+      exists: true,
+      verdict: 'already_exists',
+      recommendation: {
+        decision: 'skip_existing',
+        severity: 'info',
+        reason: 'Exact edge already exists; do not add another relation.',
+      },
+      matchingEdges: [{ from: 'capabilities/bar', to: 'domains/auth', via: 'domain', ref: 'capabilities/bar.domain' }],
+      proposedAction: null,
+    };
+
+    assert.equal(assertRelationCheckShape(missing), missing);
+    assert.equal(assertRelationCheckShape(existing), existing);
+    assert.throws(
+      () => assertRelationCheckShape({ ...missing, exists: 'false' }),
+      /relation_check exists must be a boolean/,
+    );
+    assert.throws(
+      () => assertRelationCheckShape({ ...missing, verdict: 'maybe' }),
+      /relation_check verdict must be one of:/,
+    );
+    assert.throws(
+      () => assertRelationCheckShape({ ...missing, recommendation: { decision: 'maybe', severity: 'info', reason: 'x' } }),
+      /relation_check recommendation must include decision, severity, and reason/,
+    );
+    assert.throws(
+      () => assertRelationCheckShape({ ...missing, recommendation: { decision: 'safe_to_add', severity: 'fail', reason: 'x' } }),
+      /relation_check recommendation must include decision, severity, and reason/,
+    );
+    assert.throws(
+      () => assertRelationCheckShape({ ...missing, inverseEdges: 'nope' }),
+      /relation_check inverseEdges must be an array/,
+    );
+    assert.throws(
+      () => assertRelationCheckShape({ ...missing, inverseEdges: [{ from: 'x' }] }),
+      /relation_check inverseEdges\[0\] has an invalid edge shape/,
+    );
+    assert.throws(
+      () => assertRelationCheckShape({ ...missing, proposedAction: null }),
+      /relation_check missing edge must include add_relation proposedAction/,
+    );
+    assert.throws(
+      () => assertRelationCheckShape({ ...existing, proposedAction: missing.proposedAction }),
+      /relation_check existing edge must not include proposedAction/,
+    );
+    assert.throws(
+      () => assertRelationCheckShape({ ...missing, nearbyPatterns: [{ ...missing.nearbyPatterns[0], similarity: -1 }] }),
+      /relation_check nearbyPatterns\[0\] has an invalid schema-pattern shape/,
     );
   });
 

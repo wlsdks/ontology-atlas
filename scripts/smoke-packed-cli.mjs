@@ -45,6 +45,7 @@ const installedVerifyStructuredContentRe = new RegExp(regexEscape(`structuredCon
   hasDirectGraphReads: true,
   hasLimitedQueryConcepts: true,
   hasCompileIndexes: true,
+  hasAllPaths: true,
   hasMaintenanceResume: true,
   destructiveDryRunCount: 3,
 })}`));
@@ -483,7 +484,7 @@ try {
   assert.match(cliMcpVerifyHelp.stdout, /Usage:/);
   assert.match(cliMcpVerifyHelp.stdout, /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
   assert.match(cliMcpVerifyHelp.stdout, /compile_ontology/);
-  assert.match(cliMcpVerifyHelp.stdout, /neighbors\/node-to-project path\/project_scope graph-query smoke/);
+  assert.match(cliMcpVerifyHelp.stdout, /neighbors\/node-to-project path\/all_paths\/project_scope graph-query smoke/);
   assert.match(cliMcpVerifyHelp.stdout, /tools\/list schema strictness/);
   assert.match(cliMcpVerifyHelp.stdout, /annotation coverage \(title\/read\/write\/destructive\/idempotent\/local-only\)/);
   assert.match(cliMcpVerifyHelp.stdout, /destructive writer dry-runs with every planned response present and no changed\/postWriteMaintenance/);
@@ -509,14 +510,14 @@ try {
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:dogfood:args\s+Narrow dogfood shortcut argument helper contract/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference \+ focused filter parser\/wrapper summary contract/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:dogfood:compile-fix\s+Narrow dogfood compile --fix idempotence runner contract/);
-  assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:registration\s+Narrow source-checkout .mcp.json\/.mcp.json.example registration template contract/);
+  assert.match(cliMcpVerifyHelp.stdout, /pnpm test:mcp:registration\s+Narrow source-checkout .mcp.json\/.mcp.json.example\/.codex\/config.toml registration template contract/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:health\s+Root checkout dogfood vault health gate/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:brief\s+Root checkout dogfood vault workspace_brief snapshot/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:growth\s+Root checkout dogfood vault growth_plan JSON snapshot/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:maintenance\s+Root checkout dogfood vault maintenance_plan JSON snapshot/);
   assert.match(
     cliMcpVerifyHelp.stdout,
-    /pnpm dogfood:status\s+Root checkout dogfood vault human-readable health \+ brief \+ maintenance; ends with \[dogfood:status\] health:N · workspace-brief:N · maintenance:N and focused hints before pnpm dogfood:verify on failure/,
+    /pnpm dogfood:status\s+Root checkout dogfood vault human-readable health \+ brief \+ agent handoff \+ maintenance; ends with \[dogfood:status\] health:N · workspace-brief:N · agent-brief:N · maintenance:N and focused hints before pnpm dogfood:verify on failure/,
   );
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:verify\s+Root checkout dogfood vault verify shortcut/);
@@ -731,7 +732,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /Explicit \[vault\] or --vault arguments take precedence over OMOT_VAULT/);
   assert.match(directMcpVerifyHelp.stdout, /tool inventory \(missing\/extra\/duplicate\/invalid names\)/);
   assert.match(directMcpVerifyHelp.stdout, /project probe/);
-  assert.match(directMcpVerifyHelp.stdout, /strict unknown-argument \/ invalid-enum rejection/);
+  assert.match(directMcpVerifyHelp.stdout, /strict unknown-tool \/ unknown-argument \/ invalid-enum rejection/);
   assert.match(directMcpVerifyHelp.stdout, /batch reader\/writer row isolation for non-object rows and unknown row fields with concepts\[n\]\/relations\[n\] error labels, invalid add_relations type closest-value hints, and 50-row batch cap rejection/);
   assert.match(directMcpVerifyHelp.stdout, /destructive writer dry-runs for rename_concept\/merge_concepts\/delete_concept/);
   assert.match(directMcpVerifyHelp.stdout, /maintenance_plan filter enums/);
@@ -749,7 +750,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /Narrow MCP verify timeout\/startup\/help\/empty-vault diagnostics/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:dogfood:args\s+Narrow dogfood shortcut argument helper contract/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:dogfood:script-refs\s+Narrow help\/package-script reference \+ focused filter parser\/wrapper summary contract/);
-  assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:registration\s+Narrow source-checkout .mcp.json\/.mcp.json.example registration template contract/);
+  assert.match(directMcpVerifyHelp.stdout, /pnpm test:mcp:registration\s+Narrow source-checkout .mcp.json\/.mcp.json.example\/.codex\/config.toml registration template contract/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:compile\s+Cheap root checkout compile_ontology summary snapshot/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:compile-fix\s+Cheap root checkout compile --fix idempotence gate; changed vaults need pnpm docs-vault:build; success ends with \[dogfood:compile-fix\] docs\/ontology unchanged/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:dogfood:compile-fix\s+Narrow dogfood compile --fix idempotence runner contract/);
@@ -757,7 +758,7 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:brief\s+Cheap root checkout workspace_brief snapshot/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:growth\s+Cheap root checkout growth_plan snapshot/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:maintenance\s+Cheap root checkout maintenance_plan snapshot/);
-  assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:status\s+Cheap root checkout health \+ workspace-brief \+ maintenance preflight with focused hints before full verify/);
+  assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:status\s+Cheap root checkout health \+ workspace-brief \+ agent-brief \+ maintenance preflight with focused hints before full verify/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:verify\s+Root checkout dogfood vault installed-style verify gate/);
 

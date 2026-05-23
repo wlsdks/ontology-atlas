@@ -1200,6 +1200,11 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       /Defaults to 100, max 500/,
       "query_concepts limit schema documents default and cap",
     );
+    assert.match(
+      findTool("query_ontology")?.description ?? "",
+      /agent_brief[\s\S]*relationDecisionGuide[\s\S]*read-first write policy/,
+      "query_ontology description documents agent_brief relationDecisionGuide",
+    );
     assert.deepEqual(
       {
         type: findTool("query_ontology")?.inputSchema?.properties?.iterations?.type,
@@ -1226,7 +1231,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         depthMaximum: 20,
         maxHopsMaximum: 20,
         nodeLimitDescription:
-          "components/communities/health/workspace_brief only: positive integer max node summaries per component/community group. Defaults to 25 for components/communities and 10 for health, capped at 500.",
+          "components/communities/health/workspace_brief/agent_brief only: positive integer max node summaries per component/community group. Defaults to 25 for components/communities and 10 for health, capped at 500.",
       },
       "query_ontology exposes runtime numeric caps in schema",
     );
@@ -1304,9 +1309,9 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         afterActionIdDescription:
           "maintenance_plan only: stable action id cursor; return actions after this id. Without afterActionId the ready page reports cursor.found=true and cursor.reason=null; cursor.nextAfterActionId matches the last returned action id (or null for an empty page), and cursor.hasMore matches whether more remaining actions exist after this page. nextExecutableAction/nextReviewAction point only at the first executable/review action in the current returned page and preserve that action id, executable flag, phase, kind, and severity. Bucket totals (byPhase, bySeverity, byKind) match remainingActions for the returned cursor. Unknown cursors return an empty page with cursor.found=false, cursor.reason, zero remaining actions, cursor.nextAfterActionId=null, cursor.hasMore=false, and no next actions.",
         componentTypesDescription:
-          "health/workspace_brief only: relation types used for connected-component checks. Defaults to the full graph relation set.",
+          "health/workspace_brief/agent_brief only: relation types used for connected-component checks. Defaults to the full graph relation set.",
       },
-      "query_ontology exposes health/workspace_brief tuning controls",
+      "query_ontology exposes health/workspace_brief/agent_brief tuning controls",
     );
     assert.deepEqual(
       {
@@ -1394,6 +1399,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         "recommend_relations",
         "growth_plan",
         "maintenance_plan",
+        "agent_brief",
         "workspace_brief",
         "health",
       ],
@@ -1433,6 +1439,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
         "recommend_relations",
         "growth_plan",
         "maintenance_plan",
+        "agent_brief",
         "workspace_brief",
         "health",
       ],
@@ -1605,6 +1612,17 @@ await test("initialize — instructions 필드 (#45) AI agent 안내 노출", as
     assert.match(instructions, /query_ontology/);
     assert.match(instructions, /validate_vault/);
     assert.match(instructions, /read-only first-contact diagnosis/);
+    assert.match(instructions, /operation:'agent_brief'/);
+    assert.match(instructions, /Claude Code\/Codex handoff/);
+    assert.match(instructions, /write guardrails/);
+    assert.match(instructions, /relationDecisionGuide/);
+    assert.match(instructions, /skip_existing/);
+    assert.match(instructions, /review_inverse/);
+    assert.match(instructions, /safe_to_add/);
+    assert.match(instructions, /review_new_schema/);
+    assert.match(instructions, /preflight_relation/);
+    assert.match(instructions, /preflight_rename/);
+    assert.match(instructions, /post_change_sync/);
     assert.match(instructions, /workspace_brief/);
     assert.match(instructions, /operation:'overview'/);
     assert.match(
@@ -1958,7 +1976,7 @@ await test("infer_imports — import graph exposes structuredContent", async () 
   }
 });
 
-await test("query_ontology — compiled graph engine neighbors/path/all_paths/query_plan/centrality/communities/similar_nodes/explain_relation/reachability/pattern_walk/impact/blast_radius/subgraph/overview/schema/facets/match_nodes/match_edges/node_profile/domain_profile/domain_matrix/project_scope/project_map/relation_check/components/lineage/containment_tree/cycles/topological_order/recommend_relations/growth_plan/maintenance_plan/workspace_brief/health", async () => {
+await test("query_ontology — compiled graph engine neighbors/path/all_paths/query_plan/centrality/communities/similar_nodes/explain_relation/reachability/pattern_walk/impact/blast_radius/subgraph/overview/schema/facets/match_nodes/match_edges/node_profile/domain_profile/domain_matrix/project_scope/project_map/relation_check/components/lineage/containment_tree/cycles/topological_order/recommend_relations/growth_plan/maintenance_plan/agent_brief/workspace_brief/health", async () => {
   const root = makeVault([
     {
       slug: "project",
@@ -2145,6 +2163,10 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
         operation: "maintenance_plan",
         limit: 5,
       }),
+      callTool(36, "query_ontology", {
+        operation: "agent_brief",
+        limit: 5,
+      }),
     ]);
     const neighbors = getCallParsed(responses, 2);
     assert.deepEqual(neighbors.nodes.map((node) => node.slug), ["capabilities/login"]);
@@ -2317,7 +2339,18 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(relationCheck.relation, "dependencies");
     assert.equal(relationCheck.exists, false);
     assert.equal(relationCheck.verdict, "matches_existing_schema");
+    assert.equal(relationCheck.recommendation.decision, "safe_to_add");
     assert.equal(relationCheck.schemaPattern.toKind, "domain");
+    assert.ok(Array.isArray(relationCheck.inverseEdges));
+    assert.deepEqual(relationCheck.proposedAction, {
+      tool: "add_relation",
+      args: {
+        from: "capabilities/session",
+        to: "domains/auth",
+        type: "depends_on",
+      },
+    });
+    assert.ok(Array.isArray(relationCheck.nearbyPatterns));
 
     const components = getCallParsed(responses, 22);
     assert.equal(components.totalComponents, 1);
@@ -2454,6 +2487,62 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.match(maintenancePlan.actions[0].id, /^maint_[a-f0-9]{8}$/);
     assert.match(maintenancePlan.cursor.nextAfterActionId, /^maint_[a-f0-9]{8}$/);
     assert.equal(maintenancePlan.actions[0].executable, true);
+
+    const agentBrief = getCallParsed(responses, 36);
+    assert.equal(agentBrief.operation, "agent_brief");
+    assert.equal(agentBrief.sideEffect, false);
+    assert.equal(agentBrief.status, "needs_attention");
+    assert.equal(agentBrief.readiness.status, "needs_attention");
+    assert.equal(agentBrief.readiness.meaningfulNodes, 3);
+    assert.equal(agentBrief.graph.nodes, 4);
+    assert.deepEqual(agentBrief.firstCalls.map((call) => call.arguments.operation), [
+      "workspace_brief",
+      "health",
+      "query_plan",
+      "node_profile",
+      "relation_check",
+    ]);
+    assert.equal(agentBrief.firstCalls[4].arguments.from, "capabilities/login");
+    assert.equal(agentBrief.firstCalls[4].arguments.to, "domains/auth");
+    assert.equal(agentBrief.firstCalls[4].arguments.type, "depends_on");
+    assert.deepEqual(agentBrief.playbooks.map((playbook) => playbook.id), [
+      "refactor_impact",
+      "onboarding_map",
+      "coupling_audit",
+      "graph_traversal",
+    ]);
+    assert.equal(agentBrief.playbooks[0].calls[3].arguments.operation, "blast_radius");
+    assert.deepEqual(agentBrief.playbooks[3].calls.map((call) => call.arguments.operation), [
+      "schema",
+      "query_plan",
+      "all_paths",
+      "pattern_walk",
+      "project_map",
+    ]);
+    assert.equal(agentBrief.playbooks[3].calls[1].arguments.targetOperation, "all_paths");
+    assert.equal(agentBrief.playbooks[3].calls[1].arguments.searchBudget, 1000);
+    assert.equal(agentBrief.playbooks[3].calls[2].arguments.searchBudget, 1000);
+    assert.ok(agentBrief.entrypoints.some((entrypoint) => entrypoint.slug === "domains/auth"));
+    assert.deepEqual(agentBrief.writeGuardrails.map((guardrail) => guardrail.id), [
+      "preflight_relation",
+      "preflight_rename",
+      "post_change_sync",
+    ]);
+    assert.deepEqual(agentBrief.writeGuardrails[0].calls.map((call) => call.arguments.operation), [
+      "relation_check",
+      "path",
+    ]);
+    assert.equal(agentBrief.writeGuardrails[1].calls[0].tool, "find_backlinks");
+    assert.equal(agentBrief.writeGuardrails[2].calls[1].tool, "validate_vault");
+    assert.deepEqual(agentBrief.relationDecisionGuide.map((row) => row.decision), [
+      "skip_existing",
+      "review_inverse",
+      "safe_to_add",
+      "review_new_schema",
+    ]);
+    assert.match(agentBrief.writePolicy.join("\n"), /Run read tools first/);
+    assert.match(agentBrief.writePolicy.join("\n"), /relationDecisionGuide/);
+    assert.match(agentBrief.writePolicy.join("\n"), /find_backlinks before rename_concept/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

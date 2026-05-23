@@ -78,6 +78,7 @@ pnpm test:dogfood:args
 pnpm test:dogfood:script-refs
 pnpm test:dogfood:compile-fix
 pnpm dogfood:health
+pnpm dogfood:agent
 pnpm dogfood:brief
 pnpm dogfood:growth
 pnpm dogfood:maintenance
@@ -102,8 +103,8 @@ import-analysis, ignore-file, and JSON-RPC line helper unit contracts without
 spawning the full integration suite; when `pnpm checks:changed` prints a direct
 `pnpm exec node --test mcp/src/<name>.test.mjs` command, run that first for the
 smallest matching MCP core check. `test:mcp:docs` checks README and dogfood ontology documentation drift.
-`test:mcp:registration` checks only the tracked source-checkout `.mcp.json` and
-`.mcp.json.example` templates.
+`test:mcp:registration` checks only the tracked source-checkout `.mcp.json`,
+`.mcp.json.example`, and `.codex/config.toml` templates.
 `test:mcp:dogfood` covers the dogfood helper's structuredContent output,
 indexed `compile_ontology` gate, tools/list inventory names + annotation coverage, batch writer
 row-label guidance summary, vault warning / `validate_vault` problem gates,
@@ -143,7 +144,7 @@ without running the full installed-style MCP verify walk.
 without running the full installed-style MCP verify walk.
 `dogfood:maintenance` prints the dogfood vault `maintenance_plan` JSON snapshot
 without running the full installed-style MCP verify walk.
-`dogfood:status` always runs health + workspace-brief + maintenance, prints `[dogfood:status] health:N · workspace-brief:N · maintenance:N`, preserves the first failing exit before escalating, and prints failed-child focused follow-ups (`pnpm dogfood:health`, `pnpm dogfood:brief`, or `pnpm dogfood:maintenance` + `pnpm test:mcp:maintenance`) before the `pnpm dogfood:verify` follow-up hint on failure.
+`dogfood:status` always runs health + workspace-brief + agent-brief + maintenance, prints `[dogfood:status] health:N · workspace-brief:N · agent-brief:N · maintenance:N`, preserves the first failing exit before escalating, and prints failed-child focused follow-ups (`pnpm dogfood:health`, `pnpm dogfood:brief`, `pnpm dogfood:agent`, or `pnpm dogfood:maintenance` + `pnpm test:mcp:maintenance`) before the `pnpm dogfood:verify` follow-up hint on failure.
 `test:dogfood:status` checks that always-run shortcut contract without the full dogfood suite.
 Use `OMOT_TEST_NAME_PATTERN` with `pnpm integration:mcp` when the touched MCP
 integration case has a different name. For Node's `--test-name-pattern`, use
@@ -170,8 +171,8 @@ subtracting skipped tests. File setup/import failures are reported separately as
 `pnpm dogfood:brief` is the shortest dogfood vault first-contact snapshot.
 `pnpm dogfood:growth` is the shortest dogfood vault growth candidate snapshot.
 `pnpm dogfood:maintenance` is the shortest dogfood vault maintenance queue snapshot. Use
-`pnpm dogfood:status` for the cheap human-readable health + first-contact + maintenance queue;
-it still prints the brief after health fails, preserves the first failing exit,
+`pnpm dogfood:status` for the cheap human-readable health + first-contact + agent handoff + maintenance queue;
+it still prints the brief, agent handoff, and maintenance after health fails, preserves the first failing exit,
 and prints failed-child focused follow-ups before the `pnpm dogfood:verify`
 follow-up hint on failure. Use
 `pnpm dogfood:compile-fix -- --help` / `pnpm dogfood:status -- --help`
@@ -214,7 +215,7 @@ The server connects over stdio. You should now see 23 tools under the `oh-my-ont
 | `find_orphans` | **v0.5** Finds isolated nodes — docs that no other node references through graph frontmatter (`domains` / `domain` / `capabilities` / `elements` / `dependencies` / `relates` / `contains` / `describes`). Options: enum-validated `kind` (filter) and `excludeKinds` (skip, default `['project', 'vault-readme']`; pass `[]` to include every kind); typos fail with nearest-value hints. Each orphan row includes `kind`, `title`, `domain`, `mtime` (same shape as `list_concepts` / `find_backlinks`) — agents can sort/filter "old orphans in domain X" without follow-up `get_concept` calls. Useful as a starting point for cleanup or auditing unused nodes. |
 | `query_concepts` | **v0.6** Typed filter DSL — `kind=X AND has(Y) AND NOT ...`. Saved-filter / smart-list use case. `kind` values and `has(...)` graph keys are enum-validated with nearest-value hints, and `has(depends_on)` is canonicalized to `dependencies`, so typos do not silently return empty match sets. `limit` defaults to 100 and is capped at 500. Each match row includes `slug, kind, title, domain, capabilities, elements, mtime` (same shape as `list_concepts` / `find_backlinks` / `find_orphans`) so agents can sort/filter staleness without follow-up calls. |
 | `compile_ontology` | **R+** Compiler-style graph artifact for database-like use. Compiles the whole vault into deterministic `nodes[]`, canonical `edges[]`, alias tables, graph issues, graph-array canonicalization actions, stable semantic `graphHash`, `maxMtime`, and optional query indexes (`out`, `in`, `byKind`, `byDomain`, `edgeById`, `aliasToSlug` with `includeIndexes:true`). Canonicalization action `keys` are schema-bound to relation-array frontmatter keys, and action `frontmatter` is relation-array-only so agents can distinguish safe reordering patches from arbitrary frontmatter mutation. Use before advanced reasoning, export, caching, or non-developer graph views. side effect 0. <br>**Large-vault opts (R+):** `summary: true` returns counts + `graphHash` + `byKind`/`byDomain` aggregates (no arrays) — cheap polling for cache invalidation. `nodesLimit`/`nodesOffset` and `edgesLimit`/`edgesOffset` slice arrays with `nodesPagination` / `edgesPagination` meta (`{offset, limit, total, returned, hasMore, nextOffset}`); page-size limits are capped at 500. 100+ 노드 vault 에서 토큰 한도 초과 회피. |
-| `query_ontology` | **R+** Graph-engine query over the compiled artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries), `query_plan` (EXPLAIN-style cost/index estimate before a target operation), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation graph clusters), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges + shortest path + shared-neighbor explanation), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths), `impact` (incoming by default: what depends on this?), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice), `overview` (counts, relation distribution, hubs), `schema` (`kind → relation → kind` patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters), `match_edges` (graph DB-style edge pattern rows), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before `add_relation`), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, cursor resume via `afterActionId`, ready pages with `cursor.found=true` / `cursor.reason=null`, cursor miss `reason`, executable graph-array canonicalization, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, `executable` flags, current-page `nextExecutableAction` / `nextReviewAction`, and `executableOnly` / `phases` / `severities` / `kinds` filters; `phases`, `severities`, and `kinds` are enum-validated), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard; raw `components` are still reported, but vault README-only components are ignored for actionable health/nextActions). `match_nodes.kind` and `match_edges.fromKind` use the ontology node-kind enum; `match_edges.type` uses the relation-type enum; `match_edges.toKind` also accepts `external` and `unresolved` target kinds. Typoed values return nearest-value hints instead of empty result sets. `health` / `workspace_brief` can tune their internal probes with `componentLimit`, `cycleLimit`, `recommendationLimit`, `orderLimit`, `nodeLimit`, `dependencyTypes`, and `componentTypes`. Accepts canonical slugs or unique aliases. Use for graph-database-like answers without pulling the full compile payload. side effect 0. |
+| `query_ontology` | **R+** Graph-engine query over the compiled artifact. Operations: `neighbors` (local graph neighborhood), `path` (one compiled-edge route with aligned `nodes[]` summaries), `all_paths` (bounded simple paths between two nodes with per-path `nodes[]` summaries plus `limit` / `searchBudget` / `exhaustive` / `truncatedByBudget` / `totalPathsExact` metadata and `evidence` guidance), `query_plan` (EXPLAIN-style cost/index estimate plus `execution.shouldRun`, `nextStep`, `suggestedQuery`, and safer narrowed payload guidance before a target operation), `centrality` (PageRank-style core-node ranking plus bridge/authority/hub lists), `communities` (label-propagation graph clusters), `similar_nodes` (duplicate/overlap candidates before writes), `explain_relation` (direct edges + shortest path + shared-neighbor explanation), `reachability` (transitive graph closure from a start node), `pattern_walk` (explicit relation-sequence paths), `impact` (incoming by default: what depends on this?), `blast_radius` (impact grouped by kind/domain with cross-domain edge risk), `subgraph` (bounded N-hop graph slice), `overview` (counts, relation distribution, hubs), `schema` (`kind → relation → kind` patterns), `facets` (filter/dashboard aggregates), `match_nodes` (graph DB-style node rows with degree filters), `match_edges` (graph DB-style edge pattern rows), `node_profile` (single node detail dashboard), `domain_profile` (domain detail dashboard), `domain_matrix` (domain-to-domain coupling), `project_scope` (project-contained graph slice), `project_map` (domain-by-domain project map), `relation_check` (schema-aware preflight before `add_relation`), `components` (connected graph islands), `lineage` and `containment_tree` (project/domain/capability containment), `cycles` (directed dependency-cycle checks), `topological_order` (prerequisite-first dependency ordering), `recommend_relations` (safe domain-containment suggestions), `growth_plan` (side-effect-free ontology expansion candidates), `maintenance_plan` (ordered post-write graph cleanup/repair actions with stable action `id`, cursor resume via `afterActionId`, ready pages with `cursor.found=true` / `cursor.reason=null`, cursor miss `reason`, executable graph-array canonicalization, count-safe summary fields, `byPhase` / `bySeverity` / `byKind` remaining-queue buckets, `executable` flags, current-page `nextExecutableAction` / `nextReviewAction`, and `executableOnly` / `phases` / `severities` / `kinds` filters; `phases`, `severities`, and `kinds` are enum-validated), `agent_brief` (Claude Code/Codex handoff prompt, recipes, graph entrypoints, playbook `evidence[]` and `stopWhen[]` checklists, `traversalStrategy` for plan-first bounded path evidence, write guardrails, `relation_check` decision guide, `resultContracts` for interpreting `all_paths` completeness, and read-first write policy), `workspace_brief` (first-contact status + next actions), and `health` (one-shot graph integrity dashboard; raw `components` are still reported, but vault README-only components are ignored for actionable health/nextActions). `match_nodes.kind` and `match_edges.fromKind` use the ontology node-kind enum; `match_edges.type` uses the relation-type enum; `match_edges.toKind` also accepts `external` and `unresolved` target kinds. Typoed values return nearest-value hints instead of empty result sets. `health` / `workspace_brief` / `agent_brief` can tune their internal probes with `componentLimit`, `cycleLimit`, `recommendationLimit`, `orderLimit`, `nodeLimit`, `dependencyTypes`, and `componentTypes`; `agent_brief` forwards the same probe tuning into its embedded readiness checks. Accepts canonical slugs or unique aliases. Use for graph-database-like answers without pulling the full compile payload. side effect 0. |
 | `validate_vault` | **R+** Validate every doc in the vault, return `{ scanned, problems: [{slug, issues}], summary: { problemFiles, errorFiles, warningFiles, byCode } }`. 8 issue codes (`unclosed-frontmatter`, `parse-zero-keys`, `missing-kind`, `empty-kind`, `unknown-kind`, `missing-expected-field`, `non-canonical-graph-array`, `dangling-graph-reference`); `outputSchema` restricts both `issues[].code` and `summary.byCode` keys to that set. One round-trip whole-vault health check — use for first-contact before writes, before / after a batch write, or to surface issues. Replaces the K-roundtrip pattern of `list_concepts` then per-doc `get_concept` (whose `warnings: [...]` is per-file). |
 | `analyze_repo_structure` | **R16** Analyze a code repository (default cwd) and propose ontology node candidates from `package.json` / `README.md` H2 / `src/` folders. **side effect 0** — vault NOT modified. Emits folder-prefixed slugs (`domains/*`, `capabilities/*`, `elements/src/...`) so candidates match the starter layout and CLI `add` defaults. The agent (or human) reviews and selectively passes accepted candidates to `add_concept` / `add_relation`. Detects FSD vs generic layout. Use once when bootstrapping a fresh repo. |
 | `infer_imports` | **R17** Walk TS/JS files and parse imports → file-level + module-level dependency edges. **side effect 0**. Resolves relative imports, `tsconfig.json` `compilerOptions.paths` aliases, then fallback common `@/*` aliases; unresolved imports use schema-bound `reason` values: `empty`, `relative-not-found`, or `alias-not-found`. Classifies external (npm) separately, collapses to module edges (folder-prefixed capability/element slug A → B with import count plus `kindCounts`). The agent reviews `moduleEdges` and selectively passes accepted edges to `add_relation` as `depends_on`, using `kindCounts` to distinguish static-heavy edges from dynamic / require / re-export / side-effect evidence; the `outputSchema` restricts `kindCounts` to `static`, `dynamic`, `require`, `reexport`, and `side` positive-integer keys. Use after `analyze_repo_structure` to pull *real* dependency edges from the code. |
@@ -290,7 +291,7 @@ is limited to `inspect_compile_issue` / `break_dependency_cycle` /
 `canonicalize_graph_arrays` / `resolve_dangling_reference` /
 `add_missing_relation` / `materialize_external_element` / `unassigned_node` /
 `empty_domain` for the same reason.
-`health` / `workspace_brief` relation filters expose the same enum schema for
+`health` / `workspace_brief` / `agent_brief` relation filters expose the same enum schema for
 `dependencyTypes` and `componentTypes` (`domains` / `domain` / `capabilities` /
 `elements` / `dependencies` / `depends_on` / `relates` / `contains` /
 `describes`), so clients can catch typos like `depend_on` before the call.
@@ -303,7 +304,12 @@ items so MCP clients can catch bad calls before sending them.
 For `query_ontology({ operation: "relation_check" })`, relation `type` is
 validated before endpoint slug resolution, so typoed values such as
 `depend_on` still return the nearest-value hint even in empty or project-less
-vaults where the requested endpoints do not exist.
+vaults where the requested endpoints do not exist. A clean `relation_check`
+also returns `matchingEdges`, reverse-direction `inverseEdges`, nearby schema
+patterns, and a `recommendation` decision (`skip_existing`, `review_inverse`,
+`safe_to_add`, or `review_new_schema`). When the edge does not already exist it
+also includes a ready-to-run `proposedAction` for `add_relation` so agents can
+verify before they write.
 Boolean options are also validated explicitly, including read/query flags and
 destructive write safety switches such as `confirm`, `overwrite`, and `force`.
 Write conflict guards are strict as well: every `expected_mtime` field must be
@@ -318,7 +324,13 @@ the subset through failed calls. The enum is sourced from the graph engine's
 runtime allow-list, so schema and execution stay aligned when query support
 changes. `query_ontology.operation` follows the same shared enum contract and
 is rejected at the MCP boundary when omitted or unknown, instead of falling
-through to a generic graph-engine dispatch failure.
+through to an empty result. `query_plan` responses also include an `execution`
+block with `shouldRun`, `nextStep`, `suggestedQuery`, and, when the plan should
+be narrowed, a `saferQuery` the agent can run instead of guessing lower-cost
+arguments. For `all_paths`, `limit` and `searchBudget` are schema-advertised
+too, so agents can cap path enumeration and inspect `evidence.status`,
+`evidence.pathsComplete`, `exhaustive`, and `truncatedByBudget` before treating
+returned paths or `totalPaths` as complete evidence.
 
 ## Frontmatter shape per kind (R14)
 
@@ -448,36 +460,38 @@ A successful run looks like this:
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
 ✓ maintenance cursor — ready page stable (0 remaining actions; phase none; severity none; kind none; executable none; review none)
 · maintenance cursor — resume skipped (ready page has no actions)
-✓ list_concepts — vault total 29 nodes (vaultRoot /path/to/docs/ontology)
+✓ list_concepts — vault total 30 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 13 evidence results for "project"
+✓ find_evidence — 14 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
-✓ query_concepts limited — 1 query result / 28 total query results (limited true)
+✓ query_concepts limited — 1 query result / 29 total query results (limited true)
 ✓ analyze_repo_structure — fsd (9 domain candidates, 19 capability candidates, 28 element candidates)
-✓ infer_imports — 414 files scanned, 347 module edges (elements/src/views/docs-vault->elements/src/widgets/docs-vault x14 (static:13/dynamic:1), elements/src/widgets/docs-vault->capabilities/docs-vault x10 (static:10), +345 more)
+✓ infer_imports — 418 files scanned, 358 module edges (elements/src/views/docs-vault->elements/src/widgets/docs-vault x14 (static:13/dynamic:1), elements/src/widgets/docs-vault->capabilities/docs-vault x10 (static:10), +356 more)
 ✓ find_neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ find_path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
-✓ list_kinds — 29 nodes (capability:17, domain:6, element:4, project:1, vault-readme:1)
-✓ validate_vault — 29 files, 0 problem files
+✓ list_kinds — 30 nodes (capability:18, domain:6, element:4, project:1, vault-readme:1)
+✓ validate_vault — 30 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (29 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:151)
-✓ workspace_brief_tuned — healthy (29 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:151; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief — healthy (30 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:160)
+✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 4 playbooks, 3 write guardrails, 1 result contract)
+✓ workspace_brief_tuned — healthy (30 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:160; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
-✓ compile_ontology — graph 69e8c6512353 (29 nodes, 252 edges, issues 0)
-✓ compile_ontology page — 1/29 nodes, 1/252 edges
-✓ compile_ontology indexes — out 29, in 28, edgeById 252, aliases 57, edges 101/151/0
-✓ overview — graph 69e8c6512353 (29 nodes, 252 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 29, edges 252)
-✓ project_map query_plan — aggregate_scan (medium, nodes 29, edges 252)
+✓ compile_ontology — graph f48364f844b6 (30 nodes, 268 edges, issues 0)
+✓ compile_ontology page — 1/30 nodes, 1/268 edges
+✓ compile_ontology indexes — out 30, in 29, edgeById 268, aliases 59, edges 108/160/0
+✓ overview — graph f48364f844b6 (30 nodes, 268 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 30, edges 268)
+✓ project_map query_plan — aggregate_scan (medium, nodes 30, edges 268)
 ✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ path — elements/file-system-access-api → project (2 hops, 2 edges)
-✓ project_scope — project (28 nodes, internalEdges 100)
-✓ read census consistency — 29 nodes across list_kinds/list_concepts/compile_ontology/overview, 5 kinds
-✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2 (resume skipped: no actions), graph 11/11
+✓ all_paths — elements/file-system-access-api → project (5/43 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
+✓ project_scope — project (29 nodes, internalEdges 107)
+✓ read census consistency — 30 nodes across list_kinds/list_concepts/compile_ontology/overview, 5 kinds
+✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2 (resume skipped: no actions), graph 13/13
 
 All passed — register .mcp.json with your MCP client and restart to use the 23 tools.
 ```
@@ -500,6 +514,7 @@ and paginated `compile_ontology({nodesLimit:1, edgesLimit:1})`,
 `query_ontology({operation:"query_plan", targetOperation:"project_map"})`,
 plus actual `query_ontology({operation:"neighbors"})`,
 `query_ontology({operation:"path"})`, and
+`query_ontology({operation:"all_paths"})`, and
 `query_ontology({operation:"project_scope"})` smoke calls.
 The indexed compile smoke verifies index shape, count alignment, edge membership,
 known-slug references, and resolved/external/unresolved edge breakdowns.
@@ -686,7 +701,7 @@ After you add `.mcp.json` and restart Claude Code, try the following with your L
 > 3. Call `get_concept({ slug: "project" })` to see the root node's frontmatter and neighbors.
 > 4. Call `find_neighbors({ slug: "capabilities/mcp-server" })` to inspect the local graph around that capability.
 > 5. Call `validate_vault({})` to check frontmatter and graph-reference integrity before writing.
-> 6. Call `query_ontology({ operation: "workspace_brief" })` for the first-contact graph diagnosis.
+> 6. Call `query_ontology({ operation: "agent_brief" })` when you want a Claude Code/Codex handoff: readiness, graph entrypoints, recommended MCP calls, `graph_traversal` (`schema` / `all_paths` / `pattern_walk` / `project_map`), `traversalStrategy` (`plan_before_enumeration` / `bounded_path_evidence` / `containment_cross_check`) for performance-aware traversal, write guardrails, `relationDecisionGuide` for relation preflight decisions, `resultContracts` that require `all_paths` callers to report `limit` / `searchBudget` / `expandedStates` / `exhaustive` / `truncatedByBudget` / `totalPathsExact` plus `evidence.status` / `evidence.reason` / `evidence.pathsComplete`, and read-first write policy in one response. Use `query_ontology({ operation: "workspace_brief" })` when you only need the first-contact graph diagnosis.
 > 7. Call `query_ontology({ operation: "overview", limit: 5 })` to confirm graph-query summaries work without fetching the full compile artifact.
 > 8. Call `query_ontology({ operation: "query_plan", targetOperation: "overview" })` and `query_ontology({ operation: "query_plan", targetOperation: "project_map" })` before heavier graph exploration so the agent sees the cost/index contract across more than one operation.
 
@@ -701,7 +716,7 @@ If those read-only calls respond cleanly, the agent can see the vault and its gr
 
 ## Status
 
-- 0.10.0 — 23 tools. Added `get_concepts`, `add_concepts`, `add_relations`, `validate_vault`, `find_neighbors`, `compile_ontology`, and `query_ontology` (`neighbors` / `path` / `all_paths` / `query_plan` / `centrality` / `communities` / `similar_nodes` / `explain_relation` / `reachability` / `pattern_walk` / `impact` / `blast_radius` / `subgraph` / `overview` / `schema` / `facets` / `match_nodes` / `match_edges` / `node_profile` / `domain_profile` / `domain_matrix` / `project_scope` / `project_map` / `relation_check` / `components` / `lineage` / `containment_tree` / `cycles` / `topological_order` / `recommend_relations` / `growth_plan` / `maintenance_plan` / `workspace_brief` / `health`); current split is 15 read + 8 write.
+- 0.10.0 — 23 tools. Added `get_concepts`, `add_concepts`, `add_relations`, `validate_vault`, `find_neighbors`, `compile_ontology`, and `query_ontology` (`neighbors` / `path` / `all_paths` / `query_plan` with executable run/narrow advice / `centrality` / `communities` / `similar_nodes` / `explain_relation` / `reachability` / `pattern_walk` / `impact` / `blast_radius` / `subgraph` / `overview` / `schema` / `facets` / `match_nodes` / `match_edges` / `node_profile` / `domain_profile` / `domain_matrix` / `project_scope` / `project_map` / `relation_check` / `components` / `lineage` / `containment_tree` / `cycles` / `topological_order` / `recommend_relations` / `growth_plan` / `maintenance_plan` / `agent_brief` / `workspace_brief` / `health`); current split is 15 read + 8 write.
 - 0.7.1 — 16 tools. Added `instructions` field on initialize response — Claude Code / Cursor see kind hierarchy + workflow + write-tool dry-run pattern + `expected_mtime` conflict guard guidance on connect, no per-session trial-and-error.
 - Current initialize instructions also surface destructive-write safety: `rename_concept` refuses an existing `newSlug` unless `overwrite: true`, and `delete_concept` needs `force: true` only after accepting dangling referrers.
 - Current initialize instructions also state that tool schemas are strict, unknown arguments are rejected with a nearest-argument hint, invalid enum values surface a nearest-value hint when possible, row-level repair fields include `rowName` / `receivedField` / `unknownFields` / `allowedFields` / `receivedFields` / `firstSeenAt`, `add_relations` unknown type row errors include a closest-value hint such as `Did you mean "depends_on"?`, and `add_concepts` duplicate input slugs report `concepts[n] duplicate slug in input batch; first seen at concepts[m]`, so typo and batch repair are explicit at first contact.
