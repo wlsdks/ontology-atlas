@@ -29,6 +29,8 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   maintenance: runner('maintenance.mjs', 'runMaintenance'),
   node: runner('node-profile.mjs', 'runNodeProfile'),
   similar: runner('similar.mjs', 'runSimilar'),
+  'match-nodes': runner('match-nodes.mjs', 'runMatchNodes'),
+  'match-edges': runner('match-edges.mjs', 'runMatchEdges'),
   query: runner('query.mjs', 'runQuery'),
   compile: runner('compile.mjs', 'runCompile'),
   rename: runner('rename.mjs', 'runRename'),

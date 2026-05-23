@@ -94,6 +94,10 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
                                              ${COLORS.dim}schema-aware add_relation preflight${COLORS.reset}
   npx oh-my-ontology query "<filter>"         Typed filter DSL (kind=X AND has(elements))
        --limit N --json                       ${COLORS.dim}default limit 100${COLORS.reset}
+  npx oh-my-ontology match-nodes [vault]      Graph DB-style node scan with kind/domain/degree filters
+       --kind K --min-degree N --plan --json  ${COLORS.dim}filter-preserving query_plan support${COLORS.reset}
+  npx oh-my-ontology match-edges [vault]      Graph DB-style edge scan with type/kind/external filters
+       --type T --from-kind K --plan --json   ${COLORS.dim}edge pattern rows + totalMatches${COLORS.reset}
   npx oh-my-ontology compile [vault]         Deterministic graph compile + optional reorder
        --summary --fix --json                 ${COLORS.dim}hash/counts · canonicalize relation arrays${COLORS.reset}
   npx oh-my-ontology overview [vault]         Vault first-contact dashboard (counts + 분포 + 허브)

@@ -2844,6 +2844,50 @@ await test('read-only graph commands — reject ambiguous vault arguments before
       pattern: /unknown flag: -json\. Did you mean --json\?/,
     },
     {
+      args: ['match-nodes', 'ontology', '--vault', 'docs/ontology'],
+      pattern: /either positional argument or --vault/,
+    },
+    {
+      args: ['match-nodes', '--kind=capabilty'],
+      pattern: /--kind must be one of: project, domain, capability, element, document, vault-readme\. Received: "capabilty"\. Did you mean "capability"\?/,
+    },
+    {
+      args: ['match-nodes', '--min-degree=2', '--max-degree=1'],
+      pattern: /--min-degree must be <= --max-degree/,
+    },
+    {
+      args: ['match-nodes', '--sort=mtime'],
+      pattern: /--sort must be one of: degree, inDegree, outDegree, slug\. Received: "mtime"\./,
+    },
+    {
+      args: ['match-nodes', '--slug-contain=auth'],
+      pattern: /unknown flag: --slug-contain=auth\. Did you mean --slug-contains\?/,
+    },
+    {
+      args: ['match-edges', 'ontology', '--vault', 'docs/ontology'],
+      pattern: /either positional argument or --vault/,
+    },
+    {
+      args: ['match-edges', '--from-kind=capabilty'],
+      pattern: /--from-kind must be one of: project, domain, capability, element, document, vault-readme\. Received: "capabilty"\. Did you mean "capability"\?/,
+    },
+    {
+      args: ['match-edges', '--to-kind=externl'],
+      pattern: /--to-kind must be one of: project, domain, capability, element, document, vault-readme, external, unresolved\. Received: "externl"\. Did you mean "external"\?/,
+    },
+    {
+      args: ['match-edges', '--type=depend_on'],
+      pattern: /--type must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
+    },
+    {
+      args: ['match-edges', '--type=relates', '--types=depends_on'],
+      pattern: /pass either --type or --types, not both/,
+    },
+    {
+      args: ['match-edges', '--include-extenal'],
+      pattern: /unknown flag: --include-extenal\. Did you mean --include-external\?/,
+    },
+    {
       args: ['overview', 'ontology', '--vault', 'docs/ontology'],
       pattern: /either positional argument or --vault/,
     },
@@ -3296,7 +3340,7 @@ await test('query — rejects MCP graph operation flags with CLI command guidanc
     const clean = stripAnsi(r.stderr);
     assert.match(clean, /unknown flag: --operation\./);
     assert.match(clean, /query is the typed filter DSL/);
-    assert.match(clean, /overview, health, agent-brief, workspace-brief, growth, maintenance, path, relation-check, blast-radius, cycles, or hubs/);
+    assert.match(clean, /overview, health, agent-brief, workspace-brief, growth, maintenance, path, relation-check, match-nodes, match-edges, blast-radius, cycles, or hubs/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3326,6 +3370,100 @@ await test('query --json — fails closed on malformed query_concepts payloads b
     assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     assert.equal(r.stdout, '');
     assert.match(stripAnsi(r.stderr), /query_concepts matches\[0\] has an invalid query-result shape/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('match-nodes — graph DB-style node rows with degree filters', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'match-nodes',
+      root,
+      '--kind=capability',
+      '--min-in-degree=1',
+      '--sort=inDegree',
+      '--limit=5',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /match_nodes 2\/2 node\(s\)/);
+    assert.match(clean, /filters .*kind=capability.*minInDegree=1.*sort=inDegree/);
+    assert.match(clean, /capabilities\/foo\s+— Foo.*deg 4 in 2 out 2/);
+    assert.match(clean, /capabilities\/bar\s+— Bar.*deg 3 in 1 out 2/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('match-nodes --plan --json — preserves filters in query_plan and result', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'match-nodes',
+      root,
+      '--kind=capability',
+      '--min-degree=2',
+      '--sort=degree',
+      '--limit=2',
+      '--plan',
+      '--json',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.plan.targetOperation, 'match_nodes');
+    assert.equal(data.plan.normalized.kind, 'capability');
+    assert.equal(data.plan.normalized.minDegree, 2);
+    assert.equal(data.plan.estimate.totalMatches, 2);
+    assert.equal(data.result.operation, 'match_nodes');
+    assert.equal(data.result.totalMatches, 2);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('match-edges — graph DB-style edge rows with kind/type filters', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'match-edges',
+      root,
+      '--from-kind=capability',
+      '--type=relates',
+      '--limit=5',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /match_edges 1\/1 edge\(s\)/);
+    assert.match(clean, /filters .*fromKind=capability.*types=relates/);
+    assert.match(clean, /capabilities\/bar --relates--> capabilities\/foo/);
+    assert.match(clean, /Bar.*Foo.*\(capability → capability\)/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('match-edges --plan --json — preserves filters in query_plan and result', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'match-edges',
+      root,
+      '--from-kind=capability',
+      '--type=relates',
+      '--limit=3',
+      '--plan',
+      '--json',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.plan.targetOperation, 'match_edges');
+    assert.equal(data.plan.normalized.fromKind, 'capability');
+    assert.deepEqual(data.plan.normalized.types, ['relates']);
+    assert.equal(data.plan.estimate.totalMatches, 1);
+    assert.equal(data.result.operation, 'match_edges');
+    assert.equal(data.result.totalMatches, 1);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3371,7 +3509,7 @@ await test('overview --json — JSON 응답 graph/byKind/hubs 키 노출', async
   }
 });
 
-await test('overview/hubs/blast-radius --json — fail closed on malformed graph query payloads before output', async () => {
+await test('overview/hubs/match/blast-radius --json — fail closed on malformed graph query payloads before output', async () => {
   const root = withVault();
   const fakeMcp = join(root, 'fake-mcp-graph-query-malformed.mjs');
   writeFileSync(
@@ -3388,7 +3526,11 @@ await test('overview/hubs/blast-radius --json — fail closed on malformed graph
       "      ? { operation: 'overview', graph: { nodes: '2', edges: 1 }, byKind: {}, byDomain: {}, byRelation: {}, hubs: [] }",
       "      : operation === 'centrality'",
       "        ? { operation: 'centrality', rankings: { pageRank: [{}], bridges: [], authorities: [], hubs: [] } }",
-      "        : { operation: 'blast_radius', center: 'domains/auth', risk: 'low', summary: { affectedNodes: 1, affectedEdges: '0', affectedKinds: 1, affectedDomains: 1, crossDomainEdges: 0 }, byKind: {}, byDomain: {}, nodes: { total: 0, limited: false, rows: [] }, edges: { total: 0, limited: false, rows: [] } };",
+      "        : operation === 'match_nodes'",
+      "          ? { operation: 'match_nodes', filters: {}, totalMatches: 1, limited: false, nodes: [{ slug: 'capabilities/foo', kind: 'capability', title: 'Foo', degree: '1' }] }",
+      "          : operation === 'match_edges'",
+      "            ? { operation: 'match_edges', filters: {}, totalMatches: 1, limited: false, edges: [{ from: 'capabilities/foo', to: 'capabilities/bar', via: 'relates', fromNode: { slug: 'capabilities/foo', kind: 'capability' }, toKind: 'capability' }] }",
+      "            : { operation: 'blast_radius', center: 'domains/auth', risk: 'low', summary: { affectedNodes: 1, affectedEdges: '0', affectedKinds: 1, affectedDomains: 1, crossDomainEdges: 0 }, byKind: {}, byDomain: {}, nodes: { total: 0, limited: false, rows: [] }, edges: { total: 0, limited: false, rows: [] } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
       "});",
@@ -3405,6 +3547,16 @@ await test('overview/hubs/blast-radius --json — fail closed on malformed graph
     assert.equal(hubs.code, 2, `stdout: ${hubs.stdout}\nstderr: ${hubs.stderr}`);
     assert.equal(hubs.stdout, '');
     assert.match(stripAnsi(hubs.stderr), /centrality rankings\.pageRank\[0\] has an invalid ranking shape/);
+
+    const matchNodes = await run(['match-nodes', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(matchNodes.code, 2, `stdout: ${matchNodes.stdout}\nstderr: ${matchNodes.stderr}`);
+    assert.equal(matchNodes.stdout, '');
+    assert.match(stripAnsi(matchNodes.stderr), /match_nodes nodes\[0\] has an invalid node row shape/);
+
+    const matchEdges = await run(['match-edges', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(matchEdges.code, 2, `stdout: ${matchEdges.stdout}\nstderr: ${matchEdges.stderr}`);
+    assert.equal(matchEdges.stdout, '');
+    assert.match(stripAnsi(matchEdges.stderr), /match_edges edges\[0\] has an invalid edge row shape/);
 
     const blast = await run(['blast-radius', 'domains/auth', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
     assert.equal(blast.code, 2, `stdout: ${blast.stdout}\nstderr: ${blast.stderr}`);

@@ -198,7 +198,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm integration:cli:entry` | CLI entrypoint, help, command inventory, and `init` contracts |
 | `pnpm integration:cli:compile` | CLI compile / `--fix` canonicalization contracts |
 | `pnpm integration:cli:diagnosis` | CLI `health` / `agent-brief` / `workspace-brief` diagnosis contracts |
-| `pnpm integration:cli:graph-read` | CLI read-only graph command contracts, including bounded `all-paths --plan` traversal guards |
+| `pnpm integration:cli:graph-read` | CLI read-only graph command contracts, including `match-nodes` / `match-edges` scans and bounded `all-paths --plan` traversal guards |
 | `pnpm integration:cli:graph-write` | CLI graph write dry-run/confirm safety contracts |
 | `pnpm integration:cli:repo-analysis` | CLI `analyze` / `infer-imports` / `bootstrap` code-to-vault contracts |
 | `pnpm integration:cli:local-vault` | CLI local vault `add` / `import` / `list` / `find` / `validate` contracts |

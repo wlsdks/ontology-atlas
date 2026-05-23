@@ -1,7 +1,7 @@
 {
   "name": "oh-my-ontology",
   "version": "0.11.0",
-  "description": "AI-native codebase ontology workbench — 31-command vault scaffold + graph-level/CRUD CLI + MCP 23-tool agent surface.",
+  "description": "AI-native codebase ontology workbench — 33-command vault scaffold + graph-level/CRUD CLI + MCP 23-tool agent surface.",
   "type": "module",
   "bin": {
     "oh-my-ontology": "src/index.mjs"
