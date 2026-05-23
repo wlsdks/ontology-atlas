@@ -1,8 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2, Sparkles } from 'lucide-react';
+import { CheckCircle2, ClipboardCopy, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { copyText } from '@/shared/lib/copy-text';
+
+export const ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT =
+  'Use the oh-my-ontology MCP server to run validate_vault, then query_ontology({ "operation": "workspace_brief" }), then query_ontology({ "operation": "agent_brief" }). Tell me whether this vault is readable and the write tools are available before proposing changes.';
 
 interface Props {
   /** 클릭 시 useLocalVault.scaffoldOntology() 호출. created/skipped 반환. */
@@ -25,6 +29,7 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
   const t = useTranslations('featuresMisc.starterCta');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const isEmpty = docCount === 0;
   const verificationSteps = [
     t('verifyStepFiles'),
@@ -42,6 +47,11 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function handleCopyPrompt() {
+    const copied = await copyText(ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT);
+    setCopyState(copied ? 'copied' : 'failed');
   }
 
   if (isEmpty) {
@@ -91,6 +101,18 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
             </div>
           ))}
         </div>
+        <button
+          type="button"
+          onClick={handleCopyPrompt}
+          className="mt-3 inline-flex items-center gap-2 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+        >
+          <ClipboardCopy size={12} aria-hidden />
+          {copyState === 'copied'
+            ? t('copyPromptCopied')
+            : copyState === 'failed'
+              ? t('copyPromptFailed')
+              : t('copyPromptLabel')}
+        </button>
         <button
           type="button"
           onClick={handleClick}
