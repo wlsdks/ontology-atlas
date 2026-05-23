@@ -65,6 +65,36 @@ export function buildReachabilityCliCommand({
   ].join(" ");
 }
 
+export function buildNodeProfileMcpCall({
+  slug,
+  limit,
+}: {
+  slug: string;
+  limit: number;
+}): string {
+  return `query_ontology(${JSON.stringify({
+    operation: "node_profile",
+    slug,
+    limit,
+  })})`;
+}
+
+export function buildNodeProfileCliCommand({
+  slug,
+  limit,
+}: {
+  slug: string;
+  limit: number;
+}): string {
+  return [
+    "oh-my-ontology",
+    "node",
+    shellQuote(slug),
+    "--limit",
+    String(limit),
+  ].join(" ");
+}
+
 function shellQuote(value: string): string {
   if (/^[A-Za-z0-9_./:@+-]+$/.test(value)) return value;
   return `'${value.replace(/'/g, "'\\''")}'`;

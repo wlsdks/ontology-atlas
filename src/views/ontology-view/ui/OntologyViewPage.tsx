@@ -34,6 +34,8 @@ import {
 import { OperationsNav } from "@/widgets/operations-nav";
 import { Tooltip, useToast } from "@/shared/ui";
 import {
+  buildNodeProfileCliCommand,
+  buildNodeProfileMcpCall,
   buildReachabilityCliCommand,
   buildReachabilityMcpCall,
   resolveReachabilityQuerySlug,
@@ -625,6 +627,52 @@ function ReachabilityCopyActions({
   );
 }
 
+function AgentContextCopyActions({
+  slug,
+}: {
+  slug: string;
+}) {
+  const t = useTranslations('ontologyView.detail');
+  const { show } = useToast();
+  const limit = 8;
+
+  const copyText = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      show(t('agentContextCopyToastSuccess'), "success");
+    } catch (err) {
+      console.warn("[AgentContextCopyActions] clipboard write failed", err);
+      show(t('agentContextCopyToastError'), "error");
+    }
+  };
+
+  return (
+    <div className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2.5">
+      <p className="font-mono text-[9px] uppercase text-[color:var(--color-text-quaternary)]">
+        {t('agentContextTitle')}
+      </p>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          onClick={() => void copyText(buildNodeProfileMcpCall({ slug, limit }))}
+          className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+        >
+          <Clipboard size={12} aria-hidden />
+          <span className="truncate">{t('agentContextCopyMcp')}</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => void copyText(buildNodeProfileCliCommand({ slug, limit }))}
+          className="inline-flex min-w-0 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+        >
+          <Clipboard size={12} aria-hidden />
+          <span className="truncate">{t('agentContextCopyCli')}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /**
  * 트리 row 클릭 시 노출되는 노드 상세 패널.
  *
@@ -763,6 +811,9 @@ function NodeDetailPanel({
       <p className="mt-2 break-all font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
         {node.id}
       </p>
+      {reachabilityQuerySlug ? (
+        <AgentContextCopyActions slug={reachabilityQuerySlug} />
+      ) : null}
 
       {reachability ? (
         <div

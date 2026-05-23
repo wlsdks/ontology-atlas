@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
+  buildNodeProfileCliCommand,
+  buildNodeProfileMcpCall,
   buildReachabilityCliCommand,
   buildReachabilityMcpCall,
   resolveReachabilityQuerySlug,
@@ -70,6 +72,20 @@ describe("reachability copy helpers", () => {
     );
     expect(buildReachabilityCliCommand(args)).toBe(
       "oh-my-ontology reachability capabilities/cli-developer-entry --direction incoming --depth 2 --limit 12",
+    );
+  });
+
+  it("builds copyable MCP and CLI node profile calls", () => {
+    const args = {
+      slug: "capabilities/cli-developer-entry",
+      limit: 8,
+    };
+
+    expect(buildNodeProfileMcpCall(args)).toBe(
+      'query_ontology({"operation":"node_profile","slug":"capabilities/cli-developer-entry","limit":8})',
+    );
+    expect(buildNodeProfileCliCommand(args)).toBe(
+      "oh-my-ontology node capabilities/cli-developer-entry --limit 8",
     );
   });
 });

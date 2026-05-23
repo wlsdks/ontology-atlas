@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T18:26:53.288Z",
+  "generatedAt": "2026-05-23T18:34:19.767Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -4397,8 +4397,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 6317,
-      "updatedAt": "2026-05-23T18:26:16.912Z",
+      "wordCount": 6334,
+      "updatedAt": "2026-05-23T18:33:43.325Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5252,8 +5252,8 @@
         }
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (moduleload 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), la",
-      "wordCount": 208,
-      "updatedAt": "2026-05-23T18:26:26.740Z",
+      "wordCount": 219,
+      "updatedAt": "2026-05-23T18:33:53.597Z",
       "linksOut": []
     },
     {
