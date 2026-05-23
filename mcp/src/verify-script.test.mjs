@@ -1018,7 +1018,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'query_ontology',
         description:
-          'Run graph queries including `all_paths` with limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance, `maintenance_plan` with cursor `nextAfterActionId`/`hasMore` pagination metadata and current-page `nextExecutableAction` / `nextReviewAction` pointers, and `agent_brief` with traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance and resultContracts for all_paths completeness.',
+          'Run graph queries including `all_paths` with limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance, `maintenance_plan` with cursor `nextAfterActionId`/`hasMore` pagination metadata and current-page `nextExecutableAction` / `nextReviewAction` pointers, and `agent_brief` with graphDbQueryPack for match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance and resultContracts for all_paths completeness.',
         inputSchema: {
           additionalProperties: false,
           required: ['operation'],
@@ -3103,6 +3103,15 @@ describe('verify.mjs first-contact gates', () => {
         },
       )),
       'query_ontology description missing agent result contract guidance',
+    );
+    assert.equal(
+      toolsListSchemaFailure(withQueryTool(
+        {
+          ...queryOntologyTool,
+          description: queryOntologyTool.description.replace('graphDbQueryPack for match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation', 'graph pack'),
+        },
+      )),
+      'query_ontology description missing agent graph DB query pack guidance',
     );
     assert.equal(
       toolsListSchemaFailure(withQueryTool(
@@ -6764,6 +6773,7 @@ describe('verify.mjs first-contact gates', () => {
       'maintenance_plan afterActionId cursor misses return cursor.found=false and cursor.reason.',
       'maintenance_plan missing cursors return cursor.nextAfterActionId=null and cursor.hasMore=false.',
       'query_ontology agent_brief returns relationDecisionGuide for relation_check outcomes skip_existing, review_inverse, safe_to_add, and review_new_schema.',
+      'query_ontology agent_brief returns graphDbQueryPack for match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation.',
       'query_ontology agent_brief returns traversalStrategy rows plan_before_enumeration, bounded_path_evidence, and containment_cross_check.',
       'query_ontology agent_brief returns resultContracts for all_paths requiring callers to report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.',
       'This filler keeps the instructions representative of a real initialize response.',
@@ -6877,6 +6887,10 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('relationDecisionGuide for relation_check outcomes skip_existing, review_inverse, safe_to_add, and review_new_schema', 'relation decision docs') } }),
       'initialize instructions missing agent brief relation decision guide',
+    );
+    assert.equal(
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('graphDbQueryPack for match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation', 'graph pack') } }),
+      'initialize instructions missing agent brief graph DB query pack guidance',
     );
   });
 
@@ -9116,6 +9130,7 @@ describe('verify.mjs first-contact gates', () => {
         'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
         'Run these first-contact MCP calls in order:',
         'CLI fallback commands when the MCP connector is unavailable:',
+        'Graph DB query pack:',
         'Investigation playbooks:',
         'Traversal strategy:',
         'plan_before_enumeration',
@@ -9127,7 +9142,11 @@ describe('verify.mjs first-contact gates', () => {
       cliFallbackCommands: [
         'oh-my-ontology workspace-brief [vault]',
         'oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates',
-        'oh-my-ontology all-paths capability:mcp-server domain:ai-agent-partner [vault] --plan --max-hops 3',
+        'oh-my-ontology domain-matrix [vault] --limit 10',
+        'oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10',
+        'oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20',
+        'oh-my-ontology all-paths capability:mcp-server domain:ai-agent-partner [vault] --plan --max-hops 3 --force',
+        'oh-my-ontology explain capability:mcp-server domain:ai-agent-partner [vault] --direction undirected',
       ],
       health: {
         checks: [{ id: 'compile_issues', status: 'pass', count: 0, message: 'ok' }],
@@ -9138,6 +9157,46 @@ describe('verify.mjs first-contact gates', () => {
         { tool: 'query_ontology', arguments: { operation: 'workspace_brief' } },
         { tool: 'query_ontology', arguments: { operation: 'health' } },
         { tool: 'query_ontology', arguments: { operation: 'relation_check', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', type: 'depends_on' } },
+      ],
+      graphDbQueryPack: [
+        {
+          id: 'node_scan',
+          intent: 'MATCH (n:capability) WHERE degree(n) >= 2 RETURN n',
+          goal: 'Find high-degree capability nodes.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_nodes', kind: 'capability', minDegree: 2, sort: 'degree', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'match_nodes', kind: 'capability', minDegree: 2, sort: 'degree', limit: 10 } },
+          ],
+        },
+        {
+          id: 'edge_scan',
+          intent: 'MATCH ()-[r:depends_on]->() RETURN r',
+          goal: 'Scan dependency edges.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_edges', types: ['depends_on'], limit: 20 } },
+            { tool: 'query_ontology', arguments: { operation: 'match_edges', types: ['depends_on'], limit: 20 } },
+          ],
+        },
+        {
+          id: 'domain_coupling',
+          intent: 'MATCH (domain)-[depends_on|relates]->(domain) RETURN coupling_matrix',
+          goal: 'Compare domain coupling.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'domain_matrix', types: ['depends_on', 'relates'], limit: 6 } },
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'centrality', types: ['depends_on', 'relates'], limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'centrality', types: ['depends_on', 'relates'], limit: 10 } },
+          ],
+        },
+        {
+          id: 'path_evidence',
+          intent: 'MATCH p=(from)-[:depends_on|relates*..3]-(to) RETURN p',
+          goal: 'Collect bounded path evidence.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'all_paths', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', maxHops: 3, limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'all_paths', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', maxHops: 3, limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'explain_relation', from: 'capability:mcp-server', to: 'domain:ai-agent-partner', direction: 'undirected' } },
+          ],
+        },
       ],
       playbooks: [
         {
@@ -9257,7 +9316,7 @@ describe('verify.mjs first-contact gates', () => {
     };
 
     assert.equal(agentBriefFailure(payload), null);
-    assert.equal(agentBriefSummary(payload), 'ready 100/100, 1 entrypoint, 3 first calls, 2 playbooks, 3 write guardrails, 1 result contract');
+    assert.equal(agentBriefSummary(payload), 'ready 100/100, 1 entrypoint, 3 first calls, 4 graph DB pack items, 2 playbooks, 3 write guardrails, 1 result contract');
     assert.equal(
       agentBriefFailure({ ...payload, readiness: { ...payload.readiness, score: 101 } }),
       'agent_brief response malformed readiness score',
@@ -9277,6 +9336,13 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       agentBriefFailure({ ...payload, cliFallbackCommands: ['oh-my-ontology workspace-brief [vault]'] }),
       'agent_brief cliFallbackCommands missing centrality plan fallback',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/match-nodes/.test(command)),
+      }),
+      'agent_brief cliFallbackCommands missing match-nodes plan fallback',
     );
     assert.equal(
       agentBriefFailure({ ...payload, firstCalls: [{ tool: 'query_ontology', arguments: { operation: 'not_real' } }] }),
@@ -9304,6 +9370,50 @@ describe('verify.mjs first-contact gates', () => {
         firstCalls: payload.firstCalls.filter((call) => call.arguments.operation !== 'relation_check'),
       }),
       'agent_brief firstCalls missing relation_check preflight',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, graphDbQueryPack: [] }),
+      'agent_brief response missing graphDbQueryPack',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        graphDbQueryPack: payload.graphDbQueryPack.filter((item) => item.id !== 'path_evidence'),
+      }),
+      'agent_brief graphDbQueryPack missing packs: path_evidence',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        graphDbQueryPack: payload.graphDbQueryPack.map((item) =>
+          item.id === 'node_scan'
+            ? { ...item, calls: item.calls.filter((call) => call.arguments.operation !== 'query_plan') }
+            : item,
+        ),
+      }),
+      'agent_brief graphDbQueryPack node_scan missing match_nodes query_plan',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        graphDbQueryPack: payload.graphDbQueryPack.map((item) =>
+          item.id === 'domain_coupling'
+            ? { ...item, calls: item.calls.filter((call) => call.arguments.operation !== 'centrality') }
+            : item,
+        ),
+      }),
+      'agent_brief graphDbQueryPack domain_coupling missing centrality',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        graphDbQueryPack: payload.graphDbQueryPack.map((item) =>
+          item.id === 'path_evidence'
+            ? { ...item, calls: item.calls.filter((call) => call.arguments.operation !== 'explain_relation') }
+            : item,
+        ),
+      }),
+      'agent_brief graphDbQueryPack path_evidence missing explain_relation',
     );
     assert.equal(
       agentBriefFailure({

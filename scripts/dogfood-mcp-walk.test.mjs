@@ -122,6 +122,7 @@ function makeDogfoodInitialize() {
       "maintenance_plan afterActionId cursor misses return cursor.found=false and cursor.reason.",
       "maintenance_plan missing cursors return cursor.nextAfterActionId=null and cursor.hasMore=false.",
       "query_ontology agent_brief returns relationDecisionGuide for relation_check outcomes skip_existing, review_inverse, safe_to_add, and review_new_schema.",
+      "query_ontology agent_brief returns graphDbQueryPack for match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation.",
       "query_ontology agent_brief returns traversalStrategy plan_before_enumeration, bounded_path_evidence, and containment_cross_check.",
       "query_ontology agent_brief resultContracts describe all_paths limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.",
     ].join("\n"),
@@ -486,7 +487,7 @@ function makeDogfoodToolsList() {
         },
       };
       if (name === "query_ontology") {
-        tool.description = "Graph query tool with current-page `nextExecutableAction` / `nextReviewAction` pointers and cursor `nextAfterActionId`/`hasMore` pagination metadata. `agent_brief` includes traversalStrategy plan_before_enumeration, bounded_path_evidence, and containment_cross_check guidance plus resultContracts for all_paths completeness. `all_paths` responses include limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance.";
+        tool.description = "Graph query tool with current-page `nextExecutableAction` / `nextReviewAction` pointers and cursor `nextAfterActionId`/`hasMore` pagination metadata. `agent_brief` includes graphDbQueryPack for match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation, traversalStrategy plan_before_enumeration, bounded_path_evidence, and containment_cross_check guidance plus resultContracts for all_paths completeness. `all_paths` responses include limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance.";
         tool.inputSchema.required = ["operation"];
         tool.inputSchema.properties = {
           operation: { enum: QUERY_ONTOLOGY_OPERATIONS },

@@ -507,7 +507,7 @@ A successful run looks like this:
 ✓ validate_vault — 31 files, 0 problem files
 ✓ project probe — 1 project node
 ✓ workspace_brief — healthy (31 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:174)
-✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 4 playbooks, 3 write guardrails, 1 result contract)
+✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 4 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
 ✓ workspace_brief_tuned — healthy (31 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:174; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)

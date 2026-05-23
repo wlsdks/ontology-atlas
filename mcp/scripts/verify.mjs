@@ -1749,6 +1749,10 @@ export function toolsListSchemaFailure(tools) {
     return 'query_ontology description missing agent result contract guidance';
   }
 
+  if (!/agent_brief[\s\S]*graphDbQueryPack[\s\S]*match_nodes[\s\S]*match_edges[\s\S]*domain_matrix[\s\S]*centrality[\s\S]*all_paths[\s\S]*explain_relation/.test(queryTool.description || '')) {
+    return 'query_ontology description missing agent graph DB query pack guidance';
+  }
+
   if (!/agent_brief[\s\S]*traversalStrategy[\s\S]*plan_before_enumeration[\s\S]*bounded_path_evidence[\s\S]*containment_cross_check/.test(queryTool.description || '')) {
     return 'query_ontology description missing agent traversal strategy guidance';
   }
@@ -3111,6 +3115,7 @@ export function initializeInstructionsFailure(response) {
     ['maintenance cursor miss guidance', /afterActionId[\s\S]*cursor\.found=false[\s\S]*cursor\.reason/],
     ['maintenance cursor miss pagination guidance', /cursor\.nextAfterActionId=null[\s\S]*cursor\.hasMore=false/],
     ['agent brief relation decision guide', /agent_brief[\s\S]*relationDecisionGuide[\s\S]*skip_existing[\s\S]*review_inverse[\s\S]*safe_to_add[\s\S]*review_new_schema/],
+    ['agent brief graph DB query pack guidance', /agent_brief[\s\S]*graphDbQueryPack[\s\S]*match_nodes[\s\S]*match_edges[\s\S]*domain_matrix[\s\S]*centrality[\s\S]*all_paths[\s\S]*explain_relation/],
     ['agent brief traversal strategy guidance', /agent_brief[\s\S]*traversalStrategy[\s\S]*plan_before_enumeration[\s\S]*bounded_path_evidence[\s\S]*containment_cross_check/],
     ['agent brief result contracts guidance', /agent_brief[\s\S]*resultContracts[\s\S]*all_paths[\s\S]*limit[\s\S]*searchBudget[\s\S]*expandedStates[\s\S]*exhaustive[\s\S]*truncatedByBudget[\s\S]*totalPathsExact[\s\S]*evidence\.status[\s\S]*evidence\.reason[\s\S]*evidence\.pathsComplete/],
   ];
@@ -6623,6 +6628,9 @@ export function agentBriefSummary(parsed) {
     (parsed?.entrypoints || []).length,
     'entrypoint',
   )}, ${formatCount((parsed?.firstCalls || []).length, 'first call')}, ${formatCount(
+    (parsed?.graphDbQueryPack || []).length,
+    'graph DB pack item',
+  )}, ${formatCount(
     (parsed?.playbooks || []).length,
     'playbook',
   )}, ${formatCount(
@@ -6671,6 +6679,7 @@ export function agentBriefFailure(parsed) {
     !/oh-my-ontology MCP server/.test(parsed.handoffPrompt) ||
     !/first-contact MCP calls/i.test(parsed.handoffPrompt) ||
     !/CLI fallback commands/.test(parsed.handoffPrompt) ||
+    !/Graph DB query pack/.test(parsed.handoffPrompt) ||
     !/Investigation playbooks/.test(parsed.handoffPrompt) ||
     !/Traversal strategy/.test(parsed.handoffPrompt) ||
     !/plan_before_enumeration/.test(parsed.handoffPrompt) ||
@@ -6691,6 +6700,21 @@ export function agentBriefFailure(parsed) {
   }
   if (!parsed.cliFallbackCommands.some((command) => /hubs \[vault\] --plan/.test(command))) {
     return 'agent_brief cliFallbackCommands missing centrality plan fallback';
+  }
+  if (!parsed.cliFallbackCommands.some((command) => /match-nodes \[vault\] --plan/.test(command))) {
+    return 'agent_brief cliFallbackCommands missing match-nodes plan fallback';
+  }
+  if (!parsed.cliFallbackCommands.some((command) => /match-edges \[vault\] --plan/.test(command))) {
+    return 'agent_brief cliFallbackCommands missing match-edges plan fallback';
+  }
+  if (!parsed.cliFallbackCommands.some((command) => /domain-matrix \[vault\]/.test(command))) {
+    return 'agent_brief cliFallbackCommands missing domain-matrix fallback';
+  }
+  if (!parsed.cliFallbackCommands.some((command) => /all-paths /.test(command) && / --plan /.test(command))) {
+    return 'agent_brief cliFallbackCommands missing all-paths plan fallback';
+  }
+  if (!parsed.cliFallbackCommands.some((command) => /explain /.test(command))) {
+    return 'agent_brief cliFallbackCommands missing explain fallback';
   }
   if (!parsed?.health || !Array.isArray(parsed.health.checks)) {
     return 'agent_brief response missing health checks';
@@ -6730,6 +6754,8 @@ export function agentBriefFailure(parsed) {
   if (!agentToolCallsIncludeOperation(parsed.firstCalls, 'relation_check')) {
     return 'agent_brief firstCalls missing relation_check preflight';
   }
+  const graphDbQueryPackFailure = agentGraphDbQueryPackFailure(parsed.graphDbQueryPack);
+  if (graphDbQueryPackFailure) return graphDbQueryPackFailure;
   if (!Array.isArray(parsed.playbooks) || parsed.playbooks.length === 0) {
     return 'agent_brief response missing playbooks';
   }
@@ -6904,6 +6930,61 @@ function agentResultContractsFailure(contracts) {
   return null;
 }
 
+function agentGraphDbQueryPackFailure(pack) {
+  if (!Array.isArray(pack) || pack.length === 0) {
+    return 'agent_brief response missing graphDbQueryPack';
+  }
+  const required = ['node_scan', 'edge_scan', 'domain_coupling', 'path_evidence'];
+  const seen = new Set();
+  for (const [index, item] of pack.entries()) {
+    if (!hasNonEmptyString(item?.id, item?.intent, item?.goal)) {
+      return `agent_brief graphDbQueryPack malformed row at index ${index}`;
+    }
+    seen.add(item.id);
+    const callFailure = agentToolCallsFailure(`agent_brief graphDbQueryPack ${item.id}`, item.calls);
+    if (callFailure) return callFailure;
+  }
+  const missing = required.filter((id) => !seen.has(id));
+  if (missing.length > 0) {
+    return `agent_brief graphDbQueryPack missing packs: ${missing.join(', ')}`;
+  }
+  const nodeScan = pack.find((item) => item.id === 'node_scan');
+  if (!agentToolCallsIncludeQueryPlanTarget(nodeScan?.calls, 'match_nodes')) {
+    return 'agent_brief graphDbQueryPack node_scan missing match_nodes query_plan';
+  }
+  if (!agentToolCallsIncludeOperation(nodeScan?.calls, 'match_nodes')) {
+    return 'agent_brief graphDbQueryPack node_scan missing match_nodes';
+  }
+  const edgeScan = pack.find((item) => item.id === 'edge_scan');
+  if (!agentToolCallsIncludeQueryPlanTarget(edgeScan?.calls, 'match_edges')) {
+    return 'agent_brief graphDbQueryPack edge_scan missing match_edges query_plan';
+  }
+  if (!agentToolCallsIncludeOperation(edgeScan?.calls, 'match_edges')) {
+    return 'agent_brief graphDbQueryPack edge_scan missing match_edges';
+  }
+  const domainCoupling = pack.find((item) => item.id === 'domain_coupling');
+  if (!agentToolCallsIncludeOperation(domainCoupling?.calls, 'domain_matrix')) {
+    return 'agent_brief graphDbQueryPack domain_coupling missing domain_matrix';
+  }
+  if (!agentToolCallsIncludeQueryPlanTarget(domainCoupling?.calls, 'centrality')) {
+    return 'agent_brief graphDbQueryPack domain_coupling missing centrality query_plan';
+  }
+  if (!agentToolCallsIncludeOperation(domainCoupling?.calls, 'centrality')) {
+    return 'agent_brief graphDbQueryPack domain_coupling missing centrality';
+  }
+  const pathEvidence = pack.find((item) => item.id === 'path_evidence');
+  if (!agentToolCallsIncludeQueryPlanTarget(pathEvidence?.calls, 'all_paths')) {
+    return 'agent_brief graphDbQueryPack path_evidence missing all_paths query_plan';
+  }
+  if (!agentToolCallsIncludeOperation(pathEvidence?.calls, 'all_paths')) {
+    return 'agent_brief graphDbQueryPack path_evidence missing all_paths';
+  }
+  if (!agentToolCallsIncludeOperation(pathEvidence?.calls, 'explain_relation')) {
+    return 'agent_brief graphDbQueryPack path_evidence missing explain_relation';
+  }
+  return null;
+}
+
 function agentRelationDecisionGuideFailure(guide) {
   const required = ['skip_existing', 'review_inverse', 'safe_to_add', 'review_new_schema'];
   if (!Array.isArray(guide)) {
@@ -6931,6 +7012,14 @@ function agentRelationDecisionGuideFailure(guide) {
 
 function agentToolCallsIncludeOperation(calls, operation) {
   return Array.isArray(calls) && calls.some((call) => call?.tool === 'query_ontology' && call?.arguments?.operation === operation);
+}
+
+function agentToolCallsIncludeQueryPlanTarget(calls, targetOperation) {
+  return Array.isArray(calls) && calls.some((call) =>
+    call?.tool === 'query_ontology' &&
+    call?.arguments?.operation === 'query_plan' &&
+    call?.arguments?.targetOperation === targetOperation
+  );
 }
 
 function agentToolCallsFailure(label, calls) {
