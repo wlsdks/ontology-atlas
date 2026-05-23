@@ -83,6 +83,7 @@ export async function runAgentBrief(args) {
 function verifyCliFallbacks(result, vaultRoot) {
   const commands = Array.isArray(result.cliFallbackCommands) ? result.cliFallbackCommands : [];
   let failed = 0;
+  const timings = [];
   process.stdout.write(`${COLORS.bold}agent fallback check${COLORS.reset} ${COLORS.dim}${commands.length} command(s)${COLORS.reset}\n`);
   for (const raw of commands) {
     const command = raw.replace('[vault]', vaultRoot);
@@ -93,24 +94,36 @@ function verifyCliFallbacks(result, vaultRoot) {
       process.stdout.write(`       ${COLORS.red}${parsed.error}${COLORS.reset}\n`);
       continue;
     }
+    const startedAt = performance.now();
     const child = spawnSync(process.execPath, [CLI_ENTRYPOINT, ...parsed.args], {
       encoding: 'utf8',
       maxBuffer: 1024 * 1024 * 8,
     });
+    const elapsedMs = Math.max(0, Math.round(performance.now() - startedAt));
+    timings.push({ raw, elapsedMs });
     if (child.status === 0) {
-      process.stdout.write(`  ${COLORS.green}PASS${COLORS.reset} ${raw}\n`);
+      process.stdout.write(`  ${COLORS.green}PASS${COLORS.reset} ${formatFallbackTiming(elapsedMs)} ${raw}\n`);
       continue;
     }
     failed += 1;
-    process.stdout.write(`  ${COLORS.red}FAIL${COLORS.reset} ${raw}\n`);
+    process.stdout.write(`  ${COLORS.red}FAIL${COLORS.reset} ${formatFallbackTiming(elapsedMs)} ${raw}\n`);
     const sample = String(child.stderr || child.stdout || '').split('\n').filter(Boolean).slice(0, 6).join('\n       ');
     if (sample) process.stdout.write(`       ${sample}\n`);
     if (child.error) process.stdout.write(`       ${COLORS.red}${child.error.message}${COLORS.reset}\n`);
   }
   const passed = commands.length - failed;
   const color = failed > 0 ? COLORS.red : COLORS.green;
+  const totalMs = timings.reduce((sum, item) => sum + item.elapsedMs, 0);
   process.stdout.write(`${color}${failed > 0 ? 'failed' : 'ok'}${COLORS.reset} ${passed}/${commands.length} fallback command(s) passed\n`);
+  if (timings.length > 0) {
+    const slowest = timings.reduce((max, item) => (item.elapsedMs > max.elapsedMs ? item : max), timings[0]);
+    process.stdout.write(`${COLORS.dim}timing:${COLORS.reset} total ${totalMs}ms; slowest ${slowest.elapsedMs}ms ${slowest.raw}\n`);
+  }
   return failed > 0 ? 1 : 0;
+}
+
+function formatFallbackTiming(elapsedMs) {
+  return `${COLORS.dim}${elapsedMs}ms${COLORS.reset}`;
 }
 
 function parseFallbackCommand(command) {
