@@ -309,6 +309,30 @@ export function assertAgentBriefShape(result) {
   if (!agentToolCallsIncludeOperation(refactorPlaybook.calls, 'relation_check')) {
     throw new Error('agent_brief refactor_impact playbook must include relation_check preflight');
   }
+  const onboardingPlaybook = result.playbooks.find((playbook) => playbook.id === 'onboarding_map');
+  if (!onboardingPlaybook) {
+    throw new Error('agent_brief playbooks must include onboarding_map');
+  }
+  for (const operation of ['query_plan', 'match_nodes', 'node_profile']) {
+    if (!agentToolCallsIncludeOperation(onboardingPlaybook.calls, operation)) {
+      throw new Error(`agent_brief onboarding_map playbook must include ${operation}`);
+    }
+  }
+  if (!agentToolCallsIncludeQueryPlanTarget(onboardingPlaybook.calls, 'match_nodes')) {
+    throw new Error('agent_brief onboarding_map playbook must include query_plan(match_nodes)');
+  }
+  const couplingPlaybook = result.playbooks.find((playbook) => playbook.id === 'coupling_audit');
+  if (!couplingPlaybook) {
+    throw new Error('agent_brief playbooks must include coupling_audit');
+  }
+  for (const operation of ['query_plan', 'centrality', 'match_edges']) {
+    if (!agentToolCallsIncludeOperation(couplingPlaybook.calls, operation)) {
+      throw new Error(`agent_brief coupling_audit playbook must include ${operation}`);
+    }
+  }
+  if (!agentToolCallsIncludeQueryPlanTarget(couplingPlaybook.calls, 'match_edges')) {
+    throw new Error('agent_brief coupling_audit playbook must include query_plan(match_edges)');
+  }
   const traversalPlaybook = result.playbooks.find((playbook) => playbook.id === 'graph_traversal');
   if (!traversalPlaybook) {
     throw new Error('agent_brief playbooks must include graph_traversal');
@@ -1029,6 +1053,16 @@ function validAgentGuardrailToolCall(call) {
 function agentToolCallsIncludeOperation(calls, operation) {
   return Array.isArray(calls)
     && calls.some((call) => call?.tool === 'query_ontology' && call?.arguments?.operation === operation);
+}
+
+function agentToolCallsIncludeQueryPlanTarget(calls, targetOperation) {
+  return Array.isArray(calls)
+    && calls.some(
+      (call) =>
+        call?.tool === 'query_ontology'
+        && call?.arguments?.operation === 'query_plan'
+        && call?.arguments?.targetOperation === targetOperation,
+    );
 }
 
 function validAgentPlaybook(playbook) {

@@ -408,6 +408,33 @@ describe('query-result-contract', () => {
             { tool: 'query_ontology', arguments: { operation: 'project_map', project: 'project/app' } },
           ],
         },
+        {
+          id: 'onboarding_map',
+          goal: 'Build first mental map.',
+          evidence: ['Node scan evidence.'],
+          stopWhen: ['query_plan(match_nodes) asks for narrowing.'],
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'workspace_brief', limit: 5 } },
+            { tool: 'query_ontology', arguments: { operation: 'domain_matrix', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_nodes', kind: 'capability', minDegree: 2, limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'match_nodes', kind: 'capability', minDegree: 2, limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'node_profile', slug: 'domains/auth' } },
+          ],
+        },
+        {
+          id: 'coupling_audit',
+          goal: 'Audit coupling before boundary edits.',
+          evidence: ['Edge scan evidence.'],
+          stopWhen: ['match_edges contradicts centrality.'],
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'health', limit: 5 } },
+            { tool: 'query_ontology', arguments: { operation: 'domain_matrix', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'centrality', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'centrality', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'query_plan', targetOperation: 'match_edges', types: ['depends_on'], limit: 20 } },
+            { tool: 'query_ontology', arguments: { operation: 'match_edges', types: ['depends_on'], limit: 20 } },
+          ],
+        },
       ],
       traversalStrategy: [
         {
@@ -552,6 +579,78 @@ describe('query-result-contract', () => {
         playbooks: [{ ...valid.playbooks[0], stopWhen: [] }, valid.playbooks[1]],
       }),
       /agent_brief playbooks\[0\] has an invalid playbook shape/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        playbooks: valid.playbooks.filter((playbook) => playbook.id !== 'onboarding_map'),
+      }),
+      /agent_brief playbooks must include onboarding_map/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        playbooks: valid.playbooks.map((playbook) =>
+          playbook.id === 'onboarding_map'
+            ? { ...playbook, calls: playbook.calls.filter((call) => call.arguments.operation !== 'match_nodes') }
+            : playbook,
+        ),
+      }),
+      /agent_brief onboarding_map playbook must include match_nodes/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        playbooks: valid.playbooks.map((playbook) =>
+          playbook.id === 'onboarding_map'
+            ? {
+                ...playbook,
+                calls: playbook.calls.map((call) =>
+                  call.arguments.operation === 'query_plan'
+                    ? { ...call, arguments: { ...call.arguments, targetOperation: 'centrality' } }
+                    : call,
+                ),
+              }
+            : playbook,
+        ),
+      }),
+      /agent_brief onboarding_map playbook must include query_plan\(match_nodes\)/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        playbooks: valid.playbooks.filter((playbook) => playbook.id !== 'coupling_audit'),
+      }),
+      /agent_brief playbooks must include coupling_audit/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        playbooks: valid.playbooks.map((playbook) =>
+          playbook.id === 'coupling_audit'
+            ? { ...playbook, calls: playbook.calls.filter((call) => call.arguments.operation !== 'match_edges') }
+            : playbook,
+        ),
+      }),
+      /agent_brief coupling_audit playbook must include match_edges/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        playbooks: valid.playbooks.map((playbook) =>
+          playbook.id === 'coupling_audit'
+            ? {
+                ...playbook,
+                calls: playbook.calls.filter(
+                  (call) =>
+                    call.arguments.operation !== 'query_plan'
+                    || call.arguments.targetOperation !== 'match_edges',
+                ),
+              }
+            : playbook,
+        ),
+      }),
+      /agent_brief coupling_audit playbook must include query_plan\(match_edges\)/,
     );
     assert.throws(
       () => assertAgentBriefShape({
