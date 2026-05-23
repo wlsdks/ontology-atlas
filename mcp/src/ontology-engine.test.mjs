@@ -1966,6 +1966,28 @@ describe('queryCompiledOntology', () => {
         },
       ],
     );
+    assert.equal(result.followUp.focusSlug, 'capabilities/login');
+    assert.match(result.followUp.reason, /match_nodes is a scan/);
+    assert.deepEqual(
+      result.followUp.calls.map((call) => call.arguments.operation),
+      ['node_profile', 'match_edges', 'match_edges', 'blast_radius'],
+    );
+    assert.deepEqual(result.followUp.calls[1].arguments, {
+      operation: 'match_edges',
+      from: 'capabilities/login',
+      includeExternal: true,
+      includeUnresolved: true,
+      limit: 20,
+    });
+    assert.ok(result.followUp.cliFallbackCommands.includes(
+      'oh-my-ontology node capabilities/login [vault] --limit 12',
+    ));
+    assert.ok(result.followUp.cliFallbackCommands.includes(
+      'oh-my-ontology match-edges [vault] --from capabilities/login --include-external --include-unresolved --limit 20',
+    ));
+    assert.ok(result.followUp.cliFallbackCommands.includes(
+      'oh-my-ontology blast-radius capabilities/login [vault] --depth 2 --direction incoming',
+    ));
 
     const outbound = queryCompiledOntology(artifact(), {
       operation: 'match_nodes',

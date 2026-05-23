@@ -779,6 +779,9 @@ export function assertMatchNodesShape(result) {
       throw new Error(`match_nodes nodes[${index}] has an invalid node row shape`);
     }
   }
+  if (result.followUp !== undefined && !validMatchNodesFollowUp(result.followUp)) {
+    throw new Error('match_nodes followUp must contain a focusSlug, reason, query_ontology calls, and CLI fallback commands');
+  }
   return result;
 }
 
@@ -1666,6 +1669,22 @@ function validMatchNodeRow(row) {
     && (row.inDegree === undefined || validCount(row.inDegree))
     && (row.outDegree === undefined || validCount(row.outDegree))
     && (row.domain === undefined || typeof row.domain === 'string')
+  );
+}
+
+function validMatchNodesFollowUp(followUp) {
+  return Boolean(
+    isPlainObject(followUp)
+    && hasNonEmptyString(followUp.focusSlug)
+    && hasNonEmptyString(followUp.reason)
+    && Array.isArray(followUp.calls)
+    && followUp.calls.length > 0
+    && followUp.calls.every((call) => (
+      validAgentToolCall(call)
+      && hasNonEmptyString(call.id)
+      && hasNonEmptyString(call.label)
+    ))
+    && validAgentCliFallbackCommands(followUp.cliFallbackCommands)
   );
 }
 

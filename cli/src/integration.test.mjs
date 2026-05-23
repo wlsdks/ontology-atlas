@@ -3554,6 +3554,9 @@ await test('match-nodes — graph DB-style node rows with degree filters', async
     assert.match(clean, /filters .*kind=capability.*minInDegree=1.*sort=inDegree/);
     assert.match(clean, /capabilities\/foo\s+— Foo.*deg 4 in 2 out 2/);
     assert.match(clean, /capabilities\/bar\s+— Bar.*deg 3 in 1 out 2/);
+    assert.match(clean, /next focus capabilities\/foo/);
+    assert.match(clean, /oh-my-ontology node capabilities\/foo \[vault\] --limit 12/);
+    assert.match(clean, /oh-my-ontology match-edges \[vault\] --from capabilities\/foo --include-external --include-unresolved --limit 20/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3580,6 +3583,11 @@ await test('match-nodes --plan --json — preserves filters in query_plan and re
     assert.equal(data.plan.estimate.totalMatches, 2);
     assert.equal(data.result.operation, 'match_nodes');
     assert.equal(data.result.totalMatches, 2);
+    assert.equal(data.result.followUp.focusSlug, 'capabilities/foo');
+    assert.deepEqual(
+      data.result.followUp.calls.map((call) => call.arguments.operation),
+      ['node_profile', 'match_edges', 'match_edges', 'blast_radius'],
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

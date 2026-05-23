@@ -199,6 +199,23 @@ describe('query-result-contract', () => {
       },
       totalMatches: 1,
       limited: false,
+      followUp: {
+        focusSlug: 'capabilities/login',
+        reason: 'match_nodes is a scan; inspect this node before editing.',
+        calls: [
+          {
+            id: 'profile_focus',
+            label: 'Profile the first matched node before editing.',
+            tool: 'query_ontology',
+            arguments: {
+              operation: 'node_profile',
+              slug: 'capabilities/login',
+              limit: 12,
+            },
+          },
+        ],
+        cliFallbackCommands: ['oh-my-ontology node capabilities/login [vault] --limit 12'],
+      },
       nodes: [
         {
           slug: 'capabilities/login',
@@ -223,6 +240,16 @@ describe('query-result-contract', () => {
         nodes: [{ ...valid.nodes[0], degree: -1 }],
       }),
       /match_nodes nodes\[0\] has an invalid node row shape/,
+    );
+    assert.throws(
+      () => assertMatchNodesShape({
+        ...valid,
+        followUp: {
+          ...valid.followUp,
+          cliFallbackCommands: ['node cli/src/index.mjs node capabilities/login'],
+        },
+      }),
+      /match_nodes followUp must contain/,
     );
   });
 

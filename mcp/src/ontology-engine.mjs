@@ -1280,6 +1280,9 @@ export function createOntologyEngine(artifact, options = {}) {
 
     rows.sort((left, right) => compareNodeRows(left, right, sort));
 
+    const page = rows.slice(0, limit);
+    const followUp = buildMatchNodesFollowUp(page[0]);
+
     return {
       operation: 'match_nodes',
       filters: {
@@ -1296,7 +1299,8 @@ export function createOntologyEngine(artifact, options = {}) {
       },
       totalMatches: rows.length,
       limited: rows.length > limit,
-      nodes: rows.slice(0, limit),
+      nodes: page,
+      ...(followUp ? { followUp } : {}),
     };
   }
 
@@ -3787,6 +3791,60 @@ export function createOntologyEngine(artifact, options = {}) {
 
 function agentToolCall(tool, args) {
   return { tool, arguments: args };
+}
+
+function buildMatchNodesFollowUp(node) {
+  if (!node?.slug) return null;
+  const slug = node.slug;
+  const calls = [
+    {
+      id: 'profile_focus',
+      label: 'Profile the first matched node before editing.',
+      ...agentToolCall('query_ontology', {
+        operation: 'node_profile',
+        slug,
+        limit: 12,
+      }),
+    },
+    {
+      id: 'outgoing_edges',
+      label: 'Inspect outgoing edges from the first match.',
+      ...agentToolCall('query_ontology', {
+        operation: 'match_edges',
+        from: slug,
+        includeExternal: true,
+        includeUnresolved: true,
+        limit: 20,
+      }),
+    },
+    {
+      id: 'incoming_edges',
+      label: 'Inspect incoming edges into the first match.',
+      ...agentToolCall('query_ontology', {
+        operation: 'match_edges',
+        to: slug,
+        limit: 20,
+      }),
+    },
+    {
+      id: 'incoming_impact',
+      label: 'Check incoming blast radius before changing this node.',
+      ...agentToolCall('query_ontology', {
+        operation: 'blast_radius',
+        slug,
+        depth: 2,
+        direction: 'incoming',
+      }),
+    },
+  ];
+
+  return {
+    focusSlug: slug,
+    reason:
+      'match_nodes is a scan; use these focused follow-up calls before treating a row as graph evidence.',
+    calls,
+    cliFallbackCommands: uniqueCliCommands(calls),
+  };
 }
 
 function formatAgentToolCall(call) {
