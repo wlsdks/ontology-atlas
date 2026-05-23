@@ -37,6 +37,8 @@ pnpm benchmark --dry-run     # verify config without spawning codex
 pnpm benchmark --bypass      # full 14-cell run (~5-10 minutes)
 pnpm benchmark --bypass --on-only   # ON-only (faster re-test after vault change)
 pnpm benchmark:scale --dry-run      # verify scale benchmark config without spawning codex
+pnpm perf:graph                     # in-process compile_ontology/query_ontology scale audit
+pnpm perf:graph:scale               # stricter 1k + 5k graph hot-path budget
 ```
 
 Why `--bypass` is required: Codex's `exec` mode default-denies all MCP tool calls, so without `--dangerously-bypass-approvals-and-sandbox` the ON column would be indistinguishable from OFF (Codex would just fall back to grep). The flag is required by-design — the script fails fast without it.
@@ -125,3 +127,23 @@ pnpm benchmark --bypass --on-only
 ```
 
 Aim: when the vault grows another ~25 nodes (≈50 total), re-measure to test whether the MCP advantage **scales** (graph reasoning gain widens) or **saturates** (raw grep also works fine at 50 nodes).
+
+### Graph engine scale audit
+
+`pnpm perf:graph` measures the compiler and graph query engine directly,
+without Codex/Claude startup time, MCP JSON-RPC transport, or file-system walk
+noise. It reports `compile_ontology` full/indexed/summary timings plus
+`agent_brief`, `workspace_brief`, `health`, `query_plan`, `node_profile`, `path`,
+`all_paths`, `pattern_walk`, `schema`, `relation_check`, `blast_radius`, `domain_matrix`, `centrality`, and
+`project_map` timings against generated vaults. The query set mirrors the Agent
+query recipes shown in `/ontology/insights`, so the UI handoff path and the scale
+audit stay aligned.
+`pnpm perf:graph:check` runs each hot path three times on a 1k-node synthetic
+graph, reports the median, and fails if compile or query latency exceeds the
+configured budget. `pnpm perf:graph:scale` keeps the fast package gate separate
+but adds the same median check at 1k and 5k nodes with a larger scale budget. Use
+`pnpm perf:graph -- --runs=5 --sizes=1000,5000,10000` when a larger vault needs a
+less noisy local measurement.
+Use this before introducing a native helper such as Go: a native path is
+justified only after this script shows the JavaScript graph hot path, not the
+agent process or file-system layer, is the measured bottleneck.

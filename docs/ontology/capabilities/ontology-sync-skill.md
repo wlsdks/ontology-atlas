@@ -22,5 +22,5 @@ MCP 서버가 *런타임 도구* 라면 이 skill 은 *사용 규약* — read-t
 ## 어디에 매여 있나
 
 - `domains/ai-agent-partner` — agent 가 vault 와 상호작용하는 surface 군.
-- `capabilities/mcp-server` — 이 skill 이 호출하는 14 도구의 출처.
+- `capabilities/mcp-server` — 이 skill 이 호출하는 23 도구의 출처.
 - `.claude/skills/ontology-sync/SKILL.md` — 본문.

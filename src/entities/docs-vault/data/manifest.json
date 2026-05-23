@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-19T02:29:14.808Z",
+  "generatedAt": "2026-05-22T08:58:25.295Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -1741,9 +1741,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 29 노드, CLI 28 commands, MCP 23 tools, compiler/query/health/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결과 | |||| | ",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 30 노드, CLI 29 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
       "wordCount": 1438,
-      "updatedAt": "2026-05-18T20:38:15.017Z",
+      "updatedAt": "2026-05-22T03:32:05.640Z",
       "linksOut": []
     },
     {
@@ -1817,11 +1817,16 @@
           "depth": 3,
           "text": "Re-measurement triggers (user runs these manually)",
           "slug": "re-measurement-triggers-user-runs-these-manually"
+        },
+        {
+          "depth": 3,
+          "text": "Graph engine scale audit",
+          "slug": "graph-engine-scale-audit"
         }
       ],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · 14 tools · web workbench all on top of one a",
-      "wordCount": 1045,
-      "updatedAt": "2026-05-19T01:43:05.481Z",
+      "wordCount": 1238,
+      "updatedAt": "2026-05-22T05:47:58.223Z",
       "linksOut": [
         "benchmark/tasks",
         "benchmark/rubric",
@@ -3377,8 +3382,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. The developer CLI now exposes MCP growthplan directly, so agents and humans can inspect on",
-      "wordCount": 16614,
-      "updatedAt": "2026-05-19T02:29:00.753Z",
+      "wordCount": 16615,
+      "updatedAt": "2026-05-22T08:54:59.933Z",
       "linksOut": [
         "slug"
       ]
@@ -3828,8 +3833,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 2787,
-      "updatedAt": "2026-05-19T02:28:43.986Z",
+      "wordCount": 2901,
+      "updatedAt": "2026-05-22T08:54:13.611Z",
       "linksOut": []
     },
     {
@@ -4367,8 +4372,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 5702,
-      "updatedAt": "2026-05-18T20:37:58.961Z",
+      "wordCount": 5952,
+      "updatedAt": "2026-05-22T08:47:18.510Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4636,6 +4641,43 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/agent-graph-readiness",
+      "path": "docs/ontology/capabilities/agent-graph-readiness.md",
+      "title": "Agent Graph Readiness",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/agent-graph-readiness",
+        "kind": "capability",
+        "title": "Agent Graph Readiness",
+        "domain": "views",
+        "dependencies": [
+          "capabilities/ontology-hub-mode-aware"
+        ],
+        "elements": [
+          "src/shared/lib/ontology-tree/agent-query-recipes.ts",
+          "src/shared/lib/ontology-tree/agent-readiness.ts",
+          "src/views/ontology-insights/ui/OntologyInsightsPage.tsx"
+        ],
+        "relates": [
+          "capabilities/mcp-server",
+          "capabilities/ontology-hub-mode-aware",
+          "domains/ai-agent-partner",
+          "domains/views"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Agent Graph Readiness",
+          "slug": "agent-graph-readiness"
+        }
+      ],
+      "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
+      "wordCount": 1329,
+      "updatedAt": "2026-05-22T08:11:36.457Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/builder-canvas-polish",
       "path": "docs/ontology/capabilities/builder-canvas-polish.md",
       "title": "Builder Canvas Polish (n8n routing + 도메인 tint + 정렬 toolbar)",
@@ -4711,12 +4753,12 @@
     {
       "slug": "ontology/capabilities/cli-developer-entry",
       "path": "docs/ontology/capabilities/cli-developer-entry.md",
-      "title": "CLI Developer Entry (28 commands — vault + MCP verify + growth/maintenance queue + graph deep dive)",
+      "title": "CLI Developer Entry (31 commands — vault + MCP verify + bounded path enumeration + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
-        "title": "CLI Developer Entry (28 commands — vault + MCP verify + growth/maintenance queue + graph deep dive)",
+        "title": "CLI Developer Entry (31 commands — vault + MCP verify + bounded path enumeration + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
         "domain": "onboarding-ux",
         "dependencies": [
           "capabilities/mcp-server",
@@ -4724,6 +4766,8 @@
         ],
         "elements": [
           "cli/src/commands/add.mjs",
+          "cli/src/commands/agent-brief.mjs",
+          "cli/src/commands/all-paths.mjs",
           "cli/src/commands/analyze.mjs",
           "cli/src/commands/backlinks.mjs",
           "cli/src/commands/blast-radius.mjs",
@@ -4746,6 +4790,7 @@
           "cli/src/commands/overview.mjs",
           "cli/src/commands/path.mjs",
           "cli/src/commands/query.mjs",
+          "cli/src/commands/relation-check.mjs",
           "cli/src/commands/rename.mjs",
           "cli/src/commands/similar.mjs",
           "cli/src/commands/validate.mjs",
@@ -4763,7 +4808,10 @@
           "cli/src/lib/mcp-call.mjs",
           "cli/src/lib/mcp-call.test.mjs",
           "cli/src/lib/mcp-metadata.mjs",
+          "cli/src/lib/query-plan-output.mjs",
+          "cli/src/lib/query-plan-output.test.mjs",
           "cli/src/lib/query-result-contract.mjs",
+          "cli/src/lib/query-result-contract.test.mjs",
           "cli/src/lib/repo-analysis-results.mjs",
           "cli/src/lib/repo-analysis-results.test.mjs",
           "cli/src/lib/resolve-vault.mjs",
@@ -4826,9 +4874,9 @@
           "slug": "회귀-차단"
         }
       ],
-      "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, 그리고 설치된 MCP surface 를 확인하는 mcpverify 명령 추가 — 총 28 명령. 사용자가 vault 만든 후 터미널 즉시 ontology 작업 가능 — 웹 UI / MCP ",
-      "wordCount": 7354,
-      "updatedAt": "2026-05-19T01:56:17.968Z",
+      "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / allpaths / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, write 전 schema preflight 인 relationcheck, Claude Code/Codex handoff 를 보는 agentbrief, 그리고 설치된 M",
+      "wordCount": 8183,
+      "updatedAt": "2026-05-22T08:58:16.849Z",
       "linksOut": []
     },
     {
@@ -4985,8 +5033,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 12042,
-      "updatedAt": "2026-05-19T02:28:56.471Z",
+      "wordCount": 12412,
+      "updatedAt": "2026-05-22T07:35:39.261Z",
       "linksOut": []
     },
     {
@@ -5608,6 +5656,7 @@
         "kind": "domain",
         "title": "Views (Topology · Browse · Builder)",
         "capabilities": [
+          "agent-graph-readiness",
           "builder-canvas-polish",
           "builder-vault-write",
           "ontology-hub-mode-aware",
@@ -5636,7 +5685,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합.",
       "wordCount": 38,
-      "updatedAt": "2026-05-14T07:35:12.193Z",
+      "updatedAt": "2026-05-22T02:09:17.634Z",
       "linksOut": []
     },
     {
@@ -5828,9 +5877,9 @@
           "slug": "갱신"
         }
       ],
-      "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 총 29 노드. 정확한 census 는 ohmyontology list 또는 mcp listkinds 호출. 파일을 직접 열거나, pnpm dev 후 /docs/ 에서 vault picker 로 이 디렉토리 선택. MCP 서버 등록 — mcp/README.md 의 .mcp.json 예시 참고. 23 도구 (read 15 + write 8): read — listcon",
+      "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 총 30 노드. 정확한 census 는 ohmyontology list 또는 mcp listkinds 호출. 파일을 직접 열거나, pnpm dev 후 /docs/ 에서 vault picker 로 이 디렉토리 선택. MCP 서버 등록 — mcp/README.md 의 .mcp.json 예시 참고. 23 도구 (read 15 + write 8): read — listcon",
       "wordCount": 270,
-      "updatedAt": "2026-05-18T06:48:02.168Z",
+      "updatedAt": "2026-05-22T02:11:27.267Z",
       "linksOut": []
     },
     {
@@ -6012,8 +6061,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 2064,
-      "updatedAt": "2026-05-18T06:48:02.193Z",
+      "wordCount": 2068,
+      "updatedAt": "2026-05-22T03:57:03.641Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -6145,8 +6194,8 @@
         }
       ],
       "excerpt": "Current as of 20260518. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontologyengine.mjs, and cli/src/index.mjs first. ohmyontology is now best described as a reponative memory layer for Claude Code, Cursor, and C",
-      "wordCount": 517,
-      "updatedAt": "2026-05-18T06:48:02.193Z",
+      "wordCount": 519,
+      "updatedAt": "2026-05-22T03:32:05.643Z",
       "linksOut": [
         "../README",
         "PRODUCT-DIRECTION",
@@ -6830,6 +6879,13 @@
             "type": "dir",
             "children": [
               {
+                "name": "agent-graph-readiness",
+                "path": "ontology/capabilities/agent-graph-readiness",
+                "type": "doc",
+                "slug": "ontology/capabilities/agent-graph-readiness",
+                "title": "Agent Graph Readiness"
+              },
+              {
                 "name": "builder-canvas-polish",
                 "path": "ontology/capabilities/builder-canvas-polish",
                 "type": "doc",
@@ -6848,7 +6904,7 @@
                 "path": "ontology/capabilities/cli-developer-entry",
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
-                "title": "CLI Developer Entry (28 commands — vault + MCP verify + growth/maintenance queue + graph deep dive)"
+                "title": "CLI Developer Entry (31 commands — vault + MCP verify + bounded path enumeration + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)"
               },
               {
                 "name": "firebase-deploy-skill",

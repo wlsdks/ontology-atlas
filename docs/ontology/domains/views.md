@@ -3,6 +3,7 @@ slug: domains/views
 kind: domain
 title: Views (Topology · Browse · Builder)
 capabilities:
+  - agent-graph-readiness
   - builder-canvas-polish
   - builder-vault-write
   - ontology-hub-mode-aware

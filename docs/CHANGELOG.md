@@ -43,7 +43,8 @@ can inspect ontology write candidates without raw JSON-RPC.
   `pnpm test:dogfood:script-refs` as the focused filter parser + wrapper
   summary contract too, not only the help/package-script reference check.
 - **MCP registration template guard** — `pnpm test:mcp:docs` now locks the
-  tracked `.mcp.json` and `.mcp.json.example` source-checkout templates to
+  tracked `.mcp.json`, `.mcp.json.example`, and `.codex/config.toml`
+  source-checkout templates to
   `node ./mcp/src/index.js` with `OMOT_VAULT=./docs/ontology`, so local agent
   registration drift is caught by the focused docs gate. The narrower
   `pnpm test:mcp:registration` shortcut checks only that registration-template

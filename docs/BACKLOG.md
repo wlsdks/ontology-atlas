@@ -4,8 +4,8 @@
 > 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제.
 >
 > **갱신 (2026-05-18)**: repo-native AI-agent memory layer 포지셔닝 반영.
-> local-first 3 surface (CLI · MCP · Web), dogfood 29 노드, CLI 28 commands,
-> MCP 23 tools, compiler/query/health/workspace-brief/bootstrap/import-inference
+> local-first 3 surface (CLI · MCP · Web), dogfood 30 노드, CLI 29 commands,
+> MCP 23 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference
 > 루프 기준으로 재정렬.
 
 ---
@@ -190,5 +190,5 @@ P1 V1.x 진화가 모두 ✅/N/A 로 닫혔고, 현재 3 surface (CLI · MCP · 
 - `docs/FEATURES.md` — 사용자가 *지금* 사용 가능한 기능 전수
 - `docs/archive/ONTOLOGY-MODEL-V2-DRAFT.md` — V1.x 진화 spec (cloud 부분 N/A archive)
 - `docs/CHANGELOG.md` — 시간순 사용자 가시 변화
-- `mcp/README.md` — MCP 서버 14 도구 + 등록
+- `mcp/README.md` — MCP 서버 23 도구 + 등록
 - `docs/benchmark/` — AI agent quality 측정 매트릭스

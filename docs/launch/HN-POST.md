@@ -43,7 +43,7 @@ paint chunk (verified by a CI script).
   npx oh-my-ontology init my-vault
   # Claude Code/Cursor read the generated .mcp.json; Codex uses the printed mcp add command
 
-Hosted demo (read-only, our own dogfood vault — 29 nodes):
+Hosted demo (read-only, our own dogfood vault — 30 nodes):
 https://oh-my-ontology.web.app
 
 What I'd love feedback on:
