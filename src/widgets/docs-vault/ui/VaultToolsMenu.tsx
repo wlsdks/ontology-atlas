@@ -25,8 +25,17 @@ const AGENT_VERIFY_CLI_COMMAND = [
   'oh-my-ontology validate .',
   'oh-my-ontology workspace-brief .',
   'oh-my-ontology agent-brief . --prompt',
+  'oh-my-ontology hubs . --plan --limit 10 --types depends_on,relates',
+  'oh-my-ontology hubs . --limit 10 --types depends_on,relates',
   'oh-my-ontology mcp-verify . --timeout-ms 15000',
 ].join('\n');
+
+const AGENT_VERIFY_CLI_PREVIEW = [
+  'validate .',
+  'workspace-brief .',
+  'agent-brief . --prompt',
+  'hubs . --plan --limit 10',
+];
 
 /**
  * R11 #16 step 1 — DocsVaultPage 의 advanced dropdown body 를 widget 으로 추출.
@@ -324,6 +333,21 @@ export function VaultToolsMenu({
                   <Terminal size={12} aria-hidden />
                   {copyCliLabel}
                 </button>
+                <ol className="mt-1.5 grid gap-1" aria-label={t('agentSetup.cliPreviewAriaLabel')}>
+                  {AGENT_VERIFY_CLI_PREVIEW.map((command, index) => (
+                    <li
+                      key={command}
+                      className="grid grid-cols-[18px_1fr] items-center gap-1.5 rounded-sm border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(0,0,0,0.14)] px-1.5 py-1"
+                    >
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:rgba(94,106,210,0.14)] font-mono text-[9px] text-[color:rgba(200,210,255,0.9)]">
+                        {index + 1}
+                      </span>
+                      <code className="truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                        oh-my-ontology {command}
+                      </code>
+                    </li>
+                  ))}
+                </ol>
                 <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
                   {t('agentSetup.connectGroup')}
                 </div>

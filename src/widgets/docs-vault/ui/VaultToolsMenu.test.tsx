@@ -151,7 +151,7 @@ describe('VaultToolsMenu', () => {
     ).toBeInTheDocument();
   });
 
-  it('AI agent 설정 패널에서 CLI fallback 검증 명령을 복사한다', async () => {
+  it('AI agent 설정 패널에서 CLI graph runbook 을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
     renderMenu({
       agentConfigStatus: {
@@ -162,7 +162,7 @@ describe('VaultToolsMenu', () => {
     });
 
     fireEvent.click(
-      screen.getByRole('button', { name: '설치된 CLI 검증 명령 복사' }),
+      screen.getByRole('button', { name: 'CLI 그래프 runbook 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
@@ -176,10 +176,20 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('oh-my-ontology agent-brief . --prompt'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology hubs . --plan --limit 10 --types depends_on,relates'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology hubs . --limit 10 --types depends_on,relates'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('oh-my-ontology mcp-verify . --timeout-ms 15000'),
     );
     expect(
-      await screen.findByRole('button', { name: 'CLI 검증 명령 복사됨' }),
+      screen.getByRole('list', { name: '복사되는 CLI 그래프 runbook 미리보기' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('oh-my-ontology hubs . --plan --limit 10')).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'CLI 그래프 runbook 복사됨' }),
     ).toBeInTheDocument();
   });
 
