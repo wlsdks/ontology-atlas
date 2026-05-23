@@ -20,6 +20,14 @@ const ALL_PATHS_EVIDENCE_REASONS = new Set(['complete', 'limit', 'search_budget'
 const ALL_PATHS_EVIDENCE_NEXT_STEPS = new Set(['use', 'narrow']);
 const QUERY_PLAN_COST_CLASSES = new Set(['low', 'medium', 'high']);
 const QUERY_PLAN_NEXT_STEPS = new Set(['run', 'review', 'narrow']);
+const EXPLAIN_RELATION_VERDICTS = new Set([
+  'same_node',
+  'direct',
+  'path',
+  'common_neighbor',
+  'unrelated_within_hops',
+]);
+const PATH_DIRECTIONS = new Set(['incoming', 'outgoing', 'both', 'undirected']);
 
 export function assertQueryOperation(result, expectedOperation) {
   if (!result || typeof result !== 'object' || Array.isArray(result)) {
@@ -497,6 +505,53 @@ export function assertAllPathsShape(result) {
   }
   if (!validAllPathsEvidence(result.evidence, result)) {
     throw new Error('all_paths evidence has an invalid completeness shape');
+  }
+  return result;
+}
+
+export function assertExplainRelationShape(result) {
+  assertQueryOperation(result, 'explain_relation');
+  for (const field of ['from', 'to']) {
+    if (!hasNonEmptyString(result[field])) {
+      throw new Error(`explain_relation ${field} must be a non-empty string`);
+    }
+  }
+  if (!validNodeSummary(result.fromNode)) {
+    throw new Error('explain_relation fromNode must be a valid node summary');
+  }
+  if (!validNodeSummary(result.toNode)) {
+    throw new Error('explain_relation toNode must be a valid node summary');
+  }
+  if (!EXPLAIN_RELATION_VERDICTS.has(result.verdict)) {
+    throw new Error(`explain_relation verdict must be one of: ${[...EXPLAIN_RELATION_VERDICTS].join(', ')}`);
+  }
+  if (!isPlainObject(result.domains) || !nullableString(result.domains.from) || !nullableString(result.domains.to) || typeof result.domains.sameDomain !== 'boolean') {
+    throw new Error('explain_relation domains must include from/to nullable strings and sameDomain boolean');
+  }
+  if (!isPlainObject(result.direct) || !validCount(result.direct.total) || !Array.isArray(result.direct.edges)) {
+    throw new Error('explain_relation direct must include total and edges');
+  }
+  if (result.direct.edges.length > result.direct.total) {
+    throw new Error('explain_relation direct.edges length must not exceed total');
+  }
+  for (let index = 0; index < result.direct.edges.length; index += 1) {
+    if (!validExplainDirectEdge(result.direct.edges[index], result.from, result.to)) {
+      throw new Error(`explain_relation direct.edges[${index}] has an invalid direct-edge shape`);
+    }
+  }
+  if (!validExplainShortestPath(result.shortestPath)) {
+    throw new Error('explain_relation shortestPath has an invalid path shape');
+  }
+  if (!isPlainObject(result.commonNeighbors) || !validCount(result.commonNeighbors.total) || typeof result.commonNeighbors.limited !== 'boolean' || !Array.isArray(result.commonNeighbors.rows)) {
+    throw new Error('explain_relation commonNeighbors must include total, limited, and rows');
+  }
+  if (result.commonNeighbors.rows.length > result.commonNeighbors.total) {
+    throw new Error('explain_relation commonNeighbors.rows length must not exceed total');
+  }
+  for (let index = 0; index < result.commonNeighbors.rows.length; index += 1) {
+    if (!validExplainCommonNeighbor(result.commonNeighbors.rows[index])) {
+      throw new Error(`explain_relation commonNeighbors.rows[${index}] has an invalid common-neighbor shape`);
+    }
   }
   return result;
 }
@@ -1661,6 +1716,63 @@ function validDomainMatrixConnectionRow(row) {
     && Array.isArray(row.examples)
     && row.examples.length <= row.count
     && row.examples.every(validCompiledEdgeRow)
+  );
+}
+
+function validExplainDirectEdge(row, from, to) {
+  return Boolean(
+    validCompiledEdgeRow(row)
+    && ((row.from === from && row.to === to && row.direction === 'outgoing')
+      || (row.from === to && row.to === from && row.direction === 'incoming'))
+    && validNodeSummary(row.fromNode)
+    && validNodeSummary(row.toNode)
+  );
+}
+
+function validExplainShortestPath(path) {
+  if (!isPlainObject(path)) return false;
+  if (typeof path.found !== 'boolean') return false;
+  if (!PATH_DIRECTIONS.has(path.direction)) return false;
+  if (!validCount(path.maxHops)) return false;
+  if (path.hopCount !== null && !validCount(path.hopCount)) return false;
+  if (!Array.isArray(path.hops)) return false;
+  if (!Array.isArray(path.nodes)) return false;
+  if (!Array.isArray(path.edges)) return false;
+  if (!path.found) {
+    return path.hopCount === null && path.hops.length === 0 && path.nodes.length === 0 && path.edges.length === 0;
+  }
+  if (path.hops.length === 0 || path.hops.some((hop) => !hasNonEmptyString(hop))) return false;
+  if (path.hopCount !== path.hops.length - 1) return false;
+  if (path.nodes.length !== path.hops.length) return false;
+  for (let index = 0; index < path.nodes.length; index += 1) {
+    if (!validPathNode(path.nodes[index], path.hops[index])) return false;
+  }
+  if (path.edges.length !== path.hops.length - 1) return false;
+  for (let index = 0; index < path.edges.length; index += 1) {
+    if (!validUndirectedPathEdge(path.edges[index], path.hops[index], path.hops[index + 1])) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function validExplainCommonNeighbor(row) {
+  return Boolean(
+    isPlainObject(row)
+    && hasNonEmptyString(row.slug)
+    && validNodeSummary(row.node)
+    && row.node.slug === row.slug
+    && Array.isArray(row.fromEdges)
+    && row.fromEdges.every(validExplainNeighborEdge)
+    && Array.isArray(row.toEdges)
+    && row.toEdges.every(validExplainNeighborEdge)
+  );
+}
+
+function validExplainNeighborEdge(row) {
+  return Boolean(
+    validCompiledEdgeRow(row)
+    && (row.direction === 'incoming' || row.direction === 'outgoing')
   );
 }
 

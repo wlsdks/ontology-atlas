@@ -2366,6 +2366,108 @@ await test('path --json — fails closed on malformed find_path payloads before 
   }
 });
 
+await test('explain — renders direct edges, shortest path, and common neighbors', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'explain',
+      'capabilities/bar',
+      'capabilities/foo',
+      root,
+      '--types=relates,domain',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /explain_relation capabilities\/bar — Bar → capabilities\/foo — Foo/);
+    assert.match(clean, /verdict direct/);
+    assert.match(clean, /domains domains\/auth → domains\/auth · same=true/);
+    assert.match(clean, /DIRECT EDGES 1\/1/);
+    assert.match(clean, /capabilities\/bar --relates--> capabilities\/foo/);
+    assert.match(clean, /SHORTEST PATH 1 hop/);
+    assert.match(clean, /COMMON NEIGHBORS 1\/1/);
+    assert.match(clean, /domains\/auth — Auth/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('explain --json — exposes raw explain_relation contract', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'explain',
+      'capabilities/bar',
+      'capabilities/foo',
+      root,
+      '--max-hops=3',
+      '--limit=5',
+      '--json',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'explain_relation');
+    assert.equal(data.verdict, 'direct');
+    assert.equal(data.direct.total, 1);
+    assert.equal(data.shortestPath.found, true);
+    assert.equal(data.shortestPath.maxHops, 3);
+    assert.equal(data.commonNeighbors.total, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('explain --json — unrelated verdict exits non-zero with evidence payload', async () => {
+  const root = withVault([
+    {
+      slug: 'capabilities/a',
+      content: '---\nkind: capability\nslug: capabilities/a\ntitle: A\n---\n\n# A\n',
+    },
+    {
+      slug: 'capabilities/b',
+      content: '---\nkind: capability\nslug: capabilities/b\ntitle: B\n---\n\n# B\n',
+    },
+  ]);
+  try {
+    const r = await run(['explain', 'capabilities/a', 'capabilities/b', root, '--json']);
+    assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'explain_relation');
+    assert.equal(data.verdict, 'unrelated_within_hops');
+    assert.equal(data.shortestPath.found, false);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('explain --json — fails closed on malformed explain_relation payloads before output', async () => {
+  const root = withVault();
+  const fakeMcp = join(root, 'fake-mcp-explain-malformed.mjs');
+  writeFileSync(
+    fakeMcp,
+    [
+      "import readline from 'node:readline';",
+      "const rl = readline.createInterface({ input: process.stdin });",
+      "rl.on('line', (line) => {",
+      "  const msg = JSON.parse(line);",
+      "  if (msg.id === 1) console.log(JSON.stringify({ jsonrpc: '2.0', id: 1, result: {} }));",
+      "  if (msg.id === 2) {",
+      "    const payload = { operation: 'explain_relation', from: 'a', to: 'b', fromNode: { slug: 'a', kind: 'capability', title: 'A' }, toNode: { slug: 'b', kind: 'capability', title: 'B' }, verdict: 'path', domains: { from: null, to: null, sameDomain: false }, direct: { total: 0, edges: [] }, shortestPath: { found: true, direction: 'undirected', maxHops: 5, hopCount: 1, hops: ['a', 'b'], nodes: [{ slug: 'a', kind: 'capability', title: 'A' }, { slug: 'b', kind: 'capability', title: 'B' }], edges: [] }, commonNeighbors: { total: 0, limited: false, rows: [] } };",
+      "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
+      "  }",
+      "});",
+    ].join('\n'),
+    'utf-8',
+  );
+  try {
+    const r = await run(['explain', 'a', 'b', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(r.code, 2, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    assert.equal(r.stdout, '');
+    assert.match(stripAnsi(r.stderr), /explain_relation shortestPath has an invalid path shape/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('all-paths — bounded alternatives with completeness evidence', async () => {
   const root = await buildGraphFixture();
   try {
@@ -2754,6 +2856,38 @@ await test('read-only graph commands — reject ambiguous vault arguments before
     {
       args: ['path', 'capabilities/foo', 'capabilities/bar', 'ontology', '--vault', 'docs/ontology'],
       pattern: /either positional argument or --vault/,
+    },
+    {
+      args: ['explain', 'capabilities/foo'],
+      pattern: /both <from> and <to> are required/,
+    },
+    {
+      args: ['explain', 'capabilities/foo', 'capabilities/bar', '--vault='],
+      pattern: /--vault requires a path/,
+    },
+    {
+      args: ['explain', 'capabilities/foo', 'capabilities/bar', 'ontology', '--vault', 'docs/ontology'],
+      pattern: /either positional argument or --vault/,
+    },
+    {
+      args: ['explain', 'capabilities/foo', 'capabilities/bar', '--direction=sideways'],
+      pattern: /--direction must be one of: incoming, outgoing, both, undirected\. Received: "sideways"\./,
+    },
+    {
+      args: ['explain', 'capabilities/foo', 'capabilities/bar', '--max-hops=21'],
+      pattern: /--max-hops must be <= 20/,
+    },
+    {
+      args: ['explain', 'capabilities/foo', 'capabilities/bar', '--limit=101'],
+      pattern: /--limit must be <= 100/,
+    },
+    {
+      args: ['explain', 'capabilities/foo', 'capabilities/bar', '--types=depend_on'],
+      pattern: /--types items must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
+    },
+    {
+      args: ['explain', 'capabilities/foo', 'capabilities/bar', '--jsson'],
+      pattern: /unknown flag: --jsson\. Did you mean --json\?/,
     },
     {
       args: ['all-paths', 'capabilities/foo', 'capabilities/bar', '--vault='],
@@ -3368,7 +3502,7 @@ await test('query — rejects MCP graph operation flags with CLI command guidanc
     const clean = stripAnsi(r.stderr);
     assert.match(clean, /unknown flag: --operation\./);
     assert.match(clean, /query is the typed filter DSL/);
-    assert.match(clean, /overview, health, agent-brief, workspace-brief, growth, maintenance, path, all-paths, reachability, relation-check, match-nodes, match-edges, domain-matrix, blast-radius, cycles, or hubs/);
+    assert.match(clean, /overview, health, agent-brief, workspace-brief, growth, maintenance, path, explain, all-paths, reachability, relation-check, match-nodes, match-edges, domain-matrix, blast-radius, cycles, or hubs/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

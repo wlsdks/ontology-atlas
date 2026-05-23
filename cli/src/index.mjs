@@ -88,6 +88,8 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --kind X --exclude-kinds A,B --json    ${COLORS.dim}filter / skip / machine output${COLORS.reset}
   npx oh-my-ontology path <from> <to>         Shortest path (BFS) with relation type per hop
        --max-hops N --json                    ${COLORS.dim}default 5${COLORS.reset}
+  npx oh-my-ontology explain <from> <to>      Direct edges + shortest path + common-neighbor evidence
+       --direction undirected --types A,B --json
   npx oh-my-ontology all-paths <from> <to>    Bounded simple paths + completeness evidence
        --max-hops N --limit N --search-budget N --types A,B --json
   npx oh-my-ontology reachability <slug>      Transitive reachable nodes by layer from one start node

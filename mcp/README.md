@@ -506,17 +506,17 @@ A successful run looks like this:
 ✓ list_kinds — 31 nodes (capability:19, domain:6, element:4, project:1, vault-readme:1)
 ✓ validate_vault — 31 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (31 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:173)
+✓ workspace_brief — healthy (31 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:174)
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 4 playbooks, 3 write guardrails, 1 result contract)
-✓ workspace_brief_tuned — healthy (31 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:173; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (31 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:174; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
-✓ compile_ontology — graph e524c0147f42 (31 nodes, 288 edges, issues 0)
-✓ compile_ontology page — 1/31 nodes, 1/288 edges
-✓ compile_ontology indexes — out 31, in 30, edgeById 288, aliases 61, edges 115/173/0
-✓ overview — graph e524c0147f42 (31 nodes, 288 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 31, edges 288)
-✓ project_map query_plan — aggregate_scan (medium, nodes 31, edges 288)
+✓ compile_ontology — graph 44062bc8b601 (31 nodes, 289 edges, issues 0)
+✓ compile_ontology page — 1/31 nodes, 1/289 edges
+✓ compile_ontology indexes — out 31, in 30, edgeById 289, aliases 61, edges 115/174/0
+✓ overview — graph 44062bc8b601 (31 nodes, 289 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 31, edges 289)
+✓ project_map query_plan — aggregate_scan (medium, nodes 31, edges 289)
 ✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ all_paths — elements/file-system-access-api → project (5/41 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)

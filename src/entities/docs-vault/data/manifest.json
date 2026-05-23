@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T20:22:56.636Z",
+  "generatedAt": "2026-05-23T20:36:29.509Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -1741,9 +1741,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 31 노드, CLI 35 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 31 노드, CLI 36 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
       "wordCount": 1483,
-      "updatedAt": "2026-05-23T19:47:12.313Z",
+      "updatedAt": "2026-05-23T20:33:48.371Z",
       "linksOut": []
     },
     {
@@ -3858,8 +3858,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 2943,
-      "updatedAt": "2026-05-23T19:47:22.585Z",
+      "wordCount": 2946,
+      "updatedAt": "2026-05-23T20:34:08.312Z",
       "linksOut": []
     },
     {
@@ -4397,8 +4397,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 6430,
-      "updatedAt": "2026-05-23T20:18:32.341Z",
+      "wordCount": 6437,
+      "updatedAt": "2026-05-23T20:33:15.874Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4817,12 +4817,12 @@
     {
       "slug": "ontology/capabilities/cli-developer-entry",
       "path": "docs/ontology/capabilities/cli-developer-entry.md",
-      "title": "CLI Developer Entry (35 commands — vault + MCP verify + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+      "title": "CLI Developer Entry (36 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
-        "title": "CLI Developer Entry (35 commands — vault + MCP verify + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+        "title": "CLI Developer Entry (36 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
         "domain": "onboarding-ux",
         "dependencies": [
           "capabilities/mcp-server",
@@ -4840,6 +4840,7 @@
           "cli/src/commands/cycles.mjs",
           "cli/src/commands/delete.mjs",
           "cli/src/commands/domain-matrix.mjs",
+          "cli/src/commands/explain.mjs",
           "cli/src/commands/find.mjs",
           "cli/src/commands/growth.mjs",
           "cli/src/commands/health.mjs",
@@ -4943,9 +4944,9 @@
           "slug": "회귀-차단"
         }
       ],
-      "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix 를 보는 domai",
-      "wordCount": 8849,
-      "updatedAt": "2026-05-23T20:11:11.670Z",
+      "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
+      "wordCount": 8851,
+      "updatedAt": "2026-05-23T20:34:51.307Z",
       "linksOut": []
     },
     {
@@ -6134,8 +6135,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 2070,
-      "updatedAt": "2026-05-23T17:44:17.474Z",
+      "wordCount": 2072,
+      "updatedAt": "2026-05-23T20:33:54.126Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -6984,7 +6985,7 @@
                 "path": "ontology/capabilities/cli-developer-entry",
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
-                "title": "CLI Developer Entry (35 commands — vault + MCP verify + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)"
+                "title": "CLI Developer Entry (36 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)"
               },
               {
                 "name": "firebase-deploy-skill",

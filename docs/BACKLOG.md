@@ -4,7 +4,7 @@
 > 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제.
 >
 > **갱신 (2026-05-18)**: repo-native AI-agent memory layer 포지셔닝 반영.
-> local-first 3 surface (CLI · MCP · Web), dogfood 31 노드, CLI 35 commands,
+> local-first 3 surface (CLI · MCP · Web), dogfood 31 노드, CLI 36 commands,
 > MCP 23 tools, compiler/query/health/agent-brief/workspace-brief/bootstrap/import-inference
 > 루프 기준으로 재정렬.
 

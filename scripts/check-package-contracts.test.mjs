@@ -147,7 +147,7 @@ describe('package contract helpers', () => {
     );
     assert.equal(
       pkg.scripts?.['integration:cli:graph-read'],
-      `${focusedNode} --test-name-pattern "^(backlinks|path|all-paths|reachability|relation-check|orphans|query|match-nodes|match-edges|domain-matrix|overview|hubs|blast-radius|cycles|node|similar)" cli/src/integration.test.mjs`,
+      `${focusedNode} --test-name-pattern "^(backlinks|path|explain|all-paths|reachability|relation-check|orphans|query|match-nodes|match-edges|domain-matrix|overview|hubs|blast-radius|cycles|node|similar)" cli/src/integration.test.mjs`,
     );
     assert.equal(
       pkg.scripts?.['integration:cli:graph-write'],
@@ -484,7 +484,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm integration:cli` \| Full CLI integration contracts; use when `cli\/src\/integration\.test\.mjs` itself changed \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:entry` \| CLI entrypoint, help, command inventory, and `init` contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:diagnosis` \| CLI `health` \/ `agent-brief` \/ `workspace-brief` diagnosis contracts \|/);
-    assert.match(checksDoc, /\| `pnpm integration:cli:graph-read` \| CLI read-only graph command contracts, including `match-nodes` \/ `match-edges` scans, `domain-matrix` coupling summaries, `reachability`, and bounded `all-paths --plan` traversal guards \|/);
+    assert.match(checksDoc, /\| `pnpm integration:cli:graph-read` \| CLI read-only graph command contracts, including `match-nodes` \/ `match-edges` scans, `explain` relation evidence, `domain-matrix` coupling summaries, `reachability`, and bounded `all-paths --plan` traversal guards \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:graph-write` \| CLI graph write dry-run\/confirm safety contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:repo-analysis` \| CLI `analyze` \/ `infer-imports` \/ `bootstrap` code-to-vault contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:local-vault` \| CLI local vault `add` \/ `import` \/ `list` \/ `find` \/ `validate` contracts \|/);
@@ -2623,8 +2623,8 @@ describe('package contract helpers', () => {
     const growthRow = doc.split('| `oh-my-ontology growth` |')[1]?.split('\n')[0] ?? '';
     const cyclesRow = doc.split('| `oh-my-ontology cycles` |')[1]?.split('\n')[0] ?? '';
 
-    assert.match(doc, /CLI Developer Entry \(35 commands/);
-    assert.match(doc, /총 35 명령/);
+    assert.match(doc, /CLI Developer Entry \(36 commands/);
+    assert.match(doc, /총 36 명령/);
     assert.match(doc, /cli\/src\/commands\/growth\.mjs/);
     assert.match(doc, /cli\/src\/commands\/maintenance\.mjs/);
     assert.match(doc, /cli\/src\/commands\/all-paths\.mjs/);

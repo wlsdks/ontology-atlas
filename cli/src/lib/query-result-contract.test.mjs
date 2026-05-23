@@ -9,6 +9,7 @@ import {
   assertCentralityShape,
   assertCyclesShape,
   assertDomainMatrixShape,
+  assertExplainRelationShape,
   assertGrowthPlanShape,
   assertHealthShape,
   assertMaintenancePlanShape,
@@ -270,6 +271,77 @@ describe('query-result-contract', () => {
         edges: [{ ...valid.edges[0], fromNode: { slug: 'capabilities/login', kind: 'capability' } }],
       }),
       /match_edges edges\[0\] has an invalid edge row shape/,
+    );
+  });
+
+  it('validates explain_relation evidence payloads', () => {
+    const valid = {
+      operation: 'explain_relation',
+      from: 'capabilities/login',
+      to: 'capabilities/session',
+      fromNode: { slug: 'capabilities/login', kind: 'capability', title: 'Login' },
+      toNode: { slug: 'capabilities/session', kind: 'capability', title: 'Session' },
+      verdict: 'direct',
+      domains: { from: 'domains/auth', to: 'domains/auth', sameDomain: true },
+      direct: {
+        total: 1,
+        edges: [
+          {
+            from: 'capabilities/login',
+            to: 'capabilities/session',
+            via: 'relates',
+            direction: 'outgoing',
+            fromNode: { slug: 'capabilities/login', kind: 'capability', title: 'Login' },
+            toNode: { slug: 'capabilities/session', kind: 'capability', title: 'Session' },
+          },
+        ],
+      },
+      shortestPath: {
+        found: true,
+        direction: 'undirected',
+        maxHops: 5,
+        hopCount: 1,
+        hops: ['capabilities/login', 'capabilities/session'],
+        nodes: [
+          { slug: 'capabilities/login', kind: 'capability', title: 'Login' },
+          { slug: 'capabilities/session', kind: 'capability', title: 'Session' },
+        ],
+        edges: [
+          { from: 'capabilities/login', to: 'capabilities/session', via: 'relates' },
+        ],
+      },
+      commonNeighbors: {
+        total: 1,
+        limited: false,
+        rows: [
+          {
+            slug: 'domains/auth',
+            node: { slug: 'domains/auth', kind: 'domain', title: 'Auth' },
+            fromEdges: [{ from: 'capabilities/login', to: 'domains/auth', via: 'domain', direction: 'outgoing' }],
+            toEdges: [{ from: 'capabilities/session', to: 'domains/auth', via: 'domain', direction: 'outgoing' }],
+          },
+        ],
+      },
+    };
+
+    assert.equal(assertExplainRelationShape(valid), valid);
+    assert.throws(
+      () => assertExplainRelationShape({ ...valid, verdict: 'maybe' }),
+      /explain_relation verdict must be one of/,
+    );
+    assert.throws(
+      () => assertExplainRelationShape({
+        ...valid,
+        shortestPath: { ...valid.shortestPath, edges: [] },
+      }),
+      /explain_relation shortestPath has an invalid path shape/,
+    );
+    assert.throws(
+      () => assertExplainRelationShape({
+        ...valid,
+        commonNeighbors: { ...valid.commonNeighbors, rows: [{ ...valid.commonNeighbors.rows[0], node: { slug: 'other', kind: 'domain', title: 'Other' } }] },
+      }),
+      /explain_relation commonNeighbors\.rows\[0\] has an invalid common-neighbor shape/,
     );
   });
 
