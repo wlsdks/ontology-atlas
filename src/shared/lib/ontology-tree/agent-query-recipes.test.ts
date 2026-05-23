@@ -357,6 +357,7 @@ describe("buildAgentQueryRecipes", () => {
       projectEntrypoint,
       buildAgentTraversalStrategies(entrypoints, projectEntrypoint),
       buildAgentGraphDbQueryPack(entrypoints),
+      buildAgentWriteGuardrails(entrypoints),
     );
 
     expect(prompt).toContain("Use the oh-my-ontology MCP server");
@@ -397,6 +398,14 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("oh-my-ontology all-paths");
     expect(prompt).toContain("oh-my-ontology explain domains/views '<other-slug>' [vault]");
     expect(prompt).toContain("--plan --force --max-hops 3");
+    expect(prompt).toContain("Write guardrails before changing the markdown vault");
+    expect(prompt).toContain("skip_existing means do not add");
+    expect(prompt).toContain("safe_to_add still requires citing relation_check evidence");
+    expect(prompt).toContain("## Guardrail 1. preflight_relation");
+    expect(prompt).toContain("## Guardrail 2. preflight_rename");
+    expect(prompt).toContain("## Guardrail 3. post_change_sync");
+    expect(prompt).toContain('"tool": "find_backlinks"');
+    expect(prompt).toContain('"tool": "validate_vault"');
     expect(prompt).toContain("Suggested starting slugs");
     expect(prompt).toContain("project (project, degree 6)");
     expect(prompt).toContain("domains/views");

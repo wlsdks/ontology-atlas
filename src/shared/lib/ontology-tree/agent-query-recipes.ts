@@ -643,6 +643,7 @@ export function buildAgentHandoffPrompt(
   projectEntrypoint: AgentProjectEntrypoint | null = null,
   traversalStrategies: readonly AgentTraversalStrategy[] = [],
   graphDbQueryPack: readonly AgentGraphDbQueryPackItem[] = [],
+  guardrails: readonly AgentWriteGuardrail[] = [],
 ): string {
   const runOrder = formatAgentRunOrderPrompt(recipes);
   const graphDbPackSection =
@@ -651,6 +652,18 @@ export function buildAgentHandoffPrompt(
           "",
           "Graph DB query pack for local markdown graph scans:",
           formatAgentGraphDbQueryPack(graphDbQueryPack),
+        ]
+      : [];
+  const guardrailSection =
+    guardrails.length > 0
+      ? [
+          "",
+          "Write guardrails before changing the markdown vault:",
+          "Relation decision guide: skip_existing means do not add; review_inverse and review_new_schema require explicit justification; safe_to_add still requires citing relation_check evidence.",
+          ...guardrails.map(
+            (guardrail, index) =>
+              `## Guardrail ${index + 1}. ${guardrail.id}\n${formatAgentGuardrailPrompt(guardrail)}`,
+          ),
         ]
       : [];
   const suggestedSlugs =
@@ -682,6 +695,7 @@ export function buildAgentHandoffPrompt(
     "",
     runOrder,
     ...graphDbPackSection,
+    ...guardrailSection,
     ...suggestedSlugs,
   ].join("\n");
 }

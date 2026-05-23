@@ -741,8 +741,9 @@ function AgentQueryRecipesPanel({
         projectEntrypoint,
         traversalStrategies,
         graphDbQueryPack,
+        guardrails,
       ),
-    [entrypoints, graphDbQueryPack, projectEntrypoint, recipes, traversalStrategies],
+    [entrypoints, graphDbQueryPack, guardrails, projectEntrypoint, recipes, traversalStrategies],
   );
   const traversalPayloadCount = traversalStrategies.reduce(
     (count, strategy) => count + strategy.payloads.length,
