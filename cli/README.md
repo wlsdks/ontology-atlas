@@ -330,8 +330,10 @@ check fails, or any fail-severity nextAction is present. `--graph-db-pack`
 narrows the same validated payload to an executable CLI-only queue for
 `match-nodes`, `match-edges`, `domain-matrix`, `hubs`, `all-paths`, and
 `explain`, with the resolved vault path already inserted and labels rendered as
-shell comments, so a terminal-only agent can paste the block into a shell
-without parsing MCP JSON or replacing placeholders.
+shell comments. It also prints each pack item's intent plus an evidence rule
+that scan rows are candidates until follow-up detail is cited, so a terminal-only
+agent can paste the block into a shell without parsing MCP JSON or replacing
+placeholders.
 
 `oh-my-ontology workspace-brief [vault]` follows the same blocking distinction:
 warn/advisory next actions render as guidance, but fail-severity next actions

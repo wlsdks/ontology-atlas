@@ -128,16 +128,27 @@ function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
       const runnableCommand = command.replaceAll('[vault]', graphDbShellQuote(vaultRoot));
       if (!runnableCommand || seen.has(runnableCommand)) continue;
       seen.add(runnableCommand);
-      commands.push({ id: item.id, command: runnableCommand });
+      commands.push({ id: item.id, intent: item.intent, goal: item.goal, command: runnableCommand });
     }
   }
   return [
     '# oh-my-ontology Graph DB CLI pack',
     '# Run these commands when the MCP connector is unavailable.',
     '# The selected vault path is already inserted; plan scans first, keep traversal bounded, and use follow-up evidence before writing.',
+    '# Evidence rule: scan rows are candidates, not proof; cite follow-up detail before writing or refactoring.',
     '',
-    ...commands.flatMap(({ id, command }) => [`# ${id}`, command]),
+    ...commands.flatMap(({ id, intent, goal, command }) => [
+      `# ${id}`,
+      ...graphDbCommentLine('intent', intent),
+      ...graphDbCommentLine('goal', goal),
+      command,
+    ]),
   ].join('\n');
+}
+
+function graphDbCommentLine(label, value) {
+  if (typeof value !== 'string' || value.trim() === '') return [];
+  return [`# ${label}: ${value.replace(/\s+/g, ' ').trim()}`];
 }
 
 function graphDbPackItemCliCommands(item) {

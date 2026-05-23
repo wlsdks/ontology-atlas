@@ -699,6 +699,8 @@ describe("buildAgentQueryRecipes", () => {
     );
 
     expect(cliPack).toContain("when the MCP connector is unavailable");
+    expect(cliPack).toContain("Evidence rule: scan rows are candidates, not proof");
+    expect(cliPack).toContain("intent: MATCH (n:capability) WHERE degree(n) >= 2 RETURN n");
     expect(cliPack).toContain("[node_scan] oh-my-ontology match-nodes [vault] --plan");
     expect(cliPack).toContain("[edge_scan] oh-my-ontology match-edges [vault] --plan");
     expect(cliPack).toContain("[domain_coupling] oh-my-ontology domain-matrix [vault]");

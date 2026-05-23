@@ -640,8 +640,13 @@ export function formatAgentGraphDbCliPack(
   return [
     "Run these oh-my-ontology CLI commands when the MCP connector is unavailable.",
     "They mirror the Graph DB query pack: plan scans first, keep traversal bounded, and use follow-up evidence before writing.",
+    "Evidence rule: scan rows are candidates, not proof; cite follow-up detail before writing or refactoring.",
     "",
-    ...commands.map(({ itemId, command }, index) => `${index + 1}. [${itemId}] ${command}`),
+    ...commands.map(({ itemId, command }, index) => {
+      const item = items.find((candidate) => candidate.id === itemId);
+      const intent = item?.intent ? `\n   intent: ${item.intent}` : "";
+      return `${index + 1}. [${itemId}] ${command}${intent}`;
+    }),
   ].join("\n");
 }
 

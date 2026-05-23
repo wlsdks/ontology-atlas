@@ -4387,11 +4387,14 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
     const vaultPath = escapeRegExp(root);
     assert.match(clean, /^# oh-my-ontology Graph DB CLI pack/);
     assert.match(clean, /# The selected vault path is already inserted/);
-    assert.match(clean, new RegExp(`# node_scan\\noh-my-ontology match-nodes ${vaultPath} --plan --kind capability --min-degree 2 --sort degree --limit 10`));
-    assert.match(clean, new RegExp(`# edge_scan\\noh-my-ontology match-edges ${vaultPath} --plan --types depends_on --limit 20`));
-    assert.match(clean, new RegExp(`# domain_coupling\\noh-my-ontology domain-matrix ${vaultPath} --limit 6 --types depends_on,relates`));
+    assert.match(clean, /# Evidence rule: scan rows are candidates, not proof/);
+    assert.match(clean, /# intent: MATCH \(n:capability\) WHERE degree\(n\) >= 2 RETURN n ORDER BY degree\(n\) DESC LIMIT 10/);
+    assert.match(clean, /# goal: Find high-degree capability nodes as onboarding or refactor starting points\./);
+    assert.match(clean, new RegExp(`# node_scan[\\s\\S]*oh-my-ontology match-nodes ${vaultPath} --plan --kind capability --min-degree 2 --sort degree --limit 10`));
+    assert.match(clean, new RegExp(`# edge_scan[\\s\\S]*oh-my-ontology match-edges ${vaultPath} --plan --types depends_on --limit 20`));
+    assert.match(clean, new RegExp(`# domain_coupling[\\s\\S]*oh-my-ontology domain-matrix ${vaultPath} --limit 6 --types depends_on,relates`));
     assert.match(clean, new RegExp(`oh-my-ontology hubs ${vaultPath} --plan --limit 10 --types depends_on,relates`));
-    assert.match(clean, new RegExp(`# path_evidence\\noh-my-ontology all-paths .* ${vaultPath} --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10`));
+    assert.match(clean, new RegExp(`# path_evidence[\\s\\S]*oh-my-ontology all-paths .* ${vaultPath} --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10`));
     assert.match(clean, new RegExp(`oh-my-ontology explain .* ${vaultPath} --direction undirected --max-hops 5 --types depends_on,relates --limit 10`));
     assert.doesNotMatch(clean, /\[vault\]/);
     assert.doesNotMatch(clean, /FIRST MCP CALLS/);
