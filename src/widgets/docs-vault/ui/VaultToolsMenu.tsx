@@ -146,6 +146,25 @@ export function VaultToolsMenu({
   const agentSetupReady = Boolean(
     agentStatus?.mcpJson && agentStatus.codexConfig && agentStatus.mcpExample,
   );
+  const agentSetupFiles = [
+    { key: 'mcpJson', path: '.mcp.json', label: t('agentSetup.mcpJson') },
+    {
+      key: 'codexConfig',
+      path: '.codex/config.toml',
+      label: t('agentSetup.codexConfig'),
+    },
+    {
+      key: 'mcpExample',
+      path: '.mcp.json.example',
+      label: t('agentSetup.mcpExample'),
+    },
+  ] as const;
+  const agentSetupReadyCount = agentStatus
+    ? agentSetupFiles.filter((file) => agentStatus[file.key]).length
+    : 0;
+  const nextMissingAgentConfig = agentStatus
+    ? agentSetupFiles.find((file) => !agentStatus[file.key])
+    : null;
 
   async function handleEnsureAgentConfigs() {
     setAgentSetupError(null);
@@ -310,23 +329,22 @@ export function VaultToolsMenu({
                       : t('agentSetup.missing')}
                   </span>
                 </div>
+                <p className="mt-1 text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {t('agentSetup.statusSummary', {
+                    ready: agentSetupReadyCount,
+                    total: agentSetupFiles.length,
+                  })}
+                  {nextMissingAgentConfig ? (
+                    <span className="block font-mono text-[10px] text-[color:rgba(244,196,130,0.92)]">
+                      {t('agentSetup.nextMissing', {
+                        path: nextMissingAgentConfig.path,
+                      })}
+                    </span>
+                  ) : null}
+                </p>
                 <div className="mt-2 grid gap-1.5">
-                  {[
-                    ['mcpJson', '.mcp.json', t('agentSetup.mcpJson')],
-                    [
-                      'codexConfig',
-                      '.codex/config.toml',
-                      t('agentSetup.codexConfig'),
-                    ],
-                    [
-                      'mcpExample',
-                      '.mcp.json.example',
-                      t('agentSetup.mcpExample'),
-                    ],
-                  ].map(([key, path, label]) => {
-                    const present = Boolean(
-                      agentStatus[key as keyof typeof agentStatus],
-                    );
+                  {agentSetupFiles.map(({ key, path, label }) => {
+                    const present = Boolean(agentStatus[key]);
                     return (
                       <div
                         key={key}

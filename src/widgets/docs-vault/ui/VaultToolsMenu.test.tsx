@@ -97,6 +97,8 @@ describe('VaultToolsMenu', () => {
       screen.getByRole('region', { name: 'AI agent 설정 상태' }),
     ).toBeInTheDocument();
     expect(screen.getByText('누락')).toBeInTheDocument();
+    expect(screen.getByText('설정 파일 1/3개 준비됨')).toBeInTheDocument();
+    expect(screen.getByText('다음: .mcp.json 만들기')).toBeInTheDocument();
     expect(screen.getByText('.mcp.json')).toBeInTheDocument();
     expect(screen.getByText('.codex/config.toml')).toBeInTheDocument();
     expect(screen.getByText('.mcp.json.example')).toBeInTheDocument();
@@ -119,6 +121,7 @@ describe('VaultToolsMenu', () => {
     });
 
     expect(screen.getByText('준비됨')).toBeInTheDocument();
+    expect(screen.getByText('설정 파일 3/3개 준비됨')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: '누락된 agent 설정 만들기' }),
     ).not.toBeInTheDocument();

@@ -1150,6 +1150,8 @@
       "mcpJson": "Claude Code / Cursor workspace config",
       "codexConfig": "Codex workspace config",
       "mcpExample": "template for codebase-root sessions",
+      "statusSummary": "{ready}/{total} setup files ready",
+      "nextMissing": "Next: create {path}",
       "repair": "Create missing agent configs",
       "repairing": "Creating configs…",
       "repairTitle": "Creates only the missing .mcp.json, .codex/config.toml, and .mcp.json.example files. It does not add starter markdown files.",

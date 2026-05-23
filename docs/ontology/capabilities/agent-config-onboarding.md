@@ -23,6 +23,8 @@ relates:
 복구할 수 있게 하는 onboarding surface. web starter 와 CLI init 은 `.mcp.json`,
 `.codex/config.toml`, `.mcp.json.example` 을 생성하고, Docs vault tools menu 는
 현재 로컬 폴더에 이 파일들이 있는지 별도 agent setup 상태로 보여준다.
+상태 헤더는 준비된 setup 파일 수와 첫 누락 config 경로를 함께 보여주므로,
+사용자는 파일별 체크리스트를 읽기 전에 다음에 눌러야 할 repair action 을 바로 판단할 수 있다.
 
 기존 vault 에서는 starter markdown 을 추가하지 않아도 누락된 agent 설정 파일만
 생성할 수 있다. 이 repair action 은 이미 사용자가 작성한 ontology 파일을 건드리지
