@@ -225,8 +225,8 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm benchmark --dry-run` | Benchmark runner config without spawning Codex |
 | `pnpm benchmark:scale --dry-run` | Scale benchmark config without tmp vault or Codex spawn |
 | `node scripts/perf-vault.mjs 10` | Small vault walk/read/parse perf smoke |
-| `pnpm perf:graph:check` | In-process graph compiler/query latency budget on a 1k-node generated vault, using 3-run medians; includes `agent_brief`, `query_plan(all_paths)`, bounded `all_paths`, and containment traversal hot paths |
-| `pnpm perf:graph:scale` | Larger 1k + 5k in-process graph compiler/query latency budget for scale-sensitive changes; includes the same agent traversal strategy hot paths |
+| `pnpm perf:graph:check` | In-process graph compiler/query latency budget on a 1k-node generated vault, using 3-run medians; includes `agent_brief`, `query_plan(all_paths)`, bounded `all_paths`, `query_plan(match_nodes)`, `query_plan(match_edges)`, graph DB-style node/edge scans, and containment traversal hot paths |
+| `pnpm perf:graph:scale` | Larger 1k + 5k in-process graph compiler/query latency budget for scale-sensitive changes; includes the same agent traversal strategy and graph scan hot paths |
 | `pnpm smoke:onboarding` | Clean repo onboarding smoke |
 | `pnpm smoke:memory-loop` | Fresh repo 10-minute memory loop smoke: init, bootstrap, MCP first-contact, node profile, and side-effect-free sync proposal |
 
