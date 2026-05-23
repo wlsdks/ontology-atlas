@@ -155,6 +155,9 @@ CLI fallback 도 함께 들어가므로 MCP connector 가 없는 Codex / Claude 
 오인하지 않게 한다. 같은 pack 은 `Agent handoff prompt` 복사 본문에도 포함되어,
 사용자가 pack 버튼을 따로 누르지 않아도 fresh Claude Code / Codex 세션이 첫 handoff 에서
 graph DB-style scan 계약과 fallback 명령을 함께 받는다.
+`scripts/perf-graph.mjs` 는 같은 10-call pack 을 `graph_db_pack` hot path 로 재생해
+UI / handoff 에서 복사되는 실제 Graph DB-style sequence 가 scale budget 밖으로 밀리지
+않는지도 확인한다.
 
 Run order 앞에는 별도 `Traversal strategy` 레일도 둔다. 이는 MCP
 `agent_brief.traversalStrategy` 와 같은 `plan_before_enumeration` →

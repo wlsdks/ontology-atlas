@@ -147,6 +147,78 @@ function runScaleOnce(docs) {
   const center = "capabilities/cap-10";
   const peer = "capabilities/cap-20";
   const project = "project/perf-workbench";
+  const graphDbPackQueries = [
+    {
+      operation: "query_plan",
+      targetOperation: "match_nodes",
+      kind: "capability",
+      minDegree: 2,
+      sort: "degree",
+      limit: 10,
+    },
+    {
+      operation: "match_nodes",
+      kind: "capability",
+      minDegree: 2,
+      sort: "degree",
+      limit: 10,
+    },
+    {
+      operation: "query_plan",
+      targetOperation: "match_edges",
+      types: ["depends_on"],
+      limit: 20,
+    },
+    {
+      operation: "match_edges",
+      types: ["depends_on"],
+      limit: 20,
+    },
+    {
+      operation: "domain_matrix",
+      types: ["depends_on", "relates"],
+      limit: 6,
+    },
+    {
+      operation: "query_plan",
+      targetOperation: "centrality",
+      types: ["depends_on", "relates"],
+      limit: 10,
+    },
+    {
+      operation: "centrality",
+      types: ["depends_on", "relates"],
+      limit: 10,
+    },
+    {
+      operation: "query_plan",
+      targetOperation: "all_paths",
+      from: center,
+      to: peer,
+      maxHops: 3,
+      types: ["depends_on", "relates"],
+      searchBudget: 1000,
+      limit: 10,
+    },
+    {
+      operation: "all_paths",
+      from: center,
+      to: peer,
+      maxHops: 3,
+      types: ["depends_on", "relates"],
+      searchBudget: 1000,
+      limit: 10,
+    },
+    {
+      operation: "explain_relation",
+      from: center,
+      to: peer,
+      direction: "undirected",
+      maxHops: 5,
+      types: ["depends_on", "relates"],
+      limit: 10,
+    },
+  ];
 
   const queryInputs = [
     { label: "agent_brief", query: { operation: "agent_brief" } },
@@ -226,9 +298,14 @@ function runScaleOnce(docs) {
       query: { operation: "match_nodes", kind: "capability", minDegree: 2, sort: "degree", limit: 10 },
     },
     { label: "match_edges", query: { operation: "match_edges", types: ["depends_on"], limit: 20 } },
+    {
+      label: "graph_db_pack",
+      query: null,
+      run: () => graphDbPackQueries.map((query) => queryCompiledOntology(artifact, query)),
+    },
     { label: "project_map", query: { operation: "project_map", project, itemLimit: 20 } },
-  ].map(({ label, query }) =>
-    measure(label, () => queryCompiledOntology(artifact, query)),
+  ].map(({ label, query, run }) =>
+    measure(label, () => (run ? run() : queryCompiledOntology(artifact, query))),
   );
 
   return {
@@ -255,6 +332,9 @@ function runScaleOnce(docs) {
         queryInputs.find((row) => row.label === "query_plan_match_edges")?.value,
       ),
       all_paths: allPathsDiagnostics(queryInputs.find((row) => row.label === "all_paths")?.value),
+      graph_db_pack: graphDbPackDiagnostics(
+        queryInputs.find((row) => row.label === "graph_db_pack")?.value,
+      ),
     },
   };
 }
@@ -284,6 +364,21 @@ function allPathsDiagnostics(value) {
     evidenceStatus: value?.evidence?.status ?? null,
     evidenceReason: value?.evidence?.reason ?? null,
     pathsComplete: value?.evidence?.pathsComplete ?? null,
+  };
+}
+
+function graphDbPackDiagnostics(value) {
+  const rows = Array.isArray(value) ? value : [];
+  return {
+    calls: rows.length,
+    operations: rows.map((row) => row?.operation ?? null),
+    totalMatches: rows
+      .filter((row) => Number.isInteger(row?.totalMatches))
+      .map((row) => row.totalMatches),
+    allPathsEvidenceStatus: rows.find((row) => row?.operation === "all_paths")?.evidence?.status ?? null,
+    explainRelationHasShortestPath: Boolean(
+      rows.find((row) => row?.operation === "explain_relation")?.shortestPath,
+    ),
   };
 }
 
@@ -341,7 +436,7 @@ if (json) {
       `[perf-graph] budgets: compile <= ${budgets.compileMs}ms, each query <= ${budgets.queryMs}ms`,
     );
   }
-  console.log("   N   edges  compile  indexes  summary  agent  workspace  health  plan  pathplan nodeplan edgeplan  profile   path allpaths pattern schema  relchk  blast  matrix  centrality matchnodes matchedges  project_map");
+  console.log("   N   edges  compile  indexes  summary  agent  workspace  health  plan  pathplan nodeplan edgeplan  profile   path allpaths pattern schema  relchk  blast  matrix  centrality matchnodes matchedges graphpack  project_map");
   for (const result of results) {
     const row = [
       String(result.n).padStart(4),
@@ -367,6 +462,7 @@ if (json) {
       result.queries.centrality.toFixed(2).padStart(10),
       result.queries.match_nodes.toFixed(2).padStart(10),
       result.queries.match_edges.toFixed(2).padStart(10),
+      result.queries.graph_db_pack.toFixed(2).padStart(9),
       result.queries.project_map.toFixed(2).padStart(11),
     ];
     console.log(row.join(" "));
@@ -385,6 +481,10 @@ if (json) {
     );
     console.log(
       `[perf-graph] ${result.n} nodes query_plan(match_edges): ${matchEdgesPlan.strategy}/${matchEdgesPlan.costClass}, totalMatches: ${matchEdgesPlan.totalMatches}, nextStep: ${matchEdgesPlan.nextStep}, shouldRun: ${matchEdgesPlan.shouldRun}`,
+    );
+    const graphDbPack = result.queryDiagnostics.graph_db_pack;
+    console.log(
+      `[perf-graph] ${result.n} nodes graph_db_pack: ${graphDbPack.calls} calls, operations: ${graphDbPack.operations.join(" -> ")}, all_paths evidence: ${graphDbPack.allPathsEvidenceStatus}, explain shortestPath: ${graphDbPack.explainRelationHasShortestPath}`,
     );
   }
 }

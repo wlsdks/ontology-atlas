@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T22:18:22.882Z",
+  "generatedAt": "2026-05-23T22:24:08.736Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -1825,8 +1825,8 @@
         }
       ],
       "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · 14 tools · web workbench all on top of one a",
-      "wordCount": 1238,
-      "updatedAt": "2026-05-22T05:47:58.223Z",
+      "wordCount": 1265,
+      "updatedAt": "2026-05-23T22:24:03.316Z",
       "linksOut": [
         "benchmark/tasks",
         "benchmark/rubric",
@@ -3858,8 +3858,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 2948,
-      "updatedAt": "2026-05-23T21:57:02.721Z",
+      "wordCount": 2949,
+      "updatedAt": "2026-05-23T22:24:03.315Z",
       "linksOut": []
     },
     {
@@ -4737,8 +4737,8 @@
         }
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
-      "wordCount": 1971,
-      "updatedAt": "2026-05-23T22:18:13.041Z",
+      "wordCount": 1998,
+      "updatedAt": "2026-05-23T22:24:03.317Z",
       "linksOut": []
     },
     {
@@ -4945,8 +4945,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
-      "wordCount": 9042,
-      "updatedAt": "2026-05-23T21:57:35.733Z",
+      "wordCount": 9070,
+      "updatedAt": "2026-05-23T22:24:03.316Z",
       "linksOut": []
     },
     {
