@@ -37,6 +37,20 @@ query sequence as one copyable runbook, not only as individual MCP calls.
 - **UI regression gate** — the focused Playwright insights test now checks that
   the run-order copy action is visible beside the first-contact rail.
 
+## 2026-05-23 — MCP graph query compile cache
+
+Repeated graph queries in one MCP server session now avoid recompiling the same
+vault snapshot.
+
+- **Indexed artifact cache** — `query_ontology` reuses the compiled indexed
+  artifact while the loaded vault docs have the same slug / mtime / raw-content
+  signature.
+- **Write-safe invalidation** — write paths clear the cache before generating
+  post-write maintenance, and external file edits naturally miss the cache
+  because the document signature changes.
+- **Package safety** — the cache helper is covered by focused unit tests and is
+  included in the published MCP package files list.
+
 ## 2026-05-19 — CLI growth plan dogfood
 
 The developer CLI now exposes MCP `growth_plan` directly, so agents and humans

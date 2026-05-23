@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T01:29:32.816Z",
+  "generatedAt": "2026-05-23T03:38:04.446Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -2372,6 +2372,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-23 — MCP graph query compile cache",
+          "slug": "2026-05-23-mcp-graph-query-compile-cache"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-19 — CLI growth plan dogfood",
           "slug": "2026-05-19-cli-growth-plan-dogfood"
         },
@@ -3392,8 +3397,8 @@
         }
       ],
       "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. Fresh vault setup now gives Codex the same repolocal MCP path as Claude Code and Cursor. C",
-      "wordCount": 16868,
-      "updatedAt": "2026-05-23T01:29:25.735Z",
+      "wordCount": 16965,
+      "updatedAt": "2026-05-23T03:37:53.739Z",
       "linksOut": [
         "slug"
       ]
@@ -4382,8 +4387,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 6035,
-      "updatedAt": "2026-05-23T01:28:11.594Z",
+      "wordCount": 6070,
+      "updatedAt": "2026-05-23T03:37:06.541Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5043,8 +5048,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 12412,
-      "updatedAt": "2026-05-22T07:35:39.261Z",
+      "wordCount": 12448,
+      "updatedAt": "2026-05-23T03:37:44.243Z",
       "linksOut": []
     },
     {

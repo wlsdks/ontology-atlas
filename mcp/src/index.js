@@ -81,6 +81,7 @@ import {
   inferImports,
 } from './infer-imports.mjs';
 import { compileOntology } from './ontology-compiler.mjs';
+import { createCompiledOntologyCache } from './compiled-cache.mjs';
 import {
   EDGE_TARGET_KIND_VALUES,
   MAINTENANCE_KIND_VALUES,
@@ -118,6 +119,10 @@ const VAULT_ROOT = resolve(process.env.OMOT_VAULT || process.cwd());
 const SERVER_VERSION = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
 ).version;
+const COMPILED_ONTOLOGY_CACHE = createCompiledOntologyCache({
+  loadDocs: () => loadVaultDocs(VAULT_ROOT),
+  compile: (docs, options) => compileOntology(docs, options),
+});
 const NON_BLANK_STRING_SCHEMA = Object.freeze({
   type: 'string',
   minLength: 1,
@@ -3814,7 +3819,7 @@ function compileOntologyTool({
 
 function queryOntologyTool(args = {}) {
   validateQueryOntologyArgs(args);
-  const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), { includeIndexes: true });
+  const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
   const omotIgnorePatterns = loadOmotIgnore(VAULT_ROOT);
   return {
     ...queryCompiledOntology(artifact, args, { omotIgnorePatterns }),
@@ -3905,7 +3910,8 @@ function validateQueryOntologyArgs(args = {}) {
 }
 
 function compactPostWriteMaintenance(limit = 5) {
-  const artifact = compileOntology(loadVaultDocs(VAULT_ROOT), { includeIndexes: true });
+  COMPILED_ONTOLOGY_CACHE.clear();
+  const artifact = COMPILED_ONTOLOGY_CACHE.get({ includeIndexes: true });
   const omotIgnorePatterns = loadOmotIgnore(VAULT_ROOT);
   const result = queryCompiledOntology(artifact, {
     operation: 'maintenance_plan',

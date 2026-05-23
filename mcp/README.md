@@ -6,7 +6,10 @@
 
 The vault is still plain markdown. The graph-database-like behavior comes from
 `compile_ontology` and `query_ontology`, which build and query a deterministic
-runtime graph artifact without introducing a backend database.
+runtime graph artifact without introducing a backend database. During one MCP
+server session, repeated `query_ontology` calls reuse the compiled artifact
+while the vault document signature is unchanged, so agent run orders avoid
+recompiling the same graph over and over.
 
 ## Quick start
 
