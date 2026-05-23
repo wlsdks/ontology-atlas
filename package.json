@@ -47,6 +47,7 @@
     "integration:mcp:write": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(add_concepts|add_concept/add_concepts|MCP slug conflicts|MCP write tools|add_relations|patch_concept|rename_concept|graph destructive writes|merge_concepts|delete_concept|add_relation)\" mcp/src/integration.test.mjs",
     "integration:mcp:readme": "node scripts/run-focused-node-test.mjs --test-name-pattern \"README first exploration\" mcp/src/integration.test.mjs",
     "smoke:onboarding": "node scripts/smoke-clean-onboarding.mjs",
+    "smoke:memory-loop": "node scripts/smoke-memory-loop.mjs",
     "smoke:packed-cli": "node scripts/smoke-packed-cli.mjs",
     "benchmark": "node scripts/benchmark.mjs",
     "benchmark:scale": "node scripts/benchmark-scale.mjs",

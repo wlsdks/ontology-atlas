@@ -212,6 +212,11 @@ const RULES = [
     matches: [/^scripts\/smoke-clean-onboarding\.mjs$/],
   },
   {
+    command: 'pnpm smoke:memory-loop',
+    reason: 'fresh repo memory loop smoke changed',
+    matches: [/^scripts\/smoke-memory-loop\.mjs$/],
+  },
+  {
     command: 'pnpm exec tsc --noEmit',
     reason: 'TypeScript or Next.js static export config changed',
     matches: [

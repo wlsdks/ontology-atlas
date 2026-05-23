@@ -110,7 +110,8 @@ focused-check advisor changes use the same pattern: direct
 Benchmark and smoke helpers use cheap command-level checks first:
 `pnpm benchmark --dry-run`, `pnpm benchmark:scale --dry-run`,
 `node scripts/perf-vault.mjs 10`, `pnpm perf:graph:check`, or
-`pnpm smoke:onboarding`, depending on the touched script.
+`pnpm smoke:onboarding` / `pnpm smoke:memory-loop`, depending on the touched
+script.
 App/source TypeScript changes under `app/` or `src/` first print a direct
 Vitest sibling command (`pnpm exec vitest run <path>.test.ts[x]`) when that
 test file exists or is part of the same changed path set.
@@ -227,6 +228,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm perf:graph:check` | In-process graph compiler/query latency budget on a 1k-node generated vault, using 3-run medians; includes `agent_brief`, `query_plan(all_paths)`, bounded `all_paths`, and containment traversal hot paths |
 | `pnpm perf:graph:scale` | Larger 1k + 5k in-process graph compiler/query latency budget for scale-sensitive changes; includes the same agent traversal strategy hot paths |
 | `pnpm smoke:onboarding` | Clean repo onboarding smoke |
+| `pnpm smoke:memory-loop` | Fresh repo 10-minute memory loop smoke: init, bootstrap, MCP first-contact, node profile, and side-effect-free sync proposal |
 
 `pnpm test:mcp:docs` intentionally lists explicit test-name fragments instead
 of a broad `README` token, so documentation-only changes do not accidentally

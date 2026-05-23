@@ -6,6 +6,22 @@
 
 ---
 
+## 2026-05-23 — 10-minute memory loop smoke
+
+Fresh-repo launch readiness now has an automated gate instead of only a
+backlog note.
+
+- **Memory loop smoke** — `pnpm smoke:memory-loop` creates a temporary TS repo
+  and proves `init -> bootstrap -> validate -> workspace_brief -> agent_brief ->
+  node_profile -> sync proposal` within a 10-minute budget.
+- **Side-effect-free proposal check** — after the baseline ontology is
+  committed in the temp repo, the smoke adds a new feature file and confirms
+  `analyze_repo_structure` proposes `capabilities/export` while the vault stays
+  unchanged.
+- **Git diff alignment** — the smoke asserts the sync proposal corresponds to
+  the actual changed code path, so the product loop remains reviewable before
+  an agent writes back to the vault.
+
 ## 2026-05-23 — Repo-local Codex onboarding
 
 Fresh vault setup now gives Codex the same repo-local MCP path as Claude Code

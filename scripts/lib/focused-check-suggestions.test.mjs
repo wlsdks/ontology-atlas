@@ -590,6 +590,7 @@ describe('focused check suggestions', () => {
       'scripts/perf-vault.mjs',
       'scripts/perf-graph.mjs',
       'scripts/smoke-clean-onboarding.mjs',
+      'scripts/smoke-memory-loop.mjs',
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
@@ -600,6 +601,7 @@ describe('focused check suggestions', () => {
       'pnpm perf:graph:check',
       'pnpm perf:graph:scale',
       'pnpm smoke:onboarding',
+      'pnpm smoke:memory-loop',
     ]);
   });
 

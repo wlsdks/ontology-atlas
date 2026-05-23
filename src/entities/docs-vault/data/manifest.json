@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T03:38:04.446Z",
+  "generatedAt": "2026-05-23T03:48:11.527Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -1742,8 +1742,8 @@
         }
       ],
       "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 30 노드, CLI 29 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
-      "wordCount": 1438,
-      "updatedAt": "2026-05-22T03:32:05.640Z",
+      "wordCount": 1483,
+      "updatedAt": "2026-05-23T03:44:58.997Z",
       "linksOut": []
     },
     {
@@ -2359,6 +2359,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-05-23 — 10-minute memory loop smoke",
+          "slug": "2026-05-23-10-minute-memory-loop-smoke"
         },
         {
           "depth": 2,
@@ -3396,9 +3401,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. Fresh vault setup now gives Codex the same repolocal MCP path as Claude Code and Cursor. C",
-      "wordCount": 16965,
-      "updatedAt": "2026-05-23T03:37:53.739Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. Freshrepo launch readiness now has an automated gate instead of only a backlog note. Memor",
+      "wordCount": 17082,
+      "updatedAt": "2026-05-23T03:45:55.265Z",
       "linksOut": [
         "slug"
       ]
@@ -3848,8 +3853,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 2901,
-      "updatedAt": "2026-05-22T08:54:13.611Z",
+      "wordCount": 2925,
+      "updatedAt": "2026-05-23T03:45:55.265Z",
       "linksOut": []
     },
     {
@@ -4387,8 +4392,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 6070,
-      "updatedAt": "2026-05-23T03:37:06.541Z",
+      "wordCount": 6114,
+      "updatedAt": "2026-05-23T03:45:55.266Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4847,6 +4852,7 @@
           "scripts/run-focused-node-test.mjs",
           "scripts/run-focused-node-test.test.mjs",
           "scripts/smoke-clean-onboarding.mjs",
+          "scripts/smoke-memory-loop.mjs",
           "scripts/smoke-packed-cli.mjs",
           "scripts/suggest-focused-checks.mjs",
           "scripts/suggest-focused-checks.test.mjs"
@@ -4890,8 +4896,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / allpaths / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, write 전 schema preflight 인 relationcheck, Claude Code/Codex handoff 를 보는 agentbrief, 그리고 설치된 M",
-      "wordCount": 8209,
-      "updatedAt": "2026-05-23T01:18:27.773Z",
+      "wordCount": 8262,
+      "updatedAt": "2026-05-23T03:45:55.266Z",
       "linksOut": []
     },
     {
