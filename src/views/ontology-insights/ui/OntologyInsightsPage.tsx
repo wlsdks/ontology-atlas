@@ -40,6 +40,7 @@ import {
   formatAgentRecipeCliCommand,
   formatAgentRecipePayload,
   formatAgentRunOrderPrompt,
+  formatAgentTraversalPacket,
   formatAgentTraversalStrategyPrompt,
   countCrossProjectEdges,
   selectAgentProjectEntrypoint,
@@ -696,6 +697,14 @@ function AgentQueryRecipesPanel({
           <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
             {t("agentTraversalStrategySubtitle")}
           </p>
+        </div>
+        <div className="mb-2 flex justify-end">
+          <CopyAgentTextButton
+            label={t("agentCopyTraversalPacket")}
+            copiedLabel={t("agentCopied")}
+            text={formatAgentTraversalPacket(traversalStrategies)}
+            compact
+          />
         </div>
         <ol className="grid gap-2 lg:grid-cols-3">
           {traversalStrategies.map((strategy, index) => (

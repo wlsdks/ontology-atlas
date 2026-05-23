@@ -900,6 +900,7 @@
       "agentCopyPayload": "JSON 복사",
       "agentCopyPlaybook": "playbook 복사",
       "agentCopyStrategy": "strategy 복사",
+      "agentCopyTraversalPacket": "traversal packet 복사",
       "agentCopyGuardrail": "gate 복사",
       "agentCopyCli": "CLI 복사",
       "agentCopySlug": "slug 복사",

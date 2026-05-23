@@ -385,6 +385,45 @@ export function formatAgentTraversalStrategyPrompt(strategy: AgentTraversalStrat
   ].join("\n");
 }
 
+export function formatAgentTraversalPacket(
+  strategies: readonly AgentTraversalStrategy[],
+): string {
+  const payloads = strategies
+    .flatMap((strategy) =>
+      strategy.payloads.map((payload) => ({
+        strategyId: strategy.id,
+        payload,
+      })),
+    )
+    .map(
+      ({ strategyId, payload }, index) =>
+        `${index + 1}. ${strategyId} / ${payload.operation}\n${formatAgentMcpQueryPayload(payload)}`,
+    )
+    .join("\n\n");
+  const cliCommands = strategies
+    .flatMap((strategy) => strategy.payloads)
+    .map(formatAgentQueryCallCliCommand)
+    .filter((command): command is string => command !== null);
+  const cliFallback =
+    cliCommands.length > 0
+      ? [
+          "",
+          "CLI fallback commands when the MCP connector is unavailable:",
+          ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
+        ]
+      : [];
+
+  return [
+    "Use this oh-my-ontology graph traversal packet before treating graph paths as evidence.",
+    "Run query_plan before all_paths, keep traversal bounded, and cross-check containment before changing ownership, domain boundaries, or relation direction.",
+    ...ALL_PATHS_RESULT_CONTRACT,
+    "",
+    "MCP calls:",
+    payloads,
+    ...cliFallback,
+  ].join("\n");
+}
+
 export function formatAgentGuardrailPrompt(guardrail: AgentWriteGuardrail): string {
   const payloads = guardrail.payloads
     .map((payload, index) => `${index + 1}. ${payload.operation}\n${formatAgentMcpToolPayload(payload)}`)

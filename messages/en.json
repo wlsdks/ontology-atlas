@@ -900,6 +900,7 @@
       "agentCopyPayload": "Copy JSON",
       "agentCopyPlaybook": "Copy playbook",
       "agentCopyStrategy": "Copy strategy",
+      "agentCopyTraversalPacket": "Copy traversal packet",
       "agentCopyGuardrail": "Copy gate",
       "agentCopyCli": "Copy CLI",
       "agentCopySlug": "Copy slug",

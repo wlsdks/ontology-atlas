@@ -59,6 +59,7 @@ export {
   formatAgentMcpQueryPayload,
   formatAgentMcpToolPayload,
   formatAgentGuardrailPrompt,
+  formatAgentTraversalPacket,
   formatAgentPlaybookPrompt,
   formatAgentQueryCallCliCommand,
   formatAgentRecipeCliCommand,

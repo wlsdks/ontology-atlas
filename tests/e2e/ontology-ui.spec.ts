@@ -138,6 +138,7 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("match_edges");
     await expect(recipes.getByRole("button", { name: "Copy playbook" })).toHaveCount(4);
     await expect(recipes.getByRole("button", { name: "Copy strategy" })).toHaveCount(3);
+    await expect(recipes.getByRole("button", { name: "Copy traversal packet" })).toBeVisible();
     await expect(recipes.getByRole("button", { name: "Copy run order" })).toBeVisible();
     await expect(recipes.getByTestId("insights-agent-guardrails")).toContainText(
       "Write safety gates",

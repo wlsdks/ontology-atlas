@@ -119,6 +119,13 @@ R+ follow-up 에서는 이 first-contact rail 전체를 하나의 `Copy run orde
 `all_paths` completeness contract 도 포함해 새 Claude Code/Codex 세션이 개별
 step 을 하나씩 고르지 않아도 같은 graph evidence protocol 로 시작하게 한다.
 
+추가로 traversal strategy 전체도 `Copy traversal packet` 으로 한 번에 복사한다.
+이 packet 은 `query_plan(all_paths)` → bounded `all_paths` →
+`pattern_walk` / `project_map` 순서의 MCP payload 를 묶고, 가능한 CLI fallback
+명령도 함께 넣는다. 그래서 사용자가 graph DB 식 질문을 웹에서 고른 뒤 agent 에게
+넘길 때 개별 strategy 버튼을 세 번 누르지 않아도 plan-first / bounded evidence /
+containment cross-check 순서를 그대로 유지할 수 있다.
+
 Run order 앞에는 별도 `Traversal strategy` 레일도 둔다. 이는 MCP
 `agent_brief.traversalStrategy` 와 같은 `plan_before_enumeration` →
 `bounded_path_evidence` → `containment_cross_check` 순서를 화면에 그대로 노출한다.

@@ -14,6 +14,7 @@ import {
   formatAgentRecipeCliCommand,
   formatAgentRecipePayload,
   formatAgentRunOrderPrompt,
+  formatAgentTraversalPacket,
   formatAgentTraversalStrategyPrompt,
   selectAgentProjectEntrypoint,
   selectAgentQueryEntrypoints,
@@ -494,6 +495,47 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("evidence.pathsComplete");
     expect(prompt).toContain("query_ontology.query_plan");
     expect(prompt).toContain('"targetOperation": "all_paths"');
+  });
+
+  it("formats the full traversal packet with MCP calls and CLI fallbacks", () => {
+    const strategies = buildAgentTraversalStrategies(
+      [
+        {
+          slug: "capabilities/mcp-server",
+          title: "MCP Server",
+          kind: "capability",
+          degree: 7,
+        },
+        {
+          slug: "domains/views",
+          title: "Views",
+          kind: "domain",
+          degree: 6,
+        },
+      ],
+      {
+        slug: "project",
+        title: "oh-my-ontology",
+        degree: 5,
+      },
+    );
+
+    const packet = formatAgentTraversalPacket(strategies);
+
+    expect(packet).toContain("graph traversal packet");
+    expect(packet).toContain("query_plan before all_paths");
+    expect(packet).toContain("MCP calls:");
+    expect(packet).toContain("1. plan_before_enumeration / query_ontology.query_plan");
+    expect(packet).toContain("2. bounded_path_evidence / query_ontology.all_paths");
+    expect(packet).toContain("3. containment_cross_check / query_ontology.pattern_walk");
+    expect(packet).toContain("4. containment_cross_check / query_ontology.project_map");
+    expect(packet).toContain('"targetOperation": "all_paths"');
+    expect(packet).toContain('"operation": "all_paths"');
+    expect(packet).toContain("evidence.pathsComplete");
+    expect(packet).toContain("CLI fallback commands when the MCP connector is unavailable:");
+    expect(packet).toContain(
+      "oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
+    );
   });
 
   it("formats playbooks as copyable ordered investigation prompts", () => {
