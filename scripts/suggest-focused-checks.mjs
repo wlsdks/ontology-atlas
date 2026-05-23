@@ -8,6 +8,11 @@ import {
   suggestFocusedChecks,
 } from './lib/focused-check-suggestions.mjs';
 
+const SHARED_AGENT_CONFIG_PATTERNS = [
+  /^\.agents\/skills\/[^/]+\/SKILL\.md$/,
+  /^\.codex\/(?:config\.toml|hooks\.json)$/,
+  /^\.codex\/hooks\/(?:block-npm-publish|inject-ontology-summary)\.sh$/,
+];
 const LOCAL_AGENT_STATE_PREFIXES = ['.agents/', '.codex/'];
 
 export function changedPathsFromGit({ cwd = process.cwd(), spawn = spawnSync } = {}) {
@@ -35,7 +40,9 @@ function uniqueLines(output) {
 
 export function untrackedPathsForAdvisor(output) {
   return uniqueLines(output).filter(
-    (path) => !LOCAL_AGENT_STATE_PREFIXES.some((prefix) => path.startsWith(prefix)),
+    (path) =>
+      SHARED_AGENT_CONFIG_PATTERNS.some((pattern) => pattern.test(path)) ||
+      !LOCAL_AGENT_STATE_PREFIXES.some((prefix) => path.startsWith(prefix)),
   );
 }
 
@@ -74,8 +81,9 @@ export function suggestFocusedChecksUsage() {
 
 Suggests the first focused checks for changed files. With no path arguments it
 uses tracked changes from git diff plus untracked files from git ls-files,
-excluding local .agents/ and .codex/ agent state. Pass paths explicitly to
-inspect a planned file set before editing.`;
+excluding local .agents/ and .codex/ agent state except shared repo skills,
+Codex hooks, and Codex MCP config. Pass paths explicitly to inspect a planned
+file set before editing.`;
 }
 
 if (resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {

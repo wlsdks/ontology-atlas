@@ -30,16 +30,17 @@ For user-facing UI changes, add the relevant Playwright route check.
 | CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
 | MCP core units | `pnpm test:mcp:unit` | `pnpm integration:mcp:readme` |
 | MCP/docs contract | `pnpm test:mcp:docs` | `pnpm package:check` |
+| Graph hot-path perf | `pnpm perf:graph:check` | `pnpm perf:graph:scale` |
 | Dogfood MCP smoke | `pnpm dogfood:status` | `pnpm dogfood:verify` |
 | Packed CLI release | `pnpm smoke:packed-cli` | `pnpm test:mcp:package` |
 
 `pnpm test:mcp:docs` also guards Firebase Hosting config as static-only:
 `firebase.json` must stay Hosting-only, point at `out/`, and not add Functions,
 Firestore, Storage, emulators, or rewrites. `pnpm test:mcp:docs` also guards
-the tracked `.mcp.json` and `.mcp.json.example` source-checkout templates so
-local agent registration keeps pointing at `node ./mcp/src/index.js` with
-`OMOT_VAULT=./docs/ontology`. Use `pnpm test:mcp:registration` when only those
-MCP registration templates changed.
+the tracked `.mcp.json`, `.mcp.json.example`, and `.codex/config.toml`
+source-checkout templates so local agent registration keeps pointing at
+`node ./mcp/src/index.js` with `OMOT_VAULT=./docs/ontology`. Use
+`pnpm test:mcp:registration` when only those MCP registration templates changed.
 
 ## Vault Checks
 
@@ -56,13 +57,14 @@ pnpm test:vault:audit            # focused vault audit CLI argument contract
 pnpm vault:migrate --list        # registered migrations
 ```
 
-`health --json` and `workspace-brief --json` are fail-closed machine outputs:
+`health --json`, `agent-brief --json`, and `workspace-brief --json` are fail-closed machine outputs:
 malformed diagnosis payloads are command failures, not clean vaults.
 
 Focused diagnosis flags are forwarded to MCP `query_ontology`:
 
 ```bash
 oh-my-ontology health ./ontology --dependency-types dependencies
+oh-my-ontology agent-brief ./ontology --component-types domains,domain,capabilities
 oh-my-ontology workspace-brief ./ontology --component-types domains,domain,capabilities
 oh-my-ontology workspace-brief ./ontology --component-limit 5 --node-limit 10
 ```
@@ -81,8 +83,9 @@ pnpm checks:changed -- cli/src/commands/mcp-verify.mjs mcp/scripts/verify.mjs
 
 `pnpm checks:changed` reads tracked changes from `git diff --name-only HEAD`
 plus untracked files from `git ls-files --others --exclude-standard`, excluding
-local `.agents/` and `.codex/` agent state. Pass paths after `--` to inspect a
-planned file set before editing. It prints first checks plus explicit
+local `.agents/` and `.codex/` agent state except shared repo skills,
+Codex hooks, and Codex MCP config. Pass paths after `--` to inspect a planned
+file set before editing. It prints first checks plus explicit
 escalation gates, and is only an advisor; still add runtime/browser checks when
 the touched behavior needs them. Vault helper changes route to direct sibling
 `pnpm exec node --test ...` checks when available, then to their narrow package
@@ -106,8 +109,8 @@ focused-check advisor changes use the same pattern: direct
 `pnpm exec node --test scripts/...test.mjs` first, then the aggregate shortcut.
 Benchmark and smoke helpers use cheap command-level checks first:
 `pnpm benchmark --dry-run`, `pnpm benchmark:scale --dry-run`,
-`node scripts/perf-vault.mjs 10`, or `pnpm smoke:onboarding`, depending on the
-touched script.
+`node scripts/perf-vault.mjs 10`, `pnpm perf:graph:check`, or
+`pnpm smoke:onboarding`, depending on the touched script.
 App/source TypeScript changes under `app/` or `src/` first print a direct
 Vitest sibling command (`pnpm exec vitest run <path>.test.ts[x]`) when that
 test file exists or is part of the same changed path set.
@@ -151,12 +154,14 @@ discussion intake copy is checked with the rest of the public agent workflow
 docs.
 CLI/MCP verify help changes route to `pnpm test:dogfood:script-refs` too,
 because those help surfaces list root `pnpm ...` shortcuts.
-Claude Code agent rules and skills under `.claude/LOOP-PRINCIPLES.md`,
-`.claude/rules/*.md`, and `.claude/skills/*/SKILL.md` also route to
+Claude Code/Codex agent rules and skills under `.claude/LOOP-PRINCIPLES.md`,
+`.claude/rules/*.md`, `.claude/skills/*/SKILL.md`, and
+`.agents/skills/*/SKILL.md` also route to
 `pnpm test:dogfood:script-refs`, because those files contain executable
 workflow snippets that should not drift from package scripts.
-Claude Code hook wiring and publish guard changes under `.claude/hooks/*.sh`
-or `.claude/settings.json` route to `pnpm test:claude:hooks`.
+Claude Code/Codex hook wiring and publish guard changes under
+`.claude/hooks/*.sh`, `.claude/settings.json`, `.codex/hooks/*.sh`, or
+`.codex/hooks.json` route to `pnpm test:claude:hooks`.
 Root/MCP/CLI README changes and this file also route to that gate when they may
 change scanned `pnpm ...` references.
 Changes to `scripts/check-package-contracts.mjs` or its test first route to
@@ -172,11 +177,11 @@ unless the changed behavior itself needs installed-style dogfood verification.
 
 | Command | Use when |
 |---|---|
-| `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts |
+| `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget |
 | `pnpm bundle:check` | Local-first static export bundle guard; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
 | `pnpm test:i18n:messages` | Locale routing/message catalog parity |
-| `pnpm test:claude:hooks` | Claude Code hook wiring and npm publish guard |
+| `pnpm test:claude:hooks` | Claude Code/Codex hook wiring and npm publish guard |
 | `pnpm exec vitest run <path>.test.ts[x]` | Direct app/source sibling test printed by `pnpm checks:changed` when available |
 | `pnpm exec vitest run src/shared/lib/cn.test.ts tests/contract/vault-schema.contract.test.ts` | Vitest config/setup smoke for jsdom setup plus contract discovery |
 | `pnpm exec playwright test tests/e2e/<name>.spec.ts` | Direct E2E spec printed by `pnpm checks:changed` for changed Playwright specs |
@@ -191,15 +196,15 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm integration:cli` | Full CLI integration contracts; use when `cli/src/integration.test.mjs` itself changed |
 | `pnpm integration:cli:entry` | CLI entrypoint, help, command inventory, and `init` contracts |
 | `pnpm integration:cli:compile` | CLI compile / `--fix` canonicalization contracts |
-| `pnpm integration:cli:diagnosis` | CLI `health` / `workspace-brief` diagnosis contracts |
-| `pnpm integration:cli:graph-read` | CLI read-only graph command contracts |
+| `pnpm integration:cli:diagnosis` | CLI `health` / `agent-brief` / `workspace-brief` diagnosis contracts |
+| `pnpm integration:cli:graph-read` | CLI read-only graph command contracts, including bounded `all-paths --plan` traversal guards |
 | `pnpm integration:cli:graph-write` | CLI graph write dry-run/confirm safety contracts |
 | `pnpm integration:cli:repo-analysis` | CLI `analyze` / `infer-imports` / `bootstrap` code-to-vault contracts |
 | `pnpm integration:cli:local-vault` | CLI local vault `add` / `import` / `list` / `find` / `validate` contracts |
 | `pnpm integration:cli:growth` | CLI `growth_plan` wrapper, candidate rendering, malformed payload, and argument contracts |
 | `pnpm test:contracts` | Cross-package schema/parser contracts |
 | `pnpm test:mcp:docs` | Explicit root/MCP/CLI/dogfood docs contracts plus Firebase static-hosting and MCP registration-template guards |
-| `pnpm test:mcp:registration` | Source-checkout `.mcp.json` / `.mcp.json.example` registration templates |
+| `pnpm test:mcp:registration` | Source-checkout `.mcp.json` / `.mcp.json.example` / `.codex/config.toml` registration templates |
 | `pnpm test:mcp:unit` | MCP core parser, vault, compiler, query, import-analysis, and JSON-RPC line helpers; use the direct sibling `pnpm exec node --test mcp/src/<name>.test.mjs` first when `pnpm checks:changed` prints one, including `mcp/scripts/json-rpc-lines.mjs` → `mcp/src/json-rpc-lines.test.mjs` |
 | `pnpm integration:mcp` | Full MCP integration contracts; use when `mcp/src/integration.test.mjs` itself changed |
 | `pnpm integration:mcp:surface` | MCP JSON-RPC `tools/list`, `initialize`, and `tools/call` surface contracts |
@@ -219,6 +224,8 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm benchmark --dry-run` | Benchmark runner config without spawning Codex |
 | `pnpm benchmark:scale --dry-run` | Scale benchmark config without tmp vault or Codex spawn |
 | `node scripts/perf-vault.mjs 10` | Small vault walk/read/parse perf smoke |
+| `pnpm perf:graph:check` | In-process graph compiler/query latency budget on a 1k-node generated vault, using 3-run medians; includes `agent_brief`, `query_plan(all_paths)`, bounded `all_paths`, and containment traversal hot paths |
+| `pnpm perf:graph:scale` | Larger 1k + 5k in-process graph compiler/query latency budget for scale-sensitive changes; includes the same agent traversal strategy hot paths |
 | `pnpm smoke:onboarding` | Clean repo onboarding smoke |
 
 `pnpm test:mcp:docs` intentionally lists explicit test-name fragments instead
@@ -251,6 +258,7 @@ pnpm test:dogfood:args
 pnpm test:dogfood:script-refs
 pnpm test:dogfood:compile-fix
 pnpm dogfood:health
+pnpm dogfood:agent
 pnpm dogfood:brief
 pnpm dogfood:growth
 pnpm dogfood:maintenance
@@ -287,12 +295,12 @@ the combined `pnpm test:dogfood:script-refs` gate.
 
 `pnpm dogfood:maintenance` snapshots the dogfood vault `maintenance_plan` JSON
 queue without running the full status preflight. `pnpm dogfood:status` runs the
-cheap human-readable health + workspace-brief + maintenance gates together. It
-still prints workspace-brief and maintenance when
+cheap human-readable health + workspace-brief + agent-brief + maintenance gates together. It
+still prints workspace-brief, agent-brief, and maintenance when
 health fails, then preserves the first failing exit code, ends with
-`[dogfood:status] health:N · workspace-brief:N · maintenance:N`, and prints a
-focused follow-up line (`pnpm dogfood:health`, `pnpm dogfood:brief`, or
-`pnpm dogfood:maintenance` + `pnpm test:mcp:maintenance`) plus a
+`[dogfood:status] health:N · workspace-brief:N · agent-brief:N · maintenance:N`, and prints a
+focused follow-up line (`pnpm dogfood:health`, `pnpm dogfood:brief`,
+`pnpm dogfood:agent`, or `pnpm dogfood:maintenance` + `pnpm test:mcp:maintenance`) plus a
 `pnpm dogfood:verify` follow-up hint on failure so the child statuses and next
 escalation paths are visible. Use
 `pnpm dogfood:verify` for the full
@@ -398,7 +406,7 @@ Key dogfood coverage:
 
 - `get_concepts` success and partial rows
 - `workspace_brief.nextActions[]` and `workspace_brief.health.checks`
-- `health` and `workspace_brief` tuned diagnosis flags
-- graph lookup smoke for `neighbors`, `path`, and `project_scope`
+- `health`, `agent_brief`, and `workspace_brief` tuned diagnosis flags
+- graph lookup smoke for `neighbors`, `path`, `all_paths`, and `project_scope`
 - fail-closed JSON behavior for malformed `compile`, `cycles`, `path`,
-  `health`, and `workspace-brief` payloads
+  `health`, `agent-brief`, and `workspace-brief` payloads

@@ -6,7 +6,7 @@
 
 ## Project overview
 
-`oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology` 28 commands — vault scaffold, MCP verify, deterministic graph compile, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (23 tools).
+`oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology` 31 commands — vault scaffold, MCP verify, deterministic graph compile, bounded path enumeration, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (23 tools).
 
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
@@ -65,21 +65,21 @@ src/                       FSD layers
   ├── entities/            business entities
   └── shared/              UI · lib · config primitives
 mcp/                       MCP server (the AI agent's surface) — npm pkg, 23 tools
-cli/                       CLI binary (developer's daily entry point) — npm pkg, 28 commands
+cli/                       CLI binary (developer's daily entry point) — npm pkg, 31 commands
                            init / add / import / list / find / validate / mcp-verify / query
                            analyze / infer-imports / bootstrap
                            backlinks / orphans / path / rename / merge / delete
                            overview / hubs / blast-radius / cycles / health
-                           workspace-brief / node / similar
+                           relation-check / agent-brief / workspace-brief / node / similar
 docs/                      long-form docs
-docs/ontology/             this project's own ontology vault (dogfood — 29 nodes)
+docs/ontology/             this project's own ontology vault (dogfood — 30 nodes)
                            `.omotignore` (gitignore-style) suppresses external
                            element ref noise in growth_plan / maintenance_plan
 tests/                     Vitest unit + Playwright E2E
   └── contract/            cross-package contract tests (parser 4-way, validator 3-way)
 scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood walk (R12)
                            build-docs-vault · validate-vault · migrate-vault
-                           dogfood-mcp-walk · perf-vault
+                           dogfood-mcp-walk · perf-vault · perf-graph
 .claude/rules/             granular working rules (auto-loaded)
 .githooks/                 pre-push tsc gate (R11 #2)
 ```
@@ -119,7 +119,7 @@ The detailed rules live in `.claude/rules/*.md` and Claude Code auto-loads them.
 
 ## 🚫 npm publish guard
 
-`npm publish` / `pnpm publish` / `yarn publish` is **never** run automatically. A PreToolUse hook in `.claude/settings.json` blocks it; `.claude/rules/forbidden.md` documents why. Only execute publish commands when the user explicitly asks. Even then, run `npm pack --dry-run` first to audit the tarball.
+`npm publish` / `pnpm publish` / `yarn publish` is **never** run automatically. PreToolUse hooks in `.claude/settings.json` / `.codex/hooks.json` block it; `.claude/rules/forbidden.md` documents why. Only execute publish commands when the user explicitly asks. Even then, run `npm pack --dry-run` first to audit the tarball.
 
 ## Source-of-truth files
 
@@ -143,7 +143,7 @@ Long-form docs:
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
 - Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 29 nodes (capability 17 · domain 6 · element 4 · project 1 · vault-readme 1)
+- 30 nodes (capability 18 · domain 6 · element 4 · project 1 · vault-readme 1)
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 
@@ -161,13 +161,13 @@ The vault is the **shared mental model** between the developer and the AI agent.
 
 A 30-second read at the top of the task often replaces a 10-minute re-discovery in the code.
 
-**Bootstrap an empty vault** (R16). When a user just ran `oh-my-ontology init` on a fresh repo and the vault has only the 5 starter nodes, don't make the user hand-author every node. Use the **`/ontology-bootstrap`** skill (`.claude/skills/ontology-bootstrap/SKILL.md`):
+**Bootstrap an empty vault** (R16). When a user just ran `oh-my-ontology init` on a fresh repo and the vault has only the 5 starter nodes, don't make the user hand-author every node. Use the **`/ontology-bootstrap`** skill (`.claude/skills/ontology-bootstrap/SKILL.md` or `.agents/skills/ontology-bootstrap/SKILL.md`):
 
 - It calls `analyze_repo_structure` once. **Side effect 0** — returns deterministic candidates (project + domains[] + capabilities[] + elements[] + suggestedRelations[]) by reading `package.json` / `README.md` H2 sections / `src/` folder layout (FSD or generic). Vault NOT modified.
 - Shows the candidates compactly, lets the user prune / refine, then lands the accepted ones via `add_concept` / `add_relation`. Single source of truth preserved — only the user (via your subsequent calls) writes to the vault.
 - Companion to `/ontology-sync` (incremental, post-bootstrap) and `/ontology-extract` (prose ingress).
 
-**Extract from prose** (R+). When the user shares a meeting note, PR description, RFC draft, or any prose paragraph and asks to "extract ontology from this" or similar, use the **`/ontology-extract`** skill (`.claude/skills/ontology-extract/SKILL.md`):
+**Extract from prose** (R+). When the user shares a meeting note, PR description, RFC draft, or any prose paragraph and asks to "extract ontology from this" or similar, use the **`/ontology-extract`** skill (`.claude/skills/ontology-extract/SKILL.md` or `.agents/skills/ontology-extract/SKILL.md`):
 
 - Cross-checks the prose against the existing vault via `find_evidence` / `similar_nodes` first — duplicate avoidance is the primary value.
 - Proposes a small set of candidate nodes/edges (typically 0–3 per paragraph). Asks the user to pick which to land *before* writing.
@@ -182,9 +182,9 @@ A 30-second read at the top of the task often replaces a 10-minute re-discovery 
 - two near-duplicates collapse → `merge_concepts(fromSlug, intoSlug)` (same dry-run pattern)
 - existing node refined → `patch_concept(slug, frontmatter, body, expected_mtime)` — pass `expected_mtime` from a prior `get_concept` so a concurrent human edit isn't silently overwritten
 
-For the explicit "I'm done with this task — please sync the ontology now" loop, invoke the **`/ontology-sync`** skill (see `.claude/skills/ontology-sync/SKILL.md`). It bundles the read-then-write pattern with a checklist for when to skip (typos, style nudges).
+For the explicit "I'm done with this task — please sync the ontology now" loop, invoke the **`/ontology-sync`** skill (see `.claude/skills/ontology-sync/SKILL.md` or `.agents/skills/ontology-sync/SKILL.md`). It bundles the read-then-write pattern with a checklist for when to skip (typos, style nudges).
 
-For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at `.claude/hooks/inject-ontology-summary.sh` runs once when Claude Code attaches to the workspace and injects a short census of the vault (kind counts + first 8 entries) into the agent's system context. The agent then has the ontology in mind from message #1 — no `list_concepts` round trip needed for the first orientation. The hook stays silent in repos without a vault, so it's safe to keep on globally.
+For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at `.claude/hooks/inject-ontology-summary.sh` or `.codex/hooks/inject-ontology-summary.sh` runs once when Claude Code/Codex attaches to the workspace and injects a short census of the vault (kind counts + first 8 entries) into the agent's system context. The agent then has the ontology in mind from message #1 — no `list_concepts` round trip needed for the first orientation. The hook stays silent in repos without a vault, so it's safe to keep on globally.
 
 **Skip the ontology** for: typo fixes, comment tweaks, single-line style nudges, lint config, test fixtures with no shape change. Anything that changes "what the codebase *is*" goes into the vault; anything that doesn't, stays out.
 
@@ -217,7 +217,7 @@ A vault with no `kind: project` doc still works (no containment, all nodes orpha
 
 ### 프로젝트 개요
 
-`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology` 28 명령 — vault scaffold, MCP verify, deterministic graph compile, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (23 tools) 로 같은 `.md` 파일을 read/write.
+`oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology` 31 명령 — vault scaffold, MCP verify, deterministic graph compile, bounded path enumeration, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (23 tools) 로 같은 `.md` 파일을 read/write.
 
 핵심 원칙 한 줄 (v3, R11 fire #25):
 
@@ -260,14 +260,14 @@ pnpm vault:migrate --list         # 등록된 schema 마이그레이션 (R11)
 
 ### 🚫 npm publish 가드
 
-`npm publish` / `pnpm publish` / `yarn publish` 는 **자동 실행 절대 금지**. `.claude/settings.json` 의 PreToolUse hook 이 차단하고 `.claude/rules/forbidden.md` 에 규칙으로 명시. 사용자가 직접 "publish 해줘" 라고 *명시적으로* 지시한 경우에만 실행 가능 — 그 경우에도 먼저 `npm pack --dry-run` 으로 audit.
+`npm publish` / `pnpm publish` / `yarn publish` 는 **자동 실행 절대 금지**. `.claude/settings.json` / `.codex/hooks.json` 의 PreToolUse hook 이 차단하고 `.claude/rules/forbidden.md` 에 규칙으로 명시. 사용자가 직접 "publish 해줘" 라고 *명시적으로* 지시한 경우에만 실행 가능 — 그 경우에도 먼저 `npm pack --dry-run` 으로 audit.
 
 ### 이 프로젝트의 ontology
 
 이 프로젝트 자신의 mental model 은 `docs/ontology/` 에 frontmatter md 로 표현되어 있다 (dogfooding — 우리 데이터 형식으로 우리 자신을 기술).
 
 - 진입점: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 29 노드 (capability 17 · domain 6 · element 4 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__oh-my-ontology__list_concepts` 로 즉시 조회
+- 30 노드 (capability 18 · domain 6 · element 4 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__oh-my-ontology__list_concepts` 로 즉시 조회
 - AI agent 는 `mcp/` MCP 서버로 query/write — 등록 가이드 `mcp/README.md`. **R14 부터** `add_concept` / `add` / `import` 세 진입점이 같은 schema 모듈로 양식 정규화 (`mcp/src/schema.mjs` ↔ `cli/src/lib/schema.mjs`)
 - 새 도메인/capability/element 가 생기면 같은 디렉토리에 추가 (`add_concept` 도구로 또는 직접 작성). **R14 의 `/ontology-sync` skill** 또는 SessionStart hook 으로 자동 sync 가능
 
@@ -285,13 +285,13 @@ vault 는 개발자와 AI agent 가 **공유하는 mental model**. ontology 의 
 
 작업 head 의 30 초 read 가 코드에서의 10 분 재발견을 자주 대신해 줌.
 
-**빈 vault 부트스트랩** (R16). 사용자가 fresh repo 에서 `oh-my-ontology init` 만 한 직후 — 5 starter 노드 외 빈 vault. 사용자가 매 노드 손 작성 부담 — 대신 **`/ontology-bootstrap`** skill (`.claude/skills/ontology-bootstrap/SKILL.md`) 사용:
+**빈 vault 부트스트랩** (R16). 사용자가 fresh repo 에서 `oh-my-ontology init` 만 한 직후 — 5 starter 노드 외 빈 vault. 사용자가 매 노드 손 작성 부담 — 대신 **`/ontology-bootstrap`** skill (`.claude/skills/ontology-bootstrap/SKILL.md` 또는 `.agents/skills/ontology-bootstrap/SKILL.md`) 사용:
 
 - `analyze_repo_structure` 1 회 호출. **side effect 0** — `package.json` / `README.md` H2 / `src/` 폴더 layout 읽어 deterministic 후보 반환. vault 변경 안 함.
 - 후보를 사용자에게 *5 줄 max* 요약 → confirm/pick/refine 분기 → 채택된 것만 `add_concept` / `add_relation`. 단일 source of truth 보존.
 - `/ontology-sync` (incremental, code change) 와 `/ontology-extract` (prose ingress) 짝.
 
-**prose 에서 추출** (R+). 사용자가 회의록 / PR 본문 / RFC 한 단락 / Notion 페이지 한 단락 등 *prose* 를 보여주고 "ontology 로 정리해줘" / "여기서 추출해줘" 류 요청 시 **`/ontology-extract`** skill (`.claude/skills/ontology-extract/SKILL.md`):
+**prose 에서 추출** (R+). 사용자가 회의록 / PR 본문 / RFC 한 단락 / Notion 페이지 한 단락 등 *prose* 를 보여주고 "ontology 로 정리해줘" / "여기서 추출해줘" 류 요청 시 **`/ontology-extract`** skill (`.claude/skills/ontology-extract/SKILL.md` 또는 `.agents/skills/ontology-extract/SKILL.md`):
 
 - `find_evidence` / `similar_nodes` 로 기존 vault 와 *먼저 cross-check* — duplicate 회피가 1차 가치.
 - 후보 노드/엣지를 *짧게* (단락당 0–3 개) 제안. write *전* 사용자에게 진행/일부/취소 선택 받음.
@@ -306,9 +306,9 @@ vault 는 개발자와 AI agent 가 **공유하는 mental model**. ontology 의 
 - 거의 같은 두 노드 합치기 → `merge_concepts(fromSlug, intoSlug)` (같은 dry-run 패턴)
 - 기존 노드 정련 → `patch_concept(slug, frontmatter, body, expected_mtime)` — `expected_mtime` 은 직전 `get_concept` 에서. 동시 사람 편집 silent overwrite 차단
 
-명시적 "이 작업 끝났으니 ontology sync 해줘" 루프는 **`/ontology-sync`** skill (`.claude/skills/ontology-sync/SKILL.md`) 로. read-then-write 패턴 + skip 케이스 (typo, style nudge) 체크리스트 묶음.
+명시적 "이 작업 끝났으니 ontology sync 해줘" 루프는 **`/ontology-sync`** skill (`.claude/skills/ontology-sync/SKILL.md` 또는 `.agents/skills/ontology-sync/SKILL.md`) 로. read-then-write 패턴 + skip 케이스 (typo, style nudge) 체크리스트 묶음.
 
-암시적 "이 repo 방금 열었어" 루프는 **SessionStart hook** (`.claude/hooks/inject-ontology-summary.sh`) 이 처리. Claude Code 가 workspace 에 attach 할 때 한 번 vault census (kind 카운트 + 첫 8 항목) 를 system context 에 inject — agent 가 message #1 부터 ontology 를 이미 인지. vault 없는 repo 에선 silent exit, 글로벌 활성화 안전.
+암시적 "이 repo 방금 열었어" 루프는 **SessionStart hook** (`.claude/hooks/inject-ontology-summary.sh` 또는 `.codex/hooks/inject-ontology-summary.sh`) 이 처리. Claude Code/Codex 가 workspace 에 attach 할 때 한 번 vault census (kind 카운트 + 첫 8 항목) 를 system context 에 inject — agent 가 message #1 부터 ontology 를 이미 인지. vault 없는 repo 에선 silent exit, 글로벌 활성화 안전.
 
 **ontology skip** 케이스: typo fix, 주석 수정, 한 줄 style nudge, lint config, shape 변화 없는 test fixture. *codebase 가 무엇인지* 바뀌는 변화는 vault 로, 아니면 그대로.
 

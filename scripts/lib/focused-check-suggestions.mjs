@@ -4,7 +4,7 @@ const RULES = [
   {
     command: 'pnpm test:mcp:registration',
     reason: 'MCP source-checkout registration templates changed',
-    matches: [/^\.mcp\.json(?:\.example)?$/],
+    matches: [/^\.mcp\.json(?:\.example)?$/, /^\.codex\/config\.toml$/],
   },
   {
     command: 'pnpm docs-vault:check',
@@ -121,6 +121,7 @@ const RULES = [
       /^mcp\/README\.md$/,
       /^cli\/README\.md$/,
       /^scripts\/migrations\/README\.md$/,
+      /^\.agents\/skills\/[^/]+\/SKILL\.md$/,
       /^\.claude\/LOOP-PRINCIPLES\.md$/,
       /^\.claude\/rules\/[^/]+\.md$/,
       /^\.claude\/skills\/[^/]+\/SKILL\.md$/,
@@ -128,10 +129,12 @@ const RULES = [
   },
   {
     command: 'pnpm test:claude:hooks',
-    reason: 'Claude Code hook wiring or publish guard changed',
+    reason: 'Claude Code/Codex hook wiring or publish guard changed',
     matches: [
       /^\.claude\/hooks\/(?:block-npm-publish|inject-ontology-summary)\.sh$/,
       /^\.claude\/settings\.json$/,
+      /^\.codex\/hooks\.json$/,
+      /^\.codex\/hooks\/(?:block-npm-publish|inject-ontology-summary)\.sh$/,
       /^scripts\/claude-hooks\.test\.mjs$/,
     ],
   },
@@ -187,6 +190,21 @@ const RULES = [
     command: 'node scripts/perf-vault.mjs 10',
     reason: 'vault parser perf smoke changed',
     matches: [/^scripts\/perf-vault\.mjs$/],
+  },
+  {
+    command: 'node --test scripts/perf-graph.test.mjs',
+    reason: 'graph compiler/query perf audit helper contract changed',
+    matches: [/^scripts\/perf-graph\.(?:mjs|test\.mjs)$/],
+  },
+  {
+    command: 'pnpm perf:graph:check',
+    reason: 'graph compiler/query perf budget changed',
+    matches: [/^scripts\/perf-graph\.mjs$/],
+  },
+  {
+    command: 'pnpm perf:graph:scale',
+    reason: 'graph compiler/query scale budget changed',
+    matches: [/^scripts\/perf-graph\.mjs$/],
   },
   {
     command: 'pnpm smoke:onboarding',
@@ -302,14 +320,15 @@ const RULES = [
   },
   {
     command: 'pnpm integration:cli:diagnosis',
-    reason: 'CLI health/workspace-brief diagnosis command changed',
-    matches: [/^cli\/src\/commands\/(?:health|workspace-brief)\.mjs$/],
+    reason: 'CLI health/agent-brief/workspace-brief diagnosis command changed',
+    matches: [/^cli\/src\/commands\/(?:health|agent-brief|workspace-brief)\.mjs$/],
   },
   {
     command: 'pnpm integration:cli:graph-read',
     reason: 'CLI graph read command changed',
     matches: [
-      /^cli\/src\/commands\/(?:backlinks|path|orphans|query|overview|hubs|blast-radius|cycles|node-profile|similar)\.mjs$/,
+      /^cli\/src\/commands\/(?:backlinks|path|all-paths|relation-check|orphans|query|overview|hubs|blast-radius|cycles|node-profile|similar)\.mjs$/,
+      /^cli\/src\/lib\/query-plan-output\.(?:mjs|test\.mjs)$/,
     ],
   },
   {
@@ -431,6 +450,8 @@ const CLI_DIRECT_LIB_TESTS = new Map([
   ['cli/src/lib/import-analysis-results.mjs', 'cli/src/lib/import-analysis-results.test.mjs'],
   ['cli/src/lib/mcp-call.mjs', 'cli/src/lib/mcp-call.test.mjs'],
   ['cli/src/lib/mcp-metadata.mjs', 'cli/src/lib/mcp-metadata.test.mjs'],
+  ['cli/src/lib/query-plan-output.mjs', 'cli/src/lib/query-plan-output.test.mjs'],
+  ['cli/src/lib/query-plan-output.test.mjs', 'cli/src/lib/query-plan-output.test.mjs'],
   ['cli/src/lib/query-result-contract.mjs', 'cli/src/lib/query-result-contract.test.mjs'],
   ['cli/src/lib/repo-analysis-results.mjs', 'cli/src/lib/repo-analysis-results.test.mjs'],
   ['cli/src/lib/resolve-vault.mjs', 'cli/src/lib/resolve-vault.test.mjs'],

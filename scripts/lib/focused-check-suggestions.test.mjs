@@ -411,11 +411,14 @@ describe('focused check suggestions', () => {
     ]);
   });
 
-  it('suggests Claude hook tests for hook wiring and publish guard changes', () => {
+  it('suggests agent hook tests for Claude Code and Codex hook wiring changes', () => {
     const result = suggestFocusedChecks([
       '.claude/settings.json',
       '.claude/hooks/block-npm-publish.sh',
       '.claude/hooks/inject-ontology-summary.sh',
+      '.codex/hooks.json',
+      '.codex/hooks/block-npm-publish.sh',
+      '.codex/hooks/inject-ontology-summary.sh',
       'scripts/claude-hooks.test.mjs',
     ]);
 
@@ -585,6 +588,7 @@ describe('focused check suggestions', () => {
       'scripts/benchmark.mjs',
       'scripts/benchmark-scale.mjs',
       'scripts/perf-vault.mjs',
+      'scripts/perf-graph.mjs',
       'scripts/smoke-clean-onboarding.mjs',
     ]);
 
@@ -592,6 +596,9 @@ describe('focused check suggestions', () => {
       'pnpm benchmark --dry-run',
       'pnpm benchmark:scale --dry-run',
       'node scripts/perf-vault.mjs 10',
+      'node --test scripts/perf-graph.test.mjs',
+      'pnpm perf:graph:check',
+      'pnpm perf:graph:scale',
       'pnpm smoke:onboarding',
     ]);
   });
@@ -681,9 +688,10 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.escalations.map((row) => row.command), ['pnpm dogfood:verify']);
   });
 
-  it('suggests focused CLI diagnosis integration for health and workspace-brief commands', () => {
+  it('suggests focused CLI diagnosis integration for health, agent-brief, and workspace-brief commands', () => {
     const result = suggestFocusedChecks([
       'cli/src/commands/health.mjs',
+      'cli/src/commands/agent-brief.mjs',
       'cli/src/commands/workspace-brief.mjs',
     ]);
 
@@ -697,11 +705,24 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks([
       'cli/src/commands/backlinks.mjs',
       'cli/src/commands/path.mjs',
+      'cli/src/commands/all-paths.mjs',
+      'cli/src/commands/relation-check.mjs',
       'cli/src/commands/node-profile.mjs',
       'cli/src/commands/similar.mjs',
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm integration:cli:graph-read',
+      'pnpm dogfood:status',
+    ]);
+  });
+
+  it('suggests CLI plan output unit and graph-read integration for query_plan output helpers', () => {
+    const result = suggestFocusedChecks(['cli/src/lib/query-plan-output.mjs']);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test cli/src/lib/query-plan-output.test.mjs',
+      'pnpm test:cli:lib',
       'pnpm integration:cli:graph-read',
       'pnpm dogfood:status',
     ]);

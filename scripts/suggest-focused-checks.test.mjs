@@ -25,7 +25,7 @@ describe('focused check suggestion CLI', () => {
     assert.equal(exitCode, 0);
     assert.match(output.join(''), /pnpm checks:changed/);
     assert.match(output.join(''), /tracked changes from git diff plus untracked files from git ls-files/);
-    assert.match(output.join(''), /excluding local \.agents\/ and \.codex\/ agent state/);
+    assert.match(output.join(''), /excluding local \.agents\/ and \.codex\/ agent state except shared repo skills/);
     assert.equal(output.join(''), `${suggestFocusedChecksUsage()}\n`);
   });
 
@@ -52,7 +52,7 @@ describe('focused check suggestion CLI', () => {
       spawn(command, args, options) {
         calls.push({ command, args, options });
         if (args[0] === 'diff') return { status: 0, stdout: 'docs/ontology/project.md\n' };
-        return { status: 0, stdout: '.codex/config.toml\nscripts/suggest-focused-checks.mjs\n' };
+        return { status: 0, stdout: '.codex/config.toml\n.codex/cache/session.json\nscripts/suggest-focused-checks.mjs\n' };
       },
     });
 
@@ -60,6 +60,7 @@ describe('focused check suggestion CLI', () => {
     assert.deepEqual(calls[0].args, ['diff', '--name-only', 'HEAD', '--']);
     assert.deepEqual(calls[1].args, ['ls-files', '--others', '--exclude-standard']);
     assert.match(output.join(''), /pnpm docs-vault:check/);
+    assert.match(output.join(''), /pnpm test:mcp:registration/);
     assert.match(output.join(''), /pnpm test:checks:changed/);
   });
 
@@ -89,7 +90,7 @@ describe('focused check suggestion CLI', () => {
           return { status: 0, stdout: '.agents/skills/local/SKILL.md\nb.js\nc.js\n' };
         },
       }),
-      ['a.js', 'b.js', 'c.js'],
+      ['a.js', 'b.js', '.agents/skills/local/SKILL.md', 'c.js'],
     );
     assert.deepEqual(calls, [
       ['diff', '--name-only', 'HEAD', '--'],
@@ -102,10 +103,18 @@ describe('focused check suggestion CLI', () => {
       untrackedPathsForAdvisor([
         '.agents/skills/ontology-sync/SKILL.md',
         '.codex/hooks.json',
+        '.codex/hooks/block-npm-publish.sh',
+        '.codex/cache/session.json',
         '.mcp.json',
         'scripts/new-helper.mjs',
       ].join('\n')),
-      ['.mcp.json', 'scripts/new-helper.mjs'],
+      [
+        '.agents/skills/ontology-sync/SKILL.md',
+        '.codex/hooks.json',
+        '.codex/hooks/block-npm-publish.sh',
+        '.mcp.json',
+        'scripts/new-helper.mjs',
+      ],
     );
   });
 });
