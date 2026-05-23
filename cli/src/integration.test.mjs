@@ -3899,10 +3899,16 @@ await test('agent-brief — prints agent handoff entrypoints and playbooks', asy
     assert.match(clean, /refactor_impact/);
     assert.match(clean, /evidence:/);
     assert.match(clean, /stop if:/);
+    assert.match(clean, /Whether an existing path already explains the proposed relation/);
+    assert.match(clean, /relation_check returns skip_existing, review_inverse, or review_new_schema/);
+    assert.match(clean, /Graph DB-style node scan results that surface high-degree capability starting points/);
+    assert.match(clean, /query_plan\(match_nodes\) asks for a narrower kind\/domain\/limit before scanning/);
     assert.match(clean, /TRAVERSAL STRATEGY/);
     assert.match(clean, /plan_before_enumeration/);
     assert.match(clean, /bounded_path_evidence/);
     assert.match(clean, /containment_cross_check/);
+    assert.match(clean, /query_plan\.execution\.suggestedQuery/);
+    assert.match(clean, /evidence\.pathsComplete is false/);
     assert.match(clean, /WRITE GUARDRAILS/);
     assert.match(clean, /preflight_relation/);
     assert.match(clean, /find_backlinks/);

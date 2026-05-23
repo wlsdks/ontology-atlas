@@ -123,12 +123,8 @@ function render(result) {
     const calls = playbook.calls.map((call) => call.arguments.operation).join(' → ');
     process.stdout.write(`  ${COLORS.bold}${playbook.id}${COLORS.reset} ${COLORS.dim}${calls}${COLORS.reset}\n`);
     process.stdout.write(`     ${COLORS.dim}${playbook.goal}${COLORS.reset}\n`);
-    if (Array.isArray(playbook.evidence) && playbook.evidence.length > 0) {
-      process.stdout.write(`     ${COLORS.green}evidence:${COLORS.reset} ${COLORS.dim}${playbook.evidence[0]}${COLORS.reset}\n`);
-    }
-    if (Array.isArray(playbook.stopWhen) && playbook.stopWhen.length > 0) {
-      process.stdout.write(`     ${COLORS.yellow}stop if:${COLORS.reset} ${COLORS.dim}${playbook.stopWhen[0]}${COLORS.reset}\n`);
-    }
+    renderChecklist('evidence', playbook.evidence, COLORS.green);
+    renderChecklist('stop if', playbook.stopWhen, COLORS.yellow);
   }
   process.stdout.write('\n');
 
@@ -142,12 +138,8 @@ function render(result) {
       );
       process.stdout.write(`     ${COLORS.dim}when: ${strategy.useWhen}${COLORS.reset}\n`);
       process.stdout.write(`     ${COLORS.cyan}${calls}${COLORS.reset}\n`);
-      if (Array.isArray(strategy.evidence) && strategy.evidence.length > 0) {
-        process.stdout.write(`     ${COLORS.green}evidence:${COLORS.reset} ${COLORS.dim}${strategy.evidence[0]}${COLORS.reset}\n`);
-      }
-      if (Array.isArray(strategy.stopWhen) && strategy.stopWhen.length > 0) {
-        process.stdout.write(`     ${COLORS.yellow}stop if:${COLORS.reset} ${COLORS.dim}${strategy.stopWhen[0]}${COLORS.reset}\n`);
-      }
+      renderChecklist('evidence', strategy.evidence, COLORS.green);
+      renderChecklist('stop if', strategy.stopWhen, COLORS.yellow);
     }
     process.stdout.write('\n');
   }
@@ -199,6 +191,14 @@ function render(result) {
   process.stdout.write(`${COLORS.dim}WRITE POLICY${COLORS.reset}\n`);
   for (const policy of result.writePolicy) {
     process.stdout.write(`  ${COLORS.dim}- ${policy}${COLORS.reset}\n`);
+  }
+}
+
+function renderChecklist(label, items, color) {
+  if (!Array.isArray(items) || items.length === 0) return;
+  process.stdout.write(`     ${color}${label}:${COLORS.reset} ${COLORS.dim}${items[0]}${COLORS.reset}\n`);
+  for (const item of items.slice(1)) {
+    process.stdout.write(`       ${COLORS.dim}- ${item}${COLORS.reset}\n`);
   }
 }
 
