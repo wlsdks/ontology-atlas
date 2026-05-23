@@ -17,6 +17,49 @@ export {
   selectTopByDegree,
   selectRecentNodes,
 } from "./insights";
+export type {
+  AgentReadinessActionKey,
+  AgentReadinessStatus,
+  AgentReadinessSummary,
+  AgentReadinessToolCall,
+} from "./agent-readiness";
+export {
+  buildAgentReadinessPrompt,
+  buildAgentReadinessSummary,
+  validateAgentReadinessToolCall,
+} from "./agent-readiness";
+export type {
+  AgentInvestigationPlaybook,
+  AgentInvestigationPlaybookId,
+  AgentMcpQueryCall,
+  AgentMcpToolCall,
+  AgentProjectEntrypoint,
+  AgentQueryEntrypoint,
+  AgentQueryRecipe,
+  AgentQueryRecipeId,
+  AgentTraversalStrategy,
+  AgentTraversalStrategyId,
+  AgentWriteGuardrail,
+  AgentWriteGuardrailId,
+} from "./agent-query-recipes";
+export {
+  buildAgentTraversalStrategies,
+  buildAgentWriteGuardrails,
+  buildAgentHandoffPrompt,
+  buildAgentInvestigationPlaybooks,
+  buildAgentQueryRecipes,
+  formatAgentMcpQueryPayload,
+  formatAgentMcpToolPayload,
+  formatAgentGuardrailPrompt,
+  formatAgentPlaybookPrompt,
+  formatAgentRecipeCliCommand,
+  formatAgentRecipePayload,
+  formatAgentTraversalStrategyPrompt,
+  selectAgentProjectEntrypoint,
+  selectAgentQueryEntrypoints,
+  validateAgentMcpQueryCall,
+  validateAgentMcpToolCall,
+} from "./agent-query-recipes";
 export type { MeaningfulOntologyKind, OntologyKindStats } from "./kind-stats";
 export {
   MEANINGFUL_ONTOLOGY_KINDS,

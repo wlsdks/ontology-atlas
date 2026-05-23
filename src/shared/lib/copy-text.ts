@@ -1,7 +1,12 @@
 export async function copyText(text: string): Promise<boolean> {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(text);
-    return true;
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Browser permission prompts can reject even when the Clipboard API exists.
+      // Fall back to the legacy path so copy buttons can show a deterministic failure state.
+    }
   }
 
   if (typeof document === "undefined") {

@@ -32,4 +32,22 @@ describe("copyText", () => {
     await expect(copyText("fallback")).resolves.toBe(true);
     expect(execCommand).toHaveBeenCalledWith("copy");
   });
+
+  it("falls back to execCommand when the clipboard API rejects", async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error("denied"));
+    Object.defineProperty(globalThis, "navigator", {
+      value: { clipboard: { writeText } },
+      configurable: true,
+    });
+
+    const execCommand = vi.fn().mockReturnValue(true);
+    Object.defineProperty(document, "execCommand", {
+      value: execCommand,
+      configurable: true,
+    });
+
+    await expect(copyText("fallback after reject")).resolves.toBe(true);
+    expect(writeText).toHaveBeenCalledWith("fallback after reject");
+    expect(execCommand).toHaveBeenCalledWith("copy");
+  });
 });
