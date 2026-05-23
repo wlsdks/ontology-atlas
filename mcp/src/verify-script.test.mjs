@@ -9115,6 +9115,7 @@ describe('verify.mjs first-contact gates', () => {
       handoffPrompt: [
         'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
         'Run these first-contact MCP calls in order:',
+        'CLI fallback commands when the MCP connector is unavailable:',
         'Investigation playbooks:',
         'Traversal strategy:',
         'plan_before_enumeration',
@@ -9123,6 +9124,11 @@ describe('verify.mjs first-contact gates', () => {
         'For all_paths, report totalPathsExact.',
         'Run relation_check before add_relation.',
       ].join('\n'),
+      cliFallbackCommands: [
+        'oh-my-ontology workspace-brief [vault]',
+        'oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates',
+        'oh-my-ontology all-paths capability:mcp-server domain:ai-agent-partner [vault] --plan --max-hops 3',
+      ],
       health: {
         checks: [{ id: 'compile_issues', status: 'pass', count: 0, message: 'ok' }],
       },
@@ -9259,6 +9265,18 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       agentBriefFailure({ ...payload, handoffPrompt: 'missing useful handoff content' }),
       'agent_brief response missing copyable handoffPrompt',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, cliFallbackCommands: [] }),
+      'agent_brief response missing cliFallbackCommands',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, cliFallbackCommands: ['node cli/src/index.mjs health'] }),
+      'agent_brief response missing cliFallbackCommands',
+    );
+    assert.equal(
+      agentBriefFailure({ ...payload, cliFallbackCommands: ['oh-my-ontology workspace-brief [vault]'] }),
+      'agent_brief cliFallbackCommands missing centrality plan fallback',
     );
     assert.equal(
       agentBriefFailure({ ...payload, firstCalls: [{ tool: 'query_ontology', arguments: { operation: 'not_real' } }] }),

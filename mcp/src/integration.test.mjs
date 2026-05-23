@@ -2505,6 +2505,8 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(agentBrief.firstCalls[4].arguments.from, "capabilities/login");
     assert.equal(agentBrief.firstCalls[4].arguments.to, "domains/auth");
     assert.equal(agentBrief.firstCalls[4].arguments.type, "depends_on");
+    assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates"));
+    assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology all-paths/.test(command)));
     assert.deepEqual(agentBrief.playbooks.map((playbook) => playbook.id), [
       "refactor_impact",
       "onboarding_map",

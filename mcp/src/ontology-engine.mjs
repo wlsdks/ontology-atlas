@@ -3089,6 +3089,12 @@ export function createOntologyEngine(artifact, options = {}) {
       resultContracts,
       relationDecisionGuide,
     };
+    brief.cliFallbackCommands = uniqueCliCommands([
+      ...brief.firstCalls,
+      ...brief.playbooks.flatMap((playbook) => playbook.calls),
+      ...brief.traversalStrategy.flatMap((strategy) => strategy.calls),
+      ...brief.writeGuardrails.flatMap((guardrail) => guardrail.calls),
+    ]);
     brief.handoffPrompt = buildAgentBriefHandoffPrompt(brief);
     return brief;
   }
@@ -3859,14 +3865,16 @@ function buildAgentBriefHandoffPrompt(brief) {
   const entrypoints = brief.entrypoints.length > 0
     ? brief.entrypoints.map((entrypoint) => `- ${entrypoint.slug} (${entrypoint.kind}, degree ${entrypoint.degree})`).join('\n')
     : '- <no concrete entrypoint; start with workspace_brief and health>';
-  const cliCommands = uniqueCliCommands([
-    ...brief.firstCalls,
-    ...brief.playbooks.flatMap((playbook) => playbook.calls),
-    ...(Array.isArray(brief.traversalStrategy)
-      ? brief.traversalStrategy.flatMap((strategy) => strategy.calls)
-      : []),
-    ...brief.writeGuardrails.flatMap((guardrail) => guardrail.calls),
-  ]);
+  const cliCommands = Array.isArray(brief.cliFallbackCommands)
+    ? brief.cliFallbackCommands
+    : uniqueCliCommands([
+        ...brief.firstCalls,
+        ...brief.playbooks.flatMap((playbook) => playbook.calls),
+        ...(Array.isArray(brief.traversalStrategy)
+          ? brief.traversalStrategy.flatMap((strategy) => strategy.calls)
+          : []),
+        ...brief.writeGuardrails.flatMap((guardrail) => guardrail.calls),
+      ]);
   const cliFallback = cliCommands.length > 0
     ? [
         '',

@@ -3651,6 +3651,8 @@ await test('agent-brief — prints agent handoff entrypoints and playbooks', asy
     assert.match(clean, /capabilities\/foo\s+— Foo|domains\/auth\s+— Auth/);
     assert.match(clean, /FIRST MCP CALLS/);
     assert.match(clean, /query_ontology\(\{"operation":"workspace_brief"/);
+    assert.match(clean, /CLI FALLBACKS/);
+    assert.match(clean, /oh-my-ontology hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
     assert.match(clean, /PLAYBOOKS/);
     assert.match(clean, /refactor_impact/);
     assert.match(clean, /evidence:/);
@@ -3691,6 +3693,7 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'agent_brief');
     assert.equal(data.readiness.status, 'ready');
+    assert.ok(data.cliFallbackCommands.includes('oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates'));
     assert.ok(data.writeGuardrails.some((guardrail) => guardrail.id === 'preflight_rename'));
     assert.ok(data.writeGuardrails.some((guardrail) => guardrail.calls.some((call) => call.tool === 'validate_vault')));
     assert.deepEqual(data.relationDecisionGuide.map((row) => row.decision), [
@@ -3967,7 +3970,7 @@ await test('health/agent-brief/workspace-brief --json — fail closed on malform
       "    const operation = msg.params.arguments.operation;",
       "    let payload;",
       "    if (operation === 'health') payload = { operation: 'health', status: 'healthy', summary: { nodes: 1, edges: 0 }, checks: [{ id: 'compile_issues', status: 'pass' }] };",
-      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, handoffPrompt: 'Use the oh-my-ontology MCP server. Run these first-contact MCP calls in order. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
+      "    else if (operation === 'agent_brief') payload = { operation: 'agent_brief', sideEffect: false, status: 'healthy', readiness: { status: 'ready', score: 100, meaningfulNodes: 3, relationCount: 2, projects: 1, domains: 1, capabilities: 1, elements: 0, unresolvedEdges: 0, externalEdges: 0, growthActions: 0, healthChecks: 1 }, graph: { nodes: 3, edges: 2 }, handoffPrompt: 'Use the oh-my-ontology MCP server. Run these first-contact MCP calls in order. CLI fallback commands when the MCP connector is unavailable. Investigation playbooks. Traversal strategy. plan_before_enumeration. Write guardrails. Result contracts. totalPathsExact. relation_check before add_relation.', cliFallbackCommands: ['oh-my-ontology health [vault]'], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] }, nextActions: [], entrypoints: [], firstCalls: [{ tool: 'query_ontology', arguments: {} }], playbooks: [{ id: 'refactor_impact', goal: 'Impact.', calls: [{ tool: 'query_ontology', arguments: { operation: 'health' } }] }], writePolicy: ['Read first.'] };",
       "    else payload = { operation: 'workspace_brief', status: 'healthy', summary: { nodes: 1, edges: 0 }, nextActions: [{ kind: 'cleanup', severity: 'fatal' }], health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",

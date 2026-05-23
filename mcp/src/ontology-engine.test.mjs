@@ -1734,6 +1734,9 @@ describe('queryCompiledOntology', () => {
     assert.match(result.handoffPrompt, /CLI fallback commands when the MCP connector is unavailable/);
     assert.match(result.handoffPrompt, /oh-my-ontology hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
     assert.match(result.handoffPrompt, /oh-my-ontology all-paths capabilities\/login domains\/auth \[vault\] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10/);
+    assert.ok(Array.isArray(result.cliFallbackCommands));
+    assert.ok(result.cliFallbackCommands.includes('oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates'));
+    assert.ok(result.cliFallbackCommands.includes('oh-my-ontology all-paths capabilities/login domains/auth [vault] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10'));
     assert.match(result.handoffPrompt, /Traversal strategy/);
     assert.match(result.handoffPrompt, /plan_before_enumeration/);
     assert.match(result.handoffPrompt, /Write guardrails/);

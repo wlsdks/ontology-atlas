@@ -256,6 +256,9 @@ export function assertAgentBriefShape(result) {
   if (!validAgentHandoffPrompt(result.handoffPrompt)) {
     throw new Error('agent_brief handoffPrompt must be a non-empty agent handoff string');
   }
+  if (!validAgentCliFallbackCommands(result.cliFallbackCommands)) {
+    throw new Error('agent_brief cliFallbackCommands must include non-empty oh-my-ontology CLI fallback commands');
+  }
   if (!isPlainObject(result.health) || !Array.isArray(result.health.checks) || result.health.checks.length === 0) {
     throw new Error('agent_brief health.checks must be a non-empty array');
   }
@@ -952,11 +955,18 @@ function validAgentHandoffPrompt(value) {
   return hasNonEmptyString(value)
     && /oh-my-ontology MCP server/.test(value)
     && /first-contact MCP calls/i.test(value)
+    && /CLI fallback commands/.test(value)
     && /Investigation playbooks/.test(value)
     && /Traversal strategy/.test(value)
     && /Write guardrails/.test(value)
     && /relation_check/.test(value)
     && /add_relation/.test(value);
+}
+
+function validAgentCliFallbackCommands(commands) {
+  return Array.isArray(commands)
+    && commands.length > 0
+    && commands.every((command) => hasNonEmptyString(command) && /^oh-my-ontology\s/.test(command));
 }
 
 function validAgentTraversalStrategy(strategies) {

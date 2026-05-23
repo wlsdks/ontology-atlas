@@ -6670,6 +6670,7 @@ export function agentBriefFailure(parsed) {
     !hasNonEmptyString(parsed.handoffPrompt) ||
     !/oh-my-ontology MCP server/.test(parsed.handoffPrompt) ||
     !/first-contact MCP calls/i.test(parsed.handoffPrompt) ||
+    !/CLI fallback commands/.test(parsed.handoffPrompt) ||
     !/Investigation playbooks/.test(parsed.handoffPrompt) ||
     !/Traversal strategy/.test(parsed.handoffPrompt) ||
     !/plan_before_enumeration/.test(parsed.handoffPrompt) ||
@@ -6680,6 +6681,16 @@ export function agentBriefFailure(parsed) {
     !/add_relation/.test(parsed.handoffPrompt)
   ) {
     return 'agent_brief response missing copyable handoffPrompt';
+  }
+  if (
+    !Array.isArray(parsed.cliFallbackCommands) ||
+    parsed.cliFallbackCommands.length === 0 ||
+    parsed.cliFallbackCommands.some((command) => typeof command !== 'string' || !/^oh-my-ontology\s/.test(command))
+  ) {
+    return 'agent_brief response missing cliFallbackCommands';
+  }
+  if (!parsed.cliFallbackCommands.some((command) => /hubs \[vault\] --plan/.test(command))) {
+    return 'agent_brief cliFallbackCommands missing centrality plan fallback';
   }
   if (!parsed?.health || !Array.isArray(parsed.health.checks)) {
     return 'agent_brief response missing health checks';

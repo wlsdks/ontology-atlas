@@ -200,6 +200,7 @@ describe('query-result-contract', () => {
       handoffPrompt: [
         'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
         'Run these first-contact MCP calls in order:',
+        'CLI fallback commands when the MCP connector is unavailable:',
         'Investigation playbooks:',
         'Traversal strategy:',
         'Write guardrails:',
@@ -207,6 +208,11 @@ describe('query-result-contract', () => {
         'all_paths: report searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact.',
         'Run relation_check before add_relation.',
       ].join('\n'),
+      cliFallbackCommands: [
+        'oh-my-ontology workspace-brief [vault] --limit 5',
+        'oh-my-ontology relation-check domains/auth capabilities/login contains [vault]',
+        'oh-my-ontology all-paths domains/auth capabilities/login [vault] --plan --max-hops 3',
+      ],
       health: { checks: [{ id: 'compile_issues', status: 'pass', count: 0 }] },
       nextActions: [],
       entrypoints: [
@@ -347,6 +353,14 @@ describe('query-result-contract', () => {
     assert.throws(
       () => assertAgentBriefShape({ ...valid, handoffPrompt: 'missing useful handoff content' }),
       /agent_brief handoffPrompt must be a non-empty agent handoff string/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({ ...valid, cliFallbackCommands: [] }),
+      /agent_brief cliFallbackCommands must include non-empty oh-my-ontology CLI fallback commands/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({ ...valid, cliFallbackCommands: ['node cli/src/index.mjs health'] }),
+      /agent_brief cliFallbackCommands must include non-empty oh-my-ontology CLI fallback commands/,
     );
     assert.throws(
       () => assertAgentBriefShape({ ...valid, firstCalls: [{ tool: 'query_ontology', arguments: {} }] }),

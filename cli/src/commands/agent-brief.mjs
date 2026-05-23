@@ -109,6 +109,15 @@ function render(result) {
   }
   process.stdout.write('\n');
 
+  const cliFallbackCommands = Array.isArray(result.cliFallbackCommands) ? result.cliFallbackCommands : [];
+  if (cliFallbackCommands.length > 0) {
+    process.stdout.write(`${COLORS.dim}CLI FALLBACKS${COLORS.reset} ${COLORS.dim}(MCP connector unavailable)${COLORS.reset}\n`);
+    for (const command of cliFallbackCommands) {
+      process.stdout.write(`  ${COLORS.cyan}${command}${COLORS.reset}\n`);
+    }
+    process.stdout.write('\n');
+  }
+
   process.stdout.write(`${COLORS.dim}PLAYBOOKS${COLORS.reset}\n`);
   for (const playbook of result.playbooks) {
     const calls = playbook.calls.map((call) => call.arguments.operation).join(' → ');
