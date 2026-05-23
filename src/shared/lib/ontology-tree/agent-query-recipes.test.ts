@@ -396,6 +396,33 @@ describe("buildAgentQueryRecipes", () => {
     });
     expect(playbooks[0]?.evidence.join(" ")).toContain("blast radius");
     expect(playbooks[0]?.stopWhen.join(" ")).toContain("relation_check");
+    expect(playbooks[1]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
+      "workspace_brief",
+      "domain_matrix",
+      "query_plan",
+      "match_nodes",
+      "node_profile",
+    ]);
+    expect(playbooks[1]?.payloads[2]).toEqual({
+      operation: "query_ontology.query_plan",
+      tool: "query_ontology",
+      arguments: {
+        operation: "query_plan",
+        targetOperation: "match_nodes",
+        kind: "capability",
+        minDegree: 2,
+        sort: "degree",
+        limit: 10,
+      },
+    });
+    expect(formatAgentQueryCallCliCommand(playbooks[1]!.payloads[2]!)).toBe(
+      "oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10",
+    );
+    expect(formatAgentQueryCallCliCommand(playbooks[1]!.payloads[3]!)).toBe(
+      "oh-my-ontology match-nodes [vault] --kind capability --min-degree 2 --sort degree --limit 10",
+    );
+    expect(playbooks[1]?.evidence.join(" ")).toContain("Graph DB-style node scan");
+    expect(playbooks[1]?.stopWhen.join(" ")).toContain("query_plan(match_nodes)");
     expect(playbooks[2]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
       "health",
       "domain_matrix",
@@ -648,6 +675,29 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("oh-my-ontology hubs [vault] --limit 10 --types depends_on,relates");
     expect(prompt).toContain("oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20");
     expect(prompt).toContain("oh-my-ontology match-edges [vault] --types depends_on --limit 20");
+  });
+
+  it("includes plan-first node scan fallbacks in onboarding playbooks", () => {
+    const playbooks = buildAgentInvestigationPlaybooks([
+      {
+        slug: "capabilities/mcp-server",
+        title: "MCP Server",
+        kind: "capability",
+        degree: 7,
+      },
+    ]);
+    const onboardingMap = playbooks.find((playbook) => playbook.id === "onboarding_map")!;
+
+    const prompt = formatAgentPlaybookPrompt(onboardingMap);
+
+    expect(prompt).toContain("query_ontology.match_nodes");
+    expect(prompt).toContain("Graph DB-style node scan");
+    expect(prompt).toContain(
+      "oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10",
+    );
+    expect(prompt).toContain(
+      "oh-my-ontology match-nodes [vault] --kind capability --min-degree 2 --sort degree --limit 10",
+    );
   });
 
   it("builds write guardrails for relation, rename, and post-change sync gates", () => {

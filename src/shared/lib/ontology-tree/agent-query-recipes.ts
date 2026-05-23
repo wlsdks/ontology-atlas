@@ -1023,15 +1023,32 @@ export function buildAgentInvestigationPlaybooks(
       evidence: [
         "Workspace status, project/domain map, and the main high-degree entrypoints.",
         "Domain coupling rows that explain where codebase knowledge clusters.",
+        "Graph DB-style node scan results that surface high-degree capability starting points.",
         "One concrete hub profile to anchor the first mental model.",
       ],
       stopWhen: [
         "workspace_brief reports unresolved graph health issues.",
-        "project_map cannot identify a project root for the current vault.",
+        "query_plan(match_nodes) asks for a narrower kind/domain/limit before scanning.",
+        "node_profile cannot resolve the selected high-degree entrypoint.",
       ],
       payloads: [
         recipe("workspace_brief", { operation: "workspace_brief" }),
         recipe("domain_matrix", { operation: "domain_matrix" }),
+        recipe("query_plan", {
+          operation: "query_plan",
+          targetOperation: "match_nodes",
+          kind: "capability",
+          minDegree: 2,
+          sort: "degree",
+          limit: 10,
+        }),
+        recipe("match_nodes", {
+          operation: "match_nodes",
+          kind: "capability",
+          minDegree: 2,
+          sort: "degree",
+          limit: 10,
+        }),
         recipe("node_profile", {
           operation: "node_profile",
           slug: impactSlug,

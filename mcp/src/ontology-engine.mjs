@@ -3058,16 +3058,33 @@ export function createOntologyEngine(artifact, options = {}) {
           evidence: [
             'Workspace status, project/domain map, and the main high-degree entrypoints.',
             'Domain coupling rows that explain where codebase knowledge clusters.',
+            'Graph DB-style node scan results that surface high-degree capability starting points.',
             'One concrete hub profile to anchor the first mental model.',
           ],
           stopWhen: [
             'workspace_brief reports unresolved graph health issues.',
-            'project_map cannot identify a project root for the current vault.',
+            'query_plan(match_nodes) asks for a narrower kind/domain/limit before scanning.',
+            'node_profile cannot resolve the selected high-degree entrypoint.',
           ],
           calls: [
             agentToolCall('query_ontology', { operation: 'workspace_brief', limit }),
             agentToolCall('query_ontology', { operation: 'domain_matrix', limit: 10 }),
-            agentToolCall('query_ontology', { operation: 'project_map', limit: 10 }),
+            agentToolCall('query_ontology', {
+              operation: 'query_plan',
+              targetOperation: 'match_nodes',
+              kind: 'capability',
+              minDegree: 2,
+              sort: 'degree',
+              limit: 10,
+            }),
+            agentToolCall('query_ontology', {
+              operation: 'match_nodes',
+              kind: 'capability',
+              minDegree: 2,
+              sort: 'degree',
+              limit: 10,
+            }),
+            agentToolCall('query_ontology', { operation: 'node_profile', slug: impactSlug, depth: 2, limit: 12 }),
           ],
         },
         {
@@ -3092,7 +3109,13 @@ export function createOntologyEngine(artifact, options = {}) {
               limit: 10,
             }),
             agentToolCall('query_ontology', { operation: 'centrality', types: ['depends_on', 'relates'], limit: 10 }),
-            agentToolCall('query_ontology', { operation: 'match_edges', limit: 20 }),
+            agentToolCall('query_ontology', {
+              operation: 'query_plan',
+              targetOperation: 'match_edges',
+              types: ['depends_on'],
+              limit: 20,
+            }),
+            agentToolCall('query_ontology', { operation: 'match_edges', types: ['depends_on'], limit: 20 }),
           ],
         },
         {
@@ -3805,6 +3828,12 @@ function formatAgentToolCallCliCommand(call) {
           csvFlag('--types', args.types),
         ]);
       }
+      if (args.targetOperation === 'match_nodes') {
+        return formatMatchNodesCliCommand(args, { plan: true });
+      }
+      if (args.targetOperation === 'match_edges') {
+        return formatMatchEdgesCliCommand(args, { plan: true });
+      }
       if (args.targetOperation === 'all_paths') {
         const from = stringArg(args.from, '<from-slug>');
         const to = stringArg(args.to, '<to-slug>');
@@ -3859,9 +3888,45 @@ function formatAgentToolCallCliCommand(call) {
         positiveFlag('--limit', args.limit),
         csvFlag('--types', args.types),
       ]);
+    case 'match_nodes':
+      return formatMatchNodesCliCommand(args);
+    case 'match_edges':
+      return formatMatchEdgesCliCommand(args);
     default:
       return null;
   }
+}
+
+function formatMatchNodesCliCommand(args, options = {}) {
+  return withCliFlags('oh-my-ontology match-nodes [vault]', [
+    options.plan ? '--plan' : null,
+    stringFlag('--kind', args.kind),
+    stringFlag('--domain', args.domain),
+    stringFlag('--slug-contains', args.slugContains),
+    nonNegativeFlag('--min-degree', args.minDegree),
+    nonNegativeFlag('--max-degree', args.maxDegree),
+    nonNegativeFlag('--min-in-degree', args.minInDegree),
+    nonNegativeFlag('--min-out-degree', args.minOutDegree),
+    booleanFlag('--has-incoming', args.hasIncoming),
+    booleanFlag('--has-outgoing', args.hasOutgoing),
+    stringFlag('--sort', args.sort),
+    positiveFlag('--limit', args.limit),
+  ]);
+}
+
+function formatMatchEdgesCliCommand(args, options = {}) {
+  return withCliFlags('oh-my-ontology match-edges [vault]', [
+    options.plan ? '--plan' : null,
+    stringFlag('--from', args.from),
+    stringFlag('--to', args.to),
+    stringFlag('--from-kind', args.fromKind),
+    stringFlag('--to-kind', args.toKind),
+    stringFlag('--type', args.type),
+    csvFlag('--types', args.types),
+    booleanFlag('--include-external', args.includeExternal),
+    booleanFlag('--include-unresolved', args.includeUnresolved),
+    positiveFlag('--limit', args.limit),
+  ]);
 }
 
 function withCliFlags(command, flags) {
@@ -3882,6 +3947,10 @@ function positiveFlag(name, value) {
 
 function nonNegativeFlag(name, value) {
   return Number.isInteger(value) && value >= 0 ? `${name} ${value}` : null;
+}
+
+function booleanFlag(name, value) {
+  return value === true ? name : null;
 }
 
 function csvFlag(name, value) {

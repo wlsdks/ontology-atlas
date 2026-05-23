@@ -1805,9 +1805,13 @@ describe('queryCompiledOntology', () => {
     assert.match(result.handoffPrompt, /Investigation playbooks/);
     assert.match(result.handoffPrompt, /CLI fallback commands when the MCP connector is unavailable/);
     assert.match(result.handoffPrompt, /oh-my-ontology hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
+    assert.match(result.handoffPrompt, /oh-my-ontology match-nodes \[vault\] --plan --kind capability --min-degree 2 --sort degree --limit 10/);
+    assert.match(result.handoffPrompt, /oh-my-ontology match-edges \[vault\] --plan --types depends_on --limit 20/);
     assert.match(result.handoffPrompt, /oh-my-ontology all-paths capabilities\/login domains\/auth \[vault\] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10/);
     assert.ok(Array.isArray(result.cliFallbackCommands));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates'));
+    assert.ok(result.cliFallbackCommands.includes('oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10'));
+    assert.ok(result.cliFallbackCommands.includes('oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20'));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology all-paths capabilities/login domains/auth [vault] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10'));
     assert.match(result.handoffPrompt, /Traversal strategy/);
     assert.match(result.handoffPrompt, /plan_before_enumeration/);
@@ -1831,6 +1835,30 @@ describe('queryCompiledOntology', () => {
     assert.ok(refactorPlaybook.evidence.some((item) => item.includes('blast radius')));
     assert.ok(refactorPlaybook.stopWhen.some((item) => item.includes('relation_check')));
     assert.deepEqual(refactorPlaybook.calls.at(-1), relationCall);
+    const onboardingPlaybook = result.playbooks.find((playbook) => playbook.id === 'onboarding_map');
+    assert.ok(onboardingPlaybook);
+    assert.ok(onboardingPlaybook.evidence.some((item) => item.includes('Graph DB-style node scan')));
+    assert.ok(onboardingPlaybook.stopWhen.some((item) => item.includes('query_plan(match_nodes)')));
+    assert.deepEqual(onboardingPlaybook.calls.map((call) => call.arguments.operation), [
+      'workspace_brief',
+      'domain_matrix',
+      'query_plan',
+      'match_nodes',
+      'node_profile',
+    ]);
+    assert.equal(onboardingPlaybook.calls[2].arguments.targetOperation, 'match_nodes');
+    assert.equal(onboardingPlaybook.calls[3].arguments.kind, 'capability');
+    const couplingPlaybook = result.playbooks.find((playbook) => playbook.id === 'coupling_audit');
+    assert.ok(couplingPlaybook);
+    assert.deepEqual(couplingPlaybook.calls.map((call) => call.arguments.operation), [
+      'health',
+      'domain_matrix',
+      'query_plan',
+      'centrality',
+      'query_plan',
+      'match_edges',
+    ]);
+    assert.equal(couplingPlaybook.calls[4].arguments.targetOperation, 'match_edges');
     assert.ok(traversalPlaybook);
     assert.ok(traversalPlaybook.evidence.some((item) => item.includes('all_paths')));
     assert.ok(traversalPlaybook.stopWhen.some((item) => item.includes('query_plan')));

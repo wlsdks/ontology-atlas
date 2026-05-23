@@ -144,7 +144,11 @@ domain boundary 가 걸리면 `pattern_walk` / `project_map` 으로 containment 
 `workspace_brief` → `query_plan(blast_radius)` → `node_profile` →
 `blast_radius` → `path` → `relation_check` 순서로 변경 전 영향권과 relation
 preflight 를 확인하고, `Onboarding map` 은 `workspace_brief` / `domain_matrix` /
-`node_profile` 로 첫 mental map 을 만든다. `Coupling audit` 은 `health` /
+`query_plan(match_nodes)` / `match_nodes` / `node_profile` 로 첫 mental map 을
+만든다. 먼저 node scan 비용과 범위를 확인한 뒤 high-degree capability 시작점을
+뽑으므로, 비개발자나 MCP connector 없는 agent 도 Graph DB 식 hub 탐색을
+`match-nodes --plan --kind capability --min-degree 2 --sort degree --limit 10`
+CLI fallback 으로 재현할 수 있다. `Coupling audit` 은 `health` /
 `domain_matrix` / `query_plan(centrality)` / `centrality` / `query_plan(match_edges)` /
 `match_edges` 를 묶어
 경계 변경 전에 ranking 비용과 결합, dependency edge 를 확인한다. 이 playbook 을

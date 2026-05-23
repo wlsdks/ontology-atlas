@@ -2506,6 +2506,8 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(agentBrief.firstCalls[4].arguments.to, "domains/auth");
     assert.equal(agentBrief.firstCalls[4].arguments.type, "depends_on");
     assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates"));
+    assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10"));
+    assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20"));
     assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology all-paths/.test(command)));
     assert.deepEqual(agentBrief.playbooks.map((playbook) => playbook.id), [
       "refactor_impact",
@@ -2514,6 +2516,26 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       "graph_traversal",
     ]);
     assert.equal(agentBrief.playbooks[0].calls[3].arguments.operation, "blast_radius");
+    assert.deepEqual(agentBrief.playbooks[1].calls.map((call) => call.arguments.operation), [
+      "workspace_brief",
+      "domain_matrix",
+      "query_plan",
+      "match_nodes",
+      "node_profile",
+    ]);
+    assert.equal(agentBrief.playbooks[1].calls[2].arguments.targetOperation, "match_nodes");
+    assert.equal(agentBrief.playbooks[1].calls[2].arguments.kind, "capability");
+    assert.equal(agentBrief.playbooks[1].calls[3].arguments.minDegree, 2);
+    assert.deepEqual(agentBrief.playbooks[2].calls.map((call) => call.arguments.operation), [
+      "health",
+      "domain_matrix",
+      "query_plan",
+      "centrality",
+      "query_plan",
+      "match_edges",
+    ]);
+    assert.equal(agentBrief.playbooks[2].calls[4].arguments.targetOperation, "match_edges");
+    assert.deepEqual(agentBrief.playbooks[2].calls[5].arguments.types, ["depends_on"]);
     assert.deepEqual(agentBrief.playbooks[3].calls.map((call) => call.arguments.operation), [
       "schema",
       "query_plan",

@@ -130,6 +130,8 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("maxHops 3");
     await expect(recipes).toContainText("CLI command");
     await expect(recipes).toContainText("oh-my-ontology hubs");
+    await expect(recipes).toContainText("oh-my-ontology match-nodes [vault] --plan");
+    await expect(recipes).toContainText("oh-my-ontology match-nodes");
     await expect(recipes).toContainText("oh-my-ontology match-edges [vault] --plan");
     await expect(recipes).toContainText("oh-my-ontology match-edges");
     await expect(recipes).toContainText("oh-my-ontology all-paths");
@@ -137,10 +139,12 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("blast_radius");
     await expect(recipes).toContainText("all_paths");
     await expect(recipes).toContainText("pattern_walk");
+    await expect(recipes).toContainText("match_nodes");
     await expect(recipes).toContainText("match_edges");
     await expect(recipes.getByRole("button", { name: "Copy playbook" })).toHaveCount(4);
     await expect(recipes.getByRole("button", { name: "Copy strategy" })).toHaveCount(3);
     await expect(recipes.getByRole("button", { name: "Copy traversal packet" })).toBeVisible();
+    await expect(recipes).toContainText("5 MCP calls");
     await expect(recipes).toContainText("MCP calls 4");
     await expect(recipes).toContainText("CLI fallbacks 1");
     await recipes.getByRole("button", { name: "Copy traversal packet" }).click();
