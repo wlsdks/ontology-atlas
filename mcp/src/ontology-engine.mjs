@@ -3924,6 +3924,7 @@ function buildMatchEdgesFollowUp(edge) {
       from: edge.from,
       to: edge.to,
       via: edge.via,
+      relationType: publicRelationType(edge.via),
     },
     reason:
       'match_edges is a scan; explain and preflight the first edge before treating it as write or refactor evidence.',
@@ -5004,6 +5005,7 @@ function formatCompiledEdge(edge) {
     from: edge.from,
     to: edge.to,
     via: edge.via,
+    relationType: publicRelationType(edge.via),
     ref: edge.ref,
     resolved: edge.resolved,
     external: edge.external,

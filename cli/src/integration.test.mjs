@@ -3630,7 +3630,8 @@ await test('match-edges — renders depends_on filter using public relation name
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /filters .*types=depends_on/);
     assert.doesNotMatch(clean, /filters .*types=dependencies/);
-    assert.match(clean, /--dependencies-->/);
+    assert.match(clean, /--depends_on-->/);
+    assert.doesNotMatch(clean, /--dependencies-->/);
     assert.match(clean, /oh-my-ontology explain .* --types depends_on --limit 10/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -3663,6 +3664,7 @@ await test('match-edges --plan --json — preserves filters in query_plan and re
       from: 'capabilities/bar',
       to: 'capabilities/foo',
       via: 'relates',
+      relationType: 'relates',
     });
     assert.deepEqual(
       data.result.followUp.calls.map((call) => call.arguments.operation),

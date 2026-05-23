@@ -142,17 +142,19 @@ function render(result) {
     const toColor = KIND_COLORS[toKind] || COLORS.dim;
     const fromTitle = edge.fromNode?.title ? ` ${COLORS.dim}— ${edge.fromNode.title}${COLORS.reset}` : '';
     const toTitle = edge.toNode?.title ? ` ${COLORS.dim}— ${edge.toNode.title}${COLORS.reset}` : '';
+    const relationLabel = edge.relationType || edge.via;
     process.stdout.write(
       `  ${COLORS.bold}${rank}${COLORS.reset} ${fromColor}${edge.from}${COLORS.reset}` +
-        ` ${COLORS.yellow}--${edge.via}-->${COLORS.reset} ${toColor}${edge.to}${COLORS.reset}` +
+        ` ${COLORS.yellow}--${relationLabel}-->${COLORS.reset} ${toColor}${edge.to}${COLORS.reset}` +
         `${fromTitle}${toTitle} ${COLORS.dim}(${fromKind} → ${toKind})${COLORS.reset}\n`,
     );
   }
   const followUp = result?.followUp;
   if (followUp?.focusEdge && Array.isArray(followUp.cliFallbackCommands) && followUp.cliFallbackCommands.length > 0) {
+    const relationLabel = followUp.focusEdge.relationType || followUp.focusEdge.via;
     process.stdout.write(
       `\n${COLORS.dim}next${COLORS.reset} edge ${COLORS.bold}${followUp.focusEdge.from}${COLORS.reset}` +
-        ` ${COLORS.yellow}--${followUp.focusEdge.via}-->${COLORS.reset} ` +
+        ` ${COLORS.yellow}--${relationLabel}-->${COLORS.reset} ` +
         `${COLORS.bold}${followUp.focusEdge.to}${COLORS.reset}` +
         `${COLORS.dim} — explain before treating a scan row as evidence${COLORS.reset}\n`,
     );

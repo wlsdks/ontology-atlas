@@ -2136,6 +2136,7 @@ describe('queryCompiledOntology', () => {
         from: edge.from,
         to: edge.to,
         via: edge.via,
+        relationType: edge.relationType,
         fromKind: edge.fromNode.kind,
         toKind: edge.toKind,
       })),
@@ -2144,6 +2145,7 @@ describe('queryCompiledOntology', () => {
           from: 'capabilities/login',
           to: 'domains/auth',
           via: 'dependencies',
+          relationType: 'depends_on',
           fromKind: 'capability',
           toKind: 'domain',
         },
@@ -2153,6 +2155,7 @@ describe('queryCompiledOntology', () => {
       from: 'capabilities/login',
       to: 'domains/auth',
       via: 'dependencies',
+      relationType: 'depends_on',
     });
     assert.match(result.followUp.reason, /match_edges is a scan/);
     assert.deepEqual(
