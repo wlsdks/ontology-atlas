@@ -3735,6 +3735,9 @@ await test('agent-brief --prompt — prints only the copyable handoff prompt', a
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /^Use the oh-my-ontology MCP server/);
     assert.match(clean, /Run these first-contact MCP calls in order:/);
+    assert.match(clean, /CLI fallback commands when the MCP connector is unavailable:/);
+    assert.match(clean, /oh-my-ontology hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
+    assert.match(clean, /oh-my-ontology all-paths/);
     assert.match(clean, /Investigation playbooks:/);
     assert.match(clean, /Traversal strategy:/);
     assert.match(clean, /plan_before_enumeration/);

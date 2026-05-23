@@ -3686,6 +3686,148 @@ function formatAgentToolCall(call) {
   return `${call.tool} ${JSON.stringify(call.arguments)}`;
 }
 
+function formatAgentToolCallCliCommand(call) {
+  const args = call?.arguments || {};
+  if (call?.tool === 'find_backlinks') {
+    const slug = stringArg(args.slug, '<slug>');
+    return `oh-my-ontology backlinks ${shellQuote(slug)} [vault]`;
+  }
+  if (call?.tool === 'validate_vault') {
+    return 'oh-my-ontology validate [vault]';
+  }
+  if (call?.tool !== 'query_ontology') return null;
+
+  switch (args.operation) {
+    case 'workspace_brief':
+      return withCliFlags('oh-my-ontology workspace-brief [vault]', [
+        positiveFlag('--limit', args.limit),
+      ]);
+    case 'health':
+      return withCliFlags('oh-my-ontology health [vault]', [
+        positiveFlag('--limit', args.limit),
+      ]);
+    case 'agent_brief':
+      return withCliFlags('oh-my-ontology agent-brief [vault]', [
+        positiveFlag('--limit', args.limit),
+      ]);
+    case 'query_plan':
+      if (args.targetOperation === 'blast_radius') {
+        const slug = stringArg(args.slug, '<slug>');
+        return withCliFlags(`oh-my-ontology blast-radius ${shellQuote(slug)} [vault]`, [
+          '--plan',
+          nonNegativeFlag('--depth', args.depth),
+          stringFlag('--direction', args.direction),
+        ]);
+      }
+      if (args.targetOperation === 'centrality') {
+        return withCliFlags('oh-my-ontology hubs [vault]', [
+          '--plan',
+          positiveFlag('--limit', args.limit),
+          csvFlag('--types', args.types),
+        ]);
+      }
+      if (args.targetOperation === 'all_paths') {
+        const from = stringArg(args.from, '<from-slug>');
+        const to = stringArg(args.to, '<to-slug>');
+        return withCliFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+          '--plan',
+          nonNegativeFlag('--max-hops', args.maxHops),
+          csvFlag('--types', args.types),
+          positiveFlag('--search-budget', args.searchBudget),
+          positiveFlag('--limit', args.limit),
+        ]);
+      }
+      return null;
+    case 'node_profile': {
+      const slug = stringArg(args.slug, '<slug>');
+      return withCliFlags(`oh-my-ontology node ${shellQuote(slug)} [vault]`, [
+        positiveFlag('--limit', args.limit),
+      ]);
+    }
+    case 'path': {
+      const from = stringArg(args.from, '<from-slug>');
+      const to = stringArg(args.to, '<to-slug>');
+      return withCliFlags(`oh-my-ontology path ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+        nonNegativeFlag('--max-hops', args.maxHops),
+      ]);
+    }
+    case 'relation_check': {
+      const from = stringArg(args.from, '<from-slug>');
+      const to = stringArg(args.to, '<to-slug>');
+      const type = stringArg(args.type, 'depends_on');
+      return `oh-my-ontology relation-check ${shellQuote(from)} ${shellQuote(to)} ${shellQuote(type)} [vault]`;
+    }
+    case 'blast_radius': {
+      const slug = stringArg(args.slug, '<slug>');
+      return withCliFlags(`oh-my-ontology blast-radius ${shellQuote(slug)} [vault]`, [
+        nonNegativeFlag('--depth', args.depth),
+        stringFlag('--direction', args.direction),
+      ]);
+    }
+    case 'all_paths': {
+      const from = stringArg(args.from, '<from-slug>');
+      const to = stringArg(args.to, '<to-slug>');
+      return withCliFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+        '--plan',
+        nonNegativeFlag('--max-hops', args.maxHops),
+        csvFlag('--types', args.types),
+        positiveFlag('--search-budget', args.searchBudget),
+        positiveFlag('--limit', args.limit),
+      ]);
+    }
+    case 'centrality':
+      return withCliFlags('oh-my-ontology hubs [vault]', [
+        positiveFlag('--limit', args.limit),
+        csvFlag('--types', args.types),
+      ]);
+    default:
+      return null;
+  }
+}
+
+function withCliFlags(command, flags) {
+  return [command, ...flags.filter(Boolean)].join(' ');
+}
+
+function stringArg(value, fallback) {
+  return typeof value === 'string' && value.trim() ? value : fallback;
+}
+
+function stringFlag(name, value) {
+  return typeof value === 'string' && value.trim() ? `${name} ${shellQuote(value)}` : null;
+}
+
+function positiveFlag(name, value) {
+  return Number.isInteger(value) && value > 0 ? `${name} ${value}` : null;
+}
+
+function nonNegativeFlag(name, value) {
+  return Number.isInteger(value) && value >= 0 ? `${name} ${value}` : null;
+}
+
+function csvFlag(name, value) {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const values = value.filter((item) => typeof item === 'string' && item.trim().length > 0);
+  return values.length > 0 ? `${name} ${values.map(shellQuote).join(',')}` : null;
+}
+
+function shellQuote(value) {
+  if (/^[A-Za-z0-9_/:=.,@%+-]+$/.test(value)) return value;
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
+function uniqueCliCommands(calls) {
+  const seen = new Set();
+  const commands = [];
+  for (const call of calls) {
+    const command = formatAgentToolCallCliCommand(call);
+    if (!command || seen.has(command)) continue;
+    seen.add(command);
+    commands.push(command);
+  }
+  return commands;
+}
+
 function buildAgentBriefHandoffPrompt(brief) {
   const firstCalls = brief.firstCalls
     .map((call, index) => `${index + 1}. ${formatAgentToolCall(call)}`)
@@ -3717,6 +3859,21 @@ function buildAgentBriefHandoffPrompt(brief) {
   const entrypoints = brief.entrypoints.length > 0
     ? brief.entrypoints.map((entrypoint) => `- ${entrypoint.slug} (${entrypoint.kind}, degree ${entrypoint.degree})`).join('\n')
     : '- <no concrete entrypoint; start with workspace_brief and health>';
+  const cliCommands = uniqueCliCommands([
+    ...brief.firstCalls,
+    ...brief.playbooks.flatMap((playbook) => playbook.calls),
+    ...(Array.isArray(brief.traversalStrategy)
+      ? brief.traversalStrategy.flatMap((strategy) => strategy.calls)
+      : []),
+    ...brief.writeGuardrails.flatMap((guardrail) => guardrail.calls),
+  ]);
+  const cliFallback = cliCommands.length > 0
+    ? [
+        '',
+        'CLI fallback commands when the MCP connector is unavailable:',
+        ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
+      ]
+    : [];
 
   return [
     'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
@@ -3727,6 +3884,7 @@ function buildAgentBriefHandoffPrompt(brief) {
     '',
     'Suggested graph entrypoints:',
     entrypoints,
+    ...cliFallback,
     '',
     'Investigation playbooks:',
     playbooks,
