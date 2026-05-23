@@ -856,6 +856,7 @@
       "agentTraversalContractProof": "limited, budget-truncated, pathsComplete=false 상태의 단일 path 를 증명으로 쓰지 않습니다.",
       "agentTraversalStrategyTitle": "Traversal strategy",
       "agentTraversalStrategySubtitle": "path 를 열거하기 전에 계획하고, bounded all_paths 를 근거로 보고, project/domain containment 로 다시 확인합니다.",
+      "agentTraversalPacketMeta": "MCP 호출 {mcp}개 · CLI fallback {cli}개",
       "agentTraversalStrategyPlanTitle": "Plan before enumeration",
       "agentTraversalStrategyPlanPrompt": "query_plan(all_paths) 를 먼저 실행해 high-degree hub 와 넓은 bound 를 traversal 전에 좁힙니다.",
       "agentTraversalStrategyBoundedTitle": "Bounded path evidence",

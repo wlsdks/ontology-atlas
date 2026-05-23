@@ -125,6 +125,8 @@ step 을 하나씩 고르지 않아도 같은 graph evidence protocol 로 시작
 명령도 함께 넣는다. 그래서 사용자가 graph DB 식 질문을 웹에서 고른 뒤 agent 에게
 넘길 때 개별 strategy 버튼을 세 번 누르지 않아도 plan-first / bounded evidence /
 containment cross-check 순서를 그대로 유지할 수 있다.
+화면은 packet 을 복사하기 전에 포함된 MCP 호출 수와 CLI fallback 수를 바로 보여줘,
+비개발자도 이 버튼이 agent 에게 넘기는 실행 범위를 먼저 확인할 수 있다.
 
 Run order 앞에는 별도 `Traversal strategy` 레일도 둔다. 이는 MCP
 `agent_brief.traversalStrategy` 와 같은 `plan_before_enumeration` →

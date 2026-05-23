@@ -856,6 +856,7 @@
       "agentTraversalContractProof": "Do not use one returned path as proof when the query is limited, budget-truncated, or pathsComplete is false.",
       "agentTraversalStrategyTitle": "Traversal strategy",
       "agentTraversalStrategySubtitle": "Plan before enumerating paths, treat bounded all_paths as evidence, then cross-check project/domain containment.",
+      "agentTraversalPacketMeta": "MCP calls {mcp} · CLI fallbacks {cli}",
       "agentTraversalStrategyPlanTitle": "Plan before enumeration",
       "agentTraversalStrategyPlanPrompt": "Run query_plan(all_paths) first so high-degree hubs and broad bounds are narrowed before traversal.",
       "agentTraversalStrategyBoundedTitle": "Bounded path evidence",

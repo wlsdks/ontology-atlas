@@ -572,6 +572,14 @@ function AgentQueryRecipesPanel({
     () => buildAgentHandoffPrompt(recipes, entrypoints, projectEntrypoint, traversalStrategies),
     [entrypoints, projectEntrypoint, recipes, traversalStrategies],
   );
+  const traversalPayloadCount = traversalStrategies.reduce(
+    (count, strategy) => count + strategy.payloads.length,
+    0,
+  );
+  const traversalCliFallbackCount = traversalStrategies
+    .flatMap((strategy) => strategy.payloads)
+    .map(formatAgentQueryCallCliCommand)
+    .filter((command): command is string => command !== null).length;
   const firstRunRecipes = useMemo(() => recipes.slice(0, 5), [recipes]);
   const firstRunPrompt = useMemo(
     () => formatAgentRunOrderPrompt(firstRunRecipes),
@@ -698,7 +706,13 @@ function AgentQueryRecipesPanel({
             {t("agentTraversalStrategySubtitle")}
           </p>
         </div>
-        <div className="mb-2 flex justify-end">
+        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t("agentTraversalPacketMeta", {
+              mcp: traversalPayloadCount,
+              cli: traversalCliFallbackCount,
+            })}
+          </p>
           <CopyAgentTextButton
             label={t("agentCopyTraversalPacket")}
             copiedLabel={t("agentCopied")}
