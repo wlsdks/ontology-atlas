@@ -623,6 +623,28 @@ export function formatAgentGraphDbQueryPack(
   ].join("\n");
 }
 
+export function formatAgentGraphDbCliPack(
+  items: readonly AgentGraphDbQueryPackItem[],
+): string {
+  const commands = items
+    .flatMap((item) =>
+      item.payloads
+        .map(formatAgentQueryCallCliCommand)
+        .filter((command): command is string => command !== null)
+        .map((command) => ({ itemId: item.id, command })),
+    )
+    .filter(({ command }, index, values) =>
+      values.findIndex((value) => value.command === command) === index,
+    );
+
+  return [
+    "Run these oh-my-ontology CLI commands when the MCP connector is unavailable.",
+    "They mirror the Graph DB query pack: plan scans first, keep traversal bounded, and use follow-up evidence before writing.",
+    "",
+    ...commands.map(({ itemId, command }, index) => `${index + 1}. [${itemId}] ${command}`),
+  ].join("\n");
+}
+
 export function formatAgentGuardrailPrompt(guardrail: AgentWriteGuardrail): string {
   const payloads = guardrail.payloads
     .map((payload, index) => `${index + 1}. ${payload.operation}\n${formatAgentMcpToolPayload(payload)}`)

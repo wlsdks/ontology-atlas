@@ -928,6 +928,7 @@
       "agentCopyReadinessPrompt": "repair prompt 복사",
       "agentCopyTerminalFallback": "CLI 점검 복사",
       "agentCopyGraphDbPack": "graph DB pack 복사",
+      "agentCopyGraphDbCliPack": "CLI pack 복사",
       "agentCopyGraphDbQuery": "query 복사",
       "agentCopied": "복사됨",
       "agentCopyFailed": "복사 실패",

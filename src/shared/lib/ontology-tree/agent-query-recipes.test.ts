@@ -9,6 +9,7 @@ import {
   buildAgentQueryRecipes,
   buildAgentTraversalStrategies,
   buildAgentWriteGuardrails,
+  formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentGraphDbQueryPackItemPrompt,
   formatAgentGuardrailPrompt,
@@ -677,6 +678,32 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("MATCH p=(from)-[:depends_on|relates*..3]-(to)");
     expect(prompt).toContain("oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3");
     expect(prompt).toContain("evidence.pathsComplete");
+  });
+
+  it("formats a CLI-only graph DB pack for connector-less sessions", () => {
+    const cliPack = formatAgentGraphDbCliPack(
+      buildAgentGraphDbQueryPack([
+        {
+          slug: "capabilities/mcp-server",
+          title: "MCP Server",
+          kind: "capability",
+          degree: 7,
+        },
+        {
+          slug: "domains/views",
+          title: "Views",
+          kind: "domain",
+          degree: 6,
+        },
+      ]),
+    );
+
+    expect(cliPack).toContain("when the MCP connector is unavailable");
+    expect(cliPack).toContain("[node_scan] oh-my-ontology match-nodes [vault] --plan");
+    expect(cliPack).toContain("[edge_scan] oh-my-ontology match-edges [vault] --plan");
+    expect(cliPack).toContain("[domain_coupling] oh-my-ontology domain-matrix [vault]");
+    expect(cliPack).toContain("[path_evidence] oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3");
+    expect(cliPack).toContain("[path_evidence] oh-my-ontology explain capabilities/mcp-server domains/views [vault]");
   });
 
   it("builds plan-first traversal strategies with bounded evidence and containment checks", () => {

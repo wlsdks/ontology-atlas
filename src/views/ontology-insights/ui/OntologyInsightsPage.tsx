@@ -33,6 +33,7 @@ import {
   buildAgentTraversalStrategies,
   buildAgentWriteGuardrails,
   formatAgentGuardrailPrompt,
+  formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentGraphDbQueryPackItemPrompt,
   formatAgentPlaybookPrompt,
@@ -858,12 +859,20 @@ function AgentQueryRecipesPanel({
               })}
             </p>
           </div>
-          <CopyAgentTextButton
-            label={t("agentCopyGraphDbPack")}
-            copiedLabel={t("agentCopied")}
-            text={formatAgentGraphDbQueryPack(graphDbQueryPack)}
-            compact
-          />
+          <div className="flex flex-wrap gap-1.5">
+            <CopyAgentTextButton
+              label={t("agentCopyGraphDbCliPack")}
+              copiedLabel={t("agentCopied")}
+              text={formatAgentGraphDbCliPack(graphDbQueryPack)}
+              compact
+            />
+            <CopyAgentTextButton
+              label={t("agentCopyGraphDbPack")}
+              copiedLabel={t("agentCopied")}
+              text={formatAgentGraphDbQueryPack(graphDbQueryPack)}
+              compact
+            />
+          </div>
         </div>
         <div className="grid min-w-0 gap-2 lg:grid-cols-4">
           {graphDbQueryPack.map((item) => {

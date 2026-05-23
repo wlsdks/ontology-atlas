@@ -928,6 +928,7 @@
       "agentCopyReadinessPrompt": "Copy repair prompt",
       "agentCopyTerminalFallback": "Copy CLI checks",
       "agentCopyGraphDbPack": "Copy graph DB pack",
+      "agentCopyGraphDbCliPack": "Copy CLI pack",
       "agentCopyGraphDbQuery": "Copy query",
       "agentCopied": "Copied",
       "agentCopyFailed": "Copy failed",
