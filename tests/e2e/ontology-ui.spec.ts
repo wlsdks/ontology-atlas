@@ -55,12 +55,14 @@ test.describe("ontology view UI", () => {
     await expect(readinessCli).toBeVisible();
     await expect(readinessCli).toContainText("Terminal fallback");
     await expect(readinessCli).toContainText("oh-my-ontology agent-brief [vault]");
+    await expect(readinessCli).toContainText("oh-my-ontology agent-brief [vault] --graph-db-pack");
     await expect(readinessCli).toContainText("oh-my-ontology workspace-brief [vault]");
     await readinessCli.getByRole("button", { name: "Copy CLI checks" }).click();
     const copiedReadinessCli = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
     );
     expect(copiedReadinessCli).toContain("oh-my-ontology agent-brief [vault]");
+    expect(copiedReadinessCli).toContain("oh-my-ontology agent-brief [vault] --graph-db-pack");
     expect(copiedReadinessCli).toContain("oh-my-ontology validate [vault]");
 
     const domainCoupling = page.getByTestId("insights-domain-coupling");
@@ -237,7 +239,7 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText('"tool": "query_ontology"');
     await expect(recipes.getByRole("button", { name: "Copy JSON" })).toHaveCount(12);
     await expect(recipes.getByRole("button", { name: "Copy step" })).toHaveCount(5);
-    await expect(recipes.getByRole("button", { name: "Copy CLI" })).toHaveCount(16);
+    await expect(recipes.getByRole("button", { name: "Copy CLI" })).toHaveCount(17);
     await expect(recipes.getByRole("button", { name: "Copy slug" }).first()).toBeVisible();
   });
 

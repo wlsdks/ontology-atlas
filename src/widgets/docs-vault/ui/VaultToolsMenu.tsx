@@ -26,6 +26,7 @@ const AGENT_VERIFY_CLI_COMMAND = [
   'oh-my-ontology validate .',
   'oh-my-ontology workspace-brief .',
   'oh-my-ontology agent-brief . --prompt',
+  'oh-my-ontology agent-brief . --graph-db-pack',
   'oh-my-ontology agent-brief . --verify-fallbacks',
   'oh-my-ontology hubs . --plan --limit 10 --types depends_on,relates',
   'oh-my-ontology hubs . --limit 10 --types depends_on,relates',
@@ -36,6 +37,7 @@ const AGENT_VERIFY_CLI_PREVIEW = [
   'validate .',
   'workspace-brief .',
   'agent-brief . --prompt',
+  'agent-brief . --graph-db-pack',
   'agent-brief . --verify-fallbacks',
 ];
 

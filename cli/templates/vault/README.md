@@ -81,6 +81,7 @@ If the CLI is installed, the same first-contact check is:
 oh-my-ontology validate .
 oh-my-ontology workspace-brief .
 oh-my-ontology agent-brief . --prompt
+oh-my-ontology agent-brief . --graph-db-pack
 oh-my-ontology agent-brief . --verify-fallbacks
 oh-my-ontology mcp-verify . --timeout-ms 15000
 ```

@@ -242,6 +242,9 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('oh-my-ontology agent-brief . --prompt'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology agent-brief . --graph-db-pack'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('oh-my-ontology agent-brief . --verify-fallbacks'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -256,6 +259,7 @@ describe('VaultToolsMenu', () => {
     expect(
       screen.getByRole('list', { name: '복사되는 CLI 그래프 runbook 미리보기' }),
     ).toBeInTheDocument();
+    expect(screen.getByText('oh-my-ontology agent-brief . --graph-db-pack')).toBeInTheDocument();
     expect(screen.getByText('oh-my-ontology agent-brief . --verify-fallbacks')).toBeInTheDocument();
     expect(
       await screen.findByRole('button', { name: 'CLI 그래프 runbook 복사됨' }),
