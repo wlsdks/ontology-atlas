@@ -26,9 +26,10 @@ OntologyStubNode → KnowledgeGraphNode 변환:
 OntologyViewPage / SigmaTopology / GlobalSearch 등 모든 surface 가 같은
 hook 한 번으로 vault frontmatter 의 stub 노드 + 엣지를 즉시 surface.
 
-노드 상세 패널은 선택 노드 기준 3-hop outgoing reachability 를 즉시 요약한다.
-layer 별 reachable node 수, terminal node 수, relation 분포를 보여줘 개발자가
-CLI `reachability` 명령이나 MCP `query_ontology(reachability)` 로 내려가기 전에
-웹 UI 에서도 graph DB식 탐색 방향을 빠르게 잡을 수 있다. 계산은 edge 배열을
-한 번 adjacency index 로 바꾼 뒤 BFS 하므로 큰 local vault 에서도 패널 열기 비용을
+노드 상세 패널은 선택 노드 기준 reachability 를 즉시 요약한다. 사용자는
+outgoing / incoming / both 방향과 1-3 hop depth 를 패널 안에서 바꾸며 layer 별
+reachable node 수, terminal node 수, relation 분포를 비교할 수 있다. CLI
+`reachability` 명령이나 MCP `query_ontology(reachability)` 로 내려가기 전에 웹 UI
+에서도 graph DB식 탐색 방향을 빠르게 잡을 수 있다. 계산은 edge 배열을 한 번
+adjacency index 로 바꾼 뒤 BFS 하므로 큰 local vault 에서도 패널 열기 비용을
 노드별 전체 edge scan 으로 늘리지 않는다.

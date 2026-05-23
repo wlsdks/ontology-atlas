@@ -1392,9 +1392,18 @@
       "relationsHopBreakdown": "· 1-hop {one} · 2-hop {two}",
       "reachabilityTitle": "Reachability",
       "reachabilityMeta": "{depth}-hop {direction}",
+      "reachabilityDirectionLabel": "Reachability direction",
+      "reachabilityDepthLabel": "Reachability depth",
+      "reachabilityDepthOption": "{depth} hop",
+      "reachabilityDirection": {
+        "outgoing": "outgoing",
+        "incoming": "incoming",
+        "both": "both"
+      },
       "reachabilityNodes": "reachable",
       "reachabilityLayers": "Layers",
       "reachabilityTerminal": "Terminal",
+      "reachabilityEmpty": "No nodes are reachable with the current direction and depth.",
       "reachabilityLimited": "Limited to the closest reachable nodes.",
       "egoDepthAria": "Ego graph depth",
       "egoTwoHopTooltip": "Includes neighbors one step further — labels may overlap with more nodes",

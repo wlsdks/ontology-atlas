@@ -205,6 +205,7 @@ view-doc · view-folder-topology · pin · unpin · copy URL · print · edit ·
 - Kind badge + title · `ManualSourceChip` (currently no-op — all sources `manual`)
 - Copy node link button
 - Stats: linked projects, evidence count
+- Reachability summary: outgoing / incoming / both direction controls, 1-3 hop depth controls, layer counts, terminal count, top relation distribution, and empty-state feedback when the current traversal has no reachable nodes
 - Ego graph (1-hop default, 2-hop toggle radio), circular SVG
 - Neighbors list (6 preview, expandable; missing stubs amber)
 - Related docs list (6 preview, expandable)

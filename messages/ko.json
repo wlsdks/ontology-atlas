@@ -1392,9 +1392,18 @@
       "relationsHopBreakdown": "· 1-hop {one} · 2-hop {two}",
       "reachabilityTitle": "Reachability",
       "reachabilityMeta": "{depth}-hop {direction}",
+      "reachabilityDirectionLabel": "Reachability 방향",
+      "reachabilityDepthLabel": "Reachability 깊이",
+      "reachabilityDepthOption": "{depth} hop",
+      "reachabilityDirection": {
+        "outgoing": "나가는 관계",
+        "incoming": "들어오는 관계",
+        "both": "양방향"
+      },
       "reachabilityNodes": "도달",
       "reachabilityLayers": "레이어",
       "reachabilityTerminal": "끝 노드",
+      "reachabilityEmpty": "현재 방향과 깊이에서 도달 가능한 노드가 없습니다.",
       "reachabilityLimited": "가장 가까운 도달 노드만 표시 중입니다.",
       "egoDepthAria": "ego 그래프 깊이",
       "egoTwoHopTooltip": "한 다리 건넌 이웃까지 — 노드 수 늘어 라벨 겹침 가능",

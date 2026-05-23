@@ -20,6 +20,7 @@ import {
   countTreeNodes,
   type OntologyEgoSubgraph,
   type OntologyReachability,
+  type OntologyReachabilityDirection,
   type OntologyTreeBuildResult,
 } from "@/shared/lib/ontology-tree";
 import { GlobalSearch, MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
@@ -54,6 +55,9 @@ export function OntologyViewPage() {
   // 1-hop 기본, 사용자가 토글로 2-hop 까지 확장 가능. 노드 변경 시 자동
   // 1-hop 으로 복귀해 2-hop 의 큰 ego 를 누적해 보지 않게.
   const [egoHops, setEgoHops] = useState<1 | 2>(1);
+  const [reachabilityDirection, setReachabilityDirection] =
+    useState<OntologyReachabilityDirection>("outgoing");
+  const [reachabilityDepth, setReachabilityDepth] = useState<1 | 2 | 3>(3);
   // setSelectedNode + setEgoHops(1) + URL ?node=<id> 동기화를 한 함수로.
   // 트리 / 검색 / neighbor 클릭 / 패널 닫기 모든 진입에서 같은 흐름.
   // history 안 쌓이게 router.replace 사용 (매 노드 클릭마다 뒤로가기 한 단계 X).
@@ -164,11 +168,11 @@ export function OntologyViewPage() {
   const reachability: OntologyReachability | null = useMemo(() => {
     if (!insight || !selectedNode) return null;
     return buildOntologyReachability(selectedNode.id, insight.nodes, insight.edges, {
-      depth: 3,
-      direction: "outgoing",
+      depth: reachabilityDepth,
+      direction: reachabilityDirection,
       limit: 12,
     });
-  }, [insight, selectedNode]);
+  }, [insight, reachabilityDepth, reachabilityDirection, selectedNode]);
 
 
   return (
@@ -456,8 +460,12 @@ what this capability does.
           documentTitleByEvidenceId={documentTitleByEvidenceId}
           ego={egoSubgraph}
           reachability={reachability}
+          reachabilityDepth={reachabilityDepth}
+          reachabilityDirection={reachabilityDirection}
           egoHops={egoHops}
           onChangeEgoHops={setEgoHops}
+          onChangeReachabilityDepth={setReachabilityDepth}
+          onChangeReachabilityDirection={setReachabilityDirection}
           onSelectNeighbor={(neighbor) => selectNode(neighbor)}
           onClose={() => selectNode(null)}
         />
@@ -581,8 +589,12 @@ function NodeDetailPanel({
   documentTitleByEvidenceId,
   ego,
   reachability,
+  reachabilityDepth,
+  reachabilityDirection,
   egoHops,
   onChangeEgoHops,
+  onChangeReachabilityDepth,
+  onChangeReachabilityDirection,
   onSelectNeighbor,
   onClose,
 }: {
@@ -590,8 +602,12 @@ function NodeDetailPanel({
   documentTitleByEvidenceId: Map<string, string>;
   ego: OntologyEgoSubgraph | null;
   reachability: OntologyReachability | null;
+  reachabilityDepth: 1 | 2 | 3;
+  reachabilityDirection: OntologyReachabilityDirection;
   egoHops: 1 | 2;
   onChangeEgoHops: (hops: 1 | 2) => void;
+  onChangeReachabilityDepth: (depth: 1 | 2 | 3) => void;
+  onChangeReachabilityDirection: (direction: OntologyReachabilityDirection) => void;
   onSelectNeighbor: (node: KnowledgeGraphNode) => void;
   onClose: () => void;
 }) {
@@ -697,7 +713,7 @@ function NodeDetailPanel({
         {node.id}
       </p>
 
-      {reachability && reachability.summary.reachableNodes > 0 ? (
+      {reachability ? (
         <div
           className="mt-4 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
           data-testid="ontology-reachability-summary"
@@ -710,7 +726,7 @@ function NodeDetailPanel({
               <p className="mt-1 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
                 {t('reachabilityMeta', {
                   depth: reachability.depth,
-                  direction: reachability.direction,
+                  direction: t(`reachabilityDirection.${reachability.direction}`),
                 })}
               </p>
             </div>
@@ -723,49 +739,99 @@ function NodeDetailPanel({
               </p>
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="rounded-lg border border-[color:var(--color-border-soft)] px-2.5 py-2">
-              <p className="font-mono text-[9px] uppercase text-[color:var(--color-text-quaternary)]">
-                {t('reachabilityLayers')}
-              </p>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {reachability.layers.map((layer) => (
-                  <span
-                    key={layer.distance}
-                    className="inline-flex items-center rounded-full bg-[color:rgba(94,106,210,0.12)] px-2 py-0.5 font-mono text-[10px] text-[color:rgba(159,170,235,0.95)]"
-                  >
-                    d{layer.distance}:{layer.total}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="rounded-lg border border-[color:var(--color-border-soft)] px-2.5 py-2">
-              <p className="font-mono text-[9px] uppercase text-[color:var(--color-text-quaternary)]">
-                {t('reachabilityTerminal')}
-              </p>
-              <p className="mt-1 text-sm text-[color:var(--color-text-secondary)]">
-                {reachability.summary.terminalNodes}
-              </p>
-            </div>
-          </div>
-          {Object.keys(reachability.byRelation).length > 0 ? (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              {Object.entries(reachability.byRelation).slice(0, 4).map(([relation, count]) => (
-                <span
-                  key={relation}
-                  className="inline-flex max-w-full items-center gap-1 rounded-full border border-[color:var(--color-border-soft)] px-2 py-0.5 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
+          <div className="mt-3 grid gap-2">
+            <div
+              className="grid grid-cols-3 gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-1"
+              aria-label={t('reachabilityDirectionLabel')}
+            >
+              {(["outgoing", "incoming", "both"] as const).map((direction) => (
+                <button
+                  key={direction}
+                  type="button"
+                  aria-pressed={reachabilityDirection === direction}
+                  onClick={() => onChangeReachabilityDirection(direction)}
+                  className={`rounded px-2 py-1.5 text-[10px] transition-colors ${
+                    reachabilityDirection === direction
+                      ? "bg-[color:rgba(94,106,210,0.20)] text-[color:var(--color-text-primary)]"
+                      : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  }`}
                 >
-                  <span className="truncate">{relation}</span>
-                  <span className="text-[color:var(--color-text-quaternary)]">{count}</span>
-                </span>
+                  {t(`reachabilityDirection.${direction}`)}
+                </button>
               ))}
             </div>
-          ) : null}
-          {reachability.limited ? (
-            <p className="mt-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
-              {t('reachabilityLimited')}
+            <div
+              className="grid grid-cols-3 gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.025)] p-1"
+              aria-label={t('reachabilityDepthLabel')}
+            >
+              {([1, 2, 3] as const).map((depth) => (
+                <button
+                  key={depth}
+                  type="button"
+                  aria-pressed={reachabilityDepth === depth}
+                  onClick={() => onChangeReachabilityDepth(depth)}
+                  className={`rounded px-2 py-1.5 font-mono text-[10px] transition-colors ${
+                    reachabilityDepth === depth
+                      ? "bg-[color:rgba(94,106,210,0.20)] text-[color:var(--color-text-primary)]"
+                      : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+                  }`}
+                >
+                  {t('reachabilityDepthOption', { depth })}
+                </button>
+              ))}
+            </div>
+          </div>
+          {reachability.summary.reachableNodes > 0 ? (
+            <>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="rounded-lg border border-[color:var(--color-border-soft)] px-2.5 py-2">
+                  <p className="font-mono text-[9px] uppercase text-[color:var(--color-text-quaternary)]">
+                    {t('reachabilityLayers')}
+                  </p>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {reachability.layers.map((layer) => (
+                      <span
+                        key={layer.distance}
+                        className="inline-flex items-center rounded-full bg-[color:rgba(94,106,210,0.12)] px-2 py-0.5 font-mono text-[10px] text-[color:rgba(159,170,235,0.95)]"
+                      >
+                        d{layer.distance}:{layer.total}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-lg border border-[color:var(--color-border-soft)] px-2.5 py-2">
+                  <p className="font-mono text-[9px] uppercase text-[color:var(--color-text-quaternary)]">
+                    {t('reachabilityTerminal')}
+                  </p>
+                  <p className="mt-1 text-sm text-[color:var(--color-text-secondary)]">
+                    {reachability.summary.terminalNodes}
+                  </p>
+                </div>
+              </div>
+              {Object.keys(reachability.byRelation).length > 0 ? (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {Object.entries(reachability.byRelation).slice(0, 4).map(([relation, count]) => (
+                    <span
+                      key={relation}
+                      className="inline-flex max-w-full items-center gap-1 rounded-full border border-[color:var(--color-border-soft)] px-2 py-0.5 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
+                    >
+                      <span className="truncate">{relation}</span>
+                      <span className="text-[color:var(--color-text-quaternary)]">{count}</span>
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              {reachability.limited ? (
+                <p className="mt-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
+                  {t('reachabilityLimited')}
+                </p>
+              ) : null}
+            </>
+          ) : (
+            <p className="mt-3 rounded-md border border-[color:var(--color-border-soft)] px-2.5 py-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t('reachabilityEmpty')}
             </p>
-          ) : null}
+          )}
         </div>
       ) : null}
 
