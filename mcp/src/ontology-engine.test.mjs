@@ -2814,6 +2814,7 @@ describe('queryCompiledOntology', () => {
         to: row.to,
         count: row.count,
         byRelation: row.byRelation,
+        byRelationType: row.byRelationType,
       })),
       [
         {
@@ -2821,6 +2822,7 @@ describe('queryCompiledOntology', () => {
           to: 'domains/billing',
           count: 1,
           byRelation: { dependencies: 1 },
+          byRelationType: { depends_on: 1 },
         },
       ],
     );
@@ -2831,7 +2833,10 @@ describe('queryCompiledOntology', () => {
       types: ['depends_on'],
     });
 
-    assert.deepEqual(filtered.filters, { types: ['dependencies'] });
+    assert.deepEqual(filtered.filters, {
+      types: ['dependencies'],
+      relationTypes: ['depends_on'],
+    });
     assert.deepEqual(filtered.summary, {
       domains: 2,
       nodes: 7,
@@ -2843,6 +2848,8 @@ describe('queryCompiledOntology', () => {
       unresolvedEdges: 0,
     });
     assert.deepEqual(filtered.connections.rows[0].byRelation, { dependencies: 1 });
+    assert.deepEqual(filtered.connections.rows[0].byRelationType, { depends_on: 1 });
+    assert.equal(filtered.connections.rows[0].examples[0].relationType, 'depends_on');
   });
 
   it('detects directed dependency cycles deterministically', () => {

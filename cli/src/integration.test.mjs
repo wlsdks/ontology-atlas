@@ -3711,8 +3711,10 @@ await test('domain-matrix — renders cross-domain coupling rows with examples',
     assert.match(clean, /project project/);
     assert.match(clean, /domains\/auth\s+— Auth.*out 1/);
     assert.match(clean, /domains\/billing\s+— Billing.*in 1/);
-    assert.match(clean, /domains\/auth → domains\/billing 1 dependencies:1/);
-    assert.match(clean, /capabilities\/login --dependencies--> capabilities\/invoice/);
+    assert.match(clean, /domains\/auth → domains\/billing 1 depends_on:1/);
+    assert.match(clean, /capabilities\/login --depends_on--> capabilities\/invoice/);
+    assert.doesNotMatch(clean, /dependencies:1/);
+    assert.doesNotMatch(clean, /--dependencies-->/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3770,9 +3772,9 @@ await test('domain-matrix --types — narrows semantic coupling before rendering
     const r = await run(['domain-matrix', root, '--project=project', '--types=depends_on', '--limit=5']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
-    assert.match(clean, /types dependencies/);
+    assert.match(clean, /types depends_on/);
     assert.match(clean, /domain_matrix 2 domain\(s\).*1 cross-domain edge\(s\).*0 self edge\(s\)/);
-    assert.match(clean, /domains\/auth → domains\/billing 1 dependencies:1/);
+    assert.match(clean, /domains\/auth → domains\/billing 1 depends_on:1/);
     assert.doesNotMatch(clean, /relates:1/);
   } finally {
     rmSync(root, { recursive: true, force: true });

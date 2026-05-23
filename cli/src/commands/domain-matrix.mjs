@@ -70,7 +70,9 @@ function render(result) {
   if (result.project) {
     process.stdout.write(`${COLORS.dim}project${COLORS.reset} ${result.project}\n`);
   }
-  const types = Array.isArray(result.filters?.types) ? result.filters.types.join(',') : '';
+  const types = Array.isArray(result.filters?.relationTypes)
+    ? result.filters.relationTypes.join(',')
+    : Array.isArray(result.filters?.types) ? result.filters.types.join(',') : '';
   if (types) {
     process.stdout.write(`${COLORS.dim}types${COLORS.reset} ${types}\n`);
   }
@@ -109,13 +111,14 @@ function render(result) {
   }
   for (const row of rows) {
     process.stdout.write(
-      `  ${COLORS.cyan}${row.from}${COLORS.reset} ${COLORS.dim}→${COLORS.reset} ` +
+        `  ${COLORS.cyan}${row.from}${COLORS.reset} ${COLORS.dim}→${COLORS.reset} ` +
         `${COLORS.cyan}${row.to}${COLORS.reset} ${COLORS.bold}${row.count}${COLORS.reset}` +
-        ` ${COLORS.dim}${formatRelationCounts(row.byRelation)}${COLORS.reset}\n`,
+        ` ${COLORS.dim}${formatRelationCounts(row.byRelationType || row.byRelation)}${COLORS.reset}\n`,
     );
     for (const example of row.examples.slice(0, 3)) {
+      const relationLabel = example.relationType || example.via;
       process.stdout.write(
-        `    ${COLORS.dim}ex${COLORS.reset} ${example.from} --${example.via}--> ${example.to}\n`,
+        `    ${COLORS.dim}ex${COLORS.reset} ${example.from} --${relationLabel}--> ${example.to}\n`,
       );
     }
   }

@@ -1659,6 +1659,7 @@ export function createOntologyEngine(artifact, options = {}) {
         to: row.to,
         count: row.count,
         byRelation: sortedCountObject(row.byRelation),
+        byRelationType: publicRelationCountObject(row.byRelation),
         fromNode: summarizeNode(nodeBySlug.get(row.from)),
         toNode: summarizeNode(nodeBySlug.get(row.to)),
         examples: row.examples,
@@ -1670,6 +1671,7 @@ export function createOntologyEngine(artifact, options = {}) {
       project: project ? resolveProjectRoot(project) : null,
       filters: {
         types: typeSet ? [...typeSet].sort() : null,
+        relationTypes: publicRelationTypes(typeSet),
       },
       summary: {
         domains: domainSlugs.length,
@@ -4909,6 +4911,15 @@ function publicRelationType(type) {
 
 function publicRelationTypes(typeSet) {
   return typeSet ? [...typeSet].map(publicRelationType).sort() : null;
+}
+
+function publicRelationCountObject(bucket) {
+  const mapped = new Map();
+  for (const [relation, count] of bucket.entries()) {
+    const publicName = publicRelationType(relation);
+    mapped.set(publicName, (mapped.get(publicName) || 0) + count);
+  }
+  return sortedCountObject(mapped);
 }
 
 function requireRelationType(type, name) {

@@ -2313,7 +2313,10 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     const domainMatrix = getCallParsed(responses, 18);
     assert.equal(domainMatrix.operation, "domain_matrix");
     assert.equal(domainMatrix.project, "project");
-    assert.deepEqual(domainMatrix.filters, { types: ["dependencies"] });
+    assert.deepEqual(domainMatrix.filters, {
+      types: ["dependencies"],
+      relationTypes: ["depends_on"],
+    });
     assert.equal(domainMatrix.summary.domains, 1);
     assert.equal(domainMatrix.summary.crossDomainEdges, 0);
     assert.equal(domainMatrix.summary.externalEdges, 0);
