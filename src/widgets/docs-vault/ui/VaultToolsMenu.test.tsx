@@ -160,7 +160,9 @@ describe('VaultToolsMenu', () => {
       },
     });
 
-    fireEvent.click(screen.getByRole('button', { name: 'CLI 검증 명령 복사' }));
+    fireEvent.click(
+      screen.getByRole('button', { name: '설치된 CLI 검증 명령 복사' }),
+    );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(

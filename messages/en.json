@@ -1155,10 +1155,10 @@
       "copyPromptCopied": "Verification prompt copied",
       "copyPromptFailed": "Copy failed",
       "copyPromptTitle": "Copy the read-first MCP prompt to verify Claude Code or Codex before edits.",
-      "copyCli": "Copy CLI verification",
+      "copyCli": "Copy installed CLI verification",
       "copyCliCopied": "CLI verification copied",
       "copyCliFailed": "Copy failed",
-      "copyCliTitle": "Copy terminal commands to validate this vault from inside the opened folder.",
+      "copyCliTitle": "Copy terminal commands for environments where the oh-my-ontology CLI is already installed.",
       "errorFallback": "Could not create agent configs"
     },
     "mobileDrawer": {

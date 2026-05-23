@@ -88,7 +88,7 @@ anything:
 > \`query_ontology({ "operation": "agent_brief" })\`. Tell me whether this
 > vault is readable and the write tools are available before proposing changes.
 
-If you also have the CLI installed, the same first-contact check is:
+If the CLI is installed, the same first-contact check is:
 
 \`\`\`bash
 oh-my-ontology validate .

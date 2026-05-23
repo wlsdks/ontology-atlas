@@ -1155,10 +1155,10 @@
       "copyPromptCopied": "검증 프롬프트 복사됨",
       "copyPromptFailed": "복사 실패",
       "copyPromptTitle": "Claude Code 또는 Codex가 수정 전 read-first MCP 검증을 하도록 프롬프트를 복사합니다.",
-      "copyCli": "CLI 검증 명령 복사",
+      "copyCli": "설치된 CLI 검증 명령 복사",
       "copyCliCopied": "CLI 검증 명령 복사됨",
       "copyCliFailed": "복사 실패",
-      "copyCliTitle": "열어 둔 vault 폴더 안에서 실행할 터미널 검증 명령을 복사합니다.",
+      "copyCliTitle": "oh-my-ontology CLI가 이미 설치된 환경에서 vault를 검증하는 터미널 명령을 복사합니다.",
       "errorFallback": "agent 설정을 만들지 못했습니다"
     },
     "mobileDrawer": {

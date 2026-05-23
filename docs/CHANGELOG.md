@@ -29,16 +29,16 @@ loop works before the agent writes anything.
 - **Setup-to-verify flow** — the same agent setup panel can now copy the
   read-first verification prompt, so users can go from config readiness to
   Claude Code / Codex proof without opening the command palette.
-- **CLI fallback copy** — the agent setup panel also copies the matching
-  terminal verification sequence (`validate` → `workspace-brief` →
-  `agent-brief --prompt` → `mcp-verify`) for users who want proof before MCP is
-  attached.
+- **Installed CLI verification copy** — the agent setup panel also copies the
+  matching terminal verification sequence (`validate` → `workspace-brief` →
+  `agent-brief --prompt` → `mcp-verify`) for users who already have the CLI
+  installed and want proof before MCP is attached.
 - **First-contact MCP prompt** — generated starter READMEs ask the agent to run
   `validate_vault`, `workspace_brief`, and `agent_brief`, then report whether
   the vault is readable and write tools are available.
-- **CLI fallback** — the same section gives terminal checks for `validate`,
-  `workspace-brief`, `agent-brief --prompt`, and `mcp-verify --timeout-ms
-  15000`, with a codebase-root vault-path adjustment.
+- **Installed CLI fallback** — the same section gives terminal checks for
+  `validate`, `workspace-brief`, `agent-brief --prompt`, and
+  `mcp-verify --timeout-ms 15000`, with a codebase-root vault-path adjustment.
 - **Template parity gate** — web starter output and CLI vault templates remain
   byte-for-byte aligned, with a focused assertion for the new verification
   section.
