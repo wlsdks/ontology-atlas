@@ -73,6 +73,7 @@ describe("buildAgentQueryRecipes", () => {
       "health",
       "node_profile",
       "path",
+      "explain_relation",
       "relation_check",
       "blast_radius",
       "domain_matrix",
@@ -141,6 +142,13 @@ describe("buildAgentQueryRecipes", () => {
       from: "capabilities/mcp-server",
       to: "domains/views",
     });
+    expect(recipes.find((recipe) => recipe.id === "explain_relation")?.arguments).toMatchObject({
+      operation: "explain_relation",
+      from: "capabilities/mcp-server",
+      to: "domains/views",
+      direction: "undirected",
+      types: ["depends_on", "relates"],
+    });
     expect(recipes.find((recipe) => recipe.id === "relation_check")?.arguments).toEqual({
       operation: "relation_check",
       from: "capabilities/mcp-server",
@@ -197,6 +205,9 @@ describe("buildAgentQueryRecipes", () => {
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "path")!)).toBe(
       "oh-my-ontology path capabilities/mcp-server domains/views [vault] --max-hops 5",
     );
+    expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "explain_relation")!)).toBe(
+      "oh-my-ontology explain capabilities/mcp-server domains/views [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10",
+    );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "relation_check")!)).toBe(
       "oh-my-ontology relation-check capabilities/mcp-server domains/views depends_on [vault]",
     );
@@ -218,6 +229,22 @@ describe("buildAgentQueryRecipes", () => {
         priority: "secondary",
       }),
     ).toBe("oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates");
+    expect(
+      formatAgentQueryCallCliCommand({
+        operation: "query_ontology.explain_relation",
+        tool: "query_ontology",
+        arguments: {
+          operation: "explain_relation",
+          from: "capabilities/mcp-server",
+          to: "domains/views",
+          direction: "undirected",
+          types: ["depends_on", "relates"],
+          limit: 10,
+        },
+      }),
+    ).toBe(
+      "oh-my-ontology explain capabilities/mcp-server domains/views [vault] --direction undirected --types depends_on,relates --limit 10",
+    );
     expect(
       formatAgentQueryCallCliCommand({
         operation: "query_ontology.match_edges",
@@ -342,6 +369,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("query_ontology.query_plan");
     expect(prompt).toContain("query_ontology.node_profile");
     expect(prompt).toContain("query_ontology.path");
+    expect(prompt).toContain("query_ontology.explain_relation");
     expect(prompt).toContain("query_ontology.relation_check");
     expect(prompt).toContain("query_ontology.all_paths");
     expect(prompt).toContain("query_ontology.pattern_walk");
@@ -350,6 +378,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("oh-my-ontology agent-brief [vault]");
     expect(prompt).toContain("oh-my-ontology blast-radius domains/views [vault] --plan --depth 2");
     expect(prompt).toContain("oh-my-ontology all-paths");
+    expect(prompt).toContain("oh-my-ontology explain domains/views '<other-slug>' [vault]");
     expect(prompt).toContain("--plan --max-hops 3");
     expect(prompt).toContain("Suggested starting slugs");
     expect(prompt).toContain("project (project, degree 6)");
@@ -391,6 +420,7 @@ describe("buildAgentQueryRecipes", () => {
       "node_profile",
       "blast_radius",
       "path",
+      "explain_relation",
       "relation_check",
     ]);
     expect(playbooks[0]?.payloads[1]?.arguments).toMatchObject({
@@ -401,7 +431,13 @@ describe("buildAgentQueryRecipes", () => {
       from: "capabilities/mcp-server",
       to: "domains/views",
     });
-    expect(playbooks[0]?.payloads[5]?.arguments).toEqual({
+    expect(playbooks[0]?.payloads[5]?.arguments).toMatchObject({
+      operation: "explain_relation",
+      from: "capabilities/mcp-server",
+      to: "domains/views",
+      direction: "undirected",
+    });
+    expect(playbooks[0]?.payloads[6]?.arguments).toEqual({
       operation: "relation_check",
       from: "capabilities/mcp-server",
       to: "domains/views",
@@ -665,10 +701,12 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("evidence.saferQuery");
     expect(prompt).toContain("query_ontology.workspace_brief");
     expect(prompt).toContain("query_ontology.blast_radius");
+    expect(prompt).toContain("query_ontology.explain_relation");
     expect(prompt).toContain('"slug": "domains/views"');
     expect(prompt).toContain("CLI fallback commands when the MCP connector is unavailable:");
     expect(prompt).toContain("oh-my-ontology workspace-brief [vault]");
     expect(prompt).toContain("oh-my-ontology blast-radius domains/views [vault] --depth 2 --direction incoming");
+    expect(prompt).toContain("oh-my-ontology explain domains/views '<other-slug>' [vault]");
   });
 
   it("includes graph scan CLI fallbacks in coupling audit playbooks", () => {
@@ -737,6 +775,7 @@ describe("buildAgentQueryRecipes", () => {
     ]);
     expect(guardrails[0]?.payloads.map((payload) => payload.operation)).toEqual([
       "query_ontology.relation_check",
+      "query_ontology.explain_relation",
       "query_ontology.path",
     ]);
     expect(guardrails[0]?.payloads[0]?.arguments).toEqual({
@@ -774,6 +813,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("review_inverse");
     expect(prompt).toContain("review_new_schema");
     expect(prompt).toContain("query_ontology.relation_check");
+    expect(prompt).toContain("query_ontology.explain_relation");
     expect(prompt).toContain('"from": "domains/views"');
   });
 

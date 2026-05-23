@@ -9,6 +9,7 @@ const AGENT_QUERY_OPERATIONS = new Set([
   "health",
   "node_profile",
   "path",
+  "explain_relation",
   "relation_check",
   "blast_radius",
   "domain_matrix",
@@ -36,6 +37,7 @@ export type AgentQueryRecipeId =
   | "health"
   | "node_profile"
   | "path"
+  | "explain_relation"
   | "relation_check"
   | "blast_radius"
   | "domain_matrix"
@@ -278,6 +280,16 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       const to = stringArg(args.to, "<to-slug>");
       return withFlags(`oh-my-ontology path ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         nonNegativeFlag("--max-hops", args.maxHops),
+      ]);
+    }
+    case "explain_relation": {
+      const from = stringArg(args.from, "<from-slug>");
+      const to = stringArg(args.to, "<to-slug>");
+      return withFlags(`oh-my-ontology explain ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+        stringFlag("--direction", args.direction),
+        nonNegativeFlag("--max-hops", args.maxHops),
+        csvFlag("--types", args.types),
+        positiveFlag("--limit", args.limit),
       ]);
     }
     case "relation_check": {
@@ -694,6 +706,15 @@ export function buildAgentWriteGuardrails(
           to: targetSlug,
           type: "depends_on",
         }),
+        query("explain_relation", {
+          operation: "explain_relation",
+          from: impactSlug,
+          to: targetSlug,
+          direction: "undirected",
+          maxHops: 5,
+          types: ["depends_on", "relates"],
+          limit: 10,
+        }),
         query("path", {
           operation: "path",
           from: impactSlug,
@@ -883,6 +904,22 @@ export function buildAgentQueryRecipes(
       priority: "secondary",
     },
     {
+      id: "explain_relation",
+      operation: "query_ontology.explain_relation",
+      promptKey: "agentRecipePromptExplainRelation",
+      tool: "query_ontology",
+      arguments: {
+        operation: "explain_relation",
+        from: impactSlug,
+        to: pathTargetSlug,
+        direction: "undirected",
+        maxHops: 5,
+        types: ["depends_on", "relates"],
+        limit: 10,
+      },
+      priority: "secondary",
+    },
+    {
       id: "relation_check",
       operation: "query_ontology.relation_check",
       promptKey: "agentRecipePromptRelationCheck",
@@ -980,7 +1017,7 @@ export function buildAgentInvestigationPlaybooks(
       promptKey: "agentPlaybookRefactorPrompt",
       evidence: [
         "Target node profile, incoming blast radius groups, and the highest-risk affected slugs.",
-        "Whether an existing path already explains the proposed relation.",
+        "Whether an existing direct edge, path, or common-neighbor explanation already explains the proposed relation.",
         "The relation_check recommendation.decision before any add_relation.",
       ],
       stopWhen: [
@@ -1013,6 +1050,15 @@ export function buildAgentInvestigationPlaybooks(
           from: impactSlug,
           to: pathTargetSlug,
           maxHops: 5,
+        }),
+        recipe("explain_relation", {
+          operation: "explain_relation",
+          from: impactSlug,
+          to: pathTargetSlug,
+          direction: "undirected",
+          maxHops: 5,
+          types: ["depends_on", "relates"],
+          limit: 10,
         }),
         recipe("relation_check", {
           operation: "relation_check",

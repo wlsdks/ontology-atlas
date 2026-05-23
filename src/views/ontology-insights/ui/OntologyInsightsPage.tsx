@@ -769,6 +769,7 @@ function AgentQueryRecipesPanel({
     health: ShieldCheck,
     node_profile: Network,
     path: Route,
+    explain_relation: SearchCheck,
     relation_check: GitBranch,
     blast_radius: Route,
     domain_matrix: Workflow,
