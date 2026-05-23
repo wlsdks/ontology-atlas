@@ -6,6 +6,14 @@ export type {
 } from "./types";
 export { buildOntologyTree, countTreeNodes, flattenTree } from "./build-tree";
 export { buildOntologyEgoSubgraph } from "./build-ego";
+export { buildOntologyReachability } from "./reachability";
+export type {
+  BuildOntologyReachabilityOptions,
+  OntologyReachability,
+  OntologyReachabilityDirection,
+  OntologyReachabilityLayer,
+  OntologyReachabilitySummary,
+} from "./reachability";
 export { buildRadialEgoLayout } from "./ego-layout";
 export { filterTreeByQuery } from "./filter-tree";
 export {

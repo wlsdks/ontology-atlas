@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T17:48:01.796Z",
+  "generatedAt": "2026-05-23T17:59:07.336Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -5234,6 +5234,8 @@
         ],
         "elements": [
           "src/features/vault-ontology/model/use-ontology-insight.ts",
+          "src/shared/lib/ontology-tree/reachability.test.ts",
+          "src/shared/lib/ontology-tree/reachability.ts",
           "src/views/ontology-view/ui/OntologyViewPage.tsx"
         ],
         "relates": [
@@ -5250,8 +5252,8 @@
         }
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (moduleload 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), la",
-      "wordCount": 94,
-      "updatedAt": "2026-05-18T04:31:36.864Z",
+      "wordCount": 163,
+      "updatedAt": "2026-05-23T17:59:01.487Z",
       "linksOut": []
     },
     {
