@@ -4157,6 +4157,19 @@ await test('workspace-brief --json — forwards focused diagnosis tuning flags',
   }
 });
 
+await test('workspace-brief --limit — accepts agent_brief first-contact fallback alias', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['workspace-brief', root, '--json', '--limit=1']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'workspace_brief');
+    assert.equal(data.status, 'healthy');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('workspace-brief --help — documents health and growth output', async () => {
   const r = await run(['workspace-brief', '--help']);
   assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
@@ -4171,6 +4184,7 @@ await test('workspace-brief --help — documents health and growth output', asyn
   assert.match(clean, /NEXT ACTIONS labels use id\/kind/);
   assert.match(clean, /--dependency-types A,B/);
   assert.match(clean, /--component-types A,B/);
+  assert.match(clean, /--limit is a first-contact alias for --node-limit/);
   assert.match(clean, /Tuning flags forward to query_ontology workspace_brief/);
 });
 

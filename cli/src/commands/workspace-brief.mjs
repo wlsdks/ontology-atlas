@@ -4,11 +4,16 @@
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertWorkspaceBriefShape, workspaceBriefExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
-import { formatUnknownFlagError, parseVaultFlag, resolveExclusiveVaultArg } from '../lib/cli-args.mjs';
+import {
+  formatUnknownFlagError,
+  parseBoundedPositiveIntegerFlag,
+  parseVaultFlag,
+  resolveExclusiveVaultArg,
+} from '../lib/cli-args.mjs';
 import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-options.mjs';
 import { diagnosisStatusColor } from '../lib/diagnosis-colors.mjs';
 
-const ALLOWED_FLAGS = ['--vault', '--json', ...DIAGNOSIS_OPTION_FLAGS];
+const ALLOWED_FLAGS = ['--vault', '--json', '--limit', ...DIAGNOSIS_OPTION_FLAGS];
 
 const COLORS = {
   green: '\x1b[32m',
@@ -159,6 +164,15 @@ function parseArgs(args) {
     if (a === '--vault') flags.vault = parseVaultFlag(args[++i]);
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
+    else if (a === '--limit') {
+      const limit = parseBoundedPositiveIntegerFlag('--limit', args[++i], { max: 500 });
+      if (limit instanceof Error) return { error: limit.message };
+      options.nodeLimit = limit;
+    } else if (a.startsWith('--limit=')) {
+      const limit = parseBoundedPositiveIntegerFlag('--limit', a.slice('--limit='.length), { max: 500 });
+      if (limit instanceof Error) return { error: limit.message };
+      options.nodeLimit = limit;
+    }
     else if (DIAGNOSIS_OPTION_FLAGS.includes(a)) {
       const error = parseDiagnosisOption(options, a, args[++i]);
       if (error) return { error: error.message };
@@ -179,8 +193,9 @@ function printUsage(stream = process.stderr) {
       `  oh-my-ontology workspace-brief [vault] [--json]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
-      `       [--order-limit N] [--node-limit N]\n\n` +
+      `       [--order-limit N] [--node-limit N] [--limit N]\n\n` +
       `first-contact dashboard: status + hotspots + project_scope 포함 노드 요약 + next actions.\n` +
+      `--limit is a first-contact alias for --node-limit so agent_brief CLI fallbacks run directly.\n` +
       `Use --json for repeatable first-contact snapshots such as pnpm dogfood:brief.\n` +
       `Use pnpm dogfood:health first when you only need the fail-closed health gate.\n` +
       `Use pnpm dogfood:status for the cheap human-readable health + workspace-brief + agent-brief + maintenance queue.\n` +

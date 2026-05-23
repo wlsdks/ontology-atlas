@@ -347,7 +347,9 @@ Both commands forward focused diagnosis tuning flags to MCP `query_ontology`:
 `--dependency-types A,B`, `--component-types A,B`, `--component-limit N`,
 `--cycle-limit N`, `--recommendation-limit N`, `--order-limit N`, and
 `--node-limit N`. Use these when a large vault needs scoped health checks
-without opening the full MCP payload.
+without opening the full MCP payload. `--limit N` is accepted as a
+first-contact alias for `--node-limit N`, matching the `agent_brief` CLI
+fallback command.
 
 The vault is a plain folder of `.md` files. **Frontmatter is the graph.**
 
