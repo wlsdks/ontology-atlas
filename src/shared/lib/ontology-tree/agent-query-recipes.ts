@@ -294,6 +294,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
         const to = stringArg(args.to, "<to-slug>");
         return withFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
           "--plan",
+          allPathsPlanForceFlag(args),
           nonNegativeFlag("--max-hops", args.maxHops),
           csvFlag("--types", args.types),
           positiveFlag("--search-budget", args.searchBudget),
@@ -343,6 +344,7 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       const to = stringArg(args.to, "<to-slug>");
       return withFlags(`oh-my-ontology all-paths ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         "--plan",
+        allPathsPlanForceFlag(args),
         nonNegativeFlag("--max-hops", args.maxHops),
         csvFlag("--types", args.types),
         positiveFlag("--search-budget", args.searchBudget),
@@ -429,6 +431,12 @@ function positiveFlag(name: string, value: unknown): string | null {
 function nonNegativeFlag(name: string, value: unknown): string | null {
   return typeof value === "number" && Number.isInteger(value) && value >= 0
     ? `${name} ${value}`
+    : null;
+}
+
+function allPathsPlanForceFlag(args: Record<string, unknown>): string | null {
+  return typeof args.maxHops === "number" && Number.isInteger(args.maxHops) && args.maxHops > 1
+    ? "--force"
     : null;
 }
 

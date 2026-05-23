@@ -215,7 +215,7 @@ describe("buildAgentQueryRecipes", () => {
       "oh-my-ontology relation-check capabilities/mcp-server domains/views depends_on [vault]",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "all_paths")!)).toBe(
-      "oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
+      "oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
     );
     expect(
       formatAgentRecipeCliCommand({
@@ -396,7 +396,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("oh-my-ontology blast-radius domains/views [vault] --plan --depth 2");
     expect(prompt).toContain("oh-my-ontology all-paths");
     expect(prompt).toContain("oh-my-ontology explain domains/views '<other-slug>' [vault]");
-    expect(prompt).toContain("--plan --max-hops 3");
+    expect(prompt).toContain("--plan --force --max-hops 3");
     expect(prompt).toContain("Suggested starting slugs");
     expect(prompt).toContain("project (project, degree 6)");
     expect(prompt).toContain("domains/views");
@@ -631,7 +631,7 @@ describe("buildAgentQueryRecipes", () => {
       limit: 10,
     });
     expect(formatAgentQueryCallCliCommand(pack[3]!.payloads[0]!)).toBe(
-      "oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
+      "oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
     );
   });
 
@@ -666,7 +666,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("## 1. node_scan");
     expect(prompt).toContain("## 4. path_evidence");
     expect(prompt).toContain("MATCH p=(from)-[:depends_on|relates*..3]-(to)");
-    expect(prompt).toContain("oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --max-hops 3");
+    expect(prompt).toContain("oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3");
     expect(prompt).toContain("evidence.pathsComplete");
   });
 
@@ -797,7 +797,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(packet).toContain("evidence.pathsComplete");
     expect(packet).toContain("CLI fallback commands when the MCP connector is unavailable:");
     expect(packet).toContain(
-      "oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
+      "oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
     );
   });
 

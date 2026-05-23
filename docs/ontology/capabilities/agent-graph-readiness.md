@@ -214,6 +214,9 @@ UI 와 같은 `graphDbQueryPack`, `graph_traversal` playbook,
 순서의 `traversalStrategy`, 그리고 복사 가능한 `handoffPrompt` 도 반환한다.
 그래서 웹 UI 를 거치지 않는 MCP-only Claude Code/Codex 세션도 node scan,
 edge scan, domain coupling, path evidence pack 을 구조화된 JSON 으로 받는다.
+웹 UI 의 copyable CLI fallback 도 MCP `agent_brief` 와 같은 `all-paths --plan --force`
+형태를 사용해, `query_plan` 이 review/narrow 를 반환하는 큰 traversal 에서도 사용자가
+명시적으로 선택한 pack 실행이 중간에 멈추지 않는다.
 CLI `oh-my-ontology agent-brief --prompt` 는 이 prompt 만 출력해 JSON 파싱 없이
 Claude Code/Codex 세션에 바로 붙여 넣을 수 있다. CLI `oh-my-ontology agent-brief` 와
 `mcp/scripts/verify.mjs` 는 `preflight_relation` / `preflight_rename` /
