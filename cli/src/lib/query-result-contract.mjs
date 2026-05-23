@@ -728,6 +728,53 @@ export function assertMatchEdgesShape(result) {
   return result;
 }
 
+export function assertReachabilityShape(result) {
+  assertQueryOperation(result, 'reachability');
+  if (!hasNonEmptyString(result.start)) {
+    throw new Error('reachability start must be a non-empty string');
+  }
+  if (!validNodeSummary(result.node)) {
+    throw new Error('reachability node must be a valid node summary');
+  }
+  if (!['incoming', 'outgoing', 'both'].includes(result.direction)) {
+    throw new Error('reachability direction must be one of: incoming, outgoing, both');
+  }
+  if (!validCount(result.depth)) {
+    throw new Error('reachability depth must be a non-negative integer');
+  }
+  if (!isPlainObject(result.summary)) {
+    throw new Error('reachability summary must be an object');
+  }
+  for (const field of ['reachableNodes', 'traversedEdges', 'layers', 'terminalNodes']) {
+    if (!validCount(result.summary[field])) {
+      throw new Error(`reachability summary.${field} must be a non-negative integer`);
+    }
+  }
+  for (const field of ['byKind', 'byRelation']) {
+    if (!validCountBucket(result[field])) {
+      throw new Error(`reachability ${field} must be an object of non-negative integer counts`);
+    }
+  }
+  if (!Array.isArray(result.layers)) {
+    throw new Error('reachability layers must be an array');
+  }
+  for (let index = 0; index < result.layers.length; index += 1) {
+    if (!validReachabilityLayer(result.layers[index])) {
+      throw new Error(`reachability layers[${index}] has an invalid layer shape`);
+    }
+  }
+  if (!validPage(result.paths, validReachabilityPathRow)) {
+    throw new Error('reachability paths must be a page with valid path rows');
+  }
+  if (!Array.isArray(result.terminalNodes) || !result.terminalNodes.every((node) => validNodeSummary(node))) {
+    throw new Error('reachability terminalNodes must be an array of node summaries');
+  }
+  if (!validPage(result.edges, validBlastRadiusEdgeRow)) {
+    throw new Error('reachability edges must be a page with valid edge rows');
+  }
+  return result;
+}
+
 export function assertCentralityShape(result) {
   assertQueryOperation(result, 'centrality');
   if (!isPlainObject(result.rankings)) {
@@ -1505,6 +1552,33 @@ function validMatchEdgeRow(row) {
     && (row.resolved === undefined || typeof row.resolved === 'boolean')
     && (row.external === undefined || typeof row.external === 'boolean')
   );
+}
+
+function validReachabilityLayer(layer) {
+  return Boolean(
+    isPlainObject(layer)
+    && validCount(layer.distance)
+    && validCount(layer.total)
+    && Array.isArray(layer.nodes)
+    && layer.nodes.every((node) => validNodeSummary(node))
+  );
+}
+
+function validReachabilityPathRow(row) {
+  if (!isPlainObject(row)) return false;
+  if (!hasNonEmptyString(row.slug)) return false;
+  if (!validCount(row.distance)) return false;
+  if (!Array.isArray(row.path) || row.path.length !== row.distance + 1) return false;
+  if (!row.path.every((slug) => hasNonEmptyString(slug))) return false;
+  if (row.path[0] === row.slug) return false;
+  if (row.path[row.path.length - 1] !== row.slug) return false;
+  if (!Array.isArray(row.edges) || row.edges.length !== row.distance) return false;
+  for (let index = 0; index < row.edges.length; index += 1) {
+    if (!validUndirectedPathEdge(row.edges[index], row.path[index], row.path[index + 1])) {
+      return false;
+    }
+  }
+  return validNodeSummary(row.node);
 }
 
 function validCentralityRow(row) {

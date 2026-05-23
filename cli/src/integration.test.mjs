@@ -2784,6 +2784,34 @@ await test('read-only graph commands — reject ambiguous vault arguments before
       pattern: /unknown flag: --jsson\. Did you mean --json\?/,
     },
     {
+      args: ['reachability'],
+      pattern: /slug is required/,
+    },
+    {
+      args: ['reachability', 'capabilities/foo', 'ontology', '--vault', 'docs/ontology'],
+      pattern: /either positional argument or --vault/,
+    },
+    {
+      args: ['reachability', 'capabilities/foo', '--direction=sideways'],
+      pattern: /--direction must be one of: incoming, outgoing, both\. Received: "sideways"\./,
+    },
+    {
+      args: ['reachability', 'capabilities/foo', '--depth=21'],
+      pattern: /--depth must be <= 20/,
+    },
+    {
+      args: ['reachability', 'capabilities/foo', '--limit=501'],
+      pattern: /--limit must be <= 500/,
+    },
+    {
+      args: ['reachability', 'capabilities/foo', '--types=depend_on'],
+      pattern: /--types items must be one of:[\s\S]*Received: "depend_on"\.[\s\S]*Did you mean "depends_on"\?/,
+    },
+    {
+      args: ['reachability', 'capabilities/foo', '--jsson'],
+      pattern: /unknown flag: --jsson\. Did you mean --json\?/,
+    },
+    {
       args: ['relation-check', 'capabilities/foo', 'domains/auth'],
       pattern: /<from>, <to>, and <type> are required/,
     },
@@ -3340,7 +3368,7 @@ await test('query — rejects MCP graph operation flags with CLI command guidanc
     const clean = stripAnsi(r.stderr);
     assert.match(clean, /unknown flag: --operation\./);
     assert.match(clean, /query is the typed filter DSL/);
-    assert.match(clean, /overview, health, agent-brief, workspace-brief, growth, maintenance, path, relation-check, match-nodes, match-edges, blast-radius, cycles, or hubs/);
+    assert.match(clean, /overview, health, agent-brief, workspace-brief, growth, maintenance, path, all-paths, reachability, relation-check, match-nodes, match-edges, blast-radius, cycles, or hubs/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3469,6 +3497,61 @@ await test('match-edges --plan --json — preserves filters in query_plan and re
   }
 });
 
+await test('reachability — transitive reachable nodes are grouped by layer', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'reachability',
+      'capabilities/bar',
+      root,
+      '--direction=outgoing',
+      '--depth=2',
+      '--limit=5',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /capabilities\/bar — reachability/);
+    assert.match(clean, /2 reachable node\(s\)/);
+    assert.match(clean, /by relation/);
+    assert.match(clean, /relates\s+1/);
+    assert.match(clean, /domain\s+1/);
+    assert.match(clean, /d1[\s\S]*capabilities\/foo\s+— Foo/);
+    assert.match(clean, /d1[\s\S]*domains\/auth\s+— Auth/);
+    assert.match(clean, /shortest paths/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('reachability --plan --json — preserves traversal filters in query_plan and result', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run([
+      'reachability',
+      'capabilities/bar',
+      root,
+      '--direction=outgoing',
+      '--depth=2',
+      '--types=relates,domain',
+      '--limit=5',
+      '--plan',
+      '--json',
+    ]);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.plan.operation, 'query_plan');
+    assert.equal(data.plan.targetOperation, 'reachability');
+    assert.equal(data.plan.normalized.slug, 'capabilities/bar');
+    assert.equal(data.plan.normalized.depth, 2);
+    assert.deepEqual(data.plan.normalized.types, ['domain', 'relates']);
+    assert.equal(data.result.operation, 'reachability');
+    assert.equal(data.result.start, 'capabilities/bar');
+    assert.equal(data.result.summary.reachableNodes, 2);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('overview — graph fixture 의 counts + 허브 정확', async () => {
   // buildGraphFixture: 3 노드 (capabilities/foo, capabilities/bar, domains/auth)
   const root = await buildGraphFixture();
@@ -3509,7 +3592,7 @@ await test('overview --json — JSON 응답 graph/byKind/hubs 키 노출', async
   }
 });
 
-await test('overview/hubs/match/blast-radius --json — fail closed on malformed graph query payloads before output', async () => {
+await test('overview/hubs/match/reachability/blast-radius --json — fail closed on malformed graph query payloads before output', async () => {
   const root = withVault();
   const fakeMcp = join(root, 'fake-mcp-graph-query-malformed.mjs');
   writeFileSync(
@@ -3530,7 +3613,9 @@ await test('overview/hubs/match/blast-radius --json — fail closed on malformed
       "          ? { operation: 'match_nodes', filters: {}, totalMatches: 1, limited: false, nodes: [{ slug: 'capabilities/foo', kind: 'capability', title: 'Foo', degree: '1' }] }",
       "          : operation === 'match_edges'",
       "            ? { operation: 'match_edges', filters: {}, totalMatches: 1, limited: false, edges: [{ from: 'capabilities/foo', to: 'capabilities/bar', via: 'relates', fromNode: { slug: 'capabilities/foo', kind: 'capability' }, toKind: 'capability' }] }",
-      "            : { operation: 'blast_radius', center: 'domains/auth', risk: 'low', summary: { affectedNodes: 1, affectedEdges: '0', affectedKinds: 1, affectedDomains: 1, crossDomainEdges: 0 }, byKind: {}, byDomain: {}, nodes: { total: 0, limited: false, rows: [] }, edges: { total: 0, limited: false, rows: [] } };",
+      "            : operation === 'reachability'",
+      "              ? { operation: 'reachability', start: 'capabilities/foo', node: { slug: 'capabilities/foo', kind: 'capability', title: 'Foo' }, direction: 'outgoing', depth: 2, summary: { reachableNodes: '1', traversedEdges: 0, layers: 0, terminalNodes: 0 }, byKind: {}, byRelation: {}, layers: [], paths: { total: 0, limited: false, rows: [] }, terminalNodes: [], edges: { total: 0, limited: false, rows: [] } }",
+      "              : { operation: 'blast_radius', center: 'domains/auth', risk: 'low', summary: { affectedNodes: 1, affectedEdges: '0', affectedKinds: 1, affectedDomains: 1, crossDomainEdges: 0 }, byKind: {}, byDomain: {}, nodes: { total: 0, limited: false, rows: [] }, edges: { total: 0, limited: false, rows: [] } };",
       "    console.log(JSON.stringify({ jsonrpc: '2.0', id: 2, result: { content: [{ text: JSON.stringify(payload) }], structuredContent: payload } }));",
       "  }",
       "});",
@@ -3557,6 +3642,11 @@ await test('overview/hubs/match/blast-radius --json — fail closed on malformed
     assert.equal(matchEdges.code, 2, `stdout: ${matchEdges.stdout}\nstderr: ${matchEdges.stderr}`);
     assert.equal(matchEdges.stdout, '');
     assert.match(stripAnsi(matchEdges.stderr), /match_edges edges\[0\] has an invalid edge row shape/);
+
+    const reachability = await run(['reachability', 'capabilities/foo', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
+    assert.equal(reachability.code, 2, `stdout: ${reachability.stdout}\nstderr: ${reachability.stderr}`);
+    assert.equal(reachability.stdout, '');
+    assert.match(stripAnsi(reachability.stderr), /reachability summary\.reachableNodes must be a non-negative integer/);
 
     const blast = await run(['blast-radius', 'domains/auth', root, '--json'], { env: { OMOT_MCP_PATH: fakeMcp } });
     assert.equal(blast.code, 2, `stdout: ${blast.stdout}\nstderr: ${blast.stderr}`);

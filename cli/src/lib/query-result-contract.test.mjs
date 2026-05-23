@@ -20,6 +20,7 @@ import {
   assertQueryConceptsShape,
   assertQueryOperation,
   assertQueryPlanShape,
+  assertReachabilityShape,
   assertRelationCheckShape,
   assertSimilarNodesShape,
   assertWorkspaceBriefShape,
@@ -268,6 +269,67 @@ describe('query-result-contract', () => {
         edges: [{ ...valid.edges[0], fromNode: { slug: 'capabilities/login', kind: 'capability' } }],
       }),
       /match_edges edges\[0\] has an invalid edge row shape/,
+    );
+  });
+
+  it('validates reachability payloads', () => {
+    const edge = {
+      from: 'capabilities/login',
+      to: 'domains/auth',
+      via: 'domain',
+      traversedFrom: 'capabilities/login',
+      traversedTo: 'domains/auth',
+    };
+    const valid = {
+      operation: 'reachability',
+      start: 'capabilities/login',
+      node: { slug: 'capabilities/login', kind: 'capability', title: 'Login' },
+      direction: 'outgoing',
+      depth: 3,
+      summary: {
+        reachableNodes: 1,
+        traversedEdges: 1,
+        layers: 1,
+        terminalNodes: 1,
+      },
+      byKind: { domain: 1 },
+      byRelation: { domain: 1 },
+      layers: [
+        {
+          distance: 1,
+          total: 1,
+          nodes: [{ slug: 'domains/auth', kind: 'domain', title: 'Auth' }],
+        },
+      ],
+      paths: {
+        total: 1,
+        limited: false,
+        rows: [
+          {
+            slug: 'domains/auth',
+            distance: 1,
+            path: ['capabilities/login', 'domains/auth'],
+            edges: [edge],
+            node: { slug: 'domains/auth', kind: 'domain', title: 'Auth' },
+          },
+        ],
+      },
+      terminalNodes: [{ slug: 'domains/auth', kind: 'domain', title: 'Auth' }],
+      edges: { total: 1, limited: false, rows: [edge] },
+    };
+
+    assert.equal(assertReachabilityShape(valid), valid);
+    assert.throws(
+      () => assertReachabilityShape({ ...valid, direction: 'sideways' }),
+      /reachability direction must be one of: incoming, outgoing, both/,
+    );
+    assert.throws(
+      () => assertReachabilityShape({ ...valid, summary: { ...valid.summary, reachableNodes: '1' } }),
+      /reachability summary\.reachableNodes must be a non-negative integer/,
+    );
+    assert.throws(
+      () => assertReachabilityShape({ ...valid, paths: { total: 1, limited: false, rows: [{ ...valid.paths.rows[0], path: ['domains/auth'] }] } }),
+      /reachability paths must be a page with valid path rows/,
     );
   });
 

@@ -17,6 +17,7 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   orphans: runner('orphans.mjs', 'runOrphans'),
   path: runner('path.mjs', 'runPath'),
   'all-paths': runner('all-paths.mjs', 'runAllPaths'),
+  reachability: runner('reachability.mjs', 'runReachability'),
   'relation-check': runner('relation-check.mjs', 'runRelationCheck'),
   overview: runner('overview.mjs', 'runOverview'),
   hubs: runner('hubs.mjs', 'runHubs'),

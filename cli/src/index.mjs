@@ -90,6 +90,8 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --max-hops N --json                    ${COLORS.dim}default 5${COLORS.reset}
   npx oh-my-ontology all-paths <from> <to>    Bounded simple paths + completeness evidence
        --max-hops N --limit N --search-budget N --types A,B --json
+  npx oh-my-ontology reachability <slug>      Transitive reachable nodes by layer from one start node
+       --depth N --direction outgoing --types A,B --plan --json
   npx oh-my-ontology relation-check <from> <to> <type>
                                              ${COLORS.dim}schema-aware add_relation preflight${COLORS.reset}
   npx oh-my-ontology query "<filter>"         Typed filter DSL (kind=X AND has(elements))
