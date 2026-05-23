@@ -40,6 +40,9 @@ loop works before the agent writes anything.
 - **Codebase-root Codex template copy** — Codex users get the same copy path
   for `.codex/config.toml`, with the vault-name-specific absolute-path
   placeholder in `OMOT_VAULT`.
+- **Grouped setup actions** — the agent setup panel now separates read-first
+  verification actions from separate-root connection templates, so the next
+  step is clearer when several copy buttons are visible.
 - **First-contact MCP prompt** — generated starter READMEs ask the agent to run
   `validate_vault`, `workspace_brief`, and `agent_brief`, then report whether
   the vault is readable and write tools are available.

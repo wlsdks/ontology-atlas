@@ -303,6 +303,9 @@ export function VaultToolsMenu({
                       : t('agentSetup.repair')}
                   </button>
                 ) : null}
+                <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
+                  {t('agentSetup.verifyGroup')}
+                </div>
                 <button
                   type="button"
                   onClick={() => void handleCopyAgentVerifyPrompt()}
@@ -321,6 +324,9 @@ export function VaultToolsMenu({
                   <Terminal size={12} aria-hidden />
                   {copyCliLabel}
                 </button>
+                <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
+                  {t('agentSetup.connectGroup')}
+                </div>
                 <button
                   type="button"
                   onClick={() => void handleCopyAgentConfigTemplate()}
