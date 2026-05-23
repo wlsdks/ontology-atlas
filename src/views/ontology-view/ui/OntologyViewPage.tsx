@@ -821,6 +821,45 @@ function NodeDetailPanel({
                   ))}
                 </div>
               ) : null}
+              <div className="mt-3 rounded-lg border border-[color:var(--color-border-soft)] px-2.5 py-2">
+                <p className="font-mono text-[9px] uppercase text-[color:var(--color-text-quaternary)]">
+                  {t('reachabilityPreview')}
+                </p>
+                <div className="mt-2 space-y-2">
+                  {reachability.layers.map((layer) => {
+                    const visibleNodes = layer.nodes.slice(0, 3);
+                    const hiddenCount = Math.max(0, layer.total - visibleNodes.length);
+                    return (
+                      <div key={layer.distance} className="space-y-1">
+                        <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                          {t('reachabilityPreviewLayer', {
+                            distance: layer.distance,
+                            count: layer.total,
+                          })}
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {visibleNodes.map((reachableNode) => (
+                            <button
+                              key={reachableNode.id}
+                              type="button"
+                              onClick={() => onSelectNeighbor(reachableNode)}
+                              className="inline-flex max-w-full items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+                              title={reachableNode.title}
+                            >
+                              <span className="truncate">{reachableNode.title}</span>
+                            </button>
+                          ))}
+                          {hiddenCount > 0 ? (
+                            <span className="inline-flex items-center px-1.5 py-1 font-mono text-[9px] uppercase text-[color:var(--color-text-quaternary)]">
+                              {t('reachabilityPreviewMore', { count: hiddenCount })}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
               {reachability.limited ? (
                 <p className="mt-2 text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
                   {t('reachabilityLimited')}
