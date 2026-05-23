@@ -4311,6 +4311,20 @@ await test('agent-brief --json — emits CLI fallback commands that run directly
   }
 });
 
+await test('agent-brief --verify-fallbacks — executes generated CLI fallback commands', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['agent-brief', root, '--verify-fallbacks']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /agent fallback check/);
+    assert.match(clean, /PASS oh-my-ontology workspace-brief \[vault\] --limit 5/);
+    assert.match(clean, /ok \d+\/\d+ fallback command\(s\) passed/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('agent-brief --prompt — prints only the copyable handoff prompt', async () => {
   const root = await buildGraphFixture();
   try {
@@ -4345,6 +4359,7 @@ await test('agent-brief --help — documents handoff and exit gates', async () =
   assert.match(clean, /traversal strategy/);
   assert.match(clean, /Use --json for repeatable agent handoff snapshots/);
   assert.match(clean, /use --prompt to print only \.handoffPrompt/);
+  assert.match(clean, /Use --verify-fallbacks to execute the generated CLI fallback commands/);
   assert.match(clean, /Exits non-zero when readiness is not ready/);
   assert.match(clean, /Tuning flags forward to query_ontology agent_brief/);
 });

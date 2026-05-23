@@ -261,6 +261,7 @@ pnpm test:dogfood:script-refs
 pnpm test:dogfood:compile-fix
 pnpm dogfood:health
 pnpm dogfood:agent
+pnpm dogfood:agent-fallbacks
 pnpm dogfood:brief
 pnpm dogfood:growth
 pnpm dogfood:maintenance

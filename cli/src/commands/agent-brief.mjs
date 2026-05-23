@@ -1,6 +1,8 @@
 // `oh-my-ontology agent-brief [vault]` — Claude Code/Codex handoff snapshot.
 // MCP `query_ontology({operation: 'agent_brief'})` thin wrapper.
 
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertAgentBriefShape, agentBriefExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
@@ -8,7 +10,8 @@ import { formatUnknownFlagError, parseVaultFlag, resolveExclusiveVaultArg } from
 import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-options.mjs';
 import { diagnosisStatusColor } from '../lib/diagnosis-colors.mjs';
 
-const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', ...DIAGNOSIS_OPTION_FLAGS];
+const CLI_ENTRYPOINT = fileURLToPath(new URL('../index.mjs', import.meta.url));
+const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--verify-fallbacks', ...DIAGNOSIS_OPTION_FLAGS];
 
 const COLORS = {
   green: '\x1b[32m',
@@ -36,7 +39,7 @@ const READINESS_COLORS = {
 };
 
 export async function runAgentBrief(args) {
-  const { vault, json, prompt, options, error, help } = parseArgs(args);
+  const { vault, json, prompt, verifyFallbacks, options, error, help } = parseArgs(args);
   if (help) {
     printUsage(process.stdout);
     return 0;
@@ -65,8 +68,84 @@ export async function runAgentBrief(args) {
     process.stdout.write(result.handoffPrompt.trimEnd() + '\n');
     return agentBriefExitCode(result);
   }
+  if (verifyFallbacks) {
+    const verifyCode = verifyCliFallbacks(result, vaultRoot);
+    return Math.max(agentBriefExitCode(result), verifyCode);
+  }
   render(result);
   return agentBriefExitCode(result);
+}
+
+function verifyCliFallbacks(result, vaultRoot) {
+  const commands = Array.isArray(result.cliFallbackCommands) ? result.cliFallbackCommands : [];
+  let failed = 0;
+  process.stdout.write(`${COLORS.bold}agent fallback check${COLORS.reset} ${COLORS.dim}${commands.length} command(s)${COLORS.reset}\n`);
+  for (const raw of commands) {
+    const command = raw.replace('[vault]', vaultRoot);
+    const parsed = parseFallbackCommand(command);
+    if (parsed.error) {
+      failed += 1;
+      process.stdout.write(`  ${COLORS.red}FAIL${COLORS.reset} ${command}\n`);
+      process.stdout.write(`       ${COLORS.red}${parsed.error}${COLORS.reset}\n`);
+      continue;
+    }
+    const child = spawnSync(process.execPath, [CLI_ENTRYPOINT, ...parsed.args], {
+      encoding: 'utf8',
+      maxBuffer: 1024 * 1024 * 8,
+    });
+    if (child.status === 0) {
+      process.stdout.write(`  ${COLORS.green}PASS${COLORS.reset} ${raw}\n`);
+      continue;
+    }
+    failed += 1;
+    process.stdout.write(`  ${COLORS.red}FAIL${COLORS.reset} ${raw}\n`);
+    const sample = String(child.stderr || child.stdout || '').split('\n').filter(Boolean).slice(0, 6).join('\n       ');
+    if (sample) process.stdout.write(`       ${sample}\n`);
+    if (child.error) process.stdout.write(`       ${COLORS.red}${child.error.message}${COLORS.reset}\n`);
+  }
+  const passed = commands.length - failed;
+  const color = failed > 0 ? COLORS.red : COLORS.green;
+  process.stdout.write(`${color}${failed > 0 ? 'failed' : 'ok'}${COLORS.reset} ${passed}/${commands.length} fallback command(s) passed\n`);
+  return failed > 0 ? 1 : 0;
+}
+
+function parseFallbackCommand(command) {
+  const tokens = splitShellWords(command);
+  if (tokens.length === 0) return { error: 'empty fallback command' };
+  if (tokens[0] !== 'oh-my-ontology') return { error: `expected oh-my-ontology command, got ${tokens[0]}` };
+  return { args: tokens.slice(1) };
+}
+
+function splitShellWords(input) {
+  const tokens = [];
+  let current = '';
+  let quote = null;
+  for (let i = 0; i < input.length; i += 1) {
+    const ch = input[i];
+    if (quote) {
+      if (ch === quote) quote = null;
+      else if (quote === "'" && input.slice(i, i + 4) === "'\\''") {
+        current += "'";
+        i += 3;
+      } else current += ch;
+      continue;
+    }
+    if (ch === "'" || ch === '"') {
+      quote = ch;
+      continue;
+    }
+    if (/\s/.test(ch)) {
+      if (current) {
+        tokens.push(current);
+        current = '';
+      }
+      continue;
+    }
+    current += ch;
+  }
+  if (quote) return [];
+  if (current) tokens.push(current);
+  return tokens;
 }
 
 function render(result) {
@@ -208,7 +287,7 @@ function formatToolCall(call) {
 
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
-  const flags = { vault: null, json: false, prompt: false };
+  const flags = { vault: null, json: false, prompt: false, verifyFallbacks: false };
   const options = {};
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
@@ -218,6 +297,7 @@ function parseArgs(args) {
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
     else if (a === '--prompt') flags.prompt = true;
+    else if (a === '--verify-fallbacks') flags.verifyFallbacks = true;
     else if (DIAGNOSIS_OPTION_FLAGS.includes(a)) {
       const error = parseDiagnosisOption(options, a, args[++i]);
       if (error) return { error: error.message };
@@ -230,21 +310,25 @@ function parseArgs(args) {
   if (flags.json && flags.prompt) {
     return { error: '--json and --prompt cannot be used together' };
   }
+  if (flags.verifyFallbacks && (flags.json || flags.prompt)) {
+    return { error: '--verify-fallbacks cannot be used with --json or --prompt' };
+  }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;
-  return { vault: vaultResult.vault, json: flags.json, prompt: flags.prompt, options };
+  return { vault: vaultResult.vault, json: flags.json, prompt: flags.prompt, verifyFallbacks: flags.verifyFallbacks, options };
 }
 
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology agent-brief [vault] [--json|--prompt]\n` +
+      `  oh-my-ontology agent-brief [vault] [--json|--prompt|--verify-fallbacks]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
       `       [--order-limit N] [--node-limit N]\n\n` +
       `Claude Code/Codex handoff: readiness score, copyable handoffPrompt, graph entrypoints,\n` +
       `first MCP calls, investigation playbooks, traversal strategy, health coverage, and read-first write policy.\n` +
       `Use --json for repeatable agent handoff snapshots; use --prompt to print only .handoffPrompt.\n` +
+      `Use --verify-fallbacks to execute the generated CLI fallback commands against this vault.\n` +
       `Exits non-zero when readiness is not ready, status is not healthy, a health check fails,\n` +
       `or a fail-severity nextAction is present.\n` +
       `Tuning flags forward to query_ontology agent_brief for focused diagnostics.\n`,
