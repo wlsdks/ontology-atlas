@@ -133,7 +133,8 @@ ${COLORS.bold}What 'init' does:${COLORS.reset}
   - Creates project / domain / capability / element starter .md files
   - Each file has frontmatter (kind / slug / title / depends_on / capabilities / ...)
   - Writes wired .mcp.json files for Claude Code / Cursor in both cwd and the vault
-  - Prints the exact Codex 'mcp add' command, because Codex uses its own config
+  - Writes wired .codex/config.toml files for Codex in both cwd and the vault
+  - Prints the exact Codex 'mcp add' command as a global-config fallback
   - Recommends 'bootstrap' to replace untouched starters with a first real graph
 
 ${COLORS.bold}Mission:${COLORS.reset}

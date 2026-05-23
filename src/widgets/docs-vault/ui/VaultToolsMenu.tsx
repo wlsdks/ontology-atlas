@@ -104,7 +104,7 @@ export function VaultToolsMenu({
         {/* dogfood hint + ontology starter CTA — vault 가 *비어 있으면*
             scaffold 버튼 prominent 노출 (Option D), 기존 vault 면 작은
             보조 버튼. 사용자 비전 ("비개발자도 같이") 의 핵심 진입점 —
-            터미널 / npm 없이 5 md + .mcp.json.example 시드 작성. */}
+            터미널 / npm 없이 5 md + agent MCP 설정 시드 작성. */}
         {localVault.status === 'idle' ? (
           <p className="text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
             {t('advanced.ontologyHintPrefix')}

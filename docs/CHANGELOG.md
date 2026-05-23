@@ -6,6 +6,24 @@
 
 ---
 
+## 2026-05-23 — Repo-local Codex onboarding
+
+Fresh vault setup now gives Codex the same repo-local MCP path as Claude Code
+and Cursor.
+
+- **CLI init Codex config** — `oh-my-ontology init` writes
+  `.codex/config.toml` beside the generated `.mcp.json` in both the codebase
+  root and the vault folder. Root configs point at `./<vault>`; vault-local
+  configs use `OMOT_VAULT=.`.
+- **Web starter Codex config** — the `/docs` starter writes `.mcp.json`,
+  `.codex/config.toml`, and a manual `.mcp.json.example` into an empty vault
+  folder without requiring terminal setup.
+- **Fallback still available** — `init` still prints the global
+  `codex mcp add ...` command for users who prefer Codex global config.
+- **Onboarding gates** — starter parity, CLI init integration, clean onboarding
+  smoke, packed CLI smoke, i18n, docs-vault freshness, typecheck, lint, and
+  dogfood script-reference checks cover the new path.
+
 ## 2026-05-19 — CLI growth plan dogfood
 
 The developer CLI now exposes MCP `growth_plan` directly, so agents and humans
@@ -293,7 +311,8 @@ registers the printed command.
 
 CLI help now matches the current setup contract: auto-prefix is default,
 `--raw-slug` is the opt-out, `init` writes real `.mcp.json` files for
-Claude/Cursor, and Codex needs the printed `mcp add` command.
+Claude/Cursor, and later follow-up adds repo-local `.codex/config.toml` for
+Codex while keeping the printed `mcp add` command as a global fallback.
 `init` also prints copy-pasteable repo-root bootstrap commands
 (`oh-my-ontology analyze . --vault ./ontology` and `bootstrap . --vault
 ./ontology`) instead of placeholder `/path/to/your/repo` examples.
@@ -309,16 +328,18 @@ live route, MCP is 20 tools, and the dogfood vault count is 26 nodes.
 
 Launch drafts, publish notes, and README setup copy now describe the current
 MCP/onboarding contract: 20 tools, generated `.mcp.json` files for Claude
-Code/Cursor, Codex's printed `mcp add` command, and the 26-node dogfood vault.
+Code/Cursor, Codex setup guidance, and the 26-node dogfood vault.
 A unit test blocks stale launch claims such as "12 tools", old dogfood demo
 counts, and obsolete test totals from returning to current-facing docs.
 
 ### Starter vault agent setup parity
 
 The starter vault README now spells out both AI-agent setup paths: generated
-`.mcp.json` for Claude Code/Cursor and the explicit `codex mcp add` command for
-Codex. Web workbench starter content and CLI templates are now covered by a
-byte-for-byte parity test, so the two onboarding surfaces cannot drift silently.
+`.mcp.json` for Claude Code/Cursor and Codex setup guidance. Later follow-up
+adds generated `.codex/config.toml` for Codex while retaining the explicit
+`codex mcp add` fallback. Web workbench starter content and CLI templates are
+covered by a byte-for-byte parity test, so the two onboarding surfaces cannot
+drift silently.
 
 ### Local vault change toast coverage
 

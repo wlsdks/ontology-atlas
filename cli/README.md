@@ -19,7 +19,7 @@ uses the same Node floor.
 
 | Command | What it does |
 |---|---|
-| `oh-my-ontology init [folder]` | Scaffold a new vault (project / domain / capability / element starter .md). **R15+**: also drops a wired `.mcp.json` in *both* cwd (codebase root, `OMOT_VAULT='./<vault>'`) and the vault folder (`OMOT_VAULT='.'`) — open either in an AI agent and the 23 MCP tools auto-register. Existing `.mcp.json` is preserved (`.mcp.json.example` falls back instead). |
+| `oh-my-ontology init [folder]` | Scaffold a new vault (project / domain / capability / element starter .md). **R15+**: also drops wired `.mcp.json` and `.codex/config.toml` files in *both* cwd (codebase root, `OMOT_VAULT='./<vault>'`) and the vault folder (`OMOT_VAULT='.'`) — open either in Claude Code / Cursor / Codex and the 23 MCP tools auto-register. Existing configs are preserved (`.mcp.json.example` falls back for manual merge). |
 | `oh-my-ontology list [vault]` | List ontology nodes (color table; enum-validated `--kind X` filter with closest-value hints, `--json`) |
 | `oh-my-ontology validate [vault]` | Frontmatter integrity (includes `missing-expected-field`, `non-canonical-graph-array`, and `dangling-graph-reference`; `exit 1` on errors — usable as a CI gate). Same code 가 2+ file 에서 등장하면 끝에 *grouped by code* 요약 섹션이 자동으로 붙어 *어느 종류 경고가 얼마나 많은지* 한눈에 파악. `--fail-on=code,...` accepts explicit policy codes and rejects empty CSV items such as `--fail-on=empty-kind,`. |
 | `oh-my-ontology mcp-verify [vault]` | Runs the installed MCP package verify CLI against the resolved vault: parser smoke, server boot, 23-tool inventory with missing/extra/duplicate/invalid name checks plus tools/list schema strictness and annotation coverage, strict runtime unknown-argument and invalid-enum checks with structured `errorCode` values, stale `patch_concept.expected_mtime` rejection with `vault_conflict`, relation filter / `relation_check` closest-value rejection, destructive dry-run smoke for `rename_concept` / `merge_concepts` / `delete_concept`, write-tool `postWriteMaintenance` `byPhase`/`bySeverity`/`byKind` buckets + `score`/`proposedAction`/next-action guidance, enum-validated `maintenance_plan` filters, ready `maintenance_plan` cursor + missing `maintenance_plan.afterActionId` cursor smoke, maintenance bucket / current-page next-action summaries, `list_concepts`, project-node `list_concepts` probe, `get_concept`, `get_concepts`, `find_evidence`, `find_backlinks`, `query_concepts`, limited `query_concepts`, `analyze_repo_structure`, `infer_imports`, `find_neighbors`, `find_path`, `find_orphans`, `list_kinds`, `validate_vault`, `workspace_brief`, tuned `workspace_brief`, `health`, tuned `health`, `compile_ontology` summary + paginated full-artifact + indexed full-artifact smoke, `overview`, `overview`/`project_map` query_plan, and `neighbors`/`path`/`all_paths`/`project_scope` graph-query smoke. Use `--timeout-ms N` for large/slow vaults. |
@@ -351,9 +351,14 @@ The vault is a plain folder of `.md` files. **Frontmatter is the graph.**
 
 ## How AI agents fit in
 
-`init` automatically writes a wired `.mcp.json` to both your codebase root
-and the vault folder. Claude Code and Cursor pick that project config up
-after restart and expose **23 tools** (15 read + 8 write).
+`init` automatically writes wired agent configs to both your codebase root
+and the vault folder:
+
+- `.mcp.json` for Claude Code / Cursor
+- `.codex/config.toml` for Codex
+
+Open either folder in the agent, restart it, and it exposes **23 tools**
+(15 read + 8 write).
 
 ```jsonc
 // .mcp.json (in your agent's config dir)
@@ -372,8 +377,8 @@ When running from this source checkout before npm publish, `init` writes an
 equivalent `node /absolute/path/to/mcp/src/index.js` command instead of `npx`
 so Claude Code can connect immediately without hitting the npm registry.
 
-Codex stores MCP servers in its own config, so `init` also prints the exact
-one-line command to run from a clean setup:
+Codex can also store MCP servers globally, so `init` prints the exact one-line
+fallback command too:
 
 ```bash
 codex mcp add oh-my-ontology --env OMOT_VAULT=/absolute/path/to/vault -- node /absolute/path/to/mcp/src/index.js

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T01:20:03.768Z",
+  "generatedAt": "2026-05-23T01:24:40.524Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -2362,6 +2362,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-23 — Repo-local Codex onboarding",
+          "slug": "2026-05-23-repo-local-codex-onboarding"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-19 — CLI growth plan dogfood",
           "slug": "2026-05-19-cli-growth-plan-dogfood"
         },
@@ -3381,9 +3386,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. The developer CLI now exposes MCP growthplan directly, so agents and humans can inspect on",
-      "wordCount": 16615,
-      "updatedAt": "2026-05-22T08:54:59.933Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. Fresh vault setup now gives Codex the same repolocal MCP path as Claude Code and Cursor. C",
+      "wordCount": 16762,
+      "updatedAt": "2026-05-23T01:24:23.137Z",
       "linksOut": [
         "slug"
       ]
@@ -4472,8 +4477,8 @@
         }
       ],
       "excerpt": "Submission type: Show HN Category: open source / dev tool (80 chars exactly — under HN's 80 char limit. If too long, fallback: Show HN: ohmyontology – frontmatter is the graph; AI agents read it via MCP) https://github.com/wlsdks/ohmyontology (Word count: ~280. HN expects substantive Show HN posts, not oneliners.) Best",
-      "wordCount": 446,
-      "updatedAt": "2026-05-18T06:48:02.168Z",
+      "wordCount": 440,
+      "updatedAt": "2026-05-23T01:24:27.795Z",
       "linksOut": []
     },
     {
@@ -4558,8 +4563,8 @@
         },
         {
           "depth": 1,
-          "text": "Claude Code / Cursor can use the generated .mcp.json.",
-          "slug": "claude-code-cursor-can-use-the-generated-mcpjson"
+          "text": "Claude Code / Cursor can use .mcp.json; Codex can use .codex/config.toml.",
+          "slug": "claude-code-cursor-can-use-mcpjson-codex-can-use-codexconfigtoml"
         },
         {
           "depth": 1,
@@ -4578,8 +4583,8 @@
         }
       ],
       "excerpt": "Reddit responds best to honest, problemfirst framing. Each subreddit has its own norms; copy below tuned per audience. Title: ohmyontology — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows longform better than HN): myproject/ ├── project.md ├── domains/ │ ├── auth.md │ └",
-      "wordCount": 919,
-      "updatedAt": "2026-05-18T04:31:36.862Z",
+      "wordCount": 921,
+      "updatedAt": "2026-05-23T01:24:31.461Z",
       "linksOut": []
     },
     {
@@ -6156,8 +6161,8 @@
         }
       ],
       "excerpt": "This project publishes two npm packages: | Package | Path | What | Required? | ||||| | ohmyontologymcp | mcp/ | MCP server (AI agents read/write the vault) | Required — the core of the AI agent integration | | ohmyontology | cli/ | 25command developer CLI (vault scaffold, bootstrap, compile, graph CRUD/deep dive) | Rec",
-      "wordCount": 1143,
-      "updatedAt": "2026-05-18T04:31:36.861Z",
+      "wordCount": 1151,
+      "updatedAt": "2026-05-23T01:23:50.824Z",
       "linksOut": []
     },
     {
@@ -6385,8 +6390,8 @@
         }
       ],
       "excerpt": "Common issues users hit when starting with ohmyontology. If your case isn't here, open an issue: https://github.com/wlsdks/ohmyontology/issues npm caches the package locally. Force a fresh fetch: The target folder already has README.md / project.md / etc. — the CLI never overwrites existing files. Either: Delete the co",
-      "wordCount": 1206,
-      "updatedAt": "2026-05-11T00:08:39.982Z",
+      "wordCount": 1214,
+      "updatedAt": "2026-05-23T01:23:44.722Z",
       "linksOut": []
     }
   ],

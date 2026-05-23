@@ -10,9 +10,26 @@ runtime graph artifact without introducing a backend database.
 
 ## Quick start
 
-### 1. Register with Claude Code
+### 1. Register with an agent
 
-Create a `.mcp.json` at your project root:
+The shortest path is to let the CLI or web starter write the agent configs:
+
+```bash
+npx oh-my-ontology init ./ontology
+```
+
+That creates the starter markdown vault plus ready-to-use MCP config files:
+
+- `.mcp.json` for Claude Code / Cursor
+- `.codex/config.toml` for Codex
+
+Open either the codebase root or the vault folder in the agent and restart it.
+The generated root config points at `./ontology`; the vault-local config uses
+`OMOT_VAULT=.` so the folder stays portable.
+
+For manual Claude Code / Cursor registration, create a `.mcp.json` at your
+project root:
+
 
 ```json
 {
@@ -42,6 +59,13 @@ Or, once published to npm, via `npx`:
     }
   }
 }
+```
+
+For manual Codex registration, either use the generated `.codex/config.toml` or
+add a global server:
+
+```bash
+codex mcp add oh-my-ontology --env OMOT_VAULT=/absolute/path/to/vault -- npx -y oh-my-ontology-mcp
 ```
 
 If `OMOT_VAULT` is not set, the current working directory is used as the vault root.
@@ -186,7 +210,7 @@ regression suite beyond the focused `test:mcp:dogfood` gate. Use
 the explicit CLI wrapper arguments without changing into `mcp/`; use
 `pnpm cli:mcp-verify -- --help` only for the help flag.
 
-### 2. Restart Claude Code
+### 2. Restart the agent
 
 The server connects over stdio. You should now see 23 tools under the `oh-my-ontology` namespace.
 
@@ -693,7 +717,7 @@ printf '%s\n' \
 
 ## First call after registering with Claude Code (sample prompt)
 
-After you add `.mcp.json` and restart Claude Code, try the following with your LLM:
+After you add `.mcp.json` / `.codex/config.toml` and restart the agent, try the following with your LLM:
 
 > **First exploration — confirm the vault's ontology is visible**
 > 1. Call `mcp__oh-my-ontology__list_kinds` to confirm the kind census.
@@ -731,6 +755,6 @@ If those read-only calls respond cleanly, the agent can see the vault and its gr
 
 ## Troubleshooting
 
-- **Tools don't show up**: Restart Claude Code. Validate `.mcp.json` syntax with `jq . .mcp.json`.
+- **Tools don't show up**: Restart the agent. Validate `.mcp.json` syntax with `jq . .mcp.json`; for Codex, inspect `.codex/config.toml` or `codex mcp list`.
 - **Vault appears empty**: Try an absolute path for `OMOT_VAULT`, or run `pwd` to confirm the actual working directory.
 - **`Doc already exists`**: `add_concept` won't overwrite an existing file. Edit the file directly, or use `patch_concept` to update frontmatter or body in place.

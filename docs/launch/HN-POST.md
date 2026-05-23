@@ -41,7 +41,7 @@ paint chunk (verified by a CI script).
 30-second start:
 
   npx oh-my-ontology init my-vault
-  # Claude Code/Cursor read the generated .mcp.json; Codex uses the printed mcp add command
+  # Claude Code/Cursor read .mcp.json; Codex reads .codex/config.toml
 
 Hosted demo (read-only, our own dogfood vault — 30 nodes):
 https://oh-my-ontology.web.app

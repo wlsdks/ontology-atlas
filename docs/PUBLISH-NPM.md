@@ -151,7 +151,7 @@ npx oh-my-ontology --help
 npx oh-my-ontology --version
 # prints 0.11.0
 npx oh-my-ontology init test-vault
-# creates test-vault/ with 5 .md files + wired .mcp.json
+# creates test-vault/ with 5 .md files + wired .mcp.json + .codex/config.toml
 rm -rf test-vault
 ```
 
@@ -192,7 +192,7 @@ Restart Claude Code. The tool list should show the `oh-my-ontology` namespace wi
 npx oh-my-ontology init my-vault
 cd my-vault
 ls -la
-# 5 .md files + .mcp.json
+# 5 .md files + .mcp.json + .codex/config.toml
 ```
 
 ### C) Start a user vault (workbench path)
@@ -200,7 +200,7 @@ ls -la
 1. https://oh-my-ontology.web.app/docs (after Firebase deploy)
 2. "Open my markdown folder" → pick an empty folder
 3. Click "Create starter seed"
-4. 5 .md files + a copyable .mcp.json.example are written automatically
+4. 5 .md files + `.mcp.json` + `.codex/config.toml` + a manual `.mcp.json.example` are written automatically
 
 ---
 

@@ -83,7 +83,7 @@ The walk runs against `docs/ontology/` by default. If you renamed/moved that fol
 2. Check the agent's MCP config — published install uses `command: "npx", args: ["-y", "oh-my-ontology-mcp"]`; source checkout uses `command: "node", args: ["/absolute/path/to/mcp/src/index.js"]`.
 3. Set `env.OMOT_VAULT` to the **absolute path** of the vault folder for global agent configs. Project `.mcp.json` can use a path relative to the project root.
 4. Claude Code / Cursor: restart the agent so it picks up the project `.mcp.json`.
-5. Codex: run the `codex mcp add ...` line printed by `oh-my-ontology init`; Codex does not auto-load project `.mcp.json`.
+5. Codex: restart Codex so it picks up the generated `.codex/config.toml`; if you prefer global config, run the `codex mcp add ...` fallback printed by `oh-my-ontology init`.
 
 Clean-room verification for maintainers:
 

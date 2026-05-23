@@ -126,7 +126,7 @@ because the dependency graph is *in the repo*, not a vendor silo.
 
 ```bash
 npx oh-my-ontology init my-vault   # scaffold a vault
-# Claude Code / Cursor can use the generated .mcp.json.
+# Claude Code / Cursor can use .mcp.json; Codex can use .codex/config.toml.
 # Manual config shape:
 {
   "mcpServers": {
