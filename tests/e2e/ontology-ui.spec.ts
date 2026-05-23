@@ -130,6 +130,7 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("maxHops 3");
     await expect(recipes).toContainText("CLI command");
     await expect(recipes).toContainText("oh-my-ontology hubs");
+    await expect(recipes).toContainText("oh-my-ontology match-edges");
     await expect(recipes).toContainText("oh-my-ontology all-paths");
     await expect(recipes).toContainText("--plan");
     await expect(recipes).toContainText("blast_radius");

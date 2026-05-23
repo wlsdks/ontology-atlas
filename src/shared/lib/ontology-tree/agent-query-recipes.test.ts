@@ -218,6 +218,50 @@ describe("buildAgentQueryRecipes", () => {
         priority: "secondary",
       }),
     ).toBe("oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates");
+    expect(
+      formatAgentQueryCallCliCommand({
+        operation: "query_ontology.match_edges",
+        tool: "query_ontology",
+        arguments: {
+          operation: "match_edges",
+          types: ["depends_on"],
+          fromKind: "capability",
+          toKind: "external",
+          includeExternal: true,
+          limit: 20,
+        },
+      }),
+    ).toBe(
+      "oh-my-ontology match-edges [vault] --from-kind capability --to-kind external --types depends_on --include-external --limit 20",
+    );
+    expect(
+      formatAgentQueryCallCliCommand({
+        operation: "query_ontology.query_plan",
+        tool: "query_ontology",
+        arguments: {
+          operation: "query_plan",
+          targetOperation: "match_edges",
+          types: ["depends_on"],
+          limit: 20,
+        },
+      }),
+    ).toBe("oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20");
+    expect(
+      formatAgentQueryCallCliCommand({
+        operation: "query_ontology.match_nodes",
+        tool: "query_ontology",
+        arguments: {
+          operation: "match_nodes",
+          kind: "capability",
+          minDegree: 2,
+          hasIncoming: true,
+          sort: "degree",
+          limit: 20,
+        },
+      }),
+    ).toBe(
+      "oh-my-ontology match-nodes [vault] --kind capability --min-degree 2 --has-incoming --sort degree --limit 20",
+    );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "domain_matrix")!)).toBeNull();
   });
 
@@ -568,6 +612,27 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("query_ontology.workspace_brief");
     expect(prompt).toContain("query_ontology.blast_radius");
     expect(prompt).toContain('"slug": "domains/views"');
+    expect(prompt).toContain("CLI fallback commands when the MCP connector is unavailable:");
+    expect(prompt).toContain("oh-my-ontology workspace-brief [vault]");
+    expect(prompt).toContain("oh-my-ontology blast-radius domains/views [vault] --depth 2 --direction incoming");
+  });
+
+  it("includes graph scan CLI fallbacks in coupling audit playbooks", () => {
+    const playbooks = buildAgentInvestigationPlaybooks([
+      {
+        slug: "capabilities/mcp-server",
+        title: "MCP Server",
+        kind: "capability",
+        degree: 7,
+      },
+    ]);
+    const couplingAudit = playbooks.find((playbook) => playbook.id === "coupling_audit")!;
+
+    const prompt = formatAgentPlaybookPrompt(couplingAudit);
+
+    expect(prompt).toContain("oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates");
+    expect(prompt).toContain("oh-my-ontology hubs [vault] --limit 10 --types depends_on,relates");
+    expect(prompt).toContain("oh-my-ontology match-edges [vault] --types depends_on --limit 20");
   });
 
   it("builds write guardrails for relation, rename, and post-change sync gates", () => {

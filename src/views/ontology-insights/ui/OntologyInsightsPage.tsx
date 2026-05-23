@@ -978,7 +978,7 @@ function AgentQueryRecipesPanel({
                         {t("agentCliCommandLabel")}
                       </p>
                       <ul className="grid gap-1">
-                        {cliCommands.slice(0, 2).map((command) => (
+                        {cliCommands.map((command) => (
                           <li key={command}>
                             <code className="block overflow-x-auto whitespace-nowrap font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
                               {command}

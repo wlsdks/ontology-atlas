@@ -13,6 +13,7 @@ const AGENT_QUERY_OPERATIONS = new Set([
   "blast_radius",
   "domain_matrix",
   "centrality",
+  "match_nodes",
   "match_edges",
   "pattern_walk",
   "project_map",
@@ -23,6 +24,8 @@ const AGENT_QUERY_PLAN_TARGETS = new Set([
   "all_paths",
   "blast_radius",
   "centrality",
+  "match_edges",
+  "match_nodes",
 ]);
 
 export type AgentQueryRecipeId =
@@ -256,6 +259,12 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
           csvFlag("--types", args.types),
         ]);
       }
+      if (args.targetOperation === "match_edges") {
+        return formatMatchEdgesCommand(args, { plan: true });
+      }
+      if (args.targetOperation === "match_nodes") {
+        return formatMatchNodesCommand(args, { plan: true });
+      }
       return null;
     }
     case "node_profile": {
@@ -300,9 +309,51 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
         positiveFlag("--limit", args.limit),
         csvFlag("--types", args.types),
       ]);
+    case "match_edges":
+      return formatMatchEdgesCommand(args);
+    case "match_nodes":
+      return formatMatchNodesCommand(args);
     default:
       return null;
   }
+}
+
+function formatMatchEdgesCommand(
+  args: Record<string, unknown>,
+  options: { plan?: boolean } = {},
+): string {
+  return withFlags("oh-my-ontology match-edges [vault]", [
+    options.plan ? "--plan" : null,
+    stringFlag("--from", args.from),
+    stringFlag("--to", args.to),
+    stringFlag("--from-kind", args.fromKind),
+    stringFlag("--to-kind", args.toKind),
+    stringFlag("--type", args.type),
+    csvFlag("--types", args.types),
+    booleanFlag("--include-external", args.includeExternal),
+    booleanFlag("--include-unresolved", args.includeUnresolved),
+    positiveFlag("--limit", args.limit),
+  ]);
+}
+
+function formatMatchNodesCommand(
+  args: Record<string, unknown>,
+  options: { plan?: boolean } = {},
+): string {
+  return withFlags("oh-my-ontology match-nodes [vault]", [
+    options.plan ? "--plan" : null,
+    stringFlag("--kind", args.kind),
+    stringFlag("--domain", args.domain),
+    stringFlag("--slug-contains", args.slugContains),
+    nonNegativeFlag("--min-degree", args.minDegree),
+    nonNegativeFlag("--max-degree", args.maxDegree),
+    nonNegativeFlag("--min-in-degree", args.minInDegree),
+    nonNegativeFlag("--min-out-degree", args.minOutDegree),
+    booleanFlag("--has-incoming", args.hasIncoming),
+    booleanFlag("--has-outgoing", args.hasOutgoing),
+    stringFlag("--sort", args.sort),
+    positiveFlag("--limit", args.limit),
+  ]);
 }
 
 function withFlags(command: string, flags: Array<string | null>): string {
@@ -336,6 +387,10 @@ function csvFlag(name: string, value: unknown): string | null {
   return values.length > 0 ? `${name} ${values.map(shellQuote).join(",")}` : null;
 }
 
+function booleanFlag(name: string, value: unknown): string | null {
+  return value === true ? name : null;
+}
+
 function shellQuote(value: string): string {
   if (/^[A-Za-z0-9_/:=.,@%+-]+$/.test(value)) return value;
   return `'${value.replace(/'/g, "'\\''")}'`;
@@ -345,6 +400,17 @@ export function formatAgentPlaybookPrompt(playbook: AgentInvestigationPlaybook):
   const payloads = playbook.payloads
     .map((payload, index) => `${index + 1}. ${payload.operation}\n${formatAgentMcpQueryPayload(payload)}`)
     .join("\n\n");
+  const cliCommands = playbook.payloads
+    .map(formatAgentQueryCallCliCommand)
+    .filter((command): command is string => command !== null);
+  const cliFallback =
+    cliCommands.length > 0
+      ? [
+          "",
+          "CLI fallback commands when the MCP connector is unavailable:",
+          ...cliCommands.map((command, index) => `${index + 1}. ${command}`),
+        ]
+      : [];
   const evidence = playbook.evidence.map((item) => `- ${item}`).join("\n");
   const stopWhen = playbook.stopWhen.map((item) => `- ${item}`).join("\n");
 
@@ -360,6 +426,7 @@ export function formatAgentPlaybookPrompt(playbook: AgentInvestigationPlaybook):
     stopWhen,
     "",
     payloads,
+    ...cliFallback,
   ].join("\n");
 }
 

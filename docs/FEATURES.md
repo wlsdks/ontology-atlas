@@ -236,7 +236,7 @@ Core panels (R3 cut E reordered + folded cross-project):
 Agent panels:
 
 - **Agent graph readiness** — score, graph facts, blockers, next actions, and a copyable repair prompt.
-- **Agent query recipes** — first-contact run order with a one-click copyable runbook, concrete high-degree slug entrypoints, investigation playbooks with evidence checklists and stop conditions, a one-click graph traversal packet (`query_plan` → bounded `all_paths` → `pattern_walk` / `project_map`) with visible MCP/CLI fallback counts and embedded execution gates, exact `query_ontology` JSON payloads, copyable CLI commands such as `oh-my-ontology all-paths ... --plan`, MCP handoff prompts with CLI fallback commands for connector-less Codex/Claude Code sessions, and write safety gates for `add_relation`, rename/merge, and post-change sync.
+- **Agent query recipes** — first-contact run order with a one-click copyable runbook, concrete high-degree slug entrypoints, investigation playbooks with evidence checklists and stop conditions plus CLI fallbacks for graph scans such as `match-edges`, a one-click graph traversal packet (`query_plan` → bounded `all_paths` → `pattern_walk` / `project_map`) with visible MCP/CLI fallback counts and embedded execution gates, exact `query_ontology` JSON payloads, copyable CLI commands such as `oh-my-ontology all-paths ... --plan`, MCP handoff prompts with CLI fallback commands for connector-less Codex/Claude Code sessions, and write safety gates for `add_relation`, rename/merge, and post-change sync.
 
 Empty state: blue link to `/docs` (open vault).
 
