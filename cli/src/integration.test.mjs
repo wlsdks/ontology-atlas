@@ -4351,6 +4351,28 @@ await test('agent-brief --verify-fallbacks — executes generated CLI fallback c
   }
 });
 
+await test('agent-brief --verify-fallbacks --json — emits machine-readable fallback timing report', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['agent-brief', root, '--verify-fallbacks', '--json']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'agent_fallback_check');
+    assert.equal(data.ok, true);
+    assert.equal(data.failed, 0);
+    assert.equal(data.total, data.commands.length);
+    assert.ok(data.passed > 0);
+    assert.ok(data.totalMs >= data.slowest.elapsedMs);
+    assert.match(data.slowest.command, /^oh-my-ontology /);
+    assert.ok(data.commands.every((row) => row.status === 'pass'));
+    assert.ok(data.commands.every((row) => typeof row.elapsedMs === 'number'));
+    assert.ok(data.commands.some((row) => row.command === 'oh-my-ontology workspace-brief [vault] --limit 5'));
+    assert.ok(data.commands.some((row) => row.resolvedCommand.includes(root)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('agent-brief --prompt — prints only the copyable handoff prompt', async () => {
   const root = await buildGraphFixture();
   try {

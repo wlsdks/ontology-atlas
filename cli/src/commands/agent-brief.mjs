@@ -60,6 +60,10 @@ export async function runAgentBrief(args) {
     );
     return 2;
   }
+  if (verifyFallbacks) {
+    const report = verifyCliFallbacks(result, vaultRoot, { json });
+    return Math.max(agentBriefExitCode(result), report.failed > 0 ? 1 : 0);
+  }
   if (json) {
     process.stdout.write(JSON.stringify(result, null, 2) + '\n');
     return agentBriefExitCode(result);
@@ -72,26 +76,35 @@ export async function runAgentBrief(args) {
     process.stdout.write(formatGraphDbCliPack(result.graphDbQueryPack, vaultRoot).trimEnd() + '\n');
     return agentBriefExitCode(result);
   }
-  if (verifyFallbacks) {
-    const verifyCode = verifyCliFallbacks(result, vaultRoot);
-    return Math.max(agentBriefExitCode(result), verifyCode);
-  }
   render(result);
   return agentBriefExitCode(result);
 }
 
-function verifyCliFallbacks(result, vaultRoot) {
+function verifyCliFallbacks(result, vaultRoot, { json = false } = {}) {
+  const report = buildFallbackVerificationReport(result, vaultRoot);
+  if (json) {
+    process.stdout.write(JSON.stringify(report, null, 2) + '\n');
+    return report;
+  }
+  renderFallbackVerificationReport(report);
+  return report;
+}
+
+function buildFallbackVerificationReport(result, vaultRoot) {
   const commands = Array.isArray(result.cliFallbackCommands) ? result.cliFallbackCommands : [];
-  let failed = 0;
-  const timings = [];
-  process.stdout.write(`${COLORS.bold}agent fallback check${COLORS.reset} ${COLORS.dim}${commands.length} command(s)${COLORS.reset}\n`);
+  const rows = [];
   for (const raw of commands) {
     const command = raw.replace('[vault]', vaultRoot);
     const parsed = parseFallbackCommand(command);
     if (parsed.error) {
-      failed += 1;
-      process.stdout.write(`  ${COLORS.red}FAIL${COLORS.reset} ${command}\n`);
-      process.stdout.write(`       ${COLORS.red}${parsed.error}${COLORS.reset}\n`);
+      rows.push({
+        command: raw,
+        resolvedCommand: command,
+        status: 'fail',
+        elapsedMs: 0,
+        exitCode: null,
+        error: parsed.error,
+      });
       continue;
     }
     const startedAt = performance.now();
@@ -100,26 +113,54 @@ function verifyCliFallbacks(result, vaultRoot) {
       maxBuffer: 1024 * 1024 * 8,
     });
     const elapsedMs = Math.max(0, Math.round(performance.now() - startedAt));
-    timings.push({ raw, elapsedMs });
-    if (child.status === 0) {
-      process.stdout.write(`  ${COLORS.green}PASS${COLORS.reset} ${formatFallbackTiming(elapsedMs)} ${raw}\n`);
-      continue;
-    }
-    failed += 1;
-    process.stdout.write(`  ${COLORS.red}FAIL${COLORS.reset} ${formatFallbackTiming(elapsedMs)} ${raw}\n`);
     const sample = String(child.stderr || child.stdout || '').split('\n').filter(Boolean).slice(0, 6).join('\n       ');
-    if (sample) process.stdout.write(`       ${sample}\n`);
-    if (child.error) process.stdout.write(`       ${COLORS.red}${child.error.message}${COLORS.reset}\n`);
+    rows.push({
+      command: raw,
+      resolvedCommand: command,
+      status: child.status === 0 ? 'pass' : 'fail',
+      elapsedMs,
+      exitCode: child.status,
+      ...(sample ? { outputSample: sample } : {}),
+      ...(child.error ? { error: child.error.message } : {}),
+    });
   }
-  const passed = commands.length - failed;
-  const color = failed > 0 ? COLORS.red : COLORS.green;
-  const totalMs = timings.reduce((sum, item) => sum + item.elapsedMs, 0);
-  process.stdout.write(`${color}${failed > 0 ? 'failed' : 'ok'}${COLORS.reset} ${passed}/${commands.length} fallback command(s) passed\n`);
-  if (timings.length > 0) {
-    const slowest = timings.reduce((max, item) => (item.elapsedMs > max.elapsedMs ? item : max), timings[0]);
-    process.stdout.write(`${COLORS.dim}timing:${COLORS.reset} total ${totalMs}ms; slowest ${slowest.elapsedMs}ms ${slowest.raw}\n`);
+  const passed = rows.filter((row) => row.status === 'pass').length;
+  const failed = rows.length - passed;
+  const totalMs = rows.reduce((sum, item) => sum + item.elapsedMs, 0);
+  const slowest = rows.length > 0
+    ? rows.reduce((max, item) => (item.elapsedMs > max.elapsedMs ? item : max), rows[0])
+    : null;
+  return {
+    operation: 'agent_fallback_check',
+    ok: failed === 0,
+    total: rows.length,
+    passed,
+    failed,
+    totalMs,
+    slowest: slowest
+      ? {
+          command: slowest.command,
+          elapsedMs: slowest.elapsedMs,
+          status: slowest.status,
+        }
+      : null,
+    commands: rows,
+  };
+}
+
+function renderFallbackVerificationReport(report) {
+  process.stdout.write(`${COLORS.bold}agent fallback check${COLORS.reset} ${COLORS.dim}${report.total} command(s)${COLORS.reset}\n`);
+  for (const row of report.commands) {
+    const color = row.status === 'pass' ? COLORS.green : COLORS.red;
+    process.stdout.write(`  ${color}${row.status.toUpperCase()}${COLORS.reset} ${formatFallbackTiming(row.elapsedMs)} ${row.command}\n`);
+    if (row.outputSample) process.stdout.write(`       ${row.outputSample}\n`);
+    if (row.error) process.stdout.write(`       ${COLORS.red}${row.error}${COLORS.reset}\n`);
   }
-  return failed > 0 ? 1 : 0;
+  const color = report.failed > 0 ? COLORS.red : COLORS.green;
+  process.stdout.write(`${color}${report.failed > 0 ? 'failed' : 'ok'}${COLORS.reset} ${report.passed}/${report.total} fallback command(s) passed\n`);
+  if (report.slowest) {
+    process.stdout.write(`${COLORS.dim}timing:${COLORS.reset} total ${report.totalMs}ms; slowest ${report.slowest.elapsedMs}ms ${report.slowest.command}\n`);
+  }
 }
 
 function formatFallbackTiming(elapsedMs) {
@@ -508,7 +549,7 @@ function parseArgs(args) {
   if (outputFlags.length > 1) {
     return { error: `${outputFlags.map(([name]) => name).join(' and ')} cannot be used together` };
   }
-  if (flags.verifyFallbacks && outputFlags.length > 0) {
+  if (flags.verifyFallbacks && (flags.prompt || flags.graphDbPack)) {
     return { error: `--verify-fallbacks cannot be used with ${outputFlags.map(([name]) => name).join(' or ')}` };
   }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
@@ -527,7 +568,7 @@ function printUsage(stream = process.stderr) {
       `first MCP calls, investigation playbooks, traversal strategy, health coverage, and read-first write policy.\n` +
       `Use --json for repeatable agent handoff snapshots; use --prompt to print only .handoffPrompt.\n` +
       `Use --graph-db-pack to print only executable CLI graph scan commands for connector-less sessions.\n` +
-      `Use --verify-fallbacks to execute the generated CLI fallback commands against this vault.\n` +
+      `Use --verify-fallbacks to execute the generated CLI fallback commands against this vault; combine with --json for a machine-readable timing report.\n` +
       `Exits non-zero when readiness is not ready, status is not healthy, a health check fails,\n` +
       `or a fail-severity nextAction is present.\n` +
       `Tuning flags forward to query_ontology agent_brief for focused diagnostics.\n`,
