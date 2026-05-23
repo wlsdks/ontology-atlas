@@ -1,9 +1,16 @@
 import { fireEvent, render as rtlRender, screen, waitFor } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import type { VaultManifest } from '@/entities/docs-vault';
+import { copyText } from '@/shared/lib/copy-text';
 import { VaultToolsMenu } from './VaultToolsMenu';
+
+vi.mock('@/shared/lib/copy-text', () => ({
+  copyText: vi.fn(),
+}));
+
+const copyTextMock = vi.mocked(copyText);
 
 function render(ui: React.ReactElement) {
   return rtlRender(
@@ -78,6 +85,10 @@ function renderMenu(
 }
 
 describe('VaultToolsMenu', () => {
+  beforeEach(() => {
+    copyTextMock.mockReset();
+  });
+
   it('로컬 vault의 AI agent 설정 누락 상태와 복구 버튼을 보여준다', async () => {
     const localVault = renderMenu();
 
@@ -110,5 +121,32 @@ describe('VaultToolsMenu', () => {
     expect(
       screen.queryByRole('button', { name: '누락된 agent 설정 만들기' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('AI agent 설정 패널에서 첫 연결 검증 프롬프트를 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '검증 프롬프트 복사' }));
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('validate_vault'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('workspace_brief'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('agent_brief'),
+    );
+    expect(
+      await screen.findByRole('button', { name: '검증 프롬프트 복사됨' }),
+    ).toBeInTheDocument();
   });
 });

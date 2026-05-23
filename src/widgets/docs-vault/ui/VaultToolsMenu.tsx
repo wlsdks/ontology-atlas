@@ -1,10 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, CheckCircle2, CircleAlert, FilePlus, Layers } from 'lucide-react';
+import { Bot, CheckCircle2, CircleAlert, ClipboardCopy, FilePlus, Layers } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { LocalVaultPicker, OntologyStarterCta } from '@/features/docs-vault-local';
+import {
+  LocalVaultPicker,
+  ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
+  OntologyStarterCta,
+} from '@/features/docs-vault-local';
 import type { VaultManifest } from '@/entities/docs-vault';
+import { copyText } from '@/shared/lib/copy-text';
 
 /**
  * R11 #16 step 1 — DocsVaultPage 의 advanced dropdown body 를 widget 으로 추출.
@@ -69,6 +74,9 @@ export function VaultToolsMenu({
   const t = useTranslations('docsVault');
   const [agentSetupBusy, setAgentSetupBusy] = useState(false);
   const [agentSetupError, setAgentSetupError] = useState<string | null>(null);
+  const [agentPromptCopyState, setAgentPromptCopyState] = useState<
+    'idle' | 'copied' | 'failed'
+  >('idle');
   const agentStatus = localVault.agentConfigStatus;
   const agentSetupReady = Boolean(
     agentStatus?.mcpJson && agentStatus.codexConfig && agentStatus.mcpExample,
@@ -87,6 +95,18 @@ export function VaultToolsMenu({
       setAgentSetupBusy(false);
     }
   }
+
+  async function handleCopyAgentVerifyPrompt() {
+    const copied = await copyText(ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT);
+    setAgentPromptCopyState(copied ? 'copied' : 'failed');
+  }
+
+  const copyPromptLabel =
+    agentPromptCopyState === 'copied'
+      ? t('agentSetup.copyPromptCopied')
+      : agentPromptCopyState === 'failed'
+        ? t('agentSetup.copyPromptFailed')
+        : t('agentSetup.copyPrompt');
 
   return (
     <div
@@ -218,6 +238,15 @@ export function VaultToolsMenu({
                       : t('agentSetup.repair')}
                   </button>
                 ) : null}
+                <button
+                  type="button"
+                  onClick={() => void handleCopyAgentVerifyPrompt()}
+                  title={t('agentSetup.copyPromptTitle')}
+                  className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  <ClipboardCopy size={12} aria-hidden />
+                  {copyPromptLabel}
+                </button>
                 {agentSetupError ? (
                   <p
                     role="alert"

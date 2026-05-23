@@ -28,6 +28,8 @@ relates:
 생성할 수 있다. 이 repair action 은 이미 사용자가 작성한 ontology 파일을 건드리지
 않고, agent 연결에 필요한 config surface 만 채운다.
 
-같은 화면은 read-first 검증 prompt 도 복사 가능하게 유지한다. 새 agent 세션은
+같은 화면은 read-first 검증 prompt 도 복사 가능하게 유지한다. 설정 상태 확인,
+누락 config 생성, 검증 prompt 복사가 한 패널 안에 있어 비개발자도 Claude Code /
+Codex 를 열기 전에 필요한 다음 행동을 놓치지 않는다. 새 agent 세션은
 `validate_vault`, `workspace_brief`, `agent_brief` 를 먼저 실행해 vault 가 읽히고
 write tools 가 노출되는지 보고한 뒤 변경을 제안한다.

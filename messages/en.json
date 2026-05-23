@@ -1151,6 +1151,10 @@
       "repair": "Create missing agent configs",
       "repairing": "Creating configs…",
       "repairTitle": "Creates only the missing .mcp.json, .codex/config.toml, and .mcp.json.example files. It does not add starter markdown files.",
+      "copyPrompt": "Copy verification prompt",
+      "copyPromptCopied": "Verification prompt copied",
+      "copyPromptFailed": "Copy failed",
+      "copyPromptTitle": "Copy the read-first MCP prompt to verify Claude Code or Codex before edits.",
       "errorFallback": "Could not create agent configs"
     },
     "mobileDrawer": {

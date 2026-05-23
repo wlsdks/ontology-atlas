@@ -26,6 +26,9 @@ loop works before the agent writes anything.
 - **Agent setup status** — the local vault tools menu now shows whether
   `.mcp.json`, `.codex/config.toml`, and `.mcp.json.example` exist, and can
   create only the missing agent config files without adding starter markdown.
+- **Setup-to-verify flow** — the same agent setup panel can now copy the
+  read-first verification prompt, so users can go from config readiness to
+  Claude Code / Codex proof without opening the command palette.
 - **First-contact MCP prompt** — generated starter READMEs ask the agent to run
   `validate_vault`, `workspace_brief`, and `agent_brief`, then report whether
   the vault is readable and write tools are available.
