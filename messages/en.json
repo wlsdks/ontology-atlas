@@ -1406,6 +1406,7 @@
       "emptyBusy": "Creating…",
       "emptyCta": "Create starter seed",
       "secondaryTitle": "Adds 5 ontology starter files plus agent verification guidance (existing files are left untouched)",
+      "secondaryCopyTitle": "Copy the read-first MCP verification prompt without adding starter files",
       "secondaryBusy": "Adding…",
       "secondaryLabel": "Add ontology starter"
     },

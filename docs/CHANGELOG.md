@@ -17,6 +17,9 @@ loop works before the agent writes anything.
 - **Copyable agent prompt** — the same CTA can copy the first-contact
   verification prompt directly for Claude Code / Codex, with inline copied /
   failed feedback.
+- **Existing-vault path** — folders that already contain markdown now get the
+  same copyable verification prompt beside the starter-add option, so users can
+  prove MCP connectivity without adding starter files.
 - **First-contact MCP prompt** — generated starter READMEs ask the agent to run
   `validate_vault`, `workspace_brief`, and `agent_brief`, then report whether
   the vault is readable and write tools are available.

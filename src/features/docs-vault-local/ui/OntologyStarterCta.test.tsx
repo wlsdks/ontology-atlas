@@ -61,4 +61,20 @@ describe('OntologyStarterCta', () => {
     );
     expect(await screen.findByRole('button', { name: '프롬프트 복사됨' })).toBeInTheDocument();
   });
+
+  it('기존 vault 에서도 starter 추가 없이 agent 검증 프롬프트를 복사할 수 있다', async () => {
+    const onScaffold = vi.fn();
+    copyTextMock.mockResolvedValue(true);
+    render(<OntologyStarterCta docCount={3} onScaffold={onScaffold} />);
+
+    expect(
+      screen.getByRole('button', { name: 'ontology starter 추가' }),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'agent 검증 프롬프트 복사' }));
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(onScaffold).not.toHaveBeenCalled();
+    expect(await screen.findByRole('button', { name: '프롬프트 복사됨' })).toBeInTheDocument();
+  });
 });

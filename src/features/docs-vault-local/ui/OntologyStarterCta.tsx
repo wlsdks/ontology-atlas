@@ -54,6 +54,13 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
     setCopyState(copied ? 'copied' : 'failed');
   }
 
+  const copyPromptLabel =
+    copyState === 'copied'
+      ? t('copyPromptCopied')
+      : copyState === 'failed'
+        ? t('copyPromptFailed')
+        : t('copyPromptLabel');
+
   if (isEmpty) {
     // 빈 vault — 큰 카드로 "여기서 시작" 안내
     return (
@@ -107,11 +114,7 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
           className="mt-3 inline-flex items-center gap-2 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
         >
           <ClipboardCopy size={12} aria-hidden />
-          {copyState === 'copied'
-            ? t('copyPromptCopied')
-            : copyState === 'failed'
-              ? t('copyPromptFailed')
-              : t('copyPromptLabel')}
+          {copyPromptLabel}
         </button>
         <button
           type="button"
@@ -136,15 +139,26 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
 
   // 이미 vault 에 .md 가 있는 경우 — 작은 보조 옵션
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={busy}
-      title={t('secondaryTitle')}
-      className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] disabled:opacity-60"
-    >
-      <Sparkles size={12} aria-hidden />
-      {busy ? t('secondaryBusy') : t('secondaryLabel')}
-    </button>
+    <div className="grid gap-2">
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={busy}
+        title={t('secondaryTitle')}
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)] disabled:opacity-60"
+      >
+        <Sparkles size={12} aria-hidden />
+        {busy ? t('secondaryBusy') : t('secondaryLabel')}
+      </button>
+      <button
+        type="button"
+        onClick={handleCopyPrompt}
+        title={t('secondaryCopyTitle')}
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+      >
+        <ClipboardCopy size={12} aria-hidden />
+        {copyPromptLabel}
+      </button>
+    </div>
   );
 }

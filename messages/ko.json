@@ -1406,6 +1406,7 @@
       "emptyBusy": "만드는 중…",
       "emptyCta": "starter 시드 만들기",
       "secondaryTitle": "ontology starter 5 파일과 agent 검증 안내를 추가합니다 (이미 있는 파일은 안 건드립니다)",
+      "secondaryCopyTitle": "starter 파일을 추가하지 않고 read-first MCP 검증 프롬프트만 복사합니다",
       "secondaryBusy": "추가 중…",
       "secondaryLabel": "ontology starter 추가"
     },
