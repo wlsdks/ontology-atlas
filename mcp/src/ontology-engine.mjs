@@ -2988,6 +2988,32 @@ export function createOntologyEngine(artifact, options = {}) {
         partialWhen: ['exhaustive=false', 'truncatedByBudget=true', 'totalPathsExact=false', 'evidence.status=partial', 'evidence.pathsComplete=false'],
         policy: 'Treat paths as partial evidence unless evidence.pathsComplete is true; treat totalPaths as partial evidence unless totalPathsExact is true; follow evidence.suggestedQuery or narrow maxHops/types before using paths as write evidence.',
       },
+      {
+        operation: 'match_nodes',
+        mustReport: [
+          'totalMatches',
+          'limited',
+          'nodes.length',
+          'followUp.focusSlug',
+          'followUp.calls',
+          'followUp.cliFallbackCommands',
+        ],
+        partialWhen: ['limited=true', 'nodes.length=0', 'followUp missing because no rows were returned'],
+        policy: 'Treat match_nodes rows as scan candidates, not evidence; run the followUp node_profile, incoming/outgoing match_edges, and blast_radius calls before using a node row for onboarding or refactor decisions.',
+      },
+      {
+        operation: 'match_edges',
+        mustReport: [
+          'totalMatches',
+          'limited',
+          'edges.length',
+          'followUp.focusEdge',
+          'followUp.calls',
+          'followUp.cliFallbackCommands',
+        ],
+        partialWhen: ['limited=true', 'edges.length=0', 'followUp missing because the first row is external/unresolved or no rows were returned'],
+        policy: 'Treat match_edges rows as scan candidates, not proof; run the followUp explain_relation, path, and relation_check calls before using an edge row as write, refactor, or coupling evidence.',
+      },
     ];
 
     const brief = {
@@ -3189,6 +3215,7 @@ export function createOntologyEngine(artifact, options = {}) {
         'Run read tools first and cite returned slugs/edges before editing.',
         'Run relation_check before add_relation to confirm matchingEdges, inverseEdges, schema pattern, and proposedAction args.',
         'For all_paths, report limit/searchBudget/expandedStates/exhaustive/truncatedByBudget/totalPathsExact plus evidence.status/evidence.reason/evidence.pathsComplete and treat incomplete paths as partial evidence.',
+        'For match_nodes and match_edges, report totalMatches/limited plus followUp details, then run the followUp calls before treating scan rows as evidence.',
         'Follow relationDecisionGuide: skip_existing blocks duplicate writes; review_inverse and review_new_schema require explicit justification before writing.',
         'Run find_backlinks before rename_concept or merge_concepts so backlink rewrites are intentional.',
         'Run health and validate_vault after code changes or vault writes before handing the graph to another agent.',

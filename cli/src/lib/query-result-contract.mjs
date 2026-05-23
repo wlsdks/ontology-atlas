@@ -380,7 +380,7 @@ export function assertAgentBriefShape(result) {
     throw new Error('agent_brief writePolicy must mention relation_check before add_relation');
   }
   if (!validAgentResultContracts(result.resultContracts)) {
-    throw new Error('agent_brief resultContracts must include all_paths completeness fields and partial-evidence policy');
+    throw new Error('agent_brief resultContracts must include all_paths completeness plus match_nodes/match_edges followUp policies');
   }
   if (!validAgentRelationDecisionGuide(result.relationDecisionGuide)) {
     throw new Error('agent_brief relationDecisionGuide must cover relation_check decision outcomes');
@@ -1942,7 +1942,7 @@ function validAgentResultContracts(contracts) {
     'evidence.reason',
     'evidence.pathsComplete',
   ];
-  return Array.isArray(allPaths.mustReport)
+  const validAllPaths = Array.isArray(allPaths.mustReport)
     && requiredFields.every((field) => allPaths.mustReport.includes(field))
     && Array.isArray(allPaths.partialWhen)
     && allPaths.partialWhen.some((condition) => /exhaustive=false/.test(condition))
@@ -1952,6 +1952,52 @@ function validAgentResultContracts(contracts) {
     && hasNonEmptyString(allPaths.policy)
     && /partial evidence/.test(allPaths.policy)
     && /maxHops\/types/.test(allPaths.policy);
+  if (!validAllPaths) return false;
+
+  const matchNodes = contracts.find((contract) => contract?.operation === 'match_nodes');
+  if (
+    !validScanResultContract(matchNodes, [
+      'totalMatches',
+      'limited',
+      'nodes.length',
+      'followUp.focusSlug',
+      'followUp.calls',
+      'followUp.cliFallbackCommands',
+    ])
+    || !/scan candidates/.test(matchNodes.policy)
+    || !/node_profile/.test(matchNodes.policy)
+    || !/blast_radius/.test(matchNodes.policy)
+  ) {
+    return false;
+  }
+
+  const matchEdges = contracts.find((contract) => contract?.operation === 'match_edges');
+  return Boolean(
+    validScanResultContract(matchEdges, [
+      'totalMatches',
+      'limited',
+      'edges.length',
+      'followUp.focusEdge',
+      'followUp.calls',
+      'followUp.cliFallbackCommands',
+    ])
+    && /scan candidates/.test(matchEdges.policy)
+    && /explain_relation/.test(matchEdges.policy)
+    && /relation_check/.test(matchEdges.policy)
+  );
+}
+
+function validScanResultContract(contract, requiredFields) {
+  return Boolean(
+    isPlainObject(contract)
+    && Array.isArray(contract.mustReport)
+    && requiredFields.every((field) => contract.mustReport.includes(field))
+    && Array.isArray(contract.partialWhen)
+    && contract.partialWhen.some((condition) => /limited=true/.test(condition))
+    && contract.partialWhen.some((condition) => /followUp missing/.test(condition))
+    && hasNonEmptyString(contract.policy)
+    && /followUp/.test(contract.policy)
+  );
 }
 
 function validRelationCheckEdge(edge) {

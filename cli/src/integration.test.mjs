@@ -4239,6 +4239,12 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
       'evidence.reason',
       'evidence.pathsComplete',
     ]);
+    assert.equal(data.resultContracts[1].operation, 'match_nodes');
+    assert.ok(data.resultContracts[1].mustReport.includes('followUp.focusSlug'));
+    assert.match(data.resultContracts[1].policy, /scan candidates/);
+    assert.equal(data.resultContracts[2].operation, 'match_edges');
+    assert.ok(data.resultContracts[2].mustReport.includes('followUp.focusEdge'));
+    assert.match(data.resultContracts[2].policy, /explain_relation/);
     const components = data.health.checks.find((check) => check.id === 'components');
     assert.equal(components.status, 'info');
     assert.equal(components.count, 3);

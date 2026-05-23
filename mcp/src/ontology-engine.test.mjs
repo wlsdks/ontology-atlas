@@ -1922,8 +1922,17 @@ describe('queryCompiledOntology', () => {
     assert.ok(result.resultContracts[0].partialWhen.includes('totalPathsExact=false'));
     assert.ok(result.resultContracts[0].partialWhen.includes('evidence.status=partial'));
     assert.match(result.resultContracts[0].policy, /partial evidence/);
+    assert.deepEqual(result.resultContracts[1].operation, 'match_nodes');
+    assert.ok(result.resultContracts[1].mustReport.includes('followUp.focusSlug'));
+    assert.match(result.resultContracts[1].policy, /scan candidates/);
+    assert.match(result.resultContracts[1].policy, /node_profile/);
+    assert.deepEqual(result.resultContracts[2].operation, 'match_edges');
+    assert.ok(result.resultContracts[2].mustReport.includes('followUp.focusEdge'));
+    assert.match(result.resultContracts[2].policy, /explain_relation/);
+    assert.match(result.resultContracts[2].policy, /relation_check/);
     assert.ok(result.writePolicy.some((line) => line.includes('relation_check before add_relation')));
     assert.ok(result.writePolicy.some((line) => line.includes('all_paths') && line.includes('totalPathsExact')));
+    assert.ok(result.writePolicy.some((line) => line.includes('match_nodes') && line.includes('followUp')));
     assert.ok(result.writePolicy.some((line) => line.includes('relationDecisionGuide')));
     assert.ok(result.writePolicy.some((line) => line.includes('find_backlinks before rename_concept')));
   });

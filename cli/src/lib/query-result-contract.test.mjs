@@ -739,6 +739,32 @@ describe('query-result-contract', () => {
           partialWhen: ['exhaustive=false', 'truncatedByBudget=true', 'totalPathsExact=false', 'evidence.status=partial', 'evidence.pathsComplete=false'],
           policy: 'Treat paths as partial evidence unless evidence.pathsComplete is true; treat totalPaths as partial evidence unless totalPathsExact is true; follow evidence.suggestedQuery or narrow maxHops/types before using paths as write evidence.',
         },
+        {
+          operation: 'match_nodes',
+          mustReport: [
+            'totalMatches',
+            'limited',
+            'nodes.length',
+            'followUp.focusSlug',
+            'followUp.calls',
+            'followUp.cliFallbackCommands',
+          ],
+          partialWhen: ['limited=true', 'nodes.length=0', 'followUp missing because no rows were returned'],
+          policy: 'Treat match_nodes rows as scan candidates, not evidence; run the followUp node_profile and blast_radius calls before using a node row.',
+        },
+        {
+          operation: 'match_edges',
+          mustReport: [
+            'totalMatches',
+            'limited',
+            'edges.length',
+            'followUp.focusEdge',
+            'followUp.calls',
+            'followUp.cliFallbackCommands',
+          ],
+          partialWhen: ['limited=true', 'edges.length=0', 'followUp missing because the first row is external/unresolved or no rows were returned'],
+          policy: 'Treat match_edges rows as scan candidates, not proof; run the followUp explain_relation, path, and relation_check calls before using an edge row.',
+        },
       ],
       relationDecisionGuide: [
         { decision: 'skip_existing', severity: 'info', meaning: 'Do not add duplicate edge.' },
@@ -905,14 +931,21 @@ describe('query-result-contract', () => {
     );
     assert.throws(
       () => assertAgentBriefShape({ ...valid, resultContracts: [] }),
-      /agent_brief resultContracts must include all_paths completeness fields and partial-evidence policy/,
+      /agent_brief resultContracts must include all_paths completeness plus match_nodes\/match_edges followUp policies/,
     );
     assert.throws(
       () => assertAgentBriefShape({
         ...valid,
         resultContracts: [{ ...valid.resultContracts[0], mustReport: ['searchBudget'] }],
       }),
-      /agent_brief resultContracts must include all_paths completeness fields and partial-evidence policy/,
+      /agent_brief resultContracts must include all_paths completeness plus match_nodes\/match_edges followUp policies/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        resultContracts: valid.resultContracts.filter((contract) => contract.operation !== 'match_edges'),
+      }),
+      /agent_brief resultContracts must include all_paths completeness plus match_nodes\/match_edges followUp policies/,
     );
     assert.throws(
       () => assertAgentBriefShape({
