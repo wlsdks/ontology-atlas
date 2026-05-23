@@ -69,7 +69,7 @@ export async function runAgentBrief(args) {
     return agentBriefExitCode(result);
   }
   if (graphDbPack) {
-    process.stdout.write(formatGraphDbCliPack(result.graphDbQueryPack).trimEnd() + '\n');
+    process.stdout.write(formatGraphDbCliPack(result.graphDbQueryPack, vaultRoot).trimEnd() + '\n');
     return agentBriefExitCode(result);
   }
   if (verifyFallbacks) {
@@ -120,19 +120,20 @@ function parseFallbackCommand(command) {
   return { args: tokens.slice(1) };
 }
 
-function formatGraphDbCliPack(graphDbQueryPack) {
+function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
   const commands = [];
   const seen = new Set();
   for (const item of Array.isArray(graphDbQueryPack) ? graphDbQueryPack : []) {
     for (const command of graphDbPackItemCliCommands(item)) {
-      if (!command || seen.has(command)) continue;
-      seen.add(command);
-      commands.push({ id: item.id, command });
+      const runnableCommand = command.replaceAll('[vault]', graphDbShellQuote(vaultRoot));
+      if (!runnableCommand || seen.has(runnableCommand)) continue;
+      seen.add(runnableCommand);
+      commands.push({ id: item.id, command: runnableCommand });
     }
   }
   return [
     'Run these oh-my-ontology CLI commands when the MCP connector is unavailable.',
-    'They mirror the Graph DB query pack: plan scans first, keep traversal bounded, and use follow-up evidence before writing.',
+    'They include the resolved vault path, mirror the Graph DB query pack, plan scans first, keep traversal bounded, and use follow-up evidence before writing.',
     '',
     ...commands.map(({ id, command }, index) => `${index + 1}. [${id}] ${command}`),
   ].join('\n');
