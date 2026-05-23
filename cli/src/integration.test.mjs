@@ -3609,6 +3609,9 @@ await test('match-edges — graph DB-style edge rows with kind/type filters', as
     assert.match(clean, /filters .*fromKind=capability.*types=relates/);
     assert.match(clean, /capabilities\/bar --relates--> capabilities\/foo/);
     assert.match(clean, /Bar.*Foo.*\(capability → capability\)/);
+    assert.match(clean, /next edge capabilities\/bar --relates--> capabilities\/foo/);
+    assert.match(clean, /oh-my-ontology explain capabilities\/bar capabilities\/foo \[vault\] --direction undirected --max-hops 5 --types relates --limit 10/);
+    assert.match(clean, /oh-my-ontology relation-check capabilities\/bar capabilities\/foo relates \[vault\]/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3634,6 +3637,15 @@ await test('match-edges --plan --json — preserves filters in query_plan and re
     assert.equal(data.plan.estimate.totalMatches, 1);
     assert.equal(data.result.operation, 'match_edges');
     assert.equal(data.result.totalMatches, 1);
+    assert.deepEqual(data.result.followUp.focusEdge, {
+      from: 'capabilities/bar',
+      to: 'capabilities/foo',
+      via: 'relates',
+    });
+    assert.deepEqual(
+      data.result.followUp.calls.map((call) => call.arguments.operation),
+      ['explain_relation', 'path', 'relation_check'],
+    );
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

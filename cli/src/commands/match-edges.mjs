@@ -148,6 +148,18 @@ function render(result) {
         `${fromTitle}${toTitle} ${COLORS.dim}(${fromKind} → ${toKind})${COLORS.reset}\n`,
     );
   }
+  const followUp = result?.followUp;
+  if (followUp?.focusEdge && Array.isArray(followUp.cliFallbackCommands) && followUp.cliFallbackCommands.length > 0) {
+    process.stdout.write(
+      `\n${COLORS.dim}next${COLORS.reset} edge ${COLORS.bold}${followUp.focusEdge.from}${COLORS.reset}` +
+        ` ${COLORS.yellow}--${followUp.focusEdge.via}-->${COLORS.reset} ` +
+        `${COLORS.bold}${followUp.focusEdge.to}${COLORS.reset}` +
+        `${COLORS.dim} — explain before treating a scan row as evidence${COLORS.reset}\n`,
+    );
+    for (const command of followUp.cliFallbackCommands.slice(0, 3)) {
+      process.stdout.write(`  ${COLORS.cyan}${command}${COLORS.reset}\n`);
+    }
+  }
 }
 
 function formatFilters(filters = {}) {

@@ -807,6 +807,9 @@ export function assertMatchEdgesShape(result) {
       throw new Error(`match_edges edges[${index}] has an invalid edge row shape`);
     }
   }
+  if (result.followUp !== undefined && !validMatchEdgesFollowUp(result.followUp)) {
+    throw new Error('match_edges followUp must contain a focusEdge, reason, query_ontology calls, and CLI fallback commands');
+  }
   return result;
 }
 
@@ -1701,6 +1704,25 @@ function validMatchEdgeRow(row) {
     && (row.ref === undefined || hasNonEmptyString(row.ref))
     && (row.resolved === undefined || typeof row.resolved === 'boolean')
     && (row.external === undefined || typeof row.external === 'boolean')
+  );
+}
+
+function validMatchEdgesFollowUp(followUp) {
+  return Boolean(
+    isPlainObject(followUp)
+    && isPlainObject(followUp.focusEdge)
+    && hasNonEmptyString(followUp.focusEdge.from)
+    && hasNonEmptyString(followUp.focusEdge.to)
+    && hasNonEmptyString(followUp.focusEdge.via)
+    && hasNonEmptyString(followUp.reason)
+    && Array.isArray(followUp.calls)
+    && followUp.calls.length > 0
+    && followUp.calls.every((call) => (
+      validAgentToolCall(call)
+      && hasNonEmptyString(call.id)
+      && hasNonEmptyString(call.label)
+    ))
+    && validAgentCliFallbackCommands(followUp.cliFallbackCommands)
   );
 }
 

@@ -1343,6 +1343,9 @@ export function createOntologyEngine(artifact, options = {}) {
       });
     }
 
+    const page = matches.slice(0, limit);
+    const followUp = buildMatchEdgesFollowUp(page[0]);
+
     return {
       operation: 'match_edges',
       filters: {
@@ -1356,7 +1359,8 @@ export function createOntologyEngine(artifact, options = {}) {
       },
       totalMatches: matches.length,
       limited: matches.length > limit,
-      edges: matches.slice(0, limit),
+      edges: page,
+      ...(followUp ? { followUp } : {}),
     };
   }
 
@@ -3847,6 +3851,58 @@ function buildMatchNodesFollowUp(node) {
   };
 }
 
+function buildMatchEdgesFollowUp(edge) {
+  if (!edge?.from || !edge?.to || edge.resolved === false || edge.external === true) return null;
+  const relation = edge.via === 'dependencies' ? 'depends_on' : edge.via;
+  const calls = [
+    {
+      id: 'explain_relation',
+      label: 'Explain why the first matched edge exists.',
+      ...agentToolCall('query_ontology', {
+        operation: 'explain_relation',
+        from: edge.from,
+        to: edge.to,
+        direction: 'undirected',
+        types: [relation],
+        maxHops: 5,
+        limit: 10,
+      }),
+    },
+    {
+      id: 'path_evidence',
+      label: 'Find a shortest path between the edge endpoints.',
+      ...agentToolCall('query_ontology', {
+        operation: 'path',
+        from: edge.from,
+        to: edge.to,
+        maxHops: 5,
+      }),
+    },
+    {
+      id: 'relation_preflight',
+      label: 'Preflight this relation before writing a duplicate or inverse edge.',
+      ...agentToolCall('query_ontology', {
+        operation: 'relation_check',
+        from: edge.from,
+        to: edge.to,
+        type: relation,
+      }),
+    },
+  ];
+
+  return {
+    focusEdge: {
+      from: edge.from,
+      to: edge.to,
+      via: edge.via,
+    },
+    reason:
+      'match_edges is a scan; explain and preflight the first edge before treating it as write or refactor evidence.',
+    calls,
+    cliFallbackCommands: uniqueCliCommands(calls),
+  };
+}
+
 function formatAgentToolCall(call) {
   return `${call.tool} ${JSON.stringify(call.arguments)}`;
 }
@@ -3920,6 +3976,16 @@ function formatAgentToolCallCliCommand(call) {
       const to = stringArg(args.to, '<to-slug>');
       return withCliFlags(`oh-my-ontology path ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
         nonNegativeFlag('--max-hops', args.maxHops),
+      ]);
+    }
+    case 'explain_relation': {
+      const from = stringArg(args.from, '<from-slug>');
+      const to = stringArg(args.to, '<to-slug>');
+      return withCliFlags(`oh-my-ontology explain ${shellQuote(from)} ${shellQuote(to)} [vault]`, [
+        stringFlag('--direction', args.direction),
+        nonNegativeFlag('--max-hops', args.maxHops),
+        csvFlag('--types', args.types),
+        positiveFlag('--limit', args.limit),
       ]);
     }
     case 'relation_check': {

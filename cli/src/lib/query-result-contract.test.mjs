@@ -267,6 +267,29 @@ describe('query-result-contract', () => {
       },
       totalMatches: 1,
       limited: false,
+      followUp: {
+        focusEdge: {
+          from: 'capabilities/login',
+          to: 'capabilities/session',
+          via: 'relates',
+        },
+        reason: 'match_edges is a scan; inspect this edge before editing.',
+        calls: [
+          {
+            id: 'explain_relation',
+            label: 'Explain why the first matched edge exists.',
+            tool: 'query_ontology',
+            arguments: {
+              operation: 'explain_relation',
+              from: 'capabilities/login',
+              to: 'capabilities/session',
+            },
+          },
+        ],
+        cliFallbackCommands: [
+          'oh-my-ontology explain capabilities/login capabilities/session [vault]',
+        ],
+      },
       edges: [
         {
           id: 'capabilities/login|depends_on|src/auth.ts',
@@ -298,6 +321,16 @@ describe('query-result-contract', () => {
         edges: [{ ...valid.edges[0], fromNode: { slug: 'capabilities/login', kind: 'capability' } }],
       }),
       /match_edges edges\[0\] has an invalid edge row shape/,
+    );
+    assert.throws(
+      () => assertMatchEdgesShape({
+        ...valid,
+        followUp: {
+          ...valid.followUp,
+          focusEdge: { from: 'capabilities/login', via: 'relates' },
+        },
+      }),
+      /match_edges followUp must contain/,
     );
   });
 

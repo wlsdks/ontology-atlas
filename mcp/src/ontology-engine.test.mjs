@@ -2138,6 +2138,31 @@ describe('queryCompiledOntology', () => {
         },
       ],
     );
+    assert.deepEqual(result.followUp.focusEdge, {
+      from: 'capabilities/login',
+      to: 'domains/auth',
+      via: 'dependencies',
+    });
+    assert.match(result.followUp.reason, /match_edges is a scan/);
+    assert.deepEqual(
+      result.followUp.calls.map((call) => call.arguments.operation),
+      ['explain_relation', 'path', 'relation_check'],
+    );
+    assert.deepEqual(result.followUp.calls[0].arguments, {
+      operation: 'explain_relation',
+      from: 'capabilities/login',
+      to: 'domains/auth',
+      direction: 'undirected',
+      types: ['depends_on'],
+      maxHops: 5,
+      limit: 10,
+    });
+    assert.ok(result.followUp.cliFallbackCommands.includes(
+      'oh-my-ontology explain capabilities/login domains/auth [vault] --direction undirected --max-hops 5 --types depends_on --limit 10',
+    ));
+    assert.ok(result.followUp.cliFallbackCommands.includes(
+      'oh-my-ontology relation-check capabilities/login domains/auth depends_on [vault]',
+    ));
 
     const external = queryCompiledOntology(artifact(), {
       operation: 'match_edges',
@@ -2148,6 +2173,7 @@ describe('queryCompiledOntology', () => {
     assert.equal(external.totalMatches, 1);
     assert.deepEqual(external.edges.map((edge) => edge.to), ['src/auth/login.ts']);
     assert.equal(external.edges[0].toNode, null);
+    assert.equal(external.followUp, undefined);
 
     const limited = queryCompiledOntology(artifact(), {
       operation: 'match_edges',
