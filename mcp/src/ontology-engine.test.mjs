@@ -2211,11 +2211,13 @@ describe('queryCompiledOntology', () => {
     assert.deepEqual(result.degree, { in: 1, out: 3, total: 4 });
     assert.equal(result.edges.incoming.total, 1);
     assert.deepEqual(result.edges.incoming.byRelation, { dependencies: 1 });
+    assert.deepEqual(result.edges.incoming.byRelationType, { depends_on: 1 });
     assert.deepEqual(
       result.edges.incoming.edges.map((edge) => ({
         from: edge.from,
         to: edge.to,
         via: edge.via,
+        relationType: edge.relationType,
         other: edge.otherNode.slug,
       })),
       [
@@ -2223,6 +2225,7 @@ describe('queryCompiledOntology', () => {
           from: 'capabilities/session',
           to: 'capabilities/login',
           via: 'dependencies',
+          relationType: 'depends_on',
           other: 'capabilities/session',
         },
       ],
@@ -2230,6 +2233,11 @@ describe('queryCompiledOntology', () => {
     assert.equal(result.edges.outgoing.total, 3);
     assert.deepEqual(result.edges.outgoing.byRelation, {
       dependencies: 1,
+      domain: 1,
+      elements: 1,
+    });
+    assert.deepEqual(result.edges.outgoing.byRelationType, {
+      depends_on: 1,
       domain: 1,
       elements: 1,
     });

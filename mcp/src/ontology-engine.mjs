@@ -3667,9 +3667,11 @@ export function createOntologyEngine(artifact, options = {}) {
   }
 
   function profileEdgeGroup(rows, direction, limit) {
+    const relationCounts = countEdgeMap(rows, 'via');
     return {
       total: rows.length,
-      byRelation: countEdges(rows, 'via'),
+      byRelation: sortedCountObject(relationCounts),
+      byRelationType: publicRelationCountObject(relationCounts),
       limited: rows.length > limit,
       edges: rows.slice(0, limit).map((edge) => ({
         ...formatCompiledEdge(edge),
@@ -4256,13 +4258,17 @@ function countBy(items, key) {
 }
 
 function countEdges(items, key) {
+  return sortedCountObject(countEdgeMap(items, key));
+}
+
+function countEdgeMap(items, key) {
   const counts = new Map();
   for (const item of items) {
     const value = item[key];
     if (typeof value !== 'string' || !value.trim()) continue;
     counts.set(value, (counts.get(value) || 0) + 1);
   }
-  return sortedCountObject(counts);
+  return counts;
 }
 
 function sortedCountObject(counts) {

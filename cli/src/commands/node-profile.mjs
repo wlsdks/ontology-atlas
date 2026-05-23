@@ -178,7 +178,7 @@ function renderEdgesByRelation(edges, peerField) {
   // relation 별 그룹 (via 키)
   const grouped = new Map();
   for (const e of edges) {
-    const key = e.via || '?';
+    const key = e.relationType || e.via || '?';
     if (!grouped.has(key)) grouped.set(key, []);
     grouped.get(key).push(e);
   }

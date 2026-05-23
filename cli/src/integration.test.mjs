@@ -4742,23 +4742,27 @@ await test('node --limit — high-degree edge groups are tunable', async () => {
 });
 
 await test('node --types — relation filters are forwarded before edge limits', async () => {
-  const root = await buildGraphFixture();
+  const root = buildCycleFixture();
   try {
-    const r = await run(['node', 'capabilities/foo', root, '--types=relates', '--json']);
+    const r = await run(['node', 'capabilities/a', root, '--types=depends_on', '--json']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'node_profile');
     assert.equal(data.edges.incoming.total, 1);
-    assert.equal(data.edges.incoming.edges[0]?.via, 'relates');
-    assert.equal(data.edges.incoming.edges[0]?.from, 'capabilities/bar');
-    assert.equal(data.edges.outgoing.total, 0);
+    assert.deepEqual(data.edges.incoming.byRelation, { dependencies: 1 });
+    assert.deepEqual(data.edges.incoming.byRelationType, { depends_on: 1 });
+    assert.deepEqual(data.edges.outgoing.byRelation, { dependencies: 1 });
+    assert.deepEqual(data.edges.outgoing.byRelationType, { depends_on: 1 });
+    assert.equal(data.edges.outgoing.edges[0]?.via, 'dependencies');
+    assert.equal(data.edges.outgoing.edges[0]?.relationType, 'depends_on');
 
-    const human = await run(['node', 'capabilities/foo', root, '--types=relates']);
+    const human = await run(['node', 'capabilities/a', root, '--types=depends_on']);
     assert.equal(human.code, 0, `stdout: ${human.stdout}\nstderr: ${human.stderr}`);
     const clean = stripAnsi(human.stdout);
-    assert.match(clean, /filters types=relates/);
-    assert.match(clean, /relates/);
-    assert.match(clean, /capabilities\/bar/);
+    assert.match(clean, /filters types=depends_on/);
+    assert.match(clean, /depends_on/);
+    assert.doesNotMatch(clean, /\ndependencies\s+×/);
+    assert.match(clean, /capabilities\/b/);
     assert.doesNotMatch(clean, /\n\s+domains\/auth/);
   } finally {
     rmSync(root, { recursive: true, force: true });
