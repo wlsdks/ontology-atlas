@@ -106,6 +106,8 @@ pnpm test:dogfood:script-refs
 pnpm test:dogfood:compile-fix
 pnpm dogfood:health
 pnpm dogfood:agent
+pnpm dogfood:agent-graph-db-pack
+pnpm dogfood:agent-fallbacks
 pnpm dogfood:brief
 pnpm dogfood:growth
 pnpm dogfood:maintenance
@@ -165,6 +167,8 @@ contracts without running unrelated CLI routes.
 snapshot without running the full installed-style MCP verify walk.
 `dogfood:health` prints the dogfood vault fail-closed `health` JSON gate
 without running the full installed-style MCP verify walk.
+`dogfood:agent-graph-db-pack` prints the dogfood vault shell-pasteable graph DB pack
+without running the full installed-style MCP verify walk.
 `dogfood:brief` prints the dogfood vault `workspace_brief` JSON snapshot
 without running the full installed-style MCP verify walk.
 `dogfood:growth` prints the dogfood vault `growth_plan` JSON snapshot
@@ -195,6 +199,7 @@ subtracting skipped tests. File setup/import failures are reported separately as
 `pnpm test:dogfood:script-refs` checks help text and package script body `pnpm ...` references against root package scripts plus focused filter parsing and wrapper summaries.
 `pnpm test:dogfood:compile-fix` checks that idempotence guard without the full dogfood suite.
 `pnpm dogfood:health` is the shortest dogfood vault health gate.
+`pnpm dogfood:agent-graph-db-pack` is the shortest dogfood vault graph DB pack snapshot.
 `pnpm dogfood:brief` is the shortest dogfood vault first-contact snapshot.
 `pnpm dogfood:growth` is the shortest dogfood vault growth candidate snapshot.
 `pnpm dogfood:maintenance` is the shortest dogfood vault maintenance queue snapshot. Use
@@ -410,6 +415,9 @@ pnpm dogfood:compile-fix
 pnpm test:dogfood:script-refs
 pnpm test:dogfood:compile-fix
 pnpm dogfood:health
+pnpm dogfood:agent
+pnpm dogfood:agent-graph-db-pack
+pnpm dogfood:agent-fallbacks
 pnpm dogfood:brief
 pnpm dogfood:growth
 pnpm dogfood:maintenance

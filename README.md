@@ -229,6 +229,9 @@ pnpm test:dogfood:args
 pnpm test:dogfood:script-refs
 pnpm test:dogfood:compile-fix
 pnpm dogfood:health
+pnpm dogfood:agent
+pnpm dogfood:agent-graph-db-pack
+pnpm dogfood:agent-fallbacks
 pnpm dogfood:brief
 pnpm dogfood:status
 pnpm dogfood:status -- --help

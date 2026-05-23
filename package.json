@@ -65,6 +65,7 @@
     "test:dogfood:compile-fix": "node --test scripts/dogfood-compile-fix.test.mjs",
     "dogfood:health": "node cli/src/index.mjs health docs/ontology --json",
     "dogfood:agent": "node cli/src/index.mjs agent-brief docs/ontology --json",
+    "dogfood:agent-graph-db-pack": "node cli/src/index.mjs agent-brief docs/ontology --graph-db-pack",
     "dogfood:agent-fallbacks": "node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks",
     "dogfood:brief": "node cli/src/index.mjs workspace-brief docs/ontology --json",
     "dogfood:growth": "node cli/src/index.mjs growth docs/ontology --json",
