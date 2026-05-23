@@ -474,6 +474,45 @@ describe('queryCompiledOntology', () => {
     ]);
   });
 
+  it('keeps page rank finite and normalized with many dangling nodes', () => {
+    const danglingDocs = Array.from({ length: 75 }, (_, index) =>
+      doc(`elements/dangling-${index}`, {
+        kind: 'element',
+        title: `Dangling ${index}`,
+      }),
+    );
+    const graph = compileOntology(
+      [
+        doc('domains/core', { kind: 'domain', title: 'Core' }),
+        doc('capabilities/query', {
+          kind: 'capability',
+          title: 'Query',
+          dependencies: ['domains/core'],
+        }),
+        doc('elements/query-engine', {
+          kind: 'element',
+          title: 'Query Engine',
+          dependencies: ['capabilities/query'],
+        }),
+        ...danglingDocs,
+      ],
+      { includeIndexes: true },
+    );
+
+    const result = queryCompiledOntology(graph, {
+      operation: 'centrality',
+      types: ['dependencies'],
+      limit: 100,
+    });
+    const totalPageRank = result.rankings.pageRank.reduce((sum, row) => sum + row.pageRank, 0);
+
+    assert.equal(result.graph.nodes, 78);
+    assert.equal(result.graph.resolvedEdges, 2);
+    assert.equal(result.rankings.pageRank.length, 78);
+    assert.equal(result.rankings.pageRank.every((row) => Number.isFinite(row.pageRank)), true);
+    assert.equal(Math.abs(totalPageRank - 1) < 0.0001, true);
+  });
+
   it('rejects invalid iterations instead of defaulting or clamping them', () => {
     assert.throws(
       () => queryCompiledOntology(artifact(), { operation: 'centrality', iterations: '20' }),

@@ -4056,22 +4056,32 @@ function pageRankScores(nodes, outgoingEdgesBySlug, iterations) {
   const damping = 0.85;
   let scores = new Map(nodes.map((node) => [node.slug, 1 / totalNodes]));
   const slugs = nodes.map((node) => node.slug);
+  const uniqueTargetsBySlug = new Map(
+    slugs.map((slug) => [
+      slug,
+      [...new Set((outgoingEdgesBySlug.get(slug) || []).map((edge) => edge.to))],
+    ]),
+  );
 
   for (let iteration = 0; iteration < iterations; iteration += 1) {
     const nextScores = new Map(slugs.map((slug) => [slug, (1 - damping) / totalNodes]));
+    let danglingMass = 0;
     for (const slug of slugs) {
-      const outgoingRows = outgoingEdgesBySlug.get(slug) || [];
-      if (outgoingRows.length === 0) {
-        const share = (scores.get(slug) || 0) / totalNodes;
-        for (const target of slugs) {
-          nextScores.set(target, nextScores.get(target) + damping * share);
-        }
+      const score = scores.get(slug) || 0;
+      const uniqueTargets = uniqueTargetsBySlug.get(slug) || [];
+      if (uniqueTargets.length === 0) {
+        danglingMass += score;
         continue;
       }
-      const uniqueTargets = [...new Set(outgoingRows.map((edge) => edge.to))];
-      const share = (scores.get(slug) || 0) / uniqueTargets.length;
+      const share = score / uniqueTargets.length;
       for (const target of uniqueTargets) {
         nextScores.set(target, nextScores.get(target) + damping * share);
+      }
+    }
+    if (danglingMass > 0) {
+      const danglingShare = (damping * danglingMass) / totalNodes;
+      for (const target of slugs) {
+        nextScores.set(target, nextScores.get(target) + danglingShare);
       }
     }
     scores = nextScores;
