@@ -11,7 +11,7 @@ import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-o
 import { diagnosisStatusColor } from '../lib/diagnosis-colors.mjs';
 
 const CLI_ENTRYPOINT = fileURLToPath(new URL('../index.mjs', import.meta.url));
-const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--verify-fallbacks', ...DIAGNOSIS_OPTION_FLAGS];
+const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', ...DIAGNOSIS_OPTION_FLAGS];
 
 const COLORS = {
   green: '\x1b[32m',
@@ -39,7 +39,7 @@ const READINESS_COLORS = {
 };
 
 export async function runAgentBrief(args) {
-  const { vault, json, prompt, verifyFallbacks, options, error, help } = parseArgs(args);
+  const { vault, json, prompt, graphDbPack, verifyFallbacks, options, error, help } = parseArgs(args);
   if (help) {
     printUsage(process.stdout);
     return 0;
@@ -66,6 +66,10 @@ export async function runAgentBrief(args) {
   }
   if (prompt) {
     process.stdout.write(result.handoffPrompt.trimEnd() + '\n');
+    return agentBriefExitCode(result);
+  }
+  if (graphDbPack) {
+    process.stdout.write(formatGraphDbCliPack(result.graphDbQueryPack).trimEnd() + '\n');
     return agentBriefExitCode(result);
   }
   if (verifyFallbacks) {
@@ -114,6 +118,156 @@ function parseFallbackCommand(command) {
   if (tokens.length === 0) return { error: 'empty fallback command' };
   if (tokens[0] !== 'oh-my-ontology') return { error: `expected oh-my-ontology command, got ${tokens[0]}` };
   return { args: tokens.slice(1) };
+}
+
+function formatGraphDbCliPack(graphDbQueryPack) {
+  const commands = [];
+  const seen = new Set();
+  for (const item of Array.isArray(graphDbQueryPack) ? graphDbQueryPack : []) {
+    for (const command of graphDbPackItemCliCommands(item)) {
+      if (!command || seen.has(command)) continue;
+      seen.add(command);
+      commands.push({ id: item.id, command });
+    }
+  }
+  return [
+    'Run these oh-my-ontology CLI commands when the MCP connector is unavailable.',
+    'They mirror the Graph DB query pack: plan scans first, keep traversal bounded, and use follow-up evidence before writing.',
+    '',
+    ...commands.map(({ id, command }, index) => `${index + 1}. [${id}] ${command}`),
+  ].join('\n');
+}
+
+function graphDbPackItemCliCommands(item) {
+  if (!item || !Array.isArray(item.calls)) return [];
+  return item.calls.map(graphDbToolCallCliCommand).filter(Boolean);
+}
+
+function graphDbToolCallCliCommand(call) {
+  if (!call || call.tool !== 'query_ontology' || !call.arguments) return null;
+  const args = call.arguments;
+  if (args.operation === 'query_plan') {
+    if (args.targetOperation === 'match_nodes') return graphDbMatchNodesCliCommand(args, { plan: true });
+    if (args.targetOperation === 'match_edges') return graphDbMatchEdgesCliCommand(args, { plan: true });
+    if (args.targetOperation === 'centrality') {
+      return graphDbWithFlags('oh-my-ontology hubs [vault]', [
+        '--plan',
+        graphDbPositiveFlag('--limit', args.limit),
+        graphDbCsvFlag('--types', args.types),
+      ]);
+    }
+    if (args.targetOperation === 'all_paths') {
+      return graphDbAllPathsCliCommand(args, { plan: true });
+    }
+    return null;
+  }
+  if (args.operation === 'match_nodes') return graphDbMatchNodesCliCommand(args);
+  if (args.operation === 'match_edges') return graphDbMatchEdgesCliCommand(args);
+  if (args.operation === 'domain_matrix') {
+    return graphDbWithFlags('oh-my-ontology domain-matrix [vault]', [
+      graphDbStringFlag('--project', args.project),
+      graphDbPositiveFlag('--limit', args.limit),
+      graphDbCsvFlag('--types', args.types),
+    ]);
+  }
+  if (args.operation === 'centrality') {
+    return graphDbWithFlags('oh-my-ontology hubs [vault]', [
+      graphDbPositiveFlag('--limit', args.limit),
+      graphDbCsvFlag('--types', args.types),
+    ]);
+  }
+  if (args.operation === 'all_paths') return graphDbAllPathsCliCommand(args, { plan: true });
+  if (args.operation === 'explain_relation') {
+    const from = graphDbStringArg(args.from, '<from-slug>');
+    const to = graphDbStringArg(args.to, '<to-slug>');
+    return graphDbWithFlags(`oh-my-ontology explain ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
+      graphDbStringFlag('--direction', args.direction),
+      graphDbNonNegativeFlag('--max-hops', args.maxHops),
+      graphDbCsvFlag('--types', args.types),
+      graphDbPositiveFlag('--limit', args.limit),
+    ]);
+  }
+  return null;
+}
+
+function graphDbAllPathsCliCommand(args, options = {}) {
+  const from = graphDbStringArg(args.from, '<from-slug>');
+  const to = graphDbStringArg(args.to, '<to-slug>');
+  return graphDbWithFlags(`oh-my-ontology all-paths ${graphDbShellQuote(from)} ${graphDbShellQuote(to)} [vault]`, [
+    options.plan ? '--plan' : null,
+    Number.isInteger(args.maxHops) && args.maxHops > 1 ? '--force' : null,
+    graphDbNonNegativeFlag('--max-hops', args.maxHops),
+    graphDbCsvFlag('--types', args.types),
+    graphDbPositiveFlag('--search-budget', args.searchBudget),
+    graphDbPositiveFlag('--limit', args.limit),
+  ]);
+}
+
+function graphDbMatchNodesCliCommand(args, options = {}) {
+  return graphDbWithFlags('oh-my-ontology match-nodes [vault]', [
+    options.plan ? '--plan' : null,
+    graphDbStringFlag('--kind', args.kind),
+    graphDbStringFlag('--domain', args.domain),
+    graphDbStringFlag('--slug-contains', args.slugContains),
+    graphDbNonNegativeFlag('--min-degree', args.minDegree),
+    graphDbNonNegativeFlag('--max-degree', args.maxDegree),
+    graphDbNonNegativeFlag('--min-in-degree', args.minInDegree),
+    graphDbNonNegativeFlag('--min-out-degree', args.minOutDegree),
+    graphDbBooleanFlag('--has-incoming', args.hasIncoming),
+    graphDbBooleanFlag('--has-outgoing', args.hasOutgoing),
+    graphDbStringFlag('--sort', args.sort),
+    graphDbPositiveFlag('--limit', args.limit),
+  ]);
+}
+
+function graphDbMatchEdgesCliCommand(args, options = {}) {
+  return graphDbWithFlags('oh-my-ontology match-edges [vault]', [
+    options.plan ? '--plan' : null,
+    graphDbStringFlag('--from', args.from),
+    graphDbStringFlag('--to', args.to),
+    graphDbStringFlag('--from-kind', args.fromKind),
+    graphDbStringFlag('--to-kind', args.toKind),
+    graphDbStringFlag('--type', args.type),
+    graphDbCsvFlag('--types', args.types),
+    graphDbBooleanFlag('--include-external', args.includeExternal),
+    graphDbBooleanFlag('--include-unresolved', args.includeUnresolved),
+    graphDbPositiveFlag('--limit', args.limit),
+  ]);
+}
+
+function graphDbWithFlags(command, flags) {
+  return [command, ...flags.filter(Boolean)].join(' ');
+}
+
+function graphDbStringArg(value, fallback) {
+  return typeof value === 'string' && value.trim() ? value : fallback;
+}
+
+function graphDbStringFlag(name, value) {
+  return typeof value === 'string' && value.trim() ? `${name} ${graphDbShellQuote(value)}` : null;
+}
+
+function graphDbPositiveFlag(name, value) {
+  return Number.isInteger(value) && value > 0 ? `${name} ${value}` : null;
+}
+
+function graphDbNonNegativeFlag(name, value) {
+  return Number.isInteger(value) && value >= 0 ? `${name} ${value}` : null;
+}
+
+function graphDbBooleanFlag(name, value) {
+  return value === true ? name : null;
+}
+
+function graphDbCsvFlag(name, value) {
+  if (!Array.isArray(value) || value.length === 0) return null;
+  const values = value.filter((item) => typeof item === 'string' && item.trim().length > 0);
+  return values.length > 0 ? `${name} ${values.map(graphDbShellQuote).join(',')}` : null;
+}
+
+function graphDbShellQuote(value) {
+  const text = String(value);
+  return /^[A-Za-z0-9_./:@-]+$/.test(text) ? text : `'${text.replaceAll("'", "'\\''")}'`;
 }
 
 function splitShellWords(input) {
@@ -299,7 +453,7 @@ function formatToolCall(call) {
 
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
-  const flags = { vault: null, json: false, prompt: false, verifyFallbacks: false };
+  const flags = { vault: null, json: false, prompt: false, graphDbPack: false, verifyFallbacks: false };
   const options = {};
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
@@ -309,6 +463,7 @@ function parseArgs(args) {
     else if (a.startsWith('--vault=')) flags.vault = parseVaultFlag(a.slice('--vault='.length));
     else if (a === '--json') flags.json = true;
     else if (a === '--prompt') flags.prompt = true;
+    else if (a === '--graph-db-pack') flags.graphDbPack = true;
     else if (a === '--verify-fallbacks') flags.verifyFallbacks = true;
     else if (DIAGNOSIS_OPTION_FLAGS.includes(a)) {
       const error = parseDiagnosisOption(options, a, args[++i]);
@@ -319,27 +474,33 @@ function parseArgs(args) {
     } else if (a.startsWith('-')) return { error: formatUnknownFlagError(a, ALLOWED_FLAGS) };
     else positional.push(a);
   }
-  if (flags.json && flags.prompt) {
-    return { error: '--json and --prompt cannot be used together' };
+  const outputFlags = [
+    ['--json', flags.json],
+    ['--prompt', flags.prompt],
+    ['--graph-db-pack', flags.graphDbPack],
+  ].filter(([, enabled]) => enabled);
+  if (outputFlags.length > 1) {
+    return { error: `${outputFlags.map(([name]) => name).join(' and ')} cannot be used together` };
   }
-  if (flags.verifyFallbacks && (flags.json || flags.prompt)) {
-    return { error: '--verify-fallbacks cannot be used with --json or --prompt' };
+  if (flags.verifyFallbacks && outputFlags.length > 0) {
+    return { error: `--verify-fallbacks cannot be used with ${outputFlags.map(([name]) => name).join(' or ')}` };
   }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;
-  return { vault: vaultResult.vault, json: flags.json, prompt: flags.prompt, verifyFallbacks: flags.verifyFallbacks, options };
+  return { vault: vaultResult.vault, json: flags.json, prompt: flags.prompt, graphDbPack: flags.graphDbPack, verifyFallbacks: flags.verifyFallbacks, options };
 }
 
 function printUsage(stream = process.stderr) {
   stream.write(
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
-      `  oh-my-ontology agent-brief [vault] [--json|--prompt|--verify-fallbacks]\n` +
+      `  oh-my-ontology agent-brief [vault] [--json|--prompt|--graph-db-pack|--verify-fallbacks]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
       `       [--order-limit N] [--node-limit N]\n\n` +
       `Claude Code/Codex handoff: readiness score, copyable handoffPrompt, graph entrypoints,\n` +
       `first MCP calls, investigation playbooks, traversal strategy, health coverage, and read-first write policy.\n` +
       `Use --json for repeatable agent handoff snapshots; use --prompt to print only .handoffPrompt.\n` +
+      `Use --graph-db-pack to print only executable CLI graph scan commands for connector-less sessions.\n` +
       `Use --verify-fallbacks to execute the generated CLI fallback commands against this vault.\n` +
       `Exits non-zero when readiness is not ready, status is not healthy, a health check fails,\n` +
       `or a fail-severity nextAction is present.\n` +

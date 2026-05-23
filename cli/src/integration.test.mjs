@@ -4376,6 +4376,26 @@ await test('agent-brief --prompt — prints only the copyable handoff prompt', a
   }
 });
 
+await test('agent-brief --graph-db-pack — prints only executable graph DB CLI commands', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['agent-brief', root, '--graph-db-pack']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /^Run these oh-my-ontology CLI commands when the MCP connector is unavailable\./);
+    assert.match(clean, /\[node_scan\] oh-my-ontology match-nodes \[vault\] --plan --kind capability --min-degree 2 --sort degree --limit 10/);
+    assert.match(clean, /\[edge_scan\] oh-my-ontology match-edges \[vault\] --plan --types depends_on --limit 20/);
+    assert.match(clean, /\[domain_coupling\] oh-my-ontology domain-matrix \[vault\] --limit 6 --types depends_on,relates/);
+    assert.match(clean, /\[domain_coupling\] oh-my-ontology hubs \[vault\] --plan --limit 10 --types depends_on,relates/);
+    assert.match(clean, /\[path_evidence\] oh-my-ontology all-paths .* \[vault\] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10/);
+    assert.match(clean, /\[path_evidence\] oh-my-ontology explain .* \[vault\] --direction undirected --max-hops 5 --types depends_on,relates --limit 10/);
+    assert.doesNotMatch(clean, /FIRST MCP CALLS/);
+    assert.doesNotMatch(clean, /PLAYBOOKS/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('agent-brief --help — documents handoff and exit gates', async () => {
   const r = await run(['agent-brief', '--help']);
   assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
@@ -4384,6 +4404,7 @@ await test('agent-brief --help — documents handoff and exit gates', async () =
   assert.match(clean, /traversal strategy/);
   assert.match(clean, /Use --json for repeatable agent handoff snapshots/);
   assert.match(clean, /use --prompt to print only \.handoffPrompt/);
+  assert.match(clean, /Use --graph-db-pack to print only executable CLI graph scan commands/);
   assert.match(clean, /Use --verify-fallbacks to execute the generated CLI fallback commands/);
   assert.match(clean, /Exits non-zero when readiness is not ready/);
   assert.match(clean, /Tuning flags forward to query_ontology agent_brief/);
