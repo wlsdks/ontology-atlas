@@ -3892,6 +3892,11 @@ function formatAgentToolCallCliCommand(call) {
       return formatMatchNodesCliCommand(args);
     case 'match_edges':
       return formatMatchEdgesCliCommand(args);
+    case 'domain_matrix':
+      return withCliFlags('oh-my-ontology domain-matrix [vault]', [
+        stringFlag('--project', args.project),
+        positiveFlag('--limit', args.limit),
+      ]);
     default:
       return null;
   }

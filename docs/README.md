@@ -34,7 +34,7 @@ The normative product model is:
 2. The vault's `.md` frontmatter is the graph. The markdown body is the human
    explanation. Git is the source of truth.
 3. The AI-agent surface is MCP: 23 tools, read/write, local-only, no backend.
-4. The developer surface is the CLI: 34 commands for scaffold, import,
+4. The developer surface is the CLI: 35 commands for scaffold, import,
    validation, compile, agent handoff, graph queries, growth/maintenance, and
    safe graph edits.
 5. The web surface is a local workbench: docs editor, topology, tree, ERD

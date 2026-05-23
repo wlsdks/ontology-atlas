@@ -313,6 +313,11 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       return formatMatchEdgesCommand(args);
     case "match_nodes":
       return formatMatchNodesCommand(args);
+    case "domain_matrix":
+      return withFlags("oh-my-ontology domain-matrix [vault]", [
+        stringFlag("--project", args.project),
+        positiveFlag("--limit", args.limit),
+      ]);
     default:
       return null;
   }

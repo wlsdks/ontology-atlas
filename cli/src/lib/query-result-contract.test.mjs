@@ -8,6 +8,7 @@ import {
   assertBlastRadiusShape,
   assertCentralityShape,
   assertCyclesShape,
+  assertDomainMatrixShape,
   assertGrowthPlanShape,
   assertHealthShape,
   assertMaintenancePlanShape,
@@ -330,6 +331,91 @@ describe('query-result-contract', () => {
     assert.throws(
       () => assertReachabilityShape({ ...valid, paths: { total: 1, limited: false, rows: [{ ...valid.paths.rows[0], path: ['domains/auth'] }] } }),
       /reachability paths must be a page with valid path rows/,
+    );
+  });
+
+  it('validates domain_matrix payloads', () => {
+    const valid = {
+      operation: 'domain_matrix',
+      project: 'project',
+      summary: {
+        domains: 2,
+        nodes: 4,
+        assignedNodes: 4,
+        unassignedNodes: 0,
+        crossDomainEdges: 1,
+        selfDomainEdges: 2,
+        externalEdges: 1,
+        unresolvedEdges: 0,
+      },
+      domains: [
+        {
+          slug: 'domains/auth',
+          node: { slug: 'domains/auth', kind: 'domain', title: 'Auth' },
+          nodes: 2,
+          outgoing: 1,
+          incoming: 0,
+          selfEdges: 1,
+          externalEdges: 1,
+          unresolvedEdges: 0,
+        },
+        {
+          slug: 'domains/billing',
+          node: { slug: 'domains/billing', kind: 'domain', title: 'Billing' },
+          nodes: 2,
+          outgoing: 0,
+          incoming: 1,
+          selfEdges: 1,
+          externalEdges: 0,
+          unresolvedEdges: 0,
+        },
+      ],
+      connections: {
+        total: 1,
+        limited: false,
+        rows: [
+          {
+            from: 'domains/auth',
+            to: 'domains/billing',
+            count: 1,
+            byRelation: { depends_on: 1 },
+            fromNode: { slug: 'domains/auth', kind: 'domain', title: 'Auth' },
+            toNode: { slug: 'domains/billing', kind: 'domain', title: 'Billing' },
+            examples: [
+              {
+                from: 'capabilities/login',
+                to: 'capabilities/invoice',
+                via: 'depends_on',
+                resolved: true,
+                external: false,
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    assert.equal(assertDomainMatrixShape(valid), valid);
+    assert.throws(
+      () => assertDomainMatrixShape({ ...valid, summary: { ...valid.summary, nodes: 5 } }),
+      /domain_matrix assignedNodes \+ unassignedNodes must equal nodes/,
+    );
+    assert.throws(
+      () => assertDomainMatrixShape({
+        ...valid,
+        domains: [{ ...valid.domains[0], node: { ...valid.domains[0].node, slug: 'domains/other' } }],
+      }),
+      /domain_matrix domains\[0\] has an invalid domain row shape/,
+    );
+    assert.throws(
+      () => assertDomainMatrixShape({
+        ...valid,
+        connections: {
+          ...valid.connections,
+          rows: [{ ...valid.connections.rows[0], byRelation: { depends_on: 2 } }],
+        },
+      }),
+      /domain_matrix connections must be a page with valid connection rows/,
     );
   });
 

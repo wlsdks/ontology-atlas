@@ -752,6 +752,48 @@ export function assertMatchEdgesShape(result) {
   return result;
 }
 
+export function assertDomainMatrixShape(result) {
+  assertQueryOperation(result, 'domain_matrix');
+  if (result.project !== null && result.project !== undefined && !hasNonEmptyString(result.project)) {
+    throw new Error('domain_matrix project must be null or a non-empty string');
+  }
+  if (!isPlainObject(result.summary)) {
+    throw new Error('domain_matrix summary must be an object');
+  }
+  for (const field of [
+    'domains',
+    'nodes',
+    'assignedNodes',
+    'unassignedNodes',
+    'crossDomainEdges',
+    'selfDomainEdges',
+    'externalEdges',
+    'unresolvedEdges',
+  ]) {
+    if (!validCount(result.summary[field])) {
+      throw new Error(`domain_matrix summary.${field} must be a non-negative integer`);
+    }
+  }
+  if (result.summary.assignedNodes + result.summary.unassignedNodes !== result.summary.nodes) {
+    throw new Error('domain_matrix assignedNodes + unassignedNodes must equal nodes');
+  }
+  if (!Array.isArray(result.domains)) {
+    throw new Error('domain_matrix domains must be an array');
+  }
+  if (result.domains.length > result.summary.domains) {
+    throw new Error('domain_matrix domains length must not exceed summary.domains');
+  }
+  for (let index = 0; index < result.domains.length; index += 1) {
+    if (!validDomainMatrixDomainRow(result.domains[index])) {
+      throw new Error(`domain_matrix domains[${index}] has an invalid domain row shape`);
+    }
+  }
+  if (!validPage(result.connections, validDomainMatrixConnectionRow)) {
+    throw new Error('domain_matrix connections must be a page with valid connection rows');
+  }
+  return result;
+}
+
 export function assertReachabilityShape(result) {
   assertQueryOperation(result, 'reachability');
   if (!hasNonEmptyString(result.start)) {
@@ -1581,6 +1623,53 @@ function validMatchEdgeRow(row) {
     && validNodeSummary(row.fromNode)
     && (row.toNode === null || row.toNode === undefined || validNodeSummary(row.toNode))
     && hasNonEmptyString(row.toKind)
+    && (row.id === undefined || hasNonEmptyString(row.id))
+    && (row.ref === undefined || hasNonEmptyString(row.ref))
+    && (row.resolved === undefined || typeof row.resolved === 'boolean')
+    && (row.external === undefined || typeof row.external === 'boolean')
+  );
+}
+
+function validDomainMatrixDomainRow(row) {
+  return Boolean(
+    isPlainObject(row)
+    && hasNonEmptyString(row.slug)
+    && validNodeSummary(row.node)
+    && row.node.slug === row.slug
+    && validCount(row.nodes)
+    && validCount(row.outgoing)
+    && validCount(row.incoming)
+    && validCount(row.selfEdges)
+    && validCount(row.externalEdges)
+    && validCount(row.unresolvedEdges)
+  );
+}
+
+function validDomainMatrixConnectionRow(row) {
+  return Boolean(
+    isPlainObject(row)
+    && hasNonEmptyString(row.from)
+    && hasNonEmptyString(row.to)
+    && validCount(row.count)
+    && row.count > 0
+    && validCountBucket(row.byRelation)
+    && sumCountBucket(row.byRelation) === row.count
+    && validNodeSummary(row.fromNode)
+    && row.fromNode.slug === row.from
+    && validNodeSummary(row.toNode)
+    && row.toNode.slug === row.to
+    && Array.isArray(row.examples)
+    && row.examples.length <= row.count
+    && row.examples.every(validCompiledEdgeRow)
+  );
+}
+
+function validCompiledEdgeRow(row) {
+  return Boolean(
+    isPlainObject(row)
+    && hasNonEmptyString(row.from)
+    && hasNonEmptyString(row.to)
+    && hasNonEmptyString(row.via)
     && (row.id === undefined || hasNonEmptyString(row.id))
     && (row.ref === undefined || hasNonEmptyString(row.ref))
     && (row.resolved === undefined || typeof row.resolved === 'boolean')

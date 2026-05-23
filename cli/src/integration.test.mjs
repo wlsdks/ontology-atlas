@@ -3368,7 +3368,7 @@ await test('query — rejects MCP graph operation flags with CLI command guidanc
     const clean = stripAnsi(r.stderr);
     assert.match(clean, /unknown flag: --operation\./);
     assert.match(clean, /query is the typed filter DSL/);
-    assert.match(clean, /overview, health, agent-brief, workspace-brief, growth, maintenance, path, all-paths, reachability, relation-check, match-nodes, match-edges, blast-radius, cycles, or hubs/);
+    assert.match(clean, /overview, health, agent-brief, workspace-brief, growth, maintenance, path, all-paths, reachability, relation-check, match-nodes, match-edges, domain-matrix, blast-radius, cycles, or hubs/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -3492,6 +3492,64 @@ await test('match-edges --plan --json — preserves filters in query_plan and re
     assert.equal(data.plan.estimate.totalMatches, 1);
     assert.equal(data.result.operation, 'match_edges');
     assert.equal(data.result.totalMatches, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('domain-matrix — renders cross-domain coupling rows with examples', async () => {
+  const root = withVault([
+    {
+      slug: 'project',
+      content:
+        '---\nkind: project\nslug: project\ntitle: Project\ndomains: [domains/auth, domains/billing]\n---\n\n# Project\n',
+    },
+    {
+      slug: 'domains/auth',
+      content:
+        '---\nkind: domain\nslug: domains/auth\ntitle: Auth\ncapabilities: [capabilities/login]\n---\n\n# Auth\n',
+    },
+    {
+      slug: 'domains/billing',
+      content:
+        '---\nkind: domain\nslug: domains/billing\ntitle: Billing\ncapabilities: [capabilities/invoice]\n---\n\n# Billing\n',
+    },
+    {
+      slug: 'capabilities/login',
+      content:
+        '---\nkind: capability\nslug: capabilities/login\ntitle: Login\ndomain: domains/auth\ndepends_on: [capabilities/invoice]\n---\n\n# Login\n',
+    },
+    {
+      slug: 'capabilities/invoice',
+      content:
+        '---\nkind: capability\nslug: capabilities/invoice\ntitle: Invoice\ndomain: domains/billing\n---\n\n# Invoice\n',
+    },
+  ]);
+  try {
+    const r = await run(['domain-matrix', root, '--project=project', '--limit=5']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /domain_matrix 2 domain\(s\).*1 cross-domain edge\(s\)/);
+    assert.match(clean, /project project/);
+    assert.match(clean, /domains\/auth\s+— Auth.*out 1/);
+    assert.match(clean, /domains\/billing\s+— Billing.*in 1/);
+    assert.match(clean, /domains\/auth → domains\/billing 1 dependencies:1/);
+    assert.match(clean, /capabilities\/login --dependencies--> capabilities\/invoice/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('domain-matrix --json — exposes scoped summary and connection page', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['domain-matrix', root, '--limit=3', '--json']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'domain_matrix');
+    assert.equal(data.summary.domains, 1);
+    assert.equal(data.connections.total, 0);
+    assert.equal(data.connections.limited, false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

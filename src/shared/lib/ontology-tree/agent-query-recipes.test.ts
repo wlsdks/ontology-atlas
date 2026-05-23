@@ -262,7 +262,9 @@ describe("buildAgentQueryRecipes", () => {
     ).toBe(
       "oh-my-ontology match-nodes [vault] --kind capability --min-degree 2 --has-incoming --sort degree --limit 20",
     );
-    expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "domain_matrix")!)).toBeNull();
+    expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "domain_matrix")!)).toBe(
+      "oh-my-ontology domain-matrix [vault]",
+    );
   });
 
   it("formats the first-contact run order as one copyable prompt", () => {
@@ -673,6 +675,7 @@ describe("buildAgentQueryRecipes", () => {
 
     expect(prompt).toContain("oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates");
     expect(prompt).toContain("oh-my-ontology hubs [vault] --limit 10 --types depends_on,relates");
+    expect(prompt).toContain("oh-my-ontology domain-matrix [vault]");
     expect(prompt).toContain("oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20");
     expect(prompt).toContain("oh-my-ontology match-edges [vault] --types depends_on --limit 20");
   });
