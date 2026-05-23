@@ -35,6 +35,7 @@ import {
   formatAgentQueryCallCliCommand,
   buildOntologyTree,
   buildProjectOntologyCounts,
+  computeDomainCouplingMatrix,
   computeEdgeTypeDistribution,
   computeKindDistribution,
   formatAgentRecipeCliCommand,
@@ -226,6 +227,10 @@ export function OntologyInsightsPage() {
     () => (insight ? countCrossProjectEdges(insight.edges, insight.nodes) : 0),
     [insight],
   );
+  const domainCoupling = useMemo(
+    () => (insight ? computeDomainCouplingMatrix(insight.nodes, insight.edges, 6) : null),
+    [insight],
+  );
 
   return (
     <div>
@@ -409,6 +414,111 @@ export function OntologyInsightsPage() {
                   );
                 })}
               </ul>
+            </Panel>
+          ) : null}
+
+          {domainCoupling && domainCoupling.domainCount > 0 ? (
+            <Panel
+              title={t("domainCouplingPanelTitle")}
+              subtitle={t("domainCouplingPanelSubtitle", {
+                domains: domainCoupling.domainCount,
+                cross: domainCoupling.crossDomainEdgeCount,
+                assigned: domainCoupling.assignedNodeCount,
+                nodes: domainCoupling.nodeCount,
+              })}
+            >
+              <div data-testid="insights-domain-coupling">
+                <div className="mb-3 grid grid-cols-3 gap-2">
+                  {[
+                    {
+                      key: "cross",
+                      label: t("domainCouplingMetricCross"),
+                      value: domainCoupling.crossDomainEdgeCount,
+                    },
+                    {
+                      key: "self",
+                      label: t("domainCouplingMetricSelf"),
+                      value: domainCoupling.selfDomainEdgeCount,
+                    },
+                    {
+                      key: "unassigned",
+                      label: t("domainCouplingMetricUnassigned"),
+                      value: domainCoupling.unassignedNodeCount,
+                    },
+                  ].map((metric) => (
+                    <div
+                      key={metric.key}
+                      className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(139,151,255,0.045)] px-2 py-1.5"
+                    >
+                      <p className="truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                        {metric.label}
+                      </p>
+                      <p className="mt-1 font-mono text-sm tabular-nums text-[color:var(--color-text-primary)]">
+                        {metric.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                {domainCoupling.connections.length > 0 ? (
+                  <ol className="space-y-2" data-testid="insights-domain-coupling-rows">
+                    {domainCoupling.connections.map((connection) => {
+                      const strongest = connection.relationCounts[0];
+                      const example = connection.examples[0];
+                      return (
+                        <li
+                          key={`${connection.from.id}->${connection.to.id}`}
+                          className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2"
+                          data-testid="insights-domain-coupling-row"
+                        >
+                          <div className="flex min-w-0 items-center gap-2">
+                            <Link
+                              href={buildOntologyNodeHref(connection.from.id)}
+                              className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--color-text-primary)] underline-offset-2 hover:underline"
+                            >
+                              {connection.from.title}
+                            </Link>
+                            <span className="shrink-0 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                              →
+                            </span>
+                            <Link
+                              href={buildOntologyNodeHref(connection.to.id)}
+                              className="min-w-0 flex-1 truncate text-[12px] text-[color:var(--color-text-primary)] underline-offset-2 hover:underline"
+                            >
+                              {connection.to.title}
+                            </Link>
+                            <span className="shrink-0 rounded border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[10px] tabular-nums text-[color:var(--color-text-secondary)]">
+                              {connection.count}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {connection.relationCounts.map((row) => (
+                              <span
+                                key={row.type}
+                                className="rounded border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(139,151,255,0.045)] px-1.5 py-0.5 text-[10px] text-[color:var(--color-text-tertiary)]"
+                              >
+                                {edgeTypeLabel(row.type)} {row.count}
+                              </span>
+                            ))}
+                          </div>
+                          {strongest && example ? (
+                            <p className="mt-2 min-w-0 truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                              {t("domainCouplingExample", {
+                                from: example.from,
+                                type: edgeTypeLabel(strongest.type),
+                                to: example.to,
+                              })}
+                            </p>
+                          ) : null}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                ) : (
+                  <p className="text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                    {t("domainCouplingEmpty")}
+                  </p>
+                )}
+              </div>
             </Panel>
           ) : null}
 

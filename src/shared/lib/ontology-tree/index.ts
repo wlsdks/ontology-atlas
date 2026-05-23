@@ -21,6 +21,7 @@ export {
   countCrossProjectEdges,
 } from "./relations";
 export {
+  computeDomainCouplingMatrix,
   computeKindDistribution,
   selectTopByDegree,
   selectRecentNodes,

@@ -52,6 +52,13 @@ test.describe("ontology view UI", () => {
     await expect(panel).toContainText("workspace_brief");
     await expect(panel.getByRole("button", { name: "Copy repair prompt" })).toBeVisible();
 
+    const domainCoupling = page.getByTestId("insights-domain-coupling");
+    await expect(domainCoupling).toBeVisible();
+    await expect(page.getByText("Domain coupling matrix")).toBeVisible();
+    await expect(domainCoupling).toContainText("Cross");
+    await expect(domainCoupling).toContainText("Inside");
+    await expect(domainCoupling).toContainText("Unassigned");
+
     const recipes = page.getByTestId("insights-agent-query-recipes");
     await expect(recipes).toBeVisible();
     await expect(recipes).toContainText("Agent handoff prompt");
@@ -191,7 +198,7 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText('"tool": "query_ontology"');
     await expect(recipes.getByRole("button", { name: "Copy JSON" })).toHaveCount(11);
     await expect(recipes.getByRole("button", { name: "Copy step" })).toHaveCount(5);
-    await expect(recipes.getByRole("button", { name: "Copy CLI" })).toHaveCount(14);
+    await expect(recipes.getByRole("button", { name: "Copy CLI" })).toHaveCount(15);
     await expect(recipes.getByRole("button", { name: "Copy slug" }).first()).toBeVisible();
   });
 

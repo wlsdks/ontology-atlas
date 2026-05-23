@@ -8,6 +8,7 @@ dependencies:
 elements:
   - src/shared/lib/ontology-tree/agent-query-recipes.ts
   - src/shared/lib/ontology-tree/agent-readiness.ts
+  - src/shared/lib/ontology-tree/insights.ts
   - src/views/ontology-insights/ui/OntologyInsightsPage.tsx
 relates:
   - capabilities/mcp-server
@@ -194,3 +195,14 @@ Claude Code/Codex 세션에 바로 붙여 넣을 수 있다. CLI `oh-my-ontology
 `review_new_schema` decision coverage 를 fail-closed 로 검사하므로,
 웹 UI 에서 본 쓰기 안전 절차와 Claude Code/Codex handoff payload 가 같은 계약을
 공유한다.
+
+R+ follow-up 에서 사람용 `Domain coupling matrix` 패널도 같은 인사이트 화면에
+추가했다. 이 패널은 MCP 호출 없이 브라우저가 이미 derive 한 local-first graph 에서
+containment tree 를 따라 노드를 가장 가까운 domain 에 배정하고, domain 간
+semantic cross-domain edge, domain 내부 semantic edge, 미배정 노드, relation
+bucket, 예시 edge 를 보여준다. `contains` / `belongs_to` 는 domain 배정에는 쓰되
+coupling count 에서는 제외해, 계층 구조가 아니라 실제 경계 압력
+(`depends_on` / `uses` / `related_to` / `describes`) 만 사람이 읽게 한다. 그래서
+비개발자도 `query_ontology(domain_matrix)` 나 CLI `oh-my-ontology domain-matrix` 를
+모르더라도 `/ontology/insights` 에서 어느 도메인 경계가 실제로 연결되어 있는지
+바로 읽을 수 있다.

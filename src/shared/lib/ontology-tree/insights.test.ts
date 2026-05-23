@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
+  computeDomainCouplingMatrix,
   computeDegreeCentrality,
   computeKindDistribution,
   selectRecentNodes,
@@ -118,6 +119,62 @@ describe("selectTopByDegree", () => {
   });
 });
 
+describe("computeDomainCouplingMatrix", () => {
+  it("containment tree 로 노드를 domain 에 배정하고 cross-domain connection 을 집계", () => {
+    const nodes = [
+      node("project:app", "project"),
+      node("domain:auth", "domain"),
+      node("domain:billing", "domain"),
+      node("capability:login", "capability"),
+      node("capability:invoice", "capability"),
+      node("element:token", "element"),
+      node("document:note", "document"),
+    ];
+    const edges: KnowledgeGraphEdge[] = [
+      { ...edge("e1", "project:app", "domain:auth"), type: "contains" },
+      { ...edge("e2", "project:app", "domain:billing"), type: "contains" },
+      { ...edge("e3", "domain:auth", "capability:login"), type: "contains" },
+      { ...edge("e4", "domain:billing", "capability:invoice"), type: "contains" },
+      { ...edge("e5", "capability:login", "element:token"), type: "contains" },
+      { ...edge("e6", "capability:login", "capability:invoice"), type: "depends_on" },
+      { ...edge("e7", "capability:invoice", "capability:login"), type: "related_to" },
+      { ...edge("e8", "capability:login", "element:token"), type: "uses" },
+    ];
+
+    const matrix = computeDomainCouplingMatrix(nodes, edges);
+
+    expect(matrix.domainCount).toBe(2);
+    expect(matrix.assignedNodeCount).toBe(5);
+    expect(matrix.unassignedNodeCount).toBe(2);
+    expect(matrix.crossDomainEdgeCount).toBe(2);
+    expect(matrix.selfDomainEdgeCount).toBe(1);
+    expect(matrix.connections).toHaveLength(2);
+    expect(matrix.connections[0]?.from.id).toBe("domain:auth");
+    expect(matrix.connections[0]?.to.id).toBe("domain:billing");
+    expect(matrix.connections[0]?.relationCounts).toEqual([{ type: "depends_on", count: 1 }]);
+    expect(matrix.connections[0]?.examples[0]?.id).toBe("e6");
+  });
+
+  it("cycle 이 있는 containment parent 는 domain 배정 실패로 처리", () => {
+    const nodes = [
+      node("domain:auth", "domain"),
+      node("capability:login", "capability"),
+      node("capability:session", "capability"),
+    ];
+    const edges: KnowledgeGraphEdge[] = [
+      { ...edge("e1", "capability:session", "capability:login"), type: "contains" },
+      { ...edge("e2", "capability:login", "capability:session"), type: "contains" },
+      { ...edge("e3", "capability:login", "domain:auth"), type: "depends_on" },
+    ];
+
+    const matrix = computeDomainCouplingMatrix(nodes, edges);
+
+    expect(matrix.assignedNodeCount).toBe(1);
+    expect(matrix.unassignedNodeCount).toBe(2);
+    expect(matrix.crossDomainEdgeCount).toBe(0);
+  });
+});
+
 describe("selectRecentNodes", () => {
   it("lastApprovedAt desc 정렬 + limit", () => {
     const D1 = new Date("2026-04-20T00:00:00Z");
@@ -142,4 +199,3 @@ describe("selectRecentNodes", () => {
     expect(result[1]?.id).toBe("zebra");
   });
 });
-

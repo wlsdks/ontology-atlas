@@ -45,6 +45,33 @@ export interface OntologyDegreeRow {
   degree: number;
 }
 
+export interface DomainCouplingDomainRow {
+  domain: KnowledgeGraphNode;
+  nodeCount: number;
+  outgoing: number;
+  incoming: number;
+  selfEdges: number;
+}
+
+export interface DomainCouplingConnectionRow {
+  from: KnowledgeGraphNode;
+  to: KnowledgeGraphNode;
+  count: number;
+  relationCounts: Array<{ type: string; count: number }>;
+  examples: KnowledgeGraphEdge[];
+}
+
+export interface DomainCouplingMatrix {
+  domainCount: number;
+  nodeCount: number;
+  assignedNodeCount: number;
+  unassignedNodeCount: number;
+  crossDomainEdgeCount: number;
+  selfDomainEdgeCount: number;
+  domains: DomainCouplingDomainRow[];
+  connections: DomainCouplingConnectionRow[];
+}
+
 /**
  * degree 가 높은 순 top N 노드 — "이 ontology 의 허브" 식별. document / project
  * 는 기본 제외 (메타·구조 노드라 사용자 관심 단위가 아님). 호출자가 includeKinds
@@ -76,6 +103,166 @@ export function selectTopByDegree(
 }
 
 /**
+ * 도메인 간 결합 행렬 — MCP `query_ontology(domain_matrix)` 의 브라우저
+ * local-first 대응. 서버/MCP 없이 현재 derive 된 frontmatter graph 만으로
+ * "어느 도메인이 어느 도메인에 의존/연결되는지"를 계산한다.
+ *
+ * 도메인 배정은 containment tree 를 따라 가장 가까운 domain 조상을 찾는다.
+ * domain 노드 자신은 자기 domain 으로 배정된다. document/project 처럼 domain
+ * 조상이 없는 메타 노드는 unassigned 로 남겨 결합 edge 계산에서 제외한다.
+ * `contains` / `belongs_to` 는 domain 배정을 위한 구조 edge 라서 coupling
+ * count 에서는 제외한다. 사람용 UI 에서는 계층 구조가 아니라 경계 압력을
+ * 보여주는 쪽이 더 해석 가능하다.
+ */
+export function computeDomainCouplingMatrix(
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+  limit = 8,
+): DomainCouplingMatrix {
+  const nodeById = new Map(nodes.map((node) => [node.id, node] as const));
+  const parentOf = buildContainmentParents(edges, nodeById);
+  const domainByNode = new Map<string, string>();
+  const domainRows = new Map<string, DomainCouplingDomainRow>();
+
+  for (const node of nodes) {
+    if (node.kind === "domain") {
+      domainRows.set(node.id, {
+        domain: node,
+        nodeCount: 0,
+        outgoing: 0,
+        incoming: 0,
+        selfEdges: 0,
+      });
+    }
+  }
+
+  for (const node of nodes) {
+    const domainId = nearestDomainId(node, parentOf, nodeById);
+    if (!domainId) continue;
+    domainByNode.set(node.id, domainId);
+    const row = domainRows.get(domainId);
+    if (row) row.nodeCount += 1;
+  }
+
+  const connectionRows = new Map<
+    string,
+    {
+      from: string;
+      to: string;
+      count: number;
+      relationCounts: Map<string, number>;
+      examples: KnowledgeGraphEdge[];
+    }
+  >();
+  let selfDomainEdgeCount = 0;
+  let crossDomainEdgeCount = 0;
+
+  for (const edge of edges) {
+    if (edge.type === "contains" || edge.type === "belongs_to") continue;
+    const fromDomain = domainByNode.get(edge.from);
+    const toDomain = domainByNode.get(edge.to);
+    if (!fromDomain || !toDomain) continue;
+    if (fromDomain === toDomain) {
+      selfDomainEdgeCount += 1;
+      const row = domainRows.get(fromDomain);
+      if (row) row.selfEdges += 1;
+      continue;
+    }
+
+    crossDomainEdgeCount += 1;
+    const fromRow = domainRows.get(fromDomain);
+    const toRow = domainRows.get(toDomain);
+    if (fromRow) fromRow.outgoing += 1;
+    if (toRow) toRow.incoming += 1;
+
+    const key = `${fromDomain}\0${toDomain}`;
+    if (!connectionRows.has(key)) {
+      connectionRows.set(key, {
+        from: fromDomain,
+        to: toDomain,
+        count: 0,
+        relationCounts: new Map(),
+        examples: [],
+      });
+    }
+    const row = connectionRows.get(key)!;
+    row.count += 1;
+    row.relationCounts.set(edge.type, (row.relationCounts.get(edge.type) ?? 0) + 1);
+    if (row.examples.length < 3) row.examples.push(edge);
+  }
+
+  const assignedNodeCount = domainByNode.size;
+  return {
+    domainCount: domainRows.size,
+    nodeCount: nodes.length,
+    assignedNodeCount,
+    unassignedNodeCount: nodes.length - assignedNodeCount,
+    crossDomainEdgeCount,
+    selfDomainEdgeCount,
+    domains: [...domainRows.values()].sort(
+      (a, b) =>
+        b.outgoing + b.incoming - (a.outgoing + a.incoming) ||
+        b.nodeCount - a.nodeCount ||
+        a.domain.title.localeCompare(b.domain.title),
+    ),
+    connections: [...connectionRows.values()]
+      .map((row) => ({
+        from: nodeById.get(row.from)!,
+        to: nodeById.get(row.to)!,
+        count: row.count,
+        relationCounts: [...row.relationCounts.entries()]
+          .map(([type, count]) => ({ type, count }))
+          .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type)),
+        examples: row.examples,
+      }))
+      .sort((a, b) => b.count - a.count || a.from.title.localeCompare(b.from.title))
+      .slice(0, limit),
+  };
+}
+
+function buildContainmentParents(
+  edges: readonly KnowledgeGraphEdge[],
+  nodeById: ReadonlyMap<string, KnowledgeGraphNode>,
+): Map<string, string> {
+  const parentOf = new Map<string, string>();
+  for (const edge of edges) {
+    let parentId: string | undefined;
+    let childId: string | undefined;
+    if (edge.type === "contains") {
+      parentId = edge.from;
+      childId = edge.to;
+    } else if (edge.type === "belongs_to") {
+      parentId = edge.to;
+      childId = edge.from;
+    }
+    if (!parentId || !childId) continue;
+    if (!nodeById.has(parentId) || !nodeById.has(childId) || parentId === childId) continue;
+    if (parentOf.has(childId)) continue;
+    parentOf.set(childId, parentId);
+  }
+  return parentOf;
+}
+
+function nearestDomainId(
+  node: KnowledgeGraphNode,
+  parentOf: ReadonlyMap<string, string>,
+  nodeById: ReadonlyMap<string, KnowledgeGraphNode>,
+): string | null {
+  if (node.kind === "domain") return node.id;
+  const visited = new Set<string>([node.id]);
+  let current = parentOf.get(node.id);
+  while (current) {
+    if (visited.has(current)) return null;
+    visited.add(current);
+    const parent = nodeById.get(current);
+    if (!parent) return null;
+    if (parent.kind === "domain") return parent.id;
+    current = parentOf.get(current);
+  }
+  return null;
+}
+
+/**
  * 가장 최근 갱신된 N 노드 — `lastApprovedAt` 내림차순. 활동 feed 에 사용.
  * 같은 시각이면 title asc. document / project 도 포함 (활동의 한 면).
  *
@@ -95,4 +282,3 @@ export function selectRecentNodes(
     })
     .slice(0, limit);
 }
-
