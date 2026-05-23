@@ -92,6 +92,9 @@ interface LocalVaultLike {
     mcpJson: boolean;
     codexConfig: boolean;
     mcpExample: boolean;
+    mcpJsonValid?: boolean;
+    codexConfigValid?: boolean;
+    mcpExampleValid?: boolean;
   } | null;
   errorMessage: string | null;
   lastLoadedAt: number | null;
@@ -144,27 +147,47 @@ export function VaultToolsMenu({
   >('idle');
   const agentStatus = localVault.agentConfigStatus;
   const agentSetupReady = Boolean(
-    agentStatus?.mcpJson && agentStatus.codexConfig && agentStatus.mcpExample,
+    agentStatus?.mcpJson &&
+      agentStatus.codexConfig &&
+      agentStatus.mcpExample &&
+      agentStatus.mcpJsonValid !== false &&
+      agentStatus.codexConfigValid !== false &&
+      agentStatus.mcpExampleValid !== false,
   );
   const agentSetupFiles = [
-    { key: 'mcpJson', path: '.mcp.json', label: t('agentSetup.mcpJson') },
+    {
+      key: 'mcpJson',
+      validKey: 'mcpJsonValid',
+      path: '.mcp.json',
+      label: t('agentSetup.mcpJson'),
+    },
     {
       key: 'codexConfig',
+      validKey: 'codexConfigValid',
       path: '.codex/config.toml',
       label: t('agentSetup.codexConfig'),
     },
     {
       key: 'mcpExample',
+      validKey: 'mcpExampleValid',
       path: '.mcp.json.example',
       label: t('agentSetup.mcpExample'),
     },
   ] as const;
   const agentSetupReadyCount = agentStatus
-    ? agentSetupFiles.filter((file) => agentStatus[file.key]).length
+    ? agentSetupFiles.filter(
+        (file) =>
+          agentStatus[file.key] && agentStatus[file.validKey] !== false,
+      ).length
     : 0;
   const nextMissingAgentConfig = agentStatus
-    ? agentSetupFiles.find((file) => !agentStatus[file.key])
+    ? agentSetupFiles.find(
+        (file) => !agentStatus[file.key] || agentStatus[file.validKey] === false,
+      )
     : null;
+  const hasMissingAgentConfig = agentStatus
+    ? agentSetupFiles.some((file) => !agentStatus[file.key])
+    : false;
 
   async function handleEnsureAgentConfigs() {
     setAgentSetupError(null);
@@ -336,21 +359,26 @@ export function VaultToolsMenu({
                   })}
                   {nextMissingAgentConfig ? (
                     <span className="block font-mono text-[10px] text-[color:rgba(244,196,130,0.92)]">
-                      {t('agentSetup.nextMissing', {
-                        path: nextMissingAgentConfig.path,
-                      })}
+                      {agentStatus[nextMissingAgentConfig.key]
+                        ? t('agentSetup.nextInvalid', {
+                            path: nextMissingAgentConfig.path,
+                          })
+                        : t('agentSetup.nextMissing', {
+                            path: nextMissingAgentConfig.path,
+                          })}
                     </span>
                   ) : null}
                 </p>
                 <div className="mt-2 grid gap-1.5">
-                  {agentSetupFiles.map(({ key, path, label }) => {
+                  {agentSetupFiles.map(({ key, validKey, path, label }) => {
                     const present = Boolean(agentStatus[key]);
+                    const valid = agentStatus[validKey] !== false;
                     return (
                       <div
                         key={key}
                         className="grid grid-cols-[14px_1fr] items-start gap-1.5 text-[11px] leading-4 text-[color:var(--color-text-secondary)]"
                       >
-                        {present ? (
+                        {present && valid ? (
                           <CheckCircle2
                             size={12}
                             aria-hidden
@@ -370,12 +398,17 @@ export function VaultToolsMenu({
                           <span className="text-[color:var(--color-text-tertiary)]">
                             {label}
                           </span>
+                          {present && !valid ? (
+                            <span className="ml-1 text-[color:rgba(244,196,130,0.92)]">
+                              {t('agentSetup.needsReview')}
+                            </span>
+                          ) : null}
                         </span>
                       </div>
                     );
                   })}
                 </div>
-                {!agentSetupReady && canEditCurrent ? (
+                {hasMissingAgentConfig && canEditCurrent ? (
                   <button
                     type="button"
                     onClick={() => void handleEnsureAgentConfigs()}

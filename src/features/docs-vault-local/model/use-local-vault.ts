@@ -91,6 +91,9 @@ export interface AgentConfigStatus {
   mcpJson: boolean;
   codexConfig: boolean;
   mcpExample: boolean;
+  mcpJsonValid?: boolean;
+  codexConfigValid?: boolean;
+  mcpExampleValid?: boolean;
 }
 
 function emptyState(status: Status = 'idle'): State {
@@ -228,20 +231,70 @@ async function hasRootFile(
   }
 }
 
+async function readTextFileIfPresent(
+  handle: FileSystemDirectoryHandle,
+  fileName: string,
+): Promise<string | null> {
+  try {
+    const fileHandle = await handle.getFileHandle(fileName);
+    const file = await fileHandle.getFile();
+    return await file.text();
+  } catch {
+    return null;
+  }
+}
+
+function looksLikeOmotMcpJson(raw: string | null): boolean {
+  if (!raw) return false;
+  try {
+    const parsed = JSON.parse(raw) as {
+      mcpServers?: Record<string, { command?: unknown; args?: unknown; env?: unknown }>;
+    };
+    const server = parsed.mcpServers?.['oh-my-ontology'];
+    if (!server || typeof server.command !== 'string') return false;
+    const args = Array.isArray(server.args) ? server.args : [];
+    const env =
+      server.env && typeof server.env === 'object'
+        ? (server.env as Record<string, unknown>)
+        : {};
+    return (
+      args.some((arg) => String(arg).includes('oh-my-ontology-mcp')) &&
+      typeof env.OMOT_VAULT === 'string' &&
+      env.OMOT_VAULT.trim().length > 0
+    );
+  } catch {
+    return false;
+  }
+}
+
+function looksLikeOmotCodexToml(raw: string | null): boolean {
+  if (!raw) return false;
+  return (
+    raw.includes('[mcp_servers.oh-my-ontology]') &&
+    raw.includes('oh-my-ontology-mcp') &&
+    /\bOMOT_VAULT\s*=/.test(raw)
+  );
+}
+
 async function readAgentConfigStatus(
   handle: FileSystemDirectoryHandle,
 ): Promise<AgentConfigStatus> {
-  let codexConfig = false;
+  const mcpJsonText = await readTextFileIfPresent(handle, '.mcp.json');
+  const mcpExampleText = await readTextFileIfPresent(handle, '.mcp.json.example');
+  let codexConfigText: string | null = null;
   try {
     const codexDir = await handle.getDirectoryHandle('.codex');
-    codexConfig = await hasRootFile(codexDir, 'config.toml');
+    codexConfigText = await readTextFileIfPresent(codexDir, 'config.toml');
   } catch {
-    codexConfig = false;
+    codexConfigText = null;
   }
   return {
-    mcpJson: await hasRootFile(handle, '.mcp.json'),
-    codexConfig,
-    mcpExample: await hasRootFile(handle, '.mcp.json.example'),
+    mcpJson: mcpJsonText !== null,
+    codexConfig: codexConfigText !== null,
+    mcpExample: mcpExampleText !== null,
+    mcpJsonValid: looksLikeOmotMcpJson(mcpJsonText),
+    codexConfigValid: looksLikeOmotCodexToml(codexConfigText),
+    mcpExampleValid: looksLikeOmotMcpJson(mcpExampleText),
   };
 }
 

@@ -22,9 +22,13 @@ relates:
 로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고
 복구할 수 있게 하는 onboarding surface. web starter 와 CLI init 은 `.mcp.json`,
 `.codex/config.toml`, `.mcp.json.example` 을 생성하고, Docs vault tools menu 는
-현재 로컬 폴더에 이 파일들이 있는지 별도 agent setup 상태로 보여준다.
-상태 헤더는 준비된 setup 파일 수와 첫 누락 config 경로를 함께 보여주므로,
-사용자는 파일별 체크리스트를 읽기 전에 다음에 눌러야 할 repair action 을 바로 판단할 수 있다.
+현재 로컬 폴더에 이 파일들이 있는지, 그리고 각 파일이 실제 `oh-my-ontology`
+MCP 서버와 `OMOT_VAULT` 를 가리키는지 별도 agent setup 상태로 보여준다.
+상태 헤더는 준비된 setup 파일 수와 첫 누락 config 경로를 함께 보여주며, 파일이
+있더라도 stale / 다른 MCP 설정이면 `점검 필요` 로 분리한다. 그래서 사용자는
+존재만 하는 `.mcp.json` / `.codex/config.toml` 을 agent-ready 로 오인하지 않고,
+파일별 체크리스트를 읽기 전에 다음에 만들어야 할 파일 또는 검토해야 할 설정을
+바로 판단할 수 있다.
 
 기존 vault 에서는 starter markdown 을 추가하지 않아도 누락된 agent 설정 파일만
 생성할 수 있다. 이 repair action 은 이미 사용자가 작성한 ontology 파일을 건드리지

@@ -1162,6 +1162,8 @@
       "mcpExample": "codebase root 세션용 템플릿",
       "statusSummary": "설정 파일 {ready}/{total}개 준비됨",
       "nextMissing": "다음: {path} 만들기",
+      "nextInvalid": "점검: {path} 가 oh-my-ontology MCP 설정이 아닙니다",
+      "needsReview": "점검 필요",
       "repair": "누락된 agent 설정 만들기",
       "repairing": "설정 만드는 중…",
       "repairTitle": "누락된 .mcp.json, .codex/config.toml, .mcp.json.example 파일만 만듭니다. starter markdown 파일은 추가하지 않습니다.",

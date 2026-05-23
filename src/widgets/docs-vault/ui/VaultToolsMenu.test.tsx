@@ -127,6 +127,29 @@ describe('VaultToolsMenu', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('AI agent 설정 파일이 있어도 oh-my-ontology MCP 설정이 아니면 점검 대상으로 표시한다', () => {
+    renderMenu({
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+        mcpJsonValid: true,
+        codexConfigValid: false,
+        mcpExampleValid: true,
+      },
+    });
+
+    expect(screen.getByText('누락')).toBeInTheDocument();
+    expect(screen.getByText('설정 파일 2/3개 준비됨')).toBeInTheDocument();
+    expect(
+      screen.getByText('점검: .codex/config.toml 가 oh-my-ontology MCP 설정이 아닙니다'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('점검 필요')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: '누락된 agent 설정 만들기' }),
+    ).not.toBeInTheDocument();
+  });
+
   it('AI agent 설정 패널에서 첫 연결 검증 프롬프트를 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
     renderMenu({
