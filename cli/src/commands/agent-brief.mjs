@@ -132,10 +132,11 @@ function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
     }
   }
   return [
-    'Run these oh-my-ontology CLI commands when the MCP connector is unavailable.',
-    'They include the resolved vault path, mirror the Graph DB query pack, plan scans first, keep traversal bounded, and use follow-up evidence before writing.',
+    '# oh-my-ontology Graph DB CLI pack',
+    '# Run these commands when the MCP connector is unavailable.',
+    '# The selected vault path is already inserted; plan scans first, keep traversal bounded, and use follow-up evidence before writing.',
     '',
-    ...commands.map(({ id, command }, index) => `${index + 1}. [${id}] ${command}`),
+    ...commands.flatMap(({ id, command }) => [`# ${id}`, command]),
   ].join('\n');
 }
 

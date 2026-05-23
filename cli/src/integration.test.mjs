@@ -4383,19 +4383,18 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     const vaultPath = escapeRegExp(root);
-    assert.match(clean, /^Run these oh-my-ontology CLI commands when the MCP connector is unavailable\./);
-    assert.match(clean, /They include the resolved vault path/);
-    assert.match(clean, new RegExp(`\\[node_scan\\] oh-my-ontology match-nodes ${vaultPath} --plan --kind capability --min-degree 2 --sort degree --limit 10`));
-    assert.match(clean, new RegExp(`\\[edge_scan\\] oh-my-ontology match-edges ${vaultPath} --plan --types depends_on --limit 20`));
-    assert.match(clean, new RegExp(`\\[domain_coupling\\] oh-my-ontology domain-matrix ${vaultPath} --limit 6 --types depends_on,relates`));
-    assert.match(clean, new RegExp(`\\[domain_coupling\\] oh-my-ontology hubs ${vaultPath} --plan --limit 10 --types depends_on,relates`));
-    assert.match(clean, new RegExp(`\\[path_evidence\\] oh-my-ontology all-paths .* ${vaultPath} --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10`));
-    assert.match(clean, new RegExp(`\\[path_evidence\\] oh-my-ontology explain .* ${vaultPath} --direction undirected --max-hops 5 --types depends_on,relates --limit 10`));
+    assert.match(clean, /^# oh-my-ontology Graph DB CLI pack/);
+    assert.match(clean, /# The selected vault path is already inserted/);
+    assert.match(clean, new RegExp(`# node_scan\\noh-my-ontology match-nodes ${vaultPath} --plan --kind capability --min-degree 2 --sort degree --limit 10`));
+    assert.match(clean, new RegExp(`# edge_scan\\noh-my-ontology match-edges ${vaultPath} --plan --types depends_on --limit 20`));
+    assert.match(clean, new RegExp(`# domain_coupling\\noh-my-ontology domain-matrix ${vaultPath} --limit 6 --types depends_on,relates`));
+    assert.match(clean, new RegExp(`oh-my-ontology hubs ${vaultPath} --plan --limit 10 --types depends_on,relates`));
+    assert.match(clean, new RegExp(`# path_evidence\\noh-my-ontology all-paths .* ${vaultPath} --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10`));
+    assert.match(clean, new RegExp(`oh-my-ontology explain .* ${vaultPath} --direction undirected --max-hops 5 --types depends_on,relates --limit 10`));
     assert.doesNotMatch(clean, /\[vault\]/);
     assert.doesNotMatch(clean, /FIRST MCP CALLS/);
     assert.doesNotMatch(clean, /PLAYBOOKS/);
-    for (const line of clean.split('\n').filter((row) => /^\d+\. \[/.test(row))) {
-      const command = line.replace(/^\d+\. \[[^\]]+\] /, '');
+    for (const command of clean.split('\n').filter((row) => /^oh-my-ontology /.test(row))) {
       const result = await run(command.split(/\s+/).slice(1));
       assert.equal(result.code, 0, `${command}\nstdout: ${result.stdout}\nstderr: ${result.stderr}`);
     }

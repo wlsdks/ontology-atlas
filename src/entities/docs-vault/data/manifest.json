@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-23T23:05:27.102Z",
+  "generatedAt": "2026-05-23T23:09:02.287Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -4737,8 +4737,8 @@
         }
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
-      "wordCount": 2203,
-      "updatedAt": "2026-05-23T23:05:00.001Z",
+      "wordCount": 2219,
+      "updatedAt": "2026-05-23T23:08:35.444Z",
       "linksOut": []
     },
     {
