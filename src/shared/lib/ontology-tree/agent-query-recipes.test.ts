@@ -355,6 +355,8 @@ describe("buildAgentQueryRecipes", () => {
       buildAgentQueryRecipes("ready", entrypoints, projectEntrypoint),
       entrypoints,
       projectEntrypoint,
+      buildAgentTraversalStrategies(entrypoints, projectEntrypoint),
+      buildAgentGraphDbQueryPack(entrypoints),
     );
 
     expect(prompt).toContain("Use the oh-my-ontology MCP server");
@@ -373,6 +375,13 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("budget-truncated");
     expect(prompt).toContain("run the returned followUp calls");
     expect(prompt).toContain("For match_nodes and match_edges, report totalMatches");
+    expect(prompt).toContain("Graph DB query pack for local markdown graph scans");
+    expect(prompt).toContain("Use this oh-my-ontology graph DB query pack");
+    expect(prompt).toContain("MATCH (n:capability)");
+    expect(prompt).toContain("query_ontology.match_nodes");
+    expect(prompt).toContain("query_ontology.match_edges");
+    expect(prompt).toContain("oh-my-ontology match-nodes [vault] --plan");
+    expect(prompt).toContain("oh-my-ontology match-edges [vault] --plan");
     expect(prompt).toContain("sync the docs/ontology vault");
     expect(prompt).toContain("query_ontology.query_plan");
     expect(prompt).toContain("query_ontology.node_profile");

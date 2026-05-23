@@ -152,7 +152,9 @@ CLI fallback 도 함께 들어가므로 MCP connector 가 없는 Codex / Claude 
 순서로 같은 local markdown graph 를 terminal 에서 스캔한다. 각 query 는 scan row 를
 근거로 쓰기 전에 `totalMatches`, `limited`, `followUp`, `evidence.pathsComplete` 를
 보고하라는 계약을 포함하므로 graph DB 스타일의 탐색을 하되 raw row 를 증명으로
-오인하지 않게 한다.
+오인하지 않게 한다. 같은 pack 은 `Agent handoff prompt` 복사 본문에도 포함되어,
+사용자가 pack 버튼을 따로 누르지 않아도 fresh Claude Code / Codex 세션이 첫 handoff 에서
+graph DB-style scan 계약과 fallback 명령을 함께 받는다.
 
 Run order 앞에는 별도 `Traversal strategy` 레일도 둔다. 이는 MCP
 `agent_brief.traversalStrategy` 와 같은 `plan_before_enumeration` →

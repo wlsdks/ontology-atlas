@@ -734,8 +734,15 @@ function AgentQueryRecipesPanel({
 }) {
   const t = useTranslations("ontologyPages.insights");
   const handoffPrompt = useMemo(
-    () => buildAgentHandoffPrompt(recipes, entrypoints, projectEntrypoint, traversalStrategies),
-    [entrypoints, projectEntrypoint, recipes, traversalStrategies],
+    () =>
+      buildAgentHandoffPrompt(
+        recipes,
+        entrypoints,
+        projectEntrypoint,
+        traversalStrategies,
+        graphDbQueryPack,
+      ),
+    [entrypoints, graphDbQueryPack, projectEntrypoint, recipes, traversalStrategies],
   );
   const traversalPayloadCount = traversalStrategies.reduce(
     (count, strategy) => count + strategy.payloads.length,

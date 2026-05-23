@@ -634,8 +634,17 @@ export function buildAgentHandoffPrompt(
   entrypoints: readonly AgentQueryEntrypoint[] = [],
   projectEntrypoint: AgentProjectEntrypoint | null = null,
   traversalStrategies: readonly AgentTraversalStrategy[] = [],
+  graphDbQueryPack: readonly AgentGraphDbQueryPackItem[] = [],
 ): string {
   const runOrder = formatAgentRunOrderPrompt(recipes);
+  const graphDbPackSection =
+    graphDbQueryPack.length > 0
+      ? [
+          "",
+          "Graph DB query pack for local markdown graph scans:",
+          formatAgentGraphDbQueryPack(graphDbQueryPack),
+        ]
+      : [];
   const suggestedSlugs =
     entrypoints.length > 0 || projectEntrypoint
       ? [
@@ -664,6 +673,7 @@ export function buildAgentHandoffPrompt(
     "When code changes introduce or rename a domain, capability, element, or relation, sync the docs/ontology vault before finishing.",
     "",
     runOrder,
+    ...graphDbPackSection,
     ...suggestedSlugs,
   ].join("\n");
 }
