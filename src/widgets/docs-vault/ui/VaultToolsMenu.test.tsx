@@ -99,6 +99,18 @@ describe('VaultToolsMenu', () => {
     expect(screen.getByText('누락')).toBeInTheDocument();
     expect(screen.getByText('설정 파일 1/3개 준비됨')).toBeInTheDocument();
     expect(screen.getByText('다음: .mcp.json 만들기')).toBeInTheDocument();
+    expect(
+      screen.getByRole('list', { name: 'AI agent 설정 다음 단계' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('이 vault 안의 MCP / Codex 설정 파일을 만들거나 점검합니다.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Claude Code, Cursor, Codex를 vault 폴더 또는 codebase root에서 다시 시작합니다.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('수정 전에 JSON gate를 실행하고 ok와 performanceOk를 따로 확인합니다.'),
+    ).toBeInTheDocument();
     expect(screen.getByText('.mcp.json')).toBeInTheDocument();
     expect(screen.getByText('.codex/config.toml')).toBeInTheDocument();
     expect(screen.getByText('.mcp.json.example')).toBeInTheDocument();
@@ -145,6 +157,11 @@ describe('VaultToolsMenu', () => {
       screen.getByText('점검: .codex/config.toml 가 oh-my-ontology MCP 설정이 아닙니다'),
     ).toBeInTheDocument();
     expect(screen.getByText('점검 필요')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        '기존 설정 파일은 자동으로 덮어쓰지 않습니다. 설정 패킷이나 codebase-root 템플릿을 복사해 점검 대상 파일을 직접 교체하세요.',
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: '누락된 agent 설정 만들기' }),
     ).not.toBeInTheDocument();

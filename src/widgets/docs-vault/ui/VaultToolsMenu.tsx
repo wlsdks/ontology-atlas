@@ -198,6 +198,28 @@ export function VaultToolsMenu({
   const hasMissingAgentConfig = agentStatus
     ? agentSetupFiles.some((file) => !agentStatus[file.key])
     : false;
+  const hasInvalidAgentConfig = agentStatus
+    ? agentSetupFiles.some(
+        (file) => agentStatus[file.key] && agentStatus[file.validKey] === false,
+      )
+    : false;
+  const agentSetupSteps = [
+    {
+      key: 'configs',
+      label: t('agentSetup.stepConfigs'),
+      complete: agentSetupReadyCount === agentSetupFiles.length,
+    },
+    {
+      key: 'restart',
+      label: t('agentSetup.stepRestart'),
+      complete: agentSetupReady,
+    },
+    {
+      key: 'gate',
+      label: t('agentSetup.stepGate'),
+      complete: false,
+    },
+  ];
 
   async function handleEnsureAgentConfigs() {
     setAgentSetupError(null);
@@ -387,10 +409,34 @@ export function VaultToolsMenu({
                           })
                         : t('agentSetup.nextMissing', {
                             path: nextMissingAgentConfig.path,
-                          })}
+                      })}
                     </span>
                   ) : null}
                 </p>
+                <ol
+                  aria-label={t('agentSetup.nextStepsAriaLabel')}
+                  className="mt-2 grid gap-1.5"
+                >
+                  {agentSetupSteps.map((step, index) => (
+                    <li
+                      key={step.key}
+                      className="grid grid-cols-[18px_1fr] items-start gap-1.5 rounded-sm border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
+                    >
+                      <span
+                        className={`inline-flex h-4 w-4 items-center justify-center rounded-sm font-mono text-[9px] ${
+                          step.complete
+                            ? 'bg-[color:rgba(50,185,125,0.12)] text-[color:rgba(130,230,180,0.9)]'
+                            : 'bg-[color:rgba(94,106,210,0.14)] text-[color:rgba(200,210,255,0.9)]'
+                        }`}
+                      >
+                        {step.complete ? '✓' : index + 1}
+                      </span>
+                      <span className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
+                        {step.label}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
                 <div className="mt-2 grid gap-1.5">
                   {agentSetupFiles.map(({ key, validKey, path, label }) => {
                     const present = Boolean(agentStatus[key]);
@@ -443,6 +489,11 @@ export function VaultToolsMenu({
                       ? t('agentSetup.repairing')
                       : t('agentSetup.repair')}
                   </button>
+                ) : null}
+                {hasInvalidAgentConfig ? (
+                  <p className="mt-2 break-keep rounded-sm border border-[color:rgba(244,196,130,0.18)] bg-[color:rgba(239,180,120,0.08)] px-2 py-1.5 text-[10.5px] leading-4 text-[color:rgba(244,196,130,0.92)]">
+                    {t('agentSetup.invalidRepairHint')}
+                  </p>
                 ) : null}
                 <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
                   {t('agentSetup.verifyGroup')}
