@@ -194,6 +194,17 @@ function DocsVaultContent() {
     [replaceUrlState, setAdvancedOpen],
   );
 
+  const handleOpenAgentGraphWorkflowGuide = useCallback(() => {
+    const slug = 'AGENT-GRAPH-WORKFLOW';
+    setSource('server');
+    storeSource('server');
+    setSelectedSlug(slug);
+    setRecentSlugs(pushRecentDoc('server', slug));
+    setView('doc');
+    replaceUrlState({ slug, view: 'doc' });
+    setAdvancedOpen(false);
+  }, [replaceUrlState, setAdvancedOpen, setRecentSlugs]);
+
   useEffect(() => {
     migrateLegacyRecentDocs();
     // ?intent=local 진입 사용자는 localStorage 의 stored 'server' 보다 url
@@ -1326,6 +1337,7 @@ function DocsVaultContent() {
                   localVault={localVault}
                   validationSummary={localVaultValidationSummary}
                   onCreateNewDoc={handleCreateNewDoc}
+                  onOpenWorkflowGuide={handleOpenAgentGraphWorkflowGuide}
                 />
               ) : null}
             </div>

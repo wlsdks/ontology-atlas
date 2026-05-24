@@ -80,6 +80,7 @@ function renderMenu(
       localVault={localVault}
       validationSummary={null}
       onCreateNewDoc={vi.fn()}
+      onOpenWorkflowGuide={vi.fn()}
     />,
   );
   return localVault;
@@ -198,6 +199,33 @@ describe('VaultToolsMenu', () => {
     expect(
       await screen.findByRole('button', { name: '검증 프롬프트 복사됨' }),
     ).toBeInTheDocument();
+  });
+
+  it('AI agent 설정 패널에서 기능 문서를 열 수 있다', () => {
+    const onOpenWorkflowGuide = vi.fn();
+    const localVault = makeLocalVault({
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+    render(
+      <VaultToolsMenu
+        view="doc"
+        onViewChange={vi.fn()}
+        folderTopoStatus="idle"
+        canEditCurrent
+        localVault={localVault}
+        validationSummary={null}
+        onCreateNewDoc={vi.fn()}
+        onOpenWorkflowGuide={onOpenWorkflowGuide}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: '기능 문서 열기' }));
+
+    expect(onOpenWorkflowGuide).toHaveBeenCalledTimes(1);
   });
 
   it('AI agent 설정 패널에서 전체 setup packet 을 복사한다', async () => {

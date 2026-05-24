@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import {
   Bot,
+  BookOpen,
   CheckCircle2,
   CircleAlert,
   ClipboardCopy,
@@ -125,6 +126,7 @@ interface Props {
   localVault: LocalVaultLike;
   validationSummary: { errorCount: number; warningCount: number } | null;
   onCreateNewDoc: () => void;
+  onOpenWorkflowGuide: () => void;
 }
 
 export function VaultToolsMenu({
@@ -135,6 +137,7 @@ export function VaultToolsMenu({
   localVault,
   validationSummary,
   onCreateNewDoc,
+  onOpenWorkflowGuide,
 }: Props) {
   const t = useTranslations('docsVault');
   const [agentSetupBusy, setAgentSetupBusy] = useState(false);
@@ -519,6 +522,15 @@ export function VaultToolsMenu({
                 <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
                   {t('agentSetup.verifyGroup')}
                 </div>
+                <button
+                  type="button"
+                  onClick={onOpenWorkflowGuide}
+                  title={t('agentSetup.openWorkflowGuideTitle')}
+                  className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.35)] bg-[color:rgba(94,106,210,0.09)] px-2 py-1.5 text-[11.5px] text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:rgba(139,151,255,0.52)] hover:bg-[color:rgba(94,106,210,0.14)]"
+                >
+                  <BookOpen size={12} aria-hidden />
+                  {t('agentSetup.openWorkflowGuide')}
+                </button>
                 <button
                   type="button"
                   onClick={() => void handleCopyAgentSetupPacket()}

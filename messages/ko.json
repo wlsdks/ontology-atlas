@@ -1209,6 +1209,8 @@
       "copyPromptCopied": "검증 프롬프트 복사됨",
       "copyPromptFailed": "복사 실패",
       "copyPromptTitle": "Claude Code 또는 Codex가 수정 전 read-first MCP 검증을 하도록 프롬프트를 복사합니다.",
+      "openWorkflowGuide": "기능 문서 열기",
+      "openWorkflowGuideTitle": "CLI만 쓸 때, MCP에 연결했을 때, graph DB와의 차이, 실제 검증 명령을 설명하는 Agent Graph Workflow 문서를 엽니다.",
       "copyPacket": "설정 패킷 복사",
       "copyPacketCopied": "설정 패킷 복사됨",
       "copyPacketFailed": "복사 실패",

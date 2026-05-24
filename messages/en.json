@@ -1209,6 +1209,8 @@
       "copyPromptCopied": "Verification prompt copied",
       "copyPromptFailed": "Copy failed",
       "copyPromptTitle": "Copy the read-first MCP prompt to verify Claude Code or Codex before edits.",
+      "openWorkflowGuide": "Open feature guide",
+      "openWorkflowGuideTitle": "Open the Agent Graph Workflow guide explaining CLI-only use, MCP-connected use, graph DB differences, and actual verification commands.",
       "copyPacket": "Copy setup packet",
       "copyPacketCopied": "Setup packet copied",
       "copyPacketFailed": "Copy failed",
