@@ -4451,6 +4451,8 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
     const clean = stripAnsi(r.stdout);
     const vaultPath = escapeRegExp(root);
     assert.match(clean, /^# oh-my-ontology Graph DB CLI pack/);
+    assert.match(clean, /# Self-check first: Claude Code\/Codex automation can parse ok, failed, timeoutMs, commands\[\]\.timedOut, and slowest\.elapsedMs\./);
+    assert.match(clean, new RegExp(`oh-my-ontology agent-brief ${vaultPath} --verify-fallbacks --json --fallback-timeout-ms 15000`));
     assert.match(clean, /# The selected vault path is already inserted/);
     assert.match(clean, /# Evidence rule: scan rows are candidates, not proof/);
     assert.match(clean, /# intent: MATCH \(n:capability\) WHERE degree\(n\) >= 2 RETURN n ORDER BY degree\(n\) DESC LIMIT 10/);

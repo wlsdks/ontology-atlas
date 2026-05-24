@@ -223,9 +223,12 @@ edge scan, domain coupling, path evidence 명령 묶음을 바로 실행할 수 
 CLI-only 사용자는 같은 경로를 `oh-my-ontology agent-brief [vault] --graph-db-pack`
 으로 바로 뽑을 수 있어, 웹 UI 를 열지 못하는 terminal-first 세션도 graph DB-style
 scan queue 만 복사/실행하면 된다. 이 CLI 전용 출력은 `[vault]` placeholder 대신
-선택된 vault 의 절대 경로를 넣고 pack label 을 shell comment 로 렌더링해,
-사용자가 경로를 다시 치환하거나 번호 prefix 를 지우지 않아도 그대로 shell 에 붙여
-실행할 수 있다.
+선택된 vault 의 절대 경로를 넣고 pack label 을 shell comment 로 렌더링한다. pack
+상단에는 `agent-brief --verify-fallbacks --json --fallback-timeout-ms 15000` self-check
+명령도 함께 넣어 Claude Code/Codex automation 이 `ok`, `failed`, `timeoutMs`,
+`commands[].timedOut`, `slowest.elapsedMs` 를 먼저 파싱한 뒤 같은 shell session 에서
+scan queue 를 실행할 수 있다. 사용자가 경로를 다시 치환하거나 번호 prefix 를 지우지
+않아도 그대로 shell 에 붙여 실행할 수 있다.
 또한 웹 UI 의 `Copy handoff` 프롬프트는 `preflight_relation`, `preflight_rename`,
 `post_change_sync` guardrail packet 과 `skip_existing` / `review_inverse` /
 `safe_to_add` / `review_new_schema` 판단 규칙을 함께 포함해, 별도 카드 복사 없이도

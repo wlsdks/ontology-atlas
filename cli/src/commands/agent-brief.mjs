@@ -214,6 +214,11 @@ function parseFallbackCommand(command) {
 function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
   const commands = [];
   const seen = new Set();
+  const selfCheckCommand = graphDbWithFlags(`oh-my-ontology agent-brief ${graphDbShellQuote(vaultRoot)}`, [
+    '--verify-fallbacks',
+    '--json',
+    '--fallback-timeout-ms 15000',
+  ]);
   for (const item of Array.isArray(graphDbQueryPack) ? graphDbQueryPack : []) {
     for (const command of graphDbPackItemCliCommands(item)) {
       const runnableCommand = command.replaceAll('[vault]', graphDbShellQuote(vaultRoot));
@@ -225,6 +230,9 @@ function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
   return [
     '# oh-my-ontology Graph DB CLI pack',
     '# Run these commands when the MCP connector is unavailable.',
+    '# Self-check first: Claude Code/Codex automation can parse ok, failed, timeoutMs, commands[].timedOut, and slowest.elapsedMs.',
+    selfCheckCommand,
+    '',
     '# The selected vault path is already inserted; plan scans first, keep traversal bounded, and use follow-up evidence before writing.',
     '# Evidence rule: scan rows are candidates, not proof; cite follow-up detail before writing or refactoring.',
     '',
