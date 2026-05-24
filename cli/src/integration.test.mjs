@@ -2388,6 +2388,11 @@ await test('explain — renders direct edges, shortest path, and common neighbor
     assert.match(clean, /SHORTEST PATH 1 hop/);
     assert.match(clean, /COMMON NEIGHBORS 1\/1/);
     assert.match(clean, /domains\/auth — Auth/);
+    assert.match(clean, /next relation capabilities\/bar → capabilities\/foo/);
+    assert.match(clean, /explanation is evidence, not write approval; run path and preflight before changing graph/);
+    assert.match(clean, /oh-my-ontology path capabilities\/bar capabilities\/foo \[vault\] --max-hops 5/);
+    assert.match(clean, /oh-my-ontology match-edges \[vault\] --from capabilities\/bar --to capabilities\/foo --types relates,domain --limit 10/);
+    assert.match(clean, /oh-my-ontology relation-check capabilities\/bar capabilities\/foo relates \[vault\]/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

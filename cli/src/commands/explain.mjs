@@ -81,6 +81,7 @@ function render(result, query) {
   renderDirectEdges(result.direct.edges, result.direct.total);
   renderShortestPath(result.shortestPath);
   renderCommonNeighbors(result.commonNeighbors);
+  renderNextRelation(result, query);
 }
 
 function renderDirectEdges(edges, total) {
@@ -135,6 +136,20 @@ function renderCommonNeighbors(commonNeighbors) {
     process.stdout.write(`    ${COLORS.dim}from:${COLORS.reset} ${formatEdgeList(row.fromEdges)}\n`);
     process.stdout.write(`    ${COLORS.dim}to:${COLORS.reset}   ${formatEdgeList(row.toEdges)}\n`);
   }
+}
+
+function renderNextRelation(result, query) {
+  const relationType = result.direct.edges[0]?.via ?? result.shortestPath.edges[0]?.via ?? query.types?.[0] ?? 'relates';
+  const typeList = Array.isArray(query.types) && query.types.length > 0 ? query.types.join(',') : relationType;
+  const maxHops = Number.isInteger(query.maxHops) ? query.maxHops : result.shortestPath.maxHops;
+  process.stdout.write(
+    `\n${COLORS.bold}next relation${COLORS.reset} ${COLORS.cyan}${query.from}${COLORS.reset}` +
+      ` ${COLORS.dim}→${COLORS.reset} ${COLORS.cyan}${query.to}${COLORS.reset}` +
+      ` ${COLORS.dim}— explanation is evidence, not write approval; run path and preflight before changing graph${COLORS.reset}\n` +
+      `  oh-my-ontology path ${query.from} ${query.to} [vault] --max-hops ${maxHops}\n` +
+      `  oh-my-ontology match-edges [vault] --from ${query.from} --to ${query.to} --types ${typeList} --limit 10\n` +
+      `  oh-my-ontology relation-check ${query.from} ${query.to} ${relationType} [vault]\n`,
+  );
 }
 
 function formatEdgeList(edges) {

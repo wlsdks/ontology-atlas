@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-24T01:21:28.433Z",
+  "generatedAt": "2026-05-24T01:24:43.403Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -4945,8 +4945,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
-      "wordCount": 9445,
-      "updatedAt": "2026-05-24T01:21:22.787Z",
+      "wordCount": 9511,
+      "updatedAt": "2026-05-24T01:24:26.089Z",
       "linksOut": []
     },
     {
