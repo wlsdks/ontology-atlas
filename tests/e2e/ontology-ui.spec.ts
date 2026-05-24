@@ -182,6 +182,9 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("oh-my-ontology match-edges");
     await expect(recipes).toContainText("oh-my-ontology explain");
     await expect(recipes).toContainText("oh-my-ontology all-paths");
+    await expect(recipes.getByTestId("insights-agent-graph-db-self-check")).toContainText(
+      "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000",
+    );
     await expect(recipes).toContainText("--plan");
     await expect(recipes).toContainText("blast_radius");
     await expect(recipes).toContainText("all_paths");
@@ -194,6 +197,14 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("5 MCP calls");
     await expect(recipes).toContainText("MCP calls 4");
     await expect(recipes).toContainText("CLI fallbacks 1");
+    await recipes.getByRole("button", { name: "Copy CLI pack" }).click();
+    const copiedGraphDbCliPack = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
+    );
+    expect(copiedGraphDbCliPack).toContain(
+      "0. [self_check] oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000",
+    );
+    expect(copiedGraphDbCliPack).toContain("[node_scan] oh-my-ontology match-nodes [vault] --plan");
     await recipes.getByRole("button", { name: "Copy traversal packet" }).click();
     const copiedTraversalPacket = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,

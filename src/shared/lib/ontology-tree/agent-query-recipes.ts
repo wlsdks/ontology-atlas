@@ -133,6 +133,9 @@ export interface AgentGraphDbQueryPackItem {
   payloads: AgentMcpQueryCall[];
 }
 
+export const AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND =
+  "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000";
+
 const ALL_PATHS_RESULT_CONTRACT = [
   "For all_paths, report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.",
   "Treat returned paths as partial evidence unless evidence.pathsComplete is true; when evidence.status is partial, follow evidence.suggestedQuery or evidence.saferQuery before writing.",
@@ -632,7 +635,7 @@ export function formatAgentGraphDbCliPack(
     "Run these oh-my-ontology CLI commands when the MCP connector is unavailable.",
     "They mirror the Graph DB query pack: plan scans first, keep traversal bounded, and use follow-up evidence before writing.",
     "Self-check first: Claude Code/Codex automation can parse ok, failed, timeoutMs, commands[].timedOut, and slowest.elapsedMs.",
-    "0. [self_check] oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000",
+    `0. [self_check] ${AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}`,
     "",
     "Evidence rule: scan rows are candidates, not proof; cite follow-up detail before writing or refactoring.",
     "",

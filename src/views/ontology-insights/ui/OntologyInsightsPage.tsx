@@ -22,6 +22,7 @@ import {
 import { useOntologyInsight } from "@/features/vault-ontology";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
+  AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
   UNKNOWN_TONE,
   buildAgentReadinessCliCommands,
   buildAgentReadinessPrompt,
@@ -872,6 +873,20 @@ function AgentQueryRecipesPanel({
               compact
             />
           </div>
+        </div>
+        <div
+          className="mb-2 rounded-md border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] px-2.5 py-2"
+          data-testid="insights-agent-graph-db-self-check"
+        >
+          <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(151,230,198,0.92)]">
+            {t("agentGraphDbSelfCheckLabel")}
+          </p>
+          <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+            {t("agentGraphDbSelfCheckHint")}
+          </p>
+          <code className="mt-1 block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+            {AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
+          </code>
         </div>
         <div className="grid min-w-0 gap-2 lg:grid-cols-4">
           {graphDbQueryPack.map((item) => {

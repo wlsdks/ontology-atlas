@@ -853,6 +853,8 @@
       "agentGraphDbPackTitle": "Graph DB query pack",
       "agentGraphDbPackSubtitle": "Copy graph-database-style scans that keep local markdown evidence bounded, planned, and follow-up driven.",
       "agentGraphDbPackMeta": "MCP calls {mcp} · CLI fallbacks {cli}",
+      "agentGraphDbSelfCheckLabel": "Automation self-check",
+      "agentGraphDbSelfCheckHint": "The CLI pack starts with this JSON gate to verify connection and fallback timing before scan commands run.",
       "agentGraphDbNodeScanTitle": "Node scan",
       "agentGraphDbNodeScanPrompt": "Find high-degree capabilities before onboarding, slicing work, or choosing a refactor entrypoint.",
       "agentGraphDbEdgeScanTitle": "Edge scan",

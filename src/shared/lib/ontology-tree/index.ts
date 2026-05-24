@@ -57,6 +57,7 @@ export type {
   AgentWriteGuardrailId,
 } from "./agent-query-recipes";
 export {
+  AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
   buildAgentGraphDbQueryPack,
   buildAgentTraversalStrategies,
   buildAgentWriteGuardrails,
