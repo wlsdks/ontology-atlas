@@ -33,6 +33,11 @@ Read the JSON gate in three states:
 - `ok: true` with `performanceOk: true` means the setup and fallback graph path
   are ready for read-first agent work.
 
+For humans, `agent-brief --verify-fallbacks` prints the same setup gate summary
+before the row list: `ok=true performanceOk=true wall=... slow=0/N failed=0`.
+That line is the fastest way to tell whether a connector-less Claude Code/Codex
+session can trust the local CLI graph path before scanning or writing.
+
 ## What Works Without MCP Connected
 
 You can use the product without connecting Claude Code, Codex, Cursor, or any

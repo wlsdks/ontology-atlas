@@ -204,6 +204,12 @@ async function verifyOneCliFallback(raw, vaultRoot, { timeoutMs, slowThresholdMs
 
 function renderFallbackVerificationReport(report) {
   process.stdout.write(`${COLORS.bold}agent fallback check${COLORS.reset} ${COLORS.dim}${report.total} command(s), concurrency ${report.concurrency}, timeout ${report.timeoutMs}ms, slow >= ${report.slowThresholdMs}ms${COLORS.reset}\n`);
+  const gateColor = report.ok && report.performanceOk ? COLORS.green : report.ok ? COLORS.yellow : COLORS.red;
+  process.stdout.write(
+    `${gateColor}setup gate${COLORS.reset} ` +
+      `${COLORS.dim}ok=${String(report.ok)} performanceOk=${String(report.performanceOk)} ` +
+      `wall=${report.wallMs}ms slow=${report.slow}/${report.total} failed=${report.failed}${COLORS.reset}\n`,
+  );
   for (const row of report.commands) {
     const color = row.status === 'fail' ? COLORS.red : row.slow ? COLORS.yellow : COLORS.green;
     const status = row.status === 'pass' && row.slow ? 'SLOW' : row.status.toUpperCase();

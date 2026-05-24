@@ -4673,6 +4673,7 @@ await test('agent-brief --verify-fallbacks — executes generated CLI fallback c
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /agent fallback check/);
+    assert.match(clean, /setup gate ok=true performanceOk=true wall=\d+ms slow=0\/\d+ failed=0/);
     assert.match(clean, /PASS \d+ms oh-my-ontology workspace-brief \[vault\] --limit 5/);
     assert.match(clean, /ok \d+\/\d+ fallback command\(s\) passed/);
     assert.match(clean, /timing: wall \d+ms; total \d+ms; slowest \d+ms oh-my-ontology /);

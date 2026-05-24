@@ -260,7 +260,9 @@ scan queue 만 복사/실행하면 된다. 이 CLI 전용 출력은 `[vault]` pl
 명령도 함께 넣어 Claude Code/Codex automation 이 `ok`, `failed`, `timeoutMs`,
 `performanceOk`, `slowThresholdMs`, `concurrency`, `wallMs`, `slow`, `commands[].timedOut`, `commands[].slow`,
 `slowest.elapsedMs` 를 먼저 파싱한 뒤 같은 shell session 에서 scan queue 를 실행할 수
-있다. pack 상단은 scan row 를 proof 로 오해하지 않도록 `totalMatches` / `limited` /
+있다. JSON 없이 보는 human 출력도 command row 전에 `ok=true performanceOk=true wall=... slow=0/N failed=0`
+setup gate summary 를 먼저 렌더링하므로, 비개발자는 긴 timing log 를 읽기 전에
+연결/성능/실패 상태를 한 줄로 판단할 수 있다. pack 상단은 scan row 를 proof 로 오해하지 않도록 `totalMatches` / `limited` /
 row count 보고, node row 는 `node_profile` 또는 `blast_radius`, edge row 는
 `explain` / `path` / `relation_check`, path row 는 `evidence.pathsComplete` 보고라는
 proof checklist 도 함께 출력한다. 사용자가 경로를 다시 치환하거나 번호 prefix 를
