@@ -3823,6 +3823,10 @@ await test('reachability — transitive reachable nodes are grouped by layer', a
     assert.match(clean, /d1[\s\S]*capabilities\/foo\s+— Foo/);
     assert.match(clean, /d1[\s\S]*domains\/auth\s+— Auth/);
     assert.match(clean, /shortest paths/);
+    assert.match(clean, /next reachable capabilities\/foo/);
+    assert.match(clean, /traversal rows are candidates, not proof; inspect the node and bounded paths before writing/);
+    assert.match(clean, /oh-my-ontology node capabilities\/foo \[vault\] --limit 20/);
+    assert.match(clean, /oh-my-ontology all-paths capabilities\/bar capabilities\/foo \[vault\] --plan --max-hops 2 --limit 10/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

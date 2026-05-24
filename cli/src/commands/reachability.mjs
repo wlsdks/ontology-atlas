@@ -182,6 +182,21 @@ function render(result, filters = {}) {
       );
     }
   }
+  const focusPath = paths.find((row) => Array.isArray(row.path) && row.path.length > 1);
+  const focusTarget = focusPath?.path?.[focusPath.path.length - 1];
+  if (focusTarget) {
+    const typeFlags = Array.isArray(filters.types) && filters.types.length > 0
+      ? ` --types ${filters.types.join(',')}`
+      : '';
+    process.stdout.write(
+      `\n${COLORS.dim}next${COLORS.reset} reachable ${COLORS.bold}${focusTarget}${COLORS.reset}` +
+        `${COLORS.dim} — traversal rows are candidates, not proof; inspect the node and bounded paths before writing${COLORS.reset}\n`,
+    );
+    process.stdout.write(`  ${COLORS.cyan}oh-my-ontology node ${focusTarget} [vault] --limit 20${COLORS.reset}\n`);
+    process.stdout.write(
+      `  ${COLORS.cyan}oh-my-ontology all-paths ${result.start} ${focusTarget} [vault] --plan --max-hops ${result.depth}${typeFlags} --limit 10${COLORS.reset}\n`,
+    );
+  }
 }
 
 function renderCountBucket(label, bucket, colorMap = {}) {
