@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-24T13:59:09.333Z",
+  "generatedAt": "2026-05-24T14:21:25.042Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5005,8 +5005,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
-      "wordCount": 10193,
-      "updatedAt": "2026-05-24T07:36:27.917Z",
+      "wordCount": 10207,
+      "updatedAt": "2026-05-24T14:21:00.036Z",
       "linksOut": []
     },
     {

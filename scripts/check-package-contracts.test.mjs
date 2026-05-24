@@ -1478,6 +1478,7 @@ describe('package contract helpers', () => {
   it('keeps the CLI README explicit about mcp-verify help scope', () => {
     const readme = readFileSync('cli/README.md', 'utf-8');
     const tableRow = readme.split('| `oh-my-ontology mcp-verify [vault]` |')[1]?.split('\n')[0] ?? '';
+    const agentSetupRow = readme.split('| `oh-my-ontology agent-setup [vault]` |')[1]?.split('\n')[0] ?? '';
     const growthRow = readme.split('| `oh-my-ontology growth [vault]` |')[1]?.split('\n')[0] ?? '';
     const maintenanceRow = readme.split('| `oh-my-ontology maintenance [vault]` |')[1]?.split('\n')[0] ?? '';
     const analyzeRow = readme.split('| `oh-my-ontology analyze [rootPath]` |')[1]?.split('\n')[0] ?? '';
@@ -1486,6 +1487,9 @@ describe('package contract helpers', () => {
     const verifySection = readme.split('`oh-my-ontology mcp-verify [vault]` is the fastest')[1]?.split('The vault is a plain folder')[0] ?? '';
 
     assert.match(tableRow, /project-node `list_concepts` probe/);
+    assert.match(agentSetupRow, /`docs\.workflowGuide`/);
+    assert.match(agentSetupRow, /`docs\.modeComparison`/);
+    assert.match(agentSetupRow, /CLI-only \/ MCP-connected \/ graph DB pack \/ setup gate choices/);
     assert.match(tableRow, /23-tool inventory with missing\/extra\/duplicate\/invalid name checks/);
     assert.match(tableRow, /23-tool inventory with missing\/extra\/duplicate\/invalid name checks plus tools\/list schema strictness and annotation coverage/);
     assert.match(tableRow, /relation filter \/ `relation_check` closest-value rejection/);
@@ -2714,6 +2718,8 @@ describe('package contract helpers', () => {
     assert.match(agentSetupRow, /기존 vault 에 starter markdown 을 추가하지 않고/);
     assert.match(agentSetupRow, /`--write` 는 누락 파일만 생성/);
     assert.match(agentSetupRow, /`operation:"agent_setup"`/);
+    assert.match(agentSetupRow, /`docs\.modeComparison`/);
+    assert.match(agentSetupRow, /CLI-only \/ MCP-connected \/ Graph DB pack \/ setup gate/);
     assert.match(agentSetupRow, /global `codex mcp add/);
     assert.match(reachabilityRow, /MCP `query_ontology\(reachability\)`/);
     assert.match(reachabilityRow, /`--direction incoming\|outgoing\|both`/);
