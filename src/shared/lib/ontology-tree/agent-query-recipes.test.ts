@@ -602,10 +602,16 @@ describe("buildAgentQueryRecipes", () => {
       direction: "outgoing",
       limit: 20,
     });
+    expect(formatAgentQueryCallCliCommand(playbooks[3]!.payloads[3]!)).toBe(
+      "oh-my-ontology pattern-walk project [vault] --pattern domains,capabilities --direction outgoing --limit 20",
+    );
     expect(playbooks[3]?.payloads[4]?.arguments).toMatchObject({
       operation: "project_map",
       project: "project",
     });
+    expect(formatAgentQueryCallCliCommand(playbooks[3]!.payloads[4]!)).toBe(
+      "oh-my-ontology project-map project [vault] --limit 10 --item-limit 20",
+    );
     expect(playbooks[3]?.evidence.join(" ")).toContain("evidence.status");
     expect(playbooks[3]?.evidence.join(" ")).toContain("evidence.pathsComplete");
     expect(playbooks[3]?.stopWhen.join(" ")).toContain("query_plan");

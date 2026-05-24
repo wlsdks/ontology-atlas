@@ -1821,6 +1821,7 @@ describe('queryCompiledOntology', () => {
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10'));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20'));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology all-paths capabilities/login domains/auth [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10'));
+    assert.ok(!result.cliFallbackCommands.some((command) => command.includes('<project-slug>')));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology explain capabilities/login domains/auth [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10'));
     assert.deepEqual(result.graphDbQueryPack.map((item) => item.id), [
       'graph_facets',

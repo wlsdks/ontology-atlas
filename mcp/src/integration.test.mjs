@@ -2517,6 +2517,8 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10"));
     assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20"));
     assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology all-paths/.test(command)));
+    assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology pattern-walk/.test(command)));
+    assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology project-map/.test(command)));
     assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology explain/.test(command)));
     assert.deepEqual(agentBrief.graphDbQueryPack.map((item) => item.id), [
       "graph_facets",

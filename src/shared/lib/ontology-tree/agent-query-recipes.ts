@@ -420,6 +420,21 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
         positiveFlag("--limit", args.limit),
         csvFlag("--types", args.types),
       ]);
+    case "pattern_walk": {
+      const slug = stringArg(args.slug, "<slug>");
+      return withFlags(`oh-my-ontology pattern-walk ${shellQuote(slug)} [vault]`, [
+        csvFlag("--pattern", args.pattern),
+        stringFlag("--direction", args.direction),
+        positiveFlag("--limit", args.limit),
+      ]);
+    }
+    case "project_map": {
+      const project = stringArg(args.project ?? args.slug, "<project-slug>");
+      return withFlags(`oh-my-ontology project-map ${shellQuote(project)} [vault]`, [
+        positiveFlag("--limit", args.limit),
+        positiveFlag("--item-limit", args.itemLimit),
+      ]);
+    }
     default:
       return null;
   }

@@ -147,7 +147,7 @@ describe('package contract helpers', () => {
     );
     assert.equal(
       pkg.scripts?.['integration:cli:graph-read'],
-      `${focusedNode} --test-name-pattern "^(backlinks|path|explain|all-paths|reachability|relation-check|orphans|query|match-nodes|match-edges|domain-matrix|overview|hubs|blast-radius|cycles|node|similar)" cli/src/integration.test.mjs`,
+      `${focusedNode} --test-name-pattern "^(backlinks|path|explain|all-paths|reachability|pattern-walk|project-map|relation-check|orphans|query|match-nodes|match-edges|domain-matrix|overview|hubs|blast-radius|cycles|node|similar)" cli/src/integration.test.mjs`,
     );
     assert.equal(
       pkg.scripts?.['integration:cli:graph-write'],
@@ -497,7 +497,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm integration:cli` \| Full CLI integration contracts; use when `cli\/src\/integration\.test\.mjs` itself changed \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:entry` \| CLI entrypoint, help, command inventory, and `init` contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:diagnosis` \| CLI `health` \/ `agent-brief` \/ `workspace-brief` diagnosis contracts \|/);
-    assert.match(checksDoc, /\| `pnpm integration:cli:graph-read` \| CLI read-only graph command contracts, including `match-nodes` \/ `match-edges` scans, `explain` relation evidence, `domain-matrix` coupling summaries, `reachability`, and bounded `all-paths --plan` traversal guards \|/);
+    assert.match(checksDoc, /\| `pnpm integration:cli:graph-read` \| CLI read-only graph command contracts, including `match-nodes` \/ `match-edges` scans, `explain` relation evidence, `domain-matrix` coupling summaries, `reachability`, bounded `all-paths --plan` traversal guards, explicit `pattern-walk` traversals, and `project-map` containment summaries \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:graph-write` \| CLI graph write dry-run\/confirm safety contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:repo-analysis` \| CLI `analyze` \/ `infer-imports` \/ `bootstrap` code-to-vault contracts \|/);
     assert.match(checksDoc, /\| `pnpm integration:cli:local-vault` \| CLI local vault `add` \/ `import` \/ `list` \/ `find` \/ `validate` contracts \|/);
@@ -2643,6 +2643,8 @@ describe('package contract helpers', () => {
     const domainMatrixRow = doc.split('| `oh-my-ontology domain-matrix [vault]` |')[1]?.split('\n')[0] ?? '';
     const facetsRow = doc.split('| `oh-my-ontology facets [vault]` |')[1]?.split('\n')[0] ?? '';
     const schemaRow = doc.split('| `oh-my-ontology schema` |')[1]?.split('\n')[0] ?? '';
+    const patternWalkRow = doc.split('| `oh-my-ontology pattern-walk <slug>` |')[1]?.split('\n')[0] ?? '';
+    const projectMapRow = doc.split('| `oh-my-ontology project-map <project>` |')[1]?.split('\n')[0] ?? '';
     const reachabilityRow = doc.split('| `oh-my-ontology reachability <slug>` |')[1]?.split('\n')[0] ?? '';
     const pathRow = doc.split('| `oh-my-ontology path <from> <to>` |')[1]?.split('\n')[0] ?? '';
     const allPathsRow = doc.split('| `oh-my-ontology all-paths <from> <to>` |')[1]?.split('\n')[0] ?? '';
@@ -2652,8 +2654,8 @@ describe('package contract helpers', () => {
     const componentsRow = doc.split('| `oh-my-ontology components` |')[1]?.split('\n')[0] ?? '';
     const topologicalOrderRow = doc.split('| `oh-my-ontology topological-order` |')[1]?.split('\n')[0] ?? '';
 
-    assert.match(doc, /CLI Developer Entry \(40 commands/);
-    assert.match(doc, /총 40 명령/);
+    assert.match(doc, /CLI Developer Entry \(42 commands/);
+    assert.match(doc, /총 42 명령/);
     assert.match(doc, /cli\/src\/commands\/growth\.mjs/);
     assert.match(doc, /cli\/src\/commands\/maintenance\.mjs/);
     assert.match(doc, /cli\/src\/commands\/all-paths\.mjs/);
@@ -2662,6 +2664,8 @@ describe('package contract helpers', () => {
     assert.match(doc, /cli\/src\/commands\/domain-matrix\.mjs/);
     assert.match(doc, /cli\/src\/commands\/facets\.mjs/);
     assert.match(doc, /cli\/src\/commands\/schema\.mjs/);
+    assert.match(doc, /cli\/src\/commands\/pattern-walk\.mjs/);
+    assert.match(doc, /cli\/src\/commands\/project-map\.mjs/);
     assert.match(doc, /cli\/src\/commands\/components\.mjs/);
     assert.match(doc, /cli\/src\/commands\/topological-order\.mjs/);
     assert.match(doc, /cli\/src\/commands\/reachability\.mjs/);
@@ -2699,6 +2703,12 @@ describe('package contract helpers', () => {
     assert.match(schemaRow, /MCP `query_ontology\(schema\)`/);
     assert.match(schemaRow, /from-kind \/ relation \/ to-kind/);
     assert.match(schemaRow, /malformed schema pattern payload 는 JSON 또는 human output 전 exit 2/);
+    assert.match(patternWalkRow, /MCP `query_ontology\(pattern_walk\)`/);
+    assert.match(patternWalkRow, /`--pattern domains,capabilities`/);
+    assert.match(patternWalkRow, /malformed pattern_walk payload 는 JSON 또는 human output 전 exit 2/);
+    assert.match(projectMapRow, /MCP `query_ontology\(project_map\)`/);
+    assert.match(projectMapRow, /domain-by-domain/);
+    assert.match(projectMapRow, /malformed project_map payload 는 JSON 또는 human output 전 exit 2/);
     assert.match(reachabilityRow, /MCP `query_ontology\(reachability\)`/);
     assert.match(reachabilityRow, /`--direction incoming\|outgoing\|both`/);
     assert.match(reachabilityRow, /`--plan` 은 `query_plan\(reachability\)`/);

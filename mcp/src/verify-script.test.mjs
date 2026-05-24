@@ -9148,6 +9148,8 @@ describe('verify.mjs first-contact gates', () => {
         'oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10',
         'oh-my-ontology match-edges [vault] --plan --types depends_on --limit 20',
         'oh-my-ontology all-paths capability:mcp-server domain:ai-agent-partner [vault] --plan --max-hops 3 --force',
+        'oh-my-ontology pattern-walk project:app [vault] --pattern domains,capabilities',
+        'oh-my-ontology project-map project:app [vault]',
         'oh-my-ontology explain capability:mcp-server domain:ai-agent-partner [vault] --direction undirected',
       ],
       health: {
@@ -9368,6 +9370,20 @@ describe('verify.mjs first-contact gates', () => {
         cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/match-nodes/.test(command)),
       }),
       'agent_brief cliFallbackCommands missing match-nodes plan fallback',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/pattern-walk/.test(command)),
+      }),
+      'agent_brief cliFallbackCommands missing pattern-walk fallback',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/project-map/.test(command)),
+      }),
+      'agent_brief cliFallbackCommands missing project-map fallback',
     );
     assert.equal(
       agentBriefFailure({ ...payload, firstCalls: [{ tool: 'query_ontology', arguments: { operation: 'not_real' } }] }),

@@ -38,6 +38,8 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   'domain-matrix': runner('domain-matrix.mjs', 'runDomainMatrix'),
   facets: runner('facets.mjs', 'runFacets'),
   schema: runner('schema.mjs', 'runSchema'),
+  'pattern-walk': runner('pattern-walk.mjs', 'runPatternWalk'),
+  'project-map': runner('project-map.mjs', 'runProjectMap'),
   query: runner('query.mjs', 'runQuery'),
   compile: runner('compile.mjs', 'runCompile'),
   rename: runner('rename.mjs', 'runRename'),

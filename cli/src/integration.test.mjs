@@ -3807,6 +3807,107 @@ await test('domain-matrix --types — rejects unknown relation types before MCP 
   }
 });
 
+await test('pattern-walk — prints explicit containment traversal evidence', async () => {
+  const root = withVault([
+    {
+      slug: 'project',
+      content:
+        '---\nkind: project\nslug: project\ntitle: Project\ndomains: [domains/auth]\n---\n\n# Project\n',
+    },
+    {
+      slug: 'domains/auth',
+      content:
+        '---\nkind: domain\nslug: domains/auth\ntitle: Auth\ncapabilities: [capabilities/login]\n---\n\n# Auth\n',
+    },
+    {
+      slug: 'capabilities/login',
+      content:
+        '---\nkind: capability\nslug: capabilities/login\ntitle: Login\ndomain: domains/auth\n---\n\n# Login\n',
+    },
+  ]);
+  try {
+    const r = await run(['pattern-walk', 'project', root, '--pattern=domains,capabilities', '--limit=10']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /pattern_walk project outgoing domains -> capabilities/);
+    assert.match(clean, /2 step\(s\)/);
+    assert.match(clean, /step 1 domains/);
+    assert.match(clean, /domains\/auth\s+— Auth/);
+    assert.match(clean, /step 2 capabilities/);
+    assert.match(clean, /capabilities\/login\s+— Login/);
+    assert.match(clean, /next containment capabilities\/login/);
+    assert.match(clean, /oh-my-ontology node capabilities\/login \[vault\] --limit 20/);
+
+    const json = await run(['pattern-walk', 'project', root, '--pattern=domains,capabilities', '--json']);
+    assert.equal(json.code, 0, `stdout: ${json.stdout}\nstderr: ${json.stderr}`);
+    const data = JSON.parse(json.stdout);
+    assert.equal(data.operation, 'pattern_walk');
+    assert.deepEqual(data.pattern, ['domains', 'capabilities']);
+    assert.equal(data.paths.rows[0].end, 'capabilities/login');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('pattern-walk — rejects unknown pattern relation types before MCP call', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['pattern-walk', 'project', root, '--pattern=domainz']);
+    assert.equal(r.code, 1);
+    assert.match(stripAnsi(r.stderr), /--pattern items/);
+    assert.match(stripAnsi(r.stderr), /Did you mean "domains"/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('project-map — prints domain placement and containment follow-up', async () => {
+  const root = withVault([
+    {
+      slug: 'project',
+      content:
+        '---\nkind: project\nslug: project\ntitle: Project\ndomains: [domains/auth]\n---\n\n# Project\n',
+    },
+    {
+      slug: 'domains/auth',
+      content:
+        '---\nkind: domain\nslug: domains/auth\ntitle: Auth\ncapabilities: [capabilities/login]\n---\n\n# Auth\n',
+    },
+    {
+      slug: 'capabilities/login',
+      content:
+        '---\nkind: capability\nslug: capabilities/login\ntitle: Login\ndomain: domains/auth\nelements: [elements/login-api]\n---\n\n# Login\n',
+    },
+    {
+      slug: 'elements/login-api',
+      content:
+        '---\nkind: element\nslug: elements/login-api\ntitle: Login API\ndomain: domains/auth\n---\n\n# Login API\n',
+    },
+  ]);
+  try {
+    const r = await run(['project-map', 'project', root, '--limit=5', '--item-limit=5']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /project_map project/);
+    assert.match(clean, /1 domain\(s\)/);
+    assert.match(clean, /domains\/auth\s+— Auth/);
+    assert.match(clean, /capability capabilities\/login/);
+    assert.match(clean, /element\s+elements\/login-api/);
+    assert.match(clean, /next domain domains\/auth/);
+    assert.match(clean, /oh-my-ontology pattern-walk project \[vault\] --pattern domains,capabilities --limit 20/);
+
+    const json = await run(['project-map', 'project', root, '--json']);
+    assert.equal(json.code, 0, `stdout: ${json.stdout}\nstderr: ${json.stderr}`);
+    const data = JSON.parse(json.stdout);
+    assert.equal(data.operation, 'project_map');
+    assert.equal(data.project, 'project');
+    assert.equal(data.summary.domains, 1);
+    assert.equal(data.domains[0].capabilities.nodes[0].slug, 'capabilities/login');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('reachability — transitive reachable nodes are grouped by layer', async () => {
   const root = await buildGraphFixture();
   try {

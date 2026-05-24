@@ -6719,6 +6719,12 @@ export function agentBriefFailure(parsed) {
   if (!parsed.cliFallbackCommands.some((command) => /all-paths /.test(command) && / --plan /.test(command))) {
     return 'agent_brief cliFallbackCommands missing all-paths plan fallback';
   }
+  if (!parsed.cliFallbackCommands.some((command) => /pattern-walk /.test(command) && / --pattern /.test(command))) {
+    return 'agent_brief cliFallbackCommands missing pattern-walk fallback';
+  }
+  if (!parsed.cliFallbackCommands.some((command) => /project-map /.test(command))) {
+    return 'agent_brief cliFallbackCommands missing project-map fallback';
+  }
   if (!parsed.cliFallbackCommands.some((command) => /explain /.test(command))) {
     return 'agent_brief cliFallbackCommands missing explain fallback';
   }

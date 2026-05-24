@@ -108,6 +108,10 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --limit N --json
   npx oh-my-ontology schema [vault]           Relation schema patterns for traversal/write preflight
        --limit N --json
+  npx oh-my-ontology pattern-walk <slug>      Explicit relation-sequence traversal evidence
+       --pattern domains,capabilities --limit N --json
+  npx oh-my-ontology project-map <project>    Domain-by-domain project containment map
+       --limit N --item-limit N --json
   npx oh-my-ontology compile [vault]         Deterministic graph compile + optional reorder
        --summary --fix --json                 ${COLORS.dim}hash/counts · canonicalize relation arrays${COLORS.reset}
   npx oh-my-ontology overview [vault]         Vault first-contact dashboard (counts + 분포 + 허브)

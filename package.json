@@ -30,7 +30,7 @@
     "integration:cli:compile": "node scripts/run-focused-node-test.mjs --test-name-pattern \"compile\" cli/src/integration.test.mjs",
     "integration:cli:mcp-verify": "node scripts/run-focused-node-test.mjs --test-name-pattern \"mcp-verify\" cli/src/integration.test.mjs",
     "integration:cli:diagnosis": "node scripts/run-focused-node-test.mjs --test-name-pattern \"health|agent-brief|workspace-brief\" cli/src/integration.test.mjs",
-    "integration:cli:graph-read": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(backlinks|path|explain|all-paths|reachability|relation-check|orphans|query|match-nodes|match-edges|domain-matrix|overview|hubs|blast-radius|cycles|node|similar)\" cli/src/integration.test.mjs",
+    "integration:cli:graph-read": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(backlinks|path|explain|all-paths|reachability|pattern-walk|project-map|relation-check|orphans|query|match-nodes|match-edges|domain-matrix|overview|hubs|blast-radius|cycles|node|similar)\" cli/src/integration.test.mjs",
     "integration:cli:graph-write": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(rename|delete|merge|graph write commands)\" cli/src/integration.test.mjs",
     "integration:cli:repo-analysis": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(analyze|infer-imports|bootstrap|repo analysis commands)\" cli/src/integration.test.mjs",
     "integration:cli:local-vault": "node scripts/run-focused-node-test.mjs --test-name-pattern \"^(list|add|find|import|validate|local/frontmatter commands)\" cli/src/integration.test.mjs",

@@ -3031,6 +3031,16 @@ export function createOntologyEngine(artifact, options = {}) {
         ],
       },
     ];
+    const containmentCrossCheckCalls = [
+      agentToolCall('query_ontology', {
+        operation: 'pattern_walk',
+        slug: projectSlug,
+        pattern: ['domains', 'capabilities'],
+        direction: 'outgoing',
+        limit: 20,
+      }),
+      agentToolCall('query_ontology', { operation: 'project_map', project: projectSlug, limit: 10, itemLimit: 20 }),
+    ];
     const traversalStrategy = [
       {
         id: 'plan_before_enumeration',
@@ -3057,16 +3067,7 @@ export function createOntologyEngine(artifact, options = {}) {
         useWhen: 'The answer changes ownership, domain boundaries, or add_relation direction.',
         evidence: ['pattern_walk rows for project -> domains -> capabilities', 'project_map domain placement and boundary edges'],
         stopWhen: ['pattern_walk and project_map disagree on project/domain placement.'],
-        calls: [
-          agentToolCall('query_ontology', {
-            operation: 'pattern_walk',
-            slug: projectSlug,
-            pattern: ['domains', 'capabilities'],
-            direction: 'outgoing',
-            limit: 20,
-          }),
-          agentToolCall('query_ontology', { operation: 'project_map', project: projectSlug, limit: 10, itemLimit: 20 }),
-        ],
+        calls: containmentCrossCheckCalls,
       },
     ];
     const relationDecisionGuide = [
@@ -3295,14 +3296,7 @@ export function createOntologyEngine(artifact, options = {}) {
             agentToolCall('query_ontology', { operation: 'schema', limit: 20 }),
             traversalPlanCall,
             traversalAllPathsCall,
-            agentToolCall('query_ontology', {
-              operation: 'pattern_walk',
-              slug: projectSlug,
-              pattern: ['domains', 'capabilities'],
-              direction: 'outgoing',
-              limit: 20,
-            }),
-            agentToolCall('query_ontology', { operation: 'project_map', project: projectSlug, limit: 10, itemLimit: 20 }),
+            ...containmentCrossCheckCalls,
           ],
         },
       ],
@@ -4189,9 +4183,30 @@ function formatAgentToolCallCliCommand(call) {
         positiveFlag('--limit', args.limit),
         csvFlag('--types', args.types),
       ]);
+    case 'pattern_walk': {
+      const slug = stringArg(args.slug, '<slug>');
+      if (isPlaceholderArg(slug)) return null;
+      return withCliFlags(`oh-my-ontology pattern-walk ${shellQuote(slug)} [vault]`, [
+        csvFlag('--pattern', args.pattern),
+        stringFlag('--direction', args.direction),
+        positiveFlag('--limit', args.limit),
+      ]);
+    }
+    case 'project_map': {
+      const project = stringArg(args.project ?? args.slug, '<project-slug>');
+      if (isPlaceholderArg(project)) return null;
+      return withCliFlags(`oh-my-ontology project-map ${shellQuote(project)} [vault]`, [
+        positiveFlag('--limit', args.limit),
+        positiveFlag('--item-limit', args.itemLimit),
+      ]);
+    }
     default:
       return null;
   }
+}
+
+function isPlaceholderArg(value) {
+  return typeof value === 'string' && /^<[^>]+>$/.test(value);
 }
 
 function formatMatchNodesCliCommand(args, options = {}) {
