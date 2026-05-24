@@ -129,6 +129,21 @@ function render(result) {
     }
     process.stdout.write('\n');
   }
+  const focus =
+    (Array.isArray(r.pageRank) && r.pageRank[0]) ||
+    (Array.isArray(r.bridges) && r.bridges[0]) ||
+    (Array.isArray(r.authorities) && r.authorities[0]) ||
+    (Array.isArray(r.hubs) && r.hubs[0]);
+  if (focus?.slug) {
+    process.stdout.write(
+      `${COLORS.dim}next${COLORS.reset} hub ${COLORS.bold}${focus.slug}${COLORS.reset}` +
+        `${COLORS.dim} — ranking rows are hotspots, not proof; inspect the node and impact before onboarding/refactor decisions${COLORS.reset}\n`,
+    );
+    process.stdout.write(`  ${COLORS.cyan}oh-my-ontology node ${focus.slug} [vault] --limit 20${COLORS.reset}\n`);
+    process.stdout.write(
+      `  ${COLORS.cyan}oh-my-ontology blast-radius ${focus.slug} [vault] --plan --depth 2 --direction both${COLORS.reset}\n`,
+    );
+  }
 }
 
 function parseArgs(args) {

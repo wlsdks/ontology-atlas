@@ -4015,6 +4015,10 @@ await test('hubs — human rankings include node titles for scanability', async 
     assert.match(clean, /PageRank/);
     assert.match(clean, /domains\/auth\s+— Auth/);
     assert.match(clean, /capabilities\/foo\s+— Foo/);
+    assert.match(clean, /next hub domains\/auth/);
+    assert.match(clean, /ranking rows are hotspots, not proof; inspect the node and impact before onboarding\/refactor decisions/);
+    assert.match(clean, /oh-my-ontology node domains\/auth \[vault\] --limit 20/);
+    assert.match(clean, /oh-my-ontology blast-radius domains\/auth \[vault\] --plan --depth 2 --direction both/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
