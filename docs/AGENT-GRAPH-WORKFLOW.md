@@ -1,6 +1,6 @@
 # Agent Graph Workflow
 
-> Current as of 2026-05-24. This is the user-facing guide for running
+> Current as of 2026-05-25. This is the user-facing guide for running
 > `oh-my-ontology` as a local PC graph memory: CLI-only, MCP-connected, and web
 > workbench flows over the same markdown vault.
 
@@ -176,19 +176,21 @@ Use this scan-to-proof checklist:
 
 ## Actual Verification Snapshot
 
-These checks were run against this repository's dogfood vault on 2026-05-24.
+These checks were run against this repository's dogfood vault on 2026-05-25.
 
 CLI-only checks:
 
 - `node cli/src/index.mjs agent-setup docs/ontology --json`
   - `operation: "agent_setup"`
   - `sideEffect: false`
-  - `summary: { total: 4, ready: 2, missing: 2, review: 0 }`
+  - `summary: { total: 4, ready: 2, missing: 2, review: 0, written: 0, examples: 0 }`
+  - `modeIds: ["cli_only", "mcp_connected", "graph_db_pack", "setup_gate"]`
 - `node cli/src/index.mjs match-nodes docs/ontology --kind capability --limit 3 --json`
   - `operation: "match_nodes"`
   - `totalMatches: 19`
+  - `returned: 3`
   - `limited: true`
-  - `followUp: true`
+  - `followUp.focusSlug: "capabilities/cli-developer-entry"`
 - `node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`
   - `operation: "agent_fallback_check"`
   - `ok: true`
@@ -197,15 +199,39 @@ CLI-only checks:
   - `passed: 25`
   - `failed: 0`
   - `slow: 0`
+  - `wallMs: 2534`
+  - `totalMs: 9904`
+  - slowest fallback: `match-nodes --plan --kind capability --min-degree 2`
+    at `814ms`
+- Human terminal view for the same gate printed:
+  - `setup gate ok=true performanceOk=true wall=2447ms slow=0/25 failed=0`
+- `node scripts/perf-graph.mjs --json --check --n=1000`
+  - budgets: `compileMs <= 750`, `queryMs <= 750`
+  - failures: `0`
+  - 1000 generated nodes, 3867 generated edges
+  - `compile.fullMs: 17.83`
+  - `agent_brief: 21.12ms`
+  - `graph_db_pack: 34.68ms`
+  - `project_map: 9.57ms`
+  - graph DB pack replayed 10 calls:
+    `query_plan`, `match_nodes`, `query_plan`, `match_edges`,
+    `domain_matrix`, `query_plan`, `centrality`, `query_plan`, `all_paths`,
+    `explain_relation`
+  - graph DB pack diagnostics: `totalMatches: [719, 718]`,
+    `allPathsEvidenceStatus: "complete"`, and
+    `explainRelationHasShortestPath: true`
 
 MCP-connected checks from this Codex session:
 
-- `list_kinds` returned 31 nodes: 19 capabilities, 6 domains, 4 elements, 1
-  project, 1 vault README.
-- `validate_vault` scanned 31 files and found 0 problem files.
-- `list_concepts({ kind: "capability", limit: 5, summary: true })` returned
-  capability summaries including `agent-config-onboarding` and
-  `cli-developer-entry`.
+- `workspace-brief` returned `status: "healthy"`, graph hash
+  `0d31ec737ff4c261f7e12b958e86153484330cb0336566984dae13cc50f16d13`,
+  31 nodes, 296 edges, 1 project, 6 domains, 19 capabilities, 4 elements, 0
+  unresolved edges, 0 issues, and 0 growth actions.
+- `health` returned `status: "healthy"`, 115 resolved edges, 181 external
+  edges, 1 connected component, 0 dependency cycles, 0 relation
+  recommendations, and all five checks passing:
+  `compile_issues`, `unresolved_edges`, `dependency_cycles`,
+  `relation_recommendations`, and `components`.
 
 Installed MCP verifier:
 

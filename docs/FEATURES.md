@@ -1,7 +1,7 @@
 # FEATURES — oh-my-ontology
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-05-18 (repo-native AI-agent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspace-brief positioning).
+> Last updated: 2026-05-25 (agent setup gate, graph DB-style query pack, CLI/MCP verification snapshots, and fallback performance checks).
 > Routes section UI detail remains a maintained product snapshot. When route
 > behavior changes, update this file alongside the PR body and CHANGELOG.
 > Update trigger: reflect immediately when surfaces are added or removed. Update alongside the PR body and CHANGELOG.
