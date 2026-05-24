@@ -1244,6 +1244,9 @@ function validAgentBriefDocs(value) {
   ) {
     return false;
   }
+  if (!validAgentModeComparison(value.modeComparison)) {
+    return false;
+  }
   if (!Array.isArray(value.graphScanProofChecklist) || value.graphScanProofChecklist.length < 4) {
     return false;
   }
@@ -1261,6 +1264,28 @@ function validAgentBriefDocs(value) {
     }
     for (const item of evidence) {
       if (!row.evidence.includes(item)) return false;
+    }
+  }
+  return true;
+}
+
+function validAgentModeComparison(value) {
+  if (!Array.isArray(value) || value.length < 4) return false;
+  const byId = new Map(value.map((row) => [row?.id, row]));
+  const required = [
+    ['cli_only', ['CLI-only', 'terminal-only', 'graph DB pack']],
+    ['mcp_connected', ['MCP-connected', 'structured repair fields', 'write guardrails']],
+    ['graph_db_pack', ['Graph DB pack', 'database-style graph exploration', 'proof follow-ups']],
+    ['setup_gate', ['Setup gate', 'JSON readiness', 'restart guidance']],
+  ];
+  for (const [id, fragments] of required) {
+    const row = byId.get(id);
+    if (!isPlainObject(row) || !hasNonEmptyString(row.id, row.label, row.when, row.gives)) {
+      return false;
+    }
+    const haystack = `${row.label}\n${row.when}\n${row.gives}`;
+    for (const fragment of fragments) {
+      if (!haystack.includes(fragment)) return false;
     }
   }
   return true;

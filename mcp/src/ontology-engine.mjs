@@ -13,6 +13,32 @@ const AGENT_WORKFLOW_GUIDE = Object.freeze({
   description:
     'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
 });
+const AGENT_MODE_COMPARISON = Object.freeze([
+  Object.freeze({
+    id: 'cli_only',
+    label: 'CLI-only',
+    when: 'No MCP client is connected or the user wants terminal-only inspection.',
+    gives: 'validate, workspace-brief, graph scans, graph DB pack, and fallback timing over the same local vault.',
+  }),
+  Object.freeze({
+    id: 'mcp_connected',
+    label: 'MCP-connected',
+    when: 'Claude Code, Codex, Cursor, or another MCP client is registered and restarted.',
+    gives: 'direct read/write tools, structured repair fields, result contracts, and write guardrails.',
+  }),
+  Object.freeze({
+    id: 'graph_db_pack',
+    label: 'Graph DB pack',
+    when: 'The user wants database-style graph exploration without running a database server.',
+    gives: 'bounded query plans, node/edge scans, domain matrix, path evidence, and proof follow-ups.',
+  }),
+  Object.freeze({
+    id: 'setup_gate',
+    label: 'Setup gate',
+    when: 'Setup is unclear or the agent was opened from a separate codebase root.',
+    gives: 'config repair commands, JSON readiness, performance timing, and restart guidance before edits.',
+  }),
+]);
 const GRAPH_SCAN_PROOF_CHECKLIST = Object.freeze([
   Object.freeze({
     id: 'report_scan_scope',
@@ -3369,6 +3395,7 @@ export function createOntologyEngine(artifact, options = {}) {
       relationDecisionGuide,
       docs: {
         workflowGuide: AGENT_WORKFLOW_GUIDE,
+        modeComparison: AGENT_MODE_COMPARISON,
         graphScanProofChecklist: GRAPH_SCAN_PROOF_CHECKLIST,
       },
     };

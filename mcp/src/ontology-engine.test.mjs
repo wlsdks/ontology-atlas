@@ -1806,6 +1806,14 @@ describe('queryCompiledOntology', () => {
       title: 'Agent Graph Workflow',
       description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
     });
+    assert.deepEqual(result.docs.modeComparison.map((mode) => mode.id), [
+      'cli_only',
+      'mcp_connected',
+      'graph_db_pack',
+      'setup_gate',
+    ]);
+    assert.ok(result.docs.modeComparison.find((mode) => mode.id === 'mcp_connected').gives.includes('structured repair fields'));
+    assert.ok(result.docs.modeComparison.find((mode) => mode.id === 'setup_gate').gives.includes('JSON readiness'));
     assert.deepEqual(result.docs.graphScanProofChecklist.map((row) => row.id), [
       'report_scan_scope',
       'prove_node_rows',

@@ -74,10 +74,11 @@ an AI agent can explain the right path without scraping this Markdown table.
 For automation, `agent-brief --json` and MCP `query_ontology({operation:
 "agent_brief"})` expose the same location as `docs.workflowGuide`, so an AI
 tool does not need to parse the human prompt to find the guide.
-They also expose this page's scan-to-proof rules as
-`docs.graphScanProofChecklist`, so an AI tool can inspect the required
-`totalMatches` / follow-up / `evidence.pathsComplete` steps without parsing
-Markdown.
+They also expose this page's mode chooser as `docs.modeComparison` and the
+scan-to-proof rules as `docs.graphScanProofChecklist`, so an AI tool can inspect
+the CLI-only / MCP-connected / graph DB pack / setup gate choice and the
+required `totalMatches` / follow-up / `evidence.pathsComplete` steps without
+parsing Markdown.
 
 ## What MCP Adds
 

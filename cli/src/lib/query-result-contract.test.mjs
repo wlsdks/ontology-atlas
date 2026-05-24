@@ -577,6 +577,32 @@ describe('query-result-contract', () => {
           title: 'Agent Graph Workflow',
           description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
         },
+        modeComparison: [
+          {
+            id: 'cli_only',
+            label: 'CLI-only',
+            when: 'No MCP client is connected or the user wants terminal-only inspection.',
+            gives: 'validate, workspace-brief, graph scans, graph DB pack, and fallback timing over the same local vault.',
+          },
+          {
+            id: 'mcp_connected',
+            label: 'MCP-connected',
+            when: 'Claude Code, Codex, Cursor, or another MCP client is registered and restarted.',
+            gives: 'direct read/write tools, structured repair fields, result contracts, and write guardrails.',
+          },
+          {
+            id: 'graph_db_pack',
+            label: 'Graph DB pack',
+            when: 'The user wants database-style graph exploration without running a database server.',
+            gives: 'bounded query plans, node/edge scans, domain matrix, path evidence, and proof follow-ups.',
+          },
+          {
+            id: 'setup_gate',
+            label: 'Setup gate',
+            when: 'Setup is unclear or the agent was opened from a separate codebase root.',
+            gives: 'config repair commands, JSON readiness, performance timing, and restart guidance before edits.',
+          },
+        ],
         graphScanProofChecklist: [
           {
             id: 'report_scan_scope',
@@ -867,6 +893,18 @@ describe('query-result-contract', () => {
           ...valid.docs,
           graphScanProofChecklist: valid.docs.graphScanProofChecklist.filter(
             (row) => row.id !== 'prove_edge_rows',
+          ),
+        },
+      }),
+      /agent_brief docs must include workflowGuide and graphScanProofChecklist guidance/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        docs: {
+          ...valid.docs,
+          modeComparison: valid.docs.modeComparison.filter(
+            (row) => row.id !== 'setup_gate',
           ),
         },
       }),

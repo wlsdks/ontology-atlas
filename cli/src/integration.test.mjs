@@ -4561,6 +4561,14 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
       title: 'Agent Graph Workflow',
       description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
     });
+    assert.deepEqual(data.docs.modeComparison.map((mode) => mode.id), [
+      'cli_only',
+      'mcp_connected',
+      'graph_db_pack',
+      'setup_gate',
+    ]);
+    assert.match(data.docs.modeComparison.find((mode) => mode.id === 'mcp_connected').gives, /structured repair fields/);
+    assert.match(data.docs.modeComparison.find((mode) => mode.id === 'setup_gate').gives, /JSON readiness/);
     assert.deepEqual(data.docs.graphScanProofChecklist.map((row) => row.id), [
       'report_scan_scope',
       'prove_node_rows',
