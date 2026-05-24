@@ -44,7 +44,10 @@ const AGENT_READINESS_TOOLS = new Set([
 const AGENT_READINESS_QUERY_OPERATIONS = new Set([
   "agent_brief",
   "blast_radius",
+  "cycles",
+  "growth_plan",
   "health",
+  "maintenance_plan",
   "match_nodes",
   "node_profile",
   "recommend_relations",
@@ -64,7 +67,7 @@ const ACTION_GUIDANCE: Record<AgentReadinessActionKey, string> = {
   inspectHubs:
     "Inspect suggested hubs with workspace_brief, node_profile, path, and blast_radius before editing.",
   syncAfterChanges:
-    "After code changes, sync docs/ontology so Claude Code and Codex share the same graph memory.",
+    "After code changes, run health, cycles, growth_plan, maintenance_plan, and validate_vault so Claude Code and Codex share a clean graph memory.",
 };
 
 const ACTION_PAYLOADS: Record<AgentReadinessActionKey, AgentReadinessToolCall[]> = {
@@ -91,6 +94,9 @@ const ACTION_PAYLOADS: Record<AgentReadinessActionKey, AgentReadinessToolCall[]>
   ],
   syncAfterChanges: [
     { tool: "query_ontology", arguments: { operation: "health" } },
+    { tool: "query_ontology", arguments: { operation: "cycles", maxHops: 8 } },
+    { tool: "query_ontology", arguments: { operation: "growth_plan", limit: 20 } },
+    { tool: "query_ontology", arguments: { operation: "maintenance_plan", limit: 20 } },
     { tool: "validate_vault", arguments: {} },
   ],
 };
@@ -105,6 +111,9 @@ const BASELINE_CLI_COMMANDS: AgentReadinessCliCommand[] = [
   },
   { key: "workspace_brief", command: "oh-my-ontology workspace-brief [vault]" },
   { key: "health", command: "oh-my-ontology health [vault]" },
+  { key: "cycles", command: "oh-my-ontology cycles [vault] --max-hops 8" },
+  { key: "growth", command: "oh-my-ontology growth [vault] --limit 20" },
+  { key: "maintenance", command: "oh-my-ontology maintenance [vault] --limit 20" },
 ];
 
 const ACTION_CLI_COMMANDS: Record<AgentReadinessActionKey, AgentReadinessCliCommand[]> = {
@@ -226,9 +235,16 @@ export function buildAgentReadinessPrompt(summary: AgentReadinessSummary): strin
     { tool: "query_ontology", arguments: { operation: "agent_brief" } },
     { tool: "query_ontology", arguments: { operation: "workspace_brief" } },
     { tool: "query_ontology", arguments: { operation: "health" } },
+    { tool: "query_ontology", arguments: { operation: "cycles", maxHops: 8 } },
+    { tool: "query_ontology", arguments: { operation: "growth_plan", limit: 20 } },
+    { tool: "query_ontology", arguments: { operation: "maintenance_plan", limit: 20 } },
   ];
   const actionPayloads = summary.actionKeys.flatMap((key) => ACTION_PAYLOADS[key]);
-  const payloadLines = [...baselinePayloads, ...actionPayloads]
+  const payloads = [...baselinePayloads, ...actionPayloads].filter((payload, index, all) => {
+    const key = JSON.stringify(payload);
+    return all.findIndex((item) => JSON.stringify(item) === key) === index;
+  });
+  const payloadLines = payloads
     .map((payload, index) => `${index + 1}. ${payload.tool}\n${formatPayload(payload)}`)
     .join("\n\n");
   const cliLines = formatAgentReadinessCliCommands(summary);

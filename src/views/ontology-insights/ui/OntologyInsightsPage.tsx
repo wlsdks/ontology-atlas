@@ -1806,7 +1806,7 @@ function AgentReadinessPanel({
           />
         </div>
         <ol className="mt-2 grid gap-1.5 md:grid-cols-2">
-          {readinessCliCommands.slice(0, 6).map((item, index) => (
+          {readinessCliCommands.slice(0, 8).map((item, index) => (
             <li
               key={item.key}
               className="min-w-0 rounded-md border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(3,7,18,0.16)] px-2 py-1.5"

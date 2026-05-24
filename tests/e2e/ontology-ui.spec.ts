@@ -60,6 +60,9 @@ test.describe("ontology view UI", () => {
       "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000",
     );
     await expect(readinessCli).toContainText("oh-my-ontology workspace-brief [vault]");
+    await expect(readinessCli).toContainText("oh-my-ontology cycles [vault] --max-hops 8");
+    await expect(readinessCli).toContainText("oh-my-ontology growth [vault] --limit 20");
+    await expect(readinessCli).toContainText("oh-my-ontology maintenance [vault] --limit 20");
     await readinessCli.getByRole("button", { name: "Copy CLI checks" }).click();
     const copiedReadinessCli = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
@@ -69,6 +72,9 @@ test.describe("ontology view UI", () => {
     expect(copiedReadinessCli).toContain(
       "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000",
     );
+    expect(copiedReadinessCli).toContain("oh-my-ontology cycles [vault] --max-hops 8");
+    expect(copiedReadinessCli).toContain("oh-my-ontology growth [vault] --limit 20");
+    expect(copiedReadinessCli).toContain("oh-my-ontology maintenance [vault] --limit 20");
     expect(copiedReadinessCli).toContain("oh-my-ontology validate [vault]");
 
     const domainCoupling = page.getByTestId("insights-domain-coupling");

@@ -93,11 +93,18 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain("validate_vault");
     expect(readme).toContain('"operation": "workspace_brief"');
     expect(readme).toContain('"operation": "agent_brief"');
+    expect(readme).toContain('"operation": "health"');
+    expect(readme).toContain('"operation": "cycles"');
+    expect(readme).toContain('"operation": "growth_plan"');
+    expect(readme).toContain('"operation": "maintenance_plan"');
     expect(readme).toContain("oh-my-ontology bootstrap . --vault");
     expect(readme).toContain("If the CLI is installed");
     expect(readme).toContain("oh-my-ontology validate .");
     expect(readme).toContain("oh-my-ontology agent-brief . --graph-db-pack");
     expect(readme).toContain("oh-my-ontology agent-brief . --verify-fallbacks");
+    expect(readme).toContain("oh-my-ontology cycles . --max-hops 8");
+    expect(readme).toContain("oh-my-ontology growth . --limit 20");
+    expect(readme).toContain("oh-my-ontology maintenance . --limit 20");
     expect(readme).toContain("oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000");
     expect(readme).toContain("oh-my-ontology mcp-verify . --timeout-ms 15000");
     expect(readme).toMatch(/before it edits\s+anything/);

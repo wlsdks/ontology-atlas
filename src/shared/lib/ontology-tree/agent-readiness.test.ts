@@ -101,6 +101,9 @@ describe("buildAgentReadinessSummary", () => {
     expect(prompt).toContain("Resolve unknown/stub nodes");
     expect(prompt).toContain('"tool": "query_ontology"');
     expect(prompt).toContain('"operation": "workspace_brief"');
+    expect(prompt).toContain('"operation": "cycles"');
+    expect(prompt).toContain('"operation": "growth_plan"');
+    expect(prompt).toContain('"operation": "maintenance_plan"');
     expect(prompt).toContain('"tool": "find_orphans"');
     expect(prompt).toContain('"excludeKinds"');
     expect(prompt).not.toContain('"kinds"');
@@ -140,6 +143,9 @@ describe("buildAgentReadinessSummary", () => {
       "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000",
       "oh-my-ontology workspace-brief [vault]",
       "oh-my-ontology health [vault]",
+      "oh-my-ontology cycles [vault] --max-hops 8",
+      "oh-my-ontology growth [vault] --limit 20",
+      "oh-my-ontology maintenance [vault] --limit 20",
       "oh-my-ontology node <hub-slug> [vault] --limit 12",
       "oh-my-ontology blast-radius <hub-slug> [vault] --depth 2 --direction incoming",
       "oh-my-ontology validate [vault]",
@@ -150,7 +156,8 @@ describe("buildAgentReadinessSummary", () => {
     expect(formatted).toContain(
       "3. oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000",
     );
-    expect(formatted).toContain("8. oh-my-ontology validate [vault]");
+    expect(formatted).toContain("8. oh-my-ontology maintenance [vault] --limit 20");
+    expect(formatted).toContain("11. oh-my-ontology validate [vault]");
   });
 
   it("validates readiness repair MCP payloads before they are copied", () => {
@@ -158,6 +165,12 @@ describe("buildAgentReadinessSummary", () => {
       validateAgentReadinessToolCall({
         tool: "query_ontology",
         arguments: { operation: "relation_check", from: "<from-slug>", to: "<to-slug>", type: "depends_on" },
+      }),
+    ).toEqual([]);
+    expect(
+      validateAgentReadinessToolCall({
+        tool: "query_ontology",
+        arguments: { operation: "maintenance_plan", limit: 20 },
       }),
     ).toEqual([]);
     expect(

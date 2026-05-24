@@ -72,8 +72,13 @@ anything:
 
 > Use the oh-my-ontology MCP server to run `validate_vault`, then
 > `query_ontology({ "operation": "workspace_brief" })`, then
-> `query_ontology({ "operation": "agent_brief" })`. Tell me whether this
-> vault is readable and the write tools are available before proposing changes.
+> `query_ontology({ "operation": "agent_brief" })`, then
+> `query_ontology({ "operation": "health" })`,
+> `query_ontology({ "operation": "cycles", "maxHops": 8 })`,
+> `query_ontology({ "operation": "growth_plan", "limit": 20 })`, and
+> `query_ontology({ "operation": "maintenance_plan", "limit": 20 })`. Tell me
+> whether this vault is readable, graph-clean enough, and the write tools are
+> available before proposing changes.
 
 If the CLI is installed, the same first-contact check is:
 
@@ -83,6 +88,9 @@ oh-my-ontology workspace-brief .
 oh-my-ontology agent-brief . --prompt
 oh-my-ontology agent-brief . --graph-db-pack
 oh-my-ontology agent-brief . --verify-fallbacks
+oh-my-ontology cycles . --max-hops 8
+oh-my-ontology growth . --limit 20
+oh-my-ontology maintenance . --limit 20
 oh-my-ontology mcp-verify . --timeout-ms 15000
 ```
 
