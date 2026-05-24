@@ -699,6 +699,8 @@ describe("buildAgentQueryRecipes", () => {
     );
 
     expect(cliPack).toContain("when the MCP connector is unavailable");
+    expect(cliPack).toContain("Self-check first: Claude Code/Codex automation can parse ok, failed, timeoutMs");
+    expect(cliPack).toContain("[self_check] oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000");
     expect(cliPack).toContain("Evidence rule: scan rows are candidates, not proof");
     expect(cliPack).toContain("intent: MATCH (n:capability) WHERE degree(n) >= 2 RETURN n");
     expect(cliPack).toContain("[node_scan] oh-my-ontology match-nodes [vault] --plan");
