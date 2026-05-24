@@ -17,6 +17,7 @@ import {
   buildMcpConfigJson,
   LocalVaultPicker,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
+  ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   OntologyStarterCta,
 } from '@/features/docs-vault-local';
 import type { VaultManifest } from '@/entities/docs-vault';
@@ -32,9 +33,6 @@ const AGENT_VERIFY_CLI_COMMAND = [
   'oh-my-ontology hubs . --limit 10 --types depends_on,relates',
   'oh-my-ontology mcp-verify . --timeout-ms 15000',
 ].join('\n');
-
-const AGENT_VERIFY_JSON_GATE_COMMAND =
-  'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000';
 
 const AGENT_VERIFY_CLI_PREVIEW = [
   'validate .',
@@ -67,7 +65,7 @@ function buildAgentSetupPacket(vaultName: string): string {
     AGENT_VERIFY_CLI_COMMAND,
     '',
     'Machine-readable setup gate for automation:',
-    AGENT_VERIFY_JSON_GATE_COMMAND,
+    ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   ].join('\n');
 }
 
@@ -233,7 +231,7 @@ export function VaultToolsMenu({
   }
 
   async function handleCopyAgentJsonGate() {
-    const copied = await copyText(AGENT_VERIFY_JSON_GATE_COMMAND);
+    const copied = await copyText(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
     setAgentJsonGateCopyState(copied ? 'copied' : 'failed');
   }
 
@@ -490,7 +488,7 @@ export function VaultToolsMenu({
                     {t('agentSetup.jsonGateLabel')}
                   </div>
                   <code className="mt-1 block truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-                    {AGENT_VERIFY_JSON_GATE_COMMAND}
+                    {ONTOLOGY_STARTER_JSON_GATE_COMMAND}
                   </code>
                 </div>
                 <ol className="mt-1.5 grid gap-1" aria-label={t('agentSetup.cliPreviewAriaLabel')}>

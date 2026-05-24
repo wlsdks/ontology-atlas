@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import {
   ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS,
+  ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   OntologyStarterCta,
 } from './OntologyStarterCta';
 import { copyText } from '@/shared/lib/copy-text';
@@ -49,6 +50,9 @@ describe('OntologyStarterCta', () => {
     ).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'CLI proof 복사' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '자동화 JSON gate 복사' }),
     ).toBeInTheDocument();
   });
 
@@ -105,5 +109,19 @@ describe('OntologyStarterCta', () => {
       expect.stringContaining('oh-my-ontology mcp-verify . --timeout-ms 15000'),
     );
     expect(await screen.findByRole('button', { name: 'CLI proof 복사됨' })).toBeInTheDocument();
+  });
+
+  it('자동화에서 파싱 가능한 JSON gate 명령을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    render(<OntologyStarterCta docCount={0} onScaffold={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole('button', { name: '자동화 JSON gate 복사' }));
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
+    expect(copyTextMock).toHaveBeenCalledWith(
+      'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000',
+    );
+    expect(await screen.findByRole('button', { name: 'JSON gate 복사됨' })).toBeInTheDocument();
   });
 });

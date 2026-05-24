@@ -98,6 +98,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain("oh-my-ontology validate .");
     expect(readme).toContain("oh-my-ontology agent-brief . --graph-db-pack");
     expect(readme).toContain("oh-my-ontology agent-brief . --verify-fallbacks");
+    expect(readme).toContain("oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000");
     expect(readme).toContain("oh-my-ontology mcp-verify . --timeout-ms 15000");
     expect(readme).toMatch(/before it edits\s+anything/);
   });

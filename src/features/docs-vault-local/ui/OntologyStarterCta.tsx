@@ -17,6 +17,9 @@ export const ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS = [
   'oh-my-ontology mcp-verify . --timeout-ms 15000',
 ].join('\n');
 
+export const ONTOLOGY_STARTER_JSON_GATE_COMMAND =
+  'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000';
+
 interface Props {
   /** 클릭 시 useLocalVault.scaffoldOntology() 호출. created/skipped 반환. */
   onScaffold: () => Promise<{ created: number; skipped: number }>;
@@ -40,6 +43,9 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const [cliCopyState, setCliCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  const [jsonGateCopyState, setJsonGateCopyState] = useState<
+    'idle' | 'copied' | 'failed'
+  >('idle');
   const isEmpty = docCount === 0;
   const verificationSteps = [
     t('verifyStepFiles'),
@@ -74,6 +80,11 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
     setCliCopyState(copied ? 'copied' : 'failed');
   }
 
+  async function handleCopyJsonGate() {
+    const copied = await copyText(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
+    setJsonGateCopyState(copied ? 'copied' : 'failed');
+  }
+
   const copyPromptLabel =
     copyState === 'copied'
       ? t('copyPromptCopied')
@@ -86,6 +97,12 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
       : cliCopyState === 'failed'
         ? t('copyCliFailed')
         : t('copyCliLabel');
+  const copyJsonGateLabel =
+    jsonGateCopyState === 'copied'
+      ? t('copyJsonGateCopied')
+      : jsonGateCopyState === 'failed'
+        ? t('copyJsonGateFailed')
+        : t('copyJsonGateLabel');
 
   if (isEmpty) {
     // 빈 vault — 큰 카드로 "여기서 시작" 안내
@@ -166,6 +183,14 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
             <ClipboardCopy size={12} aria-hidden />
             {copyCliLabel}
           </button>
+          <button
+            type="button"
+            onClick={handleCopyJsonGate}
+            className="inline-flex items-center gap-2 rounded-md border border-[color:rgba(130,230,180,0.28)] bg-[color:rgba(50,185,125,0.07)] px-3 py-1.5 text-[11.5px] text-[color:rgba(180,235,205,0.94)] transition-colors hover:border-[color:rgba(130,230,180,0.42)] hover:bg-[color:rgba(50,185,125,0.11)]"
+          >
+            <ClipboardCopy size={12} aria-hidden />
+            {copyJsonGateLabel}
+          </button>
         </div>
         <button
           type="button"
@@ -218,6 +243,15 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
       >
         <ClipboardCopy size={12} aria-hidden />
         {copyCliLabel}
+      </button>
+      <button
+        type="button"
+        onClick={handleCopyJsonGate}
+        title={t('secondaryJsonGateTitle')}
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(130,230,180,0.28)] bg-[color:rgba(50,185,125,0.07)] px-3 py-1.5 text-[11.5px] text-[color:rgba(180,235,205,0.94)] transition-colors hover:border-[color:rgba(130,230,180,0.42)] hover:bg-[color:rgba(50,185,125,0.11)]"
+      >
+        <ClipboardCopy size={12} aria-hidden />
+        {copyJsonGateLabel}
       </button>
     </div>
   );

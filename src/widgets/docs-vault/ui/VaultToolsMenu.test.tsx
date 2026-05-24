@@ -1,4 +1,4 @@
-import { fireEvent, render as rtlRender, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render as rtlRender, screen, waitFor, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
@@ -281,8 +281,9 @@ describe('VaultToolsMenu', () => {
       },
     });
 
+    const agentSetup = screen.getByRole('region', { name: 'AI agent 설정 상태' });
     fireEvent.click(
-      screen.getByRole('button', { name: '자동화 JSON gate 복사' }),
+      within(agentSetup).getByRole('button', { name: '자동화 JSON gate 복사' }),
     );
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));

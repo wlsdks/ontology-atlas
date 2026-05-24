@@ -53,7 +53,9 @@ starter CTA 자체도 agent 검증 프롬프트와 `oh-my-ontology validate .`,
 `workspace-brief .`, `agent-brief . --prompt`, `agent-brief . --graph-db-pack`,
 `agent-brief . --verify-fallbacks`, `mcp-verify . --timeout-ms 15000`
 CLI proof packet 을 각각 복사할 수 있어, MCP connector 가 아직 없는 세션과 agent 없는
-터미널 검증이 같은 first-contact 계약을 공유한다.
+터미널 검증이 같은 first-contact 계약을 공유한다. starter CTA 도 같은 JSON gate
+복사 버튼을 제공하므로 빈 vault 를 막 만든 사용자가 tools menu 를 다시 찾지 않아도
+자동화용 setup check 명령을 바로 가져갈 수 있다.
 자동화 gate 는 `oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000`
 단일 명령을 보여주고 복사한다. Claude Code / Codex 세션은 이 JSON 의 `ok`, `failed`,
 `timeoutMs`, `commands[].timedOut` 을 바로 파싱해 connector-less setup check 를 진행할 수

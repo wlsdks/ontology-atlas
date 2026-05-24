@@ -8,5 +8,6 @@ export {
 export { LocalVaultPicker } from './ui/LocalVaultPicker';
 export {
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
+  ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   OntologyStarterCta,
 } from './ui/OntologyStarterCta';

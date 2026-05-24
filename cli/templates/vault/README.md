@@ -86,6 +86,12 @@ oh-my-ontology agent-brief . --verify-fallbacks
 oh-my-ontology mcp-verify . --timeout-ms 15000
 ```
 
+For automation that wants a small JSON report instead of human terminal output:
+
+```bash
+oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000
+```
+
 For an agent opened at your codebase root instead of this vault folder, replace
 `.` with the vault path, for example `./ontology`.
 
