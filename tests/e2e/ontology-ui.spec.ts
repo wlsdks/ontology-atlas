@@ -267,7 +267,7 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText('"tool": "query_ontology"');
     await expect(recipes.getByRole("button", { name: "Copy JSON" })).toHaveCount(17);
     await expect(recipes.getByRole("button", { name: "Copy step" })).toHaveCount(5);
-    await expect(recipes.getByRole("button", { name: "Copy CLI" })).toHaveCount(21);
+    await expect(recipes.getByRole("button", { name: "Copy CLI" })).toHaveCount(22);
     await expect(recipes.getByRole("button", { name: "Copy slug" }).first()).toBeVisible();
   });
 

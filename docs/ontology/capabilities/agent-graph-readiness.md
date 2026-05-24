@@ -85,7 +85,9 @@ shared-neighbor signal 을 확인해, 새 concept 를 만들거나 rename 하기
 `add_concept` 대신 `patch_concept` 또는 `relates` edge 가 더 안전한지 판단하게 한다.
 `topological_order` 는 `depends_on` 관계를 prerequisite-first layer 로 정렬해,
 agent 가 refactor 순서나 onboarding 설명을 cycle-free dependency order 로 잡을 수
-있게 한다.
+있게 한다. CLI fallback 은 같은 dependency order 를 포함하는
+`oh-my-ontology health [vault] --json` 을 사용해 connector-less 세션도 즉시
+재현한다.
 
 R+ follow-up 에서 ready recipe 는 graph traversal 을 더 직접 노출한다.
 `all_paths` 는 첫 두 추천 허브 사이의 bounded simple paths 를 열거하고,

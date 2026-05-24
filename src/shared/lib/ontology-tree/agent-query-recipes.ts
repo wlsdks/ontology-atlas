@@ -284,6 +284,8 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       return withFlags("oh-my-ontology cycles [vault]", [
         nonNegativeFlag("--max-hops", args.maxHops),
       ]);
+    case "topological_order":
+      return "oh-my-ontology health [vault] --json";
     case "growth_plan":
       return withFlags("oh-my-ontology growth [vault]", [
         positiveFlag("--limit", args.limit),

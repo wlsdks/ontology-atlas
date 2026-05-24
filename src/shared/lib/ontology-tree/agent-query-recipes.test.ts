@@ -315,7 +315,9 @@ describe("buildAgentQueryRecipes", () => {
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "cycles")!)).toBe(
       "oh-my-ontology cycles [vault] --max-hops 8",
     );
-    expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "topological_order")!)).toBeNull();
+    expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "topological_order")!)).toBe(
+      "oh-my-ontology health [vault] --json",
+    );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "growth_plan")!)).toBe(
       "oh-my-ontology growth [vault] --limit 20",
     );
