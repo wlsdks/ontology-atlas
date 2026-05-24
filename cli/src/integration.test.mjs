@@ -4581,6 +4581,34 @@ await test('growth — human output summarizes growth candidates and ignored ref
   }
 });
 
+await test('growth — relation recommendations include preflight follow-up', async () => {
+  const root = withVault([
+    {
+      slug: 'capabilities/foo',
+      content:
+        '---\nkind: capability\nslug: capabilities/foo\ntitle: Foo\ndomain: domains/auth\n---\n\n# Foo\n',
+    },
+    {
+      slug: 'domains/auth',
+      content:
+        '---\nkind: domain\nslug: domains/auth\ntitle: Auth\n---\n\n# Auth\n',
+    },
+  ]);
+  try {
+    const r = await run(['growth', root, '--limit=2']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /relation recommendations/);
+    assert.match(clean, /missing_domain_containment/);
+    assert.match(clean, /next growth domains\/auth → capabilities\/foo/);
+    assert.match(clean, /growth rows are proposals, not writes; preflight the relation before changing the vault/);
+    assert.match(clean, /oh-my-ontology relation-check domains\/auth capabilities\/foo capabilities \[vault\]/);
+    assert.match(clean, /oh-my-ontology path domains\/auth capabilities\/foo \[vault\] --max-hops 5/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('growth --json — fails closed on malformed growth_plan payloads', async () => {
   const root = withVault();
   const fakeMcp = join(root, 'fake-mcp-growth-malformed.mjs');

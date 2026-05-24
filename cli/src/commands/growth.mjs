@@ -107,6 +107,7 @@ function renderGrowth(result) {
     for (const row of rows) renderGrowthRow(row);
     process.stdout.write('\n');
   }
+  printNextGrowth(result);
 }
 
 function renderGrowthRow(row) {
@@ -127,6 +128,22 @@ function renderGrowthRow(row) {
         ` ${COLORS.dim}${JSON.stringify(row.proposedAction.args ?? {})}${COLORS.reset}\n`,
     );
   }
+}
+
+function printNextGrowth(result) {
+  const recommendation = result.relationRecommendations?.recommendations?.find(
+    (row) => row?.proposedAction?.tool === 'add_relation',
+  );
+  if (!recommendation) return;
+  const args = recommendation.proposedAction.args ?? {};
+  if (!args.from || !args.to || !args.type) return;
+  process.stdout.write(
+    `${COLORS.bold}next growth${COLORS.reset} ${COLORS.cyan}${args.from}${COLORS.reset}` +
+      ` ${COLORS.dim}→${COLORS.reset} ${COLORS.cyan}${args.to}${COLORS.reset}` +
+      ` ${COLORS.dim}— growth rows are proposals, not writes; preflight the relation before changing the vault${COLORS.reset}\n` +
+      `  oh-my-ontology relation-check ${args.from} ${args.to} ${args.type} [vault]\n` +
+      `  oh-my-ontology path ${args.from} ${args.to} [vault] --max-hops 5\n`,
+  );
 }
 
 function parseArgs(args) {
