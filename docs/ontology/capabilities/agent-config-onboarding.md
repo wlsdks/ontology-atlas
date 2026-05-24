@@ -55,7 +55,11 @@ ready/missing/review 상태를 보여주고, `--write` 는 누락 config 만 생
 codebase-root 세션용 `agent-setup <vault> --root <codebase> --write` repair 명령,
 `.mcp.json.example` 템플릿, Codex `.codex/config.toml` 템플릿,
 그리고 `codex mcp add ...` 한 줄 등록 명령도 복사 가능하게 유지한다. setup packet 은
-수동 템플릿보다 `agent-setup` repair 명령을 먼저 제시하고, MCP/Codex 템플릿,
+수동 템플릿보다 `agent-setup` repair 명령을 먼저 제시하고, CLI-only / MCP-connected /
+Graph DB pack / setup gate 중 어느 모드를 먼저 써야 하는지도 같은 패킷에 포함한다.
+패널 본문도 같은 모드 선택 기준을 짧은 definition list 로 보여줘 비개발자가
+"MCP 를 꼭 연결해야만 쓰는 제품인지", "CLI 만으로 graph query 가 되는지", "Graph DB 와
+비슷한 탐색은 어디서 시작하는지"를 버튼을 누르기 전에 판단할 수 있다. MCP/Codex 템플릿,
 재시작 안내, 검증 prompt, CLI fallback, machine-readable JSON gate 를 한 번에 묶어 별도 root 에서
 agent 를 여는 사용자가 순서를 조립하지 않아도 되게 한다. 설정 상태 확인, 누락 config 생성,
 검증 액션 그룹의 setup packet / MCP prompt / 터미널 graph runbook / JSON gate 복사, 별도 codebase root

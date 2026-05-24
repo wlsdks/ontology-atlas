@@ -44,12 +44,22 @@ const AGENT_VERIFY_CLI_PREVIEW = [
   'agent-brief . --verify-fallbacks',
 ];
 
+const AGENT_MODE_PACKET_LINES = [
+  'Mode chooser:',
+  '- CLI-only: use validate, workspace-brief, graph scans, paths, and graph DB packs without MCP.',
+  '- MCP-connected: let Claude Code, Codex, or Cursor call 23 tools with structured repair fields and write guardrails.',
+  '- Graph DB pack: use bounded query plans, node/edge scans, domain matrix, paths, and relation explanations without running a database server.',
+  '- Setup gate: run the JSON fallback check before edits and treat ok separately from performanceOk.',
+];
+
 function buildAgentSetupPacket(vaultName: string): string {
   return [
     'oh-my-ontology agent setup packet',
     '',
     'Use this when Claude Code, Cursor, or Codex is opened at a separate codebase root.',
     'Replace every <absolute path...> placeholder before using the config.',
+    '',
+    ...AGENT_MODE_PACKET_LINES,
     '',
     'Preferred existing-vault repair command from a codebase root:',
     buildAgentSetupCliCommandTemplate(vaultName),
@@ -525,6 +535,37 @@ export function VaultToolsMenu({
                 <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
                   {t('agentSetup.verifyGroup')}
                 </div>
+                <dl
+                  aria-label={t('agentSetup.modeChooserAriaLabel')}
+                  className="mt-1.5 grid gap-1"
+                >
+                  {[
+                    {
+                      term: t('agentSetup.modeCliTerm'),
+                      desc: t('agentSetup.modeCliDesc'),
+                    },
+                    {
+                      term: t('agentSetup.modeMcpTerm'),
+                      desc: t('agentSetup.modeMcpDesc'),
+                    },
+                    {
+                      term: t('agentSetup.modeGraphTerm'),
+                      desc: t('agentSetup.modeGraphDesc'),
+                    },
+                  ].map((mode) => (
+                    <div
+                      key={mode.term}
+                      className="rounded-sm border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1"
+                    >
+                      <dt className="text-[10.5px] font-medium text-[color:var(--color-text-secondary)]">
+                        {mode.term}
+                      </dt>
+                      <dd className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                        {mode.desc}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
                 <button
                   type="button"
                   onClick={onOpenWorkflowGuide}

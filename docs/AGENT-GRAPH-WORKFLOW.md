@@ -8,6 +8,22 @@
 workbench where markdown frontmatter is the graph, git is the audit log, and AI
 agents can read or write through MCP when they are connected.
 
+## Choose The Right Mode
+
+Use this table before setup. The modes share the same vault files, so switching
+between them does not migrate data.
+
+| Situation | Start here | What you get |
+|---|---|---|
+| You only want to inspect a local vault from Terminal | CLI-only | Validation, workspace summaries, graph scans, path/explain queries, and graph DB packs without any MCP client |
+| Claude Code, Codex, or Cursor is connected to MCP | MCP-connected | The agent can call read/write tools directly, receive structured repair fields, and update the markdown vault after validation |
+| You want graph-database-style exploration but not a database server | Graph DB pack | Bounded query plans, node/edge scans, domain matrix, paths, relation explanations, and follow-up evidence commands |
+| Setup is unclear or you opened the agent from another codebase root | Agent setup gate | Config repair commands, restart guidance, JSON readiness checks, and fallback timing before edits |
+
+For non-developers, the safest sequence is: open a vault folder in the web UI,
+use the AI agent setup card, restart the agent, run the JSON gate, and only then
+ask the agent to write ontology updates.
+
 ## What Works Without MCP Connected
 
 You can use the product without connecting Claude Code, Codex, Cursor, or any

@@ -112,6 +112,12 @@ describe('VaultToolsMenu', () => {
     expect(
       screen.getByText('수정 전에 JSON gate를 실행하고 ok와 performanceOk를 따로 확인합니다.'),
     ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('AI agent 사용 모드 선택 기준'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('CLI만 사용')).toBeInTheDocument();
+    expect(screen.getByText('MCP 연결')).toBeInTheDocument();
+    expect(screen.getByText('Graph DB pack')).toBeInTheDocument();
     expect(screen.getByText('.mcp.json')).toBeInTheDocument();
     expect(screen.getByText('.codex/config.toml')).toBeInTheDocument();
     expect(screen.getByText('.mcp.json.example')).toBeInTheDocument();
@@ -244,6 +250,18 @@ describe('VaultToolsMenu', () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('oh-my-ontology agent setup packet'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Mode chooser:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('CLI-only: use validate, workspace-brief'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('MCP-connected: let Claude Code, Codex, or Cursor call 23 tools'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Graph DB pack: use bounded query plans'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('oh-my-ontology agent-setup'),
