@@ -699,7 +699,7 @@ describe("buildAgentQueryRecipes", () => {
     const cliPack = formatAgentGraphDbCliPack(graphDbQueryPack);
 
     expect(cliPack).toContain("when the MCP connector is unavailable");
-    expect(cliPack).toContain("Self-check first: Claude Code/Codex automation can parse ok, failed, timeoutMs");
+    expect(cliPack).toContain("Self-check first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs");
     expect(cliPack).toContain("[self_check] oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000");
     expect(countAgentGraphDbCliPackCommands(graphDbQueryPack)).toBe(
       cliPack.split("\n").filter((row) => /^\d+\. /.test(row)).length,

@@ -4359,6 +4359,7 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'agent_fallback_check');
     assert.equal(data.ok, true);
+    assert.equal(data.performanceOk, true);
     assert.equal(data.failed, 0);
     assert.equal(data.timeoutMs, 15000);
     assert.equal(data.slowThresholdMs, 5000);
@@ -4385,6 +4386,7 @@ await test('agent-brief --verify-fallbacks --json — marks slow-but-passing fal
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'agent_fallback_check');
     assert.equal(data.ok, true);
+    assert.equal(data.performanceOk, false);
     assert.equal(data.failed, 0);
     assert.equal(data.slowThresholdMs, 1);
     assert.ok(data.slow > 0);
@@ -4402,6 +4404,7 @@ await test('agent-brief --verify-fallbacks --json — fails closed when fallback
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'agent_fallback_check');
     assert.equal(data.ok, false);
+    assert.equal(typeof data.performanceOk, 'boolean');
     assert.equal(data.timeoutMs, 1);
     assert.ok(data.failed > 0);
     assert.ok(data.commands.some((row) => row.timedOut === true));
@@ -4481,7 +4484,7 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
     const clean = stripAnsi(r.stdout);
     const vaultPath = escapeRegExp(root);
     assert.match(clean, /^# oh-my-ontology Graph DB CLI pack/);
-    assert.match(clean, /# Self-check first: Claude Code\/Codex automation can parse ok, failed, timeoutMs, slowThresholdMs, slow, commands\[\]\.timedOut, commands\[\]\.slow, and slowest\.elapsedMs\./);
+    assert.match(clean, /# Self-check first: Claude Code\/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, slow, commands\[\]\.timedOut, commands\[\]\.slow, and slowest\.elapsedMs\./);
     assert.match(clean, new RegExp(`oh-my-ontology agent-brief ${vaultPath} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000`));
     assert.match(clean, /# The selected vault path is already inserted/);
     assert.match(clean, /# Evidence rule: scan rows are candidates, not proof/);

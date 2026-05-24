@@ -634,7 +634,7 @@ export function formatAgentGraphDbCliPack(
   return [
     "Run these oh-my-ontology CLI commands when the MCP connector is unavailable.",
     "They mirror the Graph DB query pack: plan scans first, keep traversal bounded, and use follow-up evidence before writing.",
-    "Self-check first: Claude Code/Codex automation can parse ok, failed, timeoutMs, slowThresholdMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs.",
+    "Self-check first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs.",
     `0. [self_check] ${AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}`,
     "",
     "Evidence rule: scan rows are candidates, not proof; cite follow-up detail before writing or refactoring.",

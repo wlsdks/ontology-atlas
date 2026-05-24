@@ -162,6 +162,7 @@ function buildFallbackVerificationReport(result, vaultRoot, { timeoutMs = DEFAUL
   return {
     operation: 'agent_fallback_check',
     ok: failed === 0,
+    performanceOk: slow === 0,
     timeoutMs,
     slowThresholdMs,
     total: rows.length,
@@ -193,6 +194,8 @@ function renderFallbackVerificationReport(report) {
   process.stdout.write(`${color}${report.failed > 0 ? 'failed' : 'ok'}${COLORS.reset} ${report.passed}/${report.total} fallback command(s) passed\n`);
   if (report.slow > 0) {
     process.stdout.write(`${COLORS.yellow}slow${COLORS.reset} ${report.slow}/${report.total} fallback command(s) took >= ${report.slowThresholdMs}ms\n`);
+  } else {
+    process.stdout.write(`${COLORS.green}performance ok${COLORS.reset} 0/${report.total} fallback command(s) took >= ${report.slowThresholdMs}ms\n`);
   }
   if (report.slowest) {
     process.stdout.write(`${COLORS.dim}timing:${COLORS.reset} total ${report.totalMs}ms; slowest ${report.slowest.elapsedMs}ms ${report.slowest.command}\n`);
@@ -262,7 +265,7 @@ function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
   return [
     '# oh-my-ontology Graph DB CLI pack',
     '# Run these commands when the MCP connector is unavailable.',
-    '# Self-check first: Claude Code/Codex automation can parse ok, failed, timeoutMs, slowThresholdMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs.',
+    '# Self-check first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs.',
     selfCheckCommand,
     '',
     '# The selected vault path is already inserted; plan scans first, keep traversal bounded, and use follow-up evidence before writing.',
