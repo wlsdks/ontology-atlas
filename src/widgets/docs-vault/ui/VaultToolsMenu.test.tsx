@@ -255,6 +255,9 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('--write'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('docs/AGENT-GRAPH-WORKFLOW.md'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('"oh-my-ontology-mcp"'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(

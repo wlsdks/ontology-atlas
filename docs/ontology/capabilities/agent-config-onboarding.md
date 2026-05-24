@@ -77,6 +77,9 @@ agent 는 `ok=false` 를 setup/fallback 실행 실패로, `ok=true` 와
 CLI 만으로 가능한 흐름, MCP 연결 시 좋아지는 점, graph DB 와의 차이, graph DB-style
 query pack, 그리고 실제 dogfood vault 검증 결과를 한 번에 설명해 비개발자와 agent 가
 같은 용어로 setup 상태를 판단하게 한다.
+`agent-setup` 의 터미널 출력과 `--json` 결과도 같은 guide 경로와 설명을 노출하므로,
+Web UI 를 열지 않고 CLI 만 쓰는 사용자의 setup log 나 자동화 결과에도 기능 문서
+진입점이 남는다.
 자동화 gate 는 `oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`
 단일 명령을 보여주고 복사한다. Claude Code / Codex 세션은 이 JSON 의 `ok`, `failed`,
 `performanceOk`, `timeoutMs`, `slowThresholdMs`, `concurrency`, `wallMs`, `slow`, `commands[].timedOut`,

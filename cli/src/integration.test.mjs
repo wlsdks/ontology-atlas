@@ -282,6 +282,8 @@ await test('agent-setup — writes agent configs for an existing vault without s
     assert.equal(data.summary.ready, 4);
     assert.equal(data.summary.written, 4);
     assert.match(data.commands.setupGate, /agent-brief .* --verify-fallbacks --json/);
+    assert.equal(data.docs.workflowGuide, 'docs/AGENT-GRAPH-WORKFLOW.md');
+    assert.match(data.docs.workflowGuideDescription, /CLI-only/);
 
     const rootMcp = JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf-8'));
     assert.equal(rootMcp.mcpServers['oh-my-ontology'].env.OMOT_VAULT, './ontology');
@@ -294,6 +296,19 @@ await test('agent-setup — writes agent configs for an existing vault without s
     assert.match(vaultCodex, /OMOT_VAULT = "\."/);
 
     assert.equal(readdirSync(join(root, 'ontology')).filter((name) => name.endsWith('.md')).length, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup — terminal output points humans to the workflow guide', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-setup-guide-'));
+  try {
+    mkdirSync(join(root, 'ontology'), { recursive: true });
+    const r = await run(['agent-setup', 'ontology', '--root', '.'], { cwd: root });
+    assert.equal(r.code, 1);
+    assert.match(stripAnsi(r.stdout), /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
+    assert.match(stripAnsi(r.stdout), /graph DB differences/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

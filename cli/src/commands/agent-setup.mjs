@@ -26,6 +26,7 @@ const PKG_ROOT = resolve(__dirname, '..', '..');
 const require_ = createRequire(import.meta.url);
 
 const ALLOWED_FLAGS = ['--root', '--vault', '--write', '--json'];
+const WORKFLOW_GUIDE_PATH = 'docs/AGENT-GRAPH-WORKFLOW.md';
 
 const COLORS = {
   red: '\x1b[31m',
@@ -125,6 +126,11 @@ function buildAgentSetup(parsed) {
         serverCommand.command,
         ...serverCommand.args,
       ].map(shellQuote).join(' '),
+    },
+    docs: {
+      workflowGuide: WORKFLOW_GUIDE_PATH,
+      workflowGuideDescription:
+        'CLI-only use, MCP-connected use, graph DB differences, graph query pack, and verified setup checks.',
     },
   };
 }
@@ -279,6 +285,7 @@ function render(result) {
   process.stdout.write(`  ${COLORS.cyan}${result.commands.verify}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.cyan}${result.commands.setupGate}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Global Codex fallback: ${result.commands.codexGlobal}${COLORS.reset}\n`);
+  process.stdout.write(`  ${COLORS.dim}Feature guide: ${result.docs.workflowGuide} — ${result.docs.workflowGuideDescription}${COLORS.reset}\n`);
   if (!result.sideEffect && (summary.missing > 0 || summary.review > 0)) {
     process.stdout.write(`\n${COLORS.dim}Run with --write to create missing files and example templates without overwriting existing configs.${COLORS.reset}\n`);
   }
@@ -382,6 +389,7 @@ function printUsage(stream = process.stderr) {
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  oh-my-ontology agent-setup [vault] [--root path] [--write] [--json]\n\n` +
       `Check or repair Claude Code / Cursor .mcp.json and Codex .codex/config.toml files for an existing vault.\n` +
+      `The JSON and terminal output point to ${WORKFLOW_GUIDE_PATH} for CLI-only, MCP-connected, and graph DB comparison flows.\n` +
       `Default root is cwd. Default vault follows OMOT_VAULT, ./docs/ontology, then cwd.\n`,
   );
 }

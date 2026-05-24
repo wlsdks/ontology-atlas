@@ -37,6 +37,9 @@ oh-my-ontology agent-setup /absolute/path/to/vault --root /absolute/path/to/code
 
 That command creates missing `.mcp.json` and `.codex/config.toml` files without
 adding starter markdown and without overwriting stale existing configs.
+Its terminal and JSON output also point back to this guide
+(`docs/AGENT-GRAPH-WORKFLOW.md`), so CLI-only setup logs still tell a human
+where to read the MCP, graph DB, and verification differences.
 
 ## What MCP Adds
 
@@ -169,4 +172,3 @@ For a developer terminal session:
 2. Run `oh-my-ontology agent-brief <vault> --verify-fallbacks --json`.
 3. Run `oh-my-ontology agent-brief <vault> --graph-db-pack`.
 4. Use follow-up commands before treating graph scans as evidence.
-
