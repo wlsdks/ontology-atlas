@@ -626,16 +626,7 @@ export function formatAgentGraphDbQueryPack(
 export function formatAgentGraphDbCliPack(
   items: readonly AgentGraphDbQueryPackItem[],
 ): string {
-  const commands = items
-    .flatMap((item) =>
-      item.payloads
-        .map(formatAgentQueryCallCliCommand)
-        .filter((command): command is string => command !== null)
-        .map((command) => ({ itemId: item.id, command })),
-    )
-    .filter(({ command }, index, values) =>
-      values.findIndex((value) => value.command === command) === index,
-    );
+  const commands = agentGraphDbCliPackCommands(items);
 
   return [
     "Run these oh-my-ontology CLI commands when the MCP connector is unavailable.",
@@ -651,6 +642,25 @@ export function formatAgentGraphDbCliPack(
       return `${index + 1}. [${itemId}] ${command}${intent}`;
     }),
   ].join("\n");
+}
+
+export function countAgentGraphDbCliPackCommands(
+  items: readonly AgentGraphDbQueryPackItem[],
+): number {
+  return 1 + agentGraphDbCliPackCommands(items).length;
+}
+
+function agentGraphDbCliPackCommands(items: readonly AgentGraphDbQueryPackItem[]) {
+  return items
+    .flatMap((item) =>
+      item.payloads
+        .map(formatAgentQueryCallCliCommand)
+        .filter((command): command is string => command !== null)
+        .map((command) => ({ itemId: item.id, command })),
+    )
+    .filter(({ command }, index, values) =>
+      values.findIndex((value) => value.command === command) === index,
+    );
 }
 
 export function formatAgentGuardrailPrompt(guardrail: AgentWriteGuardrail): string {

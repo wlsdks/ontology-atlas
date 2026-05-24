@@ -62,6 +62,7 @@ export {
   buildAgentWriteGuardrails,
   buildAgentHandoffPrompt,
   buildAgentInvestigationPlaybooks,
+  countAgentGraphDbCliPackCommands,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentGraphDbQueryPackItemPrompt,

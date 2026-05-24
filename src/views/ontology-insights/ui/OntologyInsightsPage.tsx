@@ -32,6 +32,7 @@ import {
   buildAgentQueryRecipes,
   buildAgentTraversalStrategies,
   buildAgentWriteGuardrails,
+  countAgentGraphDbCliPackCommands,
   formatAgentGuardrailPrompt,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
@@ -759,11 +760,9 @@ function AgentQueryRecipesPanel({
     (count, item) => count + item.payloads.length,
     0,
   );
-  const graphDbCliFallbackCount = graphDbQueryPack
-    .flatMap((item) => item.payloads)
-    .map(formatAgentQueryCallCliCommand)
-    .filter((command): command is string => command !== null)
-    .filter(uniqueString).length;
+  const graphDbCliFallbackCount = graphDbQueryPack.length > 0
+    ? countAgentGraphDbCliPackCommands(graphDbQueryPack)
+    : 0;
   const firstRunRecipes = useMemo(() => recipes.slice(0, 5), [recipes]);
   const firstRunPrompt = useMemo(
     () => formatAgentRunOrderPrompt(firstRunRecipes),

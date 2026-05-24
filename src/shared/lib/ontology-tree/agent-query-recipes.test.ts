@@ -9,6 +9,7 @@ import {
   buildAgentQueryRecipes,
   buildAgentTraversalStrategies,
   buildAgentWriteGuardrails,
+  countAgentGraphDbCliPackCommands,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentGraphDbQueryPackItemPrompt,
@@ -681,26 +682,28 @@ describe("buildAgentQueryRecipes", () => {
   });
 
   it("formats a CLI-only graph DB pack for connector-less sessions", () => {
-    const cliPack = formatAgentGraphDbCliPack(
-      buildAgentGraphDbQueryPack([
-        {
-          slug: "capabilities/mcp-server",
-          title: "MCP Server",
-          kind: "capability",
-          degree: 7,
-        },
-        {
-          slug: "domains/views",
-          title: "Views",
-          kind: "domain",
-          degree: 6,
-        },
-      ]),
-    );
+    const graphDbQueryPack = buildAgentGraphDbQueryPack([
+      {
+        slug: "capabilities/mcp-server",
+        title: "MCP Server",
+        kind: "capability",
+        degree: 7,
+      },
+      {
+        slug: "domains/views",
+        title: "Views",
+        kind: "domain",
+        degree: 6,
+      },
+    ]);
+    const cliPack = formatAgentGraphDbCliPack(graphDbQueryPack);
 
     expect(cliPack).toContain("when the MCP connector is unavailable");
     expect(cliPack).toContain("Self-check first: Claude Code/Codex automation can parse ok, failed, timeoutMs");
     expect(cliPack).toContain("[self_check] oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000");
+    expect(countAgentGraphDbCliPackCommands(graphDbQueryPack)).toBe(
+      cliPack.split("\n").filter((row) => /^\d+\. /.test(row)).length,
+    );
     expect(cliPack).toContain("Evidence rule: scan rows are candidates, not proof");
     expect(cliPack).toContain("intent: MATCH (n:capability) WHERE degree(n) >= 2 RETURN n");
     expect(cliPack).toContain("[node_scan] oh-my-ontology match-nodes [vault] --plan");
