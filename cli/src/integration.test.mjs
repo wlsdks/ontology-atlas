@@ -3975,6 +3975,10 @@ await test('blast-radius — affected node rows include node titles for scanabil
     assert.match(clean, /affected nodes/);
     assert.match(clean, /capabilities\/bar\s+— Bar/);
     assert.match(clean, /domains\/auth\s+— Auth/);
+    assert.match(clean, /next impact capabilities\/bar/);
+    assert.match(clean, /impact rows are candidates, not proof; inspect backlinks and node detail before refactor decisions/);
+    assert.match(clean, /oh-my-ontology node capabilities\/bar \[vault\] --limit 20/);
+    assert.match(clean, /oh-my-ontology backlinks capabilities\/foo \[vault\]/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

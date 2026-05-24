@@ -151,7 +151,21 @@ function render(result, requestedSlug) {
       const titleText = r.node?.title && r.node.title !== r.slug ? ` ${COLORS.dim}— ${r.node.title}${COLORS.reset}` : '';
       process.stdout.write(`  ${dist} ${kc}${r.slug}${COLORS.reset}${titleText}\n`);
     }
+    printNextImpact(rows, requestedSlug, result?.depth ?? 2);
   }
+}
+
+function printNextImpact(rows, requestedSlug, depth) {
+  const focus = rows.find((row) => typeof row?.slug === 'string' && row.slug.length > 0);
+  if (!focus) return;
+  const planDepth = Math.max(0, Math.min(DEPTH_CAP, Number.isInteger(depth) ? depth : 2));
+  process.stdout.write(
+    `\n${COLORS.bold}next impact${COLORS.reset} ${COLORS.cyan}${focus.slug}${COLORS.reset}` +
+      ` ${COLORS.dim}— impact rows are candidates, not proof; inspect backlinks and node detail before refactor decisions${COLORS.reset}\n` +
+      `  oh-my-ontology node ${focus.slug} [vault] --limit 20\n` +
+      `  oh-my-ontology backlinks ${requestedSlug} [vault]\n` +
+      `  oh-my-ontology reachability ${requestedSlug} [vault] --plan --depth ${planDepth} --direction both --limit 20\n`,
+  );
 }
 
 function parseArgs(args) {
