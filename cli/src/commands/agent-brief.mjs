@@ -11,9 +11,11 @@ import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-o
 import { diagnosisStatusColor } from '../lib/diagnosis-colors.mjs';
 
 const CLI_ENTRYPOINT = fileURLToPath(new URL('../index.mjs', import.meta.url));
-const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--fallback-timeout-ms', ...DIAGNOSIS_OPTION_FLAGS];
+const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--fallback-timeout-ms', '--fallback-slow-ms', ...DIAGNOSIS_OPTION_FLAGS];
 const DEFAULT_FALLBACK_TIMEOUT_MS = 15_000;
+const DEFAULT_FALLBACK_SLOW_MS = 5_000;
 const FALLBACK_TIMEOUT_ENV = 'OMOT_AGENT_FALLBACK_TIMEOUT_MS';
+const FALLBACK_SLOW_ENV = 'OMOT_AGENT_FALLBACK_SLOW_MS';
 
 const COLORS = {
   green: '\x1b[32m',
@@ -41,7 +43,7 @@ const READINESS_COLORS = {
 };
 
 export async function runAgentBrief(args) {
-  const { vault, json, prompt, graphDbPack, verifyFallbacks, fallbackTimeoutMs, options, error, help } = parseArgs(args);
+  const { vault, json, prompt, graphDbPack, verifyFallbacks, fallbackTimeoutMs, fallbackSlowMs, options, error, help } = parseArgs(args);
   if (help) {
     printUsage(process.stdout);
     return 0;
@@ -69,7 +71,17 @@ export async function runAgentBrief(args) {
       printUsage();
       return 1;
     }
-    const report = verifyCliFallbacks(result, vaultRoot, { json, timeoutMs: effectiveFallbackTimeoutMs });
+    const effectiveFallbackSlowMs = fallbackSlowMs ?? agentFallbackSlowMs();
+    if (effectiveFallbackSlowMs instanceof Error) {
+      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${effectiveFallbackSlowMs.message}\n`);
+      printUsage();
+      return 1;
+    }
+    const report = verifyCliFallbacks(result, vaultRoot, {
+      json,
+      timeoutMs: effectiveFallbackTimeoutMs,
+      slowThresholdMs: effectiveFallbackSlowMs,
+    });
     return Math.max(agentBriefExitCode(result), report.failed > 0 ? 1 : 0);
   }
   if (json) {
@@ -88,8 +100,8 @@ export async function runAgentBrief(args) {
   return agentBriefExitCode(result);
 }
 
-function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS } = {}) {
-  const report = buildFallbackVerificationReport(result, vaultRoot, { timeoutMs });
+function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS, slowThresholdMs = DEFAULT_FALLBACK_SLOW_MS } = {}) {
+  const report = buildFallbackVerificationReport(result, vaultRoot, { timeoutMs, slowThresholdMs });
   if (json) {
     process.stdout.write(JSON.stringify(report, null, 2) + '\n');
     return report;
@@ -98,7 +110,7 @@ function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs = DEFAU
   return report;
 }
 
-function buildFallbackVerificationReport(result, vaultRoot, { timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS } = {}) {
+function buildFallbackVerificationReport(result, vaultRoot, { timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS, slowThresholdMs = DEFAULT_FALLBACK_SLOW_MS } = {}) {
   const commands = Array.isArray(result.cliFallbackCommands) ? result.cliFallbackCommands : [];
   const rows = [];
   for (const raw of commands) {
@@ -124,6 +136,7 @@ function buildFallbackVerificationReport(result, vaultRoot, { timeoutMs = DEFAUL
     const elapsedMs = Math.max(0, Math.round(performance.now() - startedAt));
     const timedOut = child.error?.code === 'ETIMEDOUT';
     const failed = timedOut || child.status !== 0;
+    const slow = elapsedMs >= slowThresholdMs;
     const sample = failed ? sampleFallbackOutput(child.stderr || child.stdout) : '';
     rows.push({
       command: raw,
@@ -131,6 +144,7 @@ function buildFallbackVerificationReport(result, vaultRoot, { timeoutMs = DEFAUL
       status: failed ? 'fail' : 'pass',
       elapsedMs,
       exitCode: child.status,
+      ...(slow ? { slow: true } : {}),
       ...(child.signal ? { signal: child.signal } : {}),
       ...(timedOut ? { timedOut: true } : {}),
       ...(sample ? { outputSample: sample } : {}),
@@ -140,6 +154,7 @@ function buildFallbackVerificationReport(result, vaultRoot, { timeoutMs = DEFAUL
   }
   const passed = rows.filter((row) => row.status === 'pass').length;
   const failed = rows.length - passed;
+  const slow = rows.filter((row) => row.slow === true).length;
   const totalMs = rows.reduce((sum, item) => sum + item.elapsedMs, 0);
   const slowest = rows.length > 0
     ? rows.reduce((max, item) => (item.elapsedMs > max.elapsedMs ? item : max), rows[0])
@@ -148,9 +163,11 @@ function buildFallbackVerificationReport(result, vaultRoot, { timeoutMs = DEFAUL
     operation: 'agent_fallback_check',
     ok: failed === 0,
     timeoutMs,
+    slowThresholdMs,
     total: rows.length,
     passed,
     failed,
+    slow,
     totalMs,
     slowest: slowest
       ? {
@@ -164,15 +181,19 @@ function buildFallbackVerificationReport(result, vaultRoot, { timeoutMs = DEFAUL
 }
 
 function renderFallbackVerificationReport(report) {
-  process.stdout.write(`${COLORS.bold}agent fallback check${COLORS.reset} ${COLORS.dim}${report.total} command(s), timeout ${report.timeoutMs}ms${COLORS.reset}\n`);
+  process.stdout.write(`${COLORS.bold}agent fallback check${COLORS.reset} ${COLORS.dim}${report.total} command(s), timeout ${report.timeoutMs}ms, slow >= ${report.slowThresholdMs}ms${COLORS.reset}\n`);
   for (const row of report.commands) {
-    const color = row.status === 'pass' ? COLORS.green : COLORS.red;
-    process.stdout.write(`  ${color}${row.status.toUpperCase()}${COLORS.reset} ${formatFallbackTiming(row.elapsedMs)} ${row.command}\n`);
+    const color = row.status === 'fail' ? COLORS.red : row.slow ? COLORS.yellow : COLORS.green;
+    const status = row.status === 'pass' && row.slow ? 'SLOW' : row.status.toUpperCase();
+    process.stdout.write(`  ${color}${status}${COLORS.reset} ${formatFallbackTiming(row.elapsedMs)} ${row.command}\n`);
     if (row.outputSample) process.stdout.write(`       ${row.outputSample}\n`);
     if (row.error) process.stdout.write(`       ${COLORS.red}${row.error}${COLORS.reset}\n`);
   }
   const color = report.failed > 0 ? COLORS.red : COLORS.green;
   process.stdout.write(`${color}${report.failed > 0 ? 'failed' : 'ok'}${COLORS.reset} ${report.passed}/${report.total} fallback command(s) passed\n`);
+  if (report.slow > 0) {
+    process.stdout.write(`${COLORS.yellow}slow${COLORS.reset} ${report.slow}/${report.total} fallback command(s) took >= ${report.slowThresholdMs}ms\n`);
+  }
   if (report.slowest) {
     process.stdout.write(`${COLORS.dim}timing:${COLORS.reset} total ${report.totalMs}ms; slowest ${report.slowest.elapsedMs}ms ${report.slowest.command}\n`);
   }
@@ -184,6 +205,16 @@ function agentFallbackTimeoutMs(env = process.env) {
   const parsed = parsePositiveIntegerFlag(FALLBACK_TIMEOUT_ENV, raw);
   if (parsed instanceof Error) {
     return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${FALLBACK_TIMEOUT_ENV}=N or --fallback-timeout-ms N.`);
+  }
+  return parsed;
+}
+
+function agentFallbackSlowMs(env = process.env) {
+  const raw = env[FALLBACK_SLOW_ENV];
+  if (raw == null || raw === '') return DEFAULT_FALLBACK_SLOW_MS;
+  const parsed = parsePositiveIntegerFlag(FALLBACK_SLOW_ENV, raw);
+  if (parsed instanceof Error) {
+    return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${FALLBACK_SLOW_ENV}=N or --fallback-slow-ms N.`);
   }
   return parsed;
 }
@@ -218,6 +249,7 @@ function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
     '--verify-fallbacks',
     '--json',
     '--fallback-timeout-ms 15000',
+    '--fallback-slow-ms 5000',
   ]);
   for (const item of Array.isArray(graphDbQueryPack) ? graphDbQueryPack : []) {
     for (const command of graphDbPackItemCliCommands(item)) {
@@ -230,7 +262,7 @@ function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
   return [
     '# oh-my-ontology Graph DB CLI pack',
     '# Run these commands when the MCP connector is unavailable.',
-    '# Self-check first: Claude Code/Codex automation can parse ok, failed, timeoutMs, commands[].timedOut, and slowest.elapsedMs.',
+    '# Self-check first: Claude Code/Codex automation can parse ok, failed, timeoutMs, slowThresholdMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs.',
     selfCheckCommand,
     '',
     '# The selected vault path is already inserted; plan scans first, keep traversal bounded, and use follow-up evidence before writing.',
@@ -565,7 +597,7 @@ function formatToolCall(call) {
 
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
-  const flags = { vault: null, json: false, prompt: false, graphDbPack: false, verifyFallbacks: false, fallbackTimeoutMs: null, fallbackTimeoutRaw: null };
+  const flags = { vault: null, json: false, prompt: false, graphDbPack: false, verifyFallbacks: false, fallbackTimeoutMs: null, fallbackTimeoutRaw: null, fallbackSlowMs: null, fallbackSlowRaw: null };
   const options = {};
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
@@ -584,6 +616,14 @@ function parseArgs(args) {
     else if (a.startsWith('--fallback-timeout-ms=')) {
       flags.fallbackTimeoutRaw = a.slice('--fallback-timeout-ms='.length);
       flags.fallbackTimeoutMs = parsePositiveIntegerFlag('--fallback-timeout-ms', flags.fallbackTimeoutRaw);
+    }
+    else if (a === '--fallback-slow-ms') {
+      flags.fallbackSlowRaw = args[i + 1];
+      flags.fallbackSlowMs = parsePositiveIntegerFlag('--fallback-slow-ms', args[++i]);
+    }
+    else if (a.startsWith('--fallback-slow-ms=')) {
+      flags.fallbackSlowRaw = a.slice('--fallback-slow-ms='.length);
+      flags.fallbackSlowMs = parsePositiveIntegerFlag('--fallback-slow-ms', flags.fallbackSlowRaw);
     }
     else if (DIAGNOSIS_OPTION_FLAGS.includes(a)) {
       const error = parseDiagnosisOption(options, a, args[++i]);
@@ -610,9 +650,14 @@ function parseArgs(args) {
       error: `${flags.fallbackTimeoutMs.message}. Received: ${JSON.stringify(String(flags.fallbackTimeoutRaw))}. Set --fallback-timeout-ms N or ${FALLBACK_TIMEOUT_ENV}=N.`,
     };
   }
+  if (flags.fallbackSlowMs instanceof Error) {
+    return {
+      error: `${flags.fallbackSlowMs.message}. Received: ${JSON.stringify(String(flags.fallbackSlowRaw))}. Set --fallback-slow-ms N or ${FALLBACK_SLOW_ENV}=N.`,
+    };
+  }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;
-  return { vault: vaultResult.vault, json: flags.json, prompt: flags.prompt, graphDbPack: flags.graphDbPack, verifyFallbacks: flags.verifyFallbacks, fallbackTimeoutMs: flags.fallbackTimeoutMs, options };
+  return { vault: vaultResult.vault, json: flags.json, prompt: flags.prompt, graphDbPack: flags.graphDbPack, verifyFallbacks: flags.verifyFallbacks, fallbackTimeoutMs: flags.fallbackTimeoutMs, fallbackSlowMs: flags.fallbackSlowMs, options };
 }
 
 function printUsage(stream = process.stderr) {
@@ -620,7 +665,7 @@ function printUsage(stream = process.stderr) {
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  oh-my-ontology agent-brief [vault] [--json|--prompt|--graph-db-pack|--verify-fallbacks]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
-      `       [--fallback-timeout-ms N]\n` +
+      `       [--fallback-timeout-ms N] [--fallback-slow-ms N]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
       `       [--order-limit N] [--node-limit N]\n\n` +
       `Claude Code/Codex handoff: readiness score, copyable handoffPrompt, graph entrypoints,\n` +
@@ -629,6 +674,7 @@ function printUsage(stream = process.stderr) {
       `Use --graph-db-pack to print only executable CLI graph scan commands for connector-less sessions.\n` +
       `Use --verify-fallbacks to execute the generated CLI fallback commands against this vault; combine with --json for a machine-readable timing report.\n` +
       `Use --fallback-timeout-ms N or ${FALLBACK_TIMEOUT_ENV}=N to bound each fallback command.\n` +
+      `Use --fallback-slow-ms N or ${FALLBACK_SLOW_ENV}=N to mark slow-but-passing fallback rows in JSON and human output.\n` +
       `Exits non-zero when readiness is not ready, status is not healthy, a health check fails,\n` +
       `or a fail-severity nextAction is present.\n` +
       `Tuning flags forward to query_ontology agent_brief for focused diagnostics.\n`,

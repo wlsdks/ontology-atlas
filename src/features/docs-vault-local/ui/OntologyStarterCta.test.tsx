@@ -120,7 +120,7 @@ describe('OntologyStarterCta', () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
     expect(copyTextMock).toHaveBeenCalledWith(
-      'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000',
+      'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000',
     );
     expect(await screen.findByRole('button', { name: 'JSON gate 복사됨' })).toBeInTheDocument();
   });

@@ -18,7 +18,7 @@ export const ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS = [
 ].join('\n');
 
 export const ONTOLOGY_STARTER_JSON_GATE_COMMAND =
-  'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000';
+  'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000';
 
 interface Props {
   /** 클릭 시 useLocalVault.scaffoldOntology() 호출. created/skipped 반환. */

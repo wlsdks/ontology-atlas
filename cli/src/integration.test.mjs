@@ -4361,8 +4361,10 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
     assert.equal(data.ok, true);
     assert.equal(data.failed, 0);
     assert.equal(data.timeoutMs, 15000);
+    assert.equal(data.slowThresholdMs, 5000);
     assert.equal(data.total, data.commands.length);
     assert.ok(data.passed > 0);
+    assert.ok(Number.isInteger(data.slow));
     assert.ok(data.totalMs >= data.slowest.elapsedMs);
     assert.match(data.slowest.command, /^oh-my-ontology /);
     assert.ok(data.commands.every((row) => row.status === 'pass'));
@@ -4370,6 +4372,23 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
     assert.ok(data.commands.every((row) => !Object.hasOwn(row, 'outputSample')));
     assert.ok(data.commands.some((row) => row.command === 'oh-my-ontology workspace-brief [vault] --limit 5'));
     assert.ok(data.commands.some((row) => row.resolvedCommand.includes(root)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-brief --verify-fallbacks --json — marks slow-but-passing fallback rows', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['agent-brief', root, '--verify-fallbacks', '--json', '--fallback-slow-ms', '1']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.operation, 'agent_fallback_check');
+    assert.equal(data.ok, true);
+    assert.equal(data.failed, 0);
+    assert.equal(data.slowThresholdMs, 1);
+    assert.ok(data.slow > 0);
+    assert.ok(data.commands.some((row) => row.status === 'pass' && row.slow === true));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -4400,14 +4419,25 @@ await test('agent-brief --verify-fallbacks — rejects malformed fallback timeou
     assert.match(stripAnsi(flag.stderr), /--fallback-timeout-ms must be a positive integer/);
     assert.match(stripAnsi(flag.stderr), /OMOT_AGENT_FALLBACK_TIMEOUT_MS=N/);
 
+    const slowFlag = await run(['agent-brief', root, '--verify-fallbacks', '--fallback-slow-ms=1000ms']);
+    assert.equal(slowFlag.code, 1);
+    assert.match(stripAnsi(slowFlag.stderr), /--fallback-slow-ms must be a positive integer/);
+    assert.match(stripAnsi(slowFlag.stderr), /OMOT_AGENT_FALLBACK_SLOW_MS=N/);
+
     const env = await run(['agent-brief', root, '--verify-fallbacks'], {
       env: { OMOT_AGENT_FALLBACK_TIMEOUT_MS: '1000ms' },
     });
     assert.equal(env.code, 1);
     assert.match(stripAnsi(env.stderr), /OMOT_AGENT_FALLBACK_TIMEOUT_MS must be a positive integer/);
 
+    const slowEnv = await run(['agent-brief', root, '--verify-fallbacks'], {
+      env: { OMOT_AGENT_FALLBACK_SLOW_MS: '1000ms' },
+    });
+    assert.equal(slowEnv.code, 1);
+    assert.match(stripAnsi(slowEnv.stderr), /OMOT_AGENT_FALLBACK_SLOW_MS must be a positive integer/);
+
     const ignoredWithoutVerify = await run(['agent-brief', root, '--json'], {
-      env: { OMOT_AGENT_FALLBACK_TIMEOUT_MS: '1000ms' },
+      env: { OMOT_AGENT_FALLBACK_TIMEOUT_MS: '1000ms', OMOT_AGENT_FALLBACK_SLOW_MS: '1000ms' },
     });
     assert.equal(ignoredWithoutVerify.code, 0, `stdout: ${ignoredWithoutVerify.stdout}\nstderr: ${ignoredWithoutVerify.stderr}`);
   } finally {
@@ -4451,8 +4481,8 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
     const clean = stripAnsi(r.stdout);
     const vaultPath = escapeRegExp(root);
     assert.match(clean, /^# oh-my-ontology Graph DB CLI pack/);
-    assert.match(clean, /# Self-check first: Claude Code\/Codex automation can parse ok, failed, timeoutMs, commands\[\]\.timedOut, and slowest\.elapsedMs\./);
-    assert.match(clean, new RegExp(`oh-my-ontology agent-brief ${vaultPath} --verify-fallbacks --json --fallback-timeout-ms 15000`));
+    assert.match(clean, /# Self-check first: Claude Code\/Codex automation can parse ok, failed, timeoutMs, slowThresholdMs, slow, commands\[\]\.timedOut, commands\[\]\.slow, and slowest\.elapsedMs\./);
+    assert.match(clean, new RegExp(`oh-my-ontology agent-brief ${vaultPath} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000`));
     assert.match(clean, /# The selected vault path is already inserted/);
     assert.match(clean, /# Evidence rule: scan rows are candidates, not proof/);
     assert.match(clean, /# intent: MATCH \(n:capability\) WHERE degree\(n\) >= 2 RETURN n ORDER BY degree\(n\) DESC LIMIT 10/);
@@ -4486,7 +4516,9 @@ await test('agent-brief --help — documents handoff and exit gates', async () =
   assert.match(clean, /Use --graph-db-pack to print only executable CLI graph scan commands/);
   assert.match(clean, /Use --verify-fallbacks to execute the generated CLI fallback commands/);
   assert.match(clean, /--fallback-timeout-ms N/);
+  assert.match(clean, /--fallback-slow-ms N/);
   assert.match(clean, /OMOT_AGENT_FALLBACK_TIMEOUT_MS=N/);
+  assert.match(clean, /OMOT_AGENT_FALLBACK_SLOW_MS=N/);
   assert.match(clean, /Exits non-zero when readiness is not ready/);
   assert.match(clean, /Tuning flags forward to query_ontology agent_brief/);
 });
