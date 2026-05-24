@@ -561,6 +561,10 @@ export function VaultToolsMenu({
                       term: t('agentSetup.modeGraphTerm'),
                       desc: t('agentSetup.modeGraphDesc'),
                     },
+                    {
+                      term: t('agentSetup.modeGateTerm'),
+                      desc: t('agentSetup.modeGateDesc'),
+                    },
                   ].map((mode) => (
                     <div
                       key={mode.term}

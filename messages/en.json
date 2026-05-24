@@ -1227,6 +1227,8 @@
       "modeMcpDesc": "Claude Code, Codex, or Cursor can call 23 tools directly with structured repair fields and write guardrails.",
       "modeGraphTerm": "Graph DB pack",
       "modeGraphDesc": "Explore with query plans, node/edge scans, domain matrix, paths, and relation explanations without a database server.",
+      "modeGateTerm": "Setup gate",
+      "modeGateDesc": "When setup is unclear or the agent opens at a codebase root, check JSON readiness and performanceOk before edits.",
       "copyJsonGate": "Copy automation JSON gate",
       "copyJsonGateCopied": "JSON gate copied",
       "copyJsonGateFailed": "Copy failed",

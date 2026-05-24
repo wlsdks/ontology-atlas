@@ -118,6 +118,10 @@ describe('VaultToolsMenu', () => {
     expect(screen.getByText('CLI만 사용')).toBeInTheDocument();
     expect(screen.getByText('MCP 연결')).toBeInTheDocument();
     expect(screen.getByText('Graph DB pack')).toBeInTheDocument();
+    expect(screen.getByText('Setup gate')).toBeInTheDocument();
+    expect(
+      screen.getByText('설정이 애매하거나 codebase root에서 agent를 열었을 때 JSON readiness와 performanceOk를 먼저 확인합니다.'),
+    ).toBeInTheDocument();
     expect(
       screen.getByLabelText('자동화 JSON gate 결과 해석'),
     ).toBeInTheDocument();
