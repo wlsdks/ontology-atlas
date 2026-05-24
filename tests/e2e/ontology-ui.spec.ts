@@ -197,6 +197,12 @@ test.describe("ontology view UI", () => {
     await expect(recipes.getByTestId("insights-agent-graph-db-self-check")).toContainText(
       "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
+    const graphDbModeGuide = recipes.getByTestId("insights-agent-graph-db-mode-guide");
+    await expect(graphDbModeGuide).toContainText("CLI-only");
+    await expect(graphDbModeGuide).toContainText("MCP-connected");
+    await expect(graphDbModeGuide).toContainText("Graph DB pack");
+    await expect(graphDbModeGuide).toContainText("Setup gate");
+    await expect(graphDbModeGuide).toContainText("performanceOk");
     await expect(recipes).toContainText("--plan");
     await expect(recipes).toContainText("blast_radius");
     await expect(recipes).toContainText("all_paths");
@@ -216,6 +222,8 @@ test.describe("ontology view UI", () => {
     expect(copiedGraphDbCliPack).toContain(
       "0. [self_check] oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
+    expect(copiedGraphDbCliPack).toContain("Mode guide:");
+    expect(copiedGraphDbCliPack).toContain("MCP-connected: Claude Code, Codex, or Cursor can call local read/write tools");
     expect(copiedGraphDbCliPack).toContain("[node_scan] oh-my-ontology match-nodes [vault] --plan");
     await recipes.getByRole("button", { name: "Copy traversal packet" }).click();
     const copiedTraversalPacket = await page.evaluate(
@@ -268,7 +276,7 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText('"tool": "query_ontology"');
     await expect(recipes.getByRole("button", { name: "Copy JSON" })).toHaveCount(18);
     await expect(recipes.getByRole("button", { name: "Copy step" })).toHaveCount(5);
-    await expect(recipes.getByRole("button", { name: "Copy CLI" })).toHaveCount(23);
+    await expect(recipes.getByRole("button", { name: "Copy CLI" })).toHaveCount(24);
     await expect(recipes.getByRole("button", { name: "Copy slug" }).first()).toBeVisible();
   });
 

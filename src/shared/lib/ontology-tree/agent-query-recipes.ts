@@ -162,6 +162,14 @@ const SCAN_RESULT_CONTRACT = [
   "Run match_edges followUp calls such as explain_relation, path, and relation_check before using an edge row as write, refactor, or coupling evidence.",
 ];
 
+const AGENT_MODE_GUIDE = [
+  "Mode guide:",
+  "- CLI-only: validate, workspace-brief, graph scans, graph DB pack, and fallback timing work from Terminal without MCP.",
+  "- MCP-connected: Claude Code, Codex, or Cursor can call local read/write tools with structured repair fields and write guardrails.",
+  "- Graph DB pack: bounded query plans, node/edge scans, domain matrix, paths, and relation explanations without a database server.",
+  "- Setup gate: run the JSON fallback check before edits and read ok separately from performanceOk.",
+];
+
 export function validateAgentMcpQueryCall(payload: AgentMcpQueryCall): string[] {
   const issues: string[] = [];
   if (payload.tool !== "query_ontology") {
@@ -700,6 +708,7 @@ export function formatAgentGraphDbCliPack(
   return [
     "Run these oh-my-ontology CLI commands when the MCP connector is unavailable.",
     "They mirror the Graph DB query pack: plan scans first, keep traversal bounded, and use follow-up evidence before writing.",
+    ...AGENT_MODE_GUIDE,
     "Self-check first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs.",
     `0. [self_check] ${AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}`,
     "",

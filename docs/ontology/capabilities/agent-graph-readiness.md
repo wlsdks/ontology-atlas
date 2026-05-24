@@ -175,6 +175,13 @@ CLI fallback 도 함께 들어가므로 MCP connector 가 없는 Codex / Claude 
 오인하지 않게 한다. 같은 pack 은 `Agent handoff prompt` 복사 본문에도 포함되어,
 사용자가 pack 버튼을 따로 누르지 않아도 fresh Claude Code / Codex 세션이 첫 handoff 에서
 graph DB-style scan 계약과 fallback 명령을 함께 받는다.
+Graph DB query pack 카드 자체도 `CLI-only`, `MCP-connected`, `Graph DB pack`,
+`Setup gate` 모드 가이드를 함께 보여준다. 따라서 사용자는 복사 버튼을 누르기 전에
+터미널만으로 가능한 범위, MCP 연결 시 추가되는 구조화된 read/write 도구, DB 서버 없이
+실행하는 bounded scan pack, 그리고 `ok` / `performanceOk` 를 따로 보는 설정 gate 의
+차이를 같은 화면에서 확인할 수 있다. `Copy CLI pack` 텍스트에도 같은 mode guide 를
+넣어, 복사된 runbook 만 다른 Claude Code/Codex 세션에 전달되어도 모드 선택 기준이
+사라지지 않는다.
 `scripts/perf-graph.mjs` 는 같은 10-call pack 을 `graph_db_pack` hot path 로 재생해
 UI / handoff 에서 복사되는 실제 Graph DB-style sequence 가 scale budget 밖으로 밀리지
 않는지도 확인한다.

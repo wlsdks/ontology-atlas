@@ -72,6 +72,10 @@ query script carry the explanation forward after setup. The normal
 also render the same mode guide directly, so a human can tell when to stay
 CLI-only, when MCP adds value, when to use the graph DB pack, and when to run the
 setup gate without opening JSON first.
+The `/ontology/insights` graph DB query pack card shows the same mode guide
+before its copy buttons, and the copied UI CLI pack includes the guide too, so
+the explanation survives when a non-developer passes only the runbook into a
+fresh Claude Code or Codex session.
 `agent-setup --json` also includes `docs.modeComparison`, a machine-readable
 version of the CLI-only / MCP-connected / graph DB pack / setup gate choice, so
 an AI agent can explain the right path without scraping this Markdown table.

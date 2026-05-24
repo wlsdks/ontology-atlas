@@ -894,6 +894,30 @@ function AgentQueryRecipesPanel({
             {AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
           </code>
         </div>
+        <div
+          className="mb-2 grid gap-2 md:grid-cols-4"
+          aria-label={t("agentGraphDbModeGuideAriaLabel")}
+          data-testid="insights-agent-graph-db-mode-guide"
+        >
+          {[
+            ["agentGraphDbModeCliTerm", "agentGraphDbModeCliDesc"],
+            ["agentGraphDbModeMcpTerm", "agentGraphDbModeMcpDesc"],
+            ["agentGraphDbModePackTerm", "agentGraphDbModePackDesc"],
+            ["agentGraphDbModeGateTerm", "agentGraphDbModeGateDesc"],
+          ].map(([termKey, descKey]) => (
+            <div
+              key={termKey}
+              className="rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(139,151,255,0.04)] px-2.5 py-2"
+            >
+              <p className="font-mono text-[10px] text-[color:var(--color-text-secondary)]">
+                {t(termKey)}
+              </p>
+              <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
+                {t(descKey)}
+              </p>
+            </div>
+          ))}
+        </div>
         <div className="grid min-w-0 gap-2 lg:grid-cols-4">
           {graphDbQueryPack.map((item) => {
             const cliCommands = item.payloads
