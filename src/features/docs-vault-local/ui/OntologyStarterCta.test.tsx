@@ -72,6 +72,15 @@ describe('OntologyStarterCta', () => {
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('agent_brief'),
     );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('performanceOk=false'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Do not write to the ontology'),
+    );
     expect(await screen.findByRole('button', { name: '프롬프트 복사됨' })).toBeInTheDocument();
   });
 
