@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-24T01:50:52.566Z",
+  "generatedAt": "2026-05-24T01:55:09.092Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -4397,8 +4397,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 6980,
-      "updatedAt": "2026-05-24T01:50:33.486Z",
+      "wordCount": 6984,
+      "updatedAt": "2026-05-24T01:54:40.315Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4737,8 +4737,8 @@
         }
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
-      "wordCount": 2400,
-      "updatedAt": "2026-05-24T01:50:44.444Z",
+      "wordCount": 2423,
+      "updatedAt": "2026-05-24T01:54:49.826Z",
       "linksOut": []
     },
     {

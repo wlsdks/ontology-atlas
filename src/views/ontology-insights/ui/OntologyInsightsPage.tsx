@@ -798,6 +798,7 @@ function AgentQueryRecipesPanel({
     query_plan: SearchCheck,
     health: ShieldCheck,
     cycles: Route,
+    topological_order: Route,
     growth_plan: GitBranch,
     maintenance_plan: ShieldCheck,
     node_profile: Network,

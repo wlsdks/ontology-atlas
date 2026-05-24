@@ -86,6 +86,7 @@ describe("buildAgentQueryRecipes", () => {
       "all_paths",
       "pattern_walk",
       "cycles",
+      "topological_order",
       "growth_plan",
       "maintenance_plan",
     ]);
@@ -314,6 +315,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "cycles")!)).toBe(
       "oh-my-ontology cycles [vault] --max-hops 8",
     );
+    expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "topological_order")!)).toBeNull();
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "growth_plan")!)).toBe(
       "oh-my-ontology growth [vault] --limit 20",
     );

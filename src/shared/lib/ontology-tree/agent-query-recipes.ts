@@ -8,6 +8,7 @@ const AGENT_QUERY_OPERATIONS = new Set([
   "query_plan",
   "health",
   "cycles",
+  "topological_order",
   "growth_plan",
   "maintenance_plan",
   "node_profile",
@@ -40,6 +41,7 @@ export type AgentQueryRecipeId =
   | "query_plan"
   | "health"
   | "cycles"
+  | "topological_order"
   | "growth_plan"
   | "maintenance_plan"
   | "node_profile"
@@ -1321,6 +1323,19 @@ export function buildAgentQueryRecipes(
       promptKey: "agentRecipePromptCycles",
       tool: "query_ontology",
       arguments: { operation: "cycles", maxHops: 8 },
+      priority: "secondary",
+    },
+    {
+      id: "topological_order",
+      operation: "query_ontology.topological_order",
+      promptKey: "agentRecipePromptTopologicalOrder",
+      tool: "query_ontology",
+      arguments: {
+        operation: "topological_order",
+        types: ["depends_on"],
+        includeIsolated: false,
+        limit: 20,
+      },
       priority: "secondary",
     },
     {

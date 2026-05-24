@@ -940,6 +940,7 @@
       "agentRecipePromptQueryPlan": "Ask for cost, limits, and indexes before running a heavier graph query.",
       "agentRecipePromptHealth": "Gate the vault before writes: unresolved refs, cycles, components, recommendations.",
       "agentRecipePromptCycles": "Check directed depends_on cycles and use the next cycle evidence loop before repair.",
+      "agentRecipePromptTopologicalOrder": "Read prerequisite-first dependency layers before sequencing refactors or onboarding.",
       "agentRecipePromptGrowthPlan": "Review growth candidates and preflight recommended relations before writing to the vault.",
       "agentRecipePromptMaintenancePlan": "Open the ordered maintenance queue and narrow by phase, severity, or kind before acting.",
       "agentRecipePromptNodeProfile": "Inspect one hub deeply: aliases, incoming/outgoing edges, containment, lineage, and local risk.",
