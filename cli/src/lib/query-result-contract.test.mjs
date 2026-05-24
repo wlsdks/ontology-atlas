@@ -577,6 +577,28 @@ describe('query-result-contract', () => {
           title: 'Agent Graph Workflow',
           description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
         },
+        graphScanProofChecklist: [
+          {
+            id: 'report_scan_scope',
+            label: 'Report scan scope',
+            evidence: ['totalMatches', 'limited', 'row count'],
+          },
+          {
+            id: 'prove_node_rows',
+            label: 'Prove node rows',
+            evidence: ['node_profile', 'blast_radius'],
+          },
+          {
+            id: 'prove_edge_rows',
+            label: 'Prove edge rows',
+            evidence: ['explain_relation', 'path', 'relation_check'],
+          },
+          {
+            id: 'prove_path_completeness',
+            label: 'Prove path completeness',
+            evidence: ['evidence.pathsComplete', 'totalPathsExact'],
+          },
+        ],
       },
       handoffPrompt: [
         'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
@@ -837,6 +859,18 @@ describe('query-result-contract', () => {
     assert.throws(
       () => assertAgentBriefShape({ ...valid, handoffPrompt: 'missing useful handoff content' }),
       /agent_brief handoffPrompt must be a non-empty agent handoff string/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        docs: {
+          ...valid.docs,
+          graphScanProofChecklist: valid.docs.graphScanProofChecklist.filter(
+            (row) => row.id !== 'prove_edge_rows',
+          ),
+        },
+      }),
+      /agent_brief docs must include workflowGuide and graphScanProofChecklist guidance/,
     );
     assert.throws(
       () => assertAgentBriefShape({ ...valid, cliFallbackCommands: [] }),

@@ -13,6 +13,28 @@ const AGENT_WORKFLOW_GUIDE = Object.freeze({
   description:
     'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
 });
+const GRAPH_SCAN_PROOF_CHECKLIST = Object.freeze([
+  Object.freeze({
+    id: 'report_scan_scope',
+    label: 'Report scan scope',
+    evidence: ['totalMatches', 'limited', 'row count'],
+  }),
+  Object.freeze({
+    id: 'prove_node_rows',
+    label: 'Prove node rows',
+    evidence: ['node_profile', 'blast_radius'],
+  }),
+  Object.freeze({
+    id: 'prove_edge_rows',
+    label: 'Prove edge rows',
+    evidence: ['explain_relation', 'path', 'relation_check'],
+  }),
+  Object.freeze({
+    id: 'prove_path_completeness',
+    label: 'Prove path completeness',
+    evidence: ['evidence.pathsComplete', 'totalPathsExact'],
+  }),
+]);
 export const NODE_KIND_VALUES = Object.freeze([
   'project',
   'domain',
@@ -3347,6 +3369,7 @@ export function createOntologyEngine(artifact, options = {}) {
       relationDecisionGuide,
       docs: {
         workflowGuide: AGENT_WORKFLOW_GUIDE,
+        graphScanProofChecklist: GRAPH_SCAN_PROOF_CHECKLIST,
       },
     };
     brief.cliFallbackCommands = uniqueCliCommands([

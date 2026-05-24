@@ -71,6 +71,10 @@ query script carry the explanation forward after setup.
 For automation, `agent-brief --json` and MCP `query_ontology({operation:
 "agent_brief"})` expose the same location as `docs.workflowGuide`, so an AI
 tool does not need to parse the human prompt to find the guide.
+They also expose this page's scan-to-proof rules as
+`docs.graphScanProofChecklist`, so an AI tool can inspect the required
+`totalMatches` / follow-up / `evidence.pathsComplete` steps without parsing
+Markdown.
 
 ## What MCP Adds
 

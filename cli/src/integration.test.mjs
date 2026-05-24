@@ -4551,6 +4551,16 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
       title: 'Agent Graph Workflow',
       description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
     });
+    assert.deepEqual(data.docs.graphScanProofChecklist.map((row) => row.id), [
+      'report_scan_scope',
+      'prove_node_rows',
+      'prove_edge_rows',
+      'prove_path_completeness',
+    ]);
+    assert.ok(data.docs.graphScanProofChecklist[0].evidence.includes('totalMatches'));
+    assert.ok(data.docs.graphScanProofChecklist[1].evidence.includes('blast_radius'));
+    assert.ok(data.docs.graphScanProofChecklist[2].evidence.includes('relation_check'));
+    assert.ok(data.docs.graphScanProofChecklist[3].evidence.includes('evidence.pathsComplete'));
     assert.equal(data.readiness.status, 'ready');
     assert.ok(data.cliFallbackCommands.includes('oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates'));
     assert.ok(data.writeGuardrails.some((guardrail) => guardrail.id === 'preflight_rename'));

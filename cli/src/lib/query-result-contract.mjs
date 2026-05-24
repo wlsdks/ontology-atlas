@@ -262,7 +262,7 @@ export function assertAgentBriefShape(result) {
     throw new Error('agent_brief graph must be an object');
   }
   if (!validAgentBriefDocs(result.docs)) {
-    throw new Error('agent_brief docs.workflowGuide must include path, title, and description');
+    throw new Error('agent_brief docs must include workflowGuide and graphScanProofChecklist guidance');
   }
   if (!validAgentHandoffPrompt(result.handoffPrompt)) {
     throw new Error('agent_brief handoffPrompt must be a non-empty agent handoff string');
@@ -1238,8 +1238,32 @@ function validAgentHandoffPrompt(value) {
 function validAgentBriefDocs(value) {
   if (!isPlainObject(value) || !isPlainObject(value.workflowGuide)) return false;
   const guide = value.workflowGuide;
-  return hasNonEmptyString(guide.path, guide.title, guide.description)
-    && guide.path === 'docs/AGENT-GRAPH-WORKFLOW.md';
+  if (
+    !hasNonEmptyString(guide.path, guide.title, guide.description) ||
+    guide.path !== 'docs/AGENT-GRAPH-WORKFLOW.md'
+  ) {
+    return false;
+  }
+  if (!Array.isArray(value.graphScanProofChecklist) || value.graphScanProofChecklist.length < 4) {
+    return false;
+  }
+  const byId = new Map(value.graphScanProofChecklist.map((row) => [row?.id, row]));
+  const required = [
+    ['report_scan_scope', ['totalMatches', 'limited']],
+    ['prove_node_rows', ['node_profile', 'blast_radius']],
+    ['prove_edge_rows', ['explain_relation', 'path', 'relation_check']],
+    ['prove_path_completeness', ['evidence.pathsComplete']],
+  ];
+  for (const [id, evidence] of required) {
+    const row = byId.get(id);
+    if (!isPlainObject(row) || !hasNonEmptyString(row.id, row.label) || !Array.isArray(row.evidence)) {
+      return false;
+    }
+    for (const item of evidence) {
+      if (!row.evidence.includes(item)) return false;
+    }
+  }
+  return true;
 }
 
 function validAgentCliFallbackCommands(commands) {

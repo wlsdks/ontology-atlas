@@ -1806,6 +1806,16 @@ describe('queryCompiledOntology', () => {
       title: 'Agent Graph Workflow',
       description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
     });
+    assert.deepEqual(result.docs.graphScanProofChecklist.map((row) => row.id), [
+      'report_scan_scope',
+      'prove_node_rows',
+      'prove_edge_rows',
+      'prove_path_completeness',
+    ]);
+    assert.ok(result.docs.graphScanProofChecklist[0].evidence.includes('totalMatches'));
+    assert.ok(result.docs.graphScanProofChecklist[1].evidence.includes('node_profile'));
+    assert.ok(result.docs.graphScanProofChecklist[2].evidence.includes('relation_check'));
+    assert.ok(result.docs.graphScanProofChecklist[3].evidence.includes('evidence.pathsComplete'));
     assert.match(result.handoffPrompt, /oh-my-ontology MCP server/);
     assert.match(result.handoffPrompt, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
     assert.match(result.handoffPrompt, /first-contact MCP calls/i);
