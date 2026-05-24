@@ -144,6 +144,23 @@ function renderMaintenance(result) {
     if (result.nextReviewAction) {
       process.stdout.write(`${COLORS.dim}next review:${COLORS.reset} ${formatActionPointer(result.nextReviewAction)}\n`);
     }
+    printNextMaintenance(result);
+  }
+}
+
+function printNextMaintenance(result) {
+  const pointer = result.nextExecutableAction ?? result.nextReviewAction;
+  if (!pointer) return;
+  const cursor = result.cursor ?? {};
+  process.stdout.write(
+    `${COLORS.bold}next maintenance${COLORS.reset} ${COLORS.cyan}${pointer.id}${COLORS.reset}` +
+      ` ${COLORS.dim}— queue rows are work items, not proof; narrow the queue before acting${COLORS.reset}\n` +
+      `  oh-my-ontology maintenance [vault] --phases ${pointer.phase} --severities ${pointer.severity} --kinds ${pointer.kind} --limit 5\n`,
+  );
+  if (cursor.nextAfterActionId) {
+    process.stdout.write(
+      `  oh-my-ontology maintenance [vault] --after-action-id ${cursor.nextAfterActionId} --limit ${LIMIT_CAP > 20 ? 20 : LIMIT_CAP}\n`,
+    );
   }
 }
 
