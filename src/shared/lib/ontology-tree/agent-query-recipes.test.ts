@@ -79,6 +79,7 @@ describe("buildAgentQueryRecipes", () => {
       "node_profile",
       "path",
       "explain_relation",
+      "similar_nodes",
       "relation_check",
       "blast_radius",
       "domain_matrix",
@@ -157,6 +158,13 @@ describe("buildAgentQueryRecipes", () => {
       direction: "undirected",
       types: ["depends_on", "relates"],
     });
+    expect(recipes.find((recipe) => recipe.id === "similar_nodes")?.arguments).toEqual({
+      operation: "similar_nodes",
+      title: "MCP Server",
+      candidateSlug: "capabilities/mcp-server",
+      kind: "capability",
+      limit: 10,
+    });
     expect(recipes.find((recipe) => recipe.id === "relation_check")?.arguments).toEqual({
       operation: "relation_check",
       from: "capabilities/mcp-server",
@@ -215,6 +223,9 @@ describe("buildAgentQueryRecipes", () => {
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "explain_relation")!)).toBe(
       "oh-my-ontology explain capabilities/mcp-server domains/views [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10",
+    );
+    expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "similar_nodes")!)).toBe(
+      "oh-my-ontology similar 'MCP Server' [vault] --slug capabilities/mcp-server --kind capability --limit 10",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "relation_check")!)).toBe(
       "oh-my-ontology relation-check capabilities/mcp-server domains/views depends_on [vault]",

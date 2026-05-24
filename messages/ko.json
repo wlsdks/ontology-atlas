@@ -945,6 +945,7 @@
       "agentRecipePromptNodeProfile": "허브 하나를 깊게 확인: alias, incoming/outgoing edge, containment, lineage, local risk.",
       "agentRecipePromptPath": "경계나 관계를 바꾸기 전에 중요한 두 노드가 어떻게 연결되는지 증명.",
       "agentRecipePromptExplainRelation": "두 노드가 왜 관련되는지 direct edge, shortest path, domain 맥락, common neighbor 로 설명.",
+      "agentRecipePromptSimilarNodes": "concept 생성이나 rename 전에 duplicate 후보와 shared-neighbor signal 을 확인.",
       "agentRecipePromptRelationCheck": "add_relation 전 preflight: recommendation.decision, inverseEdges, schema pattern, 실제 add_relation args 를 확인.",
       "agentRecipePromptBlastRadius": "리팩터링 전 slug 기준 incoming impact와 의존 위험을 확인.",
       "agentRecipePromptDomainMatrix": "도메인 간 결합을 비교하고 ontology가 얽히는 지점을 찾음.",

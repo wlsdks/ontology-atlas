@@ -257,15 +257,16 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("query_ontology.node_profile");
     await expect(recipes).toContainText("query_ontology.path");
     await expect(recipes).toContainText("query_ontology.explain_relation");
+    await expect(recipes).toContainText("query_ontology.similar_nodes");
     await expect(recipes).toContainText("query_ontology.relation_check");
     await expect(recipes).toContainText("query_ontology.all_paths");
     await expect(recipes).toContainText("query_ontology.pattern_walk");
     await expect(recipes).not.toContainText("<project-slug>");
     await expect(recipes).toContainText("Secondary");
     await expect(recipes).toContainText('"tool": "query_ontology"');
-    await expect(recipes.getByRole("button", { name: "Copy JSON" })).toHaveCount(15);
+    await expect(recipes.getByRole("button", { name: "Copy JSON" })).toHaveCount(16);
     await expect(recipes.getByRole("button", { name: "Copy step" })).toHaveCount(5);
-    await expect(recipes.getByRole("button", { name: "Copy CLI" })).toHaveCount(20);
+    await expect(recipes.getByRole("button", { name: "Copy CLI" })).toHaveCount(21);
     await expect(recipes.getByRole("button", { name: "Copy slug" }).first()).toBeVisible();
   });
 

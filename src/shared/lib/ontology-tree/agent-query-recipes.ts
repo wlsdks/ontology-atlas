@@ -13,6 +13,7 @@ const AGENT_QUERY_OPERATIONS = new Set([
   "node_profile",
   "path",
   "explain_relation",
+  "similar_nodes",
   "relation_check",
   "blast_radius",
   "domain_matrix",
@@ -44,6 +45,7 @@ export type AgentQueryRecipeId =
   | "node_profile"
   | "path"
   | "explain_relation"
+  | "similar_nodes"
   | "relation_check"
   | "blast_radius"
   | "domain_matrix"
@@ -344,6 +346,14 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
         stringFlag("--direction", args.direction),
         nonNegativeFlag("--max-hops", args.maxHops),
         csvFlag("--types", args.types),
+        positiveFlag("--limit", args.limit),
+      ]);
+    }
+    case "similar_nodes": {
+      const title = stringArg(args.title, "<candidate-title>");
+      return withFlags(`oh-my-ontology similar ${shellQuote(title)} [vault]`, [
+        stringFlag("--slug", args.candidateSlug),
+        stringFlag("--kind", args.kind),
         positiveFlag("--limit", args.limit),
       ]);
     }
@@ -1143,6 +1153,8 @@ export function buildAgentQueryRecipes(
   projectEntrypoint: AgentProjectEntrypoint | null = null,
 ): AgentQueryRecipe[] {
   const impactSlug = entrypoints[0]?.slug ?? "<slug>";
+  const impactTitle = entrypoints[0]?.title ?? "<candidate-title>";
+  const impactKind = entrypoints[0]?.kind ?? "capability";
   const pathTargetSlug = entrypoints.find((entrypoint) => entrypoint.slug !== impactSlug)?.slug ?? "<other-slug>";
   const projectSlug = projectEntrypoint?.slug ?? "<project-slug>";
   const common: AgentQueryRecipe[] = [
@@ -1221,6 +1233,20 @@ export function buildAgentQueryRecipes(
         direction: "undirected",
         maxHops: 5,
         types: ["depends_on", "relates"],
+        limit: 10,
+      },
+      priority: "secondary",
+    },
+    {
+      id: "similar_nodes",
+      operation: "query_ontology.similar_nodes",
+      promptKey: "agentRecipePromptSimilarNodes",
+      tool: "query_ontology",
+      arguments: {
+        operation: "similar_nodes",
+        title: impactTitle,
+        candidateSlug: impactSlug,
+        kind: impactKind,
         limit: 10,
       },
       priority: "secondary",
