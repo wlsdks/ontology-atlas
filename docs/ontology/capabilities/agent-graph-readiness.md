@@ -263,6 +263,11 @@ MCP `agent_brief` 와 CLI `agent-brief --json` 은 같은 mode chooser 를
 구조화해 반환하므로, 에이전트는 handoff prompt 나 Markdown 본문을 파싱하지 않아도
 CLI-only / MCP-connected / Graph DB pack / setup gate 선택 기준과 scan scope /
 node proof / edge proof / path completeness gate 를 읽을 수 있다.
+일반 터미널 출력의 `agent-brief` 도 같은 mode guide 를 `ENTRYPOINTS` 전에 보여주고,
+`agent-brief --graph-db-pack` 은 shell 주석으로 같은 모드별 차이를 pack 상단에 넣는다.
+따라서 MCP 미연결 상태에서 복사한 CLI pack 만 보더라도 사용자는 "터미널만으로 가능한
+것", "MCP 연결 시 추가되는 것", "Graph DB pack 으로 대신하는 것", "설정 검증 gate"
+를 먼저 이해한 뒤 scan command 를 실행할 수 있다.
 또한 웹 UI 의 `Copy handoff` 프롬프트는 `preflight_relation`, `preflight_rename`,
 `post_change_sync` guardrail packet 과 `skip_existing` / `review_inverse` /
 `safe_to_add` / `review_new_schema` 판단 규칙을 함께 포함해, 별도 카드 복사 없이도

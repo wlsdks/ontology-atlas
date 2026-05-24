@@ -103,7 +103,7 @@ export async function runAgentBrief(args) {
     return agentBriefExitCode(result);
   }
   if (graphDbPack) {
-    process.stdout.write(formatGraphDbCliPack(result.graphDbQueryPack, vaultRoot).trimEnd() + '\n');
+    process.stdout.write(formatGraphDbCliPack(result, vaultRoot).trimEnd() + '\n');
     return agentBriefExitCode(result);
   }
   render(result);
@@ -315,7 +315,8 @@ function parseFallbackCommand(command) {
   return { args: tokens.slice(1) };
 }
 
-function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
+function formatGraphDbCliPack(result, vaultRoot) {
+  const graphDbQueryPack = Array.isArray(result?.graphDbQueryPack) ? result.graphDbQueryPack : [];
   const commands = [];
   const seen = new Set();
   const selfCheckCommand = graphDbWithFlags(`oh-my-ontology agent-brief ${graphDbShellQuote(vaultRoot)}`, [
@@ -337,6 +338,7 @@ function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
     '# oh-my-ontology Graph DB CLI pack',
     '# Run these commands when the MCP connector is unavailable.',
     `# Feature guide: ${WORKFLOW_GUIDE_PATH} explains CLI-only use, MCP-connected use, graph DB differences, and verification checks.`,
+    ...formatModeGuideComments(result),
     '# Self-check first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, concurrency, wallMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs.',
     selfCheckCommand,
     '',
@@ -351,6 +353,21 @@ function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
       command,
     ]),
   ].join('\n');
+}
+
+function formatModeGuideComments(result) {
+  const rows = modeComparisonRows(result);
+  if (rows.length === 0) return [];
+  return [
+    '# Mode guide:',
+    ...rows.map((row) => `# - ${row.label}: ${row.gives}`),
+  ];
+}
+
+function modeComparisonRows(result) {
+  return Array.isArray(result?.docs?.modeComparison)
+    ? result.docs.modeComparison.filter((row) => row && typeof row.label === 'string' && typeof row.gives === 'string')
+    : [];
 }
 
 function graphDbCommentLine(label, value) {
@@ -545,6 +562,18 @@ function render(result) {
     process.stdout.write(
       `${COLORS.dim}HANDOFF PROMPT${COLORS.reset} ${COLORS.dim}available in --json as .handoffPrompt for Claude Code/Codex paste-in setup${COLORS.reset}\n\n`,
     );
+  }
+
+  const modeRows = modeComparisonRows(result);
+  if (modeRows.length > 0) {
+    process.stdout.write(`${COLORS.dim}MODE GUIDE${COLORS.reset} ${COLORS.dim}(CLI-only / MCP-connected / Graph DB pack / setup gate)${COLORS.reset}\n`);
+    for (const row of modeRows) {
+      process.stdout.write(
+        `  ${COLORS.bold}${row.label.padEnd(14)}${COLORS.reset}` +
+          ` ${COLORS.dim}${row.gives}${COLORS.reset}\n`,
+      );
+    }
+    process.stdout.write('\n');
   }
 
   const entrypoints = Array.isArray(result.entrypoints) ? result.entrypoints : [];

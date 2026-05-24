@@ -67,7 +67,11 @@ Its terminal and JSON output also point back to this guide
 where to read the MCP, graph DB, and verification differences.
 The same guide path is included in `agent-brief --prompt` and
 `agent-brief --graph-db-pack`, so the agent handoff and connector-less graph
-query script carry the explanation forward after setup.
+query script carry the explanation forward after setup. The normal
+`agent-brief` terminal view and the shell-pasteable `--graph-db-pack` header now
+also render the same mode guide directly, so a human can tell when to stay
+CLI-only, when MCP adds value, when to use the graph DB pack, and when to run the
+setup gate without opening JSON first.
 `agent-setup --json` also includes `docs.modeComparison`, a machine-readable
 version of the CLI-only / MCP-connected / graph DB pack / setup gate choice, so
 an AI agent can explain the right path without scraping this Markdown table.
