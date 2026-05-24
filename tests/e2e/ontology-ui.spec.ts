@@ -245,6 +245,9 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("query_ontology.workspace_brief");
     await expect(recipes).toContainText("query_ontology.query_plan");
     await expect(recipes).toContainText("query_ontology.health");
+    await expect(recipes).toContainText("query_ontology.cycles");
+    await expect(recipes).toContainText("query_ontology.growth_plan");
+    await expect(recipes).toContainText("query_ontology.maintenance_plan");
     await expect(recipes).toContainText("query_ontology.node_profile");
     await expect(recipes).toContainText("query_ontology.path");
     await expect(recipes).toContainText("query_ontology.explain_relation");
@@ -254,9 +257,9 @@ test.describe("ontology view UI", () => {
     await expect(recipes).not.toContainText("<project-slug>");
     await expect(recipes).toContainText("Secondary");
     await expect(recipes).toContainText('"tool": "query_ontology"');
-    await expect(recipes.getByRole("button", { name: "Copy JSON" })).toHaveCount(12);
+    await expect(recipes.getByRole("button", { name: "Copy JSON" })).toHaveCount(15);
     await expect(recipes.getByRole("button", { name: "Copy step" })).toHaveCount(5);
-    await expect(recipes.getByRole("button", { name: "Copy CLI" })).toHaveCount(17);
+    await expect(recipes.getByRole("button", { name: "Copy CLI" })).toHaveCount(20);
     await expect(recipes.getByRole("button", { name: "Copy slug" }).first()).toBeVisible();
   });
 

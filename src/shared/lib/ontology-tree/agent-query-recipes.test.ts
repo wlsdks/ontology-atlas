@@ -84,6 +84,9 @@ describe("buildAgentQueryRecipes", () => {
       "domain_matrix",
       "all_paths",
       "pattern_walk",
+      "cycles",
+      "growth_plan",
+      "maintenance_plan",
     ]);
     expect(recipes[0]?.priority).toBe("primary");
   });
@@ -296,6 +299,15 @@ describe("buildAgentQueryRecipes", () => {
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "domain_matrix")!)).toBe(
       "oh-my-ontology domain-matrix [vault]",
+    );
+    expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "cycles")!)).toBe(
+      "oh-my-ontology cycles [vault] --max-hops 8",
+    );
+    expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "growth_plan")!)).toBe(
+      "oh-my-ontology growth [vault] --limit 20",
+    );
+    expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "maintenance_plan")!)).toBe(
+      "oh-my-ontology maintenance [vault] --limit 20",
     );
     expect(
       formatAgentQueryCallCliCommand({

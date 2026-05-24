@@ -7,6 +7,9 @@ const AGENT_QUERY_OPERATIONS = new Set([
   "workspace_brief",
   "query_plan",
   "health",
+  "cycles",
+  "growth_plan",
+  "maintenance_plan",
   "node_profile",
   "path",
   "explain_relation",
@@ -35,6 +38,9 @@ export type AgentQueryRecipeId =
   | "workspace_brief"
   | "query_plan"
   | "health"
+  | "cycles"
+  | "growth_plan"
+  | "maintenance_plan"
   | "node_profile"
   | "path"
   | "explain_relation"
@@ -270,6 +276,18 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       return "oh-my-ontology workspace-brief [vault]";
     case "health":
       return "oh-my-ontology health [vault]";
+    case "cycles":
+      return withFlags("oh-my-ontology cycles [vault]", [
+        nonNegativeFlag("--max-hops", args.maxHops),
+      ]);
+    case "growth_plan":
+      return withFlags("oh-my-ontology growth [vault]", [
+        positiveFlag("--limit", args.limit),
+      ]);
+    case "maintenance_plan":
+      return withFlags("oh-my-ontology maintenance [vault]", [
+        positiveFlag("--limit", args.limit),
+      ]);
     case "query_plan": {
       if (args.targetOperation === "blast_radius") {
         const slug = stringArg(args.slug, "<slug>");
@@ -1269,6 +1287,30 @@ export function buildAgentQueryRecipes(
         direction: "outgoing",
         limit: 20,
       },
+      priority: "secondary",
+    },
+    {
+      id: "cycles",
+      operation: "query_ontology.cycles",
+      promptKey: "agentRecipePromptCycles",
+      tool: "query_ontology",
+      arguments: { operation: "cycles", maxHops: 8 },
+      priority: "secondary",
+    },
+    {
+      id: "growth_plan",
+      operation: "query_ontology.growth_plan",
+      promptKey: "agentRecipePromptGrowthPlan",
+      tool: "query_ontology",
+      arguments: { operation: "growth_plan", limit: 20 },
+      priority: "secondary",
+    },
+    {
+      id: "maintenance_plan",
+      operation: "query_ontology.maintenance_plan",
+      promptKey: "agentRecipePromptMaintenancePlan",
+      tool: "query_ontology",
+      arguments: { operation: "maintenance_plan", limit: 20 },
       priority: "secondary",
     },
   ];
