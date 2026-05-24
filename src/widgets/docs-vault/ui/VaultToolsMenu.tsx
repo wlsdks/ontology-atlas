@@ -33,6 +33,9 @@ const AGENT_VERIFY_CLI_COMMAND = [
   'oh-my-ontology mcp-verify . --timeout-ms 15000',
 ].join('\n');
 
+const AGENT_VERIFY_JSON_GATE_COMMAND =
+  'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000';
+
 const AGENT_VERIFY_CLI_PREVIEW = [
   'validate .',
   'workspace-brief .',
@@ -62,6 +65,9 @@ function buildAgentSetupPacket(vaultName: string): string {
     '',
     'CLI fallback from the vault folder:',
     AGENT_VERIFY_CLI_COMMAND,
+    '',
+    'Machine-readable setup gate for automation:',
+    AGENT_VERIFY_JSON_GATE_COMMAND,
   ].join('\n');
 }
 
@@ -138,6 +144,9 @@ export function VaultToolsMenu({
     'idle' | 'copied' | 'failed'
   >('idle');
   const [agentCliCopyState, setAgentCliCopyState] = useState<
+    'idle' | 'copied' | 'failed'
+  >('idle');
+  const [agentJsonGateCopyState, setAgentJsonGateCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle');
   const [agentTemplateCopyState, setAgentTemplateCopyState] = useState<
@@ -223,6 +232,11 @@ export function VaultToolsMenu({
     setAgentCliCopyState(copied ? 'copied' : 'failed');
   }
 
+  async function handleCopyAgentJsonGate() {
+    const copied = await copyText(AGENT_VERIFY_JSON_GATE_COMMAND);
+    setAgentJsonGateCopyState(copied ? 'copied' : 'failed');
+  }
+
   async function handleCopyAgentConfigTemplate() {
     const copied = await copyText(
       buildMcpConfigJson(localVault.handle?.name ?? 'vault'),
@@ -264,6 +278,13 @@ export function VaultToolsMenu({
       : agentCliCopyState === 'failed'
         ? t('agentSetup.copyCliFailed')
         : t('agentSetup.copyCli');
+
+  const copyJsonGateLabel =
+    agentJsonGateCopyState === 'copied'
+      ? t('agentSetup.copyJsonGateCopied')
+      : agentJsonGateCopyState === 'failed'
+        ? t('agentSetup.copyJsonGateFailed')
+        : t('agentSetup.copyJsonGate');
 
   const copyTemplateLabel =
     agentTemplateCopyState === 'copied'
@@ -455,6 +476,23 @@ export function VaultToolsMenu({
                   <Terminal size={12} aria-hidden />
                   {copyCliLabel}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyAgentJsonGate()}
+                  title={t('agentSetup.copyJsonGateTitle')}
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(130,230,180,0.28)] bg-[color:rgba(50,185,125,0.07)] px-2 py-1.5 text-[11.5px] text-[color:rgba(180,235,205,0.94)] transition-colors hover:border-[color:rgba(130,230,180,0.42)] hover:bg-[color:rgba(50,185,125,0.11)]"
+                >
+                  <Terminal size={12} aria-hidden />
+                  {copyJsonGateLabel}
+                </button>
+                <div className="mt-1.5 rounded-sm border border-[color:rgba(130,230,180,0.18)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1.5">
+                  <div className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:rgba(130,230,180,0.78)]">
+                    {t('agentSetup.jsonGateLabel')}
+                  </div>
+                  <code className="mt-1 block truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+                    {AGENT_VERIFY_JSON_GATE_COMMAND}
+                  </code>
+                </div>
                 <ol className="mt-1.5 grid gap-1" aria-label={t('agentSetup.cliPreviewAriaLabel')}>
                   {AGENT_VERIFY_CLI_PREVIEW.map((command, index) => (
                     <li

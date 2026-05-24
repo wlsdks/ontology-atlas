@@ -210,6 +210,11 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('oh-my-ontology mcp-verify . --timeout-ms 15000'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000',
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('<absolute path to your team-vault folder>'),
     );
     expect(
@@ -263,6 +268,35 @@ describe('VaultToolsMenu', () => {
     expect(screen.getByText('oh-my-ontology agent-brief . --verify-fallbacks')).toBeInTheDocument();
     expect(
       await screen.findByRole('button', { name: 'CLI 그래프 runbook 복사됨' }),
+    ).toBeInTheDocument();
+  });
+
+  it('AI agent 설정 패널에서 자동화 JSON gate 명령을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '자동화 JSON gate 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000',
+    );
+    expect(screen.getByText('자동화 gate')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'JSON gate 복사됨' }),
     ).toBeInTheDocument();
   });
 
