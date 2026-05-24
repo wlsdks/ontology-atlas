@@ -340,7 +340,10 @@ narrows the same validated payload to an executable CLI-only queue for
 shell comments. It also prints each pack item's intent plus an evidence rule
 that scan rows are candidates until follow-up detail is cited, so a terminal-only
 agent can paste the block into a shell without parsing MCP JSON or replacing
-placeholders.
+placeholders. The pack also prints a proof checklist: report
+`totalMatches`/`limited`/row count, inspect node rows with `node` or
+`blast-radius`, inspect edge rows with `explain` / `path` / `relation-check`,
+and report `evidence.pathsComplete` before making path-based claims.
 
 `oh-my-ontology workspace-brief [vault]` follows the same blocking distinction:
 warn/advisory next actions render as guidance, but fail-severity next actions

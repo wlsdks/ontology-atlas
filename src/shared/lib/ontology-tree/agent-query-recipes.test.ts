@@ -761,6 +761,9 @@ describe("buildAgentQueryRecipes", () => {
       cliPack.split("\n").filter((row) => /^\d+\. /.test(row)).length,
     );
     expect(cliPack).toContain("Evidence rule: scan rows are candidates, not proof");
+    expect(cliPack).toContain("Proof checklist: report totalMatches/limited/row count");
+    expect(cliPack).toContain("run explain/path/relation-check for edge rows");
+    expect(cliPack).toContain("report evidence.pathsComplete for paths");
     expect(cliPack).toContain("intent: MATCH graph RETURN kind/domain/degree/relation facets");
     expect(cliPack).toContain("[graph_facets] oh-my-ontology facets [vault] --limit 10");
     expect(cliPack).toContain("[graph_facets] oh-my-ontology schema [vault] --limit 20");

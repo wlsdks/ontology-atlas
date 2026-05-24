@@ -704,6 +704,7 @@ export function formatAgentGraphDbCliPack(
     `0. [self_check] ${AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}`,
     "",
     "Evidence rule: scan rows are candidates, not proof; cite follow-up detail before writing or refactoring.",
+    "Proof checklist: report totalMatches/limited/row count, run node_profile or blast_radius for node rows, run explain/path/relation-check for edge rows, and report evidence.pathsComplete for paths.",
     "",
     ...commands.map(({ itemId, command }, index) => {
       const item = items.find((candidate) => candidate.id === itemId);

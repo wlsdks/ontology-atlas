@@ -4802,6 +4802,7 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
     assert.match(clean, new RegExp(`oh-my-ontology agent-brief ${vaultPath} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`));
     assert.match(clean, /# The selected vault path is already inserted/);
     assert.match(clean, /# Evidence rule: scan rows are candidates, not proof/);
+    assert.match(clean, /# Proof checklist: report totalMatches\/limited\/row count, run node_profile or blast_radius for node rows, run explain\/path\/relation-check for edge rows, and report evidence\.pathsComplete for paths\./);
     assert.match(clean, /# intent: MATCH graph RETURN kind\/domain\/degree\/relation facets LIMIT 10/);
     assert.match(clean, /# goal: Read kind, domain, degree, relation, and schema-pattern buckets before choosing a narrower graph query\./);
     assert.match(clean, new RegExp(`# graph_facets[\\s\\S]*oh-my-ontology facets ${vaultPath} --limit 10`));

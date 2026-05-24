@@ -142,6 +142,17 @@ Important rule: scan rows are candidates, not proof. Before using a node or edge
 for an onboarding, refactor, or write decision, follow up with `node`,
 `match-edges`, `blast-radius`, `explain`, or `relation-check`.
 
+Use this scan-to-proof checklist:
+
+1. Report `totalMatches`, `limited`, and returned row count from `match-nodes`
+   or `match-edges`.
+2. For a node row, run `node` / `node_profile` or `blast-radius` before using it
+   as onboarding or refactor evidence.
+3. For an edge row, run `explain`, `path`, and `relation-check` before using it
+   as coupling or write evidence.
+4. For path evidence, report `evidence.pathsComplete`; if it is false, narrow
+   the query before writing or making an architecture claim.
+
 ## Actual Verification Snapshot
 
 These checks were run against this repository's dogfood vault on 2026-05-24.

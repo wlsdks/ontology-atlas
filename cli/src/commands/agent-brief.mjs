@@ -342,6 +342,7 @@ function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
     '',
     '# The selected vault path is already inserted; plan scans first, keep traversal bounded, and use follow-up evidence before writing.',
     '# Evidence rule: scan rows are candidates, not proof; cite follow-up detail before writing or refactoring.',
+    '# Proof checklist: report totalMatches/limited/row count, run node_profile or blast_radius for node rows, run explain/path/relation-check for edge rows, and report evidence.pathsComplete for paths.',
     '',
     ...commands.flatMap(({ id, intent, goal, command }) => [
       `# ${id}`,

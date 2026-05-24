@@ -253,8 +253,11 @@ scan queue 만 복사/실행하면 된다. 이 CLI 전용 출력은 `[vault]` pl
 명령도 함께 넣어 Claude Code/Codex automation 이 `ok`, `failed`, `timeoutMs`,
 `performanceOk`, `slowThresholdMs`, `concurrency`, `wallMs`, `slow`, `commands[].timedOut`, `commands[].slow`,
 `slowest.elapsedMs` 를 먼저 파싱한 뒤 같은 shell session 에서 scan queue 를 실행할 수
-있다. 사용자가 경로를 다시 치환하거나 번호 prefix 를 지우지 않아도 그대로 shell 에 붙여
-실행할 수 있다.
+있다. pack 상단은 scan row 를 proof 로 오해하지 않도록 `totalMatches` / `limited` /
+row count 보고, node row 는 `node_profile` 또는 `blast_radius`, edge row 는
+`explain` / `path` / `relation_check`, path row 는 `evidence.pathsComplete` 보고라는
+proof checklist 도 함께 출력한다. 사용자가 경로를 다시 치환하거나 번호 prefix 를
+지우지 않아도 그대로 shell 에 붙여 실행할 수 있다.
 또한 웹 UI 의 `Copy handoff` 프롬프트는 `preflight_relation`, `preflight_rename`,
 `post_change_sync` guardrail packet 과 `skip_existing` / `review_inverse` /
 `safe_to_add` / `review_new_schema` 판단 규칙을 함께 포함해, 별도 카드 복사 없이도
