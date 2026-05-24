@@ -2647,15 +2647,19 @@ describe('package contract helpers', () => {
     const relationCheckRow = doc.split('| `oh-my-ontology relation-check <from> <to> <type>` |')[1]?.split('\n')[0] ?? '';
     const growthRow = doc.split('| `oh-my-ontology growth` |')[1]?.split('\n')[0] ?? '';
     const cyclesRow = doc.split('| `oh-my-ontology cycles` |')[1]?.split('\n')[0] ?? '';
+    const componentsRow = doc.split('| `oh-my-ontology components` |')[1]?.split('\n')[0] ?? '';
+    const topologicalOrderRow = doc.split('| `oh-my-ontology topological-order` |')[1]?.split('\n')[0] ?? '';
 
-    assert.match(doc, /CLI Developer Entry \(36 commands/);
-    assert.match(doc, /총 36 명령/);
+    assert.match(doc, /CLI Developer Entry \(38 commands/);
+    assert.match(doc, /총 38 명령/);
     assert.match(doc, /cli\/src\/commands\/growth\.mjs/);
     assert.match(doc, /cli\/src\/commands\/maintenance\.mjs/);
     assert.match(doc, /cli\/src\/commands\/all-paths\.mjs/);
     assert.match(doc, /cli\/src\/commands\/match-nodes\.mjs/);
     assert.match(doc, /cli\/src\/commands\/match-edges\.mjs/);
     assert.match(doc, /cli\/src\/commands\/domain-matrix\.mjs/);
+    assert.match(doc, /cli\/src\/commands\/components\.mjs/);
+    assert.match(doc, /cli\/src\/commands\/topological-order\.mjs/);
     assert.match(doc, /cli\/src\/commands\/reachability\.mjs/);
     assert.match(doc, /cli\/src\/commands\/relation-check\.mjs/);
     assert.match(maintenanceRow, /MCP `query_ontology\(maintenance_plan\)`/);
@@ -2706,6 +2710,12 @@ describe('package contract helpers', () => {
     assert.match(growthRow, /kind-specific proposedAction endpoint\/slug\/kind 의미/);
     assert.match(growthRow, /malformed 인 growth payload 는 JSON 또는 human output 전 exit 2/);
     assert.match(cyclesRow, /malformed cycle row 는 JSON 또는 human output 전 exit 2/);
+    assert.match(componentsRow, /MCP `query_ontology\(components\)`/);
+    assert.match(componentsRow, /`health --json` 의 내부 payload 를 파싱하지 않고/);
+    assert.match(componentsRow, /malformed component payload 는 JSON 또는 human output 전 exit 2/);
+    assert.match(topologicalOrderRow, /MCP `query_ontology\(topological_order\)`/);
+    assert.match(topologicalOrderRow, /cycle 로 전체 order 가 막히면 exit 1/);
+    assert.match(topologicalOrderRow, /malformed order \/ blocked payload 는 JSON 또는 human output 전 exit 2/);
     assert.doesNotMatch(regressionSection, /\*\*\d+ spawn-based\*\* integration test/);
     assert.match(doc, /`cli\/src\/lib\/mcp-call\.mjs` 의 thin wrapper/);
     assert.match(doc, /MCP `structuredContent` 를 먼저 사용하되/);

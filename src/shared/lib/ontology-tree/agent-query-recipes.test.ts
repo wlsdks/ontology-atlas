@@ -317,10 +317,10 @@ describe("buildAgentQueryRecipes", () => {
       "oh-my-ontology cycles [vault] --max-hops 8",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "components")!)).toBe(
-      "oh-my-ontology health [vault] --json",
+      "oh-my-ontology components [vault] --limit 20",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "topological_order")!)).toBe(
-      "oh-my-ontology health [vault] --json",
+      "oh-my-ontology topological-order [vault] --limit 20",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "growth_plan")!)).toBe(
       "oh-my-ontology growth [vault] --limit 20",

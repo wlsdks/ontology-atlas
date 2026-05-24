@@ -283,13 +283,18 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
     case "health":
       return "oh-my-ontology health [vault]";
     case "components":
-      return "oh-my-ontology health [vault] --json";
+      return withFlags("oh-my-ontology components [vault]", [
+        positiveFlag("--limit", args.limit),
+        positiveFlag("--node-limit", args.nodeLimit),
+      ]);
     case "cycles":
       return withFlags("oh-my-ontology cycles [vault]", [
         nonNegativeFlag("--max-hops", args.maxHops),
       ]);
     case "topological_order":
-      return "oh-my-ontology health [vault] --json";
+      return withFlags("oh-my-ontology topological-order [vault]", [
+        positiveFlag("--limit", args.limit),
+      ]);
     case "growth_plan":
       return withFlags("oh-my-ontology growth [vault]", [
         positiveFlag("--limit", args.limit),

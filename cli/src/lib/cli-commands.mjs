@@ -24,6 +24,8 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   hubs: runner('hubs.mjs', 'runHubs'),
   'blast-radius': runner('blast-radius.mjs', 'runBlastRadius'),
   cycles: runner('cycles.mjs', 'runCycles'),
+  components: runner('components.mjs', 'runComponents'),
+  'topological-order': runner('topological-order.mjs', 'runTopologicalOrder'),
   health: runner('health.mjs', 'runHealth'),
   'agent-brief': runner('agent-brief.mjs', 'runAgentBrief'),
   'workspace-brief': runner('workspace-brief.mjs', 'runWorkspaceBrief'),

@@ -114,6 +114,10 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --depth N --direction incoming|outgoing|both --json
   npx oh-my-ontology cycles [vault]           depends_on dependency cycle 검출
        --max-hops N --json                    ${COLORS.dim}default maxDepth 8${COLORS.reset}
+  npx oh-my-ontology components [vault]       Connected graph islands before trusting traversal maps
+       --limit N --node-limit N --types A,B --json
+  npx oh-my-ontology topological-order [vault] Prerequisite-first dependency ordering
+       --limit N --types A,B --include-isolated --json
   npx oh-my-ontology health [vault]           Graph 무결성 dashboard (5 checks)
        --json --component-types A,B          ${COLORS.dim}focused diagnosis tuning 지원${COLORS.reset}
   npx oh-my-ontology agent-brief [vault]      Claude Code/Codex handoff — readiness + first MCP calls

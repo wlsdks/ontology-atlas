@@ -4055,6 +4055,48 @@ await test('hubs --plan --types — plans PageRank cost before centrality rankin
   }
 });
 
+await test('components — scans connected islands without health JSON indirection', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['components', root, '--limit=2', '--node-limit=3']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /graph components/);
+    assert.match(clean, /component 1/);
+    assert.match(clean, /domains\/auth\s+— Auth/);
+
+    const json = await run(['components', root, '--json', '--limit=1', '--node-limit=2']);
+    assert.equal(json.code, 0, `stdout: ${json.stdout}\nstderr: ${json.stderr}`);
+    const data = JSON.parse(json.stdout);
+    assert.equal(data.operation, 'components');
+    assert.equal(data.components.length, 1);
+    assert.equal(data.components[0].nodes.length <= 2, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('topological-order — prints prerequisite-first dependency order', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['topological-order', root, '--limit=5', '--types=relates']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /topological order/);
+    assert.match(clean, /acyclic/);
+    assert.match(clean, /capabilities\/foo|capabilities\/bar/);
+
+    const json = await run(['topological-order', root, '--json', '--limit=3', '--types=relates']);
+    assert.equal(json.code, 0, `stdout: ${json.stdout}\nstderr: ${json.stderr}`);
+    const data = JSON.parse(json.stdout);
+    assert.equal(data.operation, 'topological_order');
+    assert.equal(data.acyclic, true);
+    assert.equal(data.order.length <= 3, true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('workspace-brief — fail severity nextActions make the CLI fail', async () => {
   const root = buildCycleFixture();
   try {

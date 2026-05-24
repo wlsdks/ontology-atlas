@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-24T02:02:47.842Z",
+  "generatedAt": "2026-05-24T02:14:50.320Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -1741,9 +1741,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 31 노드, CLI 36 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 31 노드, CLI 38 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
       "wordCount": 1483,
-      "updatedAt": "2026-05-23T20:33:48.371Z",
+      "updatedAt": "2026-05-24T02:11:17.713Z",
       "linksOut": []
     },
     {
@@ -4397,8 +4397,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 6994,
-      "updatedAt": "2026-05-24T02:02:09.397Z",
+      "wordCount": 7003,
+      "updatedAt": "2026-05-24T02:11:42.624Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4737,8 +4737,8 @@
         }
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
-      "wordCount": 2476,
-      "updatedAt": "2026-05-24T02:02:22.448Z",
+      "wordCount": 2479,
+      "updatedAt": "2026-05-24T02:13:54.148Z",
       "linksOut": []
     },
     {
@@ -4817,12 +4817,12 @@
     {
       "slug": "ontology/capabilities/cli-developer-entry",
       "path": "docs/ontology/capabilities/cli-developer-entry.md",
-      "title": "CLI Developer Entry (36 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+      "title": "CLI Developer Entry (38 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
-        "title": "CLI Developer Entry (36 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+        "title": "CLI Developer Entry (38 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
         "domain": "onboarding-ux",
         "dependencies": [
           "capabilities/mcp-server",
@@ -4837,6 +4837,7 @@
           "cli/src/commands/blast-radius.mjs",
           "cli/src/commands/bootstrap.mjs",
           "cli/src/commands/compile.mjs",
+          "cli/src/commands/components.mjs",
           "cli/src/commands/cycles.mjs",
           "cli/src/commands/delete.mjs",
           "cli/src/commands/domain-matrix.mjs",
@@ -4862,6 +4863,7 @@
           "cli/src/commands/relation-check.mjs",
           "cli/src/commands/rename.mjs",
           "cli/src/commands/similar.mjs",
+          "cli/src/commands/topological-order.mjs",
           "cli/src/commands/validate.mjs",
           "cli/src/commands/workspace-brief.mjs",
           "cli/src/index.mjs",
@@ -4945,8 +4947,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
-      "wordCount": 9610,
-      "updatedAt": "2026-05-24T01:34:08.217Z",
+      "wordCount": 9762,
+      "updatedAt": "2026-05-24T02:13:35.388Z",
       "linksOut": []
     },
     {
@@ -6268,8 +6270,8 @@
         }
       ],
       "excerpt": "Current as of 20260518. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontologyengine.mjs, and cli/src/index.mjs first. ohmyontology is now best described as a reponative memory layer for Claude Code, Cursor, and C",
-      "wordCount": 519,
-      "updatedAt": "2026-05-22T03:32:05.643Z",
+      "wordCount": 524,
+      "updatedAt": "2026-05-24T02:11:48.149Z",
       "linksOut": [
         "../README",
         "PRODUCT-DIRECTION",
@@ -6985,7 +6987,7 @@
                 "path": "ontology/capabilities/cli-developer-entry",
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
-                "title": "CLI Developer Entry (36 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)"
+                "title": "CLI Developer Entry (38 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)"
               },
               {
                 "name": "firebase-deploy-skill",
