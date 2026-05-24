@@ -84,6 +84,12 @@ query pack, 그리고 실제 dogfood vault 검증 결과를 한 번에 설명해
 `agent-setup` 의 터미널 출력과 `--json` 결과도 같은 guide 경로와 설명을 노출하므로,
 Web UI 를 열지 않고 CLI 만 쓰는 사용자의 setup log 나 자동화 결과에도 기능 문서
 진입점이 남는다.
+`agent-setup --json` 은 `docs.modeComparison` 도 함께 반환한다. 이 배열은
+CLI-only, MCP-connected, Graph DB pack, setup gate 모드를 각각 언제 쓰고 무엇을
+얻는지 구조화하므로, Codex / Claude Code 가 Markdown 표를 파싱하지 않아도 비개발자에게
+"지금은 CLI 로 충분한지", "MCP 재시작이 필요한지", "Graph DB-style pack 으로 넘어갈지"를
+설명할 수 있다. 터미널 출력도 같은 Mode guide 를 보여줘 CLI-only 사용자에게도 같은
+의사결정 표면을 남긴다.
 `agent-brief --prompt` 와 `agent-brief --graph-db-pack` 도 같은 guide 경로를 포함해,
 setup 이후 agent handoff prompt 와 connector-less graph DB-style script 에서도
 사람이 다시 기능 문서로 돌아갈 수 있다.

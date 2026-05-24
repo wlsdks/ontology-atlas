@@ -27,6 +27,32 @@ const require_ = createRequire(import.meta.url);
 
 const ALLOWED_FLAGS = ['--root', '--vault', '--write', '--json'];
 const WORKFLOW_GUIDE_PATH = 'docs/AGENT-GRAPH-WORKFLOW.md';
+const SETUP_MODE_COMPARISON = Object.freeze([
+  Object.freeze({
+    id: 'cli_only',
+    label: 'CLI-only',
+    when: 'No MCP client is connected or the user wants terminal-only inspection.',
+    gives: 'validate, workspace-brief, graph scans, graph DB pack, and fallback timing over the same local vault.',
+  }),
+  Object.freeze({
+    id: 'mcp_connected',
+    label: 'MCP-connected',
+    when: 'Claude Code, Codex, Cursor, or another MCP client is registered and restarted.',
+    gives: 'direct read/write tools, structured repair fields, result contracts, and write guardrails.',
+  }),
+  Object.freeze({
+    id: 'graph_db_pack',
+    label: 'Graph DB pack',
+    when: 'The user wants database-style graph exploration without running a database server.',
+    gives: 'bounded query plans, node/edge scans, domain matrix, path evidence, and proof follow-ups.',
+  }),
+  Object.freeze({
+    id: 'setup_gate',
+    label: 'Setup gate',
+    when: 'Setup is unclear or the agent was opened from a separate codebase root.',
+    gives: 'config repair commands, JSON readiness, performance timing, and restart guidance before edits.',
+  }),
+]);
 
 const COLORS = {
   red: '\x1b[31m',
@@ -131,6 +157,7 @@ function buildAgentSetup(parsed) {
       workflowGuide: WORKFLOW_GUIDE_PATH,
       workflowGuideDescription:
         'CLI-only use, MCP-connected use, graph DB differences, graph query pack, and verified setup checks.',
+      modeComparison: SETUP_MODE_COMPARISON,
     },
   };
 }
@@ -286,6 +313,10 @@ function render(result) {
   process.stdout.write(`  ${COLORS.cyan}${result.commands.setupGate}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Global Codex fallback: ${result.commands.codexGlobal}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Feature guide: ${result.docs.workflowGuide} — ${result.docs.workflowGuideDescription}${COLORS.reset}\n`);
+  process.stdout.write(`\n${COLORS.bold}Mode guide:${COLORS.reset}\n`);
+  for (const mode of result.docs.modeComparison) {
+    process.stdout.write(`  ${COLORS.cyan}${mode.label}${COLORS.reset} — ${mode.gives}\n`);
+  }
   if (!result.sideEffect && (summary.missing > 0 || summary.review > 0)) {
     process.stdout.write(`\n${COLORS.dim}Run with --write to create missing files and example templates without overwriting existing configs.${COLORS.reset}\n`);
   }

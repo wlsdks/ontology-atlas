@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-24T13:21:17.746Z",
+  "generatedAt": "2026-05-24T13:59:09.333Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -51,8 +51,8 @@
         }
       ],
       "excerpt": "Current as of 20260524. This is the userfacing guide for running ohmyontology as a local PC graph memory: CLIonly, MCPconnected, and web workbench flows over the same markdown vault. ohmyontology is not a hosted graph database. It is a localfirst graph workbench where markdown frontmatter is the graph, git is the audit",
-      "wordCount": 1490,
-      "updatedAt": "2026-05-24T13:18:39.097Z",
+      "wordCount": 1525,
+      "updatedAt": "2026-05-24T13:28:00.222Z",
       "linksOut": []
     },
     {
@@ -4450,8 +4450,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 7156,
-      "updatedAt": "2026-05-24T13:18:39.098Z",
+      "wordCount": 7183,
+      "updatedAt": "2026-05-24T13:58:33.161Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4752,8 +4752,8 @@
         }
       ],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. web starter 와 CLI init 은 .mcp.json, .codex/config.toml, .mcp.json.example 을 생성하고, Docs vault tools menu 는 현재 로컬 폴더에 이 파일들이 있는지, 그리고 각 파일이 실제 ohmyontology MCP 서버와 OMOTVAULT 를 가리키는지 별도 agent setup 상태로 보여준다. 상태 헤더는 준비된 setup 파일 수",
-      "wordCount": 942,
-      "updatedAt": "2026-05-24T11:57:05.069Z",
+      "wordCount": 1003,
+      "updatedAt": "2026-05-24T13:58:46.751Z",
       "linksOut": []
     },
     {
