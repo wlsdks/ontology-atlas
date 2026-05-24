@@ -236,7 +236,7 @@ describe('package contract helpers', () => {
     );
     assert.equal(
       pkg.scripts?.['dogfood:agent-setup-gate'],
-      'node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000',
+      'node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
     );
     assert.equal(pkg.scripts?.['dogfood:agent-fallbacks'], 'node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks');
     assert.equal(pkg.scripts?.['dogfood:brief'], 'node cli/src/index.mjs workspace-brief docs/ontology --json');

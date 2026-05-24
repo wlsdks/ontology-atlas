@@ -1,7 +1,7 @@
 // `oh-my-ontology agent-brief [vault]` — Claude Code/Codex handoff snapshot.
 // MCP `query_ontology({operation: 'agent_brief'})` thin wrapper.
 
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertAgentBriefShape, agentBriefExitCode } from '../lib/query-result-contract.mjs';
@@ -11,11 +11,13 @@ import { DIAGNOSIS_OPTION_FLAGS, parseDiagnosisOption } from '../lib/diagnosis-o
 import { diagnosisStatusColor } from '../lib/diagnosis-colors.mjs';
 
 const CLI_ENTRYPOINT = fileURLToPath(new URL('../index.mjs', import.meta.url));
-const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--fallback-timeout-ms', '--fallback-slow-ms', ...DIAGNOSIS_OPTION_FLAGS];
+const ALLOWED_FLAGS = ['--vault', '--json', '--prompt', '--graph-db-pack', '--verify-fallbacks', '--fallback-timeout-ms', '--fallback-slow-ms', '--fallback-concurrency', ...DIAGNOSIS_OPTION_FLAGS];
 const DEFAULT_FALLBACK_TIMEOUT_MS = 15_000;
 const DEFAULT_FALLBACK_SLOW_MS = 5_000;
+const DEFAULT_FALLBACK_CONCURRENCY = 4;
 const FALLBACK_TIMEOUT_ENV = 'OMOT_AGENT_FALLBACK_TIMEOUT_MS';
 const FALLBACK_SLOW_ENV = 'OMOT_AGENT_FALLBACK_SLOW_MS';
+const FALLBACK_CONCURRENCY_ENV = 'OMOT_AGENT_FALLBACK_CONCURRENCY';
 
 const COLORS = {
   green: '\x1b[32m',
@@ -43,7 +45,7 @@ const READINESS_COLORS = {
 };
 
 export async function runAgentBrief(args) {
-  const { vault, json, prompt, graphDbPack, verifyFallbacks, fallbackTimeoutMs, fallbackSlowMs, options, error, help } = parseArgs(args);
+  const { vault, json, prompt, graphDbPack, verifyFallbacks, fallbackTimeoutMs, fallbackSlowMs, fallbackConcurrency, options, error, help } = parseArgs(args);
   if (help) {
     printUsage(process.stdout);
     return 0;
@@ -77,10 +79,17 @@ export async function runAgentBrief(args) {
       printUsage();
       return 1;
     }
-    const report = verifyCliFallbacks(result, vaultRoot, {
+    const effectiveFallbackConcurrency = fallbackConcurrency ?? agentFallbackConcurrency();
+    if (effectiveFallbackConcurrency instanceof Error) {
+      process.stderr.write(`${COLORS.red}error${COLORS.reset}  ${effectiveFallbackConcurrency.message}\n`);
+      printUsage();
+      return 1;
+    }
+    const report = await verifyCliFallbacks(result, vaultRoot, {
       json,
       timeoutMs: effectiveFallbackTimeoutMs,
       slowThresholdMs: effectiveFallbackSlowMs,
+      concurrency: effectiveFallbackConcurrency,
     });
     return Math.max(agentBriefExitCode(result), report.failed > 0 ? 1 : 0);
   }
@@ -100,8 +109,8 @@ export async function runAgentBrief(args) {
   return agentBriefExitCode(result);
 }
 
-function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS, slowThresholdMs = DEFAULT_FALLBACK_SLOW_MS } = {}) {
-  const report = buildFallbackVerificationReport(result, vaultRoot, { timeoutMs, slowThresholdMs });
+async function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS, slowThresholdMs = DEFAULT_FALLBACK_SLOW_MS, concurrency = DEFAULT_FALLBACK_CONCURRENCY } = {}) {
+  const report = await buildFallbackVerificationReport(result, vaultRoot, { timeoutMs, slowThresholdMs, concurrency });
   if (json) {
     process.stdout.write(JSON.stringify(report, null, 2) + '\n');
     return report;
@@ -110,35 +119,74 @@ function verifyCliFallbacks(result, vaultRoot, { json = false, timeoutMs = DEFAU
   return report;
 }
 
-function buildFallbackVerificationReport(result, vaultRoot, { timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS, slowThresholdMs = DEFAULT_FALLBACK_SLOW_MS } = {}) {
+async function buildFallbackVerificationReport(result, vaultRoot, { timeoutMs = DEFAULT_FALLBACK_TIMEOUT_MS, slowThresholdMs = DEFAULT_FALLBACK_SLOW_MS, concurrency = DEFAULT_FALLBACK_CONCURRENCY } = {}) {
   const commands = Array.isArray(result.cliFallbackCommands) ? result.cliFallbackCommands : [];
-  const rows = [];
-  for (const raw of commands) {
+  const startedAt = performance.now();
+  const rows = new Array(commands.length);
+  const effectiveConcurrency = Math.max(1, Math.min(concurrency, Math.max(1, commands.length)));
+  let nextIndex = 0;
+  const runNext = async () => {
+    while (nextIndex < commands.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      rows[index] = await verifyOneCliFallback(commands[index], vaultRoot, { timeoutMs, slowThresholdMs });
+    }
+  };
+  await Promise.all(Array.from({ length: effectiveConcurrency }, runNext));
+  const wallMs = Math.max(0, Math.round(performance.now() - startedAt));
+  const compactRows = rows.filter(Boolean);
+  const passed = compactRows.filter((row) => row.status === 'pass').length;
+  const failed = compactRows.length - passed;
+  const slow = compactRows.filter((row) => row.slow === true).length;
+  const totalMs = compactRows.reduce((sum, item) => sum + item.elapsedMs, 0);
+  const slowest = compactRows.length > 0
+    ? compactRows.reduce((max, item) => (item.elapsedMs > max.elapsedMs ? item : max), compactRows[0])
+    : null;
+  return {
+    operation: 'agent_fallback_check',
+    ok: failed === 0,
+    performanceOk: slow === 0,
+    timeoutMs,
+    slowThresholdMs,
+    concurrency: effectiveConcurrency,
+    total: compactRows.length,
+    passed,
+    failed,
+    slow,
+    totalMs,
+    wallMs,
+    slowest: slowest
+      ? {
+          command: slowest.command,
+          elapsedMs: slowest.elapsedMs,
+          status: slowest.status,
+        }
+      : null,
+    commands: compactRows,
+  };
+}
+
+async function verifyOneCliFallback(raw, vaultRoot, { timeoutMs, slowThresholdMs }) {
     const command = raw.replace('[vault]', vaultRoot);
     const parsed = parseFallbackCommand(command);
     if (parsed.error) {
-      rows.push({
+      return {
         command: raw,
         resolvedCommand: command,
         status: 'fail',
         elapsedMs: 0,
         exitCode: null,
         error: parsed.error,
-      });
-      continue;
+      };
     }
     const startedAt = performance.now();
-    const child = spawnSync(process.execPath, [CLI_ENTRYPOINT, ...parsed.args], {
-      encoding: 'utf8',
-      maxBuffer: 1024 * 1024 * 8,
-      timeout: timeoutMs,
-    });
+    const child = await spawnFallbackCommand(parsed.args, timeoutMs);
     const elapsedMs = Math.max(0, Math.round(performance.now() - startedAt));
-    const timedOut = child.error?.code === 'ETIMEDOUT';
+    const timedOut = child.timedOut === true;
     const failed = timedOut || child.status !== 0;
     const slow = elapsedMs >= slowThresholdMs;
     const sample = failed ? sampleFallbackOutput(child.stderr || child.stdout) : '';
-    rows.push({
+    return {
       command: raw,
       resolvedCommand: command,
       status: failed ? 'fail' : 'pass',
@@ -150,39 +198,11 @@ function buildFallbackVerificationReport(result, vaultRoot, { timeoutMs = DEFAUL
       ...(sample ? { outputSample: sample } : {}),
       ...(timedOut ? { error: `fallback command timed out after ${timeoutMs}ms` } : {}),
       ...(!timedOut && child.error ? { error: child.error.message } : {}),
-    });
-  }
-  const passed = rows.filter((row) => row.status === 'pass').length;
-  const failed = rows.length - passed;
-  const slow = rows.filter((row) => row.slow === true).length;
-  const totalMs = rows.reduce((sum, item) => sum + item.elapsedMs, 0);
-  const slowest = rows.length > 0
-    ? rows.reduce((max, item) => (item.elapsedMs > max.elapsedMs ? item : max), rows[0])
-    : null;
-  return {
-    operation: 'agent_fallback_check',
-    ok: failed === 0,
-    performanceOk: slow === 0,
-    timeoutMs,
-    slowThresholdMs,
-    total: rows.length,
-    passed,
-    failed,
-    slow,
-    totalMs,
-    slowest: slowest
-      ? {
-          command: slowest.command,
-          elapsedMs: slowest.elapsedMs,
-          status: slowest.status,
-        }
-      : null,
-    commands: rows,
   };
 }
 
 function renderFallbackVerificationReport(report) {
-  process.stdout.write(`${COLORS.bold}agent fallback check${COLORS.reset} ${COLORS.dim}${report.total} command(s), timeout ${report.timeoutMs}ms, slow >= ${report.slowThresholdMs}ms${COLORS.reset}\n`);
+  process.stdout.write(`${COLORS.bold}agent fallback check${COLORS.reset} ${COLORS.dim}${report.total} command(s), concurrency ${report.concurrency}, timeout ${report.timeoutMs}ms, slow >= ${report.slowThresholdMs}ms${COLORS.reset}\n`);
   for (const row of report.commands) {
     const color = row.status === 'fail' ? COLORS.red : row.slow ? COLORS.yellow : COLORS.green;
     const status = row.status === 'pass' && row.slow ? 'SLOW' : row.status.toUpperCase();
@@ -198,8 +218,47 @@ function renderFallbackVerificationReport(report) {
     process.stdout.write(`${COLORS.green}performance ok${COLORS.reset} 0/${report.total} fallback command(s) took >= ${report.slowThresholdMs}ms\n`);
   }
   if (report.slowest) {
-    process.stdout.write(`${COLORS.dim}timing:${COLORS.reset} total ${report.totalMs}ms; slowest ${report.slowest.elapsedMs}ms ${report.slowest.command}\n`);
+    process.stdout.write(`${COLORS.dim}timing:${COLORS.reset} wall ${report.wallMs}ms; total ${report.totalMs}ms; slowest ${report.slowest.elapsedMs}ms ${report.slowest.command}\n`);
   }
+}
+
+function spawnFallbackCommand(args, timeoutMs) {
+  return new Promise((resolve) => {
+    const maxBuffer = 1024 * 1024 * 8;
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+    let timedOut = false;
+    const child = spawn(process.execPath, [CLI_ENTRYPOINT, ...args], {
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill('SIGTERM');
+    }, timeoutMs);
+    const append = (current, chunk) => {
+      if (current.length >= maxBuffer) return current;
+      return (current + chunk.toString('utf8')).slice(0, maxBuffer);
+    };
+    child.stdout?.on('data', (chunk) => {
+      stdout = append(stdout, chunk);
+    });
+    child.stderr?.on('data', (chunk) => {
+      stderr = append(stderr, chunk);
+    });
+    child.on('error', (error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ status: null, signal: null, stdout, stderr, error, timedOut });
+    });
+    child.on('close', (status, signal) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({ status, signal, stdout, stderr, timedOut });
+    });
+  });
 }
 
 function agentFallbackTimeoutMs(env = process.env) {
@@ -218,6 +277,16 @@ function agentFallbackSlowMs(env = process.env) {
   const parsed = parsePositiveIntegerFlag(FALLBACK_SLOW_ENV, raw);
   if (parsed instanceof Error) {
     return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${FALLBACK_SLOW_ENV}=N or --fallback-slow-ms N.`);
+  }
+  return parsed;
+}
+
+function agentFallbackConcurrency(env = process.env) {
+  const raw = env[FALLBACK_CONCURRENCY_ENV];
+  if (raw == null || raw === '') return DEFAULT_FALLBACK_CONCURRENCY;
+  const parsed = parsePositiveIntegerFlag(FALLBACK_CONCURRENCY_ENV, raw);
+  if (parsed instanceof Error) {
+    return new Error(`${parsed.message}. Received: ${JSON.stringify(String(raw))}. Set ${FALLBACK_CONCURRENCY_ENV}=N or --fallback-concurrency N.`);
   }
   return parsed;
 }
@@ -253,6 +322,7 @@ function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
     '--json',
     '--fallback-timeout-ms 15000',
     '--fallback-slow-ms 5000',
+    '--fallback-concurrency 4',
   ]);
   for (const item of Array.isArray(graphDbQueryPack) ? graphDbQueryPack : []) {
     for (const command of graphDbPackItemCliCommands(item)) {
@@ -265,7 +335,7 @@ function formatGraphDbCliPack(graphDbQueryPack, vaultRoot) {
   return [
     '# oh-my-ontology Graph DB CLI pack',
     '# Run these commands when the MCP connector is unavailable.',
-    '# Self-check first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs.',
+    '# Self-check first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, concurrency, wallMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs.',
     selfCheckCommand,
     '',
     '# The selected vault path is already inserted; plan scans first, keep traversal bounded, and use follow-up evidence before writing.',
@@ -606,7 +676,19 @@ function formatToolCall(call) {
 
 function parseArgs(args) {
   if (args.includes('--help') || args.includes('-h')) return { help: true };
-  const flags = { vault: null, json: false, prompt: false, graphDbPack: false, verifyFallbacks: false, fallbackTimeoutMs: null, fallbackTimeoutRaw: null, fallbackSlowMs: null, fallbackSlowRaw: null };
+  const flags = {
+    vault: null,
+    json: false,
+    prompt: false,
+    graphDbPack: false,
+    verifyFallbacks: false,
+    fallbackTimeoutMs: null,
+    fallbackTimeoutRaw: null,
+    fallbackSlowMs: null,
+    fallbackSlowRaw: null,
+    fallbackConcurrency: null,
+    fallbackConcurrencyRaw: null,
+  };
   const options = {};
   const positional = [];
   for (let i = 0; i < args.length; i += 1) {
@@ -633,6 +715,14 @@ function parseArgs(args) {
     else if (a.startsWith('--fallback-slow-ms=')) {
       flags.fallbackSlowRaw = a.slice('--fallback-slow-ms='.length);
       flags.fallbackSlowMs = parsePositiveIntegerFlag('--fallback-slow-ms', flags.fallbackSlowRaw);
+    }
+    else if (a === '--fallback-concurrency') {
+      flags.fallbackConcurrencyRaw = args[i + 1];
+      flags.fallbackConcurrency = parsePositiveIntegerFlag('--fallback-concurrency', args[++i]);
+    }
+    else if (a.startsWith('--fallback-concurrency=')) {
+      flags.fallbackConcurrencyRaw = a.slice('--fallback-concurrency='.length);
+      flags.fallbackConcurrency = parsePositiveIntegerFlag('--fallback-concurrency', flags.fallbackConcurrencyRaw);
     }
     else if (DIAGNOSIS_OPTION_FLAGS.includes(a)) {
       const error = parseDiagnosisOption(options, a, args[++i]);
@@ -664,9 +754,14 @@ function parseArgs(args) {
       error: `${flags.fallbackSlowMs.message}. Received: ${JSON.stringify(String(flags.fallbackSlowRaw))}. Set --fallback-slow-ms N or ${FALLBACK_SLOW_ENV}=N.`,
     };
   }
+  if (flags.fallbackConcurrency instanceof Error) {
+    return {
+      error: `${flags.fallbackConcurrency.message}. Received: ${JSON.stringify(String(flags.fallbackConcurrencyRaw))}. Set --fallback-concurrency N or ${FALLBACK_CONCURRENCY_ENV}=N.`,
+    };
+  }
   const vaultResult = resolveExclusiveVaultArg({ vault: flags.vault, positional });
   if (vaultResult.error) return vaultResult;
-  return { vault: vaultResult.vault, json: flags.json, prompt: flags.prompt, graphDbPack: flags.graphDbPack, verifyFallbacks: flags.verifyFallbacks, fallbackTimeoutMs: flags.fallbackTimeoutMs, fallbackSlowMs: flags.fallbackSlowMs, options };
+  return { vault: vaultResult.vault, json: flags.json, prompt: flags.prompt, graphDbPack: flags.graphDbPack, verifyFallbacks: flags.verifyFallbacks, fallbackTimeoutMs: flags.fallbackTimeoutMs, fallbackSlowMs: flags.fallbackSlowMs, fallbackConcurrency: flags.fallbackConcurrency, options };
 }
 
 function printUsage(stream = process.stderr) {
@@ -674,7 +769,7 @@ function printUsage(stream = process.stderr) {
     `\n${COLORS.bold}Usage:${COLORS.reset}\n` +
       `  oh-my-ontology agent-brief [vault] [--json|--prompt|--graph-db-pack|--verify-fallbacks]\n` +
       `       [--dependency-types A,B] [--component-types A,B]\n` +
-      `       [--fallback-timeout-ms N] [--fallback-slow-ms N]\n` +
+      `       [--fallback-timeout-ms N] [--fallback-slow-ms N] [--fallback-concurrency N]\n` +
       `       [--component-limit N] [--cycle-limit N] [--recommendation-limit N]\n` +
       `       [--order-limit N] [--node-limit N]\n\n` +
       `Claude Code/Codex handoff: readiness score, copyable handoffPrompt, graph entrypoints,\n` +
@@ -684,6 +779,7 @@ function printUsage(stream = process.stderr) {
       `Use --verify-fallbacks to execute the generated CLI fallback commands against this vault; combine with --json for a machine-readable timing report.\n` +
       `Use --fallback-timeout-ms N or ${FALLBACK_TIMEOUT_ENV}=N to bound each fallback command.\n` +
       `Use --fallback-slow-ms N or ${FALLBACK_SLOW_ENV}=N to mark slow-but-passing fallback rows in JSON and human output.\n` +
+      `Use --fallback-concurrency N or ${FALLBACK_CONCURRENCY_ENV}=N to run fallback checks in a bounded parallel queue.\n` +
       `Exits non-zero when readiness is not ready, status is not healthy, a health check fails,\n` +
       `or a fail-severity nextAction is present.\n` +
       `Tuning flags forward to query_ontology agent_brief for focused diagnostics.\n`,

@@ -107,7 +107,7 @@ const BASELINE_CLI_COMMANDS: AgentReadinessCliCommand[] = [
   {
     key: "setup_gate",
     command:
-      "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000",
+      "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
   },
   { key: "workspace_brief", command: "oh-my-ontology workspace-brief [vault]" },
   { key: "health", command: "oh-my-ontology health [vault]" },

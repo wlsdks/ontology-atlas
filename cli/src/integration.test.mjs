@@ -4459,7 +4459,7 @@ await test('agent-brief --verify-fallbacks — executes generated CLI fallback c
     assert.match(clean, /agent fallback check/);
     assert.match(clean, /PASS \d+ms oh-my-ontology workspace-brief \[vault\] --limit 5/);
     assert.match(clean, /ok \d+\/\d+ fallback command\(s\) passed/);
-    assert.match(clean, /timing: total \d+ms; slowest \d+ms oh-my-ontology /);
+    assert.match(clean, /timing: wall \d+ms; total \d+ms; slowest \d+ms oh-my-ontology /);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -4477,10 +4477,12 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
     assert.equal(data.failed, 0);
     assert.equal(data.timeoutMs, 15000);
     assert.equal(data.slowThresholdMs, 5000);
+    assert.equal(data.concurrency, 4);
     assert.equal(data.total, data.commands.length);
     assert.ok(data.passed > 0);
     assert.ok(Number.isInteger(data.slow));
     assert.ok(data.totalMs >= data.slowest.elapsedMs);
+    assert.ok(data.wallMs <= data.totalMs);
     assert.match(data.slowest.command, /^oh-my-ontology /);
     assert.ok(data.commands.every((row) => row.status === 'pass'));
     assert.ok(data.commands.every((row) => typeof row.elapsedMs === 'number'));
@@ -4495,7 +4497,7 @@ await test('agent-brief --verify-fallbacks --json — emits machine-readable fal
 await test('agent-brief --verify-fallbacks --json — marks slow-but-passing fallback rows', async () => {
   const root = await buildGraphFixture();
   try {
-    const r = await run(['agent-brief', root, '--verify-fallbacks', '--json', '--fallback-slow-ms', '1']);
+    const r = await run(['agent-brief', root, '--verify-fallbacks', '--json', '--fallback-slow-ms', '1', '--fallback-concurrency', '2']);
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'agent_fallback_check');
@@ -4503,6 +4505,7 @@ await test('agent-brief --verify-fallbacks --json — marks slow-but-passing fal
     assert.equal(data.performanceOk, false);
     assert.equal(data.failed, 0);
     assert.equal(data.slowThresholdMs, 1);
+    assert.equal(data.concurrency, 2);
     assert.ok(data.slow > 0);
     assert.ok(data.commands.some((row) => row.status === 'pass' && row.slow === true));
   } finally {
@@ -4513,7 +4516,7 @@ await test('agent-brief --verify-fallbacks --json — marks slow-but-passing fal
 await test('agent-brief --verify-fallbacks --json — fails closed when fallback command times out', async () => {
   const root = await buildGraphFixture();
   try {
-    const r = await run(['agent-brief', root, '--verify-fallbacks', '--json', '--fallback-timeout-ms', '1']);
+    const r = await run(['agent-brief', root, '--verify-fallbacks', '--json', '--fallback-timeout-ms', '1', '--fallback-concurrency', '1']);
     assert.equal(r.code, 1, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'agent_fallback_check');
@@ -4541,6 +4544,11 @@ await test('agent-brief --verify-fallbacks — rejects malformed fallback timeou
     assert.match(stripAnsi(slowFlag.stderr), /--fallback-slow-ms must be a positive integer/);
     assert.match(stripAnsi(slowFlag.stderr), /OMOT_AGENT_FALLBACK_SLOW_MS=N/);
 
+    const concurrencyFlag = await run(['agent-brief', root, '--verify-fallbacks', '--fallback-concurrency=fast']);
+    assert.equal(concurrencyFlag.code, 1);
+    assert.match(stripAnsi(concurrencyFlag.stderr), /--fallback-concurrency must be a positive integer/);
+    assert.match(stripAnsi(concurrencyFlag.stderr), /OMOT_AGENT_FALLBACK_CONCURRENCY=N/);
+
     const env = await run(['agent-brief', root, '--verify-fallbacks'], {
       env: { OMOT_AGENT_FALLBACK_TIMEOUT_MS: '1000ms' },
     });
@@ -4553,8 +4561,14 @@ await test('agent-brief --verify-fallbacks — rejects malformed fallback timeou
     assert.equal(slowEnv.code, 1);
     assert.match(stripAnsi(slowEnv.stderr), /OMOT_AGENT_FALLBACK_SLOW_MS must be a positive integer/);
 
+    const concurrencyEnv = await run(['agent-brief', root, '--verify-fallbacks'], {
+      env: { OMOT_AGENT_FALLBACK_CONCURRENCY: 'fast' },
+    });
+    assert.equal(concurrencyEnv.code, 1);
+    assert.match(stripAnsi(concurrencyEnv.stderr), /OMOT_AGENT_FALLBACK_CONCURRENCY must be a positive integer/);
+
     const ignoredWithoutVerify = await run(['agent-brief', root, '--json'], {
-      env: { OMOT_AGENT_FALLBACK_TIMEOUT_MS: '1000ms', OMOT_AGENT_FALLBACK_SLOW_MS: '1000ms' },
+      env: { OMOT_AGENT_FALLBACK_TIMEOUT_MS: '1000ms', OMOT_AGENT_FALLBACK_SLOW_MS: '1000ms', OMOT_AGENT_FALLBACK_CONCURRENCY: 'fast' },
     });
     assert.equal(ignoredWithoutVerify.code, 0, `stdout: ${ignoredWithoutVerify.stdout}\nstderr: ${ignoredWithoutVerify.stderr}`);
   } finally {
@@ -4598,8 +4612,8 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
     const clean = stripAnsi(r.stdout);
     const vaultPath = escapeRegExp(root);
     assert.match(clean, /^# oh-my-ontology Graph DB CLI pack/);
-    assert.match(clean, /# Self-check first: Claude Code\/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, slow, commands\[\]\.timedOut, commands\[\]\.slow, and slowest\.elapsedMs\./);
-    assert.match(clean, new RegExp(`oh-my-ontology agent-brief ${vaultPath} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000`));
+    assert.match(clean, /# Self-check first: Claude Code\/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, concurrency, wallMs, slow, commands\[\]\.timedOut, commands\[\]\.slow, and slowest\.elapsedMs\./);
+    assert.match(clean, new RegExp(`oh-my-ontology agent-brief ${vaultPath} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`));
     assert.match(clean, /# The selected vault path is already inserted/);
     assert.match(clean, /# Evidence rule: scan rows are candidates, not proof/);
     assert.match(clean, /# intent: MATCH graph RETURN kind\/domain\/degree\/relation facets LIMIT 10/);

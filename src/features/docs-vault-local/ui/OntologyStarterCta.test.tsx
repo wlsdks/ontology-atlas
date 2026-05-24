@@ -73,7 +73,7 @@ describe('OntologyStarterCta', () => {
       expect.stringContaining('agent_brief'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000'),
+      expect.stringContaining('oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('performanceOk=false'),
@@ -129,7 +129,7 @@ describe('OntologyStarterCta', () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
     expect(copyTextMock).toHaveBeenCalledWith(
-      'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000',
+      'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
     );
     expect(await screen.findByRole('button', { name: 'JSON gate 복사됨' })).toBeInTheDocument();
   });

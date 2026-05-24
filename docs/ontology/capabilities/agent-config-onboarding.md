@@ -66,9 +66,9 @@ agent 는 `ok=false` 를 setup/fallback 실행 실패로, `ok=true` 와
 `performanceOk=false` 를 동작은 하지만 로컬 graph fallback latency 를 점검해야 하는
 상태로 구분하고, 이 read-first check 중 하나가 성공하기 전에는 ontology write 를
 시작하지 않는다.
-자동화 gate 는 `oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000`
+자동화 gate 는 `oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`
 단일 명령을 보여주고 복사한다. Claude Code / Codex 세션은 이 JSON 의 `ok`, `failed`,
-`performanceOk`, `timeoutMs`, `slowThresholdMs`, `slow`, `commands[].timedOut`,
+`performanceOk`, `timeoutMs`, `slowThresholdMs`, `concurrency`, `wallMs`, `slow`, `commands[].timedOut`,
 `commands[].slow` 을 바로 파싱해 connector-less setup check 를 진행할 수 있고, 사람은
 같은 패널에서 human runbook 을 선택할 수 있다.
 새 agent 세션은 `validate_vault`,

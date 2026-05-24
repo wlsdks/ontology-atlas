@@ -190,7 +190,7 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('agent_brief'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining('oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000'),
+      expect.stringContaining('oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('performanceOk=false'),
@@ -234,7 +234,7 @@ describe('VaultToolsMenu', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
-        'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000',
+        'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -311,12 +311,12 @@ describe('VaultToolsMenu', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000',
+      'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
     );
     expect(screen.getByText('자동화 gate')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000',
+        'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
       ),
     ).toBeInTheDocument();
     expect(

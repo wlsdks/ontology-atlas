@@ -66,7 +66,7 @@
     "dogfood:health": "node cli/src/index.mjs health docs/ontology --json",
     "dogfood:agent": "node cli/src/index.mjs agent-brief docs/ontology --json",
     "dogfood:agent-graph-db-pack": "node cli/src/index.mjs agent-brief docs/ontology --graph-db-pack",
-    "dogfood:agent-setup-gate": "node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000",
+    "dogfood:agent-setup-gate": "node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     "dogfood:agent-fallbacks": "node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks",
     "dogfood:brief": "node cli/src/index.mjs workspace-brief docs/ontology --json",
     "dogfood:growth": "node cli/src/index.mjs growth docs/ontology --json",

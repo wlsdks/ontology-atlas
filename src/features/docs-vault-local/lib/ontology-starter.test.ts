@@ -105,7 +105,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain("oh-my-ontology cycles . --max-hops 8");
     expect(readme).toContain("oh-my-ontology growth . --limit 20");
     expect(readme).toContain("oh-my-ontology maintenance . --limit 20");
-    expect(readme).toContain("oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000");
+    expect(readme).toContain("oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
     expect(readme).toContain("oh-my-ontology mcp-verify . --timeout-ms 15000");
     expect(readme).toMatch(/before it edits\s+anything/);
   });

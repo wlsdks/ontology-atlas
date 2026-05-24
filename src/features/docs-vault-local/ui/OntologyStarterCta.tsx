@@ -9,7 +9,7 @@ export const ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT =
   [
     'Use the oh-my-ontology MCP server to run validate_vault, then query_ontology({ "operation": "workspace_brief" }), then query_ontology({ "operation": "agent_brief" }).',
     'Tell me whether this vault is readable and the write tools are available before proposing changes.',
-    'If the MCP connector is unavailable, run this terminal setup gate from the vault folder instead: oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000.',
+    'If the MCP connector is unavailable, run this terminal setup gate from the vault folder instead: oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4.',
     'Parse ok separately from performanceOk: ok=false means setup or fallback execution is broken; performanceOk=false with ok=true means the graph fallback works but local latency needs attention.',
     'Do not write to the ontology until one of those read-first checks succeeds.',
   ].join(' ');
@@ -24,7 +24,7 @@ export const ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS = [
 ].join('\n');
 
 export const ONTOLOGY_STARTER_JSON_GATE_COMMAND =
-  'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000';
+  'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4';
 
 interface Props {
   /** 클릭 시 useLocalVault.scaffoldOntology() 호출. created/skipped 반환. */
