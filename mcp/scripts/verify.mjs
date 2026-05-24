@@ -1749,7 +1749,7 @@ export function toolsListSchemaFailure(tools) {
     return 'query_ontology description missing agent result contract guidance';
   }
 
-  if (!/agent_brief[\s\S]*graphDbQueryPack[\s\S]*match_nodes[\s\S]*match_edges[\s\S]*domain_matrix[\s\S]*centrality[\s\S]*all_paths[\s\S]*explain_relation/.test(queryTool.description || '')) {
+  if (!/agent_brief[\s\S]*graphDbQueryPack[\s\S]*facets[\s\S]*schema[\s\S]*match_nodes[\s\S]*match_edges[\s\S]*domain_matrix[\s\S]*centrality[\s\S]*all_paths[\s\S]*explain_relation/.test(queryTool.description || '')) {
     return 'query_ontology description missing agent graph DB query pack guidance';
   }
 
@@ -3115,7 +3115,7 @@ export function initializeInstructionsFailure(response) {
     ['maintenance cursor miss guidance', /afterActionId[\s\S]*cursor\.found=false[\s\S]*cursor\.reason/],
     ['maintenance cursor miss pagination guidance', /cursor\.nextAfterActionId=null[\s\S]*cursor\.hasMore=false/],
     ['agent brief relation decision guide', /agent_brief[\s\S]*relationDecisionGuide[\s\S]*skip_existing[\s\S]*review_inverse[\s\S]*safe_to_add[\s\S]*review_new_schema/],
-    ['agent brief graph DB query pack guidance', /agent_brief[\s\S]*graphDbQueryPack[\s\S]*match_nodes[\s\S]*match_edges[\s\S]*domain_matrix[\s\S]*centrality[\s\S]*all_paths[\s\S]*explain_relation/],
+    ['agent brief graph DB query pack guidance', /agent_brief[\s\S]*graphDbQueryPack[\s\S]*facets[\s\S]*schema[\s\S]*match_nodes[\s\S]*match_edges[\s\S]*domain_matrix[\s\S]*centrality[\s\S]*all_paths[\s\S]*explain_relation/],
     ['agent brief traversal strategy guidance', /agent_brief[\s\S]*traversalStrategy[\s\S]*plan_before_enumeration[\s\S]*bounded_path_evidence[\s\S]*containment_cross_check/],
     ['agent brief result contracts guidance', /agent_brief[\s\S]*resultContracts[\s\S]*all_paths[\s\S]*limit[\s\S]*searchBudget[\s\S]*expandedStates[\s\S]*exhaustive[\s\S]*truncatedByBudget[\s\S]*totalPathsExact[\s\S]*evidence\.status[\s\S]*evidence\.reason[\s\S]*evidence\.pathsComplete/],
   ];
@@ -6934,7 +6934,7 @@ function agentGraphDbQueryPackFailure(pack) {
   if (!Array.isArray(pack) || pack.length === 0) {
     return 'agent_brief response missing graphDbQueryPack';
   }
-  const required = ['node_scan', 'edge_scan', 'domain_coupling', 'path_evidence'];
+  const required = ['graph_facets', 'node_scan', 'edge_scan', 'domain_coupling', 'path_evidence'];
   const seen = new Set();
   for (const [index, item] of pack.entries()) {
     if (!hasNonEmptyString(item?.id, item?.intent, item?.goal)) {
@@ -6947,6 +6947,13 @@ function agentGraphDbQueryPackFailure(pack) {
   const missing = required.filter((id) => !seen.has(id));
   if (missing.length > 0) {
     return `agent_brief graphDbQueryPack missing packs: ${missing.join(', ')}`;
+  }
+  const graphFacets = pack.find((item) => item.id === 'graph_facets');
+  if (!agentToolCallsIncludeOperation(graphFacets?.calls, 'facets')) {
+    return 'agent_brief graphDbQueryPack graph_facets missing facets';
+  }
+  if (!agentToolCallsIncludeOperation(graphFacets?.calls, 'schema')) {
+    return 'agent_brief graphDbQueryPack graph_facets missing schema';
   }
   const nodeScan = pack.find((item) => item.id === 'node_scan');
   if (!agentToolCallsIncludeQueryPlanTarget(nodeScan?.calls, 'match_nodes')) {

@@ -22,6 +22,7 @@ const AGENT_QUERY_OPERATIONS = new Set([
   "centrality",
   "match_nodes",
   "match_edges",
+  "facets",
   "pattern_walk",
   "project_map",
   "schema",
@@ -100,6 +101,7 @@ export type AgentWriteGuardrailId =
   | "post_change_sync";
 
 export type AgentGraphDbQueryPackId =
+  | "graph_facets"
   | "node_scan"
   | "edge_scan"
   | "domain_coupling"
@@ -282,6 +284,10 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       return "oh-my-ontology workspace-brief [vault]";
     case "health":
       return "oh-my-ontology health [vault]";
+    case "facets":
+      return withFlags("oh-my-ontology facets [vault]", [
+        positiveFlag("--limit", args.limit),
+      ]);
     case "schema":
       return withFlags("oh-my-ontology schema [vault]", [
         positiveFlag("--limit", args.limit),
@@ -906,6 +912,22 @@ export function buildAgentGraphDbQueryPack(
   });
 
   return [
+    {
+      id: "graph_facets",
+      titleKey: "agentGraphDbFacetsTitle",
+      promptKey: "agentGraphDbFacetsPrompt",
+      intent: "MATCH graph RETURN kind/domain/degree/relation facets LIMIT 10",
+      payloads: [
+        query("facets", {
+          operation: "facets",
+          limit: 10,
+        }),
+        query("schema", {
+          operation: "schema",
+          limit: 20,
+        }),
+      ],
+    },
     {
       id: "node_scan",
       titleKey: "agentGraphDbNodeScanTitle",

@@ -2517,12 +2517,15 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology all-paths/.test(command)));
     assert.ok(agentBrief.cliFallbackCommands.some((command) => /oh-my-ontology explain/.test(command)));
     assert.deepEqual(agentBrief.graphDbQueryPack.map((item) => item.id), [
+      "graph_facets",
       "node_scan",
       "edge_scan",
       "domain_coupling",
       "path_evidence",
     ]);
     assert.deepEqual(agentBrief.graphDbQueryPack.flatMap((item) => item.calls).map((call) => call.arguments.operation), [
+      "facets",
+      "schema",
       "query_plan",
       "match_nodes",
       "query_plan",

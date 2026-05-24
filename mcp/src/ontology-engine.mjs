@@ -2930,6 +2930,21 @@ export function createOntologyEngine(artifact, options = {}) {
     });
     const graphDbQueryPack = [
       {
+        id: 'graph_facets',
+        intent: 'MATCH graph RETURN kind/domain/degree/relation facets LIMIT 10',
+        goal: 'Read kind, domain, degree, relation, and schema-pattern buckets before choosing a narrower graph query.',
+        calls: [
+          agentToolCall('query_ontology', {
+            operation: 'facets',
+            limit: 10,
+          }),
+          agentToolCall('query_ontology', {
+            operation: 'schema',
+            limit: 20,
+          }),
+        ],
+      },
+      {
         id: 'node_scan',
         intent: 'MATCH (n:capability) WHERE degree(n) >= 2 RETURN n ORDER BY degree(n) DESC LIMIT 10',
         goal: 'Find high-degree capability nodes as onboarding or refactor starting points.',

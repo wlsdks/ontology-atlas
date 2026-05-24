@@ -1821,12 +1821,15 @@ describe('queryCompiledOntology', () => {
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology all-paths capabilities/login domains/auth [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10'));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology explain capabilities/login domains/auth [vault] --direction undirected --max-hops 5 --types depends_on,relates --limit 10'));
     assert.deepEqual(result.graphDbQueryPack.map((item) => item.id), [
+      'graph_facets',
       'node_scan',
       'edge_scan',
       'domain_coupling',
       'path_evidence',
     ]);
     assert.deepEqual(result.graphDbQueryPack.flatMap((item) => item.calls).map((call) => call.arguments.operation), [
+      'facets',
+      'schema',
       'query_plan',
       'match_nodes',
       'query_plan',
@@ -1838,10 +1841,11 @@ describe('queryCompiledOntology', () => {
       'all_paths',
       'explain_relation',
     ]);
-    assert.equal(result.graphDbQueryPack[0].calls[0].arguments.targetOperation, 'match_nodes');
-    assert.equal(result.graphDbQueryPack[1].calls[0].arguments.targetOperation, 'match_edges');
-    assert.equal(result.graphDbQueryPack[2].calls[1].arguments.targetOperation, 'centrality');
-    assert.equal(result.graphDbQueryPack[3].calls[0].arguments.targetOperation, 'all_paths');
+    assert.equal(result.graphDbQueryPack[0].calls[0].arguments.operation, 'facets');
+    assert.equal(result.graphDbQueryPack[1].calls[0].arguments.targetOperation, 'match_nodes');
+    assert.equal(result.graphDbQueryPack[2].calls[0].arguments.targetOperation, 'match_edges');
+    assert.equal(result.graphDbQueryPack[3].calls[1].arguments.targetOperation, 'centrality');
+    assert.equal(result.graphDbQueryPack[4].calls[0].arguments.targetOperation, 'all_paths');
     assert.match(result.handoffPrompt, /Traversal strategy/);
     assert.match(result.handoffPrompt, /plan_before_enumeration/);
     assert.match(result.handoffPrompt, /Write guardrails/);

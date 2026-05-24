@@ -606,6 +606,15 @@ describe('query-result-contract', () => {
       ],
       graphDbQueryPack: [
         {
+          id: 'graph_facets',
+          intent: 'MATCH graph RETURN kind/domain/degree/relation facets LIMIT 10',
+          goal: 'Read graph dashboard buckets.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'facets', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'schema', limit: 20 } },
+          ],
+        },
+        {
           id: 'node_scan',
           intent: 'MATCH (n:capability) WHERE degree(n) >= 2 RETURN n ORDER BY degree(n) DESC LIMIT 10',
           goal: 'Find high-degree nodes.',
@@ -843,7 +852,7 @@ describe('query-result-contract', () => {
     );
     assert.throws(
       () => assertAgentBriefShape({ ...valid, graphDbQueryPack: valid.graphDbQueryPack.slice(1) }),
-      /agent_brief graphDbQueryPack must include node scan, edge scan, domain coupling, and path evidence query packs/,
+      /agent_brief graphDbQueryPack must include graph facets, node scan, edge scan, domain coupling, and path evidence query packs/,
     );
     assert.throws(
       () => assertAgentBriefShape({

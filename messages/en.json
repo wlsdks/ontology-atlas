@@ -855,6 +855,8 @@
       "agentGraphDbPackMeta": "MCP calls {mcp} · CLI fallbacks {cli}",
       "agentGraphDbSelfCheckLabel": "Automation self-check",
       "agentGraphDbSelfCheckHint": "The CLI pack starts with this JSON gate to verify connection and fallback timing before scan commands run.",
+      "agentGraphDbFacetsTitle": "Graph facets",
+      "agentGraphDbFacetsPrompt": "Read kind, domain, degree, relation, and schema-pattern buckets before choosing a narrower graph query.",
       "agentGraphDbNodeScanTitle": "Node scan",
       "agentGraphDbNodeScanPrompt": "Find high-degree capabilities before onboarding, slicing work, or choosing a refactor entrypoint.",
       "agentGraphDbEdgeScanTitle": "Edge scan",

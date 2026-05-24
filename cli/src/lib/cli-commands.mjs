@@ -36,6 +36,7 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   'match-nodes': runner('match-nodes.mjs', 'runMatchNodes'),
   'match-edges': runner('match-edges.mjs', 'runMatchEdges'),
   'domain-matrix': runner('domain-matrix.mjs', 'runDomainMatrix'),
+  facets: runner('facets.mjs', 'runFacets'),
   schema: runner('schema.mjs', 'runSchema'),
   query: runner('query.mjs', 'runQuery'),
   compile: runner('compile.mjs', 'runCompile'),

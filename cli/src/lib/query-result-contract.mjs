@@ -303,7 +303,7 @@ export function assertAgentBriefShape(result) {
     throw new Error('agent_brief firstCalls must include relation_check preflight');
   }
   if (!validAgentGraphDbQueryPack(result.graphDbQueryPack)) {
-    throw new Error('agent_brief graphDbQueryPack must include node scan, edge scan, domain coupling, and path evidence query packs');
+    throw new Error('agent_brief graphDbQueryPack must include graph facets, node scan, edge scan, domain coupling, and path evidence query packs');
   }
   if (!Array.isArray(result.playbooks) || result.playbooks.length === 0) {
     throw new Error('agent_brief playbooks must be a non-empty array');
@@ -1203,8 +1203,10 @@ function validAgentGraphDbQueryPack(pack) {
     }
     byId.set(item.id, item);
   }
-  const required = ['node_scan', 'edge_scan', 'domain_coupling', 'path_evidence'];
+  const required = ['graph_facets', 'node_scan', 'edge_scan', 'domain_coupling', 'path_evidence'];
   if (required.some((id) => !byId.has(id))) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('graph_facets').calls, 'facets')) return false;
+  if (!agentToolCallsIncludeOperation(byId.get('graph_facets').calls, 'schema')) return false;
   if (!agentToolCallsIncludeQueryPlanTarget(byId.get('node_scan').calls, 'match_nodes')) return false;
   if (!agentToolCallsIncludeOperation(byId.get('node_scan').calls, 'match_nodes')) return false;
   if (!agentToolCallsIncludeQueryPlanTarget(byId.get('edge_scan').calls, 'match_edges')) return false;

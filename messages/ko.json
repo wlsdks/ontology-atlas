@@ -855,6 +855,8 @@
       "agentGraphDbPackMeta": "MCP 호출 {mcp}개 · CLI fallback {cli}개",
       "agentGraphDbSelfCheckLabel": "Automation self-check",
       "agentGraphDbSelfCheckHint": "CLI pack은 이 JSON gate로 연결과 fallback 성능을 먼저 확인한 뒤 scan 명령을 실행합니다.",
+      "agentGraphDbFacetsTitle": "Graph facets",
+      "agentGraphDbFacetsPrompt": "더 좁은 graph query 를 고르기 전에 kind, domain, degree, relation, schema pattern bucket 을 먼저 봅니다.",
       "agentGraphDbNodeScanTitle": "Node scan",
       "agentGraphDbNodeScanPrompt": "onboarding, 작업 분리, refactor 시작점을 고르기 전에 degree 높은 capability 를 찾습니다.",
       "agentGraphDbEdgeScanTitle": "Edge scan",

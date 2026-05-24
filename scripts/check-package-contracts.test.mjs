@@ -2641,6 +2641,7 @@ describe('package contract helpers', () => {
     const matchNodesRow = doc.split('| `oh-my-ontology match-nodes [vault]` |')[1]?.split('\n')[0] ?? '';
     const matchEdgesRow = doc.split('| `oh-my-ontology match-edges [vault]` |')[1]?.split('\n')[0] ?? '';
     const domainMatrixRow = doc.split('| `oh-my-ontology domain-matrix [vault]` |')[1]?.split('\n')[0] ?? '';
+    const facetsRow = doc.split('| `oh-my-ontology facets [vault]` |')[1]?.split('\n')[0] ?? '';
     const schemaRow = doc.split('| `oh-my-ontology schema` |')[1]?.split('\n')[0] ?? '';
     const reachabilityRow = doc.split('| `oh-my-ontology reachability <slug>` |')[1]?.split('\n')[0] ?? '';
     const pathRow = doc.split('| `oh-my-ontology path <from> <to>` |')[1]?.split('\n')[0] ?? '';
@@ -2651,14 +2652,15 @@ describe('package contract helpers', () => {
     const componentsRow = doc.split('| `oh-my-ontology components` |')[1]?.split('\n')[0] ?? '';
     const topologicalOrderRow = doc.split('| `oh-my-ontology topological-order` |')[1]?.split('\n')[0] ?? '';
 
-    assert.match(doc, /CLI Developer Entry \(39 commands/);
-    assert.match(doc, /총 39 명령/);
+    assert.match(doc, /CLI Developer Entry \(40 commands/);
+    assert.match(doc, /총 40 명령/);
     assert.match(doc, /cli\/src\/commands\/growth\.mjs/);
     assert.match(doc, /cli\/src\/commands\/maintenance\.mjs/);
     assert.match(doc, /cli\/src\/commands\/all-paths\.mjs/);
     assert.match(doc, /cli\/src\/commands\/match-nodes\.mjs/);
     assert.match(doc, /cli\/src\/commands\/match-edges\.mjs/);
     assert.match(doc, /cli\/src\/commands\/domain-matrix\.mjs/);
+    assert.match(doc, /cli\/src\/commands\/facets\.mjs/);
     assert.match(doc, /cli\/src\/commands\/schema\.mjs/);
     assert.match(doc, /cli\/src\/commands\/components\.mjs/);
     assert.match(doc, /cli\/src\/commands\/topological-order\.mjs/);
@@ -2691,6 +2693,9 @@ describe('package contract helpers', () => {
     assert.match(domainMatrixRow, /coupling audit playbook/);
     assert.match(domainMatrixRow, /connection별 relation bucket/);
     assert.match(domainMatrixRow, /malformed 인 payload 는 JSON 또는 human output 전 exit 2/);
+    assert.match(facetsRow, /MCP `query_ontology\(facets\)`/);
+    assert.match(facetsRow, /kind\/domain\/degree bucket/);
+    assert.match(facetsRow, /malformed graph bucket \/ top node \/ pattern payload 는 JSON 또는 human output 전 exit 2/);
     assert.match(schemaRow, /MCP `query_ontology\(schema\)`/);
     assert.match(schemaRow, /from-kind \/ relation \/ to-kind/);
     assert.match(schemaRow, /malformed schema pattern payload 는 JSON 또는 human output 전 exit 2/);

@@ -3509,7 +3509,7 @@ await test('query — rejects MCP graph operation flags with CLI command guidanc
     const clean = stripAnsi(r.stderr);
     assert.match(clean, /unknown flag: --operation\./);
     assert.match(clean, /query is the typed filter DSL/);
-    assert.match(clean, /overview, health, agent-brief, workspace-brief, growth, maintenance, path, explain, all-paths, reachability, relation-check, match-nodes, match-edges, domain-matrix, blast-radius, cycles, or hubs/);
+    assert.match(clean, /overview, health, agent-brief, workspace-brief, growth, maintenance, path, explain, all-paths, reachability, relation-check, match-nodes, match-edges, domain-matrix, facets, blast-radius, cycles, or hubs/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -4118,6 +4118,30 @@ await test('schema — prints relation patterns for traversal and write prefligh
   }
 });
 
+await test('facets — prints dashboard buckets before narrower graph scans', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['facets', root, '--limit=3']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /graph facets/);
+    assert.match(clean, /node kinds/);
+    assert.match(clean, /relations/);
+    assert.match(clean, /top schema patterns/);
+    assert.match(clean, /oh-my-ontology schema \[vault\] --limit 20/);
+
+    const json = await run(['facets', root, '--json', '--limit=2']);
+    assert.equal(json.code, 0, `stdout: ${json.stdout}\nstderr: ${json.stderr}`);
+    const data = JSON.parse(json.stdout);
+    assert.equal(data.operation, 'facets');
+    assert.equal(data.graph.nodes, 3);
+    assert.equal(Array.isArray(data.nodes.topByDegree), true);
+    assert.equal(Array.isArray(data.edges.topPatterns), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('workspace-brief — fail severity nextActions make the CLI fail', async () => {
   const root = buildCycleFixture();
   try {
@@ -4361,12 +4385,15 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
     assert.match(data.handoffPrompt, /Traversal strategy/);
     assert.match(data.handoffPrompt, /Graph DB query pack for local markdown graph scans/);
     assert.deepEqual(data.graphDbQueryPack.map((item) => item.id), [
+      'graph_facets',
       'node_scan',
       'edge_scan',
       'domain_coupling',
       'path_evidence',
     ]);
     assert.deepEqual(data.graphDbQueryPack.flatMap((item) => item.calls).map((call) => call.arguments.operation), [
+      'facets',
+      'schema',
       'query_plan',
       'match_nodes',
       'query_plan',
@@ -4575,6 +4602,10 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
     assert.match(clean, new RegExp(`oh-my-ontology agent-brief ${vaultPath} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000`));
     assert.match(clean, /# The selected vault path is already inserted/);
     assert.match(clean, /# Evidence rule: scan rows are candidates, not proof/);
+    assert.match(clean, /# intent: MATCH graph RETURN kind\/domain\/degree\/relation facets LIMIT 10/);
+    assert.match(clean, /# goal: Read kind, domain, degree, relation, and schema-pattern buckets before choosing a narrower graph query\./);
+    assert.match(clean, new RegExp(`# graph_facets[\\s\\S]*oh-my-ontology facets ${vaultPath} --limit 10`));
+    assert.match(clean, new RegExp(`# graph_facets[\\s\\S]*oh-my-ontology schema ${vaultPath} --limit 20`));
     assert.match(clean, /# intent: MATCH \(n:capability\) WHERE degree\(n\) >= 2 RETURN n ORDER BY degree\(n\) DESC LIMIT 10/);
     assert.match(clean, /# goal: Find high-degree capability nodes as onboarding or refactor starting points\./);
     assert.match(clean, new RegExp(`# node_scan[\\s\\S]*oh-my-ontology match-nodes ${vaultPath} --plan --kind capability --min-degree 2 --sort degree --limit 10`));

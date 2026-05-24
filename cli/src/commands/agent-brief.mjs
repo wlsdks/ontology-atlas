@@ -308,6 +308,12 @@ function graphDbToolCallCliCommand(call) {
     }
     return null;
   }
+  if (args.operation === 'facets') {
+    return graphDbWithFlags('oh-my-ontology facets [vault]', [graphDbPositiveFlag('--limit', args.limit)]);
+  }
+  if (args.operation === 'schema') {
+    return graphDbWithFlags('oh-my-ontology schema [vault]', [graphDbPositiveFlag('--limit', args.limit)]);
+  }
   if (args.operation === 'match_nodes') return graphDbMatchNodesCliCommand(args);
   if (args.operation === 'match_edges') return graphDbMatchEdgesCliCommand(args);
   if (args.operation === 'domain_matrix') {

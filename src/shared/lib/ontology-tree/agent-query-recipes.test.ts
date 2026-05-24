@@ -629,17 +629,33 @@ describe("buildAgentQueryRecipes", () => {
     ]);
 
     expect(pack.map((item) => item.id)).toEqual([
+      "graph_facets",
       "node_scan",
       "edge_scan",
       "domain_coupling",
       "path_evidence",
     ]);
-    expect(pack[0]?.intent).toContain("MATCH (n:capability)");
+    expect(pack[0]?.intent).toContain("MATCH graph");
     expect(pack[0]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
+      "facets",
+      "schema",
+    ]);
+    expect(pack[0]?.payloads[0]?.arguments).toEqual({
+      operation: "facets",
+      limit: 10,
+    });
+    expect(formatAgentQueryCallCliCommand(pack[0]!.payloads[0]!)).toBe(
+      "oh-my-ontology facets [vault] --limit 10",
+    );
+    expect(formatAgentQueryCallCliCommand(pack[0]!.payloads[1]!)).toBe(
+      "oh-my-ontology schema [vault] --limit 20",
+    );
+    expect(pack[1]?.intent).toContain("MATCH (n:capability)");
+    expect(pack[1]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
       "query_plan",
       "match_nodes",
     ]);
-    expect(pack[0]?.payloads[0]?.arguments).toEqual({
+    expect(pack[1]?.payloads[0]?.arguments).toEqual({
       operation: "query_plan",
       targetOperation: "match_nodes",
       kind: "capability",
@@ -647,25 +663,25 @@ describe("buildAgentQueryRecipes", () => {
       sort: "degree",
       limit: 10,
     });
-    expect(formatAgentQueryCallCliCommand(pack[0]!.payloads[0]!)).toBe(
+    expect(formatAgentQueryCallCliCommand(pack[1]!.payloads[0]!)).toBe(
       "oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10",
     );
-    expect(pack[1]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
+    expect(pack[2]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
       "query_plan",
       "match_edges",
     ]);
-    expect(formatAgentQueryCallCliCommand(pack[1]!.payloads[1]!)).toBe(
+    expect(formatAgentQueryCallCliCommand(pack[2]!.payloads[1]!)).toBe(
       "oh-my-ontology match-edges [vault] --types depends_on --limit 20",
     );
-    expect(pack[2]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
+    expect(pack[3]?.payloads.map((payload) => payload.arguments.operation)).toEqual([
       "domain_matrix",
       "query_plan",
       "centrality",
     ]);
-    expect(formatAgentQueryCallCliCommand(pack[2]!.payloads[0]!)).toBe(
+    expect(formatAgentQueryCallCliCommand(pack[3]!.payloads[0]!)).toBe(
       "oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates",
     );
-    expect(pack[3]?.payloads[0]?.arguments).toEqual({
+    expect(pack[4]?.payloads[0]?.arguments).toEqual({
       operation: "query_plan",
       targetOperation: "all_paths",
       from: "capabilities/mcp-server",
@@ -675,7 +691,7 @@ describe("buildAgentQueryRecipes", () => {
       searchBudget: 1000,
       limit: 10,
     });
-    expect(formatAgentQueryCallCliCommand(pack[3]!.payloads[0]!)).toBe(
+    expect(formatAgentQueryCallCliCommand(pack[4]!.payloads[0]!)).toBe(
       "oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10",
     );
   });
@@ -699,17 +715,17 @@ describe("buildAgentQueryRecipes", () => {
     const prompt = formatAgentGraphDbQueryPack(pack);
 
     expect(itemPrompt).toContain("graph DB-style query pack");
-    expect(itemPrompt).toContain("Intent: MATCH (n:capability)");
+    expect(itemPrompt).toContain("Intent: MATCH graph");
     expect(itemPrompt).toContain("MCP calls:");
-    expect(itemPrompt).toContain("query_ontology.query_plan");
-    expect(itemPrompt).toContain("query_ontology.match_nodes");
+    expect(itemPrompt).toContain("query_ontology.facets");
+    expect(itemPrompt).toContain("query_ontology.schema");
     expect(itemPrompt).toContain("CLI fallback commands when the MCP connector is unavailable:");
-    expect(itemPrompt).toContain("oh-my-ontology match-nodes [vault] --plan");
+    expect(itemPrompt).toContain("oh-my-ontology facets [vault] --limit 10");
     expect(itemPrompt).toContain("For match_nodes and match_edges, report totalMatches");
 
     expect(prompt).toContain("scan the local markdown vault like a graph database");
-    expect(prompt).toContain("## 1. node_scan");
-    expect(prompt).toContain("## 4. path_evidence");
+    expect(prompt).toContain("## 1. graph_facets");
+    expect(prompt).toContain("## 5. path_evidence");
     expect(prompt).toContain("MATCH p=(from)-[:depends_on|relates*..3]-(to)");
     expect(prompt).toContain("oh-my-ontology all-paths capabilities/mcp-server domains/views [vault] --plan --force --max-hops 3");
     expect(prompt).toContain("evidence.pathsComplete");
@@ -739,6 +755,9 @@ describe("buildAgentQueryRecipes", () => {
       cliPack.split("\n").filter((row) => /^\d+\. /.test(row)).length,
     );
     expect(cliPack).toContain("Evidence rule: scan rows are candidates, not proof");
+    expect(cliPack).toContain("intent: MATCH graph RETURN kind/domain/degree/relation facets");
+    expect(cliPack).toContain("[graph_facets] oh-my-ontology facets [vault] --limit 10");
+    expect(cliPack).toContain("[graph_facets] oh-my-ontology schema [vault] --limit 20");
     expect(cliPack).toContain("intent: MATCH (n:capability) WHERE degree(n) >= 2 RETURN n");
     expect(cliPack).toContain("[node_scan] oh-my-ontology match-nodes [vault] --plan");
     expect(cliPack).toContain("[edge_scan] oh-my-ontology match-edges [vault] --plan");

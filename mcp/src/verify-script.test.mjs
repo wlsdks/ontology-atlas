@@ -1018,7 +1018,7 @@ describe('verify.mjs first-contact gates', () => {
       {
         name: 'query_ontology',
         description:
-          'Run graph queries including `all_paths` with limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance, `maintenance_plan` with cursor `nextAfterActionId`/`hasMore` pagination metadata and current-page `nextExecutableAction` / `nextReviewAction` pointers, and `agent_brief` with graphDbQueryPack for match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance and resultContracts for all_paths completeness.',
+          'Run graph queries including `all_paths` with limit/searchBudget/exhaustive/truncatedByBudget/totalPathsExact metadata and evidence guidance, `maintenance_plan` with cursor `nextAfterActionId`/`hasMore` pagination metadata and current-page `nextExecutableAction` / `nextReviewAction` pointers, and `agent_brief` with graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation, traversalStrategy plan_before_enumeration/bounded_path_evidence/containment_cross_check guidance and resultContracts for all_paths completeness.',
         inputSchema: {
           additionalProperties: false,
           required: ['operation'],
@@ -3108,7 +3108,7 @@ describe('verify.mjs first-contact gates', () => {
       toolsListSchemaFailure(withQueryTool(
         {
           ...queryOntologyTool,
-          description: queryOntologyTool.description.replace('graphDbQueryPack for match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation', 'graph pack'),
+          description: queryOntologyTool.description.replace('graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation', 'graph pack'),
         },
       )),
       'query_ontology description missing agent graph DB query pack guidance',
@@ -6773,7 +6773,7 @@ describe('verify.mjs first-contact gates', () => {
       'maintenance_plan afterActionId cursor misses return cursor.found=false and cursor.reason.',
       'maintenance_plan missing cursors return cursor.nextAfterActionId=null and cursor.hasMore=false.',
       'query_ontology agent_brief returns relationDecisionGuide for relation_check outcomes skip_existing, review_inverse, safe_to_add, and review_new_schema.',
-      'query_ontology agent_brief returns graphDbQueryPack for match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation.',
+      'query_ontology agent_brief returns graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation.',
       'query_ontology agent_brief returns traversalStrategy rows plan_before_enumeration, bounded_path_evidence, and containment_cross_check.',
       'query_ontology agent_brief returns resultContracts for all_paths requiring callers to report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.',
       'This filler keeps the instructions representative of a real initialize response.',
@@ -6889,7 +6889,7 @@ describe('verify.mjs first-contact gates', () => {
       'initialize instructions missing agent brief relation decision guide',
     );
     assert.equal(
-      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('graphDbQueryPack for match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation', 'graph pack') } }),
+      initializeInstructionsFailure({ result: { instructions: safeInstructions.replace('graphDbQueryPack for facets, schema, match_nodes, match_edges, domain_matrix, centrality, all_paths, and explain_relation', 'graph pack') } }),
       'initialize instructions missing agent brief graph DB query pack guidance',
     );
   });
@@ -9160,6 +9160,15 @@ describe('verify.mjs first-contact gates', () => {
       ],
       graphDbQueryPack: [
         {
+          id: 'graph_facets',
+          intent: 'MATCH graph RETURN kind/domain/degree/relation facets LIMIT 10',
+          goal: 'Read graph dashboard buckets.',
+          calls: [
+            { tool: 'query_ontology', arguments: { operation: 'facets', limit: 10 } },
+            { tool: 'query_ontology', arguments: { operation: 'schema', limit: 20 } },
+          ],
+        },
+        {
           id: 'node_scan',
           intent: 'MATCH (n:capability) WHERE degree(n) >= 2 RETURN n',
           goal: 'Find high-degree capability nodes.',
@@ -9316,7 +9325,7 @@ describe('verify.mjs first-contact gates', () => {
     };
 
     assert.equal(agentBriefFailure(payload), null);
-    assert.equal(agentBriefSummary(payload), 'ready 100/100, 1 entrypoint, 3 first calls, 4 graph DB pack items, 2 playbooks, 3 write guardrails, 1 result contract');
+    assert.equal(agentBriefSummary(payload), 'ready 100/100, 1 entrypoint, 3 first calls, 5 graph DB pack items, 2 playbooks, 3 write guardrails, 1 result contract');
     assert.equal(
       agentBriefFailure({ ...payload, readiness: { ...payload.readiness, score: 101 } }),
       'agent_brief response malformed readiness score',
