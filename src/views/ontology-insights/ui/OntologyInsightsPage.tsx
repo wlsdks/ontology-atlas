@@ -797,6 +797,7 @@ function AgentQueryRecipesPanel({
     workspace_brief: Bot,
     query_plan: SearchCheck,
     health: ShieldCheck,
+    components: Network,
     cycles: Route,
     topological_order: Route,
     growth_plan: GitBranch,

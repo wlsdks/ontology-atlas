@@ -77,6 +77,7 @@ describe("buildAgentQueryRecipes", () => {
       "query_plan",
       "health",
       "node_profile",
+      "components",
       "path",
       "explain_relation",
       "similar_nodes",
@@ -314,6 +315,9 @@ describe("buildAgentQueryRecipes", () => {
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "cycles")!)).toBe(
       "oh-my-ontology cycles [vault] --max-hops 8",
+    );
+    expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "components")!)).toBe(
+      "oh-my-ontology health [vault] --json",
     );
     expect(formatAgentRecipeCliCommand(recipes.find((recipe) => recipe.id === "topological_order")!)).toBe(
       "oh-my-ontology health [vault] --json",

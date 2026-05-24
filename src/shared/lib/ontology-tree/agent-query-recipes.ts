@@ -7,6 +7,7 @@ const AGENT_QUERY_OPERATIONS = new Set([
   "workspace_brief",
   "query_plan",
   "health",
+  "components",
   "cycles",
   "topological_order",
   "growth_plan",
@@ -40,6 +41,7 @@ export type AgentQueryRecipeId =
   | "workspace_brief"
   | "query_plan"
   | "health"
+  | "components"
   | "cycles"
   | "topological_order"
   | "growth_plan"
@@ -280,6 +282,8 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       return "oh-my-ontology workspace-brief [vault]";
     case "health":
       return "oh-my-ontology health [vault]";
+    case "components":
+      return "oh-my-ontology health [vault] --json";
     case "cycles":
       return withFlags("oh-my-ontology cycles [vault]", [
         nonNegativeFlag("--max-hops", args.maxHops),
@@ -1210,6 +1214,14 @@ export function buildAgentQueryRecipes(
         depth: 2,
         limit: 12,
       },
+      priority: "secondary",
+    },
+    {
+      id: "components",
+      operation: "query_ontology.components",
+      promptKey: "agentRecipePromptComponents",
+      tool: "query_ontology",
+      arguments: { operation: "components", limit: 20 },
       priority: "secondary",
     },
     {

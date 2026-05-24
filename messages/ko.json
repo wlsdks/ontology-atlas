@@ -939,6 +939,7 @@
       "agentRecipePromptWorkspaceBrief": "상태, 허브, health check, next action을 한 번에 확인.",
       "agentRecipePromptQueryPlan": "무거운 그래프 질의 전에 비용, limit, index 사용 계획을 먼저 확인.",
       "agentRecipePromptHealth": "쓰기 전 게이트: 미해결 참조, cycle, component, 추천 관계 점검.",
+      "agentRecipePromptComponents": "traversal 이나 onboarding map 을 믿기 전에 disconnected graph island 를 확인.",
       "agentRecipePromptCycles": "directed depends_on cycle 을 확인하고 repair 전 next cycle evidence loop 를 실행.",
       "agentRecipePromptTopologicalOrder": "refactor 순서나 onboarding 전에 prerequisite-first dependency layer 를 확인.",
       "agentRecipePromptGrowthPlan": "growth 후보를 검토하고 추천 관계는 vault write 전에 preflight.",

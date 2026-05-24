@@ -939,6 +939,7 @@
       "agentRecipePromptWorkspaceBrief": "Start here for status, hotspots, health checks, and next actions.",
       "agentRecipePromptQueryPlan": "Ask for cost, limits, and indexes before running a heavier graph query.",
       "agentRecipePromptHealth": "Gate the vault before writes: unresolved refs, cycles, components, recommendations.",
+      "agentRecipePromptComponents": "Find disconnected graph islands before trusting traversal or onboarding maps.",
       "agentRecipePromptCycles": "Check directed depends_on cycles and use the next cycle evidence loop before repair.",
       "agentRecipePromptTopologicalOrder": "Read prerequisite-first dependency layers before sequencing refactors or onboarding.",
       "agentRecipePromptGrowthPlan": "Review growth candidates and preflight recommended relations before writing to the vault.",
