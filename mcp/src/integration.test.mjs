@@ -2510,6 +2510,8 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
     assert.equal(agentBrief.firstCalls[4].arguments.from, "capabilities/login");
     assert.equal(agentBrief.firstCalls[4].arguments.to, "domains/auth");
     assert.equal(agentBrief.firstCalls[4].arguments.type, "depends_on");
+    assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology facets [vault] --limit 10"));
+    assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology schema [vault] --limit 20"));
     assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates"));
     assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology domain-matrix [vault] --limit 10"));
     assert.ok(agentBrief.cliFallbackCommands.includes("oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10"));

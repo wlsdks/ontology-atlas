@@ -9141,6 +9141,8 @@ describe('verify.mjs first-contact gates', () => {
       ].join('\n'),
       cliFallbackCommands: [
         'oh-my-ontology workspace-brief [vault]',
+        'oh-my-ontology facets [vault] --limit 10',
+        'oh-my-ontology schema [vault] --limit 20',
         'oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates',
         'oh-my-ontology domain-matrix [vault] --limit 10',
         'oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10',
@@ -9345,6 +9347,20 @@ describe('verify.mjs first-contact gates', () => {
     assert.equal(
       agentBriefFailure({ ...payload, cliFallbackCommands: ['oh-my-ontology workspace-brief [vault]'] }),
       'agent_brief cliFallbackCommands missing centrality plan fallback',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/facets/.test(command)),
+      }),
+      'agent_brief cliFallbackCommands missing facets fallback',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/schema/.test(command)),
+      }),
+      'agent_brief cliFallbackCommands missing schema fallback',
     );
     assert.equal(
       agentBriefFailure({

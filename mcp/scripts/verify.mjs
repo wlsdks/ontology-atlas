@@ -6701,6 +6701,12 @@ export function agentBriefFailure(parsed) {
   if (!parsed.cliFallbackCommands.some((command) => /hubs \[vault\] --plan/.test(command))) {
     return 'agent_brief cliFallbackCommands missing centrality plan fallback';
   }
+  if (!parsed.cliFallbackCommands.some((command) => /facets \[vault\]/.test(command))) {
+    return 'agent_brief cliFallbackCommands missing facets fallback';
+  }
+  if (!parsed.cliFallbackCommands.some((command) => /schema \[vault\]/.test(command))) {
+    return 'agent_brief cliFallbackCommands missing schema fallback';
+  }
   if (!parsed.cliFallbackCommands.some((command) => /match-nodes \[vault\] --plan/.test(command))) {
     return 'agent_brief cliFallbackCommands missing match-nodes plan fallback';
   }

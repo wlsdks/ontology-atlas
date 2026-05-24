@@ -4083,6 +4083,14 @@ function formatAgentToolCallCliCommand(call) {
       return withCliFlags('oh-my-ontology agent-brief [vault]', [
         positiveFlag('--limit', args.limit),
       ]);
+    case 'facets':
+      return withCliFlags('oh-my-ontology facets [vault]', [
+        positiveFlag('--limit', args.limit),
+      ]);
+    case 'schema':
+      return withCliFlags('oh-my-ontology schema [vault]', [
+        positiveFlag('--limit', args.limit),
+      ]);
     case 'query_plan':
       if (args.targetOperation === 'blast_radius') {
         const slug = stringArg(args.slug, '<slug>');

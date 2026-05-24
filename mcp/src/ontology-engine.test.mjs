@@ -1814,6 +1814,8 @@ describe('queryCompiledOntology', () => {
     assert.match(result.handoffPrompt, /oh-my-ontology match-edges \[vault\] --plan --types depends_on --limit 20/);
     assert.match(result.handoffPrompt, /oh-my-ontology all-paths capabilities\/login domains\/auth \[vault\] --plan --force --max-hops 3 --types depends_on,relates --search-budget 1000 --limit 10/);
     assert.ok(Array.isArray(result.cliFallbackCommands));
+    assert.ok(result.cliFallbackCommands.includes('oh-my-ontology facets [vault] --limit 10'));
+    assert.ok(result.cliFallbackCommands.includes('oh-my-ontology schema [vault] --limit 20'));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates'));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology domain-matrix [vault] --limit 10'));
     assert.ok(result.cliFallbackCommands.includes('oh-my-ontology match-nodes [vault] --plan --kind capability --min-degree 2 --sort degree --limit 10'));
