@@ -10,6 +10,7 @@ export const CLI_COMMAND_RUNNERS = Object.freeze({
   list: runner('list.mjs', 'runList'),
   validate: runner('validate.mjs', 'runValidate'),
   'mcp-verify': runner('mcp-verify.mjs', 'runMcpVerify'),
+  'agent-setup': runner('agent-setup.mjs', 'runAgentSetup'),
   add: runner('add.mjs', 'runAdd'),
   find: runner('find.mjs', 'runFind'),
   import: runner('import.mjs', 'runImport'),

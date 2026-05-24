@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-24T05:39:41.951Z",
+  "generatedAt": "2026-05-24T07:38:00.041Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -1741,9 +1741,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 31 노드, CLI 42 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 31 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
       "wordCount": 1483,
-      "updatedAt": "2026-05-24T03:42:57.257Z",
+      "updatedAt": "2026-05-24T07:34:43.028Z",
       "linksOut": []
     },
     {
@@ -4397,8 +4397,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 7067,
-      "updatedAt": "2026-05-24T04:47:46.705Z",
+      "wordCount": 7074,
+      "updatedAt": "2026-05-24T07:35:11.285Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4699,8 +4699,8 @@
         }
       ],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. web starter 와 CLI init 은 .mcp.json, .codex/config.toml, .mcp.json.example 을 생성하고, Docs vault tools menu 는 현재 로컬 폴더에 이 파일들이 있는지, 그리고 각 파일이 실제 ohmyontology MCP 서버와 OMOTVAULT 를 가리키는지 별도 agent setup 상태로 보여준다. 상태 헤더는 준비된 setup 파일 수",
-      "wordCount": 637,
-      "updatedAt": "2026-05-24T02:53:43.730Z",
+      "wordCount": 697,
+      "updatedAt": "2026-05-24T07:37:45.728Z",
       "linksOut": []
     },
     {
@@ -4817,12 +4817,12 @@
     {
       "slug": "ontology/capabilities/cli-developer-entry",
       "path": "docs/ontology/capabilities/cli-developer-entry.md",
-      "title": "CLI Developer Entry (42 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+      "title": "CLI Developer Entry (43 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
       "tags": [],
       "frontmatter": {
         "slug": "capabilities/cli-developer-entry",
         "kind": "capability",
-        "title": "CLI Developer Entry (42 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
+        "title": "CLI Developer Entry (43 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)",
         "domain": "onboarding-ux",
         "dependencies": [
           "capabilities/mcp-server",
@@ -4831,6 +4831,7 @@
         "elements": [
           "cli/src/commands/add.mjs",
           "cli/src/commands/agent-brief.mjs",
+          "cli/src/commands/agent-setup.mjs",
           "cli/src/commands/all-paths.mjs",
           "cli/src/commands/analyze.mjs",
           "cli/src/commands/backlinks.mjs",
@@ -4951,8 +4952,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
-      "wordCount": 10074,
-      "updatedAt": "2026-05-24T05:20:44.851Z",
+      "wordCount": 10193,
+      "updatedAt": "2026-05-24T07:36:27.917Z",
       "linksOut": []
     },
     {
@@ -6991,7 +6992,7 @@
                 "path": "ontology/capabilities/cli-developer-entry",
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
-                "title": "CLI Developer Entry (42 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)"
+                "title": "CLI Developer Entry (43 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)"
               },
               {
                 "name": "firebase-deploy-skill",

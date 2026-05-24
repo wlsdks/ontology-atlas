@@ -2645,6 +2645,7 @@ describe('package contract helpers', () => {
     const schemaRow = doc.split('| `oh-my-ontology schema` |')[1]?.split('\n')[0] ?? '';
     const patternWalkRow = doc.split('| `oh-my-ontology pattern-walk <slug>` |')[1]?.split('\n')[0] ?? '';
     const projectMapRow = doc.split('| `oh-my-ontology project-map <project>` |')[1]?.split('\n')[0] ?? '';
+    const agentSetupRow = doc.split('| `oh-my-ontology agent-setup [vault]` |')[1]?.split('\n')[0] ?? '';
     const reachabilityRow = doc.split('| `oh-my-ontology reachability <slug>` |')[1]?.split('\n')[0] ?? '';
     const pathRow = doc.split('| `oh-my-ontology path <from> <to>` |')[1]?.split('\n')[0] ?? '';
     const allPathsRow = doc.split('| `oh-my-ontology all-paths <from> <to>` |')[1]?.split('\n')[0] ?? '';
@@ -2654,9 +2655,10 @@ describe('package contract helpers', () => {
     const componentsRow = doc.split('| `oh-my-ontology components` |')[1]?.split('\n')[0] ?? '';
     const topologicalOrderRow = doc.split('| `oh-my-ontology topological-order` |')[1]?.split('\n')[0] ?? '';
 
-    assert.match(doc, /CLI Developer Entry \(42 commands/);
-    assert.match(doc, /총 42 명령/);
+    assert.match(doc, /CLI Developer Entry \(43 commands/);
+    assert.match(doc, /총 43 명령/);
     assert.match(doc, /cli\/src\/commands\/growth\.mjs/);
+    assert.match(doc, /cli\/src\/commands\/agent-setup\.mjs/);
     assert.match(doc, /cli\/src\/commands\/maintenance\.mjs/);
     assert.match(doc, /cli\/src\/commands\/all-paths\.mjs/);
     assert.match(doc, /cli\/src\/commands\/match-nodes\.mjs/);
@@ -2709,6 +2711,10 @@ describe('package contract helpers', () => {
     assert.match(projectMapRow, /MCP `query_ontology\(project_map\)`/);
     assert.match(projectMapRow, /domain-by-domain/);
     assert.match(projectMapRow, /malformed project_map payload 는 JSON 또는 human output 전 exit 2/);
+    assert.match(agentSetupRow, /기존 vault 에 starter markdown 을 추가하지 않고/);
+    assert.match(agentSetupRow, /`--write` 는 누락 파일만 생성/);
+    assert.match(agentSetupRow, /`operation:"agent_setup"`/);
+    assert.match(agentSetupRow, /global `codex mcp add/);
     assert.match(reachabilityRow, /MCP `query_ontology\(reachability\)`/);
     assert.match(reachabilityRow, /`--direction incoming\|outgoing\|both`/);
     assert.match(reachabilityRow, /`--plan` 은 `query_plan\(reachability\)`/);

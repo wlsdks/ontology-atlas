@@ -104,6 +104,9 @@ configs for your agent. Claude Code and Cursor can read the generated
 `.mcp.json`; Codex can read the generated `.codex/config.toml`. A global
 `codex mcp add ...` fallback is printed too.
 
+Already have a vault? Run `oh-my-ontology agent-setup ./ontology --write` to
+repair only the agent config files without adding starter markdown.
+
 ### 2. Draft the first graph
 
 ```bash

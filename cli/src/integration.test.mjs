@@ -262,6 +262,69 @@ await test('init — generated MCP config points at a runnable local server in s
   }
 });
 
+await test('agent-setup — writes agent configs for an existing vault without starter files', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-setup-'));
+  try {
+    mkdirSync(join(root, 'ontology'), { recursive: true });
+    const dryRun = await run(['agent-setup', 'ontology', '--root', '.', '--json'], { cwd: root });
+    assert.equal(dryRun.code, 1);
+    const dryRunData = JSON.parse(dryRun.stdout);
+    assert.equal(dryRunData.operation, 'agent_setup');
+    assert.equal(dryRunData.sideEffect, false);
+    assert.equal(dryRunData.summary.missing, 4);
+    assert.equal(existsSyncTest(join(root, '.mcp.json')), false);
+    assert.equal(existsSyncTest(join(root, 'ontology', '.mcp.json')), false);
+
+    const write = await run(['agent-setup', 'ontology', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(write.code, 0, write.stderr);
+    const data = JSON.parse(write.stdout);
+    assert.equal(data.sideEffect, true);
+    assert.equal(data.summary.ready, 4);
+    assert.equal(data.summary.written, 4);
+    assert.match(data.commands.setupGate, /agent-brief .* --verify-fallbacks --json/);
+
+    const rootMcp = JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf-8'));
+    assert.equal(rootMcp.mcpServers['oh-my-ontology'].env.OMOT_VAULT, './ontology');
+    const vaultMcp = JSON.parse(readFileSync(join(root, 'ontology', '.mcp.json'), 'utf-8'));
+    assert.equal(vaultMcp.mcpServers['oh-my-ontology'].env.OMOT_VAULT, '.');
+
+    const rootCodex = readFileSync(join(root, '.codex', 'config.toml'), 'utf-8');
+    assert.match(rootCodex, /OMOT_VAULT = "\.\/ontology"/);
+    const vaultCodex = readFileSync(join(root, 'ontology', '.codex', 'config.toml'), 'utf-8');
+    assert.match(vaultCodex, /OMOT_VAULT = "\."/);
+
+    assert.equal(readdirSync(join(root, 'ontology')).filter((name) => name.endsWith('.md')).length, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+await test('agent-setup — preserves stale configs and writes merge templates', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cli-agent-stale-'));
+  try {
+    mkdirSync(join(root, 'ontology'), { recursive: true });
+    writeFileSync(
+      join(root, '.mcp.json'),
+      JSON.stringify({ mcpServers: { other: { command: 'node', args: [] } } }, null, 2),
+    );
+    mkdirSync(join(root, '.codex'), { recursive: true });
+    writeFileSync(join(root, '.codex', 'config.toml'), '[mcp_servers.other]\ncommand = "node"\nargs = []\n');
+
+    const r = await run(['agent-setup', 'ontology', '--root', '.', '--write', '--json'], { cwd: root });
+    assert.equal(r.code, 1);
+    const data = JSON.parse(r.stdout);
+    assert.equal(data.summary.review, 2);
+    assert.equal(data.summary.examples, 2);
+    assert.equal(JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf-8')).mcpServers.other.command, 'node');
+    assert.equal(existsSyncTest(join(root, '.mcp.json.example')), true);
+    assert.equal(existsSyncTest(join(root, '.codex', 'config.toml.example')), true);
+    assert.equal(existsSyncTest(join(root, 'ontology', '.mcp.json')), true);
+    assert.equal(existsSyncTest(join(root, 'ontology', '.codex', 'config.toml')), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('init — rejects unknown flags and extra positional args before writing', async () => {
   const root = mkdtempSync(join(tmpdir(), 'cli-init-args-'));
   try {

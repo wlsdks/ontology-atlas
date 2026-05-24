@@ -38,6 +38,11 @@ codebase-root 템플릿을 복사해 수동 교체하라는 안내를 별도 경
 기존 vault 에서는 starter markdown 을 추가하지 않아도 누락된 agent 설정 파일만
 생성할 수 있다. 이 repair action 은 이미 사용자가 작성한 ontology 파일을 건드리지
 않고, agent 연결에 필요한 config surface 만 채운다.
+CLI 의 `oh-my-ontology agent-setup [vault] --root <codebase> --write` 도 같은
+repair path 를 제공한다. 기본 dry-run 은 vault-local / codebase-root 설정의
+ready/missing/review 상태를 보여주고, `--write` 는 누락 config 만 생성하며 이미
+있는 파일은 덮어쓰지 않고 merge template 을 남긴다. 그래서 web starter 를 거치지
+않은 기존 vault 도 터미널에서 Claude Code / Cursor / Codex 연결 상태를 복구할 수 있다.
 
 빈 vault starter CTA 는 생성 전에 `local` / `graph proof` / `agent loop` 보증을
 짧은 카드로 먼저 보여준다. 비개발자는 이 폴더의 markdown 이 서버 없는 local DB

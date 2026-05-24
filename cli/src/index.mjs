@@ -62,6 +62,8 @@ ${COLORS.bold}Usage:${COLORS.reset}
        --list-codes                           ${COLORS.dim}사용 가능한 issue code 목록 (--fail-on 발견용)${COLORS.reset}
   npx oh-my-ontology mcp-verify [vault]       MCP boot + tools + health + graph-query smoke
        --timeout-ms N                         ${COLORS.dim}large / slow vault server wait override${COLORS.reset}
+  npx oh-my-ontology agent-setup [vault]      Check/repair Claude Code, Cursor, and Codex configs
+       --root path --write --json             ${COLORS.dim}existing vault setup, no starter files touched${COLORS.reset}
   npx oh-my-ontology add <kind> <slug>        Scaffold a new ontology node (.md)
        --title "..."                          ${COLORS.dim}required, non-empty${COLORS.reset}
        --domain X --body "..." --vault path   ${COLORS.dim}optional${COLORS.reset}
@@ -159,6 +161,7 @@ ${COLORS.bold}What 'init' does:${COLORS.reset}
   - Writes wired .codex/config.toml files for Codex in both cwd and the vault
   - Prints the exact Codex 'mcp add' command as a global-config fallback
   - Recommends 'bootstrap' to replace untouched starters with a first real graph
+  - For an existing vault, run 'agent-setup --write' to repair only agent configs
 
 ${COLORS.bold}Mission:${COLORS.reset}
   vault frontmatter = the graph. Humans + AI agents author the same vault.

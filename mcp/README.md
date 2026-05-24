@@ -30,6 +30,11 @@ Open either the codebase root or the vault folder in the agent and restart it.
 The generated root config points at `./ontology`; the vault-local config uses
 `OMOT_VAULT=.` so the folder stays portable.
 
+For an existing vault, run `oh-my-ontology agent-setup ./ontology --write` from
+the codebase root. It checks or creates only `.mcp.json` and
+`.codex/config.toml`, preserving existing configs and writing merge templates
+when manual review is needed.
+
 For manual Claude Code / Cursor registration, create a `.mcp.json` at your
 project root:
 
@@ -518,17 +523,17 @@ A successful run looks like this:
 ✓ list_kinds — 31 nodes (capability:19, domain:6, element:4, project:1, vault-readme:1)
 ✓ validate_vault — 31 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (31 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:180)
+✓ workspace_brief — healthy (31 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:181)
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 5 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (31 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:180; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (31 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:181; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
-✓ compile_ontology — graph 81261b2a4434 (31 nodes, 295 edges, issues 0)
-✓ compile_ontology page — 1/31 nodes, 1/295 edges
-✓ compile_ontology indexes — out 31, in 30, edgeById 295, aliases 61, edges 115/180/0
-✓ overview — graph 81261b2a4434 (31 nodes, 295 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 31, edges 295)
-✓ project_map query_plan — aggregate_scan (medium, nodes 31, edges 295)
+✓ compile_ontology — graph 0d31ec737ff4 (31 nodes, 296 edges, issues 0)
+✓ compile_ontology page — 1/31 nodes, 1/296 edges
+✓ compile_ontology indexes — out 31, in 30, edgeById 296, aliases 61, edges 115/181/0
+✓ overview — graph 0d31ec737ff4 (31 nodes, 296 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 31, edges 296)
+✓ project_map query_plan — aggregate_scan (medium, nodes 31, edges 296)
 ✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ all_paths — elements/file-system-access-api → project (5/41 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
