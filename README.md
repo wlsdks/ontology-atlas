@@ -283,6 +283,7 @@ app -> views -> widgets -> features -> entities -> shared
 |---|---|
 | [`docs/PRODUCT-DIRECTION.md`](docs/PRODUCT-DIRECTION.md) | Product strategy and launch framing |
 | [`docs/AGENT-MEMORY-POSITIONING.md`](docs/AGENT-MEMORY-POSITIONING.md) | Why this is agent memory, not an ontology editor |
+| [`docs/AGENT-GRAPH-WORKFLOW.md`](docs/AGENT-GRAPH-WORKFLOW.md) | CLI-only vs MCP-connected graph workflows, graph DB differences, and verification evidence |
 | [`docs/FEATURES.md`](docs/FEATURES.md) | Current CLI, MCP, and web feature inventory |
 | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Local-first architecture and data flow |
 | [`docs/DEVELOPMENT-CHECKS.md`](docs/DEVELOPMENT-CHECKS.md) | Maintainer verification and release checks |

@@ -55,9 +55,17 @@ Open the vault folder itself in the agent and restart it. Both config files use
 `OMOT_VAULT=.`, so the agent reads and writes this folder directly.
 
 If you prefer to keep the agent opened at a separate codebase root, use the
-manual template instead: open `.mcp.json.example`, replace the
-`OMOT_VAULT` placeholder with the absolute path to this vault, then copy that
-server entry into your agent config.
+CLI repair path from that codebase root:
+
+```bash
+oh-my-ontology agent-setup /absolute/path/to/this-vault --root . --write
+```
+
+It creates missing Claude Code / Cursor / Codex config files without adding
+starter markdown or overwriting existing configs. If you need a manual merge
+instead, open `.mcp.json.example`, replace the `OMOT_VAULT` placeholder with
+the absolute path to this vault, then copy that server entry into your agent
+config.
 
 Codex can also be wired globally with one command:
 

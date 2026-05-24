@@ -52,12 +52,14 @@ ready/missing/review 상태를 보여주고, `--write` 는 누락 config 만 생
 
 같은 화면은 전체 setup packet, read-first 검증 prompt, 설치된 CLI graph runbook,
 자동화용 JSON setup gate,
-codebase-root 세션용 `.mcp.json.example` 템플릿, Codex `.codex/config.toml` 템플릿,
+codebase-root 세션용 `agent-setup <vault> --root <codebase> --write` repair 명령,
+`.mcp.json.example` 템플릿, Codex `.codex/config.toml` 템플릿,
 그리고 `codex mcp add ...` 한 줄 등록 명령도 복사 가능하게 유지한다. setup packet 은
-MCP/Codex 템플릿, 재시작 안내, 검증 prompt, CLI fallback, machine-readable JSON gate 를 한 번에 묶어 별도 root 에서
+수동 템플릿보다 `agent-setup` repair 명령을 먼저 제시하고, MCP/Codex 템플릿,
+재시작 안내, 검증 prompt, CLI fallback, machine-readable JSON gate 를 한 번에 묶어 별도 root 에서
 agent 를 여는 사용자가 순서를 조립하지 않아도 되게 한다. 설정 상태 확인, 누락 config 생성,
 검증 액션 그룹의 setup packet / MCP prompt / 터미널 graph runbook / JSON gate 복사, 별도 codebase root
-연결 그룹의 MCP JSON / Codex TOML / Codex CLI 등록 명령 복사가 한 패널 안에 있어
+연결 그룹의 agent-setup repair 명령 / MCP JSON / Codex TOML / Codex CLI 등록 명령 복사가 한 패널 안에 있어
 비개발자도 Claude Code / Codex 를 열기 전에 필요한 다음 행동을 놓치지 않는다.
 starter CTA 자체도 agent 검증 프롬프트와 `oh-my-ontology validate .`,
 `workspace-brief .`, `agent-brief . --prompt`, `agent-brief . --graph-db-pack`,
@@ -71,6 +73,10 @@ agent 는 `ok=false` 를 setup/fallback 실행 실패로, `ok=true` 와
 `performanceOk=false` 를 동작은 하지만 로컬 graph fallback latency 를 점검해야 하는
 상태로 구분하고, 이 read-first check 중 하나가 성공하기 전에는 ontology write 를
 시작하지 않는다.
+기능 설명 문서는 `docs/AGENT-GRAPH-WORKFLOW.md` 에 별도로 유지한다. 이 문서는
+CLI 만으로 가능한 흐름, MCP 연결 시 좋아지는 점, graph DB 와의 차이, graph DB-style
+query pack, 그리고 실제 dogfood vault 검증 결과를 한 번에 설명해 비개발자와 agent 가
+같은 용어로 setup 상태를 판단하게 한다.
 자동화 gate 는 `oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`
 단일 명령을 보여주고 복사한다. Claude Code / Codex 세션은 이 JSON 의 `ok`, `failed`,
 `performanceOk`, `timeoutMs`, `slowThresholdMs`, `concurrency`, `wallMs`, `slow`, `commands[].timedOut`,

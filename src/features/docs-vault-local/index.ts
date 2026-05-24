@@ -1,6 +1,7 @@
 export { LocalVaultProvider, useLocalVault } from './model/LocalVaultProvider';
 export { VaultConflictError } from './model/use-local-vault';
 export {
+  buildAgentSetupCliCommandTemplate,
   buildCodexMcpAddCommandTemplate,
   buildCodexConfigTomlTemplate,
   buildMcpConfigJson,

@@ -16,6 +16,7 @@ query, and maintain through MCP.
 | [`../README.md`](../README.md) | Public overview, quick start, workflows, verification promises | Canonical public entry |
 | [`PRODUCT-DIRECTION.md`](PRODUCT-DIRECTION.md) | Product strategy, audience, launch framing, success criteria | Canonical strategy |
 | [`AGENT-MEMORY-POSITIONING.md`](AGENT-MEMORY-POSITIONING.md) | Why the product should be sold as agent memory, not ontology editing | Canonical positioning note |
+| [`AGENT-GRAPH-WORKFLOW.md`](AGENT-GRAPH-WORKFLOW.md) | How to use the local graph with CLI-only workflows, MCP-connected agents, graph-DB-style query packs, and actual verification evidence | Canonical user-facing workflow |
 | [`FEATURES.md`](FEATURES.md) | Complete inventory of shipping CLI, MCP, and web surfaces | Canonical feature inventory |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview |
 | [`DEVELOPMENT-CHECKS.md`](DEVELOPMENT-CHECKS.md) | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks |
@@ -42,6 +43,9 @@ The normative product model is:
    builder, insights.
 6. The product promise is durable coding-agent memory, not a manual ontology
    editor.
+7. User-facing graph workflow docs must explain what works without MCP, what
+   MCP adds, how the local graph differs from a graph database, and which
+   commands prove the setup on the current machine.
 
 ## What Is Historical
 

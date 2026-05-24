@@ -218,6 +218,15 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('oh-my-ontology agent setup packet'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology agent-setup'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('--root'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('--write'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('"oh-my-ontology-mcp"'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -242,6 +251,32 @@ describe('VaultToolsMenu', () => {
     );
     expect(
       await screen.findByRole('button', { name: '설정 패킷 복사됨' }),
+    ).toBeInTheDocument();
+  });
+
+  it('AI agent 설정 패널에서 codebase-root agent-setup 명령을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'agent-setup 명령 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      "oh-my-ontology agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
+    );
+    expect(
+      await screen.findByRole('button', {
+        name: 'agent-setup 명령 복사됨',
+      }),
     ).toBeInTheDocument();
   });
 

@@ -7,6 +7,7 @@ import {
   buildCodexConfigToml,
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
+  buildAgentSetupCliCommandTemplate,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
 } from "./ontology-starter";
@@ -63,6 +64,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(readme).toContain("Claude Code / Cursor");
     expect(readme).toContain("Codex");
     expect(readme).toContain(".codex/config.toml");
+    expect(readme).toContain("oh-my-ontology agent-setup /absolute/path/to/this-vault --root . --write");
     expect(readme).toContain("codex mcp add oh-my-ontology");
     expect(readme).toContain(".mcp.json.example");
     expect(readme).toContain("OMOT_VAULT");
@@ -200,6 +202,24 @@ describe("buildCodexMcpAddCommandTemplate", () => {
 
     expect(command).toContain(
       "OMOT_VAULT='<absolute path to your team'\\''s vault folder>'",
+    );
+  });
+});
+
+describe("buildAgentSetupCliCommandTemplate", () => {
+  it("기존 vault 를 codebase-root 에 연결하는 안전한 CLI repair 명령을 제공", () => {
+    const command = buildAgentSetupCliCommandTemplate("team-vault");
+
+    expect(command).toBe(
+      "oh-my-ontology agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
+    );
+  });
+
+  it("vault 이름의 작은따옴표를 shell-safe 하게 escape 한다", () => {
+    const command = buildAgentSetupCliCommandTemplate("team's vault");
+
+    expect(command).toContain(
+      "'<absolute path to your team'\\''s vault folder>'",
     );
   });
 });

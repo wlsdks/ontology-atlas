@@ -1,7 +1,55 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-24T07:38:00.041Z",
+  "generatedAt": "2026-05-24T09:11:27.446Z",
   "docs": [
+    {
+      "slug": "AGENT-GRAPH-WORKFLOW",
+      "path": "docs/AGENT-GRAPH-WORKFLOW.md",
+      "title": "Agent Graph Workflow",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Agent Graph Workflow",
+          "slug": "agent-graph-workflow"
+        },
+        {
+          "depth": 2,
+          "text": "What Works Without MCP Connected",
+          "slug": "what-works-without-mcp-connected"
+        },
+        {
+          "depth": 2,
+          "text": "What MCP Adds",
+          "slug": "what-mcp-adds"
+        },
+        {
+          "depth": 2,
+          "text": "How This Differs From A Graph Database",
+          "slug": "how-this-differs-from-a-graph-database"
+        },
+        {
+          "depth": 2,
+          "text": "Graph-DB-Style Query Pack",
+          "slug": "graph-db-style-query-pack"
+        },
+        {
+          "depth": 2,
+          "text": "Actual Verification Snapshot",
+          "slug": "actual-verification-snapshot"
+        },
+        {
+          "depth": 2,
+          "text": "Recommended First User Flow",
+          "slug": "recommended-first-user-flow"
+        }
+      ],
+      "excerpt": "Current as of 20260524. This is the userfacing guide for running ohmyontology as a local PC graph memory: CLIonly, MCPconnected, and web workbench flows over the same markdown vault. ohmyontology is not a hosted graph database. It is a localfirst graph workbench where markdown frontmatter is the graph, git is the audit",
+      "wordCount": 1034,
+      "updatedAt": "2026-05-24T09:01:37.709Z",
+      "linksOut": []
+    },
     {
       "slug": "AGENT-MEMORY-POSITIONING",
       "path": "docs/AGENT-MEMORY-POSITIONING.md",
@@ -4397,8 +4445,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260518 (reponative AIagent memory framing, R16/R17 bootstrap/import inference, compiler/query/health/workspacebrief positioning). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file",
-      "wordCount": 7074,
-      "updatedAt": "2026-05-24T07:35:11.285Z",
+      "wordCount": 7115,
+      "updatedAt": "2026-05-24T09:02:21.986Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4699,8 +4747,8 @@
         }
       ],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. web starter 와 CLI init 은 .mcp.json, .codex/config.toml, .mcp.json.example 을 생성하고, Docs vault tools menu 는 현재 로컬 폴더에 이 파일들이 있는지, 그리고 각 파일이 실제 ohmyontology MCP 서버와 OMOTVAULT 를 가리키는지 별도 agent setup 상태로 보여준다. 상태 헤더는 준비된 setup 파일 수",
-      "wordCount": 697,
-      "updatedAt": "2026-05-24T07:37:45.728Z",
+      "wordCount": 759,
+      "updatedAt": "2026-05-24T09:02:32.837Z",
       "linksOut": []
     },
     {
@@ -6275,12 +6323,13 @@
         }
       ],
       "excerpt": "Current as of 20260518. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontologyengine.mjs, and cli/src/index.mjs first. ohmyontology is now best described as a reponative memory layer for Claude Code, Cursor, and C",
-      "wordCount": 529,
-      "updatedAt": "2026-05-24T02:30:48.361Z",
+      "wordCount": 588,
+      "updatedAt": "2026-05-24T09:01:47.873Z",
       "linksOut": [
         "../README",
         "PRODUCT-DIRECTION",
         "AGENT-MEMORY-POSITIONING",
+        "AGENT-GRAPH-WORKFLOW",
         "FEATURES",
         "ARCHITECTURE",
         "DEVELOPMENT-CHECKS",
@@ -6499,7 +6548,7 @@
       },
       {
         "fromSlug": "README",
-        "context": "POSITIONING.md) | Why the product should be sold as agent memory, not ontology editing | Canonical positioning note | | **[`FEATURES.md`]** | Complete inventory of shipping CLI, MCP, and web surfaces | Canonical feature inventory | | [`ARCHITECTURE.md`](ARCHI",
+        "context": "MCP-connected agents, graph-DB-style query packs, and actual verification evidence | Canonical user-facing workflow | | **[`FEATURES.md`]** | Complete inventory of shipping CLI, MCP, and web surfaces | Canonical feature inventory | | [`ARCHITECTURE.md`](ARCHI",
         "linkText": "`FEATURES.md`"
       }
     ],
@@ -6587,7 +6636,7 @@
       },
       {
         "fromSlug": "README",
-        "context": "TION.md`](PRODUCT-DIRECTION.md) | Product strategy, audience, launch framing, success criteria | Canonical strategy | | **[`AGENT-MEMORY-POSITIONING.md`]** | Why the product should be sold as agent memory, not ontology editing | Canonical positioning note | | [`FEATURES.md`]",
+        "context": "TION.md`](PRODUCT-DIRECTION.md) | Product strategy, audience, launch framing, success criteria | Canonical strategy | | **[`AGENT-MEMORY-POSITIONING.md`]** | Why the product should be sold as agent memory, not ontology editing | Canonical positioning note | | [`AGENT-GRAPH-W",
         "linkText": "`AGENT-MEMORY-POSITIONING.md`"
       }
     ],
@@ -6596,6 +6645,13 @@
         "fromSlug": "README",
         "context": "agent can read, query, and maintain through MCP. ## Current Canon | Document | Use it for | Status | |---|---|---| | **[`../README.md`]** | Public overview, quick start, workflows, verification promises | Canonical public entry | | [`PRODUCT-DIRECTION.md`](",
         "linkText": "`../README.md`"
+      }
+    ],
+    "AGENT-GRAPH-WORKFLOW": [
+      {
+        "fromSlug": "README",
+        "context": "POSITIONING.md) | Why the product should be sold as agent memory, not ontology editing | Canonical positioning note | | **[`AGENT-GRAPH-WORKFLOW.md`]** | How to use the local graph with CLI-only workflows, MCP-connected agents, graph-DB-style query packs, and actual veri",
+        "linkText": "`AGENT-GRAPH-WORKFLOW.md`"
       }
     ],
     "ARCHITECTURE": [
@@ -7193,6 +7249,13 @@
             "title": "oh-my-ontology — 자기 ontology vault"
           }
         ]
+      },
+      {
+        "name": "AGENT-GRAPH-WORKFLOW",
+        "path": "AGENT-GRAPH-WORKFLOW",
+        "type": "doc",
+        "slug": "AGENT-GRAPH-WORKFLOW",
+        "title": "Agent Graph Workflow"
       },
       {
         "name": "AGENT-MEMORY-POSITIONING",

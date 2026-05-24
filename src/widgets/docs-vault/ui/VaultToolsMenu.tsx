@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
+  buildAgentSetupCliCommandTemplate,
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
   buildMcpConfigJson,
@@ -48,6 +49,9 @@ function buildAgentSetupPacket(vaultName: string): string {
     '',
     'Use this when Claude Code, Cursor, or Codex is opened at a separate codebase root.',
     'Replace every <absolute path...> placeholder before using the config.',
+    '',
+    'Preferred existing-vault repair command from a codebase root:',
+    buildAgentSetupCliCommandTemplate(vaultName),
     '',
     'Claude Code / Cursor .mcp.json:',
     buildMcpConfigJson(vaultName),
@@ -148,6 +152,9 @@ export function VaultToolsMenu({
     'idle' | 'copied' | 'failed'
   >('idle');
   const [agentTemplateCopyState, setAgentTemplateCopyState] = useState<
+    'idle' | 'copied' | 'failed'
+  >('idle');
+  const [agentSetupCliCopyState, setAgentSetupCliCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle');
   const [agentCodexTemplateCopyState, setAgentCodexTemplateCopyState] =
@@ -264,6 +271,13 @@ export function VaultToolsMenu({
     setAgentTemplateCopyState(copied ? 'copied' : 'failed');
   }
 
+  async function handleCopyAgentSetupCliCommand() {
+    const copied = await copyText(
+      buildAgentSetupCliCommandTemplate(localVault.handle?.name ?? 'vault'),
+    );
+    setAgentSetupCliCopyState(copied ? 'copied' : 'failed');
+  }
+
   async function handleCopyCodexConfigTemplate() {
     const copied = await copyText(
       buildCodexConfigTomlTemplate(localVault.handle?.name ?? 'vault'),
@@ -312,6 +326,13 @@ export function VaultToolsMenu({
       : agentTemplateCopyState === 'failed'
         ? t('agentSetup.copyTemplateFailed')
         : t('agentSetup.copyTemplate');
+
+  const copySetupCliLabel =
+    agentSetupCliCopyState === 'copied'
+      ? t('agentSetup.copySetupCliCopied')
+      : agentSetupCliCopyState === 'failed'
+        ? t('agentSetup.copySetupCliFailed')
+        : t('agentSetup.copySetupCli');
 
   const copyCodexTemplateLabel =
     agentCodexTemplateCopyState === 'copied'
@@ -560,6 +581,15 @@ export function VaultToolsMenu({
                 <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
                   {t('agentSetup.connectGroup')}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => void handleCopyAgentSetupCliCommand()}
+                  title={t('agentSetup.copySetupCliTitle')}
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(130,230,180,0.28)] bg-[color:rgba(50,185,125,0.07)] px-2 py-1.5 text-[11.5px] text-[color:rgba(180,235,205,0.94)] transition-colors hover:border-[color:rgba(130,230,180,0.42)] hover:bg-[color:rgba(50,185,125,0.11)]"
+                >
+                  <Terminal size={12} aria-hidden />
+                  {copySetupCliLabel}
+                </button>
                 <button
                   type="button"
                   onClick={() => void handleCopyAgentConfigTemplate()}
