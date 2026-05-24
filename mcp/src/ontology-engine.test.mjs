@@ -1801,6 +1801,11 @@ describe('queryCompiledOntology', () => {
     const result = queryCompiledOntology(artifact(), { operation: 'agent_brief' });
     const relationCall = result.firstCalls.find((call) => call.arguments.operation === 'relation_check');
 
+    assert.deepEqual(result.docs.workflowGuide, {
+      path: 'docs/AGENT-GRAPH-WORKFLOW.md',
+      title: 'Agent Graph Workflow',
+      description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+    });
     assert.match(result.handoffPrompt, /oh-my-ontology MCP server/);
     assert.match(result.handoffPrompt, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
     assert.match(result.handoffPrompt, /first-contact MCP calls/i);

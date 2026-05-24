@@ -571,6 +571,13 @@ describe('query-result-contract', () => {
         healthChecks: 1,
       },
       graph: { nodes: 4, edges: 2 },
+      docs: {
+        workflowGuide: {
+          path: 'docs/AGENT-GRAPH-WORKFLOW.md',
+          title: 'Agent Graph Workflow',
+          description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+        },
+      },
       handoffPrompt: [
         'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
         'Run these first-contact MCP calls in order:',

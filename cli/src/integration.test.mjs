@@ -4546,6 +4546,11 @@ await test('agent-brief --json — forwards focused diagnosis tuning flags', asy
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const data = JSON.parse(r.stdout);
     assert.equal(data.operation, 'agent_brief');
+    assert.deepEqual(data.docs.workflowGuide, {
+      path: 'docs/AGENT-GRAPH-WORKFLOW.md',
+      title: 'Agent Graph Workflow',
+      description: 'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+    });
     assert.equal(data.readiness.status, 'ready');
     assert.ok(data.cliFallbackCommands.includes('oh-my-ontology hubs [vault] --plan --limit 10 --types depends_on,relates'));
     assert.ok(data.writeGuardrails.some((guardrail) => guardrail.id === 'preflight_rename'));

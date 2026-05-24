@@ -7,6 +7,12 @@ const MAX_ALL_PATHS_SEARCH_BUDGET = 50000;
 const DOWNWARD_CONTAINMENT_TYPES = new Set(['domains', 'capabilities', 'elements', 'contains']);
 const UPWARD_CONTAINMENT_TYPES = new Set(['domain']);
 const HEALTH_IGNORED_COMPONENT_KINDS = new Set(['vault-readme']);
+const AGENT_WORKFLOW_GUIDE = Object.freeze({
+  path: 'docs/AGENT-GRAPH-WORKFLOW.md',
+  title: 'Agent Graph Workflow',
+  description:
+    'CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
+});
 export const NODE_KIND_VALUES = Object.freeze([
   'project',
   'domain',
@@ -3339,6 +3345,9 @@ export function createOntologyEngine(artifact, options = {}) {
       ],
       resultContracts,
       relationDecisionGuide,
+      docs: {
+        workflowGuide: AGENT_WORKFLOW_GUIDE,
+      },
     };
     brief.cliFallbackCommands = uniqueCliCommands([
       ...brief.firstCalls,

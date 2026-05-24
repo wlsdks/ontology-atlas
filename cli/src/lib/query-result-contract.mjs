@@ -261,6 +261,9 @@ export function assertAgentBriefShape(result) {
   if (!isPlainObject(result.graph)) {
     throw new Error('agent_brief graph must be an object');
   }
+  if (!validAgentBriefDocs(result.docs)) {
+    throw new Error('agent_brief docs.workflowGuide must include path, title, and description');
+  }
   if (!validAgentHandoffPrompt(result.handoffPrompt)) {
     throw new Error('agent_brief handoffPrompt must be a non-empty agent handoff string');
   }
@@ -1230,6 +1233,13 @@ function validAgentHandoffPrompt(value) {
     && /Write guardrails/.test(value)
     && /relation_check/.test(value)
     && /add_relation/.test(value);
+}
+
+function validAgentBriefDocs(value) {
+  if (!isPlainObject(value) || !isPlainObject(value.workflowGuide)) return false;
+  const guide = value.workflowGuide;
+  return hasNonEmptyString(guide.path, guide.title, guide.description)
+    && guide.path === 'docs/AGENT-GRAPH-WORKFLOW.md';
 }
 
 function validAgentCliFallbackCommands(commands) {

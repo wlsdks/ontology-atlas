@@ -43,6 +43,9 @@ where to read the MCP, graph DB, and verification differences.
 The same guide path is included in `agent-brief --prompt` and
 `agent-brief --graph-db-pack`, so the agent handoff and connector-less graph
 query script carry the explanation forward after setup.
+For automation, `agent-brief --json` and MCP `query_ontology({operation:
+"agent_brief"})` expose the same location as `docs.workflowGuide`, so an AI
+tool does not need to parse the human prompt to find the guide.
 
 ## What MCP Adds
 
