@@ -4899,6 +4899,11 @@ await test('cycles — human output includes node titles', async () => {
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /capabilities\/a\s+— A/);
     assert.match(clean, /capabilities\/b\s+— B/);
+    assert.match(clean, /next cycle capabilities\/a → capabilities\/b/);
+    assert.match(clean, /cycle rows are failures, but fix the edge only after inspecting path evidence and maintenance guidance/);
+    assert.match(clean, /oh-my-ontology path capabilities\/a capabilities\/b \[vault\] --max-hops 8/);
+    assert.match(clean, /oh-my-ontology match-edges \[vault\] --from capabilities\/a --to capabilities\/b --types depends_on --limit 10/);
+    assert.match(clean, /oh-my-ontology maintenance \[vault\] --phases repair --severities fail --kinds break_dependency_cycle --limit 3/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

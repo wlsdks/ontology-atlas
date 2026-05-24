@@ -74,7 +74,25 @@ export async function runCycles(args) {
     }
     if (slugs.length > 0) process.stdout.write(`    ${COLORS.dim}↩ back to ${slugs[0]}${COLORS.reset}\n\n`);
   }
+  printNextCycle(cycles[0], result?.maxDepth ?? 8);
   return cyclesResultExitCode(result);
+}
+
+function printNextCycle(cycle, maxDepth) {
+  const slugs = Array.isArray(cycle?.nodes) ? cycle.nodes : Array.isArray(cycle?.slugs) ? cycle.slugs : [];
+  const uniqueSlugs = slugs.filter((slug, index) => typeof slug === 'string' && slug.length > 0 && slugs.indexOf(slug) === index);
+  if (uniqueSlugs.length < 2) return;
+  const from = uniqueSlugs[0];
+  const to = uniqueSlugs[1];
+  const boundedMaxHops = Math.max(0, Math.min(MAX_HOPS_CAP, Number.isInteger(maxDepth) ? maxDepth : 8));
+  process.stdout.write(
+    `${COLORS.bold}next cycle${COLORS.reset} ${COLORS.cyan}${from}${COLORS.reset}` +
+      ` ${COLORS.dim}→${COLORS.reset} ${COLORS.cyan}${to}${COLORS.reset}` +
+      ` ${COLORS.dim}— cycle rows are failures, but fix the edge only after inspecting path evidence and maintenance guidance${COLORS.reset}\n` +
+      `  oh-my-ontology path ${from} ${to} [vault] --max-hops ${boundedMaxHops}\n` +
+      `  oh-my-ontology match-edges [vault] --from ${from} --to ${to} --types depends_on --limit 10\n` +
+      `  oh-my-ontology maintenance [vault] --phases repair --severities fail --kinds break_dependency_cycle --limit 3\n`,
+  );
 }
 
 function formatCycleNode(slug, summary) {
