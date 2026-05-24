@@ -24,6 +24,15 @@ For non-developers, the safest sequence is: open a vault folder in the web UI,
 use the AI agent setup card, restart the agent, run the JSON gate, and only then
 ask the agent to write ontology updates.
 
+Read the JSON gate in three states:
+
+- `ok: false` means setup or fallback command execution is broken. Fix the
+  config before asking the agent to edit ontology files.
+- `ok: true` with `performanceOk: false` means the local graph path works, but
+  fallback latency is slow enough to inspect before relying on it heavily.
+- `ok: true` with `performanceOk: true` means the setup and fallback graph path
+  are ready for read-first agent work.
+
 ## What Works Without MCP Connected
 
 You can use the product without connecting Claude Code, Codex, Cursor, or any

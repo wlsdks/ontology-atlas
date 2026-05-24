@@ -52,6 +52,13 @@ const AGENT_MODE_PACKET_LINES = [
   '- Setup gate: run the JSON fallback check before edits and treat ok separately from performanceOk.',
 ];
 
+const AGENT_GATE_PACKET_LINES = [
+  'JSON gate result rules:',
+  '- ok=false: setup or fallback command execution is broken. Fix config before ontology edits.',
+  '- ok=true and performanceOk=false: the local graph works, but fallback latency drift needs attention.',
+  '- ok=true and performanceOk=true: setup and fallback performance are ready for read-first agent work.',
+];
+
 function buildAgentSetupPacket(vaultName: string): string {
   return [
     'oh-my-ontology agent setup packet',
@@ -60,6 +67,8 @@ function buildAgentSetupPacket(vaultName: string): string {
     'Replace every <absolute path...> placeholder before using the config.',
     '',
     ...AGENT_MODE_PACKET_LINES,
+    '',
+    ...AGENT_GATE_PACKET_LINES,
     '',
     'Preferred existing-vault repair command from a codebase root:',
     buildAgentSetupCliCommandTemplate(vaultName),
@@ -619,6 +628,37 @@ export function VaultToolsMenu({
                     {ONTOLOGY_STARTER_JSON_GATE_COMMAND}
                   </code>
                 </div>
+                <dl
+                  aria-label={t('agentSetup.gateRulesAriaLabel')}
+                  className="mt-1.5 grid gap-1"
+                >
+                  {[
+                    {
+                      term: t('agentSetup.gateBrokenTerm'),
+                      desc: t('agentSetup.gateBrokenDesc'),
+                    },
+                    {
+                      term: t('agentSetup.gateSlowTerm'),
+                      desc: t('agentSetup.gateSlowDesc'),
+                    },
+                    {
+                      term: t('agentSetup.gateReadyTerm'),
+                      desc: t('agentSetup.gateReadyDesc'),
+                    },
+                  ].map((rule) => (
+                    <div
+                      key={rule.term}
+                      className="grid grid-cols-[92px_1fr] gap-2 rounded-sm border border-[color:rgba(130,230,180,0.12)] bg-[color:rgba(50,185,125,0.035)] px-2 py-1"
+                    >
+                      <dt className="truncate font-mono text-[9.5px] text-[color:rgba(180,235,205,0.94)]">
+                        {rule.term}
+                      </dt>
+                      <dd className="break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                        {rule.desc}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
                 <ol className="mt-1.5 grid gap-1" aria-label={t('agentSetup.cliPreviewAriaLabel')}>
                   {AGENT_VERIFY_CLI_PREVIEW.map((command, index) => (
                     <li

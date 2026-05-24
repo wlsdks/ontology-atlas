@@ -94,7 +94,10 @@ MCP `agent_brief` 와 `agent-brief --json` 은 같은 정보를 `docs.workflowGu
 단일 명령을 보여주고 복사한다. Claude Code / Codex 세션은 이 JSON 의 `ok`, `failed`,
 `performanceOk`, `timeoutMs`, `slowThresholdMs`, `concurrency`, `wallMs`, `slow`, `commands[].timedOut`,
 `commands[].slow` 을 바로 파싱해 connector-less setup check 를 진행할 수 있고, 사람은
-같은 패널에서 human runbook 을 선택할 수 있다.
+같은 패널에서 human runbook 을 선택할 수 있다. 패널은 `ok=false`, `performanceOk=false`,
+`ready` 상태를 별도 해석표로 보여줘 실패는 config 수정, 느림은 latency 점검, 둘 다 true 는
+read-first agent 작업 시작으로 판단하게 한다. setup packet 도 같은 JSON gate result rules 를
+포함해 UI 밖으로 복사된 지침에서도 결과 해석이 유지된다.
 새 agent 세션은 `validate_vault`,
 `workspace_brief`, `agent_brief` 를 먼저 실행해 vault 가 읽히고 write tools 가
 노출되는지 보고한 뒤 변경을 제안한다. MCP 가 아직 붙지 않았고 CLI 가 설치된 환경에서는

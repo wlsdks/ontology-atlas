@@ -118,6 +118,12 @@ describe('VaultToolsMenu', () => {
     expect(screen.getByText('CLI만 사용')).toBeInTheDocument();
     expect(screen.getByText('MCP 연결')).toBeInTheDocument();
     expect(screen.getByText('Graph DB pack')).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('자동화 JSON gate 결과 해석'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('ok=false')).toBeInTheDocument();
+    expect(screen.getByText('perf=false')).toBeInTheDocument();
+    expect(screen.getByText('ready')).toBeInTheDocument();
     expect(screen.getByText('.mcp.json')).toBeInTheDocument();
     expect(screen.getByText('.codex/config.toml')).toBeInTheDocument();
     expect(screen.getByText('.mcp.json.example')).toBeInTheDocument();
@@ -262,6 +268,15 @@ describe('VaultToolsMenu', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Graph DB pack: use bounded query plans'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('JSON gate result rules:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('ok=false: setup or fallback command execution is broken'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('ok=true and performanceOk=false'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('oh-my-ontology agent-setup'),
