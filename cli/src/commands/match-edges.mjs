@@ -156,7 +156,7 @@ function render(result) {
       `\n${COLORS.dim}next${COLORS.reset} edge ${COLORS.bold}${followUp.focusEdge.from}${COLORS.reset}` +
         ` ${COLORS.yellow}--${relationLabel}-->${COLORS.reset} ` +
         `${COLORS.bold}${followUp.focusEdge.to}${COLORS.reset}` +
-        `${COLORS.dim} — explain before treating a scan row as evidence${COLORS.reset}\n`,
+        `${COLORS.dim} — scan rows are candidates, not proof; explain/preflight before write/refactor decisions${COLORS.reset}\n`,
     );
     for (const command of followUp.cliFallbackCommands.slice(0, 3)) {
       process.stdout.write(`  ${COLORS.cyan}${command}${COLORS.reset}\n`);

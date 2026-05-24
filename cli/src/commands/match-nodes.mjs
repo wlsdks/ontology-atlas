@@ -149,7 +149,7 @@ function render(result) {
   if (followUp?.focusSlug && Array.isArray(followUp.cliFallbackCommands) && followUp.cliFallbackCommands.length > 0) {
     process.stdout.write(
       `\n${COLORS.dim}next${COLORS.reset} focus ${COLORS.bold}${followUp.focusSlug}${COLORS.reset}` +
-        `${COLORS.dim} — run before treating a scan row as evidence${COLORS.reset}\n`,
+        `${COLORS.dim} — scan rows are candidates, not proof; cite follow-up detail before onboarding/refactor decisions${COLORS.reset}\n`,
     );
     for (const command of followUp.cliFallbackCommands.slice(0, 4)) {
       process.stdout.write(`  ${COLORS.cyan}${command}${COLORS.reset}\n`);

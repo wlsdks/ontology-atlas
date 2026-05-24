@@ -3557,6 +3557,7 @@ await test('match-nodes — graph DB-style node rows with degree filters', async
     assert.match(clean, /capabilities\/foo\s+— Foo.*deg 4 in 2 out 2/);
     assert.match(clean, /capabilities\/bar\s+— Bar.*deg 3 in 1 out 2/);
     assert.match(clean, /next focus capabilities\/foo/);
+    assert.match(clean, /scan rows are candidates, not proof; cite follow-up detail before onboarding\/refactor decisions/);
     assert.match(clean, /oh-my-ontology node capabilities\/foo \[vault\] --limit 12/);
     assert.match(clean, /oh-my-ontology match-edges \[vault\] --from capabilities\/foo --include-external --include-unresolved --limit 20/);
   } finally {
@@ -3612,6 +3613,7 @@ await test('match-edges — graph DB-style edge rows with kind/type filters', as
     assert.match(clean, /capabilities\/bar --relates--> capabilities\/foo/);
     assert.match(clean, /Bar.*Foo.*\(capability → capability\)/);
     assert.match(clean, /next edge capabilities\/bar --relates--> capabilities\/foo/);
+    assert.match(clean, /scan rows are candidates, not proof; explain\/preflight before write\/refactor decisions/);
     assert.match(clean, /oh-my-ontology explain capabilities\/bar capabilities\/foo \[vault\] --direction undirected --max-hops 5 --types relates --limit 10/);
     assert.match(clean, /oh-my-ontology relation-check capabilities\/bar capabilities\/foo relates \[vault\]/);
   } finally {
