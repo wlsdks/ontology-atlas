@@ -122,6 +122,22 @@ function render(result) {
       );
     }
   }
+  const focus = rows.find((row) => Array.isArray(row.examples) && row.examples.length > 0);
+  const example = focus?.examples?.[0];
+  if (focus && example) {
+    const relationLabel = example.relationType || example.via;
+    process.stdout.write(
+      `\n${COLORS.dim}next${COLORS.reset} coupling ${COLORS.bold}${focus.from}${COLORS.reset}` +
+        ` ${COLORS.dim}→${COLORS.reset} ${COLORS.bold}${focus.to}${COLORS.reset}` +
+        `${COLORS.dim} — matrix rows are hotspots, not proof; inspect matching edges before boundary decisions${COLORS.reset}\n`,
+    );
+    process.stdout.write(
+      `  ${COLORS.cyan}oh-my-ontology match-edges [vault] --from ${example.from} --to ${example.to} --types ${relationLabel} --limit 20${COLORS.reset}\n`,
+    );
+    process.stdout.write(
+      `  ${COLORS.cyan}oh-my-ontology explain ${example.from} ${example.to} [vault] --direction undirected --max-hops 5 --types ${relationLabel} --limit 10${COLORS.reset}\n`,
+    );
+  }
 }
 
 function formatRelationCounts(bucket) {
