@@ -107,6 +107,9 @@ describe("buildAgentReadinessSummary", () => {
     expect(prompt).toContain("If the MCP connector is unavailable");
     expect(prompt).toContain("oh-my-ontology agent-brief [vault]");
     expect(prompt).toContain("oh-my-ontology agent-brief [vault] --graph-db-pack");
+    expect(prompt).toContain(
+      "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000",
+    );
     expect(prompt).toContain("oh-my-ontology match-nodes [vault] --kind unknown --limit 20");
     expect(prompt).toContain("oh-my-ontology infer-imports [repo] --vault [vault] --max-files 5000");
     expect(prompt).toContain("Only write after confirming");
@@ -134,6 +137,7 @@ describe("buildAgentReadinessSummary", () => {
     expect(commands.map((item) => item.command)).toEqual([
       "oh-my-ontology agent-brief [vault]",
       "oh-my-ontology agent-brief [vault] --graph-db-pack",
+      "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000",
       "oh-my-ontology workspace-brief [vault]",
       "oh-my-ontology health [vault]",
       "oh-my-ontology node <hub-slug> [vault] --limit 12",
@@ -143,7 +147,10 @@ describe("buildAgentReadinessSummary", () => {
     expect(new Set(commands.map((item) => item.command)).size).toBe(commands.length);
     expect(formatted).toContain("1. oh-my-ontology agent-brief [vault]");
     expect(formatted).toContain("2. oh-my-ontology agent-brief [vault] --graph-db-pack");
-    expect(formatted).toContain("7. oh-my-ontology validate [vault]");
+    expect(formatted).toContain(
+      "3. oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000",
+    );
+    expect(formatted).toContain("8. oh-my-ontology validate [vault]");
   });
 
   it("validates readiness repair MCP payloads before they are copied", () => {

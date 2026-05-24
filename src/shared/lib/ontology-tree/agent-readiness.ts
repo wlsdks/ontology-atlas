@@ -98,6 +98,11 @@ const ACTION_PAYLOADS: Record<AgentReadinessActionKey, AgentReadinessToolCall[]>
 const BASELINE_CLI_COMMANDS: AgentReadinessCliCommand[] = [
   { key: "agent_brief", command: "oh-my-ontology agent-brief [vault]" },
   { key: "graph_db_pack", command: "oh-my-ontology agent-brief [vault] --graph-db-pack" },
+  {
+    key: "setup_gate",
+    command:
+      "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000",
+  },
   { key: "workspace_brief", command: "oh-my-ontology workspace-brief [vault]" },
   { key: "health", command: "oh-my-ontology health [vault]" },
 ];
