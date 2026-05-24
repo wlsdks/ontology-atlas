@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-24T00:50:28.215Z",
+  "generatedAt": "2026-05-24T00:56:46.274Z",
   "docs": [
     {
       "slug": "AGENT-MEMORY-POSITIONING",
@@ -3858,8 +3858,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 2951,
-      "updatedAt": "2026-05-23T23:25:10.346Z",
+      "wordCount": 2986,
+      "updatedAt": "2026-05-24T00:55:21.696Z",
       "linksOut": []
     },
     {
@@ -4945,8 +4945,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
-      "wordCount": 9253,
-      "updatedAt": "2026-05-24T00:38:16.022Z",
+      "wordCount": 9273,
+      "updatedAt": "2026-05-24T00:56:40.906Z",
       "linksOut": []
     },
     {
@@ -5103,8 +5103,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 12756,
-      "updatedAt": "2026-05-24T00:20:59.186Z",
+      "wordCount": 12780,
+      "updatedAt": "2026-05-24T00:54:19.485Z",
       "linksOut": []
     },
     {

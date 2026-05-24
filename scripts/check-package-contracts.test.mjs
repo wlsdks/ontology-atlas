@@ -234,6 +234,11 @@ describe('package contract helpers', () => {
       pkg.scripts?.['dogfood:agent-graph-db-pack'],
       'node cli/src/index.mjs agent-brief docs/ontology --graph-db-pack',
     );
+    assert.equal(
+      pkg.scripts?.['dogfood:agent-setup-gate'],
+      'node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000',
+    );
+    assert.equal(pkg.scripts?.['dogfood:agent-fallbacks'], 'node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks');
     assert.equal(pkg.scripts?.['dogfood:brief'], 'node cli/src/index.mjs workspace-brief docs/ontology --json');
     assert.equal(pkg.scripts?.['dogfood:growth'], 'node cli/src/index.mjs growth docs/ontology --json');
     assert.equal(pkg.scripts?.['dogfood:maintenance'], 'node cli/src/index.mjs maintenance docs/ontology --json');
@@ -406,6 +411,7 @@ describe('package contract helpers', () => {
       'pnpm dogfood:health',
       'pnpm dogfood:agent',
       'pnpm dogfood:agent-graph-db-pack',
+      'pnpm dogfood:agent-setup-gate',
       'pnpm dogfood:agent-fallbacks',
       'pnpm dogfood:brief',
       'pnpm dogfood:growth',
@@ -1009,6 +1015,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm dogfood:health/);
     assert.match(section, /pnpm dogfood:agent/);
     assert.match(section, /pnpm dogfood:agent-graph-db-pack/);
+    assert.match(section, /pnpm dogfood:agent-setup-gate/);
     assert.match(section, /pnpm dogfood:agent-fallbacks/);
     assert.match(section, /pnpm dogfood:brief/);
     assert.match(section, /pnpm dogfood:maintenance/);
@@ -1023,6 +1030,7 @@ describe('package contract helpers', () => {
     assert.match(section, /`pnpm test:dogfood:script-refs` checks help text and package script body `pnpm \.\.\.` references against root package scripts plus focused filter parsing and wrapper summaries/);
     assert.match(section, /`dogfood:health` prints the dogfood vault fail-closed `health` JSON gate/);
     assert.match(section, /`dogfood:agent-graph-db-pack` prints the dogfood vault shell-pasteable graph DB pack/);
+    assert.match(section, /`dogfood:agent-setup-gate` prints the dogfood vault machine-readable agent setup gate with `ok` and `performanceOk`/);
     assert.match(section, /`dogfood:brief` prints the dogfood vault `workspace_brief` JSON snapshot/);
     assert.match(section, /`dogfood:growth` prints the dogfood vault `growth_plan` JSON snapshot/);
     assert.match(section, /`dogfood:maintenance` prints the dogfood vault `maintenance_plan` JSON snapshot/);
@@ -1625,6 +1633,7 @@ describe('package contract helpers', () => {
     assert.match(section, /pnpm dogfood:health/);
     assert.match(section, /pnpm dogfood:agent/);
     assert.match(section, /pnpm dogfood:agent-graph-db-pack/);
+    assert.match(section, /pnpm dogfood:agent-setup-gate/);
     assert.match(section, /pnpm dogfood:agent-fallbacks/);
     assert.match(section, /pnpm dogfood:brief/);
     assert.match(section, /pnpm dogfood:maintenance/);
@@ -1679,6 +1688,7 @@ describe('package contract helpers', () => {
     assert.match(section, /`test:dogfood:compile-fix`\s+checks that idempotence guard without invoking the full dogfood suite/);
     assert.match(section, /`dogfood:health`\s+is the shortest root-checkout fail-closed health JSON gate/);
     assert.match(section, /`dogfood:agent-graph-db-pack`\s+prints\s+the shell-pasteable graph DB pack for docs\/ontology/);
+    assert.match(section, /`dogfood:agent-setup-gate`\s+prints\s+the machine-readable agent setup gate for docs\/ontology with `ok` and `performanceOk`/);
     assert.match(section, /`dogfood:brief`\s+is\s+the shortest root-checkout first-contact JSON snapshot/);
     assert.match(section, /`dogfood:growth`\s+is the\s+shortest root-checkout growth_plan JSON snapshot/);
     assert.match(section, /`dogfood:maintenance`\s+is the\s+shortest root-checkout maintenance_plan JSON snapshot/);
@@ -2176,7 +2186,7 @@ describe('package contract helpers', () => {
     assert.match(doc, /`query_ontology` graph-query 응답은 `structuredContent`\s+누락을 실패로 처리하고 text JSON payload 와 `structuredContent` payload 의\s+구조적 일치 여부도 비교/);
     assert.match(doc, /positional vault argument 는 받지 않고 이 repo 의 dogfood vault 만\s+검증하므로 잘못된 인자는 MCP server 를 띄우기 전에 실패/);
     assert.match(doc, /Run pnpm dogfood:walk -- --help for usage/);
-    assert.match(doc, /`pnpm dogfood:walk -- --help`[\s\S]*MCP server 를 띄우지 않고 usage, `pnpm dogfood:compile` \/ `pnpm dogfood:compile-fix` \/\s+`pnpm dogfood:health` \/ `pnpm dogfood:agent` \/ `pnpm dogfood:agent-graph-db-pack` \/ `pnpm dogfood:brief` \/ `pnpm dogfood:growth` \/ `pnpm dogfood:maintenance` \/ `pnpm dogfood:status` \/ `pnpm dogfood:verify` 순서의 더 가벼운 dogfood gate, installed-style verify gate,\s+focused check 경로를 출력/);
+    assert.match(doc, /`pnpm dogfood:walk -- --help`[\s\S]*MCP server 를 띄우지 않고 usage, `pnpm dogfood:compile` \/ `pnpm dogfood:compile-fix` \/\s+`pnpm dogfood:health` \/ `pnpm dogfood:agent` \/ `pnpm dogfood:agent-graph-db-pack` \/ `pnpm dogfood:agent-setup-gate` \/ `pnpm dogfood:brief` \/ `pnpm dogfood:growth` \/ `pnpm dogfood:maintenance` \/ `pnpm dogfood:status` \/ `pnpm dogfood:verify` 순서의 더 가벼운 dogfood gate, installed-style verify gate,\s+focused check 경로를 출력/);
     assert.match(doc, /`dogfood:compile-fix` 성공 마지막 줄 `\[dogfood:compile-fix\] docs\/ontology unchanged` 와 `dogfood:status` 마지막 줄 `\[dogfood:status\] health:N · workspace-brief:N · agent-brief:N · maintenance:N` 및 실패 시 focused hint 후 `pnpm dogfood:verify` hint/);
     assert.match(doc, /`pnpm test:dogfood:args` \/ `pnpm test:dogfood:script-refs` \/ `pnpm test:dogfood:compile-fix` \/ `pnpm test:dogfood:status` \/ `pnpm test:mcp:maintenance`/);
     assert.match(doc, /maintenance-only queue contract 만 좁게 검증/);

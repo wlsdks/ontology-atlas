@@ -101,6 +101,8 @@ export function dogfoodUsage() {
     "  pnpm dogfood:compile-fix   compile --fix idempotence gate over docs/ontology; changed vaults need pnpm docs-vault:build; success ends with [dogfood:compile-fix] docs/ontology unchanged.",
     "  pnpm dogfood:health        Fail-closed health JSON gate over docs/ontology.",
     "  pnpm dogfood:agent         Claude Code/Codex agent_brief JSON handoff over docs/ontology.",
+    "  pnpm dogfood:agent-graph-db-pack  Shell-pasteable graph DB pack over docs/ontology.",
+    "  pnpm dogfood:agent-setup-gate     Machine-readable agent setup gate with ok/performanceOk over docs/ontology.",
     "  pnpm dogfood:brief         First-contact workspace_brief JSON snapshot over docs/ontology.",
     "  pnpm dogfood:growth        growth_plan JSON snapshot over docs/ontology.",
     "  pnpm dogfood:maintenance   maintenance_plan JSON snapshot over docs/ontology.",

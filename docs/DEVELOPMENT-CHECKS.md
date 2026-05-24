@@ -262,6 +262,7 @@ pnpm test:dogfood:compile-fix
 pnpm dogfood:health
 pnpm dogfood:agent
 pnpm dogfood:agent-graph-db-pack
+pnpm dogfood:agent-setup-gate
 pnpm dogfood:agent-fallbacks
 pnpm dogfood:brief
 pnpm dogfood:growth
@@ -298,7 +299,11 @@ When `pnpm checks:changed` prints direct script-helper tests such as
 the combined `pnpm test:dogfood:script-refs` gate.
 
 `pnpm dogfood:maintenance` snapshots the dogfood vault `maintenance_plan` JSON
-queue without running the full status preflight. `pnpm dogfood:status` runs the
+queue without running the full status preflight. `pnpm dogfood:agent-setup-gate`
+prints the machine-readable agent setup gate for docs/ontology with `ok` and
+`performanceOk`, so connector-less automation can separate broken setup from
+slow local fallback latency without parsing the larger graph DB pack.
+`pnpm dogfood:status` runs the
 cheap human-readable health + workspace-brief + agent-brief + maintenance gates together. It
 still prints workspace-brief, agent-brief, and maintenance when
 health fails, then preserves the first failing exit code, ends with

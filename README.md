@@ -231,6 +231,7 @@ pnpm test:dogfood:compile-fix
 pnpm dogfood:health
 pnpm dogfood:agent
 pnpm dogfood:agent-graph-db-pack
+pnpm dogfood:agent-setup-gate
 pnpm dogfood:agent-fallbacks
 pnpm dogfood:brief
 pnpm dogfood:status

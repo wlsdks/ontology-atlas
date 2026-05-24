@@ -94,6 +94,7 @@ pnpm test:dogfood:compile-fix
 pnpm dogfood:health
 pnpm dogfood:agent
 pnpm dogfood:agent-graph-db-pack
+pnpm dogfood:agent-setup-gate
 pnpm dogfood:agent-fallbacks
 pnpm dogfood:brief
 pnpm dogfood:growth
@@ -180,7 +181,7 @@ with `[dogfood:compile-fix] docs/ontology unchanged`,
 `test:dogfood:compile-fix` checks that idempotence guard without invoking the full dogfood suite,
 `dogfood:health` is the shortest root-checkout fail-closed health JSON gate, `dogfood:agent` is
 the shortest Claude Code/Codex handoff JSON snapshot, `dogfood:agent-graph-db-pack` prints
-the shell-pasteable graph DB pack for docs/ontology, including the machine-readable fallback self-check before the scan commands, `dogfood:agent-fallbacks` runs
+the shell-pasteable graph DB pack for docs/ontology, including the machine-readable fallback self-check before the scan commands, `dogfood:agent-setup-gate` prints the machine-readable agent setup gate for docs/ontology with `ok` and `performanceOk`, `dogfood:agent-fallbacks` runs
 the generated handoff CLI fallback commands against docs/ontology, `dogfood:brief` is
 the shortest root-checkout first-contact JSON snapshot, `dogfood:growth` is the
 shortest root-checkout growth_plan JSON snapshot, `dogfood:maintenance` is the
