@@ -40,6 +40,9 @@ adding starter markdown and without overwriting stale existing configs.
 Its terminal and JSON output also point back to this guide
 (`docs/AGENT-GRAPH-WORKFLOW.md`), so CLI-only setup logs still tell a human
 where to read the MCP, graph DB, and verification differences.
+The same guide path is included in `agent-brief --prompt` and
+`agent-brief --graph-db-pack`, so the agent handoff and connector-less graph
+query script carry the explanation forward after setup.
 
 ## What MCP Adds
 

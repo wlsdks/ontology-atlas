@@ -4762,6 +4762,7 @@ await test('agent-brief --prompt — prints only the copyable handoff prompt', a
     assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /^Use the oh-my-ontology MCP server/);
+    assert.match(clean, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
     assert.match(clean, /Run these first-contact MCP calls in order:/);
     assert.match(clean, /CLI fallback commands when the MCP connector is unavailable:/);
     assert.match(clean, /Graph DB query pack for local markdown graph scans:/);
@@ -4791,6 +4792,7 @@ await test('agent-brief --graph-db-pack — prints only executable graph DB CLI 
     const clean = stripAnsi(r.stdout);
     const vaultPath = escapeRegExp(root);
     assert.match(clean, /^# oh-my-ontology Graph DB CLI pack/);
+    assert.match(clean, /# Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md explains CLI-only use, MCP-connected use, graph DB differences, and verification checks\./);
     assert.match(clean, /# Self-check first: Claude Code\/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, concurrency, wallMs, slow, commands\[\]\.timedOut, commands\[\]\.slow, and slowest\.elapsedMs\./);
     assert.match(clean, new RegExp(`oh-my-ontology agent-brief ${vaultPath} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`));
     assert.match(clean, /# The selected vault path is already inserted/);

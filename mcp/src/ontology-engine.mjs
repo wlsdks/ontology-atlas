@@ -4351,6 +4351,7 @@ function buildAgentBriefHandoffPrompt(brief) {
   return [
     'Use the oh-my-ontology MCP server as the shared codebase graph memory before editing.',
     `Current readiness: ${brief.readiness.status} ${brief.readiness.score}/100; graph ${brief.graph.nodes ?? 0} nodes, ${brief.graph.edges ?? 0} edges; status ${brief.status}.`,
+    'Feature guide: docs/AGENT-GRAPH-WORKFLOW.md explains CLI-only use, MCP-connected use, graph DB differences, graph query packs, and verification checks.',
     '',
     'Run these first-contact MCP calls in order:',
     firstCalls,

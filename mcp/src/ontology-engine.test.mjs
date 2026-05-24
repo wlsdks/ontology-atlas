@@ -1802,6 +1802,7 @@ describe('queryCompiledOntology', () => {
     const relationCall = result.firstCalls.find((call) => call.arguments.operation === 'relation_check');
 
     assert.match(result.handoffPrompt, /oh-my-ontology MCP server/);
+    assert.match(result.handoffPrompt, /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
     assert.match(result.handoffPrompt, /first-contact MCP calls/i);
     assert.match(result.handoffPrompt, /Graph DB query pack for local markdown graph scans/);
     assert.match(result.handoffPrompt, /MATCH \(n:capability\) WHERE degree\(n\) >= 2/);

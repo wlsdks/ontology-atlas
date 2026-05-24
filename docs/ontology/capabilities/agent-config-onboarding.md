@@ -80,6 +80,9 @@ query pack, 그리고 실제 dogfood vault 검증 결과를 한 번에 설명해
 `agent-setup` 의 터미널 출력과 `--json` 결과도 같은 guide 경로와 설명을 노출하므로,
 Web UI 를 열지 않고 CLI 만 쓰는 사용자의 setup log 나 자동화 결과에도 기능 문서
 진입점이 남는다.
+`agent-brief --prompt` 와 `agent-brief --graph-db-pack` 도 같은 guide 경로를 포함해,
+setup 이후 agent handoff prompt 와 connector-less graph DB-style script 에서도
+사람이 다시 기능 문서로 돌아갈 수 있다.
 자동화 gate 는 `oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`
 단일 명령을 보여주고 복사한다. Claude Code / Codex 세션은 이 JSON 의 `ok`, `failed`,
 `performanceOk`, `timeoutMs`, `slowThresholdMs`, `concurrency`, `wallMs`, `slow`, `commands[].timedOut`,
