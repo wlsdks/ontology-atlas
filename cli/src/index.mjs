@@ -104,6 +104,8 @@ ${COLORS.bold}Graph-level commands${COLORS.reset} ${COLORS.dim}(R15 — wraps th
        --type T --from-kind K --plan --json   ${COLORS.dim}edge pattern rows + totalMatches${COLORS.reset}
   npx oh-my-ontology domain-matrix [vault]    Domain coupling matrix — cross-domain edges + examples
        --project SLUG --limit N --json         ${COLORS.dim}scope to one project containment tree${COLORS.reset}
+  npx oh-my-ontology schema [vault]           Relation schema patterns for traversal/write preflight
+       --limit N --json
   npx oh-my-ontology compile [vault]         Deterministic graph compile + optional reorder
        --summary --fix --json                 ${COLORS.dim}hash/counts · canonicalize relation arrays${COLORS.reset}
   npx oh-my-ontology overview [vault]         Vault first-contact dashboard (counts + 분포 + 허브)

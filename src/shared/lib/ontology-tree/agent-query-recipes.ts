@@ -282,6 +282,10 @@ export function formatAgentQueryArgumentsCliCommand(args: Record<string, unknown
       return "oh-my-ontology workspace-brief [vault]";
     case "health":
       return "oh-my-ontology health [vault]";
+    case "schema":
+      return withFlags("oh-my-ontology schema [vault]", [
+        positiveFlag("--limit", args.limit),
+      ]);
     case "components":
       return withFlags("oh-my-ontology components [vault]", [
         positiveFlag("--limit", args.limit),

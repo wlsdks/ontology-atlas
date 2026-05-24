@@ -581,6 +581,9 @@ describe("buildAgentQueryRecipes", () => {
       "pattern_walk",
       "project_map",
     ]);
+    expect(formatAgentQueryCallCliCommand(playbooks[3]!.payloads[0]!)).toBe(
+      "oh-my-ontology schema [vault] --limit 20",
+    );
     expect(playbooks[3]?.payloads[1]?.arguments).toMatchObject({
       operation: "query_plan",
       targetOperation: "all_paths",

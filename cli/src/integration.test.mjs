@@ -4097,6 +4097,27 @@ await test('topological-order — prints prerequisite-first dependency order', a
   }
 });
 
+await test('schema — prints relation patterns for traversal and write preflight', async () => {
+  const root = await buildGraphFixture();
+  try {
+    const r = await run(['schema', root, '--limit=3']);
+    assert.equal(r.code, 0, `stdout: ${r.stdout}\nstderr: ${r.stderr}`);
+    const clean = stripAnsi(r.stdout);
+    assert.match(clean, /relation schema/);
+    assert.match(clean, /domain\s+--capabilities-->\s+capability|capability\s+--domain-->\s+domain/);
+    assert.match(clean, /relation-check <from> <to> <type>/);
+
+    const json = await run(['schema', root, '--json', '--limit=2']);
+    assert.equal(json.code, 0, `stdout: ${json.stdout}\nstderr: ${json.stderr}`);
+    const data = JSON.parse(json.stdout);
+    assert.equal(data.operation, 'schema');
+    assert.equal(data.patterns.length <= 2, true);
+    assert.equal(data.patterns.every((pattern) => Number.isInteger(pattern.count)), true);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('workspace-brief — fail severity nextActions make the CLI fail', async () => {
   const root = buildCycleFixture();
   try {
