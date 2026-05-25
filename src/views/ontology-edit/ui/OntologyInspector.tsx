@@ -26,9 +26,12 @@ const FADE_MOTION = {
  * - 미선택: 안내 placeholder
  */
 export type VaultArrayKey =
+  | "domains"
   | "capabilities"
   | "elements"
   | "dependencies"
+  | "contains"
+  | "describes"
   | "relates";
 
 export type VaultLiteralKey = "description" | "domain";
@@ -40,9 +43,12 @@ export interface VaultSelected {
   /** V1.2 vault-adaptation — frontmatter scalar literals. */
   description: string;
   domain: string;
+  domains: string[];
   capabilities: string[];
   elements: string[];
   dependencies: string[];
+  contains: string[];
+  describes: string[];
   relates: string[];
 }
 
@@ -469,18 +475,26 @@ function VaultDetail({
       ) : null}
       {!readOnly && onEditArrayKey ? (
         <div className="flex flex-col gap-3">
-          {(["capabilities", "elements", "dependencies", "relates"] as const).map(
-            (key) => (
-              <ArrayKeyEditor
-                t={t}
-                key={key}
-                fieldKey={key}
-                values={node[key]}
-                onChange={(next) => onEditArrayKey(node.slug, key, next)}
-                disabled={saving}
-              />
-            ),
-          )}
+          {(
+            [
+              "domains",
+              "capabilities",
+              "elements",
+              "dependencies",
+              "contains",
+              "describes",
+              "relates",
+            ] as const
+          ).map((key) => (
+            <ArrayKeyEditor
+              t={t}
+              key={key}
+              fieldKey={key}
+              values={node[key]}
+              onChange={(next) => onEditArrayKey(node.slug, key, next)}
+              disabled={saving}
+            />
+          ))}
         </div>
       ) : readOnly ? (
         <ReadOnlyArraySummary t={t} node={node} />
@@ -537,12 +551,18 @@ function literalLabel(t: InspectorTranslator, key: VaultLiteralKey): string {
 
 function arrayLabel(t: InspectorTranslator, key: VaultArrayKey): string {
   switch (key) {
+    case "domains":
+      return t("arrayDomains");
     case "capabilities":
       return t("arrayCapabilities");
     case "elements":
       return t("arrayElements");
     case "dependencies":
       return t("arrayDependencies");
+    case "contains":
+      return t("arrayContains");
+    case "describes":
+      return t("arrayDescribes");
     case "relates":
       return t("arrayRelates");
   }
@@ -755,7 +775,15 @@ function ReadOnlyArraySummary({
   node: VaultSelected;
 }) {
   const sections: Array<{ key: VaultArrayKey; values: string[] }> = (
-    ["capabilities", "elements", "dependencies", "relates"] as const
+    [
+      "domains",
+      "capabilities",
+      "elements",
+      "dependencies",
+      "contains",
+      "describes",
+      "relates",
+    ] as const
   )
     .map((key) => ({ key, values: node[key] }))
     .filter((s) => s.values.length > 0);

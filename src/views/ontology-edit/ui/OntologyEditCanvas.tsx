@@ -196,7 +196,7 @@ export function OntologyEditCanvas({
   const edgeLabelOf = useCallback(
     (key: string) => {
       try {
-        return tEdges(key as 'capabilities' | 'elements' | 'dependencies' | 'relates' | 'contains' | 'describes');
+        return tEdges(key as 'domains' | 'capabilities' | 'elements' | 'dependencies' | 'relates' | 'contains' | 'describes');
       } catch {
         return key;
       }
@@ -314,6 +314,24 @@ export function OntologyEditCanvas({
     setLocalNodes((current) => applyNodeChanges(changes, current));
   }, []);
   const allNodes = localNodes;
+  const [miniMapReady, setMiniMapReady] = useState(false);
+  const [showMiniMap, setShowMiniMap] = useState(false);
+
+  useEffect(() => {
+    if (allNodes.length === 0) return;
+    const frame = window.requestAnimationFrame(() => {
+      setMiniMapReady(true);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [allNodes.length]);
+
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 768px)");
+    const sync = () => setShowMiniMap(query.matches);
+    sync();
+    query.addEventListener("change", sync);
+    return () => query.removeEventListener("change", sync);
+  }, []);
 
   const allEdges: Edge[] = useMemo(() => {
     // ephemeral edge — amber alpha (warning amber, hub amber 와 구분되는
@@ -516,34 +534,36 @@ export function OntologyEditCanvas({
         {/* MiniMap — 노드 많아질 때 빠른 navigation. 헌장 §11 호환:
             인디고 alpha + 무채색 alpha mask. ephemeral 은 amber 로 vault
             와 차별. 좌하단 — Controls (우하단) 와 분리. */}
-        <MiniMap
-          position="bottom-right"
-          ariaLabel={t("minimapAriaLabel")}
-          pannable
-          zoomable
-          maskColor="var(--color-overlay-3)"
-          style={{
-            background: "var(--color-panel)",
-            border: "1px solid var(--color-border-soft)",
-            width: 160,
-            height: 96,
-            marginBottom: 56,
-          }}
-          nodeColor={(node) => {
-            const data = node.data as
-              | { ephemeral?: boolean; domainSlug?: string | null }
-              | undefined;
-            if (data?.ephemeral) return "rgba(255, 179, 71, 0.78)";
-            // 도메인 tint 가 미니맵 노드에도 반영되어, 같은 hue 끼리 모여
-            // 있는 게 미니맵 한눈 navigation 의 단서가 됨.
-            if (typeof data?.domainSlug === "string" && data.domainSlug) {
-              return resolveDomainTint(data.domainSlug).accent;
-            }
-            return "rgba(139, 151, 255, 0.78)";
-          }}
-          nodeStrokeColor="rgba(14, 16, 22, 0.85)"
-          nodeStrokeWidth={2}
-        />
+        {showMiniMap && allNodes.length > 0 && miniMapReady ? (
+          <MiniMap
+            position="bottom-right"
+            ariaLabel={t("minimapAriaLabel")}
+            pannable
+            zoomable
+            maskColor="var(--color-overlay-3)"
+            style={{
+              background: "var(--color-panel)",
+              border: "1px solid var(--color-border-soft)",
+              width: 160,
+              height: 96,
+              marginBottom: 56,
+            }}
+            nodeColor={(node) => {
+              const data = node.data as
+                | { ephemeral?: boolean; domainSlug?: string | null }
+                | undefined;
+              if (data?.ephemeral) return "rgba(255, 179, 71, 0.78)";
+              // 도메인 tint 가 미니맵 노드에도 반영되어, 같은 hue 끼리 모여
+              // 있는 게 미니맵 한눈 navigation 의 단서가 됨.
+              if (typeof data?.domainSlug === "string" && data.domainSlug) {
+                return resolveDomainTint(data.domainSlug).accent;
+              }
+              return "rgba(139, 151, 255, 0.78)";
+            }}
+            nodeStrokeColor="rgba(14, 16, 22, 0.85)"
+            nodeStrokeWidth={2}
+          />
+        ) : null}
       </ReactFlow>
       {allNodes.length === 0 ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">

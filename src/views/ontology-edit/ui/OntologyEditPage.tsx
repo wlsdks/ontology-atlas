@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { Info, Maximize2, Minimize2, Wand2 } from "lucide-react";
@@ -23,6 +24,16 @@ import { downloadGraphML, downloadJsonLd } from "../lib/export-graph";
 import { BlastRadiusConfirm } from "./BlastRadiusConfirm";
 import type { VaultBacklinkMatch } from "../lib/find-vault-backlinks";
 import { findVaultBacklinks } from "../lib/find-vault-backlinks";
+import {
+  buildVaultRelationPatch,
+  inferVaultRelationKey,
+  preflightVaultRelation,
+  readVaultRelationValues,
+  type VaultRelationKey,
+  type VaultRelationProposal,
+} from "../lib/relation-proposal";
+import { resolveBuilderQueryNodeSlug } from "../lib/resolve-builder-query-node";
+import { RelationWriteConfirm } from "./RelationWriteConfirm";
 
 /**
  * 빌더 ephemeral 노드 → `${kind}s/${slug}.md` 로 vault 직접 작성.
@@ -50,7 +61,7 @@ function buildVaultMarkdown(args: {
   return lines.join("\n");
 }
 import { OntologyKindPalette } from "./OntologyKindPalette";
-import { OntologyInspector } from "./OntologyInspector";
+import { OntologyInspector, type VaultArrayKey } from "./OntologyInspector";
 import { BuilderOnboarding } from "./BuilderOnboarding";
 
 /**
@@ -96,6 +107,7 @@ function CanvasSkeleton() {
 export function OntologyEditPage() {
   const t = useTranslations("ontologyPages.edit.page");
   const tKinds = useTranslations("kinds");
+  const searchParams = useSearchParams();
   const dataSourceMode = useDataSourceMode();
   const vault = useLocalVault();
 
@@ -176,6 +188,10 @@ export function OntologyEditPage() {
     title?: string;
     backlinks: VaultBacklinkMatch[];
   } | null>(null);
+  const [pendingRelation, setPendingRelation] =
+    useState<VaultRelationProposal | null>(null);
+  const [pendingRelationKey, setPendingRelationKey] =
+    useState<VaultRelationKey>("relates");
   // Clear-all 두 단계 confirm — 첫 클릭에 confirming=true (3s), 같은 버튼
   // 다시 클릭 시 실제 clear. 실수로 임시 작업 다 날아가는 회귀 방지.
   const [clearConfirming, setClearConfirming] = useState(false);
@@ -299,10 +315,28 @@ export function OntologyEditPage() {
       domain: asString(fm.domain),
       capabilities: asStrings(fm.capabilities),
       elements: asStrings(fm.elements),
-      dependencies: asStrings(fm.dependencies),
+      dependencies: readVaultRelationValues(fm, "dependencies"),
       relates: asStrings(fm.relates),
+      domains: asStrings(fm.domains),
+      contains: asStrings(fm.contains),
+      describes: asStrings(fm.describes),
     };
   }, [selectedId, ephemeralSelected, docsBySlug]);
+
+  const queryNodeId = searchParams.get("node");
+  const resolvedQueryNodeId = useMemo(
+    () => resolveBuilderQueryNodeSlug(queryNodeId, effectiveManifest.docs),
+    [effectiveManifest.docs, queryNodeId],
+  );
+  useEffect(() => {
+    if (!resolvedQueryNodeId) return;
+    if (selectedId === resolvedQueryNodeId) return;
+    window.queueMicrotask(() => {
+      setSelectedId(resolvedQueryNodeId);
+      setFocusNodeId(resolvedQueryNodeId);
+      setFocusToken((n) => n + 1);
+    });
+  }, [resolvedQueryNodeId, selectedId]);
 
   // 선택된 vault 노드를 frontmatter array 로 가리키는 다른 노드 list.
   // ontology 탐색 핵심 — '이 노드를 누가 사용하나'. delete 시 backlinks
@@ -311,6 +345,14 @@ export function OntologyEditPage() {
     if (!vaultSelected) return [];
     return findVaultBacklinks(effectiveManifest, vaultSelected.slug);
   }, [vaultSelected, effectiveManifest]);
+
+  const pendingRelationPreflight = useMemo(
+    () =>
+      pendingRelation
+        ? preflightVaultRelation(effectiveManifest, pendingRelation, pendingRelationKey)
+        : null,
+    [effectiveManifest, pendingRelation, pendingRelationKey],
+  );
 
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const renameVaultDoc = useCallback(
@@ -337,20 +379,22 @@ export function OntologyEditPage() {
     [getExpectedMtime, showVaultWriteError, t, toast, vault],
   );
 
-  // vault frontmatter array 키 (capabilities/elements/dependencies/
-  // relates) 편집. 빈 배열은 키 자체를 제거 (null) — frontmatter 깨끗.
+  // vault graph array 키 편집. 빈 배열은 키 자체를 제거 (null) —
+  // frontmatter 깨끗.
   const editVaultArrayKey = useCallback(
     async (
       slug: string,
-      key: "capabilities" | "elements" | "dependencies" | "relates",
+      key: VaultArrayKey,
       next: string[],
     ) => {
       try {
+        const patch =
+          key === "dependencies"
+            ? { dependencies: next.length === 0 ? null : next, depends_on: null }
+            : { [key]: next.length === 0 ? null : next };
         await vault.updateFrontmatter(
           slug,
-          {
-            [key]: next.length === 0 ? null : next,
-          },
+          patch,
           { expectedMtime: getExpectedMtime(slug) },
         );
       } catch (err) {
@@ -360,63 +404,85 @@ export function OntologyEditPage() {
     [getExpectedMtime, showVaultWriteError, t, vault],
   );
 
-  // 캔버스에서 vault A 핸들 → vault B 드래그 시 호출. source 의
-  // frontmatter 에 적절한 array key 로 target slug 추가 — 인스펙터 array
-  // editor 와 동일 진실원, ERD 빌더의 자연스러운 관계 추가 흐름.
-  // kind pair 별 의미: project↔project=dependencies, domain→capability=
-  // capabilities, capability→element=elements, 그 외=relates.
-  const inferEdgeKey = useCallback(
-    (
-      sourceKind: string,
-      targetKind: string,
-    ): "capabilities" | "elements" | "dependencies" | "relates" => {
-      if (sourceKind === "project" && targetKind === "project") return "dependencies";
-      if (sourceKind === "domain" && targetKind === "capability") return "capabilities";
-      if (sourceKind === "capability" && targetKind === "element") return "elements";
-      return "relates";
-    },
-    [],
-  );
-  const connectVaultEdge = useCallback(
+  const writeVaultRelation = useCallback(
     async (
       sourceSlug: string,
       targetSlug: string,
-      sourceKind: string,
-      targetKind: string,
-    ) => {
+      key: VaultRelationKey,
+    ): Promise<boolean> => {
       // dogfood vault (read-only) 에선 patch 불가 — 안내 토스트.
       if (!hasLiveVault) {
         toast.show(t("toastVaultEdgeDemo"), "error");
-        return;
+        return false;
       }
-      const key = inferEdgeKey(sourceKind, targetKind);
       const sourceDoc = effectiveManifest.docs.find((d) => d.slug === sourceSlug);
-      const existing = sourceDoc?.frontmatter[key];
-      const currentArray = Array.isArray(existing)
-        ? existing.filter((v): v is string => typeof v === "string")
-        : [];
+      const relationPatch = buildVaultRelationPatch(
+        (sourceDoc?.frontmatter ?? {}) as Record<string, unknown>,
+        key,
+        targetSlug,
+      );
       // 자기 자신 또는 중복 reference 무시.
-      const targetRef = targetSlug;
-      if (sourceSlug === targetSlug || currentArray.includes(targetRef)) {
+      if (sourceSlug === targetSlug || relationPatch.alreadyExists) {
         toast.show(t("toastVaultEdgeDuplicate"), "info");
-        return;
+        return true;
       }
-      const next = [...currentArray, targetRef];
       try {
         await vault.updateFrontmatter(
           sourceSlug,
-          { [key]: next },
+          relationPatch.patch,
           { expectedMtime: getExpectedMtime(sourceSlug) },
         );
         toast.show(
           t("toastVaultEdgeAdded", { key, source: sourceSlug, target: targetSlug }),
           "success",
         );
+        return true;
       } catch (err) {
         showVaultWriteError(err, t("toastSaveFailed"));
+        return false;
       }
     },
-    [effectiveManifest, getExpectedMtime, hasLiveVault, inferEdgeKey, showVaultWriteError, t, toast, vault],
+    [effectiveManifest, getExpectedMtime, hasLiveVault, showVaultWriteError, t, toast, vault],
+  );
+
+  // 캔버스에서 vault A 핸들 → vault B 드래그 시 호출. 바로 쓰지 않고
+  // inferred relation key, 대안, frontmatter write scope 를 먼저 보여준다.
+  const connectVaultEdge = useCallback(
+    (
+      sourceSlug: string,
+      targetSlug: string,
+      sourceKind: string,
+      targetKind: string,
+    ) => {
+      if (!hasLiveVault) {
+        toast.show(t("toastVaultEdgeDemo"), "error");
+        return;
+      }
+      if (sourceSlug === targetSlug) {
+        toast.show(t("toastVaultEdgeDuplicate"), "info");
+        return;
+      }
+      const inferredKey = inferVaultRelationKey(sourceKind, targetKind);
+      const sourceDoc = docsBySlug.get(sourceSlug);
+      if (
+        readVaultRelationValues(
+          (sourceDoc?.frontmatter ?? {}) as Record<string, unknown>,
+          inferredKey,
+        ).includes(targetSlug)
+      ) {
+        toast.show(t("toastVaultEdgeDuplicate"), "info");
+        return;
+      }
+      setPendingRelation({
+        sourceSlug,
+        targetSlug,
+        sourceKind,
+        targetKind,
+        inferredKey,
+      });
+      setPendingRelationKey(inferredKey);
+    },
+    [docsBySlug, hasLiveVault, t, toast],
   );
   /**
    * Round 4 cut I — ephemeral edge "Save" 칩 클릭 orchestrator.
@@ -501,11 +567,10 @@ export function OntologyEditPage() {
       if (!sourceInfo) return;
       const targetInfo = await resolveEndpoint(edge.target);
       if (!targetInfo) return;
-      await connectVaultEdge(
+      await writeVaultRelation(
         sourceInfo.slug,
         targetInfo.slug,
-        sourceInfo.kind,
-        targetInfo.kind,
+        inferVaultRelationKey(sourceInfo.kind, targetInfo.kind),
       );
       removeEphemeralEdge(edgeId);
     },
@@ -518,7 +583,7 @@ export function OntologyEditPage() {
       vault,
       removeNode,
       docsBySlug,
-      connectVaultEdge,
+      writeVaultRelation,
       removeEphemeralEdge,
     ],
   );
@@ -577,6 +642,16 @@ export function OntologyEditPage() {
     },
     [vault],
   );
+
+  const confirmPendingRelation = useCallback(async () => {
+    if (!pendingRelation) return;
+    const { sourceSlug, targetSlug } = pendingRelation;
+    const key = pendingRelationKey;
+    const relationWritten = await writeVaultRelation(sourceSlug, targetSlug, key);
+    if (relationWritten) {
+      setPendingRelation(null);
+    }
+  }, [pendingRelation, pendingRelationKey, writeVaultRelation]);
 
   // Modal 의 confirm 버튼이 눌린 후 실제 delete 수행.
   const confirmPendingDelete = useCallback(async () => {
@@ -885,6 +960,149 @@ export function OntologyEditPage() {
             <BuilderOnboarding
               empty={ephemeralNodes.length === 0 && ephemeralEdges.length === 0}
             />
+            {pendingRelation && pendingRelationPreflight ? (
+              <RelationWriteConfirm
+                proposal={pendingRelation}
+                selectedKey={pendingRelationKey}
+                preflight={pendingRelationPreflight}
+                onSelectKey={setPendingRelationKey}
+                onCancel={() => setPendingRelation(null)}
+                onConfirm={() => void confirmPendingRelation()}
+                labels={{
+                  title: t("relationConfirm.title"),
+                  body: t("relationConfirm.body", {
+                    sourceKind: pendingRelation.sourceKind,
+                    targetKind: pendingRelation.targetKind,
+                    inferredKey: pendingRelation.inferredKey,
+                  }),
+                  inferred: t("relationConfirm.inferred"),
+                  inferredKey: t("relationConfirm.inferredKey"),
+                  inferenceReason: t("relationConfirm.inferenceReason"),
+                  alternatives: t("relationConfirm.alternatives"),
+                  writeScope: t("relationConfirm.writeScope"),
+                  writeFile: t("relationConfirm.writeFile"),
+                  writeChangedFiles: t("relationConfirm.writeChangedFiles"),
+                  writeUnchangedFiles: t("relationConfirm.writeUnchangedFiles"),
+                  writeBoundary: t("relationConfirm.writeBoundary"),
+                  writeBoundaryValue: t("relationConfirm.writeBoundaryValue"),
+                  writeKey: t("relationConfirm.writeKey"),
+                  writeMeaning: t("relationConfirm.writeMeaning"),
+                  writeMutation: t("relationConfirm.writeMutation"),
+                  writeFrontmatterPatch: t("relationConfirm.writeFrontmatterPatch"),
+                  mcpWriteArgs: t("relationConfirm.mcpWriteArgs"),
+                  graphEffect: t("relationConfirm.graphEffect"),
+                  graphEdge: t("relationConfirm.graphEdge"),
+                  graphRelation: t("relationConfirm.graphRelation"),
+                  graphSurfaces: t("relationConfirm.graphSurfaces"),
+                  graphSurfacesValue: t("relationConfirm.graphSurfacesValue"),
+                  graphAlternativeWarning: t("relationConfirm.graphAlternativeWarning"),
+                  postSaveGraphHandoff: t(
+                    "relationConfirm.postSaveGraphHandoff",
+                  ),
+                  postSaveGraphHandoffBody: t(
+                    "relationConfirm.postSaveGraphHandoffBody",
+                  ),
+                  postSavePathHandoff: t(
+                    "relationConfirm.postSavePathHandoff",
+                  ),
+                  postSaveSourceFocus: t("relationConfirm.postSaveSourceFocus"),
+                  postSaveTargetFocus: t("relationConfirm.postSaveTargetFocus"),
+                  saveChecklist: t("relationConfirm.saveChecklist"),
+                  saveChecklistSelectedKey: t(
+                    "relationConfirm.saveChecklistSelectedKey",
+                  ),
+                  saveChecklistPreflight: t(
+                    "relationConfirm.saveChecklistPreflight",
+                  ),
+                  saveChecklistTraversal: t(
+                    "relationConfirm.saveChecklistTraversal",
+                  ),
+                  saveChecklistSyncGate: t(
+                    "relationConfirm.saveChecklistSyncGate",
+                  ),
+                  saveChecklistReady: t("relationConfirm.saveChecklistReady"),
+                  saveChecklistReview: t("relationConfirm.saveChecklistReview"),
+                  saveChecklistBlocked: t("relationConfirm.saveChecklistBlocked"),
+                  saveChecklistSyncRequired: t(
+                    "relationConfirm.saveChecklistSyncRequired",
+                  ),
+                  preflight: t("relationConfirm.preflight"),
+                  preflightEvidence: t("relationConfirm.preflightEvidence"),
+                  preflightExact: t("relationConfirm.preflightExact"),
+                  preflightInverse: t("relationConfirm.preflightInverse"),
+                  preflightPath: t("relationConfirm.preflightPath"),
+                  preflightClear: t("relationConfirm.preflightClear"),
+                  preflightPresent: t("relationConfirm.preflightPresent"),
+                  preflightActionSafe: t("relationConfirm.preflightActionSafe"),
+                  preflightActionReview: t(
+                    "relationConfirm.preflightActionReview",
+                  ),
+                  preflightActionBlocked: t(
+                    "relationConfirm.preflightActionBlocked",
+                  ),
+                  traversalCheck: t("relationConfirm.traversalCheck"),
+                  traversalCheckBody: t("relationConfirm.traversalCheckBody"),
+                  traversalContract: t("relationConfirm.traversalContract"),
+                  traversalContractBody: t("relationConfirm.traversalContractBody"),
+                  agentCheck: t("relationConfirm.agentCheck"),
+                  postSaveCheck: t("relationConfirm.postSaveCheck"),
+                  path: t("relationConfirm.path"),
+                  copyMcpPreflight: t("relationConfirm.copyMcpPreflight"),
+                  copyMcpPreflightCopied: t(
+                    "relationConfirm.copyMcpPreflightCopied",
+                  ),
+                  copyMcpPreflightFailed: t(
+                    "relationConfirm.copyMcpPreflightFailed",
+                  ),
+                  copyPostSaveSyncGate: t("relationConfirm.copyPostSaveSyncGate"),
+                  copyPostSaveSyncGateCopied: t(
+                    "relationConfirm.copyPostSaveSyncGateCopied",
+                  ),
+                  copyPostSaveSyncGateFailed: t(
+                    "relationConfirm.copyPostSaveSyncGateFailed",
+                  ),
+                  copyMcpWrite: t("relationConfirm.copyMcpWrite"),
+                  copyMcpWriteCopied: t("relationConfirm.copyMcpWriteCopied"),
+                  copyMcpWriteFailed: t("relationConfirm.copyMcpWriteFailed"),
+                  cancel: t("relationConfirm.cancel"),
+                  confirm: t("relationConfirm.confirm"),
+                  copyPacket: t("relationConfirm.copyPacket"),
+                  copyPacketCopied: t("relationConfirm.copyPacketCopied"),
+                  copyPacketFailed: t("relationConfirm.copyPacketFailed"),
+                  closeAriaLabel: t("relationConfirm.closeAriaLabel"),
+                  decisionLabels: {
+                    safe_to_add: t("relationConfirm.decisions.safeToAdd.label"),
+                    skip_existing: t("relationConfirm.decisions.skipExisting.label"),
+                    review_inverse: t("relationConfirm.decisions.reviewInverse.label"),
+                    review_path: t("relationConfirm.decisions.reviewPath.label"),
+                  },
+                  decisionHints: {
+                    safe_to_add: t("relationConfirm.decisions.safeToAdd.hint"),
+                    skip_existing: t("relationConfirm.decisions.skipExisting.hint"),
+                    review_inverse: t("relationConfirm.decisions.reviewInverse.hint"),
+                    review_path: t("relationConfirm.decisions.reviewPath.hint"),
+                  },
+                  relationKeyLabels: {
+                    domains: t("relationConfirm.keys.domains.label"),
+                    capabilities: t("relationConfirm.keys.capabilities.label"),
+                    elements: t("relationConfirm.keys.elements.label"),
+                    dependencies: t("relationConfirm.keys.dependencies.label"),
+                    contains: t("relationConfirm.keys.contains.label"),
+                    describes: t("relationConfirm.keys.describes.label"),
+                    relates: t("relationConfirm.keys.relates.label"),
+                  },
+                  relationKeyHints: {
+                    domains: t("relationConfirm.keys.domains.hint"),
+                    capabilities: t("relationConfirm.keys.capabilities.hint"),
+                    elements: t("relationConfirm.keys.elements.hint"),
+                    dependencies: t("relationConfirm.keys.dependencies.hint"),
+                    contains: t("relationConfirm.keys.contains.hint"),
+                    describes: t("relationConfirm.keys.describes.hint"),
+                    relates: t("relationConfirm.keys.relates.hint"),
+                  },
+                }}
+              />
+            ) : null}
           </div>
           <OntologyInspector
             ephemeralSelected={ephemeralSelected}

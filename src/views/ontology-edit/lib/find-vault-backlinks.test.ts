@@ -90,4 +90,25 @@ describe("findVaultBacklinks", () => {
     );
     expect(result[0].matchedKeys.sort()).toEqual(["capabilities", "relates"]);
   });
+
+  it("domains 와 depends_on alias 도 backlink 로 찾는다", () => {
+    const result = findVaultBacklinks(
+      manifest([
+        makeDoc({
+          slug: "project",
+          frontmatter: { domains: ["domains/auth"] },
+        }),
+        makeDoc({
+          slug: "capabilities/login",
+          frontmatter: { depends_on: ["auth"] },
+        }),
+      ]),
+      "domains/auth",
+    );
+
+    expect(result.map((m) => [m.slug, m.matchedKeys]).sort()).toEqual([
+      ["capabilities/login", ["dependencies"]],
+      ["project", ["domains"]],
+    ]);
+  });
 });

@@ -89,6 +89,7 @@ const CONTAINMENT_KEYS = [
 // 노드가 서로 relates 라도 같은 column 에 머물러야 사선이 폭증하지 않음.
 const RELATION_KEYS = [
   "dependencies",
+  "depends_on",
   "relates",
   "describes",
 ] as const;
@@ -99,6 +100,9 @@ const NEIGHBOR_KEYS = [
 ] as const;
 
 const CONTAINMENT_KEY_SET: ReadonlySet<string> = new Set(CONTAINMENT_KEYS);
+const GRAPH_KEY_ALIASES: Readonly<Record<string, string>> = {
+  depends_on: "dependencies",
+};
 
 type SemanticType = "containment" | "relation";
 
@@ -209,11 +213,12 @@ export function buildVaultGraphFlow(
         const pairKey = `${doc.slug}->${resolved}`;
         if (seenPair.has(pairKey)) continue;
         seenPair.add(pairKey);
+        const canonicalKey = GRAPH_KEY_ALIASES[key] ?? key;
         edgeRecords.push({
           source: doc.slug,
           target: resolved,
-          key,
-          semanticType: semanticTypeOf(key),
+          key: canonicalKey,
+          semanticType: semanticTypeOf(canonicalKey),
         });
       }
     }

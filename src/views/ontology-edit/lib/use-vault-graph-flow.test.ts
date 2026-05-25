@@ -294,6 +294,36 @@ describe("buildVaultGraphFlow", () => {
       semanticType: "relation",
     });
   });
+
+  it("depends_on alias 를 dependencies edge 로 렌더한다", () => {
+    const result = buildVaultGraphFlow(
+      makeManifest([
+        makeDoc({
+          slug: "capabilities/a",
+          frontmatter: {
+            kind: "capability",
+            title: "A",
+            depends_on: ["capabilities/b"],
+          },
+        }),
+        makeDoc({
+          slug: "capabilities/b",
+          frontmatter: { kind: "capability", title: "B" },
+        }),
+      ]),
+    );
+
+    expect(result.edges).toHaveLength(1);
+    expect(result.edges[0]).toMatchObject({
+      id: "capabilities/a--dependencies-->capabilities/b",
+      source: "capabilities/a",
+      target: "capabilities/b",
+      data: {
+        frontmatterKey: "dependencies",
+        semanticType: "relation",
+      },
+    });
+  });
 });
 
 describe("stripTrailingParenthetical", () => {

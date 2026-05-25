@@ -9,13 +9,19 @@ import type { VaultManifest } from "@/entities/docs-vault";
  * 있으면 dangling 위험을 사용자에게 명시하고 confirm 을 한 번 더 받는다.
  */
 const NEIGHBOR_KEYS = [
+  "domains",
   "capabilities",
   "elements",
   "dependencies",
+  "depends_on",
   "relates",
   "contains",
   "describes",
 ] as const;
+
+const NEIGHBOR_KEY_ALIASES: Readonly<Record<string, string>> = {
+  depends_on: "dependencies",
+};
 
 export interface VaultBacklinkMatch {
   slug: string;
@@ -40,7 +46,10 @@ export function findVaultBacklinks(
           typeof v === "string" &&
           (v === targetSlug || v === tail || v.endsWith(`/${tail}`)),
       );
-      if (hit) matchedKeys.push(key);
+      const canonicalKey = NEIGHBOR_KEY_ALIASES[key] ?? key;
+      if (hit && !matchedKeys.includes(canonicalKey)) {
+        matchedKeys.push(canonicalKey);
+      }
     }
     if (matchedKeys.length === 0) continue;
     matches.push({
