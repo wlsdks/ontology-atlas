@@ -180,7 +180,8 @@ bridge tests, runtime doctor, `cli:mcp-verify` against `docs/ontology`, static
 build, packaged-route smoke, app/DMG build, app launch smoke,
 DMG mount/checksum smoke, and temporary install launch smoke;
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the completion
-audit after PR/release work: it checks PR review/merge readiness, required
+audit after PR/release work: it accepts an already merged PR or checks PR
+review/merge readiness, required
 Apple signing/notary secret names, public stable GitHub Release state, and
 public DMG/checksum download verification in one fail-closed pass;
 the hosted download page keeps its first-release availability copy aligned with

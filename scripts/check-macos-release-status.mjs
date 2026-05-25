@@ -138,6 +138,10 @@ function prCheckSummary(pr) {
   return `${passed}/${checks.length} checks successful`;
 }
 
+function prMerged(pr) {
+  return pr.state === "MERGED" || Boolean(pr.mergedAt);
+}
+
 function secretSetHints(repo, names) {
   return names.map((name) => `gh secret set ${name} --repo ${repo} < /path/to/${name}`).join("; ");
 }
@@ -165,7 +169,7 @@ async function main() {
       "--repo",
       options.repo,
       "--json",
-      "mergeStateStatus,reviewDecision,statusCheckRollup,url",
+      "mergeStateStatus,mergedAt,reviewDecision,state,statusCheckRollup,url",
     ], { parseJson: true });
     if (!pr.ok) {
       checks.push(blocked("Pull request", pr.message, `Open https://github.com/${options.repo}/pull/${options.pr} and verify it manually.`));
@@ -174,7 +178,9 @@ async function main() {
       const checksOk = prChecksPassed(value);
       const reviewOk = value.reviewDecision === "APPROVED";
       const mergeOk = value.mergeStateStatus === "CLEAN";
-      if (checksOk && reviewOk && mergeOk) {
+      if (prMerged(value)) {
+        checks.push(ok("Pull request", `PR #${options.pr} is already merged`));
+      } else if (checksOk && reviewOk && mergeOk) {
         checks.push(ok("Pull request", `PR #${options.pr} is merge-ready (${prCheckSummary(value)})`));
       } else {
         checks.push(blocked(

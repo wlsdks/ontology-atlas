@@ -33,6 +33,8 @@ if (args[0] === "auth" && args[1] === "status") {
 }
 if (args[0] === "pr" && args[1] === "view") {
   out({
+    state: scenario.prState ?? "OPEN",
+    mergedAt: scenario.prMergedAt ?? null,
     mergeStateStatus: scenario.prMergeState ?? "CLEAN",
     reviewDecision: scenario.prReviewDecision ?? "APPROVED",
     url: "https://github.com/wlsdks/oh-my-ontology/pull/" + args[2],
@@ -123,6 +125,23 @@ test("desktop release status passes when PR, secrets, and stable release are rea
     assert.match(result.stdout, /· Download assets: skipped by OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1/);
     assert.match(result.stdout, /ready: public macOS release requirements are satisfied/);
   });
+});
+
+test("desktop release status accepts an already merged PR", () => {
+  withFakeGh(
+    {
+      prState: "MERGED",
+      prMergeState: "UNKNOWN",
+      prMergedAt: "2026-05-26T00:00:00Z",
+    },
+    (fakeGhPath) => {
+      const result = runStatus(fakeGhPath);
+
+      assert.equal(result.status, 0, result.stderr);
+      assert.match(result.stdout, /✓ Pull request: PR #274 is already merged/);
+      assert.match(result.stdout, /ready: public macOS release requirements are satisfied/);
+    },
+  );
 });
 
 test("desktop release status help describes the completion audit", () => {

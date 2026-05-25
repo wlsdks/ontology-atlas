@@ -145,9 +145,10 @@ configured yet. Its missing-secret output includes `gh secret set <NAME> --repo
 wlsdks/oh-my-ontology` hints so the operator can move directly from readiness
 failure to secret registration.
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the completion
-audit once the PR and release path are expected to be ready. It checks PR
-review/merge readiness, required Apple release secret names, public stable
-GitHub Release state, and then runs the public DMG/checksum download verifier.
+audit once the PR and release path are expected to be ready. It accepts an
+already merged PR or checks PR review/merge readiness, required Apple release
+secret names, public stable GitHub Release state, and then runs the public
+DMG/checksum download verifier.
 It is intentionally read-only and fail-closed, so the macOS app work is not
 treated as complete while review, secrets, release publication, or public asset
 verification are still blocked.

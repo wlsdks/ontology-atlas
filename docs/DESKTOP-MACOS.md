@@ -291,9 +291,10 @@ secret list is still empty, so a tag push would fail before signing. Merge the
 PR first so GitHub sees `.github/workflows/release-macos.yml` on the default
 branch, then configure the Apple secrets.
 Use `pnpm desktop:release-status -- --pr=274 --tag=v0.1.0` as the completion
-audit before calling the macOS app goal done: it checks PR review/merge
-readiness, required Apple signing/notary secret names, public stable GitHub
-Release state, and then delegates to the public DMG/checksum download verifier.
+audit before calling the macOS app goal done: it accepts an already merged PR or
+checks PR review/merge readiness, required Apple signing/notary secret names,
+public stable GitHub Release state, and then delegates to the public
+DMG/checksum download verifier.
 When it reports missing secrets, set each value through `gh secret set`, for
 example:
 
