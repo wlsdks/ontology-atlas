@@ -1006,6 +1006,12 @@ export function OntologyEditPage() {
                   graphSurfaces: t("relationConfirm.graphSurfaces"),
                   graphSurfacesValue: t("relationConfirm.graphSurfacesValue"),
                   graphAlternativeWarning: t("relationConfirm.graphAlternativeWarning"),
+                  endpointReview: t("relationConfirm.endpointReview"),
+                  endpointReviewBody: t("relationConfirm.endpointReviewBody"),
+                  sourceOntology: t("relationConfirm.sourceOntology"),
+                  targetOntology: t("relationConfirm.targetOntology"),
+                  sourceBuilder: t("relationConfirm.sourceBuilder"),
+                  targetBuilder: t("relationConfirm.targetBuilder"),
                   postSaveGraphHandoff: t(
                     "relationConfirm.postSaveGraphHandoff",
                   ),

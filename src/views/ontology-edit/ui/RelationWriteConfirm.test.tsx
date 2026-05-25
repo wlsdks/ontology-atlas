@@ -69,6 +69,13 @@ const labels = {
   graphSurfaces: "Surfaces",
   graphSurfacesValue: "topology, path, impact, MCP",
   graphAlternativeWarning: "Alternative selected.",
+  endpointReview: "Endpoint review",
+  endpointReviewBody:
+    "Open both endpoints before saving when the concept meaning is uncertain.",
+  sourceOntology: "Source ontology",
+  targetOntology: "Target ontology",
+  sourceBuilder: "Source builder",
+  targetBuilder: "Target builder",
   postSaveGraphHandoff: "Post-save graph handoff",
   postSaveGraphHandoffBody:
     "Open the saved edge in topology before running the sync gate.",
@@ -236,6 +243,28 @@ describe("RelationWriteConfirm", () => {
     expect(screen.getByText("Relation label")).toBeInTheDocument();
     expect(screen.getAllByText("elements").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText("topology, path, impact, MCP")).toBeInTheDocument();
+    expect(screen.getByText("Endpoint review")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Open both endpoints before saving when the concept meaning is uncertain.",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Source ontology" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("/ontology/?node=capabilities%2Fmcp-server"),
+    );
+    expect(screen.getByRole("link", { name: "Target ontology" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("/ontology/?node=elements%2Fmcp-index"),
+    );
+    expect(screen.getByRole("link", { name: "Source builder" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("/ontology/edit/?node=capabilities%2Fmcp-server"),
+    );
+    expect(screen.getByRole("link", { name: "Target builder" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("/ontology/edit/?node=elements%2Fmcp-index"),
+    );
     expect(screen.getByText("Post-save graph handoff")).toBeInTheDocument();
     expect(
       screen.getByText("Open the saved edge in topology before running the sync gate."),

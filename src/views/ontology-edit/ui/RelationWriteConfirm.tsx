@@ -47,6 +47,12 @@ interface RelationWriteConfirmLabels {
   graphSurfaces: string;
   graphSurfacesValue: string;
   graphAlternativeWarning: string;
+  endpointReview: string;
+  endpointReviewBody: string;
+  sourceOntology: string;
+  targetOntology: string;
+  sourceBuilder: string;
+  targetBuilder: string;
   postSaveGraphHandoff: string;
   postSaveGraphHandoffBody: string;
   postSavePathHandoff: string;
@@ -168,6 +174,10 @@ export function RelationWriteConfirm({
     proposal.sourceSlug,
     proposal.targetSlug,
   );
+  const sourceOntologyHref = buildRelationOntologyHref(proposal.sourceSlug);
+  const targetOntologyHref = buildRelationOntologyHref(proposal.targetSlug);
+  const sourceBuilderHref = buildRelationBuilderHref(proposal.sourceSlug);
+  const targetBuilderHref = buildRelationBuilderHref(proposal.targetSlug);
   const sourceTopologyFocusHref = buildRelationTopologyFocusHref(proposal.sourceSlug);
   const targetTopologyFocusHref = buildRelationTopologyFocusHref(proposal.targetSlug);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
@@ -496,6 +506,40 @@ export function RelationWriteConfirm({
             {labels.graphAlternativeWarning}
           </p>
         ) : null}
+        <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.08)] p-2">
+          <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+            {labels.endpointReview}
+          </p>
+          <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {labels.endpointReviewBody}
+          </p>
+          <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+            <Link
+              href={sourceOntologyHref}
+              className="inline-flex h-7 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-center text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+            >
+              {labels.sourceOntology}
+            </Link>
+            <Link
+              href={targetOntologyHref}
+              className="inline-flex h-7 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-center text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+            >
+              {labels.targetOntology}
+            </Link>
+            <Link
+              href={sourceBuilderHref}
+              className="inline-flex h-7 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-center text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+            >
+              {labels.sourceBuilder}
+            </Link>
+            <Link
+              href={targetBuilderHref}
+              className="inline-flex h-7 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] px-2 text-center text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+            >
+              {labels.targetBuilder}
+            </Link>
+          </div>
+        </div>
         <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.08)] p-2">
           <p className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
             {labels.postSaveGraphHandoff}
