@@ -275,14 +275,16 @@ if (
 if (
   landingPage.includes("MacosDownloadLink") &&
   downloadPage.includes("MacosDownloadLink") &&
+  downloadPage.includes("GITHUB_REPOSITORY_URL") &&
+  downloadPage.includes("sourceCta") &&
   macosDownloadLink.includes("GITHUB_RELEASES_URL") &&
   !macosDownloadLink.includes("releases/latest") &&
   !macosDownloadLink.includes("api.github.com")
 ) {
-  pass("hosted download CTAs open GitHub Releases without a broken latest-release dependency");
+  pass("hosted download CTAs separate the GitHub Releases download path from the source-code link without a broken latest-release dependency");
 } else {
   fail(
-    "hosted landing/download CTAs must avoid a broken latest-release URL before a public macOS DMG release exists",
+    "hosted landing/download CTAs must avoid a broken latest-release URL before a public macOS DMG release exists and the download page must not duplicate the release CTA as its secondary action",
   );
 }
 

@@ -166,11 +166,12 @@ for a macOS prototype:
   release is made public; if GitHub hides the draft from tag lookup, the
   verifier falls back to the releases list and matches the requested `tag_name`
   before byte-checking assets.
-- The hosted landing and download CTAs open the GitHub Releases page instead of
-  depending on a `/releases/latest` URL that is broken before the first public
-  macOS release exists. The secondary CTA still sends users to `/download/`, a
-  static installation guide, instead of steering new users into the web
-  workbench.
+- The hosted landing and primary download CTAs open the GitHub Releases page
+  instead of depending on a `/releases/latest` URL that is broken before the
+  first public macOS release exists. The landing secondary CTA still sends
+  users to `/download/`, a static installation guide, and the download page
+  secondary CTA opens the source repository instead of duplicating the release
+  action or steering new users into the web workbench.
 - `pnpm desktop:release-preflight` is the local operator shortcut before a
   public tag: it runs readiness checks, docs-vault freshness, desktop checker
   tests, native bridge tests, runtime doctor, `cli:mcp-verify` against the

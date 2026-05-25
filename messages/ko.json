@@ -106,7 +106,7 @@
     "title": "한 번 설치하고, 내 로컬 vault 에서 작업하세요.",
     "subtitle": "데스크톱 앱은 마크다운 vault 를 직접 열고, 최근 vault 를 기억하며, 매일의 ontology 작업을 웹 사이트 밖에서 처리하게 합니다.",
     "primaryCta": "macOS 릴리스 열기",
-    "allReleasesCta": "모든 릴리스",
+    "sourceCta": "소스 코드 보기",
     "proofSigned": "릴리스 게이트가 Developer ID 서명을 요구합니다",
     "proofNotarized": "릴리스 게이트가 Apple notarization 을 요구합니다",
     "proofChecksum": "Apple Silicon + Intel 체크섬을 검증합니다",

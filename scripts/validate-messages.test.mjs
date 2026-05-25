@@ -39,7 +39,9 @@ describe('i18n message catalog', () => {
     const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
 
     assert.equal(en.download.primaryCta, 'Open macOS releases');
+    assert.equal(en.download.sourceCta, 'View source code');
     assert.match(ko.download.primaryCta, /릴리스 열기/);
+    assert.match(ko.download.sourceCta, /소스 코드/);
     assert.doesNotMatch(en.download.primaryCta, /latest/i);
     assert.doesNotMatch(ko.download.primaryCta, /최신/);
     assert.match(en.download.proofSigned, /Release gate requires/);

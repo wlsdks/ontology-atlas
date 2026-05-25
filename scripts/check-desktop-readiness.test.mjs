@@ -73,7 +73,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-      /✓ hosted download CTAs open GitHub Releases without a broken latest-release dependency/,
+    /✓ hosted download CTAs separate the GitHub Releases download path from the source-code link without a broken latest-release dependency/,
   );
   assert.match(
     result.stdout,

@@ -6,7 +6,9 @@ import { Link } from '@/i18n/navigation';
 import { cn } from '@/shared/lib/cn';
 import { buttonVariants } from '@/shared/ui';
 import { LocaleSwitch } from '@/features/locale-switch';
-import { GITHUB_RELEASES_URL, MacosDownloadLink } from '@/features/macos-download-link';
+import { MacosDownloadLink } from '@/features/macos-download-link';
+
+const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/oh-my-ontology';
 
 export function DownloadPage() {
   const t = useTranslations('download');
@@ -50,13 +52,13 @@ export function DownloadPage() {
               {t('primaryCta')}
             </MacosDownloadLink>
             <a
-              href={GITHUB_RELEASES_URL}
+              href={GITHUB_REPOSITORY_URL}
               target="_blank"
               rel="noopener noreferrer"
               className={cn(buttonVariants({ variant: 'outline', size: 'lg' }), 'rounded-full')}
             >
               <ExternalLink size={16} />
-              {t('allReleasesCta')}
+              {t('sourceCta')}
             </a>
           </div>
 
