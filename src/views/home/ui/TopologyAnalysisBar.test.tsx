@@ -39,6 +39,11 @@ const labels = {
   healthRepairOrderSync: "Run sync gate",
   overviewBriefCopy: "Copy overview brief",
   overviewBriefCopied: "Overview brief copied",
+  overviewWorkOrderTitle: "Analysis order",
+  overviewWorkOrderRead: "Read ontology map",
+  overviewWorkOrderFocus: "Focus concept",
+  overviewWorkOrderPath: "Prove path",
+  overviewWorkOrderHealth: "Repair health",
   overviewBriefCopyAriaLabel: "Copy topology overview brief",
   overviewBriefCopiedAriaLabel: "Topology overview brief copied",
   overviewBriefTitle: "Topology overview brief",
@@ -328,6 +333,37 @@ describe("TopologyAnalysisBar", () => {
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("- Workspace check: oh-my-ontology workspace-brief [vault]"),
     );
+  });
+
+  it("shows the Overview mode analysis order before exporting the graph handoff", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="overview"
+        summary={{
+          mode: "overview",
+          primaryMetric: 36,
+          secondaryMetric: 88,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 1,
+            orphan: 2,
+            promotion: 3,
+          },
+        }}
+        healthAction={null}
+        selectedTitle={null}
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Analysis order")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-overview-work-order")).toBeInTheDocument();
+    expect(screen.getByText("Read ontology map")).toBeInTheDocument();
+    expect(screen.getByText("Focus concept")).toBeInTheDocument();
+    expect(screen.getByText("Prove path")).toBeInTheDocument();
+    expect(screen.getByText("Repair health")).toBeInTheDocument();
   });
 
   it("copies MCP profile and impact checks for the focused node", async () => {

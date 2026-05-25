@@ -835,6 +835,11 @@ export function HomePage() {
                 healthRepairOrderSync: t("analysis.healthRepairOrderSync"),
                 overviewBriefCopy: t("analysis.overviewBriefCopy"),
                 overviewBriefCopied: t("analysis.overviewBriefCopied"),
+                overviewWorkOrderTitle: t("analysis.overviewWorkOrderTitle"),
+                overviewWorkOrderRead: t("analysis.overviewWorkOrderRead"),
+                overviewWorkOrderFocus: t("analysis.overviewWorkOrderFocus"),
+                overviewWorkOrderPath: t("analysis.overviewWorkOrderPath"),
+                overviewWorkOrderHealth: t("analysis.overviewWorkOrderHealth"),
                 overviewBriefCopyAriaLabel: t(
                   "analysis.overviewBriefCopyAriaLabel",
                 ),

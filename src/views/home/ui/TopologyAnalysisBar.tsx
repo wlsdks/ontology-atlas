@@ -54,6 +54,11 @@ interface TopologyAnalysisBarLabels {
   healthRepairOrderSync: string;
   overviewBriefCopy: string;
   overviewBriefCopied: string;
+  overviewWorkOrderTitle: string;
+  overviewWorkOrderRead: string;
+  overviewWorkOrderFocus: string;
+  overviewWorkOrderPath: string;
+  overviewWorkOrderHealth: string;
   overviewBriefCopyAriaLabel: string;
   overviewBriefCopiedAriaLabel: string;
   overviewBriefTitle: string;
@@ -735,27 +740,43 @@ export function TopologyAnalysisBar({
             </>
           ) : null}
           {mode === "overview" ? (
-            <button
-              type="button"
-              onClick={copyOverviewBrief}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
-              aria-label={
-                overviewBriefCopied
-                  ? labels.overviewBriefCopiedAriaLabel
-                  : labels.overviewBriefCopyAriaLabel
-              }
-            >
-              {overviewBriefCopied ? (
-                <Check size={12} aria-hidden />
-              ) : (
-                <Clipboard size={12} aria-hidden />
-              )}
-              <span>
-                {overviewBriefCopied
-                  ? labels.overviewBriefCopied
-                  : labels.overviewBriefCopy}
-              </span>
-            </button>
+            <div className="mt-2 grid gap-2">
+              <div className="rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5">
+                <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(190,199,255,0.78)]">
+                  {labels.overviewWorkOrderTitle}
+                </p>
+                <ol
+                  className="mt-2 grid gap-1.5 sm:grid-cols-4"
+                  data-testid="topology-overview-work-order"
+                >
+                  <OverviewWorkStep index={1} label={labels.overviewWorkOrderRead} />
+                  <OverviewWorkStep index={2} label={labels.overviewWorkOrderFocus} />
+                  <OverviewWorkStep index={3} label={labels.overviewWorkOrderPath} />
+                  <OverviewWorkStep index={4} label={labels.overviewWorkOrderHealth} />
+                </ol>
+              </div>
+              <button
+                type="button"
+                onClick={copyOverviewBrief}
+                className="inline-flex w-fit items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
+                aria-label={
+                  overviewBriefCopied
+                    ? labels.overviewBriefCopiedAriaLabel
+                    : labels.overviewBriefCopyAriaLabel
+                }
+              >
+                {overviewBriefCopied ? (
+                  <Check size={12} aria-hidden />
+                ) : (
+                  <Clipboard size={12} aria-hidden />
+                )}
+                <span>
+                  {overviewBriefCopied
+                    ? labels.overviewBriefCopied
+                    : labels.overviewBriefCopy}
+                </span>
+              </button>
+            </div>
           ) : null}
           {mode === "path" && pathSourceSlug && pathTargetSlug ? (
             <div className="mt-2 grid gap-2">
@@ -1065,6 +1086,25 @@ function HealthBreakdownChip({
       <span className="text-[color:var(--color-text-secondary)]">{count}</span>{" "}
       {label}
     </span>
+  );
+}
+
+function OverviewWorkStep({
+  index,
+  label,
+}: {
+  index: number;
+  label: string;
+}) {
+  return (
+    <li className="min-w-0 list-none rounded border border-[color:rgba(94,106,210,0.14)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1">
+      <span className="font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:rgba(190,199,255,0.72)]">
+        {String(index).padStart(2, "0")}
+      </span>
+      <span className="mt-0.5 block truncate text-[10.5px] text-[color:var(--color-text-secondary)]">
+        {label}
+      </span>
+    </li>
   );
 }
 
