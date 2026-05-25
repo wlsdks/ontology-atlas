@@ -81,7 +81,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ tag release workflow builds Apple Silicon and Intel DMGs, requires a clean release slot, verifies draft assets, then publishes and re-verifies public stable assets/,
+    /✓ tag release workflow builds Apple Silicon and Intel DMGs on Node 24, requires a clean release slot, verifies draft assets, then publishes and re-verifies public stable assets/,
   );
   assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned public releases/);
   assert.match(

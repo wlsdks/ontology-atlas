@@ -316,6 +316,7 @@ if (
   /pnpm desktop:smoke/.test(releaseWorkflow) &&
   /pnpm desktop:verify-release-dmg/.test(releaseWorkflow) &&
   /pnpm desktop:verify-install/.test(releaseWorkflow) &&
+  releaseWorkflow.match(/node-version:\s*24/g)?.length === 2 &&
   /arch:\s*aarch64/.test(releaseWorkflow) &&
   /runner:\s*macos-14/.test(releaseWorkflow) &&
   /arch:\s*x64/.test(releaseWorkflow) &&
@@ -325,10 +326,10 @@ if (
   hasStrictOrder(releaseBuildOrder) &&
   hasStrictOrder(releasePublishOrder)
 ) {
-  pass("tag release workflow builds Apple Silicon and Intel DMGs, requires a clean release slot, verifies draft assets, then publishes and re-verifies public stable assets");
+  pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24, requires a clean release slot, verifies draft assets, then publishes and re-verifies public stable assets");
 } else {
   fail(
-    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag and secrets before signing, sign/notarize before upload, require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, install-smoke each DMG, then run desktop:verify-download for the tag",
+    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag and secrets before signing, sign/notarize before upload, require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, install-smoke each DMG, then run desktop:verify-download for the tag",
   );
 }
 
