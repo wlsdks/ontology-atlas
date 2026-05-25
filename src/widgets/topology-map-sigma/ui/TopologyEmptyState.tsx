@@ -3,6 +3,7 @@
 import { Link } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { FolderOpen, GitBranch, Network } from 'lucide-react';
+import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 
 /**
  * Topology empty-state — when the graph has 0–1 projects, showing the
@@ -18,6 +19,7 @@ import { FolderOpen, GitBranch, Network } from 'lucide-react';
 export function TopologyEmptyState({ projectCount }: { projectCount: number }) {
   const t = useTranslations('topology.empty');
   const isNoProjects = projectCount === 0;
+  const isDesktopRuntime = isTauriVaultRuntime();
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center px-6">
@@ -29,7 +31,13 @@ export function TopologyEmptyState({ projectCount }: { projectCount: number }) {
           {isNoProjects ? t('titleNoProjects') : t('titleNoDeps')}
         </h2>
         <p className="mt-2 text-[13px] leading-relaxed text-[color:var(--color-text-tertiary)]">
-          {isNoProjects ? t('bodyNoProjects') : t('bodyNoDeps')}
+          {isNoProjects
+            ? t(
+                isDesktopRuntime
+                  ? 'bodyNoProjectsPicker'
+                  : 'bodyNoProjectsDownload',
+              )
+            : t('bodyNoDeps')}
         </p>
         <p className="mt-3 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 py-2 text-[11px] leading-relaxed text-[color:var(--color-text-tertiary)]">
           {t('crossViewHint')}
@@ -50,11 +58,15 @@ export function TopologyEmptyState({ projectCount }: { projectCount: number }) {
             {t('ctaBuilder')}
           </Link>
           <Link
-            href="/docs/"
+            href={isDesktopRuntime ? "/docs/?intent=local" : "/download/"}
             className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] px-4 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)]"
           >
             <FolderOpen size={14} aria-hidden="true" />
-            {t('ctaOpenVault')}
+            {t(
+              isDesktopRuntime
+                ? 'ctaOpenVaultPicker'
+                : 'ctaOpenVaultDownload',
+            )}
           </Link>
         </div>
       </div>

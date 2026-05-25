@@ -74,6 +74,14 @@ describe('i18n message catalog', () => {
     assert.match(en.ontologyPages.edit.onboarding.stepSaveBodyPicker, /top-right demo badge/i);
     assert.match(ko.ontologyPages.edit.page.toastDemoModeDownload, /macOS 앱 설치/);
     assert.match(ko.ontologyPages.edit.inspector.vaultFooterReadOnlyDownload, /macOS 앱/);
+    assert.match(en.ontologyView.getStarted.stepStaticVaultDescDownload, /hosted browser is read-only/i);
+    assert.match(en.ontologyView.getStarted.stepStaticVaultDescDownload, /install the macOS app/i);
+    assert.match(en.ontologyView.getStarted.stepStaticVaultDescPicker, /local vault folder/i);
+    assert.match(en.ontologyView.getStarted.ctaVaultOpenDownload, /Download macOS app/i);
+    assert.match(en.topology.empty.bodyNoProjectsDownload, /Install the macOS app/i);
+    assert.match(en.topology.empty.ctaOpenVaultDownload, /Download macOS app/i);
+    assert.match(ko.ontologyView.getStarted.stepStaticVaultDescDownload, /macOS 앱/);
+    assert.match(ko.topology.empty.ctaOpenVaultDownload, /macOS 앱 다운로드/);
   });
 });
 

@@ -32,6 +32,7 @@ const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
 const cargoToml = readText("src-tauri/Cargo.toml");
 const desktopDoc = readText("docs/DESKTOP-MACOS.md");
+const rootReadme = readText("README.md");
 const landingPage = readText("src/views/landing/ui/LandingPage.tsx");
 const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
 const macosDownloadLink = readText("src/features/macos-download-link/ui/MacosDownloadLink.tsx");
@@ -49,6 +50,8 @@ const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
 const releaseStatusScript = readText("scripts/check-macos-release-status.mjs");
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
 const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
+const ontologyViewPage = readText("src/views/ontology-view/ui/OntologyViewPage.tsx");
+const topologyEmptyState = readText("src/widgets/topology-map-sigma/ui/TopologyEmptyState.tsx");
 const vaultToolsMenu = readText("src/widgets/docs-vault/ui/VaultToolsMenu.tsx");
 const localVaultPicker = readText("src/features/docs-vault-local/ui/LocalVaultPicker.tsx");
 const localFsHandleStore = readText("src/entities/local-fs-handle/api/store.ts");
@@ -310,6 +313,39 @@ if (
 } else {
   fail(
     "hosted landing/download pages must stay promo/download-first, and src/views/docs-vault/ui/DocsVaultPage.tsx must only honor ?intent=local / local vault work in the Tauri desktop runtime",
+  );
+}
+
+if (
+  rootReadme.includes("| **Website / downloads** | **https://oh-my-ontology.web.app** |") &&
+  rootReadme.includes("| **macOS app** | Install once, pick a local vault folder") &&
+  rootReadme.includes("| **Website** | Explain the product, show a read-only demo") &&
+  rootReadme.includes("The public website is a static promo/download site with a read-only demo.") &&
+  !rootReadme.includes("| **Web workbench** |") &&
+  !rootReadme.includes("Open `http://localhost:3000`, go to `/docs`")
+) {
+  pass("root README presents the hosted site as promo/download and the macOS app as the local workbench");
+} else {
+  fail(
+    "README.md must not present the hosted Firebase site as the writable web workbench; it should route real local visual work to the installed macOS app",
+  );
+}
+
+if (
+  ontologyViewPage.includes("isTauriVaultRuntime") &&
+  ontologyViewPage.includes('"/download/"') &&
+  ontologyViewPage.includes('"/docs/?intent=local"') &&
+  topologyEmptyState.includes("isTauriVaultRuntime") &&
+  topologyEmptyState.includes('"/download/"') &&
+  topologyEmptyState.includes('"/docs/?intent=local"') &&
+  /hosted browser is read-only/i.test(enMessages.ontologyView?.getStarted?.stepStaticVaultDescDownload ?? "") &&
+  /Install the macOS app/i.test(enMessages.topology?.empty?.bodyNoProjectsDownload ?? "") &&
+  /macOS 앱/.test(koMessages.ontologyView?.getStarted?.stepStaticVaultDescDownload ?? "")
+) {
+  pass("static ontology and topology empty states route hosted users to the app download while preserving desktop vault picking");
+} else {
+  fail(
+    "Hosted static ontology/topology empty states must route writable local work to /download/, while Tauri desktop keeps /docs/?intent=local",
   );
 }
 

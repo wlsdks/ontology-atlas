@@ -26,6 +26,7 @@ import {
   type OntologyTreeBuildResult,
 } from "@/shared/lib/ontology-tree";
 import { copyText } from "@/shared/lib/copy-text";
+import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { GlobalSearch, MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { OntologyEgoGraph } from "@/widgets/ontology-ego-graph";
 import { OntologyTreeView } from "@/widgets/ontology-tree-view";
@@ -67,6 +68,7 @@ export function OntologyViewPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const dataSourceMode = useDataSourceMode();
+  const isDesktopRuntime = isTauriVaultRuntime();
 
   const { insight, error } = useOntologyInsight();
   // 트리 row 클릭 시 우측 (mobile bottom) 패널에 노드 상세 노출.
@@ -391,7 +393,19 @@ export function OntologyViewPage() {
                       ["2", t('getStarted.stepLocalBuilderTitle'), t('getStarted.stepLocalBuilderDesc')],
                     ]
                   : [
-                      ["1", t('getStarted.stepStaticVaultTitle'), t('getStarted.stepStaticVaultDesc')],
+                      [
+                        "1",
+                        t(
+                          isDesktopRuntime
+                            ? 'getStarted.stepStaticVaultTitlePicker'
+                            : 'getStarted.stepStaticVaultTitleDownload',
+                        ),
+                        t(
+                          isDesktopRuntime
+                            ? 'getStarted.stepStaticVaultDescPicker'
+                            : 'getStarted.stepStaticVaultDescDownload',
+                        ),
+                      ],
                       ["2", t('getStarted.stepStaticFrontmatterTitle'), t('getStarted.stepStaticFrontmatterDesc')],
                       ["3", t('getStarted.stepStaticBuilderTitle'), t('getStarted.stepStaticBuilderDesc')],
                     ]
@@ -426,10 +440,14 @@ export function OntologyViewPage() {
                 ) : (
                   <>
                     <Link
-                      href={"/docs/"}
+                      href={isDesktopRuntime ? "/docs/?intent=local" : "/download/"}
                       className="inline-flex items-center gap-1.5 break-keep rounded-full border border-[color:rgba(94,106,210,0.35)] bg-[color:rgba(94,106,210,0.10)] px-4 py-2 text-sm text-[color:rgba(159,170,235,0.95)] transition-colors hover:bg-[color:rgba(94,106,210,0.18)]"
                     >
-                      {t('getStarted.ctaVaultOpen')}
+                      {t(
+                        isDesktopRuntime
+                          ? 'getStarted.ctaVaultOpenPicker'
+                          : 'getStarted.ctaVaultOpenDownload',
+                      )}
                     </Link>
                     <Link
                       href={"/ontology/edit/"}
