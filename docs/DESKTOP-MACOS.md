@@ -160,7 +160,9 @@ for a macOS prototype:
   `oh-my-ontology_*.dmg` asset with an unsupported architecture suffix fails
   the gate instead of being silently ignored. The tag workflow uses
   `--allow-draft` first so uploaded draft assets are byte-checked before the
-  release is made public.
+  release is made public; if GitHub hides the draft from tag lookup, the
+  verifier falls back to the releases list and matches the requested `tag_name`
+  before byte-checking assets.
 - The hosted landing and download CTAs open the GitHub Releases page instead of
   depending on a `/releases/latest` URL that is broken before the first public
   macOS release exists. The secondary CTA still sends users to `/download/`, a

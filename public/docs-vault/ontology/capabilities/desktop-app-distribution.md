@@ -113,7 +113,10 @@ both draft asset integrity and public downloadability for Apple Silicon and
 Intel users. When a requested tag has no GitHub Release yet, the verifier
 reports the missing tag as the release-blocking condition instead of exposing a
 raw GitHub API 404, so the next operator action is to push the tag and let the
-macOS release workflow publish the signed/notarized assets.
+macOS release workflow publish the signed/notarized assets. When the workflow
+is verifying a draft release with `--allow-draft`, the verifier also falls back
+from tag lookup to the releases list if GitHub hides draft releases from the tag
+endpoint, then matches the requested `tag_name` before checking asset bytes.
 `pnpm desktop:release-github` is the operator-side pre-tag guard for that final
 step: it checks `gh` authentication, the active `release-macos.yml` workflow,
 required Apple signing/notary secret names, optional tag/version alignment, and

@@ -364,6 +364,42 @@ test("download release verifier can validate draft assets before publishing", as
   });
 });
 
+test("download release verifier can find tagged draft assets when the tag endpoint hides drafts", async () => {
+  await withServer(makeHandler(), async (baseUrl) => {
+    const payload = releasePayload(baseUrl);
+    payload[0].draft = true;
+    await withServer((req, res) => {
+      if (req.url === "/repos/wlsdks/oh-my-ontology/releases/tags/v0.1.0") {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ message: "Not Found" }));
+        return;
+      }
+      if (req.url === "/repos/wlsdks/oh-my-ontology/releases?per_page=100") {
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify(payload));
+        return;
+      }
+      makeHandler()(req, res);
+    }, async (draftBaseUrl) => {
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        ["scripts/check-macos-download-release.mjs", "--tag=v0.1.0", "--allow-draft"],
+        {
+          cwd: process.cwd(),
+          encoding: "utf8",
+          env: {
+            ...process.env,
+            OMOT_GITHUB_API_BASE: draftBaseUrl,
+            GITHUB_TOKEN: "test-token",
+          },
+        },
+      );
+
+      assert.match(stdout, /exposes reachable draft macOS download assets/);
+    });
+  });
+});
+
 test("download release verifier reports rate limits without a stack trace", async () => {
   await withServer(makeHandler({ requireAuth: true }), async (baseUrl) => {
     await assert.rejects(

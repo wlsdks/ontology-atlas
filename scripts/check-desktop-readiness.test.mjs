@@ -61,6 +61,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop download verifier rejects stale DMG versions, unsupported DMG names, and checksum mismatches, including tagged draft pre-publish assets/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop local release preflight runs readiness, tests, runtime doctor, build, route smoke, DMG, and install smoke/,
   );
   assert.match(

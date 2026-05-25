@@ -259,7 +259,28 @@ function isChecksumFor(asset, dmgName) {
 async function findRelease(options) {
   const base = `${apiBase()}/repos/${options.repo}`;
   if (options.tag) {
-    return requestJson(`${base}/releases/tags/${encodeURIComponent(options.tag)}`);
+    try {
+      return await requestJson(`${base}/releases/tags/${encodeURIComponent(options.tag)}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!options.allowDraft || !/\b404\b/.test(message)) {
+        throw error;
+      }
+      const releases = await requestJson(`${base}/releases?per_page=100`);
+      if (!Array.isArray(releases)) {
+        fail("GitHub releases response was not an array.");
+      }
+      const draftRelease = releases.find((release) => {
+        if (release?.tag_name !== options.tag) return false;
+        if (!release?.draft) return false;
+        if (!options.allowPrerelease && release?.prerelease) return false;
+        return true;
+      });
+      if (draftRelease) {
+        return draftRelease;
+      }
+      throw error;
+    }
   }
   const releases = await requestJson(`${base}/releases?per_page=20`);
   if (!Array.isArray(releases)) {

@@ -196,7 +196,9 @@ version must match the release tag. Any extra `oh-my-ontology_*.dmg` asset with
 an unsupported architecture suffix fails the gate so the GitHub Release page
 cannot present stale or ambiguous downloads; draft releases intentionally fail
 unless `--allow-draft` is passed because the hosted landing page cannot serve
-them to users.
+them to users. The draft path also falls back to the releases list when GitHub
+hides draft releases from tag lookup, then matches the requested `tag_name`
+before byte-checking assets.
 The installed app's native vault bridge is part of this same gate:
 `src-tauri/src/lib.rs` must expose folder-pick, directory-list, read, write,
 file/directory delete, mkdir, and exists commands, and

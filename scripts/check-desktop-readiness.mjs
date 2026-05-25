@@ -238,14 +238,16 @@ if (
   downloadReleaseVerifier.includes("releaseVersionFromTag") &&
   downloadReleaseVerifier.includes("do not match the tag version") &&
   downloadReleaseVerifier.includes("allowDraft") &&
+  downloadReleaseVerifier.includes("per_page=100") &&
+  downloadReleaseVerifier.includes("release?.tag_name !== options.tag") &&
   downloadReleaseVerifier.includes("unsupported macOS DMG asset names") &&
   downloadReleaseVerifier.includes("requestSha256") &&
   downloadReleaseVerifier.includes("does not match checksum")
 ) {
-  pass("desktop download verifier rejects stale DMG versions, unsupported DMG names, and checksum mismatches, including draft pre-publish assets");
+  pass("desktop download verifier rejects stale DMG versions, unsupported DMG names, and checksum mismatches, including tagged draft pre-publish assets");
 } else {
   fail(
-    "scripts/check-macos-download-release.mjs must verify supported DMG naming, DMG filename versions match the release tag, and downloaded bytes match the checksum, including draft pre-publish assets",
+    "scripts/check-macos-download-release.mjs must verify supported DMG naming, DMG filename versions match the release tag, downloaded bytes match the checksum, and --allow-draft can find tagged draft pre-publish assets",
   );
 }
 
