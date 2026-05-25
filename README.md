@@ -63,6 +63,12 @@ The product is not "please maintain an ontology." The useful loop is:
 
 ## How The Memory Works
 
+In this project, an ontology is the executable meaning model of a codebase:
+projects, domains, capabilities, elements, and the relations that explain why
+they belong together or depend on each other. It is useful only when humans and
+AI agents can read it before work, update it after work, and verify it as a git
+diff.
+
 Every markdown file is one graph node. Frontmatter is the machine-readable
 record; the body is the human-readable explanation.
 
@@ -202,7 +208,7 @@ browser receives permission to access a local folder on your machine.
 | **Vault integrity** | `pnpm vault:validate`, `test:vault:validate`, `vault:audit`, and `test:vault:audit` run in CI. |
 | **MCP/CLI contracts** | `pnpm test:cli:args`, `pnpm test:mcp:docs`, `pnpm package:check`, `pnpm test:contracts`, and focused `test:mcp:*` scripts cover the agent surface. |
 | **Graph hot paths** | `pnpm perf:graph:check` is part of `pnpm package:check`, so compile/query latency budgets run before release. |
-| **Dogfooding** | This repo's own vault has **31 nodes**: capabilities 19, domains 6, elements 4, project 1, vault-readme 1. |
+| **Dogfooding** | This repo's own vault has **47 nodes**: capabilities 24, domains 6, elements 15, project 1, vault-readme 1. |
 
 For the detailed maintainer command matrix, see
 [`docs/DEVELOPMENT-CHECKS.md`](docs/DEVELOPMENT-CHECKS.md).

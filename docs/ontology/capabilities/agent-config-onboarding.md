@@ -3,111 +3,23 @@ slug: capabilities/agent-config-onboarding
 kind: capability
 title: Agent Config Onboarding
 domain: ai-agent-partner
-dependencies:
-  - capabilities/mcp-server
-  - capabilities/vault-live-updates
-elements:
-  - src/features/docs-vault-local/lib/ontology-starter.ts
-  - src/features/docs-vault-local/model/use-local-vault.ts
-  - src/features/docs-vault-local/ui/OntologyStarterCta.tsx
-  - src/views/docs-vault/ui/DocsVaultPage.tsx
-  - src/widgets/docs-vault/ui/VaultToolsMenu.tsx
-relates:
-  - domains/ai-agent-partner
-  - domains/onboarding-ux
+dependencies: [capabilities/mcp-server, capabilities/vault-live-updates]
+elements: [src/features/docs-vault-local/lib/ontology-starter.ts, src/features/docs-vault-local/model/use-local-vault.ts, src/features/docs-vault-local/ui/OntologyStarterCta.tsx, src/views/docs-vault/ui/DocsVaultPage.tsx, src/widgets/docs-vault/ui/VaultToolsMenu.tsx]
+relates: [domains/ai-agent-partner, domains/onboarding-ux]
 ---
 
-# Agent Config Onboarding
+로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface.
 
-로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고
-복구할 수 있게 하는 onboarding surface. web starter 와 CLI init 은 `.mcp.json`,
-`.codex/config.toml`, `.mcp.json.example` 을 생성하고, Docs vault tools menu 는
-현재 로컬 폴더에 이 파일들이 있는지, 그리고 각 파일이 실제 `oh-my-ontology`
-MCP 서버와 `OMOT_VAULT` 를 가리키는지 별도 agent setup 상태로 보여준다.
-상태 헤더는 준비된 setup 파일 수와 첫 누락 config 경로를 함께 보여주며, 파일이
-있더라도 stale / 다른 MCP 설정이면 `점검 필요` 로 분리한다. 그래서 사용자는
-존재만 하는 `.mcp.json` / `.codex/config.toml` 을 agent-ready 로 오인하지 않고,
-파일별 체크리스트를 읽기 전에 다음에 만들어야 할 파일 또는 검토해야 할 설정을
-바로 판단할 수 있다.
-같은 카드 안에 `config 파일 점검 → agent 재시작 → JSON gate 실행` 순서의 3-step
-체크리스트도 보여줘, 비개발자가 버튼 묶음 사이에서 순서를 추론하지 않아도 Claude
-Code / Cursor / Codex 연결을 검증 가능한 흐름으로 진행할 수 있다.
-stale 하거나 다른 MCP 설정인 파일은 자동으로 덮어쓰지 않고 setup packet 또는
-codebase-root 템플릿을 복사해 수동 교체하라는 안내를 별도 경고로 노출한다.
+`VaultToolsMenu` exposes the setup gate in the same language as `agent_brief` / `workspace_brief`: CLI-only, MCP-connected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agent-root guidance, and JSON gate proof so a developer can tell whether they should restart from the vault folder or copy the codebase-root templates before editing from another repository.
 
-기존 vault 에서는 starter markdown 을 추가하지 않아도 누락된 agent 설정 파일만
-생성할 수 있다. 이 repair action 은 이미 사용자가 작성한 ontology 파일을 건드리지
-않고, agent 연결에 필요한 config surface 만 채운다.
-CLI 의 `oh-my-ontology agent-setup [vault] --root <codebase> --write` 도 같은
-repair path 를 제공한다. 기본 dry-run 은 vault-local / codebase-root 설정의
-ready/missing/review 상태를 보여주고, `--write` 는 누락 config 만 생성하며 이미
-있는 파일은 덮어쓰지 않고 merge template 을 남긴다. 그래서 web starter 를 거치지
-않은 기존 vault 도 터미널에서 Claude Code / Cursor / Codex 연결 상태를 복구할 수 있다.
+The copy packet includes MCP/Codex templates, restart guidance, verification prompts, CLI fallbacks, and the machine-readable JSON gate that reports `ok` and `performanceOk` independently. It now starts with an explicit root check: the agent root is the codebase root where Claude Code / Codex is opened, while the ontology vault is passed as a separate path when it is not the current working directory. The full packet exposes both JSON gate contexts: codebase-root automation passes the shell-quoted vault path, and vault-folder automation keeps the `.` cwd command. The packet also includes a machine-readable `oh-my-ontology agent-setup <vault> --root <codebase> --json` dry-run so setup state can be checked before the repair command creates missing config files.
 
-빈 vault starter CTA 는 생성 전에 `local` / `graph proof` / `agent loop` 보증을
-짧은 카드로 먼저 보여준다. 비개발자는 이 폴더의 markdown 이 서버 없는 local DB
-역할을 한다는 점, `workspace_brief` / `agent_brief` 로 graph health 와 handoff 순서를
-증명한다는 점, Claude Code / Cursor / Codex 가 같은 vault 를 수정 전 read-first 로
-확인한다는 점을 starter 생성 버튼을 누르기 전에 이해할 수 있다.
+The setup packet now includes a numbered read-first run order for codebase-root launches: check config state, repair only missing configs, restart the agent, run `mcp-verify`, run the JSON fallback performance gate, then read `workspace-brief` and `agent-brief --prompt`. The UI mirrors that order by exposing a separate `agent-setup ... --json` state-check copy action before the warmer-colored `agent-setup ... --write` repair action, and the visible checklist now continues past restart / JSON gate into `mcp-verify` and read-first graph proof. Copied codebase-root commands quote the vault path placeholder anywhere it is passed as a shell argument, so a vault path with spaces remains executable after the user replaces the placeholder. Users can therefore follow the same setup gate from the panel without opening the full packet first: inspect readiness, repair only missing configs, restart from the agent root, prove the 23 MCP tools are reachable, then read the workspace and agent brief before any ontology write. That keeps Claude Code, Codex, and terminal-only users aligned on the same first-contact sequence before any ontology write.
 
-같은 화면은 전체 setup packet, read-first 검증 prompt, 설치된 CLI graph runbook,
-자동화용 JSON setup gate,
-codebase-root 세션용 `agent-setup <vault> --root <codebase> --write` repair 명령,
-`.mcp.json.example` 템플릿, Codex `.codex/config.toml` 템플릿,
-그리고 `codex mcp add ...` 한 줄 등록 명령도 복사 가능하게 유지한다. setup packet 은
-수동 템플릿보다 `agent-setup` repair 명령을 먼저 제시하고, CLI-only / MCP-connected /
-Graph DB pack / setup gate 중 어느 모드를 먼저 써야 하는지도 같은 패킷에 포함한다.
-패널 본문도 같은 모드 선택 기준을 짧은 definition list 로 보여줘 비개발자가
-"MCP 를 꼭 연결해야만 쓰는 제품인지", "CLI 만으로 graph query 가 되는지", "Graph DB 와
-비슷한 탐색은 어디서 시작하는지"를 버튼을 누르기 전에 판단할 수 있다. MCP/Codex 템플릿,
-재시작 안내, 검증 prompt, CLI fallback, machine-readable JSON gate 를 한 번에 묶어 별도 root 에서
-agent 를 여는 사용자가 순서를 조립하지 않아도 되게 한다. 설정 상태 확인, 누락 config 생성,
-검증 액션 그룹의 setup packet / MCP prompt / 터미널 graph runbook / JSON gate 복사, 별도 codebase root
-연결 그룹의 agent-setup repair 명령 / MCP JSON / Codex TOML / Codex CLI 등록 명령 복사가 한 패널 안에 있어
-비개발자도 Claude Code / Codex 를 열기 전에 필요한 다음 행동을 놓치지 않는다.
-starter CTA 자체도 agent 검증 프롬프트와 `oh-my-ontology validate .`,
-`workspace-brief .`, `agent-brief . --prompt`, `agent-brief . --graph-db-pack`,
-`agent-brief . --verify-fallbacks`, `mcp-verify . --timeout-ms 15000`
-CLI proof packet 을 각각 복사할 수 있어, MCP connector 가 아직 없는 세션과 agent 없는
-터미널 검증이 같은 first-contact 계약을 공유한다. starter CTA 도 같은 JSON gate
-복사 버튼을 제공하므로 빈 vault 를 막 만든 사용자가 tools menu 를 다시 찾지 않아도
-자동화용 setup check 명령을 바로 가져갈 수 있다.
-검증 프롬프트 자체도 MCP connector 가 없을 때의 CLI setup gate fallback 을 포함한다.
-agent 는 `ok=false` 를 setup/fallback 실행 실패로, `ok=true` 와
-`performanceOk=false` 를 동작은 하지만 로컬 graph fallback latency 를 점검해야 하는
-상태로 구분하고, 이 read-first check 중 하나가 성공하기 전에는 ontology write 를
-시작하지 않는다.
-기능 설명 문서는 `docs/AGENT-GRAPH-WORKFLOW.md` 에 별도로 유지한다. 이 문서는
-CLI 만으로 가능한 흐름, MCP 연결 시 좋아지는 점, graph DB 와의 차이, graph DB-style
-query pack, 그리고 실제 dogfood vault 검증 결과를 한 번에 설명해 비개발자와 agent 가
-같은 용어로 setup 상태를 판단하게 한다.
-`agent-setup` 의 터미널 출력과 `--json` 결과도 같은 guide 경로와 설명을 노출하므로,
-Web UI 를 열지 않고 CLI 만 쓰는 사용자의 setup log 나 자동화 결과에도 기능 문서
-진입점이 남는다.
-`agent-setup --json` 은 `docs.modeComparison` 도 함께 반환한다. 이 배열은
-CLI-only, MCP-connected, Graph DB pack, setup gate 모드를 각각 언제 쓰고 무엇을
-얻는지 구조화하므로, Codex / Claude Code 가 Markdown 표를 파싱하지 않아도 비개발자에게
-"지금은 CLI 로 충분한지", "MCP 재시작이 필요한지", "Graph DB-style pack 으로 넘어갈지"를
-설명할 수 있다. 터미널 출력도 같은 Mode guide 를 보여줘 CLI-only 사용자에게도 같은
-의사결정 표면을 남긴다.
-`agent-brief --prompt` 와 `agent-brief --graph-db-pack` 도 같은 guide 경로를 포함해,
-setup 이후 agent handoff prompt 와 connector-less graph DB-style script 에서도
-사람이 다시 기능 문서로 돌아갈 수 있다.
-MCP `agent_brief` 와 `agent-brief --json` 은 같은 정보를 `docs.workflowGuide` 로
-구조화해 반환하므로, Claude Code / Codex 자동화도 human prompt 를 파싱하지 않고
-기능 문서 위치와 설명을 읽을 수 있다.
-자동화 gate 는 `oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`
-단일 명령을 보여주고 복사한다. Claude Code / Codex 세션은 이 JSON 의 `ok`, `failed`,
-`performanceOk`, `timeoutMs`, `slowThresholdMs`, `concurrency`, `wallMs`, `slow`, `commands[].timedOut`,
-`commands[].slow` 을 바로 파싱해 connector-less setup check 를 진행할 수 있고, 사람은
-같은 패널에서 human runbook 을 선택할 수 있다. 패널은 `ok=false`, `performanceOk=false`,
-`ready` 상태를 별도 해석표로 보여줘 실패는 config 수정, 느림은 latency 점검, 둘 다 true 는
-read-first agent 작업 시작으로 판단하게 한다. setup packet 도 같은 JSON gate result rules 를
-포함해 UI 밖으로 복사된 지침에서도 결과 해석이 유지된다.
-새 agent 세션은 `validate_vault`,
-`workspace_brief`, `agent_brief` 를 먼저 실행해 vault 가 읽히고 write tools 가
-노출되는지 보고한 뒤 변경을 제안한다. MCP 가 아직 붙지 않았고 CLI 가 설치된 환경에서는
-`oh-my-ontology validate .`, `workspace-brief .`, `agent-brief . --prompt`,
-`agent-brief . --graph-db-pack`, `agent-brief . --verify-fallbacks`,
-`hubs . --plan --limit 10 --types depends_on,relates`, `hubs . --limit 10 --types depends_on,relates`,
-`mcp-verify . --timeout-ms 15000` 순서로 같은 증거와 첫 graph traversal 후보를 터미널에서 확인한다.
+The setup card also exposes a smaller first-contact proof packet for already-installed CLI sessions. It copies only the minimum sequence needed to prove a codebase-root agent session is ready: `agent-setup ... --json`, a repair-only-if-missing `agent-setup ... --write` command, restart guidance, `mcp-verify`, the JSON fallback `agent-brief --verify-fallbacks`, `workspace-brief`, `agent-brief --prompt`, and `agent-brief --graph-db-pack`, followed by the same JSON gate result rules and post-change ontology sync rule. The compact proof packet uses the same shell-safe vault-path placeholder as the full setup packet, so Claude Code / Codex can paste it into a terminal-first setup flow without hand-fixing path quoting. This gives Claude Code / Codex a compact proof script without copying the full config templates while still closing the setup-check-to-repair loop when config files are missing.
+
+The setup prompt and packet also carry the post-change ontology sync rule from the agent brief write policy: after a non-trivial code change introduces or renames a domain, capability, element, or relation, sync `docs/ontology` before finishing; typo, comment, style-only, lint-config, and fixture-only changes can skip sync. The setup card now also exposes that sync gate as its own copy action, so an already-connected Claude Code / Codex session can copy only the `health` / `cycles` / `growth_plan` / `maintenance_plan` / `validate_vault` MCP and CLI packet immediately after a code change without copying the full setup packet again.
+
+The CLI `agent-setup` command exposes the same rule in both terminal output and JSON (`docs.postChangeSync`), keeping codebase-root setup repair, UI setup packets, and Claude/Codex automation gates aligned on the same after-edit behavior. Its JSON and terminal output also include the same first-contact graph runbook used by the UI setup card: `validate`, `mcp-verify`, `agent-brief --verify-fallbacks`, `workspace-brief`, `agent-brief --prompt`, `agent-brief --graph-db-pack`, and hub scans over the selected vault path. The command now also prints and returns separate `setupState`, `setupRepair`, and restart guidance entries, and the human `Next checks` order matches the UI first-contact sequence: inspect config state, repair only missing configs when needed, restart Claude Code / Cursor / Codex from the agent root, then run `mcp-verify` and the JSON fallback gate before reading graph briefs.
+
+`agent-setup` JSON, terminal output, the full UI setup packet, and the compact first-contact proof packet now share one first-contact proof contract: `config_state`, `mcp_verify`, `json_gate`, and `graph_briefs`. That means codebase-root and vault-root setup readiness, the 23-tool MCP boot proof, fallback `ok` / `performanceOk`, and `workspace-brief` / `agent-brief --graph-db-pack` all use the same labels before an agent edits the codebase. The setup surface is therefore no longer just a template copier; it is a repeatable proof that Claude Code, Codex, Cursor, and terminal-only users are reading the same local vault through the same graph language before writes.

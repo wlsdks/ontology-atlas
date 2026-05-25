@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-24T17:45:35.211Z",
+  "generatedAt": "2026-05-25T05:43:32.716Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1794,9 +1794,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 31 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 47 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
       "wordCount": 1483,
-      "updatedAt": "2026-05-24T07:34:43.028Z",
+      "updatedAt": "2026-05-24T20:09:35.521Z",
       "linksOut": []
     },
     {
@@ -4744,16 +4744,10 @@
           "domains/onboarding-ux"
         ]
       },
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Agent Config Onboarding",
-          "slug": "agent-config-onboarding"
-        }
-      ],
-      "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. web starter 와 CLI init 은 .mcp.json, .codex/config.toml, .mcp.json.example 을 생성하고, Docs vault tools menu 는 현재 로컬 폴더에 이 파일들이 있는지, 그리고 각 파일이 실제 ohmyontology MCP 서버와 OMOTVAULT 를 가리키는지 별도 agent setup 상태로 보여준다. 상태 헤더는 준비된 setup 파일 수",
-      "wordCount": 1003,
-      "updatedAt": "2026-05-24T13:58:46.751Z",
+      "headings": [],
+      "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLIonly, MCPconnected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agentroot guidance, and J",
+      "wordCount": 803,
+      "updatedAt": "2026-05-25T04:02:52.199Z",
       "linksOut": []
     },
     {
@@ -4790,8 +4784,8 @@
         }
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
-      "wordCount": 2868,
-      "updatedAt": "2026-05-24T17:45:30.810Z",
+      "wordCount": 3024,
+      "updatedAt": "2026-05-24T23:53:32.270Z",
       "linksOut": []
     },
     {
@@ -4816,29 +4810,59 @@
           "capabilities/builder-vault-write"
         ]
       },
+      "headings": [],
+      "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (20260514) 로 7 commit 단위 도입. n8nstyle edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 MCP dependency alias 호환 — dependson 으로 작성된 agent/CLI edge 도 builder graph 에서는 canonical depe",
+      "wordCount": 152,
+      "updatedAt": "2026-05-24T22:27:12.892Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/builder-deep-link-focus",
+      "path": "docs/ontology/capabilities/builder-deep-link-focus.md",
+      "title": "Builder Deep-Link Focus",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/builder-deep-link-focus",
+        "kind": "capability",
+        "title": "Builder Deep-Link Focus",
+        "domain": "views",
+        "elements": [
+          "builder-node-query-focus",
+          "ontology-deeplink-node-resolver"
+        ]
+      },
       "headings": [
         {
-          "depth": 2,
-          "text": "다루는 surface",
-          "slug": "다루는-surface"
-        },
-        {
-          "depth": 2,
-          "text": "관련",
-          "slug": "관련"
-        },
-        {
-          "depth": 2,
-          "text": "단위 테스트",
-          "slug": "단위-테스트"
+          "depth": 1,
+          "text": "Builder Deep-Link Focus",
+          "slug": "builder-deep-link-focus"
         }
       ],
-      "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (20260514) 로 7 commit 단위 도입. 선 꼬임 해소 — useVaultGraphFlow 가 containment 엣지 (domains / capabilities / elements / contains) 만 dagre rank 계산에 투입. relates / dependencies / describes 는 overlay 로만 그려져 rank 에 영향 0 n8n 스타일 엣지 — containment 는 smoothstep + 둥근 모서리 (borderRadius 12) ",
-      "wordCount": 330,
-      "updatedAt": "2026-05-14T12:44:39.985Z",
-      "linksOut": [
-        "capabilities/builder-vault-write"
-      ]
+      "excerpt": "/ontology/edit?node=<vaultdocslug opens the builder with the matching vault node selected in the inspector and centered on the canvas. The capability lets graph surfaces hand users directly from inspection into editing, instead of requiring them to search for the same node again. /ontology now preserves selectednode co",
+      "wordCount": 114,
+      "updatedAt": "2026-05-24T21:12:56.262Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/builder-relation-write-confirm",
+      "path": "docs/ontology/capabilities/builder-relation-write-confirm.md",
+      "title": "Builder Relation Write Confirm",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/builder-relation-write-confirm",
+        "kind": "capability",
+        "title": "Builder Relation Write Confirm",
+        "domain": "views",
+        "elements": [
+          "builder-relation-proposal",
+          "builder-relation-write-confirm-panel"
+        ]
+      },
+      "headings": [],
+      "excerpt": "/ontology/edit does not write a vault↔vault edge immediately after a drag. It opens a confirmation step that explains the inferred relation key and the reason for that inference, lets the user choose an alternate frontmatter key, and breaks the write scope into the file path, changed markdown files, unchanged markdown ",
+      "wordCount": 731,
+      "updatedAt": "2026-05-25T04:59:40.521Z",
+      "linksOut": []
     },
     {
       "slug": "ontology/capabilities/builder-vault-write",
@@ -5005,8 +5029,31 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
-      "wordCount": 10207,
-      "updatedAt": "2026-05-24T14:21:00.036Z",
+      "wordCount": 10265,
+      "updatedAt": "2026-05-25T02:44:11.389Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/collaborator-reader-brief",
+      "path": "docs/ontology/capabilities/collaborator-reader-brief.md",
+      "title": "Collaborator Reader Brief",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/collaborator-reader-brief",
+        "kind": "capability",
+        "title": "Collaborator Reader Brief",
+        "domain": "views",
+        "elements": [
+          "insights-collaborator-brief",
+          "insights-orphan-repair-packet",
+          "ontology-review-brief",
+          "topology-ontology-drawer-model"
+        ]
+      },
+      "headings": [],
+      "excerpt": "/topology, /ontology, and /ontology/insights expose a secondary collaborator reader lane without making nondevelopers the primary product target. The lane translates a selected ontology node into a plainlanguage lens, sourcebacked relation summary, and review prompt. Planners, marketers, and domain collaborators can in",
+      "wordCount": 533,
+      "updatedAt": "2026-05-25T04:25:22.656Z",
       "linksOut": []
     },
     {
@@ -5163,8 +5210,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 12783,
-      "updatedAt": "2026-05-24T02:45:21.255Z",
+      "wordCount": 12792,
+      "updatedAt": "2026-05-24T23:17:26.512Z",
       "linksOut": []
     },
     {
@@ -5393,6 +5440,51 @@
       "excerpt": "Claude Code 가 새 세션을 열 때 한 번 실행되어 현재 디렉토리의 ontology vault 요약 (총 노드 수 · kind 분포 · 첫 8 노드 샘플) 을 agent system context 에 inject 한다. 매 prompt 마다 사용자가 \"ontology 활용해\" 라고 알려주지 않아도 agent 가 작업 첫 순간부터 vault 를 인지한다. domains/aiagentpartner — agent 가 vault 와 상호작용하는 surface 군. capabilities/clideveloperentry — vault 요약을 만들 때 ohmyontolo",
       "wordCount": 152,
       "updatedAt": "2026-05-05T15:29:33.665Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/topology-analysis-modes",
+      "path": "docs/ontology/capabilities/topology-analysis-modes.md",
+      "title": "Topology Analysis Modes",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/topology-analysis-modes",
+        "kind": "capability",
+        "title": "Topology Analysis Modes",
+        "domain": "views",
+        "elements": [
+          "topology-analysis-bar",
+          "topology-analysis-state"
+        ]
+      },
+      "headings": [],
+      "excerpt": "/topology exposes explicit Overview / Focus / Path / Health modes so the Sigma graph reads as an analysis workspace instead of a decorative map. The mode switcher remains reachable on mobile, so smallscreen topology is not reduced back to a passive map. Path prompts and results are offset below the mobile mode switcher",
+      "wordCount": 1105,
+      "updatedAt": "2026-05-25T05:10:55.718Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/topology-ontology-inspection",
+      "path": "docs/ontology/capabilities/topology-ontology-inspection.md",
+      "title": "Topology Ontology Inspection",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/topology-ontology-inspection",
+        "kind": "capability",
+        "title": "Topology Ontology Inspection",
+        "domain": "views",
+        "elements": [
+          "builder-node-query-focus",
+          "ontology-deeplink-node-resolver",
+          "topology-ontology-drawer",
+          "topology-ontology-drawer-model",
+          "topology-selected-node-resolver"
+        ]
+      },
+      "headings": [],
+      "excerpt": "/topology supports ontologyaware node inspection instead of treating nonproject nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer summarizes the source document, direct incoming/outgoing relation counts, relationtype chips, and a bounded relation preview. It also l",
+      "wordCount": 422,
+      "updatedAt": "2026-05-25T03:07:11.982Z",
       "linksOut": []
     },
     {
@@ -5721,6 +5813,7 @@
           "frontmatter-to-ontology"
         ],
         "elements": [
+          "elements/ontology-relation-key-inference",
           "src/entities/docs-vault/lib/derive-ontology-from-vault.ts",
           "src/entities/knowledge-graph",
           "src/entities/ontology-class"
@@ -5739,7 +5832,7 @@
       ],
       "excerpt": "4layer class hierarchy (Project · Domain · Capability · Element + Document) + 7 edge types (KNOWLEDGEEDGETYPES) + evidencegrounded statements. Vault frontmatter is the single source of truth — deriveontologyfromvault turns \\.md\\ frontmatter into the inmemory graph. Architecture overview: \\docs/ARCHITECTURE.md\\.",
       "wordCount": 43,
-      "updatedAt": "2026-05-13T00:02:55.341Z",
+      "updatedAt": "2026-05-24T23:37:32.227Z",
       "linksOut": []
     },
     {
@@ -5792,17 +5885,34 @@
         "capabilities": [
           "agent-graph-readiness",
           "builder-canvas-polish",
+          "builder-deep-link-focus",
+          "builder-relation-write-confirm",
           "builder-vault-write",
+          "collaborator-reader-brief",
           "ontology-hub-mode-aware",
+          "topology-analysis-modes",
+          "topology-ontology-inspection",
           "topology-sigma-render"
         ],
         "elements": [
+          "builder-node-query-focus",
+          "builder-relation-proposal",
+          "builder-relation-write-confirm-panel",
+          "insights-collaborator-brief",
+          "insights-orphan-repair-packet",
+          "ontology-deeplink-node-resolver",
+          "ontology-review-brief",
           "sigma-graphology",
           "src/views/home",
           "src/views/ontology-edit",
           "src/views/ontology-view",
           "src/widgets/global-search",
           "src/widgets/topology-map-sigma",
+          "topology-analysis-bar",
+          "topology-analysis-state",
+          "topology-ontology-drawer",
+          "topology-ontology-drawer-model",
+          "topology-selected-node-resolver",
           "xyflow"
         ],
         "relates": [
@@ -5819,7 +5929,67 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합.",
       "wordCount": 38,
-      "updatedAt": "2026-05-22T02:09:17.634Z",
+      "updatedAt": "2026-05-24T22:06:20.043Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/builder-node-query-focus",
+      "path": "docs/ontology/elements/builder-node-query-focus.md",
+      "title": "Builder Node Query Focus",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/builder-node-query-focus",
+        "kind": "element",
+        "title": "Builder Node Query Focus",
+        "domain": "views"
+      },
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Builder Node Query Focus",
+          "slug": "builder-node-query-focus"
+        }
+      ],
+      "excerpt": "src/views/ontologyedit/lib/resolvebuilderquerynode.ts normalizes the node query for src/views/ontologyedit/ui/OntologyEditPage.tsx, accepting exact livevault slugs, dogfood ontology/prefixed slugs, and frontmatter slug aliases. OntologyEditPage uses the resolved slug to select that vault node in the inspector while pan",
+      "wordCount": 71,
+      "updatedAt": "2026-05-24T21:12:56.263Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/builder-relation-proposal",
+      "path": "docs/ontology/elements/builder-relation-proposal.md",
+      "title": "Builder Relation Proposal Model",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/builder-relation-proposal",
+        "kind": "element",
+        "title": "Builder Relation Proposal Model",
+        "domain": "views",
+        "relates": [
+          "elements/ontology-relation-key-inference"
+        ]
+      },
+      "headings": [],
+      "excerpt": "src/views/ontologyedit/lib/relationproposal.ts contains the builder relation proposal model. It infers the default relation key for a drag between persisted vault nodes, formats the sourceside frontmatter write preview, formats the small frontmatter patch snippet that will be appended to the source document, builds a s",
+      "wordCount": 322,
+      "updatedAt": "2026-05-25T02:54:56.810Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/builder-relation-write-confirm-panel",
+      "path": "docs/ontology/elements/builder-relation-write-confirm-panel.md",
+      "title": "Builder Relation Write Confirm Panel",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/builder-relation-write-confirm-panel",
+        "kind": "element",
+        "title": "Builder Relation Write Confirm Panel",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/ontologyedit/ui/RelationWriteConfirm.tsx is the confirmation panel shown after dragging between two persisted vault nodes. It presents the inferred edge with a dedicated inferredkey row and the schema reason behind that inference, selectable relation keys, a writescope table with the source markdown file, cha",
+      "wordCount": 864,
+      "updatedAt": "2026-05-25T04:59:18.404Z",
       "linksOut": []
     },
     {
@@ -5847,6 +6017,49 @@
       "excerpt": "브라우저 native API — showDirectoryPicker() 로 사용자 폴더 선택, FileSystemDirectoryHandle 로 read/write. 우리는 IndexedDB 에 핸들 영속, focus / visibility 시 fingerprint 비교 재스캔. SSRsafe (window 가드). 미지원 브라우저는 LocalVaultPicker 가 명시적 안내.",
       "wordCount": 38,
       "updatedAt": "2026-05-04T01:27:35.687Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/insights-collaborator-brief",
+      "path": "docs/ontology/elements/insights-collaborator-brief.md",
+      "title": "Insights Collaborator Brief",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/insights-collaborator-brief",
+        "kind": "element",
+        "title": "Insights Collaborator Brief",
+        "domain": "views",
+        "path": "src/views/ontology-insights/lib/collaborator-insights-brief.ts",
+        "relates": [
+          "capabilities/collaborator-reader-brief"
+        ]
+      },
+      "headings": [],
+      "excerpt": "src/views/ontologyinsights/lib/collaboratorinsightsbrief.ts derives the copyable collaborator overview shown on /ontology/insights. It summarizes node, relation, domain, crossdomain impact, and openquestion counts, highlights the top shared vocabulary hubs, and chooses the review focus: resolve orphan ownership questio",
+      "wordCount": 738,
+      "updatedAt": "2026-05-25T04:25:15.961Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/insights-orphan-repair-packet",
+      "path": "docs/ontology/elements/insights-orphan-repair-packet.md",
+      "title": "Insights Orphan Repair Packet",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/insights-orphan-repair-packet",
+        "kind": "element",
+        "title": "Insights Orphan Repair Packet",
+        "domain": "views",
+        "path": "src/views/ontology-insights/lib/orphan-node-actions.ts",
+        "relates": [
+          "capabilities/collaborator-reader-brief",
+          "elements/insights-collaborator-brief"
+        ]
+      },
+      "headings": [],
+      "excerpt": "src/views/ontologyinsights/lib/orphannodeactions.ts turns each /ontology/insights orphan or open ownership question into actionable links and a copyable repair packet. The row actions keep the same selected node across the ontology tree, topology health mode, and builder focus view. The packet adds the readfirst agent ",
+      "wordCount": 184,
+      "updatedAt": "2026-05-25T02:32:37.411Z",
       "linksOut": []
     },
     {
@@ -5878,6 +6091,57 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/ontology-deeplink-node-resolver",
+      "path": "docs/ontology/elements/ontology-deeplink-node-resolver.md",
+      "title": "Ontology Deeplink Node Resolver",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-deeplink-node-resolver",
+        "kind": "element",
+        "title": "Ontology Deeplink Node Resolver",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/ontologyview/lib/resolvedeeplinknode.ts resolves /ontology?node=... into the selected ontology node. It accepts both canonical ontology IDs such as capability:mcpserver and vault document slugs such as capabilities/mcpserver. This keeps links from topology, docs, and builder compatible even though the tree vi",
+      "wordCount": 48,
+      "updatedAt": "2026-05-24T19:21:46.256Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/ontology-relation-key-inference",
+      "path": "docs/ontology/elements/ontology-relation-key-inference.md",
+      "title": "Ontology Relation Key Inference",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-relation-key-inference",
+        "kind": "element",
+        "title": "Ontology Relation Key Inference",
+        "domain": "ontology-core"
+      },
+      "headings": [],
+      "excerpt": "src/shared/lib/ontologyrelationkey.ts centralizes schemaaware frontmatter relation key inference. Builder relation confirmation and topology Path evidence both use this shared helper so a source/target pair yields the same preflight relation key before any addrelation write. Hierarchylike pairs map to concrete graph ke",
+      "wordCount": 125,
+      "updatedAt": "2026-05-24T23:48:23.653Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/ontology-review-brief",
+      "path": "docs/ontology/elements/ontology-review-brief.md",
+      "title": "Ontology Review Brief",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-review-brief",
+        "kind": "element",
+        "title": "Ontology Review Brief",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/ontologyview/lib/reviewbrief.ts and the selectednode detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and direct ",
+      "wordCount": 393,
+      "updatedAt": "2026-05-25T03:49:15.491Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/sigma-graphology",
       "path": "docs/ontology/elements/sigma-graphology.md",
       "title": "Sigma + Graphology + ForceAtlas2",
@@ -5899,9 +6163,97 @@
           "slug": "sigma-graphology-forceatlas2"
         }
       ],
-      "excerpt": "WebGL spatial network 라이브러리 스택. Sigma 가 render, Graphology 가 그래프 자료구조, ForceAtlas2 가 layout 알고리즘. / (홈 hub) 와 /topology (alias) 의 토폴로지 view 가 의존.",
-      "wordCount": 33,
-      "updatedAt": "2026-05-04T01:27:35.687Z",
+      "excerpt": "WebGL spatial network 라이브러리 스택. Sigma 가 render, Graphology 가 그래프 자료구조, ForceAtlas2 가 layout 알고리즘. / (홈 hub) 와 /topology (alias) 의 토폴로지 view 가 의존. Path analysis mode now changes Sigma node clicks into source / target path picks while the mode is active, with Shift+click kept as the fallback gesture outside Path mode.",
+      "wordCount": 62,
+      "updatedAt": "2026-05-24T19:54:30.497Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-analysis-bar",
+      "path": "docs/ontology/elements/topology-analysis-bar.md",
+      "title": "Topology Analysis Bar",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-analysis-bar",
+        "kind": "element",
+        "title": "Topology Analysis Bar",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/home/ui/TopologyAnalysisBar.tsx is the compact mode switcher shown over /topology. It owns the visible Overview / Focus / Path / Health controls, the small metrics line, the Overview graph handoff brief, the Health stale/orphan/promotion chips, and the first actionable Health inspect target. The bar is reacha",
+      "wordCount": 925,
+      "updatedAt": "2026-05-25T05:10:40.051Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-analysis-state",
+      "path": "docs/ontology/elements/topology-analysis-state.md",
+      "title": "Topology Analysis State",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-analysis-state",
+        "kind": "element",
+        "title": "Topology Analysis State",
+        "domain": "views",
+        "relates": [
+          "elements/ontology-relation-key-inference"
+        ]
+      },
+      "headings": [],
+      "excerpt": "src/views/home/model/urlstate.ts and src/views/home/lib/topologyanalysis.ts persist /topology?mode=<overview|focus|path|health and derive the small read model used by the analysis bar. The state is URLaddressable so Claude Code, Codex, and humans can share the same topology analysis context. HomePage forwards Path mode",
+      "wordCount": 771,
+      "updatedAt": "2026-05-25T05:05:46.684Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-ontology-drawer",
+      "path": "docs/ontology/elements/topology-ontology-drawer.md",
+      "title": "Topology Ontology Drawer",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-ontology-drawer",
+        "kind": "element",
+        "title": "Topology Ontology Drawer",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontologyaware detail panel inside /topology. It turns a selected domain / capability / element node into an operational graph inspection surface: kind and source slug, direct incoming/outgoing relation counts, relationtype chips, relation previews, source document nav",
+      "wordCount": 374,
+      "updatedAt": "2026-05-25T03:21:44.620Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-ontology-drawer-model",
+      "path": "docs/ontology/elements/topology-ontology-drawer-model.md",
+      "title": "Topology Ontology Drawer Model",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-ontology-drawer-model",
+        "kind": "element",
+        "title": "Topology Ontology Drawer Model",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/home/lib/topologyontologydrawer.ts builds the read model for the topology ontology drawer. It summarizes selectednode incoming/outgoing relation counts, relationtype distribution, source slug, and a bounded relation preview. It also derives the collaborator brief lens, review prompt, and changeimpact summary ",
+      "wordCount": 244,
+      "updatedAt": "2026-05-25T02:23:53.231Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/topology-selected-node-resolver",
+      "path": "docs/ontology/elements/topology-selected-node-resolver.md",
+      "title": "Topology Selected Node Resolver",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/topology-selected-node-resolver",
+        "kind": "element",
+        "title": "Topology Selected Node Resolver",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/home/lib/resolvetopologyselectednode.ts resolves the selected /topology?p=... value into an ontology graph node. It accepts Sigma graph IDs such as capability:topologyanalysismodes, vault slugs such as capabilities/topologyanalysismodes, and docsvault ontology/... evidence IDs. This makes topology node select",
+      "wordCount": 58,
+      "updatedAt": "2026-05-24T19:42:29.187Z",
       "linksOut": []
     },
     {
@@ -6011,9 +6363,9 @@
           "slug": "갱신"
         }
       ],
-      "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 총 31 노드. 정확한 census 는 ohmyontology list 또는 mcp listkinds 호출. 파일을 직접 열거나, pnpm dev 후 /docs/ 에서 vault picker 로 이 디렉토리 선택. MCP 서버 등록 — mcp/README.md 의 .mcp.json 예시 참고. 23 도구 (read 15 + write 8): read — listcon",
-      "wordCount": 270,
-      "updatedAt": "2026-05-23T06:31:42.222Z",
+      "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
+      "wordCount": 316,
+      "updatedAt": "2026-05-25T05:43:13.583Z",
       "linksOut": []
     },
     {
@@ -6195,8 +6547,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 2072,
-      "updatedAt": "2026-05-23T20:33:54.126Z",
+      "wordCount": 2117,
+      "updatedAt": "2026-05-25T05:43:13.584Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -6750,13 +7102,6 @@
         "linkText": "`2026-05-04-claude-code.md`"
       }
     ],
-    "capabilities/builder-vault-write": [
-      {
-        "fromSlug": "ontology/capabilities/builder-canvas-polish",
-        "context": "-out-quint 으로 슬라이드 - **항상 visible port** — 연결 핸들 10px indigo ring 항상 노출, hover 시 단계적 enlarge + crosshair cursor ## 관련 **[capabilities/builder-vault-write]** — 빌더 캔버스의 vault 진실원 갱신 surface (이 polish 가 *시각/도구* 라면 builder-vault-write 는 *데이터 쓰기*). 같은 코드 베이스 안. ## 단위 테스트 - `alig",
-        "linkText": "capabilities/builder-vault-write"
-      }
-    ],
     "link": [
       {
         "fromSlug": "ontology/capabilities/ontology-extract-skill",
@@ -7042,6 +7387,20 @@
                 "title": "Builder Canvas Polish (n8n routing + 도메인 tint + 정렬 toolbar)"
               },
               {
+                "name": "builder-deep-link-focus",
+                "path": "ontology/capabilities/builder-deep-link-focus",
+                "type": "doc",
+                "slug": "ontology/capabilities/builder-deep-link-focus",
+                "title": "Builder Deep-Link Focus"
+              },
+              {
+                "name": "builder-relation-write-confirm",
+                "path": "ontology/capabilities/builder-relation-write-confirm",
+                "type": "doc",
+                "slug": "ontology/capabilities/builder-relation-write-confirm",
+                "title": "Builder Relation Write Confirm"
+              },
+              {
                 "name": "builder-vault-write",
                 "path": "ontology/capabilities/builder-vault-write",
                 "type": "doc",
@@ -7054,6 +7413,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/cli-developer-entry",
                 "title": "CLI Developer Entry (43 commands — vault + MCP verify + relationship explanation + bounded path enumeration + transitive reachability + relation preflight + agent handoff + growth/maintenance queue + graph deep dive)"
+              },
+              {
+                "name": "collaborator-reader-brief",
+                "path": "ontology/capabilities/collaborator-reader-brief",
+                "type": "doc",
+                "slug": "ontology/capabilities/collaborator-reader-brief",
+                "title": "Collaborator Reader Brief"
               },
               {
                 "name": "firebase-deploy-skill",
@@ -7124,6 +7490,20 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/session-start-ontology-context",
                 "title": "SessionStart Ontology Context Injection (.claude/hooks/inject-ontology-summary.sh)"
+              },
+              {
+                "name": "topology-analysis-modes",
+                "path": "ontology/capabilities/topology-analysis-modes",
+                "type": "doc",
+                "slug": "ontology/capabilities/topology-analysis-modes",
+                "title": "Topology Analysis Modes"
+              },
+              {
+                "name": "topology-ontology-inspection",
+                "path": "ontology/capabilities/topology-ontology-inspection",
+                "type": "doc",
+                "slug": "ontology/capabilities/topology-ontology-inspection",
+                "title": "Topology Ontology Inspection"
               },
               {
                 "name": "topology-sigma-render",
@@ -7210,11 +7590,46 @@
             "type": "dir",
             "children": [
               {
+                "name": "builder-node-query-focus",
+                "path": "ontology/elements/builder-node-query-focus",
+                "type": "doc",
+                "slug": "ontology/elements/builder-node-query-focus",
+                "title": "Builder Node Query Focus"
+              },
+              {
+                "name": "builder-relation-proposal",
+                "path": "ontology/elements/builder-relation-proposal",
+                "type": "doc",
+                "slug": "ontology/elements/builder-relation-proposal",
+                "title": "Builder Relation Proposal Model"
+              },
+              {
+                "name": "builder-relation-write-confirm-panel",
+                "path": "ontology/elements/builder-relation-write-confirm-panel",
+                "type": "doc",
+                "slug": "ontology/elements/builder-relation-write-confirm-panel",
+                "title": "Builder Relation Write Confirm Panel"
+              },
+              {
                 "name": "file-system-access-api",
                 "path": "ontology/elements/file-system-access-api",
                 "type": "doc",
                 "slug": "ontology/elements/file-system-access-api",
                 "title": "File System Access API"
+              },
+              {
+                "name": "insights-collaborator-brief",
+                "path": "ontology/elements/insights-collaborator-brief",
+                "type": "doc",
+                "slug": "ontology/elements/insights-collaborator-brief",
+                "title": "Insights Collaborator Brief"
+              },
+              {
+                "name": "insights-orphan-repair-packet",
+                "path": "ontology/elements/insights-orphan-repair-packet",
+                "type": "doc",
+                "slug": "ontology/elements/insights-orphan-repair-packet",
+                "title": "Insights Orphan Repair Packet"
               },
               {
                 "name": "mcp-sdk",
@@ -7224,11 +7639,67 @@
                 "title": "@modelcontextprotocol/sdk"
               },
               {
+                "name": "ontology-deeplink-node-resolver",
+                "path": "ontology/elements/ontology-deeplink-node-resolver",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-deeplink-node-resolver",
+                "title": "Ontology Deeplink Node Resolver"
+              },
+              {
+                "name": "ontology-relation-key-inference",
+                "path": "ontology/elements/ontology-relation-key-inference",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-relation-key-inference",
+                "title": "Ontology Relation Key Inference"
+              },
+              {
+                "name": "ontology-review-brief",
+                "path": "ontology/elements/ontology-review-brief",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-review-brief",
+                "title": "Ontology Review Brief"
+              },
+              {
                 "name": "sigma-graphology",
                 "path": "ontology/elements/sigma-graphology",
                 "type": "doc",
                 "slug": "ontology/elements/sigma-graphology",
                 "title": "Sigma + Graphology + ForceAtlas2"
+              },
+              {
+                "name": "topology-analysis-bar",
+                "path": "ontology/elements/topology-analysis-bar",
+                "type": "doc",
+                "slug": "ontology/elements/topology-analysis-bar",
+                "title": "Topology Analysis Bar"
+              },
+              {
+                "name": "topology-analysis-state",
+                "path": "ontology/elements/topology-analysis-state",
+                "type": "doc",
+                "slug": "ontology/elements/topology-analysis-state",
+                "title": "Topology Analysis State"
+              },
+              {
+                "name": "topology-ontology-drawer",
+                "path": "ontology/elements/topology-ontology-drawer",
+                "type": "doc",
+                "slug": "ontology/elements/topology-ontology-drawer",
+                "title": "Topology Ontology Drawer"
+              },
+              {
+                "name": "topology-ontology-drawer-model",
+                "path": "ontology/elements/topology-ontology-drawer-model",
+                "type": "doc",
+                "slug": "ontology/elements/topology-ontology-drawer-model",
+                "title": "Topology Ontology Drawer Model"
+              },
+              {
+                "name": "topology-selected-node-resolver",
+                "path": "ontology/elements/topology-selected-node-resolver",
+                "type": "doc",
+                "slug": "ontology/elements/topology-selected-node-resolver",
+                "title": "Topology Selected Node Resolver"
               },
               {
                 "name": "xyflow",

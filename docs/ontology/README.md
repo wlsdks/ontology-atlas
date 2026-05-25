@@ -11,17 +11,23 @@ describes:
 이 디렉토리는 **이 프로젝트 자신의 ontology** 다. dogfooding — 이 서비스를 만드는 데
 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현.
 
+여기서 ontology 는 단순한 그래프 그림이 아니라 **프로젝트가 무엇으로 이루어져
+있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델**이다. `project`,
+`domain`, `capability`, `element` 노드와 `contains`, `depends_on`, `relates`,
+`describes` 같은 관계를 markdown frontmatter 로 저장하고, CLI/MCP/UI 가 같은
+그래프를 읽고 갱신한다.
+
 ## 구조
 
 ```
 docs/ontology/
 ├── project.md            — root project 노드 (oh-my-ontology)
 ├── domains/              — 도메인 6개 (vault, ontology-core, views, ai-agent-partner, mode-aware-adapters, onboarding-ux)
-├── capabilities/         — capability 19개 (frontmatter → ontology, mode-aware adapter, mcp-server, cli-developer-entry …)
-└── elements/             — element 4개 (코드 디렉토리 / 라이브러리)
+├── capabilities/         — capability 24개 (frontmatter → ontology, topology analysis modes, collaborator reader brief …)
+└── elements/             — element 15개 (코드 디렉토리 / UI 모델 / 라이브러리)
 ```
 
-총 31 노드. 정확한 census 는 `oh-my-ontology list` 또는 mcp `list_kinds` 호출.
+총 47 노드. 정확한 census 는 `oh-my-ontology list` 또는 mcp `list_kinds` 호출.
 
 ## 사용
 

@@ -8,6 +8,10 @@
 
 `oh-my-ontology` is **a local-first codebase ontology workbench for the developer + their AI agent**. The `.md` frontmatter inside the vault *is* the nodes and edges — frontmatter is self-approving, no separate review step. Developer edits via CLI (`oh-my-ontology` 40 commands — vault scaffold, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) or web UI (`/ontology`, `/docs`); AI agent (Claude Code, Codex, Cursor) reads/writes the same `.md` files via the `mcp/` MCP server (23 tools).
 
+In this project, **ontology** means the executable meaning model of a codebase:
+`project`, `domain`, `capability`, and `element` nodes plus typed relations that
+explain ownership, dependencies, evidence, and impact for humans and AI agents.
+
 For direction, see `docs/PRODUCT-DIRECTION.md`. For features users can use right now, see `docs/FEATURES.md`.
 
 The single guiding principle (v3, R11 fire #25):
@@ -72,7 +76,7 @@ cli/                       CLI binary (developer's daily entry point) — npm pk
                            match-nodes / match-edges / overview / hubs / blast-radius / cycles / health
                            relation-check / agent-brief / workspace-brief / node / similar
 docs/                      long-form docs
-docs/ontology/             this project's own ontology vault (dogfood — 31 nodes)
+docs/ontology/             this project's own ontology vault (dogfood — 47 nodes)
                            `.omotignore` (gitignore-style) suppresses external
                            element ref noise in growth_plan / maintenance_plan
 tests/                     Vitest unit + Playwright E2E
@@ -143,7 +147,7 @@ Long-form docs:
 This project describes its own mental model in `docs/ontology/` as frontmatter markdown (dogfooding — we describe ourselves in our own data format).
 
 - Entry points: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 31 nodes (capability 19 · domain 6 · element 4 · project 1 · vault-readme 1)
+- 47 nodes (capability 24 · domain 6 · element 15 · project 1 · vault-readme 1)
 - AI agents query it via the `mcp/` MCP server — registration guide in `mcp/README.md`, example in `.mcp.json.example`
 - When you discover a new domain / capability / element, add it to the same directory (with the MCP `add_concept` tool, or by hand)
 
@@ -219,6 +223,10 @@ A vault with no `kind: project` doc still works (no containment, all nodes orpha
 
 `oh-my-ontology` 는 **개발자와 그 AI agent 가 같이 키우는 local-first codebase ontology workbench** 다. vault 의 `.md` frontmatter 가 *그대로* 노드와 관계 — 자기-승인이라 별도 검수 단계 없음. 개발자는 CLI (`oh-my-ontology` 34 명령 — vault scaffold, MCP verify, deterministic graph compile, bounded path enumeration, transitive reachability, relation preflight, agent handoff, growth/maintenance queue, daily exploration, graph-level deep dive) 또는 웹 UI (`/ontology`, `/docs`) 로 편집, AI agent (Claude Code, Codex, Cursor) 는 `mcp/` MCP 서버 (23 tools) 로 같은 `.md` 파일을 read/write.
 
+이 프로젝트에서 **ontology** 는 코드베이스의 실행 가능한 의미 모델이다.
+`project`, `domain`, `capability`, `element` 노드와 typed relation 으로 소유권,
+의존성, 근거, 변경 영향을 사람과 AI agent 가 함께 읽고 갱신하게 한다.
+
 핵심 원칙 한 줄 (v3, R11 fire #25):
 
 > **하나의 codebase, 하나의 ontology, 개발자와 그 AI agent 가 같이 키운다.**
@@ -267,7 +275,7 @@ pnpm vault:migrate --list         # 등록된 schema 마이그레이션 (R11)
 이 프로젝트 자신의 mental model 은 `docs/ontology/` 에 frontmatter md 로 표현되어 있다 (dogfooding — 우리 데이터 형식으로 우리 자신을 기술).
 
 - 진입점: `docs/ontology/README.md` · `docs/ontology/project.md`
-- 31 노드 (capability 19 · domain 6 · element 4 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__oh-my-ontology__list_concepts` 로 즉시 조회
+- 47 노드 (capability 24 · domain 6 · element 15 · project 1 · vault-readme 1) — 이 repo 의 `.mcp.json` 자동 등록 후 `mcp__oh-my-ontology__list_concepts` 로 즉시 조회
 - AI agent 는 `mcp/` MCP 서버로 query/write — 등록 가이드 `mcp/README.md`. **R14 부터** `add_concept` / `add` / `import` 세 진입점이 같은 schema 모듈로 양식 정규화 (`mcp/src/schema.mjs` ↔ `cli/src/lib/schema.mjs`)
 - 새 도메인/capability/element 가 생기면 같은 디렉토리에 추가 (`add_concept` 도구로 또는 직접 작성). **R14 의 `/ontology-sync` skill** 또는 SessionStart hook 으로 자동 sync 가능
 

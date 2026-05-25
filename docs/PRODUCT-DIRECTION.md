@@ -21,6 +21,12 @@ Launch framing (v4, 2026-05-18):
 - Spine = `.md` documents → a growing ontology. Topology / tree / builder are *views* of that spine.
 - PM / designer / ops are **bonus, not target**. If the surface happens to be friendly to them — good. We don't optimize for them.
 
+Working definition: an ontology here is not just a topology visualization or a
+generic knowledge base. It is the codebase's executable meaning model:
+`project`, `domain`, `capability`, and `element` nodes plus typed relations
+that explain ownership, dependency, evidence, and impact for both humans and AI
+agents.
+
 ### Why developer-primary
 
 - Developer already lives in the codebase — the *cost* of authoring frontmatter (slug / kind / domain / dependencies) is small for them.
@@ -274,7 +280,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 2. ✅ 23 tools (read 15 + write 8): `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` / `find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `compile_ontology` / `query_ontology` / `validate_vault` / `analyze_repo_structure` (R16) / `infer_imports` (R17) / `add_concept` / `add_concepts` / `add_relation` / `add_relations` / `patch_concept` / `delete_concept` / `rename_concept` / `merge_concepts` (R11 — atomic graph-level write)
 3. ✅ CLI command (`oh-my-ontology`) — `npx oh-my-ontology init <folder>` scaffolds the vault. The web `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 31 nodes describing our own mental model
+5. ✅ `docs/ontology/` dogfood vault — 47 nodes describing our own mental model
 
 ### 🚫 Phase 4 — Polish for non-developers — **dropped (R11 fire #25)**
 
