@@ -880,6 +880,11 @@ export function HomePage() {
                 focusSyncGateCopied: t("analysis.focusSyncGateCopied"),
                 focusOpenOntology: t("analysis.focusOpenOntology"),
                 focusOpenBuilder: t("analysis.focusOpenBuilder"),
+                focusReviewOrderTitle: t("analysis.focusReviewOrderTitle"),
+                focusReviewOrderProfile: t("analysis.focusReviewOrderProfile"),
+                focusReviewOrderImpact: t("analysis.focusReviewOrderImpact"),
+                focusReviewOrderRepair: t("analysis.focusReviewOrderRepair"),
+                focusReviewOrderSync: t("analysis.focusReviewOrderSync"),
                 focusBriefCopyAriaLabel: t("analysis.focusBriefCopyAriaLabel"),
                 focusBriefCopiedAriaLabel: t(
                   "analysis.focusBriefCopiedAriaLabel",

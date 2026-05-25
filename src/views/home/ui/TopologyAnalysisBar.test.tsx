@@ -67,6 +67,11 @@ const labels = {
   focusSyncGateCopied: "Sync gate copied",
   focusOpenOntology: "Open ontology",
   focusOpenBuilder: "Open builder",
+  focusReviewOrderTitle: "Focus review order",
+  focusReviewOrderProfile: "Read node profile",
+  focusReviewOrderImpact: "Trace incoming impact",
+  focusReviewOrderRepair: "Edit or confirm meaning",
+  focusReviewOrderSync: "Run sync gate",
   focusBriefCopyAriaLabel: "Copy focus review brief",
   focusBriefCopiedAriaLabel: "Focus review brief copied",
   focusMcpCopyAriaLabel: "Copy focus MCP profile",
@@ -420,6 +425,40 @@ describe("TopologyAnalysisBar", () => {
     expect(writeText).toHaveBeenCalledWith(
       'query_ontology({"operation":"blast_radius","slug":"capability:topology-analysis-modes","depth":2,"direction":"incoming"})',
     );
+  });
+
+  it("shows the focused node review order before edit handoff actions", () => {
+    render(
+      <TopologyAnalysisBar
+        mode="focus"
+        summary={{
+          mode: "focus",
+          primaryMetric: 4,
+          secondaryMetric: 3,
+          needsSelection: false,
+          healthBreakdown: {
+            stale: 0,
+            orphan: 0,
+            promotion: 0,
+          },
+        }}
+        healthAction={null}
+        selectedSlug="capability:topology-analysis-modes"
+        selectedTitle="Topology Analysis Modes"
+        labels={labels}
+        onModeChange={vi.fn()}
+        onHealthAction={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Focus review order")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-focus-review-order")).toBeInTheDocument();
+    expect(screen.getByText("Read node profile")).toBeInTheDocument();
+    expect(screen.getByText("Trace incoming impact")).toBeInTheDocument();
+    expect(screen.getByText("Edit or confirm meaning")).toBeInTheDocument();
+    expect(screen.getByText("Run sync gate")).toBeInTheDocument();
+    expect(screen.getAllByText("required")).toHaveLength(2);
+    expect(screen.getAllByText("after write")).toHaveLength(2);
   });
 
   it("copies a focused node review brief for collaborators and agents", async () => {

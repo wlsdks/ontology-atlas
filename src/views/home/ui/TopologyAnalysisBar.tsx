@@ -83,6 +83,11 @@ interface TopologyAnalysisBarLabels {
   focusSyncGateCopied: string;
   focusOpenOntology: string;
   focusOpenBuilder: string;
+  focusReviewOrderTitle: string;
+  focusReviewOrderProfile: string;
+  focusReviewOrderImpact: string;
+  focusReviewOrderRepair: string;
+  focusReviewOrderSync: string;
   focusBriefCopyAriaLabel: string;
   focusBriefCopiedAriaLabel: string;
   focusMcpCopyAriaLabel: string;
@@ -985,101 +990,133 @@ export function TopologyAnalysisBar({
             </div>
           ) : null}
           {mode === "focus" && selectedSlug ? (
-            <div className="mt-2 flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                onClick={copyFocusBrief}
-                className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
-                aria-label={
-                  focusBriefCopied
-                    ? labels.focusBriefCopiedAriaLabel
-                    : labels.focusBriefCopyAriaLabel
-                }
-              >
-                {focusBriefCopied ? (
-                  <Check size={12} aria-hidden />
-                ) : (
-                  <Clipboard size={12} aria-hidden />
-                )}
-                <span>
-                  {focusBriefCopied
-                    ? labels.focusBriefCopied
-                    : labels.focusBriefCopy}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={copyFocusMcpCheck}
-                className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                aria-label={
-                  focusMcpCopied
-                    ? labels.focusMcpCopiedAriaLabel
-                    : labels.focusMcpCopyAriaLabel
-                }
-              >
-                {focusMcpCopied ? (
-                  <Check size={12} aria-hidden />
-                ) : (
-                  <Clipboard size={12} aria-hidden />
-                )}
-                <span>
-                  {focusMcpCopied ? labels.focusMcpCopied : labels.focusMcpCopy}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={copyFocusMcpImpactCheck}
-                className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                aria-label={
-                  focusMcpImpactCopied
-                    ? labels.focusMcpImpactCopiedAriaLabel
-                    : labels.focusMcpImpactCopyAriaLabel
-                }
-              >
-                {focusMcpImpactCopied ? (
-                  <Check size={12} aria-hidden />
-                ) : (
-                  <Clipboard size={12} aria-hidden />
-                )}
-                <span>
-                  {focusMcpImpactCopied
-                    ? labels.focusMcpImpactCopied
-                    : labels.focusMcpImpactCopy}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={copyFocusSyncGate}
-                className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                aria-label={
-                  focusSyncGateCopied
-                    ? labels.focusSyncGateCopiedAriaLabel
-                    : labels.focusSyncGateCopyAriaLabel
-                }
-              >
-                {focusSyncGateCopied ? (
-                  <Check size={12} aria-hidden />
-                ) : (
-                  <Clipboard size={12} aria-hidden />
-                )}
-                <span>
-                  {focusSyncGateCopied
-                    ? labels.focusSyncGateCopied
-                    : labels.focusSyncGateCopy}
-                </span>
-              </button>
-              <Link
-                href={buildOntologyNodeHref(selectedSlug)}
-                className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
-              >
-                {labels.focusOpenOntology}
-              </Link>
-              <Link
-                href={buildTopologyHealthRepairHref(selectedSlug)}
-                className="inline-flex items-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
-              >
-                {labels.focusOpenBuilder}
-              </Link>
+            <div className="mt-2 grid gap-2">
+              <div className="rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1.5">
+                <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(190,199,255,0.82)]">
+                  {labels.focusReviewOrderTitle}
+                </p>
+                <dl
+                  className="mt-2 grid gap-1.5 sm:grid-cols-2"
+                  data-testid="topology-focus-review-order"
+                >
+                  <PathProofStep
+                    label={labels.focusReviewOrderProfile}
+                    status={labels.pathProofStatusRequired}
+                    tone="required"
+                  />
+                  <PathProofStep
+                    label={labels.focusReviewOrderImpact}
+                    status={labels.pathProofStatusRequired}
+                    tone="required"
+                  />
+                  <PathProofStep
+                    label={labels.focusReviewOrderRepair}
+                    status={labels.pathProofStatusAfterWrite}
+                    tone="after"
+                  />
+                  <PathProofStep
+                    label={labels.focusReviewOrderSync}
+                    status={labels.pathProofStatusAfterWrite}
+                    tone="after"
+                  />
+                </dl>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={copyFocusBrief}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
+                  aria-label={
+                    focusBriefCopied
+                      ? labels.focusBriefCopiedAriaLabel
+                      : labels.focusBriefCopyAriaLabel
+                  }
+                >
+                  {focusBriefCopied ? (
+                    <Check size={12} aria-hidden />
+                  ) : (
+                    <Clipboard size={12} aria-hidden />
+                  )}
+                  <span>
+                    {focusBriefCopied
+                      ? labels.focusBriefCopied
+                      : labels.focusBriefCopy}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={copyFocusMcpCheck}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
+                  aria-label={
+                    focusMcpCopied
+                      ? labels.focusMcpCopiedAriaLabel
+                      : labels.focusMcpCopyAriaLabel
+                  }
+                >
+                  {focusMcpCopied ? (
+                    <Check size={12} aria-hidden />
+                  ) : (
+                    <Clipboard size={12} aria-hidden />
+                  )}
+                  <span>
+                    {focusMcpCopied ? labels.focusMcpCopied : labels.focusMcpCopy}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={copyFocusMcpImpactCheck}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
+                  aria-label={
+                    focusMcpImpactCopied
+                      ? labels.focusMcpImpactCopiedAriaLabel
+                      : labels.focusMcpImpactCopyAriaLabel
+                  }
+                >
+                  {focusMcpImpactCopied ? (
+                    <Check size={12} aria-hidden />
+                  ) : (
+                    <Clipboard size={12} aria-hidden />
+                  )}
+                  <span>
+                    {focusMcpImpactCopied
+                      ? labels.focusMcpImpactCopied
+                      : labels.focusMcpImpactCopy}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={copyFocusSyncGate}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
+                  aria-label={
+                    focusSyncGateCopied
+                      ? labels.focusSyncGateCopiedAriaLabel
+                      : labels.focusSyncGateCopyAriaLabel
+                  }
+                >
+                  {focusSyncGateCopied ? (
+                    <Check size={12} aria-hidden />
+                  ) : (
+                    <Clipboard size={12} aria-hidden />
+                  )}
+                  <span>
+                    {focusSyncGateCopied
+                      ? labels.focusSyncGateCopied
+                      : labels.focusSyncGateCopy}
+                  </span>
+                </button>
+                <Link
+                  href={buildOntologyNodeHref(selectedSlug)}
+                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  {labels.focusOpenOntology}
+                </Link>
+                <Link
+                  href={buildTopologyHealthRepairHref(selectedSlug)}
+                  className="inline-flex items-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  {labels.focusOpenBuilder}
+                </Link>
+              </div>
             </div>
           ) : null}
         </div>
