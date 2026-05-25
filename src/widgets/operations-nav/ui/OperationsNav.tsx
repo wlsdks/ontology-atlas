@@ -7,6 +7,7 @@ import { useLocalVault } from '@/features/docs-vault-local';
 import { ThemeToggle } from '@/features/theme-toggle';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { Tooltip } from '@/shared/ui';
+import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { OntologySubNav, shouldShowOntologySubNav } from '@/widgets/ontology-sub-nav';
 import { isOperationsTabActive } from '../lib/is-tab-active';
 
@@ -72,6 +73,7 @@ function ModeBadge({ mode }: { mode: 'static' | 'local' }) {
   // useLocalVault 자체는 SSR-safe (window 가드).
   const vault = useLocalVault();
   const t = useTranslations('modeBadge');
+  const demoHref = isTauriVaultRuntime() ? '/docs/?intent=local' : '/download/';
   if (mode === 'local') {
     const docCount = vault.manifest?.docs.length ?? 0;
     const handleName = vault.handle?.name ?? 'vault';
@@ -96,7 +98,7 @@ function ModeBadge({ mode }: { mode: 'static' | 'local' }) {
   return (
     <Tooltip content={t('demoTooltipClickable')}>
       <Link
-        href="/docs/?intent=local"
+        href={demoHref}
         aria-label={t('demoAriaLabelClickable')}
         className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.08)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(244,183,49,0.55)] hover:bg-[color:rgba(244,183,49,0.14)]"
       >

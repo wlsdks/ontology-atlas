@@ -130,13 +130,14 @@ function DocsVaultContent() {
   // source 초기값을 'local' 로 박아 처음부터 picker UI 가 우측 sidebar 에
   // 보이게 (eval B4 finding — 이전엔 picker 가 4-단계 깊숙이 묻혀 있었음).
   const [source, setSource] = useState<Source>('server');
+  const isDesktopRuntime = isTauriVaultRuntime();
   // ?intent=local 진입 시: source 'local' + advanced panel 펼침. SSR 시점엔
   // searchParams 가 stale 일 수 있어 mount 후 직접 window.location 에서 read.
   // landing 의 '내 마크다운 폴더 열기' CTA 가 dead-end 안 되도록.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const intent = new URLSearchParams(window.location.search).get('intent');
-    if (intent === 'local') {
+    if (intent === 'local' && isDesktopRuntime) {
       window.queueMicrotask(() => {
         localIntentAutoOpenRef.current = true;
         setSource('local');
@@ -146,13 +147,14 @@ function DocsVaultContent() {
     // mount 1회만 — 사용자가 직접 닫은 후 reload 시 다시 안 열리게.
     // setAdvancedOpen 은 useAdvancedMenu 의 useCallback wrap 결과라 ref-stable
     // 이지만 ESLint 가 destructured method 의 stability 추적 못 해 명시.
-  }, [setAdvancedOpen]);
+  }, [isDesktopRuntime, setAdvancedOpen]);
   const [mobileTreeOpen, setMobileTreeOpen] = useState(false);
   const localVault = useLocalVault();
   const localVaultStatus = localVault.status;
   const openLocalVault = localVault.open;
   const toast = useToast();
   const desktopIntentPickerOpenedRef = useRef(false);
+  const localSourceDisabled = !isDesktopRuntime || localVault.status === 'unsupported';
 
   // R11 #16 step 5 — pinned/recent persistence 는 useDocsVaultPersistence hook
   // 에서 캡슐화. setter 들은 view 의 다양한 mutation 사이트 (delete/new-doc 등)
@@ -212,15 +214,15 @@ function DocsVaultContent() {
 
   useEffect(() => {
     migrateLegacyRecentDocs();
-    // ?intent=local 진입 사용자는 localStorage 의 stored 'server' 보다 url
-    // intent 가 우선 — 'local' 로 강제 (다른 useEffect 의 source set 와
-    // 충돌 회피).
+    // ?intent=local 은 설치 앱 안에서만 local source 로 해석한다. hosted
+    // browser 에서는 웹을 홍보/다운로드 surface 로 유지하고 로컬 vault 작업을
+    // 열지 않는다.
     if (typeof window !== 'undefined') {
       const intent = new URLSearchParams(window.location.search).get('intent');
-      if (intent === 'local') return;
+      if (intent === 'local' && isDesktopRuntime) return;
     }
     scheduleStateSync(() => setSource(readStoredSource()));
-  }, []);
+  }, [isDesktopRuntime]);
 
   // URL 복사 feedback — 최근에 복사된 slug 를 잠깐 기억하고 2초 뒤 reset.
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
@@ -256,16 +258,16 @@ function DocsVaultContent() {
   const { articleScrollRef, activeHeadingSlug, setActiveHeadingSlug } =
     useDocsVaultScrollSpy(selectedSlug, source);
 
-  // 로컬 볼트 state 가 unsupported 면 server 로 강제 복귀 (토글 누른 후
-  // 브라우저 교체한 경우 대비).
+  // Hosted browser 에서는 local vault 작업을 열지 않는다. 기존 브라우저
+  // 세션이 local source 를 저장해 둔 경우에도 promo/read-only surface 로 복귀.
   useEffect(() => {
-    if (source === 'local' && localVaultStatus === 'unsupported') {
+    if (source === 'local' && (!isDesktopRuntime || localVaultStatus === 'unsupported')) {
       scheduleStateSync(() => {
         setSource('server');
         storeSource('server');
       });
     }
-  }, [source, localVaultStatus]);
+  }, [isDesktopRuntime, source, localVaultStatus]);
 
   useEffect(() => {
     if (
@@ -281,13 +283,13 @@ function DocsVaultContent() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (desktopIntentPickerOpenedRef.current) return;
-    if (!isTauriVaultRuntime()) return;
+    if (!isDesktopRuntime) return;
     const intent = new URLSearchParams(window.location.search).get('intent');
     if (intent !== 'local') return;
     if (source !== 'local' || localVaultStatus !== 'idle') return;
     desktopIntentPickerOpenedRef.current = true;
     void openLocalVault();
-  }, [source, localVaultStatus, openLocalVault]);
+  }, [isDesktopRuntime, source, localVaultStatus, openLocalVault]);
 
   const handleSourceChange = useCallback((next: Source) => {
     setSource(next);
@@ -304,11 +306,11 @@ function DocsVaultContent() {
     // 발생 → ?intent=local 의 자동-펼침 동작과 동일하게, 헤더 토글
     // 클릭만으로도 picker 즉시 노출. 이미 vault loaded 면 dropdown 펼칠
     // 필요 없음 (사용자는 picker 가 아니라 문서 작업하러 옴).
-    if (next === 'local' && localVault.status !== 'loaded') {
+    if (next === 'local' && isDesktopRuntime && localVault.status !== 'loaded') {
       localIntentAutoOpenRef.current = true;
       setAdvancedOpen(true);
     }
-  }, [replaceUrlState, view, localVault.status, setAdvancedOpen]);
+  }, [isDesktopRuntime, replaceUrlState, view, localVault.status, setAdvancedOpen]);
 
   // 현재 활성 매니페스트 — source 에 따라 분기. 로컬은 loaded 이전엔 null.
   const manifest: VaultManifest =
@@ -1297,7 +1299,9 @@ function DocsVaultContent() {
             </button>
             <Tooltip
               content={
-                localVault.status === 'unsupported'
+                !isDesktopRuntime
+                  ? t('vaultStatus.desktopOnlyTooltip')
+                  : localVault.status === 'unsupported'
                   ? t('vaultStatus.unsupportedTooltip')
                   : t('vaultStatus.localTooltip')
               }
@@ -1307,9 +1311,9 @@ function DocsVaultContent() {
                 type="button"
                 role="radio"
                 aria-checked={source === 'local'}
-                disabled={localVault.status === 'unsupported'}
+                disabled={localSourceDisabled}
                 aria-describedby={
-                  localVault.status === 'unsupported'
+                  localSourceDisabled
                     ? 'docs-vault-local-unsupported-hint'
                     : undefined
                 }
@@ -1327,12 +1331,14 @@ function DocsVaultContent() {
             {/* unsupported 상태일 때 sr-only hint 노출 — 시각적으론 disabled
                 opacity 와 tooltip 만으로 신호. 스크린리더 사용자는 disabled
                 button 만 듣고는 *왜* disabled 인지 모르므로 별도 description. */}
-            {localVault.status === 'unsupported' ? (
+            {localSourceDisabled ? (
               <span
                 id="docs-vault-local-unsupported-hint"
                 className="sr-only"
               >
-                {t('vaultStatus.unsupportedTooltip')}
+                {isDesktopRuntime
+                  ? t('vaultStatus.unsupportedTooltip')
+                  : t('vaultStatus.desktopOnlyTooltip')}
               </span>
             ) : null}
           </div>

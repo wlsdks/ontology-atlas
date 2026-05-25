@@ -301,12 +301,15 @@ if (landingPage.includes('href="/download/"')) {
 
 if (
   !landingPage.includes('/docs/?intent=local') &&
-  !downloadPage.includes('/docs/?intent=local')
+  !downloadPage.includes('/docs/?intent=local') &&
+  docsVaultPage.includes("intent === 'local' && isDesktopRuntime") &&
+  docsVaultPage.includes("localSourceDisabled = !isDesktopRuntime") &&
+  docsVaultPage.includes("desktopOnlyTooltip")
 ) {
-  pass("hosted landing and download pages do not route users into the browser workbench");
+  pass("hosted pages do not route users into the browser workbench, and /docs local vault work is desktop-only");
 } else {
   fail(
-    "hosted landing/download pages must stay promo/download-first and must not link to /docs/?intent=local",
+    "hosted landing/download pages must stay promo/download-first, and src/views/docs-vault/ui/DocsVaultPage.tsx must only honor ?intent=local / local vault work in the Tauri desktop runtime",
   );
 }
 

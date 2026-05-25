@@ -1517,6 +1517,7 @@
     },
     "vaultStatus": {
       "localTooltip": "내 디스크의 폴더를 vault 로 선택",
+      "desktopOnlyTooltip": "로컬 vault 작업은 이제 설치된 macOS 앱에서 시작합니다. 다운로드 페이지에서 앱을 설치하세요.",
       "unsupportedTooltip": "로컬 폴더는 Chrome / Edge / Safari 18.2+ 가 필요해요 (File System Access API)",
       "permissionNeededBanner": "Vault 잠시 멈춤 — 폴더 권한 재승인이 필요합니다. 그동안 샘플 문서를 보여주고 있어요.",
       "errorBanner": "Vault 폴더에 접근할 수 없어요 ({message}). 샘플 문서를 대신 표시 — picker 에서 다시 선택하거나 refresh 해 주세요.",

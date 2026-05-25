@@ -177,6 +177,10 @@ for a macOS prototype:
   action or steering new users into the web workbench. The download page also
   states that missing first-release DMGs mean the public release is still
   waiting on PR review and Apple signing gates.
+- The `/docs/?intent=local` vault-opening path is desktop-only: hosted browser
+  sessions keep `/docs` in the read-only packaged docs mode, disable the local
+  vault source, and point users back to the macOS download path instead of
+  calling the browser folder picker.
 - `pnpm desktop:release-preflight` is the local operator shortcut before a
   public tag: it runs readiness checks, docs-vault freshness, desktop checker
   tests, native bridge tests, runtime doctor, `cli:mcp-verify` against the

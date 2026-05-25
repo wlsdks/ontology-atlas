@@ -81,7 +81,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ hosted landing and download pages do not route users into the browser workbench/,
+    /✓ hosted pages do not route users into the browser workbench, and \/docs local vault work is desktop-only/,
   );
   assert.match(
     result.stdout,

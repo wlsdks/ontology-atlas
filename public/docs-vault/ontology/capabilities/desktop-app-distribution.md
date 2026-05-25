@@ -159,9 +159,9 @@ secondary CTA opens `/download/` as a static install guide, and the hosted
 landing/download pages no longer route users into `/docs/?intent=local`. The
 download page also explains that missing first-release DMGs mean the public
 release is still waiting on PR review and Apple signing gates.
-The browser folder-picker path remains in the codebase as a prototype and
-compatibility surface, but public web acquisition now points users to the
-installed app path.
+Hosted `/docs` sessions also keep local vault work disabled: `?intent=local`
+only opens the picker in the Tauri runtime, while browser users are sent back to
+the macOS download path for writable local work.
 
 This keeps the desktop app aligned with the core ontology definition: the
 frontmatter graph remains the source of truth, the CLI/MCP graph engine remains

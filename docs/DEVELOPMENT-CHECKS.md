@@ -228,9 +228,12 @@ The installed app must also keep first-run
 entry local: `src/views/root-entry/ui/RootEntryPage.tsx` routes Tauri sessions
 without a restored vault to `/docs/?intent=local` without rendering the hosted
 marketing page, and `DocsVaultPage` opens the native picker once for that
-intent. A loaded empty local vault must surface the ontology starter in the main
-workspace pane and select the generated `README.md` after creation, so the
-desktop first-run path does not dead-end behind a generic empty document state.
+intent. Hosted browser sessions must not treat `/docs/?intent=local` as a vault
+opening path; they keep local vault work disabled and leave installation as the
+path to writable local work. A loaded empty local vault must surface the
+ontology starter in the main workspace pane and select the generated `README.md`
+after creation, so the desktop first-run path does not dead-end behind a generic
+empty document state.
 `src/shared/lib/tauri-vault-fs.test.ts`
 locks the handle shim against the command names and relative-path behavior used
 by those flows. `VaultToolsMenu` and `LocalVaultPicker` keep the Tauri absolute

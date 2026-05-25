@@ -1517,6 +1517,7 @@
     },
     "vaultStatus": {
       "localTooltip": "Pick a folder on your disk as the vault",
+      "desktopOnlyTooltip": "Local vault work now starts in the installed macOS app. Use the download page to install it.",
       "unsupportedTooltip": "Local folders need Chrome, Edge, or Safari 18.2+ (File System Access API)",
       "permissionNeededBanner": "Vault is paused — re-grant folder access to keep editing. Showing sample docs until then.",
       "errorBanner": "Vault folder is unavailable ({message}). Showing sample docs — open the picker to re-pick or refresh.",
