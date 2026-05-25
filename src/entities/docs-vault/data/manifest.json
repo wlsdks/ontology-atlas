@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T07:27:48.517Z",
+  "generatedAt": "2026-05-25T07:30:48.789Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4903,8 +4903,8 @@
       },
       "headings": [],
       "excerpt": "/ontology/edit does not write a vault↔vault edge immediately after a drag. It opens a confirmation step that explains the inferred relation key and the reason for that inference, lets the user choose an alternate frontmatter key, and breaks the write scope into the file path, changed markdown files, unchanged markdown ",
-      "wordCount": 731,
-      "updatedAt": "2026-05-25T04:59:40.521Z",
+      "wordCount": 740,
+      "updatedAt": "2026-05-25T07:30:30.635Z",
       "linksOut": []
     },
     {
@@ -6058,8 +6058,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/RelationWriteConfirm.tsx is the confirmation panel shown after dragging between two persisted vault nodes. It presents the inferred edge with a dedicated inferredkey row and the schema reason behind that inference, selectable relation keys, a writescope table with the source markdown file, cha",
-      "wordCount": 998,
-      "updatedAt": "2026-05-25T07:05:57.089Z",
+      "wordCount": 1007,
+      "updatedAt": "2026-05-25T07:30:22.585Z",
       "linksOut": []
     },
     {

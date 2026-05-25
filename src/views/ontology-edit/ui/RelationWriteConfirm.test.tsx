@@ -73,8 +73,8 @@ const labels = {
   postSaveGraphHandoffBody:
     "Open the saved edge in topology before running the sync gate.",
   postSavePathHandoff: "Open topology path",
-  postSaveSourceFocus: "Source focus",
-  postSaveTargetFocus: "Target focus",
+  postSaveSourceFocus: "Source topology focus",
+  postSaveTargetFocus: "Target topology focus",
   saveChecklist: "Save decision checklist",
   saveChecklistSelectedKey: "Selected key matches intended meaning",
   saveChecklistPreflight: "Relation preflight result",
@@ -155,8 +155,8 @@ const postSaveLabels = {
   body: "Inspect the new edge before running the sync gate.",
   relationLabel: "edge",
   openPath: "Open topology path",
-  sourceFocus: "Source focus",
-  targetFocus: "Target focus",
+  sourceFocus: "Source topology focus",
+  targetFocus: "Target topology focus",
   copySyncGate: "Copy sync gate",
   copySyncGateCopied: "Sync gate copied",
   copySyncGateFailed: "Copy failed",
@@ -242,13 +242,13 @@ describe("RelationWriteConfirm", () => {
         "/topology/?mode=path&pathFrom=capabilities%2Fmcp-server&pathTo=elements%2Fmcp-index",
       ),
     );
-    expect(screen.getByRole("link", { name: "Source focus" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Source topology focus" })).toHaveAttribute(
       "href",
       expect.stringContaining(
         "/topology/?mode=focus&p=capabilities%2Fmcp-server",
       ),
     );
-    expect(screen.getByRole("link", { name: "Target focus" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Target topology focus" })).toHaveAttribute(
       "href",
       expect.stringContaining("/topology/?mode=focus&p=elements%2Fmcp-index"),
     );
@@ -868,11 +868,11 @@ describe("RelationPostSaveHandoff", () => {
       "href",
       "/topology/?mode=path&pathFrom=capabilities%2Fmcp-server&pathTo=elements%2Fmcp-index",
     );
-    expect(screen.getByRole("link", { name: "Source focus" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Source topology focus" })).toHaveAttribute(
       "href",
       "/topology/?mode=focus&p=capabilities%2Fmcp-server",
     );
-    expect(screen.getByRole("link", { name: "Target focus" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Target topology focus" })).toHaveAttribute(
       "href",
       "/topology/?mode=focus&p=elements%2Fmcp-index",
     );
