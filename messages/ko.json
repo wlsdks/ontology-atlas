@@ -1706,6 +1706,7 @@
       "scaffoldConfirm": "이 폴더를 Folder-Topology 규격으로 초기화할까요?\n\n- projects/ 디렉터리 + sample 2개 프로젝트\n- categories.md · statuses.md 기본 세트\n- README.md\n\n이미 존재하는 파일은 덮어쓰지 않습니다.",
       "scaffoldDone": "초기화 완료 — 새 파일 {created}개 · 스킵 {skipped}개\n\n방금 생성된 README.md 를 먼저 열어보세요. starter 는 .mcp.json 과 .codex/config.toml 도 함께 만들어 Claude Code, Cursor, Codex 가 이 vault 폴더에 바로 붙을 수 있게 합니다.",
       "scaffoldFailed": "초기화 실패: {message}",
+      "ontologyStarterDone": "ontology starter 생성 완료 — 새 파일 {created}개 · 스킵 {skipped}개. README.md 를 엽니다.",
       "agentVerifyPromptCopied": "agent 검증 프롬프트 복사됨",
       "agentVerifyPromptCopyFailed": "agent 검증 프롬프트를 복사하지 못했습니다",
       "dailyNoteFailed": "daily note 생성 실패: {message}",

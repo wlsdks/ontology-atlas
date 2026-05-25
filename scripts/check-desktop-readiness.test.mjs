@@ -162,6 +162,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop empty-vault workspace surfaces the ontology starter in the main pane and opens README after creation/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop local vault tools expose, copy, and reveal the selected absolute vault path/,
   );
   assert.match(

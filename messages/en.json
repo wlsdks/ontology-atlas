@@ -1706,6 +1706,7 @@
       "scaffoldConfirm": "Initialize this folder as a Folder-Topology vault?\n\n- projects/ directory + 2 sample projects\n- categories.md · statuses.md default sets\n- README.md\n\nExisting files are not overwritten.",
       "scaffoldDone": "Initialization complete — {created} new files · {skipped} skipped\n\nOpen the freshly generated README.md first. The starter also writes .mcp.json and .codex/config.toml so Claude Code, Cursor, or Codex can attach to this vault folder.",
       "scaffoldFailed": "Initialization failed: {message}",
+      "ontologyStarterDone": "Ontology starter created — {created} new files · {skipped} skipped. Opening README.md.",
       "agentVerifyPromptCopied": "Agent verification prompt copied",
       "agentVerifyPromptCopyFailed": "Could not copy agent verification prompt",
       "dailyNoteFailed": "Daily note creation failed: {message}",

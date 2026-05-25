@@ -32,6 +32,10 @@ so broad filesystem, shell, HTTP, or opener plugin permissions are not granted.
 `src-tauri/Info.plist` explains selected vault-folder access for protected
 macOS locations such as Documents, Downloads, Desktop, network volumes, and
 removable volumes.
+The desktop first-run path also keeps empty vaults actionable: after a user
+selects a blank local folder, the main workspace pane shows the ontology starter
+directly, creates the starter markdown and vault-local agent configs, then opens
+the generated `README.md` instead of showing a generic empty document state.
 `scripts/package-macos-dmg.mjs` wraps that `.app`
 with a reproducible `hdiutil` DMG so the download artifact does not depend on
 Tauri's Finder AppleScript DMG styling step, then writes a `.sha256` checksum.

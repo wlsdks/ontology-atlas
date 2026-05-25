@@ -706,6 +706,20 @@ if (
 }
 
 if (
+  docsVaultPage.includes("OntologyStarterCta") &&
+  docsVaultPage.includes("handleScaffoldOntologyStarter") &&
+  docsVaultPage.includes("manifest.docs.length === 0") &&
+  docsVaultPage.includes("setSelectedSlug('README')") &&
+  docsVaultPage.includes("dialog.ontologyStarterDone")
+) {
+  pass("desktop empty-vault workspace surfaces the ontology starter in the main pane and opens README after creation");
+} else {
+  fail(
+    "src/views/docs-vault/ui/DocsVaultPage.tsx must show the ontology starter directly in the main pane for a loaded empty local vault and open README.md after starter creation",
+  );
+}
+
+if (
   vaultToolsMenu.includes("getTauriVaultRootPath") &&
   vaultToolsMenu.includes("openTauriVaultInFinder") &&
   localVaultPicker.includes("rootPath") &&

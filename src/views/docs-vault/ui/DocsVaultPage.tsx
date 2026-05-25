@@ -26,6 +26,7 @@ import {
   X,
 } from 'lucide-react';
 import {
+  OntologyStarterCta,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
   VaultConflictError,
   useLocalVault,
@@ -506,6 +507,31 @@ function DocsVaultContent() {
       );
     }
   }, [canEditCurrent, localVault, recentKey, replaceUrlState, setRecentSlugs, t]);
+
+  const handleScaffoldOntologyStarter = useCallback(async () => {
+    const result = await localVault.scaffoldOntology();
+    setSelectedSlug('README');
+    setRecentSlugs(pushRecentDoc(recentKey, 'README'));
+    replaceUrlState({ slug: 'README', view: 'doc' });
+    setView('doc');
+    setAdvancedOpen(false);
+    toast.show(
+      t('dialog.ontologyStarterDone', {
+        created: result.created,
+        skipped: result.skipped,
+      }),
+      'success',
+    );
+    return result;
+  }, [
+    localVault,
+    recentKey,
+    replaceUrlState,
+    setAdvancedOpen,
+    setRecentSlugs,
+    t,
+    toast,
+  ]);
 
   const handleDailyNote = useCallback(async () => {
     if (!canEditCurrent) return;
@@ -1601,6 +1627,18 @@ function DocsVaultContent() {
                   }}
                 />
               ) : null}
+            </div>
+          ) : source === 'local' &&
+            localVault.status === 'loaded' &&
+            canEditCurrent &&
+            manifest.docs.length === 0 ? (
+            <div className="flex min-h-full items-center justify-center p-5">
+              <div className="w-full max-w-3xl">
+                <OntologyStarterCta
+                  onScaffold={handleScaffoldOntologyStarter}
+                  docCount={0}
+                />
+              </div>
             </div>
           ) : (
             <EmptyState />

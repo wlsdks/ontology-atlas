@@ -190,6 +190,10 @@ for a macOS prototype:
   lets stale recent paths be removed from the list. If a restored desktop handle
   no longer produces a manifest, the root entry sends the user back to that
   picker instead of rendering a broken workspace.
+- When a newly selected local vault has no markdown docs yet, the main
+  workspace pane shows the ontology starter directly, creates the starter vault
+  files plus local agent configs, and opens the generated `README.md` instead
+  of leaving the user at a generic "select a document" empty state.
 - vault-local agent setup validation treats `.mcp.json` and
   `.codex/config.toml` as ready only when they point `OMOT_VAULT` at `.`, so a
   stale config copied from another vault does not look ready inside the
