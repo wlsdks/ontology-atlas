@@ -1712,6 +1712,10 @@
       "collaboratorBriefImpactCheck": "Impact check",
       "collaboratorBriefMcpImpactCheck": "MCP impact check",
       "collaboratorBriefSyncGate": "Post-change sync gate",
+      "collaboratorHandoffOrderTitle": "Graph handoff order",
+      "collaboratorHandoffProfileStep": "Inspect the selected concept profile before changing language or scope.",
+      "collaboratorHandoffImpactStep": "Trace incoming impact so dependents are visible before review.",
+      "collaboratorHandoffSyncStep": "After a real change, run the shared ontology sync gate.",
       "collaboratorLens": {
         "project": "Product or initiative scope",
         "domain": "Shared domain vocabulary",

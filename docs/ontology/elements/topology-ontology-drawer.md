@@ -13,4 +13,11 @@ It also renders the collaborator brief for secondary readers. The brief uses neu
 
 The card also exposes a compact vocabulary copy action for planning / marketing reviews that only need the term, meaning to keep, reuse context, review questions, and relation anchors. Dedicated MCP profile, impact, and sync-gate copy actions remain separate, so human vocabulary review stays readable while Claude Code or Codex still gets the small payloads it should run before changing frontmatter and then closing the graph.
 
+The visible brief now shows the same agent handoff order before the copy buttons:
+inspect `node_profile`, trace incoming `blast_radius`, then run the shared
+post-change sync gate (`health`, `cycles`, `growth_plan`, `maintenance_plan`,
+`validate`). That keeps the drawer from hiding Claude Code / Codex workflow in
+copy payloads only; a reviewer can see the graph-proof sequence before deciding
+whether to export the full brief or one focused MCP check.
+
 The drawer owns the selected-node handoff actions as persistent navigation, not incidental content. On mobile it sits above the global bottom tabs and keeps the ontology / builder / source links in a sticky footer, so a long relation preview cannot hide the route from visual graph inspection to the tree or frontmatter-backed builder.

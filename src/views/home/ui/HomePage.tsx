@@ -1391,6 +1391,18 @@ export function HomePage() {
               collaboratorBriefSyncGate: t(
                 "ontologyDrawer.collaboratorBriefSyncGate",
               ),
+              collaboratorHandoffOrderTitle: t(
+                "ontologyDrawer.collaboratorHandoffOrderTitle",
+              ),
+              collaboratorHandoffProfileStep: t(
+                "ontologyDrawer.collaboratorHandoffProfileStep",
+              ),
+              collaboratorHandoffImpactStep: t(
+                "ontologyDrawer.collaboratorHandoffImpactStep",
+              ),
+              collaboratorHandoffSyncStep: t(
+                "ontologyDrawer.collaboratorHandoffSyncStep",
+              ),
               collaboratorLensLabels: {
                 project: t("ontologyDrawer.collaboratorLens.project"),
                 domain: t("ontologyDrawer.collaboratorLens.domain"),

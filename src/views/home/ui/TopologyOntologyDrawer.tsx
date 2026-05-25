@@ -89,6 +89,10 @@ interface Props {
     collaboratorBriefImpactCheck: string;
     collaboratorBriefMcpImpactCheck: string;
     collaboratorBriefSyncGate: string;
+    collaboratorHandoffOrderTitle: string;
+    collaboratorHandoffProfileStep: string;
+    collaboratorHandoffImpactStep: string;
+    collaboratorHandoffSyncStep: string;
     collaboratorLensLabels: Record<CollaboratorLens, string>;
     collaboratorReviewLabels: Record<CollaboratorReview, string>;
     collaboratorImpactLabels: Record<
@@ -346,6 +350,46 @@ export function TopologyOntologyDrawer({
               </li>
             ))}
           </ul>
+        </div>
+        <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(14,16,22,0.22)] px-2.5 py-2">
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {labels.collaboratorHandoffOrderTitle}
+          </p>
+          <ol className="mt-1.5 flex flex-col gap-1 text-[11.5px] leading-5 text-[color:var(--color-text-secondary)]">
+            <li className="grid grid-cols-[1.25rem_1fr] gap-2">
+              <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                1
+              </span>
+              <span className="min-w-0">
+                {labels.collaboratorHandoffProfileStep}
+                <span className="mt-0.5 block truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                  node_profile · {agentCheckSlug}
+                </span>
+              </span>
+            </li>
+            <li className="grid grid-cols-[1.25rem_1fr] gap-2">
+              <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                2
+              </span>
+              <span className="min-w-0">
+                {labels.collaboratorHandoffImpactStep}
+                <span className="mt-0.5 block truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                  blast_radius · incoming · depth 2
+                </span>
+              </span>
+            </li>
+            <li className="grid grid-cols-[1.25rem_1fr] gap-2">
+              <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                3
+              </span>
+              <span className="min-w-0">
+                {labels.collaboratorHandoffSyncStep}
+                <span className="mt-0.5 block truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                  health · cycles · growth_plan · maintenance_plan · validate
+                </span>
+              </span>
+            </li>
+          </ol>
         </div>
         <button
           type="button"

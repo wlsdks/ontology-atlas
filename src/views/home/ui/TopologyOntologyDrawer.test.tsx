@@ -97,6 +97,10 @@ const labels = {
   collaboratorBriefImpactCheck: "Impact check",
   collaboratorBriefMcpImpactCheck: "MCP impact check",
   collaboratorBriefSyncGate: "Post-change sync gate",
+  collaboratorHandoffOrderTitle: "Graph handoff order",
+  collaboratorHandoffProfileStep: "Inspect profile first.",
+  collaboratorHandoffImpactStep: "Trace incoming impact.",
+  collaboratorHandoffSyncStep: "Run sync gate after changes.",
   collaboratorBriefReviewQuestions: "Review questions",
   collaboratorLensLabels: {
     project: "Product or initiative scope",
@@ -203,6 +207,19 @@ describe("TopologyOntologyDrawer", () => {
     expect(screen.getByText("Change impact")).toBeInTheDocument();
     expect(screen.getByText("Check incoming dependents first.")).toBeInTheDocument();
     expect(screen.getByText("First incoming")).toBeInTheDocument();
+    expect(screen.getByText("Graph handoff order")).toBeInTheDocument();
+    expect(screen.getByText("Inspect profile first.")).toBeInTheDocument();
+    expect(screen.getByText("Trace incoming impact.")).toBeInTheDocument();
+    expect(screen.getByText("Run sync gate after changes.")).toBeInTheDocument();
+    expect(
+      screen.getByText("node_profile · capabilities/topology-ontology-inspection"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("blast_radius · incoming · depth 2"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("health · cycles · growth_plan · maintenance_plan · validate"),
+    ).toBeInTheDocument();
     expect(screen.getByText("Who relies on this concept?")).toBeInTheDocument();
     expect(screen.getByText("What breaks if it changes?")).toBeInTheDocument();
     expect(screen.getByText("Who should confirm the change?")).toBeInTheDocument();

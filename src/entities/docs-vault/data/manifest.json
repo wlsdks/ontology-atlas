@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T05:48:02.996Z",
+  "generatedAt": "2026-05-25T05:51:01.100Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6218,8 +6218,8 @@
       },
       "headings": [],
       "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontologyaware detail panel inside /topology. It turns a selected domain / capability / element node into an operational graph inspection surface: kind and source slug, direct incoming/outgoing relation counts, relationtype chips, relation previews, source document nav",
-      "wordCount": 374,
-      "updatedAt": "2026-05-25T03:21:44.620Z",
+      "wordCount": 440,
+      "updatedAt": "2026-05-25T05:50:57.344Z",
       "linksOut": []
     },
     {

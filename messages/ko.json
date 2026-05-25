@@ -1712,6 +1712,10 @@
       "collaboratorBriefImpactCheck": "영향 점검",
       "collaboratorBriefMcpImpactCheck": "MCP 영향 점검",
       "collaboratorBriefSyncGate": "수정 후 sync gate",
+      "collaboratorHandoffOrderTitle": "Graph handoff 순서",
+      "collaboratorHandoffProfileStep": "언어나 범위를 바꾸기 전에 선택 개념의 profile 을 먼저 확인합니다.",
+      "collaboratorHandoffImpactStep": "리뷰 전에 incoming 영향 범위를 추적해 의존 대상을 보이게 합니다.",
+      "collaboratorHandoffSyncStep": "실제 변경 후에는 공유 ontology sync gate 를 실행합니다.",
       "collaboratorLens": {
         "project": "제품 또는 이니셔티브 범위",
         "domain": "공유 도메인 어휘",
