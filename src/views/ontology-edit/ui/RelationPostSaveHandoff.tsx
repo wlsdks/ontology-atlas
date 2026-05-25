@@ -18,6 +18,9 @@ type RelationPostSaveHandoffLabels = {
   openPath: string;
   sourceFocus: string;
   targetFocus: string;
+  copyProofPacket: string;
+  copyProofPacketCopied: string;
+  copyProofPacketFailed: string;
   copySyncGate: string;
   copySyncGateCopied: string;
   copySyncGateFailed: string;
@@ -36,16 +39,30 @@ export function RelationPostSaveHandoff({
   onDismiss,
 }: RelationPostSaveHandoffProps) {
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const [proofCopyState, setProofCopyState] = useState<
+    "idle" | "copied" | "failed"
+  >("idle");
   const copyLabel =
     copyState === "copied"
       ? labels.copySyncGateCopied
       : copyState === "failed"
         ? labels.copySyncGateFailed
         : labels.copySyncGate;
+  const proofCopyLabel =
+    proofCopyState === "copied"
+      ? labels.copyProofPacketCopied
+      : proofCopyState === "failed"
+        ? labels.copyProofPacketFailed
+        : labels.copyProofPacket;
 
   async function handleCopySyncGate() {
     const copied = await copyText(formatAgentPostChangeSyncPacket());
     setCopyState(copied ? "copied" : "failed");
+  }
+
+  async function handleCopyProofPacket() {
+    const copied = await copyText(formatSavedRelationProofPacket(relation));
+    setProofCopyState(copied ? "copied" : "failed");
   }
 
   return (
@@ -105,6 +122,14 @@ export function RelationPostSaveHandoff({
         </Link>
         <button
           type="button"
+          onClick={() => void handleCopyProofPacket()}
+          className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+        >
+          <Clipboard size={12} aria-hidden />
+          {proofCopyLabel}
+        </button>
+        <button
+          type="button"
           onClick={() => void handleCopySyncGate()}
           className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
         >
@@ -114,4 +139,67 @@ export function RelationPostSaveHandoff({
       </div>
     </aside>
   );
+}
+
+function formatSavedRelationProofPacket(
+  relation: VaultRelationProposal & { selectedKey: VaultRelationKey },
+): string {
+  return [
+    "# Saved relation graph proof",
+    "",
+    `- Source: ${relation.sourceSlug}`,
+    `- Target: ${relation.targetSlug}`,
+    `- Relation: ${relation.selectedKey}`,
+    `- Topology path: ${buildRelationTopologyPathHref(
+      relation.sourceSlug,
+      relation.targetSlug,
+    )}`,
+    `- Source focus: ${buildRelationTopologyFocusHref(relation.sourceSlug)}`,
+    `- Target focus: ${buildRelationTopologyFocusHref(relation.targetSlug)}`,
+    "",
+    "CLI proof:",
+    `1. oh-my-ontology relation-check ${relation.sourceSlug} ${relation.targetSlug} ${relation.selectedKey} [vault]`,
+    `2. oh-my-ontology path ${relation.sourceSlug} ${relation.targetSlug} [vault] --max-hops 5`,
+    `3. oh-my-ontology all-paths ${relation.sourceSlug} ${relation.targetSlug} [vault] --plan --max-hops 5 --limit 10 --search-budget 1000`,
+    "",
+    "MCP proof:",
+    `1. ${formatQueryOntologyCall({
+      operation: "relation_check",
+      from: relation.sourceSlug,
+      to: relation.targetSlug,
+      type: relation.selectedKey,
+    })}`,
+    `2. ${formatQueryOntologyCall({
+      operation: "path",
+      from: relation.sourceSlug,
+      to: relation.targetSlug,
+      maxHops: 5,
+    })}`,
+    `3. ${formatQueryOntologyCall({
+      operation: "query_plan",
+      targetOperation: "all_paths",
+      from: relation.sourceSlug,
+      to: relation.targetSlug,
+      maxHops: 5,
+      limit: 10,
+      searchBudget: 1000,
+    })}`,
+    `4. ${formatQueryOntologyCall({
+      operation: "all_paths",
+      from: relation.sourceSlug,
+      to: relation.targetSlug,
+      maxHops: 5,
+      limit: 10,
+      searchBudget: 1000,
+    })}`,
+    "",
+    "Evidence contract: report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete before using paths as proof.",
+    "",
+    "Post-save sync gate:",
+    formatAgentPostChangeSyncPacket(),
+  ].join("\n");
+}
+
+function formatQueryOntologyCall(payload: Record<string, unknown>): string {
+  return `query_ontology(${JSON.stringify(payload)})`;
 }

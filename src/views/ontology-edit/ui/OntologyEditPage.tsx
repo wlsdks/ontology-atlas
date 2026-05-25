@@ -1131,6 +1131,13 @@ export function OntologyEditPage() {
                   openPath: t("relationPostSave.openPath"),
                   sourceFocus: t("relationPostSave.sourceFocus"),
                   targetFocus: t("relationPostSave.targetFocus"),
+                  copyProofPacket: t("relationPostSave.copyProofPacket"),
+                  copyProofPacketCopied: t(
+                    "relationPostSave.copyProofPacketCopied",
+                  ),
+                  copyProofPacketFailed: t(
+                    "relationPostSave.copyProofPacketFailed",
+                  ),
                   copySyncGate: t("relationPostSave.copySyncGate"),
                   copySyncGateCopied: t("relationPostSave.copySyncGateCopied"),
                   copySyncGateFailed: t("relationPostSave.copySyncGateFailed"),

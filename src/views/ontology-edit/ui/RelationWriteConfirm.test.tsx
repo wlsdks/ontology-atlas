@@ -158,6 +158,9 @@ const postSaveLabels = {
   openPath: "Open topology path",
   sourceFocus: "Source topology focus",
   targetFocus: "Target topology focus",
+  copyProofPacket: "Copy proof packet",
+  copyProofPacketCopied: "Proof packet copied",
+  copyProofPacketFailed: "Copy failed",
   copySyncGate: "Copy sync gate",
   copySyncGateCopied: "Sync gate copied",
   copySyncGateFailed: "Copy failed",
@@ -900,6 +903,42 @@ describe("RelationPostSaveHandoff", () => {
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock.mock.calls[0]?.[0]).toContain("# Post-change ontology sync gate");
     expect(screen.getByRole("button", { name: "Sync gate copied" })).toBeInTheDocument();
+  });
+
+  it("copies a saved-edge proof packet from the post-save handoff", async () => {
+    copyTextMock.mockResolvedValue(true);
+
+    render(
+      <RelationPostSaveHandoff
+        relation={{ ...proposal, selectedKey: "elements" }}
+        labels={postSaveLabels}
+        onDismiss={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy proof packet" }));
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    const copied = copyTextMock.mock.calls[0]?.[0] ?? "";
+    expect(copied).toContain("# Saved relation graph proof");
+    expect(copied).toContain("- Relation: elements");
+    expect(copied).toContain(
+      "/topology/?mode=path&pathFrom=capabilities%2Fmcp-server&pathTo=elements%2Fmcp-index",
+    );
+    expect(copied).toContain(
+      "oh-my-ontology relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
+    );
+    expect(copied).toContain(
+      'query_ontology({"operation":"relation_check","from":"capabilities/mcp-server","to":"elements/mcp-index","type":"elements"})',
+    );
+    expect(copied).toContain(
+      'query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"capabilities/mcp-server","to":"elements/mcp-index","maxHops":5,"limit":10,"searchBudget":1000})',
+    );
+    expect(copied).toContain("Evidence contract: report limit, searchBudget");
+    expect(copied).toContain("# Post-change ontology sync gate");
+    expect(
+      screen.getByRole("button", { name: "Proof packet copied" }),
+    ).toBeInTheDocument();
   });
 
   it("dismisses the saved relation handoff", () => {
