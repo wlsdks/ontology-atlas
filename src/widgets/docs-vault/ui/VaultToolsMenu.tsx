@@ -34,6 +34,7 @@ const AGENT_VERIFY_CLI_COMMAND = [
   'oh-my-ontology agent-brief . --prompt',
   'oh-my-ontology agent-brief . --graph-db-pack',
   'oh-my-ontology agent-brief . --verify-fallbacks',
+  'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
   'oh-my-ontology hubs . --plan --limit 10 --types depends_on,relates',
   'oh-my-ontology hubs . --limit 10 --types depends_on,relates',
   'oh-my-ontology mcp-verify . --timeout-ms 15000',
@@ -45,6 +46,7 @@ const AGENT_VERIFY_CLI_PREVIEW = [
   'agent-brief . --prompt',
   'agent-brief . --graph-db-pack',
   'agent-brief . --verify-fallbacks',
+  'agent-brief . --verify-fallbacks --json',
 ];
 
 const AGENT_MODE_PACKET_LINES = [

@@ -567,6 +567,11 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('oh-my-ontology agent-brief . --verify-fallbacks'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('oh-my-ontology hubs . --plan --limit 10 --types depends_on,relates'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -580,6 +585,7 @@ describe('VaultToolsMenu', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('oh-my-ontology agent-brief . --graph-db-pack')).toBeInTheDocument();
     expect(screen.getByText('oh-my-ontology agent-brief . --verify-fallbacks')).toBeInTheDocument();
+    expect(screen.getByText('oh-my-ontology agent-brief . --verify-fallbacks --json')).toBeInTheDocument();
     expect(
       await screen.findByRole('button', { name: 'CLI 그래프 runbook 복사됨' }),
     ).toBeInTheDocument();
