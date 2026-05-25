@@ -1052,6 +1052,13 @@ export function OntologyEditPage() {
                   agentCheck: t("relationConfirm.agentCheck"),
                   postSaveCheck: t("relationConfirm.postSaveCheck"),
                   path: t("relationConfirm.path"),
+                  copyCliPreflight: t("relationConfirm.copyCliPreflight"),
+                  copyCliPreflightCopied: t(
+                    "relationConfirm.copyCliPreflightCopied",
+                  ),
+                  copyCliPreflightFailed: t(
+                    "relationConfirm.copyCliPreflightFailed",
+                  ),
                   copyMcpPreflight: t("relationConfirm.copyMcpPreflight"),
                   copyMcpPreflightCopied: t(
                     "relationConfirm.copyMcpPreflightCopied",

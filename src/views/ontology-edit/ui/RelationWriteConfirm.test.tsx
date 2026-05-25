@@ -100,6 +100,9 @@ const labels = {
   agentCheck: "Agent check:",
   postSaveCheck: "After save:",
   path: "Path:",
+  copyCliPreflight: "Copy CLI preflight",
+  copyCliPreflightCopied: "CLI preflight copied",
+  copyCliPreflightFailed: "Copy failed",
   copyMcpPreflight: "Copy MCP preflight",
   copyMcpPreflightCopied: "MCP preflight copied",
   copyMcpPreflightFailed: "Copy failed",
@@ -265,6 +268,9 @@ describe("RelationWriteConfirm", () => {
     ).toBeInTheDocument();
     expect(
       screen.getByText("oh-my-ontology validate [vault]"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Copy CLI preflight" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Copy MCP preflight" }),
@@ -493,6 +499,39 @@ describe("RelationWriteConfirm", () => {
     );
     expect(
       await screen.findByRole("button", { name: /packet copied/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("copies only the CLI preflight commands before saving", async () => {
+    copyTextMock.mockResolvedValue(true);
+    render(
+      <RelationWriteConfirm
+        proposal={proposal}
+        selectedKey="elements"
+        preflight={safePreflight}
+        labels={labels}
+        onSelectKey={vi.fn()}
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy CLI preflight" }));
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      [
+        "# Relation write CLI preflight",
+        "",
+        "- Run these before saving the builder edge when MCP is not connected.",
+        "- oh-my-ontology relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
+        "- Run bounded all_paths before treating a shortest path or existing path as complete evidence.",
+        "- oh-my-ontology all-paths capabilities/mcp-server elements/mcp-index [vault] --plan --max-hops 5 --limit 10 --search-budget 1000",
+        "- all_paths evidence contract: report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete before using paths as write evidence",
+      ].join("\n"),
+    );
+    expect(
+      await screen.findByRole("button", { name: "CLI preflight copied" }),
     ).toBeInTheDocument();
   });
 

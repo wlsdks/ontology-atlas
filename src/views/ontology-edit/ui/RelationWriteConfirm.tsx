@@ -78,6 +78,9 @@ interface RelationWriteConfirmLabels {
   agentCheck: string;
   postSaveCheck: string;
   path: string;
+  copyCliPreflight: string;
+  copyCliPreflightCopied: string;
+  copyCliPreflightFailed: string;
   copyMcpPreflight: string;
   copyMcpPreflightCopied: string;
   copyMcpPreflightFailed: string;
@@ -168,6 +171,9 @@ export function RelationWriteConfirm({
   const sourceTopologyFocusHref = buildRelationTopologyFocusHref(proposal.sourceSlug);
   const targetTopologyFocusHref = buildRelationTopologyFocusHref(proposal.targetSlug);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const [cliPreflightCopyState, setCliPreflightCopyState] = useState<
+    "idle" | "copied" | "failed"
+  >("idle");
   const [mcpPreflightCopyState, setMcpPreflightCopyState] = useState<
     "idle" | "copied" | "failed"
   >("idle");
@@ -183,6 +189,12 @@ export function RelationWriteConfirm({
       : copyState === "failed"
         ? labels.copyPacketFailed
         : labels.copyPacket;
+  const copyCliPreflightLabel =
+    cliPreflightCopyState === "copied"
+      ? labels.copyCliPreflightCopied
+      : cliPreflightCopyState === "failed"
+        ? labels.copyCliPreflightFailed
+        : labels.copyCliPreflight;
   const copyMcpPreflightLabel =
     mcpPreflightCopyState === "copied"
       ? labels.copyMcpPreflightCopied
@@ -216,6 +228,16 @@ export function RelationWriteConfirm({
       }),
     );
     setCopyState(copied ? "copied" : "failed");
+  }
+
+  async function handleCopyCliPreflight() {
+    const copied = await copyText(
+      formatCliPreflightPacket({
+        proposal,
+        selectedKey,
+      }),
+    );
+    setCliPreflightCopyState(copied ? "copied" : "failed");
   }
 
   async function handleCopyMcpPreflight() {
@@ -424,6 +446,14 @@ export function RelationWriteConfirm({
           </ul>
         </div>
         <div className="mt-3 flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => void handleCopyCliPreflight()}
+            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          >
+            <Clipboard size={12} aria-hidden />
+            {copyCliPreflightLabel}
+          </button>
           <button
             type="button"
             onClick={() => void handleCopyMcpPreflight()}
@@ -842,6 +872,24 @@ function formatMcpWritePacket({
     "- Run only after reviewing relation_check, path, and bounded all_paths evidence.",
     "- This writes frontmatter in the local vault.",
     formatMcpAddRelationToolCall({ proposal, selectedKey }),
+  ].join("\n");
+}
+
+function formatCliPreflightPacket({
+  proposal,
+  selectedKey,
+}: {
+  proposal: VaultRelationProposal;
+  selectedKey: VaultRelationKey;
+}): string {
+  return [
+    "# Relation write CLI preflight",
+    "",
+    "- Run these before saving the builder edge when MCP is not connected.",
+    `- ${buildRelationCheckCommand({ proposal, selectedKey })}`,
+    "- Run bounded all_paths before treating a shortest path or existing path as complete evidence.",
+    `- ${buildAllPathsCheckCommand({ proposal })}`,
+    `- ${formatAllPathsEvidenceContractLine()}`,
   ].join("\n");
 }
 
