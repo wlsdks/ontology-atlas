@@ -41,6 +41,7 @@ const verifyDmgScript = readText("scripts/verify-macos-dmg.mjs");
 const verifyAppScript = readText("scripts/verify-macos-app-launch.mjs");
 const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
 const releaseTagScript = readText("scripts/check-macos-release-tag.mjs");
+const releaseSlotScript = readText("scripts/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
 const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
@@ -74,6 +75,7 @@ const releaseBuildOrder = orderedIndexes(releaseWorkflow, [
   "name: Upload workflow artifact",
 ]);
 const releasePublishOrder = orderedIndexes(releaseWorkflow, [
+  "name: Require clean GitHub Release slot",
   "name: Upload draft GitHub Release assets",
   "name: Verify draft release assets",
   "name: Publish verified stable release",
@@ -302,6 +304,7 @@ if (
 
 if (
   /draft:\s*true/.test(releaseWorkflow) &&
+  /pnpm desktop:release-slot -- --tag="\$\{GITHUB_REF_NAME\}"/.test(releaseWorkflow) &&
   /Verify draft release assets/.test(releaseWorkflow) &&
   /--allow-draft/.test(releaseWorkflow) &&
   /gh release edit "\$\{GITHUB_REF_NAME\}" --draft=false --prerelease=false/.test(releaseWorkflow) &&
@@ -322,10 +325,10 @@ if (
   hasStrictOrder(releaseBuildOrder) &&
   hasStrictOrder(releasePublishOrder)
 ) {
-  pass("tag release workflow builds Apple Silicon and Intel DMGs, verifies draft assets, then publishes and re-verifies public stable assets");
+  pass("tag release workflow builds Apple Silicon and Intel DMGs, requires a clean release slot, verifies draft assets, then publishes and re-verifies public stable assets");
 } else {
   fail(
-    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag and secrets before signing, sign/notarize before upload, upload checksum assets as a draft release, verify draft assets, publish the release as stable, install-smoke each DMG, then run desktop:verify-download for the tag",
+    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag and secrets before signing, sign/notarize before upload, require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, install-smoke each DMG, then run desktop:verify-download for the tag",
   );
 }
 
@@ -346,6 +349,19 @@ if (
 } else {
   fail(
     "package.json and .github/workflows/release-macos.yml must run scripts/check-macos-release-tag.mjs before signing so release tags match package, Tauri, and Cargo versions",
+  );
+}
+
+if (
+  pkg.scripts?.["desktop:release-slot"] === "node scripts/check-macos-release-slot.mjs" &&
+  releaseWorkflow.includes('pnpm desktop:release-slot -- --tag="${GITHUB_REF_NAME}"') &&
+  releaseSlotScript.includes("already exists") &&
+  releaseSlotScript.includes("Delete the existing")
+) {
+  pass("desktop release slot gate blocks stale same-tag GitHub Release assets before upload");
+} else {
+  fail(
+    "package.json and .github/workflows/release-macos.yml must run scripts/check-macos-release-slot.mjs before uploading DMGs so same-tag stale release assets cannot be reused",
   );
 }
 

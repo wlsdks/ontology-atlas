@@ -4,6 +4,7 @@ kind: capability
 title: macOS Desktop App Distribution
 domain: vault-local-first
 dependencies: [capabilities/agent-config-onboarding, capabilities/frontmatter-to-ontology, capabilities/vault-live-updates]
+elements: [scripts/check-macos-release-slot.mjs]
 relates: [domains/ai-agent-partner, domains/views]
 ---
 
@@ -96,9 +97,10 @@ checksum after stapling, runs `pnpm desktop:verify-release-dmg` so the mounted
 app signature and stapled notarization ticket plus Gatekeeper assessment are
 required, runs `pnpm desktop:verify-install` so the DMG copy-and-launch path is
 exercised, and uploads workflow artifacts only after those release gates pass.
-The publish job attaches both DMGs plus checksums to a draft GitHub Release,
-runs the download verifier against draft assets with `--allow-draft`, publishes
-the verified release as stable, and then verifies the public assets again. `pnpm
+The publish job checks that the same tag has no existing GitHub Release before
+attaching both DMGs plus checksums to a draft GitHub Release, runs the download
+verifier against draft assets with `--allow-draft`, publishes the verified
+release as stable, and then verifies the public assets again. `pnpm
 desktop:verify-download` checks the public GitHub Release channel and fails
 unless users can reach both `oh-my-ontology_*_aarch64.dmg` and
 `oh-my-ontology_*_x64.dmg` assets with plausible DMG download content types,

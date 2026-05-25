@@ -156,6 +156,11 @@ jobs:
           path: release-assets
           merge-multiple: true
 
+      - name: Require clean GitHub Release slot
+        run: pnpm desktop:release-slot -- --tag="${GITHUB_REF_NAME}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Upload draft GitHub Release assets
         uses: softprops/action-gh-release@v2
         with:

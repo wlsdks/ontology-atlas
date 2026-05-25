@@ -139,7 +139,7 @@ The macOS desktop readiness gate is scaffold-aware and local-first: when
 `scripts/verify-macos-install-smoke.mjs`,
 `scripts/check-macos-download-release.mjs`,
 `scripts/check-macos-release-secrets.mjs`, `scripts/check-macos-release-tag.mjs`,
-`scripts/check-macos-release-github.mjs`,
+`scripts/check-macos-release-slot.mjs`, `scripts/check-macos-release-github.mjs`,
 `scripts/sign-macos-app.mjs`,
 `scripts/notarize-macos-dmg.mjs`,
 `src/shared/lib/tauri-vault-fs.ts`, `docs/DESKTOP-MACOS.md`, `src-tauri/**`,
@@ -159,7 +159,10 @@ handoff gate, and offline desktop docs before `.app` / `.dmg` builds; `pnpm
 desktop:check` also requires the `package.json`, `src-tauri/tauri.conf.json`,
 and `src-tauri/Cargo.toml` versions to match so app metadata, DMG filenames, and
 release tags move together; `pnpm desktop:release-tag` compares the v-prefixed
-Git tag to those versions before signing; `pnpm desktop:smoke` verifies the
+Git tag to those versions before signing; `pnpm desktop:release-slot` fails
+closed before GitHub Release upload when that same tag already has a draft,
+prerelease, or public release so stale DMG assets cannot mix with the freshly
+signed artifacts; `pnpm desktop:smoke` verifies the
 built `out/` payload has the locale-prefixed docs, ontology, topology, builder
 routes, `_next` assets, and offline desktop docs;
 `pnpm desktop:verify-app` launches the built `.app` long enough to catch early
@@ -275,6 +278,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
 | `pnpm desktop:release-secrets` | Fail closed before tag release when any Apple signing or notarization secret is missing, blank, or structurally invalid |
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |
+| `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
 | `pnpm desktop:release-github` | Operator-side GitHub release readiness check for gh auth, active release workflow, required Apple secret names, and optional tag/version alignment |
 | `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available |

@@ -141,6 +141,10 @@ for a macOS prototype:
   `release-macos.yml` workflow, required Apple signing/notary secret names, and
   optional tag/version alignment. It cannot inspect secret values, so the tag
   workflow still runs `desktop:release-secrets` before signing.
+- `scripts/check-macos-release-slot.mjs` runs inside the publish job before
+  upload and fails if the same tag already has a draft, prerelease, or public
+  GitHub Release, preventing stale DMG assets from mixing with newly signed
+  artifacts during a rerun.
 - `scripts/sign-macos-app.mjs` signs the built `.app` with hardened runtime
   using `APPLE_SIGNING_IDENTITY`, then runs strict `codesign` verification.
 - `scripts/notarize-macos-dmg.mjs` submits the DMG with `xcrun notarytool`,
@@ -271,7 +275,8 @@ gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks/oh-my-ontology < /path/
 gh secret set APPLE_TEAM_ID --repo wlsdks/oh-my-ontology < /path/to/APPLE_TEAM_ID
 ```
 
-The tag workflow uploads release assets as a draft, runs
+The tag workflow first requires a clean GitHub Release slot for the tag, uploads
+release assets as a draft, runs
 `pnpm desktop:verify-download -- --allow-draft` against those draft assets with
 `github.token`, publishes the verified release, then runs
 `pnpm desktop:verify-download` again to prove the public download surface
@@ -296,7 +301,8 @@ builds and route-smokes the static desktop payload, verifies the tag version
 before signing, signs and notarizes each DMG, verifies the mounted
 signed/stapled artifact, copies each DMG app to a temporary install folder and
 launch-smokes it, uploads workflow artifacts, creates a draft GitHub Release
-with both DMGs plus checksums, verifies those draft assets with
+with both DMGs plus checksums only after confirming that tag has no existing
+Release, verifies those draft assets with
 `pnpm desktop:verify-download -- --allow-draft`, publishes the release as
 stable, then runs
 `pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}"` so the release run

@@ -24,6 +24,7 @@
     "test:desktop:bridge": "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/features/docs-vault-local/model/agent-config-status.test.ts && cargo test --manifest-path src-tauri/Cargo.toml",
     "desktop:release-secrets": "node scripts/check-macos-release-secrets.mjs",
     "desktop:release-tag": "node scripts/check-macos-release-tag.mjs",
+    "desktop:release-slot": "node scripts/check-macos-release-slot.mjs",
     "desktop:release-github": "node scripts/check-macos-release-github.mjs",
     "desktop:sign": "node scripts/sign-macos-app.mjs",
     "desktop:notarize": "node scripts/notarize-macos-dmg.mjs",

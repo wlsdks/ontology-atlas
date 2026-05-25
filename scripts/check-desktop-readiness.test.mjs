@@ -81,9 +81,13 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ tag release workflow builds Apple Silicon and Intel DMGs, verifies draft assets, then publishes and re-verifies public stable assets/,
+    /✓ tag release workflow builds Apple Silicon and Intel DMGs, requires a clean release slot, verifies draft assets, then publishes and re-verifies public stable assets/,
   );
   assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned public releases/);
+  assert.match(
+    result.stdout,
+    /✓ desktop release slot gate blocks stale same-tag GitHub Release assets before upload/,
+  );
   assert.match(
     result.stdout,
     /✓ desktop release tag gate fails before signing when the v-prefixed tag differs from app versions/,
@@ -199,6 +203,14 @@ test("desktop release helper scripts expose credential-aware help", () => {
       encoding: "utf8",
     },
   );
+  const releaseSlot = spawnSync(
+    process.execPath,
+    ["scripts/check-macos-release-slot.mjs", "--help"],
+    {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    },
+  );
 
   assert.equal(sign.status, 0, sign.stderr);
   assert.match(sign.stdout, /APPLE_SIGNING_IDENTITY/);
@@ -233,6 +245,10 @@ test("desktop release helper scripts expose credential-aware help", () => {
   assert.equal(releaseGithub.status, 0, releaseGithub.stderr);
   assert.match(releaseGithub.stdout, /GitHub-side prerequisites/);
   assert.match(releaseGithub.stdout, /APPLE_CERTIFICATE_P12_BASE64/);
+
+  assert.equal(releaseSlot.status, 0, releaseSlot.stderr);
+  assert.match(releaseSlot.stdout, /GitHub Release already exists/);
+  assert.match(releaseSlot.stdout, /stale DMG assets/);
 });
 
 test("desktop GitHub release readiness gate reports missing Apple secrets", () => {
@@ -380,10 +396,83 @@ test("desktop readiness checker enforces release workflow order", () => {
   assert.match(checker, /const releasePublishOrder = orderedIndexes\(releaseWorkflow, \[/);
   assert.match(
     checker,
-    /"name: Verify draft release assets",\s+"name: Publish verified stable release"/,
+    /"name: Require clean GitHub Release slot",\s+"name: Upload draft GitHub Release assets"/,
+  );
+  assert.match(
+    checker,
+    /"name: Upload draft GitHub Release assets",\s+"name: Verify draft release assets"/,
   );
   assert.match(checker, /hasStrictOrder\(releaseBuildOrder\)/);
   assert.match(checker, /hasStrictOrder\(releasePublishOrder\)/);
+});
+
+test("desktop release slot gate rejects an existing same-tag release", () => {
+  const dir = mkdtempSync(join(tmpdir(), "omot-gh-slot-"));
+  const ghPath = join(dir, "gh");
+  writeFileSync(
+    ghPath,
+    `#!/usr/bin/env node
+const args = process.argv.slice(2);
+if (args[0] === 'release' && args[1] === 'view') {
+  console.log(JSON.stringify({ tagName: 'v0.1.0', isDraft: true, isPrerelease: false, url: 'https://example.test/release' }));
+  process.exit(0);
+}
+console.error('unexpected gh args: ' + args.join(' '));
+process.exit(1);
+`,
+  );
+  chmodSync(ghPath, 0o755);
+  try {
+    const result = spawnSync(
+      process.execPath,
+      ["scripts/check-macos-release-slot.mjs", "--tag=v0.1.0"],
+      {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: { ...process.env, OMOT_GH_BIN: ghPath },
+      },
+    );
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /release v0\.1\.0 already exists/);
+    assert.match(result.stderr, /Delete the existing draft release/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("desktop release slot gate accepts a missing same-tag release", () => {
+  const dir = mkdtempSync(join(tmpdir(), "omot-gh-slot-"));
+  const ghPath = join(dir, "gh");
+  writeFileSync(
+    ghPath,
+    `#!/usr/bin/env node
+const args = process.argv.slice(2);
+if (args[0] === 'release' && args[1] === 'view') {
+  console.error('release not found (HTTP 404)');
+  process.exit(1);
+}
+console.error('unexpected gh args: ' + args.join(' '));
+process.exit(1);
+`,
+  );
+  chmodSync(ghPath, 0o755);
+  try {
+    const result = spawnSync(
+      process.execPath,
+      ["scripts/check-macos-release-slot.mjs", "--", "--tag=v0.1.0"],
+      {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: { ...process.env, OMOT_GH_BIN: ghPath },
+      },
+    );
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /has no existing GitHub Release/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("desktop release secret gate fails closed when Apple secrets are absent", () => {

@@ -246,6 +246,8 @@ versions before signing, runs `pnpm desktop:sign`, packages the signed app, runs
 final mounted artifact with signing and notarization required, and launch-smokes
 the app copied from the DMG before attaching both architecture DMGs to a draft
 GitHub Release.
+The publish job first checks that the tag has no existing GitHub Release, so a
+rerun or manual draft cannot mix stale DMG assets with newly signed artifacts.
 `pnpm desktop:verify-download -- --allow-draft` byte-checks those draft assets
 before the workflow publishes the release as stable. `pnpm
 desktop:verify-download` then runs again as the public hosted CTA gate: it
