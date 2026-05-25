@@ -176,8 +176,9 @@ temporary install folder, launch-smokes that copied app from its own executable
 directory, and removes the temp install;
 `pnpm desktop:release-preflight` is the local pre-tag operator shortcut that
 runs desktop readiness, docs-vault freshness, desktop checker tests, native
-bridge tests, runtime doctor, static build, packaged-route smoke, app/DMG build,
-app launch smoke, DMG mount/checksum smoke, and temporary install launch smoke;
+bridge tests, runtime doctor, `cli:mcp-verify` against `docs/ontology`, static
+build, packaged-route smoke, app/DMG build, app launch smoke,
+DMG mount/checksum smoke, and temporary install launch smoke;
 `pnpm desktop:dev` launches the Tauri shell for local prototype work, and
 `pnpm desktop:build:app` targets the macOS `.app`; release builds must first
 pass `pnpm desktop:release-secrets`, then run `pnpm desktop:sign` with a
@@ -280,7 +281,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:build:app` | Build the Tauri `.app` before optional release signing or local DMG packaging |
 | `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes, then terminate it |
 | `pnpm desktop:verify-install` | Mount the DMG, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up |
-| `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, bridge tests, runtime doctor, build, route smoke, DMG, and install smoke |
+| `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, bridge tests, runtime doctor, CLI/MCP handoff, build, route smoke, DMG, and install smoke |
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
 | `pnpm desktop:release-secrets` | Fail closed before tag release when any Apple signing or notarization secret is missing, blank, or structurally invalid |
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |

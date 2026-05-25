@@ -69,7 +69,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop local release preflight runs readiness, tests, runtime doctor, build, route smoke, DMG, and install smoke/,
+    /✓ desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, build, route smoke, DMG, and install smoke/,
   );
   assert.match(
     result.stdout,

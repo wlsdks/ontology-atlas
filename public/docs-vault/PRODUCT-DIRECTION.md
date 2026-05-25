@@ -258,8 +258,9 @@ rejects unsupported extra `oh-my-ontology_*.dmg` names so the GitHub Release
 page cannot show ambiguous macOS downloads.
 `pnpm desktop:release-preflight`
 is the local pre-tag command for readiness, docs-vault freshness, desktop tests,
-runtime doctor, build, route smoke, DMG verification, and temporary install
-smoke before credentials are used. The hosted landing page should now bias toward "Download macOS app"
+runtime doctor, CLI/MCP handoff against `docs/ontology`, build, route smoke,
+DMG verification, and temporary install smoke before credentials are used. The
+hosted landing page should now bias toward "Download macOS app"
 and product explanation, with the browser folder picker treated as a prototype
 fallback until public signed releases are uploaded.
 

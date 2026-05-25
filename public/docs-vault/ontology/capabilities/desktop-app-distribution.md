@@ -131,9 +131,10 @@ configured yet. Its missing-secret output includes `gh secret set <NAME> --repo
 wlsdks/oh-my-ontology` hints so the operator can move directly from readiness
 failure to secret registration.
 `pnpm desktop:release-preflight` is the local pre-tag gate for readiness,
-docs-vault freshness, desktop tests, native bridge tests, runtime doctor, build,
-route smoke, DMG verification, and temporary install launch smoke before signing
-credentials enter the path.
+docs-vault freshness, desktop tests, native bridge tests, runtime doctor,
+`cli:mcp-verify docs/ontology --timeout-ms 15000`, build, route smoke, DMG
+verification, and temporary install launch smoke before signing credentials
+enter the path.
 The hosted web surface now moves toward product introduction and macOS
 distribution: the landing/download primary CTAs open the GitHub Releases page
 instead of depending on `/releases/latest` before a public macOS DMG exists. The

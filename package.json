@@ -20,7 +20,7 @@
     "desktop:verify-install": "node scripts/verify-macos-install-smoke.mjs",
     "desktop:verify-release-dmg": "node scripts/verify-macos-dmg.mjs --require-signed --require-notarized",
     "desktop:verify-download": "node scripts/check-macos-download-release.mjs",
-    "desktop:release-preflight": "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:verify-app && pnpm desktop:verify-dmg && pnpm desktop:verify-install",
+    "desktop:release-preflight": "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:verify-app && pnpm desktop:verify-dmg && pnpm desktop:verify-install",
     "test:desktop:bridge": "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/features/docs-vault-local/model/agent-config-status.test.ts && cargo test --manifest-path src-tauri/Cargo.toml",
     "desktop:release-secrets": "node scripts/check-macos-release-secrets.mjs",
     "desktop:release-tag": "node scripts/check-macos-release-tag.mjs",
