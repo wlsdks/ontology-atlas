@@ -297,6 +297,10 @@ export function formatTopologyNodeMcpCheck(slug: string): string {
   });
 }
 
+export function formatTopologyNodeCliCheck(slug: string): string {
+  return `oh-my-ontology node ${slug} [vault] --limit 12`;
+}
+
 export function formatTopologyNodeImpactCliCheck(slug: string): string {
   return `oh-my-ontology blast-radius ${slug} [vault] --depth 2 --direction incoming`;
 }

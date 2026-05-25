@@ -1338,8 +1338,14 @@ export function HomePage() {
               collaboratorCopyVocabulary: t(
                 "ontologyDrawer.collaboratorCopyVocabulary",
               ),
+              collaboratorCopyCliProfile: t(
+                "ontologyDrawer.collaboratorCopyCliProfile",
+              ),
               collaboratorCopyMcpProfile: t(
                 "ontologyDrawer.collaboratorCopyMcpProfile",
+              ),
+              collaboratorCopyCliImpact: t(
+                "ontologyDrawer.collaboratorCopyCliImpact",
               ),
               collaboratorCopyMcpImpact: t(
                 "ontologyDrawer.collaboratorCopyMcpImpact",

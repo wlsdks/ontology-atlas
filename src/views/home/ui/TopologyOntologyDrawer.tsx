@@ -25,6 +25,7 @@ import {
   buildTopologyOntologyDrawerModel,
   formatTopologyNodeImpactCliCheck,
   formatTopologyNodeImpactMcpCheck,
+  formatTopologyNodeCliCheck,
   formatTopologyNodeMcpCheck,
   formatTopologyCollaboratorBrief,
   formatTopologyImpactRelation,
@@ -63,7 +64,9 @@ interface Props {
     collaboratorBody: string;
     collaboratorCopy: string;
     collaboratorCopyVocabulary: string;
+    collaboratorCopyCliProfile: string;
     collaboratorCopyMcpProfile: string;
+    collaboratorCopyCliImpact: string;
     collaboratorCopyMcpImpact: string;
     collaboratorCopySyncGate: string;
     collaboratorCopySuccess: string;
@@ -167,7 +170,7 @@ export function TopologyOntologyDrawer({
         topology: topologyUrl,
         ontology: ontologyHref,
         builder: builderHref,
-        agentCheck: `oh-my-ontology node ${agentCheckSlug} [vault] --limit 12`,
+        agentCheck: formatTopologyNodeCliCheck(agentCheckSlug),
         mcpCheck: formatTopologyNodeMcpCheck(agentCheckSlug),
         impactCheck: formatTopologyNodeImpactCliCheck(agentCheckSlug),
         mcpImpactCheck: formatTopologyNodeImpactMcpCheck(agentCheckSlug),
@@ -176,6 +179,14 @@ export function TopologyOntologyDrawer({
     });
 
     if (await copyText(text)) {
+      toast.show(labels.collaboratorCopySuccess, "success");
+      return;
+    }
+
+    toast.show(labels.collaboratorCopyError, "error");
+  };
+  const copyCliProfileCheck = async () => {
+    if (await copyText(formatTopologyNodeCliCheck(agentCheckSlug))) {
       toast.show(labels.collaboratorCopySuccess, "success");
       return;
     }
@@ -216,6 +227,14 @@ export function TopologyOntologyDrawer({
     });
 
     if (await copyText(text)) {
+      toast.show(labels.collaboratorCopySuccess, "success");
+      return;
+    }
+
+    toast.show(labels.collaboratorCopyError, "error");
+  };
+  const copyCliImpactCheck = async () => {
+    if (await copyText(formatTopologyNodeImpactCliCheck(agentCheckSlug))) {
       toast.show(labels.collaboratorCopySuccess, "success");
       return;
     }
@@ -410,11 +429,27 @@ export function TopologyOntologyDrawer({
           </button>
           <button
             type="button"
+            onClick={copyCliProfileCheck}
+            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          >
+            <Clipboard size={12} aria-hidden />
+            {labels.collaboratorCopyCliProfile}
+          </button>
+          <button
+            type="button"
             onClick={copyMcpProfileCheck}
             className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
           >
             <Clipboard size={12} aria-hidden />
             {labels.collaboratorCopyMcpProfile}
+          </button>
+          <button
+            type="button"
+            onClick={copyCliImpactCheck}
+            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          >
+            <Clipboard size={12} aria-hidden />
+            {labels.collaboratorCopyCliImpact}
           </button>
           <button
             type="button"

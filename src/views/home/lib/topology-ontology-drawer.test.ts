@@ -6,6 +6,7 @@ import type {
 import {
   buildTopologyOntologyDrawerModel,
   formatTopologyCollaboratorBrief,
+  formatTopologyNodeCliCheck,
   formatTopologyNodeImpactCliCheck,
   formatTopologyNodeImpactMcpCheck,
   formatTopologyNodeMcpCheck,
@@ -280,6 +281,9 @@ describe("buildTopologyOntologyDrawerModel", () => {
   });
 
   it("formats a selected node MCP profile payload for agent handoff", () => {
+    expect(formatTopologyNodeCliCheck("capabilities/mcp-server")).toBe(
+      "oh-my-ontology node capabilities/mcp-server [vault] --limit 12",
+    );
     expect(formatTopologyNodeMcpCheck("capabilities/mcp-server")).toBe(
       'query_ontology({"operation":"node_profile","slug":"capabilities/mcp-server","depth":2,"limit":12})',
     );

@@ -72,7 +72,9 @@ const labels = {
   collaboratorBody: "Use this as shared vocabulary.",
   collaboratorCopy: "Copy brief",
   collaboratorCopyVocabulary: "Copy vocabulary",
+  collaboratorCopyCliProfile: "Copy CLI profile",
   collaboratorCopyMcpProfile: "Copy MCP profile",
+  collaboratorCopyCliImpact: "Copy CLI impact",
   collaboratorCopyMcpImpact: "Copy MCP impact",
   collaboratorCopySyncGate: "Copy sync gate",
   collaboratorCopySuccess: "Collaborator brief copied.",
@@ -225,7 +227,7 @@ describe("TopologyOntologyDrawer", () => {
     expect(screen.getByText("Who should confirm the change?")).toBeInTheDocument();
   });
 
-  it("copies focused MCP profile, impact, and sync-gate payloads from the topology drawer", async () => {
+  it("copies focused CLI, MCP, and sync-gate payloads from the topology drawer", async () => {
     copyTextMock.mockResolvedValue(true);
     const selected = node("capabilities/topology-ontology-inspection");
     const domain = node("domains/views", "domain");
@@ -241,27 +243,37 @@ describe("TopologyOntologyDrawer", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: "Copy CLI profile" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy MCP profile" }));
+    fireEvent.click(screen.getByRole("button", { name: "Copy CLI impact" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy MCP impact" }));
     fireEvent.click(screen.getByRole("button", { name: "Copy sync gate" }));
 
-    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(3));
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(5));
     expect(copyTextMock).toHaveBeenNthCalledWith(
       1,
-      'query_ontology({"operation":"node_profile","slug":"capabilities/topology-ontology-inspection","depth":2,"limit":12})',
+      "oh-my-ontology node capabilities/topology-ontology-inspection [vault] --limit 12",
     );
     expect(copyTextMock).toHaveBeenNthCalledWith(
       2,
+      'query_ontology({"operation":"node_profile","slug":"capabilities/topology-ontology-inspection","depth":2,"limit":12})',
+    );
+    expect(copyTextMock).toHaveBeenNthCalledWith(
+      3,
+      "oh-my-ontology blast-radius capabilities/topology-ontology-inspection [vault] --depth 2 --direction incoming",
+    );
+    expect(copyTextMock).toHaveBeenNthCalledWith(
+      4,
       'query_ontology({"operation":"blast_radius","slug":"capabilities/topology-ontology-inspection","depth":2,"direction":"incoming"})',
     );
-    expect(copyTextMock.mock.calls[2]?.[0]).toContain(
+    expect(copyTextMock.mock.calls[4]?.[0]).toContain(
       "# Post-change ontology sync gate",
     );
-    expect(copyTextMock.mock.calls[2]?.[0]).toContain('"operation": "health"');
-    expect(copyTextMock.mock.calls[2]?.[0]).toContain(
+    expect(copyTextMock.mock.calls[4]?.[0]).toContain('"operation": "health"');
+    expect(copyTextMock.mock.calls[4]?.[0]).toContain(
       '"operation": "maintenance_plan"',
     );
-    expect(copyTextMock.mock.calls[2]?.[0]).toContain(
+    expect(copyTextMock.mock.calls[4]?.[0]).toContain(
       "oh-my-ontology validate [vault]",
     );
   });
