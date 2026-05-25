@@ -172,6 +172,36 @@ Same graph. Same vault. Different input paths.
 
 ## 4. Local package — how to distribute
 
+### New target — macOS-first desktop app exploration (2026-05-25)
+
+The product should explore an installable macOS app as a first-class
+distribution goal, not only the hosted website or `pnpm dev` workflow. This
+fits the local-first promise: the user installs the workbench on their own Mac,
+opens a vault folder from disk, and keeps the same markdown + MCP + CLI graph
+loop without visiting the hosted site.
+
+Recommended first slice:
+
+1. Keep the existing Next.js static export as the frontend payload.
+2. Prototype a macOS-only desktop shell with Tauri first.
+3. Point the shell at the generated `out/` directory and preserve the current
+   File System Access / local-vault behavior where possible.
+4. Verify the app can open the dogfood vault, render `/docs`, `/ontology`,
+   `/topology`, and `/ontology/edit`, and still hand off to CLI/MCP setup
+   gates.
+5. Treat signing, notarization, updater, and packaged MCP/CLI sidecars as
+   separate distribution hardening work after the local prototype works.
+
+Why Tauri first: this repo already uses `output: 'export'`, `images.unoptimized`,
+and `trailingSlash`, which match the static frontend shape expected by Tauri's
+Next.js guide. Electron remains a fallback if the desktop shell needs bundled
+Node.js behavior, but it is heavier and macOS distribution still needs signing
+and notarization.
+
+Non-goal for the first slice: do not add backend/login/cloud or change the
+source-of-truth model. The desktop app is another local shell over the same
+vault, not a new data store.
+
 ### Option A — npm package + CLI
 
 ```bash
@@ -197,10 +227,12 @@ Cons:
 - Requires Node.js.
 - Bundle is heavy after publish (Sigma + xyflow + …).
 
-### Option B — Electron desktop app
+### Option B — macOS desktop app
 
-Pros: feels truly native.
-Cons: complex build, heavy distribution, mismatched with the "AI agent shares this" concept (CLI fits better).
+Pros: feels local-first by default, removes the hosted-site mental model, and
+can make folder picking / recent vaults / app launch more natural on macOS.
+Cons: adds native packaging, signing, notarization, updater, and sidecar
+questions that the web and CLI surfaces do not have.
 
 ### Option C — Just Next.js static export + a guide
 
@@ -209,9 +241,14 @@ Use after `pnpm dev`. No packaging. Document with environment variables.
 Pros: fastest. Zero new deps.
 Cons: blocks distribution (clone overhead).
 
-### Recommendation: option A
+### Recommendation: option A now, macOS desktop as the next distribution track
 
 Publish `oh-my-ontology` as an npm package. Users run `npx oh-my-ontology` from any project root. AI agents participate via the same package's MCP server or CLI.
+
+In parallel, run a narrow Tauri/macOS proof before committing to desktop
+distribution: static `out/` shell, local vault open, route smoke, and MCP/CLI
+handoff proof. If that proof is clean, the desktop app becomes the preferred
+non-technical install path while the CLI remains the developer/agent path.
 
 ---
 
@@ -280,7 +317,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 2. ✅ 23 tools (read 15 + write 8): `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` / `find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `compile_ontology` / `query_ontology` / `validate_vault` / `analyze_repo_structure` (R16) / `infer_imports` (R17) / `add_concept` / `add_concepts` / `add_relation` / `add_relations` / `patch_concept` / `delete_concept` / `rename_concept` / `merge_concepts` (R11 — atomic graph-level write)
 3. ✅ CLI command (`oh-my-ontology`) — `npx oh-my-ontology init <folder>` scaffolds the vault. The web `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
-5. ✅ `docs/ontology/` dogfood vault — 47 nodes describing our own mental model
+5. ✅ `docs/ontology/` dogfood vault — 50 nodes describing our own mental model
 
 ### 🚫 Phase 4 — Polish for non-developers — **dropped (R11 fire #25)**
 

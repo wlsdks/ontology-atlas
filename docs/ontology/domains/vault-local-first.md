@@ -3,6 +3,7 @@ slug: domains/vault-local-first
 kind: domain
 title: Vault — Local-First
 capabilities:
+  - desktop-app-distribution
   - vault-live-updates
   - vault-migrator
   - vault-validator

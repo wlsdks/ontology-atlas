@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T06:08:36.648Z",
+  "generatedAt": "2026-05-25T06:12:11.961Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5057,6 +5057,32 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/desktop-app-distribution",
+      "path": "docs/ontology/capabilities/desktop-app-distribution.md",
+      "title": "macOS Desktop App Distribution",
+      "tags": [],
+      "frontmatter": {
+        "slug": "desktop-app-distribution",
+        "kind": "capability",
+        "title": "macOS Desktop App Distribution",
+        "domain": "vault-local-first",
+        "dependencies": [
+          "capabilities/agent-config-onboarding",
+          "capabilities/frontmatter-to-ontology",
+          "capabilities/vault-live-updates"
+        ],
+        "relates": [
+          "domains/ai-agent-partner",
+          "domains/views"
+        ]
+      },
+      "headings": [],
+      "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The first slice is a feasibility proof, not a second product architecture: wrap the existing Next.js static export in a Tauri shell, open the same local vault folder, render /docs, /ontology, /topology, and /ontol",
+      "wordCount": 139,
+      "updatedAt": "2026-05-25T06:12:00.927Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/firebase-deploy-skill",
       "path": "docs/ontology/capabilities/firebase-deploy-skill.md",
       "title": "Firebase Deploy Skill (.claude/skills/firebase-deploy)",
@@ -5845,6 +5871,7 @@
         "kind": "domain",
         "title": "Vault — Local-First",
         "capabilities": [
+          "desktop-app-distribution",
           "vault-live-updates",
           "vault-migrator",
           "vault-validator"
@@ -5870,7 +5897,7 @@
       ],
       "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 shortcircuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vaultliveupdates). 자세한 원칙: .claude/rules/localfirst.md. 사용자 surface: docs/FEATURES.md.",
       "wordCount": 45,
-      "updatedAt": "2026-05-13T00:02:55.341Z",
+      "updatedAt": "2026-05-25T06:11:00.010Z",
       "linksOut": []
     },
     {
@@ -6447,13 +6474,18 @@
         },
         {
           "depth": 3,
+          "text": "New target — macOS-first desktop app exploration (2026-05-25)",
+          "slug": "new-target-macos-first-desktop-app-exploration-2026-05-25"
+        },
+        {
+          "depth": 3,
           "text": "Option A — npm package + CLI",
           "slug": "option-a-npm-package-cli"
         },
         {
           "depth": 3,
-          "text": "Option B — Electron desktop app",
-          "slug": "option-b-electron-desktop-app"
+          "text": "Option B — macOS desktop app",
+          "slug": "option-b-macos-desktop-app"
         },
         {
           "depth": 3,
@@ -6462,8 +6494,8 @@
         },
         {
           "depth": 3,
-          "text": "Recommendation: option A",
-          "slug": "recommendation-option-a"
+          "text": "Recommendation: option A now, macOS desktop as the next distribution track",
+          "slug": "recommendation-option-a-now-macos-desktop-as-the-next-distribution-track"
         },
         {
           "depth": 2,
@@ -6547,8 +6579,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 2117,
-      "updatedAt": "2026-05-25T05:43:13.584Z",
+      "wordCount": 2424,
+      "updatedAt": "2026-05-25T06:11:39.138Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -7420,6 +7452,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/collaborator-reader-brief",
                 "title": "Collaborator Reader Brief"
+              },
+              {
+                "name": "desktop-app-distribution",
+                "path": "ontology/capabilities/desktop-app-distribution",
+                "type": "doc",
+                "slug": "ontology/capabilities/desktop-app-distribution",
+                "title": "macOS Desktop App Distribution"
               },
               {
                 "name": "firebase-deploy-skill",

@@ -23,11 +23,11 @@ describes:
 docs/ontology/
 ├── project.md            — root project 노드 (oh-my-ontology)
 ├── domains/              — 도메인 6개 (vault, ontology-core, views, ai-agent-partner, mode-aware-adapters, onboarding-ux)
-├── capabilities/         — capability 24개 (frontmatter → ontology, topology analysis modes, collaborator reader brief …)
-└── elements/             — element 15개 (코드 디렉토리 / UI 모델 / 라이브러리)
+├── capabilities/         — capability 25개 (frontmatter → ontology, topology analysis modes, macOS desktop distribution …)
+└── elements/             — element 17개 (코드 디렉토리 / UI 모델 / 라이브러리)
 ```
 
-총 47 노드. 정확한 census 는 `oh-my-ontology list` 또는 mcp `list_kinds` 호출.
+총 50 노드. 정확한 census 는 `oh-my-ontology list` 또는 mcp `list_kinds` 호출.
 
 ## 사용
 
