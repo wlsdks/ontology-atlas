@@ -16,4 +16,9 @@ Topology drawer briefs are now copyable as compact markdown with kind, node id, 
 
 The insights brief now also names a decision lane for the current review focus. Instead of asking collaborators to infer next steps from graph metrics, the visible card and copied markdown say who should decide, what decision is expected, and which graph surface to open next: hub handoffs for vocabulary alignment, Topology Path plus domain-matrix checks for impact review, or Builder / Topology health handoffs for ownership cleanup. The lane includes one direct graph handoff link, so a review note can move from decision wording into the exact node, path, or repair surface without searching again.
 
+The same visible card and copied markdown now include a `Decision record`
+checkpoint. It restates the expected decision, owner, graph evidence, and
+follow-up step in a meeting-note shape, so planning / marketing / domain
+review can leave a concrete record instead of only copying prompts and links.
+
 Insights briefs add the overview lane: planners and domain reviewers can copy a compact markdown snapshot of node / relation / domain counts, cross-domain impact, open ownership questions, top vocabulary hubs, strongest domain impact pairs, and the same actionable review focus shown on screen. When open ownership questions exist, the copied overview now names the first concrete concepts and includes direct ontology, topology health, and builder handoff links instead of leaving collaborators with only an aggregate count. Orphan rows still add a smaller ownership repair packet with direct ontology, topology health, builder, relation-check, and health-verification handoff details.

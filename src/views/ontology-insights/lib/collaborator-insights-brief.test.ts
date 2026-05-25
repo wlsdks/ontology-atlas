@@ -37,6 +37,11 @@ const LABELS = {
   decisionOrphanOwner: "Domain owner for each open concept",
   decisionOrphanExpected: "Assign a container, merge, rename, or delete the orphan.",
   decisionOrphanNextStep: "Open Builder or Topology health before writing.",
+  decisionRecord: "Decision record",
+  decisionRecordDecision: "Decision",
+  decisionRecordOwner: "Owner",
+  decisionRecordEvidence: "Evidence",
+  decisionRecordFollowUp: "Follow-up",
   reviewQuestions: "Review questions",
   alignVocabularyQuestions: [
     "Which terms should be reused in planning docs?",
@@ -193,6 +198,15 @@ describe("buildInsightsCollaboratorBrief", () => {
     );
     expect(formatInsightsCollaboratorBrief({ brief, labels: LABELS })).toContain(
       [
+        "## Decision record",
+        "- Decision: Approve reused terms and confirm vocabulary owners.",
+        "- Owner: Planning, marketing, and domain leads",
+        "- Evidence: Agent Graph Readiness (Topology focus)",
+        "- Follow-up: Open hub handoffs before copying terms into plans.",
+      ].join("\n"),
+    );
+    expect(formatInsightsCollaboratorBrief({ brief, labels: LABELS })).toContain(
+      [
         "## Review questions",
         "- Which terms should be reused in planning docs?",
         "- Which term should be renamed before handoff?",
@@ -281,6 +295,9 @@ describe("buildInsightsCollaboratorBrief", () => {
     expect(formatted).toContain(
       "- Expected decision: Approve reused terms and confirm vocabulary owners.",
     );
+    expect(formatted).toContain("## Decision record");
+    expect(formatted).toContain("- Decision: Approve reused terms and confirm vocabulary owners.");
+    expect(formatted).toContain("- Evidence: Views (Topology focus)");
     expect(formatted).toContain("## Review questions");
     expect(formatted).toContain("- Which terms should be reused in planning docs?");
     expect(formatted).toContain(

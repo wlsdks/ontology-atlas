@@ -99,6 +99,11 @@ export interface FormatInsightsCollaboratorBriefLabels {
   decisionOrphanOwner: string;
   decisionOrphanExpected: string;
   decisionOrphanNextStep: string;
+  decisionRecord: string;
+  decisionRecordDecision: string;
+  decisionRecordOwner: string;
+  decisionRecordEvidence: string;
+  decisionRecordFollowUp: string;
   reviewQuestions: string;
   alignVocabularyQuestions: readonly string[];
   traceImpactQuestions: readonly string[];
@@ -236,6 +241,12 @@ export function formatInsightsCollaboratorBrief({
         ]
       : []),
     "",
+    `## ${labels.decisionRecord}`,
+    `- ${labels.decisionRecordDecision}: ${decisionLaneLabel(brief.reviewFocus, labels, "expected")}`,
+    `- ${labels.decisionRecordOwner}: ${decisionLaneLabel(brief.reviewFocus, labels, "owner")}`,
+    `- ${labels.decisionRecordEvidence}: ${brief.decisionHandoff ? formatDecisionHandoffLabel(brief.decisionHandoff, labels) : reviewFocusLabel(brief.reviewFocus, labels)}`,
+    `- ${labels.decisionRecordFollowUp}: ${decisionLaneLabel(brief.reviewFocus, labels, "nextStep")}`,
+    "",
     `## ${labels.reviewQuestions}`,
     reviewQuestionsForFocus(brief.reviewFocus, labels)
       .map((question) => `- ${question}`)
@@ -313,6 +324,12 @@ export function formatInsightsVocabularyReview({
           )}: ${brief.decisionHandoff.href}`,
         ]
       : []),
+    "",
+    `## ${labels.decisionRecord}`,
+    `- ${labels.decisionRecordDecision}: ${decisionLaneLabel(brief.reviewFocus, labels, "expected")}`,
+    `- ${labels.decisionRecordOwner}: ${decisionLaneLabel(brief.reviewFocus, labels, "owner")}`,
+    `- ${labels.decisionRecordEvidence}: ${brief.decisionHandoff ? formatDecisionHandoffLabel(brief.decisionHandoff, labels) : reviewFocusLabel(brief.reviewFocus, labels)}`,
+    `- ${labels.decisionRecordFollowUp}: ${decisionLaneLabel(brief.reviewFocus, labels, "nextStep")}`,
     "",
     `## ${labels.reviewQuestions}`,
     reviewQuestionsForFocus(brief.reviewFocus, labels)

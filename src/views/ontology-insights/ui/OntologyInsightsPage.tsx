@@ -948,6 +948,11 @@ function InsightsCollaboratorBriefPanel({
     decisionOrphanOwner: t("collaboratorDecisionOrphanOwner"),
     decisionOrphanExpected: t("collaboratorDecisionOrphanExpected"),
     decisionOrphanNextStep: t("collaboratorDecisionOrphanNextStep"),
+    decisionRecord: t("collaboratorDecisionRecord"),
+    decisionRecordDecision: t("collaboratorDecisionRecordDecision"),
+    decisionRecordOwner: t("collaboratorDecisionRecordOwner"),
+    decisionRecordEvidence: t("collaboratorDecisionRecordEvidence"),
+    decisionRecordFollowUp: t("collaboratorDecisionRecordFollowUp"),
   };
   const reviewQuestions = reviewQuestionsForFocus(
     brief.reviewFocus,
@@ -1238,6 +1243,45 @@ function InsightsCollaboratorBriefPanel({
                 </dd>
               </div>
             ) : null}
+          </dl>
+          <dl
+            className="mt-2 grid gap-1.5 rounded border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2"
+            data-testid="insights-collaborator-decision-record"
+          >
+            <div className="min-w-0">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {t("collaboratorDecisionRecord")}
+              </dt>
+              <dd className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                {decisionExpected}
+              </dd>
+            </div>
+            <div className="grid gap-1 sm:grid-cols-3">
+              <div className="min-w-0">
+                <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  {t("collaboratorDecisionRecordOwner")}
+                </dt>
+                <dd className="mt-0.5 break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {decisionOwner}
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  {t("collaboratorDecisionRecordEvidence")}
+                </dt>
+                <dd className="mt-0.5 truncate text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {decisionHandoffLabel ?? focusLabel}
+                </dd>
+              </div>
+              <div className="min-w-0">
+                <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  {t("collaboratorDecisionRecordFollowUp")}
+                </dt>
+                <dd className="mt-0.5 break-keep text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {decisionNextStep}
+                </dd>
+              </div>
+            </div>
           </dl>
           <div className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2">
             <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">

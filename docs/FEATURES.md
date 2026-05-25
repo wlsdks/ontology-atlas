@@ -233,6 +233,10 @@ Core panels (R3 cut E reordered + folded cross-project):
 5. **Recent nodes** (vault sentinel preview, click → deeplink)
 6. **Orphans** (R3 cut E made clickable Links, amber accent, top 10 + "+N more")
 
+Collaborator reader lane:
+
+- **Collaborator insight brief** — copyable workspace overview for planning, marketing, and domain review. It includes metrics, shared vocabulary hubs, review vocabulary rows, focus-specific review questions, a `Decision lane`, a `Decision record` checkpoint, graph handoff links, impact handoffs, open-question handoffs, workspace CLI/MCP checks, and a compact vocabulary-only copy action when reviewers do not need agent commands.
+
 Agent panels:
 
 - **Agent graph readiness** — score, graph facts, blockers, next actions, a copyable MCP repair prompt, and local terminal fallback checks (`agent-brief`, `agent-brief --graph-db-pack`, `agent-brief --verify-fallbacks --json`, `workspace-brief`, `health`, `cycles`, `growth`, `maintenance`, `validate`, plus action-specific commands) for connector-less Claude Code/Codex sessions. The copied CLI packet now includes the same setup automation gate plus dashboard facet/schema scans, dependency-cycle, growth-candidate, and maintenance-queue gates as the starter flow, so agents can parse `ok` vs `performanceOk` before trusting local graph fallback speed or proposing writes.

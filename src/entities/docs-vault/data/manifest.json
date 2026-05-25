@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T07:42:58.275Z",
+  "generatedAt": "2026-05-25T07:48:49.568Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4493,8 +4493,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260525 (agent setup gate, graph DBstyle query pack, CLI/MCP verification snapshots, and fallback performance checks). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongside t",
-      "wordCount": 7262,
-      "updatedAt": "2026-05-25T07:42:40.487Z",
+      "wordCount": 7321,
+      "updatedAt": "2026-05-25T07:48:41.315Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5095,8 +5095,8 @@
       },
       "headings": [],
       "excerpt": "/topology, /ontology, and /ontology/insights expose a secondary collaborator reader lane without making nondevelopers the primary product target. The lane translates a selected ontology node into a plainlanguage lens, sourcebacked relation summary, and review prompt. Planners, marketers, and domain collaborators can in",
-      "wordCount": 533,
-      "updatedAt": "2026-05-25T04:25:22.656Z",
+      "wordCount": 580,
+      "updatedAt": "2026-05-25T07:47:55.609Z",
       "linksOut": []
     },
     {
@@ -6106,8 +6106,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyinsights/lib/collaboratorinsightsbrief.ts derives the copyable collaborator overview shown on /ontology/insights. It summarizes node, relation, domain, crossdomain impact, and openquestion counts, highlights the top shared vocabulary hubs, and chooses the review focus: resolve orphan ownership questio",
-      "wordCount": 810,
-      "updatedAt": "2026-05-25T07:25:28.205Z",
+      "wordCount": 867,
+      "updatedAt": "2026-05-25T07:48:12.075Z",
       "linksOut": []
     },
     {
