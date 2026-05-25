@@ -3,6 +3,7 @@ import {
   explainOntologyRelationKeyForGraphIds,
   inferOntologyRelationKeyForGraphIds,
 } from "@/shared/lib/ontology-relation-key";
+import { buildOntologyBuilderNodeHrefFromGraphId } from "@/entities/knowledge-graph";
 
 export interface TopologyAnalysisSummaryInput {
   mode: TopologyAnalysisMode;
@@ -560,23 +561,7 @@ function formatQueryOntologyCall(payload: Record<string, unknown>): string {
 }
 
 export function buildTopologyHealthRepairHref(slug: string): string {
-  return `/ontology/edit/?node=${encodeURIComponent(
-    resolveTopologyHealthRepairNodeSlug(slug),
-  )}`;
-}
-
-function resolveTopologyHealthRepairNodeSlug(slug: string): string {
-  const normalized = slug.trim().replace(/^\/+/, "");
-  const [kind, ...tailParts] = normalized.split(":");
-  const tail = tailParts.join(":").trim();
-  if (!tail) return normalized;
-
-  if (kind === "domain") return `domains/${tail}`;
-  if (kind === "capability") return `capabilities/${tail}`;
-  if (kind === "element") return `elements/${tail}`;
-  if (kind === "project") return tail;
-
-  return normalized;
+  return buildOntologyBuilderNodeHrefFromGraphId(slug);
 }
 
 export function getTopologyHealthNextAction(

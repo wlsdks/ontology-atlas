@@ -19,20 +19,33 @@ const KIND_TO_VAULT_FOLDER: Record<string, string> = {
   element: "elements",
 };
 
+export function resolveOntologyBuilderNodeSlugFromGraphId(nodeId: string): string {
+  const normalized = nodeId.trim().replace(/^\/+/, "").replace(/^ontology\//, "");
+  if (!normalized) return normalized;
+  if (normalized.includes("/")) return normalized;
+
+  const [kind, ...tailParts] = normalized.split(":");
+  const tail = tailParts.join(":").trim();
+  if (!tail) return normalized;
+  if (kind === "project") return tail;
+
+  const folder = KIND_TO_VAULT_FOLDER[kind];
+  return folder ? `${folder}/${tail}` : normalized;
+}
+
+export function buildOntologyBuilderNodeHrefFromGraphId(nodeId: string): string {
+  return `/ontology/edit/?node=${encodeURIComponent(
+    resolveOntologyBuilderNodeSlugFromGraphId(nodeId),
+  )}`;
+}
+
 export function resolveOntologyBuilderNodeSlug(
   node: KnowledgeGraphNode,
 ): string {
   const sourceSlug = node.evidenceIds[0]?.replace(/^ontology\//, "").trim();
   if (sourceSlug) return sourceSlug;
 
-  if (node.id.includes("/")) return node.id;
-
-  const tail = node.id.split(":").slice(1).join(":").trim();
-  if (!tail) return node.id;
-  if (node.kind === "project") return tail;
-
-  const folder = KIND_TO_VAULT_FOLDER[node.kind];
-  return folder ? `${folder}/${tail}` : tail;
+  return resolveOntologyBuilderNodeSlugFromGraphId(node.id);
 }
 
 export function buildOntologyBuilderNodeHref(

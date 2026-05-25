@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "../model";
 import {
   buildOntologyBuilderNodeHref,
+  buildOntologyBuilderNodeHrefFromGraphId,
   buildOntologyNodeHref,
   resolveOntologyBuilderNodeSlug,
+  resolveOntologyBuilderNodeSlugFromGraphId,
 } from "./ontology-node-href";
 
 describe("buildOntologyNodeHref", () => {
@@ -86,5 +88,44 @@ describe("buildOntologyBuilderNodeHref", () => {
         node({ id: "capabilities/topology-analysis-modes" }),
       ),
     ).toBe("capabilities/topology-analysis-modes");
+  });
+});
+
+describe("buildOntologyBuilderNodeHrefFromGraphId", () => {
+  it("topology graph id 를 canonical builder node query 로 변환", () => {
+    expect(resolveOntologyBuilderNodeSlugFromGraphId("domain:views")).toBe(
+      "domains/views",
+    );
+    expect(
+      buildOntologyBuilderNodeHrefFromGraphId("capability:topology-analysis-modes"),
+    ).toBe(
+      `/ontology/edit/?node=${encodeURIComponent(
+        "capabilities/topology-analysis-modes",
+      )}`,
+    );
+  });
+
+  it("project graph id 는 project frontmatter slug 로 넘긴다", () => {
+    expect(resolveOntologyBuilderNodeSlugFromGraphId("project:oh-my-ontology")).toBe(
+      "oh-my-ontology",
+    );
+    expect(buildOntologyBuilderNodeHrefFromGraphId("project:oh-my-ontology")).toBe(
+      `/ontology/edit/?node=${encodeURIComponent("oh-my-ontology")}`,
+    );
+  });
+
+  it("이미 vault source slug 이거나 ontology prefix 가 있으면 query 호환 slug 로 정규화", () => {
+    expect(
+      resolveOntologyBuilderNodeSlugFromGraphId(
+        "ontology/capabilities/topology-analysis-modes",
+      ),
+    ).toBe("capabilities/topology-analysis-modes");
+    expect(
+      buildOntologyBuilderNodeHrefFromGraphId("capabilities/topology-analysis-modes"),
+    ).toBe(
+      `/ontology/edit/?node=${encodeURIComponent(
+        "capabilities/topology-analysis-modes",
+      )}`,
+    );
   });
 });

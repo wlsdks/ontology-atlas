@@ -13,8 +13,10 @@ export {
 export type { EdgeTypeRow } from "./model";
 export {
   buildOntologyBuilderNodeHref,
+  buildOntologyBuilderNodeHrefFromGraphId,
   buildOntologyNodeHref,
   resolveOntologyBuilderNodeSlug,
+  resolveOntologyBuilderNodeSlugFromGraphId,
 } from "./lib/ontology-node-href";
 export {
   buildOntologyHealthSignals,
