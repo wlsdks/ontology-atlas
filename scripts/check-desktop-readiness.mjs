@@ -302,8 +302,8 @@ if (landingPage.includes('href="/download/"')) {
 if (
   !landingPage.includes('/docs/?intent=local') &&
   !downloadPage.includes('/docs/?intent=local') &&
-  docsVaultPage.includes("intent === 'local' && isDesktopRuntime") &&
-  docsVaultPage.includes("localSourceDisabled = !isDesktopRuntime") &&
+  docsVaultPage.includes("shouldHonorLocalIntent(intent, isDesktopRuntime)") &&
+  docsVaultPage.includes("isDocsVaultLocalSourceDisabled") &&
   docsVaultPage.includes("desktopOnlyTooltip")
 ) {
   pass("hosted pages do not route users into the browser workbench, and /docs local vault work is desktop-only");

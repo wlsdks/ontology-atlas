@@ -86,8 +86,10 @@ import { DocsVaultDocOutlinePanel } from "./parts/DocsVaultDocOutlinePanel";
 import { EmptyState } from "./parts/EmptyState";
 import {
   parseDocsVaultView as parseView,
+  isDocsVaultLocalSourceDisabled,
   readStoredSource,
   scheduleStateSync,
+  shouldHonorLocalIntent,
   storeSource,
   type DocsVaultSource as Source,
   type DocsVaultView,
@@ -137,7 +139,7 @@ function DocsVaultContent() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const intent = new URLSearchParams(window.location.search).get('intent');
-    if (intent === 'local' && isDesktopRuntime) {
+    if (shouldHonorLocalIntent(intent, isDesktopRuntime)) {
       window.queueMicrotask(() => {
         localIntentAutoOpenRef.current = true;
         setSource('local');
@@ -154,7 +156,10 @@ function DocsVaultContent() {
   const openLocalVault = localVault.open;
   const toast = useToast();
   const desktopIntentPickerOpenedRef = useRef(false);
-  const localSourceDisabled = !isDesktopRuntime || localVault.status === 'unsupported';
+  const localSourceDisabled = isDocsVaultLocalSourceDisabled({
+    isDesktopRuntime,
+    localVaultStatus: localVault.status,
+  });
 
   // R11 #16 step 5 — pinned/recent persistence 는 useDocsVaultPersistence hook
   // 에서 캡슐화. setter 들은 view 의 다양한 mutation 사이트 (delete/new-doc 등)
@@ -219,7 +224,7 @@ function DocsVaultContent() {
     // 열지 않는다.
     if (typeof window !== 'undefined') {
       const intent = new URLSearchParams(window.location.search).get('intent');
-      if (intent === 'local' && isDesktopRuntime) return;
+      if (shouldHonorLocalIntent(intent, isDesktopRuntime)) return;
     }
     scheduleStateSync(() => setSource(readStoredSource()));
   }, [isDesktopRuntime]);

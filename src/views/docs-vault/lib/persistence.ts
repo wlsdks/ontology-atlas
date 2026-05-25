@@ -42,6 +42,23 @@ export function storeSource(v: DocsVaultSource) {
   }
 }
 
+export function shouldHonorLocalIntent(
+  intent: string | null | undefined,
+  isDesktopRuntime: boolean,
+): boolean {
+  return intent === "local" && isDesktopRuntime;
+}
+
+export function isDocsVaultLocalSourceDisabled({
+  isDesktopRuntime,
+  localVaultStatus,
+}: {
+  isDesktopRuntime: boolean;
+  localVaultStatus: string;
+}): boolean {
+  return !isDesktopRuntime || localVaultStatus === "unsupported";
+}
+
 /**
  * 외부 popout / print 용 HTML 생성 시 사용자 입력 (title / 본문) 를 안전하게
  * 이스케이프. 4 개 entity 만 처리 (SVG / iframe 안 사용 안 하므로 충분).

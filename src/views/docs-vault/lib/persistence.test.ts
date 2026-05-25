@@ -2,9 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DOCS_VAULT_SOURCE_KEY,
   escapeHtml,
+  isDocsVaultLocalSourceDisabled,
   parseDocsVaultView,
   readStoredSource,
   scheduleStateSync,
+  shouldHonorLocalIntent,
   storeSource,
 } from "./persistence";
 
@@ -57,6 +59,37 @@ describe("source storage", () => {
   it("source: 잘못된 값 저장돼 있으면 'server' fallback", () => {
     window.localStorage.setItem(DOCS_VAULT_SOURCE_KEY, "garbage");
     expect(readStoredSource()).toBe("server");
+  });
+});
+
+describe("desktop-only local vault source", () => {
+  it("honors ?intent=local only inside the installed desktop runtime", () => {
+    expect(shouldHonorLocalIntent("local", true)).toBe(true);
+    expect(shouldHonorLocalIntent("local", false)).toBe(false);
+    expect(shouldHonorLocalIntent("server", true)).toBe(false);
+    expect(shouldHonorLocalIntent(null, true)).toBe(false);
+    expect(shouldHonorLocalIntent(undefined, true)).toBe(false);
+  });
+
+  it("disables local vault source in hosted browsers even when browser APIs exist", () => {
+    expect(
+      isDocsVaultLocalSourceDisabled({
+        isDesktopRuntime: false,
+        localVaultStatus: "idle",
+      }),
+    ).toBe(true);
+    expect(
+      isDocsVaultLocalSourceDisabled({
+        isDesktopRuntime: true,
+        localVaultStatus: "idle",
+      }),
+    ).toBe(false);
+    expect(
+      isDocsVaultLocalSourceDisabled({
+        isDesktopRuntime: true,
+        localVaultStatus: "unsupported",
+      }),
+    ).toBe(true);
   });
 });
 
