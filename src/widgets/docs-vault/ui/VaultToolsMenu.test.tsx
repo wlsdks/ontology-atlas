@@ -133,6 +133,25 @@ describe('VaultToolsMenu', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('json gate')).toBeInTheDocument();
     expect(screen.getByText('수정 전 agent root에서 JSON gate를 복사해 실행')).toBeInTheDocument();
+    expect(screen.getByLabelText('첫 연결 증거 계약')).toBeInTheDocument();
+    expect(screen.getByText('config_state')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'agent-setup --json 으로 root별 Claude Code / Cursor / Codex 설정 준비 상태를 repair 전에 확인합니다.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('mcp_verify')).toBeInTheDocument();
+    expect(
+      screen.getByText('mcp-verify 로 local MCP server boot, 23개 tool 목록, target vault 읽기를 증명합니다.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('json_gate')).toBeInTheDocument();
+    expect(
+      screen.getByText('agent-brief --verify-fallbacks --json 이 수정 전 ok와 performanceOk를 보고합니다.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('graph_briefs')).toBeInTheDocument();
+    expect(
+      screen.getByText('workspace-brief 와 agent-brief --graph-db-pack 이 같은 local vault 를 설명합니다.'),
+    ).toBeInTheDocument();
     expect(
       screen.getByLabelText('AI agent 사용 모드 선택 기준'),
     ).toBeInTheDocument();

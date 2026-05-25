@@ -408,6 +408,28 @@ export function VaultToolsMenu({
       state: 'manual',
     },
   ] as const;
+  const agentFirstContactProofRows = [
+    {
+      key: 'configState',
+      label: t('agentSetup.proofContractConfigState'),
+      value: t('agentSetup.proofContractConfigStateDesc'),
+    },
+    {
+      key: 'mcpVerify',
+      label: t('agentSetup.proofContractMcpVerify'),
+      value: t('agentSetup.proofContractMcpVerifyDesc'),
+    },
+    {
+      key: 'jsonGate',
+      label: t('agentSetup.proofContractJsonGate'),
+      value: t('agentSetup.proofContractJsonGateDesc'),
+    },
+    {
+      key: 'graphBriefs',
+      label: t('agentSetup.proofContractGraphBriefs'),
+      value: t('agentSetup.proofContractGraphBriefsDesc'),
+    },
+  ] as const;
 
   async function handleEnsureAgentConfigs() {
     setAgentSetupError(null);
@@ -714,6 +736,27 @@ export function VaultToolsMenu({
                         />
                       )}
                       <dt className="truncate font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                        {row.label}
+                      </dt>
+                      <dd className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
+                        {row.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+                <dl
+                  aria-label={t('agentSetup.proofContractAriaLabel')}
+                  className="mt-1.5 grid gap-1"
+                >
+                  {agentFirstContactProofRows.map((row, index) => (
+                    <div
+                      key={row.key}
+                      className="grid grid-cols-[18px_88px_1fr] items-start gap-1.5 rounded-sm border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(94,106,210,0.045)] px-1.5 py-1"
+                    >
+                      <span className="inline-flex h-4 w-4 items-center justify-center rounded-sm bg-[color:rgba(94,106,210,0.14)] font-mono text-[9px] text-[color:rgba(200,210,255,0.9)]">
+                        {index + 1}
+                      </span>
+                      <dt className="truncate font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:rgba(200,210,255,0.82)]">
                         {row.label}
                       </dt>
                       <dd className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
