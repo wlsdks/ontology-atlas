@@ -307,8 +307,9 @@ process.exit(1);
     );
 
     assert.equal(result.status, 1);
-    assert.match(result.stderr, /release-macos\.yml is not available on GitHub/);
-    assert.match(result.stderr, /Commit and push \.github\/workflows\/release-macos\.yml/);
+    assert.match(result.stderr, /release-macos\.yml is not available to GitHub/);
+    assert.match(result.stderr, /merge that PR into the default branch/);
+    assert.match(result.stderr, /commit and push \.github\/workflows\/release-macos\.yml/i);
     assert.doesNotMatch(result.stderr, /gh api repos/);
   } finally {
     rmSync(dir, { recursive: true, force: true });

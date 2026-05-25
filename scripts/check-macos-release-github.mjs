@@ -85,7 +85,7 @@ function runGh(args, { parseJson = false } = {}) {
       /\b404\b|not found/i.test(result.stderr || result.stdout)
     ) {
       fail(
-        "release-macos.yml is not available on GitHub for this repo yet. Commit and push .github/workflows/release-macos.yml before pushing the release tag.",
+        "release-macos.yml is not available to GitHub for this repo yet. If the workflow is still on a PR branch, merge that PR into the default branch before pushing the release tag. Otherwise, commit and push .github/workflows/release-macos.yml first.",
       );
     }
     fail(`gh ${args.join(" ")} failed: ${(result.stderr || result.stdout).trim()}`);

@@ -247,8 +247,10 @@ Before pushing the tag, run
 `pnpm desktop:release-github -- --tag=v0.1.0` to catch missing GitHub secret
 names or a disabled release workflow from the operator machine. In the current
 repo state this is a real external gate: GitHub authentication works, but the
-Apple release secret list is still empty, so a tag push would fail before
-signing.
+release workflow is still on the macOS app PR branch and the Apple release
+secret list is still empty, so a tag push would fail before signing. Merge the
+PR first so GitHub sees `.github/workflows/release-macos.yml` on the default
+branch, then configure the Apple secrets.
 When it reports missing secrets, set each value through `gh secret set`, for
 example:
 
