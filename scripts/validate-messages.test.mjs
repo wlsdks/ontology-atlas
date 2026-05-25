@@ -64,6 +64,16 @@ describe('i18n message catalog', () => {
     assert.match(ko.modeBadge.demoTooltipDownload, /macOS 앱 설치/);
     assert.match(en.modeBadge.demoAriaLabelPicker, /open a local vault folder/i);
     assert.match(en.modeBadge.demoTooltipPicker, /saving changes/i);
+    assert.doesNotMatch(en.ontologyPages.edit.page.toastDemoModeDownload, /\/docs|open a markdown folder/i);
+    assert.doesNotMatch(en.ontologyPages.edit.page.toastVaultEdgeDemoDownload, /\/docs|open a vault folder/i);
+    assert.match(en.ontologyPages.edit.page.toastDemoModeDownload, /install the macOS app/i);
+    assert.match(en.ontologyPages.edit.inspector.vaultFooterReadOnlyDownload, /install the macOS app/i);
+    assert.match(en.ontologyPages.edit.onboarding.stepSaveBodyDownload, /install the macOS app/i);
+    assert.match(en.ontologyPages.edit.page.toastDemoModePicker, /local vault folder/i);
+    assert.match(en.ontologyPages.edit.inspector.vaultFooterReadOnlyPicker, /local vault folder/i);
+    assert.match(en.ontologyPages.edit.onboarding.stepSaveBodyPicker, /top-right demo badge/i);
+    assert.match(ko.ontologyPages.edit.page.toastDemoModeDownload, /macOS 앱 설치/);
+    assert.match(ko.ontologyPages.edit.inspector.vaultFooterReadOnlyDownload, /macOS 앱/);
   });
 });
 
