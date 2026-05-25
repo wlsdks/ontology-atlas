@@ -323,7 +323,7 @@ export function ontologyReviewQuestionsForPrompt(
 }
 
 export function buildOntologyReviewTopologyHref(nodeId: string): string {
-  return `/topology/?p=${encodeURIComponent(nodeId)}`;
+  return `/topology/?mode=focus&p=${encodeURIComponent(nodeId)}`;
 }
 
 function formatRelationTypes(

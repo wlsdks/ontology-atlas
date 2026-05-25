@@ -97,7 +97,7 @@ describe("buildOntologyReviewBrief", () => {
         },
       ],
       handoffLinks: {
-        topology: "/topology/?p=capability%3Amcp-server",
+        topology: "/topology/?mode=focus&p=capability%3Amcp-server",
         builder: null,
       },
       agentChecks: {
@@ -163,7 +163,7 @@ describe("formatOntologyReviewBrief", () => {
       outgoingCount: 2,
       relationTypes: [{ type: "depends_on", count: 2 }],
       relationPreview,
-      topologyHref: "/topology/?p=capability%3Amcp-server",
+      topologyHref: "/topology/?mode=focus&p=capability%3Amcp-server",
       builderHref: "/ontology/edit/?node=capabilities%2Fmcp-server",
       agentCheckSlug: "capabilities/mcp-server",
     });
@@ -202,7 +202,7 @@ describe("formatOntologyReviewBrief", () => {
       "## Direct relation preview\n- in · capabilities · AI Agent Partner (domain, domains/ai-agent-partner)",
     );
     expect(text).toContain("- out · elements · Sigma (element, elements/sigma)");
-    expect(text).toContain("- Topology: /topology/?p=capability%3Amcp-server");
+    expect(text).toContain("- Topology: /topology/?mode=focus&p=capability%3Amcp-server");
     expect(text).toContain("- Builder: /ontology/edit/?node=capabilities%2Fmcp-server");
     expect(text).toContain(
       '- MCP check: query_ontology({"operation":"node_profile","slug":"capabilities/mcp-server","limit":8})',
@@ -236,7 +236,7 @@ describe("formatOntologyReviewBrief", () => {
       node: selected,
       incomingCount: 1,
       outgoingCount: 1,
-      topologyHref: "/topology/?p=capability%3Amcp-server",
+      topologyHref: "/topology/?mode=focus&p=capability%3Amcp-server",
       builderHref: "/ontology/edit/?node=capabilities%2Fmcp-server",
       relationTypes: [
         { type: "contains", count: 1 },
@@ -296,7 +296,7 @@ describe("formatOntologyReviewBrief", () => {
         "- Incoming capabilities: AI Agent Partner (domain, domains/ai-agent-partner)",
         "",
         "## Handoff",
-        "- Topology: /topology/?p=capability%3Amcp-server",
+        "- Topology: /topology/?mode=focus&p=capability%3Amcp-server",
         "- Builder: /ontology/edit/?node=capabilities%2Fmcp-server",
       ].join("\n"),
     );
