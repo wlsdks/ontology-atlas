@@ -161,9 +161,9 @@ if (
 
 if (
   pkg.scripts?.["test:desktop:bridge"] ===
-  "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts && cargo test --manifest-path src-tauri/Cargo.toml"
+  "pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts src/entities/local-fs-handle/api/store.test.ts src/features/docs-vault-local/model/agent-config-status.test.ts && cargo test --manifest-path src-tauri/Cargo.toml"
 ) {
-  pass("desktop native vault bridge tests cover WebView handle shim and Rust path guard");
+  pass("desktop native vault bridge tests cover WebView handle shim, agent config validation, and Rust path guard");
 } else {
   fail("package.json must expose test:desktop:bridge for the Tauri vault bridge contract");
 }
@@ -608,16 +608,18 @@ if (
   localFsHandleStore.includes("listRecentLocalFsHandles") &&
   localFsHandleStore.includes("forgetRecentLocalFsHandle") &&
   localVaultHook.includes("recentVaults") &&
+  localVaultHook.includes("mcpJsonValid: looksLikeOmotMcpJson(mcpJsonText, { expectedVault: '.' })") &&
+  localVaultHook.includes("codexConfigValid: looksLikeOmotCodexToml(codexConfigText, { expectedVault: '.' })") &&
   localVaultHook.includes("openRecent") &&
   localVaultHook.includes("forgetRecent") &&
   localVaultPicker.includes("recentVaults") &&
   localVaultPicker.includes("recentOpenAriaLabel") &&
   localVaultPicker.includes("recentForgetAriaLabel")
 ) {
-  pass("desktop local vault picker exposes recent vault recall and stale-path cleanup from persisted Tauri paths");
+  pass("desktop local vault picker exposes recent vault recall, stale-path cleanup, and vault-local agent config validation");
 } else {
   fail(
-    "desktop local vault picker must expose recent vault recall and stale-path cleanup from persisted Tauri paths",
+    "desktop local vault picker must expose recent vault recall, stale-path cleanup, and reject stale vault-local agent configs that do not use OMOT_VAULT=.",
   );
 }
 

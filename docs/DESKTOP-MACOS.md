@@ -108,8 +108,8 @@ for a macOS prototype:
   rendering the hosted marketing page inside the installed app.
 - `src/views/docs-vault/ui/DocsVaultPage.tsx` treats that desktop intent as the
   installed-app first-run path and opens the native vault picker once.
-- `pnpm test:desktop:bridge` verifies that shim against the Tauri command names
-  and runs Rust unit tests for the relative-path guard that keeps file
+- `pnpm test:desktop:bridge` verifies that shim against the Tauri command names,
+  vault-local agent config validation, and Rust unit tests for the relative-path guard that keeps file
   operations inside the selected vault root. The Rust guard canonicalizes
   existing targets and nearest existing parents so symlinks inside the vault
   cannot redirect read, write, mkdir, exists, or remove operations outside the
@@ -172,6 +172,10 @@ for a macOS prototype:
 - When no vault is open, the same picker lists recently opened desktop vaults
   from persisted Tauri paths, reopens them without another Finder selection, and
   lets stale recent paths be removed from the list.
+- vault-local agent setup validation treats `.mcp.json` and
+  `.codex/config.toml` as ready only when they point `OMOT_VAULT` at `.`, so a
+  stale config copied from another vault does not look ready inside the
+  installed app.
 - the Rust entrypoint and default Tauri capability files exist.
 - the Tauri icon set exists under `src-tauri/icons/` so a fresh checkout can
   build the `.app` instead of failing during `generate_context!()`.

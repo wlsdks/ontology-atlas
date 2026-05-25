@@ -35,7 +35,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop native vault bridge tests cover WebView handle shim and Rust path guard/,
+    /✓ desktop native vault bridge tests cover WebView handle shim, agent config validation, and Rust path guard/,
   );
   assert.match(
     result.stdout,
@@ -134,7 +134,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop local vault picker exposes recent vault recall and stale-path cleanup from persisted Tauri paths/,
+    /✓ desktop local vault picker exposes recent vault recall, stale-path cleanup, and vault-local agent config validation/,
   );
   assert.match(
     result.stdout,

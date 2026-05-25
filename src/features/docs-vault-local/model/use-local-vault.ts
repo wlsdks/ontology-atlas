@@ -252,7 +252,10 @@ async function readTextFileIfPresent(
   }
 }
 
-function looksLikeOmotMcpJson(raw: string | null): boolean {
+export function looksLikeOmotMcpJson(
+  raw: string | null,
+  options: { expectedVault?: string } = {},
+): boolean {
   if (!raw) return false;
   try {
     const parsed = JSON.parse(raw) as {
@@ -268,19 +271,27 @@ function looksLikeOmotMcpJson(raw: string | null): boolean {
     return (
       args.some((arg) => String(arg).includes('oh-my-ontology-mcp')) &&
       typeof env.OMOT_VAULT === 'string' &&
-      env.OMOT_VAULT.trim().length > 0
+      env.OMOT_VAULT.trim().length > 0 &&
+      (options.expectedVault === undefined ||
+        env.OMOT_VAULT.trim() === options.expectedVault)
     );
   } catch {
     return false;
   }
 }
 
-function looksLikeOmotCodexToml(raw: string | null): boolean {
+export function looksLikeOmotCodexToml(
+  raw: string | null,
+  options: { expectedVault?: string } = {},
+): boolean {
   if (!raw) return false;
+  const vaultMatch = raw.match(/\bOMOT_VAULT\s*=\s*"([^"]+)"/);
   return (
     raw.includes('[mcp_servers.oh-my-ontology]') &&
     raw.includes('oh-my-ontology-mcp') &&
-    /\bOMOT_VAULT\s*=/.test(raw)
+    Boolean(vaultMatch) &&
+    (options.expectedVault === undefined ||
+      vaultMatch?.[1]?.trim() === options.expectedVault)
   );
 }
 
@@ -300,8 +311,8 @@ async function readAgentConfigStatus(
     mcpJson: mcpJsonText !== null,
     codexConfig: codexConfigText !== null,
     mcpExample: mcpExampleText !== null,
-    mcpJsonValid: looksLikeOmotMcpJson(mcpJsonText),
-    codexConfigValid: looksLikeOmotCodexToml(codexConfigText),
+    mcpJsonValid: looksLikeOmotMcpJson(mcpJsonText, { expectedVault: '.' }),
+    codexConfigValid: looksLikeOmotCodexToml(codexConfigText, { expectedVault: '.' }),
     mcpExampleValid: looksLikeOmotMcpJson(mcpExampleText),
   };
 }
