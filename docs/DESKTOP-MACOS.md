@@ -184,7 +184,9 @@ for a macOS prototype:
   data location is visible instead of hidden behind a folder nickname.
 - When no vault is open, the same picker lists recently opened desktop vaults
   from persisted Tauri paths, reopens them without another Finder selection, and
-  lets stale recent paths be removed from the list.
+  lets stale recent paths be removed from the list. If a restored desktop handle
+  no longer produces a manifest, the root entry sends the user back to that
+  picker instead of rendering a broken workspace.
 - vault-local agent setup validation treats `.mcp.json` and
   `.codex/config.toml` as ready only when they point `OMOT_VAULT` at `.`, so a
   stale config copied from another vault does not look ready inside the

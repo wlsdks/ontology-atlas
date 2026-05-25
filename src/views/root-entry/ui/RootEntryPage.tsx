@@ -18,9 +18,10 @@ import { LandingPage } from "@/views/landing";
  * vault picker 자체는 별도 `/docs` 라우트. LandingPage 의 "내 마크다운 폴더
  * 열기" 버튼이 그 곳으로 보낸다.
  *
- * 데스크톱 런타임에서는 restoreAttempted 이후 vault 가 없을 때 LandingPage 를
- * 렌더하지 않는다. 설치 앱의 `/` 는 홍보가 아니라 로컬 vault picker 로 가는
- * 작업 진입점이어야 한다.
+ * 데스크톱 런타임에서는 restoreAttempted 이후 로드된 manifest 가 없을 때
+ * LandingPage 를 렌더하지 않는다. 설치 앱의 `/` 는 홍보가 아니라 로컬 vault
+ * picker 로 가는 작업 진입점이어야 한다. 저장된 handle 이 stale path 로
+ * 복원되어 manifest build 가 실패한 경우도 여기서 picker 로 돌린다.
  *
  * **`/` vs `/ontology` 의도적 dual-surface (R3 결정)** — vault 선택 시
  * 둘 다 `OntologyViewPage` 를 렌더하지만 *역할이 다름*:
@@ -39,12 +40,12 @@ export function RootEntryPage() {
 
   useEffect(() => {
     if (!vault.restoreAttempted) return;
-    if (vault.handle) return;
+    if (vault.manifest) return;
     if (!isDesktopRuntime) return;
     router.replace('/docs/?intent=local');
-  }, [isDesktopRuntime, router, vault.handle, vault.restoreAttempted]);
+  }, [isDesktopRuntime, router, vault.manifest, vault.restoreAttempted]);
 
-  if (vault.handle) return <OntologyViewPage />;
+  if (vault.manifest) return <OntologyViewPage />;
   if (isDesktopRuntime && vault.restoreAttempted) return <DesktopVaultRedirect />;
   return <LandingPage />;
 }

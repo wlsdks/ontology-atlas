@@ -84,7 +84,9 @@ the hosted marketing page; `DocsVaultPage` then opens the native vault picker
 once, so the installed app starts in local work mode instead of the download
 page. The picker keeps a small recent-vault list from persisted Tauri paths,
 can reopen those vaults without another Finder selection, and can remove stale
-recent paths when folders have moved or been deleted. The
+recent paths when folders have moved or been deleted. If a restored desktop
+handle no longer produces a manifest, the root entry sends the user back to the
+picker instead of rendering a broken workspace. The
 `.github/workflows/release-macos.yml` workflow builds those artifacts on `v*`
 tags, fails closed through `pnpm desktop:release-secrets` unless all Apple
 Developer ID and notary secrets are present and structurally usable, and runs

@@ -665,12 +665,13 @@ if (
 if (
   rootEntryPage.includes("isTauriVaultRuntime()") &&
   rootEntryPage.includes("restoreAttempted") &&
+  rootEntryPage.includes("vault.manifest") &&
   rootEntryPage.includes("DesktopVaultRedirect") &&
   rootEntryPage.includes("'/docs/?intent=local'")
 ) {
-  pass("desktop root entry routes first launch into the local vault picker flow without rendering marketing");
+  pass("desktop root entry routes first launch and stale restored vaults into the local picker flow without rendering marketing");
 } else {
-  fail("src/views/root-entry/ui/RootEntryPage.tsx must route Tauri first launch to /docs/?intent=local after restore without rendering the hosted landing page");
+  fail("src/views/root-entry/ui/RootEntryPage.tsx must route Tauri first launch or stale restored handles to /docs/?intent=local unless a manifest loaded, without rendering the hosted landing page");
 }
 
 if (

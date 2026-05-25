@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   isDesktopRuntime: false,
   vaultState: {
     handle: null as unknown,
+    manifest: null as unknown,
     restoreAttempted: true,
   },
 }));
@@ -42,7 +43,7 @@ describe('RootEntryPage', () => {
   beforeEach(() => {
     mocks.replace.mockReset();
     mocks.isDesktopRuntime = false;
-    mocks.vaultState = { handle: null, restoreAttempted: true };
+    mocks.vaultState = { handle: null, manifest: null, restoreAttempted: true };
   });
 
   it('keeps the hosted web root on the landing page when no vault is loaded', () => {
@@ -66,7 +67,7 @@ describe('RootEntryPage', () => {
 
   it('waits for the local vault restore attempt before desktop picker routing', async () => {
     mocks.isDesktopRuntime = true;
-    mocks.vaultState = { handle: null, restoreAttempted: false };
+    mocks.vaultState = { handle: null, manifest: null, restoreAttempted: false };
 
     render(<RootEntryPage />);
 
@@ -77,11 +78,32 @@ describe('RootEntryPage', () => {
 
   it('opens the ontology workspace when a vault is already loaded', () => {
     mocks.isDesktopRuntime = true;
-    mocks.vaultState = { handle: { name: 'vault' }, restoreAttempted: true };
+    mocks.vaultState = {
+      handle: { name: 'vault' },
+      manifest: { docs: [] },
+      restoreAttempted: true,
+    };
 
     render(<RootEntryPage />);
 
     expect(screen.getByTestId('ontology')).toBeInTheDocument();
     expect(mocks.replace).not.toHaveBeenCalled();
+  });
+
+  it('routes stale restored desktop handles back to the picker instead of the workspace', async () => {
+    mocks.isDesktopRuntime = true;
+    mocks.vaultState = {
+      handle: { name: 'missing-vault' },
+      manifest: null,
+      restoreAttempted: true,
+    };
+
+    render(<RootEntryPage />);
+
+    expect(screen.queryByTestId('ontology')).not.toBeInTheDocument();
+    expect(screen.getByText('Opening local vault picker')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(mocks.replace).toHaveBeenCalledWith('/docs/?intent=local');
+    });
   });
 });
