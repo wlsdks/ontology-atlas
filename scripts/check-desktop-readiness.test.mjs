@@ -85,6 +85,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ local vault picker and shortcut copy describe the installed app path, not browser File System Access/,
+  );
+  assert.match(
+    result.stdout,
     /✓ root README presents the hosted site as promo\/download and the macOS app as the local workbench/,
   );
   assert.match(

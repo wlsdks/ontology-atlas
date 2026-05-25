@@ -328,6 +328,30 @@ if (
 }
 
 if (
+  enMessages.searchWidgets.shortcuts.rows.localVault ===
+    "Open a local vault folder in the installed app" &&
+  koMessages.searchWidgets.shortcuts.rows.localVault ===
+    "설치된 앱에서 로컬 vault 폴더 열기" &&
+  enMessages.docsVault.vaultStatus.unsupportedTooltip ===
+    "Local vault editing is available in the installed macOS app." &&
+  koMessages.docsVault.vaultStatus.unsupportedTooltip ===
+    "로컬 vault 편집은 설치된 macOS 앱에서 사용할 수 있습니다." &&
+  enMessages.featuresMisc.localVaultPicker.openLabel === "Open vault folder" &&
+  koMessages.featuresMisc.localVaultPicker.openLabel === "vault 폴더 열기" &&
+  enMessages.featuresMisc.localVaultPicker.unsupported.includes("Install the macOS app") &&
+  koMessages.featuresMisc.localVaultPicker.unsupported.includes("macOS 앱을 설치") &&
+  !enMessages.searchWidgets.shortcuts.rows.localVault.includes("File System Access") &&
+  !koMessages.searchWidgets.shortcuts.rows.localVault.includes("File System Access") &&
+  !enMessages.featuresMisc.localVaultPicker.openLabel.includes("markdown folder")
+) {
+  pass("local vault picker and shortcut copy describe the installed app path, not browser File System Access");
+} else {
+  fail(
+    "Local vault picker and shortcut copy must route users toward the installed macOS app instead of preserving browser/File System Access wording",
+  );
+}
+
+if (
   rootReadme.includes("| **Website / downloads** | **https://oh-my-ontology.web.app** |") &&
   rootReadme.includes("| **macOS app** | Install once, pick a local vault folder") &&
   rootReadme.includes("| **Website** | Explain the product, show a read-only demo") &&
