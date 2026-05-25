@@ -1168,7 +1168,7 @@ function InsightsCollaboratorBriefPanel({
                       href={hub.topologyHref}
                       className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
                     >
-                      {t("collaboratorHandoffTopologyShort")}
+                      {t("collaboratorHandoffTopologyFocus")}
                     </Link>
                   ) : null}
                   {hub.builderHref ? (
@@ -1329,7 +1329,7 @@ function InsightsCollaboratorBriefPanel({
                           href={question.topologyHref}
                           className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
                         >
-                          {t("collaboratorHandoffTopologyShort")}
+                          {t("collaboratorHandoffTopologyHealth")}
                         </Link>
                       ) : null}
                       {question.builderHref ? (
