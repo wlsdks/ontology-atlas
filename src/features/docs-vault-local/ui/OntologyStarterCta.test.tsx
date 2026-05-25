@@ -38,6 +38,9 @@ describe('OntologyStarterCta', () => {
       screen.getByLabelText('starter에 포함된 AI agent 검증 단계'),
     ).toBeInTheDocument();
     expect(screen.getByText(/Claude Code, Cursor, Codex용/)).toBeInTheDocument();
+    expect(screen.getByText('ontology 정의')).toBeInTheDocument();
+    expect(screen.getByText(/실행 가능한 의미 모델/)).toBeInTheDocument();
+    expect(screen.getByText(/소유권, 의존성, 근거, 변경 영향/)).toBeInTheDocument();
     expect(screen.getByText('local')).toBeInTheDocument();
     expect(screen.getByText('graph proof')).toBeInTheDocument();
     expect(screen.getByText('agent loop')).toBeInTheDocument();

@@ -142,6 +142,14 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
           <br />
           {t('emptyBodyLine2')}
         </p>
+        <div className="mx-auto mt-4 max-w-[560px] rounded-md border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(14,16,22,0.18)] px-3 py-2 text-left">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-indigo-accent)]">
+            {t('definitionLabel')}
+          </p>
+          <p className="mt-1 break-keep text-[11.5px] leading-5 text-[color:var(--color-text-secondary)]">
+            {t('definitionBody')}
+          </p>
+        </div>
         <div className="mx-auto mt-4 grid max-w-[520px] gap-2 sm:grid-cols-3">
           {proofCards.map((card) => (
             <div

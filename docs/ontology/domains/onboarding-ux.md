@@ -35,6 +35,11 @@ starter README 에도 첫 연결 검증 루프를
 `validate_vault` → `workspace_brief` → `agent_brief` 를 실행해 읽기 가능성과 write tool
 노출 여부를 보고하게 하고, CLI 가 설치된 사용자는 `validate`, `workspace-brief`,
 `agent-brief --prompt`, `mcp-verify --timeout-ms 15000` 로 같은 경로를 확인한다.
+starter CTA 와 CLI/web starter README 는 ontology 를 "project/domain/capability/element
+와 typed relation 으로 코드베이스의 소유권, 의존성, 근거, 변경 영향을 설명하는 실행
+가능한 의미 모델"로 먼저 정의한다. 그래서 첫 진입 사용자는 그래프 그림이나 파일
+시드가 아니라 AI agent 와 사람이 같이 유지할 의미 모델을 만든다는 점을 이해한 뒤
+starter 를 생성한다.
 자세한 디자인 룰:
 `docs/DESIGN-SYSTEM.md`.
 

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T05:43:32.716Z",
+  "generatedAt": "2026-05-25T05:48:02.996Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5796,8 +5796,8 @@
         }
       ],
       "excerpt": "crosscutting. 라이트/다크 토글 (html[datatheme=\"light\"]), Sonner기반 toast, arialive 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefersreducedmotion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 web workbench starter 가 같은 5node vault README/setup 내용을 제공하고, Claude Code/Cursor .mc",
-      "wordCount": 243,
-      "updatedAt": "2026-05-23T18:06:37.351Z",
+      "wordCount": 294,
+      "updatedAt": "2026-05-25T05:47:52.672Z",
       "linksOut": []
     },
     {

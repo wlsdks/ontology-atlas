@@ -24,6 +24,10 @@ together**. Every \`.md\` file is one node (project / domain / capability /
 element / concept), and the frontmatter at the top of each file is the
 graph's keys (slug / kind / depends_on / capabilities / elements / domain).
 
+In this vault, an ontology is an executable meaning model for a codebase:
+projects, domains, capabilities, elements, and typed relations that explain
+ownership, dependency, evidence, and change impact.
+
 ## Get started in 5 minutes
 
 1. Open \`project.md\` and write your project's name and description.

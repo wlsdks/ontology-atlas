@@ -2158,6 +2158,8 @@
       "emptyTitle": "Create the ontology starter",
       "emptyBodyLine1": "Creates 5 starter markdown files (project / domain / capability / element + README), <code>.mcp.json</code>, and <code>.codex/config.toml</code> in this folder.",
       "emptyBodyLine2": "Edit the frontmatter to match your project and it shows up in the tree, topology, and builder right away.",
+      "definitionLabel": "ontology definition",
+      "definitionBody": "A codebase ontology is an executable meaning model: projects, domains, capabilities, elements, and typed relations that explain ownership, dependency, evidence, and impact.",
       "proofLocalLabel": "local",
       "proofLocalBody": "Markdown in the folder is the database. No account or server; it reads and writes your PC files.",
       "proofGraphLabel": "graph proof",

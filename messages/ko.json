@@ -2158,6 +2158,8 @@
       "emptyTitle": "ontology starter 만들기",
       "emptyBodyLine1": "5 개의 starter markdown 파일 (project / domain / capability / element + README), <code>.mcp.json</code>, <code>.codex/config.toml</code> 을 이 폴더에 만듭니다.",
       "emptyBodyLine2": "그 다음 frontmatter 를 본인 프로젝트에 맞게 수정하면 즉시 트리·토폴로지·빌더에 반영돼요.",
+      "definitionLabel": "ontology 정의",
+      "definitionBody": "codebase ontology 는 실행 가능한 의미 모델입니다. project, domain, capability, element 와 typed relation 으로 소유권, 의존성, 근거, 변경 영향을 설명합니다.",
       "proofLocalLabel": "local",
       "proofLocalBody": "폴더 안 markdown 이 곧 DB입니다. 계정·서버 없이 내 PC 파일만 읽고 씁니다.",
       "proofGraphLabel": "graph proof",
