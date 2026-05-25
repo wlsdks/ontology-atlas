@@ -171,7 +171,9 @@ for a macOS prototype:
   first public macOS release exists. The landing secondary CTA still sends
   users to `/download/`, a static installation guide, and the download page
   secondary CTA opens the source repository instead of duplicating the release
-  action or steering new users into the web workbench.
+  action or steering new users into the web workbench. The download page also
+  states that missing first-release DMGs mean the public release is still
+  waiting on PR review and Apple signing gates.
 - `pnpm desktop:release-preflight` is the local operator shortcut before a
   public tag: it runs readiness checks, docs-vault freshness, desktop checker
   tests, native bridge tests, runtime doctor, `cli:mcp-verify` against the

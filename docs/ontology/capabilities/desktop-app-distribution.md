@@ -147,7 +147,9 @@ The hosted web surface now moves toward product introduction and macOS
 distribution: the landing/download primary CTAs open the GitHub Releases page
 instead of depending on `/releases/latest` before a public macOS DMG exists. The
 secondary CTA opens `/download/` as a static install guide, and the hosted
-landing/download pages no longer route users into `/docs/?intent=local`.
+landing/download pages no longer route users into `/docs/?intent=local`. The
+download page also explains that missing first-release DMGs mean the public
+release is still waiting on PR review and Apple signing gates.
 The browser folder-picker path remains in the codebase as a prototype and
 compatibility surface, but public web acquisition now points users to the
 installed app path.

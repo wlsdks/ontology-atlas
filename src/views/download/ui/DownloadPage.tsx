@@ -61,6 +61,9 @@ export function DownloadPage() {
               {t('sourceCta')}
             </a>
           </div>
+          <p className="max-w-2xl text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t('releaseAvailabilityNote')}
+          </p>
 
           <div className="grid gap-3 border-y border-[color:var(--color-divider)] py-5 md:grid-cols-3">
             <ProofItem label={t('proofSigned')} />

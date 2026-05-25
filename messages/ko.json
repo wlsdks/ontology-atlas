@@ -107,6 +107,7 @@
     "subtitle": "데스크톱 앱은 마크다운 vault 를 직접 열고, 최근 vault 를 기억하며, 매일의 ontology 작업을 웹 사이트 밖에서 처리하게 합니다.",
     "primaryCta": "macOS 릴리스 열기",
     "sourceCta": "소스 코드 보기",
+    "releaseAvailabilityNote": "macOS DMG 가 아직 보이지 않으면 첫 public release 가 PR review 와 Apple signing gate 를 기다리는 중입니다.",
     "proofSigned": "릴리스 게이트가 Developer ID 서명을 요구합니다",
     "proofNotarized": "릴리스 게이트가 Apple notarization 을 요구합니다",
     "proofChecksum": "Apple Silicon + Intel 체크섬을 검증합니다",

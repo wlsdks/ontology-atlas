@@ -44,6 +44,10 @@ describe('i18n message catalog', () => {
     assert.match(ko.download.sourceCta, /소스 코드/);
     assert.doesNotMatch(en.download.primaryCta, /latest/i);
     assert.doesNotMatch(ko.download.primaryCta, /최신/);
+    assert.match(en.download.releaseAvailabilityNote, /If no macOS DMG is visible yet/);
+    assert.match(en.download.releaseAvailabilityNote, /PR review and Apple signing gates/);
+    assert.match(ko.download.releaseAvailabilityNote, /macOS DMG 가 아직 보이지 않으면/);
+    assert.match(ko.download.releaseAvailabilityNote, /PR review 와 Apple signing gate/);
     assert.match(en.download.proofSigned, /Release gate requires/);
     assert.match(en.download.proofNotarized, /Release gate requires/);
     assert.match(en.download.proofChecksum, /checksums are verified/);

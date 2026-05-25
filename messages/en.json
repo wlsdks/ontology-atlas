@@ -107,6 +107,7 @@
     "subtitle": "The desktop app opens your markdown vault directly, remembers recent vaults, and keeps the hosted site out of your daily ontology workflow.",
     "primaryCta": "Open macOS releases",
     "sourceCta": "View source code",
+    "releaseAvailabilityNote": "If no macOS DMG is visible yet, the first public release is still waiting on PR review and Apple signing gates.",
     "proofSigned": "Release gate requires Developer ID signing",
     "proofNotarized": "Release gate requires Apple notarization",
     "proofChecksum": "Apple Silicon + Intel checksums are verified",

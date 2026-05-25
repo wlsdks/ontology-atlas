@@ -28,6 +28,8 @@ function hasStrictOrder(indexes) {
 
 const nextConfig = readText("next.config.ts");
 const pkg = JSON.parse(readText("package.json"));
+const enMessages = JSON.parse(readText("messages/en.json"));
+const koMessages = JSON.parse(readText("messages/ko.json"));
 const cargoToml = readText("src-tauri/Cargo.toml");
 const desktopDoc = readText("docs/DESKTOP-MACOS.md");
 const landingPage = readText("src/views/landing/ui/LandingPage.tsx");
@@ -304,6 +306,22 @@ if (
 } else {
   fail(
     "hosted landing/download pages must stay promo/download-first and must not link to /docs/?intent=local",
+  );
+}
+
+if (
+  downloadPage.includes("releaseAvailabilityNote") &&
+  /first public release is still waiting on PR review and Apple signing gates/.test(
+    enMessages.download?.releaseAvailabilityNote ?? "",
+  ) &&
+  /첫 public release 가 PR review 와 Apple signing gate/.test(
+    koMessages.download?.releaseAvailabilityNote ?? "",
+  )
+) {
+  pass("hosted download page explains missing first-release DMGs without routing into the web workbench");
+} else {
+  fail(
+    "hosted download copy must explain that missing first-release DMGs are waiting on PR review and Apple signing gates, while keeping ontology work inside the installed app",
   );
 }
 

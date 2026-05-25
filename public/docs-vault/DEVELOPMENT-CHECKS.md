@@ -183,6 +183,9 @@ DMG mount/checksum smoke, and temporary install launch smoke;
 audit after PR/release work: it checks PR review/merge readiness, required
 Apple signing/notary secret names, public stable GitHub Release state, and
 public DMG/checksum download verification in one fail-closed pass;
+the hosted download page keeps its first-release availability copy aligned with
+those same review/signing blockers instead of sending users into the browser
+workbench;
 `pnpm desktop:dev` launches the Tauri shell for local prototype work, and
 `pnpm desktop:build:app` targets the macOS `.app`; release builds must first
 pass `pnpm desktop:release-secrets`, then run `pnpm desktop:sign` with a
