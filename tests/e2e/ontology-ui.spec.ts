@@ -189,6 +189,9 @@ test.describe("ontology view UI", () => {
     await expect(
       collaboratorBrief.getByRole("button", { name: "Copy MCP check" }),
     ).toBeVisible();
+    await expect(
+      collaboratorBrief.getByRole("button", { name: "Copy vocabulary review" }),
+    ).toBeVisible();
     await collaboratorBrief.getByRole("button", { name: "Copy collaborator brief" }).click();
     const copiedCollaboratorBrief = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
@@ -219,6 +222,16 @@ test.describe("ontology view UI", () => {
     expect(copiedCollaboratorBrief).toContain(
       '- MCP check: query_ontology({"operation":"workspace_brief","limit":5})',
     );
+    await collaboratorBrief.getByRole("button", { name: "Copy vocabulary review" }).click();
+    const copiedVocabularyReview = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
+    );
+    expect(copiedVocabularyReview).toContain("# Review vocabulary");
+    expect(copiedVocabularyReview).toContain("## Decision lane");
+    expect(copiedVocabularyReview).toContain("## Review questions");
+    expect(copiedVocabularyReview).toContain("## Hub handoff");
+    expect(copiedVocabularyReview).not.toContain("## Handoff");
+    expect(copiedVocabularyReview).not.toContain("- MCP check:");
     await collaboratorBrief.getByRole("button", { name: "Copy MCP check" }).click();
     const copiedCollaboratorMcpCheck = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,

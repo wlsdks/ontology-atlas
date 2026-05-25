@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T05:53:40.074Z",
+  "generatedAt": "2026-05-25T05:58:09.969Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6036,8 +6036,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyinsights/lib/collaboratorinsightsbrief.ts derives the copyable collaborator overview shown on /ontology/insights. It summarizes node, relation, domain, crossdomain impact, and openquestion counts, highlights the top shared vocabulary hubs, and chooses the review focus: resolve orphan ownership questio",
-      "wordCount": 738,
-      "updatedAt": "2026-05-25T04:25:15.961Z",
+      "wordCount": 787,
+      "updatedAt": "2026-05-25T05:58:06.092Z",
       "linksOut": []
     },
     {

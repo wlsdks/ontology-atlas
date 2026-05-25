@@ -279,6 +279,55 @@ export function formatInsightsCollaboratorBrief({
   return lines.join("\n");
 }
 
+export function formatInsightsVocabularyReview({
+  brief,
+  labels,
+}: {
+  brief: InsightsCollaboratorBrief;
+  labels: FormatInsightsCollaboratorBriefLabels;
+}): string {
+  const vocabularyRows = brief.topHubs.map((hub) =>
+    formatVocabularyReviewLine(hub, labels),
+  );
+  const hubHandoffRows = brief.topHubs
+    .filter((hub) => hub.ontologyHref || hub.topologyHref || hub.builderHref)
+    .map((hub) => formatHubHandoffLine(hub, labels));
+
+  const lines = [
+    `# ${labels.reviewVocabulary}`,
+    "",
+    `## ${labels.reviewFocus}`,
+    reviewFocusLabel(brief.reviewFocus, labels),
+    "",
+    `## ${labels.decisionLane}`,
+    `- ${labels.decisionOwner}: ${decisionLaneLabel(brief.reviewFocus, labels, "owner")}`,
+    `- ${labels.decisionExpected}: ${decisionLaneLabel(brief.reviewFocus, labels, "expected")}`,
+    `- ${labels.decisionNextStep}: ${decisionLaneLabel(brief.reviewFocus, labels, "nextStep")}`,
+    ...(brief.decisionHandoff
+      ? [
+          `- ${labels.decisionGraphHandoff}: ${formatDecisionHandoffLabel(
+            brief.decisionHandoff,
+            labels,
+          )}: ${brief.decisionHandoff.href}`,
+        ]
+      : []),
+    "",
+    `## ${labels.reviewQuestions}`,
+    reviewQuestionsForFocus(brief.reviewFocus, labels)
+      .map((question) => `- ${question}`)
+      .join("\n"),
+    "",
+    `## ${labels.reviewVocabulary}`,
+    vocabularyRows.length > 0 ? vocabularyRows.join("\n") : `- ${labels.noHubs}`,
+  ];
+
+  if (hubHandoffRows.length > 0) {
+    lines.push("", `## ${labels.hubHandoff}`, hubHandoffRows.join("\n"));
+  }
+
+  return lines.join("\n");
+}
+
 export function reviewQuestionsForFocus(
   focus: InsightsCollaboratorReviewFocus,
   labels: Pick<

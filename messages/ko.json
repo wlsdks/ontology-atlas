@@ -1080,6 +1080,7 @@
       "collaboratorHandoffImpactCliCheck": "영향 CLI 점검",
       "collaboratorHandoffImpactMcpCheck": "영향 MCP 점검",
       "collaboratorCopyBrief": "collaborator brief 복사",
+      "collaboratorCopyVocabulary": "어휘 리뷰 복사",
       "collaboratorCopyCliCheck": "CLI 점검 복사",
       "collaboratorCopyMcpCheck": "MCP 점검 복사",
       "agentRecipesTitle": "Agent query recipes",

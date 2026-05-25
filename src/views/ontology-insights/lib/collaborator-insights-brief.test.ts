@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildInsightsCollaboratorBrief,
   formatInsightsCollaboratorBrief,
+  formatInsightsVocabularyReview,
 } from "./collaborator-insights-brief";
 
 const LABELS = {
@@ -249,6 +250,45 @@ describe("buildInsightsCollaboratorBrief", () => {
         '- MCP check: query_ontology({"operation":"workspace_brief","limit":5})',
       ].join("\n"),
     );
+  });
+
+  it("formats a compact vocabulary review packet without agent handoff noise", () => {
+    const brief = buildInsightsCollaboratorBrief({
+      nodeCount: 12,
+      relationCount: 18,
+      domainCount: 3,
+      crossDomainEdgeCount: 0,
+      orphanCount: 0,
+      topHubs: [
+        {
+          id: "domains/views",
+          title: "Views",
+          kind: "domain",
+          degree: 8,
+          ontologyHref: "/ontology/?node=domains%2Fviews",
+          topologyHref: "/topology/?mode=focus&p=domains%2Fviews",
+          builderHref: "/ontology/edit/?node=domains%2Fviews",
+        },
+      ],
+    });
+
+    const formatted = formatInsightsVocabularyReview({ brief, labels: LABELS });
+
+    expect(formatted).toContain("# Review vocabulary");
+    expect(formatted).toContain("## Decision lane");
+    expect(formatted).toContain(
+      "- Expected decision: Approve reused terms and confirm vocabulary owners.",
+    );
+    expect(formatted).toContain("## Review questions");
+    expect(formatted).toContain("- Which terms should be reused in planning docs?");
+    expect(formatted).toContain(
+      "- Term: Views (domain, domains/views) | Why it matters: degree 8 | Reuse review: align naming, owner, and reuse context before external handoff",
+    );
+    expect(formatted).toContain(
+      "- Views: Ontology: /ontology/?node=domains%2Fviews | Topology health: /topology/?mode=focus&p=domains%2Fviews | Builder: /ontology/edit/?node=domains%2Fviews",
+    );
+    expect(formatted).not.toContain("## Handoff");
+    expect(formatted).not.toContain("MCP check");
   });
 
   it("exports open question handoffs with exact node links", () => {

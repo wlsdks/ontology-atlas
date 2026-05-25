@@ -69,6 +69,7 @@ import {
   decisionLaneLabel,
   formatDecisionHandoffLabel,
   formatInsightsCollaboratorBrief,
+  formatInsightsVocabularyReview,
   reviewQuestionsForFocus,
   type InsightsCollaboratorBrief,
 } from "../lib/collaborator-insights-brief";
@@ -1029,6 +1030,52 @@ function InsightsCollaboratorBriefPanel({
       impactMcpCheckPayload,
     },
   });
+  const vocabularyReviewText = formatInsightsVocabularyReview({
+    brief,
+    labels: {
+      title: t("collaboratorInsightsTitle"),
+      summary: t("collaboratorInsightsSubtitle"),
+      nodes: metricLabels.nodes,
+      relations: metricLabels.relations,
+      domains: metricLabels.domains,
+      crossDomain: metricLabels.crossDomain,
+      orphans: metricLabels.orphans,
+      topHubs: t("collaboratorTopHubs"),
+      reviewVocabulary: t("collaboratorReviewVocabulary"),
+      vocabularyTerm: t("collaboratorVocabularyTerm"),
+      vocabularyWhy: t("collaboratorVocabularyWhy"),
+      vocabularyReuse: t("collaboratorVocabularyReuse"),
+      vocabularyReuseAction: t("collaboratorVocabularyReuseAction"),
+      reviewFocus: t("collaboratorReviewFocus"),
+      focusAlignVocabulary: t("collaboratorFocusAlignVocabulary"),
+      focusTraceImpact: t("collaboratorFocusTraceImpact"),
+      focusResolveOrphans: t("collaboratorFocusResolveOrphans"),
+      decisionLane: t("collaboratorDecisionLane"),
+      decisionOwner: t("collaboratorDecisionOwner"),
+      decisionExpected: t("collaboratorDecisionExpected"),
+      decisionNextStep: t("collaboratorDecisionNextStep"),
+      decisionGraphHandoff: t("collaboratorDecisionGraphHandoff"),
+      ...decisionLaneLabels,
+      reviewQuestions: t("collaboratorReviewQuestions"),
+      ...reviewQuestionLabels,
+      noHubs: t("collaboratorNoHubs"),
+      hubHandoff: t("collaboratorHubHandoff"),
+      impactHandoff: t("collaboratorImpactHandoff"),
+      impactHandoffExample: t("collaboratorImpactHandoffExample"),
+      impactHandoffPath: t("collaboratorImpactHandoffPath"),
+      openQuestionHandoff: t("collaboratorOpenQuestionHandoff"),
+      ontology: t("collaboratorHandoffOntology"),
+      builder: t("collaboratorHandoffBuilder"),
+      handoff: t("collaboratorHandoff"),
+      insights: t("collaboratorHandoffInsights"),
+      topology: t("collaboratorHandoffTopology"),
+      agentCheck: t("collaboratorHandoffAgentCheck"),
+      agentCliCheck: t("collaboratorHandoffCliCheck"),
+      agentMcpCheck: t("collaboratorHandoffMcpCheck"),
+      impactCliCheck: t("collaboratorHandoffImpactCliCheck"),
+      impactMcpCheck: t("collaboratorHandoffImpactMcpCheck"),
+    },
+  });
 
   return (
     <section
@@ -1049,6 +1096,12 @@ function InsightsCollaboratorBriefPanel({
             label={t("collaboratorCopyBrief")}
             copiedLabel={t("agentCopied")}
             text={copyTextValue}
+            compact
+          />
+          <CopyAgentTextButton
+            label={t("collaboratorCopyVocabulary")}
+            copiedLabel={t("agentCopied")}
+            text={vocabularyReviewText}
             compact
           />
           <CopyAgentTextButton

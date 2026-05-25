@@ -1080,6 +1080,7 @@
       "collaboratorHandoffImpactCliCheck": "Impact CLI check",
       "collaboratorHandoffImpactMcpCheck": "Impact MCP check",
       "collaboratorCopyBrief": "Copy collaborator brief",
+      "collaboratorCopyVocabulary": "Copy vocabulary review",
       "collaboratorCopyCliCheck": "Copy CLI check",
       "collaboratorCopyMcpCheck": "Copy MCP check",
       "agentRecipesTitle": "Agent query recipes",
