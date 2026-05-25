@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T18:40:42.046Z",
+  "generatedAt": "2026-05-25T23:25:05.976Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1794,9 +1794,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 50 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
-      "wordCount": 1483,
-      "updatedAt": "2026-05-25T06:22:21.356Z",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260526): macOS app distribution track 반영. localfirst 4 surface (macOS app · CLI · MCP · Website), dogfood 50 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR ",
+      "wordCount": 1499,
+      "updatedAt": "2026-05-25T23:24:55.922Z",
       "linksOut": []
     },
     {
@@ -3901,8 +3901,8 @@
         }
       ],
       "excerpt": "ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app should be a native shell around the same local markdown vault, not a backend, cloud sync layer, or second data store. Use Tauri first for the prototype. The repository now includes the first srctauri/ shell so desktop wor",
-      "wordCount": 2837,
-      "updatedAt": "2026-05-25T17:49:38.090Z",
+      "wordCount": 2898,
+      "updatedAt": "2026-05-25T23:24:32.028Z",
       "linksOut": []
     },
     {

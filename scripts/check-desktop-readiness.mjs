@@ -59,6 +59,15 @@ const releaseTagScript = readText("scripts/check-macos-release-tag.mjs");
 const releaseSlotScript = readText("scripts/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
 const releaseStatusScript = readText("scripts/check-macos-release-status.mjs");
+const requiredAppleSecretNames = [
+  "APPLE_CERTIFICATE_P12_BASE64",
+  "APPLE_CERTIFICATE_PASSWORD",
+  "APPLE_KEYCHAIN_PASSWORD",
+  "APPLE_SIGNING_IDENTITY",
+  "APPLE_ID",
+  "APPLE_APP_SPECIFIC_PASSWORD",
+  "APPLE_TEAM_ID",
+];
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
 const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
 const ontologyViewPage = readText("src/views/ontology-view/ui/OntologyViewPage.tsx");
@@ -524,6 +533,18 @@ if (pkg.scripts?.["desktop:release-secrets"] === "node scripts/check-macos-relea
 } else {
   fail(
     "package.json must expose desktop:release-secrets as node scripts/check-macos-release-secrets.mjs",
+  );
+}
+
+if (
+  requiredAppleSecretNames.every((name) =>
+    desktopDoc.includes(`gh secret set ${name} --repo wlsdks/oh-my-ontology < /path/to/${name}`),
+  )
+) {
+  pass("desktop release docs include gh secret set commands for every required Apple secret");
+} else {
+  fail(
+    "docs/DESKTOP-MACOS.md must show a gh secret set command for every Apple signing/notary secret that blocks the public macOS release",
   );
 }
 

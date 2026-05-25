@@ -299,6 +299,11 @@ example:
 
 ```bash
 gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks/oh-my-ontology < /path/to/APPLE_CERTIFICATE_P12_BASE64
+gh secret set APPLE_CERTIFICATE_PASSWORD --repo wlsdks/oh-my-ontology < /path/to/APPLE_CERTIFICATE_PASSWORD
+gh secret set APPLE_KEYCHAIN_PASSWORD --repo wlsdks/oh-my-ontology < /path/to/APPLE_KEYCHAIN_PASSWORD
+gh secret set APPLE_SIGNING_IDENTITY --repo wlsdks/oh-my-ontology < /path/to/APPLE_SIGNING_IDENTITY
+gh secret set APPLE_ID --repo wlsdks/oh-my-ontology < /path/to/APPLE_ID
+gh secret set APPLE_APP_SPECIFIC_PASSWORD --repo wlsdks/oh-my-ontology < /path/to/APPLE_APP_SPECIFIC_PASSWORD
 gh secret set APPLE_TEAM_ID --repo wlsdks/oh-my-ontology < /path/to/APPLE_TEAM_ID
 ```
 
@@ -315,10 +320,13 @@ If the requested tag has not produced a GitHub Release yet, the verifier reports
 that missing tag directly and points back to `.github/workflows/release-macos.yml`
 instead of surfacing a raw GitHub API 404.
 
-Current local checkpoint (2026-05-25): `pnpm desktop:build` successfully
-produces `src-tauri/target/release/bundle/macos/oh-my-ontology.app` and
-`src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg`.
-The same build writes
+Current local checkpoint (2026-05-26): `pnpm desktop:doctor -- --require-runtime`,
+`pnpm test:desktop:bridge`, `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000`,
+`pnpm desktop:smoke`, `pnpm desktop:build`, `pnpm desktop:verify-app`,
+`pnpm desktop:verify-dmg`, and `pnpm desktop:verify-install` all pass locally.
+The unsigned Apple Silicon build produces
+`src-tauri/target/release/bundle/macos/oh-my-ontology.app`,
+`src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg`, and
 `src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg.sha256`.
 `.github/workflows/release-macos.yml` builds Apple Silicon (`macos-14`) and
 Intel (`macos-15-intel`) artifacts on `v*` tags, requires Apple release
@@ -345,4 +353,4 @@ Treat these as separate hardening slices after the prototype works:
 - public release-channel policy after the first stable macOS tag release is exercised.
 - updater and release-channel policy.
 - whether MCP/CLI binaries are bundled as sidecars or installed separately.
-- filesystem permission UX beyond the current browser File System Access flow.
+- native filesystem permission UX beyond the current selected-folder bridge.

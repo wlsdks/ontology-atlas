@@ -130,6 +130,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned public releases/);
   assert.match(
     result.stdout,
+    /✓ desktop release docs include gh secret set commands for every required Apple secret/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop release slot gate blocks stale same-tag GitHub Release assets before upload/,
   );
   assert.match(
