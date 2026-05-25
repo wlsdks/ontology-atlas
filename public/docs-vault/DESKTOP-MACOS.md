@@ -113,7 +113,9 @@ for a macOS prototype:
   operations inside the selected vault root. The Rust guard canonicalizes
   existing targets and nearest existing parents so symlinks inside the vault
   cannot redirect read, write, mkdir, exists, or remove operations outside the
-  selected root.
+  selected root. Write-target parent directories are checked before
+  `create_dir_all`, so a symlinked vault directory cannot create folders outside
+  the selected root as a failed-write side effect.
 - `scripts/package-macos-dmg.mjs` wraps the built `.app` in a reproducible
   `hdiutil` DMG with an Applications symlink, avoiding the Finder AppleScript
   dependency in Tauri's generated `bundle_dmg.sh`, and writes a `.sha256`

@@ -39,7 +39,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop native vault bridge rejects symlink escapes outside the selected vault/,
+    /✓ desktop native vault bridge rejects symlink escapes without outside-vault side effects/,
   );
   assert.match(
     result.stdout,

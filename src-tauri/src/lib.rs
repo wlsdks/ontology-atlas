@@ -76,6 +76,17 @@ fn resolve_write_target_inside(root_path: &str, relative_path: &str) -> Result<P
     let parent = path
         .parent()
         .ok_or_else(|| "write target must have a parent directory".to_string())?;
+    let root = canonical_root(root_path)?;
+    let mut ancestor = parent;
+    while !ancestor.exists() {
+        ancestor = ancestor
+            .parent()
+            .ok_or_else(|| "write target must stay inside the selected vault".to_string())?;
+    }
+    let canonical_ancestor = fs::canonicalize(ancestor).map_err(|err| err.to_string())?;
+    if !canonical_ancestor.starts_with(&root) {
+        return Err("resolved path must stay inside the selected vault".into());
+    }
     fs::create_dir_all(parent).map_err(|err| err.to_string())?;
     let canonical_parent = ensure_inside_canonical(root_path, parent)?;
     let file_name = path
@@ -412,6 +423,18 @@ mod tests {
         let mkdir_error =
             ensure_vault_directory(root_path.clone(), "linked-dir/new".into()).unwrap_err();
         assert_eq!(mkdir_error, "resolved path must stay inside the selected vault");
+        assert!(!outside.join("new").exists());
+
+        let nested_write_error = write_vault_text_file(
+            root_path.clone(),
+            "linked-dir/new/created-outside.md".into(),
+            "outside".into(),
+        )
+        .unwrap_err();
+        assert_eq!(
+            nested_write_error,
+            "resolved path must stay inside the selected vault"
+        );
         assert!(!outside.join("new").exists());
 
         let remove_error =

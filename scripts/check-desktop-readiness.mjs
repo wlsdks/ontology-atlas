@@ -172,11 +172,13 @@ if (
   tauriLib.includes("ensure_inside_canonical") &&
   tauriLib.includes("resolve_write_target_inside") &&
   tauriLib.includes("resolve_directory_target_inside") &&
-  tauriLib.includes("vault_commands_reject_symlink_escapes")
+  tauriLib.includes("vault_commands_reject_symlink_escapes") &&
+  tauriLib.includes('"linked-dir/new/created-outside.md"') &&
+  tauriLib.includes("assert!(!outside.join(\"new\").exists())")
 ) {
-  pass("desktop native vault bridge rejects symlink escapes outside the selected vault");
+  pass("desktop native vault bridge rejects symlink escapes without outside-vault side effects");
 } else {
-  fail("src-tauri/src/lib.rs must reject symlink escapes for vault read/write/remove/mkdir paths");
+  fail("src-tauri/src/lib.rs must reject symlink escapes for vault read/write/remove/mkdir paths without creating outside-vault directories");
 }
 
 if (pkg.scripts?.["desktop:verify-dmg"] === "node scripts/verify-macos-dmg.mjs") {
