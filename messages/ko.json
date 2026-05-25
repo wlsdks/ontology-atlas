@@ -1086,6 +1086,8 @@
       "collaboratorHandoff": "Handoff",
       "collaboratorHandoffInsights": "인사이트",
       "collaboratorHandoffTopology": "토폴로지 health",
+      "collaboratorHandoffTopologyFocus": "토폴로지 focus",
+      "collaboratorHandoffTopologyHealth": "토폴로지 health",
       "collaboratorHandoffTopologyShort": "토폴로지",
       "collaboratorHandoffOntology": "온톨로지",
       "collaboratorHandoffBuilder": "빌더",

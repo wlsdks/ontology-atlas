@@ -64,6 +64,8 @@ const LABELS = {
   handoff: "Handoff",
   insights: "Insights",
   topology: "Topology health",
+  topologyFocus: "Topology focus",
+  topologyHealth: "Topology health",
   agentCheck: "Agent check",
   agentCliCheck: "CLI check",
   agentMcpCheck: "MCP check",
@@ -186,7 +188,7 @@ describe("buildInsightsCollaboratorBrief", () => {
         "- Decision owner: Planning, marketing, and domain leads",
         "- Expected decision: Approve reused terms and confirm vocabulary owners.",
         "- Next graph step: Open hub handoffs before copying terms into plans.",
-        "- Graph handoff: Agent Graph Readiness (Topology health): /topology/?mode=focus&p=capabilities%2Fagent-graph-readiness",
+        "- Graph handoff: Agent Graph Readiness (Topology focus): /topology/?mode=focus&p=capabilities%2Fagent-graph-readiness",
       ].join("\n"),
     );
     expect(formatInsightsCollaboratorBrief({ brief, labels: LABELS })).toContain(
@@ -240,7 +242,7 @@ describe("buildInsightsCollaboratorBrief", () => {
     expect(formatted).toContain(
       [
         "## Hub handoff",
-        "- Views: Ontology: /ontology/?node=domains%2Fviews | Topology health: /topology/?mode=focus&p=domains%2Fviews | Builder: /ontology/edit/?node=domains%2Fviews",
+        "- Views: Ontology: /ontology/?node=domains%2Fviews | Topology focus: /topology/?mode=focus&p=domains%2Fviews | Builder: /ontology/edit/?node=domains%2Fviews",
         "",
         "## Handoff",
         "- Insights: /ontology/insights/",
@@ -285,7 +287,7 @@ describe("buildInsightsCollaboratorBrief", () => {
       "- Term: Views (domain, domains/views) | Why it matters: degree 8 | Reuse review: align naming, owner, and reuse context before external handoff",
     );
     expect(formatted).toContain(
-      "- Views: Ontology: /ontology/?node=domains%2Fviews | Topology health: /topology/?mode=focus&p=domains%2Fviews | Builder: /ontology/edit/?node=domains%2Fviews",
+      "- Views: Ontology: /ontology/?node=domains%2Fviews | Topology focus: /topology/?mode=focus&p=domains%2Fviews | Builder: /ontology/edit/?node=domains%2Fviews",
     );
     expect(formatted).not.toContain("## Handoff");
     expect(formatted).not.toContain("MCP check");

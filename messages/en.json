@@ -1086,6 +1086,8 @@
       "collaboratorHandoff": "Handoff",
       "collaboratorHandoffInsights": "Insights",
       "collaboratorHandoffTopology": "Topology health",
+      "collaboratorHandoffTopologyFocus": "Topology focus",
+      "collaboratorHandoffTopologyHealth": "Topology health",
       "collaboratorHandoffTopologyShort": "Topology",
       "collaboratorHandoffOntology": "Ontology",
       "collaboratorHandoffBuilder": "Builder",

@@ -970,6 +970,8 @@ function InsightsCollaboratorBriefPanel({
         impactHandoffPath: t("collaboratorImpactHandoffPath"),
         ontology: t("collaboratorHandoffOntology"),
         topology: t("collaboratorHandoffTopologyShort"),
+        topologyFocus: t("collaboratorHandoffTopologyFocus"),
+        topologyHealth: t("collaboratorHandoffTopologyHealth"),
       })
     : null;
   const collaboratorCliCheckCommand =
@@ -1014,6 +1016,8 @@ function InsightsCollaboratorBriefPanel({
       handoff: t("collaboratorHandoff"),
       insights: t("collaboratorHandoffInsights"),
       topology: t("collaboratorHandoffTopology"),
+      topologyFocus: t("collaboratorHandoffTopologyFocus"),
+      topologyHealth: t("collaboratorHandoffTopologyHealth"),
       agentCheck: t("collaboratorHandoffAgentCheck"),
       agentCliCheck: t("collaboratorHandoffCliCheck"),
       agentMcpCheck: t("collaboratorHandoffMcpCheck"),
@@ -1069,6 +1073,8 @@ function InsightsCollaboratorBriefPanel({
       handoff: t("collaboratorHandoff"),
       insights: t("collaboratorHandoffInsights"),
       topology: t("collaboratorHandoffTopology"),
+      topologyFocus: t("collaboratorHandoffTopologyFocus"),
+      topologyHealth: t("collaboratorHandoffTopologyHealth"),
       agentCheck: t("collaboratorHandoffAgentCheck"),
       agentCliCheck: t("collaboratorHandoffCliCheck"),
       agentMcpCheck: t("collaboratorHandoffMcpCheck"),

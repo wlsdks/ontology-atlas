@@ -114,6 +114,8 @@ export interface FormatInsightsCollaboratorBriefLabels {
   handoff: string;
   insights: string;
   topology: string;
+  topologyFocus: string;
+  topologyHealth: string;
   agentCheck: string;
   agentCliCheck: string;
   agentMcpCheck: string;
@@ -471,7 +473,12 @@ export function formatDecisionHandoffLabel(
   handoff: NonNullable<InsightsCollaboratorBrief["decisionHandoff"]>,
   labels: Pick<
     FormatInsightsCollaboratorBriefLabels,
-    "builder" | "impactHandoffPath" | "ontology" | "topology"
+    | "builder"
+    | "impactHandoffPath"
+    | "ontology"
+    | "topology"
+    | "topologyFocus"
+    | "topologyHealth"
   >,
 ): string {
   const surface =
@@ -481,7 +488,7 @@ export function formatDecisionHandoffLabel(
         ? labels.impactHandoffPath
         : handoff.surface === "ontology"
           ? labels.ontology
-          : labels.topology;
+          : topologyModeLabel(handoff.href, labels);
   return `${handoff.title} (${surface})`;
 }
 
@@ -509,12 +516,14 @@ function formatHubHandoffLine(
   hub: InsightsBriefHub,
   labels: Pick<
     FormatInsightsCollaboratorBriefLabels,
-    "ontology" | "topology" | "builder"
+    "ontology" | "topology" | "topologyFocus" | "topologyHealth" | "builder"
   >,
 ): string {
   const links = [
     hub.ontologyHref ? `${labels.ontology}: ${hub.ontologyHref}` : null,
-    hub.topologyHref ? `${labels.topology}: ${hub.topologyHref}` : null,
+    hub.topologyHref
+      ? `${topologyModeLabel(hub.topologyHref, labels)}: ${hub.topologyHref}`
+      : null,
     hub.builderHref ? `${labels.builder}: ${hub.builderHref}` : null,
   ].filter((link): link is string => link !== null);
   return `- ${hub.title}: ${links.join(" | ")}`;
@@ -540,13 +549,27 @@ function formatOpenQuestionHandoffLine(
   question: InsightsOpenQuestion,
   labels: Pick<
     FormatInsightsCollaboratorBriefLabels,
-    "ontology" | "topology" | "builder"
+    "ontology" | "topology" | "topologyFocus" | "topologyHealth" | "builder"
   >,
 ): string {
   const links = [
     question.ontologyHref ? `${labels.ontology}: ${question.ontologyHref}` : null,
-    question.topologyHref ? `${labels.topology}: ${question.topologyHref}` : null,
+    question.topologyHref
+      ? `${topologyModeLabel(question.topologyHref, labels)}: ${question.topologyHref}`
+      : null,
     question.builderHref ? `${labels.builder}: ${question.builderHref}` : null,
   ].filter((link): link is string => link !== null);
   return `- ${question.title} (${question.kind}, ${question.id}): ${links.join(" | ")}`;
+}
+
+function topologyModeLabel(
+  href: string,
+  labels: Pick<
+    FormatInsightsCollaboratorBriefLabels,
+    "topology" | "topologyFocus" | "topologyHealth"
+  >,
+): string {
+  if (href.includes("mode=health")) return labels.topologyHealth;
+  if (href.includes("mode=focus")) return labels.topologyFocus;
+  return labels.topology;
 }
