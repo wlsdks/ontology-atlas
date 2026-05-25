@@ -6,11 +6,13 @@ vault, not a backend, cloud sync layer, or second data store.
 
 ## Current Decision
 
-Use Tauri first for the prototype.
+Use Tauri first for the prototype. The repository now includes the first
+`src-tauri/` shell so desktop work can move from planning to local app smoke.
 
 - The web app already builds as a static export (`next.config.ts` keeps
   `output: 'export'`).
-- The desktop shell can point at the generated `out/` directory.
+- The desktop shell points at the generated `out/` directory through
+  `src-tauri/tauri.conf.json`.
 - The local vault, CLI graph engine, and MCP setup gates remain the authority.
 - Electron stays a fallback if a later slice needs bundled Node.js behavior.
 
@@ -41,14 +43,18 @@ Run:
 pnpm desktop:check
 ```
 
-The gate verifies the static frontend prerequisites for a macOS/Tauri prototype:
+The gate verifies the static frontend and Tauri scaffold prerequisites for a
+macOS prototype:
 
 - Next.js static export is enabled.
 - Image optimization is disabled for static packaging.
 - trailing-slash routes are emitted for file-backed navigation.
 - `pnpm build` refreshes the docs vault before `next build`.
-- `docs-vault:check` and `cli:mcp-verify` are available for packaging and agent
-  handoff checks.
+- `docs-vault:check`, `cli:mcp-verify`, `desktop:dev`, and `desktop:build` are
+  available for packaging, app launch, and agent handoff checks.
+- `src-tauri/tauri.conf.json` loads `../out`, runs `pnpm build` before
+  packaging, and targets a macOS `.app` bundle.
+- the Rust entrypoint and default Tauri capability files exist.
 - this document keeps the desktop-grade quality bar explicit: native `.app`
   launch, vault-folder permissions, recent vault recall, visible local data
   location, agent setup visibility, and offline route usefulness.
@@ -57,12 +63,14 @@ The gate verifies the static frontend prerequisites for a macOS/Tauri prototype:
 
 ## First Prototype Scope
 
-1. Add `src-tauri/tauri.conf.json` with `frontendDist: "../out"`.
-2. Build `out/` with `pnpm build`.
-3. Launch the macOS app shell against the static export.
-4. Open the dogfood vault and smoke `/docs`, `/ontology`, `/topology`, and
+1. Install Rust / Cargo if the local machine does not already provide it.
+2. Run `pnpm install` so `@tauri-apps/cli` is available.
+3. Build `out/` with `pnpm build`.
+4. Launch the macOS app shell with `pnpm desktop:dev`, or build the `.app`
+   prototype with `pnpm desktop:build`.
+5. Open the dogfood vault and smoke `/docs`, `/ontology`, `/topology`, and
    `/ontology/edit`.
-5. Run `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` after the app
+6. Run `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` after the app
    smoke so the desktop path still proves Claude Code / Codex handoff readiness.
 
 ## Later Distribution Work

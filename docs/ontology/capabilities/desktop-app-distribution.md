@@ -26,10 +26,13 @@ The first slice is a feasibility proof, not a second product architecture:
 wrap the existing Next.js static export in a Tauri shell, open the same local
 vault folder, render `/docs`, `/ontology`, `/topology`, and `/ontology/edit`,
 then verify the same CLI/MCP setup gates still work for Claude Code and Codex.
-`pnpm desktop:check` is the pre-scaffold gate for that slice: it checks the
-Next.js static export shape, static image mode, trailing-slash routes, docs-vault
-build freshness path, CLI/MCP verification script availability, the explicit
-desktop-grade quality bar, and the first prototype route-smoke scope.
+The repository now has the first `src-tauri/` shell with `frontendDist: "../out"`
+and macOS `.app` bundle targeting. `pnpm desktop:check` is the scaffold-aware
+gate for that slice: it checks the Next.js static export shape, static image
+mode, trailing-slash routes, docs-vault build freshness path, CLI/MCP
+verification script availability, `desktop:dev` / `desktop:build` scripts, the
+Tauri shell files, the explicit desktop-grade quality bar, and the first
+prototype route-smoke scope.
 `pnpm checks:changed` also routes desktop-related edits to this gate, and routes
 checker implementation edits through the focused
 `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` contract first.

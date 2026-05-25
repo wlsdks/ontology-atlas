@@ -1,0 +1,17 @@
+[package]
+name = "oh-my-ontology"
+version = "0.1.0"
+description = "Local-first codebase ontology workbench"
+authors = ["oh-my-ontology contributors"]
+edition = "2021"
+license = "MIT"
+
+[lib]
+name = "oh_my_ontology_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }

@@ -439,6 +439,7 @@ describe('focused check suggestions', () => {
       'scripts/check-desktop-readiness.mjs',
       'scripts/check-desktop-readiness.test.mjs',
       'docs/DESKTOP-MACOS.md',
+      'src-tauri/tauri.conf.json',
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [

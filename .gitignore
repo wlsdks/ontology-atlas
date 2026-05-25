@@ -17,6 +17,9 @@ out/
 build/
 dist/
 
+# Tauri / Rust desktop build output
+src-tauri/target/
+
 # Production
 *.tsbuildinfo
 next-env.d.ts

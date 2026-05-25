@@ -17,15 +17,15 @@ function pass(message) {
   console.log(`✓ ${message}`);
 }
 
-function note(message) {
-  console.log(`· ${message}`);
-}
-
 const nextConfig = readText("next.config.ts");
 const pkg = JSON.parse(readText("package.json"));
 const desktopDoc = readText("docs/DESKTOP-MACOS.md");
+const tauriConfigPath = path.join(root, "src-tauri", "tauri.conf.json");
+const tauriConfig = fs.existsSync(tauriConfigPath)
+  ? JSON.parse(fs.readFileSync(tauriConfigPath, "utf8"))
+  : null;
 
-console.log("[desktop-check] macOS desktop static-shell readiness");
+console.log("[desktop-check] macOS desktop Tauri-shell readiness");
 
 if (/output\s*:\s*['"]export['"]/.test(nextConfig)) {
   pass("Next.js uses static export output");
@@ -61,6 +61,30 @@ if (pkg.scripts?.["cli:mcp-verify"]) {
   pass("CLI/MCP setup gate is available for desktop handoff verification");
 } else {
   fail("package.json must expose cli:mcp-verify for desktop handoff verification");
+}
+
+if (pkg.scripts?.tauri === "tauri") {
+  pass("Tauri CLI alias is available through pnpm tauri");
+} else {
+  fail("package.json must expose tauri as the Tauri CLI alias");
+}
+
+if (pkg.scripts?.["desktop:dev"] === "pnpm tauri dev") {
+  pass("desktop dev script launches the Tauri shell");
+} else {
+  fail("package.json must expose desktop:dev as pnpm tauri dev");
+}
+
+if (pkg.scripts?.["desktop:build"] === "pnpm tauri build --bundles app") {
+  pass("desktop build script targets a macOS .app bundle");
+} else {
+  fail("package.json must expose desktop:build as pnpm tauri build --bundles app");
+}
+
+if (pkg.devDependencies?.["@tauri-apps/cli"]) {
+  pass("Tauri CLI dependency is installed for desktop scripts");
+} else {
+  fail("package.json must include @tauri-apps/cli as a devDependency");
 }
 
 const qualityBarChecks = [
@@ -103,12 +127,47 @@ if (missingPrototypeRoutes.length === 0) {
   );
 }
 
-if (fs.existsSync(path.join(root, "src-tauri", "tauri.conf.json"))) {
+if (tauriConfig) {
   pass("Tauri scaffold exists");
 } else {
-  note("Tauri scaffold not present yet; first prototype should add src-tauri/tauri.conf.json with frontendDist='../out'");
+  fail("src-tauri/tauri.conf.json must exist before desktop prototype work continues");
+}
+
+if (tauriConfig?.build?.frontendDist === "../out") {
+  pass("Tauri loads the Next.js static export from out/");
+} else {
+  fail("src-tauri/tauri.conf.json must set build.frontendDist to ../out");
+}
+
+if (tauriConfig?.build?.beforeBuildCommand === "pnpm build") {
+  pass("Tauri build refreshes the static frontend through pnpm build");
+} else {
+  fail("src-tauri/tauri.conf.json must set build.beforeBuildCommand to pnpm build");
+}
+
+if (tauriConfig?.bundle?.targets?.includes("app")) {
+  pass("Tauri bundle target includes macOS .app");
+} else {
+  fail("src-tauri/tauri.conf.json must include bundle target app");
+}
+
+const tauriScaffoldFiles = [
+  "src-tauri/Cargo.toml",
+  "src-tauri/build.rs",
+  "src-tauri/src/main.rs",
+  "src-tauri/src/lib.rs",
+  "src-tauri/capabilities/default.json",
+];
+const missingTauriFiles = tauriScaffoldFiles.filter(
+  (relativePath) => !fs.existsSync(path.join(root, relativePath)),
+);
+
+if (missingTauriFiles.length === 0) {
+  pass("Tauri Rust entrypoint and default capability files exist");
+} else {
+  fail(`Tauri scaffold is incomplete: missing ${missingTauriFiles.join(", ")}`);
 }
 
 if (!process.exitCode) {
-  console.log("[desktop-check] ready: static frontend prerequisites support a macOS/Tauri prototype");
+  console.log("[desktop-check] ready: Tauri scaffold can wrap the static frontend for a macOS prototype");
 }

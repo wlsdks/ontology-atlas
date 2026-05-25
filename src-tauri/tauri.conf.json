@@ -1,0 +1,36 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "oh-my-ontology",
+  "version": "0.1.0",
+  "identifier": "dev.jinan.oh-my-ontology",
+  "build": {
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "devUrl": "http://localhost:3000",
+    "frontendDist": "../out"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "oh-my-ontology",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 1040,
+        "minHeight": 720,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app"],
+    "macOS": {
+      "minimumSystemVersion": "12.0"
+    }
+  }
+}

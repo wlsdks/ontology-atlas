@@ -47,6 +47,8 @@ const RULES = [
     matches: [
       /^scripts\/check-desktop-readiness\.(?:mjs|test\.mjs)$/,
       /^docs\/DESKTOP-MACOS\.md$/,
+      /^src-tauri\//,
+      /^package\.json$/,
       /^next\.config\.ts$/,
     ],
   },

@@ -132,12 +132,13 @@ which exercises global Tailwind/CSS output across the core responsive routes
 without starting from every Playwright journey.
 The local-first bundle guard is artifact-based: when `scripts/check-bundle.mjs`
 changes, run `pnpm build` first and then `pnpm bundle:check`.
-The macOS desktop readiness gate is pre-scaffold and local-first: when
-`scripts/check-desktop-readiness.mjs`, `docs/DESKTOP-MACOS.md`, or
-`next.config.ts` changes, run `pnpm desktop:check`; checker implementation
-changes also route to direct
+The macOS desktop readiness gate is scaffold-aware and local-first: when
+`scripts/check-desktop-readiness.mjs`, `docs/DESKTOP-MACOS.md`,
+`src-tauri/**`, `package.json`, or `next.config.ts` changes, run
+`pnpm desktop:check`; checker implementation changes also route to direct
 `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and then
-`pnpm test:desktop:check`.
+`pnpm test:desktop:check`. `pnpm desktop:dev` launches the Tauri shell for
+local prototype work, and `pnpm desktop:build` targets the macOS `.app` bundle.
 `next.config.ts` is static-export source-of-truth; changes route to
 `pnpm desktop:check`, `pnpm exec tsc --noEmit`, `pnpm build`, and then
 `pnpm bundle:check`.
@@ -188,7 +189,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 |---|---|
 | `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget |
 | `pnpm bundle:check` | Local-first static export bundle guard; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
-| `pnpm desktop:check` | macOS desktop pre-scaffold readiness gate for static export, image mode, docs-vault freshness, CLI/MCP verification script availability, desktop-grade quality bar coverage, and route smoke scope |
+| `pnpm desktop:check` | macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files |
 | `pnpm test:desktop:check` | Desktop readiness checker contract; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
 | `pnpm test:i18n:messages` | Locale routing/message catalog parity |
