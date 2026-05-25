@@ -48,6 +48,10 @@ interface TopologyAnalysisBarLabels {
   healthMcpImpactCopied: string;
   healthSyncGateCopy: string;
   healthSyncGateCopied: string;
+  healthRepairOrderTitle: string;
+  healthRepairOrderInspect: string;
+  healthRepairOrderRepair: string;
+  healthRepairOrderSync: string;
   overviewBriefCopy: string;
   overviewBriefCopied: string;
   overviewBriefCopyAriaLabel: string;
@@ -623,6 +627,31 @@ export function TopologyAnalysisBar({
                       {healthNextAction}
                     </p>
                   ) : null}
+                  <div className="mt-2 rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1.5">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(190,199,255,0.82)]">
+                      {labels.healthRepairOrderTitle}
+                    </p>
+                    <dl
+                      className="mt-2 grid gap-1.5 sm:grid-cols-3"
+                      data-testid="topology-health-repair-order"
+                    >
+                      <PathProofStep
+                        label={labels.healthRepairOrderInspect}
+                        status={labels.pathProofStatusReady}
+                        tone="ready"
+                      />
+                      <PathProofStep
+                        label={labels.healthRepairOrderRepair}
+                        status={labels.pathProofStatusRequired}
+                        tone="required"
+                      />
+                      <PathProofStep
+                        label={labels.healthRepairOrderSync}
+                        status={labels.pathProofStatusAfterWrite}
+                        tone="after"
+                      />
+                    </dl>
+                  </div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <button
                       type="button"

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T05:58:09.969Z",
+  "generatedAt": "2026-05-25T06:04:05.186Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6181,8 +6181,8 @@
       },
       "headings": [],
       "excerpt": "src/views/home/ui/TopologyAnalysisBar.tsx is the compact mode switcher shown over /topology. It owns the visible Overview / Focus / Path / Health controls, the small metrics line, the Overview graph handoff brief, the Health stale/orphan/promotion chips, and the first actionable Health inspect target. The bar is reacha",
-      "wordCount": 925,
-      "updatedAt": "2026-05-25T05:10:40.051Z",
+      "wordCount": 952,
+      "updatedAt": "2026-05-25T06:03:17.489Z",
       "linksOut": []
     },
     {

@@ -33,6 +33,10 @@ const labels = {
   healthMcpImpactCopied: "MCP impact copied",
   healthSyncGateCopy: "Copy sync gate",
   healthSyncGateCopied: "Sync gate copied",
+  healthRepairOrderTitle: "Repair order",
+  healthRepairOrderInspect: "Inspect target",
+  healthRepairOrderRepair: "Repair ownership or evidence",
+  healthRepairOrderSync: "Run sync gate",
   overviewBriefCopy: "Copy overview brief",
   overviewBriefCopied: "Overview brief copied",
   overviewBriefCopyAriaLabel: "Copy topology overview brief",
@@ -941,6 +945,14 @@ describe("TopologyAnalysisBar", () => {
         "Connect this node to its owner/domain or document why it should stay standalone.",
       ),
     ).toBeInTheDocument();
+    expect(screen.getByText("Repair order")).toBeInTheDocument();
+    expect(screen.getByTestId("topology-health-repair-order")).toBeInTheDocument();
+    expect(screen.getByText("Inspect target")).toBeInTheDocument();
+    expect(screen.getByText("Repair ownership or evidence")).toBeInTheDocument();
+    expect(screen.getByText("Run sync gate")).toBeInTheDocument();
+    expect(screen.getByText("ready")).toBeInTheDocument();
+    expect(screen.getByText("required")).toBeInTheDocument();
+    expect(screen.getByText("after write")).toBeInTheDocument();
   });
 
   it("copies the current health evidence brief", async () => {
