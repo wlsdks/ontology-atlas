@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildOntologyNodeHref } from "./ontology-node-href";
+import type { KnowledgeGraphNode } from "../model";
+import {
+  buildOntologyBuilderNodeHref,
+  buildOntologyNodeHref,
+  resolveOntologyBuilderNodeSlug,
+} from "./ontology-node-href";
 
 describe("buildOntologyNodeHref", () => {
   it("kind:slug 형식 노드 ID", () => {
@@ -22,5 +27,64 @@ describe("buildOntologyNodeHref", () => {
 
   it("빈 ID 도 그대로 반환 (caller contract)", () => {
     expect(buildOntologyNodeHref("")).toBe("/ontology/?node=");
+  });
+});
+
+describe("buildOntologyBuilderNodeHref", () => {
+  function node(overrides: Partial<KnowledgeGraphNode>): KnowledgeGraphNode {
+    return {
+      id: "capability:mcp-server",
+      title: "MCP Server",
+      kind: "capability",
+      projectIds: [],
+      evidenceIds: [],
+      lastApprovedAt: new Date(0),
+      lastApprovedBy: "test",
+      ...overrides,
+    };
+  }
+
+  it("vault source slug 를 builder focus query 로 사용", () => {
+    const selected = node({
+      id: "capability:mcp-server",
+      evidenceIds: ["capabilities/mcp-server"],
+    });
+
+    expect(resolveOntologyBuilderNodeSlug(selected)).toBe(
+      "capabilities/mcp-server",
+    );
+    expect(buildOntologyBuilderNodeHref(selected)).toBe(
+      `/ontology/edit/?node=${encodeURIComponent("capabilities/mcp-server")}`,
+    );
+  });
+
+  it("ontology/ prefix 가 붙은 evidence slug 를 정규화", () => {
+    const selected = node({
+      evidenceIds: ["ontology/elements/parser"],
+      kind: "element",
+    });
+
+    expect(resolveOntologyBuilderNodeSlug(selected)).toBe("elements/parser");
+  });
+
+  it("legacy kind:id 노드를 canonical vault folder 로 fallback", () => {
+    expect(
+      resolveOntologyBuilderNodeSlug(
+        node({ id: "domain:views", kind: "domain" }),
+      ),
+    ).toBe("domains/views");
+    expect(
+      resolveOntologyBuilderNodeSlug(
+        node({ id: "element:parser", kind: "element" }),
+      ),
+    ).toBe("elements/parser");
+  });
+
+  it("slash 기반 vault id 는 그대로 유지", () => {
+    expect(
+      resolveOntologyBuilderNodeSlug(
+        node({ id: "capabilities/topology-analysis-modes" }),
+      ),
+    ).toBe("capabilities/topology-analysis-modes");
   });
 });

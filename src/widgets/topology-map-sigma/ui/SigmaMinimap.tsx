@@ -112,16 +112,21 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   const rawY1 = (topLeftGraph.y + offsetY) * scale;
   const rawX2 = (bottomRightGraph.x + offsetX) * scale;
   const rawY2 = (bottomRightGraph.y + offsetY) * scale;
-  const cx1 = Math.max(0, Math.min(MINI_W, rawX1));
-  const cy1 = Math.max(0, Math.min(MINI_H, rawY1));
-  const cx2 = Math.max(0, Math.min(MINI_W, rawX2));
-  const cy2 = Math.max(0, Math.min(MINI_H, rawY2));
+  const viewportCoordsAreFinite =
+    Number.isFinite(rawX1) &&
+    Number.isFinite(rawY1) &&
+    Number.isFinite(rawX2) &&
+    Number.isFinite(rawY2);
+  const cx1 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_W, rawX1)) : 0;
+  const cy1 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_H, rawY1)) : 0;
+  const cx2 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_W, rawX2)) : 0;
+  const cy2 = viewportCoordsAreFinite ? Math.max(0, Math.min(MINI_H, rawY2)) : 0;
   const rectX = cx1;
   const rectY = cy1;
   const rectW = cx2 - cx1;
   const rectH = cy2 - cy1;
   // overlap 이 충분할 때만 렌더. 2px 이하면 degenerate (가로/세로 줄) 이므로 숨김.
-  const showViewportRect = rectW > 2 && rectH > 2;
+  const showViewportRect = viewportCoordsAreFinite && rectW > 2 && rectH > 2;
 
   // 허브 + 일반 노드 샘플링. 허브는 전원, 일반은 sampleStep 간격.
   const hubPositions = new Map<string, { x: number; y: number }>();
@@ -139,16 +144,23 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   graph.forEachNode((id, attrs) => {
     if (attrs.isHub) {
       hubCount += 1;
-      hubPositions.set(id, {
-        x: (attrs.x + offsetX) * scale,
-        y: (attrs.y + offsetY) * scale,
-      });
+      const x = (attrs.x + offsetX) * scale;
+      const y = (attrs.y + offsetY) * scale;
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        hubPositions.set(id, { x, y });
+      }
     }
     if (attrs.isHub || idx % sampleStep === 0) {
+      const x = (attrs.x + offsetX) * scale;
+      const y = (attrs.y + offsetY) * scale;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        idx += 1;
+        return;
+      }
       sampledNodes.push({
         id,
-        x: (attrs.x + offsetX) * scale,
-        y: (attrs.y + offsetY) * scale,
+        x,
+        y,
         size: attrs.isHub ? 3 : 1.2,
         isHub: attrs.isHub,
       });
@@ -248,6 +260,7 @@ function computeBbox(
   let maxX = -Infinity;
   let maxY = -Infinity;
   graph.forEachNode((_, attrs) => {
+    if (!Number.isFinite(attrs.x) || !Number.isFinite(attrs.y)) return;
     if (attrs.x < minX) minX = attrs.x;
     if (attrs.y < minY) minY = attrs.y;
     if (attrs.x > maxX) maxX = attrs.x;

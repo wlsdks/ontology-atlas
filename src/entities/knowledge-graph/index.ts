@@ -11,4 +11,13 @@ export {
   buildEdgeTypeRows,
 } from "./model";
 export type { EdgeTypeRow } from "./model";
-export { buildOntologyNodeHref } from "./lib/ontology-node-href";
+export {
+  buildOntologyBuilderNodeHref,
+  buildOntologyNodeHref,
+  resolveOntologyBuilderNodeSlug,
+} from "./lib/ontology-node-href";
+export {
+  buildOntologyHealthSignals,
+  type OntologyHealthSignalCandidate,
+  type OntologyHealthSignals,
+} from "./lib/ontology-health-signals";

@@ -9,11 +9,10 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { ArrowUpRight, BookOpen, X } from "lucide-react";
+import { BookOpen, X } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
-import { isOntologyNodeId } from "@/shared/lib/ontology-node-id";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
 // 타입/기본값은 Sigma(WebGL) 의존성 없는 별도 모듈에서 직접 import해서
@@ -95,11 +94,27 @@ import { GestureHint } from "@/widgets/gesture-hint";
 import { PINNED_DOCS_STORAGE_PREFIX } from "@/widgets/docs-vault";
 import { LiveAnnouncer, Tooltip, useToast } from "@/shared/ui";
 import {
+  detectOrphanProjects,
+  detectPromotionCandidates,
+  detectStaleProjects,
   getProjectDetailHref,
+  type Project,
   type ProjectImpactMode,
 } from "@/entities/project";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
+import {
+  buildOntologyHealthSignals,
+  type KnowledgeGraphNode,
+} from "@/entities/knowledge-graph";
 import { useHomeRouteState } from "../model/use-home-route-state";
+import type { TopologyAnalysisMode } from "../model/url-state";
+import {
+  buildTopologyAnalysisSummary,
+  buildTopologyHealthActionTarget,
+} from "../lib/topology-analysis";
+import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-selected-node";
+import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
+import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 
 const LEFT_PANEL_COLLAPSED_KEY = "demo:left-panel-collapsed:v2";
 
@@ -206,6 +221,9 @@ export function HomePage() {
     activeCategory,
     selectedSlug,
     impactMode,
+    analysisMode,
+    pathSourceSlug,
+    pathTargetSlug,
   } = routeState;
   const renderProjects = projects;
   const selectedProject = useMemo(
@@ -222,11 +240,11 @@ export function HomePage() {
   const { insight: ontologyInsight } = useOntologyInsight();
   const selectedOntologyNode = useMemo(() => {
     if (!selectedSlug || selectedProject) return null;
-    if (!isOntologyNodeId(selectedSlug)) return null;
     if (!ontologyInsight) return null;
-    return ontologyInsight.nodes.find((n) => n.id === selectedSlug) ?? null;
+    return resolveTopologySelectedOntologyNode(selectedSlug, ontologyInsight.nodes);
   }, [selectedSlug, selectedProject, ontologyInsight]);
   const combinedFitToken = fitViewToken;
+  const analysisModeRef = useRef<TopologyAnalysisMode>("overview");
   // 클라이언트 사이드 동적 타이틀 — 선택 프로젝트 컨텍스트를 브라우저 탭에
   // 노출 (정적 export 환경의 page metadata 한계 보완).
   useDocumentTitle(
@@ -234,6 +252,7 @@ export function HomePage() {
       new Set(
         [
           selectedProject?.name,
+          selectedOntologyNode?.title,
           t('documentTitle'),
           "oh-my-ontology",
         ].filter((value): value is string => Boolean(value)),
@@ -323,7 +342,7 @@ export function HomePage() {
     return () => window.removeEventListener('keydown', handler);
   }, [localGraphRoot]);
 
-  const canvasSelectedSlug = selectedSlug;
+  const canvasSelectedSlug = selectedProject?.slug ?? selectedOntologyNode?.id ?? selectedSlug;
   const drawerProject = selectedProject;
 
   const handleSelect = useCallback(
@@ -331,17 +350,8 @@ export function HomePage() {
       slug: string,
       options?: { preserveImpact?: boolean },
     ) => {
-      // R+ 사용자 보고: ontology 노드 클릭이 *자동으로* /ontology/?node=...
-      // 로 redirect 되어 우측 drawer 가 안 뜬다. 원래 의도는 "drawer 안에
-      // detail + 트리 이동 버튼". auto-redirect 제거 — selectedSlug 만 set
-      // 해서 drawer 자체는 띄움 (ontology 노드는 projectBySlug 에 없어
-      // drawer 의 project section 은 비지만 적어도 자동 jump 는 차단).
-      // 트리로의 명시 이동은 컨텍스트 메뉴 (rightClickNode) 의 "포커스" /
-      // "이웃만 보기" 또는 별도 nav 로. drawer 의 ontology mode 풀 fledged
-      // 는 follow-up PR scope.
-      if (isOntologyNodeId(slug)) {
-        // dismissSigmaHint 만 호출 — drawer 는 setRouteState 분기로 뜸.
-      }
+      // Ontology node clicks and shareable vault slugs both stay on
+      // /topology; selected-node resolution happens against ontologyInsight.
       // 노드 선택 = drawer 열기. 허브를 선택하면 포커스 모드 자동 활성,
       // 일반 노드는 포커스 해제.
       // projectBySlug Map 으로 O(1) lookup — 이전엔 매 클릭마다
@@ -422,7 +432,148 @@ export function HomePage() {
     },
   ]);
 
-  const drawerOpen = drawerProject !== null;
+  const drawerOpen = drawerProject !== null || selectedOntologyNode !== null;
+  const analysisSelectedTitle =
+    selectedProject?.name ?? selectedOntologyNode?.title ?? null;
+  const pathSourceTitle = useMemo(
+    () =>
+      resolveTopologyNodeTitle({
+        slug: pathSourceSlug,
+        projectBySlug,
+        ontologyNodes: ontologyInsight?.nodes,
+      }),
+    [pathSourceSlug, projectBySlug, ontologyInsight?.nodes],
+  );
+  const pathTargetTitle = useMemo(
+    () =>
+      resolveTopologyNodeTitle({
+        slug: pathTargetSlug,
+        projectBySlug,
+        ontologyNodes: ontologyInsight?.nodes,
+      }),
+    [pathTargetSlug, projectBySlug, ontologyInsight?.nodes],
+  );
+  const topologyHealthSummary = useMemo(() => {
+    const now = new Date(mountNowMs);
+    const stale = detectStaleProjects(renderProjects, {
+      now,
+      daysThreshold: 30,
+    });
+    const orphan = detectOrphanProjects(renderProjects);
+    const promotion = detectPromotionCandidates(renderProjects, {
+      minFanIn: 4,
+    });
+    const ontologySignals = ontologyInsight
+      ? buildOntologyHealthSignals(ontologyInsight.nodes, ontologyInsight.edges, {
+          now,
+          staleDaysThreshold: 30,
+          promotionMinFanIn: 4,
+        })
+      : { stale: [], orphan: [], promotion: [] };
+    const staleSignals = [...stale, ...ontologySignals.stale];
+    const orphanSignals = [...orphan, ...ontologySignals.orphan];
+    const promotionSignals = [...promotion, ...ontologySignals.promotion];
+
+    return {
+      staleCount: staleSignals.length,
+      orphanCount: orphanSignals.length,
+      promotionCount: promotionSignals.length,
+      actionTarget: buildTopologyHealthActionTarget({
+        stale: staleSignals,
+        orphan: orphanSignals,
+        promotion: promotionSignals,
+      }),
+    };
+  }, [renderProjects, ontologyInsight, mountNowMs]);
+  const topologyTotalNodes =
+    renderProjects.length + (ontologyInsight?.nodes.length ?? 0);
+  const topologyTotalRelations =
+    renderProjects.reduce((sum, project) => sum + project.dependencies.length, 0) +
+    (ontologyInsight?.edges.length ?? 0);
+  const analysisSummary = buildTopologyAnalysisSummary({
+    mode: analysisMode,
+    selectedTitle: analysisSelectedTitle,
+    visibleCount: sigmaVisibleCount,
+    totalCount: topologyTotalNodes,
+    relationCount: topologyTotalRelations,
+    ...topologyHealthSummary,
+  });
+
+  useEffect(() => {
+    if (analysisModeRef.current === analysisMode) return;
+    analysisModeRef.current = analysisMode;
+
+    setSigmaControls((current) => {
+      if (analysisMode === "focus") {
+        return {
+          ...current,
+          depthLimit: current.depthLimit ?? 2,
+          hubsOnly: false,
+          overlays: {
+            ...current.overlays,
+            backrefHighlight: true,
+            auditHighlight: false,
+          },
+        };
+      }
+      if (analysisMode === "health") {
+        return {
+          ...current,
+          depthLimit: null,
+          hubsOnly: false,
+          overlays: {
+            ...current.overlays,
+            auditHighlight: true,
+            backrefHighlight: false,
+          },
+        };
+      }
+      if (analysisMode === "path") {
+        return {
+          ...current,
+          depthLimit: null,
+          hubsOnly: false,
+          overlays: {
+            ...current.overlays,
+            auditHighlight: false,
+          },
+        };
+      }
+      return {
+        ...current,
+        depthLimit: null,
+        overlays: {
+          ...current.overlays,
+          auditHighlight: false,
+        },
+      };
+    });
+  }, [analysisMode]);
+
+  const handleSelectAnalysisMode = useCallback(
+    (mode: TopologyAnalysisMode) => {
+      setRouteState((current) => ({
+        ...current,
+        analysisMode: mode,
+        pathSourceSlug: mode === "path" ? current.pathSourceSlug : null,
+        pathTargetSlug: mode === "path" ? current.pathTargetSlug : null,
+      }));
+    },
+    [setRouteState],
+  );
+
+  const handlePathSelectionChange = useCallback(
+    (selection: { sourceSlug: string | null; targetSlug: string | null }) => {
+      setRouteState((current) => ({
+        ...current,
+        analysisMode: "path",
+        selectedSlug: selection.sourceSlug ?? current.selectedSlug,
+        pathSourceSlug: selection.sourceSlug,
+        pathTargetSlug: selection.targetSlug,
+      }));
+    },
+    [setRouteState],
+  );
 
   const preloadProjectAsset = useCallback(
     (slug: string) => {
@@ -643,6 +794,272 @@ export function HomePage() {
               </button>
               </Tooltip>
             </div>
+            <TopologyAnalysisBar
+              mode={analysisMode}
+              summary={analysisSummary}
+              healthAction={topologyHealthSummary.actionTarget}
+              selectedSlug={selectedSlug}
+              selectedTitle={analysisSelectedTitle}
+              pathSourceSlug={pathSourceSlug}
+              pathTargetSlug={pathTargetSlug}
+              pathSourceTitle={pathSourceTitle}
+              pathTargetTitle={pathTargetTitle}
+              rightPanelReserved={drawerOpen}
+              onModeChange={handleSelectAnalysisMode}
+              onHealthAction={(slug) => handleSelect(slug)}
+              labels={{
+                title: t("analysis.title"),
+                overview: t("analysis.overview"),
+                focus: t("analysis.focus"),
+                path: t("analysis.path"),
+                health: t("analysis.health"),
+                metricNodes: t("analysis.metricNodes"),
+                metricRelations: t("analysis.metricRelations"),
+                metricIssues: t("analysis.metricIssues"),
+                healthStale: t("analysis.healthStale"),
+                healthOrphan: t("analysis.healthOrphan"),
+                healthPromotion: t("analysis.healthPromotion"),
+                healthInspect: t("analysis.healthInspect"),
+                healthCopy: t("analysis.healthCopy"),
+                healthRepair: t("analysis.healthRepair"),
+                healthCopied: t("analysis.healthCopied"),
+                healthMcpCopy: t("analysis.healthMcpCopy"),
+                healthMcpCopied: t("analysis.healthMcpCopied"),
+                healthMcpImpactCopy: t("analysis.healthMcpImpactCopy"),
+                healthMcpImpactCopied: t("analysis.healthMcpImpactCopied"),
+                healthSyncGateCopy: t("analysis.healthSyncGateCopy"),
+                healthSyncGateCopied: t("analysis.healthSyncGateCopied"),
+                overviewBriefCopy: t("analysis.overviewBriefCopy"),
+                overviewBriefCopied: t("analysis.overviewBriefCopied"),
+                overviewBriefCopyAriaLabel: t(
+                  "analysis.overviewBriefCopyAriaLabel",
+                ),
+                overviewBriefCopiedAriaLabel: t(
+                  "analysis.overviewBriefCopiedAriaLabel",
+                ),
+                overviewBriefTitle: t("analysis.overviewBriefTitle"),
+                overviewBriefTotalNodes: t("analysis.overviewBriefTotalNodes"),
+                overviewBriefTotalRelations: t(
+                  "analysis.overviewBriefTotalRelations",
+                ),
+                overviewBriefHealthSignals: t(
+                  "analysis.overviewBriefHealthSignals",
+                ),
+                overviewBriefHealthUrl: t("analysis.overviewBriefHealthUrl"),
+                overviewBriefInsightsUrl: t("analysis.overviewBriefInsightsUrl"),
+                overviewBriefAgentCheck: t("analysis.overviewBriefAgentCheck"),
+                overviewBriefMcpCheck: t("analysis.overviewBriefMcpCheck"),
+                overviewBriefMcpQueryPlan: t(
+                  "analysis.overviewBriefMcpQueryPlan",
+                ),
+                overviewBriefWorkspaceCheck: t(
+                  "analysis.overviewBriefWorkspaceCheck",
+                ),
+                overviewBriefMcpWorkspaceCheck: t(
+                  "analysis.overviewBriefMcpWorkspaceCheck",
+                ),
+                focusBriefCopy: t("analysis.focusBriefCopy"),
+                focusBriefCopied: t("analysis.focusBriefCopied"),
+                focusMcpCopy: t("analysis.focusMcpCopy"),
+                focusMcpCopied: t("analysis.focusMcpCopied"),
+                focusMcpImpactCopy: t("analysis.focusMcpImpactCopy"),
+                focusMcpImpactCopied: t("analysis.focusMcpImpactCopied"),
+                focusSyncGateCopy: t("analysis.focusSyncGateCopy"),
+                focusSyncGateCopied: t("analysis.focusSyncGateCopied"),
+                focusOpenOntology: t("analysis.focusOpenOntology"),
+                focusOpenBuilder: t("analysis.focusOpenBuilder"),
+                focusBriefCopyAriaLabel: t("analysis.focusBriefCopyAriaLabel"),
+                focusBriefCopiedAriaLabel: t(
+                  "analysis.focusBriefCopiedAriaLabel",
+                ),
+                focusMcpCopyAriaLabel: t("analysis.focusMcpCopyAriaLabel"),
+                focusMcpCopiedAriaLabel: t("analysis.focusMcpCopiedAriaLabel"),
+                focusMcpImpactCopyAriaLabel: t(
+                  "analysis.focusMcpImpactCopyAriaLabel",
+                ),
+                focusMcpImpactCopiedAriaLabel: t(
+                  "analysis.focusMcpImpactCopiedAriaLabel",
+                ),
+                focusSyncGateCopyAriaLabel: t(
+                  "analysis.focusSyncGateCopyAriaLabel",
+                ),
+                focusSyncGateCopiedAriaLabel: t(
+                  "analysis.focusSyncGateCopiedAriaLabel",
+                ),
+                focusBriefTitle: t("analysis.focusBriefTitle"),
+                focusBriefNode: t("analysis.focusBriefNode"),
+                focusBriefUrl: t("analysis.focusBriefUrl"),
+                focusBriefOntologyUrl: t("analysis.focusBriefOntologyUrl"),
+                focusBriefBuilderUrl: t("analysis.focusBriefBuilderUrl"),
+                focusBriefReviewFocus: t("analysis.focusBriefReviewFocus"),
+                focusBriefAgentCheck: t("analysis.focusBriefAgentCheck"),
+                focusBriefMcpCheck: t("analysis.focusBriefMcpCheck"),
+                focusBriefImpactCheck: t("analysis.focusBriefImpactCheck"),
+                focusBriefMcpImpactCheck: t("analysis.focusBriefMcpImpactCheck"),
+                focusBriefSyncGate: t("analysis.focusBriefSyncGate"),
+                healthMcpCopyAriaLabel: t("analysis.healthMcpCopyAriaLabel"),
+                healthMcpCopiedAriaLabel: t(
+                  "analysis.healthMcpCopiedAriaLabel",
+                ),
+                healthMcpImpactCopyAriaLabel: t(
+                  "analysis.healthMcpImpactCopyAriaLabel",
+                ),
+                healthMcpImpactCopiedAriaLabel: t(
+                  "analysis.healthMcpImpactCopiedAriaLabel",
+                ),
+                healthSyncGateCopyAriaLabel: t(
+                  "analysis.healthSyncGateCopyAriaLabel",
+                ),
+                healthSyncGateCopiedAriaLabel: t(
+                  "analysis.healthSyncGateCopiedAriaLabel",
+                ),
+                healthCopyAriaLabel: t("analysis.healthCopyAriaLabel"),
+                healthCopiedAriaLabel: t("analysis.healthCopiedAriaLabel"),
+                healthEvidenceTitle: t("analysis.healthEvidenceTitle"),
+                healthEvidenceTotal: t("analysis.healthEvidenceTotal"),
+                healthEvidenceInspectUrl: t("analysis.healthEvidenceInspectUrl"),
+                healthEvidenceRepairUrl: t("analysis.healthEvidenceRepairUrl"),
+                healthEvidenceNextAction: t("analysis.healthEvidenceNextAction"),
+                healthEvidenceAgentCheck: t("analysis.healthEvidenceAgentCheck"),
+                healthEvidenceMcpCheck: t("analysis.healthEvidenceMcpCheck"),
+                healthEvidenceRelationPreflight: t(
+                  "analysis.healthEvidenceRelationPreflight",
+                ),
+                healthEvidenceMcpRelationPreflight: t(
+                  "analysis.healthEvidenceMcpRelationPreflight",
+                ),
+                healthEvidenceImpactCheck: t("analysis.healthEvidenceImpactCheck"),
+                healthEvidenceMcpImpactCheck: t(
+                  "analysis.healthEvidenceMcpImpactCheck",
+                ),
+                healthEvidenceSyncGate: t("analysis.healthEvidenceSyncGate"),
+                healthEvidenceActionStale: t("analysis.healthEvidenceActionStale"),
+                healthEvidenceActionOrphan: t("analysis.healthEvidenceActionOrphan"),
+                healthEvidenceActionPromotion: t(
+                  "analysis.healthEvidenceActionPromotion",
+                ),
+                healthEvidenceNone: t("analysis.healthEvidenceNone"),
+                healthEvidenceUrl: t("analysis.healthEvidenceUrl"),
+                focusPrompt: t("analysis.focusPrompt"),
+                focusSelected: t("analysis.focusSelected", {
+                  title: analysisSelectedTitle ?? "",
+                }),
+                pathPrompt: t("analysis.pathPrompt"),
+                pathSelected: t("analysis.pathSelected", {
+                  title: pathSourceTitle ?? analysisSelectedTitle ?? "",
+                }),
+                pathResolved: t("analysis.pathResolved", {
+                  source: pathSourceTitle ?? "",
+                  target: pathTargetTitle ?? "",
+                }),
+                pathEvidenceCopy: t("analysis.pathEvidenceCopy"),
+                pathEvidenceCopied: t("analysis.pathEvidenceCopied"),
+                pathEvidenceCopyAriaLabel: t(
+                  "analysis.pathEvidenceCopyAriaLabel",
+                ),
+                pathEvidenceCopiedAriaLabel: t(
+                  "analysis.pathEvidenceCopiedAriaLabel",
+                ),
+                pathMcpCopy: t("analysis.pathMcpCopy"),
+                pathMcpCopied: t("analysis.pathMcpCopied"),
+                pathMcpCopyAriaLabel: t("analysis.pathMcpCopyAriaLabel"),
+                pathMcpCopiedAriaLabel: t("analysis.pathMcpCopiedAriaLabel"),
+                pathRelationPreflightCopy: t(
+                  "analysis.pathRelationPreflightCopy",
+                ),
+                pathRelationPreflightCopied: t(
+                  "analysis.pathRelationPreflightCopied",
+                ),
+                pathRelationPreflightCopyAriaLabel: t(
+                  "analysis.pathRelationPreflightCopyAriaLabel",
+                ),
+                pathRelationPreflightCopiedAriaLabel: t(
+                  "analysis.pathRelationPreflightCopiedAriaLabel",
+                ),
+                pathExplainRelationCopy: t("analysis.pathExplainRelationCopy"),
+                pathExplainRelationCopied: t(
+                  "analysis.pathExplainRelationCopied",
+                ),
+                pathExplainRelationCopyAriaLabel: t(
+                  "analysis.pathExplainRelationCopyAriaLabel",
+                ),
+                pathExplainRelationCopiedAriaLabel: t(
+                  "analysis.pathExplainRelationCopiedAriaLabel",
+                ),
+                pathAllPathsPlanCopy: t("analysis.pathAllPathsPlanCopy"),
+                pathAllPathsPlanCopied: t("analysis.pathAllPathsPlanCopied"),
+                pathAllPathsPlanCopyAriaLabel: t(
+                  "analysis.pathAllPathsPlanCopyAriaLabel",
+                ),
+                pathAllPathsPlanCopiedAriaLabel: t(
+                  "analysis.pathAllPathsPlanCopiedAriaLabel",
+                ),
+                pathProofOrderTitle: t("analysis.pathProofOrderTitle"),
+                pathProofOrderDesc: t("analysis.pathProofOrderDesc"),
+                pathProofChecklist: t("analysis.pathProofChecklist"),
+                pathProofVisiblePath: t("analysis.pathProofVisiblePath"),
+                pathProofRelationPreflight: t(
+                  "analysis.pathProofRelationPreflight",
+                ),
+                pathProofExplainRelation: t(
+                  "analysis.pathProofExplainRelation",
+                ),
+                pathProofBoundedTraversal: t(
+                  "analysis.pathProofBoundedTraversal",
+                ),
+                pathProofPostWriteSync: t("analysis.pathProofPostWriteSync"),
+                pathProofStatusReady: t("analysis.pathProofStatusReady"),
+                pathProofStatusRequired: t("analysis.pathProofStatusRequired"),
+                pathProofStatusAfterWrite: t("analysis.pathProofStatusAfterWrite"),
+                pathEvidenceTitle: t("analysis.pathEvidenceTitle"),
+                pathEvidenceSource: t("analysis.pathEvidenceSource"),
+                pathEvidenceTarget: t("analysis.pathEvidenceTarget"),
+                pathEvidenceUrl: t("analysis.pathEvidenceUrl"),
+                pathEvidenceSourceOntologyUrl: t(
+                  "analysis.pathEvidenceSourceOntologyUrl",
+                ),
+                pathEvidenceTargetOntologyUrl: t(
+                  "analysis.pathEvidenceTargetOntologyUrl",
+                ),
+                pathEvidenceSourceBuilderUrl: t(
+                  "analysis.pathEvidenceSourceBuilderUrl",
+                ),
+                pathEvidenceTargetBuilderUrl: t(
+                  "analysis.pathEvidenceTargetBuilderUrl",
+                ),
+                pathEvidenceCliCheck: t("analysis.pathEvidenceCliCheck"),
+                pathEvidenceMcpCheck: t("analysis.pathEvidenceMcpCheck"),
+                pathEvidenceRelationPreflightReason: t(
+                  "analysis.pathEvidenceRelationPreflightReason",
+                ),
+                pathEvidenceRelationPreflightMcpCheck: t(
+                  "analysis.pathEvidenceRelationPreflightMcpCheck",
+                ),
+                pathEvidenceExplainRelationMcpCheck: t(
+                  "analysis.pathEvidenceExplainRelationMcpCheck",
+                ),
+                pathEvidenceAllPathsPlanMcpCheck: t(
+                  "analysis.pathEvidenceAllPathsPlanMcpCheck",
+                ),
+                pathEvidenceAllPathsMcpCheck: t(
+                  "analysis.pathEvidenceAllPathsMcpCheck",
+                ),
+                pathEvidenceAllPathsCopyInstruction: t(
+                  "analysis.pathEvidenceAllPathsCopyInstruction",
+                ),
+                pathEvidencePostWriteSyncGate: t(
+                  "analysis.pathEvidencePostWriteSyncGate",
+                ),
+                pathSourceOntology: t("analysis.pathSourceOntology"),
+                pathTargetOntology: t("analysis.pathTargetOntology"),
+                pathSourceBuilder: t("analysis.pathSourceBuilder"),
+                pathTargetBuilder: t("analysis.pathTargetBuilder"),
+                healthPrompt: t("analysis.healthPrompt", {
+                  count: analysisSummary.primaryMetric,
+                }),
+                overviewPrompt: t("analysis.overviewPrompt"),
+              }}
+            />
           </>
         <div className="absolute inset-0">
           <>
@@ -658,6 +1075,11 @@ export function HomePage() {
                   <TopologyEmptyState projectCount={sigmaVisibleCount} />
                 ) : null}
                 <SigmaTopology
+                  key={
+                    analysisMode === "path"
+                      ? `${localGraphRoot ?? "__root__"}:${pathSourceSlug ?? ""}:${pathTargetSlug ?? ""}`
+                      : (localGraphRoot ?? "__root__")
+                  }
                   projects={localGraphProjects}
                   categories={taxonomyCategories}
                   selectedSlug={canvasSelectedSlug}
@@ -681,6 +1103,12 @@ export function HomePage() {
                   // 라고 약속한 본질을 살린다. local-graph (drawer 의 ego)
                   // 에서는 project 의존만 보이게 끔 — 좁은 시야 위해.
                   showOntologyNodes={localGraphRoot === null}
+                  pathWorkflowActive={analysisMode === "path"}
+                  pathSelection={{
+                    sourceSlug: pathSourceSlug,
+                    targetSlug: pathTargetSlug,
+                  }}
+                  onPathSelectionChange={handlePathSelectionChange}
                 />
               </div>
               <style jsx>{`
@@ -869,49 +1297,152 @@ export function HomePage() {
           }
           containerLabel={null}
         />
-        {/* R+ ontology 노드 drawer (#259 follow-up) — ProjectDrawer 가
-            domain/capability/element 의 빈 project section 으로 떠 어색하던
-            회귀를 대체. fixed-position panel — title + kind + summary +
-            트리 이동 명시 버튼. */}
-        {selectedOntologyNode ? (
-          <aside
-            role="dialog"
-            aria-label={selectedOntologyNode.title}
-            className="fixed right-0 top-0 z-30 flex h-screen w-full flex-col gap-4 border-l border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[0_24px_48px_rgba(0,0,0,0.24)] sm:w-[380px] md:px-6"
-          >
-            <header className="flex items-start justify-between gap-3">
-              <div className="flex flex-col gap-1.5">
-                <span className="inline-flex w-fit items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
-                  {selectedOntologyNode.kind}
-                </span>
-                <h2 className="break-keep text-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                  {selectedOntologyNode.title}
-                </h2>
-              </div>
-              <button
-                type="button"
-                onClick={handleClose}
-                aria-label={t("controls.close")}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
-              >
-                <X size={16} />
-              </button>
-            </header>
-            {selectedOntologyNode.summary ? (
-              <p className="break-keep text-sm leading-6 text-[color:var(--color-text-secondary)]">
-                {selectedOntologyNode.summary}
-              </p>
-            ) : null}
-            <div className="mt-auto flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] pt-4">
-              <Link
-                href={`/ontology/?node=${encodeURIComponent(selectedOntologyNode.id)}`}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.16)]"
-              >
-                {t("ontologyDrawer.viewInTree")}
-                <ArrowUpRight size={14} aria-hidden />
-              </Link>
-            </div>
-          </aside>
+        {selectedOntologyNode && ontologyInsight ? (
+          <TopologyOntologyDrawer
+            node={selectedOntologyNode}
+            nodes={ontologyInsight.nodes}
+            edges={ontologyInsight.edges}
+            onClose={handleClose}
+            closeLabel={t("controls.close")}
+            labels={{
+              caption: t("ontologyDrawer.caption"),
+              source: t("ontologyDrawer.source"),
+              noSource: t("ontologyDrawer.noSource"),
+              relations: t("ontologyDrawer.relations"),
+              incoming: t("ontologyDrawer.incoming"),
+              outgoing: t("ontologyDrawer.outgoing"),
+              noRelations: t("ontologyDrawer.noRelations"),
+              openOntology: t("ontologyDrawer.openOntology"),
+              openBuilder: t("ontologyDrawer.openBuilder"),
+              openSource: t("ontologyDrawer.openSource"),
+              collaboratorTitle: t("ontologyDrawer.collaboratorTitle"),
+              collaboratorBody: t("ontologyDrawer.collaboratorBody"),
+              collaboratorCopy: t("ontologyDrawer.collaboratorCopy"),
+              collaboratorCopyVocabulary: t(
+                "ontologyDrawer.collaboratorCopyVocabulary",
+              ),
+              collaboratorCopyMcpProfile: t(
+                "ontologyDrawer.collaboratorCopyMcpProfile",
+              ),
+              collaboratorCopyMcpImpact: t(
+                "ontologyDrawer.collaboratorCopyMcpImpact",
+              ),
+              collaboratorCopySyncGate: t(
+                "ontologyDrawer.collaboratorCopySyncGate",
+              ),
+              collaboratorCopySuccess: t("ontologyDrawer.collaboratorCopySuccess"),
+              collaboratorCopyError: t("ontologyDrawer.collaboratorCopyError"),
+              collaboratorBriefRelationTypes: t(
+                "ontologyDrawer.collaboratorBriefRelationTypes",
+              ),
+              collaboratorVocabularyTitle: t(
+                "ontologyDrawer.collaboratorVocabularyTitle",
+              ),
+              collaboratorVocabularyMeaning: t(
+                "ontologyDrawer.collaboratorVocabularyMeaning",
+              ),
+              collaboratorVocabularyReuse: t(
+                "ontologyDrawer.collaboratorVocabularyReuse",
+              ),
+              collaboratorVocabularyAnchors: t(
+                "ontologyDrawer.collaboratorVocabularyAnchors",
+              ),
+              collaboratorBriefReviewQuestions: t(
+                "ontologyDrawer.collaboratorBriefReviewQuestions",
+              ),
+              collaboratorBriefImpactSummary: t(
+                "ontologyDrawer.collaboratorBriefImpactSummary",
+              ),
+              collaboratorBriefFirstIncoming: t(
+                "ontologyDrawer.collaboratorBriefFirstIncoming",
+              ),
+              collaboratorBriefFirstOutgoing: t(
+                "ontologyDrawer.collaboratorBriefFirstOutgoing",
+              ),
+              collaboratorBriefNoImpactRelation: t(
+                "ontologyDrawer.collaboratorBriefNoImpactRelation",
+              ),
+              collaboratorBriefPreviewRelations: t(
+                "ontologyDrawer.collaboratorBriefPreviewRelations",
+              ),
+              collaboratorBriefNoPreviewRelations: t(
+                "ontologyDrawer.collaboratorBriefNoPreviewRelations",
+              ),
+              collaboratorBriefHandoff: t("ontologyDrawer.collaboratorBriefHandoff"),
+              collaboratorBriefTopology: t(
+                "ontologyDrawer.collaboratorBriefTopology",
+              ),
+              collaboratorBriefOntology: t(
+                "ontologyDrawer.collaboratorBriefOntology",
+              ),
+              collaboratorBriefBuilder: t("ontologyDrawer.collaboratorBriefBuilder"),
+              collaboratorBriefAgentCheck: t(
+                "ontologyDrawer.collaboratorBriefAgentCheck",
+              ),
+              collaboratorBriefMcpCheck: t(
+                "ontologyDrawer.collaboratorBriefMcpCheck",
+              ),
+              collaboratorBriefImpactCheck: t(
+                "ontologyDrawer.collaboratorBriefImpactCheck",
+              ),
+              collaboratorBriefMcpImpactCheck: t(
+                "ontologyDrawer.collaboratorBriefMcpImpactCheck",
+              ),
+              collaboratorBriefSyncGate: t(
+                "ontologyDrawer.collaboratorBriefSyncGate",
+              ),
+              collaboratorLensLabels: {
+                project: t("ontologyDrawer.collaboratorLens.project"),
+                domain: t("ontologyDrawer.collaboratorLens.domain"),
+                capability: t("ontologyDrawer.collaboratorLens.capability"),
+                element: t("ontologyDrawer.collaboratorLens.element"),
+                node: t("ontologyDrawer.collaboratorLens.node"),
+              },
+              collaboratorReviewLabels: {
+                define_owner: t("ontologyDrawer.collaboratorReview.defineOwner"),
+                explain_usage: t("ontologyDrawer.collaboratorReview.explainUsage"),
+                confirm_dependents: t("ontologyDrawer.collaboratorReview.confirmDependents"),
+                trace_impact: t("ontologyDrawer.collaboratorReview.traceImpact"),
+              },
+              collaboratorImpactLabels: {
+                needs_owner: t("ontologyDrawer.collaboratorImpact.needsOwner"),
+                usage_only: t("ontologyDrawer.collaboratorImpact.usageOnly"),
+                dependent_only: t(
+                  "ontologyDrawer.collaboratorImpact.dependentOnly",
+                ),
+                bidirectional: t(
+                  "ontologyDrawer.collaboratorImpact.bidirectional",
+                ),
+              },
+              collaboratorReviewQuestionLabels: {
+                define_owner: [
+                  t("ontologyDrawer.collaboratorReviewQuestions.defineOwnerOwner"),
+                  t("ontologyDrawer.collaboratorReviewQuestions.defineOwnerRelation"),
+                  t("ontologyDrawer.collaboratorReviewQuestions.defineOwnerMeaning"),
+                ],
+                explain_usage: [
+                  t("ontologyDrawer.collaboratorReviewQuestions.explainUsageDepends"),
+                  t("ontologyDrawer.collaboratorReviewQuestions.explainUsageWhy"),
+                  t("ontologyDrawer.collaboratorReviewQuestions.explainUsageAudience"),
+                ],
+                confirm_dependents: [
+                  t("ontologyDrawer.collaboratorReviewQuestions.confirmDependentsWho"),
+                  t("ontologyDrawer.collaboratorReviewQuestions.confirmDependentsChange"),
+                  t("ontologyDrawer.collaboratorReviewQuestions.confirmDependentsNotify"),
+                ],
+                trace_impact: [
+                  t("ontologyDrawer.collaboratorReviewQuestions.traceImpactIncoming"),
+                  t("ontologyDrawer.collaboratorReviewQuestions.traceImpactOutgoing"),
+                  t("ontologyDrawer.collaboratorReviewQuestions.traceImpactBoundary"),
+                ],
+              },
+              collaboratorChipLabels: {
+                source: t("ontologyDrawer.collaboratorChip.source"),
+                impact: t("ontologyDrawer.collaboratorChip.impact"),
+                vocabulary: t("ontologyDrawer.collaboratorChip.vocabulary"),
+              },
+            }}
+          />
         ) : null}
         <SearchPalette
           open={searchOpen}
@@ -950,4 +1481,21 @@ export function HomePage() {
         />
     </main>
   );
+}
+
+function resolveTopologyNodeTitle({
+  slug,
+  projectBySlug,
+  ontologyNodes,
+}: {
+  slug: string | null;
+  projectBySlug: ReadonlyMap<string, Project>;
+  ontologyNodes: readonly KnowledgeGraphNode[] | null | undefined;
+}): string | null {
+  if (!slug) return null;
+
+  const project = projectBySlug.get(slug);
+  if (project) return project.name;
+
+  return resolveTopologySelectedOntologyNode(slug, ontologyNodes)?.title ?? slug;
 }

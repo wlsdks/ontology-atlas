@@ -74,6 +74,12 @@ export interface SigmaEdgeAttrs {
    * - `knowledge`: extraction 결과로 파생된 관계 (아직 미사용 예약).
    */
   kind?: 'contains' | 'depends-on' | 'referenced-by' | 'knowledge';
+  /**
+   * User-facing relation key for analysis surfaces. `kind` is the Sigma render
+   * grouping; this keeps the ontology/frontmatter relation meaning available
+   * for Path mode and tooltips.
+   */
+  relationType?: string;
   /** @sigma/edge-curve — 0=직선, 0.3=뚜렷한 커브. 허브-위성은 0.08, 허브-허브
    * 는 0.28로 관계 층위를 시각화. */
   curvature?: number;
@@ -278,6 +284,7 @@ export function buildGraph(
           size: hubToHub ? 0.9 : 0.5,
           color: palette.edge,
           kind: isContainsRelation ? 'contains' : 'depends-on',
+          relationType: isContainsRelation ? 'contains' : 'depends_on',
           // R+ stick-bug fix: non-hub 의 0.08 도 거의 직선 → 0.14. hub-hub
           // 의 0.28 은 그대로 (메인 의존 골격 강조).
           curvature: hubToHub ? 0.28 : 0.14,
@@ -353,6 +360,7 @@ export function buildGraph(
         size: 0.28,
         color: palette.edge,
         kind,
+        relationType: edge.type,
         // R+ 사용자 피드백: zoom out 시 거의 직선 (0.06) 이 "대벌레 다리"
         // 격자 시각의 한 원인. 살짝 더 휘게 (0.14) — 노드 클러스터 사이가
         // organic 한 흐름. project hub-hub 의 0.28 보다 약함 (메인 의존
@@ -445,4 +453,3 @@ export function settleLayout(
     settings: { ...settings, ...SETTLE_SETTINGS },
   });
 }
-

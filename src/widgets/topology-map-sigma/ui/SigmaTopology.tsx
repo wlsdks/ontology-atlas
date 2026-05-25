@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { useTranslations } from 'next-intl';
-import { Maximize2 } from 'lucide-react';
+import { Check, Clipboard, Maximize2 } from 'lucide-react';
 import { ErrorBoundary } from '@/shared/ui';
 import { SigmaErrorFallback } from './SigmaErrorFallback';
 import { Tooltip } from '@/shared/ui';
@@ -18,6 +18,7 @@ import {
   detectStaleProjects,
   type Project,
 } from '@/entities/project';
+import { buildOntologyHealthSignals } from '@/entities/knowledge-graph';
 import {
   buildGraph,
   settleLayout,
@@ -27,6 +28,7 @@ import {
 } from '../lib/graph-build';
 import {
   buildProjectOntologyCounts,
+  formatAgentPostChangeSyncPacket,
   type OntologyCountsForProject,
 } from '@/shared/lib/ontology-tree';
 import { useOntologyInsight } from '@/features/vault-ontology';
@@ -49,6 +51,19 @@ import {
   AUDIT_STALE_COLOR,
   applyAuditOverlay,
 } from '../lib/reducer-audit';
+import {
+  buildPathRelationSteps,
+  formatPathAllPathsMcpCheck,
+  formatPathAllPathsPlanMcpCheck,
+  formatPathEvidenceBrief,
+  formatPathExplainRelationMcpCheck,
+  formatPathMcpCheck,
+  formatPathRelationPreflightMcpCheck,
+  formatPathRelationPreflightReason,
+  inferPathRelationPreflightType,
+  resolvePathGraphNodeId,
+  shouldUsePathSelectionGesture,
+} from '../lib/path-interaction';
 import { applyFocusOverlay } from '../lib/reducer-focus';
 import {
   matchesCategory as matchesCategoryFn,
@@ -65,6 +80,7 @@ import { SigmaFocusLabel } from './SigmaFocusLabel';
 import { SigmaEdgeTooltip, type SigmaEdgeTooltipData } from './SigmaEdgeTooltip';
 import { SigmaMinimap } from './SigmaMinimap';
 import { SigmaNodeTooltip, type SigmaNodeTooltipData } from './SigmaNodeTooltip';
+import { copyText } from '@/shared/lib/copy-text';
 
 const POSITION_STORAGE_KEY = 'demo:sigma-node-positions:v1';
 
@@ -227,6 +243,16 @@ interface SigmaTopologyProps {
    * 않게 한다.
    */
   showOntologyNodes?: boolean;
+  /** true면 Path analysis mode용 primer를 그래프 위에 표시한다. */
+  pathWorkflowActive?: boolean;
+  pathSelection?: {
+    sourceSlug: string | null;
+    targetSlug: string | null;
+  } | null;
+  onPathSelectionChange?: (selection: {
+    sourceSlug: string | null;
+    targetSlug: string | null;
+  }) => void;
   className?: string;
 }
 
@@ -250,6 +276,9 @@ function SigmaTopologyImpl({
   minimal = false,
   stripNamePrefix,
   showOntologyNodes = false,
+  pathWorkflowActive = false,
+  pathSelection = null,
+  onPathSelectionChange,
   className,
 }: SigmaTopologyProps) {
   const t = useTranslations('topologyWidgets.sigma');
@@ -265,11 +294,20 @@ function SigmaTopologyImpl({
   const depthLimitRef = useRef<number | null | undefined>(depthLimit);
   const searchQueryRef = useRef<string | undefined>(searchQuery);
   const hubsOnlyRef = useRef<boolean>(hubsOnly ?? false);
+  const pathWorkflowActiveRef = useRef(pathWorkflowActive);
+  const pathSelectionRef = useRef(pathSelection);
+  const onPathSelectionChangeRef = useSyncedCallbackRef(onPathSelectionChange);
   useEffect(() => {
     hubsOnlyRef.current = hubsOnly ?? false;
     // toggle 즉시 반영
     sigmaRef.current?.refresh();
   }, [hubsOnly]);
+  useEffect(() => {
+    pathWorkflowActiveRef.current = pathWorkflowActive;
+  }, [pathWorkflowActive]);
+  useEffect(() => {
+    pathSelectionRef.current = pathSelection;
+  }, [pathSelection]);
   // overlay 플래그들은 reducer closure 안에서 매 프레임 읽히므로 ref 로.
   // 기본값: recentPulse on (prop 미지정 시에도 기존 동작 유지), 나머지 off.
   const overlaysRef = useRef<SigmaOverlays>({
@@ -293,6 +331,7 @@ function SigmaTopologyImpl({
     overlays?.auditHighlight,
   ]);
 
+  const { insight: ontologyInsight } = useOntologyInsight();
   // audit overlay 용 slug 집합. overlay 가 off 인 동안은 빈 Set 로 cheap.
   // 위의 AUDIT_STALE_DAYS_THRESHOLD / AUDIT_PROMOTION_MIN_FAN_IN 임계값
   // 사용 — stale 노드 / orphan / promotion 후보 3 종을 한 번에 분류.
@@ -305,21 +344,38 @@ function SigmaTopologyImpl({
       };
     }
     const now = new Date();
+    const ontologySignals =
+      showOntologyNodes && ontologyInsight
+        ? buildOntologyHealthSignals(ontologyInsight.nodes, ontologyInsight.edges, {
+            now,
+            staleDaysThreshold: AUDIT_STALE_DAYS_THRESHOLD,
+            promotionMinFanIn: AUDIT_PROMOTION_MIN_FAN_IN,
+          })
+        : { stale: [], orphan: [], promotion: [] };
     return {
       stale: new Set(
-        detectStaleProjects(projects, {
-          now,
-          daysThreshold: AUDIT_STALE_DAYS_THRESHOLD,
-        }).map((p) => p.slug),
+        [
+          ...detectStaleProjects(projects, {
+            now,
+            daysThreshold: AUDIT_STALE_DAYS_THRESHOLD,
+          }).map((p) => p.slug),
+          ...ontologySignals.stale.map((node) => node.slug),
+        ],
       ),
-      orphan: new Set(detectOrphanProjects(projects).map((p) => p.slug)),
+      orphan: new Set([
+        ...detectOrphanProjects(projects).map((p) => p.slug),
+        ...ontologySignals.orphan.map((node) => node.slug),
+      ]),
       promotion: new Set(
-        detectPromotionCandidates(projects, {
-          minFanIn: AUDIT_PROMOTION_MIN_FAN_IN,
-        }).map((p) => p.slug),
+        [
+          ...detectPromotionCandidates(projects, {
+            minFanIn: AUDIT_PROMOTION_MIN_FAN_IN,
+          }).map((p) => p.slug),
+          ...ontologySignals.promotion.map((node) => node.slug),
+        ],
       ),
     };
-  }, [overlays?.auditHighlight, projects]);
+  }, [overlays?.auditHighlight, projects, showOntologyNodes, ontologyInsight]);
   const auditSetsRef = useRef(auditSets);
   useEffect(() => {
     auditSetsRef.current = auditSets;
@@ -404,6 +460,12 @@ function SigmaTopologyImpl({
   // 경로 찾기 결과 노드 체인. 완성 시 set, 일반 클릭/Esc 로 clear.
   // 상단 배너에서 "A → B → C (N hop)" 표기 + 해제 버튼용.
   const [pathResultSlugs, setPathResultSlugs] = useState<string[]>([]);
+  const [pathCopied, setPathCopied] = useState(false);
+  const [pathMcpCopied, setPathMcpCopied] = useState(false);
+  const [pathRelationPreflightCopied, setPathRelationPreflightCopied] = useState(false);
+  const [pathExplainRelationCopied, setPathExplainRelationCopied] = useState(false);
+  const [pathAllPathsPlanCopied, setPathAllPathsPlanCopied] = useState(false);
+  const [pathAllPathsCopied, setPathAllPathsCopied] = useState(false);
   // 콜백 refs — HomePage가 매 렌더마다 새 함수를 넘기면 effect가 재실행돼서
   // renderer가 kill/recreate되면서 클릭이 먹지 않는 문제를 막는다.
   const onSelectProjectRef = useSyncedCallbackRef(onSelectProject);
@@ -426,7 +488,6 @@ function SigmaTopologyImpl({
   // 메타 kind 제외 (4 kind: domain / capability / element / unknown).
   // ontology 노드 0 인 경우 module-scope EMPTY 로 짧게 short-circuit — 매 render
   // 새 Map 생성 회피.
-  const { insight: ontologyInsight } = useOntologyInsight();
   const ontologyCountsBySlug = useMemo(() => {
     if (!ontologyInsight || ontologyInsight.nodes.length === 0) {
       return EMPTY_ONTOLOGY_COUNTS;
@@ -526,6 +587,131 @@ function SigmaTopologyImpl({
     hasAnyRecentRef.current = anyRecent;
   }, [graph]);
 
+  const pathRelationSteps = useMemo(
+    () =>
+      buildPathRelationSteps({
+        slugs: pathResultSlugs,
+        getRelation: (from, to) => {
+          const edgeId = graph.edge(from, to) ?? graph.edge(to, from);
+          if (!edgeId) return null;
+          const attrs = graph.getEdgeAttributes(edgeId);
+          return attrs.relationType ?? attrs.kind ?? null;
+        },
+      }),
+    [graph, pathResultSlugs],
+  );
+
+  const pathRelationPreflight = useMemo(() => {
+    const sourceSlug = pathResultSlugs[0];
+    const targetSlug = pathResultSlugs[pathResultSlugs.length - 1];
+    if (!sourceSlug || !targetSlug || pathResultSlugs.length < 2) return null;
+    return {
+      type: inferPathRelationPreflightType(sourceSlug, targetSlug),
+      reason: formatPathRelationPreflightReason(sourceSlug, targetSlug),
+    };
+  }, [pathResultSlugs]);
+
+  const copyPathEvidence = useCallback(async () => {
+    const postWriteSyncPacket = formatAgentPostChangeSyncPacket();
+    const text = formatPathEvidenceBrief({
+      slugs: pathResultSlugs,
+      steps: pathRelationSteps,
+      getLabel: (slug) =>
+        graph.hasNode(slug)
+          ? (graph.getNodeAttribute(slug, 'label') as string)
+          : slug,
+        labels: {
+          title: t('pathEvidenceTitle'),
+          hops: t('pathEvidenceHops'),
+          source: t('pathEvidenceSource'),
+          target: t('pathEvidenceTarget'),
+          route: t('pathEvidenceRoute'),
+          slugs: t('pathEvidenceSlugs'),
+          url: t('pathEvidenceUrl'),
+          sourceOntologyUrl: t('pathEvidenceSourceOntologyUrl'),
+          targetOntologyUrl: t('pathEvidenceTargetOntologyUrl'),
+          sourceBuilderUrl: t('pathEvidenceSourceBuilderUrl'),
+          targetBuilderUrl: t('pathEvidenceTargetBuilderUrl'),
+          cliCheck: t('pathEvidenceCliCheck'),
+          mcpCheck: t('pathEvidenceMcpCheck'),
+          relationPreflightReason: t('pathEvidenceRelationPreflightReason'),
+          relationPreflightCliCheck: t('pathEvidenceRelationPreflightCliCheck'),
+          relationPreflightMcpCheck: t('pathEvidenceRelationPreflightMcpCheck'),
+          explainRelationCliCheck: t('pathEvidenceExplainRelationCliCheck'),
+          explainRelationMcpCheck: t('pathEvidenceExplainRelationMcpCheck'),
+          traversalCompleteness: t('pathEvidenceTraversalCompleteness'),
+          traversalCompletenessPolicy: t('pathEvidenceTraversalCompletenessPolicy'),
+          allPathsCliCheck: t('pathEvidenceAllPathsCliCheck'),
+          allPathsPlanMcpCheck: t('pathEvidenceAllPathsPlanMcpCheck'),
+          allPathsMcpCheck: t('pathEvidenceAllPathsMcpCheck'),
+          allPathsCopyInstruction: t('pathEvidenceAllPathsCopyInstruction'),
+          postWriteSyncGate: t('pathEvidencePostWriteSyncGate'),
+        },
+        url: typeof window === 'undefined' ? null : window.location.href,
+        syncGatePacket: postWriteSyncPacket,
+      });
+    const ok = await copyText(text);
+    if (!ok) return;
+    setPathCopied(true);
+    window.setTimeout(() => setPathCopied(false), 1600);
+  }, [graph, pathRelationSteps, pathResultSlugs, t]);
+
+  const copyPathMcpCheck = useCallback(async () => {
+    const sourceSlug = pathResultSlugs[0];
+    const targetSlug = pathResultSlugs[pathResultSlugs.length - 1];
+    if (!sourceSlug || !targetSlug) return;
+    const ok = await copyText(formatPathMcpCheck(sourceSlug, targetSlug));
+    if (!ok) return;
+    setPathMcpCopied(true);
+    window.setTimeout(() => setPathMcpCopied(false), 1600);
+  }, [pathResultSlugs]);
+
+  const copyPathRelationPreflightCheck = useCallback(async () => {
+    const sourceSlug = pathResultSlugs[0];
+    const targetSlug = pathResultSlugs[pathResultSlugs.length - 1];
+    if (!sourceSlug || !targetSlug) return;
+    const ok = await copyText(
+      formatPathRelationPreflightMcpCheck(sourceSlug, targetSlug),
+    );
+    if (!ok) return;
+    setPathRelationPreflightCopied(true);
+    window.setTimeout(() => setPathRelationPreflightCopied(false), 1600);
+  }, [pathResultSlugs]);
+
+  const copyPathExplainRelationCheck = useCallback(async () => {
+    const sourceSlug = pathResultSlugs[0];
+    const targetSlug = pathResultSlugs[pathResultSlugs.length - 1];
+    if (!sourceSlug || !targetSlug) return;
+    const ok = await copyText(
+      formatPathExplainRelationMcpCheck(sourceSlug, targetSlug),
+    );
+    if (!ok) return;
+    setPathExplainRelationCopied(true);
+    window.setTimeout(() => setPathExplainRelationCopied(false), 1600);
+  }, [pathResultSlugs]);
+
+  const copyPathAllPathsPlanCheck = useCallback(async () => {
+    const sourceSlug = pathResultSlugs[0];
+    const targetSlug = pathResultSlugs[pathResultSlugs.length - 1];
+    if (!sourceSlug || !targetSlug) return;
+    const ok = await copyText(
+      formatPathAllPathsPlanMcpCheck(sourceSlug, targetSlug),
+    );
+    if (!ok) return;
+    setPathAllPathsPlanCopied(true);
+    window.setTimeout(() => setPathAllPathsPlanCopied(false), 1600);
+  }, [pathResultSlugs]);
+
+  const copyPathAllPathsCheck = useCallback(async () => {
+    const sourceSlug = pathResultSlugs[0];
+    const targetSlug = pathResultSlugs[pathResultSlugs.length - 1];
+    if (!sourceSlug || !targetSlug) return;
+    const ok = await copyText(formatPathAllPathsMcpCheck(sourceSlug, targetSlug));
+    if (!ok) return;
+    setPathAllPathsCopied(true);
+    window.setTimeout(() => setPathAllPathsCopied(false), 1600);
+  }, [pathResultSlugs]);
+
   useEffect(() => {
     if (!containerRef.current) return;
     const renderer = createSigma(graph, containerRef.current, minimal);
@@ -598,6 +784,55 @@ function SigmaTopologyImpl({
     let pathAnchor: string | null = null;
     const pathNodes = new Set<string>();
     const pathEdgeSet = new Set<string>();
+    const clearPathState = () => {
+      pathAnchor = null;
+      setPathAnchorSlug(null);
+      setPathCopied(false);
+      setPathMcpCopied(false);
+      setPathRelationPreflightCopied(false);
+      setPathAllPathsPlanCopied(false);
+      setPathAllPathsCopied(false);
+      setPathResultSlugs([]);
+      pathNodes.clear();
+      pathEdgeSet.clear();
+    };
+    const applyPathSelection = (
+      selection: {
+        sourceSlug: string | null;
+        targetSlug: string | null;
+      } | null,
+    ) => {
+      clearPathState();
+      const source = resolvePathGraphNodeId(selection?.sourceSlug, (nodeId) =>
+        graph.hasNode(nodeId),
+      );
+      if (!source) return;
+      pathAnchor = source;
+      pathNodes.add(source);
+      const target = resolvePathGraphNodeId(selection?.targetSlug, (nodeId) =>
+        graph.hasNode(nodeId),
+      );
+      if (!target || target === source) {
+        setPathAnchorSlug(source);
+        return;
+      }
+      const path = shortestPath(graph, source, target);
+      if (!path) {
+        setPathAnchorSlug(source);
+        return;
+      }
+      pathNodes.clear();
+      for (const n of path) pathNodes.add(n);
+      for (let i = 0; i < path.length - 1; i += 1) {
+        const eId =
+          graph.edge(path[i], path[i + 1]) ??
+          graph.edge(path[i + 1], path[i]);
+        if (eId) pathEdgeSet.add(eId);
+      }
+      pathAnchor = null;
+      setPathAnchorSlug(null);
+      setPathResultSlugs(path);
+    };
 
     // 검색 / 카테고리 / depth 필터는 ../lib/reducer-filter 의 pure 함수
     // (A3-2 추출). caller 가 ref 값 추출해 넘김.
@@ -924,17 +1159,36 @@ function SigmaTopologyImpl({
         event.original.stopPropagation();
         return;
       }
-      // Shift+클릭: 경로 찾기. 첫 클릭은 시작 노드 고정, 둘째 클릭은 최단 경로
-      // 하이라이트. Esc 로 해제.
+      // Path mode 또는 Shift+클릭: 경로 찾기. 첫 클릭은 시작 노드 고정,
+      // 둘째 클릭은 최단 경로 하이라이트. Esc 로 해제. Path mode 에서는
+      // 일반 클릭만으로 source/target 을 고를 수 있어 hidden shortcut 이
+      // 아니라 명시적 analysis workflow 로 동작한다.
       const shiftKey =
         event.original instanceof MouseEvent ? event.original.shiftKey : false;
-      if (shiftKey) {
+      const pathGesture = shouldUsePathSelectionGesture({
+        pathWorkflowActive: pathWorkflowActiveRef.current,
+        shiftKey,
+      });
+      if (pathGesture) {
+        if (pathWorkflowActiveRef.current) {
+          onSelectProjectRef.current?.(node);
+        }
         if (!pathAnchor || pathAnchor === node) {
           pathAnchor = node;
           setPathAnchorSlug(node);
+          setPathCopied(false);
+          setPathMcpCopied(false);
+          setPathRelationPreflightCopied(false);
+          setPathAllPathsPlanCopied(false);
+          setPathAllPathsCopied(false);
+          setPathResultSlugs([]);
           pathNodes.clear();
           pathEdgeSet.clear();
           pathNodes.add(node);
+          onPathSelectionChangeRef.current?.({
+            sourceSlug: node,
+            targetSlug: null,
+          });
           renderer.refresh();
           return;
         }
@@ -949,9 +1203,27 @@ function SigmaTopologyImpl({
               graph.edge(path[i + 1], path[i]);
             if (eId) pathEdgeSet.add(eId);
           }
+          setPathCopied(false);
+          setPathMcpCopied(false);
+          setPathRelationPreflightCopied(false);
+          setPathAllPathsPlanCopied(false);
+          setPathAllPathsCopied(false);
           setPathResultSlugs(path);
+          onPathSelectionChangeRef.current?.({
+            sourceSlug: pathAnchor,
+            targetSlug: node,
+          });
         } else {
+          setPathCopied(false);
+          setPathMcpCopied(false);
+          setPathRelationPreflightCopied(false);
+          setPathAllPathsPlanCopied(false);
+          setPathAllPathsCopied(false);
           setPathResultSlugs([]);
+          onPathSelectionChangeRef.current?.({
+            sourceSlug: null,
+            targetSlug: null,
+          });
         }
         pathAnchor = null;
         setPathAnchorSlug(null);
@@ -960,21 +1232,21 @@ function SigmaTopologyImpl({
       }
       // 일반 클릭: 경로 결과가 떠 있으면 먼저 해제.
       if (pathNodes.size > 0 || pathAnchor) {
-        pathAnchor = null;
-        setPathAnchorSlug(null);
-        setPathResultSlugs([]);
-        pathNodes.clear();
-        pathEdgeSet.clear();
+        clearPathState();
+        onPathSelectionChangeRef.current?.({
+          sourceSlug: null,
+          targetSlug: null,
+        });
         renderer.refresh();
       }
       onSelectProjectRef.current?.(node);
     });
     pathClearRef.current = () => {
-      pathAnchor = null;
-      setPathAnchorSlug(null);
-      setPathResultSlugs([]);
-      pathNodes.clear();
-      pathEdgeSet.clear();
+      clearPathState();
+      onPathSelectionChangeRef.current?.({
+        sourceSlug: null,
+        targetSlug: null,
+      });
       renderer.refresh();
     };
     renderer.on('rightClickNode', ({ node, event }) => {
@@ -1068,6 +1340,19 @@ function SigmaTopologyImpl({
 
     sigmaRef.current = renderer;
     setSigmaInstance(renderer);
+    if (pathWorkflowActiveRef.current) {
+      queueMicrotask(() => {
+        applyPathSelection(pathSelectionRef.current);
+        try {
+          renderer.refresh();
+        } catch {
+          // Sigma can still be finalizing its WebGL node programs during the
+          // first restored-path tick. The DOM evidence banner is already
+          // restored; the next normal Sigma render will pick up the reducer
+          // state without surfacing a runtime error to the user.
+        }
+      });
+    }
     rendererRefreshNeighbors.current = () => {
       refreshNeighbors();
       renderer.refresh();
@@ -1564,47 +1849,167 @@ function SigmaTopologyImpl({
       {/* 경로 찾기 결과 배너 — 두 노드 체인 + hop 수 노출. 노드 이름 click
           으로 focus 이동. path anchor 진행 배너가 아직 있으면 결과가 우선. */}
       {pathResultSlugs.length >= 2 && !pathAnchorSlug ? (
-        <div className="pointer-events-auto absolute left-1/2 top-[96px] z-30 flex max-w-[560px] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.4)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)]">
-          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
-            Path · {pathResultSlugs.length - 1} hop
-          </span>
-          <div className="flex min-w-0 flex-1 items-center gap-1 overflow-hidden">
-            {pathResultSlugs.map((slug, idx) => {
-              const label = graph.hasNode(slug)
-                ? (graph.getNodeAttribute(slug, 'label') as string)
-                : slug;
-              return (
-                <span key={`${slug}-${idx}`} className="flex min-w-0 items-center gap-1">
-                  {idx > 0 ? (
-                    <span className="text-[color:var(--color-text-quaternary)]">→</span>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => onSelectProjectRef.current?.(slug)}
-                    className="truncate rounded-sm px-1 py-0.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.12)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
-                    title={label}
-                  >
-                    {label}
-                  </button>
-                </span>
-              );
-            })}
+        <div className="pointer-events-auto absolute left-1/2 top-[200px] z-30 flex max-w-[min(760px,calc(100vw-32px))] -translate-x-1/2 flex-col gap-2 rounded-lg border border-[color:rgba(139,151,255,0.4)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[96px]">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
+              Path · {pathResultSlugs.length - 1} hop
+            </span>
+            <div className="flex min-w-[220px] flex-1 items-center gap-1 overflow-hidden">
+              {pathResultSlugs.map((slug, idx) => {
+                const label = graph.hasNode(slug)
+                  ? (graph.getNodeAttribute(slug, 'label') as string)
+                  : slug;
+                const relation = idx > 0 ? pathRelationSteps[idx - 1]?.relation : null;
+                return (
+                  <span key={`${slug}-${idx}`} className="flex min-w-0 items-center gap-1">
+                    {idx > 0 ? (
+                      <>
+                        <span className="max-w-[96px] truncate rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
+                          {relation}
+                        </span>
+                        <span className="text-[color:var(--color-text-quaternary)]">→</span>
+                      </>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => onSelectProjectRef.current?.(slug)}
+                      className="truncate rounded-sm px-1 py-0.5 text-[12px] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.12)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+                      title={label}
+                    >
+                      {label}
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+            <button
+              type="button"
+              onClick={copyPathEvidence}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:rgba(139,151,255,0.14)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+              aria-label={pathCopied ? t('pathCopiedAriaLabel') : t('pathCopyAriaLabel')}
+            >
+              {pathCopied ? <Check size={11} /> : <Clipboard size={11} />}
+              <span>{pathCopied ? t('pathCopied') : t('pathCopy')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={copyPathMcpCheck}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+              aria-label={pathMcpCopied ? t('pathMcpCopiedAriaLabel') : t('pathMcpCopyAriaLabel')}
+            >
+              {pathMcpCopied ? <Check size={11} /> : <Clipboard size={11} />}
+              <span>{pathMcpCopied ? t('pathMcpCopied') : t('pathMcpCopy')}</span>
+            </button>
+            <button
+              type="button"
+              onClick={copyPathRelationPreflightCheck}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+              aria-label={
+                pathRelationPreflightCopied
+                  ? t('pathRelationPreflightCopiedAriaLabel')
+                  : t('pathRelationPreflightCopyAriaLabel')
+              }
+            >
+              {pathRelationPreflightCopied ? <Check size={11} /> : <Clipboard size={11} />}
+              <span>
+                {pathRelationPreflightCopied
+                  ? t('pathRelationPreflightCopied')
+                  : t('pathRelationPreflightCopy')}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={copyPathExplainRelationCheck}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+              aria-label={
+                pathExplainRelationCopied
+                  ? t('pathExplainRelationCopiedAriaLabel')
+                  : t('pathExplainRelationCopyAriaLabel')
+              }
+            >
+              {pathExplainRelationCopied ? <Check size={11} /> : <Clipboard size={11} />}
+              <span>
+                {pathExplainRelationCopied
+                  ? t('pathExplainRelationCopied')
+                  : t('pathExplainRelationCopy')}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={copyPathAllPathsPlanCheck}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+              aria-label={
+                pathAllPathsPlanCopied
+                  ? t('pathAllPathsPlanCopiedAriaLabel')
+                  : t('pathAllPathsPlanCopyAriaLabel')
+              }
+            >
+              {pathAllPathsPlanCopied ? <Check size={11} /> : <Clipboard size={11} />}
+              <span>
+                {pathAllPathsPlanCopied
+                  ? t('pathAllPathsPlanCopied')
+                  : t('pathAllPathsPlanCopy')}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={copyPathAllPathsCheck}
+              className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[color:rgba(139,151,255,0.30)] bg-[color:rgba(139,151,255,0.10)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-secondary)] transition-colors hover:bg-[color:rgba(139,151,255,0.16)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+              aria-label={
+                pathAllPathsCopied
+                  ? t('pathAllPathsCopiedAriaLabel')
+                  : t('pathAllPathsCopyAriaLabel')
+              }
+            >
+              {pathAllPathsCopied ? <Check size={11} /> : <Clipboard size={11} />}
+              <span>
+                {pathAllPathsCopied
+                  ? t('pathAllPathsCopied')
+                  : t('pathAllPathsCopy')}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => pathClearRef.current?.()}
+              className="shrink-0 rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+              aria-label={t('pathClearAriaLabel')}
+            >
+              Esc
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => pathClearRef.current?.()}
-            className="shrink-0 rounded-full border border-[color:var(--color-divider)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
-            aria-label={t('pathClearAriaLabel')}
-          >
-            Esc
-          </button>
+          {pathRelationPreflight ? (
+            <div className="flex min-w-0 flex-col gap-1.5 border-t border-[color:rgba(139,151,255,0.16)] pt-2 font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <span className="uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                  {t('pathRelationPreflightReasonLabel')}
+                </span>
+                <span className="rounded-sm border border-[color:rgba(139,151,255,0.24)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 uppercase tracking-[0.10em] text-[color:rgba(139,151,255,0.95)]">
+                  {pathRelationPreflight.type}
+                </span>
+                <span className="min-w-[220px] flex-1 break-words leading-4">
+                  {pathRelationPreflight.reason}
+                </span>
+              </div>
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                <span className="uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                  {t('pathTraversalCompletenessLabel')}
+                </span>
+                <span className="rounded-sm border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 uppercase tracking-[0.10em] text-[color:rgba(139,151,255,0.88)]">
+                  all_paths
+                </span>
+                <span className="min-w-[220px] flex-1 break-words leading-4">
+                  {t('pathTraversalCompletenessBody')}
+                </span>
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
 
       {/* 경로 찾기 진행 배너 — Shift+클릭 첫 노드 고정 시 노출. 두 번째 노드를
           Shift+클릭하거나 Esc 로 해제 안내. */}
       {pathAnchorSlug ? (
-        <div className="pointer-events-auto absolute left-1/2 top-[96px] z-30 flex max-w-[440px] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)]">
+        <div className="pointer-events-auto absolute left-1/2 top-[200px] z-30 flex max-w-[440px] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.38)] bg-[color:var(--color-panel)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] md:top-[96px]">
           <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
             Path
           </span>
@@ -1626,6 +2031,17 @@ function SigmaTopologyImpl({
           >
             Esc
           </button>
+        </div>
+      ) : null}
+
+      {!minimal && pathWorkflowActive && !pathAnchorSlug && pathResultSlugs.length < 2 ? (
+        <div className="pointer-events-auto absolute left-1/2 top-[200px] z-30 flex max-w-[520px] -translate-x-1/2 items-center gap-3 rounded-full border border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(14,16,22,0.94)] px-4 py-2 text-[12px] text-[color:var(--color-text-primary)] shadow-[0_12px_28px_rgba(0,0,0,0.42)] md:top-[96px]">
+          <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.95)]">
+            {t('pathStartTitle')}
+          </span>
+          <span className="min-w-0 truncate text-[color:var(--color-text-tertiary)]">
+            {t('pathStartBody')}
+          </span>
         </div>
       ) : null}
 
@@ -1675,7 +2091,7 @@ function SigmaTopologyImpl({
             </span>
           </>
         ) : null}
-        {pathAnchorSlug ? (
+        {pathWorkflowActive || pathAnchorSlug ? (
           <>
             <span className="h-2 w-px bg-[color:rgba(139,151,255,0.32)]" />
             <span className="rounded-sm border border-[color:rgba(139,151,255,0.32)] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.95)]">

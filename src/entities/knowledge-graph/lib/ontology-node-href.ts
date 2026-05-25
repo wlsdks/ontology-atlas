@@ -1,3 +1,5 @@
+import type { KnowledgeGraphNode } from "../model";
+
 /**
  * Ontology view 의 노드 deeplink 빌더 — `/ontology/?node=<encoded-id>`.
  *
@@ -9,4 +11,34 @@
  */
 export function buildOntologyNodeHref(nodeId: string): string {
   return `/ontology/?node=${encodeURIComponent(nodeId)}`;
+}
+
+const KIND_TO_VAULT_FOLDER: Record<string, string> = {
+  domain: "domains",
+  capability: "capabilities",
+  element: "elements",
+};
+
+export function resolveOntologyBuilderNodeSlug(
+  node: KnowledgeGraphNode,
+): string {
+  const sourceSlug = node.evidenceIds[0]?.replace(/^ontology\//, "").trim();
+  if (sourceSlug) return sourceSlug;
+
+  if (node.id.includes("/")) return node.id;
+
+  const tail = node.id.split(":").slice(1).join(":").trim();
+  if (!tail) return node.id;
+  if (node.kind === "project") return tail;
+
+  const folder = KIND_TO_VAULT_FOLDER[node.kind];
+  return folder ? `${folder}/${tail}` : tail;
+}
+
+export function buildOntologyBuilderNodeHref(
+  node: KnowledgeGraphNode,
+): string {
+  return `/ontology/edit/?node=${encodeURIComponent(
+    resolveOntologyBuilderNodeSlug(node),
+  )}`;
 }

@@ -8,7 +8,7 @@ import {
 describe("parseHomeRouteState", () => {
   it("reads supported home query params", () => {
     const params = new URLSearchParams(
-      "p=iam&c=in-progress&hub=iam&impact=downstream&pulse=30d",
+      "p=iam&c=in-progress&hub=iam&impact=downstream&pulse=30d&mode=path&pathFrom=domain:views&pathTo=capability:topology-analysis-modes",
     );
 
     expect(parseHomeRouteState(params)).toEqual({
@@ -17,6 +17,9 @@ describe("parseHomeRouteState", () => {
       focusedHubSlug: "iam",
       impactMode: "downstream",
       pulseMode: "30d",
+      analysisMode: "path",
+      pathSourceSlug: "domain:views",
+      pathTargetSlug: "capability:topology-analysis-modes",
     });
   });
 
@@ -35,11 +38,44 @@ describe("applyHomeRouteState", () => {
       focusedHubSlug: "reactor",
       impactMode: "network",
       pulseMode: "7d",
+      analysisMode: "health",
+      pathSourceSlug: null,
+      pathTargetSlug: null,
     });
 
     expect(params.toString()).toBe(
-      "p=pick&c=planned&hub=reactor&impact=network&pulse=7d",
+      "p=pick&c=planned&hub=reactor&impact=network&pulse=7d&mode=health",
     );
+  });
+
+  it("serializes path endpoints only while Path mode is active", () => {
+    const params = applyHomeRouteState(new URLSearchParams(), {
+      selectedSlug: null,
+      activeCategory: null,
+      focusedHubSlug: null,
+      impactMode: "none",
+      pulseMode: "all",
+      analysisMode: "path",
+      pathSourceSlug: "domain:views",
+      pathTargetSlug: "capability:topology-analysis-modes",
+    });
+
+    expect(params.toString()).toBe(
+      "mode=path&pathFrom=domain%3Aviews&pathTo=capability%3Atopology-analysis-modes",
+    );
+
+    const hidden = applyHomeRouteState(params, {
+      selectedSlug: null,
+      activeCategory: null,
+      focusedHubSlug: null,
+      impactMode: "none",
+      pulseMode: "all",
+      analysisMode: "overview",
+      pathSourceSlug: "domain:views",
+      pathTargetSlug: "capability:topology-analysis-modes",
+    });
+
+    expect(hidden.toString()).toBe("");
   });
 
   it("drops params when values match defaults", () => {
