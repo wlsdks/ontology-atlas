@@ -452,22 +452,30 @@ if (
   /first public release is still waiting on PR review and Apple signing gates/.test(
     enMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
+  /Before the first DMG appears/.test(enMessages.download?.releaseStatusTitle ?? "") &&
   /PR #274/.test(enMessages.download?.releaseStatusPr ?? "") &&
+  /before v0\.1\.0 can ship/.test(enMessages.download?.releaseStatusPr ?? "") &&
   /Apple Developer ID signing and notarization secrets/.test(
     enMessages.download?.releaseStatusSecrets ?? "",
   ) &&
+  /before release/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
   /v0\.1\.0 GitHub Release/.test(enMessages.download?.releaseStatusRelease ?? "") &&
+  /source of truth/.test(enMessages.download?.releaseStatusRelease ?? "") &&
   /첫 public release 가 PR review 와 Apple signing gate/.test(
     koMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
+  /첫 DMG 가 보이기 전 체크리스트/.test(koMessages.download?.releaseStatusTitle ?? "") &&
   /PR #274/.test(koMessages.download?.releaseStatusPr ?? "") &&
+  /v0\.1\.0 배포 전/.test(koMessages.download?.releaseStatusPr ?? "") &&
   /Apple Developer ID/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
-  /v0\.1\.0 GitHub Release/.test(koMessages.download?.releaseStatusRelease ?? "")
+  /릴리스 전/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
+  /v0\.1\.0 GitHub Release/.test(koMessages.download?.releaseStatusRelease ?? "") &&
+  /진실원/.test(koMessages.download?.releaseStatusRelease ?? "")
 ) {
-  pass("hosted download page names current PR, Apple secret, and release blockers without routing into the web workbench");
+  pass("hosted download page names first-release PR, Apple secret, and GitHub Release gates without stale current-blocker copy");
 } else {
   fail(
-    "hosted download copy must name the current PR review, Apple signing secret, and v0.1.0 Release blockers while keeping ontology work inside the installed app",
+    "hosted download copy must condition first-release PR review, Apple signing secret, and v0.1.0 Release gates without stale current-blocker wording",
   );
 }
 

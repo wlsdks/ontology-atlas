@@ -49,13 +49,15 @@ describe('DownloadPage', () => {
     expect(
       screen.getByText(/first public release is still waiting on PR review and Apple signing gates/i),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Current release blockers/i)).toBeInTheDocument();
-    expect(screen.getByText(/PR #274 must be reviewed and merged/i)).toBeInTheDocument();
+    expect(screen.getByText(/Before the first DMG appears/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/Apple Developer ID signing and notarization secrets must be configured/i),
+      screen.getByText(/PR #274 must be reviewed and merged before v0\.1\.0 can ship/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/v0\.1\.0 GitHub Release must publish verified Apple Silicon and Intel DMGs/i),
+      screen.getByText(/Apple Developer ID signing and notarization secrets must be configured before release/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/v0\.1\.0 GitHub Release is the source of truth for verified Apple Silicon and Intel DMGs/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/hosted site does not open or edit vault folders/i)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
