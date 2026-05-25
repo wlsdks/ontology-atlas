@@ -81,6 +81,14 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ pull request CI uses Node 24-compatible checkout, pnpm, and setup-node actions/,
+  );
+  assert.match(
+    result.stdout,
+    /✓ macOS release workflow uses Node 24-compatible GitHub action majors/,
+  );
+  assert.match(
+    result.stdout,
     /✓ tag release workflow builds Apple Silicon and Intel DMGs on Node 24, requires a clean release slot, verifies draft assets, then publishes and re-verifies public stable assets/,
   );
   assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned public releases/);

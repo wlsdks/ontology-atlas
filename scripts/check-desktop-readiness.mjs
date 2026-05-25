@@ -49,6 +49,7 @@ const vaultToolsMenu = readText("src/widgets/docs-vault/ui/VaultToolsMenu.tsx");
 const localVaultPicker = readText("src/features/docs-vault-local/ui/LocalVaultPicker.tsx");
 const localFsHandleStore = readText("src/entities/local-fs-handle/api/store.ts");
 const localVaultHook = readText("src/features/docs-vault-local/model/use-local-vault.ts");
+const ciWorkflow = readText(".github/workflows/ci.yml");
 const releaseWorkflow = readText(".github/workflows/release-macos.yml");
 const downloadReleaseVerifier = readText("scripts/check-macos-download-release.mjs");
 const tauriConfigPath = path.join(root, "src-tauri", "tauri.conf.json");
@@ -300,6 +301,34 @@ if (
   pass("mobile bottom navigation is hidden on public marketing and download surfaces");
 } else {
   fail("BottomTabBar must hide on /download and on the public landing page until a local vault is loaded");
+}
+
+if (
+  /uses:\s*actions\/checkout@v6/.test(ciWorkflow) &&
+  /uses:\s*pnpm\/action-setup@v6/.test(ciWorkflow) &&
+  /uses:\s*actions\/setup-node@v6/.test(ciWorkflow) &&
+  /node-version:\s*24/.test(ciWorkflow)
+) {
+  pass("pull request CI uses Node 24-compatible checkout, pnpm, and setup-node actions");
+} else {
+  fail(
+    ".github/workflows/ci.yml must use Node 24-compatible actions/checkout@v6, pnpm/action-setup@v6, actions/setup-node@v6, and node-version 24",
+  );
+}
+
+if (
+  releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length === 2 &&
+  releaseWorkflow.match(/uses:\s*pnpm\/action-setup@v6/g)?.length === 2 &&
+  releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length === 2 &&
+  /uses:\s*actions\/upload-artifact@v7/.test(releaseWorkflow) &&
+  /uses:\s*actions\/download-artifact@v7/.test(releaseWorkflow) &&
+  /uses:\s*softprops\/action-gh-release@v3/.test(releaseWorkflow)
+) {
+  pass("macOS release workflow uses Node 24-compatible GitHub action majors");
+} else {
+  fail(
+    ".github/workflows/release-macos.yml must use Node 24-compatible action majors: actions/checkout@v6, pnpm/action-setup@v6, actions/setup-node@v6, actions/upload-artifact@v7, actions/download-artifact@v7, and softprops/action-gh-release@v3",
+  );
 }
 
 if (
