@@ -497,6 +497,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm desktop:release-preflight` \| Local pre-tag macOS release gate: readiness, docs-vault, checker tests, bridge tests, runtime doctor, CLI\/MCP handoff, build, route smoke, DMG, and install smoke \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-slot` \| Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-github` \| Operator-side GitHub release readiness check for gh auth, active release workflow, required Apple secret names, optional tag\/version alignment, and clean same-tag Release slot \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:release-status` \| Completion audit for PR review\/merge readiness, Apple release secret names, public stable Release state, and public DMG\/checksum download verification \|/);
     assert.match(checksDoc, /\| `pnpm test:desktop:bridge` \| WebView handle-shim tests plus Rust path-guard tests for the native vault bridge \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-secrets` \| Fail closed before tag release when any Apple signing or notarization secret is missing, blank, or structurally invalid \|/);
     assert.match(checksDoc, /\| `pnpm desktop:sign` \| Sign the built `\.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available \|/);

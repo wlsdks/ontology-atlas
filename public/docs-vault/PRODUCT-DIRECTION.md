@@ -260,6 +260,12 @@ page cannot show ambiguous macOS downloads.
 is the local pre-tag command for readiness, docs-vault freshness, desktop tests,
 runtime doctor, CLI/MCP handoff against `docs/ontology`, build, route smoke,
 DMG verification, and temporary install smoke before credentials are used. The
+post-release completion audit is
+`pnpm desktop:release-status -- --pr=<number> --tag=<tag>`: it does not publish
+anything, but it fails closed until PR review/merge readiness, Apple release
+secret names, public stable GitHub Release state, and public DMG/checksum
+download verification all pass. This is evidence for goal completion, not a
+substitute for publishing signed/notarized release assets.
 hosted landing page should now bias toward "Download macOS app"
 and product explanation, with the browser folder picker treated as a prototype
 fallback until public signed releases are uploaded.

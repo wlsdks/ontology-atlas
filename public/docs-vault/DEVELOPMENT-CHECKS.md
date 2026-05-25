@@ -179,6 +179,10 @@ runs desktop readiness, docs-vault freshness, desktop checker tests, native
 bridge tests, runtime doctor, `cli:mcp-verify` against `docs/ontology`, static
 build, packaged-route smoke, app/DMG build, app launch smoke,
 DMG mount/checksum smoke, and temporary install launch smoke;
+`pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the completion
+audit after PR/release work: it checks PR review/merge readiness, required
+Apple signing/notary secret names, public stable GitHub Release state, and
+public DMG/checksum download verification in one fail-closed pass;
 `pnpm desktop:dev` launches the Tauri shell for local prototype work, and
 `pnpm desktop:build:app` targets the macOS `.app`; release builds must first
 pass `pnpm desktop:release-secrets`, then run `pnpm desktop:sign` with a
@@ -287,6 +291,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
 | `pnpm desktop:release-github` | Operator-side GitHub release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, and clean same-tag Release slot |
+| `pnpm desktop:release-status` | Completion audit for PR review/merge readiness, Apple release secret names, public stable Release state, and public DMG/checksum download verification |
 | `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available |
 | `pnpm desktop:verify-dmg` | Mount and checksum smoke for the generated macOS DMG before GitHub Release upload |
@@ -551,6 +556,10 @@ pnpm desktop:verify-app
 pnpm desktop:verify-install
 pnpm desktop:notarize
 pnpm desktop:verify-release-dmg
+
+# Completion audit after PR review/merge, Apple secrets, tag workflow, and
+# public release publication are expected to be done:
+pnpm desktop:release-status -- --pr=274 --tag=v0.1.0
 ```
 
 For local unsigned smoke, `pnpm desktop:build` is the shortcut for

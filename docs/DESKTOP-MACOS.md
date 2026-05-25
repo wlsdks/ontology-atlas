@@ -58,6 +58,7 @@ pnpm desktop:verify-dmg
 pnpm desktop:verify-install
 pnpm desktop:release-preflight         # full local pre-tag gate
 pnpm desktop:release-github -- --tag=v0.1.0  # GitHub workflow + Apple secret-name gate
+pnpm desktop:release-status -- --pr=274 --tag=v0.1.0  # completion audit
 ```
 
 `desktop:check` verifies the static frontend and Tauri scaffold prerequisites
@@ -73,7 +74,7 @@ for a macOS prototype:
 - `docs-vault:check`, `cli:mcp-verify`, `desktop:doctor`, `desktop:dev`,
   `desktop:smoke`, `desktop:verify-app`, `desktop:build:app`,
   `desktop:build`, `desktop:release-tag`, `desktop:release-github`,
-  `desktop:sign`, `desktop:notarize`, and
+  `desktop:release-status`, `desktop:sign`, `desktop:notarize`, and
   `desktop:verify-dmg`, `desktop:verify-install` are available for packaging,
   app launch, local runtime diagnosis, packaged-route smoke, startup crash
   detection, signing, notarization/stapling, DMG mount/checksum verification,
@@ -272,6 +273,10 @@ release workflow is still on the macOS app PR branch and the Apple release
 secret list is still empty, so a tag push would fail before signing. Merge the
 PR first so GitHub sees `.github/workflows/release-macos.yml` on the default
 branch, then configure the Apple secrets.
+Use `pnpm desktop:release-status -- --pr=274 --tag=v0.1.0` as the completion
+audit before calling the macOS app goal done: it checks PR review/merge
+readiness, required Apple signing/notary secret names, public stable GitHub
+Release state, and then delegates to the public DMG/checksum download verifier.
 When it reports missing secrets, set each value through `gh secret set`, for
 example:
 

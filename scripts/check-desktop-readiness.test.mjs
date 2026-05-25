@@ -39,7 +39,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop checker tests cover the GitHub release operator gate/,
+    /✓ desktop checker tests cover the GitHub release operator and completion gates/,
   );
   assert.match(
     result.stdout,
@@ -111,6 +111,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(
     result.stdout,
     /✓ desktop GitHub release readiness gate checks workflow, Apple secret names, and release slot before tag push/,
+  );
+  assert.match(
+    result.stdout,
+    /✓ desktop release status gate audits PR readiness, Apple secrets, public release state, and download assets/,
   );
   assert.match(result.stdout, /✓ desktop signing script is available for release builds/);
   assert.match(result.stdout, /✓ desktop notarization script is available for release builds/);

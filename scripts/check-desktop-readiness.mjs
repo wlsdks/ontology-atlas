@@ -43,6 +43,7 @@ const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
 const releaseTagScript = readText("scripts/check-macos-release-tag.mjs");
 const releaseSlotScript = readText("scripts/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
+const releaseStatusScript = readText("scripts/check-macos-release-status.mjs");
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
 const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
 const vaultToolsMenu = readText("src/widgets/docs-vault/ui/VaultToolsMenu.tsx");
@@ -171,10 +172,13 @@ if (
   fail("package.json must expose test:desktop:bridge for the Tauri vault bridge contract");
 }
 
-if (pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-github.test.mjs")) {
-  pass("desktop checker tests cover the GitHub release operator gate");
+if (
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-github.test.mjs") &&
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-status.test.mjs")
+) {
+  pass("desktop checker tests cover the GitHub release operator and completion gates");
 } else {
-  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs so the macOS release operator gate stays covered");
+  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs and scripts/check-macos-release-status.test.mjs so the macOS release operator and completion gates stay covered");
 }
 
 if (
@@ -415,6 +419,21 @@ if (
 } else {
   fail(
     "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the release workflow, required Apple GitHub secret names, and same-tag release slot",
+  );
+}
+
+if (
+  pkg.scripts?.["desktop:release-status"] === "node scripts/check-macos-release-status.mjs" &&
+  releaseStatusScript.includes('"pr"') &&
+  releaseStatusScript.includes('"secret"') &&
+  releaseStatusScript.includes('"release"') &&
+  releaseStatusScript.includes("check-macos-download-release.mjs") &&
+  releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY")
+) {
+  pass("desktop release status gate audits PR readiness, Apple secrets, public release state, and download assets");
+} else {
+  fail(
+    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit PR readiness, Apple secret names, public release state, and public download assets",
   );
 }
 
