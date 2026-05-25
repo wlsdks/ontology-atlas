@@ -180,6 +180,13 @@ fits the local-first promise: the user installs the workbench on their own Mac,
 opens a vault folder from disk, and keeps the same markdown + MCP + CLI graph
 loop without visiting the hosted site.
 
+Quality bar: this must be desktop-grade, not a webview-shaped shortcut.
+Compare against Obsidian, Claude Desktop, and Codex Desktop for the basics:
+stable `.app` launch, trustworthy folder permission UX, recent-vault recall,
+clear local data location, command/agent setup visibility, offline operation,
+and a polished native-feeling window lifecycle. A weaker shell should remain an
+internal prototype, not a user-facing distribution promise.
+
 Recommended first slice:
 
 1. Keep the existing Next.js static export as the frontend payload.

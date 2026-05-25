@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T06:28:05.838Z",
+  "generatedAt": "2026-05-25T06:50:20.325Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3876,6 +3876,11 @@
         },
         {
           "depth": 2,
+          "text": "Product Quality Bar",
+          "slug": "product-quality-bar"
+        },
+        {
+          "depth": 2,
           "text": "Readiness Gate",
           "slug": "readiness-gate"
         },
@@ -3891,8 +3896,8 @@
         }
       ],
       "excerpt": "ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app should be a native shell around the same local markdown vault, not a backend, cloud sync layer, or second data store. Use Tauri first for the prototype. The web app already builds as a static export (next.config.ts keeps ",
-      "wordCount": 278,
-      "updatedAt": "2026-05-25T06:16:46.246Z",
+      "wordCount": 439,
+      "updatedAt": "2026-05-25T06:50:11.373Z",
       "linksOut": []
     },
     {
@@ -5115,9 +5120,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The first slice is a feasibility proof, not a second product architecture: wrap the existing Next.js static export in a Tauri shell, open the same local vault folder, render /docs, /ontology, /topology, and /ontol",
-      "wordCount": 193,
-      "updatedAt": "2026-05-25T06:21:16.812Z",
+      "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
+      "wordCount": 255,
+      "updatedAt": "2026-05-25T06:50:11.375Z",
       "linksOut": []
     },
     {
@@ -6617,8 +6622,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 2443,
-      "updatedAt": "2026-05-25T06:17:14.179Z",
+      "wordCount": 2501,
+      "updatedAt": "2026-05-25T06:50:11.374Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]

@@ -15,6 +15,13 @@ relates:
 `oh-my-ontology` should explore a macOS-first desktop app as a local install
 path over the same markdown vault.
 
+The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable
+native `.app`, trustworthy vault-folder permission UX, recent vault recall,
+clear local data location, offline operation, and visible Claude Code / Codex
+handoff checks. A thin hosted-site wrapper is not enough; if the desktop shell
+cannot make the local ontology workflow feel first-class, it should remain an
+internal prototype.
+
 The first slice is a feasibility proof, not a second product architecture:
 wrap the existing Next.js static export in a Tauri shell, open the same local
 vault folder, render `/docs`, `/ontology`, `/topology`, and `/ontology/edit`,
