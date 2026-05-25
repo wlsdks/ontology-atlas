@@ -15,7 +15,9 @@ vi.mock('@/shared/lib/idb-kv', () => ({
 import {
   CURRENT_LOCAL_FS_HANDLE_ID,
   deleteLocalFsHandle,
+  forgetRecentLocalFsHandle,
   getLocalFsHandle,
+  listRecentLocalFsHandles,
   putLocalFsHandle,
   touchLocalFsHandle,
 } from './store';
@@ -73,6 +75,7 @@ describe('local-fs-handle store', () => {
     const after = (await getLocalFsHandle())!;
     expect(after.createdAt).toBe(before.createdAt);
     expect(after.lastAccessedAt).toBeGreaterThan(before.lastAccessedAt);
+    expect((await listRecentLocalFsHandles())[0].lastAccessedAt).toBe(after.lastAccessedAt);
   });
 
   it('touch 는 record 가 없으면 no-op', async () => {
@@ -91,6 +94,9 @@ describe('local-fs-handle store', () => {
     expect(
       memory.get('docs-vault:fs-handle:current'),
     ).toBeDefined();
+    expect((await listRecentLocalFsHandles()).map((record) => record.name)).toEqual([
+      'OldVault',
+    ]);
   });
 
   it('마이그레이션은 한 번만 — 이후 read 는 record 직접', async () => {
@@ -118,5 +124,64 @@ describe('local-fs-handle store', () => {
     });
     expect((await getLocalFsHandle('current'))?.name).toBe('A');
     expect((await getLocalFsHandle('archive'))?.name).toBe('B');
+  });
+
+  it('최근 vault 목록은 lastAccessedAt 순서로 dedupe 하고 5개로 제한', async () => {
+    for (let i = 0; i < 6; i += 1) {
+      await putLocalFsHandle({
+        id: `vault-${i}`,
+        handle: fakeHandle(`Vault ${i}`),
+        name: `Vault ${i}`,
+        createdAt: i,
+        lastAccessedAt: i,
+      });
+    }
+    await putLocalFsHandle({
+      id: 'vault-2',
+      handle: fakeHandle('Vault 2'),
+      name: 'Vault 2',
+      createdAt: 2,
+      lastAccessedAt: 20,
+    });
+
+    expect((await listRecentLocalFsHandles()).map((record) => record.name)).toEqual([
+      'Vault 2',
+      'Vault 5',
+      'Vault 4',
+      'Vault 3',
+      'Vault 1',
+    ]);
+  });
+
+  it('최근 vault 항목을 identity 기준으로 제거한다', async () => {
+    const first: LocalFsHandleRecord = {
+      id: 'current',
+      handle: fakeHandle('Current'),
+      desktopRootPath: '/Users/jinan/vaults/current',
+      name: 'Current',
+      createdAt: 1,
+      lastAccessedAt: 1,
+    };
+    const second: LocalFsHandleRecord = {
+      id: 'archive',
+      handle: fakeHandle('Archive'),
+      desktopRootPath: '/Users/jinan/vaults/archive',
+      name: 'Archive',
+      createdAt: 2,
+      lastAccessedAt: 2,
+    };
+
+    await putLocalFsHandle(first);
+    await putLocalFsHandle(second);
+    await forgetRecentLocalFsHandle({
+      ...first,
+      id: 'different-current-id',
+      handle: fakeHandle('Current'),
+    });
+
+    expect((await listRecentLocalFsHandles()).map((record) => record.name)).toEqual([
+      'Archive',
+    ]);
+    expect((await getLocalFsHandle('current'))?.name).toBe('Current');
   });
 });

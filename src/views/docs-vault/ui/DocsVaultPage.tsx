@@ -34,6 +34,7 @@ import { VaultToolsMenu } from '@/widgets/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
+import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { Tooltip, useToast } from '@/shared/ui';
 // 추출된 page-local helpers.
@@ -147,7 +148,10 @@ function DocsVaultContent() {
   }, [setAdvancedOpen]);
   const [mobileTreeOpen, setMobileTreeOpen] = useState(false);
   const localVault = useLocalVault();
+  const localVaultStatus = localVault.status;
+  const openLocalVault = localVault.open;
   const toast = useToast();
+  const desktopIntentPickerOpenedRef = useRef(false);
 
   // R11 #16 step 5 — pinned/recent persistence 는 useDocsVaultPersistence hook
   // 에서 캡슐화. setter 들은 view 의 다양한 mutation 사이트 (delete/new-doc 등)
@@ -254,24 +258,35 @@ function DocsVaultContent() {
   // 로컬 볼트 state 가 unsupported 면 server 로 강제 복귀 (토글 누른 후
   // 브라우저 교체한 경우 대비).
   useEffect(() => {
-    if (source === 'local' && localVault.status === 'unsupported') {
+    if (source === 'local' && localVaultStatus === 'unsupported') {
       scheduleStateSync(() => {
         setSource('server');
         storeSource('server');
       });
     }
-  }, [source, localVault.status]);
+  }, [source, localVaultStatus]);
 
   useEffect(() => {
     if (
       source === 'local' &&
-      localVault.status === 'loaded' &&
+      localVaultStatus === 'loaded' &&
       localIntentAutoOpenRef.current
     ) {
       localIntentAutoOpenRef.current = false;
       setAdvancedOpen(false);
     }
-  }, [source, localVault.status, setAdvancedOpen]);
+  }, [source, localVaultStatus, setAdvancedOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (desktopIntentPickerOpenedRef.current) return;
+    if (!isTauriVaultRuntime()) return;
+    const intent = new URLSearchParams(window.location.search).get('intent');
+    if (intent !== 'local') return;
+    if (source !== 'local' || localVaultStatus !== 'idle') return;
+    desktopIntentPickerOpenedRef.current = true;
+    void openLocalVault();
+  }, [source, localVaultStatus, openLocalVault]);
 
   const handleSourceChange = useCallback((next: Source) => {
     setSource(next);

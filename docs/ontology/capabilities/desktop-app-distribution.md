@@ -3,13 +3,8 @@ slug: desktop-app-distribution
 kind: capability
 title: macOS Desktop App Distribution
 domain: vault-local-first
-dependencies:
-  - capabilities/agent-config-onboarding
-  - capabilities/frontmatter-to-ontology
-  - capabilities/vault-live-updates
-relates:
-  - domains/ai-agent-partner
-  - domains/views
+dependencies: [capabilities/agent-config-onboarding, capabilities/frontmatter-to-ontology, capabilities/vault-live-updates]
+relates: [domains/ai-agent-partner, domains/views]
 ---
 
 `oh-my-ontology` should explore a macOS-first desktop app as a local install
@@ -24,18 +19,40 @@ internal prototype.
 
 The first slice is a feasibility proof, not a second product architecture:
 wrap the existing Next.js static export in a Tauri shell, open the same local
-vault folder, render `/docs`, `/ontology`, `/topology`, and `/ontology/edit`,
-then verify the same CLI/MCP setup gates still work for Claude Code and Codex.
+vault folder, render `/download`, `/docs`, `/ontology`, `/topology`, and
+`/ontology/edit`, then verify the same CLI/MCP setup gates still work for
+Claude Code and Codex.
 The repository now has the first `src-tauri/` shell with `frontendDist: "../out"`
-and macOS `.app` bundle targeting. `pnpm desktop:check` is the scaffold-aware
-gate for that slice: it checks the Next.js static export shape, static image
-mode, trailing-slash routes, docs-vault build freshness path, CLI/MCP
-verification script availability, `desktop:dev` / `desktop:smoke` /
-`desktop:build` scripts, the Tauri shell files, the explicit desktop-grade
-quality bar, and the first prototype route-smoke scope. `pnpm desktop:smoke`
-checks the built `out/` payload that the `.app` packages: locale-prefixed
-`/docs`, `/ontology`, `/topology`, and `/ontology/edit` routes, `_next` assets,
-and offline desktop docs under `docs-vault/`. `pnpm desktop:doctor` is the local
+and macOS `.app` targeting. Its WebView CSP is enabled for local app assets,
+data/blob images, local styles, and the Tauri IPC endpoint, so the installed app
+is not shipped with an open CSP while still allowing native vault commands. The
+default capability remains scoped to the `main` window with `core:default` only,
+so broad filesystem, shell, HTTP, or opener plugin permissions are not granted.
+`scripts/package-macos-dmg.mjs` wraps that `.app`
+with a reproducible `hdiutil` DMG so the download artifact does not depend on
+Tauri's Finder AppleScript DMG styling step, then writes a `.sha256` checksum.
+`scripts/verify-macos-dmg.mjs` mounts the DMG read-only, verifies that checksum,
+and checks for the app bundle plus Applications symlink. `pnpm desktop:check`
+is the scaffold-aware gate for that slice: it checks the Next.js static export
+shape, static image mode, trailing-slash routes, docs-vault build freshness
+path, CLI/MCP verification script availability, `desktop:dev` /
+`desktop:smoke` / `desktop:verify-app` / `desktop:build` /
+`desktop:verify-dmg` / `desktop:verify-install` scripts, the Tauri shell files, the explicit
+desktop-grade quality bar, and the first prototype route-smoke scope. `pnpm
+desktop:smoke` checks the built `out/` payload that the `.app` / `.dmg`
+packages: locale-prefixed `/download`, `/docs`, `/ontology`, `/topology`, and
+`/ontology/edit` routes, `_next` assets, and offline desktop docs under
+`docs-vault/`. `pnpm desktop:verify-app` launches the built `.app` executable
+from inside its `Contents/MacOS` executable directory long enough to catch early
+Tauri/WebView startup crashes, then terminates it.
+`pnpm desktop:verify-install` mounts the generated DMG, copies the bundled app
+to a temporary install folder, launch-smokes that copied app from its own
+executable directory, and removes the temporary install after detaching the image.
+`pnpm test:desktop:bridge` locks the native vault bridge at the API boundary:
+Vitest exercises the WebView `FileSystemDirectoryHandle` shim and `cargo test`
+checks that Rust relative paths and symlinks cannot escape the selected vault
+root for read, write, mkdir, exists, or remove operations.
+`pnpm desktop:doctor` is the local
 machine and ontology-handoff diagnosis for that same track: it reports Tauri
 CLI, Cargo, rustc, macOS Xcode command line tool readiness, the dogfood
 `docs/ontology` vault, the `cli:mcp-verify` handoff gate, and offline desktop
@@ -46,12 +63,83 @@ checker, doctor, and smoke implementation edits through focused
 `pnpm exec node --test scripts/desktop-doctor.test.mjs` /
 `pnpm exec node --test scripts/desktop-smoke.test.mjs` contracts first.
 
+The first local macOS bundle proof now exists: `pnpm desktop:build` produces
+`src-tauri/target/release/bundle/macos/oh-my-ontology.app` and
+`src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg` on macOS
+once the Tauri icon set generated from `public/logo.png` is present under
+`src-tauri/icons/`, with a sibling `.sha256` checksum file. The installed app
+now has a native vault bridge: `src-tauri/src/lib.rs` owns folder selection and
+file read/write plus file/directory delete commands, while
+`src/shared/lib/tauri-vault-fs.ts` wraps those commands as a
+`FileSystemDirectoryHandle`-compatible adapter through the supported
+`@tauri-apps/api/core` `invoke` / `isTauri` API, so the existing manifest
+builder, editor, image resolver, conflict guard, and agent-config bootstrap
+flows work inside the desktop WebView even when browser
+File System Access APIs are absent. `src/views/root-entry/ui/RootEntryPage.tsx`
+keeps the hosted web root as the marketing surface but routes first-run Tauri
+sessions without a restored vault to `/docs/?intent=local` without rendering
+the hosted marketing page; `DocsVaultPage` then opens the native vault picker
+once, so the installed app starts in local work mode instead of the download
+page. The picker keeps a small recent-vault list from persisted Tauri paths,
+can reopen those vaults without another Finder selection, and can remove stale
+recent paths when folders have moved or been deleted. The
+`.github/workflows/release-macos.yml` workflow builds those artifacts on `v*`
+tags, fails closed through `pnpm desktop:release-secrets` unless all Apple
+Developer ID and notary secrets are present and structurally usable, and runs
+docs-vault freshness, desktop checker, and native bridge tests in both release
+lanes. It builds Apple Silicon on `macos-14` and Intel on `macos-15-intel`, route-smokes
+the static desktop payload, verifies the `v*` tag matches package, Tauri, and
+Cargo versions before signing credentials enter the path, imports the
+certificate, signs the `.app` through `pnpm desktop:sign`, packages each DMG,
+notarizes and staples it through `pnpm desktop:notarize`, refreshes the
+checksum after stapling, runs `pnpm desktop:verify-release-dmg` so the mounted
+app signature and stapled notarization ticket plus Gatekeeper assessment are
+required, runs `pnpm desktop:verify-install` so the DMG copy-and-launch path is
+exercised, and uploads workflow artifacts only after those release gates pass.
+The publish job attaches both DMGs plus checksums to a draft GitHub Release,
+runs the download verifier against draft assets with `--allow-draft`, publishes
+the verified release as stable, and then verifies the public assets again. `pnpm
+desktop:verify-download` checks the public GitHub Release channel and fails
+unless users can reach both `oh-my-ontology_*_aarch64.dmg` and
+`oh-my-ontology_*_x64.dmg` assets with plausible DMG download content types,
+those assets are not reported as empty files, both architecture assets carry the
+same version as the release tag, and their `.sha256` files name the same DMGs.
+The verifier also downloads each public DMG and compares its SHA-256 digest to
+the checksum asset. The tag workflow runs that same download verifier against
+`${GITHUB_REF_NAME}` before and after publication, so a green release job proves
+both draft asset integrity and public downloadability for Apple Silicon and
+Intel users. When a requested tag has no GitHub Release yet, the verifier
+reports the missing tag as the release-blocking condition instead of exposing a
+raw GitHub API 404, so the next operator action is to push the tag and let the
+macOS release workflow publish the signed/notarized assets.
+`pnpm desktop:release-github` is the operator-side pre-tag guard for that final
+step: it checks `gh` authentication, the active `release-macos.yml` workflow,
+required Apple signing/notary secret names, and optional tag/version alignment
+before the release tag is pushed. It cannot read secret values, so the workflow
+still fails closed through `pnpm desktop:release-secrets`, but it catches the
+current external blocker earlier: the repo has no Apple release secret names
+configured yet. Its missing-secret output includes `gh secret set <NAME> --repo
+wlsdks/oh-my-ontology` hints so the operator can move directly from readiness
+failure to secret registration.
+`pnpm desktop:release-preflight` is the local pre-tag gate for readiness,
+docs-vault freshness, desktop tests, native bridge tests, runtime doctor, build,
+route smoke, DMG verification, and temporary install launch smoke before signing
+credentials enter the path.
+The hosted web surface now moves toward product introduction and macOS
+distribution: the landing/download primary CTAs open the GitHub Releases page
+instead of depending on `/releases/latest` before a public macOS DMG exists. The
+secondary CTA opens `/download/` as a static install guide, and the hosted
+landing/download pages no longer route users into `/docs/?intent=local`.
+The browser folder-picker path remains in the codebase as a prototype and
+compatibility surface, but public web acquisition now points users to the
+installed app path.
+
 This keeps the desktop app aligned with the core ontology definition: the
 frontmatter graph remains the source of truth, the CLI/MCP graph engine remains
 the agent interface, and the app is only a native-feeling local shell for the
 workbench.
 
-Distribution hardening is a later slice: signing, notarization, updater,
-packaged MCP/CLI sidecars, and release-channel policy should be handled only
-after the local macOS prototype proves that the existing vault workflow works
-without the hosted site.
+Remaining distribution hardening after this slice is release-channel policy,
+updater behavior, and whether MCP/CLI sidecars are bundled or installed
+separately. Public downloads still require real Apple Developer credentials in
+the tag workflow before the primary download can be published and verified.

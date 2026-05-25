@@ -442,7 +442,15 @@ describe('focused check suggestions', () => {
       'scripts/desktop-doctor.test.mjs',
       'scripts/desktop-smoke.mjs',
       'scripts/desktop-smoke.test.mjs',
+      'scripts/verify-macos-install-smoke.mjs',
+      'scripts/check-macos-download-release.mjs',
       'docs/DESKTOP-MACOS.md',
+      'src/shared/lib/tauri-vault-fs.ts',
+      'src/shared/lib/tauri-vault-fs.test.ts',
+      'src/views/root-entry/ui/RootEntryPage.tsx',
+      'src/views/root-entry/ui/RootEntryPage.test.tsx',
+      'src/views/docs-vault/ui/DocsVaultPage.tsx',
+      'src-tauri/src/lib.rs',
       'src-tauri/tauri.conf.json',
     ]);
 
@@ -450,9 +458,13 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/check-desktop-readiness.test.mjs',
       'pnpm exec node --test scripts/desktop-doctor.test.mjs',
       'pnpm exec node --test scripts/desktop-smoke.test.mjs',
+      'pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts',
+      'pnpm exec vitest run src/views/root-entry/ui/RootEntryPage.test.tsx',
       'pnpm docs-vault:check',
       'pnpm test:desktop:check',
+      'pnpm test:desktop:bridge',
       'pnpm desktop:check',
+      'pnpm exec tsc --noEmit',
     ]);
     assert.deepEqual(result.commands[0].paths, [
       'scripts/check-desktop-readiness.mjs',
@@ -570,7 +582,6 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks([
       'src/shared/config/site.ts',
       'src/widgets/operations-nav/ui/OperationsNav.tsx',
-      'src/views/root-entry/ui/RootEntryPage.tsx',
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), ['pnpm exec tsc --noEmit']);

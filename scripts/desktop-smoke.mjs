@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 export const DESKTOP_SMOKE_LOCALES = ["en", "ko"];
-export const DESKTOP_SMOKE_ROUTES = ["/docs", "/ontology", "/topology", "/ontology/edit"];
+export const DESKTOP_SMOKE_ROUTES = ["/download", "/docs", "/ontology", "/topology", "/ontology/edit"];
 export const DESKTOP_SMOKE_DOCS = [
   "docs-vault/DESKTOP-MACOS.md",
   "docs-vault/ontology/capabilities/desktop-app-distribution.md",

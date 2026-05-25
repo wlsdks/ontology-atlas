@@ -5,6 +5,7 @@
     "pages": {
       "topology": "Topology",
       "docs": "Docs Vault",
+      "download": "Download",
       "projects": "Projects",
       "ontology": "Ontology",
       "ontologyEdit": "Ontology Builder",
@@ -67,10 +68,10 @@
   },
   "landing": {
     "eyebrow": "Ontology workbench · humans + AI agents",
-    "headerKicker": "open-source ontology workbench",
+    "headerKicker": "macOS-first ontology workbench",
     "titleLine1": "Codebase ontology",
     "titleEmphasis": "that grows with AI",
-    "subtitle": "Map your codebase — projects, features, who-depends-on-what — as plain markdown files. Browse it as a tree or a graph; ask AI agents to update it. Like Obsidian or Notion: pick a folder and start.",
+    "subtitle": "Install the app, pick a local vault folder, and start. Map features, modules, and dependencies as markdown files; browse them as a tree or graph; let AI agents work on the same files.",
     "topologyCaption": "TOPOLOGY · {nodes, plural, one {# NODE} other {# NODES}} · {relations, plural, one {# RELATION} other {# RELATIONS}}",
     "step1Title": "Write a markdown file per piece",
     "step1Body": "One file per project / feature / module. Add a name and a few links in the header — that's a node, those are relations. AI agents (Claude Code, etc.) read and edit the same files.",
@@ -90,9 +91,33 @@
       "stackValue": "Next.js · TypeScript · Sigma.js · MCP · static hosting",
       "githubCta": "Open the GitHub repo"
     },
-    "exploreCta": "See the demo first",
+    "exploreCta": "Installation guide",
+    "downloadMacCta": "Download macOS app",
+    "downloadNote": "Public builds ship through the latest GitHub Release after signing, notarization, checksum verification, and download-asset checks pass.",
     "openVaultCta": "Open my markdown folder",
-    "privacyNote": "Local folders stay on your disk and are never sent anywhere. Your data, your truth source."
+    "privacyNote": "The app and vault data use your local disk as the source of truth. The website is the product introduction and download entry point."
+  },
+  "rootEntry": {
+    "openingLocalVaultPicker": "Opening local vault picker"
+  },
+  "download": {
+    "back": "Back to overview",
+    "eyebrow": "macOS app download",
+    "title": "Install once. Work from your local vault.",
+    "subtitle": "The desktop app opens your markdown vault directly, remembers recent vaults, and keeps the hosted site out of your daily ontology workflow.",
+    "primaryCta": "Open macOS releases",
+    "allReleasesCta": "All releases",
+    "proofSigned": "Release gate requires Developer ID signing",
+    "proofNotarized": "Release gate requires Apple notarization",
+    "proofChecksum": "Apple Silicon + Intel checksums are verified",
+    "installTitle": "Install path",
+    "step1Title": "Download the DMG",
+    "step1Body": "Use the latest stable GitHub Release. Choose the aarch64 DMG for Apple Silicon Macs, or the x64 DMG for Intel Macs. Public builds are published only after signing, notarization, and checksum verification.",
+    "step2Title": "Drag the app to Applications",
+    "step2Body": "Open the DMG, copy oh-my-ontology.app into Applications, then launch it like any local macOS app.",
+    "step3Title": "Pick your vault folder",
+    "step3Body": "The app opens a native folder picker on first run, then reopens recent local vaults without returning to the website.",
+    "releaseGateNote": "The hosted site does not open or edit vault folders. Daily ontology work starts inside the installed app after the release asset passes the macOS signing, notarization, and checksum gates."
   },
   "kinds": {
     "project": "Project",
@@ -1504,6 +1529,10 @@
       "ontologyHintSuffix": " — this tool's own ontology vault appears in the tree instantly (dogfooding).",
       "newDoc": "New doc"
     },
+    "vaultReveal": {
+      "errorFallback": "Could not open the vault in Finder.",
+      "error": "Finder open failed: {message}"
+    },
     "agentSetup": {
       "ariaLabel": "AI agent setup status",
       "title": "AI agent setup",
@@ -2221,6 +2250,13 @@
       "errorReselect": "Pick again",
       "loadedDocCount": "{count} docs",
       "loadedScannedSuffix": "· scanned {relative}",
+      "copyPathTooltip": "Copy the local vault path",
+      "copyPathAriaLabel": "Copy local vault path: {path}",
+      "copyPathCopied": "Path copied",
+      "copyPathFailed": "Path copy failed",
+      "revealPathTooltip": "Open this vault in Finder",
+      "revealPathAriaLabel": "Open local vault in Finder: {path}",
+      "revealPathLabel": "Finder",
       "rescanTooltip": "Rescan",
       "rescanAriaLabel": "Rescan",
       "closeTooltip": "Close local vault",
@@ -2228,6 +2264,11 @@
       "openOpening": "Opening folder…",
       "openLoading": "Building manifest…",
       "openLabel": "Open my markdown folder",
+      "recentAriaLabel": "Recently opened vaults",
+      "recentTitle": "Recent vaults",
+      "recentOpenAriaLabel": "Open recent vault: {name}",
+      "recentForgetTooltip": "Remove this vault from recents",
+      "recentForgetAriaLabel": "Remove recent vault: {name}",
       "validationChip": "{errors, plural, =0 {⚠ {warnings}} other {✗ {errors}}}",
       "validationTooltip": "{errors, plural, =0 {{warnings} frontmatter warning(s) — run pnpm vault:validate for detail} other {{errors} frontmatter error(s){warnings, plural, =0 {} other {, {warnings} warning(s)}} — some nodes are missing from the graph. Run pnpm vault:validate for detail}}"
     },

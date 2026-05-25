@@ -20,7 +20,7 @@ test("desktop smoke proves packaged locale routes and offline docs exist", () =>
   fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
 
   for (const locale of ["en", "ko"]) {
-    for (const route of ["/docs", "/ontology", "/topology", "/ontology/edit"]) {
+    for (const route of ["/download", "/docs", "/ontology", "/topology", "/ontology/edit"]) {
       touch(outDir, path.join(locale, route.replace(/^\/+/, ""), "index.html"));
     }
   }

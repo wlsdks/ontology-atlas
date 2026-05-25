@@ -5,6 +5,7 @@
     "pages": {
       "topology": "토폴로지",
       "docs": "Docs Vault",
+      "download": "다운로드",
       "projects": "프로젝트",
       "ontology": "온톨로지",
       "ontologyEdit": "온톨로지 빌더",
@@ -67,10 +68,10 @@
   },
   "landing": {
     "eyebrow": "ONTOLOGY WORKBENCH · 사람 + AI AGENT 협업",
-    "headerKicker": "오픈소스 ontology workbench",
+    "headerKicker": "macOS-first ontology workbench",
     "titleLine1": "AI 와 함께 자라는",
     "titleEmphasis": "codebase ontology",
-    "subtitle": "프로젝트의 조각들 — 기능 · 모듈 · 누가 무엇에 의존하는지 — 를 마크다운 파일로 정리합니다. 트리나 그래프로 둘러보고, AI 에이전트에게 정리도 맡길 수 있어요. Obsidian/Notion 처럼 폴더만 고르면 시작.",
+    "subtitle": "앱을 설치하고 로컬 vault 폴더만 고르면 시작합니다. 프로젝트의 기능 · 모듈 · 의존 관계를 마크다운 파일로 정리하고, 트리와 그래프로 살피며, AI 에이전트에게 같은 파일을 맡길 수 있어요.",
     "topologyCaption": "TOPOLOGY · 노드 {nodes} · 관계 {relations}",
     "step1Title": "조각마다 마크다운 한 파일",
     "step1Body": "프로젝트 / 기능 / 모듈 한 개당 .md 한 개. 이름과 연결 몇 개를 헤더에 적으면 그게 노드와 관계. AI 에이전트 (Claude Code 등) 도 같은 파일을 읽고 씁니다.",
@@ -90,9 +91,33 @@
       "stackValue": "Next.js · TypeScript · Sigma.js · MCP · static hosting",
       "githubCta": "GitHub 저장소 열기"
     },
-    "exploreCta": "데모 먼저 보기",
+    "exploreCta": "설치 안내 보기",
+    "downloadMacCta": "macOS 앱 다운로드",
+    "downloadNote": "공개 빌드는 서명, notarization, 체크섬 검증, 다운로드 asset 검증을 통과한 뒤 최신 GitHub Release 로 배포됩니다.",
     "openVaultCta": "내 마크다운 폴더 열기",
-    "privacyNote": "로컬 폴더는 디스크에만 저장되고 외부로 전송되지 않아요. 데이터는 사용자 디스크가 진실원."
+    "privacyNote": "앱과 vault 데이터는 로컬 디스크를 진실원으로 사용합니다. 웹 사이트는 제품 소개와 다운로드 진입점입니다."
+  },
+  "rootEntry": {
+    "openingLocalVaultPicker": "로컬 vault 선택기를 여는 중"
+  },
+  "download": {
+    "back": "소개로 돌아가기",
+    "eyebrow": "macOS 앱 다운로드",
+    "title": "한 번 설치하고, 내 로컬 vault 에서 작업하세요.",
+    "subtitle": "데스크톱 앱은 마크다운 vault 를 직접 열고, 최근 vault 를 기억하며, 매일의 ontology 작업을 웹 사이트 밖에서 처리하게 합니다.",
+    "primaryCta": "macOS 릴리스 열기",
+    "allReleasesCta": "모든 릴리스",
+    "proofSigned": "릴리스 게이트가 Developer ID 서명을 요구합니다",
+    "proofNotarized": "릴리스 게이트가 Apple notarization 을 요구합니다",
+    "proofChecksum": "Apple Silicon + Intel 체크섬을 검증합니다",
+    "installTitle": "설치 경로",
+    "step1Title": "DMG 다운로드",
+    "step1Body": "최신 stable GitHub Release 를 사용합니다. Apple Silicon Mac 은 aarch64 DMG, Intel Mac 은 x64 DMG 를 선택하세요. 공개 빌드는 서명, notarization, 체크섬 검증 뒤에만 올라갑니다.",
+    "step2Title": "Applications 로 앱 이동",
+    "step2Body": "DMG 를 열고 oh-my-ontology.app 을 Applications 로 복사한 뒤 일반 macOS 앱처럼 실행합니다.",
+    "step3Title": "vault 폴더 선택",
+    "step3Body": "첫 실행에서 native 폴더 picker 를 열고, 이후에는 최근 로컬 vault 를 웹 사이트로 돌아오지 않고 다시 엽니다.",
+    "releaseGateNote": "호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다. 매일의 ontology 작업은 macOS 서명, notarization, 체크섬 게이트를 통과한 릴리스 asset 설치 후 앱 안에서 시작합니다."
   },
   "kinds": {
     "project": "프로젝트",
@@ -1504,6 +1529,10 @@
       "ontologyHintSuffix": "를 선택해 보세요 — 이 도구 자체의 ontology vault 가 즉시 트리에 등장합니다 (dogfood).",
       "newDoc": "새 문서"
     },
+    "vaultReveal": {
+      "errorFallback": "Finder에서 vault를 열지 못했습니다.",
+      "error": "Finder 열기 실패: {message}"
+    },
     "agentSetup": {
       "ariaLabel": "AI agent 설정 상태",
       "title": "AI agent 설정",
@@ -2221,6 +2250,13 @@
       "errorReselect": "다시 선택",
       "loadedDocCount": "{count} 문서",
       "loadedScannedSuffix": "· {relative} 스캔",
+      "copyPathTooltip": "로컬 vault 경로 복사",
+      "copyPathAriaLabel": "로컬 vault 경로 복사: {path}",
+      "copyPathCopied": "경로 복사됨",
+      "copyPathFailed": "경로 복사 실패",
+      "revealPathTooltip": "Finder에서 이 vault 열기",
+      "revealPathAriaLabel": "Finder에서 로컬 vault 열기: {path}",
+      "revealPathLabel": "Finder",
       "rescanTooltip": "다시 스캔",
       "rescanAriaLabel": "다시 스캔",
       "closeTooltip": "로컬 볼트 닫기",
@@ -2228,6 +2264,11 @@
       "openOpening": "폴더 여는 중…",
       "openLoading": "매니페스트 빌드 중…",
       "openLabel": "내 PC 의 마크다운 폴더 열기",
+      "recentAriaLabel": "최근에 열었던 vault",
+      "recentTitle": "최근 vault",
+      "recentOpenAriaLabel": "최근 vault 열기: {name}",
+      "recentForgetTooltip": "최근 vault 목록에서 지우기",
+      "recentForgetAriaLabel": "최근 vault 지우기: {name}",
       "validationChip": "{errors, plural, =0 {⚠ {warnings}} other {✗ {errors}}}",
       "validationTooltip": "{errors, plural, =0 {frontmatter 경고 {warnings} 건 — pnpm vault:validate 로 상세} other {frontmatter 오류 {errors} 건{warnings, plural, =0 {} other {, 경고 {warnings} 건}} — 일부 노드가 graph 에서 빠졌습니다. pnpm vault:validate 로 상세}}"
     },

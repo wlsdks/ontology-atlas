@@ -4,14 +4,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
+import { openTauriVaultInFinder } from '@/shared/lib/tauri-vault-fs';
 import { TooltipProvider } from '@/shared/ui';
 import { VaultToolsMenu } from './VaultToolsMenu';
 
 vi.mock('@/shared/lib/copy-text', () => ({
   copyText: vi.fn(),
 }));
+vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+  getTauriVaultRootPath: (handle: FileSystemDirectoryHandle) =>
+    (handle as unknown as { rootPath?: string }).rootPath,
+  openTauriVaultInFinder: vi.fn(),
+}));
 
 const copyTextMock = vi.mocked(copyText);
+const openTauriVaultInFinderMock = vi.mocked(openTauriVaultInFinder);
 
 function render(ui: React.ReactElement) {
   return rtlRender(
@@ -59,7 +66,10 @@ function makeLocalVault(
     lastLoadedAt: 1779498839000,
     scaffoldOntology: vi.fn().mockResolvedValue({ created: 0, skipped: 0 }),
     ensureAgentConfigs: vi.fn().mockResolvedValue({ created: 2, skipped: 1 }),
+    recentVaults: [],
     open: vi.fn(),
+    openRecent: vi.fn(),
+    forgetRecent: vi.fn(),
     close: vi.fn(),
     refresh: vi.fn(),
     requestPermission: vi.fn(),
@@ -90,6 +100,7 @@ function renderMenu(
 describe('VaultToolsMenu', () => {
   beforeEach(() => {
     copyTextMock.mockReset();
+    openTauriVaultInFinderMock.mockReset();
   });
 
   it('로컬 vault의 AI agent 설정 누락 상태와 복구 버튼을 보여준다', async () => {
@@ -199,6 +210,54 @@ describe('VaultToolsMenu', () => {
 
     await waitFor(() => expect(localVault.ensureAgentConfigs).toHaveBeenCalledTimes(1));
     expect(localVault.scaffoldOntology).not.toHaveBeenCalled();
+  });
+
+  it('Tauri 데스크톱 vault 경로를 표시하고 복사할 수 있다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: {
+        name: 'ontology',
+        rootPath: '/Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      } as unknown as FileSystemDirectoryHandle,
+    });
+
+    const copyPathButton = screen.getByRole('button', {
+      name: '로컬 vault 경로 복사: /Users/jinan/side-project/oh-my-ontology/docs/ontology',
+    });
+
+    expect(
+      screen.getByText('/Users/jinan/side-project/oh-my-ontology/docs/ontology'),
+    ).toBeInTheDocument();
+
+    fireEvent.click(copyPathButton);
+
+    await waitFor(() => {
+      expect(copyTextMock).toHaveBeenCalledWith(
+        '/Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      );
+    });
+  });
+
+  it('Tauri 데스크톱 vault를 Finder에서 열 수 있다', async () => {
+    openTauriVaultInFinderMock.mockResolvedValue();
+    renderMenu({
+      handle: {
+        name: 'ontology',
+        rootPath: '/Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      } as unknown as FileSystemDirectoryHandle,
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Finder에서 로컬 vault 열기: /Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(openTauriVaultInFinderMock).toHaveBeenCalledWith(
+        '/Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      );
+    });
   });
 
   it('AI agent 설정이 모두 있으면 준비됨으로 표시하고 복구 버튼을 숨긴다', () => {

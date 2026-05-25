@@ -27,6 +27,11 @@ import {
 import { formatAgentPostChangeSyncPacket } from '@/shared/lib/ontology-tree';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
+import {
+  getTauriVaultRootPath,
+  openTauriVaultInFinder,
+} from '@/shared/lib/tauri-vault-fs';
+import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
 const AGENT_VERIFY_CLI_COMMAND = [
   'oh-my-ontology validate .',
@@ -225,7 +230,10 @@ interface LocalVaultLike {
   lastLoadedAt: number | null;
   scaffoldOntology: () => Promise<{ created: number; skipped: number }>;
   ensureAgentConfigs: () => Promise<{ created: number; skipped: number }>;
+  recentVaults: LocalFsHandleRecord[];
   open: () => void;
+  openRecent: (record: LocalFsHandleRecord) => void;
+  forgetRecent: (record: LocalFsHandleRecord) => void;
   close: () => void;
   refresh: () => void;
   requestPermission: () => void;
@@ -284,6 +292,7 @@ export function VaultToolsMenu({
   const [agentCodexCliCopyState, setAgentCodexCliCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle');
+  const [vaultRevealError, setVaultRevealError] = useState<string | null>(null);
   const agentStatus = localVault.agentConfigStatus;
   const agentSetupReady = Boolean(
     agentStatus?.mcpJson &&
@@ -529,6 +538,15 @@ export function VaultToolsMenu({
     setAgentCodexCliCopyState(copied ? 'copied' : 'failed');
   }
 
+  async function handleRevealVaultPath(rootPath: string) {
+    setVaultRevealError(null);
+    try {
+      await openTauriVaultInFinder(rootPath);
+    } catch (err) {
+      setVaultRevealError(err instanceof Error ? err.message : t('vaultReveal.errorFallback'));
+    }
+  }
+
   const copyPromptLabel =
     agentPromptCopyState === 'copied'
       ? t('agentSetup.copyPromptCopied')
@@ -638,15 +656,27 @@ export function VaultToolsMenu({
         <LocalVaultPicker
           status={localVault.status}
           handleName={localVault.handle?.name ?? null}
+          rootPath={
+            localVault.handle ? getTauriVaultRootPath(localVault.handle) : null
+          }
           docCount={localVault.manifest?.docs.length ?? 0}
           errorMessage={localVault.errorMessage}
           lastLoadedAt={localVault.lastLoadedAt}
           validationSummary={validationSummary}
+          recentVaults={localVault.recentVaults}
           onOpen={localVault.open}
+          onOpenRecent={localVault.openRecent}
+          onForgetRecent={localVault.forgetRecent}
           onClose={localVault.close}
           onRefresh={localVault.refresh}
           onRequestPermission={localVault.requestPermission}
+          onReveal={handleRevealVaultPath}
         />
+        {vaultRevealError ? (
+          <p className="rounded-sm border border-[color:rgba(229,72,77,0.24)] bg-[color:rgba(229,72,77,0.08)] px-2 py-1 text-[10.5px] leading-4 text-[color:var(--color-status-danger)]">
+            {t('vaultReveal.error', { message: vaultRevealError })}
+          </p>
+        ) : null}
         {localVault.status === 'loaded' && agentStatus ? (
           <section
             aria-label={t('agentSetup.ariaLabel')}

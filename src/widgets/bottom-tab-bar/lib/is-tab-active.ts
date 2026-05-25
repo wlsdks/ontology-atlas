@@ -17,3 +17,10 @@ export function isBottomTabActive(
   if (matchPrefixes.some((p) => pathname.startsWith(p))) return true;
   return pathname === href || pathname === href.replace(/\/$/, '');
 }
+
+export function shouldHideBottomTabBar(pathname: string, hasLoadedVault: boolean): boolean {
+  const normalized = pathname.replace(/\/$/, '') || '/';
+  if (normalized === '/download') return true;
+  if (normalized === '/' && !hasLoadedVault) return true;
+  return false;
+}

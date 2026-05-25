@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T09:33:46.813Z",
+  "generatedAt": "2026-05-25T14:57:43.699Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3891,13 +3891,18 @@
         },
         {
           "depth": 2,
+          "text": "Release Signing and Notarization",
+          "slug": "release-signing-and-notarization"
+        },
+        {
+          "depth": 2,
           "text": "Later Distribution Work",
           "slug": "later-distribution-work"
         }
       ],
       "excerpt": "ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app should be a native shell around the same local markdown vault, not a backend, cloud sync layer, or second data store. Use Tauri first for the prototype. The repository now includes the first srctauri/ shell so desktop wor",
-      "wordCount": 699,
-      "updatedAt": "2026-05-25T09:24:31.648Z",
+      "wordCount": 2331,
+      "updatedAt": "2026-05-25T14:57:31.345Z",
       "linksOut": []
     },
     {
@@ -3954,8 +3959,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 3230,
-      "updatedAt": "2026-05-25T09:25:03.564Z",
+      "wordCount": 4408,
+      "updatedAt": "2026-05-25T14:52:02.583Z",
       "linksOut": []
     },
     {
@@ -4493,8 +4498,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260525 (agent setup gate, graph DBstyle query pack, CLI/MCP verification snapshots, and fallback performance checks). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongside t",
-      "wordCount": 7321,
-      "updatedAt": "2026-05-25T07:48:41.315Z",
+      "wordCount": 7425,
+      "updatedAt": "2026-05-25T13:27:28.889Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5121,8 +5126,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 374,
-      "updatedAt": "2026-05-25T09:24:54.291Z",
+      "wordCount": 1289,
+      "updatedAt": "2026-05-25T14:57:36.970Z",
       "linksOut": []
     },
     {
@@ -6622,8 +6627,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 2538,
-      "updatedAt": "2026-05-25T08:36:51.011Z",
+      "wordCount": 2950,
+      "updatedAt": "2026-05-25T14:33:44.956Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]

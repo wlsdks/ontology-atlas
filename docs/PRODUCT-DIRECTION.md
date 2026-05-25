@@ -196,8 +196,9 @@ Recommended first slice:
 4. Verify the app can open the dogfood vault, render `/docs`, `/ontology`,
    `/topology`, and `/ontology/edit`, and still hand off to CLI/MCP setup
    gates.
-5. Treat signing, notarization, updater, and packaged MCP/CLI sidecars as
-   separate distribution hardening work after the local prototype works.
+5. Keep signing and notarization wired into the tag-release path, while leaving
+   updater and packaged MCP/CLI sidecars as separate distribution hardening work
+   after the local prototype works.
 
 Why Tauri first: this repo already uses `output: 'export'`, `images.unoptimized`,
 and `trailingSlash`, which match the static frontend shape expected by Tauri's
@@ -215,6 +216,50 @@ Tauri scaffold, and agent-handoff prerequisites before app smoke, while
 line tool readiness. The first `src-tauri/` shell is present; local prototype
 execution now depends on Rust / Cargo being installed on the machine. See
 `docs/DESKTOP-MACOS.md`.
+
+2026-05-25 checkpoint: the first local `pnpm desktop:build` produced
+`src-tauri/target/release/bundle/macos/oh-my-ontology.app` and the macOS
+download artifact
+`src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg` after
+adding the Tauri icon set derived from `public/logo.png` and a repo-owned
+`hdiutil` DMG packager. The desktop shell now has a native Tauri vault bridge:
+when WebView `showDirectoryPicker` is unavailable, it opens a native folder
+dialog and adapts that folder into the same manifest/editor/image handle shape
+used by the web prototype. The desktop root now waits for stored-vault restore;
+if no vault is loaded in the Tauri runtime, it routes to `/docs/?intent=local`
+and opens the native vault picker once instead of showing the hosted marketing
+landing page. The desktop picker also persists recent Tauri vault paths and can
+reopen them without another Finder selection. The build also writes a `.sha256` checksum, and
+`pnpm desktop:verify-app` launch-smokes the built `.app` long enough to catch
+early Tauri/WebView startup crashes before DMG verification. `pnpm
+desktop:verify-install` then mounts the generated DMG, copies the bundled app to
+a temporary install folder, and launch-smokes that installed copy before
+cleanup. The
+`.github/workflows/release-macos.yml` now fails closed on `v*` tags unless the
+Apple Developer ID and notary secrets are present and structurally usable, then
+passes docs-vault freshness, desktop checker tests, and native bridge tests
+before importing the certificate in both macOS lanes. It builds Apple Silicon
+on `macos-14` and Intel on `macos-15-intel`, route-smokes the static desktop payload,
+runs `pnpm desktop:release-tag` so the v-prefixed tag matches package/Tauri/Cargo
+versions before signing, runs `pnpm desktop:sign`, packages the signed app, runs
+`pnpm desktop:notarize`, staples the DMG, refreshes its checksum, verifies the
+final mounted artifact with signing and notarization required, and launch-smokes
+the app copied from the DMG before attaching both architecture DMGs to a draft
+GitHub Release.
+`pnpm desktop:verify-download -- --allow-draft` byte-checks those draft assets
+before the workflow publishes the release as stable. `pnpm
+desktop:verify-download` then runs again as the public hosted CTA gate: it
+fails unless a public non-draft GitHub Release exposes reachable
+`oh-my-ontology_*_aarch64.dmg` and `oh-my-ontology_*_x64.dmg` assets plus
+matching `.sha256` checksum files that name those same-version DMGs, and it
+rejects unsupported extra `oh-my-ontology_*.dmg` names so the GitHub Release
+page cannot show ambiguous macOS downloads.
+`pnpm desktop:release-preflight`
+is the local pre-tag command for readiness, docs-vault freshness, desktop tests,
+runtime doctor, build, route smoke, DMG verification, and temporary install
+smoke before credentials are used. The hosted landing page should now bias toward "Download macOS app"
+and product explanation, with the browser folder picker treated as a prototype
+fallback until public signed releases are uploaded.
 
 ### Option A — npm package + CLI
 

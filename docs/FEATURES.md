@@ -55,16 +55,19 @@ input (humans + AI agents)     parse           store              output
 
 ### `/` — Smart entry
 
-- **No vault** → `LandingPage`
-- **Vault loaded** → `HomePage` (Sigma topology hub) — same component as `/topology`
+- **Hosted web, no vault** → `LandingPage`
+- **macOS app, no restored vault** → local redirect state, then `/docs/?intent=local` opens the native vault picker once; the installed app does not render the hosted marketing page on first run
+- **Recent desktop vaults** → the picker stores recently opened Tauri vault paths, can reopen them without another Finder selection, and can remove stale paths from the list
+- **Vault loaded** → `OntologyViewPage` (tree + ego graph hub)
 
 ### `/` — Landing (no vault)
 
-- **Hero**: title + subtitle + 3-step value chain rail (01 / 02 / 03)
+- **Hero**: macOS-first title + subtitle + 3-step value chain rail (01 / 02 / 03)
 - **Mini topology** animation (14 nodes, 21 edges, SVG ForceAtlas2 — respects `prefers-reduced-motion`)
-- **Primary CTA** (R3 cut D): "Open my markdown folder" → `/docs/?intent=local` (auto-opens vault picker)
-- **Secondary CTA**: "See the demo first" → `/ontology/`
-- **Privacy note**: "Local folders stay on disk, never sent anywhere"
+- **Primary CTA**: "Download macOS app" → GitHub Releases
+- **Secondary CTA**: "Installation guide" → `/download/`
+- **No hosted workbench CTA**: public web pages do not route new users into `/docs/?intent=local`; local vault work starts inside the installed app
+- **Privacy note**: the installed app and vault data use local disk as the source of truth; the hosted site is product introduction + download entry
 - **Footer**: license · GitHub · stack chips · `LocaleSwitch`
 
 ### `/` and `/topology` — Sigma WebGL hub
@@ -492,6 +495,7 @@ without extra node lookups.
 ### `BottomTabBar` (mobile only, `md:` hidden)
 - 4 tabs: Ontology (`/`, `/ontology`) · Topology (`/topology`) · Projects (`/projects` or `/project`) · Docs (`/docs`)
 - Min height 56 px (safe-area)
+- Hidden on public marketing/download surfaces: `/` while no local vault is loaded, and `/download/`
 
 ### Search palettes (separate by design — R5 skip merge)
 - **`⌘K` `SearchPalette`** — projects-focused fuzzy search + top vault docs match (3) + recent (5) + Layer filter (All / Hub / Node)

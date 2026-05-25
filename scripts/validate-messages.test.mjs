@@ -33,6 +33,26 @@ describe('i18n message catalog', () => {
       );
     }
   });
+
+  it('keeps hosted download copy honest before the first public macOS release', async () => {
+    const en = await readJson(path.join(MESSAGES_DIR, 'en.json'));
+    const ko = await readJson(path.join(MESSAGES_DIR, 'ko.json'));
+
+    assert.equal(en.download.primaryCta, 'Open macOS releases');
+    assert.match(ko.download.primaryCta, /릴리스 열기/);
+    assert.doesNotMatch(en.download.primaryCta, /latest/i);
+    assert.doesNotMatch(ko.download.primaryCta, /최신/);
+    assert.match(en.download.proofSigned, /Release gate requires/);
+    assert.match(en.download.proofNotarized, /Release gate requires/);
+    assert.match(en.download.proofChecksum, /checksums are verified/);
+    assert.match(en.download.step1Body, /aarch64 DMG for Apple Silicon Macs/);
+    assert.match(en.download.step1Body, /x64 DMG for Intel Macs/);
+    assert.match(ko.download.proofSigned, /릴리스 게이트/);
+    assert.match(ko.download.proofNotarized, /릴리스 게이트/);
+    assert.match(ko.download.proofChecksum, /체크섬을 검증/);
+    assert.match(ko.download.step1Body, /Apple Silicon Mac 은 aarch64 DMG/);
+    assert.match(ko.download.step1Body, /Intel Mac 은 x64 DMG/);
+  });
 });
 
 async function readRoutingLocales() {

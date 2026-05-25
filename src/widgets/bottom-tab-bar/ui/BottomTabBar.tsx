@@ -3,7 +3,8 @@
 import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { Network, FolderKanban, FileText, Route } from 'lucide-react';
-import { isBottomTabActive } from '../lib/is-tab-active';
+import { useLocalVault } from '@/features/docs-vault-local';
+import { isBottomTabActive, shouldHideBottomTabBar } from '../lib/is-tab-active';
 
 interface TabItem {
   href: string;
@@ -29,6 +30,11 @@ const TABS: ReadonlyArray<TabItem> = [
 export function BottomTabBar() {
   const pathname = usePathname() ?? '/';
   const t = useTranslations('nav');
+  const vault = useLocalVault();
+
+  if (shouldHideBottomTabBar(pathname, vault.status === 'loaded')) {
+    return null;
+  }
 
   return (
     <nav

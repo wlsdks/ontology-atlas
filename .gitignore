@@ -19,6 +19,7 @@ dist/
 
 # Tauri / Rust desktop build output
 src-tauri/target/
+src-tauri/gen/
 
 # Production
 *.tsbuildinfo
@@ -59,6 +60,8 @@ references/
 *.png
 !public/logo.png
 !public/og-image.png
+!src-tauri/icons/
+!src-tauri/icons/**
 
 # Testing
 coverage/
