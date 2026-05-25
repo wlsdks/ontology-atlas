@@ -395,6 +395,21 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('Graph briefs: workspace-brief and agent-brief --graph-db-pack describe the same local vault'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('MCP-connected proof:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('query_ontology({"operation":"workspace_brief","limit":5})'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('query_ontology({"operation":"agent_brief","limit":5})'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('query_ontology({"operation":"health","limit":5})'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('query_ontology({"operation":"match_nodes","kind":"capability","minDegree":2,"sort":"degree","limit":10})'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('ok=false: setup or fallback command execution is broken'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -659,6 +674,21 @@ describe('VaultToolsMenu', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Read-first graph proof:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('MCP-connected proof:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('query_ontology({"operation":"workspace_brief","limit":5})'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('query_ontology({"operation":"agent_brief","limit":5})'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Use these MCP calls only after mcp-verify succeeds'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('CLI fallback proof:'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(

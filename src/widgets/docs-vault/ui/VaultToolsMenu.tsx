@@ -72,6 +72,16 @@ const AGENT_FIRST_CONTACT_PROOF_CONTRACT_LINES = [
   '- Graph briefs: workspace-brief and agent-brief --graph-db-pack describe the same local vault before writes.',
 ];
 
+const AGENT_MCP_CONNECTED_PROOF_LINES = [
+  'MCP-connected proof:',
+  '1. query_ontology({"operation":"workspace_brief","limit":5})',
+  '2. query_ontology({"operation":"agent_brief","limit":5})',
+  '3. query_ontology({"operation":"health","limit":5})',
+  '4. query_ontology({"operation":"query_plan","targetOperation":"match_nodes","kind":"capability","minDegree":2,"sort":"degree","limit":10})',
+  '5. query_ontology({"operation":"match_nodes","kind":"capability","minDegree":2,"sort":"degree","limit":10})',
+  'Use these MCP calls only after mcp-verify succeeds; if MCP is unavailable, use the CLI proof below.',
+];
+
 function buildAgentFirstContactProofPacket(vaultName: string): string {
   const vaultPathPlaceholder = `<absolute path to your ${vaultName} folder>`;
   const vaultPathArg = shellQuoteForPacket(vaultPathPlaceholder);
@@ -90,6 +100,9 @@ function buildAgentFirstContactProofPacket(vaultName: string): string {
     `5. oh-my-ontology agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
     '',
     'Read-first graph proof:',
+    ...AGENT_MCP_CONNECTED_PROOF_LINES,
+    '',
+    'CLI fallback proof:',
     `1. oh-my-ontology workspace-brief ${vaultPathArg}`,
     `2. oh-my-ontology agent-brief ${vaultPathArg} --prompt`,
     `3. oh-my-ontology agent-brief ${vaultPathArg} --graph-db-pack`,
@@ -127,6 +140,8 @@ function buildAgentSetupPacket(vaultName: string): string {
     ...AGENT_FIRST_CONTACT_PROOF_CONTRACT_LINES,
     '',
     ...ONTOLOGY_POST_CHANGE_SYNC_LINES,
+    '',
+    ...AGENT_MCP_CONNECTED_PROOF_LINES,
     '',
     'Read-first run order from a codebase root:',
     `1. Check config state: ${setupStateCommand}`,

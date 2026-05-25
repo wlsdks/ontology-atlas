@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T08:44:43.945Z",
+  "generatedAt": "2026-05-25T08:48:58.436Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4789,8 +4789,8 @@
       },
       "headings": [],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLIonly, MCPconnected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agentroot guidance, and J",
-      "wordCount": 857,
-      "updatedAt": "2026-05-25T07:42:30.242Z",
+      "wordCount": 906,
+      "updatedAt": "2026-05-25T08:48:47.217Z",
       "linksOut": []
     },
     {
