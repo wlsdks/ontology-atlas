@@ -167,8 +167,8 @@ Git tag to those versions before signing; `pnpm desktop:release-slot` fails
 closed before GitHub Release upload when that same tag already has a draft,
 prerelease, or public release so stale DMG assets cannot mix with the freshly
 signed artifacts; `pnpm desktop:smoke` verifies the
-built `out/` payload has the locale-prefixed docs, ontology, topology, builder
-routes, `_next` assets, and offline desktop docs;
+built `out/` payload has the root app entry, locale-prefixed docs, ontology,
+topology, builder routes, `_next` assets, and offline desktop docs;
 `pnpm desktop:verify-app` launches the built `.app` long enough to catch early
 Tauri/WebView startup crashes from inside the app executable directory and then
 terminates it; `pnpm desktop:verify-install` mounts the DMG, copies the app to a
@@ -281,7 +281,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm bundle:check` | Local-first static export bundle guard; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
 | `pnpm desktop:check` | macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files |
 | `pnpm desktop:doctor` | Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, and Xcode command line tools |
-| `pnpm desktop:smoke` | Built `out/` payload smoke for packaged locale routes, `_next` assets, and offline desktop docs before launching or bundling the `.app` / `.dmg` |
+| `pnpm desktop:smoke` | Built `out/` payload smoke for the packaged root app entry, locale routes, `_next` assets, and offline desktop docs before launching or bundling the `.app` / `.dmg` |
 | `pnpm desktop:build:app` | Build the Tauri `.app` before optional release signing or local DMG packaging |
 | `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes, then terminate it |
 | `pnpm desktop:verify-install` | Mount the DMG, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up |

@@ -18,6 +18,7 @@ function touch(root, relativePath) {
 test("desktop smoke proves packaged locale routes and offline docs exist", () => {
   const outDir = makeOutDir();
   fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
 
   for (const locale of ["en", "ko"]) {
     for (const route of ["/download", "/docs", "/ontology", "/topology", "/ontology/edit"]) {
@@ -31,12 +32,14 @@ test("desktop smoke proves packaged locale routes and offline docs exist", () =>
 
   assert.equal(report.ok, true);
   assert.equal(report.missing.length, 0);
+  assert.ok(report.checks.some((check) => check.id === "root-entry"));
   assert.match(report.nextAction, /pnpm desktop:dev/);
 });
 
 test("desktop smoke reports the exact missing packaged route", () => {
   const outDir = makeOutDir();
   fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
   touch(outDir, "en/docs/index.html");
   touch(outDir, "docs-vault/DESKTOP-MACOS.md");
 
@@ -53,4 +56,24 @@ test("desktop smoke reports the exact missing packaged route", () => {
     ["route:en:/topology"],
   );
   assert.match(report.nextAction, /pnpm build/);
+});
+
+test("desktop smoke reports the exact missing Tauri app root entry", () => {
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "en/docs/index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/docs"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    ["root-entry"],
+  );
 });

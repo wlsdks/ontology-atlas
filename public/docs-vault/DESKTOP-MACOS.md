@@ -204,9 +204,10 @@ It exits successfully as a report by default, and
 when missing prerequisites should fail fast.
 
 `desktop:smoke` checks the built `out/` payload that Tauri packages. It verifies
-that both `en` and `ko` static routes exist for `/download`, `/docs`,
-`/ontology`, `/topology`, and `/ontology/edit`, that `_next` assets are present,
-and that the desktop docs are bundled under `docs-vault/` for offline reference.
+that the root `out/index.html` app entry exists, that both `en` and `ko` static
+routes exist for `/download`, `/docs`, `/ontology`, `/topology`, and
+`/ontology/edit`, that `_next` assets are present, and that the desktop docs
+are bundled under `docs-vault/` for offline reference.
 
 `desktop:verify-app` checks the built `.app` runtime after packaging. It runs
 the app executable from inside `Contents/MacOS` for a short hold window and

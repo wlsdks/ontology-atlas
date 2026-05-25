@@ -4,6 +4,7 @@ import path from "node:path";
 
 export const DESKTOP_SMOKE_LOCALES = ["en", "ko"];
 export const DESKTOP_SMOKE_ROUTES = ["/download", "/docs", "/ontology", "/topology", "/ontology/edit"];
+export const DESKTOP_SMOKE_ROOT_ENTRY = "index.html";
 export const DESKTOP_SMOKE_DOCS = [
   "docs-vault/DESKTOP-MACOS.md",
   "docs-vault/ontology/capabilities/desktop-app-distribution.md",
@@ -31,6 +32,12 @@ export function evaluateDesktopSmoke({
 
   addCheck("out-dir", "Next.js static export exists", fs.existsSync(outDir), outDir);
   addCheck("_next", "packaged app assets exist", existsUnder(outDir, "_next"), "_next");
+  addCheck(
+    "root-entry",
+    "Tauri app root entry exists",
+    existsUnder(outDir, DESKTOP_SMOKE_ROOT_ENTRY),
+    DESKTOP_SMOKE_ROOT_ENTRY,
+  );
 
   for (const locale of locales) {
     for (const route of routes) {

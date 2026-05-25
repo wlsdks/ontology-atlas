@@ -490,7 +490,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm bundle:check` \| Local-first static export bundle guard; run after `pnpm build` when `scripts\/check-bundle\.mjs` changed \|/);
     assert.match(checksDoc, /\| `pnpm desktop:check` \| macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI\/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files \|/);
     assert.match(checksDoc, /\| `pnpm desktop:doctor` \| Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, and Xcode command line tools \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:smoke` \| Built `out\/` payload smoke for packaged locale routes, `_next` assets, and offline desktop docs before launching or bundling the `\.app` \/ `\.dmg` \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:smoke` \| Built `out\/` payload smoke for the packaged root app entry, locale routes, `_next` assets, and offline desktop docs before launching or bundling the `\.app` \/ `\.dmg` \|/);
     assert.match(checksDoc, /\| `pnpm desktop:build:app` \| Build the Tauri `\.app` before optional release signing or local DMG packaging \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-app` \| Launch the built `\.app` from its executable directory long enough to catch early Tauri\/WebView startup crashes, then terminate it \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-install` \| Mount the DMG, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up \|/);

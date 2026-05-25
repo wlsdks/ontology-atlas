@@ -41,11 +41,12 @@ path, CLI/MCP verification script availability, `desktop:dev` /
 `desktop:verify-dmg` / `desktop:verify-install` scripts, the Tauri shell files, the explicit
 desktop-grade quality bar, and the first prototype route-smoke scope. `pnpm
 desktop:smoke` checks the built `out/` payload that the `.app` / `.dmg`
-packages: locale-prefixed `/download`, `/docs`, `/ontology`, `/topology`, and
-`/ontology/edit` routes, `_next` assets, and offline desktop docs under
-`docs-vault/`. `pnpm desktop:verify-app` launches the built `.app` executable
-from inside its `Contents/MacOS` executable directory long enough to catch early
-Tauri/WebView startup crashes, then terminates it.
+packages: the root app entry, locale-prefixed `/download`, `/docs`,
+`/ontology`, `/topology`, and `/ontology/edit` routes, `_next` assets, and
+offline desktop docs under `docs-vault/`. `pnpm desktop:verify-app` launches
+the built `.app` executable from inside its `Contents/MacOS` executable
+directory long enough to catch early Tauri/WebView startup crashes, then
+terminates it.
 `pnpm desktop:verify-install` mounts the generated DMG, copies the bundled app
 to a temporary install folder, launch-smokes that copied app from its own
 executable directory, and removes the temporary install after detaching the image.
