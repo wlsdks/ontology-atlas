@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T09:25:39.396Z",
+  "generatedAt": "2026-05-25T09:29:34.816Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -51,8 +51,8 @@
         }
       ],
       "excerpt": "Current as of 20260525. This is the userfacing guide for running ohmyontology as a local PC graph memory: CLIonly, MCPconnected, and web workbench flows over the same markdown vault. ohmyontology is not a hosted graph database. It is a localfirst graph workbench where markdown frontmatter is the graph, git is the audit",
-      "wordCount": 1813,
-      "updatedAt": "2026-05-24T17:45:20.354Z",
+      "wordCount": 1844,
+      "updatedAt": "2026-05-25T09:29:22.210Z",
       "linksOut": []
     },
     {
@@ -4789,8 +4789,8 @@
       },
       "headings": [],
       "excerpt": "로컬 vault 를 Claude Code / Cursor / Codex 에 붙이는 설정 파일을 사람이 확인하고 복구할 수 있게 하는 onboarding surface. VaultToolsMenu exposes the setup gate in the same language as agentbrief / workspacebrief: CLIonly, MCPconnected, Graph DB pack, and Setup gate. The panel now separates vault health, config readiness, agentroot guidance, and J",
-      "wordCount": 906,
-      "updatedAt": "2026-05-25T08:48:47.217Z",
+      "wordCount": 988,
+      "updatedAt": "2026-05-25T09:29:13.399Z",
       "linksOut": []
     },
     {

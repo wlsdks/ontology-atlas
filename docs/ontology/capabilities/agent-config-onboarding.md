@@ -29,3 +29,11 @@ the copy actions. Users see `config_state`, `mcp_verify`, `json_gate`, and
 `graph_briefs` in the UI itself, not only inside the copied packet or CLI JSON.
 That keeps the panel, terminal `agent-setup`, and Claude Code / Codex setup
 automation aligned on the exact evidence order.
+
+The setup card now also shows the root execution contract directly in the UI:
+`vault folder` means the agent is opened inside the ontology vault and commands
+can use `.` as the vault path, while `codebase root` means the agent is opened
+inside another product repository and setup-state, repair, `mcp-verify`, and
+JSON gate commands must pass the ontology vault as an explicit absolute path.
+This makes the codebase-root versus vault-folder distinction visible before a
+user copies any setup command or config template.

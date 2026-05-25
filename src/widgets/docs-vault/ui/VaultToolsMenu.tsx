@@ -1004,6 +1004,33 @@ export function VaultToolsMenu({
                 <div className="mt-2 text-[10px] font-medium uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]">
                   {t('agentSetup.connectGroup')}
                 </div>
+                <dl
+                  aria-label={t('agentSetup.rootContractAriaLabel')}
+                  className="mt-1.5 grid gap-1"
+                >
+                  {[
+                    {
+                      term: t('agentSetup.rootVaultTerm'),
+                      desc: t('agentSetup.rootVaultDesc'),
+                    },
+                    {
+                      term: t('agentSetup.rootCodebaseTerm'),
+                      desc: t('agentSetup.rootCodebaseDesc'),
+                    },
+                  ].map((rootMode) => (
+                    <div
+                      key={rootMode.term}
+                      className="rounded-sm border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(94,106,210,0.045)] px-2 py-1"
+                    >
+                      <dt className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:rgba(200,210,255,0.82)]">
+                        {rootMode.term}
+                      </dt>
+                      <dd className="mt-0.5 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                        {rootMode.desc}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
                 <button
                   type="button"
                   onClick={() => void handleCopyAgentSetupCheckCliCommand()}

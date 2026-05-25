@@ -180,6 +180,15 @@ describe('VaultToolsMenu', () => {
     expect(
       screen.getByRole('button', { name: '설정 상태 확인 명령 복사' }),
     ).toBeInTheDocument();
+    expect(screen.getByLabelText('AI agent root 실행 계약')).toBeInTheDocument();
+    expect(screen.getByText('vault folder')).toBeInTheDocument();
+    expect(
+      screen.getByText('이 vault 폴더 자체를 agent root로 열면 verify와 graph brief 명령은 `.`을 vault로 사용합니다.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('codebase root')).toBeInTheDocument();
+    expect(
+      screen.getByText('별도 제품 코드베이스에서 agent를 열면 설정 상태 확인, repair, mcp-verify, JSON gate 모두 이 vault의 절대경로를 명시합니다.'),
+    ).toBeInTheDocument();
     expect(screen.getByText('.mcp.json')).toBeInTheDocument();
     expect(screen.getByText('.codex/config.toml')).toBeInTheDocument();
     expect(screen.getByText('.mcp.json.example')).toBeInTheDocument();

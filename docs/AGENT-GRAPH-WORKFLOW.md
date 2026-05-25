@@ -248,11 +248,14 @@ For a non-developer or a first-time AI-agent session:
 
 1. Open the local vault folder in the web workbench.
 2. Open the Docs vault tools menu and check the AI agent setup card.
-3. If the agent opens at a separate codebase root, copy the `agent-setup`
+3. Read the root execution contract: `vault folder` sessions can use `.` as the
+   vault path, while separate `codebase root` sessions must pass the ontology
+   vault as an explicit absolute path.
+4. If the agent opens at a separate codebase root, copy the `agent-setup`
    command before copying manual templates.
-4. Restart Claude Code, Codex, or Cursor.
-5. Run the read-first verification prompt or the JSON setup gate.
-6. Only then ask the agent to answer architecture questions or write ontology
+5. Restart Claude Code, Codex, or Cursor.
+6. Run the read-first verification prompt or the JSON setup gate.
+7. Only then ask the agent to answer architecture questions or write ontology
    updates.
 
 For a developer terminal session:
