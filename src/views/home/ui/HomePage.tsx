@@ -1332,6 +1332,7 @@ export function HomePage() {
               incoming: t("ontologyDrawer.incoming"),
               outgoing: t("ontologyDrawer.outgoing"),
               noRelations: t("ontologyDrawer.noRelations"),
+              openTopologyFocus: t("ontologyDrawer.openTopologyFocus"),
               openOntology: t("ontologyDrawer.openOntology"),
               openBuilder: t("ontologyDrawer.openBuilder"),
               openSource: t("ontologyDrawer.openSource"),

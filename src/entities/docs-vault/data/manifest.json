@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T07:11:14.999Z",
+  "generatedAt": "2026-05-25T07:15:03.987Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6288,8 +6288,8 @@
       },
       "headings": [],
       "excerpt": "src/views/home/ui/TopologyOntologyDrawer.tsx is the ontologyaware detail panel inside /topology. It turns a selected domain / capability / element node into an operational graph inspection surface: kind and source slug, direct incoming/outgoing relation counts, relationtype chips, relation previews, source document nav",
-      "wordCount": 442,
-      "updatedAt": "2026-05-25T06:53:22.647Z",
+      "wordCount": 453,
+      "updatedAt": "2026-05-25T07:14:41.900Z",
       "linksOut": []
     },
     {
@@ -6305,8 +6305,8 @@
       },
       "headings": [],
       "excerpt": "src/views/home/lib/topologyontologydrawer.ts builds the read model for the topology ontology drawer. It summarizes selectednode incoming/outgoing relation counts, relationtype distribution, source slug, and a bounded relation preview. It also derives the collaborator brief lens, review prompt, and changeimpact summary ",
-      "wordCount": 280,
-      "updatedAt": "2026-05-25T06:53:22.647Z",
+      "wordCount": 286,
+      "updatedAt": "2026-05-25T07:14:56.121Z",
       "linksOut": []
     },
     {

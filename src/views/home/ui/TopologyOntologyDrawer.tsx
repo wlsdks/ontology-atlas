@@ -57,6 +57,7 @@ interface Props {
     incoming: string;
     outgoing: string;
     noRelations: string;
+    openTopologyFocus: string;
     openOntology: string;
     openBuilder: string;
     openSource: string;
@@ -120,6 +121,7 @@ export function TopologyOntologyDrawer({
   const sourceHref = model.sourceSlug
     ? buildDocsVaultHref({ slug: model.sourceSlug })
     : null;
+  const topologyFocusHref = buildTopologyFocusHref(node.id);
   const ontologyHref = buildOntologyNodeHref(node.id);
   const builderHref = buildOntologyBuilderNodeHref(node);
   const agentCheckSlug = model.sourceSlug ?? node.id;
@@ -127,8 +129,8 @@ export function TopologyOntologyDrawer({
   const copyCollaboratorBrief = async () => {
     const topologyUrl =
       typeof window === "undefined"
-        ? `/topology/?p=${encodeURIComponent(node.id)}`
-        : window.location.href;
+        ? topologyFocusHref
+        : buildTopologyFocusUrl(window.location.href, node.id);
     const text = formatTopologyCollaboratorBrief({
       node,
       model,
@@ -550,8 +552,15 @@ export function TopologyOntologyDrawer({
 
       <div className="sticky bottom-0 -mx-5 mt-auto flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 md:-mx-6 md:px-6">
         <Link
-          href={ontologyHref}
+          href={topologyFocusHref}
           className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.16)]"
+        >
+          <GitBranch size={14} aria-hidden />
+          {labels.openTopologyFocus}
+        </Link>
+        <Link
+          href={ontologyHref}
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
         >
           {labels.openOntology}
           <ArrowUpRight size={14} aria-hidden />
@@ -575,4 +584,20 @@ export function TopologyOntologyDrawer({
       </div>
     </aside>
   );
+}
+
+function buildTopologyFocusHref(nodeId: string): string {
+  return `/topology/?mode=focus&p=${encodeURIComponent(nodeId)}`;
+}
+
+function buildTopologyFocusUrl(currentUrl: string, nodeId: string): string {
+  const url = new URL(currentUrl);
+  if (!url.pathname.endsWith("/topology/") && !url.pathname.endsWith("/topology")) {
+    url.pathname = "/topology/";
+  }
+  url.searchParams.set("mode", "focus");
+  url.searchParams.set("p", nodeId);
+  url.searchParams.delete("pathFrom");
+  url.searchParams.delete("pathTo");
+  return url.toString();
 }

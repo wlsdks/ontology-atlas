@@ -1698,6 +1698,7 @@
       "incoming": "Incoming",
       "outgoing": "Outgoing",
       "noRelations": "No direct graph relations are attached to this node yet.",
+      "openTopologyFocus": "Open focus link",
       "openOntology": "Open in ontology tree",
       "openBuilder": "Focus in builder",
       "openSource": "Open source document",

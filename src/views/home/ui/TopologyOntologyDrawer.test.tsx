@@ -65,6 +65,7 @@ const labels = {
   incoming: "Incoming",
   outgoing: "Outgoing",
   noRelations: "No relations",
+  openTopologyFocus: "Open focus link",
   openOntology: "Open in ontology tree",
   openBuilder: "Focus in builder",
   openSource: "Open source document",
@@ -176,6 +177,9 @@ describe("TopologyOntologyDrawer", () => {
     expect(copied).toContain("# capabilities/topology-ontology-inspection");
     expect(copied).toContain("- Review prompt: Confirm dependents.");
     expect(copied).toContain(
+      "- Topology: http://localhost:3000/topology/?mode=focus&p=capabilities%2Ftopology-ontology-inspection",
+    );
+    expect(copied).toContain(
       "- Ontology: /ontology/?node=capabilities%2Ftopology-ontology-inspection",
     );
     expect(copied).toContain(
@@ -225,6 +229,14 @@ describe("TopologyOntologyDrawer", () => {
     expect(screen.getByText("Who relies on this concept?")).toBeInTheDocument();
     expect(screen.getByText("What breaks if it changes?")).toBeInTheDocument();
     expect(screen.getByText("Who should confirm the change?")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open focus link" })).toHaveAttribute(
+      "href",
+      "/topology/?mode=focus&p=capabilities%2Ftopology-ontology-inspection",
+    );
+    expect(screen.getByRole("link", { name: "Open in ontology tree" })).toHaveAttribute(
+      "href",
+      "/ontology/?node=capabilities%2Ftopology-ontology-inspection",
+    );
   });
 
   it("copies focused CLI, MCP, and sync-gate payloads from the topology drawer", async () => {

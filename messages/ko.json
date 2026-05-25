@@ -1698,6 +1698,7 @@
       "incoming": "들어오는 관계",
       "outgoing": "나가는 관계",
       "noRelations": "아직 이 노드에 직접 연결된 그래프 관계가 없습니다.",
+      "openTopologyFocus": "Focus 링크 열기",
       "openOntology": "온톨로지 트리에서 보기",
       "openBuilder": "빌더에서 포커스",
       "openSource": "근거 문서 열기",
