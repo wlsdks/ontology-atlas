@@ -277,10 +277,10 @@ CI runs `pnpm docs-vault:check`, `pnpm vault:validate`, `pnpm test:vault:validat
 
 | Area | Stack |
 |---|---|
-| App | Next.js 16, React 19, TypeScript 5, App Router, static export |
+| App | Next.js 16, React 19, TypeScript 5, App Router, static export, Tauri macOS shell |
 | UI | Tailwind CSS 4, Radix primitives, lucide icons |
 | Graph | Sigma.js, Graphology, ForceAtlas2, xyflow |
-| Local-first | File System Access API, IndexedDB handle persistence |
+| Local-first | Tauri native vault bridge, source-browser File System Access fallback, IndexedDB handle/path persistence |
 | Agent interface | `@modelcontextprotocol/sdk`, stdio JSON-RPC |
 | Tests | Vitest, Testing Library, jsdom, Playwright, Node test runner |
 

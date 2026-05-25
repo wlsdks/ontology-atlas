@@ -156,10 +156,10 @@ rm -rf test-vault
 ```
 
 Don't want to publish the CLI? Users can still create starter files from the
-web workbench's `/docs` page → "Create starter seed" button. But they will miss
-the terminal-native graph workflow (`bootstrap`, `compile --fix`, graph CRUD,
-deep-dive commands), so publishing the CLI is recommended for AI-native
-developers.
+installed macOS app's `/docs` page → "Create starter seed" button. But they
+will miss the terminal-native graph workflow (`bootstrap`, `compile --fix`,
+graph CRUD, deep-dive commands), so publishing the CLI is recommended for
+AI-native developers.
 
 ---
 
@@ -195,11 +195,11 @@ ls -la
 # 5 .md files + .mcp.json + .codex/config.toml
 ```
 
-### C) Start a user vault (workbench path)
+### C) Start a user vault (desktop app path)
 
-1. https://oh-my-ontology.web.app/docs (after Firebase deploy)
-2. "Open my markdown folder" → pick an empty folder
-3. Click "Create starter seed"
+1. Install and launch the signed macOS app.
+2. Pick an empty local vault folder from the app's `/docs` picker.
+3. Click "Create starter seed".
 4. 5 .md files + `.mcp.json` + `.codex/config.toml` + a manual `.mcp.json.example` are written automatically
 
 ---

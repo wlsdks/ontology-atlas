@@ -46,7 +46,7 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     expect(example?.content).toMatch(/^slug:\s+domains\/example/m);
   });
 
-  it("web starter 와 CLI template 은 같은 vault README/setup 안내를 제공", () => {
+  it("app starter 와 CLI template 은 같은 vault README/setup 안내를 제공", () => {
     for (const starterFile of ONTOLOGY_STARTER_FILES) {
       const template = readFileSync(
         path.join(ROOT, "cli/templates/vault", starterFile.relPath),

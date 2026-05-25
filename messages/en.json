@@ -96,7 +96,7 @@
     "exploreCta": "Installation guide",
     "downloadMacCta": "Download macOS app",
     "downloadNote": "Public builds ship through the latest GitHub Release after signing, notarization, checksum verification, and download-asset checks pass.",
-    "openVaultCta": "Open my markdown folder",
+    "openVaultCta": "Open local vault in the app",
     "privacyNote": "The app and vault data use your local disk as the source of truth. The website is the product introduction and download entry point."
   },
   "rootEntry": {

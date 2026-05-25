@@ -69,10 +69,10 @@ For AI agents, there's an MCP server (`oh-my-ontology-mcp`, 23 tools
 The agent now has `list_concepts`, `get_concept`, `find_path` (BFS),
 `find_orphans`, `add_concept`, `patch_concept`, `delete_concept`, etc.
 
-There's also a Next.js workbench that visualizes the same vault three
-ways: Sigma WebGL topology, hierarchical tree, xyflow ERD builder. All
-read/write the same `.md` files via the browser File System Access API.
-Static export — works offline, no server.
+There's also a macOS desktop app that wraps the same Next.js static
+workbench and visualizes the vault three ways: Sigma WebGL topology,
+hierarchical tree, xyflow ERD builder. The installed app reads/writes the
+same `.md` files through a local native vault bridge; the hosted website is only the product intro and download entry point.
 
 **Pure local-first**: no backend, no auth, no DB. The optional Firebase
 / Firestore / Auth surfaces were permanently removed in R10. A

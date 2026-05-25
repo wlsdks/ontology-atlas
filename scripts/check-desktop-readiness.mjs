@@ -33,6 +33,17 @@ const koMessages = JSON.parse(readText("messages/ko.json"));
 const cargoToml = readText("src-tauri/Cargo.toml");
 const desktopDoc = readText("docs/DESKTOP-MACOS.md");
 const rootReadme = readText("README.md");
+const featuresDoc = readText("docs/FEATURES.md");
+const productDirectionDoc = readText("docs/PRODUCT-DIRECTION.md");
+const architectureDoc = readText("docs/ARCHITECTURE.md");
+const agentGraphWorkflowDoc = readText("docs/AGENT-GRAPH-WORKFLOW.md");
+const troubleshootingDoc = readText("docs/TROUBLESHOOTING.md");
+const publishNpmDoc = readText("docs/PUBLISH-NPM.md");
+const demoStoryboardDoc = readText("docs/launch/DEMO-GIF-STORYBOARD.md");
+const redditPostsDoc = readText("docs/launch/REDDIT-POSTS.md");
+const desktopOntologyDoc = readText("docs/ontology/capabilities/desktop-app-distribution.md");
+const onboardingOntologyDoc = readText("docs/ontology/domains/onboarding-ux.md");
+const firebaseDeployOntologyDoc = readText("docs/ontology/capabilities/firebase-deploy-skill.md");
 const landingPage = readText("src/views/landing/ui/LandingPage.tsx");
 const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
 const macosDownloadLink = readText("src/features/macos-download-link/ui/MacosDownloadLink.tsx");
@@ -321,6 +332,8 @@ if (
   rootReadme.includes("| **macOS app** | Install once, pick a local vault folder") &&
   rootReadme.includes("| **Website** | Explain the product, show a read-only demo") &&
   rootReadme.includes("The public website is a static promo/download site with a read-only demo.") &&
+  rootReadme.includes("Tauri macOS shell") &&
+  rootReadme.includes("Tauri native vault bridge") &&
   !rootReadme.includes("| **Web workbench** |") &&
   !rootReadme.includes("Open `http://localhost:3000`, go to `/docs`")
 ) {
@@ -328,6 +341,54 @@ if (
 } else {
   fail(
     "README.md must not present the hosted Firebase site as the writable web workbench; it should route real local visual work to the installed macOS app",
+  );
+}
+
+if (
+  featuresDoc.includes("4 surfaces (macOS app · CLI · MCP · Website)") &&
+  featuresDoc.includes("real ontology work happens in the installed app / CLI / MCP") &&
+  featuresDoc.includes("Hosted pages do not open or edit local vault folders.") &&
+  productDirectionDoc.includes("CLI · installed macOS app") &&
+  productDirectionDoc.includes("hosted website is the product introduction and download entry point") &&
+  architectureDoc.includes("Tauri macOS shell (installed local workbench)") &&
+  architectureDoc.includes("Tauri native bridge → user disk") &&
+  architectureDoc.includes("AI agents and the installed app end up with the same view")
+) {
+  pass("product and architecture docs frame the installed app as the writable local workbench");
+} else {
+  fail(
+    "FEATURES, PRODUCT-DIRECTION, and ARCHITECTURE must describe macOS app / CLI / MCP as the writable local surfaces and hosted web as promo/download/read-only",
+  );
+}
+
+if (
+  agentGraphWorkflowDoc.includes("Install the macOS app and open the local vault folder there.") &&
+  troubleshootingDoc.includes("desktop app `/docs` button") &&
+  troubleshootingDoc.includes("Desktop app scaffold button stays grayed out") &&
+  publishNpmDoc.includes("installed macOS app's `/docs` page") &&
+  publishNpmDoc.includes("Start a user vault (desktop app path)") &&
+  demoStoryboardDoc.includes("설치된 oh-my-ontology macOS 앱") &&
+  redditPostsDoc.includes("macOS desktop app that wraps the same Next.js static") &&
+  redditPostsDoc.includes("hosted website is only the product intro and download entry point")
+) {
+  pass("workflow, troubleshooting, publish, and launch docs route writable vault work through the desktop app");
+} else {
+  fail(
+    "User-facing workflow/troubleshooting/publish/launch docs must not steer local vault work through the hosted web workbench",
+  );
+}
+
+if (
+  desktopOntologyDoc.includes("hosted empty states and demo badges route users to") &&
+  onboardingOntologyDoc.includes("설치된 macOS 앱의 starter") &&
+  onboardingOntologyDoc.includes("CLI/app starter README") &&
+  firebaseDeployOntologyDoc.includes("static promo/download website") &&
+  firebaseDeployOntologyDoc.includes("real local vault work is routed to the installed macOS app")
+) {
+  pass("dogfood ontology docs mirror the desktop-app and hosted-download split");
+} else {
+  fail(
+    "docs/ontology must mirror the desktop-app distribution model so the shared ontology does not preserve the old hosted-workbench framing",
   );
 }
 

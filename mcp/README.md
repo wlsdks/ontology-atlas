@@ -15,7 +15,7 @@ recompiling the same graph over and over.
 
 ### 1. Register with an agent
 
-The shortest path is to let the CLI or web starter write the agent configs:
+The shortest path is to let the CLI or installed app starter write the agent configs:
 
 ```bash
 npx oh-my-ontology init ./ontology

@@ -441,19 +441,13 @@ declared action keys do not match the frontmatter patch.
 
 ## See the graph
 
-A web workbench visualizes the vault as a tree, topology (Sigma WebGL),
+The macOS app visualizes the vault as a tree, topology (Sigma WebGL),
 and ERD (xyflow):
 
-- **Hosted demo** (read-only, our own dogfood vault):
+- **Hosted website** (intro, download, read-only dogfood demo):
   https://oh-my-ontology.web.app
-- **Local workbench** (read/write your vault):
-  ```bash
-  git clone https://github.com/wlsdks/oh-my-ontology
-  cd oh-my-ontology
-  pnpm install
-  pnpm dev   # http://localhost:3000
-  ```
-  Then visit `/docs` and pick your vault folder.
+- **Local workbench** (read/write your vault): install the macOS app, then
+  open `/docs` and pick your vault folder.
 
 ## Mission
 

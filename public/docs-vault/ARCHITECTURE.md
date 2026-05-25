@@ -30,10 +30,12 @@ tags: [architecture, infra, overview]
 │ ├─ Next.js 16 App Router                               │
 │ ├─ next-intl /[locale]/ (en, ko)                       │
 │ ├─ output: 'export'  (static)                          │
+│ ├─ Tauri macOS shell (installed local workbench)        │
 │ └─ TaxonomyProvider · ToastProvider · MotionProvider   │
 ├────────────────────────────────────────────────────────┤
 │ Data sources (mode-aware)                               │
-│ ├─ vault           File System Access API → user disk  │
+│ ├─ vault           Tauri native bridge → user disk      │
+│ │                  (source browser dev can use FSA)     │
 │ │                  (`src/features/docs-vault-local/`)  │
 │ └─ static          build-time dogfood manifest         │
 │                    (`docs/ontology/` → JSON import)    │
@@ -111,18 +113,19 @@ The directory layout is enforced by `eslint-plugin-boundaries` in `eslint.config
    merge/delete calls. Analysis tools such as `analyze_repo_structure` and
    `infer_imports` are side-effect-free candidate generators.
 
-### Vault mode (user picked a markdown folder)
+### Vault mode (user picked a markdown folder in the desktop app)
 
 1. `useLocalVault()` returns `{ status: 'loaded', handle, manifest }`.
 2. `useDataSourceMode()` returns `'local'`.
 3. `useProjects()` derives projects from `manifest.docs` (filter `kind: project`).
 4. `useOntologyInsight()` derives ontology nodes/edges from vault frontmatter.
 5. Mutations (`useProjectMutations.updateProject`) write directly to `.md`
-   files via the File System Access API.
+   files via the Tauri native vault bridge. Source-browser development can use
+   the File System Access API fallback, but hosted web keeps local vault work
+   disabled.
 
 The MCP server is independent: it reads the same vault directory through the
-filesystem (Node.js `fs`), not the browser FS API. AI agents and the web UI
-end up with the same view.
+filesystem (Node.js `fs`), not the WebView bridge. AI agents and the installed app end up with the same view.
 
 ### Static mode (no vault picked)
 

@@ -23,6 +23,10 @@ wrap the existing Next.js static export in a Tauri shell, open the same local
 vault folder, render `/download`, `/docs`, `/ontology`, `/topology`, and
 `/ontology/edit`, then verify the same CLI/MCP setup gates still work for
 Claude Code and Codex.
+The hosted Firebase site is intentionally demoted to product introduction,
+download, and read-only demo: hosted empty states and demo badges route users to
+`/download`, while the installed Tauri runtime keeps `/docs/?intent=local` as
+the writable local vault picker path.
 The repository now has the first `src-tauri/` shell with `frontendDist: "../out"`
 and macOS `.app` targeting. Its WebView CSP is enabled for local app assets,
 data/blob images, local styles, and the Tauri IPC endpoint, so the installed app

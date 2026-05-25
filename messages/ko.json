@@ -96,7 +96,7 @@
     "exploreCta": "설치 안내 보기",
     "downloadMacCta": "macOS 앱 다운로드",
     "downloadNote": "공개 빌드는 서명, notarization, 체크섬 검증, 다운로드 asset 검증을 통과한 뒤 최신 GitHub Release 로 배포됩니다.",
-    "openVaultCta": "내 마크다운 폴더 열기",
+    "openVaultCta": "앱에서 로컬 vault 열기",
     "privacyNote": "앱과 vault 데이터는 로컬 디스크를 진실원으로 사용합니다. 웹 사이트는 제품 소개와 다운로드 진입점입니다."
   },
   "rootEntry": {

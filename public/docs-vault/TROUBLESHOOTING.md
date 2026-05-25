@@ -4,7 +4,7 @@ Common issues users hit when starting with `oh-my-ontology`. If your case isn't 
 
 ---
 
-## Vault scaffold (`npx oh-my-ontology init`, web `/docs` button)
+## Vault scaffold (`npx oh-my-ontology init`, desktop app `/docs` button)
 
 ### `npx oh-my-ontology` runs an old version
 
@@ -23,22 +23,22 @@ The target folder already has `README.md` / `project.md` / etc. — the CLI neve
 - Delete the conflicting files, or
 - Use a fresh folder: `npx oh-my-ontology init another-folder`
 
-### Web scaffold button stays grayed out
+### Desktop app scaffold button stays grayed out
 
 The button only enables when:
 
-1. You picked a folder via "Open my markdown folder" *and*
+1. You picked a folder via the app's local vault picker *and*
 2. The picked handle has read+write permission.
 
-If the browser asked only for "view files" permission, click the picker again and approve "edit files."
+If the app cannot write, click the picker again and choose a non-system folder.
 
-### Browser refuses to write to the picked folder
+### Local vault picker refuses to write to the picked folder
 
-The File System Access API requires:
+The desktop app requires:
 
-- A user gesture (click) that called `showDirectoryPicker` — refresh and click again.
-- HTTPS or `localhost`. Some browsers block on plain HTTP.
 - A non-system folder. Try a folder under `~/Documents` or `~/Desktop`.
+- macOS privacy permission for protected locations such as Desktop or Documents.
+- A folder the current user can read and write.
 
 ---
 
@@ -118,7 +118,7 @@ If you use `nvm`, set the agent to invoke `npx` from a v20+ shim.
 
 ---
 
-## Web workbench (dev / prod)
+## Desktop app / source workbench (dev / prod)
 
 ### `pnpm dev` 500 error after `pnpm build`
 

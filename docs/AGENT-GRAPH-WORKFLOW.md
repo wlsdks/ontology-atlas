@@ -20,9 +20,9 @@ between them does not migrate data.
 | You want graph-database-style exploration but not a database server | Graph DB pack | Bounded query plans, node/edge scans, domain matrix, paths, relation explanations, and follow-up evidence commands |
 | Setup is unclear or you opened the agent from another codebase root | Agent setup gate | Config repair commands, restart guidance, JSON readiness checks, and fallback timing before edits |
 
-For non-developers, the safest sequence is: open a vault folder in the web UI,
-use the AI agent setup card, restart the agent, run the JSON gate, and only then
-ask the agent to write ontology updates.
+For non-developers, the safest sequence is: install the macOS app, open a vault
+folder there, use the AI agent setup card, restart the agent, run the JSON
+gate, and only then ask the agent to write ontology updates.
 
 Read the JSON gate in three states:
 
@@ -246,7 +246,7 @@ Installed MCP verifier:
 
 For a non-developer or a first-time AI-agent session:
 
-1. Open the local vault folder in the web workbench.
+1. Install the macOS app and open the local vault folder there.
 2. Open the Docs vault tools menu and check the AI agent setup card.
 3. Read the root execution contract: `vault folder` sessions can use `.` as the
    vault path, while separate `codebase root` sessions must pass the ontology

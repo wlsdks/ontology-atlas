@@ -17,7 +17,7 @@ query, and maintain through MCP.
 | [`PRODUCT-DIRECTION.md`](PRODUCT-DIRECTION.md) | Product strategy, audience, launch framing, success criteria | Canonical strategy |
 | [`AGENT-MEMORY-POSITIONING.md`](AGENT-MEMORY-POSITIONING.md) | Why the product should be sold as agent memory, not ontology editing | Canonical positioning note |
 | [`AGENT-GRAPH-WORKFLOW.md`](AGENT-GRAPH-WORKFLOW.md) | How to use the local graph with CLI-only workflows, MCP-connected agents, graph-DB-style query packs, and actual verification evidence | Canonical user-facing workflow |
-| [`FEATURES.md`](FEATURES.md) | Complete inventory of shipping CLI, MCP, and web surfaces | Canonical feature inventory |
+| [`FEATURES.md`](FEATURES.md) | Complete inventory of shipping macOS app, CLI, MCP, and website surfaces | Canonical feature inventory |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview |
 | [`DEVELOPMENT-CHECKS.md`](DEVELOPMENT-CHECKS.md) | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks |
 | [`DESKTOP-MACOS.md`](DESKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track |
@@ -40,8 +40,9 @@ The normative product model is:
    validation, compile, agent handoff, graph queries, dashboard facets, relation schema scans,
    connected island checks, prerequisite ordering, growth/maintenance, and safe
    graph edits.
-5. The web surface is a local workbench: docs editor, topology, tree, ERD
-   builder, insights.
+5. The installed macOS app is the local workbench: docs editor, topology, tree,
+   ERD builder, insights. The hosted website is product introduction,
+   download, and read-only demo.
 6. The product promise is durable coding-agent memory, not a manual ontology
    editor.
 7. User-facing graph workflow docs must explain what works without MCP, what

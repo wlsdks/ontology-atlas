@@ -20,7 +20,7 @@ relates:
 cross-cutting. 라이트/다크 토글 (`html[data-theme="light"]`), Sonner-기반 toast, aria-live
 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키,
 `prefers-reduced-motion` 자동 존중. fresh vault onboarding 도 이 domain 의 일부:
-CLI `init` 과 web workbench starter 가 같은 5-node vault README/setup 내용을 제공하고,
+CLI `init` 과 설치된 macOS 앱의 starter 가 같은 5-node vault README/setup 내용을 제공하고,
 Claude Code/Cursor `.mcp.json`, Codex `.codex/config.toml`, global Codex `mcp add`
 흐름을 동시에 안내한다. 2026-05-23 follow-up 으로 빈 vault CTA 에 생성 전 agent 검증
 체크리스트와 copyable agent prompt 를 노출하고, 기존 markdown 이 있는 vault 에서도
@@ -35,7 +35,7 @@ starter README 에도 첫 연결 검증 루프를
 `validate_vault` → `workspace_brief` → `agent_brief` 를 실행해 읽기 가능성과 write tool
 노출 여부를 보고하게 하고, CLI 가 설치된 사용자는 `validate`, `workspace-brief`,
 `agent-brief --prompt`, `agent-brief --verify-fallbacks --json`, `mcp-verify --timeout-ms 15000` 로 같은 경로를 확인한다.
-starter CTA 와 CLI/web starter README 는 ontology 를 "project/domain/capability/element
+starter CTA 와 CLI/app starter README 는 ontology 를 "project/domain/capability/element
 와 typed relation 으로 코드베이스의 소유권, 의존성, 근거, 변경 영향을 설명하는 실행
 가능한 의미 모델"로 먼저 정의한다. 그래서 첫 진입 사용자는 그래프 그림이나 파일
 시드가 아니라 AI agent 와 사람이 같이 유지할 의미 모델을 만든다는 점을 이해한 뒤

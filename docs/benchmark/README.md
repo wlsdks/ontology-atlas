@@ -9,7 +9,7 @@
 
 ## Why this exists
 
-We built CLI · MCP · 14 tools · web workbench all on top of one assumption — that giving an AI agent access to a curated graph of `kind / domain / capability / element` makes it answer codebase questions better. We've never tested whether that's actually true.
+We built CLI · MCP · graph tooling · a macOS local workbench all on top of one assumption — that giving an AI agent access to a curated graph of `kind / domain / capability / element` makes it answer codebase questions better. We've never tested whether that's actually true.
 
 If the effect is large, this folder becomes evidence in the README. If small, we re-design — maybe the schema is too thin, maybe agents prefer raw grep, maybe the value is elsewhere.
 

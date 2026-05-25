@@ -122,10 +122,10 @@ cli/src/integration.test.mjs — spawn-based integration suite. 매 PR 마다 co
 
 `pnpm test:mcp:maintenance` — focused MCP maintenance queue contract. `maintenance_plan` filter enum, ready/missing cursor handling, valid resume cursor, dogfood work-queue shape failure 를 `mcp/src/verify-script.test.mjs` 와 `scripts/dogfood-mcp-walk.test.mjs` 에서 골라 실행해, maintenance queue 만 만질 때 full verify / dogfood suite 를 돌리지 않아도 된다.
 
-src/features/docs-vault-local/lib/ontology-starter.test.ts — web workbench starter 의 5개
+src/features/docs-vault-local/lib/ontology-starter.test.ts — app starter 의 5개
 파일이 `cli/templates/vault/` 와 byte-for-byte 동일한지 검증. starter README 안에
 Claude Code/Cursor `.mcp.json`, Codex `.codex/config.toml`, global Codex
-`codex mcp add ...` 경로가 모두 남아있는지도 확인해 CLI/Web onboarding drift 를
+`codex mcp add ...` 경로가 모두 남아있는지도 확인해 CLI/app onboarding drift 를
 차단한다.
 
 scripts/smoke-clean-onboarding.mjs — fresh user smoke. 임시 `HOME` / `CODEX_HOME` 과 새 프로젝트를 만들고 `init → bootstrap → validate` 부터 Claude/Cursor project `.mcp.json`, Codex repo-local `.codex/config.toml`, Codex `mcp add` 등록까지 clean-room 으로 검증.

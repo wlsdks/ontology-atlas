@@ -17,7 +17,7 @@ Launch framing (v4, 2026-05-18):
 > Your AI coding agent forgets your codebase. Give it a local, git-backed
 > mental model it can read, query, and maintain through MCP.
 
-- Primary audience: **developer + their AI agent**. Developer creates / refines nodes (CLI · web UI); AI agent (Claude Code, Codex, Cursor) reads/writes the same vault via MCP to give better codebase answers.
+- Primary audience: **developer + their AI agent**. Developer creates / refines nodes (CLI · installed macOS app); AI agent (Claude Code, Codex, Cursor) reads/writes the same vault via MCP to give better codebase answers. The hosted website is the product introduction and download entry point, not the daily writable workbench.
 - Spine = `.md` documents → a growing ontology. Topology / tree / builder are *views* of that spine.
 - PM / designer / ops are **bonus, not target**. If the surface happens to be friendly to them — good. We don't optimize for them.
 
@@ -100,7 +100,7 @@ This is the differentiator. **Generic ontology workbench (Protégé etc.) → "w
 
 | Audience | Role | Primary surface |
 |---|---|---|
-| **Developer** | Author + maintain the ontology as part of normal coding | CLI (`oh-my-ontology init/list/validate/add/find/import`), web UI (`/ontology`, `/docs`) |
+| **Developer** | Author + maintain the ontology as part of normal coding | CLI (`oh-my-ontology init/list/validate/add/find/import`), installed macOS app (`/ontology`, `/docs`) |
 | **AI agent** (Claude Code, Cursor, …) | Read for context · write back new findings | MCP server (23 tools — read 15 + write 8) |
 | ~~PM / designer / ops~~ | ~~Build mental model without reading source~~ | dropped (R11 fire #25 — developer-primary 결정 후) |
 
@@ -278,9 +278,9 @@ $ npx oh-my-ontology@latest
 
 # starts:
 # - treats the current directory as the vault
-# - serves the web UI on localhost:3210
-# - opens the browser
-# - if Firebase isn't configured, falls back to local mode automatically
+# - serves the local workbench on localhost:3210 for source development
+# - opens the browser as a source-checkout fallback
+# - production visual work moves through the signed macOS app
 ```
 
 Pros:
@@ -383,7 +383,7 @@ When an agent enters the codebase, it sees this on the first page and picks up t
 
 1. ✅ `mcp/` package — MCP server (`oh-my-ontology-mcp`)
 2. ✅ 23 tools (read 15 + write 8): `list_concepts` / `get_concept` / `get_concepts` / `find_evidence` / `find_backlinks` / `find_neighbors` / `find_path` / `list_kinds` / `find_orphans` / `query_concepts` (typed filter DSL) / `compile_ontology` / `query_ontology` / `validate_vault` / `analyze_repo_structure` (R16) / `infer_imports` (R17) / `add_concept` / `add_concepts` / `add_relation` / `add_relations` / `patch_concept` / `delete_concept` / `rename_concept` / `merge_concepts` (R11 — atomic graph-level write)
-3. ✅ CLI command (`oh-my-ontology`) — `npx oh-my-ontology init <folder>` scaffolds the vault. The web `/docs` "Create starter seed" button is the no-terminal alternative.
+3. ✅ CLI command (`oh-my-ontology`) — `npx oh-my-ontology init <folder>` scaffolds the vault. The installed app `/docs` "Create starter seed" button is the no-terminal alternative.
 4. ⏸ Auto-generated AGENTS.md — DEFERRED (manual updates + dogfood vault cover this)
 5. ✅ `docs/ontology/` dogfood vault — 50 nodes describing our own mental model
 

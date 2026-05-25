@@ -89,6 +89,18 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ product and architecture docs frame the installed app as the writable local workbench/,
+  );
+  assert.match(
+    result.stdout,
+    /✓ workflow, troubleshooting, publish, and launch docs route writable vault work through the desktop app/,
+  );
+  assert.match(
+    result.stdout,
+    /✓ dogfood ontology docs mirror the desktop-app and hosted-download split/,
+  );
+  assert.match(
+    result.stdout,
     /✓ static ontology and topology empty states route hosted users to the app download while preserving desktop vault picking/,
   );
   assert.match(

@@ -73,7 +73,7 @@ they get value.
 Risk signals:
 
 - onboarding starts with manual node authoring
-- the web UI feels like the primary product instead of an optional workbench
+- the hosted website feels like the primary product instead of intro/download
 - agent sync is not visible in git diffs
 - `health`, `workspace_brief`, and `maintenance_plan` explain problems but do
   not lead to obvious next actions

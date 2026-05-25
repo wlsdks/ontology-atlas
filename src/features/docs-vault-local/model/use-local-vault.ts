@@ -1001,7 +1001,7 @@ export function useLocalVaultInternal() {
   /**
    * mission v2 ontology starter — `npx oh-my-ontology init` 과 동일한
    * 5 md + .mcp.json / .mcp.json.example / .codex/config.toml 시드를 vault 에
-   * 작성. 비개발자가 터미널 없이 web workbench 의 picker → "starter 만들기"
+   * 작성. 비개발자가 터미널 없이 desktop app 의 picker → "starter 만들기"
    * 버튼만으로 시작 가능하게.
    *
    * 이미 존재하는 파일은 덮어쓰지 않고 skip. 사용자가 기존 vault 에 호출해도
