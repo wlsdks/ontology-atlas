@@ -434,10 +434,30 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests desktop readiness checks for macOS desktop distribution files', () => {
+    const result = suggestFocusedChecks([
+      'scripts/check-desktop-readiness.mjs',
+      'scripts/check-desktop-readiness.test.mjs',
+      'docs/DESKTOP-MACOS.md',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test scripts/check-desktop-readiness.test.mjs',
+      'pnpm docs-vault:check',
+      'pnpm test:desktop:check',
+      'pnpm desktop:check',
+    ]);
+    assert.deepEqual(result.commands[0].paths, [
+      'scripts/check-desktop-readiness.mjs',
+      'scripts/check-desktop-readiness.test.mjs',
+    ]);
+  });
+
   it('suggests static export gates when Next config changes', () => {
     const result = suggestFocusedChecks(['next.config.ts']);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm desktop:check',
       'pnpm exec tsc --noEmit',
       'pnpm build',
       'pnpm bundle:check',

@@ -22,6 +22,9 @@ then verify the same CLI/MCP setup gates still work for Claude Code and Codex.
 `pnpm desktop:check` is the pre-scaffold gate for that slice: it checks the
 Next.js static export shape, static image mode, trailing-slash routes, docs-vault
 build freshness path, and CLI/MCP verification script availability.
+`pnpm checks:changed` also routes desktop-related edits to this gate, and routes
+checker implementation edits through the focused
+`pnpm exec node --test scripts/check-desktop-readiness.test.mjs` contract first.
 
 This keeps the desktop app aligned with the core ontology definition: the
 frontmatter graph remains the source of truth, the CLI/MCP graph engine remains

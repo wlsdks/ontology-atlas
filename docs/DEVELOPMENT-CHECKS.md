@@ -26,6 +26,7 @@ For user-facing UI changes, add the relevant Playwright route check.
 | Lint/style | `pnpm lint` | `pnpm test:run` |
 | Static deploy safety | `pnpm build` | `pnpm bundle:check` |
 | Static dogfood manifest | `pnpm docs-vault:check` | `pnpm test:docs-vault` |
+| macOS desktop readiness | `pnpm desktop:check` | `pnpm test:desktop:check` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
 | CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
 | MCP core units | `pnpm test:mcp:unit` | `pnpm integration:mcp:readme` |
@@ -131,8 +132,15 @@ which exercises global Tailwind/CSS output across the core responsive routes
 without starting from every Playwright journey.
 The local-first bundle guard is artifact-based: when `scripts/check-bundle.mjs`
 changes, run `pnpm build` first and then `pnpm bundle:check`.
+The macOS desktop readiness gate is pre-scaffold and local-first: when
+`scripts/check-desktop-readiness.mjs`, `docs/DESKTOP-MACOS.md`, or
+`next.config.ts` changes, run `pnpm desktop:check`; checker implementation
+changes also route to direct
+`pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and then
+`pnpm test:desktop:check`.
 `next.config.ts` is static-export source-of-truth; changes route to
-`pnpm exec tsc --noEmit`, `pnpm build`, and then `pnpm bundle:check`.
+`pnpm desktop:check`, `pnpm exec tsc --noEmit`, `pnpm build`, and then
+`pnpm bundle:check`.
 Next App Router entries under `app/**/*.ts[x]` and `next-env.d.ts` route to
 `pnpm exec tsc --noEmit`, so route exports, metadata routes, and page/layout
 type drift are caught before broader browser or build checks.
@@ -180,6 +188,8 @@ unless the changed behavior itself needs installed-style dogfood verification.
 |---|---|
 | `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget |
 | `pnpm bundle:check` | Local-first static export bundle guard; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
+| `pnpm desktop:check` | macOS desktop pre-scaffold readiness gate for static export, image mode, docs-vault freshness, and CLI/MCP verification script availability |
+| `pnpm test:desktop:check` | Desktop readiness checker contract; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
 | `pnpm test:i18n:messages` | Locale routing/message catalog parity |
 | `pnpm test:claude:hooks` | Claude Code/Codex hook wiring and npm publish guard |

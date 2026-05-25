@@ -37,6 +37,20 @@ const RULES = [
     matches: [/^scripts\/audit-vault-paths\.(?:mjs|test\.mjs)$/],
   },
   {
+    command: 'pnpm test:desktop:check',
+    reason: 'desktop readiness checker contract changed',
+    matches: [/^scripts\/check-desktop-readiness\.(?:mjs|test\.mjs)$/],
+  },
+  {
+    command: 'pnpm desktop:check',
+    reason: 'macOS desktop readiness inputs changed',
+    matches: [
+      /^scripts\/check-desktop-readiness\.(?:mjs|test\.mjs)$/,
+      /^docs\/DESKTOP-MACOS\.md$/,
+      /^next\.config\.ts$/,
+    ],
+  },
+  {
     command: 'pnpm vault:migrate --list',
     reason: 'vault migration inventory or runner changed',
     matches: [
@@ -470,6 +484,8 @@ const SCRIPT_DIRECT_LIB_TESTS = new Map([
   ['scripts/audit-vault-paths.test.mjs', 'scripts/audit-vault-paths.test.mjs'],
   ['scripts/build-docs-vault.mjs', 'scripts/build-docs-vault.test.mjs'],
   ['scripts/build-docs-vault.test.mjs', 'scripts/build-docs-vault.test.mjs'],
+  ['scripts/check-desktop-readiness.mjs', 'scripts/check-desktop-readiness.test.mjs'],
+  ['scripts/check-desktop-readiness.test.mjs', 'scripts/check-desktop-readiness.test.mjs'],
   ['scripts/dogfood-compile-fix.mjs', 'scripts/dogfood-compile-fix.test.mjs'],
   ['scripts/dogfood-compile-fix.test.mjs', 'scripts/dogfood-compile-fix.test.mjs'],
   ['scripts/dogfood-mcp-walk.mjs', 'scripts/dogfood-mcp-walk.test.mjs'],

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T06:17:29.605Z",
+  "generatedAt": "2026-05-25T06:22:29.056Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1794,9 +1794,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 47 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 50 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
       "wordCount": 1483,
-      "updatedAt": "2026-05-24T20:09:35.521Z",
+      "updatedAt": "2026-05-25T06:22:21.356Z",
       "linksOut": []
     },
     {
@@ -3949,8 +3949,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 2992,
-      "updatedAt": "2026-05-24T04:49:12.097Z",
+      "wordCount": 3080,
+      "updatedAt": "2026-05-25T06:21:07.496Z",
       "linksOut": []
     },
     {
@@ -5116,8 +5116,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The first slice is a feasibility proof, not a second product architecture: wrap the existing Next.js static export in a Tauri shell, open the same local vault folder, render /docs, /ontology, /topology, and /ontol",
-      "wordCount": 169,
-      "updatedAt": "2026-05-25T06:17:22.951Z",
+      "wordCount": 193,
+      "updatedAt": "2026-05-25T06:21:16.812Z",
       "linksOut": []
     },
     {
