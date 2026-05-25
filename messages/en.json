@@ -2264,6 +2264,7 @@
       "openOpening": "Opening folder…",
       "openLoading": "Building manifest…",
       "openLabel": "Open my markdown folder",
+      "idleHint": "Pick a local folder with markdown files. Frontmatter becomes the graph, and nothing is uploaded.",
       "recentAriaLabel": "Recently opened vaults",
       "recentTitle": "Recent vaults",
       "recentOpenAriaLabel": "Open recent vault: {name}",

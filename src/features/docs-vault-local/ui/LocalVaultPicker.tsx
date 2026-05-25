@@ -293,6 +293,9 @@ export function LocalVaultPicker({
             ? t('openLoading')
             : t('openLabel')}
       </button>
+      <p className="text-[11px] leading-5 text-[color:var(--color-text-quaternary)]">
+        {t('idleHint')}
+      </p>
       <RecentVaultList
         recentVaults={recentVaults}
         disabled={status === 'opening' || status === 'loading'}

@@ -25,6 +25,27 @@ function recentVault(name: string, rootPath: string, lastAccessedAt: number): Lo
 }
 
 describe('LocalVaultPicker', () => {
+  it('idle 상태에서 로컬 markdown vault 사용 모델을 설명한다', () => {
+    render(
+      <LocalVaultPicker
+        status="idle"
+        handleName={null}
+        docCount={0}
+        errorMessage={null}
+        lastLoadedAt={null}
+        onOpen={vi.fn()}
+        onClose={vi.fn()}
+        onRefresh={vi.fn()}
+        onRequestPermission={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText(/마크다운 파일이 있는 로컬 폴더를 선택하세요/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/업로드는 없습니다/)).toBeInTheDocument();
+  });
+
   it('idle 상태에서 최근 desktop vault 를 원클릭 재열기 affordance 로 보여준다', () => {
     const onOpenRecent = vi.fn();
     const onForgetRecent = vi.fn();

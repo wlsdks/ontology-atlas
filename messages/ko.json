@@ -2264,6 +2264,7 @@
       "openOpening": "폴더 여는 중…",
       "openLoading": "매니페스트 빌드 중…",
       "openLabel": "내 PC 의 마크다운 폴더 열기",
+      "idleHint": "마크다운 파일이 있는 로컬 폴더를 선택하세요. frontmatter 가 그래프가 되고, 업로드는 없습니다.",
       "recentAriaLabel": "최근에 열었던 vault",
       "recentTitle": "최근 vault",
       "recentOpenAriaLabel": "최근 vault 열기: {name}",
