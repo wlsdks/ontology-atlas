@@ -266,6 +266,17 @@ describe("buildInsightsCollaboratorBrief", () => {
         '- MCP check: query_ontology({"operation":"workspace_brief","limit":5})',
       ].join("\n"),
     );
+    expect(formatted).toContain(
+      [
+        "## Decision record",
+        "- Decision: Confirm affected domains and scope boundaries.",
+        "- Owner: Product and domain owners",
+        "- Evidence: Trace cross-domain impact before changing scope or ownership.",
+        "- Follow-up: Open the Topology Path handoff and replay domain-matrix checks.",
+        "- CLI check: oh-my-ontology workspace-brief [vault] --limit 5",
+        '- MCP check: query_ontology({"operation":"workspace_brief","limit":5})',
+      ].join("\n"),
+    );
   });
 
   it("formats a compact vocabulary review packet without agent handoff noise", () => {
@@ -308,6 +319,7 @@ describe("buildInsightsCollaboratorBrief", () => {
     );
     expect(formatted).not.toContain("## Handoff");
     expect(formatted).not.toContain("MCP check");
+    expect(formatted).not.toContain("CLI check:");
   });
 
   it("exports open question handoffs with exact node links", () => {
@@ -381,21 +393,21 @@ describe("buildInsightsCollaboratorBrief", () => {
       surface: "path",
       title: "Views -> AI agent partner",
     });
-    expect(
-      formatInsightsCollaboratorBrief({
-        brief,
-        labels: LABELS,
-        handoff: {
-          insightsUrl: "/ontology/insights/",
-          topologyUrl: "/topology/?mode=health",
-          agentCheckCommand: "oh-my-ontology workspace-brief [vault] --limit 5",
-          impactCliCheckCommand:
-            "oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
-          impactMcpCheckPayload:
-            'query_ontology({"operation":"domain_matrix","limit":6})',
-        },
-      }),
-    ).toContain(
+    const formatted = formatInsightsCollaboratorBrief({
+      brief,
+      labels: LABELS,
+      handoff: {
+        insightsUrl: "/ontology/insights/",
+        topologyUrl: "/topology/?mode=health",
+        agentCheckCommand: "oh-my-ontology workspace-brief [vault] --limit 5",
+        impactCliCheckCommand:
+          "oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
+        impactMcpCheckPayload:
+          'query_ontology({"operation":"domain_matrix","limit":6})',
+      },
+    });
+
+    expect(formatted).toContain(
       [
         "## Impact handoff",
         "- Views -> AI agent partner: 4 Cross-domain impact. example: views/ontology-insights --describes--> capabilities/agent-graph-readiness Path: /topology/?mode=path&pathFrom=views%2Fontology-insights&pathTo=capabilities%2Fagent-graph-readiness",
@@ -404,6 +416,18 @@ describe("buildInsightsCollaboratorBrief", () => {
         "- Insights: /ontology/insights/",
         "- Topology health: /topology/?mode=health",
         "- Agent check: oh-my-ontology workspace-brief [vault] --limit 5",
+        "- CLI check: oh-my-ontology workspace-brief [vault] --limit 5",
+        "- Impact CLI check: oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
+        '- Impact MCP check: query_ontology({"operation":"domain_matrix","limit":6})',
+      ].join("\n"),
+    );
+    expect(formatted).toContain(
+      [
+        "## Decision record",
+        "- Decision: Confirm affected domains and scope boundaries.",
+        "- Owner: Product and domain owners",
+        "- Evidence: Views -> AI agent partner (Path)",
+        "- Follow-up: Open the Topology Path handoff and replay domain-matrix checks.",
         "- CLI check: oh-my-ontology workspace-brief [vault] --limit 5",
         "- Impact CLI check: oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
         '- Impact MCP check: query_ontology({"operation":"domain_matrix","limit":6})',

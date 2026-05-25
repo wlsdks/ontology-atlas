@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T08:52:29.418Z",
+  "generatedAt": "2026-05-25T08:56:45.289Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5095,8 +5095,8 @@
       },
       "headings": [],
       "excerpt": "/topology, /ontology, and /ontology/insights expose a secondary collaborator reader lane without making nondevelopers the primary product target. The lane translates a selected ontology node into a plainlanguage lens, sourcebacked relation summary, and review prompt. Planners, marketers, and domain collaborators can in",
-      "wordCount": 580,
-      "updatedAt": "2026-05-25T07:47:55.609Z",
+      "wordCount": 618,
+      "updatedAt": "2026-05-25T08:56:39.896Z",
       "linksOut": []
     },
     {

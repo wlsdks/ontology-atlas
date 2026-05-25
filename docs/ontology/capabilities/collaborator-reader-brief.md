@@ -20,5 +20,8 @@ The same visible card and copied markdown now include a `Decision record`
 checkpoint. It restates the expected decision, owner, graph evidence, and
 follow-up step in a meeting-note shape, so planning / marketing / domain
 review can leave a concrete record instead of only copying prompts and links.
+When a workspace handoff is available, the copied decision record also carries
+the replayable CLI and MCP proof rows for the selected focus, so the note can
+move directly into Claude Code, Codex, or a terminal verification loop.
 
 Insights briefs add the overview lane: planners and domain reviewers can copy a compact markdown snapshot of node / relation / domain counts, cross-domain impact, open ownership questions, top vocabulary hubs, strongest domain impact pairs, and the same actionable review focus shown on screen. When open ownership questions exist, the copied overview now names the first concrete concepts and includes direct ontology, topology health, and builder handoff links instead of leaving collaborators with only an aggregate count. Orphan rows still add a smaller ownership repair packet with direct ontology, topology health, builder, relation-check, and health-verification handoff details.

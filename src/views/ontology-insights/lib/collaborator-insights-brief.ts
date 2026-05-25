@@ -246,6 +246,7 @@ export function formatInsightsCollaboratorBrief({
     `- ${labels.decisionRecordOwner}: ${decisionLaneLabel(brief.reviewFocus, labels, "owner")}`,
     `- ${labels.decisionRecordEvidence}: ${brief.decisionHandoff ? formatDecisionHandoffLabel(brief.decisionHandoff, labels) : reviewFocusLabel(brief.reviewFocus, labels)}`,
     `- ${labels.decisionRecordFollowUp}: ${decisionLaneLabel(brief.reviewFocus, labels, "nextStep")}`,
+    ...formatDecisionProofRows(handoff, labels),
     "",
     `## ${labels.reviewQuestions}`,
     reviewQuestionsForFocus(brief.reviewFocus, labels)
@@ -290,6 +291,28 @@ export function formatInsightsCollaboratorBrief({
   }
 
   return lines.join("\n");
+}
+
+function formatDecisionProofRows(
+  handoff: InsightsCollaboratorHandoff | null | undefined,
+  labels: Pick<
+    FormatInsightsCollaboratorBriefLabels,
+    "agentCliCheck" | "agentMcpCheck" | "impactCliCheck" | "impactMcpCheck"
+  >,
+): string[] {
+  if (!handoff) return [];
+
+  const rows = [`- ${labels.agentCliCheck}: ${handoff.agentCheckCommand}`];
+  if (handoff.agentMcpCheckPayload) {
+    rows.push(`- ${labels.agentMcpCheck}: ${handoff.agentMcpCheckPayload}`);
+  }
+  if (handoff.impactCliCheckCommand) {
+    rows.push(`- ${labels.impactCliCheck}: ${handoff.impactCliCheckCommand}`);
+  }
+  if (handoff.impactMcpCheckPayload) {
+    rows.push(`- ${labels.impactMcpCheck}: ${handoff.impactMcpCheckPayload}`);
+  }
+  return rows;
 }
 
 export function formatInsightsVocabularyReview({
