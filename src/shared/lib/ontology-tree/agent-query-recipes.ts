@@ -1,4 +1,7 @@
-import type { AgentReadinessStatus } from "./agent-readiness";
+import {
+  buildAgentPostChangeSyncCliCommands,
+  type AgentReadinessStatus,
+} from "./agent-readiness";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 
 const AGENT_QUERY_OPERATIONS = new Set([
@@ -137,6 +140,7 @@ export interface AgentWriteGuardrail {
   titleKey: string;
   promptKey: string;
   payloads: AgentMcpToolCall[];
+  cliFallbackCommands?: string[];
 }
 
 export interface AgentGraphDbQueryPackItem {
@@ -746,6 +750,14 @@ export function formatAgentGuardrailPrompt(guardrail: AgentWriteGuardrail): stri
   const payloads = guardrail.payloads
     .map((payload, index) => `${index + 1}. ${payload.operation}\n${formatAgentMcpToolPayload(payload)}`)
     .join("\n\n");
+  const cliFallback =
+    guardrail.cliFallbackCommands && guardrail.cliFallbackCommands.length > 0
+      ? [
+          "",
+          "CLI fallback:",
+          ...guardrail.cliFallbackCommands.map((command, index) => `${index + 1}. ${command}`),
+        ]
+      : [];
 
   return [
     "Use this oh-my-ontology MCP write gate before changing the vault.",
@@ -753,6 +765,7 @@ export function formatAgentGuardrailPrompt(guardrail: AgentWriteGuardrail): stri
     "For relation_check, follow recommendation.decision first: skip_existing means do not add, review_inverse or review_new_schema means pause and explain before writing.",
     "",
     payloads,
+    ...cliFallback,
   ].join("\n");
 }
 
@@ -1127,12 +1140,16 @@ export function buildAgentWriteGuardrails(
       promptKey: "agentGuardrailSyncPrompt",
       payloads: [
         query("health", { operation: "health" }),
+        query("cycles", { operation: "cycles", maxHops: 8 }),
+        query("growth_plan", { operation: "growth_plan", limit: 20 }),
+        query("maintenance_plan", { operation: "maintenance_plan", limit: 20 }),
         {
           operation: "validate_vault",
           tool: "validate_vault",
           arguments: {},
         },
       ],
+      cliFallbackCommands: buildAgentPostChangeSyncCliCommands().map((item) => item.command),
     },
   ];
 }

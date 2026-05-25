@@ -1026,6 +1026,20 @@ describe("buildAgentQueryRecipes", () => {
       tool: "validate_vault",
       arguments: {},
     });
+    expect(guardrails[2]?.payloads.map((payload) => payload.operation)).toEqual([
+      "query_ontology.health",
+      "query_ontology.cycles",
+      "query_ontology.growth_plan",
+      "query_ontology.maintenance_plan",
+      "validate_vault",
+    ]);
+    expect(guardrails[2]?.cliFallbackCommands).toEqual([
+      "oh-my-ontology health [vault]",
+      "oh-my-ontology cycles [vault] --max-hops 8",
+      "oh-my-ontology growth [vault] --limit 20",
+      "oh-my-ontology maintenance [vault] --limit 20",
+      "oh-my-ontology validate [vault]",
+    ]);
   });
 
   it("formats write guardrails as copyable preflight prompts", () => {
@@ -1047,6 +1061,28 @@ describe("buildAgentQueryRecipes", () => {
     expect(prompt).toContain("query_ontology.relation_check");
     expect(prompt).toContain("query_ontology.explain_relation");
     expect(prompt).toContain('"from": "domains/views"');
+  });
+
+  it("formats post-change sync guardrails with MCP and CLI fallback gates", () => {
+    const syncGuardrail = buildAgentWriteGuardrails([
+      {
+        slug: "domains/views",
+        title: "Views",
+        kind: "domain",
+        degree: 9,
+      },
+    ]).find((guardrail) => guardrail.id === "post_change_sync")!;
+
+    const prompt = formatAgentGuardrailPrompt(syncGuardrail);
+
+    expect(prompt).toContain("query_ontology.health");
+    expect(prompt).toContain("query_ontology.cycles");
+    expect(prompt).toContain("query_ontology.growth_plan");
+    expect(prompt).toContain("query_ontology.maintenance_plan");
+    expect(prompt).toContain("validate_vault");
+    expect(prompt).toContain("CLI fallback:");
+    expect(prompt).toContain("oh-my-ontology cycles [vault] --max-hops 8");
+    expect(prompt).toContain("oh-my-ontology maintenance [vault] --limit 20");
   });
 
   it("validates non-query MCP tool calls used by write guardrails", () => {

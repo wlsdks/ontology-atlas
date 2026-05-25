@@ -817,6 +817,9 @@ describe('query-result-contract', () => {
           goal: 'After changes.',
           calls: [
             { tool: 'query_ontology', arguments: { operation: 'health' } },
+            { tool: 'query_ontology', arguments: { operation: 'cycles', maxHops: 8 } },
+            { tool: 'query_ontology', arguments: { operation: 'growth_plan', limit: 20 } },
+            { tool: 'query_ontology', arguments: { operation: 'maintenance_plan', limit: 20 } },
             { tool: 'validate_vault', arguments: {} },
           ],
         },
@@ -1097,6 +1100,20 @@ describe('query-result-contract', () => {
         writeGuardrails: valid.writeGuardrails.filter((guardrail) => guardrail.id !== 'preflight_rename'),
       }),
       /agent_brief writeGuardrails must include preflight_rename find_backlinks/,
+    );
+    assert.throws(
+      () => assertAgentBriefShape({
+        ...valid,
+        writeGuardrails: valid.writeGuardrails.map((guardrail) =>
+          guardrail.id === 'post_change_sync'
+            ? {
+                ...guardrail,
+                calls: guardrail.calls.filter((call) => call.arguments?.operation !== 'maintenance_plan'),
+              }
+            : guardrail,
+        ),
+      }),
+      /agent_brief writeGuardrails must include post_change_sync maintenance_plan/,
     );
     assert.throws(
       () => assertAgentBriefShape({

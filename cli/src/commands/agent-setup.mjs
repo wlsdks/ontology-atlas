@@ -27,6 +27,21 @@ const require_ = createRequire(import.meta.url);
 
 const ALLOWED_FLAGS = ['--root', '--vault', '--write', '--json'];
 const WORKFLOW_GUIDE_PATH = 'docs/AGENT-GRAPH-WORKFLOW.md';
+const POST_CHANGE_SYNC_RULES = Object.freeze([
+  'After non-trivial code changes, sync docs/ontology before finishing so Claude Code and Codex see the same graph.',
+  'Sync when a change introduces or renames a domain, capability, element, or relation.',
+  'Skip ontology sync for typos, comments, style-only edits, lint config, and fixture-only changes.',
+]);
+const GRAPH_RUNBOOK_STEPS = Object.freeze([
+  Object.freeze({ id: 'validate', args: ['validate'] }),
+  Object.freeze({ id: 'mcp_verify', args: ['mcp-verify', '--timeout-ms', '15000'] }),
+  Object.freeze({ id: 'setup_gate', args: ['agent-brief', '--verify-fallbacks'] }),
+  Object.freeze({ id: 'workspace_brief', args: ['workspace-brief'] }),
+  Object.freeze({ id: 'agent_prompt', args: ['agent-brief', '--prompt'] }),
+  Object.freeze({ id: 'graph_db_pack', args: ['agent-brief', '--graph-db-pack'] }),
+  Object.freeze({ id: 'hub_plan', args: ['hubs', '--plan', '--limit', '10', '--types', 'depends_on,relates'] }),
+  Object.freeze({ id: 'hubs', args: ['hubs', '--limit', '10', '--types', 'depends_on,relates'] }),
+]);
 const SETUP_MODE_COMPARISON = Object.freeze([
   Object.freeze({
     id: 'cli_only',
@@ -51,6 +66,28 @@ const SETUP_MODE_COMPARISON = Object.freeze([
     label: 'Setup gate',
     when: 'Setup is unclear or the agent was opened from a separate codebase root.',
     gives: 'config repair commands, JSON readiness, performance timing, and restart guidance before edits.',
+  }),
+]);
+const FIRST_CONTACT_PROOF_CONTRACT = Object.freeze([
+  Object.freeze({
+    id: 'config_state',
+    label: 'Config state',
+    proves: 'agent-setup --json reports root-specific Claude Code / Cursor and Codex config readiness before repair.',
+  }),
+  Object.freeze({
+    id: 'mcp_verify',
+    label: 'MCP verify',
+    proves: 'mcp-verify can boot the local MCP server, list the 23 tools, and read the target vault.',
+  }),
+  Object.freeze({
+    id: 'json_gate',
+    label: 'JSON setup gate',
+    proves: 'agent-brief --verify-fallbacks --json returns ok/performanceOk before the agent edits.',
+  }),
+  Object.freeze({
+    id: 'graph_briefs',
+    label: 'Graph briefs',
+    proves: 'workspace-brief and agent-brief --graph-db-pack describe the same local vault before writes.',
   }),
 ]);
 
@@ -139,8 +176,12 @@ function buildAgentSetup(parsed) {
     summary,
     files,
     commands: {
+      setupState: `oh-my-ontology agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --json`,
+      setupRepair: `oh-my-ontology agent-setup ${shellQuote(vaultRoot)} --root ${shellQuote(codebaseRoot)} --write`,
+      restartGuidance: `Restart Claude Code, Cursor, or Codex from ${shellQuote(codebaseRoot)} after repair.`,
       verify: `oh-my-ontology mcp-verify ${shellQuote(vaultRoot)} --timeout-ms 15000`,
       setupGate: `oh-my-ontology agent-brief ${shellQuote(vaultRoot)} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+      graphRunbook: buildGraphRunbookCommands(vaultRoot),
       codexGlobal: [
         'codex',
         'mcp',
@@ -158,6 +199,8 @@ function buildAgentSetup(parsed) {
       workflowGuideDescription:
         'CLI-only use, MCP-connected use, graph DB differences, graph query pack, and verified setup checks.',
       modeComparison: SETUP_MODE_COMPARISON,
+      firstContactProofContract: FIRST_CONTACT_PROOF_CONTRACT,
+      postChangeSync: POST_CHANGE_SYNC_RULES,
     },
   };
 }
@@ -309,13 +352,28 @@ function render(result) {
   }
 
   process.stdout.write(`\n${COLORS.bold}Next checks:${COLORS.reset}\n`);
+  process.stdout.write(`  ${COLORS.cyan}${result.commands.setupState}${COLORS.reset}\n`);
+  process.stdout.write(`  ${COLORS.dim}Repair missing configs only if needed: ${result.commands.setupRepair}${COLORS.reset}\n`);
+  process.stdout.write(`  ${COLORS.dim}${result.commands.restartGuidance}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.cyan}${result.commands.verify}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.cyan}${result.commands.setupGate}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Global Codex fallback: ${result.commands.codexGlobal}${COLORS.reset}\n`);
   process.stdout.write(`  ${COLORS.dim}Feature guide: ${result.docs.workflowGuide} — ${result.docs.workflowGuideDescription}${COLORS.reset}\n`);
+  process.stdout.write(`\n${COLORS.bold}Read-first graph runbook:${COLORS.reset}\n`);
+  for (const command of result.commands.graphRunbook) {
+    process.stdout.write(`  ${COLORS.cyan}${command}${COLORS.reset}\n`);
+  }
   process.stdout.write(`\n${COLORS.bold}Mode guide:${COLORS.reset}\n`);
   for (const mode of result.docs.modeComparison) {
     process.stdout.write(`  ${COLORS.cyan}${mode.label}${COLORS.reset} — ${mode.gives}\n`);
+  }
+  process.stdout.write(`\n${COLORS.bold}First-contact proof contract:${COLORS.reset}\n`);
+  for (const proof of result.docs.firstContactProofContract) {
+    process.stdout.write(`  ${COLORS.cyan}${proof.label}${COLORS.reset} — ${proof.proves}\n`);
+  }
+  process.stdout.write(`\n${COLORS.bold}After code changes:${COLORS.reset}\n`);
+  for (const rule of result.docs.postChangeSync) {
+    process.stdout.write(`  ${COLORS.dim}- ${rule}${COLORS.reset}\n`);
   }
   if (!result.sideEffect && (summary.missing > 0 || summary.review > 0)) {
     process.stdout.write(`\n${COLORS.dim}Run with --write to create missing files and example templates without overwriting existing configs.${COLORS.reset}\n`);
@@ -382,6 +440,13 @@ function codexConfigForVault(serverCommand, omotVault) {
     `OMOT_VAULT = ${tomlString(omotVault)}`,
     '',
   ].join('\n');
+}
+
+function buildGraphRunbookCommands(vaultRoot) {
+  return GRAPH_RUNBOOK_STEPS.map((step) =>
+    ['oh-my-ontology', step.args[0], shellQuote(vaultRoot), ...step.args.slice(1)]
+      .join(' '),
+  );
 }
 
 function resolveMcpServerCommand() {

@@ -167,6 +167,14 @@ const ACTION_CLI_COMMANDS: Record<AgentReadinessActionKey, AgentReadinessCliComm
   ],
 };
 
+const POST_CHANGE_SYNC_CLI_KEYS = new Set([
+  "health",
+  "cycles",
+  "growth",
+  "maintenance",
+  "validate_vault",
+]);
+
 export function buildAgentReadinessCliCommands(
   summary: Pick<AgentReadinessSummary, "actionKeys">,
 ): AgentReadinessCliCommand[] {
@@ -190,6 +198,40 @@ export function formatAgentReadinessCliCommands(
   return buildAgentReadinessCliCommands(summary)
     .map((item, index) => `${index + 1}. ${item.command}`)
     .join("\n");
+}
+
+export function buildAgentPostChangeSyncCliCommands(): AgentReadinessCliCommand[] {
+  const syncCommands = buildAgentReadinessCliCommands({ actionKeys: ["syncAfterChanges"] });
+  return syncCommands.filter((item) => POST_CHANGE_SYNC_CLI_KEYS.has(item.key));
+}
+
+export function formatAgentPostChangeSyncPacket(): string {
+  const payloadLines = ACTION_PAYLOADS.syncAfterChanges
+    .map((payload, index) => `${index + 1}. ${payload.tool}\n${formatPayload(payload)}`)
+    .join("\n\n");
+  const cliLines = buildAgentPostChangeSyncCliCommands()
+    .map((item, index) => `${index + 1}. ${item.command}`)
+    .join("\n");
+
+  return [
+    "# Post-change ontology sync gate",
+    "",
+    "Run this after a non-trivial code change before handing work to Claude Code, Codex, or another collaborator.",
+    "",
+    "## Run when",
+    "- a domain, capability, element, or relation was introduced, renamed, split, merged, or made more explicit",
+    "- a UI, CLI, MCP, or docs change changes what this codebase is or how an agent should navigate it",
+    "- a vault write landed and the next agent needs the same graph health evidence",
+    "",
+    "## MCP",
+    payloadLines,
+    "",
+    "## CLI fallback",
+    cliLines,
+    "",
+    "## Skip when",
+    "- typo-only, comment-only, one-line style, lint config, or test fixture changes with no ontology shape change",
+  ].join("\n");
 }
 
 export function validateAgentReadinessToolCall(payload: AgentReadinessToolCall): string[] {

@@ -3376,6 +3376,9 @@ export function createOntologyEngine(artifact, options = {}) {
           goal: 'After code changes or vault writes, gate the shared graph before handing work back to another agent.',
           calls: [
             healthGateCall,
+            agentToolCall('query_ontology', { operation: 'cycles', maxHops: 8 }),
+            agentToolCall('query_ontology', { operation: 'growth_plan', limit: 20 }),
+            agentToolCall('query_ontology', { operation: 'maintenance_plan', limit: 20 }),
             validateVaultGateCall,
           ],
         },
@@ -3387,7 +3390,7 @@ export function createOntologyEngine(artifact, options = {}) {
         'For match_nodes and match_edges, report totalMatches/limited plus followUp details, then run the followUp calls before treating scan rows as evidence.',
         'Follow relationDecisionGuide: skip_existing blocks duplicate writes; review_inverse and review_new_schema require explicit justification before writing.',
         'Run find_backlinks before rename_concept or merge_concepts so backlink rewrites are intentional.',
-        'Run health and validate_vault after code changes or vault writes before handing the graph to another agent.',
+        'Run health, cycles, growth_plan, maintenance_plan, and validate_vault after code changes or vault writes before handing the graph to another agent.',
         'Use add_concept/add_relation/patch_concept/merge_concepts only after the intended ontology change is clear.',
         'After code changes introduce or rename a domain, capability, element, or relation, sync the vault before finishing.',
       ],

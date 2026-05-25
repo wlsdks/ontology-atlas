@@ -1945,6 +1945,13 @@ describe('queryCompiledOntology', () => {
       arguments: { slug: 'capabilities/login' },
     });
     assert.ok(syncGuardrail);
+    assert.deepEqual(syncGuardrail.calls.map((call) => call.arguments?.operation ?? call.tool), [
+      'health',
+      'cycles',
+      'growth_plan',
+      'maintenance_plan',
+      'validate_vault',
+    ]);
     assert.deepEqual(syncGuardrail.calls.at(-1), {
       tool: 'validate_vault',
       arguments: {},

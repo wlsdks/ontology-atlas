@@ -69,6 +69,7 @@ function makeLocalVault(
 
 function renderMenu(
   overrides: Partial<React.ComponentProps<typeof VaultToolsMenu>['localVault']> = {},
+  props: Partial<Pick<React.ComponentProps<typeof VaultToolsMenu>, 'validationSummary'>> = {},
 ) {
   const localVault = makeLocalVault(overrides);
   render(
@@ -78,7 +79,7 @@ function renderMenu(
       folderTopoStatus="idle"
       canEditCurrent
       localVault={localVault}
-      validationSummary={null}
+      validationSummary={props.validationSummary ?? null}
       onCreateNewDoc={vi.fn()}
       onOpenWorkflowGuide={vi.fn()}
     />,
@@ -113,6 +114,26 @@ describe('VaultToolsMenu', () => {
       screen.getByText('수정 전에 JSON gate를 실행하고 ok와 performanceOk를 따로 확인합니다.'),
     ).toBeInTheDocument();
     expect(
+      screen.getByText('agent root에서 mcp-verify를 실행해 로컬 23개 tool 연결을 증명합니다.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('첫 ontology write 전에 workspace-brief와 agent-brief를 읽습니다.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText('AI agent setup gate 증거'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('vault')).toBeInTheDocument();
+    expect(screen.getByText('이 로컬 vault에서 문서 1개 로드됨')).toBeInTheDocument();
+    expect(screen.getByText('health')).toBeInTheDocument();
+    expect(screen.getByText('이 패널에 validation 결과가 아직 없습니다')).toBeInTheDocument();
+    expect(screen.getByText('configs')).toBeInTheDocument();
+    expect(screen.getByText('agent root')).toBeInTheDocument();
+    expect(
+      screen.getByText('다른 codebase root에서 Claude Code나 Codex를 열기 전 설정 패킷을 복사'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('json gate')).toBeInTheDocument();
+    expect(screen.getByText('수정 전 agent root에서 JSON gate를 복사해 실행')).toBeInTheDocument();
+    expect(
       screen.getByLabelText('AI agent 사용 모드 선택 기준'),
     ).toBeInTheDocument();
     expect(screen.getByText('CLI만 사용')).toBeInTheDocument();
@@ -128,6 +149,18 @@ describe('VaultToolsMenu', () => {
     expect(screen.getByText('ok=false')).toBeInTheDocument();
     expect(screen.getByText('perf=false')).toBeInTheDocument();
     expect(screen.getByText('ready')).toBeInTheDocument();
+    expect(screen.getByText('코드 변경 후')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'non-trivial 변경이 domain, capability, element, relation을 도입하거나 이름을 바꾸면 끝내기 전에 docs/ontology를 sync합니다. 오타, 주석, style-only, lint config, fixture-only 변경은 건너뜁니다.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'sync gate 복사' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: '설정 상태 확인 명령 복사' }),
+    ).toBeInTheDocument();
     expect(screen.getByText('.mcp.json')).toBeInTheDocument();
     expect(screen.getByText('.codex/config.toml')).toBeInTheDocument();
     expect(screen.getByText('.mcp.json.example')).toBeInTheDocument();
@@ -154,6 +187,42 @@ describe('VaultToolsMenu', () => {
     expect(
       screen.queryByRole('button', { name: '누락된 agent 설정 만들기' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('AI agent setup gate proof에 validation 결과를 반영한다', () => {
+    renderMenu(
+      {
+        agentConfigStatus: {
+          mcpJson: true,
+          codexConfig: true,
+          mcpExample: true,
+        },
+      },
+      { validationSummary: { errorCount: 0, warningCount: 2 } },
+    );
+
+    expect(screen.getByText('validation 경고 2개 점검 필요')).toBeInTheDocument();
+    expect(
+      screen.getByText('Claude Code / Cursor / Codex 설정 파일 준비됨'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('vault 폴더에서 재시작하거나, 다른 codebase root에서는 템플릿을 복사해 사용'),
+    ).toBeInTheDocument();
+  });
+
+  it('AI agent setup gate proof에서 validation 오류를 agent 수정 차단으로 표시한다', () => {
+    renderMenu(
+      {
+        agentConfigStatus: {
+          mcpJson: true,
+          codexConfig: true,
+          mcpExample: true,
+        },
+      },
+      { validationSummary: { errorCount: 1, warningCount: 0 } },
+    );
+
+    expect(screen.getByText('validation 오류 1개가 agent 수정을 막음')).toBeInTheDocument();
   });
 
   it('AI agent 설정 파일이 있어도 oh-my-ontology MCP 설정이 아니면 점검 대상으로 표시한다', () => {
@@ -212,6 +281,9 @@ describe('VaultToolsMenu', () => {
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('performanceOk=false'),
     );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('After any non-trivial code change, sync docs/ontology before finishing'),
+    );
     expect(
       await screen.findByRole('button', { name: '검증 프롬프트 복사됨' }),
     ).toBeInTheDocument();
@@ -262,6 +334,18 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('oh-my-ontology agent setup packet'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Root check:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Agent root: <absolute path to your codebase root>'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Ontology vault: <absolute path to your team-vault folder>'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Run the setup gate from the agent root'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('Mode chooser:'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -277,10 +361,65 @@ describe('VaultToolsMenu', () => {
       expect.stringContaining('JSON gate result rules:'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('First-contact proof contract:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Config state: agent-setup --json reports root-specific'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 23 tools'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Graph briefs: workspace-brief and agent-brief --graph-db-pack describe the same local vault'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('ok=false: setup or fallback command execution is broken'),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('ok=true and performanceOk=false'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Post-change ontology sync:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('sync docs/ontology before finishing'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Skip sync for typos, comments, one-line style'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Read-first run order from a codebase root:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "1. Check config state: oh-my-ontology agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "2. Repair only if state reports missing configs: oh-my-ontology agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('3. Restart Claude Code / Cursor / Codex from the agent root.'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "4. Verify MCP tools: oh-my-ontology mcp-verify '<absolute path to your team-vault folder>' --timeout-ms 15000",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "5. Gate fallback performance: oh-my-ontology agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "6. Read the graph: oh-my-ontology workspace-brief '<absolute path to your team-vault folder>' && oh-my-ontology agent-brief '<absolute path to your team-vault folder>' --prompt",
+      ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining('oh-my-ontology agent-setup'),
@@ -311,7 +450,30 @@ describe('VaultToolsMenu', () => {
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining(
+        'Machine-readable setup gate for automation from the codebase root:',
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Machine-readable setup gate when the vault folder is the current directory:',
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
         'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Machine-readable config state check before repair:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
@@ -344,6 +506,32 @@ describe('VaultToolsMenu', () => {
     expect(
       await screen.findByRole('button', {
         name: 'agent-setup 명령 복사됨',
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it('AI agent 설정 패널에서 codebase-root setup state 확인 명령을 먼저 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '설정 상태 확인 명령 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      "oh-my-ontology agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
+    );
+    expect(
+      await screen.findByRole('button', {
+        name: '설정 상태 확인 명령 복사됨',
       }),
     ).toBeInTheDocument();
   });
@@ -397,6 +585,97 @@ describe('VaultToolsMenu', () => {
     ).toBeInTheDocument();
   });
 
+  it('AI agent 설정 패널에서 첫 연결 증거 패킷을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: { name: 'team-vault' } as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '첫 연결 증거 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology first-contact agent proof'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Setup gate:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "If setup state reports missing configs: oh-my-ontology agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --write",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'Restart Claude Code / Cursor / Codex from the codebase root after repair.',
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology mcp-verify '<absolute path to your team-vault folder>' --timeout-ms 15000",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology agent-brief '<absolute path to your team-vault folder>' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Read-first graph proof:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology workspace-brief '<absolute path to your team-vault folder>'",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology agent-brief '<absolute path to your team-vault folder>' --prompt",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology agent-brief '<absolute path to your team-vault folder>' --graph-db-pack",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('JSON gate result rules:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('First-contact proof contract:'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Config state: agent-setup --json reports root-specific'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('MCP verify: mcp-verify can boot the local MCP server, list the 23 tools'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Graph briefs: workspace-brief and agent-brief --graph-db-pack describe the same local vault'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Post-change ontology sync:'),
+    );
+    expect(
+      await screen.findByRole('button', { name: '첫 연결 증거 복사됨' }),
+    ).toBeInTheDocument();
+  });
+
   it('AI agent 설정 패널에서 자동화 JSON gate 명령을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
     renderMenu({
@@ -424,6 +703,48 @@ describe('VaultToolsMenu', () => {
     ).toBeInTheDocument();
     expect(
       await screen.findByRole('button', { name: 'JSON gate 복사됨' }),
+    ).toBeInTheDocument();
+  });
+
+  it('AI agent 설정 패널에서 post-change ontology sync gate를 독립적으로 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    const agentSetup = screen.getByRole('region', { name: 'AI agent 설정 상태' });
+    fireEvent.click(
+      within(agentSetup).getByRole('button', { name: 'sync gate 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('# Post-change ontology sync gate'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('## MCP'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('"operation": "health"'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('"operation": "maintenance_plan"'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('"tool": "validate_vault"'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('## CLI fallback'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('oh-my-ontology validate [vault]'),
+    );
+    expect(
+      await screen.findByRole('button', { name: 'sync gate 복사됨' }),
     ).toBeInTheDocument();
   });
 

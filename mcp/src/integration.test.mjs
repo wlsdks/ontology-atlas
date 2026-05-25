@@ -2589,7 +2589,13 @@ await test("query_ontology — compiled graph engine neighbors/path/all_paths/qu
       "path",
     ]);
     assert.equal(agentBrief.writeGuardrails[1].calls[0].tool, "find_backlinks");
-    assert.equal(agentBrief.writeGuardrails[2].calls[1].tool, "validate_vault");
+    assert.deepEqual(agentBrief.writeGuardrails[2].calls.map((call) => call.arguments?.operation ?? call.tool), [
+      "health",
+      "cycles",
+      "growth_plan",
+      "maintenance_plan",
+      "validate_vault",
+    ]);
     assert.deepEqual(agentBrief.relationDecisionGuide.map((row) => row.decision), [
       "skip_existing",
       "review_inverse",

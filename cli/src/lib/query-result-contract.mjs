@@ -379,6 +379,11 @@ export function assertAgentBriefShape(result) {
   if (!syncGuardrail || !syncGuardrail.calls.some((call) => call?.tool === 'validate_vault')) {
     throw new Error('agent_brief writeGuardrails must include post_change_sync validate_vault');
   }
+  for (const operation of ['health', 'cycles', 'growth_plan', 'maintenance_plan']) {
+    if (!agentToolCallsIncludeOperation(syncGuardrail.calls, operation)) {
+      throw new Error(`agent_brief writeGuardrails must include post_change_sync ${operation}`);
+    }
+  }
   if (!Array.isArray(result.writePolicy) || !result.writePolicy.every((row) => hasNonEmptyString(row))) {
     throw new Error('agent_brief writePolicy must be an array of non-empty strings');
   }

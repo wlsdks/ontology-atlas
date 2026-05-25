@@ -1489,6 +1489,7 @@ describe('package contract helpers', () => {
     assert.match(tableRow, /project-node `list_concepts` probe/);
     assert.match(agentSetupRow, /`docs\.workflowGuide`/);
     assert.match(agentSetupRow, /`docs\.modeComparison`/);
+    assert.match(agentSetupRow, /`docs\.postChangeSync`/);
     assert.match(agentSetupRow, /CLI-only \/ MCP-connected \/ graph DB pack \/ setup gate choices/);
     assert.match(tableRow, /23-tool inventory with missing\/extra\/duplicate\/invalid name checks/);
     assert.match(tableRow, /23-tool inventory with missing\/extra\/duplicate\/invalid name checks plus tools\/list schema strictness and annotation coverage/);
@@ -2720,6 +2721,7 @@ describe('package contract helpers', () => {
     assert.match(agentSetupRow, /`operation:"agent_setup"`/);
     assert.match(agentSetupRow, /`docs\.modeComparison`/);
     assert.match(agentSetupRow, /CLI-only \/ MCP-connected \/ Graph DB pack \/ setup gate/);
+    assert.match(agentSetupRow, /`docs\.postChangeSync`/);
     assert.match(agentSetupRow, /global `codex mcp add/);
     assert.match(reachabilityRow, /MCP `query_ontology\(reachability\)`/);
     assert.match(reachabilityRow, /`--direction incoming\|outgoing\|both`/);

@@ -9293,6 +9293,9 @@ describe('verify.mjs first-contact gates', () => {
           goal: 'After changes.',
           calls: [
             { tool: 'query_ontology', arguments: { operation: 'health' } },
+            { tool: 'query_ontology', arguments: { operation: 'cycles', maxHops: 8 } },
+            { tool: 'query_ontology', arguments: { operation: 'growth_plan', limit: 20 } },
+            { tool: 'query_ontology', arguments: { operation: 'maintenance_plan', limit: 20 } },
             { tool: 'validate_vault', arguments: {} },
           ],
         },
@@ -9384,6 +9387,14 @@ describe('verify.mjs first-contact gates', () => {
         cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/project-map/.test(command)),
       }),
       'agent_brief cliFallbackCommands missing project-map fallback',
+    );
+    assert.equal(
+      agentBriefFailure({
+        ...payload,
+        readiness: { ...payload.readiness, projects: 0 },
+        cliFallbackCommands: payload.cliFallbackCommands.filter((command) => !/pattern-walk|project-map/.test(command)),
+      }),
+      null,
     );
     assert.equal(
       agentBriefFailure({ ...payload, firstCalls: [{ tool: 'query_ontology', arguments: { operation: 'not_real' } }] }),

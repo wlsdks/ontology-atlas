@@ -6719,11 +6719,13 @@ export function agentBriefFailure(parsed) {
   if (!parsed.cliFallbackCommands.some((command) => /all-paths /.test(command) && / --plan /.test(command))) {
     return 'agent_brief cliFallbackCommands missing all-paths plan fallback';
   }
-  if (!parsed.cliFallbackCommands.some((command) => /pattern-walk /.test(command) && / --pattern /.test(command))) {
-    return 'agent_brief cliFallbackCommands missing pattern-walk fallback';
-  }
-  if (!parsed.cliFallbackCommands.some((command) => /project-map /.test(command))) {
-    return 'agent_brief cliFallbackCommands missing project-map fallback';
+  if (parsed.readiness.projects > 0) {
+    if (!parsed.cliFallbackCommands.some((command) => /pattern-walk /.test(command) && / --pattern /.test(command))) {
+      return 'agent_brief cliFallbackCommands missing pattern-walk fallback';
+    }
+    if (!parsed.cliFallbackCommands.some((command) => /project-map /.test(command))) {
+      return 'agent_brief cliFallbackCommands missing project-map fallback';
+    }
   }
   if (!parsed.cliFallbackCommands.some((command) => /explain /.test(command))) {
     return 'agent_brief cliFallbackCommands missing explain fallback';
@@ -6831,6 +6833,11 @@ export function agentBriefFailure(parsed) {
   const syncGuardrail = parsed.writeGuardrails.find((guardrail) => guardrail?.id === 'post_change_sync');
   if (!syncGuardrail || !syncGuardrail.calls.some((call) => call?.tool === 'validate_vault')) {
     return 'agent_brief writeGuardrails missing post_change_sync validate_vault';
+  }
+  for (const operation of ['health', 'cycles', 'growth_plan', 'maintenance_plan']) {
+    if (!agentToolCallsIncludeOperation(syncGuardrail.calls, operation)) {
+      return `agent_brief writeGuardrails missing post_change_sync ${operation}`;
+    }
   }
   if (!Array.isArray(parsed.writePolicy) || parsed.writePolicy.some((row) => typeof row !== 'string' || row.trim() === '')) {
     return 'agent_brief response missing writePolicy guidance';

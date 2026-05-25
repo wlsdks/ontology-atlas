@@ -281,7 +281,23 @@ await test('agent-setup — writes agent configs for an existing vault without s
     assert.equal(data.sideEffect, true);
     assert.equal(data.summary.ready, 4);
     assert.equal(data.summary.written, 4);
+    assert.match(data.commands.setupState, /agent-setup .* --root .* --json/);
+    assert.match(data.commands.setupRepair, /agent-setup .* --root .* --write/);
+    assert.match(data.commands.restartGuidance, /Restart Claude Code, Cursor, or Codex from .* after repair/);
     assert.match(data.commands.setupGate, /agent-brief .* --verify-fallbacks --json/);
+    assert.deepEqual(
+      data.commands.graphRunbook.map((command) => command.replace(data.vaultRoot, '<vault>')),
+      [
+        'oh-my-ontology validate <vault>',
+        'oh-my-ontology mcp-verify <vault> --timeout-ms 15000',
+        'oh-my-ontology agent-brief <vault> --verify-fallbacks',
+        'oh-my-ontology workspace-brief <vault>',
+        'oh-my-ontology agent-brief <vault> --prompt',
+        'oh-my-ontology agent-brief <vault> --graph-db-pack',
+        'oh-my-ontology hubs <vault> --plan --limit 10 --types depends_on,relates',
+        'oh-my-ontology hubs <vault> --limit 10 --types depends_on,relates',
+      ],
+    );
     assert.equal(data.docs.workflowGuide, 'docs/AGENT-GRAPH-WORKFLOW.md');
     assert.match(data.docs.workflowGuideDescription, /CLI-only/);
     assert.deepEqual(data.docs.modeComparison.map((mode) => mode.id), [
@@ -292,6 +308,16 @@ await test('agent-setup — writes agent configs for an existing vault without s
     ]);
     assert.match(data.docs.modeComparison.find((mode) => mode.id === 'mcp_connected').gives, /structured repair fields/);
     assert.match(data.docs.modeComparison.find((mode) => mode.id === 'graph_db_pack').gives, /proof follow-ups/);
+    assert.deepEqual(data.docs.firstContactProofContract.map((proof) => proof.id), [
+      'config_state',
+      'mcp_verify',
+      'json_gate',
+      'graph_briefs',
+    ]);
+    assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'config_state').proves, /root-specific/);
+    assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'mcp_verify').proves, /23 tools/);
+    assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'json_gate').proves, /ok\/performanceOk/);
+    assert.match(data.docs.firstContactProofContract.find((proof) => proof.id === 'graph_briefs').proves, /workspace-brief/);
 
     const rootMcp = JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf-8'));
     assert.equal(rootMcp.mcpServers['oh-my-ontology'].env.OMOT_VAULT, './ontology');
@@ -315,10 +341,24 @@ await test('agent-setup — terminal output points humans to the workflow guide'
     mkdirSync(join(root, 'ontology'), { recursive: true });
     const r = await run(['agent-setup', 'ontology', '--root', '.'], { cwd: root });
     assert.equal(r.code, 1);
+    assert.match(stripAnsi(r.stdout), /oh-my-ontology agent-setup .*ontology.* --root .* --json/);
     assert.match(stripAnsi(r.stdout), /Feature guide: docs\/AGENT-GRAPH-WORKFLOW\.md/);
+    assert.match(stripAnsi(r.stdout), /Read-first graph runbook:/);
+    assert.match(stripAnsi(r.stdout), /oh-my-ontology workspace-brief .*ontology/);
+    assert.match(stripAnsi(r.stdout), /oh-my-ontology agent-brief .*ontology.* --graph-db-pack/);
+    assert.match(stripAnsi(r.stdout), /oh-my-ontology hubs .*ontology.* --plan --limit 10 --types depends_on,relates/);
+    assert.match(stripAnsi(r.stdout), /Repair missing configs only if needed: oh-my-ontology agent-setup .*ontology.* --root .* --write/);
+    assert.match(stripAnsi(r.stdout), /Restart Claude Code, Cursor, or Codex from .* after repair/);
     assert.match(stripAnsi(r.stdout), /Mode guide:/);
     assert.match(stripAnsi(r.stdout), /MCP-connected — direct read\/write tools/);
     assert.match(stripAnsi(r.stdout), /graph DB differences/);
+    assert.match(stripAnsi(r.stdout), /First-contact proof contract:/);
+    assert.match(stripAnsi(r.stdout), /Config state — agent-setup --json reports root-specific/);
+    assert.match(stripAnsi(r.stdout), /MCP verify — mcp-verify can boot the local MCP server/);
+    assert.match(stripAnsi(r.stdout), /JSON setup gate — agent-brief --verify-fallbacks --json returns ok\/performanceOk/);
+    assert.match(stripAnsi(r.stdout), /Graph briefs — workspace-brief and agent-brief --graph-db-pack/);
+    assert.match(stripAnsi(r.stdout), /After code changes:/);
+    assert.match(stripAnsi(r.stdout), /sync docs\/ontology before finishing/);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -340,6 +380,7 @@ await test('agent-setup — preserves stale configs and writes merge templates',
     const data = JSON.parse(r.stdout);
     assert.equal(data.summary.review, 2);
     assert.equal(data.summary.examples, 2);
+    assert.ok(data.docs.postChangeSync.some((line) => line.includes('sync docs/ontology before finishing')));
     assert.equal(JSON.parse(readFileSync(join(root, '.mcp.json'), 'utf-8')).mcpServers.other.command, 'node');
     assert.equal(existsSyncTest(join(root, '.mcp.json.example')), true);
     assert.equal(existsSyncTest(join(root, '.codex', 'config.toml.example')), true);

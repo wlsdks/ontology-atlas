@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
+  buildAgentSetupCheckCliCommandTemplate,
   buildAgentSetupCliCommandTemplate,
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
@@ -20,8 +21,10 @@ import {
   LocalVaultPicker,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
+  ONTOLOGY_POST_CHANGE_SYNC_LINES,
   OntologyStarterCta,
 } from '@/features/docs-vault-local';
+import { formatAgentPostChangeSyncPacket } from '@/shared/lib/ontology-tree';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
 
@@ -59,19 +62,80 @@ const AGENT_GATE_PACKET_LINES = [
   '- ok=true and performanceOk=true: setup and fallback performance are ready for read-first agent work.',
 ];
 
+const AGENT_FIRST_CONTACT_PROOF_CONTRACT_LINES = [
+  'First-contact proof contract:',
+  '- Config state: agent-setup --json reports root-specific Claude Code / Cursor and Codex config readiness before repair.',
+  '- MCP verify: mcp-verify can boot the local MCP server, list the 23 tools, and read the target vault.',
+  '- JSON setup gate: agent-brief --verify-fallbacks --json returns ok/performanceOk before the agent edits.',
+  '- Graph briefs: workspace-brief and agent-brief --graph-db-pack describe the same local vault before writes.',
+];
+
+function buildAgentFirstContactProofPacket(vaultName: string): string {
+  const vaultPathPlaceholder = `<absolute path to your ${vaultName} folder>`;
+  const vaultPathArg = shellQuoteForPacket(vaultPathPlaceholder);
+  const setupStateCommand = buildAgentSetupCheckCliCommandTemplate(vaultName);
+
+  return [
+    'oh-my-ontology first-contact agent proof',
+    '',
+    'Run these before Claude Code, Codex, or Cursor edits the codebase with this ontology.',
+    '',
+    'Setup gate:',
+    `1. ${setupStateCommand}`,
+    `2. If setup state reports missing configs: ${buildAgentSetupCliCommandTemplate(vaultName)}`,
+    `3. Restart Claude Code / Cursor / Codex from the codebase root after repair.`,
+    `4. oh-my-ontology mcp-verify ${vaultPathArg} --timeout-ms 15000`,
+    `5. oh-my-ontology agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    '',
+    'Read-first graph proof:',
+    `1. oh-my-ontology workspace-brief ${vaultPathArg}`,
+    `2. oh-my-ontology agent-brief ${vaultPathArg} --prompt`,
+    `3. oh-my-ontology agent-brief ${vaultPathArg} --graph-db-pack`,
+    '',
+    ...AGENT_FIRST_CONTACT_PROOF_CONTRACT_LINES,
+    '',
+    ...AGENT_GATE_PACKET_LINES,
+    '',
+    ...ONTOLOGY_POST_CHANGE_SYNC_LINES,
+  ].join('\n');
+}
+
 function buildAgentSetupPacket(vaultName: string): string {
+  const vaultPathPlaceholder = `<absolute path to your ${vaultName} folder>`;
+  const vaultPathArg = shellQuoteForPacket(vaultPathPlaceholder);
+  const codebaseRootPlaceholder = '<absolute path to your codebase root>';
+  const setupStateCommand = buildAgentSetupCheckCliCommandTemplate(vaultName);
+  const setupRepairCommand = buildAgentSetupCliCommandTemplate(vaultName);
+
   return [
     'oh-my-ontology agent setup packet',
     '',
     'Use this when Claude Code, Cursor, or Codex is opened at a separate codebase root.',
     'Replace every <absolute path...> placeholder before using the config.',
     '',
+    'Root check:',
+    `- Agent root: ${codebaseRootPlaceholder}`,
+    `- Ontology vault: ${vaultPathPlaceholder}`,
+    '- Run the setup gate from the agent root; pass the ontology vault path explicitly when the vault is not the cwd.',
+    '',
     ...AGENT_MODE_PACKET_LINES,
     '',
     ...AGENT_GATE_PACKET_LINES,
     '',
+    ...AGENT_FIRST_CONTACT_PROOF_CONTRACT_LINES,
+    '',
+    ...ONTOLOGY_POST_CHANGE_SYNC_LINES,
+    '',
+    'Read-first run order from a codebase root:',
+    `1. Check config state: ${setupStateCommand}`,
+    `2. Repair only if state reports missing configs: ${setupRepairCommand}`,
+    '3. Restart Claude Code / Cursor / Codex from the agent root.',
+    `4. Verify MCP tools: oh-my-ontology mcp-verify ${vaultPathArg} --timeout-ms 15000`,
+    `5. Gate fallback performance: oh-my-ontology agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `6. Read the graph: oh-my-ontology workspace-brief ${vaultPathArg} && oh-my-ontology agent-brief ${vaultPathArg} --prompt`,
+    '',
     'Preferred existing-vault repair command from a codebase root:',
-    buildAgentSetupCliCommandTemplate(vaultName),
+    setupRepairCommand,
     '',
     'Feature guide:',
     'docs/AGENT-GRAPH-WORKFLOW.md',
@@ -91,9 +155,19 @@ function buildAgentSetupPacket(vaultName: string): string {
     'CLI fallback from the vault folder:',
     AGENT_VERIFY_CLI_COMMAND,
     '',
-    'Machine-readable setup gate for automation:',
+    'Machine-readable setup gate for automation from the codebase root:',
+    `oh-my-ontology agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    '',
+    'Machine-readable setup gate when the vault folder is the current directory:',
     ONTOLOGY_STARTER_JSON_GATE_COMMAND,
+    '',
+    'Machine-readable config state check before repair:',
+    setupStateCommand,
   ].join('\n');
+}
+
+function shellQuoteForPacket(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
 }
 
 /**
@@ -176,9 +250,15 @@ export function VaultToolsMenu({
   const [agentJsonGateCopyState, setAgentJsonGateCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle');
+  const [agentPostChangeSyncCopyState, setAgentPostChangeSyncCopyState] =
+    useState<'idle' | 'copied' | 'failed'>('idle');
+  const [agentFirstContactProofCopyState, setAgentFirstContactProofCopyState] =
+    useState<'idle' | 'copied' | 'failed'>('idle');
   const [agentTemplateCopyState, setAgentTemplateCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle');
+  const [agentSetupCheckCliCopyState, setAgentSetupCheckCliCopyState] =
+    useState<'idle' | 'copied' | 'failed'>('idle');
   const [agentSetupCliCopyState, setAgentSetupCliCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle');
@@ -251,7 +331,81 @@ export function VaultToolsMenu({
       label: t('agentSetup.stepGate'),
       complete: false,
     },
+    {
+      key: 'mcpVerify',
+      label: t('agentSetup.stepMcpVerify'),
+      complete: false,
+    },
+    {
+      key: 'graphProof',
+      label: t('agentSetup.stepGraphProof'),
+      complete: false,
+    },
   ];
+  const validationState = validationSummary
+    ? validationSummary.errorCount > 0
+      ? 'error'
+      : validationSummary.warningCount > 0
+        ? 'warning'
+        : 'clean'
+    : 'unknown';
+  const agentSetupProofRows = [
+    {
+      key: 'vault',
+      label: t('agentSetup.proofVault'),
+      value: t('agentSetup.proofVaultLoaded', {
+        count: localVault.manifest?.docs.length ?? 0,
+      }),
+      state: localVault.status === 'loaded' ? 'ready' : 'warning',
+    },
+    {
+      key: 'health',
+      label: t('agentSetup.proofHealth'),
+      value:
+        validationState === 'clean'
+          ? t('agentSetup.proofHealthClean')
+          : validationState === 'warning'
+            ? t('agentSetup.proofHealthWarnings', {
+                count: validationSummary?.warningCount ?? 0,
+              })
+            : validationState === 'error'
+              ? t('agentSetup.proofHealthErrors', {
+                  count: validationSummary?.errorCount ?? 0,
+                })
+              : t('agentSetup.proofHealthUnknown'),
+      state:
+        validationState === 'clean'
+          ? 'ready'
+          : validationState === 'error'
+            ? 'blocked'
+            : 'warning',
+    },
+    {
+      key: 'configs',
+      label: t('agentSetup.proofConfigs'),
+      value: agentSetupReady
+        ? t('agentSetup.proofConfigsReady')
+        : t('agentSetup.proofConfigsMissing', {
+            ready: agentSetupReadyCount,
+            total: agentSetupFiles.length,
+      }),
+      state: agentSetupReady ? 'ready' : 'warning',
+    },
+    {
+      key: 'agentRoot',
+      label: t('agentSetup.proofAgentRoot'),
+      value: agentSetupReady
+        ? t('agentSetup.proofAgentRootReady')
+        : t('agentSetup.proofAgentRootNeedsTemplate'),
+      state: agentSetupReady ? 'manual' : 'warning',
+    },
+    {
+      key: 'jsonGate',
+      label: t('agentSetup.proofJsonGate'),
+      value: t('agentSetup.proofJsonGateManual'),
+      state: 'manual',
+    },
+  ] as const;
 
   async function handleEnsureAgentConfigs() {
     setAgentSetupError(null);
@@ -289,11 +443,30 @@ export function VaultToolsMenu({
     setAgentJsonGateCopyState(copied ? 'copied' : 'failed');
   }
 
+  async function handleCopyAgentPostChangeSyncGate() {
+    const copied = await copyText(formatAgentPostChangeSyncPacket());
+    setAgentPostChangeSyncCopyState(copied ? 'copied' : 'failed');
+  }
+
+  async function handleCopyAgentFirstContactProof() {
+    const copied = await copyText(
+      buildAgentFirstContactProofPacket(localVault.handle?.name ?? 'vault'),
+    );
+    setAgentFirstContactProofCopyState(copied ? 'copied' : 'failed');
+  }
+
   async function handleCopyAgentConfigTemplate() {
     const copied = await copyText(
       buildMcpConfigJson(localVault.handle?.name ?? 'vault'),
     );
     setAgentTemplateCopyState(copied ? 'copied' : 'failed');
+  }
+
+  async function handleCopyAgentSetupCheckCliCommand() {
+    const copied = await copyText(
+      buildAgentSetupCheckCliCommandTemplate(localVault.handle?.name ?? 'vault'),
+    );
+    setAgentSetupCheckCliCopyState(copied ? 'copied' : 'failed');
   }
 
   async function handleCopyAgentSetupCliCommand() {
@@ -345,6 +518,20 @@ export function VaultToolsMenu({
         ? t('agentSetup.copyJsonGateFailed')
         : t('agentSetup.copyJsonGate');
 
+  const copyPostChangeSyncLabel =
+    agentPostChangeSyncCopyState === 'copied'
+      ? t('agentSetup.copyPostChangeSyncCopied')
+      : agentPostChangeSyncCopyState === 'failed'
+        ? t('agentSetup.copyPostChangeSyncFailed')
+        : t('agentSetup.copyPostChangeSync');
+
+  const copyFirstContactProofLabel =
+    agentFirstContactProofCopyState === 'copied'
+      ? t('agentSetup.copyFirstContactProofCopied')
+      : agentFirstContactProofCopyState === 'failed'
+        ? t('agentSetup.copyFirstContactProofFailed')
+        : t('agentSetup.copyFirstContactProof');
+
   const copyTemplateLabel =
     agentTemplateCopyState === 'copied'
       ? t('agentSetup.copyTemplateCopied')
@@ -358,6 +545,13 @@ export function VaultToolsMenu({
       : agentSetupCliCopyState === 'failed'
         ? t('agentSetup.copySetupCliFailed')
         : t('agentSetup.copySetupCli');
+
+  const copySetupCheckCliLabel =
+    agentSetupCheckCliCopyState === 'copied'
+      ? t('agentSetup.copySetupCheckCliCopied')
+      : agentSetupCheckCliCopyState === 'failed'
+        ? t('agentSetup.copySetupCheckCliFailed')
+        : t('agentSetup.copySetupCheckCli');
 
   const copyCodexTemplateLabel =
     agentCodexTemplateCopyState === 'copied'
@@ -483,6 +677,49 @@ export function VaultToolsMenu({
                     </li>
                   ))}
                 </ol>
+                <dl
+                  aria-label={t('agentSetup.proofAriaLabel')}
+                  className="mt-2 grid gap-1"
+                >
+                  {agentSetupProofRows.map((row) => (
+                    <div
+                      key={row.key}
+                      className="grid grid-cols-[14px_76px_1fr] items-start gap-1.5 rounded-sm border border-[color:rgba(255,255,255,0.055)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
+                    >
+                      {row.state === 'ready' ? (
+                        <CheckCircle2
+                          size={12}
+                          aria-hidden
+                          className="mt-0.5 text-[color:rgba(130,230,180,0.9)]"
+                        />
+                      ) : row.state === 'blocked' ? (
+                        <CircleAlert
+                          size={12}
+                          aria-hidden
+                          className="mt-0.5 text-[color:var(--color-status-danger)]"
+                        />
+                      ) : row.state === 'manual' ? (
+                        <Terminal
+                          size={12}
+                          aria-hidden
+                          className="mt-0.5 text-[color:rgba(180,235,205,0.9)]"
+                        />
+                      ) : (
+                        <CircleAlert
+                          size={12}
+                          aria-hidden
+                          className="mt-0.5 text-[color:rgba(244,196,130,0.92)]"
+                        />
+                      )}
+                      <dt className="truncate font-mono text-[9.5px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                        {row.label}
+                      </dt>
+                      <dd className="break-keep text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
+                        {row.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
                 <div className="mt-2 grid gap-1.5">
                   {agentSetupFiles.map(({ key, validKey, path, label }) => {
                     const present = Boolean(agentStatus[key]);
@@ -617,6 +854,15 @@ export function VaultToolsMenu({
                 </button>
                 <button
                   type="button"
+                  onClick={() => void handleCopyAgentFirstContactProof()}
+                  title={t('agentSetup.copyFirstContactProofTitle')}
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5 text-[11.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  <Terminal size={12} aria-hidden />
+                  {copyFirstContactProofLabel}
+                </button>
+                <button
+                  type="button"
                   onClick={() => void handleCopyAgentJsonGate()}
                   title={t('agentSetup.copyJsonGateTitle')}
                   className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(130,230,180,0.28)] bg-[color:rgba(50,185,125,0.07)] px-2 py-1.5 text-[11.5px] text-[color:rgba(180,235,205,0.94)] transition-colors hover:border-[color:rgba(130,230,180,0.42)] hover:bg-[color:rgba(50,185,125,0.11)]"
@@ -663,6 +909,23 @@ export function VaultToolsMenu({
                     </div>
                   ))}
                 </dl>
+                <div className="mt-1.5 rounded-sm border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(94,106,210,0.045)] px-2 py-1.5">
+                  <p className="text-[9.5px] font-medium uppercase tracking-[0.12em] text-[color:rgba(200,210,255,0.82)]">
+                    {t('agentSetup.syncAfterChangeTitle')}
+                  </p>
+                  <p className="mt-1 break-keep text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+                    {t('agentSetup.syncAfterChangeDesc')}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => void handleCopyAgentPostChangeSyncGate()}
+                    title={t('agentSetup.copyPostChangeSyncTitle')}
+                    className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1.5 text-[11px] text-[color:rgba(210,216,255,0.94)] transition-colors hover:border-[color:rgba(139,151,255,0.46)] hover:bg-[color:rgba(94,106,210,0.13)]"
+                  >
+                    <ClipboardCopy size={12} aria-hidden />
+                    {copyPostChangeSyncLabel}
+                  </button>
+                </div>
                 <ol className="mt-1.5 grid gap-1" aria-label={t('agentSetup.cliPreviewAriaLabel')}>
                   {AGENT_VERIFY_CLI_PREVIEW.map((command, index) => (
                     <li
@@ -683,9 +946,18 @@ export function VaultToolsMenu({
                 </div>
                 <button
                   type="button"
+                  onClick={() => void handleCopyAgentSetupCheckCliCommand()}
+                  title={t('agentSetup.copySetupCheckCliTitle')}
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(130,230,180,0.28)] bg-[color:rgba(50,185,125,0.07)] px-2 py-1.5 text-[11.5px] text-[color:rgba(180,235,205,0.94)] transition-colors hover:border-[color:rgba(130,230,180,0.42)] hover:bg-[color:rgba(50,185,125,0.11)]"
+                >
+                  <Terminal size={12} aria-hidden />
+                  {copySetupCheckCliLabel}
+                </button>
+                <button
+                  type="button"
                   onClick={() => void handleCopyAgentSetupCliCommand()}
                   title={t('agentSetup.copySetupCliTitle')}
-                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(130,230,180,0.28)] bg-[color:rgba(50,185,125,0.07)] px-2 py-1.5 text-[11.5px] text-[color:rgba(180,235,205,0.94)] transition-colors hover:border-[color:rgba(130,230,180,0.42)] hover:bg-[color:rgba(50,185,125,0.11)]"
+                  className="mt-1.5 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(244,196,130,0.28)] bg-[color:rgba(239,180,120,0.07)] px-2 py-1.5 text-[11.5px] text-[color:rgba(244,196,130,0.94)] transition-colors hover:border-[color:rgba(244,196,130,0.42)] hover:bg-[color:rgba(239,180,120,0.11)]"
                 >
                   <Terminal size={12} aria-hidden />
                   {copySetupCliLabel}

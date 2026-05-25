@@ -34,9 +34,11 @@ export type {
   AgentReadinessToolCall,
 } from "./agent-readiness";
 export {
+  buildAgentPostChangeSyncCliCommands,
   buildAgentReadinessCliCommands,
   buildAgentReadinessPrompt,
   buildAgentReadinessSummary,
+  formatAgentPostChangeSyncPacket,
   formatAgentReadinessCliCommands,
   validateAgentReadinessToolCall,
 } from "./agent-readiness";

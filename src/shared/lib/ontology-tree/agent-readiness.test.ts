@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
+  buildAgentPostChangeSyncCliCommands,
   buildAgentReadinessCliCommands,
   buildAgentReadinessPrompt,
   buildAgentReadinessSummary,
+  formatAgentPostChangeSyncPacket,
   formatAgentReadinessCliCommands,
   validateAgentReadinessToolCall,
 } from "./agent-readiness";
@@ -158,6 +160,36 @@ describe("buildAgentReadinessSummary", () => {
     );
     expect(formatted).toContain("8. oh-my-ontology maintenance [vault] --limit 20");
     expect(formatted).toContain("11. oh-my-ontology validate [vault]");
+  });
+
+  it("builds a focused post-change sync gate for MCP and CLI sessions", () => {
+    const commands = buildAgentPostChangeSyncCliCommands();
+    const packet = formatAgentPostChangeSyncPacket();
+
+    expect(commands.map((item) => item.command)).toEqual([
+      "oh-my-ontology health [vault]",
+      "oh-my-ontology cycles [vault] --max-hops 8",
+      "oh-my-ontology growth [vault] --limit 20",
+      "oh-my-ontology maintenance [vault] --limit 20",
+      "oh-my-ontology validate [vault]",
+    ]);
+    expect(packet).toContain("# Post-change ontology sync gate");
+    expect(packet).toContain("## Run when");
+    expect(packet).toContain(
+      "a domain, capability, element, or relation was introduced, renamed, split, merged, or made more explicit",
+    );
+    expect(packet).toContain(
+      "a UI, CLI, MCP, or docs change changes what this codebase is or how an agent should navigate it",
+    );
+    expect(packet).toContain('"operation": "health"');
+    expect(packet).toContain('"operation": "cycles"');
+    expect(packet).toContain('"operation": "growth_plan"');
+    expect(packet).toContain('"operation": "maintenance_plan"');
+    expect(packet).toContain('"tool": "validate_vault"');
+    expect(packet).toContain("## CLI fallback");
+    expect(packet).toContain("1. oh-my-ontology health [vault]");
+    expect(packet).toContain("5. oh-my-ontology validate [vault]");
+    expect(packet).toContain("typo-only, comment-only");
   });
 
   it("validates readiness repair MCP payloads before they are copied", () => {
