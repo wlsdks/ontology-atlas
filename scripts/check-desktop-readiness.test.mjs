@@ -109,7 +109,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ hosted download page explains missing first-release DMGs without routing into the web workbench/,
+    /✓ hosted download page names current PR, Apple secret, and release blockers without routing into the web workbench/,
   );
   assert.match(
     result.stdout,

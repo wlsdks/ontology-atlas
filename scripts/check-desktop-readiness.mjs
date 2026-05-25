@@ -445,17 +445,29 @@ if (
 
 if (
   downloadPage.includes("releaseAvailabilityNote") &&
+  downloadPage.includes("releaseStatusTitle") &&
+  downloadPage.includes("releaseStatusPr") &&
+  downloadPage.includes("releaseStatusSecrets") &&
+  downloadPage.includes("releaseStatusRelease") &&
   /first public release is still waiting on PR review and Apple signing gates/.test(
     enMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
+  /PR #274/.test(enMessages.download?.releaseStatusPr ?? "") &&
+  /Apple Developer ID signing and notarization secrets/.test(
+    enMessages.download?.releaseStatusSecrets ?? "",
+  ) &&
+  /v0\.1\.0 GitHub Release/.test(enMessages.download?.releaseStatusRelease ?? "") &&
   /첫 public release 가 PR review 와 Apple signing gate/.test(
     koMessages.download?.releaseAvailabilityNote ?? "",
-  )
+  ) &&
+  /PR #274/.test(koMessages.download?.releaseStatusPr ?? "") &&
+  /Apple Developer ID/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
+  /v0\.1\.0 GitHub Release/.test(koMessages.download?.releaseStatusRelease ?? "")
 ) {
-  pass("hosted download page explains missing first-release DMGs without routing into the web workbench");
+  pass("hosted download page names current PR, Apple secret, and release blockers without routing into the web workbench");
 } else {
   fail(
-    "hosted download copy must explain that missing first-release DMGs are waiting on PR review and Apple signing gates, while keeping ontology work inside the installed app",
+    "hosted download copy must name the current PR review, Apple signing secret, and v0.1.0 Release blockers while keeping ontology work inside the installed app",
   );
 }
 

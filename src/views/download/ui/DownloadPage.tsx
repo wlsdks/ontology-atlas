@@ -65,6 +65,17 @@ export function DownloadPage() {
             {t('releaseAvailabilityNote')}
           </p>
 
+          <div className="grid max-w-2xl gap-2 rounded-lg border border-[color:rgba(244,183,49,0.34)] bg-[color:rgba(244,183,49,0.08)] p-3">
+            <p className="font-mono text-[10px] uppercase text-[color:var(--color-status-warning)]">
+              {t('releaseStatusTitle')}
+            </p>
+            <ul className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+              <ReleaseStatusItem label={t('releaseStatusPr')} />
+              <ReleaseStatusItem label={t('releaseStatusSecrets')} />
+              <ReleaseStatusItem label={t('releaseStatusRelease')} />
+            </ul>
+          </div>
+
           <div className="grid gap-3 border-y border-[color:var(--color-divider)] py-5 md:grid-cols-3">
             <ProofItem label={t('proofSigned')} />
             <ProofItem label={t('proofNotarized')} />
@@ -114,6 +125,18 @@ function ProofItem({ label }: { label: string }) {
       <CheckCircle2 size={14} className="shrink-0 text-[color:var(--color-indigo-accent)]" />
       <span>{label}</span>
     </div>
+  );
+}
+
+function ReleaseStatusItem({ label }: { label: string }) {
+  return (
+    <li className="flex items-start gap-2">
+      <span
+        className="mt-[0.42rem] h-1.5 w-1.5 shrink-0 rounded-full bg-[color:var(--color-status-warning)]"
+        aria-hidden
+      />
+      <span>{label}</span>
+    </li>
   );
 }
 
