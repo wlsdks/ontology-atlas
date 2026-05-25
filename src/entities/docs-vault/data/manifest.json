@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T06:12:11.961Z",
+  "generatedAt": "2026-05-25T06:17:29.605Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3858,6 +3858,44 @@
       ]
     },
     {
+      "slug": "DESKTOP-MACOS",
+      "path": "docs/DESKTOP-MACOS.md",
+      "title": "macOS Desktop App Track",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "macOS Desktop App Track",
+          "slug": "macos-desktop-app-track"
+        },
+        {
+          "depth": 2,
+          "text": "Current Decision",
+          "slug": "current-decision"
+        },
+        {
+          "depth": 2,
+          "text": "Readiness Gate",
+          "slug": "readiness-gate"
+        },
+        {
+          "depth": 2,
+          "text": "First Prototype Scope",
+          "slug": "first-prototype-scope"
+        },
+        {
+          "depth": 2,
+          "text": "Later Distribution Work",
+          "slug": "later-distribution-work"
+        }
+      ],
+      "excerpt": "ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app should be a native shell around the same local markdown vault, not a backend, cloud sync layer, or second data store. Use Tauri first for the prototype. The web app already builds as a static export (next.config.ts keeps ",
+      "wordCount": 278,
+      "updatedAt": "2026-05-25T06:16:46.246Z",
+      "linksOut": []
+    },
+    {
       "slug": "DEVELOPMENT-CHECKS",
       "path": "docs/DEVELOPMENT-CHECKS.md",
       "title": "Development Checks",
@@ -5078,8 +5116,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The first slice is a feasibility proof, not a second product architecture: wrap the existing Next.js static export in a Tauri shell, open the same local vault folder, render /docs, /ontology, /topology, and /ontol",
-      "wordCount": 139,
-      "updatedAt": "2026-05-25T06:12:00.927Z",
+      "wordCount": 169,
+      "updatedAt": "2026-05-25T06:17:22.951Z",
       "linksOut": []
     },
     {
@@ -6579,8 +6617,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 2424,
-      "updatedAt": "2026-05-25T06:11:39.138Z",
+      "wordCount": 2443,
+      "updatedAt": "2026-05-25T06:17:14.179Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -6712,8 +6750,8 @@
         }
       ],
       "excerpt": "Current as of 20260518. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontologyengine.mjs, and cli/src/index.mjs first. ohmyontology is now best described as a reponative memory layer for Claude Code, Cursor, and C",
-      "wordCount": 588,
-      "updatedAt": "2026-05-24T09:01:47.873Z",
+      "wordCount": 606,
+      "updatedAt": "2026-05-25T06:17:05.212Z",
       "linksOut": [
         "../README",
         "PRODUCT-DIRECTION",
@@ -6722,6 +6760,7 @@
         "FEATURES",
         "ARCHITECTURE",
         "DEVELOPMENT-CHECKS",
+        "DESKTOP-MACOS",
         "../mcp/README",
         "../cli/README",
         "DESIGN-SYSTEM",
@@ -7053,14 +7092,21 @@
     "DEVELOPMENT-CHECKS": [
       {
         "fromSlug": "README",
-        "context": "`](ARCHITECTURE.md) | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview | | **[`DEVELOPMENT-CHECKS.md`]** | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks | | [`../mcp/README.md`]",
+        "context": "`](ARCHITECTURE.md) | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview | | **[`DEVELOPMENT-CHECKS.md`]** | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks | | [`DESKTOP-MACOS.md`]",
         "linkText": "`DEVELOPMENT-CHECKS.md`"
+      }
+    ],
+    "DESKTOP-MACOS": [
+      {
+        "fromSlug": "README",
+        "context": "VELOPMENT-CHECKS.md) | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks | | **[`DESKTOP-MACOS.md`]** | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | [`../mcp/README",
+        "linkText": "`DESKTOP-MACOS.md`"
       }
     ],
     "../mcp/README": [
       {
         "fromSlug": "README",
-        "context": "VELOPMENT-CHECKS.md) | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks | | **[`../mcp/README.md`]** | MCP registration, 23 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
+        "context": "SKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track | | **[`../mcp/README.md`]** | MCP registration, 23 tools, tool contracts, verification | Canonical agent interface | | [`../cli/README.md`](../cli/",
         "linkText": "`../mcp/README.md`"
       }
     ],
@@ -7813,6 +7859,13 @@
         "type": "doc",
         "slug": "DESIGN-SYSTEM",
         "title": "Design System"
+      },
+      {
+        "name": "DESKTOP-MACOS",
+        "path": "DESKTOP-MACOS",
+        "type": "doc",
+        "slug": "DESKTOP-MACOS",
+        "title": "macOS Desktop App Track"
       },
       {
         "name": "DEVELOPMENT-CHECKS",

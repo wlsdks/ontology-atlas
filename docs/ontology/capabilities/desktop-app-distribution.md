@@ -19,6 +19,9 @@ The first slice is a feasibility proof, not a second product architecture:
 wrap the existing Next.js static export in a Tauri shell, open the same local
 vault folder, render `/docs`, `/ontology`, `/topology`, and `/ontology/edit`,
 then verify the same CLI/MCP setup gates still work for Claude Code and Codex.
+`pnpm desktop:check` is the pre-scaffold gate for that slice: it checks the
+Next.js static export shape, static image mode, trailing-slash routes, docs-vault
+build freshness path, and CLI/MCP verification script availability.
 
 This keeps the desktop app aligned with the core ontology definition: the
 frontmatter graph remains the source of truth, the CLI/MCP graph engine remains

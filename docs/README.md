@@ -20,6 +20,7 @@ query, and maintain through MCP.
 | [`FEATURES.md`](FEATURES.md) | Complete inventory of shipping CLI, MCP, and web surfaces | Canonical feature inventory |
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview |
 | [`DEVELOPMENT-CHECKS.md`](DEVELOPMENT-CHECKS.md) | Maintainer verification, package checks, dogfood release gates | Canonical maintainer checks |
+| [`DESKTOP-MACOS.md`](DESKTOP-MACOS.md) | macOS desktop app track, readiness gate, first Tauri prototype scope | Current distribution track |
 | [`../mcp/README.md`](../mcp/README.md) | MCP registration, 23 tools, tool contracts, verification | Canonical agent interface |
 | [`../cli/README.md`](../cli/README.md) | CLI commands, graph workflows, installed-package checks | Canonical developer terminal interface |
 | [`DESIGN-SYSTEM.md`](DESIGN-SYSTEM.md) | Visual language, tokens, forbidden patterns | Canonical UI style guide |

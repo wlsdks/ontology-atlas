@@ -202,6 +202,10 @@ Non-goal for the first slice: do not add backend/login/cloud or change the
 source-of-truth model. The desktop app is another local shell over the same
 vault, not a new data store.
 
+Current readiness gate: `pnpm desktop:check` verifies the static export and
+agent-handoff prerequisites before adding a Tauri scaffold. See
+`docs/DESKTOP-MACOS.md`.
+
 ### Option A — npm package + CLI
 
 ```bash
