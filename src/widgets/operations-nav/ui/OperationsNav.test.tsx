@@ -51,9 +51,11 @@ vi.mock('next-intl', () => ({
   useTranslations: (namespace: string) => (key: string, values?: Record<string, unknown>) => {
     const messages: Record<string, Record<string, string>> = {
       modeBadge: {
-        demoAriaLabelClickable: 'Demo mode — click to start local vault work',
+        demoAriaLabelDownload: 'Demo mode — install the macOS app to start local vault work',
+        demoAriaLabelPicker: 'Demo mode — open a local vault folder',
         demoLabel: 'demo',
-        demoTooltipClickable: 'Demo mode — local vault work starts in the installed app',
+        demoTooltipDownload: 'Demo mode — install the macOS app to start writable local vault work',
+        demoTooltipPicker: 'Demo mode — open a local vault folder to start saving changes',
         vaultDocs: `${values?.count ?? 0} docs`,
         vaultLabel: 'vault',
         vaultTooltip: `Vault mode — ${values?.name ?? 'vault'} (${values?.count ?? 0} docs).`,
@@ -100,10 +102,11 @@ describe('OperationsNav desktop acquisition boundary', () => {
     render(<OperationsNav />);
 
     for (const link of screen.getAllByRole('link', {
-      name: /Demo mode — click to start local vault work/i,
+      name: /Demo mode — install the macOS app to start local vault work/i,
     })) {
       expect(link).toHaveAttribute('href', '/download/');
     }
+    expect(screen.queryByRole('link', { name: /open a local vault folder/i })).not.toBeInTheDocument();
   });
 
   it('keeps the installed desktop app demo badge on the native local picker path', () => {
@@ -112,9 +115,10 @@ describe('OperationsNav desktop acquisition boundary', () => {
     render(<OperationsNav />);
 
     for (const link of screen.getAllByRole('link', {
-      name: /Demo mode — click to start local vault work/i,
+      name: /Demo mode — open a local vault folder/i,
     })) {
       expect(link).toHaveAttribute('href', '/docs/?intent=local');
     }
+    expect(screen.queryByRole('link', { name: /install the macOS app/i })).not.toBeInTheDocument();
   });
 });

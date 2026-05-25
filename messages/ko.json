@@ -52,9 +52,11 @@
     "vaultTooltip": "vault 모드 — {name} ({count} docs). 모든 변경이 로컬 디스크에 저장됨.",
     "demoLabel": "데모",
     "demoAriaLabel": "데모 모드",
-    "demoAriaLabelClickable": "데모 모드 — 클릭하면 로컬 vault 작업 시작",
+    "demoAriaLabelDownload": "데모 모드 — 로컬 vault 작업을 시작하려면 macOS 앱 설치",
+    "demoAriaLabelPicker": "데모 모드 — 로컬 vault 폴더 열기",
     "demoTooltip": "데모 모드 — vault 미선택. 빌드 타임 demo manifest 만 노출, 변경 저장 안 됨.",
-    "demoTooltipClickable": "데모 모드 — 로컬 vault 작업은 설치된 앱에서 시작"
+    "demoTooltipDownload": "데모 모드 — 저장 가능한 로컬 vault 작업은 macOS 앱 설치 후 시작",
+    "demoTooltipPicker": "데모 모드 — 로컬 vault 폴더를 열면 변경 사항을 저장할 수 있음"
   },
   "locale": {
     "switcher": "언어",

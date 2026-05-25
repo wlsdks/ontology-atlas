@@ -52,9 +52,11 @@
     "vaultTooltip": "Vault mode — {name} ({count} docs). Every change is saved to your local disk.",
     "demoLabel": "demo",
     "demoAriaLabel": "Demo mode",
-    "demoAriaLabelClickable": "Demo mode — click to start local vault work",
+    "demoAriaLabelDownload": "Demo mode — install the macOS app to start local vault work",
+    "demoAriaLabelPicker": "Demo mode — open a local vault folder",
     "demoTooltip": "Demo mode — no vault picked. Build-time demo manifest only; changes are not saved.",
-    "demoTooltipClickable": "Demo mode — local vault work starts in the installed app"
+    "demoTooltipDownload": "Demo mode — install the macOS app to start writable local vault work",
+    "demoTooltipPicker": "Demo mode — open a local vault folder to start saving changes"
   },
   "locale": {
     "switcher": "Language",

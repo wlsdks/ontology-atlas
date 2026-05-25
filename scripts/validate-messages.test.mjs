@@ -58,10 +58,12 @@ describe('i18n message catalog', () => {
     assert.match(ko.download.proofChecksum, /체크섬을 검증/);
     assert.match(ko.download.step1Body, /Apple Silicon Mac 은 aarch64 DMG/);
     assert.match(ko.download.step1Body, /Intel Mac 은 x64 DMG/);
-    assert.doesNotMatch(en.modeBadge.demoAriaLabelClickable, /open my markdown folder/i);
-    assert.doesNotMatch(en.modeBadge.demoTooltipClickable, /open my markdown folder/i);
-    assert.match(en.modeBadge.demoTooltipClickable, /installed app/i);
-    assert.match(ko.modeBadge.demoTooltipClickable, /설치된 앱/);
+    assert.doesNotMatch(en.modeBadge.demoAriaLabelDownload, /open my markdown folder/i);
+    assert.doesNotMatch(en.modeBadge.demoTooltipDownload, /open my markdown folder/i);
+    assert.match(en.modeBadge.demoTooltipDownload, /install the macOS app/i);
+    assert.match(ko.modeBadge.demoTooltipDownload, /macOS 앱 설치/);
+    assert.match(en.modeBadge.demoAriaLabelPicker, /open a local vault folder/i);
+    assert.match(en.modeBadge.demoTooltipPicker, /saving changes/i);
   });
 });
 
