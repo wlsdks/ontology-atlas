@@ -143,7 +143,8 @@ doctor implementation changes route to
 implementation changes route to
 `pnpm exec node --test scripts/desktop-smoke.test.mjs`, then
 `pnpm test:desktop:check`. `pnpm desktop:doctor` reports local Tauri / Cargo /
-rustc / Xcode command-line-tool readiness before `.app` builds; `pnpm
+rustc / Xcode command-line-tool readiness plus the dogfood vault, CLI/MCP
+handoff gate, and offline desktop docs before `.app` builds; `pnpm
 desktop:smoke` verifies the built `out/` payload has the locale-prefixed docs,
 ontology, topology, builder routes, `_next` assets, and offline desktop docs;
 `pnpm desktop:dev` launches the Tauri shell for local prototype work, and

@@ -106,6 +106,7 @@ const qualityBarChecks = [
   ["local data location clarity", /where data is\s+stored|local data location/i],
   ["agent setup visibility", /CLI, and MCP handoff|agent confidence|MCP verification/i],
   ["offline packaged routes", /offline usefulness|remain usable from the packaged app/i],
+  ["doctor local ontology handoff", /dogfood `docs\/ontology` vault|dogfood vault/i],
 ];
 
 const missingQualityBar = qualityBarChecks
@@ -113,7 +114,7 @@ const missingQualityBar = qualityBarChecks
   .map(([label]) => label);
 
 if (missingQualityBar.length === 0) {
-  pass("desktop quality bar names native launch, vault permissions, recent vaults, local data, agent setup, and offline routes");
+  pass("desktop quality bar names native launch, vault permissions, recent vaults, local data, agent setup, offline routes, and local ontology handoff");
 } else {
   fail(
     `docs/DESKTOP-MACOS.md must keep the desktop quality bar explicit: missing ${missingQualityBar.join(", ")}`,

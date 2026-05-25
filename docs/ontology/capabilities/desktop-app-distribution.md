@@ -36,9 +36,10 @@ quality bar, and the first prototype route-smoke scope. `pnpm desktop:smoke`
 checks the built `out/` payload that the `.app` packages: locale-prefixed
 `/docs`, `/ontology`, `/topology`, and `/ontology/edit` routes, `_next` assets,
 and offline desktop docs under `docs-vault/`. `pnpm desktop:doctor` is the local
-machine runtime diagnosis for that same track: it reports Tauri CLI, Cargo,
-rustc, and macOS Xcode command line tool readiness before a user attempts `.app`
-builds.
+machine and ontology-handoff diagnosis for that same track: it reports Tauri
+CLI, Cargo, rustc, macOS Xcode command line tool readiness, the dogfood
+`docs/ontology` vault, the `cli:mcp-verify` handoff gate, and offline desktop
+docs before a user attempts `.app` builds.
 `pnpm checks:changed` also routes desktop-related edits to this gate, and routes
 checker, doctor, and smoke implementation edits through focused
 `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and

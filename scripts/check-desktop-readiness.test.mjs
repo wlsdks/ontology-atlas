@@ -27,7 +27,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ Tauri CLI dependency is installed/);
   assert.match(
     result.stdout,
-    /✓ desktop quality bar names native launch, vault permissions, recent vaults, local data, agent setup, and offline routes/,
+    /✓ desktop quality bar names native launch, vault permissions, recent vaults, local data, agent setup, offline routes, and local ontology handoff/,
   );
   assert.match(
     result.stdout,

@@ -65,10 +65,12 @@ for a macOS prototype:
 - the first prototype smoke keeps the same route contract explicit: `/docs`,
   `/ontology`, `/topology`, and `/ontology/edit`.
 
-`desktop:doctor` checks the local machine runtime: Tauri CLI, Cargo, rustc, and
-macOS Xcode command line tools. It exits successfully as a report by default,
-and `pnpm desktop:doctor -- --require-runtime` can be used in a local build
-session when missing prerequisites should fail fast.
+`desktop:doctor` checks the local machine runtime and the local ontology handoff
+surface: Tauri CLI, Cargo, rustc, macOS Xcode command line tools, the dogfood
+`docs/ontology` vault, the `cli:mcp-verify` setup gate, and offline desktop docs.
+It exits successfully as a report by default, and
+`pnpm desktop:doctor -- --require-runtime` can be used in a local build session
+when missing prerequisites should fail fast.
 
 `desktop:smoke` checks the built `out/` payload that Tauri packages. It verifies
 that both `en` and `ko` static routes exist for `/docs`, `/ontology`,
@@ -78,7 +80,7 @@ desktop docs are bundled under `docs-vault/` for offline reference.
 ## First Prototype Scope
 
 1. Run `pnpm desktop:doctor` and resolve any missing Cargo / rustc / Xcode
-   command line tool reports.
+   command line tool, dogfood vault, CLI/MCP handoff, or offline-doc reports.
 2. Run `pnpm install` so `@tauri-apps/cli` is available.
 3. Build `out/` with `pnpm build`.
 4. Run `pnpm desktop:smoke` to prove the packaged static payload includes the

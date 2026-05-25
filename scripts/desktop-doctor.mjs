@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import fs from "node:fs";
+import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { platform } from "node:os";
 import { pathToFileURL } from "node:url";
@@ -6,6 +8,7 @@ import { pathToFileURL } from "node:url";
 export function evaluateDesktopDoctor({
   run = runCommand,
   osPlatform = platform(),
+  root = process.cwd(),
 } = {}) {
   const checks = [
     {
@@ -39,6 +42,8 @@ export function evaluateDesktopDoctor({
     },
   ].map((check) => evaluateCheck(check, run));
 
+  checks.push(...evaluateLocalOntologyChecks(root));
+
   const requiredFailures = checks.filter(
     (check) => check.required && check.status === "missing",
   );
@@ -49,7 +54,50 @@ export function evaluateDesktopDoctor({
     checks,
     nextAction:
       requiredFailures[0]?.installHint ??
-      "Run pnpm desktop:build, then smoke /docs, /ontology, /topology, and /ontology/edit.",
+      "Run pnpm desktop:build, smoke /docs, /ontology, /topology, and /ontology/edit, then run pnpm cli:mcp-verify docs/ontology --timeout-ms 15000.",
+  };
+}
+
+function evaluateLocalOntologyChecks(root) {
+  const packageJsonPath = path.join(root, "package.json");
+  const pkg = fs.existsSync(packageJsonPath)
+    ? JSON.parse(fs.readFileSync(packageJsonPath, "utf8"))
+    : {};
+
+  return [
+    evaluateStaticCheck({
+      id: "dogfood-vault",
+      label: "Dogfood ontology vault",
+      ok: fs.existsSync(path.join(root, "docs", "ontology", "README.md")),
+      output: "docs/ontology is available as the local source-of-truth vault",
+      installHint: "Run from the oh-my-ontology repo root so docs/ontology can be verified.",
+    }),
+    evaluateStaticCheck({
+      id: "cli-mcp-verify",
+      label: "CLI/MCP handoff gate",
+      ok: Boolean(pkg.scripts?.["cli:mcp-verify"]),
+      output: "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
+      installHint: "Restore package.json script cli:mcp-verify before desktop handoff smoke.",
+    }),
+    evaluateStaticCheck({
+      id: "desktop-docs",
+      label: "Offline desktop docs",
+      ok: fs.existsSync(path.join(root, "docs", "DESKTOP-MACOS.md")),
+      output: "docs/DESKTOP-MACOS.md is available for packaged offline reference",
+      installHint: "Restore docs/DESKTOP-MACOS.md so desktop setup can be read offline.",
+    }),
+  ];
+}
+
+function evaluateStaticCheck({ id, label, ok, output, installHint }) {
+  return {
+    id,
+    label,
+    required: true,
+    command: "local file check",
+    status: ok ? "ok" : "missing",
+    output: ok ? output : "missing",
+    installHint,
   };
 }
 
