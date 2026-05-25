@@ -134,15 +134,20 @@ The local-first bundle guard is artifact-based: when `scripts/check-bundle.mjs`
 changes, run `pnpm build` first and then `pnpm bundle:check`.
 The macOS desktop readiness gate is scaffold-aware and local-first: when
 `scripts/check-desktop-readiness.mjs`, `scripts/desktop-doctor.mjs`,
+`scripts/desktop-smoke.mjs`,
 `docs/DESKTOP-MACOS.md`, `src-tauri/**`, `package.json`, or `next.config.ts`
 changes, run `pnpm desktop:check`; checker implementation changes also route to
 direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and
 doctor implementation changes route to
-`pnpm exec node --test scripts/desktop-doctor.test.mjs`, then
+`pnpm exec node --test scripts/desktop-doctor.test.mjs`. Desktop smoke
+implementation changes route to
+`pnpm exec node --test scripts/desktop-smoke.test.mjs`, then
 `pnpm test:desktop:check`. `pnpm desktop:doctor` reports local Tauri / Cargo /
 rustc / Xcode command-line-tool readiness before `.app` builds; `pnpm
-desktop:dev` launches the Tauri shell for local prototype work, and `pnpm
-desktop:build` targets the macOS `.app` bundle.
+desktop:smoke` verifies the built `out/` payload has the locale-prefixed docs,
+ontology, topology, builder routes, `_next` assets, and offline desktop docs;
+`pnpm desktop:dev` launches the Tauri shell for local prototype work, and
+`pnpm desktop:build` targets the macOS `.app` bundle.
 `next.config.ts` is static-export source-of-truth; changes route to
 `pnpm desktop:check`, `pnpm exec tsc --noEmit`, `pnpm build`, and then
 `pnpm bundle:check`.
@@ -195,6 +200,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm bundle:check` | Local-first static export bundle guard; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
 | `pnpm desktop:check` | macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files |
 | `pnpm desktop:doctor` | Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, and Xcode command line tools |
+| `pnpm desktop:smoke` | Built `out/` payload smoke for packaged locale routes, `_next` assets, and offline desktop docs before launching or bundling the `.app` |
 | `pnpm test:desktop:check` | Desktop readiness checker contract; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
 | `pnpm test:i18n:messages` | Locale routing/message catalog parity |

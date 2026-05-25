@@ -20,6 +20,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ build script refreshes docs-vault before next build/);
   assert.match(result.stdout, /✓ CLI\/MCP setup gate is available/);
   assert.match(result.stdout, /✓ desktop runtime doctor is available/);
+  assert.match(result.stdout, /✓ desktop packaged-route smoke is available/);
   assert.match(result.stdout, /✓ Tauri CLI alias is available through pnpm tauri/);
   assert.match(result.stdout, /✓ desktop dev script launches the Tauri shell/);
   assert.match(result.stdout, /✓ desktop build script targets a macOS \.app bundle/);

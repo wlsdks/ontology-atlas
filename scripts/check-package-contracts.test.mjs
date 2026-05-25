@@ -469,7 +469,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /`playwright\.config\.ts` changes route to the local-vault picker spec first/);
     assert.match(checksDoc, /`postcss\.config\.mjs` and `app\/globals\.css` route to the overflow sweep spec/);
     assert.match(checksDoc, /when `scripts\/check-bundle\.mjs`\s+changes, run `pnpm build` first and then `pnpm bundle:check`/);
-    assert.match(checksDoc, /The macOS desktop readiness gate is scaffold-aware and local-first: when\s+`scripts\/check-desktop-readiness\.mjs`, `scripts\/desktop-doctor\.mjs`,\s+`docs\/DESKTOP-MACOS\.md`, `src-tauri\/\*\*`, `package\.json`, or `next\.config\.ts`\s+changes, run `pnpm desktop:check`/);
+    assert.match(checksDoc, /The macOS desktop readiness gate is scaffold-aware and local-first: when\s+`scripts\/check-desktop-readiness\.mjs`, `scripts\/desktop-doctor\.mjs`,\s+`scripts\/desktop-smoke\.mjs`,\s+`docs\/DESKTOP-MACOS\.md`, `src-tauri\/\*\*`, `package\.json`, or `next\.config\.ts`\s+changes, run `pnpm desktop:check`/);
     assert.match(checksDoc, /`next\.config\.ts` is static-export source-of-truth; changes route to\s+`pnpm desktop:check`, `pnpm exec tsc --noEmit`, `pnpm build`, and then\s+`pnpm bundle:check`/);
     assert.match(checksDoc, /Next App Router entries under `app\/\*\*\/\*\.ts\[x\]` and `next-env\.d\.ts` route to\s+`pnpm exec tsc --noEmit`/);
     assert.match(checksDoc, /Locale routing under `src\/i18n\/\*\.ts` and message catalogs under\s+`messages\/\*\.json` route to `pnpm test:i18n:messages`/);
@@ -487,6 +487,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm bundle:check` \| Local-first static export bundle guard; run after `pnpm build` when `scripts\/check-bundle\.mjs` changed \|/);
     assert.match(checksDoc, /\| `pnpm desktop:check` \| macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI\/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files \|/);
     assert.match(checksDoc, /\| `pnpm desktop:doctor` \| Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, and Xcode command line tools \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:smoke` \| Built `out\/` payload smoke for packaged locale routes, `_next` assets, and offline desktop docs before launching or bundling the `\.app` \|/);
     assert.match(checksDoc, /\| `pnpm test:desktop:check` \| Desktop readiness checker contract; use direct `pnpm exec node --test scripts\/check-desktop-readiness\.test\.mjs` first when printed \|/);
     assert.match(checksDoc, /\| `pnpm exec tsc --noEmit` \| TypeScript and Next config type safety \|/);
     assert.match(checksDoc, /\| `pnpm test:i18n:messages` \| Locale routing\/message catalog parity \|/);

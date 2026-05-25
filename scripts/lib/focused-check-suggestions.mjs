@@ -42,6 +42,7 @@ const RULES = [
     matches: [
       /^scripts\/check-desktop-readiness\.(?:mjs|test\.mjs)$/,
       /^scripts\/desktop-doctor\.(?:mjs|test\.mjs)$/,
+      /^scripts\/desktop-smoke\.(?:mjs|test\.mjs)$/,
     ],
   },
   {
@@ -50,6 +51,7 @@ const RULES = [
     matches: [
       /^scripts\/check-desktop-readiness\.(?:mjs|test\.mjs)$/,
       /^scripts\/desktop-doctor\.(?:mjs|test\.mjs)$/,
+      /^scripts\/desktop-smoke\.(?:mjs|test\.mjs)$/,
       /^docs\/DESKTOP-MACOS\.md$/,
       /^src-tauri\//,
       /^package\.json$/,
@@ -494,6 +496,8 @@ const SCRIPT_DIRECT_LIB_TESTS = new Map([
   ['scripts/check-desktop-readiness.test.mjs', 'scripts/check-desktop-readiness.test.mjs'],
   ['scripts/desktop-doctor.mjs', 'scripts/desktop-doctor.test.mjs'],
   ['scripts/desktop-doctor.test.mjs', 'scripts/desktop-doctor.test.mjs'],
+  ['scripts/desktop-smoke.mjs', 'scripts/desktop-smoke.test.mjs'],
+  ['scripts/desktop-smoke.test.mjs', 'scripts/desktop-smoke.test.mjs'],
   ['scripts/dogfood-compile-fix.mjs', 'scripts/dogfood-compile-fix.test.mjs'],
   ['scripts/dogfood-compile-fix.test.mjs', 'scripts/dogfood-compile-fix.test.mjs'],
   ['scripts/dogfood-mcp-walk.mjs', 'scripts/dogfood-mcp-walk.test.mjs'],

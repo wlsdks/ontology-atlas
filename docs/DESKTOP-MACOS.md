@@ -42,6 +42,7 @@ Run:
 ```bash
 pnpm desktop:check
 pnpm desktop:doctor
+pnpm build && pnpm desktop:smoke
 ```
 
 `desktop:check` verifies the static frontend and Tauri scaffold prerequisites
@@ -51,9 +52,10 @@ for a macOS prototype:
 - Image optimization is disabled for static packaging.
 - trailing-slash routes are emitted for file-backed navigation.
 - `pnpm build` refreshes the docs vault before `next build`.
-- `docs-vault:check`, `cli:mcp-verify`, `desktop:doctor`, `desktop:dev`, and
-  `desktop:build` are available for packaging, app launch, local runtime
-  diagnosis, and agent handoff checks.
+- `docs-vault:check`, `cli:mcp-verify`, `desktop:doctor`, `desktop:dev`,
+  `desktop:smoke`, and `desktop:build` are available for packaging, app
+  launch, local runtime diagnosis, packaged-route smoke, and agent handoff
+  checks.
 - `src-tauri/tauri.conf.json` loads `../out`, runs `pnpm build` before
   packaging, and targets a macOS `.app` bundle.
 - the Rust entrypoint and default Tauri capability files exist.
@@ -68,17 +70,24 @@ macOS Xcode command line tools. It exits successfully as a report by default,
 and `pnpm desktop:doctor -- --require-runtime` can be used in a local build
 session when missing prerequisites should fail fast.
 
+`desktop:smoke` checks the built `out/` payload that Tauri packages. It verifies
+that both `en` and `ko` static routes exist for `/docs`, `/ontology`,
+`/topology`, and `/ontology/edit`, that `_next` assets are present, and that the
+desktop docs are bundled under `docs-vault/` for offline reference.
+
 ## First Prototype Scope
 
 1. Run `pnpm desktop:doctor` and resolve any missing Cargo / rustc / Xcode
    command line tool reports.
 2. Run `pnpm install` so `@tauri-apps/cli` is available.
 3. Build `out/` with `pnpm build`.
-4. Launch the macOS app shell with `pnpm desktop:dev`, or build the `.app`
+4. Run `pnpm desktop:smoke` to prove the packaged static payload includes the
+   desktop routes and offline docs.
+5. Launch the macOS app shell with `pnpm desktop:dev`, or build the `.app`
    prototype with `pnpm desktop:build`.
-5. Open the dogfood vault and smoke `/docs`, `/ontology`, `/topology`, and
+6. Open the dogfood vault and smoke `/docs`, `/ontology`, `/topology`, and
    `/ontology/edit`.
-6. Run `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` after the app
+7. Run `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` after the app
    smoke so the desktop path still proves Claude Code / Codex handoff readiness.
 
 ## Later Distribution Work

@@ -30,15 +30,20 @@ The repository now has the first `src-tauri/` shell with `frontendDist: "../out"
 and macOS `.app` bundle targeting. `pnpm desktop:check` is the scaffold-aware
 gate for that slice: it checks the Next.js static export shape, static image
 mode, trailing-slash routes, docs-vault build freshness path, CLI/MCP
-verification script availability, `desktop:dev` / `desktop:build` scripts, the
-Tauri shell files, the explicit desktop-grade quality bar, and the first
-prototype route-smoke scope. `pnpm desktop:doctor` is the local machine runtime
-diagnosis for that same track: it reports Tauri CLI, Cargo, rustc, and macOS
-Xcode command line tool readiness before a user attempts `.app` builds.
+verification script availability, `desktop:dev` / `desktop:smoke` /
+`desktop:build` scripts, the Tauri shell files, the explicit desktop-grade
+quality bar, and the first prototype route-smoke scope. `pnpm desktop:smoke`
+checks the built `out/` payload that the `.app` packages: locale-prefixed
+`/docs`, `/ontology`, `/topology`, and `/ontology/edit` routes, `_next` assets,
+and offline desktop docs under `docs-vault/`. `pnpm desktop:doctor` is the local
+machine runtime diagnosis for that same track: it reports Tauri CLI, Cargo,
+rustc, and macOS Xcode command line tool readiness before a user attempts `.app`
+builds.
 `pnpm checks:changed` also routes desktop-related edits to this gate, and routes
-checker and doctor implementation edits through focused
+checker, doctor, and smoke implementation edits through focused
 `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and
-`pnpm exec node --test scripts/desktop-doctor.test.mjs` contracts first.
+`pnpm exec node --test scripts/desktop-doctor.test.mjs` /
+`pnpm exec node --test scripts/desktop-smoke.test.mjs` contracts first.
 
 This keeps the desktop app aligned with the core ontology definition: the
 frontmatter graph remains the source of truth, the CLI/MCP graph engine remains

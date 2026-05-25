@@ -440,6 +440,8 @@ describe('focused check suggestions', () => {
       'scripts/check-desktop-readiness.test.mjs',
       'scripts/desktop-doctor.mjs',
       'scripts/desktop-doctor.test.mjs',
+      'scripts/desktop-smoke.mjs',
+      'scripts/desktop-smoke.test.mjs',
       'docs/DESKTOP-MACOS.md',
       'src-tauri/tauri.conf.json',
     ]);
@@ -447,6 +449,7 @@ describe('focused check suggestions', () => {
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm exec node --test scripts/check-desktop-readiness.test.mjs',
       'pnpm exec node --test scripts/desktop-doctor.test.mjs',
+      'pnpm exec node --test scripts/desktop-smoke.test.mjs',
       'pnpm docs-vault:check',
       'pnpm test:desktop:check',
       'pnpm desktop:check',

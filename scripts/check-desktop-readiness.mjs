@@ -69,6 +69,12 @@ if (pkg.scripts?.["desktop:doctor"] === "node scripts/desktop-doctor.mjs") {
   fail("package.json must expose desktop:doctor as node scripts/desktop-doctor.mjs");
 }
 
+if (pkg.scripts?.["desktop:smoke"] === "node scripts/desktop-smoke.mjs") {
+  pass("desktop packaged-route smoke is available after static build");
+} else {
+  fail("package.json must expose desktop:smoke as node scripts/desktop-smoke.mjs");
+}
+
 if (pkg.scripts?.tauri === "tauri") {
   pass("Tauri CLI alias is available through pnpm tauri");
 } else {
