@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T07:06:09.609Z",
+  "generatedAt": "2026-05-25T07:11:14.999Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6270,9 +6270,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/home/model/urlstate.ts and src/views/home/lib/topologyanalysis.ts persist /topology?mode=<overview|focus|path|health and derive the small read model used by the analysis bar. The state is URLaddressable so Claude Code, Codex, and humans can share the same topology analysis context. HomePage forwards Path mode",
-      "wordCount": 771,
-      "updatedAt": "2026-05-25T05:05:46.684Z",
+      "excerpt": "src/views/home/model/urlstate.ts and src/views/home/lib/topologyanalysis.ts persist /topology?mode=<overview|focus|path|health and derive the small read model used by the analysis bar. The state is URLaddressable so Claude Code, Codex, and humans can share the same topology analysis context. A selectednode URL (/topolo",
+      "wordCount": 826,
+      "updatedAt": "2026-05-25T07:11:07.211Z",
       "linksOut": []
     },
     {

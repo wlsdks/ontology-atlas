@@ -3,6 +3,7 @@ import {
   applyHomeRouteState,
   DEFAULT_HOME_ROUTE_STATE,
   parseHomeRouteState,
+  selectTopologyNodeRouteState,
 } from "./url-state";
 
 describe("parseHomeRouteState", () => {
@@ -27,6 +28,15 @@ describe("parseHomeRouteState", () => {
     const params = new URLSearchParams("impact=weird&pulse=bad");
 
     expect(parseHomeRouteState(params)).toEqual(DEFAULT_HOME_ROUTE_STATE);
+  });
+
+  it("treats selected-node topology links as Focus analysis links by default", () => {
+    const params = new URLSearchParams("p=capabilities/topology-analysis-modes");
+
+    expect(parseHomeRouteState(params)).toMatchObject({
+      selectedSlug: "capabilities/topology-analysis-modes",
+      analysisMode: "focus",
+    });
   });
 });
 
@@ -85,5 +95,46 @@ describe("applyHomeRouteState", () => {
     );
 
     expect(params.toString()).toBe("");
+  });
+});
+
+describe("selectTopologyNodeRouteState", () => {
+  it("promotes overview node selection into Focus mode", () => {
+    expect(
+      selectTopologyNodeRouteState(DEFAULT_HOME_ROUTE_STATE, "capabilities/mcp-server"),
+    ).toMatchObject({
+      selectedSlug: "capabilities/mcp-server",
+      analysisMode: "focus",
+      impactMode: "none",
+    });
+  });
+
+  it("preserves active Path and Health workflows while updating the selected node", () => {
+    const pathState = selectTopologyNodeRouteState(
+      {
+        ...DEFAULT_HOME_ROUTE_STATE,
+        analysisMode: "path",
+        pathSourceSlug: "domains/views",
+        pathTargetSlug: "capabilities/topology-analysis-modes",
+      },
+      "domains/views",
+    );
+
+    expect(pathState).toMatchObject({
+      selectedSlug: "domains/views",
+      analysisMode: "path",
+      pathSourceSlug: "domains/views",
+      pathTargetSlug: "capabilities/topology-analysis-modes",
+    });
+
+    expect(
+      selectTopologyNodeRouteState(
+        { ...DEFAULT_HOME_ROUTE_STATE, analysisMode: "health" },
+        "capabilities/orphan",
+      ),
+    ).toMatchObject({
+      selectedSlug: "capabilities/orphan",
+      analysisMode: "health",
+    });
   });
 });

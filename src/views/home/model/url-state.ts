@@ -57,9 +57,15 @@ export function parseHomeRouteState(
   const impactParam = searchParams.get(HOME_QUERY_KEYS.impact);
   const pulseParam = searchParams.get(HOME_QUERY_KEYS.pulse);
   const modeParam = searchParams.get(HOME_QUERY_KEYS.mode);
+  const selectedSlug = searchParams.get(HOME_QUERY_KEYS.project);
+  const analysisMode = VALID_ANALYSIS_MODE.includes(modeParam as TopologyAnalysisMode)
+    ? (modeParam as TopologyAnalysisMode)
+    : selectedSlug
+      ? "focus"
+      : DEFAULT_HOME_ROUTE_STATE.analysisMode;
 
   return {
-    selectedSlug: searchParams.get(HOME_QUERY_KEYS.project),
+    selectedSlug,
     activeCategory: searchParams.get(HOME_QUERY_KEYS.category),
     focusedHubSlug: searchParams.get(HOME_QUERY_KEYS.hub),
     impactMode: VALID_IMPACT.includes(impactParam as ProjectImpactMode)
@@ -68,11 +74,24 @@ export function parseHomeRouteState(
     pulseMode: VALID_PULSE.includes(pulseParam as HomePulseMode)
       ? (pulseParam as HomePulseMode)
       : DEFAULT_HOME_ROUTE_STATE.pulseMode,
-    analysisMode: VALID_ANALYSIS_MODE.includes(modeParam as TopologyAnalysisMode)
-      ? (modeParam as TopologyAnalysisMode)
-      : DEFAULT_HOME_ROUTE_STATE.analysisMode,
+    analysisMode,
     pathSourceSlug: searchParams.get(HOME_QUERY_KEYS.pathSource),
     pathTargetSlug: searchParams.get(HOME_QUERY_KEYS.pathTarget),
+  };
+}
+
+export function selectTopologyNodeRouteState(
+  current: HomeRouteState,
+  slug: string,
+  options?: { isHub?: boolean; preserveImpact?: boolean },
+): HomeRouteState {
+  return {
+    ...current,
+    selectedSlug: slug,
+    focusedHubSlug: options?.isHub ? slug : null,
+    impactMode: options?.preserveImpact ? current.impactMode : "none",
+    analysisMode:
+      current.analysisMode === "overview" ? "focus" : current.analysisMode,
   };
 }
 

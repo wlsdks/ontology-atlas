@@ -107,7 +107,10 @@ import {
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
 import { useHomeRouteState } from "../model/use-home-route-state";
-import type { TopologyAnalysisMode } from "../model/url-state";
+import {
+  selectTopologyNodeRouteState,
+  type TopologyAnalysisMode,
+} from "../model/url-state";
 import {
   buildTopologyAnalysisSummary,
   buildTopologyHealthActionTarget,
@@ -357,12 +360,12 @@ export function HomePage() {
       // projectBySlug Map 으로 O(1) lookup — 이전엔 매 클릭마다
       // renderProjects.find 로 O(N) 스캔.
       const project = projectBySlug.get(slug);
-      setRouteState((current) => ({
-        ...current,
-        selectedSlug: slug,
-        focusedHubSlug: project?.isHub ? slug : null,
-        impactMode: options?.preserveImpact ? current.impactMode : "none",
-      }));
+      setRouteState((current) =>
+        selectTopologyNodeRouteState(current, slug, {
+          isHub: Boolean(project?.isHub),
+          preserveImpact: options?.preserveImpact,
+        }),
+      );
       dismissSigmaHint();
     },
     [projectBySlug, setRouteState, dismissSigmaHint],
