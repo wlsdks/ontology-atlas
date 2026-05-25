@@ -152,7 +152,8 @@ const safePreflight = {
 
 const postSaveLabels = {
   title: "Relation saved",
-  body: "Inspect the new edge before running the sync gate.",
+  body:
+    "Inspect the saved edge in Topology Path mode, then check endpoints in Focus mode.",
   relationLabel: "edge",
   openPath: "Open topology path",
   sourceFocus: "Source topology focus",
@@ -861,6 +862,11 @@ describe("RelationPostSaveHandoff", () => {
 
     expect(screen.getByTestId("builder-relation-post-save-handoff")).toBeInTheDocument();
     expect(screen.getByText("Relation saved")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Inspect the saved edge in Topology Path mode, then check endpoints in Focus mode.",
+      ),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("capabilities/mcp-server.elements -> elements/mcp-index"),
     ).toBeInTheDocument();

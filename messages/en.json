@@ -745,7 +745,7 @@
         "toastEdgePersistNeedsTitle": "Name the unsaved node first, then click Save on the edge.",
         "relationPostSave": {
           "title": "Relation saved",
-          "body": "Keep the graph context alive: inspect the new edge in topology, then hand the sync gate to the next Claude Code or Codex run.",
+          "body": "Keep the graph context alive: inspect the saved edge in Topology Path mode, check either endpoint in Focus mode, then hand the sync gate to the next Claude Code or Codex run.",
           "relationLabel": "edge",
           "openPath": "Open topology path",
           "sourceFocus": "Source topology focus",
