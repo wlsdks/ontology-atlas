@@ -202,7 +202,7 @@ describe("formatOntologyReviewBrief", () => {
       "## Direct relation preview\n- in · capabilities · AI Agent Partner (domain, domains/ai-agent-partner)",
     );
     expect(text).toContain("- out · elements · Sigma (element, elements/sigma)");
-    expect(text).toContain("- Topology: /topology/?mode=focus&p=capability%3Amcp-server");
+    expect(text).toContain("- Topology focus: /topology/?mode=focus&p=capability%3Amcp-server");
     expect(text).toContain("- Builder: /ontology/edit/?node=capabilities%2Fmcp-server");
     expect(text).toContain(
       '- MCP check: query_ontology({"operation":"node_profile","slug":"capabilities/mcp-server","limit":8})',
@@ -265,7 +265,7 @@ describe("formatOntologyReviewBrief", () => {
           reviewQuestions: "Review questions",
           relationAnchors: "Relation anchors",
           handoff: "Handoff",
-          topology: "Topology",
+          topology: "Topology focus",
           builder: "Builder",
           sourceFallback: "no source",
           noRelationPreview: "No direct relation evidence",
@@ -296,7 +296,7 @@ describe("formatOntologyReviewBrief", () => {
         "- Incoming capabilities: AI Agent Partner (domain, domains/ai-agent-partner)",
         "",
         "## Handoff",
-        "- Topology: /topology/?mode=focus&p=capability%3Amcp-server",
+        "- Topology focus: /topology/?mode=focus&p=capability%3Amcp-server",
         "- Builder: /ontology/edit/?node=capabilities%2Fmcp-server",
       ].join("\n"),
     );

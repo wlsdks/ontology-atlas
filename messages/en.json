@@ -2065,7 +2065,7 @@
       "reviewRelations": "out {outgoing} · in {incoming}",
       "reviewRelationTypes": "types · {types}",
       "reviewNoRelationTypes": "none",
-      "reviewOpenTopology": "Open topology",
+      "reviewOpenTopology": "Open topology focus",
       "reviewOpenBuilder": "Focus in builder",
       "reviewCopyMcpCheck": "Copy MCP check",
       "reviewCopyCliCheck": "Copy CLI check",

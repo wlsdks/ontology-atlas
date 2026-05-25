@@ -2065,7 +2065,7 @@
       "reviewRelations": "out {outgoing} · in {incoming}",
       "reviewRelationTypes": "types · {types}",
       "reviewNoRelationTypes": "없음",
-      "reviewOpenTopology": "토폴로지에서 보기",
+      "reviewOpenTopology": "토폴로지 focus 열기",
       "reviewOpenBuilder": "빌더에서 포커스",
       "reviewCopyMcpCheck": "MCP 점검 복사",
       "reviewCopyCliCheck": "CLI 점검 복사",

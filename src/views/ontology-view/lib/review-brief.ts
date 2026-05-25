@@ -238,7 +238,7 @@ export function formatOntologyReviewBrief({
       ? relationPreview.map(formatRelationPreviewRow)
       : [`- ${noRelationPreviewLabel}`]),
     "",
-    `- Topology: ${brief.handoffLinks.topology}`,
+    `- Topology focus: ${brief.handoffLinks.topology}`,
     ...(brief.handoffLinks.builder
       ? [`- Builder: ${brief.handoffLinks.builder}`]
       : []),
