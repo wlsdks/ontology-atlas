@@ -139,8 +139,9 @@ for a macOS prototype:
 - `scripts/check-macos-release-github.mjs` checks the GitHub-side prerequisites
   before pushing a public tag: `gh` authentication, the active
   `release-macos.yml` workflow, required Apple signing/notary secret names, and
-  optional tag/version alignment. It cannot inspect secret values, so the tag
-  workflow still runs `desktop:release-secrets` before signing.
+  optional tag/version alignment plus clean same-tag Release slot. It cannot
+  inspect secret values, so the tag workflow still runs `desktop:release-secrets`
+  before signing.
 - `scripts/check-macos-release-slot.mjs` runs inside the publish job before
   upload and fails if the same tag already has a draft, prerelease, or public
   GitHub Release, preventing stale DMG assets from mixing with newly signed

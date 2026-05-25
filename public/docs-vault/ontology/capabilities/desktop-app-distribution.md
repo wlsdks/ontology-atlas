@@ -116,9 +116,10 @@ raw GitHub API 404, so the next operator action is to push the tag and let the
 macOS release workflow publish the signed/notarized assets.
 `pnpm desktop:release-github` is the operator-side pre-tag guard for that final
 step: it checks `gh` authentication, the active `release-macos.yml` workflow,
-required Apple signing/notary secret names, and optional tag/version alignment
-before the release tag is pushed. It cannot read secret values, so the workflow
-still fails closed through `pnpm desktop:release-secrets`, but it catches the
+required Apple signing/notary secret names, optional tag/version alignment, and
+the clean same-tag Release slot before the release tag is pushed. It cannot read
+secret values, so the workflow still fails closed through
+`pnpm desktop:release-secrets`, but it catches the
 current external blocker earlier: the repo has no Apple release secret names
 configured yet. Its missing-secret output includes `gh secret set <NAME> --repo
 wlsdks/oh-my-ontology` hints so the operator can move directly from readiness

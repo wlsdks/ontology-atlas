@@ -94,7 +94,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop GitHub release readiness gate checks workflow and Apple secret names before tag push/,
+    /✓ desktop GitHub release readiness gate checks workflow, Apple secret names, and release slot before tag push/,
   );
   assert.match(result.stdout, /✓ desktop signing script is available for release builds/);
   assert.match(result.stdout, /✓ desktop notarization script is available for release builds/);
@@ -357,6 +357,10 @@ if (args[0] === 'secret' && args[1] === 'list') {
   console.log(JSON.stringify(${JSON.stringify(secretNames.map((name) => ({ name })))}));
   process.exit(0);
 }
+if (args[0] === 'release' && args[1] === 'view') {
+  console.error('release not found (HTTP 404)');
+  process.exit(1);
+}
 console.error('unexpected gh args: ' + args.join(' '));
 process.exit(1);
 `,
@@ -376,6 +380,60 @@ process.exit(1);
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /has an active release workflow/);
     assert.match(result.stdout, /v0\.1\.0 matches package, Tauri, and Cargo versions/);
+    assert.match(result.stdout, /v0\.1\.0 has no existing GitHub Release/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("desktop GitHub release readiness gate rejects an occupied release slot", () => {
+  const dir = mkdtempSync(join(tmpdir(), "omot-gh-"));
+  const ghPath = join(dir, "gh");
+  const secretNames = [
+    "APPLE_CERTIFICATE_P12_BASE64",
+    "APPLE_CERTIFICATE_PASSWORD",
+    "APPLE_KEYCHAIN_PASSWORD",
+    "APPLE_SIGNING_IDENTITY",
+    "APPLE_ID",
+    "APPLE_APP_SPECIFIC_PASSWORD",
+    "APPLE_TEAM_ID",
+  ];
+  writeFileSync(
+    ghPath,
+    `#!/usr/bin/env node
+const args = process.argv.slice(2);
+if (args[0] === 'auth' && args[1] === 'status') process.exit(0);
+if (args[0] === 'api') {
+  console.log(JSON.stringify({ state: 'active' }));
+  process.exit(0);
+}
+if (args[0] === 'secret' && args[1] === 'list') {
+  console.log(JSON.stringify(${JSON.stringify(secretNames.map((name) => ({ name })))}));
+  process.exit(0);
+}
+if (args[0] === 'release' && args[1] === 'view') {
+  console.log(JSON.stringify({ tagName: 'v0.1.0', isDraft: false, isPrerelease: false, url: 'https://example.test/release' }));
+  process.exit(0);
+}
+console.error('unexpected gh args: ' + args.join(' '));
+process.exit(1);
+`,
+  );
+  chmodSync(ghPath, 0o755);
+  try {
+    const result = spawnSync(
+      process.execPath,
+      ["scripts/check-macos-release-github.mjs", "--tag=v0.1.0"],
+      {
+        cwd: process.cwd(),
+        encoding: "utf8",
+        env: { ...process.env, OMOT_GH_BIN: ghPath },
+      },
+    );
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /release v0\.1\.0 already exists/);
+    assert.match(result.stderr, /Delete the existing public release/);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

@@ -370,12 +370,13 @@ if (
   releaseGithubScript.includes('"secret"') &&
   releaseGithubScript.includes('"list"') &&
   releaseGithubScript.includes("APPLE_CERTIFICATE_P12_BASE64") &&
-  releaseGithubScript.includes("actions/workflows/release-macos.yml")
+  releaseGithubScript.includes("actions/workflows/release-macos.yml") &&
+  releaseGithubScript.includes("check-macos-release-slot.mjs")
 ) {
-  pass("desktop GitHub release readiness gate checks workflow and Apple secret names before tag push");
+  pass("desktop GitHub release readiness gate checks workflow, Apple secret names, and release slot before tag push");
 } else {
   fail(
-    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the release workflow plus required Apple GitHub secret names",
+    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the release workflow, required Apple GitHub secret names, and same-tag release slot",
   );
 }
 

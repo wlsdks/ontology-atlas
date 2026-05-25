@@ -17,7 +17,8 @@ function printHelp() {
 
 Checks GitHub-side prerequisites for the macOS release workflow before a public
 tag push: gh authentication, the release workflow file, required Apple signing
-and notarization secret names, and optional local tag/version alignment.
+and notarization secret names, optional local tag/version alignment, and an
+optional clean same-tag GitHub Release slot check.
 
 This check can only prove that required secret names exist. The tag workflow
 still runs desktop:release-secrets to verify that values are non-empty and the
@@ -141,6 +142,7 @@ if (missing.length > 0) {
 
 if (options.tag) {
   runNode(["scripts/check-macos-release-tag.mjs", `--tag=${options.tag}`]);
+  runNode(["scripts/check-macos-release-slot.mjs", `--repo=${options.repo}`, `--tag=${options.tag}`]);
 }
 
 console.log(
@@ -148,4 +150,5 @@ console.log(
 );
 if (options.tag) {
   console.log(`[desktop-release-github] ${options.tag} matches package, Tauri, and Cargo versions`);
+  console.log(`[desktop-release-github] ${options.tag} has no existing GitHub Release`);
 }
