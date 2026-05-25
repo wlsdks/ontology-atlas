@@ -171,6 +171,12 @@ if (
   fail("package.json must expose test:desktop:bridge for the Tauri vault bridge contract");
 }
 
+if (pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-github.test.mjs")) {
+  pass("desktop checker tests cover the GitHub release operator gate");
+} else {
+  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs so the macOS release operator gate stays covered");
+}
+
 if (
   tauriLib.includes("ensure_inside_canonical") &&
   tauriLib.includes("resolve_write_target_inside") &&

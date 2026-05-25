@@ -39,6 +39,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop checker tests cover the GitHub release operator gate/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop native vault bridge rejects symlink escapes without outside-vault side effects/,
   );
   assert.match(

@@ -150,7 +150,11 @@ implementation changes route to
 `pnpm exec node --test scripts/desktop-doctor.test.mjs`. Desktop smoke
 implementation changes route to
 `pnpm exec node --test scripts/desktop-smoke.test.mjs`, then
-`pnpm test:desktop:check`. Native vault bridge changes route to
+`pnpm test:desktop:check`. The desktop checker suite also covers the
+operator-side GitHub release gate (`scripts/check-macos-release-github.mjs`) with
+a fake `gh` binary, so workflow availability, required Apple secret-name
+detection, tag/version alignment, and stale same-tag release-slot failures stay
+covered before a public tag is pushed. Native vault bridge changes route to
 `pnpm test:desktop:bridge`, which runs the WebView handle-shim tests plus
 `cargo test --manifest-path src-tauri/Cargo.toml` for the Rust path guard.
 `pnpm desktop:doctor` reports local Tauri / Cargo /

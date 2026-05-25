@@ -141,7 +141,9 @@ for a macOS prototype:
   `release-macos.yml` workflow, required Apple signing/notary secret names, and
   optional tag/version alignment plus clean same-tag Release slot. It cannot
   inspect secret values, so the tag workflow still runs `desktop:release-secrets`
-  before signing.
+  before signing. `pnpm test:desktop:check` covers this operator-side gate with a
+  fake `gh` binary, including the PR-only workflow case, missing Apple secret
+  names, tag/version alignment, and stale same-tag Release slots.
 - `scripts/check-macos-release-slot.mjs` runs inside the publish job before
   upload and fails if the same tag already has a draft, prerelease, or public
   GitHub Release, preventing stale DMG assets from mixing with newly signed

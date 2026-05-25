@@ -122,7 +122,10 @@ step: it checks `gh` authentication, the active `release-macos.yml` workflow,
 required Apple signing/notary secret names, optional tag/version alignment, and
 the clean same-tag Release slot before the release tag is pushed. It cannot read
 secret values, so the workflow still fails closed through
-`pnpm desktop:release-secrets`, but it catches the
+`pnpm desktop:release-secrets`. `pnpm test:desktop:check` covers this
+operator-side gate with a fake `gh` binary so PR-only workflow,
+missing-secret, tag/version, and stale release-slot failures remain explicit in
+the PR gate. The operator-side guard also catches the
 current external blocker earlier: the repo has no Apple release secret names
 configured yet. Its missing-secret output includes `gh secret set <NAME> --repo
 wlsdks/oh-my-ontology` hints so the operator can move directly from readiness
