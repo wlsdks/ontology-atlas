@@ -20,6 +20,13 @@ step in a compact record shape. The compact vocabulary-review export includes
 the same record, so planning and marketing notes can carry the decision outcome
 without pulling in the broader MCP / CLI handoff section.
 
+The visible panel, full markdown export, and compact vocabulary-review export
+now include a `Meeting agenda` block. It turns the current decision lane into
+three meeting-ready steps: the decision to make, the graph evidence to review,
+and the next graph action. This keeps planner / marketer / domain-review notes
+from becoming passive metrics; the copied brief can be pasted directly into a
+meeting doc with the review order intact.
+
 The markdown export also includes a dedicated `Review vocabulary` section derived from the top hubs. Each row names the term, kind, node id when available, degree-based reason for attention, and the reuse review action: align naming, owner, and reuse context before external handoff. That keeps the secondary collaborator lane from reading hubs as only graph metrics; the copied brief turns them into vocabulary review items. The panel now also exposes a separate compact vocabulary-review copy action. It exports review focus, decision lane, review questions, vocabulary rows, and hub handoffs without the broader agent/MCP handoff block, so planning and marketing reviewers can carry only the shared terminology packet when they do not need graph-operation commands.
 
 The top hub rows now keep exact graph identity instead of only displaying titles: hub kind, degree, node id, and direct Ontology / Topology / Builder handoff links are visible in the panel and exported in the markdown `Hub handoff` block. Both the visible panel and copied markdown label Focus-mode topology links as `Topology focus` and Health-mode repair links as `Topology health`, so a workspace-level planning note points a collaborator or agent back to the same concept node without confusing vocabulary alignment with ownership repair.

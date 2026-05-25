@@ -1008,6 +1008,10 @@ function InsightsCollaboratorBriefPanel({
       decisionNextStep: t("collaboratorDecisionNextStep"),
       decisionGraphHandoff: t("collaboratorDecisionGraphHandoff"),
       ...decisionLaneLabels,
+      meetingAgenda: t("collaboratorMeetingAgenda"),
+      meetingAgendaDecision: t("collaboratorMeetingAgendaDecision"),
+      meetingAgendaEvidence: t("collaboratorMeetingAgendaEvidence"),
+      meetingAgendaAction: t("collaboratorMeetingAgendaAction"),
       reviewQuestions: t("collaboratorReviewQuestions"),
       ...reviewQuestionLabels,
       noHubs: t("collaboratorNoHubs"),
@@ -1065,6 +1069,10 @@ function InsightsCollaboratorBriefPanel({
       decisionNextStep: t("collaboratorDecisionNextStep"),
       decisionGraphHandoff: t("collaboratorDecisionGraphHandoff"),
       ...decisionLaneLabels,
+      meetingAgenda: t("collaboratorMeetingAgenda"),
+      meetingAgendaDecision: t("collaboratorMeetingAgendaDecision"),
+      meetingAgendaEvidence: t("collaboratorMeetingAgendaEvidence"),
+      meetingAgendaAction: t("collaboratorMeetingAgendaAction"),
       reviewQuestions: t("collaboratorReviewQuestions"),
       ...reviewQuestionLabels,
       noHubs: t("collaboratorNoHubs"),
@@ -1283,6 +1291,45 @@ function InsightsCollaboratorBriefPanel({
               </div>
             </div>
           </dl>
+          <div
+            className="mt-2 rounded border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.045)] px-2.5 py-2"
+            data-testid="insights-collaborator-meeting-agenda"
+          >
+            <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {t("collaboratorMeetingAgenda")}
+            </p>
+            <ol className="mt-1.5 space-y-1">
+              {[
+                {
+                  label: t("collaboratorMeetingAgendaDecision"),
+                  value: decisionExpected,
+                },
+                {
+                  label: t("collaboratorMeetingAgendaEvidence"),
+                  value: decisionHandoffLabel ?? focusLabel,
+                },
+                {
+                  label: t("collaboratorMeetingAgendaAction"),
+                  value: decisionNextStep,
+                },
+              ].map((item, index) => (
+                <li
+                  key={item.label}
+                  className="grid grid-cols-[18px_1fr] gap-1.5 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]"
+                >
+                  <span className="font-mono text-[9px] text-[color:rgba(200,210,255,0.82)]">
+                    {index + 1}
+                  </span>
+                  <span className="break-keep">
+                    <span className="text-[color:var(--color-text-secondary)]">
+                      {item.label}:
+                    </span>{" "}
+                    {item.value}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </div>
           <div className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2">
             <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
               {t("collaboratorReviewQuestions")}

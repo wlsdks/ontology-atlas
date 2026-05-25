@@ -104,6 +104,10 @@ export interface FormatInsightsCollaboratorBriefLabels {
   decisionRecordOwner: string;
   decisionRecordEvidence: string;
   decisionRecordFollowUp: string;
+  meetingAgenda: string;
+  meetingAgendaDecision: string;
+  meetingAgendaEvidence: string;
+  meetingAgendaAction: string;
   reviewQuestions: string;
   alignVocabularyQuestions: readonly string[];
   traceImpactQuestions: readonly string[];
@@ -248,6 +252,9 @@ export function formatInsightsCollaboratorBrief({
     `- ${labels.decisionRecordFollowUp}: ${decisionLaneLabel(brief.reviewFocus, labels, "nextStep")}`,
     ...formatDecisionProofRows(handoff, labels),
     "",
+    `## ${labels.meetingAgenda}`,
+    ...formatMeetingAgendaRows({ brief, handoff, labels }),
+    "",
     `## ${labels.reviewQuestions}`,
     reviewQuestionsForFocus(brief.reviewFocus, labels)
       .map((question) => `- ${question}`)
@@ -354,6 +361,9 @@ export function formatInsightsVocabularyReview({
     `- ${labels.decisionRecordEvidence}: ${brief.decisionHandoff ? formatDecisionHandoffLabel(brief.decisionHandoff, labels) : reviewFocusLabel(brief.reviewFocus, labels)}`,
     `- ${labels.decisionRecordFollowUp}: ${decisionLaneLabel(brief.reviewFocus, labels, "nextStep")}`,
     "",
+    `## ${labels.meetingAgenda}`,
+    ...formatMeetingAgendaRows({ brief, handoff: null, labels }),
+    "",
     `## ${labels.reviewQuestions}`,
     reviewQuestionsForFocus(brief.reviewFocus, labels)
       .map((question) => `- ${question}`)
@@ -382,6 +392,44 @@ export function reviewQuestionsForFocus(
   if (focus === "resolve_orphans") return labels.resolveOrphansQuestions;
   if (focus === "trace_impact") return labels.traceImpactQuestions;
   return labels.alignVocabularyQuestions;
+}
+
+function formatMeetingAgendaRows({
+  brief,
+  handoff,
+  labels,
+}: {
+  brief: InsightsCollaboratorBrief;
+  handoff: InsightsCollaboratorHandoff | null | undefined;
+  labels: Pick<
+    FormatInsightsCollaboratorBriefLabels,
+    | "agentCliCheck"
+    | "decisionRecordEvidence"
+    | "decisionRecordFollowUp"
+    | "impactCliCheck"
+    | "meetingAgendaAction"
+    | "meetingAgendaDecision"
+    | "meetingAgendaEvidence"
+  > &
+    Parameters<typeof decisionLaneLabel>[1] &
+    Parameters<typeof formatDecisionHandoffLabel>[1];
+}): string[] {
+  const evidence =
+    brief.decisionHandoff
+      ? formatDecisionHandoffLabel(brief.decisionHandoff, labels)
+      : reviewFocusLabel(brief.reviewFocus, labels as FormatInsightsCollaboratorBriefLabels);
+  const checks = [
+    handoff?.agentCheckCommand ? `${labels.agentCliCheck}: ${handoff.agentCheckCommand}` : null,
+    handoff?.impactCliCheckCommand
+      ? `${labels.impactCliCheck}: ${handoff.impactCliCheckCommand}`
+      : null,
+  ].filter((row): row is string => row !== null);
+
+  return [
+    `1. ${labels.meetingAgendaDecision}: ${decisionLaneLabel(brief.reviewFocus, labels, "expected")}`,
+    `2. ${labels.meetingAgendaEvidence}: ${evidence}${checks.length > 0 ? `; ${checks.join("; ")}` : ""}`,
+    `3. ${labels.meetingAgendaAction}: ${decisionLaneLabel(brief.reviewFocus, labels, "nextStep")}`,
+  ];
 }
 
 function resolveReviewFocus({
