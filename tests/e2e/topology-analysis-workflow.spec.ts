@@ -595,6 +595,28 @@ test.describe("topology analysis workflow", () => {
     );
 
     await expect(
+      page.getByRole("button", {
+        name: "Copy topology path all_paths MCP execution check",
+      }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", {
+        name: "Copy topology path all_paths MCP execution check",
+      })
+      .click();
+    const copiedTopBarAllPathsMcpCheck = await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __lastCopiedTopologyPathAllPathsMcpCheck?: string;
+          }
+        ).__lastCopiedTopologyPathAllPathsMcpCheck,
+    );
+    expect(copiedTopBarAllPathsMcpCheck).toBe(
+      'query_ontology({"operation":"all_paths","from":"domain:views","to":"capability:topology-analysis-modes","maxHops":5,"limit":10,"searchBudget":1000})',
+    );
+
+    await expect(
       page.getByRole("button", { name: "Copy bounded all_paths MCP check" }),
     ).toBeVisible();
     await page

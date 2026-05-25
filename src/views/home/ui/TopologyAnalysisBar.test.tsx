@@ -141,6 +141,10 @@ const labels = {
   pathAllPathsPlanCopyAriaLabel: "Copy topology path all_paths query plan MCP check",
   pathAllPathsPlanCopiedAriaLabel:
     "Topology path all_paths query plan MCP check copied",
+  pathAllPathsCopy: "Copy all_paths run",
+  pathAllPathsCopied: "all_paths run copied",
+  pathAllPathsCopyAriaLabel: "Copy topology path all_paths MCP execution check",
+  pathAllPathsCopiedAriaLabel: "Topology path all_paths MCP execution check copied",
   pathProofOrderTitle: "Proof order",
   pathProofOrderDesc:
     "Use the visible path as a clue, then run relation_check, explain_relation, and a bounded all_paths plan before treating it as write evidence.",
@@ -664,6 +668,11 @@ describe("TopologyAnalysisBar", () => {
         name: "Copy topology path all_paths query plan MCP check",
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Copy topology path all_paths MCP execution check",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("copies path evidence from the analysis bar for agent handoff", async () => {
@@ -819,7 +828,7 @@ describe("TopologyAnalysisBar", () => {
     );
   });
 
-  it("copies path relation preflight, explain_relation, and all_paths plan checks", async () => {
+  it("copies path relation preflight, explain_relation, all_paths plan, and all_paths execution checks", async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.assign(navigator, {
       clipboard: { writeText },
@@ -876,6 +885,15 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       'query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"domains/views","to":"capability:topology-analysis-modes","maxHops":5,"limit":10,"searchBudget":1000})',
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Copy topology path all_paths MCP execution check",
+      }),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      'query_ontology({"operation":"all_paths","from":"domains/views","to":"capability:topology-analysis-modes","maxHops":5,"limit":10,"searchBudget":1000})',
     );
   });
 

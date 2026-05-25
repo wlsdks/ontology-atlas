@@ -1003,6 +1003,14 @@ export function HomePage() {
                 pathAllPathsPlanCopiedAriaLabel: t(
                   "analysis.pathAllPathsPlanCopiedAriaLabel",
                 ),
+                pathAllPathsCopy: t("analysis.pathAllPathsCopy"),
+                pathAllPathsCopied: t("analysis.pathAllPathsCopied"),
+                pathAllPathsCopyAriaLabel: t(
+                  "analysis.pathAllPathsCopyAriaLabel",
+                ),
+                pathAllPathsCopiedAriaLabel: t(
+                  "analysis.pathAllPathsCopiedAriaLabel",
+                ),
                 pathProofOrderTitle: t("analysis.pathProofOrderTitle"),
                 pathProofOrderDesc: t("analysis.pathProofOrderDesc"),
                 pathProofChecklist: t("analysis.pathProofChecklist"),

@@ -17,6 +17,7 @@ import {
   formatTopologyHealthImpactMcpCheck,
   formatTopologyHealthMcpCheck,
   formatTopologyOverviewBrief,
+  formatTopologyPathAllPathsMcpCheck,
   formatTopologyPathAllPathsPlanMcpCheck,
   formatTopologyPathEvidenceBrief,
   formatTopologyPathExplainRelationMcpCheck,
@@ -151,6 +152,10 @@ interface TopologyAnalysisBarLabels {
   pathAllPathsPlanCopied: string;
   pathAllPathsPlanCopyAriaLabel: string;
   pathAllPathsPlanCopiedAriaLabel: string;
+  pathAllPathsCopy: string;
+  pathAllPathsCopied: string;
+  pathAllPathsCopyAriaLabel: string;
+  pathAllPathsCopiedAriaLabel: string;
   pathProofOrderTitle: string;
   pathProofOrderDesc: string;
   pathProofChecklist: string;
@@ -241,6 +246,7 @@ export function TopologyAnalysisBar({
   const [pathExplainRelationCopied, setPathExplainRelationCopied] =
     useState(false);
   const [pathAllPathsPlanCopied, setPathAllPathsPlanCopied] = useState(false);
+  const [pathAllPathsCopied, setPathAllPathsCopied] = useState(false);
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
   const resolvedPathTitle =
     pathSourceTitle && pathTargetTitle
@@ -535,6 +541,16 @@ export function TopologyAnalysisBar({
     if (!ok) return;
     setPathAllPathsPlanCopied(true);
     window.setTimeout(() => setPathAllPathsPlanCopied(false), 1600);
+  }, [pathSourceSlug, pathTargetSlug]);
+
+  const copyPathAllPaths = useCallback(async () => {
+    if (!pathSourceSlug || !pathTargetSlug) return;
+    const ok = await copyText(
+      formatTopologyPathAllPathsMcpCheck(pathSourceSlug, pathTargetSlug),
+    );
+    if (!ok) return;
+    setPathAllPathsCopied(true);
+    window.setTimeout(() => setPathAllPathsCopied(false), 1600);
   }, [pathSourceSlug, pathTargetSlug]);
 
   return (
@@ -918,6 +934,27 @@ export function TopologyAnalysisBar({
                     {pathAllPathsPlanCopied
                       ? labels.pathAllPathsPlanCopied
                       : labels.pathAllPathsPlanCopy}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={copyPathAllPaths}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
+                  aria-label={
+                    pathAllPathsCopied
+                      ? labels.pathAllPathsCopiedAriaLabel
+                      : labels.pathAllPathsCopyAriaLabel
+                  }
+                >
+                  {pathAllPathsCopied ? (
+                    <Check size={12} aria-hidden />
+                  ) : (
+                    <Clipboard size={12} aria-hidden />
+                  )}
+                  <span>
+                    {pathAllPathsCopied
+                      ? labels.pathAllPathsCopied
+                      : labels.pathAllPathsCopy}
                   </span>
                 </button>
                 <Link
