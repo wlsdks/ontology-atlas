@@ -438,12 +438,15 @@ describe('focused check suggestions', () => {
     const result = suggestFocusedChecks([
       'scripts/check-desktop-readiness.mjs',
       'scripts/check-desktop-readiness.test.mjs',
+      'scripts/desktop-doctor.mjs',
+      'scripts/desktop-doctor.test.mjs',
       'docs/DESKTOP-MACOS.md',
       'src-tauri/tauri.conf.json',
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), [
       'pnpm exec node --test scripts/check-desktop-readiness.test.mjs',
+      'pnpm exec node --test scripts/desktop-doctor.test.mjs',
       'pnpm docs-vault:check',
       'pnpm test:desktop:check',
       'pnpm desktop:check',

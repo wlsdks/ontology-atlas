@@ -13,6 +13,7 @@
     "dev": "next dev",
     "build": "pnpm docs-vault:build && next build",
     "desktop:check": "node scripts/check-desktop-readiness.mjs",
+    "desktop:doctor": "node scripts/desktop-doctor.mjs",
     "tauri": "tauri",
     "desktop:dev": "pnpm tauri dev",
     "desktop:build": "pnpm tauri build --bundles app",

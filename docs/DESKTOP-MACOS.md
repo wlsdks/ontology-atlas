@@ -41,17 +41,19 @@ Run:
 
 ```bash
 pnpm desktop:check
+pnpm desktop:doctor
 ```
 
-The gate verifies the static frontend and Tauri scaffold prerequisites for a
-macOS prototype:
+`desktop:check` verifies the static frontend and Tauri scaffold prerequisites
+for a macOS prototype:
 
 - Next.js static export is enabled.
 - Image optimization is disabled for static packaging.
 - trailing-slash routes are emitted for file-backed navigation.
 - `pnpm build` refreshes the docs vault before `next build`.
-- `docs-vault:check`, `cli:mcp-verify`, `desktop:dev`, and `desktop:build` are
-  available for packaging, app launch, and agent handoff checks.
+- `docs-vault:check`, `cli:mcp-verify`, `desktop:doctor`, `desktop:dev`, and
+  `desktop:build` are available for packaging, app launch, local runtime
+  diagnosis, and agent handoff checks.
 - `src-tauri/tauri.conf.json` loads `../out`, runs `pnpm build` before
   packaging, and targets a macOS `.app` bundle.
 - the Rust entrypoint and default Tauri capability files exist.
@@ -61,9 +63,15 @@ macOS prototype:
 - the first prototype smoke keeps the same route contract explicit: `/docs`,
   `/ontology`, `/topology`, and `/ontology/edit`.
 
+`desktop:doctor` checks the local machine runtime: Tauri CLI, Cargo, rustc, and
+macOS Xcode command line tools. It exits successfully as a report by default,
+and `pnpm desktop:doctor -- --require-runtime` can be used in a local build
+session when missing prerequisites should fail fast.
+
 ## First Prototype Scope
 
-1. Install Rust / Cargo if the local machine does not already provide it.
+1. Run `pnpm desktop:doctor` and resolve any missing Cargo / rustc / Xcode
+   command line tool reports.
 2. Run `pnpm install` so `@tauri-apps/cli` is available.
 3. Build `out/` with `pnpm build`.
 4. Launch the macOS app shell with `pnpm desktop:dev`, or build the `.app`

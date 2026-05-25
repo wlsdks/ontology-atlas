@@ -63,6 +63,12 @@ if (pkg.scripts?.["cli:mcp-verify"]) {
   fail("package.json must expose cli:mcp-verify for desktop handoff verification");
 }
 
+if (pkg.scripts?.["desktop:doctor"] === "node scripts/desktop-doctor.mjs") {
+  pass("desktop runtime doctor is available before .app build attempts");
+} else {
+  fail("package.json must expose desktop:doctor as node scripts/desktop-doctor.mjs");
+}
+
 if (pkg.scripts?.tauri === "tauri") {
   pass("Tauri CLI alias is available through pnpm tauri");
 } else {

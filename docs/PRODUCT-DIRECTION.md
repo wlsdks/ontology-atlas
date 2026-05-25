@@ -209,10 +209,12 @@ Non-goal for the first slice: do not add backend/login/cloud or change the
 source-of-truth model. The desktop app is another local shell over the same
 vault, not a new data store.
 
-Current readiness gate: `pnpm desktop:check` verifies the static export,
-Tauri scaffold, and agent-handoff prerequisites before app smoke. The first
-`src-tauri/` shell is present; local prototype execution now depends on Rust /
-Cargo being installed on the machine. See `docs/DESKTOP-MACOS.md`.
+Current readiness gates: `pnpm desktop:check` verifies the static export,
+Tauri scaffold, and agent-handoff prerequisites before app smoke, while
+`pnpm desktop:doctor` reports local Tauri CLI / Cargo / rustc / Xcode command
+line tool readiness. The first `src-tauri/` shell is present; local prototype
+execution now depends on Rust / Cargo being installed on the machine. See
+`docs/DESKTOP-MACOS.md`.
 
 ### Option A — npm package + CLI
 

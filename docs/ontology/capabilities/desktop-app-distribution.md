@@ -32,10 +32,13 @@ gate for that slice: it checks the Next.js static export shape, static image
 mode, trailing-slash routes, docs-vault build freshness path, CLI/MCP
 verification script availability, `desktop:dev` / `desktop:build` scripts, the
 Tauri shell files, the explicit desktop-grade quality bar, and the first
-prototype route-smoke scope.
+prototype route-smoke scope. `pnpm desktop:doctor` is the local machine runtime
+diagnosis for that same track: it reports Tauri CLI, Cargo, rustc, and macOS
+Xcode command line tool readiness before a user attempts `.app` builds.
 `pnpm checks:changed` also routes desktop-related edits to this gate, and routes
-checker implementation edits through the focused
-`pnpm exec node --test scripts/check-desktop-readiness.test.mjs` contract first.
+checker and doctor implementation edits through focused
+`pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and
+`pnpm exec node --test scripts/desktop-doctor.test.mjs` contracts first.
 
 This keeps the desktop app aligned with the core ontology definition: the
 frontmatter graph remains the source of truth, the CLI/MCP graph engine remains

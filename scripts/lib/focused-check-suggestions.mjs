@@ -39,13 +39,17 @@ const RULES = [
   {
     command: 'pnpm test:desktop:check',
     reason: 'desktop readiness checker contract changed',
-    matches: [/^scripts\/check-desktop-readiness\.(?:mjs|test\.mjs)$/],
+    matches: [
+      /^scripts\/check-desktop-readiness\.(?:mjs|test\.mjs)$/,
+      /^scripts\/desktop-doctor\.(?:mjs|test\.mjs)$/,
+    ],
   },
   {
     command: 'pnpm desktop:check',
     reason: 'macOS desktop readiness inputs changed',
     matches: [
       /^scripts\/check-desktop-readiness\.(?:mjs|test\.mjs)$/,
+      /^scripts\/desktop-doctor\.(?:mjs|test\.mjs)$/,
       /^docs\/DESKTOP-MACOS\.md$/,
       /^src-tauri\//,
       /^package\.json$/,
@@ -488,6 +492,8 @@ const SCRIPT_DIRECT_LIB_TESTS = new Map([
   ['scripts/build-docs-vault.test.mjs', 'scripts/build-docs-vault.test.mjs'],
   ['scripts/check-desktop-readiness.mjs', 'scripts/check-desktop-readiness.test.mjs'],
   ['scripts/check-desktop-readiness.test.mjs', 'scripts/check-desktop-readiness.test.mjs'],
+  ['scripts/desktop-doctor.mjs', 'scripts/desktop-doctor.test.mjs'],
+  ['scripts/desktop-doctor.test.mjs', 'scripts/desktop-doctor.test.mjs'],
   ['scripts/dogfood-compile-fix.mjs', 'scripts/dogfood-compile-fix.test.mjs'],
   ['scripts/dogfood-compile-fix.test.mjs', 'scripts/dogfood-compile-fix.test.mjs'],
   ['scripts/dogfood-mcp-walk.mjs', 'scripts/dogfood-mcp-walk.test.mjs'],
