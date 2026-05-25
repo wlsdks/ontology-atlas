@@ -163,7 +163,9 @@ instead of depending on `/releases/latest` before a public macOS DMG exists. The
 secondary CTA opens `/download/` as a static install guide, and the hosted
 landing/download pages no longer route users into `/docs/?intent=local`. The
 download page also explains that missing first-release DMGs mean the public
-release is still waiting on PR review and Apple signing gates.
+release is still waiting on PR review and Apple signing gates. Once verified
+public DMGs are published, `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` hides
+that pre-release checklist on the next hosted rebuild without a code change.
 Hosted `/docs` sessions also keep local vault work disabled: `?intent=local`
 only opens the picker in the Tauri runtime, while browser users are sent back to
 the macOS download path for writable local work.

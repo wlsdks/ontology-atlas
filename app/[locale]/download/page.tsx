@@ -13,5 +13,7 @@ export async function generateMetadata({
 }
 
 export default function Page() {
-  return <DownloadPage />;
+  const showFirstReleaseChecklist = process.env.NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING !== '0';
+
+  return <DownloadPage showFirstReleaseChecklist={showFirstReleaseChecklist} />;
 }

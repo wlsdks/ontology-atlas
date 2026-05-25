@@ -46,6 +46,7 @@ const onboardingOntologyDoc = readText("docs/ontology/domains/onboarding-ux.md")
 const firebaseDeployOntologyDoc = readText("docs/ontology/capabilities/firebase-deploy-skill.md");
 const landingPage = readText("src/views/landing/ui/LandingPage.tsx");
 const downloadPage = readText("src/views/download/ui/DownloadPage.tsx");
+const downloadRoute = readText("app/[locale]/download/page.tsx");
 const macosDownloadLink = readText("src/features/macos-download-link/ui/MacosDownloadLink.tsx");
 const bottomTabBar = readText("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
 const bottomTabBarPolicy = readText("src/widgets/bottom-tab-bar/lib/is-tab-active.ts");
@@ -449,6 +450,10 @@ if (
   downloadPage.includes("releaseStatusPr") &&
   downloadPage.includes("releaseStatusSecrets") &&
   downloadPage.includes("releaseStatusRelease") &&
+  downloadPage.includes("showFirstReleaseChecklist") &&
+  downloadRoute.includes("NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING") &&
+  downloadRoute.includes("!== '0'") &&
+  downloadRoute.includes("showFirstReleaseChecklist={showFirstReleaseChecklist}") &&
   /first public release is still waiting on PR review and Apple signing gates/.test(
     enMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
@@ -472,10 +477,10 @@ if (
   /v0\.1\.0 GitHub Release/.test(koMessages.download?.releaseStatusRelease ?? "") &&
   /진실원/.test(koMessages.download?.releaseStatusRelease ?? "")
 ) {
-  pass("hosted download page names first-release PR, Apple secret, and GitHub Release gates without stale current-blocker copy");
+  pass("hosted download page names first-release gates and can hide the checklist after verified DMGs publish");
 } else {
   fail(
-    "hosted download copy must condition first-release PR review, Apple signing secret, and v0.1.0 Release gates without stale current-blocker wording",
+    "hosted download copy must condition first-release PR review, Apple signing secret, and v0.1.0 Release gates, and NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
   );
 }
 

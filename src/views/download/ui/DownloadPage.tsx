@@ -10,7 +10,11 @@ import { MacosDownloadLink } from '@/features/macos-download-link';
 
 const GITHUB_REPOSITORY_URL = 'https://github.com/wlsdks/oh-my-ontology';
 
-export function DownloadPage() {
+interface Props {
+  showFirstReleaseChecklist?: boolean;
+}
+
+export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
   const t = useTranslations('download');
   const tFooter = useTranslations('footer');
 
@@ -65,16 +69,18 @@ export function DownloadPage() {
             {t('releaseAvailabilityNote')}
           </p>
 
-          <div className="grid max-w-2xl gap-2 rounded-lg border border-[color:rgba(244,183,49,0.34)] bg-[color:rgba(244,183,49,0.08)] p-3">
-            <p className="font-mono text-[10px] uppercase text-[color:var(--color-status-warning)]">
-              {t('releaseStatusTitle')}
-            </p>
-            <ul className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
-              <ReleaseStatusItem label={t('releaseStatusPr')} />
-              <ReleaseStatusItem label={t('releaseStatusSecrets')} />
-              <ReleaseStatusItem label={t('releaseStatusRelease')} />
-            </ul>
-          </div>
+          {showFirstReleaseChecklist ? (
+            <div className="grid max-w-2xl gap-2 rounded-lg border border-[color:rgba(244,183,49,0.34)] bg-[color:rgba(244,183,49,0.08)] p-3">
+              <p className="font-mono text-[10px] uppercase text-[color:var(--color-status-warning)]">
+                {t('releaseStatusTitle')}
+              </p>
+              <ul className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+                <ReleaseStatusItem label={t('releaseStatusPr')} />
+                <ReleaseStatusItem label={t('releaseStatusSecrets')} />
+                <ReleaseStatusItem label={t('releaseStatusRelease')} />
+              </ul>
+            </div>
+          ) : null}
 
           <div className="grid gap-3 border-y border-[color:var(--color-divider)] py-5 md:grid-cols-3">
             <ProofItem label={t('proofSigned')} />

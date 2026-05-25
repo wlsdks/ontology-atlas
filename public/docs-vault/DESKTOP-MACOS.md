@@ -176,7 +176,10 @@ for a macOS prototype:
   secondary CTA opens the source repository instead of duplicating the release
   action or steering new users into the web workbench. The download page also
   states that missing first-release DMGs mean the public release is still
-  waiting on PR review and Apple signing gates.
+  waiting on PR review and Apple signing gates. After verified public DMGs are
+  published, rebuild the hosted site with
+  `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` to hide that pre-release
+  checklist without a code change.
 - The `/docs/?intent=local` vault-opening path is desktop-only: hosted browser
   sessions keep `/docs` in the read-only packaged docs mode, disable the local
   vault source, and point users back to the macOS download path instead of

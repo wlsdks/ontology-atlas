@@ -69,6 +69,7 @@ input (humans + AI agents)     parse           store              output
 - **Primary CTA**: "Download macOS app" → GitHub Releases
 - **Secondary CTA**: "Installation guide" → `/download/`
 - **No hosted workbench CTA**: public web pages do not route new users into `/docs/?intent=local`; local vault work starts inside the installed app
+- **First-release checklist**: `/download/` shows the PR/signing/release checklist while the first public DMGs are pending; rebuild with `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` after verified DMGs publish to hide it.
 - **Privacy note**: the installed app and vault data use local disk as the source of truth; the hosted site is product introduction + download entry
 - **Footer**: license · GitHub · stack chips · `LocaleSwitch`
 

@@ -26,10 +26,10 @@ vi.mock('@/i18n/navigation', () => ({
   ),
 }));
 
-function renderDownloadPage() {
+function renderDownloadPage({ showFirstReleaseChecklist = true } = {}) {
   return render(
     <NextIntlClientProvider locale="en" messages={enMessages}>
-      <DownloadPage />
+      <DownloadPage showFirstReleaseChecklist={showFirstReleaseChecklist} />
     </NextIntlClientProvider>,
   );
 }
@@ -61,5 +61,18 @@ describe('DownloadPage', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/hosted site does not open or edit vault folders/i)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
+  });
+
+  it('can hide the first-release checklist after public DMGs are published', () => {
+    renderDownloadPage({ showFirstReleaseChecklist: false });
+
+    expect(screen.queryByText(/Before the first DMG appears/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/PR #274 must be reviewed and merged before v0\.1\.0 can ship/i),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Open macOS releases/i })).toHaveAttribute(
+      'href',
+      GITHUB_RELEASES_URL,
+    );
   });
 });
