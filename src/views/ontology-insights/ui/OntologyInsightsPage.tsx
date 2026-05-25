@@ -16,7 +16,9 @@ import {
 } from "lucide-react";
 import {
   buildEdgeTypeRows,
+  buildOntologyBuilderNodeHref,
   buildOntologyNodeHref,
+  type KnowledgeGraphNode,
   useEdgeTypeLabel,
 } from "@/entities/knowledge-graph";
 import { useOntologyInsight } from "@/features/vault-ontology";
@@ -25,6 +27,7 @@ import {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
   UNKNOWN_TONE,
   buildAgentReadinessCliCommands,
+  formatAgentPostChangeSyncPacket,
   buildAgentReadinessPrompt,
   buildAgentReadinessSummary,
   buildAgentGraphDbQueryPack,
@@ -61,6 +64,19 @@ import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { EmptyState } from "@/shared/ui";
 import { resolveDomainTint } from "@/shared/lib/domain-color";
+import {
+  buildInsightsCollaboratorBrief,
+  decisionLaneLabel,
+  formatDecisionHandoffLabel,
+  formatInsightsCollaboratorBrief,
+  reviewQuestionsForFocus,
+  type InsightsCollaboratorBrief,
+} from "../lib/collaborator-insights-brief";
+import {
+  buildInsightsOrphanNodeActions,
+  formatInsightsOrphanRepairMcpPacket,
+  formatInsightsOrphanRepairPacket,
+} from "../lib/orphan-node-actions";
 
 /**
  * 노드 row 좌측 accent bar 색 — 빌더의 도메인 grouping 과 시각 일관.
@@ -115,6 +131,10 @@ const DOMAIN_COUPLING_LIMIT = 6;
 const DOMAIN_COUPLING_LOCAL_TYPES = ["depends_on", "related_to", "describes"] as const;
 const DOMAIN_COUPLING_CLI_TYPES = "depends_on,relates,describes";
 const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as const;
+const DOMAIN_COUPLING_PATH_MAX_HOPS = 5;
+const DOMAIN_COUPLING_PATH_LIMIT = 10;
+const DOMAIN_COUPLING_PATH_SEARCH_BUDGET = 1000;
+const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
 
 /**
  * `/ontology/insights` — ontology 의 구조를 한눈에.
@@ -149,7 +169,7 @@ export function OntologyInsightsPage() {
     () => (insight ? buildOntologyTree(insight.nodes, insight.edges) : null),
     [insight],
   );
-  const orphans = treeResult?.orphans ?? [];
+  const orphans = treeResult?.orphans ?? EMPTY_ORPHANS;
   const agentReadiness = useMemo(
     () =>
       insight && treeResult
@@ -255,23 +275,67 @@ export function OntologyInsightsPage() {
   const domainCouplingCliCommand =
     `oh-my-ontology domain-matrix [vault] --limit ${DOMAIN_COUPLING_LIMIT} ` +
     `--types ${DOMAIN_COUPLING_CLI_TYPES}`;
-  const domainCouplingMcpPayload = JSON.stringify(
-    {
-      tool: "query_ontology",
-      arguments: {
-        operation: "domain_matrix",
-        limit: DOMAIN_COUPLING_LIMIT,
-        types: DOMAIN_COUPLING_MCP_TYPES,
-      },
-    },
-    null,
-    2,
-  );
+  const domainCouplingMcpPayload = formatInsightsQueryOntologyCall({
+    operation: "domain_matrix",
+    limit: DOMAIN_COUPLING_LIMIT,
+    types: DOMAIN_COUPLING_MCP_TYPES,
+  });
+  const collaboratorBrief = useMemo(() => {
+    if (!insight || !domainCoupling) return null;
+    return buildInsightsCollaboratorBrief({
+      nodeCount: totalNodes,
+      relationCount: totalEdges,
+      domainCount: domainCoupling.domainCount,
+      crossDomainEdgeCount: domainCoupling.crossDomainEdgeCount,
+      orphanCount: orphans.length,
+      impactHandoffs: domainCoupling.connections.slice(0, 3).map((connection) => {
+        const strongest = connection.relationCounts[0];
+        const example = connection.examples[0];
+        return {
+          fromDomain: connection.from.title,
+          toDomain: connection.to.title,
+          count: connection.count,
+          topologyPathHref:
+            strongest && example
+              ? `/topology/?mode=path&pathFrom=${encodeURIComponent(example.from)}&pathTo=${encodeURIComponent(example.to)}`
+              : undefined,
+          example:
+            strongest && example
+              ? {
+                  from: example.from,
+                  type: edgeTypeLabel(strongest.type),
+                  to: example.to,
+                }
+              : undefined,
+        };
+      }),
+      openQuestions: orphans.slice(0, 3).map((node) => {
+        const actions = buildInsightsOrphanNodeActions(node);
+        return {
+          id: node.id,
+          title: node.title,
+          kind: node.kind,
+          ontologyHref: actions.ontologyHref,
+          topologyHref: actions.topologyHref,
+          builderHref: actions.builderHref,
+        };
+      }),
+      topHubs: topHubs.map(({ node, degree }) => ({
+        id: node.id,
+        title: node.title,
+        kind: node.kind,
+        degree,
+        ontologyHref: buildOntologyNodeHref(node.id),
+        topologyHref: `/topology/?mode=focus&p=${encodeURIComponent(node.id)}`,
+        builderHref: buildOntologyBuilderNodeHref(node),
+      })),
+    });
+  }, [domainCoupling, edgeTypeLabel, insight, orphans, topHubs, totalNodes, totalEdges]);
 
   return (
     <div>
       <OperationsNav />
-      <div className="mx-auto max-w-5xl px-5 py-8 md:px-8 md:py-12">
+      <main id="main" className="mx-auto max-w-5xl px-5 py-8 md:px-8 md:py-12">
       <MountedGlobalSearch />
 
       <section className="mb-8 space-y-3">
@@ -317,6 +381,14 @@ export function OntologyInsightsPage() {
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {collaboratorBrief ? (
+            <InsightsCollaboratorBriefPanel
+              brief={collaboratorBrief}
+              impactCliCheckCommand={domainCouplingCliCommand}
+              impactMcpCheckPayload={domainCouplingMcpPayload}
+            />
+          ) : null}
+
           {agentReadiness ? (
             <AgentReadinessPanel
               summary={agentReadiness}
@@ -520,6 +592,32 @@ export function OntologyInsightsPage() {
                     {domainCoupling.connections.map((connection) => {
                       const strongest = connection.relationCounts[0];
                       const example = connection.examples[0];
+                      const topologyPathHref =
+                        strongest && example
+                          ? `/topology/?mode=path&pathFrom=${encodeURIComponent(example.from)}&pathTo=${encodeURIComponent(example.to)}`
+                          : null;
+                      const pathCheckPacket =
+                        strongest && example && topologyPathHref
+                          ? formatDomainCouplingPathCheck({
+                              from: example.from,
+                              relationType: edgeTypeLabel(strongest.type),
+                              to: example.to,
+                              topologyPathHref,
+                              labels: {
+                                title: t("domainCouplingPathCheckTitle"),
+                                source: t("domainCouplingPathCheckSource"),
+                                target: t("domainCouplingPathCheckTarget"),
+                                relation: t("domainCouplingPathCheckRelation"),
+                                topology: t("domainCouplingPathCheckTopology"),
+                                cli: t("domainCouplingPathCheckCli"),
+                                mcpPlan: t("domainCouplingPathCheckMcpPlan"),
+                                mcp: t("domainCouplingPathCheckMcp"),
+                                evidenceContract: t(
+                                  "domainCouplingPathCheckEvidenceContract",
+                                ),
+                              },
+                            })
+                          : null;
                       return (
                         <li
                           key={`${connection.from.id}->${connection.to.id}`}
@@ -557,13 +655,31 @@ export function OntologyInsightsPage() {
                             ))}
                           </div>
                           {strongest && example ? (
-                            <p className="mt-2 min-w-0 truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                              {t("domainCouplingExample", {
-                                from: example.from,
-                                type: edgeTypeLabel(strongest.type),
-                                to: example.to,
-                              })}
-                            </p>
+                            <div className="mt-2 flex min-w-0 items-center gap-2">
+                              <p className="min-w-0 flex-1 truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                                {t("domainCouplingExample", {
+                                  from: example.from,
+                                  type: edgeTypeLabel(strongest.type),
+                                  to: example.to,
+                                })}
+                              </p>
+                              {topologyPathHref ? (
+                                <Link
+                                  href={topologyPathHref}
+                                  className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                                >
+                                  {t("domainCouplingOpenPath")}
+                                </Link>
+                              ) : null}
+                              {pathCheckPacket ? (
+                                <CopyAgentTextButton
+                                  label={t("domainCouplingCopyPathCheck")}
+                                  copiedLabel={t("agentCopied")}
+                                  text={pathCheckPacket}
+                                  compact
+                                />
+                              ) : null}
+                            </div>
                           ) : null}
                         </li>
                       );
@@ -688,21 +804,84 @@ export function OntologyInsightsPage() {
               accent="amber"
             >
               <ul className="space-y-1">
-                {orphans.slice(0, 10).map((node) => (
-                  <li key={node.id}>
-                    <Link
-                      href={buildOntologyNodeHref(node.id)}
-                      className="flex items-center gap-2 rounded-md border border-[color:rgba(255,179,71,0.18)] bg-[color:rgba(255,179,71,0.04)] px-2.5 py-1.5 text-[12px] transition-[border-color,box-shadow,background-color] duration-200 hover:border-[color:rgba(255,179,71,0.40)] hover:bg-[color:rgba(255,179,71,0.08)] hover:shadow-[0_4px_14px_rgba(255,179,71,0.18)]"
+                {orphans.slice(0, 10).map((node) => {
+                  const actions = buildInsightsOrphanNodeActions(node);
+                  const repairPacket = formatInsightsOrphanRepairPacket({
+                    actions,
+                    labels: {
+                      title: t("orphansRepairPacketTitle"),
+                      node: t("orphansRepairPacketNode"),
+                      kind: t("orphansRepairPacketKind"),
+                      ontology: t("orphansRepairPacketOntology"),
+                      topology: t("orphansRepairPacketTopology"),
+                      builder: t("orphansRepairPacketBuilder"),
+                      agentChecks: t("orphansRepairPacketAgentChecks"),
+                      nextSteps: t("orphansRepairPacketNextSteps"),
+                      inspectNode: t("orphansRepairPacketInspectNode"),
+                      chooseOwner: t("orphansRepairPacketChooseOwner"),
+                      preflightRelation: t("orphansRepairPacketPreflightRelation"),
+                      verifyHealth: t("orphansRepairPacketVerifyHealth"),
+                      syncGate: t("orphansRepairPacketSyncGate"),
+                    },
+                    node,
+                  });
+                  const repairMcpPacket = formatInsightsOrphanRepairMcpPacket({
+                    labels: {
+                      title: t("orphansRepairMcpPacketTitle"),
+                      inspectNode: t("orphansRepairMcpPacketInspectNode"),
+                      preflightRelation: t(
+                        "orphansRepairMcpPacketPreflightRelation",
+                      ),
+                      verifyHealth: t("orphansRepairMcpPacketVerifyHealth"),
+                      syncGate: t("orphansRepairMcpPacketSyncGate"),
+                    },
+                    node,
+                  });
+                  return (
+                    <li
+                      key={node.id}
+                      className="rounded-md border border-[color:rgba(255,179,71,0.18)] bg-[color:rgba(255,179,71,0.04)] px-2.5 py-1.5 text-[12px] transition-[border-color,box-shadow,background-color] duration-200 hover:border-[color:rgba(255,179,71,0.40)] hover:bg-[color:rgba(255,179,71,0.08)] hover:shadow-[0_4px_14px_rgba(255,179,71,0.18)]"
                     >
-                      <span className="inline-flex shrink-0 items-center rounded-full border border-[color:rgba(255,179,71,0.30)] bg-[color:rgba(255,179,71,0.08)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.95)]">
-                        {kindLabel(node.kind)}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
-                        {node.title}
-                      </span>
-                    </Link>
-                  </li>
-                ))}
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex shrink-0 items-center rounded-full border border-[color:rgba(255,179,71,0.30)] bg-[color:rgba(255,179,71,0.08)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.95)]">
+                          {kindLabel(node.kind)}
+                        </span>
+                        <Link
+                          href={actions.ontologyHref}
+                          className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)] underline-offset-2 hover:underline"
+                        >
+                          {node.title}
+                        </Link>
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1.5 pl-0 sm:pl-[68px]">
+                        <Link
+                          href={actions.topologyHref}
+                          className="rounded border border-[color:rgba(255,179,71,0.18)] bg-[color:rgba(255,179,71,0.045)] px-1.5 py-0.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(255,179,71,0.34)] hover:text-[color:var(--color-text-primary)]"
+                        >
+                          {t("orphansOpenTopology")}
+                        </Link>
+                        <Link
+                          href={actions.builderHref}
+                          className="rounded border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.045)] px-1.5 py-0.5 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)]"
+                        >
+                          {t("orphansFocusBuilder")}
+                        </Link>
+                        <CopyAgentTextButton
+                          label={t("orphansCopyRepairPacket")}
+                          copiedLabel={t("agentCopied")}
+                          text={repairPacket}
+                          compact
+                        />
+                        <CopyAgentTextButton
+                          label={t("orphansCopyMcpRepairPacket")}
+                          copiedLabel={t("agentCopied")}
+                          text={repairMcpPacket}
+                          compact
+                        />
+                      </div>
+                    </li>
+                  );
+                })}
                 {orphans.length > 10 ? (
                   <li className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
                     {t("orphansMore", { count: orphans.length - 10 })}
@@ -713,8 +892,404 @@ export function OntologyInsightsPage() {
           ) : null}
         </div>
       )}
-      </div>
+      </main>
     </div>
+  );
+}
+
+function InsightsCollaboratorBriefPanel({
+  brief,
+  impactCliCheckCommand,
+  impactMcpCheckPayload,
+}: {
+  brief: InsightsCollaboratorBrief;
+  impactCliCheckCommand: string;
+  impactMcpCheckPayload: string;
+}) {
+  const t = useTranslations("ontologyPages.insights");
+  const metricLabels = {
+    nodes: t("collaboratorMetricNodes"),
+    relations: t("collaboratorMetricRelations"),
+    domains: t("collaboratorMetricDomains"),
+    crossDomain: t("collaboratorMetricCrossDomain"),
+    orphans: t("collaboratorMetricOrphans"),
+  } satisfies Record<string, string>;
+  const focusLabel =
+    brief.reviewFocus === "resolve_orphans"
+      ? t("collaboratorFocusResolveOrphans")
+      : brief.reviewFocus === "trace_impact"
+        ? t("collaboratorFocusTraceImpact")
+        : t("collaboratorFocusAlignVocabulary");
+  const reviewQuestionLabels = {
+    alignVocabularyQuestions: [
+      t("collaboratorQuestionAlignReuse"),
+      t("collaboratorQuestionAlignRename"),
+      t("collaboratorQuestionAlignOwner"),
+    ],
+    traceImpactQuestions: [
+      t("collaboratorQuestionImpactDomains"),
+      t("collaboratorQuestionImpactMessaging"),
+      t("collaboratorQuestionImpactBoundary"),
+    ],
+    resolveOrphansQuestions: [
+      t("collaboratorQuestionOrphanOwner"),
+      t("collaboratorQuestionOrphanContainer"),
+      t("collaboratorQuestionOrphanAction"),
+    ],
+  };
+  const decisionLaneLabels = {
+    decisionAlignOwner: t("collaboratorDecisionAlignOwner"),
+    decisionAlignExpected: t("collaboratorDecisionAlignExpected"),
+    decisionAlignNextStep: t("collaboratorDecisionAlignNextStep"),
+    decisionImpactOwner: t("collaboratorDecisionImpactOwner"),
+    decisionImpactExpected: t("collaboratorDecisionImpactExpected"),
+    decisionImpactNextStep: t("collaboratorDecisionImpactNextStep"),
+    decisionOrphanOwner: t("collaboratorDecisionOrphanOwner"),
+    decisionOrphanExpected: t("collaboratorDecisionOrphanExpected"),
+    decisionOrphanNextStep: t("collaboratorDecisionOrphanNextStep"),
+  };
+  const reviewQuestions = reviewQuestionsForFocus(
+    brief.reviewFocus,
+    reviewQuestionLabels,
+  );
+  const decisionOwner = decisionLaneLabel(brief.reviewFocus, decisionLaneLabels, "owner");
+  const decisionExpected = decisionLaneLabel(
+    brief.reviewFocus,
+    decisionLaneLabels,
+    "expected",
+  );
+  const decisionNextStep = decisionLaneLabel(
+    brief.reviewFocus,
+    decisionLaneLabels,
+    "nextStep",
+  );
+  const decisionHandoffLabel = brief.decisionHandoff
+    ? formatDecisionHandoffLabel(brief.decisionHandoff, {
+        builder: t("collaboratorHandoffBuilder"),
+        impactHandoffPath: t("collaboratorImpactHandoffPath"),
+        ontology: t("collaboratorHandoffOntology"),
+        topology: t("collaboratorHandoffTopologyShort"),
+      })
+    : null;
+  const collaboratorCliCheckCommand =
+    "oh-my-ontology workspace-brief [vault] --limit 5";
+  const collaboratorMcpCheckPayload = 'query_ontology({"operation":"workspace_brief","limit":5})';
+  const copyTextValue = formatInsightsCollaboratorBrief({
+    brief,
+    labels: {
+      title: t("collaboratorInsightsTitle"),
+      summary: t("collaboratorInsightsSubtitle"),
+      nodes: metricLabels.nodes,
+      relations: metricLabels.relations,
+      domains: metricLabels.domains,
+      crossDomain: metricLabels.crossDomain,
+      orphans: metricLabels.orphans,
+      topHubs: t("collaboratorTopHubs"),
+      reviewVocabulary: t("collaboratorReviewVocabulary"),
+      vocabularyTerm: t("collaboratorVocabularyTerm"),
+      vocabularyWhy: t("collaboratorVocabularyWhy"),
+      vocabularyReuse: t("collaboratorVocabularyReuse"),
+      vocabularyReuseAction: t("collaboratorVocabularyReuseAction"),
+      reviewFocus: t("collaboratorReviewFocus"),
+      focusAlignVocabulary: t("collaboratorFocusAlignVocabulary"),
+      focusTraceImpact: t("collaboratorFocusTraceImpact"),
+      focusResolveOrphans: t("collaboratorFocusResolveOrphans"),
+      decisionLane: t("collaboratorDecisionLane"),
+      decisionOwner: t("collaboratorDecisionOwner"),
+      decisionExpected: t("collaboratorDecisionExpected"),
+      decisionNextStep: t("collaboratorDecisionNextStep"),
+      decisionGraphHandoff: t("collaboratorDecisionGraphHandoff"),
+      ...decisionLaneLabels,
+      reviewQuestions: t("collaboratorReviewQuestions"),
+      ...reviewQuestionLabels,
+      noHubs: t("collaboratorNoHubs"),
+      hubHandoff: t("collaboratorHubHandoff"),
+      impactHandoff: t("collaboratorImpactHandoff"),
+      impactHandoffExample: t("collaboratorImpactHandoffExample"),
+      impactHandoffPath: t("collaboratorImpactHandoffPath"),
+      openQuestionHandoff: t("collaboratorOpenQuestionHandoff"),
+      ontology: t("collaboratorHandoffOntology"),
+      builder: t("collaboratorHandoffBuilder"),
+      handoff: t("collaboratorHandoff"),
+      insights: t("collaboratorHandoffInsights"),
+      topology: t("collaboratorHandoffTopology"),
+      agentCheck: t("collaboratorHandoffAgentCheck"),
+      agentCliCheck: t("collaboratorHandoffCliCheck"),
+      agentMcpCheck: t("collaboratorHandoffMcpCheck"),
+      impactCliCheck: t("collaboratorHandoffImpactCliCheck"),
+      impactMcpCheck: t("collaboratorHandoffImpactMcpCheck"),
+    },
+    handoff: {
+      insightsUrl:
+        typeof window === "undefined" ? "/ontology/insights/" : window.location.href,
+      topologyUrl: "/topology/?mode=health",
+      agentCheckCommand: collaboratorCliCheckCommand,
+      agentMcpCheckPayload: collaboratorMcpCheckPayload,
+      impactCliCheckCommand,
+      impactMcpCheckPayload,
+    },
+  });
+
+  return (
+    <section
+      className="min-w-0 rounded-2xl border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.055)] px-5 py-4 md:col-span-2"
+      data-testid="insights-collaborator-brief"
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(184,191,255,0.92)]">
+            {t("collaboratorInsightsTitle")}
+          </p>
+          <p className="mt-1 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t("collaboratorInsightsSubtitle")}
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          <CopyAgentTextButton
+            label={t("collaboratorCopyBrief")}
+            copiedLabel={t("agentCopied")}
+            text={copyTextValue}
+            compact
+          />
+          <CopyAgentTextButton
+            label={t("collaboratorCopyCliCheck")}
+            copiedLabel={t("agentCopied")}
+            text={collaboratorCliCheckCommand}
+            compact
+          />
+          <CopyAgentTextButton
+            label={t("collaboratorCopyMcpCheck")}
+            copiedLabel={t("agentCopied")}
+            text={collaboratorMcpCheckPayload}
+            compact
+          />
+        </div>
+      </div>
+      <div className="mt-3 grid gap-2 md:grid-cols-5">
+        {brief.summaryMetrics.map((metric) => (
+          <div
+            key={metric.key}
+            className="rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(3,7,18,0.12)] px-2.5 py-2"
+          >
+            <p className="truncate font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {metricLabels[metric.key]}
+            </p>
+            <p className="mt-1 font-mono text-sm tabular-nums text-[color:var(--color-text-primary)]">
+              {metric.value}
+            </p>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 grid gap-2 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(255,255,255,0.035)] px-3 py-2.5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t("collaboratorTopHubs")}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {brief.topHubs.length > 0 ? (
+              brief.topHubs.map((hub) => (
+                <span
+                  key={hub.id ?? hub.title}
+                  className="flex max-w-full min-w-0 flex-wrap items-center gap-1 rounded border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.055)] px-2 py-1 text-[11px] text-[color:var(--color-text-secondary)]"
+                >
+                  <span className="max-w-[18rem] truncate">{hub.title}</span>
+                  <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                    {hub.kind} · {hub.degree}
+                  </span>
+                  {hub.ontologyHref ? (
+                    <Link
+                      href={hub.ontologyHref}
+                      className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                    >
+                      {t("collaboratorHandoffOntology")}
+                    </Link>
+                  ) : null}
+                  {hub.topologyHref ? (
+                    <Link
+                      href={hub.topologyHref}
+                      className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                    >
+                      {t("collaboratorHandoffTopologyShort")}
+                    </Link>
+                  ) : null}
+                  {hub.builderHref ? (
+                    <Link
+                      href={hub.builderHref}
+                      className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                    >
+                      {t("collaboratorHandoffBuilder")}
+                    </Link>
+                  ) : null}
+                </span>
+              ))
+            ) : (
+              <span className="text-[11px] text-[color:var(--color-text-tertiary)]">
+                {t("collaboratorNoHubs")}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="rounded-md border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] px-3 py-2.5">
+          <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:rgba(151,230,198,0.92)]">
+            {t("collaboratorReviewFocus")}
+          </p>
+          <p className="mt-2 break-keep text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+            {focusLabel}
+          </p>
+          <dl
+            className="mt-2 grid gap-1.5 rounded border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(255,255,255,0.03)] px-2.5 py-2"
+            data-testid="insights-collaborator-decision-lane"
+          >
+            <div className="min-w-0">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {t("collaboratorDecisionOwner")}
+              </dt>
+              <dd className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                {decisionOwner}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {t("collaboratorDecisionExpected")}
+              </dt>
+              <dd className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                {decisionExpected}
+              </dd>
+            </div>
+            <div className="min-w-0">
+              <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {t("collaboratorDecisionNextStep")}
+              </dt>
+              <dd className="mt-0.5 break-keep text-[11px] leading-4 text-[color:var(--color-text-secondary)]">
+                {decisionNextStep}
+              </dd>
+            </div>
+            {brief.decisionHandoff && decisionHandoffLabel ? (
+              <div className="min-w-0 border-t border-[color:rgba(73,190,146,0.12)] pt-1.5">
+                <dt className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  {t("collaboratorDecisionGraphHandoff")}
+                </dt>
+                <dd className="mt-1 min-w-0">
+                  <Link
+                    href={brief.decisionHandoff.href}
+                    className="inline-flex max-w-full items-center rounded border border-[color:rgba(73,190,146,0.22)] bg-[color:rgba(73,190,146,0.07)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                  >
+                    <span className="truncate">{decisionHandoffLabel}</span>
+                  </Link>
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+          <div className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2">
+            <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {t("collaboratorReviewQuestions")}
+            </p>
+            <ul className="mt-1.5 space-y-1">
+              {reviewQuestions.map((question) => (
+                <li
+                  key={question}
+                  className="break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+                >
+                  {question}
+                </li>
+              ))}
+            </ul>
+          </div>
+          {brief.impactHandoffs.length > 0 ? (
+            <div
+              className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2"
+              data-testid="insights-collaborator-impact-handoffs"
+            >
+              <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {t("collaboratorImpactHandoff")}
+              </p>
+              <ul className="mt-1.5 space-y-1.5">
+                {brief.impactHandoffs.map((handoff) => (
+                  <li
+                    key={`${handoff.fromDomain}->${handoff.toDomain}`}
+                    className="min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+                  >
+                    <span className="text-[color:var(--color-text-secondary)]">
+                      {handoff.fromDomain} → {handoff.toDomain}
+                    </span>
+                    <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                      {" "}
+                      {handoff.count}
+                    </span>
+                    {handoff.example ? (
+                      <span className="block truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                        {handoff.example.from} --{handoff.example.type}--&gt;{" "}
+                        {handoff.example.to}
+                      </span>
+                    ) : null}
+                    {handoff.topologyPathHref ? (
+                      <Link
+                        href={handoff.topologyPathHref}
+                        className="mt-1 inline-flex font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                      >
+                        {t("collaboratorImpactHandoffPath")}
+                      </Link>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+          {brief.openQuestions.length > 0 ? (
+            <div
+              className="mt-2 border-t border-[color:rgba(73,190,146,0.14)] pt-2"
+              data-testid="insights-collaborator-open-questions"
+            >
+              <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {t("collaboratorOpenQuestionHandoff")}
+              </p>
+              <ul className="mt-1.5 space-y-1.5">
+                {brief.openQuestions.map((question) => (
+                  <li
+                    key={question.id}
+                    className="min-w-0 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]"
+                  >
+                    <span className="text-[color:var(--color-text-secondary)]">
+                      {question.title}
+                    </span>
+                    <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                      {" "}
+                      {question.kind}
+                    </span>
+                    <span className="ml-1.5 inline-flex flex-wrap gap-1">
+                      {question.ontologyHref ? (
+                        <Link
+                          href={question.ontologyHref}
+                          className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                        >
+                          {t("collaboratorHandoffOntology")}
+                        </Link>
+                      ) : null}
+                      {question.topologyHref ? (
+                        <Link
+                          href={question.topologyHref}
+                          className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                        >
+                          {t("collaboratorHandoffTopologyShort")}
+                        </Link>
+                      ) : null}
+                      {question.builderHref ? (
+                        <Link
+                          href={question.builderHref}
+                          className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-accent)] hover:underline"
+                        >
+                          {t("collaboratorHandoffBuilder")}
+                        </Link>
+                      ) : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -1413,6 +1988,20 @@ function AgentQueryRecipesPanel({
                     </li>
                   ))}
                 </ol>
+                {guardrail.cliFallbackCommands && guardrail.cliFallbackCommands.length > 0 ? (
+                  <ol className="mt-2 grid gap-1" aria-label={t("agentCliCommandLabel")}>
+                    {guardrail.cliFallbackCommands.slice(0, 3).map((command, index) => (
+                      <li
+                        key={`${guardrail.id}-cli-${command}`}
+                        className="min-w-0 rounded border border-[color:rgba(73,190,146,0.12)] bg-[color:rgba(3,7,18,0.16)] px-1.5 py-1"
+                      >
+                        <code className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
+                          {index + 1}. {command}
+                        </code>
+                      </li>
+                    ))}
+                  </ol>
+                ) : null}
               </div>
               <CopyAgentTextButton
                 label={t("agentCopyGuardrail")}
@@ -1612,6 +2201,69 @@ function uniqueString(value: string, index: number, values: string[]): boolean {
   return values.indexOf(value) === index;
 }
 
+function formatDomainCouplingPathCheck({
+  from,
+  labels,
+  relationType,
+  to,
+  topologyPathHref,
+}: {
+  from: string;
+  labels: {
+    title: string;
+    source: string;
+    target: string;
+    relation: string;
+    topology: string;
+    cli: string;
+    mcpPlan: string;
+    mcp: string;
+    evidenceContract: string;
+  };
+  relationType: string;
+  to: string;
+  topologyPathHref: string;
+}): string {
+  const mcpPlanPayload = formatInsightsQueryOntologyCall({
+    operation: "query_plan",
+    targetOperation: "all_paths",
+    from,
+    to,
+    maxHops: DOMAIN_COUPLING_PATH_MAX_HOPS,
+    limit: DOMAIN_COUPLING_PATH_LIMIT,
+    searchBudget: DOMAIN_COUPLING_PATH_SEARCH_BUDGET,
+  });
+  const mcpPayload = formatInsightsQueryOntologyCall({
+    operation: "all_paths",
+    from,
+    to,
+    maxHops: DOMAIN_COUPLING_PATH_MAX_HOPS,
+    limit: DOMAIN_COUPLING_PATH_LIMIT,
+    searchBudget: DOMAIN_COUPLING_PATH_SEARCH_BUDGET,
+  });
+  const cliCommand =
+    `oh-my-ontology all-paths ${from} ${to} [vault] --plan ` +
+    `--max-hops ${DOMAIN_COUPLING_PATH_MAX_HOPS} ` +
+    `--limit ${DOMAIN_COUPLING_PATH_LIMIT} ` +
+    `--search-budget ${DOMAIN_COUPLING_PATH_SEARCH_BUDGET}`;
+
+  return [
+    `# ${labels.title}`,
+    `- ${labels.source}: ${from}`,
+    `- ${labels.target}: ${to}`,
+    `- ${labels.relation}: ${relationType}`,
+    `- ${labels.topology}: ${topologyPathHref}`,
+    `- ${labels.cli}: ${cliCommand}`,
+    `- ${labels.mcpPlan}: ${mcpPlanPayload}`,
+    `- ${labels.mcp}: ${mcpPayload}`,
+    `- ${labels.evidenceContract}: report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete before using paths as coupling evidence`,
+  ].join("\n");
+}
+
+function formatInsightsQueryOntologyCall(payload: Record<string, unknown>): string {
+  return `query_ontology(${JSON.stringify(payload)})`;
+}
+
 function CopyAgentTextButton({
   label,
   copiedLabel,
@@ -1700,6 +2352,7 @@ function AgentReadinessPanel({
 }) {
   const t = useTranslations("ontologyPages.insights");
   const readinessPrompt = useMemo(() => buildAgentReadinessPrompt(summary), [summary]);
+  const postChangeSyncPrompt = useMemo(() => formatAgentPostChangeSyncPacket(), []);
   const readinessCliCommands = useMemo(() => buildAgentReadinessCliCommands(summary), [summary]);
   const readinessCliPrompt = useMemo(
     () => readinessCliCommands.map((item, index) => `${index + 1}. ${item.command}`).join("\n"),
@@ -1717,6 +2370,7 @@ function AgentReadinessPanel({
       : status === "needs-links"
         ? "border-[color:rgba(255,179,71,0.34)] bg-[color:rgba(255,179,71,0.08)] text-[color:rgba(238,198,128,0.95)]"
         : "border-[color:rgba(229,72,77,0.30)] bg-[color:rgba(229,72,77,0.08)] text-[color:rgba(248,160,160,0.95)]";
+  const showPostChangeSyncGate = actionKeys.includes("syncAfterChanges");
 
   const metrics = [
     {
@@ -1794,12 +2448,22 @@ function AgentReadinessPanel({
           <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t("agentNextActionsTitle")}
           </p>
-          <CopyAgentTextButton
-            label={t("agentCopyReadinessPrompt")}
-            copiedLabel={t("agentCopied")}
-            text={readinessPrompt}
-            compact
-          />
+          <div className="flex flex-wrap gap-2">
+            {showPostChangeSyncGate ? (
+              <CopyAgentTextButton
+                label={t("agentCopyPostChangeSyncGate")}
+                copiedLabel={t("agentCopied")}
+                text={postChangeSyncPrompt}
+                compact
+              />
+            ) : null}
+            <CopyAgentTextButton
+              label={t("agentCopyReadinessPrompt")}
+              copiedLabel={t("agentCopied")}
+              text={readinessPrompt}
+              compact
+            />
+          </div>
         </div>
         <ul className="mt-2 grid gap-2 md:grid-cols-2" data-testid="insights-agent-next-actions">
           {actionKeys.map((key) => (

@@ -8,6 +8,7 @@ import {
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
   buildAgentSetupCliCommandTemplate,
+  buildAgentSetupCheckCliCommandTemplate,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
 } from "./ontology-starter";
@@ -217,6 +218,24 @@ describe("buildAgentSetupCliCommandTemplate", () => {
 
   it("vault 이름의 작은따옴표를 shell-safe 하게 escape 한다", () => {
     const command = buildAgentSetupCliCommandTemplate("team's vault");
+
+    expect(command).toContain(
+      "'<absolute path to your team'\\''s vault folder>'",
+    );
+  });
+});
+
+describe("buildAgentSetupCheckCliCommandTemplate", () => {
+  it("기존 vault 의 codebase-root 설정 상태를 JSON dry-run 으로 점검하는 명령을 제공", () => {
+    const command = buildAgentSetupCheckCliCommandTemplate("team-vault");
+
+    expect(command).toBe(
+      "oh-my-ontology agent-setup '<absolute path to your team-vault folder>' --root '<absolute path to your codebase root>' --json",
+    );
+  });
+
+  it("vault 이름의 작은따옴표를 shell-safe 하게 escape 한다", () => {
+    const command = buildAgentSetupCheckCliCommandTemplate("team's vault");
 
     expect(command).toContain(
       "'<absolute path to your team'\\''s vault folder>'",

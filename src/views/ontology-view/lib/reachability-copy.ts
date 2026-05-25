@@ -95,6 +95,43 @@ export function buildNodeProfileCliCommand({
   ].join(" ");
 }
 
+export function buildBlastRadiusMcpCall({
+  slug,
+  depth,
+  direction,
+}: {
+  slug: string;
+  depth: 1 | 2 | 3;
+  direction: "incoming" | "outgoing" | "both";
+}): string {
+  return `query_ontology(${JSON.stringify({
+    operation: "blast_radius",
+    slug,
+    depth,
+    direction,
+  })})`;
+}
+
+export function buildBlastRadiusCliCommand({
+  slug,
+  depth,
+  direction,
+}: {
+  slug: string;
+  depth: 1 | 2 | 3;
+  direction: "incoming" | "outgoing" | "both";
+}): string {
+  return [
+    "oh-my-ontology",
+    "blast-radius",
+    shellQuote(slug),
+    "--depth",
+    String(depth),
+    "--direction",
+    direction,
+  ].join(" ");
+}
+
 export function buildAgentContextBundle({
   slug,
   direction,

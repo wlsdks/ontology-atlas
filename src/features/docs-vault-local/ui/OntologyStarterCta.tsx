@@ -11,6 +11,7 @@ export const ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT =
     'Tell me whether this vault is readable and the write tools are available before proposing changes.',
     'If the MCP connector is unavailable, run this terminal setup gate from the vault folder instead: oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4.',
     'Parse ok separately from performanceOk: ok=false means setup or fallback execution is broken; performanceOk=false with ok=true means the graph fallback works but local latency needs attention.',
+    'After any non-trivial code change, sync docs/ontology before finishing when the change introduces or renames a domain, capability, element, or relation. Skip sync for typos, comments, one-line style, lint config, or fixture-only changes.',
     'Do not write to the ontology until one of those read-first checks succeeds.',
   ].join(' ');
 
@@ -25,6 +26,13 @@ export const ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS = [
 
 export const ONTOLOGY_STARTER_JSON_GATE_COMMAND =
   'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4';
+
+export const ONTOLOGY_POST_CHANGE_SYNC_LINES = [
+  'Post-change ontology sync:',
+  '- If a code change introduces or renames a domain, capability, element, or relation, sync docs/ontology before finishing.',
+  '- Use MCP write tools when connected; otherwise update the markdown vault deliberately and run health/validate gates.',
+  '- Skip sync for typos, comments, one-line style, lint config, or fixture-only changes.',
+];
 
 interface Props {
   /** 클릭 시 useLocalVault.scaffoldOntology() 호출. created/skipped 반환. */

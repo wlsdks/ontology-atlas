@@ -29,6 +29,130 @@ test.describe("ontology view UI", () => {
     );
   });
 
+  test("desktop: selected-node brief hands off to topology and builder", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "clipboard", {
+        value: {
+          writeText: async (text: string) => {
+            (
+              window as typeof window & {
+                __lastCopiedReviewBrief?: string;
+              }
+            ).__lastCopiedReviewBrief = text;
+          },
+        },
+        configurable: true,
+      });
+    });
+    await page.goto("/en/ontology/?node=capability%3Atopology-analysis-modes");
+
+    const detail = page.getByTestId("ontology-node-detail");
+    await expect(detail).toBeVisible();
+    await expect(detail).toContainText("Topology Analysis Modes");
+
+    const brief = page.getByTestId("ontology-review-brief");
+    await expect(brief).toBeVisible();
+    await expect(brief).toContainText("Collaborator brief");
+    await expect(brief).toContainText("Review questions");
+    await expect(brief).toContainText("Change impact");
+    await expect(brief).toContainText("Direct relation preview");
+    await expect(brief.getByRole("link", { name: "Open topology" })).toHaveAttribute(
+      "href",
+      /\/en\/topology\/\?p=capability%3Atopology-analysis-modes/,
+    );
+    await expect(brief.getByRole("link", { name: "Focus in builder" })).toHaveAttribute(
+      "href",
+      /\/en\/ontology\/edit\/\?node=capabilities%2Ftopology-analysis-modes/,
+    );
+    await expect(
+      brief.getByRole("button", { name: "Copy MCP check" }),
+    ).toBeVisible();
+    await expect(
+      brief.getByRole("button", { name: "Copy CLI check" }),
+    ).toBeVisible();
+    await expect(
+      brief.getByRole("button", { name: "Copy MCP impact" }),
+    ).toBeVisible();
+    await expect(
+      brief.getByRole("button", { name: "Copy CLI impact" }),
+    ).toBeVisible();
+    await expect(
+      brief.getByRole("button", { name: "Copy sync gate" }),
+    ).toBeVisible();
+    await expect(
+      brief.getByRole("button", { name: "Copy vocabulary" }),
+    ).toBeVisible();
+
+    await brief.getByRole("button", { name: "Copy", exact: true }).click();
+    const copiedBrief = await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __lastCopiedReviewBrief?: string;
+          }
+        ).__lastCopiedReviewBrief,
+    );
+    expect(copiedBrief).toContain("# Topology Analysis Modes");
+    expect(copiedBrief).toContain("## Review questions");
+    expect(copiedBrief).toContain("## Change impact");
+    expect(copiedBrief).toContain("## Direct relation preview");
+    expect(copiedBrief).toMatch(/- (out|in) · [a-z_]+ · .+ \(.+, .+\)/);
+    expect(copiedBrief).toContain(
+      "- Topology: /topology/?p=capability%3Atopology-analysis-modes",
+    );
+    expect(copiedBrief).toContain(
+      "- Builder: /ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
+    );
+    expect(copiedBrief).toContain(
+      '- MCP check: query_ontology({"operation":"node_profile","slug":"capabilities/topology-analysis-modes","limit":8})',
+    );
+    expect(copiedBrief).toContain(
+      "- CLI check: oh-my-ontology node capabilities/topology-analysis-modes --limit 8",
+    );
+    expect(copiedBrief).toContain(
+      '- Impact MCP check: query_ontology({"operation":"blast_radius","slug":"capabilities/topology-analysis-modes","depth":2,"direction":"incoming"})',
+    );
+    await brief.getByRole("button", { name: "Copy vocabulary" }).click();
+    const copiedVocabulary = await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __lastCopiedReviewBrief?: string;
+          }
+        ).__lastCopiedReviewBrief,
+    );
+    expect(copiedVocabulary).toContain("# Review vocabulary: Topology Analysis Modes");
+    expect(copiedVocabulary).toContain("## Meaning to keep");
+    expect(copiedVocabulary).toContain("## Reuse context");
+    expect(copiedVocabulary).toContain("## Relation anchors");
+    await brief.getByRole("button", { name: "Copy MCP impact" }).click();
+    const copiedImpactMcp = await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __lastCopiedReviewBrief?: string;
+          }
+        ).__lastCopiedReviewBrief,
+    );
+    expect(copiedImpactMcp).toBe(
+      'query_ontology({"operation":"blast_radius","slug":"capabilities/topology-analysis-modes","depth":2,"direction":"incoming"})',
+    );
+    await brief.getByRole("button", { name: "Copy sync gate" }).click();
+    const copiedSyncGate = await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __lastCopiedReviewBrief?: string;
+          }
+        ).__lastCopiedReviewBrief,
+    );
+    expect(copiedSyncGate).toContain("# Post-change ontology sync gate");
+    expect(copiedSyncGate).toContain('"operation": "health"');
+    expect(copiedSyncGate).toContain('"operation": "maintenance_plan"');
+    expect(copiedSyncGate).toContain("oh-my-ontology validate [vault]");
+  });
+
   test("desktop: insights exposes agent graph readiness", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.addInitScript(() => {
@@ -44,13 +168,88 @@ test.describe("ontology view UI", () => {
     });
     await page.goto("/en/ontology/insights/");
 
+    const collaboratorBrief = page.getByTestId("insights-collaborator-brief");
+    await expect(collaboratorBrief).toBeVisible();
+    await expect(collaboratorBrief).toContainText("Collaborator insight brief");
+    await expect(collaboratorBrief).toContainText("Review questions");
+    await expect(collaboratorBrief.getByTestId("insights-collaborator-decision-lane")).toBeVisible();
+    await expect(collaboratorBrief).toContainText("Expected decision");
+    await expect(collaboratorBrief).toContainText("Graph handoff");
+    await expect(
+      collaboratorBrief.getByTestId("insights-collaborator-impact-handoffs"),
+    ).toBeVisible();
+    await expect(collaboratorBrief).toContainText("Impact handoff");
+    await expect(collaboratorBrief.getByRole("link", { name: "Path" }).first()).toBeVisible();
+    await expect(collaboratorBrief.getByRole("link", { name: "Ontology" }).first()).toBeVisible();
+    await expect(collaboratorBrief.getByRole("link", { name: "Topology" }).first()).toBeVisible();
+    await expect(collaboratorBrief.getByRole("link", { name: "Builder" }).first()).toBeVisible();
+    await expect(
+      collaboratorBrief.getByRole("button", { name: "Copy CLI check" }),
+    ).toBeVisible();
+    await expect(
+      collaboratorBrief.getByRole("button", { name: "Copy MCP check" }),
+    ).toBeVisible();
+    await collaboratorBrief.getByRole("button", { name: "Copy collaborator brief" }).click();
+    const copiedCollaboratorBrief = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
+    );
+    expect(copiedCollaboratorBrief).toContain("# Collaborator insight brief");
+    expect(copiedCollaboratorBrief).toContain("## Review focus");
+    expect(copiedCollaboratorBrief).toContain("## Decision lane");
+    expect(copiedCollaboratorBrief).toContain("- Expected decision:");
+    expect(copiedCollaboratorBrief).toContain("- Next graph step:");
+    expect(copiedCollaboratorBrief).toContain("- Graph handoff:");
+    expect(copiedCollaboratorBrief).toContain("## Review questions");
+    expect(copiedCollaboratorBrief).toContain("## Hub handoff");
+    expect(copiedCollaboratorBrief).toContain("## Impact handoff");
+    expect(copiedCollaboratorBrief).toContain("/topology/?mode=path&pathFrom=");
+    expect(copiedCollaboratorBrief).toContain(
+      "- Impact CLI check: oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
+    );
+    expect(copiedCollaboratorBrief).toContain("- Impact MCP check:");
+    expect(copiedCollaboratorBrief).toContain('query_ontology({"operation":"domain_matrix"');
+    expect(copiedCollaboratorBrief).toContain("/topology/?mode=focus&p=");
+    expect(copiedCollaboratorBrief).toContain("/ontology/edit/?node=");
+    expect(copiedCollaboratorBrief).toMatch(
+      /Align naming around the top hubs|Trace cross-domain impact|Resolve open ownership questions/,
+    );
+    expect(copiedCollaboratorBrief).toContain(
+      "- CLI check: oh-my-ontology workspace-brief [vault] --limit 5",
+    );
+    expect(copiedCollaboratorBrief).toContain(
+      '- MCP check: query_ontology({"operation":"workspace_brief","limit":5})',
+    );
+    await collaboratorBrief.getByRole("button", { name: "Copy MCP check" }).click();
+    const copiedCollaboratorMcpCheck = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
+    );
+    expect(copiedCollaboratorMcpCheck).toBe(
+      'query_ontology({"operation":"workspace_brief","limit":5})',
+    );
+
     const panel = page.getByTestId("insights-agent-readiness");
     await expect(panel).toBeVisible();
     await expect(panel).toContainText("Agent graph readiness");
     await expect(panel).toContainText("Ready");
     await expect(panel).toContainText("Recommended next actions");
     await expect(panel).toContainText("workspace_brief");
+    await expect(panel.getByRole("button", { name: "Copy sync gate" })).toBeVisible();
     await expect(panel.getByRole("button", { name: "Copy repair prompt" })).toBeVisible();
+    await panel.getByRole("button", { name: "Copy sync gate" }).click();
+    const copiedSyncGate = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
+    );
+    expect(copiedSyncGate).toContain("# Post-change ontology sync gate");
+    expect(copiedSyncGate).toContain("## Run when");
+    expect(copiedSyncGate).toContain(
+      "a domain, capability, element, or relation was introduced, renamed, split, merged, or made more explicit",
+    );
+    expect(copiedSyncGate).toContain('"operation": "health"');
+    expect(copiedSyncGate).toContain('"operation": "cycles"');
+    expect(copiedSyncGate).toContain('"operation": "growth_plan"');
+    expect(copiedSyncGate).toContain('"operation": "maintenance_plan"');
+    expect(copiedSyncGate).toContain('"tool": "validate_vault"');
+    expect(copiedSyncGate).toContain("oh-my-ontology validate [vault]");
     const readinessCli = page.getByTestId("insights-agent-readiness-cli");
     await expect(readinessCli).toBeVisible();
     await expect(readinessCli).toContainText("Terminal fallback");
@@ -84,6 +283,23 @@ test.describe("ontology view UI", () => {
     await expect(domainCoupling).toContainText("Inside");
     await expect(domainCoupling).toContainText("Unassigned");
     await expect(domainCoupling).toContainText("Re-run this semantic matrix");
+    const domainCouplingPathLink = domainCoupling.getByRole("link", { name: "Path" }).first();
+    await expect(domainCouplingPathLink).toBeVisible();
+    await expect(domainCouplingPathLink).toHaveAttribute(
+      "href",
+      /\/en\/topology\/\?mode=path&pathFrom=.+&pathTo=.+/,
+    );
+    await domainCoupling.getByRole("button", { name: "Copy path check" }).first().click();
+    const copiedPathCheck = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
+    );
+    expect(copiedPathCheck).toContain("# Domain coupling path check");
+    expect(copiedPathCheck).toContain("/topology/?mode=path&pathFrom=");
+    expect(copiedPathCheck).toContain("oh-my-ontology all-paths");
+    expect(copiedPathCheck).toContain('query_ontology({"operation":"query_plan"');
+    expect(copiedPathCheck).toContain('"targetOperation":"all_paths"');
+    expect(copiedPathCheck).toContain('query_ontology({"operation":"all_paths"');
+    expect(copiedPathCheck).toContain("evidence.pathsComplete");
     await domainCoupling.getByRole("button", { name: "Copy CLI matrix" }).click();
     const copiedCli = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
@@ -91,11 +307,11 @@ test.describe("ontology view UI", () => {
     expect(copiedCli).toContain(
       "oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes",
     );
-    await domainCoupling.getByRole("button", { name: "Copy MCP JSON" }).click();
+    await domainCoupling.getByRole("button", { name: "Copy MCP check" }).click();
     const copiedMcp = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
     );
-    expect(copiedMcp).toContain('"operation": "domain_matrix"');
+    expect(copiedMcp).toContain('query_ontology({"operation":"domain_matrix"');
     expect(copiedMcp).toContain('"relates"');
 
     const recipes = page.getByTestId("insights-agent-query-recipes");
@@ -253,6 +469,20 @@ test.describe("ontology view UI", () => {
     await expect(recipes.getByTestId("insights-agent-guardrails")).toContainText(
       "find_backlinks",
     );
+    const syncGuardrail = recipes.locator('[data-guardrail="post_change_sync"]');
+    await expect(syncGuardrail).toContainText(
+      "health, cycles, growth_plan, maintenance_plan, and validate_vault",
+    );
+    await expect(syncGuardrail).toContainText("query_ontology.cycles");
+    await expect(syncGuardrail).toContainText("query_ontology.growth_plan");
+    await expect(syncGuardrail).toContainText("oh-my-ontology cycles [vault] --max-hops 8");
+    await syncGuardrail.getByRole("button", { name: "Copy gate" }).click();
+    const copiedSyncGuardrail = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
+    );
+    expect(copiedSyncGuardrail).toContain("query_ontology.maintenance_plan");
+    expect(copiedSyncGuardrail).toContain("CLI fallback:");
+    expect(copiedSyncGuardrail).toContain("oh-my-ontology validate [vault]");
     await expect(recipes.getByRole("button", { name: "Copy gate" })).toHaveCount(3);
     await expect(recipes.getByRole("button", { name: "Copy handoff" })).toBeVisible();
     await expect(recipes).toContainText("query_ontology.agent_brief");

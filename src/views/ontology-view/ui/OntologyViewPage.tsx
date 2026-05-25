@@ -5,8 +5,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Clipboard, Info, Link2, X } from "lucide-react";
+import { Clipboard, Info, Link2, PencilLine, X } from "lucide-react";
 import {
+  buildOntologyBuilderNodeHref,
   buildOntologyNodeHref,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
@@ -17,6 +18,7 @@ import {
   buildOntologyEgoSubgraph,
   buildOntologyReachability,
   buildOntologyTree,
+  formatAgentPostChangeSyncPacket,
   countTreeNodes,
   type OntologyEgoSubgraph,
   type OntologyReachability,
@@ -42,6 +44,16 @@ import {
   buildReachabilityMcpCall,
   resolveReachabilityQuerySlug,
 } from "../lib/reachability-copy";
+import { resolveOntologyDeeplinkNode } from "../lib/resolve-deeplink-node";
+import {
+  buildOntologyReviewBrief,
+  buildOntologyReviewTopologyHref,
+  formatImpactRelation,
+  formatOntologyReviewBrief,
+  formatOntologyVocabularyReview,
+  ontologyReviewQuestionsForPrompt,
+  type OntologyReviewRelationPreview,
+} from "../lib/review-brief";
 
 /**
  * `/ontology` — ontology view.
@@ -119,7 +131,7 @@ export function OntologyViewPage() {
       };
     }
     if (selectedNode?.id === deeplinkNodeId) return;
-    const found = insight.nodes.find((n) => n.id === deeplinkNodeId);
+    const found = resolveOntologyDeeplinkNode(deeplinkNodeId, insight.nodes);
     if (found) {
       window.queueMicrotask(() => {
         if (!cancelled) setSelectedNode(found);
@@ -182,6 +194,9 @@ export function OntologyViewPage() {
       limit: 12,
     });
   }, [insight, reachabilityDepth, reachabilityDirection, selectedNode]);
+  const builderHref = selectedNode
+    ? buildOntologyBuilderNodeHref(selectedNode)
+    : "/ontology/edit/";
 
 
   return (
@@ -270,7 +285,7 @@ export function OntologyViewPage() {
             </Tooltip>
             <Tooltip content={t('actions.builderTooltip')} withProvider={false}>
               <Link
-                href={"/ontology/edit/"}
+                href={builderHref}
                 className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-brand)] px-4 text-xs font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-opacity hover:opacity-90"
                 aria-label={t('actions.builderAria')}
               >
@@ -741,6 +756,7 @@ function NodeDetailPanel({
   onClose: () => void;
 }) {
   const t = useTranslations('ontologyView.detail');
+  const { show } = useToast();
   const getKindLabel = useOntologyKindLabel();
   const kindLabel = getKindLabel(node.kind);
   const isProject = node.kind === "project";
@@ -788,6 +804,107 @@ function NodeDetailPanel({
     : evidenceList.slice(0, EVIDENCE_PREVIEW);
   const hiddenEvidenceCount = Math.max(0, evidenceList.length - visibleEvidence.length);
   const reachabilityQuerySlug = resolveReachabilityQuerySlug(node);
+  const topologyHref = buildOntologyReviewTopologyHref(node.id);
+  const builderHref = buildOntologyBuilderNodeHref(node);
+  const directNeighbors = ego?.neighbors.filter((neighbor) => neighbor.hop === 1) ?? [];
+  const relationTypes = buildRelationTypeCounts(directNeighbors);
+  const relationPreview = buildRelationPreviewRows(directNeighbors, getKindLabel);
+  const reviewBrief = buildOntologyReviewBrief({
+    node,
+    incomingCount: directNeighbors.filter((neighbor) => neighbor.direction === "incoming").length,
+    outgoingCount: directNeighbors.filter((neighbor) => neighbor.direction === "outgoing").length,
+    relationTypes,
+    relationPreview,
+    topologyHref,
+    builderHref,
+    agentCheckSlug: reachabilityQuerySlug,
+  });
+  const reviewAgentChecks = reviewBrief.agentChecks;
+  const reviewQuestions = ontologyReviewQuestionsForPrompt(reviewBrief.prompt, {
+    define_owner: [
+      t('reviewQuestions.defineOwnerOwner'),
+      t('reviewQuestions.defineOwnerContainer'),
+      t('reviewQuestions.defineOwnerMeaning'),
+    ],
+    explain_usage: [
+      t('reviewQuestions.explainUsageDepends'),
+      t('reviewQuestions.explainUsageWhy'),
+      t('reviewQuestions.explainUsageAudience'),
+    ],
+    confirm_dependents: [
+      t('reviewQuestions.confirmDependentsWho'),
+      t('reviewQuestions.confirmDependentsChange'),
+      t('reviewQuestions.confirmDependentsReviewer'),
+    ],
+    trace_impact: [
+      t('reviewQuestions.traceImpactIncoming'),
+      t('reviewQuestions.traceImpactOutgoing'),
+      t('reviewQuestions.traceImpactBoundary'),
+    ],
+  });
+  const copyReviewAgentCheck = async (text: string) => {
+    if (await copyText(text)) {
+      show(t('agentContextCopyToastSuccess'), 'success');
+      return;
+    }
+    show(t('agentContextCopyToastError'), 'error');
+  };
+  const copyReviewSyncGate = async () => {
+    if (await copyText(formatAgentPostChangeSyncPacket())) {
+      show(t('reviewCopySyncGateSuccess'), 'success');
+      return;
+    }
+    show(t('reviewCopySyncGateError'), 'error');
+  };
+  const copyReviewBrief = async () => {
+    const text = formatOntologyReviewBrief({
+      node,
+      brief: reviewBrief,
+      lensLabel: t(`reviewLens.${reviewBrief.lens}`),
+      promptLabel: t(`reviewPrompt.${reviewBrief.prompt}`),
+      reviewQuestionsLabel: t('reviewQuestionsTitle'),
+      reviewQuestions,
+      impactSummaryLabel: t('reviewImpactTitle'),
+      impactSummaryText: t(`reviewImpact.${reviewBrief.impactSummary.level}`),
+      impactIncomingLabel: t('reviewImpactIncoming'),
+      impactOutgoingLabel: t('reviewImpactOutgoing'),
+      impactNoneLabel: t('reviewImpactNone'),
+      relationPreviewLabel: t('reviewRelationPreviewTitle'),
+      relationPreview,
+      noRelationPreviewLabel: t('reviewRelationPreviewEmpty'),
+    });
+    if (await copyText(text)) {
+      show(t('reviewCopySuccess'), 'success');
+      return;
+    }
+    show(t('reviewCopyError'), 'error');
+  };
+  const copyVocabularyReview = async () => {
+    const text = formatOntologyVocabularyReview({
+      node,
+      brief: reviewBrief,
+      reviewQuestions,
+      labels: {
+        title: t('reviewVocabularyTitle'),
+        meaningToKeep: t('reviewVocabularyMeaning'),
+        reuseContext: t('reviewVocabularyReuse'),
+        reviewQuestions: t('reviewQuestionsTitle'),
+        relationAnchors: t('reviewVocabularyAnchors'),
+        handoff: t('reviewVocabularyHandoff'),
+        topology: t('reviewOpenTopology'),
+        builder: t('reviewOpenBuilder'),
+        sourceFallback: t('reviewNoSource'),
+        noRelationPreview: t('reviewRelationPreviewEmpty'),
+        incoming: t('reviewRelationPreviewIn'),
+        outgoing: t('reviewRelationPreviewOut'),
+      },
+    });
+    if (await copyText(text)) {
+      show(t('reviewCopySuccess'), 'success');
+      return;
+    }
+    show(t('reviewCopyError'), 'error');
+  };
   // evidenceId 는 vault `.md` slug. /docs/?slug=... viewer 가 대응 라우트라
   // 각 chip 을 그 viewer 로 가는 Link 로 노출 — ontology 그래프 → 원문 docs
   // 한 클릭 점프.
@@ -813,6 +930,15 @@ function NodeDetailPanel({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <CopyNodeLinkButton node={node} />
+          <Tooltip content={t('builderFocus')} withProvider={false}>
+            <Link
+              href={builderHref}
+              aria-label={t('builderFocus')}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <PencilLine size={15} aria-hidden />
+            </Link>
+          </Tooltip>
           {/* 새 edge 는 vault frontmatter array (capabilities / elements /
               dependencies / relates / contains / describes) 직접 추가 또는
               builder canvas (/ontology/edit). */}
@@ -842,6 +968,189 @@ function NodeDetailPanel({
       <p className="mt-2 break-all font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
         {node.id}
       </p>
+      <div
+        className="mt-4 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-3 py-3"
+        data-testid="ontology-review-brief"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              {t('reviewTitle')}
+            </p>
+            <p className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              {t(`reviewLens.${reviewBrief.lens}`)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={copyReviewBrief}
+            className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)]"
+          >
+            <Clipboard size={12} aria-hidden />
+            {t('reviewCopy')}
+          </button>
+        </div>
+        <p className="mt-2 break-keep text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+          {t(`reviewPrompt.${reviewBrief.prompt}`)}
+        </p>
+        <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(14,16,22,0.22)] px-2.5 py-2">
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('reviewQuestionsTitle')}
+          </p>
+          <ul className="mt-1.5 flex flex-col gap-1 text-[11.5px] leading-5 text-[color:var(--color-text-secondary)]">
+            {reviewQuestions.map((question) => (
+              <li key={question} className="break-keep">
+                {question}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(14,16,22,0.18)] px-2.5 py-2">
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('reviewImpactTitle')}
+          </p>
+          <p className="mt-1.5 break-keep text-[11.5px] leading-5 text-[color:var(--color-text-secondary)]">
+            {t(`reviewImpact.${reviewBrief.impactSummary.level}`)}
+          </p>
+          <dl className="mt-2 flex flex-col gap-1 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+            <div className="flex min-w-0 gap-2">
+              <dt className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {t('reviewImpactIncoming')}
+              </dt>
+              <dd className="min-w-0 flex-1 truncate">
+                {formatImpactRelation(
+                  reviewBrief.impactSummary.firstIncoming,
+                  t('reviewImpactNone'),
+                )}
+              </dd>
+            </div>
+            <div className="flex min-w-0 gap-2">
+              <dt className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {t('reviewImpactOutgoing')}
+              </dt>
+              <dd className="min-w-0 flex-1 truncate">
+                {formatImpactRelation(
+                  reviewBrief.impactSummary.firstOutgoing,
+                  t('reviewImpactNone'),
+                )}
+              </dd>
+            </div>
+          </dl>
+        </div>
+        <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(14,16,22,0.18)] px-2.5 py-2">
+          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('reviewRelationPreviewTitle')}
+          </p>
+          {relationPreview.length > 0 ? (
+            <ul className="mt-1.5 flex flex-col gap-1">
+              {relationPreview.map((row) => (
+                <li
+                  key={`${row.direction}-${row.type}-${row.nodeId}`}
+                  className="flex min-w-0 items-center gap-1.5 text-[11px] leading-5 text-[color:var(--color-text-secondary)]"
+                >
+                  <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    {row.direction === "outgoing" ? t('reviewRelationPreviewOut') : t('reviewRelationPreviewIn')}
+                  </span>
+                  <span className="shrink-0 rounded-sm border border-[color:rgba(94,106,210,0.20)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]">
+                    {row.type}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate">{row.title}</span>
+                  <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                    {row.kind}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-1.5 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t('reviewRelationPreviewEmpty')}
+            </p>
+          )}
+        </div>
+        <div className="mt-3 flex flex-wrap gap-1.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
+          <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
+            {t('reviewSource', {
+              source: reviewBrief.sourceSlug ?? t('reviewNoSource'),
+            })}
+          </span>
+          <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
+            {t('reviewRelations', {
+              outgoing: reviewBrief.relationSummary.outgoing,
+              incoming: reviewBrief.relationSummary.incoming,
+            })}
+          </span>
+          <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
+            {t('reviewRelationTypes', {
+              types: reviewBrief.relationTypes.length > 0
+                ? reviewBrief.relationTypes
+                    .map((row) => `${row.type} ${row.count}`)
+                    .join(', ')
+                : t('reviewNoRelationTypes'),
+            })}
+          </span>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link
+            href={topologyHref}
+            className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {t('reviewOpenTopology')}
+          </Link>
+          <Link
+            href={builderHref}
+            className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {t('reviewOpenBuilder')}
+          </Link>
+          <button
+            type="button"
+            onClick={() => void copyVocabularyReview()}
+            className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {t('reviewCopyVocabulary')}
+          </button>
+          {reviewAgentChecks ? (
+            <>
+              <button
+                type="button"
+                onClick={() => void copyReviewAgentCheck(reviewAgentChecks.mcp)}
+                className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+              >
+                {t('reviewCopyMcpCheck')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void copyReviewAgentCheck(reviewAgentChecks.cli)}
+                className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+              >
+                {t('reviewCopyCliCheck')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void copyReviewAgentCheck(reviewAgentChecks.impactMcp)}
+                className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+              >
+                {t('reviewCopyMcpImpactCheck')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void copyReviewAgentCheck(reviewAgentChecks.impactCli)}
+                className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+              >
+                {t('reviewCopyCliImpactCheck')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void copyReviewSyncGate()}
+                title={t('reviewCopySyncGateTitle')}
+                className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+              >
+                {t('reviewCopySyncGate')}
+              </button>
+            </>
+          ) : null}
+        </div>
+      </div>
       {reachabilityQuerySlug ? (
         <AgentContextCopyActions
           slug={reachabilityQuerySlug}
@@ -1208,6 +1517,32 @@ function NodeDetailPanel({
       ) : null}
     </aside>
   );
+}
+
+function buildRelationTypeCounts(
+  neighbors: NonNullable<OntologyEgoSubgraph>["neighbors"],
+): Array<{ type: string; count: number }> {
+  const counts = new Map<string, number>();
+  for (const neighbor of neighbors) {
+    const type = neighbor.edge.label ?? neighbor.edge.type;
+    counts.set(type, (counts.get(type) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type));
+}
+
+function buildRelationPreviewRows(
+  neighbors: NonNullable<OntologyEgoSubgraph>["neighbors"],
+  getKindLabel: (kind: string) => string,
+): OntologyReviewRelationPreview[] {
+  return neighbors.slice(0, 4).map((neighbor) => ({
+    direction: neighbor.direction,
+    type: neighbor.edge.label ?? neighbor.edge.type,
+    title: neighbor.node?.title ?? neighbor.neighborId,
+    kind: neighbor.node ? getKindLabel(neighbor.node.kind) : "missing",
+    nodeId: neighbor.neighborId,
+  }));
 }
 
 function Stat({

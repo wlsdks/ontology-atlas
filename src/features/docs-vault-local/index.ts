@@ -1,6 +1,7 @@
 export { LocalVaultProvider, useLocalVault } from './model/LocalVaultProvider';
 export { VaultConflictError } from './model/use-local-vault';
 export {
+  buildAgentSetupCheckCliCommandTemplate,
   buildAgentSetupCliCommandTemplate,
   buildCodexMcpAddCommandTemplate,
   buildCodexConfigTomlTemplate,
@@ -8,6 +9,7 @@ export {
 } from './lib/ontology-starter';
 export { LocalVaultPicker } from './ui/LocalVaultPicker';
 export {
+  ONTOLOGY_POST_CHANGE_SYNC_LINES,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   OntologyStarterCta,

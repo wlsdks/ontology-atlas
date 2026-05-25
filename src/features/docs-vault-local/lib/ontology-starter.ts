@@ -379,6 +379,18 @@ export function buildAgentSetupCliCommandTemplate(vaultName: string): string {
   ].join(' ');
 }
 
+export function buildAgentSetupCheckCliCommandTemplate(vaultName: string): string {
+  const vaultPath = `<absolute path to your ${vaultName} folder>`;
+  return [
+    'oh-my-ontology',
+    'agent-setup',
+    shellQuote(vaultPath),
+    '--root',
+    shellQuote('<absolute path to your codebase root>'),
+    '--json',
+  ].join(' ');
+}
+
 function shellQuote(value: string): string {
   return `'${value.replace(/'/g, "'\\''")}'`;
 }
