@@ -743,6 +743,18 @@
         "toastVaultEdgeDuplicate": "이미 있는 관계입니다",
         "toastVaultEdgeDemo": "데모 모드라 관계 추가 안 됨. /docs 에서 vault 폴더를 여세요.",
         "toastEdgePersistNeedsTitle": "저장 안 된 노드의 이름을 먼저 입력한 뒤 edge 의 Save 를 눌러주세요.",
+        "relationPostSave": {
+          "title": "관계 저장 완료",
+          "body": "graph 맥락을 끊지 않도록 새 edge 를 topology 에서 확인한 뒤 다음 Claude Code / Codex 실행에 sync gate 를 넘기세요.",
+          "relationLabel": "edge",
+          "openPath": "Topology path 열기",
+          "sourceFocus": "Source focus",
+          "targetFocus": "Target focus",
+          "copySyncGate": "sync gate 복사",
+          "copySyncGateCopied": "sync gate 복사됨",
+          "copySyncGateFailed": "복사 실패",
+          "closeAriaLabel": "저장된 관계 handoff 닫기"
+        },
         "relationConfirm": {
           "title": "관계 쓰기 확인",
           "body": "빌더가 {sourceKind} → {targetKind} 에서 `{inferredKey}` 를 추론했습니다. frontmatter 를 바꾸기 전에 의미를 확인하세요.",

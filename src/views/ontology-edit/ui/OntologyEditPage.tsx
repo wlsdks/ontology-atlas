@@ -34,6 +34,7 @@ import {
 } from "../lib/relation-proposal";
 import { resolveBuilderQueryNodeSlug } from "../lib/resolve-builder-query-node";
 import { RelationWriteConfirm } from "./RelationWriteConfirm";
+import { RelationPostSaveHandoff } from "./RelationPostSaveHandoff";
 
 /**
  * 빌더 ephemeral 노드 → `${kind}s/${slug}.md` 로 vault 직접 작성.
@@ -192,6 +193,8 @@ export function OntologyEditPage() {
     useState<VaultRelationProposal | null>(null);
   const [pendingRelationKey, setPendingRelationKey] =
     useState<VaultRelationKey>("relates");
+  const [lastSavedRelation, setLastSavedRelation] =
+    useState<(VaultRelationProposal & { selectedKey: VaultRelationKey }) | null>(null);
   // Clear-all 두 단계 confirm — 첫 클릭에 confirming=true (3s), 같은 버튼
   // 다시 클릭 시 실제 clear. 실수로 임시 작업 다 날아가는 회귀 방지.
   const [clearConfirming, setClearConfirming] = useState(false);
@@ -481,6 +484,7 @@ export function OntologyEditPage() {
         inferredKey,
       });
       setPendingRelationKey(inferredKey);
+      setLastSavedRelation(null);
     },
     [docsBySlug, hasLiveVault, t, toast],
   );
@@ -649,6 +653,7 @@ export function OntologyEditPage() {
     const key = pendingRelationKey;
     const relationWritten = await writeVaultRelation(sourceSlug, targetSlug, key);
     if (relationWritten) {
+      setLastSavedRelation({ ...pendingRelation, selectedKey: key });
       setPendingRelation(null);
     }
   }, [pendingRelation, pendingRelationKey, writeVaultRelation]);
@@ -1112,6 +1117,24 @@ export function OntologyEditPage() {
                     describes: t("relationConfirm.keys.describes.hint"),
                     relates: t("relationConfirm.keys.relates.hint"),
                   },
+                }}
+              />
+            ) : null}
+            {!pendingRelation && lastSavedRelation ? (
+              <RelationPostSaveHandoff
+                relation={lastSavedRelation}
+                onDismiss={() => setLastSavedRelation(null)}
+                labels={{
+                  title: t("relationPostSave.title"),
+                  body: t("relationPostSave.body"),
+                  relationLabel: t("relationPostSave.relationLabel"),
+                  openPath: t("relationPostSave.openPath"),
+                  sourceFocus: t("relationPostSave.sourceFocus"),
+                  targetFocus: t("relationPostSave.targetFocus"),
+                  copySyncGate: t("relationPostSave.copySyncGate"),
+                  copySyncGateCopied: t("relationPostSave.copySyncGateCopied"),
+                  copySyncGateFailed: t("relationPostSave.copySyncGateFailed"),
+                  closeAriaLabel: t("relationPostSave.closeAriaLabel"),
                 }}
               />
             ) : null}

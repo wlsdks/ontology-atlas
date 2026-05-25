@@ -1045,12 +1045,12 @@ function buildRelationBuilderHref(slug: string): string {
   return `/ontology/edit/?node=${encodeURIComponent(slug)}`;
 }
 
-function buildRelationTopologyPathHref(sourceSlug: string, targetSlug: string): string {
+export function buildRelationTopologyPathHref(sourceSlug: string, targetSlug: string): string {
   return `/topology/?mode=path&pathFrom=${encodeURIComponent(
     sourceSlug,
   )}&pathTo=${encodeURIComponent(targetSlug)}`;
 }
 
-function buildRelationTopologyFocusHref(slug: string): string {
+export function buildRelationTopologyFocusHref(slug: string): string {
   return `/topology/?mode=focus&p=${encodeURIComponent(slug)}`;
 }

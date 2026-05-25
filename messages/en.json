@@ -743,6 +743,18 @@
         "toastVaultEdgeDuplicate": "This relation already exists",
         "toastVaultEdgeDemo": "Demo mode — open a vault folder from /docs to add relations.",
         "toastEdgePersistNeedsTitle": "Name the unsaved node first, then click Save on the edge.",
+        "relationPostSave": {
+          "title": "Relation saved",
+          "body": "Keep the graph context alive: inspect the new edge in topology, then hand the sync gate to the next Claude Code or Codex run.",
+          "relationLabel": "edge",
+          "openPath": "Open topology path",
+          "sourceFocus": "Source focus",
+          "targetFocus": "Target focus",
+          "copySyncGate": "Copy sync gate",
+          "copySyncGateCopied": "Sync gate copied",
+          "copySyncGateFailed": "Copy failed",
+          "closeAriaLabel": "Dismiss saved relation handoff"
+        },
         "relationConfirm": {
           "title": "Confirm relation write",
           "body": "Builder inferred `{inferredKey}` from {sourceKind} → {targetKind}. Review the meaning before changing frontmatter.",

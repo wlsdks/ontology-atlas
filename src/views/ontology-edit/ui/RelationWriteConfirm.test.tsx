@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { RelationWriteConfirm } from "./RelationWriteConfirm";
+import { RelationPostSaveHandoff } from "./RelationPostSaveHandoff";
 import type { VaultRelationKey } from "../lib/relation-proposal";
 import { copyText } from "@/shared/lib/copy-text";
 
@@ -147,6 +148,19 @@ const safePreflight = {
   inverseExists: false,
   pathExists: false,
   path: [],
+};
+
+const postSaveLabels = {
+  title: "Relation saved",
+  body: "Inspect the new edge before running the sync gate.",
+  relationLabel: "edge",
+  openPath: "Open topology path",
+  sourceFocus: "Source focus",
+  targetFocus: "Target focus",
+  copySyncGate: "Copy sync gate",
+  copySyncGateCopied: "Sync gate copied",
+  copySyncGateFailed: "Copy failed",
+  closeAriaLabel: "Dismiss saved relation handoff",
 };
 
 describe("RelationWriteConfirm", () => {
@@ -828,5 +842,73 @@ describe("RelationWriteConfirm", () => {
     expect(
       await screen.findByRole("button", { name: /packet copied/i }),
     ).toBeInTheDocument();
+  });
+});
+
+describe("RelationPostSaveHandoff", () => {
+  beforeEach(() => {
+    copyTextMock.mockReset();
+  });
+
+  it("keeps topology handoff actions visible after a relation save", () => {
+    render(
+      <RelationPostSaveHandoff
+        relation={{ ...proposal, selectedKey: "elements" }}
+        labels={postSaveLabels}
+        onDismiss={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId("builder-relation-post-save-handoff")).toBeInTheDocument();
+    expect(screen.getByText("Relation saved")).toBeInTheDocument();
+    expect(
+      screen.getByText("capabilities/mcp-server.elements -> elements/mcp-index"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open topology path" })).toHaveAttribute(
+      "href",
+      "/topology/?mode=path&pathFrom=capabilities%2Fmcp-server&pathTo=elements%2Fmcp-index",
+    );
+    expect(screen.getByRole("link", { name: "Source focus" })).toHaveAttribute(
+      "href",
+      "/topology/?mode=focus&p=capabilities%2Fmcp-server",
+    );
+    expect(screen.getByRole("link", { name: "Target focus" })).toHaveAttribute(
+      "href",
+      "/topology/?mode=focus&p=elements%2Fmcp-index",
+    );
+  });
+
+  it("copies the shared sync gate from the post-save handoff", async () => {
+    copyTextMock.mockResolvedValue(true);
+
+    render(
+      <RelationPostSaveHandoff
+        relation={{ ...proposal, selectedKey: "elements" }}
+        labels={postSaveLabels}
+        onDismiss={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy sync gate" }));
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock.mock.calls[0]?.[0]).toContain("# Post-change ontology sync gate");
+    expect(screen.getByRole("button", { name: "Sync gate copied" })).toBeInTheDocument();
+  });
+
+  it("dismisses the saved relation handoff", () => {
+    const onDismiss = vi.fn();
+
+    render(
+      <RelationPostSaveHandoff
+        relation={{ ...proposal, selectedKey: "elements" }}
+        labels={postSaveLabels}
+        onDismiss={onDismiss}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Dismiss saved relation handoff" }));
+
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });
