@@ -1,0 +1,42 @@
+---
+slug: elements/insights-collaborator-brief
+kind: element
+title: Insights Collaborator Brief
+domain: views
+path: src/views/ontology-insights/lib/collaborator-insights-brief.ts
+relates:
+  - capabilities/collaborator-reader-brief
+---
+
+`src/views/ontology-insights/lib/collaborator-insights-brief.ts` derives the copyable collaborator overview shown on `/ontology/insights`.
+
+It summarizes node, relation, domain, cross-domain impact, and open-question counts, highlights the top shared vocabulary hubs, and chooses the review focus: resolve orphan ownership questions first, otherwise trace cross-domain impact, otherwise align vocabulary around the main hubs. The visible panel and markdown export now include focus-specific review questions, so the collaborator lane gives planning, marketing, and domain reviewers concrete prompts instead of only a metric summary. The markdown export uses the same full review-focus sentence as the visible panel instead of reducing the decision to a metric label, so a copied brief still tells collaborators what to review next.
+
+The visible panel and markdown export now include a `Decision lane` block next to the review focus. It names the expected decision owner, the decision to make, and the next graph step for the current focus: planning / marketing / domain leads approve reusable vocabulary, product and domain owners confirm cross-domain impact boundaries, or domain owners assign / merge / rename / delete open orphan concepts. The lane also carries the first concrete graph handoff for that focus: a top-hub Topology / Ontology / Builder link for vocabulary alignment, a Topology Path handoff for impact review, or the first open-question Builder / Topology health / Ontology link for ownership cleanup. This turns the workspace-level brief into a meeting handoff rather than a passive dashboard.
+
+The visible panel and markdown export also include a `Decision record` block.
+It repeats the expected decision, owner, graph evidence, and follow-up graph
+step in a compact record shape. The compact vocabulary-review export includes
+the same record, so planning and marketing notes can carry the decision outcome
+without pulling in the broader MCP / CLI handoff section.
+
+The visible panel, full markdown export, and compact vocabulary-review export
+now include a `Meeting agenda` block. It turns the current decision lane into
+three meeting-ready steps: the decision to make, the graph evidence to review,
+and the next graph action. This keeps planner / marketer / domain-review notes
+from becoming passive metrics; the copied brief can be pasted directly into a
+meeting doc with the review order intact.
+
+The markdown export also includes a dedicated `Review vocabulary` section derived from the top hubs. Each row names the term, kind, node id when available, degree-based reason for attention, and the reuse review action: align naming, owner, and reuse context before external handoff. That keeps the secondary collaborator lane from reading hubs as only graph metrics; the copied brief turns them into vocabulary review items. The panel now also exposes a separate compact vocabulary-review copy action. It exports review focus, decision lane, review questions, vocabulary rows, and hub handoffs without the broader agent/MCP handoff block, so planning and marketing reviewers can carry only the shared terminology packet when they do not need graph-operation commands.
+
+The top hub rows now keep exact graph identity instead of only displaying titles: hub kind, degree, node id, and direct Ontology / Topology / Builder handoff links are visible in the panel and exported in the markdown `Hub handoff` block. Both the visible panel and copied markdown label Focus-mode topology links as `Topology focus` and Health-mode repair links as `Topology health`, so a workspace-level planning note points a collaborator or agent back to the same concept node without confusing vocabulary alignment with ownership repair.
+
+When open ownership questions exist, the brief also carries the first few concrete open-question handoffs instead of only reporting an aggregate count. Each row keeps the concept title, kind, node id, and direct Ontology / Topology health / Builder links, so a planning review can move from "there are open questions" to the exact concept that needs ownership repair.
+
+The brief now also carries the strongest domain-to-domain impact rows from the insights domain matrix. Each `Impact handoff` row keeps the source domain, target domain, cross-domain link count, a sample relation, and a `/topology?mode=path&pathFrom=<source>&pathTo=<target>` handoff URL, so collaborators can discuss concrete boundary pressure and then inspect the exact path workflow instead of only seeing a total "impact links" number. The visible domain coupling matrix rows expose the same Path-mode handoff next to their sample relation, plus a compact path-check packet with the matching `oh-my-ontology all-paths --plan` CLI command, MCP `query_plan(all_paths)` payload, MCP `all_paths` payload, and evidence-contract reminder. That keeps the on-screen matrix, copied collaborator brief, and Claude Code/Codex handoff aligned.
+
+The markdown export can include a handoff block with the current insights URL, `/topology?mode=health`, and read-only agent checks for both terminal and MCP sessions: `oh-my-ontology workspace-brief [vault] --limit 5` plus `query_ontology({"operation":"workspace_brief","limit":5})`. It also includes the replay checks for the same impact matrix: `oh-my-ontology domain-matrix [vault] --limit 6 --types depends_on,relates,describes` and the matching MCP `query_ontology(domain_matrix)` payload. The panel exposes the workspace checks as separate copy actions next to the full collaborator brief. That keeps planning / marketing / domain review notes tied back to the same local ontology graph and gives Claude Code or Codex a safe first command before interpreting the shared vocabulary.
+
+The insights orphan/open-question rows also link each unconnected concept into the same repair loop: the node title opens the ontology tree, while compact actions open `/topology?mode=health&p=<node>` and `/ontology/edit?node=<slug>` so ownership questions can move directly from overview to graph inspection or builder repair.
+
+Each orphan row can also copy a focused ownership repair packet. The packet includes the ontology, topology health, and builder URLs plus bounded agent checks: `oh-my-ontology node <slug> [vault] --limit 12`, `oh-my-ontology relation-check <owner-slug> <slug> contains [vault]`, and `oh-my-ontology health [vault] --limit 5`. This gives a planner or domain reviewer a small handoff artifact that Claude Code or Codex can use before any frontmatter write.
