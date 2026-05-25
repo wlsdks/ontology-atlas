@@ -221,7 +221,9 @@ WebView. The Rust bridge also canonicalizes vault paths and nearest existing
 parents so symlinks inside the vault cannot redirect read, write, mkdir,
 exists, or remove operations outside the selected root. The default Tauri
 capability stays scoped to the `main` window with `core:default` only, without
-broad filesystem, shell, HTTP, or opener plugin permissions.
+broad filesystem, shell, HTTP, or opener plugin permissions. `src-tauri/Info.plist`
+must also explain selected vault-folder access for protected macOS locations
+such as Documents, Downloads, Desktop, network volumes, and removable volumes.
 The installed app must also keep first-run
 entry local: `src/views/root-entry/ui/RootEntryPage.tsx` routes Tauri sessions
 without a restored vault to `/docs/?intent=local` without rendering the hosted

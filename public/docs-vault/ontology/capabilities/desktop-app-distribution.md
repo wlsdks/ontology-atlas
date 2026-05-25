@@ -29,6 +29,9 @@ data/blob images, local styles, and the Tauri IPC endpoint, so the installed app
 is not shipped with an open CSP while still allowing native vault commands. The
 default capability remains scoped to the `main` window with `core:default` only,
 so broad filesystem, shell, HTTP, or opener plugin permissions are not granted.
+`src-tauri/Info.plist` explains selected vault-folder access for protected
+macOS locations such as Documents, Downloads, Desktop, network volumes, and
+removable volumes.
 `scripts/package-macos-dmg.mjs` wraps that `.app`
 with a reproducible `hdiutil` DMG so the download artifact does not depend on
 Tauri's Finder AppleScript DMG styling step, then writes a `.sha256` checksum.

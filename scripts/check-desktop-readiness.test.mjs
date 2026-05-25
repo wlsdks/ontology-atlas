@@ -141,6 +141,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ Tauri bundle target includes macOS \.app/);
   assert.match(
     result.stdout,
+    /✓ macOS Info\.plist explains selected vault-folder access for protected locations/,
+  );
+  assert.match(
+    result.stdout,
     /✓ Tauri CSP is enabled for local app assets, images, styles, and IPC only/,
   );
   assert.match(

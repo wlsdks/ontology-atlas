@@ -39,6 +39,7 @@ const bottomTabBar = readText("src/widgets/bottom-tab-bar/ui/BottomTabBar.tsx");
 const bottomTabBarPolicy = readText("src/widgets/bottom-tab-bar/lib/is-tab-active.ts");
 const tauriLib = readText("src-tauri/src/lib.rs");
 const tauriShim = readText("src/shared/lib/tauri-vault-fs.ts");
+const tauriInfoPlist = readText("src-tauri/Info.plist");
 const verifyDmgScript = readText("scripts/verify-macos-dmg.mjs");
 const verifyAppScript = readText("scripts/verify-macos-app-launch.mjs");
 const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
@@ -584,6 +585,26 @@ if (
 } else {
   fail(
     "src-tauri/tauri.conf.json must set macOS bundle category, descriptions, and copyright so the installed app is not a generic wrapper",
+  );
+}
+
+const macosFolderUsageKeys = [
+  "NSDocumentsFolderUsageDescription",
+  "NSDownloadsFolderUsageDescription",
+  "NSDesktopFolderUsageDescription",
+  "NSNetworkVolumesUsageDescription",
+  "NSRemovableVolumesUsageDescription",
+];
+const missingFolderUsageKeys = macosFolderUsageKeys.filter(
+  (key) =>
+    !tauriInfoPlist.includes(`<key>${key}</key>`) ||
+    !tauriInfoPlist.includes("markdown ontology vault folder you choose"),
+);
+if (missingFolderUsageKeys.length === 0) {
+  pass("macOS Info.plist explains selected vault-folder access for protected locations");
+} else {
+  fail(
+    `src-tauri/Info.plist must explain selected vault folder access for protected macOS locations: missing ${missingFolderUsageKeys.join(", ")}`,
   );
 }
 

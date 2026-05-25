@@ -84,6 +84,9 @@ for a macOS prototype:
 - the app bundle metadata identifies the install as a `DeveloperTool` with a
   local-first ontology workbench description, so Finder/Gatekeeper-facing
   metadata does not ship as an anonymous web wrapper.
+- `src-tauri/Info.plist` explains why the app opens the user-selected markdown
+  ontology vault when macOS asks about protected Documents, Downloads, Desktop,
+  network, or removable-volume folders.
 - the Tauri WebView CSP is enabled instead of left open: it allows local app
   assets, data/blob images, local styles, and the Tauri IPC endpoint required by
   native vault commands, without allowing arbitrary remote hosts.
