@@ -21,6 +21,14 @@ test("desktop readiness check proves static macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ CLI\/MCP setup gate is available/);
   assert.match(
     result.stdout,
+    /✓ desktop quality bar names native launch, vault permissions, recent vaults, local data, agent setup, and offline routes/,
+  );
+  assert.match(
+    result.stdout,
+    /✓ desktop prototype smoke names docs, ontology, topology, and builder routes/,
+  );
+  assert.match(
+    result.stdout,
     /ready: static frontend prerequisites support a macOS\/Tauri prototype/,
   );
 });

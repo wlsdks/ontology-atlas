@@ -485,7 +485,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /MCP lockfile\s+changes still show `pnpm dogfood:verify` as an escalation because they touch the\s+agent runtime package directly; CLI lockfile changes stay on package contracts/);
     assert.match(checksDoc, /\| `pnpm package:check` \| Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget \|/);
     assert.match(checksDoc, /\| `pnpm bundle:check` \| Local-first static export bundle guard; run after `pnpm build` when `scripts\/check-bundle\.mjs` changed \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:check` \| macOS desktop pre-scaffold readiness gate for static export, image mode, docs-vault freshness, and CLI\/MCP verification script availability \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:check` \| macOS desktop pre-scaffold readiness gate for static export, image mode, docs-vault freshness, CLI\/MCP verification script availability, desktop-grade quality bar coverage, and route smoke scope \|/);
     assert.match(checksDoc, /\| `pnpm test:desktop:check` \| Desktop readiness checker contract; use direct `pnpm exec node --test scripts\/check-desktop-readiness\.test\.mjs` first when printed \|/);
     assert.match(checksDoc, /\| `pnpm exec tsc --noEmit` \| TypeScript and Next config type safety \|/);
     assert.match(checksDoc, /\| `pnpm test:i18n:messages` \| Locale routing\/message catalog parity \|/);

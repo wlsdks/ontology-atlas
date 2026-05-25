@@ -188,7 +188,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 |---|---|
 | `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget |
 | `pnpm bundle:check` | Local-first static export bundle guard; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
-| `pnpm desktop:check` | macOS desktop pre-scaffold readiness gate for static export, image mode, docs-vault freshness, and CLI/MCP verification script availability |
+| `pnpm desktop:check` | macOS desktop pre-scaffold readiness gate for static export, image mode, docs-vault freshness, CLI/MCP verification script availability, desktop-grade quality bar coverage, and route smoke scope |
 | `pnpm test:desktop:check` | Desktop readiness checker contract; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
 | `pnpm test:i18n:messages` | Locale routing/message catalog parity |

@@ -49,6 +49,11 @@ The gate verifies the static frontend prerequisites for a macOS/Tauri prototype:
 - `pnpm build` refreshes the docs vault before `next build`.
 - `docs-vault:check` and `cli:mcp-verify` are available for packaging and agent
   handoff checks.
+- this document keeps the desktop-grade quality bar explicit: native `.app`
+  launch, vault-folder permissions, recent vault recall, visible local data
+  location, agent setup visibility, and offline route usefulness.
+- the first prototype smoke keeps the same route contract explicit: `/docs`,
+  `/ontology`, `/topology`, and `/ontology/edit`.
 
 ## First Prototype Scope
 

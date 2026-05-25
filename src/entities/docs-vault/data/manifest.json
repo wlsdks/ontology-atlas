@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T07:33:52.604Z",
+  "generatedAt": "2026-05-25T07:38:05.757Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3896,8 +3896,8 @@
         }
       ],
       "excerpt": "ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app should be a native shell around the same local markdown vault, not a backend, cloud sync layer, or second data store. Use Tauri first for the prototype. The web app already builds as a static export (next.config.ts keeps ",
-      "wordCount": 439,
-      "updatedAt": "2026-05-25T06:50:11.373Z",
+      "wordCount": 483,
+      "updatedAt": "2026-05-25T07:37:42.688Z",
       "linksOut": []
     },
     {
@@ -3954,8 +3954,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 3080,
-      "updatedAt": "2026-05-25T06:21:07.496Z",
+      "wordCount": 3087,
+      "updatedAt": "2026-05-25T07:37:46.337Z",
       "linksOut": []
     },
     {
@@ -5121,8 +5121,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 255,
-      "updatedAt": "2026-05-25T06:50:11.375Z",
+      "wordCount": 265,
+      "updatedAt": "2026-05-25T07:37:52.536Z",
       "linksOut": []
     },
     {

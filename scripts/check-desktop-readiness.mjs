@@ -23,6 +23,7 @@ function note(message) {
 
 const nextConfig = readText("next.config.ts");
 const pkg = JSON.parse(readText("package.json"));
+const desktopDoc = readText("docs/DESKTOP-MACOS.md");
 
 console.log("[desktop-check] macOS desktop static-shell readiness");
 
@@ -60,6 +61,46 @@ if (pkg.scripts?.["cli:mcp-verify"]) {
   pass("CLI/MCP setup gate is available for desktop handoff verification");
 } else {
   fail("package.json must expose cli:mcp-verify for desktop handoff verification");
+}
+
+const qualityBarChecks = [
+  ["native .app launch path", /stable `\.app` launch path|stable native `\.app`/i],
+  ["vault-folder permission UX", /permission prompts|permission UX/i],
+  ["recent vault recall", /recent vault recall/i],
+  ["local data location clarity", /where data is\s+stored|local data location/i],
+  ["agent setup visibility", /CLI, and MCP handoff|agent confidence|MCP verification/i],
+  ["offline packaged routes", /offline usefulness|remain usable from the packaged app/i],
+];
+
+const missingQualityBar = qualityBarChecks
+  .filter(([, pattern]) => !pattern.test(desktopDoc))
+  .map(([label]) => label);
+
+if (missingQualityBar.length === 0) {
+  pass("desktop quality bar names native launch, vault permissions, recent vaults, local data, agent setup, and offline routes");
+} else {
+  fail(
+    `docs/DESKTOP-MACOS.md must keep the desktop quality bar explicit: missing ${missingQualityBar.join(", ")}`,
+  );
+}
+
+const prototypeRouteChecks = [
+  ["/docs", /\/docs/],
+  ["/ontology", /\/ontology/],
+  ["/topology", /\/topology/],
+  ["/ontology/edit", /\/ontology\/edit/],
+];
+
+const missingPrototypeRoutes = prototypeRouteChecks
+  .filter(([, pattern]) => !pattern.test(desktopDoc))
+  .map(([route]) => route);
+
+if (missingPrototypeRoutes.length === 0) {
+  pass("desktop prototype smoke names docs, ontology, topology, and builder routes");
+} else {
+  fail(
+    `docs/DESKTOP-MACOS.md must keep the first desktop smoke routes explicit: missing ${missingPrototypeRoutes.join(", ")}`,
+  );
 }
 
 if (fs.existsSync(path.join(root, "src-tauri", "tauri.conf.json"))) {
