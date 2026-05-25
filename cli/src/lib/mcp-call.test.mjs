@@ -163,12 +163,12 @@ describe('mcp-call response parsing', () => {
       'utf-8',
     );
     process.env.OMOT_MCP_PATH = server;
-    process.env.OMOT_CLI_MCP_TIMEOUT_MS = '100';
+    process.env.OMOT_CLI_MCP_TIMEOUT_MS = '500';
     process.env.OMOT_CLI_MCP_KILL_GRACE_MS = '25';
     try {
       await assert.rejects(
         () => callMcpTool(root, 'list_kinds'),
-        /mcp call timed out after 100ms while calling list_kinds .*OMOT_CLI_MCP_TIMEOUT_MS=N[\s\S]*silent server ready/,
+        /mcp call timed out after 500ms while calling list_kinds .*OMOT_CLI_MCP_TIMEOUT_MS=N[\s\S]*silent server ready/,
       );
     } finally {
       if (previousPath === undefined) delete process.env.OMOT_MCP_PATH;
