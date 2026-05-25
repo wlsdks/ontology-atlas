@@ -41,6 +41,7 @@ interface TopologyAnalysisBarLabels {
   healthPromotion: string;
   healthInspect: string;
   healthCopy: string;
+  healthOpenOntology: string;
   healthRepair: string;
   healthCopied: string;
   healthMcpCopy: string;
@@ -118,6 +119,7 @@ interface TopologyAnalysisBarLabels {
   healthEvidenceTitle: string;
   healthEvidenceTotal: string;
   healthEvidenceInspectUrl: string;
+  healthEvidenceOntologyUrl: string;
   healthEvidenceRepairUrl: string;
   healthEvidenceNextAction: string;
   healthEvidenceAgentCheck: string;
@@ -343,6 +345,7 @@ export function TopologyAnalysisBar({
           promotion: labels.healthPromotion,
           inspect: labels.healthInspect,
           inspectUrl: labels.healthEvidenceInspectUrl,
+          ontologyUrl: labels.healthEvidenceOntologyUrl,
           repairUrl: labels.healthEvidenceRepairUrl,
           nextAction: labels.healthEvidenceNextAction,
           agentCheck: labels.healthEvidenceAgentCheck,
@@ -638,6 +641,12 @@ export function TopologyAnalysisBar({
                         {healthAction.title}
                       </span>
                     </button>
+                    <Link
+                      href={buildOntologyNodeHref(healthAction.slug)}
+                      className="inline-flex h-[26px] items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
+                    >
+                      {labels.healthOpenOntology}
+                    </Link>
                     <Link
                       href={buildTopologyHealthRepairHref(healthAction.slug)}
                       className="inline-flex h-[26px] items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"

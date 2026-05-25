@@ -25,6 +25,7 @@ const labels = {
   healthPromotion: "promotion",
   healthInspect: "Inspect",
   healthCopy: "Copy health",
+  healthOpenOntology: "Open ontology",
   healthRepair: "Repair in builder",
   healthCopied: "Copied",
   healthMcpCopy: "Copy MCP check",
@@ -102,6 +103,7 @@ const labels = {
   healthEvidenceTitle: "Topology health evidence",
   healthEvidenceTotal: "Issues",
   healthEvidenceInspectUrl: "Inspect URL",
+  healthEvidenceOntologyUrl: "Ontology URL",
   healthEvidenceRepairUrl: "Repair URL",
   healthEvidenceNextAction: "Next action",
   healthEvidenceAgentCheck: "Agent check",
@@ -999,6 +1001,10 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
+    expect(screen.getByRole("link", { name: "Open ontology" })).toHaveAttribute(
+      "href",
+      "/ontology/?node=capability%3Atopology-analysis-modes",
+    );
     expect(screen.getByRole("link", { name: "Repair in builder" })).toHaveAttribute(
       "href",
       "/ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
@@ -1087,6 +1093,9 @@ describe("TopologyAnalysisBar", () => {
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("p=domain%3Aviews"),
+    );
+    expect(writeText).toHaveBeenCalledWith(
+      expect.stringContaining("- Ontology URL: /ontology/?node=domain%3Aviews"),
     );
     expect(writeText).toHaveBeenCalledWith(
       expect.stringContaining("- Repair URL: /ontology/edit/?node=domains%2Fviews"),

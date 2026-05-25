@@ -824,6 +824,7 @@ export function HomePage() {
                 healthPromotion: t("analysis.healthPromotion"),
                 healthInspect: t("analysis.healthInspect"),
                 healthCopy: t("analysis.healthCopy"),
+                healthOpenOntology: t("analysis.healthOpenOntology"),
                 healthRepair: t("analysis.healthRepair"),
                 healthCopied: t("analysis.healthCopied"),
                 healthMcpCopy: t("analysis.healthMcpCopy"),
@@ -935,6 +936,9 @@ export function HomePage() {
                 healthEvidenceTitle: t("analysis.healthEvidenceTitle"),
                 healthEvidenceTotal: t("analysis.healthEvidenceTotal"),
                 healthEvidenceInspectUrl: t("analysis.healthEvidenceInspectUrl"),
+                healthEvidenceOntologyUrl: t(
+                  "analysis.healthEvidenceOntologyUrl",
+                ),
                 healthEvidenceRepairUrl: t("analysis.healthEvidenceRepairUrl"),
                 healthEvidenceNextAction: t("analysis.healthEvidenceNextAction"),
                 healthEvidenceAgentCheck: t("analysis.healthEvidenceAgentCheck"),

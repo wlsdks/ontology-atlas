@@ -3,7 +3,10 @@ import {
   explainOntologyRelationKeyForGraphIds,
   inferOntologyRelationKeyForGraphIds,
 } from "@/shared/lib/ontology-relation-key";
-import { buildOntologyBuilderNodeHrefFromGraphId } from "@/entities/knowledge-graph";
+import {
+  buildOntologyBuilderNodeHrefFromGraphId,
+  buildOntologyNodeHref,
+} from "@/entities/knowledge-graph";
 
 export interface TopologyAnalysisSummaryInput {
   mode: TopologyAnalysisMode;
@@ -47,6 +50,7 @@ export interface TopologyHealthBriefLabels {
   promotion: string;
   inspect: string;
   inspectUrl: string;
+  ontologyUrl: string;
   repairUrl: string;
   nextAction: string;
   agentCheck: string;
@@ -241,6 +245,7 @@ export function formatTopologyHealthBrief({
   }
   if (actionTarget) {
     lines.push(
+      `- ${labels.ontologyUrl}: ${buildOntologyNodeHref(actionTarget.slug)}`,
       `- ${labels.repairUrl}: ${buildTopologyHealthRepairHref(actionTarget.slug)}`,
       `- ${labels.nextAction}: ${getTopologyHealthNextAction(actionTarget.kind, labels)}`,
       `- ${labels.agentCheck}: oh-my-ontology node ${actionTarget.slug} [vault] --limit 12`,
