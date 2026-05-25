@@ -38,6 +38,9 @@ interface RelationWriteConfirmLabels {
   writeMutation: string;
   writeFrontmatterPatch: string;
   mcpWriteArgs: string;
+  mcpWritePolicy: string;
+  mcpWritePolicyReady: string;
+  mcpWritePolicyBlocked: string;
   graphEffect: string;
   graphEdge: string;
   graphRelation: string;
@@ -573,6 +576,14 @@ export function RelationWriteConfirm({
               {labels.mcpWriteArgs}
             </dt>
             <dd className="min-w-0 truncate">{mcpWriteArgs}</dd>
+            <dt className="text-[color:var(--color-text-quaternary)]">
+              {labels.mcpWritePolicy}
+            </dt>
+            <dd className="min-w-0 break-keep text-[color:var(--color-text-secondary)]">
+              {directMcpWriteBlocked
+                ? labels.mcpWritePolicyBlocked
+                : labels.mcpWritePolicyReady}
+            </dd>
           </dl>
           <p
             data-testid="builder-relation-preflight-action"

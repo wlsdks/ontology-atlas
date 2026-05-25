@@ -990,6 +990,11 @@ export function OntologyEditPage() {
                   writeMutation: t("relationConfirm.writeMutation"),
                   writeFrontmatterPatch: t("relationConfirm.writeFrontmatterPatch"),
                   mcpWriteArgs: t("relationConfirm.mcpWriteArgs"),
+                  mcpWritePolicy: t("relationConfirm.mcpWritePolicy"),
+                  mcpWritePolicyReady: t("relationConfirm.mcpWritePolicyReady"),
+                  mcpWritePolicyBlocked: t(
+                    "relationConfirm.mcpWritePolicyBlocked",
+                  ),
                   graphEffect: t("relationConfirm.graphEffect"),
                   graphEdge: t("relationConfirm.graphEdge"),
                   graphRelation: t("relationConfirm.graphRelation"),

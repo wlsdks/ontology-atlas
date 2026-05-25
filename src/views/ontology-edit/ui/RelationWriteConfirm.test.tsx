@@ -57,6 +57,11 @@ const labels = {
   writeMutation: "Mutation",
   writeFrontmatterPatch: "Frontmatter patch",
   mcpWriteArgs: "MCP args",
+  mcpWritePolicy: "MCP write policy",
+  mcpWritePolicyReady:
+    "Direct MCP write payload is enabled only after read checks are clear.",
+  mcpWritePolicyBlocked:
+    "Direct MCP write payload stays disabled until read checks are reviewed.",
   graphEffect: "Graph effect",
   graphEdge: "Edge",
   graphRelation: "Relation label",
@@ -193,6 +198,12 @@ describe("RelationWriteConfirm", () => {
     expect(
       screen.getByText(
         '{"from":"capabilities/mcp-server","to":"elements/mcp-index","type":"elements"}',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("MCP write policy")).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Direct MCP write payload is enabled only after read checks are clear.",
       ),
     ).toBeInTheDocument();
     expect(screen.getAllByText("uses element")).toHaveLength(2);
@@ -633,6 +644,11 @@ describe("RelationWriteConfirm", () => {
     expect(screen.getByText("Relation preflight result")).toBeInTheDocument();
     expect(screen.getAllByText("review").length).toBeGreaterThanOrEqual(2);
     expect(screen.getByRole("button", { name: "Copy MCP write" })).toBeDisabled();
+    expect(
+      screen.getByText(
+        "Direct MCP write payload stays disabled until read checks are reviewed.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /save relation/i })).toBeEnabled();
     expect(screen.getByText("Path:")).toBeInTheDocument();
     expect(
