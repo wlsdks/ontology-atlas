@@ -99,6 +99,9 @@ for a macOS prototype:
   the same `buildLocalManifest`, editor save, image preview, conflict guard, and
   agent-config bootstrap flows that the web prototype uses without depending on
   private Tauri WebView internals.
+- the shim preserves browser File System Access create semantics: asking for a
+  file handle with `{ create: true }` creates a missing file, but it first checks
+  `vault_path_exists` and does not truncate an existing markdown file.
 - `src/views/root-entry/ui/RootEntryPage.tsx` keeps the hosted web root on the
   product landing page, but routes the Tauri app root to `/docs/?intent=local`
   after the stored-vault restore attempt when no vault is loaded, without

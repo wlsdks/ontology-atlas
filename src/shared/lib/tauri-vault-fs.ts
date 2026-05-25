@@ -162,11 +162,18 @@ class TauriDirectoryHandle {
   ): Promise<FileSystemFileHandle> {
     const relativePath = joinRelative(this.relativePath, name);
     if (options.create) {
-      await this.invoke('write_vault_text_file', {
+      const exists = await this.invoke<boolean>('vault_path_exists', {
         rootPath: this.rootPath,
         relativePath,
-        content: '',
+        kind: 'file',
       });
+      if (!exists) {
+        await this.invoke('write_vault_text_file', {
+          rootPath: this.rootPath,
+          relativePath,
+          content: '',
+        });
+      }
     } else {
       const exists = await this.invoke<boolean>('vault_path_exists', {
         rootPath: this.rootPath,

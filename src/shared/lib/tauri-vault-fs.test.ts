@@ -144,6 +144,7 @@ describe('tauri vault file-system shim', () => {
 
   it('creates directories, creates files, writes accumulated text, and removes files', async () => {
     const calls = installInvoke(({ command }) => {
+      if (command === 'vault_path_exists') return false;
       if (
         command === 'ensure_vault_directory' ||
         command === 'write_vault_text_file' ||
@@ -169,6 +170,10 @@ describe('tauri vault file-system shim', () => {
         args: { rootPath: '/vault', relativePath: 'docs' },
       },
       {
+        command: 'vault_path_exists',
+        args: { rootPath: '/vault', relativePath: 'docs/note.md', kind: 'file' },
+      },
+      {
         command: 'write_vault_text_file',
         args: { rootPath: '/vault', relativePath: 'docs/note.md', content: '' },
       },
@@ -179,6 +184,24 @@ describe('tauri vault file-system shim', () => {
       {
         command: 'remove_vault_entry',
         args: { rootPath: '/vault', relativePath: 'docs/note.md', recursive: false },
+      },
+    ]);
+  });
+
+  it('does not truncate an existing file when getFileHandle create is true', async () => {
+    const calls = installInvoke(({ command }) => {
+      if (command === 'vault_path_exists') return true;
+      throw new Error(`unexpected command: ${command}`);
+    });
+    const root = createTauriVaultHandle('/vault');
+
+    const file = await root.getFileHandle('existing.md', { create: true });
+
+    expect(file.name).toBe('existing.md');
+    expect(calls).toEqual([
+      {
+        command: 'vault_path_exists',
+        args: { rootPath: '/vault', relativePath: 'existing.md', kind: 'file' },
       },
     ]);
   });

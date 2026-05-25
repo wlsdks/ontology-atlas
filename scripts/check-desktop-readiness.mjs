@@ -554,6 +554,19 @@ if (
 }
 
 if (
+  tauriShim.includes("options.create") &&
+  tauriShim.includes("'vault_path_exists'") &&
+  tauriShim.includes("if (!exists)") &&
+  tauriShim.includes("'write_vault_text_file'")
+) {
+  pass("Tauri getFileHandle create semantics avoid truncating existing vault files");
+} else {
+  fail(
+    "src/shared/lib/tauri-vault-fs.ts must match File System Access create semantics: create missing files without truncating existing ones",
+  );
+}
+
+if (
   rootEntryPage.includes("isTauriVaultRuntime()") &&
   rootEntryPage.includes("restoreAttempted") &&
   rootEntryPage.includes("DesktopVaultRedirect") &&
