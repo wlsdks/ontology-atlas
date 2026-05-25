@@ -80,6 +80,9 @@ for a macOS prototype:
   temporary-install launch smoke, and agent handoff checks.
 - `src-tauri/tauri.conf.json` loads `../out`, runs `pnpm build` before
   packaging, and targets the macOS `.app` bundle.
+- the app bundle metadata identifies the install as a `DeveloperTool` with a
+  local-first ontology workbench description, so Finder/Gatekeeper-facing
+  metadata does not ship as an anonymous web wrapper.
 - the Tauri WebView CSP is enabled instead of left open: it allows local app
   assets, data/blob images, local styles, and the Tauri IPC endpoint required by
   native vault commands, without allowing arbitrary remote hosts.

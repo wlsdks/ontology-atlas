@@ -477,6 +477,20 @@ if (tauriConfig?.bundle?.targets?.includes("app")) {
   fail("src-tauri/tauri.conf.json must include bundle target app");
 }
 
+if (
+  tauriConfig?.bundle?.category === "DeveloperTool" &&
+  tauriConfig?.bundle?.shortDescription?.includes("Local-first codebase ontology workbench") &&
+  tauriConfig?.bundle?.longDescription?.includes("markdown ontology vault") &&
+  tauriConfig?.bundle?.longDescription?.includes("without a backend or login") &&
+  tauriConfig?.bundle?.copyright?.includes("oh-my-ontology contributors")
+) {
+  pass("Tauri bundle metadata identifies the installed app as a local-first developer tool");
+} else {
+  fail(
+    "src-tauri/tauri.conf.json must set macOS bundle category, descriptions, and copyright so the installed app is not a generic wrapper",
+  );
+}
+
 const tauriCsp = tauriConfig?.app?.security?.csp;
 if (
   tauriCsp &&

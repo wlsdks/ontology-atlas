@@ -36,6 +36,10 @@
   "bundle": {
     "active": true,
     "targets": ["app"],
+    "category": "DeveloperTool",
+    "shortDescription": "Local-first codebase ontology workbench",
+    "longDescription": "A local-first macOS app for opening a markdown ontology vault, editing codebase meaning, and handing the same graph to AI agents without a backend or login.",
+    "copyright": "Copyright © 2026 oh-my-ontology contributors",
     "macOS": {
       "minimumSystemVersion": "12.0"
     }

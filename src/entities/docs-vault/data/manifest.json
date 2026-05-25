@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T15:08:55.898Z",
+  "generatedAt": "2026-05-25T15:18:41.789Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3901,8 +3901,8 @@
         }
       ],
       "excerpt": "ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app should be a native shell around the same local markdown vault, not a backend, cloud sync layer, or second data store. Use Tauri first for the prototype. The repository now includes the first srctauri/ shell so desktop wor",
-      "wordCount": 2360,
-      "updatedAt": "2026-05-25T15:08:49.598Z",
+      "wordCount": 2388,
+      "updatedAt": "2026-05-25T15:18:34.692Z",
       "linksOut": []
     },
     {
