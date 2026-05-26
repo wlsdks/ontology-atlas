@@ -97,8 +97,11 @@ page. The picker keeps a small recent-vault list from persisted Tauri paths,
 can reopen those vaults without another Finder selection, shows the last-opened
 time for each remembered vault so repeated desktop work does not become a blind
 path list, and can remove stale recent paths when folders have moved or been
-deleted. If a restored desktop handle no longer produces a manifest, the root
-entry sends the user back to the picker instead of rendering a broken workspace. The
+deleted. If a restored folder needs macOS permission re-authorization, the same
+recent-vault list stays visible so the user can switch to another remembered
+vault instead of clearing state or reopening Finder first. If a restored desktop
+handle no longer produces a manifest, the root entry sends the user back to the
+picker instead of rendering a broken workspace. The
 `.github/workflows/release-macos.yml` workflow builds those artifacts on `v*`
 tags, fails closed through `pnpm desktop:release-secrets` unless all Apple
 Developer ID and notary secrets are present and structurally usable, and runs
@@ -158,7 +161,9 @@ review/merge readiness, required Apple release secret names, public stable
 GitHub Release state, and then runs the public DMG/checksum download verifier.
 When PR checks block the release, it includes the failing or pending check names
 plus each check's GitHub Actions details URL when available, and the exact
-`gh pr checks <number> --repo wlsdks/oh-my-ontology` command.
+`gh pr checks <number> --repo wlsdks/oh-my-ontology` command. When all PR
+checks pass but review or merge state still blocks release, it skips redundant
+check rerun advice and points directly at the PR review/merge blocker.
 Firebase Hosting remains a separate static
 website deployment checked with `pnpm desktop:verify-hosted`.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`
