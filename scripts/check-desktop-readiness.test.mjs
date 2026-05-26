@@ -178,7 +178,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop release status gate audits PR readiness, Apple secrets, public release state, and download assets without Firebase Hosting dependencies/,
+    /✓ desktop release status gate audits version alignment, PR readiness, Apple secrets, public release state, and download assets without Firebase Hosting dependencies/,
   );
   assert.match(result.stdout, /✓ desktop signing script is available for release builds/);
   assert.match(result.stdout, /✓ desktop notarization script is available for release builds/);

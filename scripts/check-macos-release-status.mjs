@@ -22,8 +22,9 @@ function printHelp() {
   console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER]
 
 Checks the public macOS release completion state in one fail-closed pass:
-pull-request merge readiness, Apple signing/notary secret names, public GitHub
-Release state, and downloadable DMG/checksum assets.
+release tag version alignment, pull-request merge readiness, Apple
+signing/notary secret names, public GitHub Release state, and downloadable
+DMG/checksum assets.
 
 This command is an operator/completion audit. It does not publish tags, set
 secrets, or edit releases.
@@ -163,6 +164,20 @@ async function main() {
     renderAndExit(options, checks);
   }
   checks.push(ok("GitHub CLI auth", "gh auth status succeeded"));
+
+  const tagAlignment = runNode([
+    "scripts/check-macos-release-tag.mjs",
+    `--tag=${options.tag}`,
+  ]);
+  if (tagAlignment.ok) {
+    checks.push(ok("Version alignment", tagAlignment.message.replace(/^\[desktop-release-tag\]\s*/, "")));
+  } else {
+    checks.push(blocked(
+      "Version alignment",
+      tagAlignment.message.replace(/^\[desktop-release-tag\]\s*/, ""),
+      `Run pnpm desktop:release-tag -- --tag=${options.tag} and update package.json, src-tauri/tauri.conf.json, and src-tauri/Cargo.toml together before tagging.`,
+    ));
+  }
 
   if (options.pr) {
     const pr = runGh([

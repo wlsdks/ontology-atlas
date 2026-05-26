@@ -208,8 +208,9 @@ split tests, native bridge tests, runtime doctor, `cli:mcp-verify` against
 DMG mount/checksum smoke, and temporary install launch smoke;
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the macOS app
 completion audit after PR/release work: it accepts an already merged PR or
-checks PR review/merge readiness, required Apple signing/notary secret names,
-public stable GitHub Release state, and public DMG/checksum download
+checks tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
+required Apple signing/notary secret names, public stable GitHub Release state,
+and public DMG/checksum download
 verification in one fail-closed pass. Firebase Hosting is not part of the macOS
 app release gate; verify the separate website with `pnpm desktop:verify-hosted`;
 the hosted download page keeps macOS app release blockers aligned with
@@ -342,7 +343,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
 | `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, and clean same-tag Release slot |
-| `pnpm desktop:release-status` | macOS app completion audit for PR review/merge readiness, Apple release secret names, public stable Release state, and public DMG/checksum download verification |
+| `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, Apple release secret names, public stable Release state, and public DMG/checksum download verification |
 | `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available |
 | `pnpm desktop:verify-dmg` | Mount and checksum smoke for the generated macOS DMG before GitHub Release upload |

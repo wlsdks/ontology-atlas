@@ -273,9 +273,10 @@ handoff against `docs/ontology`, build, route smoke, DMG verification, and
 temporary install smoke before credentials are used. The
 post-release completion audit is
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>`: it does not publish
-anything, but it fails closed until PR review/merge readiness, Apple release
-secret names, public stable GitHub Release state, and public DMG/checksum
-download verification all pass. Firebase Hosting remains a separate website
+anything, but it fails closed until tag/package/Tauri/Cargo version alignment,
+PR review/merge readiness, Apple release secret names, public stable GitHub
+Release state, and public DMG/checksum download verification all pass. Firebase
+Hosting remains a separate website
 deployment check, not a macOS app release dependency. This is
 evidence for goal completion, not a substitute for publishing signed/notarized
 release assets.

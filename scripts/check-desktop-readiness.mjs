@@ -796,15 +796,16 @@ if (
   releaseStatusScript.includes('"pr"') &&
   releaseStatusScript.includes('"secret"') &&
   releaseStatusScript.includes('"release"') &&
+  releaseStatusScript.includes("check-macos-release-tag.mjs") &&
   releaseStatusScript.includes("check-macos-download-release.mjs") &&
   releaseStatusScript.includes("Firebase Hosting is intentionally excluded") &&
   releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY") &&
   !releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY")
 ) {
-  pass("desktop release status gate audits PR readiness, Apple secrets, public release state, and download assets without Firebase Hosting dependencies");
+  pass("desktop release status gate audits version alignment, PR readiness, Apple secrets, public release state, and download assets without Firebase Hosting dependencies");
 } else {
   fail(
-    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit PR readiness, Apple secret names, public release state, and public download assets without requiring Firebase Hosting",
+    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit version alignment, PR readiness, Apple secret names, public release state, and public download assets without requiring Firebase Hosting",
   );
 }
 

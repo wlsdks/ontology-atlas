@@ -316,8 +316,9 @@ the PR first so GitHub sees `.github/workflows/release-macos.yml` on the default
 branch, then configure the Apple secrets.
 Use `pnpm desktop:release-status -- --pr=274 --tag=v0.1.0` as the completion
 audit before calling the macOS app goal done: it accepts an already merged PR or
-checks PR review/merge readiness, required Apple signing/notary secret names,
-public stable GitHub Release state, then delegates to the public DMG/checksum
+checks tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
+required Apple signing/notary secret names, public stable GitHub Release state,
+then delegates to the public DMG/checksum
 download verifier. Firebase Hosting is not part of the macOS app release gate;
 run `pnpm desktop:verify-hosted` after the separate website deploy.
 When it reports missing secrets, set each value through `gh secret set`, for

@@ -110,6 +110,7 @@ test("desktop release status reports current completion blockers together", () =
       const result = runStatus(fakeGhPath);
 
       assert.equal(result.status, 1);
+      assert.match(result.stdout, /✓ Version alignment: v0\.1\.0 matches package, Tauri, and Cargo versions/);
       assert.match(result.stdout, /✗ Pull request: PR #274 is not merge-ready/);
       assert.match(result.stdout, /review=REVIEW_REQUIRED/);
       assert.match(result.stdout, /merge=BLOCKED/);
@@ -128,6 +129,7 @@ test("desktop release status passes when PR, secrets, and stable release are rea
     const result = runStatus(fakeGhPath);
 
     assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /✓ Version alignment: v0\.1\.0 matches package, Tauri, and Cargo versions/);
     assert.match(result.stdout, /✓ Pull request: PR #274 is merge-ready/);
     assert.match(result.stdout, /✓ Apple release secrets: all required Apple signing\/notary secret names exist/);
     assert.match(result.stdout, /✓ GitHub Release: v0\.1\.0 is public and stable/);
@@ -176,6 +178,17 @@ test("desktop release status accepts an already merged PR", () => {
   );
 });
 
+test("desktop release status blocks version-mismatched tags before completion", () => {
+  withFakeGh({}, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath, ["--tag=v9.9.9", "--pr=274"]);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /✗ Version alignment: release tag v9\.9\.9 does not match macOS app versions/);
+    assert.match(result.stdout, /next: Run pnpm desktop:release-tag -- --tag=v9\.9\.9/);
+    assert.match(result.stderr, /blocked: 1 release requirement/);
+  });
+});
+
 test("desktop release status help describes the completion audit", () => {
   const stdout = execFileSync(process.execPath, ["scripts/check-macos-release-status.mjs", "--help"], {
     cwd: process.cwd(),
@@ -183,7 +196,8 @@ test("desktop release status help describes the completion audit", () => {
   });
 
   assert.match(stdout, /release completion state/);
-  assert.match(stdout, /downloadable DMG\/checksum\s+assets/);
+  assert.match(stdout, /release tag version alignment/);
+  assert.match(stdout, /downloadable\s+DMG\/checksum assets/);
   assert.match(stdout, /Firebase Hosting is intentionally excluded/);
   assert.doesNotMatch(stdout, /Hosted website/);
 });
