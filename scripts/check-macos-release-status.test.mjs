@@ -112,6 +112,7 @@ test("desktop release status reports current completion blockers together", () =
         },
         { name: "lint", status: "COMPLETED", conclusion: "SUCCESS" },
         { name: "build", status: "IN_PROGRESS", conclusion: null },
+        { name: "deploy", status: "QUEUED", conclusion: "" },
       ],
       secretNames: [],
       releaseMissing: true,
@@ -124,10 +125,10 @@ test("desktop release status reports current completion blockers together", () =
       assert.match(result.stdout, /✗ Pull request: PR #274 is not merge-ready/);
       assert.match(result.stdout, /review=REVIEW_REQUIRED/);
       assert.match(result.stdout, /merge=BLOCKED/);
-      assert.match(result.stdout, /1\/3 checks successful/);
+      assert.match(result.stdout, /1\/4 checks successful/);
       assert.match(
         result.stdout,
-        /blocked checks: desktop release preflight=FAILURE .*build=IN_PROGRESS/,
+        /blocked checks: desktop release preflight=FAILURE .*build=IN_PROGRESS, deploy=QUEUED/,
       );
       assert.match(result.stdout, /actions\/runs\/1\/job\/2/);
       assert.match(result.stdout, /next: Run gh pr checks 274 --repo wlsdks\/oh-my-ontology/);

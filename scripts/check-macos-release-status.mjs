@@ -151,7 +151,7 @@ function prCheckSummary(pr) {
 
 function prCheckLabel(check) {
   const name = check.name ?? check.context ?? check.workflowName ?? check.__typename ?? "unnamed check";
-  const state = check.conclusion ?? check.status ?? "unknown";
+  const state = check.conclusion || check.status || "unknown";
   const detail = typeof check.detailsUrl === "string" && check.detailsUrl
     ? ` (${check.detailsUrl})`
     : "";
