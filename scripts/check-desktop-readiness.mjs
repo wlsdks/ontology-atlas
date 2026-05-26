@@ -248,6 +248,17 @@ if (
 }
 
 if (
+  pkg.scripts?.["test:desktop:runtime"] ===
+  "pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts src/views/root-entry/ui/RootEntryPage.test.tsx src/widgets/operations-nav/ui/OperationsNav.test.tsx"
+) {
+  pass("desktop runtime split tests cover local intent, first-run routing, and hosted download routing");
+} else {
+  fail(
+    "package.json must expose test:desktop:runtime for the hosted-vs-installed runtime split: DocsVault persistence, RootEntryPage first-run routing, and OperationsNav hosted download routing",
+  );
+}
+
+if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-github.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-source.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-status.test.mjs") &&
@@ -412,7 +423,7 @@ if (
 
 if (
   pkg.scripts?.["desktop:release-preflight"] ===
-  "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:verify-app && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
+  "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:verify-app && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
 ) {
   pass("desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, build, route smoke, DMG, and install smoke");
 } else {
@@ -680,6 +691,7 @@ if (
   /prerelease:\s*false/.test(releaseWorkflow) &&
   /pnpm docs-vault:check/.test(releaseWorkflow) &&
   /pnpm test:desktop:check/.test(releaseWorkflow) &&
+  /pnpm test:desktop:runtime/.test(releaseWorkflow) &&
   /pnpm test:desktop:bridge/.test(releaseWorkflow) &&
   /pnpm build/.test(releaseWorkflow) &&
   /pnpm desktop:smoke/.test(releaseWorkflow) &&

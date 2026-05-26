@@ -55,6 +55,7 @@ Run:
 pnpm desktop:check
 pnpm desktop:doctor
 pnpm build && pnpm desktop:smoke
+pnpm test:desktop:runtime
 pnpm test:desktop:bridge
 pnpm desktop:build
 pnpm desktop:verify-app
@@ -264,18 +265,20 @@ window, and cleans up the temp install after detaching the image.
 3. Build `out/` with `pnpm build`.
 4. Run `pnpm desktop:smoke` to prove the packaged static payload includes the
    desktop routes and offline docs.
-5. Run `pnpm test:desktop:bridge` to prove the WebView handle shim and Rust path
+5. Run `pnpm test:desktop:runtime` to prove hosted `/docs?intent=local` stays
+   desktop-only while installed-app first-run routing opens the local vault path.
+6. Run `pnpm test:desktop:bridge` to prove the WebView handle shim and Rust path
    guard still match the installed-app vault bridge.
-6. Launch the macOS app shell with `pnpm desktop:dev`, open a vault folder from
+7. Launch the macOS app shell with `pnpm desktop:dev`, open a vault folder from
    the native picker, and confirm `/docs`, `/ontology`, `/topology`, and
    `/ontology/edit` read the same local markdown files. Build the unsigned local
    `.app` and `.dmg` prototypes with `pnpm desktop:build`.
-7. Launch-smoke the built app with `pnpm desktop:verify-app`.
-8. Verify the generated DMG with `pnpm desktop:verify-dmg`.
-9. Copy-and-launch smoke the DMG app with `pnpm desktop:verify-install`.
-10. Open the dogfood vault and smoke `/docs`, `/ontology`, `/topology`, and
+8. Launch-smoke the built app with `pnpm desktop:verify-app`.
+9. Verify the generated DMG with `pnpm desktop:verify-dmg`.
+10. Copy-and-launch smoke the DMG app with `pnpm desktop:verify-install`.
+11. Open the dogfood vault and smoke `/docs`, `/ontology`, `/topology`, and
    `/ontology/edit`.
-11. Run `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` after the app
+12. Run `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000` after the app
    smoke so the desktop path still proves Claude Code / Codex handoff readiness.
 
 ## Release Signing and Notarization

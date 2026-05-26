@@ -47,6 +47,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop runtime split tests cover local intent, first-run routing, and hosted download routing/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop checker tests cover the GitHub release operator, source, and completion gates/,
   );
   assert.match(

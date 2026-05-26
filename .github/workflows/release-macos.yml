@@ -68,6 +68,9 @@ jobs:
       - name: Desktop checker tests
         run: pnpm test:desktop:check
 
+      - name: Desktop runtime split tests
+        run: pnpm test:desktop:runtime
+
       - name: Native vault bridge tests
         run: pnpm test:desktop:bridge
 

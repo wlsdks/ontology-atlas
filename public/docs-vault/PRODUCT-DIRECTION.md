@@ -267,9 +267,10 @@ static promo/download website and should be followed by `pnpm
 desktop:verify-hosted` when the public `/ko/download/` route is expected to be
 live.
 `pnpm desktop:release-preflight`
-is the local pre-tag command for readiness, docs-vault freshness, desktop tests,
-runtime doctor, CLI/MCP handoff against `docs/ontology`, build, route smoke,
-DMG verification, and temporary install smoke before credentials are used. The
+is the local pre-tag command for readiness, docs-vault freshness, desktop
+checker tests, runtime split tests, native bridge tests, runtime doctor, CLI/MCP
+handoff against `docs/ontology`, build, route smoke, DMG verification, and
+temporary install smoke before credentials are used. The
 post-release completion audit is
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>`: it does not publish
 anything, but it fails closed until PR review/merge readiness, Apple release

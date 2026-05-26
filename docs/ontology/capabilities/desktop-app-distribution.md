@@ -163,10 +163,10 @@ It is intentionally read-only and fail-closed, so the macOS app work is not
 treated as complete while review, secrets, release publication, public asset
 verification, or hosted-site deployment are still blocked.
 `pnpm desktop:release-preflight` is the local pre-tag gate for readiness,
-docs-vault freshness, desktop tests, native bridge tests, runtime doctor,
-`cli:mcp-verify docs/ontology --timeout-ms 15000`, build, route smoke, DMG
-verification, and temporary install launch smoke before signing credentials
-enter the path.
+docs-vault freshness, desktop checker tests, runtime split tests, native bridge
+tests, runtime doctor, `cli:mcp-verify docs/ontology --timeout-ms 15000`, build,
+route smoke, DMG verification, and temporary install launch smoke before signing
+credentials enter the path.
 The hosted web surface now moves toward product introduction and macOS
 distribution: the landing/download primary CTAs open the GitHub Releases page
 instead of depending on `/releases/latest` before a public macOS DMG exists. The

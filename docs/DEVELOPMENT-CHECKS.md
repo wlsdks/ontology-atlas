@@ -27,7 +27,7 @@ For user-facing UI changes, add the relevant Playwright route check.
 | Static deploy safety | `pnpm build` | `pnpm bundle:check` |
 | Firebase Hosting deploy | `pnpm firebase:deploy-check` | `pnpm desktop:verify-hosted` after deploy |
 | Static dogfood manifest | `pnpm docs-vault:check` | `pnpm test:docs-vault` |
-| macOS desktop readiness | `pnpm desktop:check` | `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:bridge` |
+| macOS desktop readiness | `pnpm desktop:check` | `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:runtime` / `pnpm test:desktop:bridge` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
 | CLI argument parsing | `pnpm test:cli:args` | `pnpm test:cli:lib` |
 | MCP core units | `pnpm test:mcp:unit` | `pnpm integration:mcp:readme` |
@@ -197,9 +197,9 @@ terminates it; `pnpm desktop:verify-install` mounts the DMG, copies the app to a
 temporary install folder, launch-smokes that copied app from its own executable
 directory, and removes the temp install;
 `pnpm desktop:release-preflight` is the local pre-tag operator shortcut that
-runs desktop readiness, docs-vault freshness, desktop checker tests, native
-bridge tests, runtime doctor, `cli:mcp-verify` against `docs/ontology`, static
-build, packaged-route smoke, app/DMG build, app launch smoke,
+runs desktop readiness, docs-vault freshness, desktop checker tests, runtime
+split tests, native bridge tests, runtime doctor, `cli:mcp-verify` against
+`docs/ontology`, static build, packaged-route smoke, app/DMG build, app launch smoke,
 DMG mount/checksum smoke, and temporary install launch smoke;
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the macOS app
 completion audit after PR/release work: it accepts an already merged PR or
@@ -327,7 +327,8 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:build:app` | Build the Tauri `.app` before optional release signing or local DMG packaging |
 | `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes, then terminate it |
 | `pnpm desktop:verify-install` | Mount the DMG, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up |
-| `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, bridge tests, runtime doctor, CLI/MCP handoff, build, route smoke, DMG, and install smoke |
+| `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, build, route smoke, DMG, and install smoke |
+| `pnpm test:desktop:runtime` | Hosted-vs-installed runtime split tests for `/docs?intent=local`, first-run desktop routing, and hosted download routing |
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
 | `pnpm desktop:release-secrets` | Fail closed before tag release when any Apple signing or notarization secret is missing, blank, or structurally invalid |
 | `pnpm desktop:release-source` | Fail closed before release signing when the tag commit is not the current default-branch head |
