@@ -328,6 +328,8 @@ async function main() {
 function renderAndExit(options, checks) {
   const blockers = checks.filter((check) => check.status === "blocked");
   const payload = {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
     repo: options.repo,
     tag: options.tag,
     pr: options.pr || null,

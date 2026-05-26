@@ -329,7 +329,8 @@ plus `gh pr checks <number> --repo wlsdks/oh-my-ontology` as the next action.
 Use `--json` for automation that needs `ready`, `blockerCount`, and per-check
 `next` actions without scraping terminal text. Use `--json-file=<path>` when
 the command is wrapped by a package runner and the automation needs a clean JSON
-artifact on disk.
+artifact on disk. The snapshot includes `schemaVersion` and `generatedAt` for
+stored release evidence.
 Firebase Hosting is not part of the macOS app release gate;
 run `pnpm desktop:verify-hosted` after the separate website deploy.
 When it reports missing secrets, set each value through `gh secret set`, for

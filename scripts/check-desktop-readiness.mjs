@@ -824,6 +824,8 @@ if (
   releaseStatusScript.includes("check-macos-download-release.mjs") &&
   releaseStatusScript.includes('"--json"') &&
   releaseStatusScript.includes('"--json-file="') &&
+  releaseStatusScript.includes("schemaVersion") &&
+  releaseStatusScript.includes("generatedAt") &&
   releaseStatusScript.includes("blockerCount") &&
   releaseStatusScript.includes("fs.writeFileSync") &&
   releaseStatusScript.includes("Firebase Hosting is intentionally excluded") &&

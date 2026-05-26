@@ -218,7 +218,9 @@ command, so operators do not have to infer the blocker from a count like
 `0/1 checks successful`. Add `--json` when a goal runner, CI wrapper, or release
 dashboard needs `ready`, `blockerCount`, and per-check `next` actions without
 parsing human text; add `--json-file=<path>` when the command is invoked through
-a package runner that may add lifecycle text around stdout. Firebase Hosting is not part of the macOS
+a package runner that may add lifecycle text around stdout. The JSON snapshot
+includes `schemaVersion` and `generatedAt` so stored release evidence can be
+versioned and ordered. Firebase Hosting is not part of the macOS
 app release gate; verify the separate website with `pnpm desktop:verify-hosted`;
 the hosted download page keeps macOS app release blockers aligned with
 review/signing/GitHub Release requirements while naming Firebase Hosting only

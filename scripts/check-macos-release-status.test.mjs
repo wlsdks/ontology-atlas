@@ -111,6 +111,8 @@ test("desktop release status emits machine-readable blockers for automation", ()
 
       assert.equal(result.status, 1);
       const payload = JSON.parse(result.stdout);
+      assert.equal(payload.schemaVersion, 1);
+      assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
       assert.equal(payload.repo, "wlsdks/oh-my-ontology");
       assert.equal(payload.tag, "v0.1.0");
       assert.equal(payload.pr, "274");
@@ -151,6 +153,8 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
         assert.match(result.stdout, /\[desktop-release-status\] wlsdks\/oh-my-ontology v0\.1\.0/);
         assert.ok(existsSync(jsonPath));
         const payload = JSON.parse(readFileSync(jsonPath, "utf8"));
+        assert.equal(payload.schemaVersion, 1);
+        assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
         assert.equal(payload.ready, false);
         assert.equal(payload.blockerCount, 3);
         assert.deepEqual(
@@ -247,6 +251,8 @@ test("desktop release status JSON reports ready when all release gates pass", ()
 
     assert.equal(result.status, 0, result.stderr);
     const payload = JSON.parse(result.stdout);
+    assert.equal(payload.schemaVersion, 1);
+    assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
     assert.equal(payload.ready, true);
     assert.equal(payload.blockerCount, 0);
     assert.deepEqual(
