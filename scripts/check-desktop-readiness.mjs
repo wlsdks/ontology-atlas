@@ -420,13 +420,15 @@ if (
   downloadReleaseVerifier.includes("REQUIRED_MACOS_ARCHES = [\"aarch64\", \"x64\"]") &&
   downloadReleaseVerifier.includes("Expected oh-my-ontology_<version>_<aarch64|x64>.dmg") &&
   !downloadReleaseVerifier.includes("aarch64|x64|universal") &&
+  downloadReleaseVerifier.includes("duplicate macOS DMG assets") &&
+  downloadReleaseVerifier.includes("Keep exactly one DMG per architecture") &&
   downloadReleaseVerifier.includes("requestSha256") &&
   downloadReleaseVerifier.includes("does not match checksum")
 ) {
-  pass("desktop download verifier requires explicit Apple Silicon and Intel DMGs with checksum byte verification");
+  pass("desktop download verifier requires explicit one-per-architecture Apple Silicon and Intel DMGs with checksum byte verification");
 } else {
   fail(
-    "scripts/check-macos-download-release.mjs must require explicit aarch64 and x64 oh-my-ontology DMG assets, reject unsupported names such as universal/arm64/Context Atlas .dmg files, verify DMG filename versions match the release tag, verify downloaded bytes match checksums, and let --allow-draft find tagged draft pre-publish assets",
+    "scripts/check-macos-download-release.mjs must require explicit one-per-architecture aarch64 and x64 oh-my-ontology DMG assets, reject unsupported names such as universal/arm64/Context Atlas .dmg files, reject duplicate architecture DMGs, verify DMG filename versions match the release tag, verify downloaded bytes match checksums, and let --allow-draft find tagged draft pre-publish assets",
   );
 }
 

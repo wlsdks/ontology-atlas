@@ -12,10 +12,10 @@ function printHelp() {
   console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-prerelease] [--allow-draft]
 
 Verifies that a public GitHub Release exposes reachable Apple Silicon
-(aarch64) and Intel (x64) macOS DMGs with matching .sha256 checksums. Draft
-releases are never accepted because the hosted landing page cannot serve them
-as a real user download unless --allow-draft is explicitly passed for the
-pre-publish CI gate.
+(aarch64) and Intel (x64) macOS DMGs with exactly one DMG per architecture and
+matching .sha256 checksums. Draft releases are never accepted because the
+hosted landing page cannot serve them as a real user download unless
+--allow-draft is explicitly passed for the pre-publish CI gate.
 `);
 }
 

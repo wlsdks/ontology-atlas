@@ -195,6 +195,7 @@ test("download release verifier help describes the two architecture contract", a
   assert.match(stdout, /aarch64/);
   assert.match(stdout, /Intel/);
   assert.match(stdout, /x64/);
+  assert.match(stdout, /exactly one DMG per architecture/);
   assert.match(stdout, /matching \.sha256 checksums/);
 });
 
