@@ -78,6 +78,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
                 <ReleaseStatusItem label={t('releaseStatusPr')} />
                 <ReleaseStatusItem label={t('releaseStatusSecrets')} />
                 <ReleaseStatusItem label={t('releaseStatusRelease')} />
+                <ReleaseStatusItem label={t('releaseStatusHosted')} />
               </ul>
             </div>
           ) : null}

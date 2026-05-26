@@ -59,6 +59,9 @@ describe('DownloadPage', () => {
     expect(
       screen.getByText(/v0\.1\.0 GitHub Release is the source of truth for verified Apple Silicon and Intel DMGs/i),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Firebase Hosting must deploy the promo\/download site so \/ko\/download\/ is live after release/i),
+    ).toBeInTheDocument();
     expect(screen.getByText(/hosted site does not open or edit vault folders/i)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
   });
@@ -69,6 +72,9 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/Before the first DMG appears/i)).not.toBeInTheDocument();
     expect(
       screen.queryByText(/PR #274 must be reviewed and merged before v0\.1\.0 can ship/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Firebase Hosting must deploy the promo\/download site/i),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Open macOS releases/i })).toHaveAttribute(
       'href',

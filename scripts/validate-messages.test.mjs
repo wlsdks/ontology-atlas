@@ -54,6 +54,8 @@ describe('i18n message catalog', () => {
     assert.match(en.download.releaseStatusSecrets, /before release/);
     assert.match(en.download.releaseStatusRelease, /v0\.1\.0 GitHub Release/);
     assert.match(en.download.releaseStatusRelease, /source of truth/);
+    assert.match(en.download.releaseStatusHosted, /Firebase Hosting must deploy/);
+    assert.match(en.download.releaseStatusHosted, /\/ko\/download\//);
     assert.match(ko.download.releaseAvailabilityNote, /macOS DMG 가 아직 보이지 않으면/);
     assert.match(ko.download.releaseAvailabilityNote, /PR review, Apple signing, Firebase Hosting gate/);
     assert.match(ko.download.releaseStatusTitle, /첫 DMG 가 보이기 전 체크리스트/);
@@ -64,6 +66,8 @@ describe('i18n message catalog', () => {
     assert.match(ko.download.releaseStatusSecrets, /릴리스 전/);
     assert.match(ko.download.releaseStatusRelease, /v0\.1\.0 GitHub Release/);
     assert.match(ko.download.releaseStatusRelease, /진실원/);
+    assert.match(ko.download.releaseStatusHosted, /Firebase Hosting/);
+    assert.match(ko.download.releaseStatusHosted, /\/ko\/download\//);
     assert.match(en.download.proofSigned, /Release gate requires/);
     assert.match(en.download.proofNotarized, /Release gate requires/);
     assert.match(en.download.proofChecksum, /checksums are verified/);

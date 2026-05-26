@@ -509,6 +509,7 @@ if (
   downloadPage.includes("releaseStatusPr") &&
   downloadPage.includes("releaseStatusSecrets") &&
   downloadPage.includes("releaseStatusRelease") &&
+  downloadPage.includes("releaseStatusHosted") &&
   downloadPage.includes("showFirstReleaseChecklist") &&
   downloadRoute.includes("NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING") &&
   downloadRoute.includes("!== '0'") &&
@@ -525,6 +526,10 @@ if (
   /before release/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
   /v0\.1\.0 GitHub Release/.test(enMessages.download?.releaseStatusRelease ?? "") &&
   /source of truth/.test(enMessages.download?.releaseStatusRelease ?? "") &&
+  /Firebase Hosting must deploy the promo\/download site/.test(
+    enMessages.download?.releaseStatusHosted ?? "",
+  ) &&
+  /\/ko\/download\//.test(enMessages.download?.releaseStatusHosted ?? "") &&
   /첫 public release 가 PR review, Apple signing, Firebase Hosting gate/.test(
     koMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
@@ -535,12 +540,14 @@ if (
   /Firebase Hosting service account/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
   /릴리스 전/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
   /v0\.1\.0 GitHub Release/.test(koMessages.download?.releaseStatusRelease ?? "") &&
-  /진실원/.test(koMessages.download?.releaseStatusRelease ?? "")
+  /진실원/.test(koMessages.download?.releaseStatusRelease ?? "") &&
+  /Firebase Hosting/.test(koMessages.download?.releaseStatusHosted ?? "") &&
+  /\/ko\/download\//.test(koMessages.download?.releaseStatusHosted ?? "")
 ) {
   pass("hosted download page names first-release gates and can hide the checklist after verified DMGs publish");
 } else {
   fail(
-    "hosted download copy must condition first-release PR review, Apple signing, Firebase Hosting secret, and v0.1.0 Release gates, and NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
+    "hosted download copy must condition first-release PR review, Apple signing, Firebase Hosting secret, v0.1.0 Release, and hosted /ko/download/ deploy gates, and NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
   );
 }
 

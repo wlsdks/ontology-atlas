@@ -202,8 +202,8 @@ Apple signing/notary and Firebase Hosting deploy secret names, public stable Git
 public DMG/checksum download verification plus deployed hosted landing/download
 surface verification in one fail-closed pass;
 the hosted download page keeps its first-release availability copy aligned with
-those same review/signing/Firebase Hosting blockers instead of sending users
-into the browser workbench;
+those same review/signing/Firebase Hosting/release/hosted-route blockers
+instead of sending users into the browser workbench;
 `pnpm desktop:dev` launches the Tauri shell for local prototype work, and
 `pnpm desktop:build:app` targets the macOS `.app`; release builds must first
 pass `pnpm desktop:release-secrets`, then run `pnpm desktop:sign` with a

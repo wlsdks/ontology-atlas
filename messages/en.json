@@ -114,6 +114,7 @@
     "releaseStatusPr": "PR #274 must be reviewed and merged before v0.1.0 can ship.",
     "releaseStatusSecrets": "Apple Developer ID signing/notarization secrets and the Firebase Hosting service account must be configured before release.",
     "releaseStatusRelease": "The v0.1.0 GitHub Release is the source of truth for verified Apple Silicon and Intel DMGs.",
+    "releaseStatusHosted": "Firebase Hosting must deploy the promo/download site so /ko/download/ is live after release.",
     "proofSigned": "Release gate requires Developer ID signing",
     "proofNotarized": "Release gate requires Apple notarization",
     "proofChecksum": "Apple Silicon + Intel checksums are verified",

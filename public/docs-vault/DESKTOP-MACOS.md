@@ -179,9 +179,10 @@ for a macOS prototype:
   secondary CTA opens the source repository instead of duplicating the release
   action or steering new users into the web workbench. The download page also
   states that missing first-release DMGs mean the public release is still
-  waiting on PR review, Apple signing, and Firebase Hosting gates. After
-  verified public DMGs are published, rebuild the hosted site with
-  `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` to hide that pre-release
+  waiting on PR review, Apple signing, Firebase Hosting service-account, GitHub
+  Release, and hosted `/ko/download/` deployment gates. After verified public
+  DMGs are published and the hosted download route is live, rebuild the hosted
+  site with `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` to hide that pre-release
   checklist without a code change.
 - `scripts/check-hosted-download-surface.mjs` verifies the deployed hosted
   website after Firebase Hosting deploy: `/ko/` must be promo/download-first,
