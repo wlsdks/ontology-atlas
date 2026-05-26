@@ -47,7 +47,12 @@ For production Firebase Hosting, `pnpm firebase:deploy-check` is the local
 deploy preflight: it requires `.env.prod`, verifies `.firebaserc` matches
 `FIREBASE_PROJECT_ID`, keeps `firebase.json` static Hosting-only, and confirms
 `.env.prod` is excluded from both git and Firebase deploy packaging before
-`firebase deploy --only hosting`.
+`firebase deploy --only hosting`. The GitHub maintainer path is
+`.github/workflows/deploy-hosting.yml`: after a public macOS Release is
+published, it writes `.env.prod` from repository variables, authenticates with
+`FIREBASE_SERVICE_ACCOUNT_JSON`, deploys only Hosting with
+`firebase-tools@15.17.0`, and runs `pnpm desktop:verify-hosted` so the hosted
+download route cannot stay 404 after a successful release.
 
 ## Vault Checks
 
@@ -150,7 +155,8 @@ The macOS desktop readiness gate is scaffold-aware and local-first: when
 `scripts/sign-macos-app.mjs`,
 `scripts/notarize-macos-dmg.mjs`,
 `src/shared/lib/tauri-vault-fs.ts`, `docs/DESKTOP-MACOS.md`, `src-tauri/**`,
-`package.json`, `.github/workflows/release-macos.yml`, or `next.config.ts`
+`package.json`, `.github/workflows/release-macos.yml`,
+`.github/workflows/deploy-hosting.yml`, or `next.config.ts`
 changes, run `pnpm desktop:check`; checker implementation changes also route to direct
 `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` and doctor
 implementation changes route to

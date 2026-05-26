@@ -73,6 +73,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ Firebase Hosting workflow deploys the promo\/download site after public macOS releases and verifies the live download route/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop download verifier rejects stale DMG versions, unsupported DMG names, and checksum mismatches, including tagged draft pre-publish assets/,
   );
   assert.match(

@@ -1,0 +1,81 @@
+name: Deploy Firebase Hosting
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: firebase-hosting-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || 'oh-my-ontology' }}
+  FIREBASE_HOSTING_URL: ${{ vars.FIREBASE_HOSTING_URL || 'https://oh-my-ontology.web.app' }}
+  FIREBASE_HOSTING_ALT_URL: ${{ vars.FIREBASE_HOSTING_ALT_URL || 'https://oh-my-ontology.firebaseapp.com' }}
+
+jobs:
+  deploy-hosting:
+    name: Deploy static promo/download site
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Write Firebase deploy env
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::FIREBASE_SERVICE_ACCOUNT_JSON secret is required for Firebase Hosting deploy"
+            exit 1
+          fi
+
+          cat > .env.prod <<EOF
+          FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+          FIREBASE_HOSTING_URL=${FIREBASE_HOSTING_URL}
+          FIREBASE_HOSTING_ALT_URL=${FIREBASE_HOSTING_ALT_URL}
+          EOF
+
+          SERVICE_ACCOUNT_PATH="$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$SERVICE_ACCOUNT_PATH"
+          node -e "JSON.parse(require('node:fs').readFileSync(process.argv[1], 'utf8'))" "$SERVICE_ACCOUNT_PATH"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$SERVICE_ACCOUNT_PATH" >> "$GITHUB_ENV"
+
+      - name: Firebase deploy preflight
+        run: pnpm firebase:deploy-check
+
+      - name: Docs and type gates
+        run: |
+          pnpm test:mcp:docs
+          pnpm exec tsc --noEmit
+
+      - name: Build static site
+        run: |
+          pnpm build
+          pnpm bundle:check
+
+      - name: Deploy Hosting
+        run: npx --yes firebase-tools@15.17.0 deploy --only hosting --project "$FIREBASE_PROJECT_ID" --non-interactive
+
+      - name: Verify hosted download surface
+        run: pnpm desktop:verify-hosted -- --base-url="$FIREBASE_HOSTING_URL"

@@ -37,6 +37,13 @@ fails if `.env.prod` is missing, `.firebaserc` points at another project,
 Firebase config drifts away from static Hosting, or `.env.prod` could be
 committed/uploaded.
 
+The repository also includes `.github/workflows/deploy-hosting.yml` for the
+maintainer path: when the macOS GitHub Release is published, the workflow writes
+`.env.prod` from GitHub repository variables, authenticates with the
+`FIREBASE_SERVICE_ACCOUNT_JSON` secret, runs the same static deploy gates,
+deploys only Firebase Hosting with `firebase-tools@15.17.0`, then runs
+`pnpm desktop:verify-hosted` against the configured public URL.
+
 Expected public URLs after deploy:
 
 - `https://oh-my-ontology.web.app`

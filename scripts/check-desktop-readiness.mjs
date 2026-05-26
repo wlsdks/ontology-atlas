@@ -82,6 +82,7 @@ const localFsHandleStore = readText("src/entities/local-fs-handle/api/store.ts")
 const localVaultHook = readText("src/features/docs-vault-local/model/use-local-vault.ts");
 const ciWorkflow = readText(".github/workflows/ci.yml");
 const releaseWorkflow = readText(".github/workflows/release-macos.yml");
+const hostingDeployWorkflow = readText(".github/workflows/deploy-hosting.yml");
 const downloadReleaseVerifier = readText("scripts/check-macos-download-release.mjs");
 const tauriConfigPath = path.join(root, "src-tauri", "tauri.conf.json");
 const tauriCapabilityPath = path.join(root, "src-tauri", "capabilities", "default.json");
@@ -304,6 +305,25 @@ if (
 } else {
   fail(
     "package.json must expose firebase:deploy-check, test:desktop:check must cover it, and scripts/check-firebase-hosting-deploy-env.mjs must validate .env.prod, project alignment, static-only Hosting config, and credential ignores",
+  );
+}
+
+if (
+  /release:\s*\n\s+types:\s*\[published\]/.test(hostingDeployWorkflow) &&
+  /workflow_dispatch:/.test(hostingDeployWorkflow) &&
+  /FIREBASE_SERVICE_ACCOUNT_JSON/.test(hostingDeployWorkflow) &&
+  /FIREBASE_PROJECT_ID:\s*\$\{\{\s*vars\.FIREBASE_PROJECT_ID/.test(hostingDeployWorkflow) &&
+  /pnpm firebase:deploy-check/.test(hostingDeployWorkflow) &&
+  /pnpm test:mcp:docs/.test(hostingDeployWorkflow) &&
+  /pnpm build/.test(hostingDeployWorkflow) &&
+  /pnpm bundle:check/.test(hostingDeployWorkflow) &&
+  /firebase-tools@15\.17\.0 deploy --only hosting/.test(hostingDeployWorkflow) &&
+  /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/.test(hostingDeployWorkflow)
+) {
+  pass("Firebase Hosting workflow deploys the promo/download site after public macOS releases and verifies the live download route");
+} else {
+  fail(
+    ".github/workflows/deploy-hosting.yml must deploy Hosting on release publication and manual dispatch, require FIREBASE_SERVICE_ACCOUNT_JSON, run the static deploy gates, deploy only Hosting, and verify the hosted download route",
   );
 }
 

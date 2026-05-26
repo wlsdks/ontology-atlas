@@ -469,7 +469,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /`playwright\.config\.ts` changes route to the local-vault picker spec first/);
     assert.match(checksDoc, /`postcss\.config\.mjs` and `app\/globals\.css` route to the overflow sweep spec/);
     assert.match(checksDoc, /when `scripts\/check-bundle\.mjs`\s+changes, run `pnpm build` first and then `pnpm bundle:check`/);
-    assert.match(checksDoc, /The macOS desktop readiness gate is scaffold-aware and local-first: when\s+`scripts\/check-desktop-readiness\.mjs`, `scripts\/desktop-doctor\.mjs`,\s+`scripts\/desktop-smoke\.mjs`, `scripts\/package-macos-dmg\.mjs`,\s+`scripts\/verify-macos-app-launch\.mjs`, `scripts\/verify-macos-dmg\.mjs`,\s+`scripts\/verify-macos-install-smoke\.mjs`,\s+`scripts\/check-macos-download-release\.mjs`,\s+`scripts\/check-macos-release-secrets\.mjs`, `scripts\/check-macos-release-source\.mjs`,\s+`scripts\/check-macos-release-tag\.mjs`,\s+`scripts\/check-macos-release-slot\.mjs`, `scripts\/check-macos-release-github\.mjs`,\s+`scripts\/sign-macos-app\.mjs`,\s+`scripts\/notarize-macos-dmg\.mjs`,\s+`src\/shared\/lib\/tauri-vault-fs\.ts`, `docs\/DESKTOP-MACOS\.md`, `src-tauri\/\*\*`,\s+`package\.json`, `\.github\/workflows\/release-macos\.yml`, or `next\.config\.ts`\s+changes, run `pnpm desktop:check`/);
+    assert.match(checksDoc, /The macOS desktop readiness gate is scaffold-aware and local-first: when\s+`scripts\/check-desktop-readiness\.mjs`, `scripts\/desktop-doctor\.mjs`,\s+`scripts\/desktop-smoke\.mjs`, `scripts\/package-macos-dmg\.mjs`,\s+`scripts\/verify-macos-app-launch\.mjs`, `scripts\/verify-macos-dmg\.mjs`,\s+`scripts\/verify-macos-install-smoke\.mjs`,\s+`scripts\/check-macos-download-release\.mjs`,\s+`scripts\/check-macos-release-secrets\.mjs`, `scripts\/check-macos-release-source\.mjs`,\s+`scripts\/check-macos-release-tag\.mjs`,\s+`scripts\/check-macos-release-slot\.mjs`, `scripts\/check-macos-release-github\.mjs`,\s+`scripts\/sign-macos-app\.mjs`,\s+`scripts\/notarize-macos-dmg\.mjs`,\s+`src\/shared\/lib\/tauri-vault-fs\.ts`, `docs\/DESKTOP-MACOS\.md`, `src-tauri\/\*\*`,\s+`package\.json`, `\.github\/workflows\/release-macos\.yml`,\s+`\.github\/workflows\/deploy-hosting\.yml`, or `next\.config\.ts`\s+changes, run `pnpm desktop:check`/);
     assert.match(checksDoc, /The installed app's native vault bridge is part of this same gate:\s+`src-tauri\/src\/lib\.rs` must expose folder-pick, directory-list, read, write,\s+file\/directory delete, mkdir, and exists commands, and\s+`src\/shared\/lib\/tauri-vault-fs\.ts` must wrap the same commands as a handle shim\s+through `@tauri-apps\/api\/core` `invoke` \/ `isTauri`, not private Tauri\s+internals/);
     assert.match(checksDoc, /The installed app must also keep first-run\s+entry local: `src\/views\/root-entry\/ui\/RootEntryPage\.tsx` routes Tauri sessions\s+without a restored vault to `\/docs\/\?intent=local` without rendering the hosted\s+marketing page, and `DocsVaultPage` opens the native picker once for that\s+intent/);
     assert.match(checksDoc, /Native vault bridge changes route to\s+`pnpm test:desktop:bridge`, which runs the WebView handle-shim tests plus\s+`cargo test --manifest-path src-tauri\/Cargo\.toml` for the Rust path guard/);
@@ -610,6 +610,7 @@ describe('package contract helpers', () => {
     const deployment = readFileSync('docs/DEPLOYMENT.md', 'utf-8');
     const skill = readFileSync('.claude/skills/firebase-deploy/SKILL.md', 'utf-8');
     const capability = readFileSync('docs/ontology/capabilities/firebase-deploy-skill.md', 'utf-8');
+    const hostingWorkflow = readFileSync('.github/workflows/deploy-hosting.yml', 'utf-8');
 
     const forbiddenTopLevel = ['functions', 'firestore', 'storage', 'database', 'emulators', 'extensions'];
     assert.deepEqual(
@@ -639,14 +640,26 @@ describe('package contract helpers', () => {
 
     assert.match(deployment, /does not configure rewrites, Functions, Firestore, Storage, or auth/);
     assert.match(deployment, /pnpm firebase:deploy-check/);
+    assert.match(deployment, /\.github\/workflows\/deploy-hosting\.yml/);
+    assert.match(deployment, /FIREBASE_SERVICE_ACCOUNT_JSON/);
     assert.match(skill, /firebase deploy --only hosting/);
     assert.match(skill, /pnpm firebase:deploy-check/);
     assert.match(skill, /no Functions, Firestore, Storage, Auth, emulators, or server runtime/);
     assert.match(skill, /pnpm test:mcp:docs/);
+    assert.match(skill, /\.github\/workflows\/deploy-hosting\.yml/);
+    assert.match(skill, /FIREBASE_SERVICE_ACCOUNT_JSON/);
     assert.equal(pkg.scripts?.['firebase:deploy-check'], 'node scripts/check-firebase-hosting-deploy-env.mjs');
     assert.match(capability, /static host only/);
     assert.match(capability, /pnpm firebase:deploy-check/);
+    assert.match(capability, /deploy-hosting\.yml/);
+    assert.match(capability, /FIREBASE_SERVICE_ACCOUNT_JSON/);
     assert.match(capability, /Functions, Firestore, Storage, Auth, or committed credentials/);
+    assert.match(hostingWorkflow, /release:\s*\n\s+types:\s*\[published\]/);
+    assert.match(hostingWorkflow, /workflow_dispatch:/);
+    assert.match(hostingWorkflow, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+    assert.match(hostingWorkflow, /pnpm firebase:deploy-check/);
+    assert.match(hostingWorkflow, /npx --yes firebase-tools@15\.17\.0 deploy --only hosting/);
+    assert.match(hostingWorkflow, /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/);
   });
 
   it('keeps the docs-vault freshness check executable from source checkout', () => {

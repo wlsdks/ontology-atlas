@@ -24,6 +24,17 @@ publish credentials. If `.env.prod` is missing, stop and ask the user to create
 it or provide the Firebase project id. Use `.env.prod.example` as the non-secret
 template.
 
+For the GitHub-hosted deploy path, `.github/workflows/deploy-hosting.yml`
+expects these repository settings:
+
+- secret: `FIREBASE_SERVICE_ACCOUNT_JSON`
+- variables: `FIREBASE_PROJECT_ID`, `FIREBASE_HOSTING_URL`,
+  `FIREBASE_HOSTING_ALT_URL` (defaults match `.env.prod.example`)
+
+The workflow runs on public GitHub Release publication and manual dispatch. It
+still writes a temporary `.env.prod`, runs `pnpm firebase:deploy-check`, deploys
+only Hosting with `firebase-tools@15.17.0`, and verifies the live download route.
+
 ## Workflow
 
 Run commands one by one so failures are attributable.
@@ -69,6 +80,8 @@ Deployment is complete only when all are true:
 - `pnpm firebase:deploy-check` proves `.env.prod`, `.firebaserc`,
   `firebase.json`, `.gitignore`, and `.firebaseignore` agree before deploy.
 - `pnpm bundle:check` still reports Firebase SDK chunk `0`.
+- In GitHub Actions, `.github/workflows/deploy-hosting.yml` publishes only the
+  static `out/` Hosting target and then runs `pnpm desktop:verify-hosted`.
 
 For UI-sensitive landing changes, also run a short Playwright check against
 `$FIREBASE_HOSTING_URL/en/` and `$FIREBASE_HOSTING_URL/en/docs/?intent=local`.
