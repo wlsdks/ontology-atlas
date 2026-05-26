@@ -136,16 +136,16 @@ function fail(message) {
   process.exit(1);
 }
 
-function ok(label, detail) {
-  return { status: "ok", label, detail };
+function ok(id, label, detail) {
+  return { id, status: "ok", label, detail };
 }
 
-function blocked(label, detail, next) {
-  return { status: "blocked", label, detail, next };
+function blocked(id, label, detail, next) {
+  return { id, status: "blocked", label, detail, next };
 }
 
-function skipped(label, detail) {
-  return { status: "skipped", label, detail };
+function skipped(id, label, detail) {
+  return { id, status: "skipped", label, detail };
 }
 
 function prChecksPassed(pr) {
@@ -201,19 +201,20 @@ async function main() {
 
   const auth = runGh(["auth", "status"]);
   if (!auth.ok) {
-    checks.push(blocked("GitHub CLI auth", auth.message, "Run gh auth login, then rerun desktop:release-status."));
+    checks.push(blocked("github_cli_auth", "GitHub CLI auth", auth.message, "Run gh auth login, then rerun desktop:release-status."));
     renderAndExit(options, checks);
   }
-  checks.push(ok("GitHub CLI auth", "gh auth status succeeded"));
+  checks.push(ok("github_cli_auth", "GitHub CLI auth", "gh auth status succeeded"));
 
   const tagAlignment = runNode([
     "scripts/check-macos-release-tag.mjs",
     `--tag=${options.tag}`,
   ]);
   if (tagAlignment.ok) {
-    checks.push(ok("Version alignment", tagAlignment.message.replace(/^\[desktop-release-tag\]\s*/, "")));
+    checks.push(ok("version_alignment", "Version alignment", tagAlignment.message.replace(/^\[desktop-release-tag\]\s*/, "")));
   } else {
     checks.push(blocked(
+      "version_alignment",
       "Version alignment",
       tagAlignment.message.replace(/^\[desktop-release-tag\]\s*/, ""),
       `Run pnpm desktop:release-tag -- --tag=${options.tag} and update package.json, src-tauri/tauri.conf.json, and src-tauri/Cargo.toml together before tagging.`,
@@ -231,18 +232,19 @@ async function main() {
       "mergeStateStatus,mergedAt,reviewDecision,state,statusCheckRollup,url",
     ], { parseJson: true });
     if (!pr.ok) {
-      checks.push(blocked("Pull request", pr.message, `Open https://github.com/${options.repo}/pull/${options.pr} and verify it manually.`));
+      checks.push(blocked("pull_request", "Pull request", pr.message, `Open https://github.com/${options.repo}/pull/${options.pr} and verify it manually.`));
     } else {
       const value = pr.value;
       const checksOk = prChecksPassed(value);
       const reviewOk = value.reviewDecision === "APPROVED";
       const mergeOk = value.mergeStateStatus === "CLEAN";
       if (prMerged(value)) {
-        checks.push(ok("Pull request", `PR #${options.pr} is already merged`));
+        checks.push(ok("pull_request", "Pull request", `PR #${options.pr} is already merged`));
       } else if (checksOk && reviewOk && mergeOk) {
-        checks.push(ok("Pull request", `PR #${options.pr} is merge-ready (${prCheckSummary(value)})`));
+        checks.push(ok("pull_request", "Pull request", `PR #${options.pr} is merge-ready (${prCheckSummary(value)})`));
       } else {
         checks.push(blocked(
+          "pull_request",
           "Pull request",
           `PR #${options.pr} is not merge-ready: review=${value.reviewDecision ?? "unknown"}, merge=${value.mergeStateStatus ?? "unknown"}, ${prCheckSummary(value)}`,
           prNextAction({
@@ -255,7 +257,7 @@ async function main() {
       }
     }
   } else {
-    checks.push(skipped("Pull request", "pass --pr=NUMBER to include review and merge readiness"));
+    checks.push(skipped("pull_request", "Pull request", "pass --pr=NUMBER to include review and merge readiness"));
   }
 
   const secrets = runGh([
@@ -267,16 +269,17 @@ async function main() {
     "name",
   ], { parseJson: true });
   if (!secrets.ok) {
-    checks.push(blocked("Apple release secrets", secrets.message, `Run gh secret list --repo ${options.repo}.`));
+    checks.push(blocked("apple_release_secrets", "Apple release secrets", secrets.message, `Run gh secret list --repo ${options.repo}.`));
   } else if (!Array.isArray(secrets.value)) {
-    checks.push(blocked("Apple release secrets", "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`));
+    checks.push(blocked("apple_release_secrets", "Apple release secrets", "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`));
   } else {
     const secretNames = new Set(secrets.value.map((secret) => secret?.name).filter(Boolean));
     const missing = REQUIRED_SECRETS.filter((name) => !secretNames.has(name));
     if (missing.length === 0) {
-      checks.push(ok("Apple release secrets", "all required Apple signing/notary secret names exist"));
+      checks.push(ok("apple_release_secrets", "Apple release secrets", "all required Apple signing/notary secret names exist"));
     } else {
       checks.push(blocked(
+        "apple_release_secrets",
         "Apple release secrets",
         `missing ${missing.join(", ")}`,
         secretSetHints(options.repo, missing),
@@ -297,17 +300,18 @@ async function main() {
     const next = isNotFound(release.message)
       ? `Merge the desktop PR, add Apple release secrets, then push ${options.tag} so .github/workflows/release-macos.yml can publish signed DMGs.`
       : `Run gh release view ${options.tag} --repo ${options.repo}.`;
-    checks.push(blocked("GitHub Release", release.message, next));
+    checks.push(blocked("github_release", "GitHub Release", release.message, next));
   } else if (release.value?.isDraft || release.value?.isPrerelease) {
     checks.push(blocked(
+      "github_release",
       "GitHub Release",
       `${options.tag} is ${release.value.isDraft ? "draft" : "prerelease"}`,
       "Publish a stable, non-draft release only after signed/notarized DMGs and checksums pass.",
     ));
   } else {
-    checks.push(ok("GitHub Release", `${options.tag} is public and stable${release.value?.url ? ` (${release.value.url})` : ""}`));
+    checks.push(ok("github_release", "GitHub Release", `${options.tag} is public and stable${release.value?.url ? ` (${release.value.url})` : ""}`));
     if (process.env.OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY === "1") {
-      checks.push(skipped("Download assets", "skipped by OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1"));
+      checks.push(skipped("download_assets", "Download assets", "skipped by OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1"));
     } else {
       const download = runNode([
         "scripts/check-macos-download-release.mjs",
@@ -315,9 +319,9 @@ async function main() {
         `--tag=${options.tag}`,
       ]);
       if (download.ok) {
-        checks.push(ok("Download assets", "public DMGs and .sha256 assets passed byte verification"));
+        checks.push(ok("download_assets", "Download assets", "public DMGs and .sha256 assets passed byte verification"));
       } else {
-        checks.push(blocked("Download assets", download.message, `Run pnpm desktop:verify-download -- --repo=${options.repo} --tag=${options.tag}.`));
+        checks.push(blocked("download_assets", "Download assets", download.message, `Run pnpm desktop:verify-download -- --repo=${options.repo} --tag=${options.tag}.`));
       }
     }
   }

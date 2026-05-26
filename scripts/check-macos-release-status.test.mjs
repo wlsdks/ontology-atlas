@@ -119,8 +119,22 @@ test("desktop release status emits machine-readable blockers for automation", ()
       assert.equal(payload.ready, false);
       assert.equal(payload.blockerCount, 3);
       assert.deepEqual(
+        payload.checks.map((check) => check.id),
+        [
+          "github_cli_auth",
+          "version_alignment",
+          "pull_request",
+          "apple_release_secrets",
+          "github_release",
+        ],
+      );
+      assert.deepEqual(
         payload.checks.filter((check) => check.status === "blocked").map((check) => check.label),
         ["Pull request", "Apple release secrets", "GitHub Release"],
+      );
+      assert.deepEqual(
+        payload.checks.filter((check) => check.status === "blocked").map((check) => check.id),
+        ["pull_request", "apple_release_secrets", "github_release"],
       );
       assert.match(
         payload.checks.find((check) => check.label === "Apple release secrets").next,
@@ -157,6 +171,10 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
         assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
         assert.equal(payload.ready, false);
         assert.equal(payload.blockerCount, 3);
+        assert.deepEqual(
+          payload.checks.filter((check) => check.status === "blocked").map((check) => check.id),
+          ["pull_request", "apple_release_secrets", "github_release"],
+        );
         assert.deepEqual(
           payload.checks.filter((check) => check.status === "blocked").map((check) => check.label),
           ["Pull request", "Apple release secrets", "GitHub Release"],
@@ -258,6 +276,17 @@ test("desktop release status JSON reports ready when all release gates pass", ()
     assert.deepEqual(
       payload.checks.map((check) => check.status),
       ["ok", "ok", "ok", "ok", "ok", "skipped"],
+    );
+    assert.deepEqual(
+      payload.checks.map((check) => check.id),
+      [
+        "github_cli_auth",
+        "version_alignment",
+        "pull_request",
+        "apple_release_secrets",
+        "github_release",
+        "download_assets",
+      ],
     );
     assert.equal(result.stderr, "");
   });

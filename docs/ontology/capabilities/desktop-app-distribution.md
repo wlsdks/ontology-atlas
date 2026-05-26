@@ -177,7 +177,10 @@ actions so goal runners and release dashboards can consume blockers without
 scraping human text. With `--json-file=<path>`, it writes the same blocker
 snapshot to disk for package-runner contexts that may add lifecycle output
 around stdout. The snapshot includes `schemaVersion` and `generatedAt` so saved
-release evidence can be versioned and ordered.
+release evidence can be versioned and ordered. Each check also carries a stable
+`id` (`pull_request`, `apple_release_secrets`, `github_release`,
+`download_assets`, and related setup checks) so automation does not branch on
+human labels.
 Firebase Hosting remains a separate static
 website deployment checked with `pnpm desktop:verify-hosted`.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`

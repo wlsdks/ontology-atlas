@@ -826,6 +826,8 @@ if (
   releaseStatusScript.includes('"--json-file="') &&
   releaseStatusScript.includes("schemaVersion") &&
   releaseStatusScript.includes("generatedAt") &&
+  releaseStatusScript.includes("apple_release_secrets") &&
+  releaseStatusScript.includes("download_assets") &&
   releaseStatusScript.includes("blockerCount") &&
   releaseStatusScript.includes("fs.writeFileSync") &&
   releaseStatusScript.includes("Firebase Hosting is intentionally excluded") &&

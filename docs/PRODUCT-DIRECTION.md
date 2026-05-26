@@ -281,7 +281,8 @@ Release state, and public DMG/checksum download verification all pass. Its
 goal runners or dashboards that need structured release blockers; `--json-file`
 writes the same snapshot to disk when stdout may be wrapped by package-runner
 logs. The snapshot carries `schemaVersion` and `generatedAt` so saved release
-evidence has a stable contract and timestamp. Firebase
+evidence has a stable contract and timestamp, and each check carries a stable
+machine id so automation can branch without scraping human labels. Firebase
 Hosting remains a separate website
 deployment check, not a macOS app release dependency. This is
 evidence for goal completion, not a substitute for publishing signed/notarized
