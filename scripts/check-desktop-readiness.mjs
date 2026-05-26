@@ -859,6 +859,10 @@ if (
   releaseStatusScript.includes("readyAt") &&
   releaseStatusScript.includes("blockedAt") &&
   releaseStatusScript.includes("apple_release_secrets") &&
+  releaseStatusScript.includes("release_tag_slot") &&
+  releaseStatusScript.includes("runGitStatus") &&
+  releaseStatusScript.includes("runGhStatus") &&
+  releaseStatusScript.includes("refs/tags/") &&
   releaseStatusScript.includes("download_assets") &&
   releaseStatusScript.includes("blockerCount") &&
   releaseStatusScript.includes("blockerIds") &&
@@ -881,10 +885,10 @@ if (
   releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY") &&
   !releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY")
 ) {
-  pass("desktop release status gate audits version alignment, PR readiness, Apple secrets, public release state, download assets, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies");
+  pass("desktop release status gate audits version alignment, PR readiness, tag slots, Apple secrets, public release state, download assets, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies");
 } else {
   fail(
-    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit version alignment, PR readiness, Apple secret names, public release state, public download assets, JSON blocker snapshots, and markdown operator checklists without requiring Firebase Hosting",
+    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit version alignment, PR readiness, local/remote Git tag slots, Apple secret names, public release state, public download assets, JSON blocker snapshots, and markdown operator checklists without requiring Firebase Hosting",
   );
 }
 

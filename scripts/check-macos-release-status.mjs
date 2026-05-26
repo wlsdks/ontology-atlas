@@ -17,6 +17,7 @@ const CHECK_SCOPES = new Map([
   ["github_cli_auth", "local"],
   ["version_alignment", "local"],
   ["pull_request", "external"],
+  ["release_tag_slot", "external"],
   ["apple_release_secrets", "external"],
   ["github_release", "external"],
   ["download_assets", "external"],
@@ -25,6 +26,7 @@ const CHECK_OWNERS = new Map([
   ["github_cli_auth", "developer"],
   ["version_alignment", "developer"],
   ["pull_request", "reviewer"],
+  ["release_tag_slot", "release_operator"],
   ["apple_release_secrets", "release_operator"],
   ["github_release", "release_operator"],
   ["download_assets", "release_operator"],
@@ -123,6 +125,10 @@ function ghBin() {
   return process.env.OMOT_GH_BIN || "gh";
 }
 
+function gitBin() {
+  return process.env.OMOT_GIT_BIN || "git";
+}
+
 function runGh(args, { parseJson = false } = {}) {
   const result = spawnSync(ghBin(), args, {
     cwd: process.cwd(),
@@ -143,6 +149,28 @@ function runGh(args, { parseJson = false } = {}) {
   } catch (error) {
     return { ok: false, message: `gh ${args.join(" ")} returned invalid JSON: ${error.message}` };
   }
+}
+
+function runGhStatus(args) {
+  const result = spawnSync(ghBin(), args, {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  if (result.error) {
+    return { status: null, stdout: "", stderr: `failed to run gh ${args.join(" ")}: ${result.error.message}` };
+  }
+  return result;
+}
+
+function runGitStatus(args) {
+  const result = spawnSync(gitBin(), args, {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  if (result.error) {
+    return { status: null, stdout: "", stderr: `failed to run git ${args.join(" ")}: ${result.error.message}` };
+  }
+  return result;
 }
 
 function runNode(args) {
@@ -264,6 +292,10 @@ function isNotFound(message) {
   return /\b404\b|not found|release not found/i.test(message);
 }
 
+function statusOutput(result) {
+  return `${result?.stderr || ""}\n${result?.stdout || ""}`.trim();
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const checks = [];
@@ -333,6 +365,52 @@ async function main() {
     }
   } else {
     checks.push(skipped("pull_request", "Pull request", "pass --pr=NUMBER to include review and merge readiness"));
+  }
+
+  const localTagRef = runGitStatus(["rev-parse", "--verify", "--quiet", `refs/tags/${options.tag}`]);
+  if (localTagRef.status === 0) {
+    checks.push(blocked(
+      "release_tag_slot",
+      "Release tag slot",
+      `local git tag ${options.tag} already exists`,
+      `Delete the stale local tag with git tag -d ${options.tag} after verifying it was not pushed, or choose a new version before release.`,
+      [`git tag -d ${options.tag}`],
+      { scope: "local", owner: "developer" },
+    ));
+  } else if (localTagRef.status !== 1) {
+    checks.push(blocked(
+      "release_tag_slot",
+      "Release tag slot",
+      `git rev-parse --verify refs/tags/${options.tag} failed: ${statusOutput(localTagRef) || `exit ${localTagRef.status}`}`,
+      `Run git rev-parse --verify --quiet refs/tags/${options.tag} locally before tagging.`,
+      [`git rev-parse --verify --quiet refs/tags/${options.tag}`],
+      { scope: "local", owner: "developer" },
+    ));
+  } else {
+    const remoteTagRef = runGhStatus(["api", `repos/${options.repo}/git/ref/tags/${options.tag}`]);
+    const remoteTagOutput = statusOutput(remoteTagRef);
+    if (remoteTagRef.status === 0) {
+      checks.push(blocked(
+        "release_tag_slot",
+        "Release tag slot",
+        `git tag ${options.tag} already exists for ${options.repo}`,
+        "Inspect the existing tag workflow run or choose a new version before pushing a macOS release tag.",
+        [
+          `gh api repos/${options.repo}/git/ref/tags/${options.tag}`,
+          `gh run list --repo ${options.repo} --workflow release-macos.yml --event push --limit 10`,
+        ],
+      ));
+    } else if (!isNotFound(remoteTagOutput)) {
+      checks.push(blocked(
+        "release_tag_slot",
+        "Release tag slot",
+        `gh api repos/${options.repo}/git/ref/tags/${options.tag} failed: ${remoteTagOutput || `exit ${remoteTagRef.status}`}`,
+        `Run gh api repos/${options.repo}/git/ref/tags/${options.tag} to inspect the remote tag slot.`,
+        [`gh api repos/${options.repo}/git/ref/tags/${options.tag}`],
+      ));
+    } else {
+      checks.push(ok("release_tag_slot", "Release tag slot", `${options.tag} has no existing local or remote Git tag`));
+    }
   }
 
   const secrets = runGh([

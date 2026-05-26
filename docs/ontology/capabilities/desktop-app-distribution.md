@@ -169,8 +169,9 @@ operator can move directly from readiness failure to secret registration.
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the completion
 audit once the PR and release path are expected to be ready. It accepts an
 already merged PR or checks tag/package/Tauri/Cargo version alignment, PR
-review/merge readiness, required Apple release secret names, public stable
-GitHub Release state, and then runs the public DMG/checksum download verifier.
+review/merge readiness, clean local and remote same-tag Git ref slots, required
+Apple release secret names, public stable GitHub Release state, and then runs
+the public DMG/checksum download verifier.
 When PR checks block the release, it includes the failing or pending check names
 plus each check's GitHub Actions details URL when available, and the exact
 `gh pr checks <number> --repo wlsdks/oh-my-ontology` command. When all PR

@@ -277,8 +277,9 @@ are used. The
 post-release completion audit is
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>`: it does not publish
 anything, but it fails closed until tag/package/Tauri/Cargo version alignment,
-PR review/merge readiness, Apple release secret names, public stable GitHub
-Release state, and public DMG/checksum download verification all pass. Its
+PR review/merge readiness, clean local and remote same-tag Git ref slots, Apple
+release secret names, public stable GitHub Release state, and public DMG/checksum
+download verification all pass. Its
 `--json` mode reports `ready`, `blockerCount`, and per-check `next` actions for
 goal runners or dashboards that need structured release blockers; stdout JSON is
 compact to avoid small-buffer truncation, `--json-file` writes the same snapshot

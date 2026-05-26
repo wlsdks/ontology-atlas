@@ -43,6 +43,18 @@ if (args[0] === "pr" && args[1] === "view") {
   });
   process.exit(0);
 }
+if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/oh-my-ontology/git/ref/tags/")) {
+  if (scenario.gitTagExists) {
+    out({ ref: "refs/tags/" + args[1].split("/").pop(), object: { sha: "0".repeat(40) } });
+    process.exit(0);
+  }
+  if (scenario.gitTagCheckFails) {
+    err("tag API unavailable");
+    process.exit(1);
+  }
+  err("HTTP 404: Not Found");
+  process.exit(1);
+}
 if (args[0] === "secret" && args[1] === "list") {
   if (scenario.secretListFails) {
     err("secret API unavailable");
@@ -77,22 +89,50 @@ process.exit(2);
   return binPath;
 }
 
+function writeFakeGit(root, scenario) {
+  const binPath = join(root, "fake-git.mjs");
+  writeFileSync(
+    binPath,
+    `#!/usr/bin/env node
+const scenario = ${JSON.stringify(scenario)};
+const args = process.argv.slice(2);
+if (args[0] === "rev-parse" && args[1] === "--verify" && args[2] === "--quiet" && args[3]?.startsWith("refs/tags/")) {
+  if (scenario.localTagExists) {
+    process.stdout.write("1".repeat(40) + "\\n");
+    process.exit(0);
+  }
+  if (scenario.localTagCheckFails) {
+    process.stderr.write("local tag check failed");
+    process.exit(2);
+  }
+  process.exit(1);
+}
+process.stderr.write("unexpected git call: " + args.join(" "));
+process.exit(2);
+`,
+  );
+  chmodSync(binPath, 0o755);
+  return binPath;
+}
+
 function withFakeGh(scenario, run) {
   const root = mkdtempSync(join(tmpdir(), "omo-release-status-"));
   try {
-    run(writeFakeGh(root, scenario));
+    run(writeFakeGh(root, scenario), writeFakeGit(root, scenario));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 }
 
 function runStatus(fakeGhPath, args = ["--tag=v0.1.0", "--pr=274"]) {
+  const fakeGitPath = fakeGhPath.replace(/fake-gh\.mjs$/, "fake-git.mjs");
   return spawnSync(process.execPath, ["scripts/check-macos-release-status.mjs", ...args], {
     cwd: process.cwd(),
     encoding: "utf8",
     env: {
       ...process.env,
       OMOT_GH_BIN: fakeGhPath,
+      OMOT_GIT_BIN: fakeGitPath,
       OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY: "1",
     },
   });
@@ -180,6 +220,7 @@ test("desktop release status emits machine-readable blockers for automation", ()
           "github_cli_auth",
           "version_alignment",
           "pull_request",
+          "release_tag_slot",
           "apple_release_secrets",
           "github_release",
         ],
@@ -417,6 +458,43 @@ test("desktop release status exposes command arrays for actionable blockers", ()
   );
 });
 
+test("desktop release status blocks stale local release tags", () => {
+  withFakeGh({ localTagExists: true }, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+
+    assert.equal(result.status, 1);
+    const payload = JSON.parse(result.stdout);
+    assert.deepEqual(payload.localBlockerIds, ["release_tag_slot"]);
+    assert.deepEqual(payload.externalBlockerIds, []);
+    assert.deepEqual(payload.blockersByOwner, { developer: ["release_tag_slot"] });
+    const blocker = payload.checks.find((check) => check.id === "release_tag_slot");
+    assert.equal(blocker.scope, "local");
+    assert.equal(blocker.owner, "developer");
+    assert.match(blocker.detail, /local git tag v0\.1\.0 already exists/);
+    assert.deepEqual(blocker.commands, ["git tag -d v0.1.0"]);
+  });
+});
+
+test("desktop release status blocks existing remote release tags", () => {
+  withFakeGh({ gitTagExists: true }, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+
+    assert.equal(result.status, 1);
+    const payload = JSON.parse(result.stdout);
+    assert.deepEqual(payload.localBlockerIds, []);
+    assert.deepEqual(payload.externalBlockerIds, ["release_tag_slot"]);
+    assert.deepEqual(payload.blockersByOwner, { release_operator: ["release_tag_slot"] });
+    const blocker = payload.checks.find((check) => check.id === "release_tag_slot");
+    assert.equal(blocker.scope, "external");
+    assert.equal(blocker.owner, "release_operator");
+    assert.match(blocker.detail, /git tag v0\.1\.0 already exists/);
+    assert.deepEqual(blocker.commands, [
+      "gh api repos/wlsdks/oh-my-ontology/git/ref/tags/v0.1.0",
+      "gh run list --repo wlsdks/oh-my-ontology --workflow release-macos.yml --event push --limit 10",
+    ]);
+  });
+});
+
 test("desktop release status separates local and external blockers", () => {
   withFakeGh({}, (fakeGhPath) => {
     const result = runStatus(fakeGhPath, ["--tag=v9.9.9", "--pr=274", "--json"]);
@@ -491,7 +569,7 @@ test("desktop release status JSON reports ready when all release gates pass", ()
     assert.deepEqual(payload.nextActions, []);
     assert.deepEqual(
       payload.checks.map((check) => check.status),
-      ["ok", "ok", "ok", "ok", "ok", "skipped"],
+      ["ok", "ok", "ok", "ok", "ok", "ok", "skipped"],
     );
     assert.deepEqual(
       payload.checks.map((check) => check.id),
@@ -499,6 +577,7 @@ test("desktop release status JSON reports ready when all release gates pass", ()
         "github_cli_auth",
         "version_alignment",
         "pull_request",
+        "release_tag_slot",
         "apple_release_secrets",
         "github_release",
         "download_assets",
