@@ -27,6 +27,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ bundle guard covers the hosted download and local-first app routes/,
+  );
+  assert.match(
+    result.stdout,
     /✓ root package dependencies stay Firebase SDK and Firebase CLI free for the local-only app/,
   );
   assert.match(result.stdout, /✓ CLI\/MCP setup gate is available/);

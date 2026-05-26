@@ -171,7 +171,7 @@ All routes are wrapped under `/[locale]/` by next-intl (en, ko).
 pnpm docs-vault:build      # docs/ontology/*.md → src/entities/docs-vault/data/manifest.json
 pnpm docs-vault:check      # verify committed docs-vault outputs are fresh (CI gate)
 pnpm build                 # next build → static export → out/
-pnpm bundle:check          # verifies firebase SDK chunk = 0 across user-facing routes
+pnpm bundle:check          # verifies firebase SDK chunk = 0 across landing/download/app routes
 pnpm vault:validate        # R11+ — frontmatter integrity + graph array drift (CI gate)
 pnpm test:vault:validate   # focused validator CLI argument contract (CI gate)
 pnpm vault:audit           # dogfood ontology capability/element paths exist in repo

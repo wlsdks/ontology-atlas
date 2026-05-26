@@ -487,7 +487,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /Root `pnpm-lock\.yaml` and MCP\/CLI package lockfiles route to\s+`pnpm test:mcp:package` plus `pnpm package:check` escalation/);
     assert.match(checksDoc, /MCP lockfile\s+changes still show `pnpm dogfood:verify` as an escalation because they touch the\s+agent runtime package directly; CLI lockfile changes stay on package contracts/);
     assert.match(checksDoc, /\| `pnpm package:check` \| Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget \|/);
-    assert.match(checksDoc, /\| `pnpm bundle:check` \| Local-first static export bundle guard; run after `pnpm build` when `scripts\/check-bundle\.mjs` changed \|/);
+    assert.match(checksDoc, /\| `pnpm bundle:check` \| Local-first static export bundle guard for the landing, download, docs, ontology, topology, and projects routes; run after `pnpm build` when `scripts\/check-bundle\.mjs` changed \|/);
     assert.match(checksDoc, /\| `pnpm desktop:check` \| macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI\/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files \|/);
     assert.match(checksDoc, /\| `pnpm desktop:doctor` \| Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, and Xcode command line tools \|/);
     assert.match(checksDoc, /\| `pnpm desktop:smoke` \| Built `out\/` payload smoke for the packaged root app entry, locale routes, `_next` assets, and offline desktop docs before launching or bundling the `\.app` \/ `\.dmg` \|/);

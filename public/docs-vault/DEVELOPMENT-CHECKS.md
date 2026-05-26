@@ -319,7 +319,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | Command | Use when |
 |---|---|
 | `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget |
-| `pnpm bundle:check` | Local-first static export bundle guard; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
+| `pnpm bundle:check` | Local-first static export bundle guard for the landing, download, docs, ontology, topology, and projects routes; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
 | `pnpm firebase:deploy-check` | Firebase Hosting deploy preflight for `.env.prod`, project-id alignment, static-only Hosting config, and deploy credential ignores |
 | `pnpm desktop:check` | macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files |
 | `pnpm desktop:doctor` | Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, and Xcode command line tools |

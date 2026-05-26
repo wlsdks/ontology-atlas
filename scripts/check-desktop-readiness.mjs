@@ -57,6 +57,7 @@ const tauriLib = readText("src-tauri/src/lib.rs");
 const tauriShim = readText("src/shared/lib/tauri-vault-fs.ts");
 const tauriInfoPlist = readText("src-tauri/Info.plist");
 const packageMacosDmgScript = readText("scripts/package-macos-dmg.mjs");
+const bundleCheckScript = readText("scripts/check-bundle.mjs");
 const verifyDmgScript = readText("scripts/verify-macos-dmg.mjs");
 const verifyAppScript = readText("scripts/verify-macos-app-launch.mjs");
 const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
@@ -163,6 +164,22 @@ if (pkg.scripts?.["docs-vault:check"]) {
   pass("docs-vault freshness check is available before desktop packaging");
 } else {
   fail("package.json must expose docs-vault:check before desktop packaging");
+}
+
+if (
+  pkg.scripts?.["bundle:check"] === "node scripts/check-bundle.mjs" &&
+  bundleCheckScript.includes("const LOCAL_FIRST_BASE_ROUTES") &&
+  bundleCheckScript.includes("'download'") &&
+  bundleCheckScript.includes("'docs'") &&
+  bundleCheckScript.includes("'ontology'") &&
+  bundleCheckScript.includes("'topology'") &&
+  bundleCheckScript.includes("'projects'")
+) {
+  pass("bundle guard covers the hosted download and local-first app routes");
+} else {
+  fail(
+    "scripts/check-bundle.mjs must include /download plus docs/ontology/topology/projects in LOCAL_FIRST_BASE_ROUTES so Firebase chunks cannot re-enter public app/download surfaces",
+  );
 }
 
 const firebaseDependencyFields = [

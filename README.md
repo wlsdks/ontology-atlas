@@ -214,7 +214,7 @@ to access a local folder on your machine.
 
 | Promise | How this repo checks it |
 |---|---|
-| **No backend** | `pnpm bundle:check` keeps Firebase/server chunks out of local-first routes. |
+| **No backend** | `pnpm bundle:check` keeps Firebase/server chunks out of landing, download, and local-first app routes. |
 | **Static deploy** | `pnpm build` exports to `out/`; Firebase Hosting serves only static files. |
 | **Static dogfood manifest** | `pnpm docs-vault:check` keeps committed `src/entities/docs-vault/data/manifest.json` and `public/docs-vault/` in sync with `docs/`. |
 | **Vault integrity** | `pnpm vault:validate`, `test:vault:validate`, `vault:audit`, and `test:vault:audit` run in CI. |
