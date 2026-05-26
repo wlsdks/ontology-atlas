@@ -76,6 +76,7 @@ export function DownloadPage({ showFirstReleaseChecklist = true }: Props) {
               </p>
               <ul className="grid gap-1.5 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
                 <ReleaseStatusItem label={t('releaseStatusPr')} />
+                <ReleaseStatusItem label={t('releaseStatusVersion')} />
                 <ReleaseStatusItem label={t('releaseStatusSecrets')} />
                 <ReleaseStatusItem label={t('releaseStatusRelease')} />
                 <ReleaseStatusItem label={t('releaseStatusHosted')} />

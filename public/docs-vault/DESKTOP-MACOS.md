@@ -186,8 +186,9 @@ for a macOS prototype:
   secondary CTA opens the source repository instead of duplicating the release
   action or steering new users into the web workbench. The download page also
   states that missing first-release DMGs mean the macOS app release is still
-  waiting on PR review, Apple signing, or the `v0.1.0` GitHub Release. It names
-  Firebase Hosting separately as the promo/download website deploy gate for the
+  waiting on PR review, tag/package/Tauri/Cargo version alignment, Apple
+  signing, or the `v0.1.0` GitHub Release. It names Firebase Hosting separately
+  as the promo/download website deploy gate for the
   hosted `/ko/download/` route. After verified public DMGs are published and the
   hosted download route is live, rebuild the hosted site with
   `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` to hide that pre-release checklist

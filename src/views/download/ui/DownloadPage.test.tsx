@@ -47,11 +47,14 @@ describe('DownloadPage', () => {
       'https://github.com/wlsdks/oh-my-ontology',
     );
     expect(
-      screen.getByText(/app release is still waiting on PR review, Apple signing, or the v0\.1\.0 GitHub Release/i),
+      screen.getByText(/app release is still waiting on PR review, version alignment, Apple signing, or the v0\.1\.0 GitHub Release/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Before the first release is fully available/i)).toBeInTheDocument();
     expect(
       screen.getByText(/PR #274 must be reviewed and merged before v0\.1\.0 can ship/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/v0\.1\.0 tag must match package\.json, Tauri, and Cargo metadata/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/Apple Developer ID signing\/notarization secrets must be configured before the macOS app release/i),
@@ -72,6 +75,9 @@ describe('DownloadPage', () => {
     expect(screen.queryByText(/Before the first release is fully available/i)).not.toBeInTheDocument();
     expect(
       screen.queryByText(/PR #274 must be reviewed and merged before v0\.1\.0 can ship/i),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/v0\.1\.0 tag must match package\.json, Tauri, and Cargo metadata/i),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByText(/Firebase Hosting must deploy the promo\/download site/i),

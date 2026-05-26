@@ -596,6 +596,7 @@ if (
   downloadPage.includes("releaseAvailabilityNote") &&
   downloadPage.includes("releaseStatusTitle") &&
   downloadPage.includes("releaseStatusPr") &&
+  downloadPage.includes("releaseStatusVersion") &&
   downloadPage.includes("releaseStatusSecrets") &&
   downloadPage.includes("releaseStatusRelease") &&
   downloadPage.includes("releaseStatusHosted") &&
@@ -603,13 +604,18 @@ if (
   downloadRoute.includes("NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING") &&
   downloadRoute.includes("!== '0'") &&
   downloadRoute.includes("showFirstReleaseChecklist={showFirstReleaseChecklist}") &&
-  /app release is still waiting on PR review, Apple signing, or the v0\.1\.0 GitHub Release/.test(
+  /app release is still waiting on PR review, version alignment, Apple signing, or the v0\.1\.0 GitHub Release/.test(
     enMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
   !/Firebase Hosting/.test(enMessages.download?.releaseAvailabilityNote ?? "") &&
   /Before the first release is fully available/.test(enMessages.download?.releaseStatusTitle ?? "") &&
   /PR #274/.test(enMessages.download?.releaseStatusPr ?? "") &&
   /before v0\.1\.0 can ship/.test(enMessages.download?.releaseStatusPr ?? "") &&
+  /v0\.1\.0 tag/.test(enMessages.download?.releaseStatusVersion ?? "") &&
+  /package\.json, Tauri, and Cargo metadata/.test(
+    enMessages.download?.releaseStatusVersion ?? "",
+  ) &&
+  !/Firebase Hosting/.test(enMessages.download?.releaseStatusVersion ?? "") &&
   /Apple Developer ID signing\/notarization secrets/.test(
     enMessages.download?.releaseStatusSecrets ?? "",
   ) &&
@@ -621,13 +627,18 @@ if (
     enMessages.download?.releaseStatusHosted ?? "",
   ) &&
   /\/ko\/download\//.test(enMessages.download?.releaseStatusHosted ?? "") &&
-  /앱 릴리스가 PR review, Apple signing, v0\.1\.0 GitHub Release/.test(
+  /앱 릴리스가 PR review, version alignment, Apple signing, v0\.1\.0 GitHub Release/.test(
     koMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
   !/Firebase Hosting/.test(koMessages.download?.releaseAvailabilityNote ?? "") &&
   /첫 릴리스가 완전히 열리기 전 체크리스트/.test(koMessages.download?.releaseStatusTitle ?? "") &&
   /PR #274/.test(koMessages.download?.releaseStatusPr ?? "") &&
   /v0\.1\.0 배포 전/.test(koMessages.download?.releaseStatusPr ?? "") &&
+  /v0\.1\.0 tag/.test(koMessages.download?.releaseStatusVersion ?? "") &&
+  /package\.json, Tauri, Cargo metadata/.test(
+    koMessages.download?.releaseStatusVersion ?? "",
+  ) &&
+  !/Firebase Hosting/.test(koMessages.download?.releaseStatusVersion ?? "") &&
   /Apple Developer ID/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
   !/Firebase Hosting/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
   /macOS 앱 릴리스 전/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
@@ -640,7 +651,7 @@ if (
   pass("hosted download page separates macOS app release blockers from the Firebase website deploy gate");
 } else {
   fail(
-    "hosted download copy must separate macOS app blockers (PR review, Apple signing, v0.1.0 Release) from the separate Firebase Hosting /ko/download/ deploy gate, and NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
+    "hosted download copy must separate macOS app blockers (PR review, version alignment, Apple signing, v0.1.0 Release) from the separate Firebase Hosting /ko/download/ deploy gate, and NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
   );
 }
 

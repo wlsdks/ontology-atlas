@@ -162,7 +162,8 @@ landing/download pages and rejects a stale public deployment that still shows
 the old browser vault picker CTA or lacks `/ko/download/`.
 It is intentionally read-only and fail-closed, so the macOS app work is not
 treated as complete while review, secrets, release publication, public asset
-verification, or hosted-site deployment are still blocked.
+verification, tag/package/Tauri/Cargo version alignment, or hosted-site
+deployment are still blocked.
 `pnpm desktop:release-preflight` is the local pre-tag gate for readiness,
 docs-vault freshness, desktop checker tests, runtime split tests, native bridge
 tests, runtime doctor, `cli:mcp-verify docs/ontology --timeout-ms 15000`, build,
@@ -174,9 +175,10 @@ instead of depending on `/releases/latest` before a public macOS DMG exists. The
 secondary CTA opens `/download/` as a static install guide, and the hosted
 landing/download pages no longer route users into `/docs/?intent=local`. The
 download page also explains that missing first-release DMGs mean the macOS app
-release is still waiting on PR review, Apple signing, or the `v0.1.0` GitHub
-Release, while Firebase Hosting is named separately as the promo/download
-website deploy gate for hosted `/ko/download/`.
+release is still waiting on PR review, tag/package/Tauri/Cargo version
+alignment, Apple signing, or the `v0.1.0` GitHub Release, while Firebase Hosting
+is named separately as the promo/download website deploy gate for hosted
+`/ko/download/`.
 Once verified public DMGs are published and the hosted download route is live,
 `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` hides that pre-release checklist on the next hosted rebuild without a code change.
 Hosted `/docs` sessions also keep local vault work disabled: `?intent=local`
