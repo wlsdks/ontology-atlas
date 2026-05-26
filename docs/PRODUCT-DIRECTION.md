@@ -240,6 +240,7 @@ Apple Developer ID and notary secrets are present and structurally usable, then
 passes docs-vault freshness, desktop checker tests, and native bridge tests
 before importing the certificate in both macOS lanes. It builds Apple Silicon
 on `macos-14` and Intel on `macos-15-intel`, route-smokes the static desktop payload,
+runs `pnpm desktop:release-source` so the tag commit is the default-branch head,
 runs `pnpm desktop:release-tag` so the v-prefixed tag matches package/Tauri/Cargo
 versions before signing, runs `pnpm desktop:sign`, packages the signed app, runs
 `pnpm desktop:notarize`, staples the DMG, refreshes its checksum, verifies the

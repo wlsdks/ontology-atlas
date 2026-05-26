@@ -58,6 +58,7 @@ pnpm desktop:verify-dmg
 pnpm desktop:verify-install
 pnpm desktop:release-preflight         # full local pre-tag gate
 pnpm desktop:release-github -- --tag=v0.1.0  # GitHub workflow + Apple secret-name gate
+pnpm desktop:release-source -- --sha="$(git rev-parse HEAD)"  # tag only default-branch head
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0  # completion audit
 ```
 
@@ -73,9 +74,10 @@ for a macOS prototype:
   not drift apart.
 - `docs-vault:check`, `cli:mcp-verify`, `desktop:doctor`, `desktop:dev`,
   `desktop:smoke`, `desktop:verify-app`, `desktop:build:app`,
-  `desktop:build`, `desktop:release-tag`, `desktop:release-github`,
-  `desktop:release-status`, `desktop:sign`, `desktop:notarize`, and
-  `desktop:verify-dmg`, `desktop:verify-install` are available for packaging,
+  `desktop:build`, `desktop:release-source`, `desktop:release-tag`,
+  `desktop:release-github`, `desktop:release-status`, `desktop:sign`,
+  `desktop:notarize`, `desktop:verify-dmg`, `desktop:verify-install` are
+  available for packaging,
   app launch, local runtime diagnosis, packaged-route smoke, startup crash
   detection, signing, notarization/stapling, DMG mount/checksum verification,
   temporary-install launch smoke, and agent handoff checks.
@@ -282,15 +284,16 @@ and the tag workflow fails closed unless these GitHub Secrets are all present:
 - `APPLE_APP_SPECIFIC_PASSWORD`: app-specific password for that Apple ID.
 - `APPLE_TEAM_ID`: Apple Developer Team ID.
 
-The tag workflow verifies `${GITHUB_REF_NAME}` with
+The tag workflow verifies `${GITHUB_SHA}` with
+`pnpm desktop:release-source` and `${GITHUB_REF_NAME}` with
 `pnpm desktop:release-tag` before signing credentials enter the path, then runs
 `pnpm desktop:release-secrets`, builds the `.app`, imports the certificate,
 signs with `pnpm desktop:sign`, packages the DMG, notarizes/staples with
 `pnpm desktop:notarize`, and runs `pnpm desktop:verify-release-dmg` against the
-final artifact. If the tag version drifts from package/Tauri/Cargo metadata or
-the Apple secrets are not configured, blank, or structurally invalid, the
-workflow fails before uploading an unsigned or wrongly versioned distribution
-candidate.
+final artifact. If the tag was pushed from an unmerged or stale commit, the tag
+version drifts from package/Tauri/Cargo metadata, or the Apple secrets are not
+configured, blank, or structurally invalid, the workflow fails before uploading
+an unsigned or wrongly sourced distribution candidate.
 Before pushing the tag, run
 `pnpm desktop:release-github -- --tag=v0.1.0` to catch missing GitHub secret
 names or a disabled release workflow from the operator machine. In the current

@@ -39,7 +39,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop checker tests cover the GitHub release operator and completion gates/,
+    /✓ desktop checker tests cover the GitHub release operator, source, and completion gates/,
   );
   assert.match(
     result.stdout,
@@ -133,7 +133,11 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ tag release workflow builds Apple Silicon and Intel DMGs on Node 24, requires a clean release slot, verifies draft assets, then publishes and re-verifies public stable assets/,
+    /✓ tag release workflow builds Apple Silicon and Intel DMGs on Node 24, requires a default-branch source, clean release slot, verifies draft assets, then publishes and re-verifies public stable assets/,
+  );
+  assert.match(
+    result.stdout,
+    /✓ desktop release source gate blocks tags from unmerged or stale commits before signing/,
   );
   assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned public releases/);
   assert.match(
@@ -271,6 +275,14 @@ test("desktop release helper scripts expose credential-aware help", () => {
       encoding: "utf8",
     },
   );
+  const releaseSource = spawnSync(
+    process.execPath,
+    ["scripts/check-macos-release-source.mjs", "--help"],
+    {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    },
+  );
   const releaseSlot = spawnSync(
     process.execPath,
     ["scripts/check-macos-release-slot.mjs", "--help"],
@@ -313,6 +325,10 @@ test("desktop release helper scripts expose credential-aware help", () => {
   assert.equal(releaseGithub.status, 0, releaseGithub.stderr);
   assert.match(releaseGithub.stdout, /GitHub-side prerequisites/);
   assert.match(releaseGithub.stdout, /APPLE_CERTIFICATE_P12_BASE64/);
+
+  assert.equal(releaseSource.status, 0, releaseSource.stderr);
+  assert.match(releaseSource.stdout, /default-branch head/);
+  assert.match(releaseSource.stdout, /unmerged PR branch/);
 
   assert.equal(releaseSlot.status, 0, releaseSlot.stderr);
   assert.match(releaseSlot.stdout, /GitHub Release already exists/);
@@ -513,7 +529,7 @@ test("desktop readiness checker enforces release workflow order", () => {
   assert.match(checker, /const releaseBuildOrder = orderedIndexes\(releaseWorkflow, \[/);
   assert.match(
     checker,
-    /"name: Verify release tag version",\s+"name: Require Apple release signing secrets"/,
+    /"name: Verify release source commit",\s+"name: Verify release tag version",\s+"name: Require Apple release signing secrets"/,
   );
   assert.match(
     checker,

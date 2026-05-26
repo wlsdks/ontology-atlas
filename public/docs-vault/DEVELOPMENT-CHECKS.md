@@ -144,7 +144,8 @@ The macOS desktop readiness gate is scaffold-aware and local-first: when
 `scripts/verify-macos-app-launch.mjs`, `scripts/verify-macos-dmg.mjs`,
 `scripts/verify-macos-install-smoke.mjs`,
 `scripts/check-macos-download-release.mjs`,
-`scripts/check-macos-release-secrets.mjs`, `scripts/check-macos-release-tag.mjs`,
+`scripts/check-macos-release-secrets.mjs`, `scripts/check-macos-release-source.mjs`,
+`scripts/check-macos-release-tag.mjs`,
 `scripts/check-macos-release-slot.mjs`, `scripts/check-macos-release-github.mjs`,
 `scripts/sign-macos-app.mjs`,
 `scripts/notarize-macos-dmg.mjs`,
@@ -169,7 +170,10 @@ handoff gate, and offline desktop docs before `.app` / `.dmg` builds; `pnpm
 desktop:check` also requires the `package.json`, `src-tauri/tauri.conf.json`,
 and `src-tauri/Cargo.toml` versions to match so app metadata, DMG filenames, and
 release tags move together; `pnpm desktop:release-tag` compares the v-prefixed
-Git tag to those versions before signing; `pnpm desktop:release-slot` fails
+Git tag to those versions before signing; `pnpm desktop:release-source` fails
+closed when a tag push points at anything other than the current default-branch
+head, so signed DMGs cannot be published from an unmerged PR branch;
+`pnpm desktop:release-slot` fails
 closed before GitHub Release upload when that same tag already has a draft,
 prerelease, or public release so stale DMG assets cannot mix with the freshly
 signed artifacts; `pnpm desktop:smoke` verifies the
@@ -313,6 +317,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, bridge tests, runtime doctor, CLI/MCP handoff, build, route smoke, DMG, and install smoke |
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
 | `pnpm desktop:release-secrets` | Fail closed before tag release when any Apple signing or notarization secret is missing, blank, or structurally invalid |
+| `pnpm desktop:release-source` | Fail closed before release signing when the tag commit is not the current default-branch head |
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
 | `pnpm desktop:release-github` | Operator-side GitHub release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, and clean same-tag Release slot |
@@ -573,6 +578,7 @@ pnpm desktop:release-preflight
 pnpm desktop:check
 pnpm desktop:doctor -- --require-runtime
 pnpm desktop:release-github -- --tag=v0.1.0
+pnpm desktop:release-source -- --sha="$(git rev-parse HEAD)"
 pnpm desktop:release-tag -- --tag=v0.1.0
 pnpm desktop:release-secrets
 pnpm desktop:build:app
@@ -599,9 +605,10 @@ before distribution checks.
 same app only after docs-vault freshness, desktop checker tests, native bridge
 tests, and the release tag/version gate pass on each macOS architecture lane.
 It builds Apple Silicon on `macos-14` and Intel on `macos-15-intel`,
-route-smokes the static desktop payload, verifies the release tag matches the
-package/Tauri/Cargo version before signing credentials enter the path, checks
-all Apple release secrets, signs the app, packages the DMG, notarizes/staples
+route-smokes the static desktop payload, verifies `${GITHUB_SHA}` is the current
+default-branch head, verifies the release tag matches the package/Tauri/Cargo
+version before signing credentials enter the path, checks all Apple release
+secrets, signs the app, packages the DMG, notarizes/staples
 it, verifies the checksum/mount/signature/staple
 contract, copy-and-launch smokes the DMG app from a temporary install folder,
 uploads workflow artifacts, attaches both DMGs plus `.sha256` files to a draft

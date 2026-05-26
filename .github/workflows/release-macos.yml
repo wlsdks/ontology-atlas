@@ -80,6 +80,11 @@ jobs:
       - name: Static desktop route smoke
         run: pnpm desktop:smoke
 
+      - name: Verify release source commit
+        run: pnpm desktop:release-source -- --sha="${GITHUB_SHA}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
       - name: Verify release tag version
         run: pnpm desktop:release-tag -- --tag="${GITHUB_REF_NAME}"
 

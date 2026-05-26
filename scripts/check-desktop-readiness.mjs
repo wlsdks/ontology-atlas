@@ -56,6 +56,7 @@ const tauriInfoPlist = readText("src-tauri/Info.plist");
 const verifyDmgScript = readText("scripts/verify-macos-dmg.mjs");
 const verifyAppScript = readText("scripts/verify-macos-app-launch.mjs");
 const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
+const releaseSourceScript = readText("scripts/check-macos-release-source.mjs");
 const releaseTagScript = readText("scripts/check-macos-release-tag.mjs");
 const releaseSlotScript = readText("scripts/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
@@ -95,6 +96,7 @@ console.log("[desktop-check] macOS desktop Tauri-shell readiness");
 
 const cargoPackageVersion = cargoToml.match(/\[package\][\s\S]*?\nversion\s*=\s*"([^"]+)"/)?.[1];
 const releaseBuildOrder = orderedIndexes(releaseWorkflow, [
+  "name: Verify release source commit",
   "name: Verify release tag version",
   "name: Require Apple release signing secrets",
   "name: Build macOS app",
@@ -203,11 +205,12 @@ if (
 
 if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-github.test.mjs") &&
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-source.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-status.test.mjs")
 ) {
-  pass("desktop checker tests cover the GitHub release operator and completion gates");
+  pass("desktop checker tests cover the GitHub release operator, source, and completion gates");
 } else {
-  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs and scripts/check-macos-release-status.test.mjs so the macOS release operator and completion gates stay covered");
+  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs, scripts/check-macos-release-source.test.mjs, and scripts/check-macos-release-status.test.mjs so the macOS release operator, source, and completion gates stay covered");
 }
 
 if (
@@ -567,6 +570,7 @@ if (
   /pnpm test:desktop:bridge/.test(releaseWorkflow) &&
   /pnpm build/.test(releaseWorkflow) &&
   /pnpm desktop:smoke/.test(releaseWorkflow) &&
+  /pnpm desktop:release-source -- --sha="\$\{GITHUB_SHA\}"/.test(releaseWorkflow) &&
   /pnpm desktop:verify-release-dmg/.test(releaseWorkflow) &&
   /pnpm desktop:verify-install/.test(releaseWorkflow) &&
   releaseWorkflow.match(/node-version:\s*24/g)?.length === 2 &&
@@ -579,10 +583,23 @@ if (
   hasStrictOrder(releaseBuildOrder) &&
   hasStrictOrder(releasePublishOrder)
 ) {
-  pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24, requires a clean release slot, verifies draft assets, then publishes and re-verifies public stable assets");
+  pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24, requires a default-branch source, clean release slot, verifies draft assets, then publishes and re-verifies public stable assets");
 } else {
   fail(
-    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag and secrets before signing, sign/notarize before upload, require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, install-smoke each DMG, then run desktop:verify-download for the tag",
+    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag commit is the default-branch head, verify the tag and secrets before signing, sign/notarize before upload, require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, install-smoke each DMG, then run desktop:verify-download for the tag",
+  );
+}
+
+if (
+  pkg.scripts?.["desktop:release-source"] === "node scripts/check-macos-release-source.mjs" &&
+  releaseWorkflow.includes('pnpm desktop:release-source -- --sha="${GITHUB_SHA}"') &&
+  releaseSourceScript.includes("default-branch head") &&
+  releaseSourceScript.includes("Merge the desktop PR and tag the default-branch head")
+) {
+  pass("desktop release source gate blocks tags from unmerged or stale commits before signing");
+} else {
+  fail(
+    "package.json and .github/workflows/release-macos.yml must run scripts/check-macos-release-source.mjs before signing so signed DMGs only publish from the default-branch head",
   );
 }
 
@@ -975,6 +992,7 @@ const tauriScaffoldFiles = [
   "scripts/verify-macos-install-smoke.mjs",
   "scripts/check-macos-download-release.mjs",
   "scripts/check-macos-release-secrets.mjs",
+  "scripts/check-macos-release-source.mjs",
   "scripts/check-macos-release-tag.mjs",
   "scripts/check-macos-release-github.mjs",
   "scripts/sign-macos-app.mjs",

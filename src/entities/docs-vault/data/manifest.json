@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-26T00:25:10.623Z",
+  "generatedAt": "2026-05-26T00:37:54.205Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3901,8 +3901,8 @@
         }
       ],
       "excerpt": "ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app should be a native shell around the same local markdown vault, not a backend, cloud sync layer, or second data store. Use Tauri first for the prototype. The repository now includes the first srctauri/ shell so desktop wor",
-      "wordCount": 2990,
-      "updatedAt": "2026-05-26T00:06:04.768Z",
+      "wordCount": 3016,
+      "updatedAt": "2026-05-26T00:37:27.300Z",
       "linksOut": []
     },
     {
@@ -3959,8 +3959,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 4910,
-      "updatedAt": "2026-05-26T00:24:13.019Z",
+      "wordCount": 4972,
+      "updatedAt": "2026-05-26T00:35:33.129Z",
       "linksOut": []
     },
     {
@@ -5129,8 +5129,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 1672,
-      "updatedAt": "2026-05-26T00:06:23.100Z",
+      "wordCount": 1696,
+      "updatedAt": "2026-05-26T00:36:09.168Z",
       "linksOut": []
     },
     {
@@ -6630,8 +6630,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 3059,
-      "updatedAt": "2026-05-25T18:40:17.773Z",
+      "wordCount": 3070,
+      "updatedAt": "2026-05-26T00:35:52.271Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]

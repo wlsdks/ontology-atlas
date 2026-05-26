@@ -136,7 +136,9 @@ step: it checks `gh` authentication, the active `release-macos.yml` workflow,
 required Apple signing/notary secret names, optional tag/version alignment, and
 the clean same-tag Release slot before the release tag is pushed. It cannot read
 secret values, so the workflow still fails closed through
-`pnpm desktop:release-secrets`. `pnpm test:desktop:check` covers this
+`pnpm desktop:release-secrets`. The workflow also runs
+`pnpm desktop:release-source` before signing, so a tag pushed from an unmerged PR
+branch or stale commit cannot publish signed DMGs. `pnpm test:desktop:check` covers this
 operator-side gate with a fake `gh` binary so PR-only workflow,
 missing-secret, tag/version, and stale release-slot failures remain explicit in
 the PR gate. The operator-side guard also catches the
