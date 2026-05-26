@@ -55,6 +55,7 @@ const bottomTabBarPolicy = readText("src/widgets/bottom-tab-bar/lib/is-tab-activ
 const tauriLib = readText("src-tauri/src/lib.rs");
 const tauriShim = readText("src/shared/lib/tauri-vault-fs.ts");
 const tauriInfoPlist = readText("src-tauri/Info.plist");
+const packageMacosDmgScript = readText("scripts/package-macos-dmg.mjs");
 const verifyDmgScript = readText("scripts/verify-macos-dmg.mjs");
 const verifyAppScript = readText("scripts/verify-macos-app-launch.mjs");
 const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
@@ -236,6 +237,22 @@ if (pkg.scripts?.["desktop:verify-dmg"] === "node scripts/verify-macos-dmg.mjs")
   pass("desktop DMG verifier is available after packaging");
 } else {
   fail("package.json must expose desktop:verify-dmg as node scripts/verify-macos-dmg.mjs");
+}
+
+if (
+  packageMacosDmgScript.includes("appBundleName") &&
+  packageMacosDmgScript.includes("releaseAssetName") &&
+  packageMacosDmgScript.includes("const appPath = path.join(bundleRoot, \"macos\", appBundleName)") &&
+  packageMacosDmgScript.includes("`${releaseAssetName}_${version}_${arch}.dmg`") &&
+  packageMacosDmgScript.includes("\"-volname\"") &&
+  packageMacosDmgScript.includes("appName") &&
+  packageMacosDmgScript.includes("path.basename(dmgPath)")
+) {
+  pass("desktop DMG packager puts the Context Atlas app bundle into oh-my-ontology release assets");
+} else {
+  fail(
+    "scripts/package-macos-dmg.mjs must source appBundleName, name the DMG with releaseAssetName_version_arch, use the appName volume label, and write a checksum for the DMG basename",
+  );
 }
 
 if (

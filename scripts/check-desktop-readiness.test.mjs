@@ -52,6 +52,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   assert.match(result.stdout, /✓ desktop DMG verifier is available after packaging/);
   assert.match(
     result.stdout,
+    /✓ desktop DMG packager puts the Context Atlas app bundle into oh-my-ontology release assets/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop install verifier copies the DMG app and launch-smokes the installed copy/,
   );
   assert.match(result.stdout, /✓ desktop release DMG verifier requires signing and notarization/);
