@@ -337,9 +337,10 @@ release evidence, top-level `blockerIds` / `localBlockerIds` /
 plus `scope` and `owner` values such as `pull_request`,
 `apple_release_secrets`, `github_release`, and `download_assets`.
 Actionable blockers also carry `commands[]` so reviewers and release operators
-can copy exact diagnostic, secret setup, or post-merge tag-push commands from
-JSON or Markdown without parsing prose; Apple signing blockers additionally
-expose `missingSecrets[]` for direct comparison against GitHub Secrets.
+can copy exact diagnostic, secret setup, pre-tag source checks, or post-merge
+tag-push commands from JSON or Markdown without parsing prose; Apple signing
+blockers additionally expose `missingSecrets[]` for direct comparison against
+GitHub Secrets.
 Firebase Hosting is not part of the macOS app release gate;
 run `pnpm desktop:verify-hosted` after the separate website deploy.
 When it reports missing secrets, set each value through `gh secret set`, for

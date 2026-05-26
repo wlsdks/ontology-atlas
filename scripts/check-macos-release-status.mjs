@@ -244,8 +244,10 @@ function secretSetCommands(repo, names) {
 
 function releasePublishCommands({ repo, tag, prNumber }) {
   const commands = [
+    `pnpm desktop:release-github -- --repo=${repo} --tag=${tag}`,
     `gh secret list --repo ${repo}`,
     `git fetch origin main --tags`,
+    `pnpm desktop:release-source -- --repo=${repo} --sha="$(git rev-parse origin/main)"`,
     `git tag ${tag} origin/main`,
     `git push origin ${tag}`,
     `gh release view ${tag} --repo ${repo}`,

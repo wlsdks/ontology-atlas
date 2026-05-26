@@ -841,6 +841,8 @@ if (
   releaseStatusScript.includes("nextActions") &&
   releaseStatusScript.includes("commands") &&
   releaseStatusScript.includes("gh pr view") &&
+  releaseStatusScript.includes("desktop:release-github") &&
+  releaseStatusScript.includes("desktop:release-source") &&
   releaseStatusScript.includes("git push origin") &&
   releaseStatusScript.includes("renderMarkdownChecklist") &&
   releaseStatusScript.includes("fs.writeFileSync") &&

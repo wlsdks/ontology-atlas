@@ -163,8 +163,10 @@ test("desktop release status emits machine-readable blockers for automation", ()
         payload.nextActions.find((action) => action.id === "github_release").commands,
         [
           "gh pr view 274 --repo wlsdks/oh-my-ontology --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
+          "pnpm desktop:release-github -- --repo=wlsdks/oh-my-ontology --tag=v0.1.0",
           "gh secret list --repo wlsdks/oh-my-ontology",
           "git fetch origin main --tags",
+          "pnpm desktop:release-source -- --repo=wlsdks/oh-my-ontology --sha=\"$(git rev-parse origin/main)\"",
           "git tag v0.1.0 origin/main",
           "git push origin v0.1.0",
           "gh release view v0.1.0 --repo wlsdks/oh-my-ontology",
@@ -398,8 +400,10 @@ test("desktop release status exposes command arrays for actionable blockers", ()
         payload.nextActions.find((action) => action.id === "github_release").commands,
         [
           "gh pr view 274 --repo wlsdks/oh-my-ontology --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
+          "pnpm desktop:release-github -- --repo=wlsdks/oh-my-ontology --tag=v0.1.0",
           "gh secret list --repo wlsdks/oh-my-ontology",
           "git fetch origin main --tags",
+          "pnpm desktop:release-source -- --repo=wlsdks/oh-my-ontology --sha=\"$(git rev-parse origin/main)\"",
           "git tag v0.1.0 origin/main",
           "git push origin v0.1.0",
           "gh release view v0.1.0 --repo wlsdks/oh-my-ontology",
