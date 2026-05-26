@@ -72,6 +72,9 @@ const requiredAppleSecretNames = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
+const requiredFirebaseSecretNames = [
+  "FIREBASE_SERVICE_ACCOUNT_JSON",
+];
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
 const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
 const ontologyViewPage = readText("src/views/ontology-view/ui/OntologyViewPage.tsx");
@@ -510,25 +513,26 @@ if (
   downloadRoute.includes("NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING") &&
   downloadRoute.includes("!== '0'") &&
   downloadRoute.includes("showFirstReleaseChecklist={showFirstReleaseChecklist}") &&
-  /first public release is still waiting on PR review and Apple signing gates/.test(
+  /first public release is still waiting on PR review, Apple signing, and Firebase Hosting gates/.test(
     enMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
   /Before the first DMG appears/.test(enMessages.download?.releaseStatusTitle ?? "") &&
   /PR #274/.test(enMessages.download?.releaseStatusPr ?? "") &&
   /before v0\.1\.0 can ship/.test(enMessages.download?.releaseStatusPr ?? "") &&
-  /Apple Developer ID signing and notarization secrets/.test(
+  /Apple Developer ID signing\/notarization secrets and the Firebase Hosting service account/.test(
     enMessages.download?.releaseStatusSecrets ?? "",
   ) &&
   /before release/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
   /v0\.1\.0 GitHub Release/.test(enMessages.download?.releaseStatusRelease ?? "") &&
   /source of truth/.test(enMessages.download?.releaseStatusRelease ?? "") &&
-  /첫 public release 가 PR review 와 Apple signing gate/.test(
+  /첫 public release 가 PR review, Apple signing, Firebase Hosting gate/.test(
     koMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
   /첫 DMG 가 보이기 전 체크리스트/.test(koMessages.download?.releaseStatusTitle ?? "") &&
   /PR #274/.test(koMessages.download?.releaseStatusPr ?? "") &&
   /v0\.1\.0 배포 전/.test(koMessages.download?.releaseStatusPr ?? "") &&
   /Apple Developer ID/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
+  /Firebase Hosting service account/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
   /릴리스 전/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
   /v0\.1\.0 GitHub Release/.test(koMessages.download?.releaseStatusRelease ?? "") &&
   /진실원/.test(koMessages.download?.releaseStatusRelease ?? "")
@@ -536,7 +540,7 @@ if (
   pass("hosted download page names first-release gates and can hide the checklist after verified DMGs publish");
 } else {
   fail(
-    "hosted download copy must condition first-release PR review, Apple signing secret, and v0.1.0 Release gates, and NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
+    "hosted download copy must condition first-release PR review, Apple signing, Firebase Hosting secret, and v0.1.0 Release gates, and NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
   );
 }
 
@@ -632,14 +636,14 @@ if (pkg.scripts?.["desktop:release-secrets"] === "node scripts/check-macos-relea
 }
 
 if (
-  requiredAppleSecretNames.every((name) =>
+  [...requiredAppleSecretNames, ...requiredFirebaseSecretNames].every((name) =>
     desktopDoc.includes(`gh secret set ${name} --repo wlsdks/oh-my-ontology < /path/to/${name}`),
   )
 ) {
-  pass("desktop release docs include gh secret set commands for every required Apple secret");
+  pass("desktop release docs include gh secret set commands for every required Apple/Firebase secret");
 } else {
   fail(
-    "docs/DESKTOP-MACOS.md must show a gh secret set command for every Apple signing/notary secret that blocks the public macOS release",
+    "docs/DESKTOP-MACOS.md must show a gh secret set command for every Apple signing/notary and Firebase Hosting secret that blocks the public macOS release",
   );
 }
 

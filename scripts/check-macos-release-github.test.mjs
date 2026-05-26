@@ -155,7 +155,7 @@ test("desktop GitHub release gate blocks an existing same-tag release slot", () 
   });
 });
 
-test("desktop GitHub release gate help lists every required Apple secret", () => {
+test("desktop GitHub release gate help lists every required Apple/Firebase secret", () => {
   const stdout = execFileSync(process.execPath, ["scripts/check-macos-release-github.mjs", "--help"], {
     cwd: process.cwd(),
     encoding: "utf8",

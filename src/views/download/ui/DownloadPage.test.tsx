@@ -47,14 +47,14 @@ describe('DownloadPage', () => {
       'https://github.com/wlsdks/oh-my-ontology',
     );
     expect(
-      screen.getByText(/first public release is still waiting on PR review and Apple signing gates/i),
+      screen.getByText(/first public release is still waiting on PR review, Apple signing, and Firebase Hosting gates/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/Before the first DMG appears/i)).toBeInTheDocument();
     expect(
       screen.getByText(/PR #274 must be reviewed and merged before v0\.1\.0 can ship/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Apple Developer ID signing and notarization secrets must be configured before release/i),
+      screen.getByText(/Apple Developer ID signing\/notarization secrets and the Firebase Hosting service account must be configured before release/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/v0\.1\.0 GitHub Release is the source of truth for verified Apple Silicon and Intel DMGs/i),
