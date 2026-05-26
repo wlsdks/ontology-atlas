@@ -228,11 +228,11 @@ function isDmgAsset(asset) {
   );
 }
 
-function isOhMyOntologyDmgAsset(asset) {
+function isAnyDmgAsset(asset) {
   return (
     asset &&
     typeof asset.name === "string" &&
-    /^oh-my-ontology_[^/]+_[^/]+\.dmg$/.test(asset.name)
+    asset.name.endsWith(".dmg")
   );
 }
 
@@ -406,7 +406,7 @@ if (release.prerelease && !options.allowPrerelease) {
 
 const assets = Array.isArray(release.assets) ? release.assets : [];
 const unsupportedDmgs = assets
-  .filter(isOhMyOntologyDmgAsset)
+  .filter(isAnyDmgAsset)
   .filter((asset) => !isDmgAsset(asset))
   .map((asset) => asset.name);
 if (unsupportedDmgs.length > 0) {

@@ -308,6 +308,25 @@ test("download release verifier rejects universal DMGs so both release lanes sta
   );
 });
 
+test("download release verifier rejects Context Atlas branded DMG asset names", async () => {
+  await withServer(
+    makeHandler({
+      names: [...dmgNames, "Context Atlas_0.1.0_aarch64.dmg"],
+    }),
+    async (baseUrl) => {
+      await assert.rejects(
+        runVerifier(baseUrl),
+        (error) => {
+          assert.match(error.stderr, /unsupported macOS DMG asset names/);
+          assert.match(error.stderr, /Context Atlas_0\.1\.0_aarch64\.dmg/);
+          assert.match(error.stderr, /oh-my-ontology_<version>_<aarch64\|x64>\.dmg/);
+          return true;
+        },
+      );
+    },
+  );
+});
+
 test("download release verifier requires a v-prefixed release tag", async () => {
   await withServer(makeHandler({ tagName: "0.1.0" }), async (baseUrl) => {
     await assert.rejects(
