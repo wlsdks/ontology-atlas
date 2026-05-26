@@ -183,7 +183,8 @@ DMG mount/checksum smoke, and temporary install launch smoke;
 audit after PR/release work: it accepts an already merged PR or checks PR
 review/merge readiness, required
 Apple signing/notary secret names, public stable GitHub Release state, and
-public DMG/checksum download verification in one fail-closed pass;
+public DMG/checksum download verification plus deployed hosted landing/download
+surface verification in one fail-closed pass;
 the hosted download page keeps its first-release availability copy aligned with
 those same review/signing blockers instead of sending users into the browser
 workbench;
@@ -212,6 +213,11 @@ unless `--allow-draft` is passed because the hosted landing page cannot serve
 them to users. The draft path also falls back to the releases list when GitHub
 hides draft releases from tag lookup, then matches the requested `tag_name`
 before byte-checking assets.
+After deploying the static website, run `pnpm desktop:verify-hosted` to confirm
+the live `/ko/` landing page no longer exposes the browser vault picker CTA and
+the live `/ko/download/` installation route exists and points to GitHub
+Releases. `pnpm desktop:release-status` includes the same hosted-page check so a
+stale Firebase deployment cannot be mistaken for a complete macOS release.
 The installed app's native vault bridge is part of this same gate:
 `src-tauri/src/lib.rs` must expose folder-pick, directory-list, read, write,
 file/directory delete, mkdir, and exists commands, and
@@ -303,12 +309,13 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
 | `pnpm desktop:release-github` | Operator-side GitHub release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, and clean same-tag Release slot |
-| `pnpm desktop:release-status` | Completion audit for PR review/merge readiness, Apple release secret names, public stable Release state, and public DMG/checksum download verification |
+| `pnpm desktop:release-status` | Completion audit for PR review/merge readiness, Apple release secret names, public stable Release state, public DMG/checksum download verification, and hosted website deployment |
 | `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available |
 | `pnpm desktop:verify-dmg` | Mount and checksum smoke for the generated macOS DMG before GitHub Release upload |
 | `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment |
 | `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported extra `oh-my-ontology_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
+| `pnpm desktop:verify-hosted` | Live hosted website verifier: requires `/ko/` to be promo/download-first and `/ko/download/` to exist with the GitHub Releases CTA, rejecting stale browser-vault CTAs |
 | `pnpm test:desktop:check` | Desktop readiness checker contract; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
 | `pnpm test:i18n:messages` | Locale routing/message catalog parity |
@@ -570,7 +577,7 @@ pnpm desktop:notarize
 pnpm desktop:verify-release-dmg
 
 # Completion audit after PR review/merge, Apple secrets, tag workflow, and
-# public release publication are expected to be done:
+# public release publication plus Firebase Hosting deploy are expected to be done:
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0
 ```
 

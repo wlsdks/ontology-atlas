@@ -180,6 +180,12 @@ for a macOS prototype:
   published, rebuild the hosted site with
   `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` to hide that pre-release
   checklist without a code change.
+- `scripts/check-hosted-download-surface.mjs` verifies the deployed hosted
+  website after Firebase Hosting deploy: `/ko/` must be promo/download-first,
+  must not expose the old browser vault picker CTA, and `/ko/download/` must
+  exist with the GitHub Releases download path. This catches the stale live-site
+  state where the app code is ready but `oh-my-ontology.web.app` still serves
+  the previous web-workbench landing page or a missing download route.
 - The `/docs/?intent=local` vault-opening path is desktop-only: hosted browser
   sessions keep `/docs` in the read-only packaged docs mode, disable the local
   vault source, and point users back to the macOS download path instead of
@@ -296,8 +302,8 @@ branch, then configure the Apple secrets.
 Use `pnpm desktop:release-status -- --pr=274 --tag=v0.1.0` as the completion
 audit before calling the macOS app goal done: it accepts an already merged PR or
 checks PR review/merge readiness, required Apple signing/notary secret names,
-public stable GitHub Release state, and then delegates to the public
-DMG/checksum download verifier.
+public stable GitHub Release state, then delegates to the public DMG/checksum
+download verifier and the live hosted website verifier.
 When it reports missing secrets, set each value through `gh secret set`, for
 example:
 

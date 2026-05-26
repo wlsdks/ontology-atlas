@@ -87,6 +87,7 @@ function runStatus(fakeGhPath, args = ["--tag=v0.1.0", "--pr=274"]) {
       ...process.env,
       OMOT_GH_BIN: fakeGhPath,
       OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY: "1",
+      OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY: "1",
     },
   });
 }
@@ -123,6 +124,7 @@ test("desktop release status passes when PR, secrets, and stable release are rea
     assert.match(result.stdout, /✓ Apple release secrets: all required Apple signing\/notary secret names exist/);
     assert.match(result.stdout, /✓ GitHub Release: v0\.1\.0 is public and stable/);
     assert.match(result.stdout, /· Download assets: skipped by OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1/);
+    assert.match(result.stdout, /· Hosted website: skipped by OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY=1/);
     assert.match(result.stdout, /ready: public macOS release requirements are satisfied/);
   });
 });
@@ -152,4 +154,5 @@ test("desktop release status help describes the completion audit", () => {
 
   assert.match(stdout, /release completion state/);
   assert.match(stdout, /downloadable DMG\/checksum assets/);
+  assert.match(stdout, /Hosted website/);
 });

@@ -24,7 +24,8 @@ function printHelp() {
 
 Checks the public macOS release completion state in one fail-closed pass:
 pull-request merge readiness, Apple signing/notary secret names, public GitHub
-Release state, and downloadable DMG/checksum assets.
+Release state, downloadable DMG/checksum assets, and the deployed Hosted website
+download surface.
 
 This command is an operator/completion audit. It does not publish tags, set
 secrets, or edit releases.
@@ -255,6 +256,21 @@ async function main() {
       } else {
         checks.push(blocked("Download assets", download.message, `Run pnpm desktop:verify-download -- --repo=${options.repo} --tag=${options.tag}.`));
       }
+    }
+  }
+
+  if (process.env.OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY === "1") {
+    checks.push(skipped("Hosted website", "skipped by OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY=1"));
+  } else {
+    const hosted = runNode(["scripts/check-hosted-download-surface.mjs"]);
+    if (hosted.ok) {
+      checks.push(ok("Hosted website", "deployed landing and download pages are promo/download aligned"));
+    } else {
+      checks.push(blocked(
+        "Hosted website",
+        hosted.message,
+        "Deploy the current static out/ to Firebase Hosting, then rerun pnpm desktop:verify-hosted.",
+      ));
     }
   }
 

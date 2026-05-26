@@ -148,10 +148,13 @@ failure to secret registration.
 audit once the PR and release path are expected to be ready. It accepts an
 already merged PR or checks PR review/merge readiness, required Apple release
 secret names, public stable GitHub Release state, and then runs the public
-DMG/checksum download verifier.
+DMG/checksum download verifier plus the deployed hosted website verifier.
+`pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`
+landing/download pages and rejects a stale public deployment that still shows
+the old browser vault picker CTA or lacks `/ko/download/`.
 It is intentionally read-only and fail-closed, so the macOS app work is not
-treated as complete while review, secrets, release publication, or public asset
-verification are still blocked.
+treated as complete while review, secrets, release publication, public asset
+verification, or hosted-site deployment are still blocked.
 `pnpm desktop:release-preflight` is the local pre-tag gate for readiness,
 docs-vault freshness, desktop tests, native bridge tests, runtime doctor,
 `cli:mcp-verify docs/ontology --timeout-ms 15000`, build, route smoke, DMG

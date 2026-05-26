@@ -60,6 +60,7 @@ const releaseTagScript = readText("scripts/check-macos-release-tag.mjs");
 const releaseSlotScript = readText("scripts/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
 const releaseStatusScript = readText("scripts/check-macos-release-status.mjs");
+const hostedDownloadSurfaceScript = readText("scripts/check-hosted-download-surface.mjs");
 const requiredAppleSecretNames = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
@@ -268,6 +269,21 @@ if (
 } else {
   fail(
     "package.json must expose desktop:verify-download as node scripts/check-macos-download-release.mjs",
+  );
+}
+
+if (
+  pkg.scripts?.["desktop:verify-hosted"] ===
+  "node scripts/check-hosted-download-surface.mjs" &&
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-hosted-download-surface.test.mjs") &&
+  hostedDownloadSurfaceScript.includes("내 마크다운 폴더 열기") &&
+  hostedDownloadSurfaceScript.includes("/ko/download/") &&
+  hostedDownloadSurfaceScript.includes("https://github.com/wlsdks/oh-my-ontology/releases")
+) {
+  pass("hosted website verifier catches stale browser-vault CTAs and missing download routes");
+} else {
+  fail(
+    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must reject stale browser-vault CTAs while requiring the hosted /ko/download/ route",
   );
 }
 
@@ -619,12 +635,14 @@ if (
   releaseStatusScript.includes('"secret"') &&
   releaseStatusScript.includes('"release"') &&
   releaseStatusScript.includes("check-macos-download-release.mjs") &&
-  releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY")
+  releaseStatusScript.includes("check-hosted-download-surface.mjs") &&
+  releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY") &&
+  releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY")
 ) {
-  pass("desktop release status gate audits PR readiness, Apple secrets, public release state, and download assets");
+  pass("desktop release status gate audits PR readiness, Apple secrets, public release state, download assets, and hosted website deployment");
 } else {
   fail(
-    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit PR readiness, Apple secret names, public release state, and public download assets",
+    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit PR readiness, Apple secret names, public release state, public download assets, and the deployed hosted website",
   );
 }
 

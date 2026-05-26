@@ -65,6 +65,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ hosted website verifier catches stale browser-vault CTAs and missing download routes/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop download verifier rejects stale DMG versions, unsupported DMG names, and checksum mismatches, including tagged draft pre-publish assets/,
   );
   assert.match(
@@ -146,7 +150,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop release status gate audits PR readiness, Apple secrets, public release state, and download assets/,
+    /✓ desktop release status gate audits PR readiness, Apple secrets, public release state, download assets, and hosted website deployment/,
   );
   assert.match(result.stdout, /✓ desktop signing script is available for release builds/);
   assert.match(result.stdout, /✓ desktop notarization script is available for release builds/);
