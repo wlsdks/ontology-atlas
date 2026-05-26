@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import test from "node:test";
 
-function withFakePnpm(run) {
+function withFakePnpm(run, scenario = {}) {
   const root = mkdtempSync(join(tmpdir(), "omo-goal-audit-"));
   try {
     const logPath = join(root, "pnpm.log");
@@ -14,7 +14,15 @@ function withFakePnpm(run) {
       binPath,
       `#!/usr/bin/env node
 import { appendFileSync } from "node:fs";
+const scenario = ${JSON.stringify(scenario)};
+const args = process.argv.slice(2);
 appendFileSync(${JSON.stringify(logPath)}, JSON.stringify(process.argv.slice(2)) + "\\n");
+if (args[0] === "desktop:release-preflight" && scenario.preflightStatus) {
+  process.exit(scenario.preflightStatus);
+}
+if (args[0] === "desktop:release-status" && scenario.releaseStatus) {
+  process.exit(scenario.releaseStatus);
+}
 process.exit(0);
 `,
     );
@@ -87,6 +95,45 @@ test("desktop goal audit runs preflight before full hosted release status", () =
       ],
     ]);
   });
+});
+
+test("desktop goal audit stops before release status when preflight fails", () => {
+  withFakePnpm(({ binPath, logPath }) => {
+    const result = runGoalAudit(["--pr=274", "--tag=v0.1.0"], binPath);
+
+    assert.equal(result.status, 7);
+    const calls = readFileSync(logPath, "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.deepEqual(calls, [
+      ["desktop:release-preflight"],
+    ]);
+  }, { preflightStatus: 7 });
+});
+
+test("desktop goal audit returns the release status failure code", () => {
+  withFakePnpm(({ binPath, logPath }) => {
+    const result = runGoalAudit(["--pr=274", "--tag=v0.1.0"], binPath);
+
+    assert.equal(result.status, 9);
+    const calls = readFileSync(logPath, "utf8")
+      .trim()
+      .split("\n")
+      .map((line) => JSON.parse(line));
+    assert.deepEqual(calls, [
+      ["desktop:release-preflight"],
+      [
+        "desktop:release-status",
+        "--",
+        "--repo=wlsdks/oh-my-ontology",
+        "--pr=274",
+        "--tag=v0.1.0",
+        "--include-hosted-surface",
+        "--hosted-base-url=https://oh-my-ontology.web.app",
+      ],
+    ]);
+  }, { releaseStatus: 9 });
 });
 
 test("desktop goal audit help describes the required evidence", () => {
