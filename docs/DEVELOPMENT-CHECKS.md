@@ -221,9 +221,10 @@ parsing human text; add `--json-file=<path>` when the command is invoked through
 a package runner that may add lifecycle text around stdout, and add
 `--markdown-file=<path>` when a reviewer or release operator needs a
 human-readable checklist artifact. The JSON snapshot
-includes `schemaVersion` and `generatedAt` so stored release evidence can be
-versioned and ordered; top-level `blockerIds` and `nextActions` summarize the
-blocked checks, and each check also carries a stable `id` such as `pull_request`,
+includes `schemaVersion`, `generatedAt`, `status`, `readyAt`, and `blockedAt`
+so stored release evidence can be versioned, ordered, and filtered by outcome;
+top-level `blockerIds` and `nextActions` summarize the blocked checks, and each
+check also carries a stable `id` such as `pull_request`,
 `apple_release_secrets`, `github_release`, and `download_assets` so automation
 does not branch on translated or edited labels.
 Firebase Hosting is not part of the macOS

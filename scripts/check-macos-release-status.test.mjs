@@ -117,6 +117,9 @@ test("desktop release status emits machine-readable blockers for automation", ()
       assert.equal(payload.tag, "v0.1.0");
       assert.equal(payload.pr, "274");
       assert.equal(payload.ready, false);
+      assert.equal(payload.status, "blocked");
+      assert.equal(payload.readyAt, null);
+      assert.equal(payload.blockedAt, payload.generatedAt);
       assert.equal(payload.blockerCount, 3);
       assert.deepEqual(payload.blockerIds, [
         "pull_request",
@@ -179,6 +182,9 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
         assert.equal(payload.schemaVersion, 1);
         assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
         assert.equal(payload.ready, false);
+        assert.equal(payload.status, "blocked");
+        assert.equal(payload.readyAt, null);
+        assert.equal(payload.blockedAt, payload.generatedAt);
         assert.equal(payload.blockerCount, 3);
         assert.deepEqual(payload.blockerIds, [
           "pull_request",
@@ -228,7 +234,10 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /^# macOS Release Status/);
         assert.match(markdown, /- Repo: `wlsdks\/oh-my-ontology`/);
         assert.match(markdown, /- Tag: `v0\.1\.0`/);
+        assert.match(markdown, /- Status: blocked/);
         assert.match(markdown, /- Ready: no/);
+        assert.match(markdown, /- Ready at: not ready/);
+        assert.match(markdown, /- Blocked at: \d{4}-\d{2}-\d{2}T/);
         assert.match(markdown, /## Blockers/);
         assert.match(markdown, /- \[ \] Pull request \(`pull_request`\)/);
         assert.match(markdown, /- \[ \] Apple release secrets \(`apple_release_secrets`\)/);
@@ -329,6 +338,9 @@ test("desktop release status JSON reports ready when all release gates pass", ()
     assert.equal(payload.schemaVersion, 1);
     assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
     assert.equal(payload.ready, true);
+    assert.equal(payload.status, "ready");
+    assert.equal(payload.readyAt, payload.generatedAt);
+    assert.equal(payload.blockedAt, null);
     assert.equal(payload.blockerCount, 0);
     assert.deepEqual(payload.blockerIds, []);
     assert.deepEqual(payload.nextActions, []);
@@ -364,7 +376,10 @@ test("desktop release status markdown reports ready when all release gates pass"
 
       assert.equal(result.status, 0, result.stderr);
       const markdown = readFileSync(markdownPath, "utf8");
+      assert.match(markdown, /- Status: ready/);
       assert.match(markdown, /- Ready: yes/);
+      assert.match(markdown, /- Ready at: \d{4}-\d{2}-\d{2}T/);
+      assert.match(markdown, /- Blocked at: not blocked/);
       assert.match(markdown, /No blockers\./);
       assert.match(markdown, /- \[x\] Pull request \(`pull_request`\)/);
       assert.match(markdown, /- \[-\] Download assets \(`download_assets`\)/);

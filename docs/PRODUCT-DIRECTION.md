@@ -282,7 +282,8 @@ goal runners or dashboards that need structured release blockers; `--json-file`
 writes the same snapshot to disk when stdout may be wrapped by package-runner
 logs, and `--markdown-file` writes a reviewer/operator checklist from the same
 audit result. The snapshot carries `schemaVersion` and `generatedAt` so saved
-release evidence has a stable contract and timestamp, and each check carries a
+release evidence has a stable contract and timestamp; `status`, `readyAt`, and
+`blockedAt` make saved snapshots filterable by outcome, and each check carries a
 stable machine id with top-level `blockerIds` / `nextActions` so automation can
 branch without scraping human labels. Firebase
 Hosting remains a separate website

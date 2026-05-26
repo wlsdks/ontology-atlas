@@ -827,6 +827,8 @@ if (
   releaseStatusScript.includes('"--markdown-file="') &&
   releaseStatusScript.includes("schemaVersion") &&
   releaseStatusScript.includes("generatedAt") &&
+  releaseStatusScript.includes("readyAt") &&
+  releaseStatusScript.includes("blockedAt") &&
   releaseStatusScript.includes("apple_release_secrets") &&
   releaseStatusScript.includes("download_assets") &&
   releaseStatusScript.includes("blockerCount") &&

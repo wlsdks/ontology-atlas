@@ -341,13 +341,18 @@ async function main() {
 
 function renderAndExit(options, checks) {
   const blockers = checks.filter((check) => check.status === "blocked");
+  const generatedAt = new Date().toISOString();
+  const ready = blockers.length === 0;
   const payload = {
     schemaVersion: 1,
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     repo: options.repo,
     tag: options.tag,
     pr: options.pr || null,
-    ready: blockers.length === 0,
+    ready,
+    status: ready ? "ready" : "blocked",
+    readyAt: ready ? generatedAt : null,
+    blockedAt: ready ? null : generatedAt,
     blockerCount: blockers.length,
     blockerIds: blockers.map((check) => check.id),
     nextActions: blockers
@@ -396,8 +401,11 @@ function renderMarkdownChecklist(payload) {
     `- Repo: \`${payload.repo}\``,
     `- Tag: \`${payload.tag}\``,
     `- PR: ${payload.pr ? `#${payload.pr}` : "not checked"}`,
+    `- Status: ${payload.status}`,
     `- Ready: ${payload.ready ? "yes" : "no"}`,
     `- Generated: ${payload.generatedAt}`,
+    `- Ready at: ${payload.readyAt ?? "not ready"}`,
+    `- Blocked at: ${payload.blockedAt ?? "not blocked"}`,
     "",
     "## Blockers",
     "",
