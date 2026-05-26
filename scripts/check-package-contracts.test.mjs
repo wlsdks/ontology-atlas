@@ -510,7 +510,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm desktop:verify-dmg` \| Mount and checksum smoke for the generated macOS DMG, including app bundle presence and `\/Applications` symlink target, before GitHub Release upload \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-release-dmg` \| Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-download` \| Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `oh-my-ontology_\*\.dmg` names, and verifies matching `\.sha256` contents and downloaded bytes \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:verify-hosted` \| Live hosted website verifier: requires `\/ko\/` to be promo\/download-first and `\/ko\/download\/` to exist with the GitHub Releases CTA, rejecting stale browser-vault CTAs \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:verify-hosted` \| Live hosted website verifier: requires `\/ko\/` to be promo\/download-first and `\/ko\/download\/` to exist with the stable GitHub Releases CTA, rejecting stale browser-vault CTAs and `\/releases\/latest` \|/);
     assert.match(checksDoc, /\| `pnpm test:desktop:check` \| Desktop readiness checker contract; use direct `pnpm exec node --test scripts\/check-desktop-readiness\.test\.mjs` first when printed \|/);
     assert.match(checksDoc, /\| `pnpm exec tsc --noEmit` \| TypeScript and Next config type safety \|/);
     assert.match(checksDoc, /\| `pnpm test:i18n:messages` \| Locale routing\/message catalog parity \|/);

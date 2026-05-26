@@ -100,6 +100,52 @@ test("hosted download surface check rejects a missing download route", async () 
   }
 });
 
+test("hosted download surface check rejects a download page without the release CTA href", async () => {
+  const server = await startServer({
+    "/ko/": { body: alignedLanding },
+    "/ko/download/": {
+      body: alignedDownload.replace(
+        "https://github.com/wlsdks/oh-my-ontology/releases",
+        "https://github.com/wlsdks/oh-my-ontology",
+      ),
+    },
+  });
+  try {
+    await assert.rejects(
+      evaluateHostedSurface({
+        baseUrl: server.baseUrl,
+        timeoutMs: 5000,
+      }),
+      /\/ko\/download\/ is missing expected text: https:\/\/github\.com\/wlsdks\/oh-my-ontology\/releases/,
+    );
+  } finally {
+    await server.close();
+  }
+});
+
+test("hosted download surface check rejects unstable latest-release URLs", async () => {
+  const server = await startServer({
+    "/ko/": {
+      body: alignedLanding.replace(
+        "https://github.com/wlsdks/oh-my-ontology/releases",
+        "https://github.com/wlsdks/oh-my-ontology/releases/latest",
+      ),
+    },
+    "/ko/download/": { body: alignedDownload },
+  });
+  try {
+    await assert.rejects(
+      evaluateHostedSurface({
+        baseUrl: server.baseUrl,
+        timeoutMs: 5000,
+      }),
+      /hosted pages still contains stale hosted-workbench text: https:\/\/github\.com\/wlsdks\/oh-my-ontology\/releases\/latest/,
+    );
+  } finally {
+    await server.close();
+  }
+});
+
 test("hosted download surface CLI prints the deploy recovery path for live 404s", async () => {
   const server = await startServer({
     "/ko/": { body: alignedLanding },

@@ -71,7 +71,7 @@ input (humans + AI agents)     parse           store              output
 - **Secondary CTA**: "Installation guide" → `/download/`
 - **No hosted workbench CTA**: public web pages do not route new users into `/docs/?intent=local`; local vault work starts inside the installed app
 - **First-release checklist**: `/download/` shows macOS app blockers (PR review, tag/package/Tauri/Cargo version alignment, Apple signing, v0.1.0 GitHub Release) separately from the Firebase Hosting `/ko/download/` website deploy gate; rebuild with `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` after verified DMGs publish and the hosted download route is live to hide it.
-- **Live deploy verification**: `pnpm desktop:verify-hosted` checks the deployed `oh-my-ontology.web.app` landing/download pages so a stale public site with the old browser-vault CTA or missing `/ko/download/` route cannot satisfy the desktop release goal.
+- **Live deploy verification**: `pnpm desktop:verify-hosted` checks the deployed `oh-my-ontology.web.app` landing/download pages so a stale public site with the old browser-vault CTA, missing `/ko/download/` route, or unstable `/releases/latest` CTA cannot satisfy the desktop release goal.
 - **Privacy note**: the installed app and vault data use local disk as the source of truth; the hosted site is product introduction + download entry
 - **Footer**: license · GitHub · stack chips · `LocaleSwitch`
 

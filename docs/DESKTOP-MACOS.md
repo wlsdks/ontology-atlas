@@ -206,7 +206,8 @@ for a macOS prototype:
 - `scripts/check-hosted-download-surface.mjs` verifies the deployed hosted
   website after Firebase Hosting deploy: `/ko/` must be promo/download-first,
   must not expose the old browser vault picker CTA, and `/ko/download/` must
-  exist with the GitHub Releases download path. This catches the stale live-site
+  exist with the stable GitHub Releases download path instead of
+  `/releases/latest`. This catches the stale live-site
   state where the app code is ready but `oh-my-ontology.web.app` still serves
   the previous web-workbench landing page or a missing download route. If the
   live `/ko/download/` route returns 404, merge the desktop PR so

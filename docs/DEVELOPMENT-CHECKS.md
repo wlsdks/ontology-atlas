@@ -284,8 +284,8 @@ hides draft releases from tag lookup, then matches the requested `tag_name`
 before byte-checking assets.
 After deploying the static website, run `pnpm desktop:verify-hosted` to confirm
 the live `/ko/` landing page no longer exposes the browser vault picker CTA and
-the live `/ko/download/` installation route exists and points to GitHub
-Releases. This hosted-page check is separate from `pnpm desktop:release-status`
+the live `/ko/download/` installation route exists and points directly to the
+stable GitHub Releases page, not `/releases/latest`. This hosted-page check is separate from `pnpm desktop:release-status`
 so a Firebase deployment problem cannot block the local-only macOS app release.
 When `/ko/download/` returns 404, the recovery path is to merge the desktop PR
 so `.github/workflows/deploy-hosting.yml` is available on the default branch,
@@ -404,7 +404,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:verify-dmg` | Mount and checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
 | `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment |
 | `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `oh-my-ontology_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
-| `pnpm desktop:verify-hosted` | Live hosted website verifier: requires `/ko/` to be promo/download-first and `/ko/download/` to exist with the GitHub Releases CTA, rejecting stale browser-vault CTAs |
+| `pnpm desktop:verify-hosted` | Live hosted website verifier: requires `/ko/` to be promo/download-first and `/ko/download/` to exist with the stable GitHub Releases CTA, rejecting stale browser-vault CTAs and `/releases/latest` |
 | `pnpm test:desktop:check` | Desktop readiness checker contract; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
 | `pnpm test:i18n:messages` | Locale routing/message catalog parity |

@@ -359,13 +359,15 @@ if (
   hostedDownloadSurfaceScript.includes("내 마크다운 폴더 열기") &&
   hostedDownloadSurfaceScript.includes("/ko/download/") &&
   hostedDownloadSurfaceScript.includes("https://github.com/wlsdks/oh-my-ontology/releases") &&
+  hostedDownloadSurfaceScript.includes("releases/latest") &&
+  hostedDownloadSurfaceScript.includes("assertIncludes(download.body, downloadPath") &&
   hostedDownloadSurfaceScript.includes("deploy-hosting.yml") &&
   hostedDownloadSurfaceScript.includes("gh workflow run deploy-hosting.yml")
 ) {
-  pass("hosted website verifier catches stale browser-vault CTAs, missing download routes, and prints deploy recovery");
+  pass("hosted website verifier requires stable GitHub Releases CTAs on the download route and prints deploy recovery");
 } else {
   fail(
-    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must reject stale browser-vault CTAs while requiring the hosted /ko/download/ route and printing the deploy-hosting recovery path",
+    "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must reject stale browser-vault CTAs, require the hosted /ko/download/ route, require a stable GitHub Releases CTA on the download route, reject releases/latest, and print the deploy-hosting recovery path",
   );
 }
 

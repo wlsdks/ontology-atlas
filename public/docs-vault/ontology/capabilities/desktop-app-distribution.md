@@ -204,7 +204,8 @@ deploy secret, and website check as `hosted_deploy_workflow`,
 `hosted_deploy_secrets`, and `hosted_surface` in the same blocker snapshot.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`
 landing/download pages and rejects a stale public deployment that still shows
-the old browser vault picker CTA or lacks `/ko/download/`.
+the old browser vault picker CTA, lacks `/ko/download/`, or points the download
+CTA at `/releases/latest` instead of the stable GitHub Releases page.
 When that live download route returns 404, the verifier points the operator to
 merge the desktop PR so `.github/workflows/deploy-hosting.yml` is available on
 the default branch, dispatch

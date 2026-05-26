@@ -167,7 +167,7 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
 
   const landingText = renderedText(landing.body);
   const downloadText = renderedText(download.body);
-  const combinedHtml = `${landing.body}\n${download.body}`;
+  const releasesUrl = "https://github.com/wlsdks/oh-my-ontology/releases";
 
   assertIncludes(landingText, landingPath, [
     "Context Atlas",
@@ -187,8 +187,10 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
     "소스 코드 보기",
     "호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다",
   ]);
-  assertIncludes(combinedHtml, "hosted pages", [
-    "https://github.com/wlsdks/oh-my-ontology/releases",
+  assertIncludes(landing.body, landingPath, [releasesUrl]);
+  assertIncludes(download.body, downloadPath, [releasesUrl]);
+  assertExcludes(`${landing.body}\n${download.body}`, "hosted pages", [
+    "https://github.com/wlsdks/oh-my-ontology/releases/latest",
   ]);
 
   return {
