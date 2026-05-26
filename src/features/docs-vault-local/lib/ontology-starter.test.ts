@@ -136,6 +136,16 @@ describe("buildMcpConfigJson", () => {
     expect(buildMcpConfigJson("한글-vault")).toContain("your 한글-vault folder");
   });
 
+  it("설치 앱이 알고 있는 vault 절대경로를 OMOT_VAULT 에 바로 넣을 수 있다", () => {
+    const parsed = JSON.parse(
+      buildMcpConfigJson("team-vault", "/Users/jinan/Team Vault/docs/ontology"),
+    );
+
+    expect(parsed.mcpServers["oh-my-ontology"].env.OMOT_VAULT).toBe(
+      "/Users/jinan/Team Vault/docs/ontology",
+    );
+  });
+
   it("출력 끝에 newline 추가 (편집기 친화)", () => {
     expect(buildMcpConfigJson("v")).toMatch(/\n$/);
   });
@@ -181,6 +191,18 @@ describe("buildCodexConfigToml", () => {
     expect(toml).toMatch(/\n$/);
   });
 
+  it("Codex codebase-root MCP config template 은 알려진 vault 절대경로를 바로 넣을 수 있다", () => {
+    const toml = buildCodexConfigTomlTemplate(
+      "team-vault",
+      "/Users/jinan/Team Vault/docs/ontology",
+    );
+
+    expect(toml).toContain(
+      'OMOT_VAULT = "/Users/jinan/Team Vault/docs/ontology"',
+    );
+    expect(toml).not.toContain("<absolute path to your team-vault folder>");
+  });
+
   it("Codex MCP config 는 OMOT_VAULT 값을 TOML string 으로 escape 한다", () => {
     const toml = buildCodexConfigToml('/tmp/vault "quoted"');
     expect(toml).toContain('OMOT_VAULT = "/tmp/vault \\"quoted\\""');
@@ -196,6 +218,18 @@ describe("buildCodexMcpAddCommandTemplate", () => {
       "OMOT_VAULT='<absolute path to your team-vault folder>'",
     );
     expect(command).toContain("npx -y oh-my-ontology-mcp");
+  });
+
+  it("Codex CLI one-line MCP 등록 명령은 알려진 vault 절대경로를 shell-safe 하게 넣는다", () => {
+    const command = buildCodexMcpAddCommandTemplate(
+      "team-vault",
+      "/Users/jinan/Team Vault/docs/ontology",
+    );
+
+    expect(command).toContain(
+      "OMOT_VAULT='/Users/jinan/Team Vault/docs/ontology'",
+    );
+    expect(command).not.toContain("<absolute path to your team-vault folder>");
   });
 
   it("vault 이름의 작은따옴표를 shell-safe 하게 escape 한다", () => {

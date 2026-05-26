@@ -13,8 +13,6 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
-  buildAgentSetupCheckCliCommandTemplate,
-  buildAgentSetupCliCommandTemplate,
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
   buildMcpConfigJson,
@@ -94,10 +92,33 @@ const AGENT_MCP_CONNECTED_PROOF_LINES = [
   'Use these MCP calls only after mcp-verify succeeds; if MCP is unavailable, use the CLI proof below.',
 ];
 
-function buildAgentFirstContactProofPacket(vaultName: string): string {
-  const vaultPathPlaceholder = `<absolute path to your ${vaultName} folder>`;
-  const vaultPathArg = shellQuoteForPacket(vaultPathPlaceholder);
-  const setupStateCommand = buildAgentSetupCheckCliCommandTemplate(vaultName);
+function vaultPathForPacket(vaultName: string, vaultPath?: string | null): string {
+  return vaultPath ?? `<absolute path to your ${vaultName} folder>`;
+}
+
+function buildAgentSetupCliCommand(
+  vaultName: string,
+  mode: 'json' | 'write',
+  vaultPath?: string | null,
+): string {
+  const command = [
+    'oh-my-ontology',
+    'agent-setup',
+    shellQuoteForPacket(vaultPathForPacket(vaultName, vaultPath)),
+    '--root',
+    shellQuoteForPacket('<absolute path to your codebase root>'),
+  ];
+  command.push(mode === 'json' ? '--json' : '--write');
+  return command.join(' ');
+}
+
+function buildAgentFirstContactProofPacket(
+  vaultName: string,
+  vaultPath?: string | null,
+): string {
+  const vaultPathLabel = vaultPathForPacket(vaultName, vaultPath);
+  const vaultPathArg = shellQuoteForPacket(vaultPathLabel);
+  const setupStateCommand = buildAgentSetupCliCommand(vaultName, 'json', vaultPath);
 
   return [
     'oh-my-ontology first-contact agent proof',
@@ -106,7 +127,7 @@ function buildAgentFirstContactProofPacket(vaultName: string): string {
     '',
     'Setup gate:',
     `1. ${setupStateCommand}`,
-    `2. If setup state reports missing configs: ${buildAgentSetupCliCommandTemplate(vaultName)}`,
+    `2. If setup state reports missing configs: ${buildAgentSetupCliCommand(vaultName, 'write', vaultPath)}`,
     `3. Restart Claude Code / Cursor / Codex from the codebase root after repair.`,
     `4. oh-my-ontology mcp-verify ${vaultPathArg} --timeout-ms 15000`,
     `5. oh-my-ontology agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
@@ -127,22 +148,24 @@ function buildAgentFirstContactProofPacket(vaultName: string): string {
   ].join('\n');
 }
 
-function buildAgentSetupPacket(vaultName: string): string {
-  const vaultPathPlaceholder = `<absolute path to your ${vaultName} folder>`;
-  const vaultPathArg = shellQuoteForPacket(vaultPathPlaceholder);
+function buildAgentSetupPacket(vaultName: string, vaultPath?: string | null): string {
+  const vaultPathLabel = vaultPathForPacket(vaultName, vaultPath);
+  const vaultPathArg = shellQuoteForPacket(vaultPathLabel);
   const codebaseRootPlaceholder = '<absolute path to your codebase root>';
-  const setupStateCommand = buildAgentSetupCheckCliCommandTemplate(vaultName);
-  const setupRepairCommand = buildAgentSetupCliCommandTemplate(vaultName);
+  const setupStateCommand = buildAgentSetupCliCommand(vaultName, 'json', vaultPath);
+  const setupRepairCommand = buildAgentSetupCliCommand(vaultName, 'write', vaultPath);
 
   return [
     'oh-my-ontology agent setup packet',
     '',
     'Use this when Claude Code, Cursor, or Codex is opened at a separate codebase root.',
-    'Replace every <absolute path...> placeholder before using the config.',
+    vaultPath
+      ? 'The ontology vault path below came from the installed desktop app; replace only the agent root placeholder before using codebase-root commands.'
+      : 'Replace every <absolute path...> placeholder before using the config.',
     '',
     'Root check:',
     `- Agent root: ${codebaseRootPlaceholder}`,
-    `- Ontology vault: ${vaultPathPlaceholder}`,
+    `- Ontology vault: ${vaultPathLabel}`,
     '- Run the setup gate from the agent root; pass the ontology vault path explicitly when the vault is not the cwd.',
     '',
     ...AGENT_MODE_PACKET_LINES,
@@ -170,13 +193,13 @@ function buildAgentSetupPacket(vaultName: string): string {
     'docs/AGENT-GRAPH-WORKFLOW.md',
     '',
     'Claude Code / Cursor .mcp.json:',
-    buildMcpConfigJson(vaultName),
+    buildMcpConfigJson(vaultName, vaultPath),
     '',
     'Codex .codex/config.toml:',
-    buildCodexConfigTomlTemplate(vaultName),
+    buildCodexConfigTomlTemplate(vaultName, vaultPath),
     '',
     'Codex one-line registration:',
-    buildCodexMcpAddCommandTemplate(vaultName),
+    buildCodexMcpAddCommandTemplate(vaultName, vaultPath),
     '',
     'After registering, restart the agent and paste this verification prompt:',
     ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
@@ -486,7 +509,7 @@ export function VaultToolsMenu({
 
   async function handleCopyAgentSetupPacket() {
     const copied = await copyText(
-      buildAgentSetupPacket(localVault.handle?.name ?? 'vault'),
+      buildAgentSetupPacket(localVault.handle?.name ?? 'vault', vaultRootPath),
     );
     setAgentPacketCopyState(copied ? 'copied' : 'failed');
   }
@@ -508,7 +531,7 @@ export function VaultToolsMenu({
 
   async function handleCopyAgentFirstContactProof() {
     const copied = await copyText(
-      buildAgentFirstContactProofPacket(localVault.handle?.name ?? 'vault'),
+      buildAgentFirstContactProofPacket(localVault.handle?.name ?? 'vault', vaultRootPath),
     );
     setAgentFirstContactProofCopyState(copied ? 'copied' : 'failed');
   }
@@ -522,14 +545,14 @@ export function VaultToolsMenu({
 
   async function handleCopyAgentSetupCheckCliCommand() {
     const copied = await copyText(
-      buildAgentSetupCheckCliCommandTemplate(localVault.handle?.name ?? 'vault'),
+      buildAgentSetupCliCommand(localVault.handle?.name ?? 'vault', 'json', vaultRootPath),
     );
     setAgentSetupCheckCliCopyState(copied ? 'copied' : 'failed');
   }
 
   async function handleCopyAgentSetupCliCommand() {
     const copied = await copyText(
-      buildAgentSetupCliCommandTemplate(localVault.handle?.name ?? 'vault'),
+      buildAgentSetupCliCommand(localVault.handle?.name ?? 'vault', 'write', vaultRootPath),
     );
     setAgentSetupCliCopyState(copied ? 'copied' : 'failed');
   }

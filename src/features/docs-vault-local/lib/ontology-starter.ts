@@ -294,8 +294,10 @@ export const ONTOLOGY_STARTER_FILES: ReadonlyArray<StarterFile> = [
  * a different working directory. `OMOT_VAULT` must be the absolute path to
  * the vault folder — the browser cannot know it.
  */
-export function buildMcpConfigJson(vaultName: string): string {
-  return buildMcpConfigJsonForVault(`<absolute path to your ${vaultName} folder>`);
+export function buildMcpConfigJson(vaultName: string, vaultPath?: string | null): string {
+  return buildMcpConfigJsonForVault(
+    vaultPath ?? `<absolute path to your ${vaultName} folder>`,
+  );
 }
 
 /**
@@ -342,23 +344,29 @@ export function buildCodexConfigToml(omotVault = '.'): string {
   ].join('\n');
 }
 
-export function buildCodexConfigTomlTemplate(vaultName: string): string {
-  return buildCodexConfigToml(`<absolute path to your ${vaultName} folder>`);
+export function buildCodexConfigTomlTemplate(
+  vaultName: string,
+  vaultPath?: string | null,
+): string {
+  return buildCodexConfigToml(vaultPath ?? `<absolute path to your ${vaultName} folder>`);
 }
 
 /**
  * One-line Codex CLI registration for users who prefer mutating their Codex
  * MCP config through the CLI instead of editing `.codex/config.toml`.
  */
-export function buildCodexMcpAddCommandTemplate(vaultName: string): string {
-  const vaultPath = `<absolute path to your ${vaultName} folder>`;
+export function buildCodexMcpAddCommandTemplate(
+  vaultName: string,
+  vaultPath?: string | null,
+): string {
+  const resolvedVaultPath = vaultPath ?? `<absolute path to your ${vaultName} folder>`;
   return [
     'codex',
     'mcp',
     'add',
     'oh-my-ontology',
     '--env',
-    `OMOT_VAULT=${shellQuote(vaultPath)}`,
+    `OMOT_VAULT=${shellQuote(resolvedVaultPath)}`,
     '--',
     'npx',
     '-y',
