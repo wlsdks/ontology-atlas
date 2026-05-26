@@ -47,16 +47,15 @@ For production Firebase Hosting, `pnpm firebase:deploy-check` is the local
 deploy preflight: it requires `.env.prod`, verifies `.firebaserc` matches
 `FIREBASE_PROJECT_ID`, keeps `firebase.json` static Hosting-only, and confirms
 `.env.prod` is excluded from both git and Firebase deploy packaging before
-`firebase deploy --only hosting`. The tag release path deploys Hosting inside
-`.github/workflows/release-macos.yml` after the verified stable GitHub Release
-is public, because GitHub does not start a second workflow from most events
-created with the release workflow's `GITHUB_TOKEN`. The fallback maintainer path
-is `.github/workflows/deploy-hosting.yml` for manual dispatch or human-created
-Release events. Both paths write `.env.prod` from repository variables,
-authenticate with `FIREBASE_SERVICE_ACCOUNT_JSON`, set
-`NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, deploy only Hosting with
-`firebase-tools@15.17.0`, and run `pnpm desktop:verify-hosted` so the hosted
-download route cannot stay 404 after a successful release.
+`firebase deploy --only hosting`. Firebase Hosting is deliberately separate
+from the macOS app release workflow: `.github/workflows/release-macos.yml`
+publishes signed/notarized local-only DMGs without Firebase secrets or deploy
+steps. The website maintainer path is `.github/workflows/deploy-hosting.yml` for
+manual dispatch or human-created Release events. It writes `.env.prod` from
+repository variables, authenticates with `FIREBASE_SERVICE_ACCOUNT_JSON`, sets
+`NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, deploys only Hosting with
+`firebase-tools@15.17.0`, and runs `pnpm desktop:verify-hosted` so the hosted
+download route can be verified separately from the app release.
 
 ## Vault Checks
 
@@ -169,8 +168,8 @@ implementation changes route to
 `pnpm exec node --test scripts/desktop-smoke.test.mjs`, then
 `pnpm test:desktop:check`. The desktop checker suite also covers the
 operator-side GitHub release gate (`scripts/check-macos-release-github.mjs`) with
-a fake `gh` binary, so workflow availability, required Apple/Firebase
-secret-name detection, tag/version alignment, and stale same-tag release-slot
+a fake `gh` binary, so workflow availability, required Apple secret-name
+detection, tag/version alignment, and stale same-tag release-slot
 failures stay covered before a public tag is pushed. Native vault bridge changes route to
 `pnpm test:desktop:bridge`, which runs the WebView handle-shim tests plus
 `cargo test --manifest-path src-tauri/Cargo.toml` for the Rust path guard.
@@ -199,12 +198,12 @@ runs desktop readiness, docs-vault freshness, desktop checker tests, native
 bridge tests, runtime doctor, `cli:mcp-verify` against `docs/ontology`, static
 build, packaged-route smoke, app/DMG build, app launch smoke,
 DMG mount/checksum smoke, and temporary install launch smoke;
-`pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the completion
-audit after PR/release work: it accepts an already merged PR or checks PR
-review/merge readiness, required
-Apple signing/notary and Firebase Hosting deploy secret names, public stable GitHub Release state, and
-public DMG/checksum download verification plus deployed hosted landing/download
-surface verification in one fail-closed pass;
+`pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the macOS app
+completion audit after PR/release work: it accepts an already merged PR or
+checks PR review/merge readiness, required Apple signing/notary secret names,
+public stable GitHub Release state, and public DMG/checksum download
+verification in one fail-closed pass. Firebase Hosting is not part of the macOS
+app release gate; verify the separate website with `pnpm desktop:verify-hosted`;
 the hosted download page keeps its first-release availability copy aligned with
 those same review/signing/Firebase Hosting/release/hosted-route blockers
 instead of sending users into the browser workbench;
@@ -236,8 +235,8 @@ before byte-checking assets.
 After deploying the static website, run `pnpm desktop:verify-hosted` to confirm
 the live `/ko/` landing page no longer exposes the browser vault picker CTA and
 the live `/ko/download/` installation route exists and points to GitHub
-Releases. `pnpm desktop:release-status` includes the same hosted-page check so a
-stale Firebase deployment cannot be mistaken for a complete macOS release.
+Releases. This hosted-page check is separate from `pnpm desktop:release-status`
+so a Firebase deployment problem cannot block the local-only macOS app release.
 The installed app's native vault bridge is part of this same gate:
 `src-tauri/src/lib.rs` must expose folder-pick, directory-list, read, write,
 file/directory delete, mkdir, and exists commands, and
@@ -330,8 +329,8 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-source` | Fail closed before release signing when the tag commit is not the current default-branch head |
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
-| `pnpm desktop:release-github` | Operator-side GitHub release readiness check for gh auth, active release/deploy workflows, required Apple/Firebase secret names, optional tag/version alignment, and clean same-tag Release slot |
-| `pnpm desktop:release-status` | Completion audit for PR review/merge readiness, Apple/Firebase release/deploy secret names, public stable Release state, public DMG/checksum download verification, and hosted website deployment |
+| `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, and clean same-tag Release slot |
+| `pnpm desktop:release-status` | macOS app completion audit for PR review/merge readiness, Apple release secret names, public stable Release state, and public DMG/checksum download verification |
 | `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available |
 | `pnpm desktop:verify-dmg` | Mount and checksum smoke for the generated macOS DMG before GitHub Release upload |
@@ -599,8 +598,8 @@ pnpm desktop:verify-install
 pnpm desktop:notarize
 pnpm desktop:verify-release-dmg
 
-# Completion audit after PR review/merge, Apple/Firebase secrets, tag workflow,
-# public release publication, and Firebase Hosting deploy are expected to be done:
+# macOS app completion audit after PR review/merge, Apple secrets, tag workflow,
+# public release publication, and DMG asset verification are expected to be done:
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0
 ```
 

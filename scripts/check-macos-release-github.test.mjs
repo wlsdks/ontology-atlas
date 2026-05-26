@@ -14,9 +14,6 @@ const requiredSecrets = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
-const hostingSecrets = ["FIREBASE_SERVICE_ACCOUNT_JSON"];
-const allRequiredSecrets = [...requiredSecrets, ...hostingSecrets];
-
 function writeFakeGh(root, scenario) {
   const binPath = join(root, "fake-gh.mjs");
   writeFileSync(
@@ -38,15 +35,11 @@ if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/oh-my-ontology/action
     err("HTTP 404: Not Found");
     process.exit(1);
   }
-  if (scenario.hostingWorkflowMissing && args[1].endsWith("/deploy-hosting.yml")) {
-    err("HTTP 404: Not Found");
-    process.exit(1);
-  }
   out({ state: scenario.workflowState ?? "active" });
   process.exit(0);
 }
 if (args[0] === "secret" && args[1] === "list") {
-  const names = scenario.secretNames ?? ${JSON.stringify(allRequiredSecrets)};
+  const names = scenario.secretNames ?? ${JSON.stringify(requiredSecrets)};
   out(names.map((name) => ({ name })));
   process.exit(0);
 }
@@ -97,14 +90,14 @@ test("desktop GitHub release gate proves workflows, secrets, tag version, and cl
     const result = runReleaseGithub(fakeGhPath);
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /has active release\/deploy workflows and all required Apple\/Firebase release secret names/);
+    assert.match(result.stdout, /has the active macOS release workflow and all required Apple release secret names/);
     assert.match(result.stdout, /v0\.1\.0 matches package, Tauri, and Cargo versions/);
     assert.match(result.stdout, /v0\.1\.0 has no existing GitHub Release/);
   });
 });
 
 test("desktop GitHub release gate fails before tag push when Apple secret names are missing", () => {
-  withFakeGh({ secretNames: allRequiredSecrets.filter((name) => name !== "APPLE_TEAM_ID") }, (fakeGhPath) => {
+  withFakeGh({ secretNames: requiredSecrets.filter((name) => name !== "APPLE_TEAM_ID") }, (fakeGhPath) => {
     const result = runReleaseGithub(fakeGhPath);
 
     assert.equal(result.status, 1);
@@ -114,33 +107,12 @@ test("desktop GitHub release gate fails before tag push when Apple secret names 
   });
 });
 
-test("desktop GitHub release gate fails before tag push when Firebase Hosting secret is missing", () => {
-  withFakeGh({ secretNames: requiredSecrets }, (fakeGhPath) => {
-    const result = runReleaseGithub(fakeGhPath);
-
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /missing GitHub Actions secrets/);
-    assert.match(result.stderr, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.match(result.stderr, /gh secret set FIREBASE_SERVICE_ACCOUNT_JSON --repo wlsdks\/oh-my-ontology/);
-  });
-});
-
 test("desktop GitHub release gate explains that a PR-only workflow cannot receive tag pushes yet", () => {
   withFakeGh({ workflowMissing: true }, (fakeGhPath) => {
     const result = runReleaseGithub(fakeGhPath);
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /release-macos\.yml is not available to GitHub/);
-    assert.match(result.stderr, /merge that PR into the default branch before pushing the release tag/);
-  });
-});
-
-test("desktop GitHub release gate explains that a PR-only Hosting workflow cannot receive release events yet", () => {
-  withFakeGh({ hostingWorkflowMissing: true }, (fakeGhPath) => {
-    const result = runReleaseGithub(fakeGhPath);
-
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /deploy-hosting\.yml is not available to GitHub/);
     assert.match(result.stderr, /merge that PR into the default branch before pushing the release tag/);
   });
 });
@@ -155,7 +127,7 @@ test("desktop GitHub release gate blocks an existing same-tag release slot", () 
   });
 });
 
-test("desktop GitHub release gate help lists every required Apple/Firebase secret", () => {
+test("desktop GitHub release gate help lists every required Apple secret and excludes Firebase", () => {
   const stdout = execFileSync(process.execPath, ["scripts/check-macos-release-github.mjs", "--help"], {
     cwd: process.cwd(),
     encoding: "utf8",
@@ -164,5 +136,6 @@ test("desktop GitHub release gate help lists every required Apple/Firebase secre
   for (const name of requiredSecrets) {
     assert.match(stdout, new RegExp(name));
   }
-  assert.match(stdout, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.doesNotMatch(stdout, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+  assert.match(stdout, /Firebase Hosting is intentionally excluded/);
 });

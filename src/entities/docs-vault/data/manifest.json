@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-26T01:21:14.939Z",
+  "generatedAt": "2026-05-26T04:07:10.986Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3525,8 +3525,8 @@
         }
       ],
       "excerpt": "202605 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (Firebase Hosting, Vercel, Netlify, GitHub Pages, S3 + CloudFront, …). The detailed Firebasespecific guide is archived in docs/archive/DEPLOYFIREBASE.md for reference. Th",
-      "wordCount": 544,
-      "updatedAt": "2026-05-26T01:18:32.950Z",
+      "wordCount": 532,
+      "updatedAt": "2026-05-26T04:05:13.022Z",
       "linksOut": [
         "archive/DEPLOY-FIREBASE"
       ]
@@ -3901,8 +3901,8 @@
         }
       ],
       "excerpt": "ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app should be a native shell around the same local markdown vault, not a backend, cloud sync layer, or second data store. Use Tauri first for the prototype. The repository now includes the first srctauri/ shell so desktop wor",
-      "wordCount": 3086,
-      "updatedAt": "2026-05-26T01:18:59.151Z",
+      "wordCount": 3065,
+      "updatedAt": "2026-05-26T04:05:39.233Z",
       "linksOut": []
     },
     {
@@ -5129,8 +5129,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 1767,
-      "updatedAt": "2026-05-26T01:19:15.462Z",
+      "wordCount": 1757,
+      "updatedAt": "2026-05-26T04:06:21.732Z",
       "linksOut": []
     },
     {
@@ -5154,9 +5154,9 @@
           "slug": "firebase-deploy-skill"
         }
       ],
-      "excerpt": ".claude/skills/firebasedeploy/SKILL.md is the agentrunbook for publishing the static promo/download website to Firebase Hosting. It reads local .env.prod identifiers, runs the docs/type/build/bundle gates plus pnpm firebase:deploycheck, deploys with firebase deploy only hosting, and verifies the live web.app URL. The m",
-      "wordCount": 206,
-      "updatedAt": "2026-05-26T01:19:22.709Z",
+      "excerpt": ".claude/skills/firebasedeploy/SKILL.md is the agentrunbook for publishing the static promo/download website to Firebase Hosting. It reads local .env.prod identifiers, runs the docs/type/build/bundle gates plus pnpm firebase:deploycheck, deploys with firebase deploy only hosting, and verifies the live web.app URL. Fireb",
+      "wordCount": 193,
+      "updatedAt": "2026-05-26T04:05:56.436Z",
       "linksOut": []
     },
     {
@@ -6630,8 +6630,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 3111,
-      "updatedAt": "2026-05-26T01:18:42.215Z",
+      "wordCount": 3132,
+      "updatedAt": "2026-05-26T04:06:15.077Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]

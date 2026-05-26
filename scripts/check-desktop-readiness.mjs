@@ -72,9 +72,6 @@ const requiredAppleSecretNames = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
-const requiredFirebaseSecretNames = [
-  "FIREBASE_SERVICE_ACCOUNT_JSON",
-];
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
 const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
 const ontologyViewPage = readText("src/views/ontology-view/ui/OntologyViewPage.tsx");
@@ -118,15 +115,6 @@ const releasePublishOrder = orderedIndexes(releaseWorkflow, [
   "name: Publish verified stable release",
   "name: Verify public download assets",
 ]);
-const releaseHostingDeployOrder = orderedIndexes(releaseWorkflow, [
-  "name: Write Firebase deploy env",
-  "name: Firebase deploy preflight",
-  "name: Docs and type gates",
-  "name: Build static site",
-  "name: Deploy Hosting",
-  "name: Verify hosted download surface",
-]);
-
 if (/output\s*:\s*['"]export['"]/.test(nextConfig)) {
   pass("Next.js uses static export output");
 } else {
@@ -584,9 +572,9 @@ if (
 }
 
 if (
-  releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length === 3 &&
-  releaseWorkflow.match(/uses:\s*pnpm\/action-setup@v6/g)?.length === 3 &&
-  releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length === 3 &&
+  releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length === 2 &&
+  releaseWorkflow.match(/uses:\s*pnpm\/action-setup@v6/g)?.length === 2 &&
+  releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length === 2 &&
   /uses:\s*actions\/upload-artifact@v7/.test(releaseWorkflow) &&
   /uses:\s*actions\/download-artifact@v7/.test(releaseWorkflow) &&
   /uses:\s*softprops\/action-gh-release@v3/.test(releaseWorkflow)
@@ -613,27 +601,21 @@ if (
   /pnpm desktop:release-source -- --sha="\$\{GITHUB_SHA\}"/.test(releaseWorkflow) &&
   /pnpm desktop:verify-release-dmg/.test(releaseWorkflow) &&
   /pnpm desktop:verify-install/.test(releaseWorkflow) &&
-  releaseWorkflow.match(/node-version:\s*24/g)?.length === 3 &&
+  releaseWorkflow.match(/node-version:\s*24/g)?.length === 2 &&
   /arch:\s*aarch64/.test(releaseWorkflow) &&
   /runner:\s*macos-14/.test(releaseWorkflow) &&
   /arch:\s*x64/.test(releaseWorkflow) &&
   /runner:\s*macos-15-intel/.test(releaseWorkflow) &&
   /release-assets\/\*\.sha256/.test(releaseWorkflow) &&
   /pnpm desktop:verify-download -- --tag="\$\{GITHUB_REF_NAME\}"/.test(releaseWorkflow) &&
-  /deploy-hosting:\s*\n\s+name:\s*Deploy hosted download site/.test(releaseWorkflow) &&
-  /needs:\s*publish-macos/.test(releaseWorkflow) &&
-  /FIREBASE_SERVICE_ACCOUNT_JSON/.test(releaseWorkflow) &&
-  /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/.test(releaseWorkflow) &&
-  /firebase-tools@15\.17\.0 deploy --only hosting/.test(releaseWorkflow) &&
-  /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/.test(releaseWorkflow) &&
+  !/FIREBASE_SERVICE_ACCOUNT_JSON|firebase-tools|Deploy Hosting|desktop:verify-hosted/.test(releaseWorkflow) &&
   hasStrictOrder(releaseBuildOrder) &&
-  hasStrictOrder(releasePublishOrder) &&
-  hasStrictOrder(releaseHostingDeployOrder)
+  hasStrictOrder(releasePublishOrder)
 ) {
-  pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24, publishes verified public assets, then deploys and verifies the hosted download site");
+  pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24 and publishes verified public assets without Firebase Hosting dependencies");
 } else {
   fail(
-    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag commit is the default-branch head, verify the tag and secrets before signing, sign/notarize before upload, require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, verify public downloads, then deploy and verify the hosted download site in the same workflow",
+    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag commit is the default-branch head, verify the tag and secrets before signing, sign/notarize before upload, require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, and verify public downloads without requiring Firebase Hosting secrets or deploy steps",
   );
 }
 
@@ -659,14 +641,15 @@ if (pkg.scripts?.["desktop:release-secrets"] === "node scripts/check-macos-relea
 }
 
 if (
-  [...requiredAppleSecretNames, ...requiredFirebaseSecretNames].every((name) =>
+  requiredAppleSecretNames.every((name) =>
     desktopDoc.includes(`gh secret set ${name} --repo wlsdks/oh-my-ontology < /path/to/${name}`),
-  )
+  ) &&
+  desktopDoc.includes("Firebase Hosting is not part of the macOS app release gate")
 ) {
-  pass("desktop release docs include gh secret set commands for every required Apple/Firebase secret");
+  pass("desktop release docs include Apple signing secret commands and exclude Firebase from the app gate");
 } else {
   fail(
-    "docs/DESKTOP-MACOS.md must show a gh secret set command for every Apple signing/notary and Firebase Hosting secret that blocks the public macOS release",
+    "docs/DESKTOP-MACOS.md must show a gh secret set command for every Apple signing/notary secret and state that Firebase Hosting is separate from the macOS app release gate",
   );
 }
 
@@ -700,15 +683,14 @@ if (
   releaseGithubScript.includes('"secret"') &&
   releaseGithubScript.includes('"list"') &&
   releaseGithubScript.includes("APPLE_CERTIFICATE_P12_BASE64") &&
-  releaseGithubScript.includes("FIREBASE_SERVICE_ACCOUNT_JSON") &&
   releaseGithubScript.includes("release-macos.yml") &&
-  releaseGithubScript.includes("deploy-hosting.yml") &&
+  releaseGithubScript.includes("Firebase Hosting is intentionally excluded") &&
   releaseGithubScript.includes("check-macos-release-slot.mjs")
 ) {
-  pass("desktop GitHub release readiness gate checks release/deploy workflows, Apple/Firebase secret names, and release slot before tag push");
+  pass("desktop GitHub release readiness gate checks the release workflow, Apple secret names, and release slot before tag push");
 } else {
   fail(
-    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check release/deploy workflows, required Apple/Firebase GitHub secret names, and same-tag release slot",
+    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the release workflow, required Apple GitHub secret names, and same-tag release slot without requiring Firebase Hosting",
   );
 }
 
@@ -717,16 +699,15 @@ if (
   releaseStatusScript.includes('"pr"') &&
   releaseStatusScript.includes('"secret"') &&
   releaseStatusScript.includes('"release"') &&
-  releaseStatusScript.includes("FIREBASE_SERVICE_ACCOUNT_JSON") &&
   releaseStatusScript.includes("check-macos-download-release.mjs") &&
-  releaseStatusScript.includes("check-hosted-download-surface.mjs") &&
+  releaseStatusScript.includes("Firebase Hosting is intentionally excluded") &&
   releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY") &&
-  releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY")
+  !releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY")
 ) {
-  pass("desktop release status gate audits PR readiness, Apple/Firebase secrets, public release state, download assets, and hosted website deployment");
+  pass("desktop release status gate audits PR readiness, Apple secrets, public release state, and download assets without Firebase Hosting dependencies");
 } else {
   fail(
-    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit PR readiness, Apple/Firebase secret names, public release state, public download assets, and the deployed hosted website",
+    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit PR readiness, Apple secret names, public release state, and public download assets without requiring Firebase Hosting",
   );
 }
 

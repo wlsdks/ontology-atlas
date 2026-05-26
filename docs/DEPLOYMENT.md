@@ -37,16 +37,15 @@ fails if `.env.prod` is missing, `.firebaserc` points at another project,
 Firebase config drifts away from static Hosting, or `.env.prod` could be
 committed/uploaded.
 
-The macOS tag release workflow (`.github/workflows/release-macos.yml`) also
-deploys Hosting after publishing and verifying the stable GitHub Release. That
-job writes `.env.prod` from GitHub repository variables, authenticates with the
-`FIREBASE_SERVICE_ACCOUNT_JSON` secret, sets
+The macOS tag release workflow (`.github/workflows/release-macos.yml`) is
+intentionally app-only: it publishes signed/notarized DMGs without Firebase
+secrets or Hosting deploy steps. `.github/workflows/deploy-hosting.yml` owns the
+separate website path for manual dispatch or human-created Release events. That
+workflow writes `.env.prod` from GitHub repository variables, authenticates with
+the `FIREBASE_SERVICE_ACCOUNT_JSON` secret, sets
 `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, runs the same static deploy gates,
 deploys only Firebase Hosting with `firebase-tools@15.17.0`, then runs
 `pnpm desktop:verify-hosted` against the configured public URL.
-`.github/workflows/deploy-hosting.yml` keeps the same Hosting path available for
-manual dispatch or human-created Release events; the release workflow does not
-depend on a second workflow being triggered by `GITHUB_TOKEN`.
 
 Expected public URLs after deploy:
 

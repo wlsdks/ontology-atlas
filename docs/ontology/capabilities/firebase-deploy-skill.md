@@ -13,11 +13,10 @@ the static promo/download website to Firebase Hosting. It reads local `.env.prod
 identifiers, runs the docs/type/build/bundle gates plus
 `pnpm firebase:deploy-check`, deploys with `firebase deploy --only hosting`,
 and verifies the live `web.app` URL.
-The macOS tag release workflow now runs the same Hosting contract after the
-verified GitHub Release is public, because events created with the release
-workflow's `GITHUB_TOKEN` should not be the only path that starts deployment.
-`.github/workflows/deploy-hosting.yml` remains the fallback maintainer CI path
-for manual dispatch or human-created Release events: it writes a temporary
+Firebase Hosting is separate from the macOS app release workflow: signed DMGs do
+not require Firebase secrets and the installed app remains local-only.
+`.github/workflows/deploy-hosting.yml` is the maintainer CI path for manual
+dispatch or human-created Release events: it writes a temporary
 `.env.prod` from repository variables, authenticates with
 `FIREBASE_SERVICE_ACCOUNT_JSON`, runs the same static deploy preflight, deploys
 only Hosting with `firebase-tools@15.17.0`, and runs

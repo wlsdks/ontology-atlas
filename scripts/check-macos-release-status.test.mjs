@@ -14,9 +14,6 @@ const requiredSecrets = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
-const hostingSecrets = ["FIREBASE_SERVICE_ACCOUNT_JSON"];
-const allRequiredSecrets = [...requiredSecrets, ...hostingSecrets];
-
 function writeFakeGh(root, scenario) {
   const binPath = join(root, "fake-gh.mjs");
   writeFileSync(
@@ -47,7 +44,7 @@ if (args[0] === "pr" && args[1] === "view") {
   process.exit(0);
 }
 if (args[0] === "secret" && args[1] === "list") {
-  const names = scenario.secretNames ?? ${JSON.stringify(allRequiredSecrets)};
+  const names = scenario.secretNames ?? ${JSON.stringify(requiredSecrets)};
   out(names.map((name) => ({ name })));
   process.exit(0);
 }
@@ -89,7 +86,6 @@ function runStatus(fakeGhPath, args = ["--tag=v0.1.0", "--pr=274"]) {
       ...process.env,
       OMOT_GH_BIN: fakeGhPath,
       OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY: "1",
-      OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY: "1",
     },
   });
 }
@@ -111,10 +107,10 @@ test("desktop release status reports current completion blockers together", () =
       assert.match(result.stdout, /merge=BLOCKED/);
       assert.match(result.stdout, /✗ Apple release secrets: missing APPLE_CERTIFICATE_P12_BASE64/);
       assert.match(result.stdout, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
-      assert.match(result.stdout, /✗ Firebase Hosting deploy secrets: missing FIREBASE_SERVICE_ACCOUNT_JSON/);
       assert.match(result.stdout, /✗ GitHub Release: release not found/);
-      assert.match(result.stdout, /release-macos\.yml can publish signed DMGs and deploy the hosted download page in the same run/);
-      assert.match(result.stderr, /blocked: 4 release requirement/);
+      assert.match(result.stdout, /release-macos\.yml can publish signed DMGs/);
+      assert.doesNotMatch(result.stdout, /Firebase Hosting deploy secrets/);
+      assert.match(result.stderr, /blocked: 3 release requirement/);
     },
   );
 });
@@ -126,10 +122,9 @@ test("desktop release status passes when PR, secrets, and stable release are rea
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /✓ Pull request: PR #274 is merge-ready/);
     assert.match(result.stdout, /✓ Apple release secrets: all required Apple signing\/notary secret names exist/);
-    assert.match(result.stdout, /✓ Firebase Hosting deploy secrets: Firebase service account secret exists/);
     assert.match(result.stdout, /✓ GitHub Release: v0\.1\.0 is public and stable/);
     assert.match(result.stdout, /· Download assets: skipped by OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1/);
-    assert.match(result.stdout, /· Hosted website: skipped by OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY=1/);
+    assert.doesNotMatch(result.stdout, /Hosted website/);
     assert.match(result.stdout, /ready: public macOS release requirements are satisfied/);
   });
 });
@@ -159,6 +154,6 @@ test("desktop release status help describes the completion audit", () => {
 
   assert.match(stdout, /release completion state/);
   assert.match(stdout, /downloadable DMG\/checksum\s+assets/);
-  assert.match(stdout, /Firebase Hosting/);
-  assert.match(stdout, /Hosted website/);
+  assert.match(stdout, /Firebase Hosting is intentionally excluded/);
+  assert.doesNotMatch(stdout, /Hosted website/);
 });

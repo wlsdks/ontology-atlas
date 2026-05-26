@@ -124,10 +124,10 @@ The verifier also downloads each public DMG and compares its SHA-256 digest to
 the checksum asset. The tag workflow runs that same download verifier against
 `${GITHUB_REF_NAME}` before and after publication, so a green release job proves
 both draft asset integrity and public downloadability for Apple Silicon and
-Intel users. The same release workflow then deploys the Firebase-hosted
-promo/download site with the first-release checklist hidden and verifies the
-live `/ko/download/` route, so hosted download completion does not rely on a
-second workflow event created by `GITHUB_TOKEN`. When a requested tag has no GitHub Release yet, the verifier
+Intel users. The same release workflow intentionally avoids Firebase Hosting
+deploy steps so signed DMGs can publish without backend or hosting credentials;
+the hosted promo/download site is deployed and verified through the separate
+`deploy-hosting.yml` path. When a requested tag has no GitHub Release yet, the verifier
 reports the missing tag as the release-blocking condition instead of exposing a
 raw GitHub API 404, so the next operator action is to push the tag and let the
 macOS release workflow publish the signed/notarized assets. When the workflow
@@ -136,8 +136,7 @@ from tag lookup to the releases list if GitHub hides draft releases from the tag
 endpoint, then matches the requested `tag_name` before checking asset bytes.
 `pnpm desktop:release-github` is the operator-side pre-tag guard for that final
 step: it checks `gh` authentication, the active `release-macos.yml` release
-workflow, the fallback `deploy-hosting.yml` Firebase Hosting deploy workflow,
-required Apple signing/notary and Firebase service-account secret names,
+workflow, required Apple signing/notary secret names,
 optional tag/version alignment, and the clean same-tag Release slot before the
 release tag is pushed. It cannot read
 secret values, so the workflow still fails closed through
@@ -148,14 +147,15 @@ operator-side gate with a fake `gh` binary so PR-only workflow,
 missing-secret, tag/version, and stale release-slot failures remain explicit in
 the PR gate. The operator-side guard also catches the
 current external blocker earlier: the repo is missing Apple release secret names
-and the Firebase Hosting service-account secret. Its missing-secret output
+without making Firebase Hosting a macOS app blocker. Its missing-secret output
 includes `gh secret set <NAME> --repo wlsdks/oh-my-ontology` hints so the
 operator can move directly from readiness failure to secret registration.
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the completion
 audit once the PR and release path are expected to be ready. It accepts an
 already merged PR or checks PR review/merge readiness, required Apple release
-secret names, Firebase Hosting deploy secret names, public stable GitHub Release state, and then runs the public
-DMG/checksum download verifier plus the deployed hosted website verifier.
+secret names, public stable GitHub Release state, and then runs the public
+DMG/checksum download verifier. Firebase Hosting remains a separate static
+website deployment checked with `pnpm desktop:verify-hosted`.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`
 landing/download pages and rejects a stale public deployment that still shows
 the old browser vault picker CTA or lacks `/ko/download/`.

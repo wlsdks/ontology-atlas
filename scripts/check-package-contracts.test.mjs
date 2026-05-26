@@ -496,8 +496,8 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm desktop:verify-install` \| Mount the DMG, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-preflight` \| Local pre-tag macOS release gate: readiness, docs-vault, checker tests, bridge tests, runtime doctor, CLI\/MCP handoff, build, route smoke, DMG, and install smoke \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-slot` \| Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:release-github` \| Operator-side GitHub release readiness check for gh auth, active release\/deploy workflows, required Apple\/Firebase secret names, optional tag\/version alignment, and clean same-tag Release slot \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:release-status` \| Completion audit for PR review\/merge readiness, Apple\/Firebase release\/deploy secret names, public stable Release state, public DMG\/checksum download verification, and hosted website deployment \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:release-github` \| Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag\/version alignment, and clean same-tag Release slot \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:release-status` \| macOS app completion audit for PR review\/merge readiness, Apple release secret names, public stable Release state, and public DMG\/checksum download verification \|/);
     assert.match(checksDoc, /\| `pnpm test:desktop:bridge` \| WebView handle-shim tests plus Rust path-guard tests for the native vault bridge \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-secrets` \| Fail closed before tag release when any Apple signing or notarization secret is missing, blank, or structurally invalid \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-source` \| Fail closed before release signing when the tag commit is not the current default-branch head \|/);
@@ -645,18 +645,19 @@ describe('package contract helpers', () => {
     assert.match(deployment, /\.github\/workflows\/deploy-hosting\.yml/);
     assert.match(deployment, /FIREBASE_SERVICE_ACCOUNT_JSON/);
     assert.match(deployment, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0/);
+    assert.match(deployment, /release-macos\.yml.+app-only/s);
     assert.match(skill, /firebase deploy --only hosting/);
     assert.match(skill, /pnpm firebase:deploy-check/);
     assert.match(skill, /no Functions, Firestore, Storage, Auth, emulators, or server runtime/);
     assert.match(skill, /pnpm test:mcp:docs/);
-    assert.match(skill, /macOS tag release workflow/);
+    assert.match(skill, /macOS tag release workflow does not require Firebase secrets/);
     assert.match(skill, /\.github\/workflows\/deploy-hosting\.yml/);
     assert.match(skill, /FIREBASE_SERVICE_ACCOUNT_JSON/);
     assert.match(skill, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0/);
     assert.equal(pkg.scripts?.['firebase:deploy-check'], 'node scripts/check-firebase-hosting-deploy-env.mjs');
     assert.match(capability, /static host only/);
     assert.match(capability, /pnpm firebase:deploy-check/);
-    assert.match(capability, /macOS tag release workflow/);
+    assert.match(capability, /separate from the macOS app release workflow/);
     assert.match(capability, /deploy-hosting\.yml/);
     assert.match(capability, /FIREBASE_SERVICE_ACCOUNT_JSON/);
     assert.match(capability, /Functions, Firestore, Storage, Auth, or committed credentials/);
@@ -667,12 +668,11 @@ describe('package contract helpers', () => {
     assert.match(hostingWorkflow, /pnpm firebase:deploy-check/);
     assert.match(hostingWorkflow, /npx --yes firebase-tools@15\.17\.0 deploy --only hosting/);
     assert.match(hostingWorkflow, /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/);
-    assert.match(releaseWorkflow, /deploy-hosting:\s*\n\s+name:\s*Deploy hosted download site/);
-    assert.match(releaseWorkflow, /needs:\s*publish-macos/);
-    assert.match(releaseWorkflow, /FIREBASE_SERVICE_ACCOUNT_JSON/);
-    assert.match(releaseWorkflow, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/);
-    assert.match(releaseWorkflow, /npx --yes firebase-tools@15\.17\.0 deploy --only hosting/);
-    assert.match(releaseWorkflow, /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/);
+    assert.doesNotMatch(releaseWorkflow, /deploy-hosting:\s*\n\s+name:\s*Deploy hosted download site/);
+    assert.doesNotMatch(releaseWorkflow, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+    assert.doesNotMatch(releaseWorkflow, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/);
+    assert.doesNotMatch(releaseWorkflow, /npx --yes firebase-tools@15\.17\.0 deploy --only hosting/);
+    assert.doesNotMatch(releaseWorkflow, /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/);
   });
 
   it('keeps the docs-vault freshness check executable from source checkout', () => {

@@ -24,16 +24,17 @@ publish credentials. If `.env.prod` is missing, stop and ask the user to create
 it or provide the Firebase project id. Use `.env.prod.example` as the non-secret
 template.
 
-For GitHub-hosted deploys, the macOS tag release workflow runs Hosting after it
-publishes and verifies the stable DMGs. `.github/workflows/deploy-hosting.yml`
-keeps the same path available for manual dispatch or human-created Release
-events. Both GitHub paths expect these repository settings:
+For GitHub-hosted deploys, `.github/workflows/deploy-hosting.yml` is the
+website-only path for manual dispatch or human-created Release events. The
+macOS tag release workflow does not require Firebase secrets and does not deploy
+Hosting; the installed app remains local-only. The Hosting path expects these
+repository settings:
 
 - secret: `FIREBASE_SERVICE_ACCOUNT_JSON`
 - variables: `FIREBASE_PROJECT_ID`, `FIREBASE_HOSTING_URL`,
   `FIREBASE_HOSTING_ALT_URL` (defaults match `.env.prod.example`)
 
-The workflows write a temporary `.env.prod`, set
+The workflow writes a temporary `.env.prod`, sets
 `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, run `pnpm firebase:deploy-check`,
 deploy only Hosting with `firebase-tools@15.17.0`, and verify the live download
 route.
@@ -83,10 +84,9 @@ Deployment is complete only when all are true:
 - `pnpm firebase:deploy-check` proves `.env.prod`, `.firebaserc`,
   `firebase.json`, `.gitignore`, and `.firebaseignore` agree before deploy.
 - `pnpm bundle:check` still reports Firebase SDK chunk `0`.
-- In GitHub Actions, `.github/workflows/release-macos.yml` publishes only the
-  static `out/` Hosting target after the verified macOS Release is public, then
-  runs `pnpm desktop:verify-hosted`. `.github/workflows/deploy-hosting.yml`
-  preserves the same contract for manual fallback deploys.
+- In GitHub Actions, `.github/workflows/deploy-hosting.yml` publishes only the
+  static `out/` Hosting target and then runs `pnpm desktop:verify-hosted`.
+  `.github/workflows/release-macos.yml` is intentionally app-only.
 
 For UI-sensitive landing changes, also run a short Playwright check against
 `$FIREBASE_HOSTING_URL/en/` and `$FIREBASE_HOSTING_URL/en/docs/?intent=local`.

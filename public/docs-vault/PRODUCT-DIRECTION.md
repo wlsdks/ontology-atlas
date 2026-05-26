@@ -256,10 +256,12 @@ fails unless a public non-draft GitHub Release exposes reachable
 `oh-my-ontology_*_aarch64.dmg` and `oh-my-ontology_*_x64.dmg` assets plus
 matching `.sha256` checksum files that name those same-version DMGs, and it
 rejects unsupported extra `oh-my-ontology_*.dmg` names so the GitHub Release
-page cannot show ambiguous macOS downloads. The same tag workflow then deploys
-the Firebase-hosted promo/download site with the first-release checklist hidden
-and runs `pnpm desktop:verify-hosted`, so the public `/ko/download/` route is
-proven live without relying on a second workflow triggered by `GITHUB_TOKEN`.
+page cannot show ambiguous macOS downloads. The tag workflow intentionally stops
+there: the installed macOS app is local-only and does not require Firebase
+secrets or Hosting deploy steps. The separate `deploy-hosting` workflow owns the
+static promo/download website and should be followed by `pnpm
+desktop:verify-hosted` when the public `/ko/download/` route is expected to be
+live.
 `pnpm desktop:release-preflight`
 is the local pre-tag command for readiness, docs-vault freshness, desktop tests,
 runtime doctor, CLI/MCP handoff against `docs/ontology`, build, route smoke,
@@ -267,8 +269,9 @@ DMG verification, and temporary install smoke before credentials are used. The
 post-release completion audit is
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>`: it does not publish
 anything, but it fails closed until PR review/merge readiness, Apple release
-secret names, Firebase Hosting deploy secret names, public stable GitHub
-Release state, and public DMG/checksum download verification all pass. This is
+secret names, public stable GitHub Release state, and public DMG/checksum
+download verification all pass. Firebase Hosting remains a separate website
+deployment check, not a macOS app release dependency. This is
 evidence for goal completion, not a substitute for publishing signed/notarized
 release assets.
 hosted landing page should now bias toward "Download macOS app"

@@ -13,10 +13,6 @@ const REQUIRED_SECRETS = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
-const REQUIRED_HOSTING_SECRETS = [
-  "FIREBASE_SERVICE_ACCOUNT_JSON",
-];
-
 function defaultTag() {
   const pkg = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8"));
   return `v${pkg.version}`;
@@ -26,12 +22,15 @@ function printHelp() {
   console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER]
 
 Checks the public macOS release completion state in one fail-closed pass:
-pull-request merge readiness, Apple signing/notary secret names, Firebase Hosting
-deploy secret names, public GitHub Release state, downloadable DMG/checksum
-assets, and the deployed Hosted website download surface.
+pull-request merge readiness, Apple signing/notary secret names, public GitHub
+Release state, and downloadable DMG/checksum assets.
 
 This command is an operator/completion audit. It does not publish tags, set
 secrets, or edit releases.
+
+Firebase Hosting is intentionally excluded from this macOS app release audit.
+Use pnpm desktop:verify-hosted after the separate static promo/download website
+deploy.
 `);
 }
 
@@ -224,16 +223,6 @@ async function main() {
         secretSetHints(options.repo, missing),
       ));
     }
-    const missingHosting = REQUIRED_HOSTING_SECRETS.filter((name) => !secretNames.has(name));
-    if (missingHosting.length === 0) {
-      checks.push(ok("Firebase Hosting deploy secrets", "Firebase service account secret exists for hosted download deployment"));
-    } else {
-      checks.push(blocked(
-        "Firebase Hosting deploy secrets",
-        `missing ${missingHosting.join(", ")}`,
-        secretSetHints(options.repo, missingHosting),
-      ));
-    }
   }
 
   const release = runGh([
@@ -247,7 +236,7 @@ async function main() {
   ], { parseJson: true });
   if (!release.ok) {
     const next = isNotFound(release.message)
-      ? `Merge the desktop PR, add Apple/Firebase release secrets, then push ${options.tag} so .github/workflows/release-macos.yml can publish signed DMGs and deploy the hosted download page in the same run.`
+      ? `Merge the desktop PR, add Apple release secrets, then push ${options.tag} so .github/workflows/release-macos.yml can publish signed DMGs.`
       : `Run gh release view ${options.tag} --repo ${options.repo}.`;
     checks.push(blocked("GitHub Release", release.message, next));
   } else if (release.value?.isDraft || release.value?.isPrerelease) {
@@ -271,21 +260,6 @@ async function main() {
       } else {
         checks.push(blocked("Download assets", download.message, `Run pnpm desktop:verify-download -- --repo=${options.repo} --tag=${options.tag}.`));
       }
-    }
-  }
-
-  if (process.env.OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY === "1") {
-    checks.push(skipped("Hosted website", "skipped by OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY=1"));
-  } else {
-    const hosted = runNode(["scripts/check-hosted-download-surface.mjs"]);
-    if (hosted.ok) {
-      checks.push(ok("Hosted website", "deployed landing and download pages are promo/download aligned"));
-    } else {
-      checks.push(blocked(
-        "Hosted website",
-        hosted.message,
-        `Let .github/workflows/release-macos.yml deploy Hosting after ${options.tag} publishes, or run the deploy-hosting fallback manually, then rerun pnpm desktop:verify-hosted.`,
-      ));
     }
   }
 

@@ -57,7 +57,7 @@ pnpm desktop:verify-app
 pnpm desktop:verify-dmg
 pnpm desktop:verify-install
 pnpm desktop:release-preflight         # full local pre-tag gate
-pnpm desktop:release-github -- --tag=v0.1.0  # GitHub workflows + Apple/Firebase secret-name gate
+pnpm desktop:release-github -- --tag=v0.1.0  # GitHub workflow + Apple secret-name gate
 pnpm desktop:release-source -- --sha="$(git rev-parse HEAD)"  # tag only default-branch head
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0  # completion audit
 ```
@@ -144,13 +144,12 @@ for a macOS prototype:
   unsigned or unnotarized macOS artifact.
 - `scripts/check-macos-release-github.mjs` checks the GitHub-side prerequisites
   before pushing a public tag: `gh` authentication, the active
-  `release-macos.yml` release workflow, the fallback `deploy-hosting.yml` deploy
-  workflow, required Apple signing/notary and Firebase Hosting service-account
-  secret names, and optional tag/version alignment plus clean same-tag Release slot. It cannot
+  `release-macos.yml` release workflow, required Apple signing/notary secret
+  names, and optional tag/version alignment plus clean same-tag Release slot. It cannot
   inspect secret values, so the tag workflow still runs `desktop:release-secrets`
   before signing. `pnpm test:desktop:check` covers this operator-side gate with a
-  fake `gh` binary, including PR-only workflow cases, missing Apple/Firebase
-  secret names, tag/version alignment, and stale same-tag Release slots.
+  fake `gh` binary, including PR-only workflow cases, missing Apple secret names,
+  tag/version alignment, and stale same-tag Release slots.
 - `scripts/check-macos-release-slot.mjs` runs inside the publish job before
   upload and fails if the same tag already has a draft, prerelease, or public
   GitHub Release, preventing stale DMG assets from mixing with newly signed
@@ -298,18 +297,18 @@ configured, blank, or structurally invalid, the workflow fails before uploading
 an unsigned or wrongly sourced distribution candidate.
 Before pushing the tag, run
 `pnpm desktop:release-github -- --tag=v0.1.0` to catch missing GitHub secret
-names or disabled release/deploy workflows from the operator machine. In the current
+names or a disabled release workflow from the operator machine. In the current
 repo state this is a real external gate: GitHub authentication works, but the
-release/deploy workflows are still on the macOS app PR branch and the Apple/Firebase
-release secret list is still incomplete, so a tag push would fail before signing
-or hosted deployment. Merge the PR first so GitHub sees
-`.github/workflows/release-macos.yml` and `.github/workflows/deploy-hosting.yml`
-on the default branch, then configure the Apple and Firebase secrets.
+release workflow is still on the macOS app PR branch and the Apple release
+secret list is still incomplete, so a tag push would fail before signing. Merge
+the PR first so GitHub sees `.github/workflows/release-macos.yml` on the default
+branch, then configure the Apple secrets.
 Use `pnpm desktop:release-status -- --pr=274 --tag=v0.1.0` as the completion
 audit before calling the macOS app goal done: it accepts an already merged PR or
-checks PR review/merge readiness, required Apple signing/notary and Firebase
-Hosting deploy secret names, public stable GitHub Release state, then delegates to the public DMG/checksum
-download verifier and the live hosted website verifier.
+checks PR review/merge readiness, required Apple signing/notary secret names,
+public stable GitHub Release state, then delegates to the public DMG/checksum
+download verifier. Firebase Hosting is not part of the macOS app release gate;
+run `pnpm desktop:verify-hosted` after the separate website deploy.
 When it reports missing secrets, set each value through `gh secret set`, for
 example:
 
@@ -321,7 +320,6 @@ gh secret set APPLE_SIGNING_IDENTITY --repo wlsdks/oh-my-ontology < /path/to/APP
 gh secret set APPLE_ID --repo wlsdks/oh-my-ontology < /path/to/APPLE_ID
 gh secret set APPLE_APP_SPECIFIC_PASSWORD --repo wlsdks/oh-my-ontology < /path/to/APPLE_APP_SPECIFIC_PASSWORD
 gh secret set APPLE_TEAM_ID --repo wlsdks/oh-my-ontology < /path/to/APPLE_TEAM_ID
-gh secret set FIREBASE_SERVICE_ACCOUNT_JSON --repo wlsdks/oh-my-ontology < /path/to/FIREBASE_SERVICE_ACCOUNT_JSON
 ```
 
 The tag workflow first requires a clean GitHub Release slot for the tag, uploads
@@ -358,11 +356,10 @@ Release, verifies those draft assets with
 `pnpm desktop:verify-download -- --allow-draft`, publishes the release as
 stable, then runs
 `pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}"` so the release run
-itself proves the hosted CTA can reach both public release assets. The same
-release workflow then deploys the Firebase-hosted promo/download site with
-`NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` and verifies `/ko/download/` through
-`pnpm desktop:verify-hosted`, avoiding reliance on a second workflow event
-created by `GITHUB_TOKEN`. Public downloads are still a
+itself proves the hosted CTA can reach both public release assets. The workflow
+does not require Firebase secrets or deploy Hosting; the installed app remains
+local-only, and website deployment stays in `.github/workflows/deploy-hosting.yml`.
+Public downloads are still a
 distribution-hardening slice until the Apple credentials are configured and the
 tag workflow runs successfully.
 
