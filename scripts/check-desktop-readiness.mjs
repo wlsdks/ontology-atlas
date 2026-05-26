@@ -64,6 +64,7 @@ const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
 const signMacosScript = readText("scripts/sign-macos-app.mjs");
 const notarizeMacosDmgScript = readText("scripts/notarize-macos-dmg.mjs");
 const releaseSourceScript = readText("scripts/check-macos-release-source.mjs");
+const releaseSecretsScript = readText("scripts/check-macos-release-secrets.mjs");
 const releaseTagScript = readText("scripts/check-macos-release-tag.mjs");
 const releaseSlotScript = readText("scripts/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
@@ -773,11 +774,18 @@ if (
   );
 }
 
-if (pkg.scripts?.["desktop:release-secrets"] === "node scripts/check-macos-release-secrets.mjs") {
-  pass("desktop release secret gate blocks unsigned public releases");
+if (
+  pkg.scripts?.["desktop:release-secrets"] === "node scripts/check-macos-release-secrets.mjs" &&
+  releaseSecretsScript.includes("decodedPkcs12Secret") &&
+  releaseSecretsScript.includes("hasDerSequenceEnvelope") &&
+  releaseSecretsScript.includes("firstLengthByte < 0x80") &&
+  releaseSecretsScript.includes("PKCS#12 DER sequence with a valid length envelope") &&
+  releaseSecretsScript.includes("cannot import its signing certificate")
+) {
+  pass("desktop release secret gate blocks unsigned releases and malformed PKCS#12 certificates");
 } else {
   fail(
-    "package.json must expose desktop:release-secrets as node scripts/check-macos-release-secrets.mjs",
+    "package.json must expose desktop:release-secrets as node scripts/check-macos-release-secrets.mjs, and scripts/check-macos-release-secrets.mjs must reject missing Apple secrets, malformed base64, and non-PKCS#12 certificate payloads before signing",
   );
 }
 

@@ -152,7 +152,8 @@ for a macOS prototype:
   app, detaches the DMG, and removes the temp install.
 - `scripts/check-macos-release-secrets.mjs` fails the tag workflow before build
   when any required Apple Developer ID or notary secret is missing, blank, or
-  structurally unusable, so GitHub Releases cannot accidentally publish an
+  structurally unusable, including a certificate secret that is base64 but not
+  a PKCS#12 DER payload, so GitHub Releases cannot accidentally publish an
   unsigned or unnotarized macOS artifact.
 - `scripts/check-macos-release-github.mjs` checks the GitHub-side prerequisites
   before pushing a public tag: `gh` authentication, the active

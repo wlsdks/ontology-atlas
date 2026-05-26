@@ -114,7 +114,8 @@ and repair command while keeping `.` fallbacks for browser and source-checkout
 contexts. The
 `.github/workflows/release-macos.yml` workflow builds those artifacts on `v*`
 tags, fails closed through `pnpm desktop:release-secrets` unless all Apple
-Developer ID and notary secrets are present and structurally usable, and runs
+Developer ID and notary secrets are present and structurally usable, including
+rejecting base64 certificate payloads that are not PKCS#12 DER, and runs
 docs-vault freshness, desktop checker, and native bridge tests in both release
 lanes. It builds Apple Silicon on `macos-14` and Intel on `macos-15-intel`, route-smokes
 the static desktop payload, verifies the `v*` tag matches package, Tauri, and

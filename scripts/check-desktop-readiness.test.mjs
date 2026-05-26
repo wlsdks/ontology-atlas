@@ -159,7 +159,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ desktop release source gate blocks tags from unmerged or stale commits before signing/,
   );
-  assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned public releases/);
+  assert.match(result.stdout, /✓ desktop release secret gate blocks unsigned releases and malformed PKCS#12 certificates/);
   assert.match(
     result.stdout,
     /✓ desktop release docs include Apple signing secret commands and exclude Firebase from the app gate/,
@@ -713,17 +713,44 @@ test("desktop release secret gate rejects invalid certificate base64", () => {
   });
 
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /APPLE_CERTIFICATE_P12_BASE64 must be a non-empty base64-encoded/);
+  assert.match(result.stderr, /APPLE_CERTIFICATE_P12_BASE64 must be a base64-encoded/);
   assert.match(result.stderr, /cannot import its signing certificate/);
 });
 
-test("desktop release secret gate accepts structurally valid release secrets", () => {
+test("desktop release secret gate rejects base64 that is not a PKCS#12 DER certificate", () => {
   const result = spawnSync(process.execPath, ["scripts/check-macos-release-secrets.mjs"], {
     cwd: process.cwd(),
     encoding: "utf8",
     env: {
       ...process.env,
-      APPLE_CERTIFICATE_P12_BASE64: Buffer.from("fake-p12-bytes").toString("base64"),
+      APPLE_CERTIFICATE_P12_BASE64: Buffer.from("not-a-pkcs12-certificate-but-long-enough").toString("base64"),
+      APPLE_CERTIFICATE_PASSWORD: "certificate-password",
+      APPLE_KEYCHAIN_PASSWORD: "keychain-password",
+      APPLE_SIGNING_IDENTITY: "Developer ID Application: Example",
+      APPLE_ID: "developer@example.com",
+      APPLE_APP_SPECIFIC_PASSWORD: "app-specific-password",
+      APPLE_TEAM_ID: "ABCDE12345",
+    },
+  });
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /APPLE_CERTIFICATE_P12_BASE64 must decode to a PKCS#12 DER sequence with a valid length envelope/);
+  assert.match(result.stderr, /cannot import its signing certificate/);
+});
+
+test("desktop release secret gate accepts structurally valid release secrets", () => {
+  const pkcs12DerLikeBytes = Buffer.from([
+    0x30, 0x1e, 0x02, 0x01, 0x03, 0x30, 0x19, 0x06,
+    0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01,
+    0x07, 0x01, 0xa0, 0x0c, 0x04, 0x0a, 0x30, 0x08,
+    0x02, 0x01, 0x00, 0x04, 0x03, 0x70, 0x31, 0x32,
+  ]);
+  const result = spawnSync(process.execPath, ["scripts/check-macos-release-secrets.mjs"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+    env: {
+      ...process.env,
+      APPLE_CERTIFICATE_P12_BASE64: pkcs12DerLikeBytes.toString("base64"),
       APPLE_CERTIFICATE_PASSWORD: "certificate-password",
       APPLE_KEYCHAIN_PASSWORD: "keychain-password",
       APPLE_SIGNING_IDENTITY: "Developer ID Application: Example",
