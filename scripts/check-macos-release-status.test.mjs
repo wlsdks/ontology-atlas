@@ -204,6 +204,45 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
   );
 });
 
+test("desktop release status writes a human-readable markdown checklist", () => {
+  withFakeGh(
+    {
+      prMergeState: "BLOCKED",
+      prReviewDecision: "REVIEW_REQUIRED",
+      secretNames: [],
+      releaseMissing: true,
+    },
+    (fakeGhPath) => {
+      const root = mkdtempSync(join(tmpdir(), "omo-release-status-md-"));
+      try {
+        const markdownPath = join(root, "nested", "release-status.md");
+        const result = runStatus(fakeGhPath, [
+          "--tag=v0.1.0",
+          "--pr=274",
+          `--markdown-file=${markdownPath}`,
+        ]);
+
+        assert.equal(result.status, 1);
+        assert.ok(existsSync(markdownPath));
+        const markdown = readFileSync(markdownPath, "utf8");
+        assert.match(markdown, /^# macOS Release Status/);
+        assert.match(markdown, /- Repo: `wlsdks\/oh-my-ontology`/);
+        assert.match(markdown, /- Tag: `v0\.1\.0`/);
+        assert.match(markdown, /- Ready: no/);
+        assert.match(markdown, /## Blockers/);
+        assert.match(markdown, /- \[ \] Pull request \(`pull_request`\)/);
+        assert.match(markdown, /- \[ \] Apple release secrets \(`apple_release_secrets`\)/);
+        assert.match(markdown, /- \[ \] GitHub Release \(`github_release`\)/);
+        assert.match(markdown, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
+        assert.match(markdown, /## Checks/);
+        assert.match(markdown, /- \[x\] GitHub CLI auth \(`github_cli_auth`\)/);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    },
+  );
+});
+
 test("desktop release status reports current completion blockers together", () => {
   withFakeGh(
     {
@@ -312,6 +351,29 @@ test("desktop release status JSON reports ready when all release gates pass", ()
   });
 });
 
+test("desktop release status markdown reports ready when all release gates pass", () => {
+  withFakeGh({}, (fakeGhPath) => {
+    const root = mkdtempSync(join(tmpdir(), "omo-release-status-md-ready-"));
+    try {
+      const markdownPath = join(root, "release-status.md");
+      const result = runStatus(fakeGhPath, [
+        "--tag=v0.1.0",
+        "--pr=274",
+        `--markdown-file=${markdownPath}`,
+      ]);
+
+      assert.equal(result.status, 0, result.stderr);
+      const markdown = readFileSync(markdownPath, "utf8");
+      assert.match(markdown, /- Ready: yes/);
+      assert.match(markdown, /No blockers\./);
+      assert.match(markdown, /- \[x\] Pull request \(`pull_request`\)/);
+      assert.match(markdown, /- \[-\] Download assets \(`download_assets`\)/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 test("desktop release status keeps Firebase out when GitHub secret listing fails", () => {
   withFakeGh({ secretListFails: true, releaseMissing: true }, (fakeGhPath) => {
     const result = runStatus(fakeGhPath);
@@ -373,8 +435,10 @@ test("desktop release status help describes the completion audit", () => {
   assert.match(stdout, /downloadable\s+DMG\/checksum assets/);
   assert.match(stdout, /--json/);
   assert.match(stdout, /--json-file=PATH/);
+  assert.match(stdout, /--markdown-file=PATH/);
   assert.match(stdout, /machine-readable blocker list/);
   assert.match(stdout, /write that same payload to disk/);
+  assert.match(stdout, /human-readable release checklist/);
   assert.match(stdout, /Firebase Hosting is intentionally excluded/);
   assert.doesNotMatch(stdout, /Hosted website/);
 });

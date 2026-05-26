@@ -19,7 +19,7 @@ function defaultTag() {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER] [--json] [--json-file=PATH]
+  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER] [--json] [--json-file=PATH] [--markdown-file=PATH]
 
 Checks the public macOS release completion state in one fail-closed pass:
 release tag version alignment, pull-request merge readiness, Apple
@@ -33,6 +33,8 @@ Use --json when a goal runner, CI wrapper, or release dashboard needs a
 machine-readable blocker list. Human-readable output remains the default.
 Use --json-file=PATH to write that same payload to disk even when a package
 runner adds lifecycle text around stdout.
+Use --markdown-file=PATH to write a human-readable release checklist for PR
+reviewers and release operators.
 
 Firebase Hosting is intentionally excluded from this macOS app release audit.
 Use pnpm desktop:verify-hosted after the separate static promo/download website
@@ -47,6 +49,7 @@ function parseArgs(argv) {
     pr: "",
     json: false,
     jsonFile: "",
+    markdownFile: "",
   };
 
   for (const arg of argv) {
@@ -75,6 +78,10 @@ function parseArgs(argv) {
       options.jsonFile = arg.slice("--json-file=".length).trim();
       continue;
     }
+    if (arg.startsWith("--markdown-file=")) {
+      options.markdownFile = arg.slice("--markdown-file=".length).trim();
+      continue;
+    }
     fail(`unknown argument: ${arg}`);
   }
 
@@ -89,6 +96,9 @@ function parseArgs(argv) {
   }
   if (options.jsonFile && options.jsonFile.includes("\0")) {
     fail("--json-file must not contain null bytes.");
+  }
+  if (options.markdownFile && options.markdownFile.includes("\0")) {
+    fail("--markdown-file must not contain null bytes.");
   }
   return options;
 }
@@ -350,6 +360,11 @@ function renderAndExit(options, checks) {
     fs.mkdirSync(path.dirname(jsonFilePath), { recursive: true });
     fs.writeFileSync(jsonFilePath, `${JSON.stringify(payload, null, 2)}\n`);
   }
+  if (options.markdownFile) {
+    const markdownFilePath = path.resolve(process.cwd(), options.markdownFile);
+    fs.mkdirSync(path.dirname(markdownFilePath), { recursive: true });
+    fs.writeFileSync(markdownFilePath, renderMarkdownChecklist(payload));
+  }
   if (options.json) {
     console.log(JSON.stringify(payload, null, 2));
     if (blockers.length > 0) {
@@ -372,6 +387,43 @@ function renderAndExit(options, checks) {
     process.exit(1);
   }
   console.log("[desktop-release-status] ready: public macOS release requirements are satisfied");
+}
+
+function renderMarkdownChecklist(payload) {
+  const lines = [
+    "# macOS Release Status",
+    "",
+    `- Repo: \`${payload.repo}\``,
+    `- Tag: \`${payload.tag}\``,
+    `- PR: ${payload.pr ? `#${payload.pr}` : "not checked"}`,
+    `- Ready: ${payload.ready ? "yes" : "no"}`,
+    `- Generated: ${payload.generatedAt}`,
+    "",
+    "## Blockers",
+    "",
+  ];
+
+  const blockers = payload.checks.filter((check) => check.status === "blocked");
+  if (blockers.length === 0) {
+    lines.push("No blockers.", "");
+  } else {
+    for (const check of blockers) {
+      lines.push(`- [ ] ${check.label} (\`${check.id}\`)`);
+      lines.push(`  - Detail: ${check.detail}`);
+      if (check.next) {
+        lines.push(`  - Next: \`${check.next}\``);
+      }
+    }
+    lines.push("");
+  }
+
+  lines.push("## Checks", "");
+  for (const check of payload.checks) {
+    const marker = check.status === "ok" ? "[x]" : check.status === "skipped" ? "[-]" : "[ ]";
+    lines.push(`- ${marker} ${check.label} (\`${check.id}\`) - ${check.detail}`);
+  }
+  lines.push("");
+  return `${lines.join("\n")}`;
 }
 
 await main();

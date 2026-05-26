@@ -218,7 +218,9 @@ command, so operators do not have to infer the blocker from a count like
 `0/1 checks successful`. Add `--json` when a goal runner, CI wrapper, or release
 dashboard needs `ready`, `blockerCount`, and per-check `next` actions without
 parsing human text; add `--json-file=<path>` when the command is invoked through
-a package runner that may add lifecycle text around stdout. The JSON snapshot
+a package runner that may add lifecycle text around stdout, and add
+`--markdown-file=<path>` when a reviewer or release operator needs a
+human-readable checklist artifact. The JSON snapshot
 includes `schemaVersion` and `generatedAt` so stored release evidence can be
 versioned and ordered; top-level `blockerIds` and `nextActions` summarize the
 blocked checks, and each check also carries a stable `id` such as `pull_request`,
@@ -638,6 +640,7 @@ pnpm desktop:verify-release-dmg
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0 --json
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0 --json-file=.tmp/release-status.json
+pnpm desktop:release-status -- --pr=274 --tag=v0.1.0 --markdown-file=.tmp/release-status.md
 ```
 
 For local unsigned smoke, `pnpm desktop:build` is the shortcut for
