@@ -174,7 +174,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop GitHub release readiness gate checks the release workflow, Apple secret names, Git tag slot, and release slot before tag push/,
+    /✓ desktop GitHub release readiness gate checks the release workflow, Apple secret names, local and remote Git tag slots, and release slot before tag push/,
   );
   assert.match(
     result.stdout,

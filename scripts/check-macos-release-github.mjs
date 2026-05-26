@@ -25,6 +25,8 @@ Checks GitHub-side prerequisites for the macOS release workflow before a public
 tag push: gh authentication, required release workflow file, Apple signing and
 notarization secret names, optional local tag/version alignment, an optional
 clean remote Git tag slot, and an optional clean same-tag GitHub Release slot.
+It also checks the local Git tag slot so stale local tags fail before the
+operator reaches the tag-push command.
 
 This check can only prove that required secret names exist. The tag workflow
 still runs desktop:release-secrets to verify that values are non-empty and the
@@ -82,6 +84,10 @@ function ghBin() {
   return process.env.OMOT_GH_BIN || "gh";
 }
 
+function gitBin() {
+  return process.env.OMOT_GIT_BIN || "git";
+}
+
 function runGh(args, { parseJson = false } = {}) {
   const result = spawnSync(ghBin(), args, {
     cwd: process.cwd(),
@@ -119,6 +125,17 @@ function runGhStatus(args) {
   });
   if (result.error) {
     fail(`failed to run gh ${args.join(" ")}: ${result.error.message}`);
+  }
+  return result;
+}
+
+function runGitStatus(args) {
+  const result = spawnSync(gitBin(), args, {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  if (result.error) {
+    fail(`failed to run git ${args.join(" ")}: ${result.error.message}`);
   }
   return result;
 }
@@ -168,6 +185,16 @@ if (missing.length > 0) {
 
 if (options.tag) {
   runNode(["scripts/check-macos-release-tag.mjs", `--tag=${options.tag}`]);
+  const localTagRef = runGitStatus(["rev-parse", "--verify", "--quiet", `refs/tags/${options.tag}`]);
+  if (localTagRef.status === 0) {
+    fail(
+      `local git tag ${options.tag} already exists. Delete the stale local tag with git tag -d ${options.tag} after verifying it was not pushed, or choose a new version before pushing a macOS release tag.`,
+    );
+  }
+  if (localTagRef.status !== 1) {
+    const output = `${localTagRef.stderr || ""}\n${localTagRef.stdout || ""}`.trim();
+    fail(`git rev-parse --verify refs/tags/${options.tag} failed: ${output || `exit ${localTagRef.status}`}`);
+  }
   const tagRef = runGhStatus(["api", `repos/${options.repo}/git/ref/tags/${options.tag}`]);
   if (tagRef.status === 0) {
     fail(
@@ -186,6 +213,7 @@ console.log(
 );
 if (options.tag) {
   console.log(`[desktop-release-github] ${options.tag} matches package, Tauri, and Cargo versions`);
+  console.log(`[desktop-release-github] ${options.tag} has no existing local Git tag`);
   console.log(`[desktop-release-github] ${options.tag} has no existing Git tag`);
   console.log(`[desktop-release-github] ${options.tag} has no existing GitHub Release`);
 }

@@ -377,7 +377,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-source` | Fail closed before release signing when the tag commit is not the current default-branch head |
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
-| `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, clean same-tag Git ref slot, and clean same-tag Release slot |
+| `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, clean local/remote same-tag Git ref slots, and clean same-tag Release slot |
 | `pnpm desktop:release-run` | Wait for the tag-push `release-macos.yml` run scoped to the pushed tag commit, then watch that exact run to completion |
 | `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, Apple release secret names, public stable Release state, and public DMG/checksum download verification |
 | `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |

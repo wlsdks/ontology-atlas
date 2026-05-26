@@ -72,13 +72,36 @@ process.exit(2);
   return binPath;
 }
 
-function runReleaseGithub(fakeGhPath, args = ["--tag=v0.1.0"]) {
+function writeFakeGit(root, scenario) {
+  const binPath = join(root, "fake-git.mjs");
+  writeFileSync(
+    binPath,
+    `#!/usr/bin/env node
+const scenario = ${JSON.stringify(scenario)};
+const args = process.argv.slice(2);
+if (args[0] === "rev-parse" && args[1] === "--verify" && args[2] === "--quiet" && args[3] === "refs/tags/v0.1.0") {
+  if (scenario.localTagExists) {
+    process.stdout.write("1".repeat(40) + "\\n");
+    process.exit(0);
+  }
+  process.exit(1);
+}
+process.stderr.write("unexpected git call: " + args.join(" "));
+process.exit(2);
+`,
+  );
+  chmodSync(binPath, 0o755);
+  return binPath;
+}
+
+function runReleaseGithub(fakeGhPath, fakeGitPath, args = ["--tag=v0.1.0"]) {
   return spawnSync(process.execPath, ["scripts/check-macos-release-github.mjs", ...args], {
     cwd: process.cwd(),
     encoding: "utf8",
     env: {
       ...process.env,
       OMOT_GH_BIN: fakeGhPath,
+      OMOT_GIT_BIN: fakeGitPath,
     },
   });
 }
@@ -87,27 +110,29 @@ function withFakeGh(scenario, run) {
   const root = mkdtempSync(join(tmpdir(), "omo-release-github-"));
   try {
     const fakeGhPath = writeFakeGh(root, scenario);
-    run(fakeGhPath);
+    const fakeGitPath = writeFakeGit(root, scenario);
+    run(fakeGhPath, fakeGitPath);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 }
 
 test("desktop GitHub release gate proves workflows, secrets, tag version, and clean release slot", () => {
-  withFakeGh({}, (fakeGhPath) => {
-    const result = runReleaseGithub(fakeGhPath);
+  withFakeGh({}, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /has the active macOS release workflow and all required Apple release secret names/);
     assert.match(result.stdout, /v0\.1\.0 matches package, Tauri, and Cargo versions/);
+    assert.match(result.stdout, /v0\.1\.0 has no existing local Git tag/);
     assert.match(result.stdout, /v0\.1\.0 has no existing Git tag/);
     assert.match(result.stdout, /v0\.1\.0 has no existing GitHub Release/);
   });
 });
 
 test("desktop GitHub release gate fails before tag push when Apple secret names are missing", () => {
-  withFakeGh({ secretNames: requiredSecrets.filter((name) => name !== "APPLE_TEAM_ID") }, (fakeGhPath) => {
-    const result = runReleaseGithub(fakeGhPath);
+  withFakeGh({ secretNames: requiredSecrets.filter((name) => name !== "APPLE_TEAM_ID") }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /missing GitHub Actions secrets/);
@@ -117,8 +142,8 @@ test("desktop GitHub release gate fails before tag push when Apple secret names 
 });
 
 test("desktop GitHub release gate explains that a PR-only workflow cannot receive tag pushes yet", () => {
-  withFakeGh({ workflowMissing: true }, (fakeGhPath) => {
-    const result = runReleaseGithub(fakeGhPath);
+  withFakeGh({ workflowMissing: true }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /release-macos\.yml is not available to GitHub/);
@@ -127,8 +152,8 @@ test("desktop GitHub release gate explains that a PR-only workflow cannot receiv
 });
 
 test("desktop GitHub release gate blocks an existing same-tag release slot", () => {
-  withFakeGh({ releaseExists: true, releaseDraft: true }, (fakeGhPath) => {
-    const result = runReleaseGithub(fakeGhPath);
+  withFakeGh({ releaseExists: true, releaseDraft: true }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /release v0\.1\.0 already exists/);
@@ -137,12 +162,22 @@ test("desktop GitHub release gate blocks an existing same-tag release slot", () 
 });
 
 test("desktop GitHub release gate blocks an existing same-tag Git ref before tag push", () => {
-  withFakeGh({ gitTagExists: true }, (fakeGhPath) => {
-    const result = runReleaseGithub(fakeGhPath);
+  withFakeGh({ gitTagExists: true }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath);
 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /git tag v0\.1\.0 already exists/);
     assert.match(result.stderr, /Inspect the existing tag workflow run or choose a new version/);
+  });
+});
+
+test("desktop GitHub release gate blocks an existing local Git tag before tag push", () => {
+  withFakeGh({ localTagExists: true }, (fakeGhPath, fakeGitPath) => {
+    const result = runReleaseGithub(fakeGhPath, fakeGitPath);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /local git tag v0\.1\.0 already exists/);
+    assert.match(result.stderr, /git tag -d v0\.1\.0/);
   });
 });
 

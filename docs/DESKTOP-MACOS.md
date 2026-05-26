@@ -156,12 +156,12 @@ for a macOS prototype:
 - `scripts/check-macos-release-github.mjs` checks the GitHub-side prerequisites
   before pushing a public tag: `gh` authentication, the active
   `release-macos.yml` release workflow, required Apple signing/notary secret
-  names, optional tag/version alignment, a clean same-tag Git ref slot, and a
-  clean same-tag Release slot. It cannot inspect secret values, so the tag
+  names, optional tag/version alignment, clean local and remote same-tag Git tag
+  slots, and a clean same-tag Release slot. It cannot inspect secret values, so the tag
   workflow still runs `desktop:release-secrets` before signing.
   `pnpm test:desktop:check` covers this operator-side gate with a fake `gh`
   binary, including PR-only workflow cases, missing Apple secret names,
-  tag/version alignment, stale Git tags, and stale same-tag Release slots.
+  tag/version alignment, stale local/remote Git tags, and stale same-tag Release slots.
 - `scripts/check-macos-release-slot.mjs` runs inside the publish job before
   upload and fails if the same tag already has a draft, prerelease, or public
   GitHub Release, preventing stale DMG assets from mixing with newly signed
