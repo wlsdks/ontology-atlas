@@ -212,7 +212,10 @@ completion audit after PR/release work: it accepts an already merged PR or
 checks tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
 required Apple signing/notary secret names, public stable GitHub Release state,
 and public DMG/checksum download
-verification in one fail-closed pass. Firebase Hosting is not part of the macOS
+verification in one fail-closed pass. When PR checks block the release it names
+the failing or pending GitHub check rows and prints the matching `gh pr checks`
+command, so operators do not have to infer the blocker from a count like
+`0/1 checks successful`. Firebase Hosting is not part of the macOS
 app release gate; verify the separate website with `pnpm desktop:verify-hosted`;
 the hosted download page keeps macOS app release blockers aligned with
 review/signing/GitHub Release requirements while naming Firebase Hosting only

@@ -155,6 +155,8 @@ audit once the PR and release path are expected to be ready. It accepts an
 already merged PR or checks tag/package/Tauri/Cargo version alignment, PR
 review/merge readiness, required Apple release secret names, public stable
 GitHub Release state, and then runs the public DMG/checksum download verifier.
+When PR checks block the release, it includes the failing or pending check names
+and the exact `gh pr checks <number> --repo wlsdks/oh-my-ontology` command.
 Firebase Hosting remains a separate static
 website deployment checked with `pnpm desktop:verify-hosted`.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`

@@ -139,7 +139,20 @@ function prChecksPassed(pr) {
 function prCheckSummary(pr) {
   const checks = Array.isArray(pr.statusCheckRollup) ? pr.statusCheckRollup : [];
   const passed = checks.filter((check) => check.status === "COMPLETED" && check.conclusion === "SUCCESS").length;
-  return `${passed}/${checks.length} checks successful`;
+  const failing = checks
+    .filter((check) => !(check.status === "COMPLETED" && check.conclusion === "SUCCESS"))
+    .map(prCheckLabel)
+    .filter(Boolean);
+  const failingSummary = failing.length > 0
+    ? `; blocked checks: ${failing.join(", ")}`
+    : "";
+  return `${passed}/${checks.length} checks successful${failingSummary}`;
+}
+
+function prCheckLabel(check) {
+  const name = check.name ?? check.context ?? check.workflowName ?? check.__typename ?? "unnamed check";
+  const state = check.conclusion ?? check.status ?? "unknown";
+  return `${name}=${state}`;
 }
 
 function prMerged(pr) {
@@ -204,7 +217,7 @@ async function main() {
         checks.push(blocked(
           "Pull request",
           `PR #${options.pr} is not merge-ready: review=${value.reviewDecision ?? "unknown"}, merge=${value.mergeStateStatus ?? "unknown"}, ${prCheckSummary(value)}`,
-          value.url ?? `https://github.com/${options.repo}/pull/${options.pr}`,
+          `Run gh pr checks ${options.pr} --repo ${options.repo}, then resolve review/merge blockers: ${value.url ?? `https://github.com/${options.repo}/pull/${options.pr}`}`,
         ));
       }
     }

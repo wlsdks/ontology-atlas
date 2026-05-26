@@ -103,6 +103,11 @@ test("desktop release status reports current completion blockers together", () =
     {
       prMergeState: "BLOCKED",
       prReviewDecision: "REVIEW_REQUIRED",
+      prChecks: [
+        { name: "desktop release preflight", status: "COMPLETED", conclusion: "FAILURE" },
+        { name: "lint", status: "COMPLETED", conclusion: "SUCCESS" },
+        { name: "build", status: "IN_PROGRESS", conclusion: null },
+      ],
       secretNames: [],
       releaseMissing: true,
     },
@@ -114,6 +119,9 @@ test("desktop release status reports current completion blockers together", () =
       assert.match(result.stdout, /✗ Pull request: PR #274 is not merge-ready/);
       assert.match(result.stdout, /review=REVIEW_REQUIRED/);
       assert.match(result.stdout, /merge=BLOCKED/);
+      assert.match(result.stdout, /1\/3 checks successful/);
+      assert.match(result.stdout, /blocked checks: desktop release preflight=FAILURE, build=IN_PROGRESS/);
+      assert.match(result.stdout, /next: Run gh pr checks 274 --repo wlsdks\/oh-my-ontology/);
       assert.match(result.stdout, /✗ Apple release secrets: missing APPLE_CERTIFICATE_P12_BASE64/);
       assert.match(result.stdout, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
       assert.match(result.stdout, /✗ GitHub Release: release not found/);
