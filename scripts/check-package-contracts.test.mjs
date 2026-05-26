@@ -497,7 +497,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm desktop:release-preflight` \| Local pre-tag macOS release gate: readiness, docs-vault, checker tests, bridge tests, runtime doctor, CLI\/MCP handoff, build, route smoke, DMG, and install smoke \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-slot` \| Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-github` \| Operator-side GitHub release readiness check for gh auth, active release workflow, required Apple secret names, optional tag\/version alignment, and clean same-tag Release slot \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:release-status` \| Completion audit for PR review\/merge readiness, Apple release secret names, public stable Release state, and public DMG\/checksum download verification \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:release-status` \| Completion audit for PR review\/merge readiness, Apple release secret names, public stable Release state, public DMG\/checksum download verification, and hosted website deployment \|/);
     assert.match(checksDoc, /\| `pnpm test:desktop:bridge` \| WebView handle-shim tests plus Rust path-guard tests for the native vault bridge \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-secrets` \| Fail closed before tag release when any Apple signing or notarization secret is missing, blank, or structurally invalid \|/);
     assert.match(checksDoc, /\| `pnpm desktop:sign` \| Sign the built `\.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available \|/);
@@ -505,6 +505,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm desktop:verify-dmg` \| Mount and checksum smoke for the generated macOS DMG before GitHub Release upload \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-release-dmg` \| Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-download` \| Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported extra `oh-my-ontology_\*\.dmg` names, and verifies matching `\.sha256` contents and downloaded bytes \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:verify-hosted` \| Live hosted website verifier: requires `\/ko\/` to be promo\/download-first and `\/ko\/download\/` to exist with the GitHub Releases CTA, rejecting stale browser-vault CTAs \|/);
     assert.match(checksDoc, /\| `pnpm test:desktop:check` \| Desktop readiness checker contract; use direct `pnpm exec node --test scripts\/check-desktop-readiness\.test\.mjs` first when printed \|/);
     assert.match(checksDoc, /\| `pnpm exec tsc --noEmit` \| TypeScript and Next config type safety \|/);
     assert.match(checksDoc, /\| `pnpm test:i18n:messages` \| Locale routing\/message catalog parity \|/);
