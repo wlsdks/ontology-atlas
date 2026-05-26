@@ -44,6 +44,14 @@ if (args[0] === "pr" && args[1] === "view") {
   process.exit(0);
 }
 if (args[0] === "secret" && args[1] === "list") {
+  if (scenario.secretListFails) {
+    err("secret API unavailable");
+    process.exit(1);
+  }
+  if (scenario.secretListInvalidJson) {
+    out("not-json");
+    process.exit(0);
+  }
   const names = scenario.secretNames ?? ${JSON.stringify(requiredSecrets)};
   out(names.map((name) => ({ name })));
   process.exit(0);
@@ -126,6 +134,28 @@ test("desktop release status passes when PR, secrets, and stable release are rea
     assert.match(result.stdout, /· Download assets: skipped by OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY=1/);
     assert.doesNotMatch(result.stdout, /Hosted website/);
     assert.match(result.stdout, /ready: public macOS release requirements are satisfied/);
+  });
+});
+
+test("desktop release status keeps Firebase out when GitHub secret listing fails", () => {
+  withFakeGh({ secretListFails: true, releaseMissing: true }, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /✗ Apple release secrets: secret API unavailable/);
+    assert.doesNotMatch(result.stdout, /Firebase Hosting deploy secrets/);
+    assert.doesNotMatch(result.stderr, /Firebase Hosting deploy secrets/);
+  });
+});
+
+test("desktop release status keeps Firebase out when GitHub secret JSON is malformed", () => {
+  withFakeGh({ secretListInvalidJson: true, releaseMissing: true }, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /✗ Apple release secrets: gh secret list .* returned invalid JSON/);
+    assert.doesNotMatch(result.stdout, /Firebase Hosting deploy secrets/);
+    assert.doesNotMatch(result.stderr, /Firebase Hosting deploy secrets/);
   });
 });
 

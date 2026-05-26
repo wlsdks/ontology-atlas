@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-26T10:43:24.474Z",
+  "generatedAt": "2026-05-26T11:04:00.191Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3901,8 +3901,8 @@
         }
       ],
       "excerpt": "Context Atlas is the userfacing macOS app name for the ohmyontology project. ohmyontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app ",
-      "wordCount": 3097,
-      "updatedAt": "2026-05-26T10:42:47.350Z",
+      "wordCount": 3109,
+      "updatedAt": "2026-05-26T11:03:34.978Z",
       "linksOut": []
     },
     {
@@ -3959,8 +3959,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 5072,
-      "updatedAt": "2026-05-26T01:18:21.004Z",
+      "wordCount": 5081,
+      "updatedAt": "2026-05-26T11:03:34.978Z",
       "linksOut": []
     },
     {
@@ -4498,8 +4498,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260525 (agent setup gate, graph DBstyle query pack, CLI/MCP verification snapshots, and fallback performance checks). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongside t",
-      "wordCount": 7606,
-      "updatedAt": "2026-05-26T10:42:47.349Z",
+      "wordCount": 7613,
+      "updatedAt": "2026-05-26T11:03:52.304Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4560,8 +4560,8 @@
         }
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ohmyontology 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성. ",
-      "wordCount": 419,
-      "updatedAt": "2026-05-25T18:35:06.590Z",
+      "wordCount": 420,
+      "updatedAt": "2026-05-26T11:03:52.305Z",
       "linksOut": []
     },
     {
@@ -5129,8 +5129,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 1757,
-      "updatedAt": "2026-05-26T04:06:21.732Z",
+      "wordCount": 1768,
+      "updatedAt": "2026-05-26T11:03:34.979Z",
       "linksOut": []
     },
     {

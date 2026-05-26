@@ -11,7 +11,7 @@ README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. **claim → pro
 
 ## Cut 2 (6–12s) — "frontmatter 가 곧 그래프"
 
-- **screen**: 설치된 oh-my-ontology macOS 앱에서 위 vault 폴더를 `/docs` picker 로 열면 즉시 트리·토폴로지·ERD 에 노드 / 엣지 표시.
+- **screen**: 설치된 Context Atlas macOS 앱에서 위 vault 폴더를 `/docs` picker 로 열면 즉시 트리·토폴로지·ERD 에 노드 / 엣지 표시.
 - **action**: 워크벤치 좌측 트리에서 `domains/auth` 클릭 → 우측 detail 패널에 frontmatter 그대로.
 - **caption**: `frontmatter is the graph`
 

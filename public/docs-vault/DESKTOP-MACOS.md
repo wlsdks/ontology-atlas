@@ -181,12 +181,13 @@ for a macOS prototype:
   users to `/download/`, a static installation guide, and the download page
   secondary CTA opens the source repository instead of duplicating the release
   action or steering new users into the web workbench. The download page also
-  states that missing first-release DMGs mean the public release is still
-  waiting on PR review, Apple signing, Firebase Hosting service-account, GitHub
-  Release, and hosted `/ko/download/` deployment gates. After verified public
-  DMGs are published and the hosted download route is live, rebuild the hosted
-  site with `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` to hide that pre-release
-  checklist without a code change.
+  states that missing first-release DMGs mean the macOS app release is still
+  waiting on PR review, Apple signing, or the `v0.1.0` GitHub Release. It names
+  Firebase Hosting separately as the promo/download website deploy gate for the
+  hosted `/ko/download/` route. After verified public DMGs are published and the
+  hosted download route is live, rebuild the hosted site with
+  `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` to hide that pre-release checklist
+  without a code change.
 - `scripts/check-hosted-download-surface.mjs` verifies the deployed hosted
   website after Firebase Hosting deploy: `/ko/` must be promo/download-first,
   must not expose the old browser vault picker CTA, and `/ko/download/` must

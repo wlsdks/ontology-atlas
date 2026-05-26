@@ -47,20 +47,20 @@ describe('DownloadPage', () => {
       'https://github.com/wlsdks/oh-my-ontology',
     );
     expect(
-      screen.getByText(/first public release is still waiting on PR review, Apple signing, and Firebase Hosting gates/i),
+      screen.getByText(/app release is still waiting on PR review, Apple signing, or the v0\.1\.0 GitHub Release/i),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Before the first DMG appears/i)).toBeInTheDocument();
+    expect(screen.getByText(/Before the first release is fully available/i)).toBeInTheDocument();
     expect(
       screen.getByText(/PR #274 must be reviewed and merged before v0\.1\.0 can ship/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Apple Developer ID signing\/notarization secrets and the Firebase Hosting service account must be configured before release/i),
+      screen.getByText(/Apple Developer ID signing\/notarization secrets must be configured before the macOS app release/i),
     ).toBeInTheDocument();
     expect(
       screen.getByText(/v0\.1\.0 GitHub Release is the source of truth for verified Apple Silicon and Intel DMGs/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Firebase Hosting must deploy the promo\/download site so \/ko\/download\/ is live after release/i),
+      screen.getByText(/Separately, Firebase Hosting must deploy the promo\/download site so \/ko\/download\/ is live after the app release/i),
     ).toBeInTheDocument();
     expect(screen.getByText(/hosted site does not open or edit vault folders/i)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /Open my markdown folder/i })).not.toBeInTheDocument();
@@ -69,7 +69,7 @@ describe('DownloadPage', () => {
   it('can hide the first-release checklist after public DMGs are published', () => {
     renderDownloadPage({ showFirstReleaseChecklist: false });
 
-    expect(screen.queryByText(/Before the first DMG appears/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Before the first release is fully available/i)).not.toBeInTheDocument();
     expect(
       screen.queryByText(/PR #274 must be reviewed and merged before v0\.1\.0 can ship/i),
     ).not.toBeInTheDocument();

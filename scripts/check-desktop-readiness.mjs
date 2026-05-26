@@ -469,7 +469,7 @@ if (
   troubleshootingDoc.includes("Desktop app scaffold button stays grayed out") &&
   publishNpmDoc.includes("installed macOS app's `/docs` page") &&
   publishNpmDoc.includes("Start a user vault (desktop app path)") &&
-  demoStoryboardDoc.includes("설치된 oh-my-ontology macOS 앱") &&
+  demoStoryboardDoc.includes("설치된 Context Atlas macOS 앱") &&
   redditPostsDoc.includes("macOS desktop app that wraps the same Next.js static") &&
   redditPostsDoc.includes("hosted website is only the product intro and download entry point")
 ) {
@@ -523,40 +523,44 @@ if (
   downloadRoute.includes("NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING") &&
   downloadRoute.includes("!== '0'") &&
   downloadRoute.includes("showFirstReleaseChecklist={showFirstReleaseChecklist}") &&
-  /first public release is still waiting on PR review, Apple signing, and Firebase Hosting gates/.test(
+  /app release is still waiting on PR review, Apple signing, or the v0\.1\.0 GitHub Release/.test(
     enMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
-  /Before the first DMG appears/.test(enMessages.download?.releaseStatusTitle ?? "") &&
+  !/Firebase Hosting/.test(enMessages.download?.releaseAvailabilityNote ?? "") &&
+  /Before the first release is fully available/.test(enMessages.download?.releaseStatusTitle ?? "") &&
   /PR #274/.test(enMessages.download?.releaseStatusPr ?? "") &&
   /before v0\.1\.0 can ship/.test(enMessages.download?.releaseStatusPr ?? "") &&
-  /Apple Developer ID signing\/notarization secrets and the Firebase Hosting service account/.test(
+  /Apple Developer ID signing\/notarization secrets/.test(
     enMessages.download?.releaseStatusSecrets ?? "",
   ) &&
-  /before release/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
+  !/Firebase Hosting/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
+  /before the macOS app release/.test(enMessages.download?.releaseStatusSecrets ?? "") &&
   /v0\.1\.0 GitHub Release/.test(enMessages.download?.releaseStatusRelease ?? "") &&
   /source of truth/.test(enMessages.download?.releaseStatusRelease ?? "") &&
-  /Firebase Hosting must deploy the promo\/download site/.test(
+  /Separately, Firebase Hosting must deploy the promo\/download site/.test(
     enMessages.download?.releaseStatusHosted ?? "",
   ) &&
   /\/ko\/download\//.test(enMessages.download?.releaseStatusHosted ?? "") &&
-  /첫 public release 가 PR review, Apple signing, Firebase Hosting gate/.test(
+  /앱 릴리스가 PR review, Apple signing, v0\.1\.0 GitHub Release/.test(
     koMessages.download?.releaseAvailabilityNote ?? "",
   ) &&
-  /첫 DMG 가 보이기 전 체크리스트/.test(koMessages.download?.releaseStatusTitle ?? "") &&
+  !/Firebase Hosting/.test(koMessages.download?.releaseAvailabilityNote ?? "") &&
+  /첫 릴리스가 완전히 열리기 전 체크리스트/.test(koMessages.download?.releaseStatusTitle ?? "") &&
   /PR #274/.test(koMessages.download?.releaseStatusPr ?? "") &&
   /v0\.1\.0 배포 전/.test(koMessages.download?.releaseStatusPr ?? "") &&
   /Apple Developer ID/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
-  /Firebase Hosting service account/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
-  /릴리스 전/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
+  !/Firebase Hosting/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
+  /macOS 앱 릴리스 전/.test(koMessages.download?.releaseStatusSecrets ?? "") &&
   /v0\.1\.0 GitHub Release/.test(koMessages.download?.releaseStatusRelease ?? "") &&
   /진실원/.test(koMessages.download?.releaseStatusRelease ?? "") &&
+  /별도로/.test(koMessages.download?.releaseStatusHosted ?? "") &&
   /Firebase Hosting/.test(koMessages.download?.releaseStatusHosted ?? "") &&
   /\/ko\/download\//.test(koMessages.download?.releaseStatusHosted ?? "")
 ) {
-  pass("hosted download page names first-release gates and can hide the checklist after verified DMGs publish");
+  pass("hosted download page separates macOS app release blockers from the Firebase website deploy gate");
 } else {
   fail(
-    "hosted download copy must condition first-release PR review, Apple signing, Firebase Hosting secret, v0.1.0 Release, and hosted /ko/download/ deploy gates, and NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
+    "hosted download copy must separate macOS app blockers (PR review, Apple signing, v0.1.0 Release) from the separate Firebase Hosting /ko/download/ deploy gate, and NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0 must hide the pre-release checklist",
   );
 }
 

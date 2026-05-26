@@ -207,10 +207,8 @@ async function main() {
   ], { parseJson: true });
   if (!secrets.ok) {
     checks.push(blocked("Apple release secrets", secrets.message, `Run gh secret list --repo ${options.repo}.`));
-    checks.push(blocked("Firebase Hosting deploy secrets", secrets.message, `Run gh secret list --repo ${options.repo}.`));
   } else if (!Array.isArray(secrets.value)) {
     checks.push(blocked("Apple release secrets", "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`));
-    checks.push(blocked("Firebase Hosting deploy secrets", "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`));
   } else {
     const secretNames = new Set(secrets.value.map((secret) => secret?.name).filter(Boolean));
     const missing = REQUIRED_SECRETS.filter((name) => !secretNames.has(name));

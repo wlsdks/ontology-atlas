@@ -172,9 +172,10 @@ distribution: the landing/download primary CTAs open the GitHub Releases page
 instead of depending on `/releases/latest` before a public macOS DMG exists. The
 secondary CTA opens `/download/` as a static install guide, and the hosted
 landing/download pages no longer route users into `/docs/?intent=local`. The
-download page also explains that missing first-release DMGs mean the public
-release is still waiting on PR review, Apple signing, Firebase Hosting
-service-account, GitHub Release, and hosted `/ko/download/` deployment gates.
+download page also explains that missing first-release DMGs mean the macOS app
+release is still waiting on PR review, Apple signing, or the `v0.1.0` GitHub
+Release, while Firebase Hosting is named separately as the promo/download
+website deploy gate for hosted `/ko/download/`.
 Once verified public DMGs are published and the hosted download route is live,
 `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` hides that pre-release checklist on the next hosted rebuild without a code change.
 Hosted `/docs` sessions also keep local vault work disabled: `?intent=local`
