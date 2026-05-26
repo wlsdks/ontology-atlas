@@ -205,7 +205,11 @@ for a macOS prototype:
   must not expose the old browser vault picker CTA, and `/ko/download/` must
   exist with the GitHub Releases download path. This catches the stale live-site
   state where the app code is ready but `oh-my-ontology.web.app` still serves
-  the previous web-workbench landing page or a missing download route.
+  the previous web-workbench landing page or a missing download route. If the
+  live `/ko/download/` route returns 404, merge the desktop PR so
+  `.github/workflows/deploy-hosting.yml` exists on the default branch, run
+  `gh workflow run deploy-hosting.yml --repo wlsdks/oh-my-ontology`, then rerun
+  `pnpm desktop:verify-hosted`.
 - The `/docs/?intent=local` vault-opening path is desktop-only: hosted browser
   sessions keep `/docs` in the read-only packaged docs mode, disable the local
   vault source, and point users back to the macOS download path instead of

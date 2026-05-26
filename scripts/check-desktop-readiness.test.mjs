@@ -81,7 +81,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ hosted website verifier catches stale browser-vault CTAs and missing download routes/,
+    /✓ hosted website verifier catches stale browser-vault CTAs, missing download routes, and prints deploy recovery/,
   );
   assert.match(
     result.stdout,

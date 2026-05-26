@@ -61,6 +61,18 @@ function fail(message) {
   process.exit(1);
 }
 
+function deploymentNextAction(error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!/\/ko\/download\/ returned HTTP 404|\/ko\/ returned HTTP 404/.test(message)) {
+    return null;
+  }
+  return [
+    "next: ensure .github/workflows/deploy-hosting.yml is merged into the default branch,",
+    "then run: gh workflow run deploy-hosting.yml --repo wlsdks/oh-my-ontology",
+    "after the workflow completes, rerun: pnpm desktop:verify-hosted",
+  ].join(" ");
+}
+
 function requestText(url, { timeoutMs, redirects = 3 } = {}) {
   return new Promise((resolve, reject) => {
     const parsed = new URL(url);
@@ -193,7 +205,8 @@ async function main() {
     console.log(`landing: ${report.landingUrl}`);
     console.log(`download: ${report.downloadUrl}`);
   } catch (error) {
-    fail(error.message);
+    const next = deploymentNextAction(error);
+    fail(next ? `${error.message}\n${next}` : error.message);
   }
 }
 

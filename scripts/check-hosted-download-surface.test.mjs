@@ -99,3 +99,43 @@ test("hosted download surface check rejects a missing download route", async () 
     await server.close();
   }
 });
+
+test("hosted download surface CLI prints the deploy recovery path for live 404s", async () => {
+  const server = await startServer({
+    "/ko/": { body: alignedLanding },
+  });
+  try {
+    const { spawn } = await import("node:child_process");
+    const result = await new Promise((resolve) => {
+      const child = spawn(process.execPath, [
+        "scripts/check-hosted-download-surface.mjs",
+        `--base-url=${server.baseUrl}`,
+        "--timeout-ms=5000",
+      ], {
+        cwd: process.cwd(),
+        encoding: "utf8",
+      });
+      let stdout = "";
+      let stderr = "";
+      child.stdout.setEncoding("utf8");
+      child.stderr.setEncoding("utf8");
+      child.stdout.on("data", (chunk) => {
+        stdout += chunk;
+      });
+      child.stderr.on("data", (chunk) => {
+        stderr += chunk;
+      });
+      child.on("close", (status) => {
+        resolve({ status, stdout, stderr });
+      });
+    });
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /\/ko\/download\/ returned HTTP 404/);
+    assert.match(result.stderr, /deploy-hosting\.yml is merged into the default branch/);
+    assert.match(result.stderr, /gh workflow run deploy-hosting\.yml --repo wlsdks\/oh-my-ontology/);
+    assert.match(result.stderr, /pnpm desktop:verify-hosted/);
+  } finally {
+    await server.close();
+  }
+});

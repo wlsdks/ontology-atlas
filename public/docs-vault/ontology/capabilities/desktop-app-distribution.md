@@ -200,6 +200,11 @@ website deployment checked with `pnpm desktop:verify-hosted`.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`
 landing/download pages and rejects a stale public deployment that still shows
 the old browser vault picker CTA or lacks `/ko/download/`.
+When that live download route returns 404, the verifier points the operator to
+merge the desktop PR so `.github/workflows/deploy-hosting.yml` is available on
+the default branch, dispatch
+`gh workflow run deploy-hosting.yml --repo wlsdks/oh-my-ontology`, and rerun
+`pnpm desktop:verify-hosted`.
 It is intentionally read-only and fail-closed, so the macOS app work is not
 treated as complete while review, secrets, release publication, public asset
 verification, tag/package/Tauri/Cargo version alignment, or hosted-site

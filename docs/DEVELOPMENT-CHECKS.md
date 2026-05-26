@@ -278,6 +278,10 @@ the live `/ko/` landing page no longer exposes the browser vault picker CTA and
 the live `/ko/download/` installation route exists and points to GitHub
 Releases. This hosted-page check is separate from `pnpm desktop:release-status`
 so a Firebase deployment problem cannot block the local-only macOS app release.
+When `/ko/download/` returns 404, the recovery path is to merge the desktop PR
+so `.github/workflows/deploy-hosting.yml` is available on the default branch,
+run `gh workflow run deploy-hosting.yml --repo wlsdks/oh-my-ontology`, then
+rerun `pnpm desktop:verify-hosted`.
 The installed app's native vault bridge is part of this same gate:
 `src-tauri/src/lib.rs` must expose folder-pick, directory-list, read, write,
 file/directory delete, mkdir, and exists commands, and
