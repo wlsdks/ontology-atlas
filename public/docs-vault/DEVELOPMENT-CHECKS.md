@@ -263,7 +263,8 @@ assets with `github.token`; after publishing, run `pnpm desktop:verify-download`
 to confirm the public GitHub Release exposes reachable Apple Silicon
 (`aarch64`) and Intel (`x64`) macOS DMGs plus matching `.sha256` assets whose
 contents name the same DMG files and match the downloaded DMG bytes. The two
-architecture DMGs must carry the same version in their filenames, and that
+architecture DMGs must carry the same version in their filenames, each
+architecture may appear only once, and that
 version must match the release tag. Any extra `oh-my-ontology_*.dmg` asset with
 an unsupported architecture suffix fails the gate so the GitHub Release page
 cannot present stale or ambiguous downloads; draft releases intentionally fail
@@ -387,7 +388,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials |
 | `pnpm desktop:verify-dmg` | Mount and checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
 | `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment |
-| `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported extra `oh-my-ontology_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
+| `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported or duplicate-architecture `oh-my-ontology_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
 | `pnpm desktop:verify-hosted` | Live hosted website verifier: requires `/ko/` to be promo/download-first and `/ko/download/` to exist with the GitHub Releases CTA, rejecting stale browser-vault CTAs |
 | `pnpm test:desktop:check` | Desktop readiness checker contract; use direct `pnpm exec node --test scripts/check-desktop-readiness.test.mjs` first when printed |
 | `pnpm exec tsc --noEmit` | TypeScript and Next config type safety |
@@ -686,8 +687,9 @@ asset contains a SHA-256 line for the same DMG filename and bytes. The workflow
 then deploys the hosted promo/download site with the first-release checklist
 hidden and runs `pnpm desktop:verify-hosted`. The verifier
 rejects unsupported extra `oh-my-ontology_*.dmg` names, mixed-version
-architecture assets in the same release, DMG filenames whose version does not
-match the release tag, and DMG bytes whose digest does not match the checksum.
+architecture assets in the same release, duplicate architecture DMG assets, DMG
+filenames whose version does not match the release tag, and DMG bytes whose
+digest does not match the checksum.
 Missing Apple secrets or structurally invalid
 certificate secrets fail the workflow before upload instead of publishing an
 unsigned or unnotarized artifact.

@@ -426,6 +426,19 @@ if (missingArches.length > 0) {
     `release ${release.tag_name ?? "(unknown tag)"} is missing macOS DMG assets for: ${missingArches.join(", ")}.`,
   );
 }
+const duplicateArches = REQUIRED_MACOS_ARCHES
+  .map((arch) => ({
+    arch,
+    assets: parsedDmgs.filter((dmg) => dmg.arch === arch).map((dmg) => dmg.asset.name),
+  }))
+  .filter((entry) => entry.assets.length > 1);
+if (duplicateArches.length > 0) {
+  fail(
+    `release ${release.tag_name ?? "(unknown tag)"} has duplicate macOS DMG assets for: ${duplicateArches
+      .map((entry) => `${entry.arch}=${entry.assets.join("|")}`)
+      .join(", ")}. Keep exactly one DMG per architecture.`,
+  );
+}
 const requiredVersionByArch = new Map(
   parsedDmgs
     .filter((dmg) => REQUIRED_MACOS_ARCHES.includes(dmg.arch))

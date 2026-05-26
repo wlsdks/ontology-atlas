@@ -234,6 +234,29 @@ test("download release verifier requires Apple Silicon and Intel assets", async 
   });
 });
 
+test("download release verifier rejects duplicate architecture DMG assets", async () => {
+  await withServer(
+    makeHandler({
+      names: [
+        "oh-my-ontology_0.1.0_aarch64.dmg",
+        "oh-my-ontology_0.1.0_x64.dmg",
+        "oh-my-ontology_0.1.0-a_aarch64.dmg",
+      ],
+    }),
+    async (baseUrl) => {
+      await assert.rejects(
+        runVerifier(baseUrl),
+        (error) => {
+          assert.match(error.stderr, /duplicate macOS DMG assets/);
+          assert.match(error.stderr, /aarch64=/);
+          assert.match(error.stderr, /Keep exactly one DMG per architecture/);
+          return true;
+        },
+      );
+    },
+  );
+});
+
 test("download release verifier rejects mixed-version architecture assets", async () => {
   await withServer(
     makeHandler({

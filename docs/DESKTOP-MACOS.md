@@ -177,10 +177,11 @@ for a macOS prototype:
   that the hosted landing page sends users to: the normal mode requires a
   non-draft release with reachable `oh-my-ontology_*_aarch64.dmg` and
   `oh-my-ontology_*_x64.dmg` assets whose filename versions match the release
-  tag, plus matching `.sha256` checksum assets whose contents name the same DMG
-  files and match the downloaded DMG bytes. Any extra
+  tag, each architecture appears exactly once, plus matching `.sha256` checksum
+  assets whose contents name the same DMG files and match the downloaded DMG bytes. Any extra
   `oh-my-ontology_*.dmg` asset with an unsupported architecture suffix fails
-  the gate instead of being silently ignored. The tag workflow uses
+  the gate instead of being silently ignored, and duplicate architecture DMGs
+  fail so the release page cannot show ambiguous downloads. The tag workflow uses
   `--allow-draft` first so uploaded draft assets are byte-checked before the
   release is made public; if GitHub hides the draft from tag lookup, the
   verifier falls back to the releases list and matches the requested `tag_name`
@@ -372,8 +373,8 @@ release assets as a draft, runs
 `github.token`, publishes the verified release, then runs
 `pnpm desktop:verify-download` again to prove the public download surface
 exposes reachable Apple Silicon and Intel DMGs with filename versions that
-match the release tag and checksum files that name and hash the same downloaded
-DMGs. Local runs may need `GITHUB_TOKEN` or `GH_TOKEN` when the unauthenticated
+match the release tag, exactly one DMG per architecture, and checksum files that
+name and hash the same downloaded DMGs. Local runs may need `GITHUB_TOKEN` or `GH_TOKEN` when the unauthenticated
 GitHub API rate limit is exhausted.
 If the requested tag has not produced a GitHub Release yet, the verifier reports
 that missing tag directly and points back to `.github/workflows/release-macos.yml`

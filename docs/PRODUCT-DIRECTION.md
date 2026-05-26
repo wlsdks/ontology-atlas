@@ -260,7 +260,9 @@ fails unless a public non-draft GitHub Release exposes reachable
 `oh-my-ontology_*_aarch64.dmg` and `oh-my-ontology_*_x64.dmg` assets plus
 matching `.sha256` checksum files that name those same-version DMGs, and it
 rejects unsupported extra `oh-my-ontology_*.dmg` names so the GitHub Release
-page cannot show ambiguous macOS downloads. The tag workflow intentionally stops
+page cannot show ambiguous macOS downloads; it also rejects duplicate architecture
+DMGs so each release has exactly one Apple Silicon and one Intel download. The
+tag workflow intentionally stops
 there: the installed macOS app is local-only and does not require Firebase
 secrets or Hosting deploy steps. The separate `deploy-hosting` workflow owns the
 static promo/download website and should be followed by `pnpm

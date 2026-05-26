@@ -134,7 +134,8 @@ desktop:verify-download` checks the public GitHub Release channel and fails
 unless users can reach both `oh-my-ontology_*_aarch64.dmg` and
 `oh-my-ontology_*_x64.dmg` assets with plausible DMG download content types,
 those assets are not reported as empty files, both architecture assets carry the
-same version as the release tag, and their `.sha256` files name the same DMGs.
+same version as the release tag, each architecture appears exactly once, and
+their `.sha256` files name the same DMGs.
 The verifier also downloads each public DMG and compares its SHA-256 digest to
 the checksum asset. The tag workflow runs that same download verifier against
 `${GITHUB_REF_NAME}` before and after publication, so a green release job proves
