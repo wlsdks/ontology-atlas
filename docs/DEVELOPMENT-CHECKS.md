@@ -217,8 +217,9 @@ mount/checksum smoke, and temporary install launch smoke;
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the macOS app
 completion audit after PR/release work: it accepts an already merged PR or
 checks tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
-clean local and remote same-tag Git ref slots, required Apple signing/notary
-secret names, public stable GitHub Release state, and public DMG/checksum download
+active macOS release workflow availability, clean local and remote same-tag Git
+ref slots, required Apple signing/notary secret names, public stable GitHub
+Release state, and public DMG/checksum download
 verification in one fail-closed pass. When PR checks block the release it names
 the failing or pending GitHub check rows and prints the matching `gh pr checks`
 command, so operators do not have to infer the blocker from a count like
@@ -383,7 +384,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
 | `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, clean local/remote same-tag Git ref slots, and clean same-tag Release slot |
 | `pnpm desktop:release-run` | Wait for the tag-push `release-macos.yml` run scoped to the pushed tag commit, then watch that exact run to completion |
-| `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, clean local/remote same-tag Git ref slots, Apple release secret names, public stable Release state, and public DMG/checksum download verification |
+| `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, active release workflow availability, clean local/remote same-tag Git ref slots, Apple release secret names, public stable Release state, and public DMG/checksum download verification |
 | `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials |
 | `pnpm desktop:verify-dmg` | Mount and checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |

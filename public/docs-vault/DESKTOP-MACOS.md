@@ -328,9 +328,9 @@ branch, then configure the Apple secrets.
 Use `pnpm desktop:release-status -- --pr=274 --tag=v0.1.0` as the completion
 audit before calling the macOS app goal done: it accepts an already merged PR or
 checks tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
-clean local and remote same-tag Git ref slots, required Apple signing/notary
-secret names, public stable GitHub Release state, then delegates to the public
-DMG/checksum download verifier. If PR checks are
+active macOS release workflow availability, clean local and remote same-tag Git
+ref slots, required Apple signing/notary secret names, public stable GitHub
+Release state, then delegates to the public DMG/checksum download verifier. If PR checks are
 still blocking the release, the audit prints the failing or pending check names
 plus `gh pr checks <number> --repo wlsdks/oh-my-ontology` as the next action.
 Use `--json` for automation that needs `ready`, `blockerCount`, and per-check

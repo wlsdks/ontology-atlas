@@ -43,6 +43,18 @@ if (args[0] === "pr" && args[1] === "view") {
   });
   process.exit(0);
 }
+if (args[0] === "api" && args[1] === "repos/wlsdks/oh-my-ontology/actions/workflows/release-macos.yml") {
+  if (scenario.workflowMissing) {
+    err("HTTP 404: Not Found");
+    process.exit(1);
+  }
+  if (scenario.workflowCheckFails) {
+    err("workflow API unavailable");
+    process.exit(1);
+  }
+  out({ state: scenario.workflowState ?? "active" });
+  process.exit(0);
+}
 if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/oh-my-ontology/git/ref/tags/")) {
   if (scenario.gitTagExists) {
     out({ ref: "refs/tags/" + args[1].split("/").pop(), object: { sha: "0".repeat(40) } });
@@ -220,6 +232,7 @@ test("desktop release status emits machine-readable blockers for automation", ()
           "github_cli_auth",
           "version_alignment",
           "pull_request",
+          "release_workflow",
           "release_tag_slot",
           "apple_release_secrets",
           "github_release",
@@ -495,6 +508,42 @@ test("desktop release status blocks existing remote release tags", () => {
   });
 });
 
+test("desktop release status blocks unavailable release workflows", () => {
+  withFakeGh({ workflowMissing: true }, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+
+    assert.equal(result.status, 1);
+    const payload = JSON.parse(result.stdout);
+    assert.deepEqual(payload.localBlockerIds, []);
+    assert.deepEqual(payload.externalBlockerIds, ["release_workflow"]);
+    assert.deepEqual(payload.blockersByOwner, { release_operator: ["release_workflow"] });
+    const blocker = payload.checks.find((check) => check.id === "release_workflow");
+    assert.equal(blocker.scope, "external");
+    assert.equal(blocker.owner, "release_operator");
+    assert.match(blocker.detail, /release-macos\.yml is not available to GitHub/);
+    assert.match(blocker.next, /merged into the default branch/);
+    assert.deepEqual(blocker.commands, [
+      "gh api repos/wlsdks/oh-my-ontology/actions/workflows/release-macos.yml",
+      "gh pr view 274 --repo wlsdks/oh-my-ontology --json state,mergedAt,reviewDecision,mergeStateStatus,url",
+    ]);
+  });
+});
+
+test("desktop release status blocks disabled release workflows", () => {
+  withFakeGh({ workflowState: "disabled_manually" }, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+
+    assert.equal(result.status, 1);
+    const payload = JSON.parse(result.stdout);
+    assert.deepEqual(payload.externalBlockerIds, ["release_workflow"]);
+    const blocker = payload.checks.find((check) => check.id === "release_workflow");
+    assert.match(blocker.detail, /workflow is disabled_manually/);
+    assert.deepEqual(blocker.commands, [
+      "gh workflow enable release-macos.yml --repo wlsdks/oh-my-ontology",
+    ]);
+  });
+});
+
 test("desktop release status separates local and external blockers", () => {
   withFakeGh({}, (fakeGhPath) => {
     const result = runStatus(fakeGhPath, ["--tag=v9.9.9", "--pr=274", "--json"]);
@@ -569,7 +618,7 @@ test("desktop release status JSON reports ready when all release gates pass", ()
     assert.deepEqual(payload.nextActions, []);
     assert.deepEqual(
       payload.checks.map((check) => check.status),
-      ["ok", "ok", "ok", "ok", "ok", "ok", "skipped"],
+      ["ok", "ok", "ok", "ok", "ok", "ok", "ok", "skipped"],
     );
     assert.deepEqual(
       payload.checks.map((check) => check.id),
@@ -577,6 +626,7 @@ test("desktop release status JSON reports ready when all release gates pass", ()
         "github_cli_auth",
         "version_alignment",
         "pull_request",
+        "release_workflow",
         "release_tag_slot",
         "apple_release_secrets",
         "github_release",

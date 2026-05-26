@@ -17,6 +17,7 @@ const CHECK_SCOPES = new Map([
   ["github_cli_auth", "local"],
   ["version_alignment", "local"],
   ["pull_request", "external"],
+  ["release_workflow", "external"],
   ["release_tag_slot", "external"],
   ["apple_release_secrets", "external"],
   ["github_release", "external"],
@@ -26,6 +27,7 @@ const CHECK_OWNERS = new Map([
   ["github_cli_auth", "developer"],
   ["version_alignment", "developer"],
   ["pull_request", "reviewer"],
+  ["release_workflow", "release_operator"],
   ["release_tag_slot", "release_operator"],
   ["apple_release_secrets", "release_operator"],
   ["github_release", "release_operator"],
@@ -40,9 +42,9 @@ function printHelp() {
   console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER] [--json] [--json-file=PATH] [--markdown-file=PATH]
 
 Checks the public macOS release completion state in one fail-closed pass:
-release tag version alignment, pull-request merge readiness, Apple
-signing/notary secret names, public GitHub Release state, and downloadable
-DMG/checksum assets.
+release tag version alignment, pull-request merge readiness, active macOS
+release workflow availability, Apple signing/notary secret names, public GitHub
+Release state, and downloadable DMG/checksum assets.
 
 This command is an operator/completion audit. It does not publish tags, set
 secrets, or edit releases.
@@ -296,6 +298,10 @@ function statusOutput(result) {
   return `${result?.stderr || ""}\n${result?.stdout || ""}`.trim();
 }
 
+function workflowUnavailableMessage(repo) {
+  return `release-macos.yml is not available to GitHub for ${repo}. If the workflow is still on a PR branch, merge the desktop PR before pushing the release tag.`;
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const checks = [];
@@ -365,6 +371,38 @@ async function main() {
     }
   } else {
     checks.push(skipped("pull_request", "Pull request", "pass --pr=NUMBER to include review and merge readiness"));
+  }
+
+  const workflow = runGh([
+    "api",
+    `repos/${options.repo}/actions/workflows/release-macos.yml`,
+  ], { parseJson: true });
+  if (!workflow.ok) {
+    const detail = isNotFound(workflow.message)
+      ? workflowUnavailableMessage(options.repo)
+      : workflow.message;
+    checks.push(blocked(
+      "release_workflow",
+      "Release workflow",
+      detail,
+      `Ensure .github/workflows/release-macos.yml is merged into the default branch and active before pushing ${options.tag}.`,
+      [
+        `gh api repos/${options.repo}/actions/workflows/release-macos.yml`,
+        options.pr
+          ? `gh pr view ${options.pr} --repo ${options.repo} --json state,mergedAt,reviewDecision,mergeStateStatus,url`
+          : `gh workflow view release-macos.yml --repo ${options.repo}`,
+      ],
+    ));
+  } else if (workflow.value?.state !== "active") {
+    checks.push(blocked(
+      "release_workflow",
+      "Release workflow",
+      `release-macos.yml workflow is ${workflow.value?.state ?? "not active"}`,
+      `Enable the release-macos.yml workflow before pushing ${options.tag}.`,
+      [`gh workflow enable release-macos.yml --repo ${options.repo}`],
+    ));
+  } else {
+    checks.push(ok("release_workflow", "Release workflow", "release-macos.yml is active on GitHub"));
   }
 
   const localTagRef = runGitStatus(["rev-parse", "--verify", "--quiet", `refs/tags/${options.tag}`]);
