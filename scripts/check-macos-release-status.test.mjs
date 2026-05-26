@@ -232,9 +232,10 @@ test("desktop release status emits machine-readable blockers for automation", ()
           "gh pr view 274 --repo wlsdks/oh-my-ontology --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
           "pnpm desktop:release-github -- --repo=wlsdks/oh-my-ontology --tag=v0.1.0",
           "gh secret list --repo wlsdks/oh-my-ontology",
-          "git fetch origin main --tags",
-          "pnpm desktop:release-source -- --repo=wlsdks/oh-my-ontology --sha=\"$(git rev-parse origin/main)\"",
-          "git tag v0.1.0 origin/main",
+          "DEFAULT_BRANCH=\"$(gh repo view wlsdks/oh-my-ontology --json defaultBranchRef --jq .defaultBranchRef.name)\"",
+          "git fetch origin \"$DEFAULT_BRANCH\" --tags",
+          "pnpm desktop:release-source -- --repo=wlsdks/oh-my-ontology --sha=\"$(git rev-parse \"origin/$DEFAULT_BRANCH\")\"",
+          "git tag v0.1.0 \"origin/$DEFAULT_BRANCH\"",
           "git push origin v0.1.0",
           "pnpm desktop:release-run -- --repo=wlsdks/oh-my-ontology --tag=v0.1.0",
           "gh release view v0.1.0 --repo wlsdks/oh-my-ontology",
@@ -382,6 +383,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /  - Owner: release_operator/);
         assert.match(markdown, /- \[ \] GitHub Release \(`github_release`\)/);
         assert.match(markdown, /git push origin v0\.1\.0/);
+        assert.match(markdown, /gh repo view wlsdks\/oh-my-ontology --json defaultBranchRef --jq \.defaultBranchRef\.name/);
         assert.match(markdown, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
         assert.match(markdown, /  - Commands:\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/oh-my-ontology < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /  - Missing secrets:\n    - `APPLE_CERTIFICATE_P12_BASE64`/);
@@ -473,9 +475,10 @@ test("desktop release status exposes command arrays for actionable blockers", ()
           "gh pr view 274 --repo wlsdks/oh-my-ontology --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
           "pnpm desktop:release-github -- --repo=wlsdks/oh-my-ontology --tag=v0.1.0",
           "gh secret list --repo wlsdks/oh-my-ontology",
-          "git fetch origin main --tags",
-          "pnpm desktop:release-source -- --repo=wlsdks/oh-my-ontology --sha=\"$(git rev-parse origin/main)\"",
-          "git tag v0.1.0 origin/main",
+          "DEFAULT_BRANCH=\"$(gh repo view wlsdks/oh-my-ontology --json defaultBranchRef --jq .defaultBranchRef.name)\"",
+          "git fetch origin \"$DEFAULT_BRANCH\" --tags",
+          "pnpm desktop:release-source -- --repo=wlsdks/oh-my-ontology --sha=\"$(git rev-parse \"origin/$DEFAULT_BRANCH\")\"",
+          "git tag v0.1.0 \"origin/$DEFAULT_BRANCH\"",
           "git push origin v0.1.0",
           "pnpm desktop:release-run -- --repo=wlsdks/oh-my-ontology --tag=v0.1.0",
           "gh release view v0.1.0 --repo wlsdks/oh-my-ontology",

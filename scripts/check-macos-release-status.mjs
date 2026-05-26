@@ -304,13 +304,19 @@ function secretSetCommands(repo, names) {
   return names.map((name) => `gh secret set ${name} --repo ${repo} < /path/to/${name}`);
 }
 
+function defaultBranchCommand(repo) {
+  return `gh repo view ${repo} --json defaultBranchRef --jq .defaultBranchRef.name`;
+}
+
 function releasePublishCommands({ repo, tag, prNumber }) {
+  const defaultBranch = defaultBranchCommand(repo);
   const commands = [
     `pnpm desktop:release-github -- --repo=${repo} --tag=${tag}`,
     `gh secret list --repo ${repo}`,
-    `git fetch origin main --tags`,
-    `pnpm desktop:release-source -- --repo=${repo} --sha="$(git rev-parse origin/main)"`,
-    `git tag ${tag} origin/main`,
+    `DEFAULT_BRANCH="$(${defaultBranch})"`,
+    `git fetch origin "$DEFAULT_BRANCH" --tags`,
+    `pnpm desktop:release-source -- --repo=${repo} --sha="$(git rev-parse "origin/$DEFAULT_BRANCH")"`,
+    `git tag ${tag} "origin/$DEFAULT_BRANCH"`,
     `git push origin ${tag}`,
     `pnpm desktop:release-run -- --repo=${repo} --tag=${tag}`,
     `gh release view ${tag} --repo ${repo}`,

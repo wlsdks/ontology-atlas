@@ -194,7 +194,10 @@ stable `id` plus `scope` and `owner` (`pull_request`,
 checks) so automation does not branch on human labels. Actionable blockers also
 carry `commands[]` entries for exact diagnostic, setup, pre-tag source-check, or
 post-merge tag-push commands, plus the `desktop:release-run` tag-commit-scoped release-workflow watch and public download
-verification. Apple signing blockers expose `missingSecrets[]`, hosted deploy
+verification. The post-merge tag commands resolve the repository's current
+default branch through `gh repo view ... defaultBranchRef` before `git fetch`,
+`desktop:release-source`, or `git tag`, so the release checklist follows the
+actual tag source branch instead of hardcoding `main`. Apple signing blockers expose `missingSecrets[]`, hosted deploy
 blockers expose `missingHostedSecrets[]`, and the Markdown checklist renders
 both under each blocked row's missing-secret section for direct GitHub Secrets
 reconciliation.
