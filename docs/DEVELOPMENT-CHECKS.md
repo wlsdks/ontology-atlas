@@ -217,10 +217,11 @@ the failing or pending GitHub check rows and prints the matching `gh pr checks`
 command, so operators do not have to infer the blocker from a count like
 `0/1 checks successful`. Add `--json` when a goal runner, CI wrapper, or release
 dashboard needs `ready`, `blockerCount`, and per-check `next` actions without
-parsing human text; add `--json-file=<path>` when the command is invoked through
-a package runner that may add lifecycle text around stdout, and add
-`--markdown-file=<path>` when a reviewer or release operator needs a
-human-readable checklist artifact. The JSON snapshot
+parsing human text; stdout JSON is compact so small goal-runner buffers do not
+truncate it. Add `--json-file=<path>` when the command is invoked through a
+package runner that may add lifecycle text around stdout or when humans need a
+pretty JSON artifact, and add `--markdown-file=<path>` when a reviewer or release
+operator needs a human-readable checklist artifact. The JSON snapshot
 includes `schemaVersion`, `generatedAt`, `status`, `readyAt`, and `blockedAt`
 so stored release evidence can be versioned, ordered, and filtered by outcome;
 top-level `blockerIds`, `localBlockerIds`, `externalBlockerIds`,
@@ -230,8 +231,8 @@ check also carries a stable `id`, `scope`, and `owner` such as `pull_request`,
 does not branch on translated or edited labels. Actionable blockers include
 `commands[]` entries, and Apple signing blockers expose top-level
 `missingSecrets[]`, so follow-up runners can execute known diagnostics, secret
-setup prompts, pre-tag source checks, or the post-merge release tag push without
-parsing prose.
+setup prompts, pre-tag source checks, the post-merge release tag push, release
+workflow watch, and public download verification without parsing prose.
 Firebase Hosting is not part of the macOS
 app release gate; verify the separate website with `pnpm desktop:verify-hosted`;
 the hosted download page keeps macOS app release blockers aligned with

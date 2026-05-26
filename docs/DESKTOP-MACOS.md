@@ -328,9 +328,10 @@ then delegates to the public DMG/checksum download verifier. If PR checks are
 still blocking the release, the audit prints the failing or pending check names
 plus `gh pr checks <number> --repo wlsdks/oh-my-ontology` as the next action.
 Use `--json` for automation that needs `ready`, `blockerCount`, and per-check
-`next` actions without scraping terminal text. Use `--json-file=<path>` when
-the command is wrapped by a package runner and the automation needs a clean JSON
-artifact on disk. Use `--markdown-file=<path>` when a reviewer or release
+`next` actions without scraping terminal text; stdout JSON is compact so goal
+runners with small output buffers do not truncate it. Use `--json-file=<path>`
+when the command is wrapped by a package runner and the automation needs a clean,
+pretty JSON artifact on disk. Use `--markdown-file=<path>` when a reviewer or release
 operator needs a shareable checklist artifact. The snapshot includes
 `schemaVersion`, `generatedAt`, `status`, `readyAt`, and `blockedAt` for stored
 release evidence, top-level `blockerIds` / `localBlockerIds` /
@@ -338,10 +339,10 @@ release evidence, top-level `blockerIds` / `localBlockerIds` /
 plus `scope` and `owner` values such as `pull_request`,
 `apple_release_secrets`, `github_release`, and `download_assets`.
 Actionable blockers also carry `commands[]` so reviewers and release operators
-can copy exact diagnostic, secret setup, pre-tag source checks, or post-merge
-tag-push commands from JSON or Markdown without parsing prose; Apple signing
-blockers additionally expose `missingSecrets[]` for direct comparison against
-GitHub Secrets.
+can copy exact diagnostic, secret setup, pre-tag source checks, post-merge
+tag-push, release-workflow watch, and public download verification commands from
+JSON or Markdown without parsing prose; Apple signing blockers additionally
+expose `missingSecrets[]` for direct comparison against GitHub Secrets.
 Firebase Hosting is not part of the macOS app release gate;
 run `pnpm desktop:verify-hosted` after the separate website deploy.
 When it reports missing secrets, set each value through `gh secret set`, for

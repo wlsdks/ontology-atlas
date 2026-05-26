@@ -278,18 +278,20 @@ anything, but it fails closed until tag/package/Tauri/Cargo version alignment,
 PR review/merge readiness, Apple release secret names, public stable GitHub
 Release state, and public DMG/checksum download verification all pass. Its
 `--json` mode reports `ready`, `blockerCount`, and per-check `next` actions for
-goal runners or dashboards that need structured release blockers; `--json-file`
-writes the same snapshot to disk when stdout may be wrapped by package-runner
-logs, and `--markdown-file` writes a reviewer/operator checklist from the same
-audit result. The snapshot carries `schemaVersion` and `generatedAt` so saved
+goal runners or dashboards that need structured release blockers; stdout JSON is
+compact to avoid small-buffer truncation, `--json-file` writes the same snapshot
+as a pretty disk artifact when stdout may be wrapped by package-runner logs, and
+`--markdown-file` writes a reviewer/operator checklist from the same audit
+result. The snapshot carries `schemaVersion` and `generatedAt` so saved
 release evidence has a stable contract and timestamp; `status`, `readyAt`, and
 `blockedAt` make saved snapshots filterable by outcome, and each check carries a
 stable machine id, `scope`, and `owner` with top-level `blockerIds` /
 `localBlockerIds` / `externalBlockerIds` / `blockersByOwner` / `nextActions` so
 automation can branch without scraping human labels; actionable blockers also
 expose `commands[]` for exact diagnostics, setup prompts, pre-tag source
-checks, or the post-merge release tag push, and Apple signing blockers include
-`missingSecrets[]` for release-operator reconciliation. Firebase
+checks, the post-merge release tag push, release workflow watch, and public
+download verification, and Apple signing blockers include `missingSecrets[]` for
+release-operator reconciliation. Firebase
 Hosting remains a separate website
 deployment check, not a macOS app release dependency. This is
 evidence for goal completion, not a substitute for publishing signed/notarized

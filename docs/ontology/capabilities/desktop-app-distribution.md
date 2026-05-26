@@ -173,11 +173,12 @@ plus each check's GitHub Actions details URL when available, and the exact
 checks pass but review or merge state still blocks release, it skips redundant
 check rerun advice and points directly at the PR review/merge blocker. With
 `--json`, the same audit emits `ready`, `blockerCount`, and per-check `next`
-actions so goal runners and release dashboards can consume blockers without
-scraping human text. With `--json-file=<path>`, it writes the same blocker
-snapshot to disk for package-runner contexts that may add lifecycle output
-around stdout. With `--markdown-file=<path>`, it writes the same audit as a
-human-readable reviewer/operator checklist. The snapshot includes
+actions as compact stdout so goal runners and release dashboards can consume
+blockers without scraping human text or truncating small output buffers. With
+`--json-file=<path>`, it writes the same blocker snapshot as a pretty disk
+artifact for package-runner contexts that may add lifecycle output around stdout.
+With `--markdown-file=<path>`, it writes the same audit as a human-readable
+reviewer/operator checklist. The snapshot includes
 `schemaVersion`, `generatedAt`, `status`, `readyAt`, and `blockedAt` so saved
 release evidence can be versioned, ordered, and filtered by outcome. Top-level
 `blockerIds`, `localBlockerIds`, `externalBlockerIds`, `blockersByOwner`, and
@@ -186,8 +187,9 @@ stable `id` plus `scope` and `owner` (`pull_request`,
 `apple_release_secrets`, `github_release`, `download_assets`, and related setup
 checks) so automation does not branch on human labels. Actionable blockers also
 carry `commands[]` entries for exact diagnostic, setup, pre-tag source-check, or
-post-merge tag-push commands, and Apple signing blockers expose
-`missingSecrets[]` for direct GitHub Secrets reconciliation.
+post-merge tag-push commands, plus release-workflow watch and public download
+verification, and Apple signing blockers expose `missingSecrets[]` for direct
+GitHub Secrets reconciliation.
 Firebase Hosting remains a separate static
 website deployment checked with `pnpm desktop:verify-hosted`.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`

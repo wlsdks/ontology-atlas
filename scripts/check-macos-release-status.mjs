@@ -250,7 +250,9 @@ function releasePublishCommands({ repo, tag, prNumber }) {
     `pnpm desktop:release-source -- --repo=${repo} --sha="$(git rev-parse origin/main)"`,
     `git tag ${tag} origin/main`,
     `git push origin ${tag}`,
+    `gh run watch --repo ${repo} "$(gh run list --repo ${repo} --workflow release-macos.yml --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status`,
     `gh release view ${tag} --repo ${repo}`,
+    `pnpm desktop:verify-download -- --repo=${repo} --tag=${tag}`,
   ];
   if (prNumber) {
     commands.unshift(`gh pr view ${prNumber} --repo ${repo} --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url`);
@@ -460,7 +462,7 @@ function renderAndExit(options, checks) {
     fs.writeFileSync(markdownFilePath, renderMarkdownChecklist(payload));
   }
   if (options.json) {
-    console.log(JSON.stringify(payload, null, 2));
+    console.log(JSON.stringify(payload));
     if (blockers.length > 0) {
       console.error(`[desktop-release-status] blocked: ${blockers.length} release requirement(s) are not satisfied`);
       process.exit(1);
