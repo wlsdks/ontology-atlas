@@ -12,9 +12,14 @@
 
 | Open it | Link |
 |---|---|
+| **App brand** | **Context Atlas** (repo, CLI, MCP package, and release assets stay `oh-my-ontology`) |
 | **Website / downloads** | **https://oh-my-ontology.web.app** |
 | **GitHub repository** | https://github.com/wlsdks/oh-my-ontology |
 | **MCP docs** | [`mcp/README.md`](mcp/README.md) |
+
+**Context Atlas** is the installable macOS app and public product name for the
+`oh-my-ontology` project. `oh-my-ontology` remains the repository, CLI, MCP, and
+release-artifact identity.
 
 `oh-my-ontology` is a local-first workbench for the shared memory between a
 developer and their AI coding agent. The graph is not stored in a hosted

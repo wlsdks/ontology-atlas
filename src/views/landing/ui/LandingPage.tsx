@@ -36,7 +36,7 @@ export function LandingPage() {
             <Orbit size={15} />
           </span>
           <span className="text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-            oh-my-ontology
+            Context Atlas
           </span>
           <span className="hidden font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] md:inline">
             {t('headerKicker')}

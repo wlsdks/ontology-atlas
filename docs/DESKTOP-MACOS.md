@@ -1,5 +1,9 @@
 # macOS Desktop App Track
 
+**Context Atlas** is the user-facing macOS app name for the `oh-my-ontology`
+project. `oh-my-ontology` stays the repository, CLI, MCP, and current release
+asset identity so existing package and GitHub Release contracts remain stable.
+
 `oh-my-ontology` can become a macOS-installed app without changing the source of
 truth. The desktop app should be a native shell around the same local markdown
 vault, not a backend, cloud sync layer, or second data store.

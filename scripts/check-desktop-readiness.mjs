@@ -30,6 +30,8 @@ const nextConfig = readText("next.config.ts");
 const pkg = JSON.parse(readText("package.json"));
 const enMessages = JSON.parse(readText("messages/en.json"));
 const koMessages = JSON.parse(readText("messages/ko.json"));
+const rootLayout = readText("app/layout.tsx");
+const webManifest = readText("app/manifest.ts");
 const cargoToml = readText("src-tauri/Cargo.toml");
 const desktopDoc = readText("docs/DESKTOP-MACOS.md");
 const rootReadme = readText("README.md");
@@ -418,8 +420,11 @@ if (
 }
 
 if (
+  rootReadme.includes("| **App brand** | **Context Atlas**") &&
   rootReadme.includes("| **Website / downloads** | **https://oh-my-ontology.web.app** |") &&
   rootReadme.includes("| **macOS app** | Install once, pick a local vault folder") &&
+  rootReadme.includes("Context Atlas") &&
+  rootReadme.includes("release-artifact identity") &&
   rootReadme.includes("| **Website** | Explain the product, show a read-only demo") &&
   rootReadme.includes("The public website is a static promo/download site with a read-only demo.") &&
   rootReadme.includes("Tauri macOS shell") &&
@@ -436,11 +441,18 @@ if (
 
 if (
   featuresDoc.includes("4 surfaces (macOS app · CLI · MCP · Website)") &&
+  featuresDoc.includes("**Context Atlas** is the user-facing macOS app / website brand") &&
   featuresDoc.includes("real ontology work happens in the installed app / CLI / MCP") &&
   featuresDoc.includes("Hosted pages do not open or edit local vault folders.") &&
+  productDirectionDoc.includes("Context Atlas") &&
+  productDirectionDoc.includes("bundle `productName`") &&
   productDirectionDoc.includes("CLI · installed macOS app") &&
   productDirectionDoc.includes("hosted website is the product introduction and download entry point") &&
+  desktopDoc.includes("Context Atlas") &&
+  desktopDoc.includes("current release") &&
+  desktopDoc.includes("asset identity") &&
   architectureDoc.includes("Tauri macOS shell (installed local workbench)") &&
+  architectureDoc.includes("The public app/website brand is **Context Atlas**") &&
   architectureDoc.includes("Tauri native bridge → user disk") &&
   architectureDoc.includes("AI agents and the installed app end up with the same view")
 ) {
@@ -828,16 +840,46 @@ if (tauriConfig?.bundle?.targets?.includes("app")) {
 }
 
 if (
+  rootLayout.includes("title: 'Context Atlas'") &&
+  rootLayout.includes("alternateName: 'oh-my-ontology'") &&
+  webManifest.includes("name: 'Context Atlas'") &&
+  enMessages.metadata.siteName === "Context Atlas" &&
+  koMessages.metadata.siteName === "Context Atlas" &&
+  landingPage.includes("Context Atlas")
+) {
+  pass("user-facing web and app metadata use Context Atlas while preserving oh-my-ontology as the project alias");
+} else {
+  fail(
+    "Root metadata, PWA manifest, localized metadata, and landing header must expose Context Atlas as the user-facing brand while keeping oh-my-ontology as the project alias",
+  );
+}
+
+if (
+  tauriConfig?.productName === "oh-my-ontology" &&
+  tauriConfig?.identifier === "dev.jinan.oh-my-ontology" &&
+  tauriConfig?.app?.windows?.some((windowConfig) => windowConfig?.title === "Context Atlas")
+) {
+  pass("Tauri keeps the existing oh-my-ontology release identity while the app window presents Context Atlas");
+} else {
+  fail(
+    "src-tauri/tauri.conf.json must keep productName/identifier on oh-my-ontology for release asset compatibility while setting the visible app window title to Context Atlas",
+  );
+}
+
+if (
   tauriConfig?.bundle?.category === "DeveloperTool" &&
   tauriConfig?.bundle?.shortDescription?.includes("Local-first codebase ontology workbench") &&
+  tauriConfig?.bundle?.shortDescription?.includes("Context Atlas") &&
+  tauriConfig?.bundle?.longDescription?.includes("Context Atlas") &&
+  tauriConfig?.bundle?.longDescription?.includes("oh-my-ontology project name") &&
   tauriConfig?.bundle?.longDescription?.includes("markdown ontology vault") &&
   tauriConfig?.bundle?.longDescription?.includes("without a backend or login") &&
   tauriConfig?.bundle?.copyright?.includes("oh-my-ontology contributors")
 ) {
-  pass("Tauri bundle metadata identifies the installed app as a local-first developer tool");
+  pass("Tauri bundle metadata identifies Context Atlas as the local-first app while preserving the oh-my-ontology project identity");
 } else {
   fail(
-    "src-tauri/tauri.conf.json must set macOS bundle category, descriptions, and copyright so the installed app is not a generic wrapper",
+    "src-tauri/tauri.conf.json must set macOS bundle category, Context Atlas descriptions, and oh-my-ontology copyright/project identity so the installed app is not a generic wrapper",
   );
 }
 
@@ -851,6 +893,7 @@ const macosFolderUsageKeys = [
 const missingFolderUsageKeys = macosFolderUsageKeys.filter(
   (key) =>
     !tauriInfoPlist.includes(`<key>${key}</key>`) ||
+    !tauriInfoPlist.includes("Context Atlas opens") ||
     !tauriInfoPlist.includes("markdown ontology vault folder you choose"),
 );
 if (missingFolderUsageKeys.length === 0) {

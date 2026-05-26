@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-26T04:07:10.986Z",
+  "generatedAt": "2026-05-26T10:43:24.474Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -193,8 +193,8 @@
         }
       ],
       "excerpt": "20260518 update — the current architecture is a localfirst, gitbacked memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graphengine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloudmode de",
-      "wordCount": 1175,
-      "updatedAt": "2026-05-25T18:38:08.242Z",
+      "wordCount": 1208,
+      "updatedAt": "2026-05-26T10:42:47.351Z",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -3900,9 +3900,9 @@
           "slug": "later-distribution-work"
         }
       ],
-      "excerpt": "ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app should be a native shell around the same local markdown vault, not a backend, cloud sync layer, or second data store. Use Tauri first for the prototype. The repository now includes the first srctauri/ shell so desktop wor",
-      "wordCount": 3065,
-      "updatedAt": "2026-05-26T04:05:39.233Z",
+      "excerpt": "Context Atlas is the userfacing macOS app name for the ohmyontology project. ohmyontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app ",
+      "wordCount": 3097,
+      "updatedAt": "2026-05-26T10:42:47.350Z",
       "linksOut": []
     },
     {
@@ -4498,8 +4498,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260525 (agent setup gate, graph DBstyle query pack, CLI/MCP verification snapshots, and fallback performance checks). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongside t",
-      "wordCount": 7575,
-      "updatedAt": "2026-05-26T01:09:27.914Z",
+      "wordCount": 7606,
+      "updatedAt": "2026-05-26T10:42:47.349Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6630,8 +6630,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 3132,
-      "updatedAt": "2026-05-26T04:06:15.077Z",
+      "wordCount": 3170,
+      "updatedAt": "2026-05-26T10:42:47.350Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]

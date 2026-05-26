@@ -76,6 +76,10 @@ There is no backend, no server database, no auth provider. The user's markdown
 folder is the single source of truth. Both the MCP server (AI agent) and the
 CLI (developer) read/write that single source.
 
+The public app/website brand is **Context Atlas**. The repo, CLI binary, MCP
+package, and release artifacts remain under `oh-my-ontology`, so product naming
+does not imply a backend, Firebase data dependency, or package rename.
+
 The graph-database behavior is runtime computation, not a separate persistence
 layer. `compile_ontology` turns markdown frontmatter into a deterministic graph
 artifact; `query_ontology` runs graph operations over that artifact; confirmed

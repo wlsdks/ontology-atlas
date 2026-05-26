@@ -158,6 +158,7 @@ export async function evaluateHostedSurface({ baseUrl, timeoutMs = DEFAULT_TIMEO
   const combinedHtml = `${landing.body}\n${download.body}`;
 
   assertIncludes(landingText, landingPath, [
+    "Context Atlas",
     "macOS-first ontology workbench",
     "macOS 앱 다운로드",
     "설치 안내 보기",

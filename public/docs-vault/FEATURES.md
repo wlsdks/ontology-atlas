@@ -13,6 +13,7 @@
 > **Mission v3**: "One codebase, one ontology, that the developer and their AI agent grow together."
 > **Launch framing v4**: "A repo-native memory layer for Claude Code, Cursor, and Codex."
 > **Operating model**: single-user tool. Local-first vault. No login, no backend. **4 surfaces (macOS app · CLI · MCP · Website)** — real ontology work happens in the installed app / CLI / MCP; the hosted website is promo/download plus read-only demo.
+> **Brand split**: **Context Atlas** is the user-facing macOS app / website brand. `oh-my-ontology` remains the repo, CLI binary, MCP package, and release-asset identity.
 
 The product should not feel like an ontology editor. The core user-visible loop
 is `init -> bootstrap -> MCP-backed agent answer -> agent sync proposal -> git
@@ -20,7 +21,7 @@ diff review -> better next agent task`.
 
 | Surface | Entry | Audience |
 |---|---|---|
-| **macOS app** (desktop distribution track) | signed DMG → installed local workbench; first run opens `/docs/?intent=local` native vault picker; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/edit`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
+| **macOS app** (Context Atlas desktop distribution track) | signed DMG → installed local workbench; first run opens `/docs/?intent=local` native vault picker; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/edit`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
 | **CLI** (R12 / R14 / R15+ · 43 commands) | `init / agent-setup / add / import / list / find / validate / mcp-verify / query / compile` (vault basics + existing-vault Claude/Codex config repair + installed MCP health/graph-query smoke + deterministic graph compile) · `analyze / infer-imports / bootstrap` (autonomous ingest) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 23 tools (15 read · 8 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — read for context · write back findings · bootstrap empty vault (R16 `analyze_repo_structure` · R17 `infer_imports`) · compile/query/health/agent-brief/workspace-brief as graph-engine memory access |
 | **Website** | Firebase static hosting / `/download` | product introduction, release download path, and read-only demo. Hosted pages do not open or edit local vault folders. |
@@ -64,7 +65,7 @@ input (humans + AI agents)     parse           store              output
 
 ### `/` — Landing (no vault)
 
-- **Hero**: macOS-first title + subtitle + 3-step value chain rail (01 / 02 / 03)
+- **Hero**: Context Atlas brand header + macOS-first title + subtitle + 3-step value chain rail (01 / 02 / 03)
 - **Mini topology** animation (14 nodes, 21 edges, SVG ForceAtlas2 — respects `prefers-reduced-motion`)
 - **Primary CTA**: "Download macOS app" → GitHub Releases
 - **Secondary CTA**: "Installation guide" → `/download/`

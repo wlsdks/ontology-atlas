@@ -28,6 +28,7 @@ function startServer(routes) {
 
 const alignedLanding = `<!doctype html>
 <main>
+  <p>Context Atlas</p>
   <p>macOS-first ontology workbench</p>
   <a href="https://github.com/wlsdks/oh-my-ontology/releases">macOS 앱 다운로드</a>
   <a href="/ko/download/">설치 안내 보기</a>

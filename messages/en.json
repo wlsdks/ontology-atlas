@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "siteName": "oh-my-ontology",
+    "siteName": "Context Atlas",
     "siteTagline": "Open-source ontology workbench",
     "pages": {
       "topology": "Topology",
@@ -84,7 +84,7 @@
     "openSource": {
       "eyebrow": "open source · local-first · MCP",
       "title": "Built in public for developers who use AI coding agents.",
-      "body": "oh-my-ontology is an MIT-licensed workbench by stark (Jinan Choi / 최진안). It exists because AI coding agents keep forgetting the long-term shape of a codebase. The project keeps that shape in markdown frontmatter, inside your repo, so Claude Code, Cursor, Codex, and humans can share one memory.",
+      "body": "Context Atlas is the user-facing app for the MIT-licensed oh-my-ontology project by stark (Jinan Choi / 최진안). It exists because AI coding agents keep forgetting the long-term shape of a codebase. The project keeps that shape in markdown frontmatter, inside your repo, so Claude Code, Cursor, Codex, and humans can share one memory.",
       "madeByLabel": "Made by",
       "madeByValue": "stark (Jinan Choi / 최진안)",
       "licenseLabel": "License",
@@ -122,7 +122,7 @@
     "step1Title": "Download the DMG",
     "step1Body": "Use the latest stable GitHub Release. Choose the aarch64 DMG for Apple Silicon Macs, or the x64 DMG for Intel Macs. Public builds are published only after signing, notarization, and checksum verification.",
     "step2Title": "Drag the app to Applications",
-    "step2Body": "Open the DMG, copy oh-my-ontology.app into Applications, then launch it like any local macOS app.",
+    "step2Body": "Open the DMG, copy the app into Applications, then launch Context Atlas like any local macOS app.",
     "step3Title": "Pick your vault folder",
     "step3Body": "The app opens a native folder picker on first run, then reopens recent local vaults without returning to the website.",
     "releaseGateNote": "The hosted site does not open or edit vault folders. Daily ontology work starts inside the installed app after the release asset passes the macOS signing, notarization, and checksum gates."

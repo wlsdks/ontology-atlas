@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "siteName": "oh-my-ontology",
+    "siteName": "Context Atlas",
     "siteTagline": "오픈소스 온톨로지 워크벤치",
     "pages": {
       "topology": "토폴로지",
@@ -84,7 +84,7 @@
     "openSource": {
       "eyebrow": "오픈소스 · local-first · MCP",
       "title": "AI coding agent 를 쓰는 개발자를 위해 공개적으로 만드는 도구.",
-      "body": "oh-my-ontology 는 stark (최진안 / Jinan Choi) 가 만드는 MIT 라이선스 오픈소스 workbench 입니다. AI coding agent 가 코드베이스의 장기 구조를 계속 잊는 문제를 줄이기 위해 만들었습니다. 프로젝트의 mental model 을 repo 안 markdown frontmatter 로 남겨 Claude Code, Cursor, Codex 와 사람이 같은 기억을 공유하게 합니다.",
+      "body": "Context Atlas 는 stark (최진안 / Jinan Choi) 가 만드는 MIT 라이선스 oh-my-ontology 프로젝트의 사용자-facing 앱입니다. AI coding agent 가 코드베이스의 장기 구조를 계속 잊는 문제를 줄이기 위해 만들었습니다. 프로젝트의 mental model 을 repo 안 markdown frontmatter 로 남겨 Claude Code, Cursor, Codex 와 사람이 같은 기억을 공유하게 합니다.",
       "madeByLabel": "만든 사람",
       "madeByValue": "stark (최진안 / Jinan Choi)",
       "licenseLabel": "라이선스",
@@ -122,7 +122,7 @@
     "step1Title": "DMG 다운로드",
     "step1Body": "최신 stable GitHub Release 를 사용합니다. Apple Silicon Mac 은 aarch64 DMG, Intel Mac 은 x64 DMG 를 선택하세요. 공개 빌드는 서명, notarization, 체크섬 검증 뒤에만 올라갑니다.",
     "step2Title": "Applications 로 앱 이동",
-    "step2Body": "DMG 를 열고 oh-my-ontology.app 을 Applications 로 복사한 뒤 일반 macOS 앱처럼 실행합니다.",
+    "step2Body": "DMG 를 열고 앱을 Applications 로 복사한 뒤 Context Atlas 를 일반 macOS 앱처럼 실행합니다.",
     "step3Title": "vault 폴더 선택",
     "step3Body": "첫 실행에서 native 폴더 picker 를 열고, 이후에는 최근 로컬 vault 를 웹 사이트로 돌아오지 않고 다시 엽니다.",
     "releaseGateNote": "호스팅 웹 사이트는 vault 폴더를 열거나 편집하지 않습니다. 매일의 ontology 작업은 macOS 서명, notarization, 체크섬 게이트를 통과한 릴리스 asset 설치 후 앱 안에서 시작합니다."

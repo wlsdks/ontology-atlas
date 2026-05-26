@@ -17,6 +17,10 @@ Launch framing (v4, 2026-05-18):
 > Your AI coding agent forgets your codebase. Give it a local, git-backed
 > mental model it can read, query, and maintain through MCP.
 
+- Product name split (v5, 2026-05-26): **Context Atlas** is the user-facing
+  macOS app / website brand. `oh-my-ontology` stays the repository, CLI binary,
+  MCP package, bundle `productName`, and GitHub Release asset identity until a
+  deliberate migration changes those contracts.
 - Primary audience: **developer + their AI agent**. Developer creates / refines nodes (CLI · installed macOS app); AI agent (Claude Code, Codex, Cursor) reads/writes the same vault via MCP to give better codebase answers. The hosted website is the product introduction and download entry point, not the daily writable workbench.
 - Spine = `.md` documents → a growing ontology. Topology / tree / builder are *views* of that spine.
 - PM / designer / ops are **bonus, not target**. If the surface happens to be friendly to them — good. We don't optimize for them.

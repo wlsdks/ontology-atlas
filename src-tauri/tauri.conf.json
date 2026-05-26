@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "oh-my-ontology",
+        "title": "Context Atlas",
         "width": 1280,
         "height": 820,
         "minWidth": 1040,
@@ -37,8 +37,8 @@
     "active": true,
     "targets": ["app"],
     "category": "DeveloperTool",
-    "shortDescription": "Local-first codebase ontology workbench",
-    "longDescription": "A local-first macOS app for opening a markdown ontology vault, editing codebase meaning, and handing the same graph to AI agents without a backend or login.",
+    "shortDescription": "Local-first codebase ontology workbench for Context Atlas",
+    "longDescription": "Context Atlas is a local-first macOS app for opening a markdown ontology vault, editing codebase meaning, and handing the same graph to AI agents without a backend or login. The repository, CLI, and release assets remain under the oh-my-ontology project name.",
     "copyright": "Copyright © 2026 oh-my-ontology contributors",
     "macOS": {
       "minimumSystemVersion": "12.0"
