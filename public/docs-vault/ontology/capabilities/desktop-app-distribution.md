@@ -185,9 +185,9 @@ release evidence can be versioned, ordered, and filtered by outcome. Top-level
 stable `id` plus `scope` and `owner` (`pull_request`,
 `apple_release_secrets`, `github_release`, `download_assets`, and related setup
 checks) so automation does not branch on human labels. Actionable blockers also
-carry `commands[]` entries for exact diagnostic or setup commands, and Apple
-signing blockers expose `missingSecrets[]` for direct GitHub Secrets
-reconciliation.
+carry `commands[]` entries for exact diagnostic, setup, or post-merge tag-push
+commands, and Apple signing blockers expose `missingSecrets[]` for direct
+GitHub Secrets reconciliation.
 Firebase Hosting remains a separate static
 website deployment checked with `pnpm desktop:verify-hosted`.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`

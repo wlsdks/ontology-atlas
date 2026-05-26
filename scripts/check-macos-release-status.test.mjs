@@ -151,11 +151,24 @@ test("desktop release status emits machine-readable blockers for automation", ()
       );
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "pull_request").commands,
-        [],
+        [
+          "gh pr view 274 --repo wlsdks/oh-my-ontology --json reviewDecision,mergeStateStatus,statusCheckRollup,url",
+        ],
       );
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "apple_release_secrets").commands.at(-1),
         "gh secret set APPLE_TEAM_ID --repo wlsdks/oh-my-ontology < /path/to/APPLE_TEAM_ID",
+      );
+      assert.deepEqual(
+        payload.nextActions.find((action) => action.id === "github_release").commands,
+        [
+          "gh pr view 274 --repo wlsdks/oh-my-ontology --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
+          "gh secret list --repo wlsdks/oh-my-ontology",
+          "git fetch origin main --tags",
+          "git tag v0.1.0 origin/main",
+          "git push origin v0.1.0",
+          "gh release view v0.1.0 --repo wlsdks/oh-my-ontology",
+        ],
       );
       assert.deepEqual(
         payload.checks.map((check) => check.id),
@@ -295,6 +308,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /- \[ \] Apple release secrets \(`apple_release_secrets`\)/);
         assert.match(markdown, /  - Owner: release_operator/);
         assert.match(markdown, /- \[ \] GitHub Release \(`github_release`\)/);
+        assert.match(markdown, /git push origin v0\.1\.0/);
         assert.match(markdown, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
         assert.match(markdown, /  - Commands:\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/oh-my-ontology < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /  - Missing secrets:\n    - `APPLE_CERTIFICATE_P12_BASE64`/);
@@ -367,7 +381,10 @@ test("desktop release status exposes command arrays for actionable blockers", ()
       const payload = JSON.parse(result.stdout);
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "pull_request").commands,
-        ["gh pr checks 274 --repo wlsdks/oh-my-ontology"],
+        [
+          "gh pr checks 274 --repo wlsdks/oh-my-ontology",
+          "gh pr view 274 --repo wlsdks/oh-my-ontology --json reviewDecision,mergeStateStatus,statusCheckRollup,url",
+        ],
       );
       assert.equal(
         payload.checks.find((check) => check.id === "apple_release_secrets").commands.length,
@@ -379,7 +396,14 @@ test("desktop release status exposes command arrays for actionable blockers", ()
       );
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "github_release").commands,
-        [],
+        [
+          "gh pr view 274 --repo wlsdks/oh-my-ontology --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url",
+          "gh secret list --repo wlsdks/oh-my-ontology",
+          "git fetch origin main --tags",
+          "git tag v0.1.0 origin/main",
+          "git push origin v0.1.0",
+          "gh release view v0.1.0 --repo wlsdks/oh-my-ontology",
+        ],
       );
     },
   );

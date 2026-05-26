@@ -229,8 +229,8 @@ check also carries a stable `id`, `scope`, and `owner` such as `pull_request`,
 `apple_release_secrets`, `github_release`, and `download_assets` so automation
 does not branch on translated or edited labels. Actionable blockers include
 `commands[]` entries, and Apple signing blockers expose top-level
-`missingSecrets[]`, so follow-up runners can execute known-safe diagnostics or
-secret setup prompts without parsing prose.
+`missingSecrets[]`, so follow-up runners can execute known diagnostics, secret
+setup prompts, or the post-merge release tag push without parsing prose.
 Firebase Hosting is not part of the macOS
 app release gate; verify the separate website with `pnpm desktop:verify-hosted`;
 the hosted download page keeps macOS app release blockers aligned with

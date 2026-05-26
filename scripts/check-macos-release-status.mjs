@@ -214,7 +214,11 @@ function prNextAction({ checksOk, prNumber, repo, url }) {
 }
 
 function prNextCommands({ checksOk, prNumber, repo }) {
-  return checksOk ? [] : [`gh pr checks ${prNumber} --repo ${repo}`];
+  const commands = [`gh pr view ${prNumber} --repo ${repo} --json reviewDecision,mergeStateStatus,statusCheckRollup,url`];
+  if (!checksOk) {
+    commands.unshift(`gh pr checks ${prNumber} --repo ${repo}`);
+  }
+  return commands;
 }
 
 function prCheckLabel(check) {
@@ -236,6 +240,20 @@ function secretSetHints(repo, names) {
 
 function secretSetCommands(repo, names) {
   return names.map((name) => `gh secret set ${name} --repo ${repo} < /path/to/${name}`);
+}
+
+function releasePublishCommands({ repo, tag, prNumber }) {
+  const commands = [
+    `gh secret list --repo ${repo}`,
+    `git fetch origin main --tags`,
+    `git tag ${tag} origin/main`,
+    `git push origin ${tag}`,
+    `gh release view ${tag} --repo ${repo}`,
+  ];
+  if (prNumber) {
+    commands.unshift(`gh pr view ${prNumber} --repo ${repo} --json state,mergedAt,reviewDecision,mergeStateStatus,statusCheckRollup,url`);
+  }
+  return commands;
 }
 
 function isNotFound(message) {
@@ -356,7 +374,11 @@ async function main() {
       ? `Merge the desktop PR, add Apple release secrets, then push ${options.tag} so .github/workflows/release-macos.yml can publish signed DMGs.`
       : `Run gh release view ${options.tag} --repo ${options.repo}.`;
     const commands = isNotFound(release.message)
-      ? []
+      ? releasePublishCommands({
+          repo: options.repo,
+          tag: options.tag,
+          prNumber: options.pr,
+        })
       : [`gh release view ${options.tag} --repo ${options.repo}`];
     checks.push(blocked("github_release", "GitHub Release", release.message, next, commands));
   } else if (release.value?.isDraft || release.value?.isPrerelease) {

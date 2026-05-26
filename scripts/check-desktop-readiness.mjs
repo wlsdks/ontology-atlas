@@ -840,6 +840,8 @@ if (
   releaseStatusScript.includes("missingSecrets") &&
   releaseStatusScript.includes("nextActions") &&
   releaseStatusScript.includes("commands") &&
+  releaseStatusScript.includes("gh pr view") &&
+  releaseStatusScript.includes("git push origin") &&
   releaseStatusScript.includes("renderMarkdownChecklist") &&
   releaseStatusScript.includes("fs.writeFileSync") &&
   releaseStatusScript.includes("Firebase Hosting is intentionally excluded") &&
