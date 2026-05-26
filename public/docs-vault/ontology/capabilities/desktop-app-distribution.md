@@ -143,7 +143,9 @@ The verifier also downloads each public DMG and compares its SHA-256 digest to
 the checksum asset. The tag workflow runs that same download verifier against
 `${GITHUB_REF_NAME}` before and after publication, so a green release job proves
 both draft asset integrity and public downloadability for Apple Silicon and
-Intel users. The same release workflow intentionally avoids Firebase Hosting
+Intel users. After the public verifier passes, the publish job records the
+published GitHub Release URL plus the public DMG filenames, byte sizes, and
+SHA-256 values in the GitHub Actions step summary. The same release workflow intentionally avoids Firebase Hosting
 deploy steps so signed DMGs can publish without backend or hosting credentials;
 the hosted promo/download site is deployed and verified through the separate
 `deploy-hosting.yml` path. When a requested tag has no GitHub Release yet, the verifier

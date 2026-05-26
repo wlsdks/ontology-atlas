@@ -208,3 +208,23 @@ jobs:
         run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}"
         env:
           GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Summarize published macOS release
+        run: |
+          release_url="$(gh release view "${GITHUB_REF_NAME}" --json url --jq .url)"
+          {
+            echo "## Published macOS Release"
+            echo ""
+            echo "Release: ${release_url}"
+            echo ""
+            echo "| Asset | Size | SHA-256 |"
+            echo "| --- | ---: | --- |"
+            for dmg in release-assets/*.dmg; do
+              checksum="${dmg}.sha256"
+              size="$(wc -c < "$dmg" | tr -d ' ')"
+              sha="$(cut -d ' ' -f 1 "$checksum")"
+              echo "| \`$(basename "$dmg")\` | ${size} bytes | \`${sha}\` |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

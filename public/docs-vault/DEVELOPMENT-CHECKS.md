@@ -712,7 +712,10 @@ Actions step summary, uploads workflow artifacts, attaches both DMGs plus
 publishes the release as stable, then runs
 `pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}"` so the same CI run
 proves the hosted download CTA can reach both public DMGs and that each checksum
-asset contains a SHA-256 line for the same DMG filename and bytes. The separate
+asset contains a SHA-256 line for the same DMG filename and bytes. After public
+verification, the publish job writes the published GitHub Release URL plus the
+public DMG filenames, byte sizes, and SHA-256 values to the GitHub Actions step
+summary. The separate
 `.github/workflows/deploy-hosting.yml` path deploys the hosted promo/download
 site after release publication or manual dispatch and then runs
 `pnpm desktop:verify-hosted`. The verifier

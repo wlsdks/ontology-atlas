@@ -407,7 +407,11 @@ release assets as a draft, runs
 `pnpm desktop:verify-download` again to prove the public download surface
 exposes reachable Apple Silicon and Intel DMGs with filename versions that
 match the release tag, exactly one DMG per architecture, and checksum files that
-name and hash the same downloaded DMGs. Local runs may need `GITHUB_TOKEN` or `GH_TOKEN` when the unauthenticated
+name and hash the same downloaded DMGs. After that public verification, the
+workflow writes the published GitHub Release URL plus the DMG filenames, byte
+sizes, and SHA-256 values to the GitHub Actions step summary so the release
+record is inspectable without re-running the verifier. Local runs may need
+`GITHUB_TOKEN` or `GH_TOKEN` when the unauthenticated
 GitHub API rate limit is exhausted.
 If the requested tag has not produced a GitHub Release yet, the verifier reports
 that missing tag directly and points back to `.github/workflows/release-macos.yml`
@@ -435,8 +439,10 @@ Release, verifies those draft assets with
 `pnpm desktop:verify-download -- --allow-draft`, publishes the release as
 stable, then runs
 `pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}"` so the release run
-itself proves the hosted CTA can reach both public release assets. The workflow
-does not require Firebase secrets or deploy Hosting; the installed app remains
+itself proves the hosted CTA can reach both public release assets. It then
+records the public GitHub Release URL plus the public asset filenames, byte
+sizes, and SHA-256 values in the GitHub Actions step summary. The workflow does
+not require Firebase secrets or deploy Hosting; the installed app remains
 local-only, and website deployment stays in `.github/workflows/deploy-hosting.yml`.
 Public downloads are still a
 distribution-hardening slice until the Apple credentials are configured and the
