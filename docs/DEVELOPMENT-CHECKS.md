@@ -178,10 +178,13 @@ rustc / Xcode command-line-tool readiness plus the dogfood vault, CLI/MCP
 handoff gate, and offline desktop docs before `.app` / `.dmg` builds; `pnpm
 desktop:check` also requires the `package.json`, `src-tauri/tauri.conf.json`,
 and `src-tauri/Cargo.toml` versions to match so app metadata, DMG filenames, and
-release tags move together; `pnpm desktop:release-tag` compares the v-prefixed
-Git tag to those versions before signing; `pnpm desktop:release-source` fails
-closed when a tag push points at anything other than the current default-branch
-head, so signed DMGs cannot be published from an unmerged PR branch;
+release tags move together, and requires the root package to stay free of
+Firebase SDK, Firebase Admin, and Firebase CLI dependencies so the local-only
+app package cannot silently absorb the separate Hosting deploy toolchain;
+`pnpm desktop:release-tag` compares the v-prefixed Git tag to those versions
+before signing; `pnpm desktop:release-source` fails closed when a tag push
+points at anything other than the current default-branch head, so signed DMGs
+cannot be published from an unmerged PR branch;
 `pnpm desktop:release-slot` fails
 closed before GitHub Release upload when that same tag already has a draft,
 prerelease, or public release so stale DMG assets cannot mix with the freshly

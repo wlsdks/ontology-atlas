@@ -76,6 +76,9 @@ for a macOS prototype:
 - `package.json`, `src-tauri/tauri.conf.json`, and `src-tauri/Cargo.toml`
   keep the same version so the app metadata, DMG filename, and release tag do
   not drift apart.
+- the root package stays free of Firebase SDK, Firebase Admin, and Firebase CLI
+  dependencies. Firebase Hosting deploys use the separate website workflow and
+  `npx firebase-tools`, not the local-only app package.
 - `docs-vault:check`, `cli:mcp-verify`, `desktop:doctor`, `desktop:dev`,
   `desktop:smoke`, `desktop:verify-app`, `desktop:build:app`,
   `desktop:build`, `desktop:release-source`, `desktop:release-tag`,

@@ -38,6 +38,7 @@ const rootReadme = readText("README.md");
 const featuresDoc = readText("docs/FEATURES.md");
 const productDirectionDoc = readText("docs/PRODUCT-DIRECTION.md");
 const architectureDoc = readText("docs/ARCHITECTURE.md");
+const developmentChecksDoc = readText("docs/DEVELOPMENT-CHECKS.md");
 const agentGraphWorkflowDoc = readText("docs/AGENT-GRAPH-WORKFLOW.md");
 const troubleshootingDoc = readText("docs/TROUBLESHOOTING.md");
 const publishNpmDoc = readText("docs/PUBLISH-NPM.md");
@@ -492,6 +493,9 @@ if (
   desktopDoc.includes("Context Atlas") &&
   desktopDoc.includes("current release") &&
   desktopDoc.includes("asset identity") &&
+  desktopDoc.includes("root package stays free of Firebase SDK, Firebase Admin, and Firebase CLI") &&
+  desktopDoc.includes("separate website workflow") &&
+  desktopDoc.includes("not the local-only app package") &&
   architectureDoc.includes("Tauri macOS shell (installed local workbench)") &&
   architectureDoc.includes("The public app/website brand is **Context Atlas**") &&
   architectureDoc.includes("Tauri native bridge → user disk") &&
@@ -510,6 +514,8 @@ if (
   troubleshootingDoc.includes("Desktop app scaffold button stays grayed out") &&
   publishNpmDoc.includes("installed macOS app's `/docs` page") &&
   publishNpmDoc.includes("Start a user vault (desktop app path)") &&
+  developmentChecksDoc.includes("Firebase SDK, Firebase Admin, and Firebase CLI dependencies") &&
+  developmentChecksDoc.includes("separate Hosting deploy toolchain") &&
   demoStoryboardDoc.includes("설치된 Context Atlas macOS 앱") &&
   redditPostsDoc.includes("macOS desktop app that wraps the same Next.js static") &&
   redditPostsDoc.includes("hosted website is only the product intro and download entry point")
