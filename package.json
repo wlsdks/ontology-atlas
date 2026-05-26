@@ -38,7 +38,7 @@
     "desktop:dev": "pnpm tauri dev",
     "desktop:build:app": "pnpm tauri build --bundles app",
     "desktop:build": "pnpm desktop:build:app && node scripts/package-macos-dmg.mjs",
-    "test:desktop:check": "node --test scripts/check-desktop-readiness.test.mjs scripts/desktop-smoke.test.mjs scripts/lib/macos-release-names.test.mjs scripts/lib/macos-dmg-layout.test.mjs scripts/check-macos-download-release.test.mjs scripts/check-macos-release-github.test.mjs scripts/check-macos-release-source.test.mjs scripts/check-macos-release-status.test.mjs scripts/watch-macos-release-run.test.mjs scripts/check-hosted-download-surface.test.mjs scripts/check-firebase-hosting-deploy-env.test.mjs",
+    "test:desktop:check": "node --test scripts/check-desktop-readiness.test.mjs scripts/desktop-smoke.test.mjs scripts/lib/macos-release-names.test.mjs scripts/lib/macos-dmg-layout.test.mjs scripts/lib/redact-command.test.mjs scripts/check-macos-download-release.test.mjs scripts/check-macos-release-github.test.mjs scripts/check-macos-release-source.test.mjs scripts/check-macos-release-status.test.mjs scripts/watch-macos-release-run.test.mjs scripts/check-hosted-download-surface.test.mjs scripts/check-firebase-hosting-deploy-env.test.mjs",
     "docs-vault:build": "node scripts/build-docs-vault.mjs",
     "docs-vault:check": "node scripts/build-docs-vault.mjs --check",
     "test:docs-vault": "node --test scripts/build-docs-vault.test.mjs",

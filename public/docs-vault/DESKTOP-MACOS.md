@@ -170,7 +170,9 @@ for a macOS prototype:
   using `APPLE_SIGNING_IDENTITY`, then runs strict `codesign` verification.
 - `scripts/notarize-macos-dmg.mjs` submits the DMG with `xcrun notarytool`,
   waits for notarization, staples and validates the ticket, then refreshes the
-  `.sha256` file because stapling changes the DMG bytes.
+  `.sha256` file because stapling changes the DMG bytes. Notary failure logs
+  redact Apple ID, app-specific password, and keychain profile arguments before
+  printing the failed command.
 - `scripts/check-macos-download-release.mjs` verifies the GitHub Release assets
   that the hosted landing page sends users to: the normal mode requires a
   non-draft release with reachable `oh-my-ontology_*_aarch64.dmg` and

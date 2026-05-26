@@ -121,7 +121,8 @@ the static desktop payload, verifies the `v*` tag matches package, Tauri, and
 Cargo versions before signing credentials enter the path, imports the
 certificate, signs the `.app` through `pnpm desktop:sign`, packages each DMG,
 notarizes and staples it through `pnpm desktop:notarize`, refreshes the
-checksum after stapling, runs `pnpm desktop:verify-release-dmg` so the mounted
+checksum after stapling, redacts notary credentials from failed command logs,
+runs `pnpm desktop:verify-release-dmg` so the mounted
 app signature and stapled notarization ticket plus Gatekeeper assessment are
 required, runs `pnpm desktop:verify-install` so the DMG copy-and-launch path is
 exercised, and uploads workflow artifacts only after those release gates pass.

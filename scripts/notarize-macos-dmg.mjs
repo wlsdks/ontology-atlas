@@ -4,6 +4,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
+import { formatCommandForLog } from "./lib/redact-command.mjs";
 
 const root = process.cwd();
 const names = loadMacosReleaseNames(root);
@@ -51,7 +52,7 @@ function run(command, args) {
   if (result.status !== 0) {
     fail(
       [
-        `${command} ${args.join(" ")} failed with exit ${result.status}`,
+        `${formatCommandForLog(command, args)} failed with exit ${result.status}`,
         result.stdout?.trim() ? `stdout:\n${result.stdout.trim()}` : null,
         result.stderr?.trim() ? `stderr:\n${result.stderr.trim()}` : null,
       ]
