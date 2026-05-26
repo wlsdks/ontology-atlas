@@ -73,7 +73,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ Firebase Hosting workflow deploys the promo\/download site after public macOS releases and verifies the live download route/,
+    /✓ Firebase Hosting fallback workflow deploys the promo\/download site after public macOS releases and verifies the live download route/,
   );
   assert.match(
     result.stdout,
@@ -137,7 +137,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ tag release workflow builds Apple Silicon and Intel DMGs on Node 24, requires a default-branch source, clean release slot, verifies draft assets, then publishes and re-verifies public stable assets/,
+    /✓ tag release workflow builds Apple Silicon and Intel DMGs on Node 24, publishes verified public assets, then deploys and verifies the hosted download site/,
   );
   assert.match(
     result.stdout,

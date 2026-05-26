@@ -124,7 +124,10 @@ The verifier also downloads each public DMG and compares its SHA-256 digest to
 the checksum asset. The tag workflow runs that same download verifier against
 `${GITHUB_REF_NAME}` before and after publication, so a green release job proves
 both draft asset integrity and public downloadability for Apple Silicon and
-Intel users. When a requested tag has no GitHub Release yet, the verifier
+Intel users. The same release workflow then deploys the Firebase-hosted
+promo/download site with the first-release checklist hidden and verifies the
+live `/ko/download/` route, so hosted download completion does not rely on a
+second workflow event created by `GITHUB_TOKEN`. When a requested tag has no GitHub Release yet, the verifier
 reports the missing tag as the release-blocking condition instead of exposing a
 raw GitHub API 404, so the next operator action is to push the tag and let the
 macOS release workflow publish the signed/notarized assets. When the workflow

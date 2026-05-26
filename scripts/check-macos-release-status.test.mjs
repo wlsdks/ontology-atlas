@@ -113,6 +113,7 @@ test("desktop release status reports current completion blockers together", () =
       assert.match(result.stdout, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
       assert.match(result.stdout, /✗ Firebase Hosting deploy secrets: missing FIREBASE_SERVICE_ACCOUNT_JSON/);
       assert.match(result.stdout, /✗ GitHub Release: release not found/);
+      assert.match(result.stdout, /release-macos\.yml can publish signed DMGs and deploy the hosted download page in the same run/);
       assert.match(result.stderr, /blocked: 4 release requirement/);
     },
   );

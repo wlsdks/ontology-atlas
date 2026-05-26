@@ -358,8 +358,11 @@ Release, verifies those draft assets with
 `pnpm desktop:verify-download -- --allow-draft`, publishes the release as
 stable, then runs
 `pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}"` so the release run
-itself proves the hosted CTA can reach both public release assets. Public
-downloads are still a
+itself proves the hosted CTA can reach both public release assets. The same
+release workflow then deploys the Firebase-hosted promo/download site with
+`NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` and verifies `/ko/download/` through
+`pnpm desktop:verify-hosted`, avoiding reliance on a second workflow event
+created by `GITHUB_TOKEN`. Public downloads are still a
 distribution-hardening slice until the Apple credentials are configured and the
 tag workflow runs successfully.
 

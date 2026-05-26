@@ -611,6 +611,7 @@ describe('package contract helpers', () => {
     const skill = readFileSync('.claude/skills/firebase-deploy/SKILL.md', 'utf-8');
     const capability = readFileSync('docs/ontology/capabilities/firebase-deploy-skill.md', 'utf-8');
     const hostingWorkflow = readFileSync('.github/workflows/deploy-hosting.yml', 'utf-8');
+    const releaseWorkflow = readFileSync('.github/workflows/release-macos.yml', 'utf-8');
 
     const forbiddenTopLevel = ['functions', 'firestore', 'storage', 'database', 'emulators', 'extensions'];
     assert.deepEqual(
@@ -640,26 +641,38 @@ describe('package contract helpers', () => {
 
     assert.match(deployment, /does not configure rewrites, Functions, Firestore, Storage, or auth/);
     assert.match(deployment, /pnpm firebase:deploy-check/);
+    assert.match(deployment, /\.github\/workflows\/release-macos\.yml/);
     assert.match(deployment, /\.github\/workflows\/deploy-hosting\.yml/);
     assert.match(deployment, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+    assert.match(deployment, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0/);
     assert.match(skill, /firebase deploy --only hosting/);
     assert.match(skill, /pnpm firebase:deploy-check/);
     assert.match(skill, /no Functions, Firestore, Storage, Auth, emulators, or server runtime/);
     assert.match(skill, /pnpm test:mcp:docs/);
+    assert.match(skill, /macOS tag release workflow/);
     assert.match(skill, /\.github\/workflows\/deploy-hosting\.yml/);
     assert.match(skill, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+    assert.match(skill, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0/);
     assert.equal(pkg.scripts?.['firebase:deploy-check'], 'node scripts/check-firebase-hosting-deploy-env.mjs');
     assert.match(capability, /static host only/);
     assert.match(capability, /pnpm firebase:deploy-check/);
+    assert.match(capability, /macOS tag release workflow/);
     assert.match(capability, /deploy-hosting\.yml/);
     assert.match(capability, /FIREBASE_SERVICE_ACCOUNT_JSON/);
     assert.match(capability, /Functions, Firestore, Storage, Auth, or committed credentials/);
     assert.match(hostingWorkflow, /release:\s*\n\s+types:\s*\[published\]/);
     assert.match(hostingWorkflow, /workflow_dispatch:/);
     assert.match(hostingWorkflow, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+    assert.match(hostingWorkflow, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/);
     assert.match(hostingWorkflow, /pnpm firebase:deploy-check/);
     assert.match(hostingWorkflow, /npx --yes firebase-tools@15\.17\.0 deploy --only hosting/);
     assert.match(hostingWorkflow, /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/);
+    assert.match(releaseWorkflow, /deploy-hosting:\s*\n\s+name:\s*Deploy hosted download site/);
+    assert.match(releaseWorkflow, /needs:\s*publish-macos/);
+    assert.match(releaseWorkflow, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+    assert.match(releaseWorkflow, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/);
+    assert.match(releaseWorkflow, /npx --yes firebase-tools@15\.17\.0 deploy --only hosting/);
+    assert.match(releaseWorkflow, /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/);
   });
 
   it('keeps the docs-vault freshness check executable from source checkout', () => {

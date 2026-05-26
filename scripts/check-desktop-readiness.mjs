@@ -118,6 +118,14 @@ const releasePublishOrder = orderedIndexes(releaseWorkflow, [
   "name: Publish verified stable release",
   "name: Verify public download assets",
 ]);
+const releaseHostingDeployOrder = orderedIndexes(releaseWorkflow, [
+  "name: Write Firebase deploy env",
+  "name: Firebase deploy preflight",
+  "name: Docs and type gates",
+  "name: Build static site",
+  "name: Deploy Hosting",
+  "name: Verify hosted download surface",
+]);
 
 if (/output\s*:\s*['"]export['"]/.test(nextConfig)) {
   pass("Next.js uses static export output");
@@ -315,6 +323,7 @@ if (
   /release:\s*\n\s+types:\s*\[published\]/.test(hostingDeployWorkflow) &&
   /workflow_dispatch:/.test(hostingDeployWorkflow) &&
   /FIREBASE_SERVICE_ACCOUNT_JSON/.test(hostingDeployWorkflow) &&
+  /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/.test(hostingDeployWorkflow) &&
   /FIREBASE_PROJECT_ID:\s*\$\{\{\s*vars\.FIREBASE_PROJECT_ID/.test(hostingDeployWorkflow) &&
   /pnpm firebase:deploy-check/.test(hostingDeployWorkflow) &&
   /pnpm test:mcp:docs/.test(hostingDeployWorkflow) &&
@@ -323,10 +332,10 @@ if (
   /firebase-tools@15\.17\.0 deploy --only hosting/.test(hostingDeployWorkflow) &&
   /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/.test(hostingDeployWorkflow)
 ) {
-  pass("Firebase Hosting workflow deploys the promo/download site after public macOS releases and verifies the live download route");
+  pass("Firebase Hosting fallback workflow deploys the promo/download site after public macOS releases and verifies the live download route");
 } else {
   fail(
-    ".github/workflows/deploy-hosting.yml must deploy Hosting on release publication and manual dispatch, require FIREBASE_SERVICE_ACCOUNT_JSON, run the static deploy gates, deploy only Hosting, and verify the hosted download route",
+    ".github/workflows/deploy-hosting.yml must deploy Hosting on release publication/manual dispatch, require FIREBASE_SERVICE_ACCOUNT_JSON, hide the first-release checklist, run the static deploy gates, deploy only Hosting, and verify the hosted download route",
   );
 }
 
@@ -575,9 +584,9 @@ if (
 }
 
 if (
-  releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length === 2 &&
-  releaseWorkflow.match(/uses:\s*pnpm\/action-setup@v6/g)?.length === 2 &&
-  releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length === 2 &&
+  releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length === 3 &&
+  releaseWorkflow.match(/uses:\s*pnpm\/action-setup@v6/g)?.length === 3 &&
+  releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length === 3 &&
   /uses:\s*actions\/upload-artifact@v7/.test(releaseWorkflow) &&
   /uses:\s*actions\/download-artifact@v7/.test(releaseWorkflow) &&
   /uses:\s*softprops\/action-gh-release@v3/.test(releaseWorkflow)
@@ -604,20 +613,27 @@ if (
   /pnpm desktop:release-source -- --sha="\$\{GITHUB_SHA\}"/.test(releaseWorkflow) &&
   /pnpm desktop:verify-release-dmg/.test(releaseWorkflow) &&
   /pnpm desktop:verify-install/.test(releaseWorkflow) &&
-  releaseWorkflow.match(/node-version:\s*24/g)?.length === 2 &&
+  releaseWorkflow.match(/node-version:\s*24/g)?.length === 3 &&
   /arch:\s*aarch64/.test(releaseWorkflow) &&
   /runner:\s*macos-14/.test(releaseWorkflow) &&
   /arch:\s*x64/.test(releaseWorkflow) &&
   /runner:\s*macos-15-intel/.test(releaseWorkflow) &&
   /release-assets\/\*\.sha256/.test(releaseWorkflow) &&
   /pnpm desktop:verify-download -- --tag="\$\{GITHUB_REF_NAME\}"/.test(releaseWorkflow) &&
+  /deploy-hosting:\s*\n\s+name:\s*Deploy hosted download site/.test(releaseWorkflow) &&
+  /needs:\s*publish-macos/.test(releaseWorkflow) &&
+  /FIREBASE_SERVICE_ACCOUNT_JSON/.test(releaseWorkflow) &&
+  /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/.test(releaseWorkflow) &&
+  /firebase-tools@15\.17\.0 deploy --only hosting/.test(releaseWorkflow) &&
+  /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/.test(releaseWorkflow) &&
   hasStrictOrder(releaseBuildOrder) &&
-  hasStrictOrder(releasePublishOrder)
+  hasStrictOrder(releasePublishOrder) &&
+  hasStrictOrder(releaseHostingDeployOrder)
 ) {
-  pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24, requires a default-branch source, clean release slot, verifies draft assets, then publishes and re-verifies public stable assets");
+  pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24, publishes verified public assets, then deploys and verifies the hosted download site");
 } else {
   fail(
-    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag commit is the default-branch head, verify the tag and secrets before signing, sign/notarize before upload, require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, install-smoke each DMG, then run desktop:verify-download for the tag",
+    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag commit is the default-branch head, verify the tag and secrets before signing, sign/notarize before upload, require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, verify public downloads, then deploy and verify the hosted download site in the same workflow",
   );
 }
 

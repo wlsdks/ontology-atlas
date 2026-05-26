@@ -247,7 +247,7 @@ async function main() {
   ], { parseJson: true });
   if (!release.ok) {
     const next = isNotFound(release.message)
-      ? `Merge the desktop PR, add Apple/Firebase release secrets, then push ${options.tag} so .github/workflows/release-macos.yml can publish signed DMGs and .github/workflows/deploy-hosting.yml can deploy the hosted download page.`
+      ? `Merge the desktop PR, add Apple/Firebase release secrets, then push ${options.tag} so .github/workflows/release-macos.yml can publish signed DMGs and deploy the hosted download page in the same run.`
       : `Run gh release view ${options.tag} --repo ${options.repo}.`;
     checks.push(blocked("GitHub Release", release.message, next));
   } else if (release.value?.isDraft || release.value?.isPrerelease) {

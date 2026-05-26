@@ -47,11 +47,15 @@ For production Firebase Hosting, `pnpm firebase:deploy-check` is the local
 deploy preflight: it requires `.env.prod`, verifies `.firebaserc` matches
 `FIREBASE_PROJECT_ID`, keeps `firebase.json` static Hosting-only, and confirms
 `.env.prod` is excluded from both git and Firebase deploy packaging before
-`firebase deploy --only hosting`. The GitHub maintainer path is
-`.github/workflows/deploy-hosting.yml`: after a public macOS Release is
-published, it writes `.env.prod` from repository variables, authenticates with
-`FIREBASE_SERVICE_ACCOUNT_JSON`, deploys only Hosting with
-`firebase-tools@15.17.0`, and runs `pnpm desktop:verify-hosted` so the hosted
+`firebase deploy --only hosting`. The tag release path deploys Hosting inside
+`.github/workflows/release-macos.yml` after the verified stable GitHub Release
+is public, because GitHub does not start a second workflow from most events
+created with the release workflow's `GITHUB_TOKEN`. The fallback maintainer path
+is `.github/workflows/deploy-hosting.yml` for manual dispatch or human-created
+Release events. Both paths write `.env.prod` from repository variables,
+authenticate with `FIREBASE_SERVICE_ACCOUNT_JSON`, set
+`NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, deploy only Hosting with
+`firebase-tools@15.17.0`, and run `pnpm desktop:verify-hosted` so the hosted
 download route cannot stay 404 after a successful release.
 
 ## Vault Checks
@@ -620,10 +624,12 @@ contract, copy-and-launch smokes the DMG app from a temporary install folder,
 uploads workflow artifacts, attaches both DMGs plus `.sha256` files to a draft
 GitHub Release, verifies those draft assets with
 `pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --allow-draft`,
-publishes the release as stable, and then runs
+publishes the release as stable, then runs
 `pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}"` so the same CI run
 proves the hosted download CTA can reach both public DMGs and that each checksum
-asset contains a SHA-256 line for the same DMG filename and bytes. The verifier
+asset contains a SHA-256 line for the same DMG filename and bytes. The workflow
+then deploys the hosted promo/download site with the first-release checklist
+hidden and runs `pnpm desktop:verify-hosted`. The verifier
 rejects unsupported extra `oh-my-ontology_*.dmg` names, mixed-version
 architecture assets in the same release, DMG filenames whose version does not
 match the release tag, and DMG bytes whose digest does not match the checksum.

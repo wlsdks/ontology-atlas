@@ -24,16 +24,19 @@ publish credentials. If `.env.prod` is missing, stop and ask the user to create
 it or provide the Firebase project id. Use `.env.prod.example` as the non-secret
 template.
 
-For the GitHub-hosted deploy path, `.github/workflows/deploy-hosting.yml`
-expects these repository settings:
+For GitHub-hosted deploys, the macOS tag release workflow runs Hosting after it
+publishes and verifies the stable DMGs. `.github/workflows/deploy-hosting.yml`
+keeps the same path available for manual dispatch or human-created Release
+events. Both GitHub paths expect these repository settings:
 
 - secret: `FIREBASE_SERVICE_ACCOUNT_JSON`
 - variables: `FIREBASE_PROJECT_ID`, `FIREBASE_HOSTING_URL`,
   `FIREBASE_HOSTING_ALT_URL` (defaults match `.env.prod.example`)
 
-The workflow runs on public GitHub Release publication and manual dispatch. It
-still writes a temporary `.env.prod`, runs `pnpm firebase:deploy-check`, deploys
-only Hosting with `firebase-tools@15.17.0`, and verifies the live download route.
+The workflows write a temporary `.env.prod`, set
+`NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, run `pnpm firebase:deploy-check`,
+deploy only Hosting with `firebase-tools@15.17.0`, and verify the live download
+route.
 
 ## Workflow
 

@@ -256,7 +256,10 @@ fails unless a public non-draft GitHub Release exposes reachable
 `oh-my-ontology_*_aarch64.dmg` and `oh-my-ontology_*_x64.dmg` assets plus
 matching `.sha256` checksum files that name those same-version DMGs, and it
 rejects unsupported extra `oh-my-ontology_*.dmg` names so the GitHub Release
-page cannot show ambiguous macOS downloads.
+page cannot show ambiguous macOS downloads. The same tag workflow then deploys
+the Firebase-hosted promo/download site with the first-release checklist hidden
+and runs `pnpm desktop:verify-hosted`, so the public `/ko/download/` route is
+proven live without relying on a second workflow triggered by `GITHUB_TOKEN`.
 `pnpm desktop:release-preflight`
 is the local pre-tag command for readiness, docs-vault freshness, desktop tests,
 runtime doctor, CLI/MCP handoff against `docs/ontology`, build, route smoke,

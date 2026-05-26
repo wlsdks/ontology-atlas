@@ -17,6 +17,7 @@ env:
   FIREBASE_PROJECT_ID: ${{ vars.FIREBASE_PROJECT_ID || 'oh-my-ontology' }}
   FIREBASE_HOSTING_URL: ${{ vars.FIREBASE_HOSTING_URL || 'https://oh-my-ontology.web.app' }}
   FIREBASE_HOSTING_ALT_URL: ${{ vars.FIREBASE_HOSTING_ALT_URL || 'https://oh-my-ontology.firebaseapp.com' }}
+  NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING: "0"
 
 jobs:
   deploy-hosting:
@@ -54,6 +55,7 @@ jobs:
           FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
           FIREBASE_HOSTING_URL=${FIREBASE_HOSTING_URL}
           FIREBASE_HOSTING_ALT_URL=${FIREBASE_HOSTING_ALT_URL}
+          NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=${NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING}
           EOF
 
           SERVICE_ACCOUNT_PATH="$RUNNER_TEMP/firebase-service-account.json"
