@@ -21,7 +21,8 @@ FIREBASE_HOSTING_ALT_URL=https://oh-my-ontology.firebaseapp.com
 
 Do not print or commit tokens, service account JSON, refresh tokens, or npm
 publish credentials. If `.env.prod` is missing, stop and ask the user to create
-it or provide the Firebase project id.
+it or provide the Firebase project id. Use `.env.prod.example` as the non-secret
+template.
 
 ## Workflow
 

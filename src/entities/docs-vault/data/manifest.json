@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-26T00:07:27.129Z",
+  "generatedAt": "2026-05-26T00:17:37.788Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3525,8 +3525,8 @@
         }
       ],
       "excerpt": "202605 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (Firebase Hosting, Vercel, Netlify, GitHub Pages, S3 + CloudFront, …). The detailed Firebasespecific guide is archived in docs/archive/DEPLOYFIREBASE.md for reference. Th",
-      "wordCount": 404,
-      "updatedAt": "2026-05-18T06:48:02.151Z",
+      "wordCount": 430,
+      "updatedAt": "2026-05-26T00:17:16.312Z",
       "linksOut": [
         "archive/DEPLOY-FIREBASE"
       ]

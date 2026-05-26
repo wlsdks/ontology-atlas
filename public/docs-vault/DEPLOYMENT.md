@@ -29,6 +29,9 @@ firebase deploy --only hosting
 This repo already includes `firebase.json`, `.firebaserc`, and
 `.firebaseignore` for static Hosting. `firebase.json` points to `out/` and
 does not configure rewrites, Functions, Firestore, Storage, or auth.
+Maintainer deploys should copy `.env.prod.example` to the gitignored
+`.env.prod` first so the Firebase project id and live verification URLs are
+explicit before production Hosting is updated.
 
 Expected public URLs after deploy:
 
