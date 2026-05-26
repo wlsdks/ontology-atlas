@@ -171,7 +171,10 @@ When PR checks block the release, it includes the failing or pending check names
 plus each check's GitHub Actions details URL when available, and the exact
 `gh pr checks <number> --repo wlsdks/oh-my-ontology` command. When all PR
 checks pass but review or merge state still blocks release, it skips redundant
-check rerun advice and points directly at the PR review/merge blocker.
+check rerun advice and points directly at the PR review/merge blocker. With
+`--json`, the same audit emits `ready`, `blockerCount`, and per-check `next`
+actions so goal runners and release dashboards can consume blockers without
+scraping human text.
 Firebase Hosting remains a separate static
 website deployment checked with `pnpm desktop:verify-hosted`.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`

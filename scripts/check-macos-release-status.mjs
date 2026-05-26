@@ -19,7 +19,7 @@ function defaultTag() {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER]
+  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER] [--json]
 
 Checks the public macOS release completion state in one fail-closed pass:
 release tag version alignment, pull-request merge readiness, Apple
@@ -28,6 +28,9 @@ DMG/checksum assets.
 
 This command is an operator/completion audit. It does not publish tags, set
 secrets, or edit releases.
+
+Use --json when a goal runner, CI wrapper, or release dashboard needs a
+machine-readable blocker list. Human-readable output remains the default.
 
 Firebase Hosting is intentionally excluded from this macOS app release audit.
 Use pnpm desktop:verify-hosted after the separate static promo/download website
@@ -40,6 +43,7 @@ function parseArgs(argv) {
     repo: DEFAULT_REPO,
     tag: defaultTag(),
     pr: "",
+    json: false,
   };
 
   for (const arg of argv) {
@@ -58,6 +62,10 @@ function parseArgs(argv) {
     }
     if (arg.startsWith("--pr=")) {
       options.pr = arg.slice("--pr=".length).trim();
+      continue;
+    }
+    if (arg === "--json") {
+      options.json = true;
       continue;
     }
     fail(`unknown argument: ${arg}`);
@@ -308,6 +316,23 @@ async function main() {
 }
 
 function renderAndExit(options, checks) {
+  const blockers = checks.filter((check) => check.status === "blocked");
+  if (options.json) {
+    console.log(JSON.stringify({
+      repo: options.repo,
+      tag: options.tag,
+      pr: options.pr || null,
+      ready: blockers.length === 0,
+      blockerCount: blockers.length,
+      checks,
+    }, null, 2));
+    if (blockers.length > 0) {
+      console.error(`[desktop-release-status] blocked: ${blockers.length} release requirement(s) are not satisfied`);
+      process.exit(1);
+    }
+    return;
+  }
+
   console.log(`[desktop-release-status] ${options.repo} ${options.tag}`);
   for (const check of checks) {
     const marker = check.status === "ok" ? "✓" : check.status === "skipped" ? "·" : "✗";
@@ -316,7 +341,6 @@ function renderAndExit(options, checks) {
       console.log(`  next: ${check.next}`);
     }
   }
-  const blockers = checks.filter((check) => check.status === "blocked");
   if (blockers.length > 0) {
     console.error(`[desktop-release-status] blocked: ${blockers.length} release requirement(s) are not satisfied`);
     process.exit(1);

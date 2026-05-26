@@ -326,6 +326,8 @@ required Apple signing/notary secret names, public stable GitHub Release state,
 then delegates to the public DMG/checksum download verifier. If PR checks are
 still blocking the release, the audit prints the failing or pending check names
 plus `gh pr checks <number> --repo wlsdks/oh-my-ontology` as the next action.
+Use `--json` for automation that needs `ready`, `blockerCount`, and per-check
+`next` actions without scraping terminal text.
 Firebase Hosting is not part of the macOS app release gate;
 run `pnpm desktop:verify-hosted` after the separate website deploy.
 When it reports missing secrets, set each value through `gh secret set`, for

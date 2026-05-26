@@ -276,7 +276,9 @@ post-release completion audit is
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>`: it does not publish
 anything, but it fails closed until tag/package/Tauri/Cargo version alignment,
 PR review/merge readiness, Apple release secret names, public stable GitHub
-Release state, and public DMG/checksum download verification all pass. Firebase
+Release state, and public DMG/checksum download verification all pass. Its
+`--json` mode reports `ready`, `blockerCount`, and per-check `next` actions for
+goal runners or dashboards that need structured release blockers. Firebase
 Hosting remains a separate website
 deployment check, not a macOS app release dependency. This is
 evidence for goal completion, not a substitute for publishing signed/notarized

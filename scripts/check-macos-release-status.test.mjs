@@ -98,6 +98,37 @@ function runStatus(fakeGhPath, args = ["--tag=v0.1.0", "--pr=274"]) {
   });
 }
 
+test("desktop release status emits machine-readable blockers for automation", () => {
+  withFakeGh(
+    {
+      prMergeState: "BLOCKED",
+      prReviewDecision: "REVIEW_REQUIRED",
+      secretNames: [],
+      releaseMissing: true,
+    },
+    (fakeGhPath) => {
+      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+
+      assert.equal(result.status, 1);
+      const payload = JSON.parse(result.stdout);
+      assert.equal(payload.repo, "wlsdks/oh-my-ontology");
+      assert.equal(payload.tag, "v0.1.0");
+      assert.equal(payload.pr, "274");
+      assert.equal(payload.ready, false);
+      assert.equal(payload.blockerCount, 3);
+      assert.deepEqual(
+        payload.checks.filter((check) => check.status === "blocked").map((check) => check.label),
+        ["Pull request", "Apple release secrets", "GitHub Release"],
+      );
+      assert.match(
+        payload.checks.find((check) => check.label === "Apple release secrets").next,
+        /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/,
+      );
+      assert.match(result.stderr, /blocked: 3 release requirement/);
+    },
+  );
+});
+
 test("desktop release status reports current completion blockers together", () => {
   withFakeGh(
     {
@@ -175,6 +206,22 @@ test("desktop release status passes when PR, secrets, and stable release are rea
   });
 });
 
+test("desktop release status JSON reports ready when all release gates pass", () => {
+  withFakeGh({}, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+
+    assert.equal(result.status, 0, result.stderr);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.ready, true);
+    assert.equal(payload.blockerCount, 0);
+    assert.deepEqual(
+      payload.checks.map((check) => check.status),
+      ["ok", "ok", "ok", "ok", "ok", "skipped"],
+    );
+    assert.equal(result.stderr, "");
+  });
+});
+
 test("desktop release status keeps Firebase out when GitHub secret listing fails", () => {
   withFakeGh({ secretListFails: true, releaseMissing: true }, (fakeGhPath) => {
     const result = runStatus(fakeGhPath);
@@ -234,6 +281,8 @@ test("desktop release status help describes the completion audit", () => {
   assert.match(stdout, /release completion state/);
   assert.match(stdout, /release tag version alignment/);
   assert.match(stdout, /downloadable\s+DMG\/checksum assets/);
+  assert.match(stdout, /--json/);
+  assert.match(stdout, /machine-readable blocker list/);
   assert.match(stdout, /Firebase Hosting is intentionally excluded/);
   assert.doesNotMatch(stdout, /Hosted website/);
 });

@@ -215,7 +215,9 @@ and public DMG/checksum download
 verification in one fail-closed pass. When PR checks block the release it names
 the failing or pending GitHub check rows and prints the matching `gh pr checks`
 command, so operators do not have to infer the blocker from a count like
-`0/1 checks successful`. Firebase Hosting is not part of the macOS
+`0/1 checks successful`. Add `--json` when a goal runner, CI wrapper, or release
+dashboard needs `ready`, `blockerCount`, and per-check `next` actions without
+parsing human text. Firebase Hosting is not part of the macOS
 app release gate; verify the separate website with `pnpm desktop:verify-hosted`;
 the hosted download page keeps macOS app release blockers aligned with
 review/signing/GitHub Release requirements while naming Firebase Hosting only
@@ -627,6 +629,7 @@ pnpm desktop:verify-release-dmg
 # macOS app completion audit after PR review/merge, Apple secrets, tag workflow,
 # public release publication, and DMG asset verification are expected to be done:
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0
+pnpm desktop:release-status -- --pr=274 --tag=v0.1.0 --json
 ```
 
 For local unsigned smoke, `pnpm desktop:build` is the shortcut for
