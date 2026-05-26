@@ -214,6 +214,10 @@ split tests, native bridge tests, runtime doctor, `cli:mcp-verify` against
 `docs/ontology`, the `dogfood:agent-setup-gate` JSON fallback/performance gate,
 static build, packaged-route smoke, app/DMG build, app launch smoke, DMG
 mount/checksum smoke, and temporary install launch smoke;
+`pnpm desktop:goal-audit -- --pr=<number> --tag=<tag>` chains that full local
+preflight with the full public release/hosted download blocker audit, so a
+single operator command proves both the installed-app artifact path and the
+public download readiness path before a desktop goal is marked done;
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the macOS app
 completion audit after PR/release work: it accepts an already merged PR or
 checks tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
@@ -384,6 +388,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes, then terminate it |
 | `pnpm desktop:verify-install` | Mount the DMG, require the `/Applications` symlink target, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up |
 | `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, agent JSON setup gate, build, route smoke, DMG, and install smoke |
+| `pnpm desktop:goal-audit` | Full desktop goal gate: runs the local release preflight, then `desktop:release-status -- --include-hosted-surface` for PR, signing, GitHub Release, hosted deploy, and download blockers |
 | `pnpm test:desktop:runtime` | Hosted-vs-installed runtime split tests for `/docs?intent=local`, first-run desktop routing, and hosted download routing |
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
 | `pnpm desktop:release-secrets` | Fail closed before tag release when any Apple signing or notarization secret is missing, blank, or structurally invalid |
@@ -644,6 +649,7 @@ For macOS app release candidates, use:
 
 ```bash
 pnpm desktop:release-preflight
+pnpm desktop:goal-audit -- --pr=274 --tag=v0.1.0
 
 # CI-only or local credentialed release signing path:
 pnpm desktop:check

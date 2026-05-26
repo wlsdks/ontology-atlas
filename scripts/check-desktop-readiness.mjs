@@ -446,6 +446,17 @@ if (
 }
 
 if (
+  pkg.scripts?.["desktop:goal-audit"] ===
+  "pnpm desktop:release-preflight && pnpm desktop:release-status -- --include-hosted-surface"
+) {
+  pass("desktop goal audit chains the full local preflight with the public release and hosted download blocker snapshot");
+} else {
+  fail(
+    "package.json must expose desktop:goal-audit as pnpm desktop:release-preflight && pnpm desktop:release-status -- --include-hosted-surface so goal completion proves both local app packaging and public release/download readiness",
+  );
+}
+
+if (
   landingPage.includes("MacosDownloadLink") &&
   downloadPage.includes("MacosDownloadLink") &&
   downloadPage.includes("GITHUB_REPOSITORY_URL") &&

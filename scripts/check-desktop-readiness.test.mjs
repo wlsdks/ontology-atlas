@@ -184,6 +184,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Apple secrets, public release state, download assets, optional hosted deploy workflow, deploy secret, and surface, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies by default/,
   );
+  assert.match(
+    result.stdout,
+    /✓ desktop goal audit chains the full local preflight with the public release and hosted download blocker snapshot/,
+  );
   assert.match(result.stdout, /✓ desktop signing script is available for release builds/);
   assert.match(result.stdout, /✓ desktop notarization script is available for release builds/);
   assert.match(result.stdout, /✓ Tauri CLI alias is available through pnpm tauri/);

@@ -273,7 +273,10 @@ is the local pre-tag command for readiness, docs-vault freshness, desktop
 checker tests, runtime split tests, native bridge tests, runtime doctor, CLI/MCP
 handoff against `docs/ontology`, the agent JSON setup/performance gate, build,
 route smoke, DMG verification, and temporary install smoke before credentials
-are used. The
+are used. `pnpm desktop:goal-audit -- --pr=<number> --tag=<tag>` chains that
+local preflight with the public release/hosted download status audit, giving the
+macOS desktop goal one command that proves both the local artifact path and the
+public install path. The
 post-release completion audit is
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>`: it does not publish
 anything, but it fails closed until tag/package/Tauri/Cargo version alignment,
