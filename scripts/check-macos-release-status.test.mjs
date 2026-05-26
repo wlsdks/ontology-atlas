@@ -430,10 +430,12 @@ test("desktop release status reports current completion blockers together", () =
       );
       assert.match(result.stdout, /actions\/runs\/1\/job\/2/);
       assert.match(result.stdout, /next: Run gh pr checks 274 --repo wlsdks\/oh-my-ontology/);
+      assert.match(result.stdout, /commands \(run in one shell session\):\n    - gh pr checks 274 --repo wlsdks\/oh-my-ontology/);
       assert.match(result.stdout, /✗ Apple release secrets: missing APPLE_CERTIFICATE_P12_BASE64/);
       assert.match(result.stdout, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
       assert.match(result.stdout, /✗ GitHub Release: release not found/);
       assert.match(result.stdout, /release-macos\.yml can publish signed DMGs/);
+      assert.match(result.stdout, /DEFAULT_BRANCH="\$\(gh repo view wlsdks\/oh-my-ontology --json defaultBranchRef --jq \.defaultBranchRef\.name\)"/);
       assert.doesNotMatch(result.stdout, /Firebase Hosting deploy secrets/);
       assert.match(result.stderr, /blocked: 3 release requirement/);
     },

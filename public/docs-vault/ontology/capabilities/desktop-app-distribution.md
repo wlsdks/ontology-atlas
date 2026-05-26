@@ -194,7 +194,8 @@ stable `id` plus `scope` and `owner` (`pull_request`,
 checks) so automation does not branch on human labels. Actionable blockers also
 carry `commands[]` entries for exact diagnostic, setup, pre-tag source-check, or
 post-merge tag-push commands, plus the `desktop:release-run` tag-commit-scoped release-workflow watch and public download
-verification. The post-merge tag commands resolve the repository's current
+verification, and the default terminal output prints those same command groups
+under each blocker. The post-merge tag commands resolve the repository's current
 default branch through `gh repo view ... defaultBranchRef` before `git fetch`,
 `desktop:release-source`, or `git tag`, so the release checklist follows the
 actual tag source branch instead of hardcoding `main`. The Markdown checklist

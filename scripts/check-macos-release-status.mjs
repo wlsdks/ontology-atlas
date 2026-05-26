@@ -723,6 +723,12 @@ function renderAndExit(options, checks) {
     if (check.next) {
       console.log(`  next: ${check.next}`);
     }
+    if (Array.isArray(check.commands) && check.commands.length > 0) {
+      console.log("  commands (run in one shell session):");
+      for (const command of check.commands) {
+        console.log(`    - ${command}`);
+      }
+    }
   }
   if (blockers.length > 0) {
     console.error(`[desktop-release-status] blocked: ${blockers.length} release requirement(s) are not satisfied`);

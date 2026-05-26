@@ -373,7 +373,7 @@ operators do not accidentally watch an unrelated latest workflow run.
 Actionable blockers also carry `commands[]` so reviewers and release operators
 can copy exact diagnostic, secret setup, pre-tag source checks, post-merge
 tag-push, tag-commit-scoped release-workflow watch, and public download verification commands from
-JSON or Markdown without parsing prose. The post-merge tag commands resolve the
+the default terminal output, JSON, or Markdown without parsing prose. The post-merge tag commands resolve the
 repository's current default branch through `gh repo view ... defaultBranchRef`
 before `git fetch`, `desktop:release-source`, or `git tag`, so the release
 handoff keeps following the real default branch if it is renamed. Markdown

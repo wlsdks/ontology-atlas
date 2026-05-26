@@ -247,6 +247,9 @@ does not branch on translated or edited labels. Actionable blockers include
 so follow-up runners can execute known diagnostics, secret
 setup prompts, pre-tag source checks, the post-merge release tag push, release
 workflow watch scoped to the pushed tag commit, and public download verification without parsing prose.
+The default terminal output prints the same command groups under each blocker,
+so an operator running the audit directly does not have to open the JSON or
+Markdown artifact to find the next command.
 The generated post-merge tag commands resolve the repository's current default
 branch through `gh repo view ... defaultBranchRef` before `git fetch`,
 `desktop:release-source`, or `git tag`, so the release handoff does not freeze a
