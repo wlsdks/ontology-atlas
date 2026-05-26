@@ -150,11 +150,12 @@ function ok(id, label, detail) {
   return { id, status: "ok", label, detail };
 }
 
-function blocked(id, label, detail, next, commands = []) {
+function blocked(id, label, detail, next, commands = [], extra = {}) {
   const check = { id, status: "blocked", label, detail, next };
   if (commands.length > 0) {
     check.commands = commands;
   }
+  Object.assign(check, extra);
   return check;
 }
 
@@ -312,6 +313,7 @@ async function main() {
         `missing ${missing.join(", ")}`,
         secretSetHints(options.repo, missing),
         secretSetCommands(options.repo, missing),
+        { missingSecrets: missing },
       ));
     }
   }
@@ -383,6 +385,7 @@ function renderAndExit(options, checks) {
     blockedAt: ready ? null : generatedAt,
     blockerCount: blockers.length,
     blockerIds: blockers.map((check) => check.id),
+    missingSecrets: checks.find((check) => check.id === "apple_release_secrets")?.missingSecrets ?? [],
     nextActions: blockers
       .filter((check) => check.next)
       .map((check) => ({
@@ -458,6 +461,12 @@ function renderMarkdownChecklist(payload) {
         lines.push("  - Commands:");
         for (const command of check.commands) {
           lines.push(`    - \`${command}\``);
+        }
+      }
+      if (Array.isArray(check.missingSecrets) && check.missingSecrets.length > 0) {
+        lines.push("  - Missing secrets:");
+        for (const secret of check.missingSecrets) {
+          lines.push(`    - \`${secret}\``);
         }
       }
     }

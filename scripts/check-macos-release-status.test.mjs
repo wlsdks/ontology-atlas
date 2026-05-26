@@ -121,6 +121,7 @@ test("desktop release status emits machine-readable blockers for automation", ()
       assert.equal(payload.readyAt, null);
       assert.equal(payload.blockedAt, payload.generatedAt);
       assert.equal(payload.blockerCount, 3);
+      assert.deepEqual(payload.missingSecrets, requiredSecrets);
       assert.deepEqual(payload.blockerIds, [
         "pull_request",
         "apple_release_secrets",
@@ -194,6 +195,7 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
         assert.equal(payload.readyAt, null);
         assert.equal(payload.blockedAt, payload.generatedAt);
         assert.equal(payload.blockerCount, 3);
+        assert.deepEqual(payload.missingSecrets, requiredSecrets);
         assert.deepEqual(payload.blockerIds, [
           "pull_request",
           "apple_release_secrets",
@@ -256,6 +258,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /- \[ \] GitHub Release \(`github_release`\)/);
         assert.match(markdown, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
         assert.match(markdown, /  - Commands:\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/oh-my-ontology < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
+        assert.match(markdown, /  - Missing secrets:\n    - `APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /## Checks/);
         assert.match(markdown, /- \[x\] GitHub CLI auth \(`github_cli_auth`\)/);
       } finally {
@@ -332,6 +335,10 @@ test("desktop release status exposes command arrays for actionable blockers", ()
         requiredSecrets.length,
       );
       assert.deepEqual(
+        payload.checks.find((check) => check.id === "apple_release_secrets").missingSecrets,
+        requiredSecrets,
+      );
+      assert.deepEqual(
         payload.nextActions.find((action) => action.id === "github_release").commands,
         [],
       );
@@ -385,6 +392,7 @@ test("desktop release status JSON reports ready when all release gates pass", ()
     assert.equal(payload.readyAt, payload.generatedAt);
     assert.equal(payload.blockedAt, null);
     assert.equal(payload.blockerCount, 0);
+    assert.deepEqual(payload.missingSecrets, []);
     assert.deepEqual(payload.blockerIds, []);
     assert.deepEqual(payload.nextActions, []);
     assert.deepEqual(

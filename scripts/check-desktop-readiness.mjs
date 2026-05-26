@@ -833,6 +833,7 @@ if (
   releaseStatusScript.includes("download_assets") &&
   releaseStatusScript.includes("blockerCount") &&
   releaseStatusScript.includes("blockerIds") &&
+  releaseStatusScript.includes("missingSecrets") &&
   releaseStatusScript.includes("nextActions") &&
   releaseStatusScript.includes("commands") &&
   releaseStatusScript.includes("renderMarkdownChecklist") &&

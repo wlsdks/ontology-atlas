@@ -227,7 +227,8 @@ top-level `blockerIds` and `nextActions` summarize the blocked checks, and each
 check also carries a stable `id` such as `pull_request`,
 `apple_release_secrets`, `github_release`, and `download_assets` so automation
 does not branch on translated or edited labels. Actionable blockers include
-`commands[]` entries, so follow-up runners can execute known-safe diagnostics or
+`commands[]` entries, and Apple signing blockers expose top-level
+`missingSecrets[]`, so follow-up runners can execute known-safe diagnostics or
 secret setup prompts without parsing prose.
 Firebase Hosting is not part of the macOS
 app release gate; verify the separate website with `pnpm desktop:verify-hosted`;
