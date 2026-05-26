@@ -58,11 +58,14 @@ const tauriInfoPlist = readText("src-tauri/Info.plist");
 const verifyDmgScript = readText("scripts/verify-macos-dmg.mjs");
 const verifyAppScript = readText("scripts/verify-macos-app-launch.mjs");
 const verifyInstallScript = readText("scripts/verify-macos-install-smoke.mjs");
+const signMacosScript = readText("scripts/sign-macos-app.mjs");
+const notarizeMacosDmgScript = readText("scripts/notarize-macos-dmg.mjs");
 const releaseSourceScript = readText("scripts/check-macos-release-source.mjs");
 const releaseTagScript = readText("scripts/check-macos-release-tag.mjs");
 const releaseSlotScript = readText("scripts/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
 const releaseStatusScript = readText("scripts/check-macos-release-status.mjs");
+const macosReleaseNamesHelper = readText("scripts/lib/macos-release-names.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/check-hosted-download-surface.mjs");
 const firebaseDeployEnvScript = readText("scripts/check-firebase-hosting-deploy-env.mjs");
 const requiredAppleSecretNames = [
@@ -445,7 +448,7 @@ if (
   featuresDoc.includes("real ontology work happens in the installed app / CLI / MCP") &&
   featuresDoc.includes("Hosted pages do not open or edit local vault folders.") &&
   productDirectionDoc.includes("Context Atlas") &&
-  productDirectionDoc.includes("bundle `productName`") &&
+  productDirectionDoc.includes("The Tauri bundle product name") &&
   productDirectionDoc.includes("CLI · installed macOS app") &&
   productDirectionDoc.includes("hosted website is the product introduction and download entry point") &&
   desktopDoc.includes("Context Atlas") &&
@@ -859,14 +862,22 @@ if (
 }
 
 if (
-  tauriConfig?.productName === "oh-my-ontology" &&
+  tauriConfig?.productName === "Context Atlas" &&
   tauriConfig?.identifier === "dev.jinan.oh-my-ontology" &&
-  tauriConfig?.app?.windows?.some((windowConfig) => windowConfig?.title === "Context Atlas")
+  tauriConfig?.app?.windows?.some((windowConfig) => windowConfig?.title === "Context Atlas") &&
+  macosReleaseNamesHelper.includes("const releaseAssetName = pkg.name") &&
+  verifyDmgScript.includes("releaseAssetName") &&
+  verifyInstallScript.includes("releaseAssetName") &&
+  verifyAppScript.includes("appBundleName") &&
+  verifyAppScript.includes("resolveMacosExecutable") &&
+  verifyInstallScript.includes("resolveMacosExecutable") &&
+  signMacosScript.includes("appBundleName") &&
+  notarizeMacosDmgScript.includes("releaseAssetName")
 ) {
-  pass("Tauri keeps the existing oh-my-ontology release identity while the app window presents Context Atlas");
+  pass("Tauri presents Context Atlas as the app bundle while release scripts keep oh-my-ontology DMG assets");
 } else {
   fail(
-    "src-tauri/tauri.conf.json must keep productName/identifier on oh-my-ontology for release asset compatibility while setting the visible app window title to Context Atlas",
+    "src-tauri/tauri.conf.json must use Context Atlas as the app productName/window title, keep the oh-my-ontology bundle identifier, and route release scripts through appBundleName vs releaseAssetName so GitHub DMG assets stay oh-my-ontology_*",
   );
 }
 

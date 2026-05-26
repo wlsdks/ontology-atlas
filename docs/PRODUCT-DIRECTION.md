@@ -19,8 +19,8 @@ Launch framing (v4, 2026-05-18):
 
 - Product name split (v5, 2026-05-26): **Context Atlas** is the user-facing
   macOS app / website brand. `oh-my-ontology` stays the repository, CLI binary,
-  MCP package, bundle `productName`, and GitHub Release asset identity until a
-  deliberate migration changes those contracts.
+  MCP package, and GitHub Release asset identity. The Tauri bundle product name
+  is `Context Atlas`, while the DMG filenames remain `oh-my-ontology_*`.
 - Primary audience: **developer + their AI agent**. Developer creates / refines nodes (CLI · installed macOS app); AI agent (Claude Code, Codex, Cursor) reads/writes the same vault via MCP to give better codebase answers. The hosted website is the product introduction and download entry point, not the daily writable workbench.
 - Spine = `.md` documents → a growing ontology. Topology / tree / builder are *views* of that spine.
 - PM / designer / ops are **bonus, not target**. If the surface happens to be friendly to them — good. We don't optimize for them.
@@ -222,7 +222,7 @@ execution now depends on Rust / Cargo being installed on the machine. See
 `docs/DESKTOP-MACOS.md`.
 
 2026-05-25 checkpoint: the first local `pnpm desktop:build` produced
-`src-tauri/target/release/bundle/macos/oh-my-ontology.app` and the macOS
+`src-tauri/target/release/bundle/macos/Context Atlas.app` and the macOS
 download artifact
 `src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg` after
 adding the Tauri icon set derived from `public/logo.png` and a repo-owned

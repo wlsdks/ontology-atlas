@@ -3,21 +3,16 @@ import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
 
 const root = process.cwd();
-const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-const tauriConfig = JSON.parse(
-  fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),
-);
-
-const productName = tauriConfig.productName ?? pkg.name;
-const version = tauriConfig.version ?? pkg.version;
-const arch = process.env.TAURI_ARCH ?? (process.arch === "arm64" ? "aarch64" : process.arch);
+const names = loadMacosReleaseNames(root);
+const { appName, appBundleName, releaseAssetName, version, arch } = names;
 const bundleRoot = path.join(root, "src-tauri", "target", "release", "bundle");
-const appPath = path.join(bundleRoot, "macos", `${productName}.app`);
+const appPath = path.join(bundleRoot, "macos", appBundleName);
 const dmgDir = path.join(bundleRoot, "dmg");
 const stagingDir = path.join(dmgDir, ".staging");
-const dmgPath = path.join(dmgDir, `${productName}_${version}_${arch}.dmg`);
+const dmgPath = path.join(dmgDir, `${releaseAssetName}_${version}_${arch}.dmg`);
 const checksumPath = `${dmgPath}.sha256`;
 
 function fail(message) {
@@ -63,14 +58,14 @@ fs.mkdirSync(dmgDir, { recursive: true });
 fs.rmSync(dmgPath, { force: true });
 fs.rmSync(checksumPath, { force: true });
 
-const stagedAppPath = path.join(stagingDir, `${productName}.app`);
+const stagedAppPath = path.join(stagingDir, appBundleName);
 run("ditto", [appPath, stagedAppPath]);
 fs.symlinkSync("/Applications", path.join(stagingDir, "Applications"));
 
 run("hdiutil", [
   "create",
   "-volname",
-  productName,
+  appName,
   "-srcfolder",
   stagingDir,
   "-ov",

@@ -2,14 +2,11 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
 
 const root = process.cwd();
-const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-const tauriConfig = JSON.parse(
-  fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),
-);
-
-const productName = tauriConfig.productName ?? pkg.name;
+const names = loadMacosReleaseNames(root);
+const { appBundleName } = names;
 const appPath =
   process.env.MACOS_APP_PATH ??
   path.join(
@@ -19,7 +16,7 @@ const appPath =
     "release",
     "bundle",
     "macos",
-    `${productName}.app`,
+    appBundleName,
   );
 const signingIdentity = process.env.APPLE_SIGNING_IDENTITY;
 

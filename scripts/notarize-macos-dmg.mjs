@@ -3,16 +3,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
+import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
 
 const root = process.cwd();
-const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-const tauriConfig = JSON.parse(
-  fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),
-);
-
-const productName = tauriConfig.productName ?? pkg.name;
-const version = tauriConfig.version ?? pkg.version;
-const arch = process.env.TAURI_ARCH ?? (process.arch === "arm64" ? "aarch64" : process.arch);
+const names = loadMacosReleaseNames(root);
+const { releaseAssetName, version, arch } = names;
 const dmgPath =
   process.argv.slice(2).find((arg) => !arg.startsWith("-")) ??
   path.join(
@@ -22,7 +17,7 @@ const dmgPath =
     "release",
     "bundle",
     "dmg",
-    `${productName}_${version}_${arch}.dmg`,
+    `${releaseAssetName}_${version}_${arch}.dmg`,
   );
 const checksumPath = `${dmgPath}.sha256`;
 

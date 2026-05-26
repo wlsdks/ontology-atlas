@@ -3,16 +3,11 @@ import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
 
 const root = process.cwd();
-const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-const tauriConfig = JSON.parse(
-  fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),
-);
-
-const productName = tauriConfig.productName ?? pkg.name;
-const version = tauriConfig.version ?? pkg.version;
-const arch = process.env.TAURI_ARCH ?? (process.arch === "arm64" ? "aarch64" : process.arch);
+const names = loadMacosReleaseNames(root);
+const { appBundleName, releaseAssetName, version, arch } = names;
 const requireSigned = process.argv.includes("--require-signed");
 const requireNotarized = process.argv.includes("--require-notarized");
 const dmgPath =
@@ -24,7 +19,7 @@ const dmgPath =
     "release",
     "bundle",
     "dmg",
-    `${productName}_${version}_${arch}.dmg`,
+    `${releaseAssetName}_${version}_${arch}.dmg`,
   );
 const checksumPath = `${dmgPath}.sha256`;
 
@@ -123,10 +118,10 @@ if (!mountDir) {
 let verificationError = null;
 
 try {
-  const appPath = path.join(mountDir, `${productName}.app`);
+  const appPath = path.join(mountDir, appBundleName);
   const applicationsLink = path.join(mountDir, "Applications");
   if (!fs.existsSync(appPath)) {
-    throw new Error(`mounted DMG is missing ${productName}.app`);
+    throw new Error(`mounted DMG is missing ${appBundleName}`);
   }
   if (!fs.lstatSync(applicationsLink).isSymbolicLink()) {
     throw new Error("mounted DMG is missing Applications symlink");

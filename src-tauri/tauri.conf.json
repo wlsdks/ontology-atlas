@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "oh-my-ontology",
+  "productName": "Context Atlas",
   "version": "0.1.0",
   "identifier": "dev.jinan.oh-my-ontology",
   "build": {

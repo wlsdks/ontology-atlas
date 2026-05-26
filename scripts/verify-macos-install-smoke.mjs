@@ -4,16 +4,11 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { loadMacosReleaseNames, resolveMacosExecutable } from "./lib/macos-release-names.mjs";
 
 const root = process.cwd();
-const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-const tauriConfig = JSON.parse(
-  fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),
-);
-
-const productName = tauriConfig.productName ?? pkg.name;
-const version = tauriConfig.version ?? pkg.version;
-const arch = process.env.TAURI_ARCH ?? (process.arch === "arm64" ? "aarch64" : process.arch);
+const names = loadMacosReleaseNames(root);
+const { appBundleName, releaseAssetName, version, arch } = names;
 const holdMsArg = process.argv.find((arg) => arg.startsWith("--hold-ms="));
 const holdMs = holdMsArg ? Number(holdMsArg.slice("--hold-ms=".length)) : 5000;
 const dmgPath =
@@ -25,14 +20,14 @@ const dmgPath =
     "release",
     "bundle",
     "dmg",
-    `${productName}_${version}_${arch}.dmg`,
+    `${releaseAssetName}_${version}_${arch}.dmg`,
   );
 const checksumPath = `${dmgPath}.sha256`;
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:verify-install [path/to/app.dmg] [--hold-ms=5000]
 
-Mounts the DMG read-only, copies ${productName}.app to a temporary install
+Mounts the DMG read-only, copies ${appBundleName} to a temporary install
 directory with ditto, launches that copied app long enough to catch early
 startup crashes, then detaches and removes the temporary install.
 `);
@@ -83,7 +78,7 @@ async function terminate(child) {
 }
 
 async function launchCopiedApp(appPath) {
-  const executablePath = path.join(appPath, "Contents", "MacOS", productName);
+  const executablePath = resolveMacosExecutable(appPath, names);
   if (!fs.existsSync(executablePath)) {
     throw new Error(`copied app is missing executable ${executablePath}`);
   }
@@ -114,7 +109,7 @@ async function launchCopiedApp(appPath) {
   if (earlyExit) {
     throw new Error(
       [
-        `${productName}.app copied from DMG exited before ${holdMs}ms (code=${earlyExit.code}, signal=${earlyExit.signal})`,
+        `${appBundleName} copied from DMG exited before ${holdMs}ms (code=${earlyExit.code}, signal=${earlyExit.signal})`,
         stdout.trim() ? `stdout:\n${stdout.trim()}` : null,
         stderr.trim() ? `stderr:\n${stderr.trim()}` : null,
       ]
@@ -169,13 +164,13 @@ try {
     throw new Error(`could not find mounted volume in hdiutil output:\n${attach.stdout}`);
   }
 
-  const mountedApp = path.join(mountDir, `${productName}.app`);
+  const mountedApp = path.join(mountDir, appBundleName);
   if (!fs.existsSync(mountedApp)) {
-    throw new Error(`mounted DMG is missing ${productName}.app`);
+    throw new Error(`mounted DMG is missing ${appBundleName}`);
   }
 
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "omot-install-smoke-"));
-  const installedApp = path.join(tempDir, `${productName}.app`);
+  const installedApp = path.join(tempDir, appBundleName);
   run("ditto", [mountedApp, installedApp]);
 
   await launchCopiedApp(installedApp);
@@ -199,5 +194,5 @@ if (verificationError) {
 }
 
 console.log(
-  `[desktop-install-verify] copied and launched ${productName}.app from ${dmgPath} for ${holdMs}ms`,
+  `[desktop-install-verify] copied and launched ${appBundleName} from ${dmgPath} for ${holdMs}ms`,
 );

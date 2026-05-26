@@ -77,7 +77,7 @@ checker, doctor, and smoke implementation edits through focused
 `pnpm exec node --test scripts/desktop-smoke.test.mjs` contracts first.
 
 The first local macOS bundle proof now exists: `pnpm desktop:build` produces
-`src-tauri/target/release/bundle/macos/oh-my-ontology.app` and
+`src-tauri/target/release/bundle/macos/Context Atlas.app` and
 `src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg` on macOS
 once the Tauri icon set generated from `public/logo.png` is present under
 `src-tauri/icons/`, with a sibling `.sha256` checksum file. The installed app

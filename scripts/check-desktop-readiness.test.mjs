@@ -121,7 +121,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ hosted download page names first-release gates and can hide the checklist after verified DMGs publish/,
+    /✓ hosted download page separates macOS app release blockers from the Firebase website deploy gate/,
   );
   assert.match(
     result.stdout,

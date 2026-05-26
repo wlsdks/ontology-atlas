@@ -133,7 +133,7 @@ for a macOS prototype:
 - `scripts/verify-macos-app-launch.mjs` launches the built `.app` executable
   long enough to catch early Tauri/WebView startup crashes, then terminates it.
 - `scripts/verify-macos-dmg.mjs` verifies that checksum, runs `hdiutil verify`,
-  mounts the image read-only, and checks for `oh-my-ontology.app` plus the
+  mounts the image read-only, and checks for `Context Atlas.app` plus the
   Applications symlink. Release verification uses
   `pnpm desktop:verify-release-dmg`, which additionally requires strict
   `codesign` verification of the mounted app, a valid stapled notarization
@@ -249,7 +249,7 @@ checks and DMG mounting cannot see without masking source-checkout path
 dependencies through the repo root cwd.
 
 `desktop:verify-install` checks the generated DMG from the user-install angle.
-It mounts the image, copies `oh-my-ontology.app` to a temporary install folder,
+It mounts the image, copies `Context Atlas.app` to a temporary install folder,
 launches that copied app from its own executable directory for the same hold
 window, and cleans up the temp install after detaching the image.
 
@@ -345,7 +345,7 @@ Current local checkpoint (2026-05-26): `pnpm desktop:doctor -- --require-runtime
 `pnpm desktop:smoke`, `pnpm desktop:build`, `pnpm desktop:verify-app`,
 `pnpm desktop:verify-dmg`, and `pnpm desktop:verify-install` all pass locally.
 The unsigned Apple Silicon build produces
-`src-tauri/target/release/bundle/macos/oh-my-ontology.app`,
+`src-tauri/target/release/bundle/macos/Context Atlas.app`,
 `src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg`, and
 `src-tauri/target/release/bundle/dmg/oh-my-ontology_0.1.0_aarch64.dmg.sha256`.
 `.github/workflows/release-macos.yml` builds Apple Silicon (`macos-14`) and

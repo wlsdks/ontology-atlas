@@ -2,14 +2,11 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { loadMacosReleaseNames, resolveMacosExecutable } from "./lib/macos-release-names.mjs";
 
 const root = process.cwd();
-const pkg = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8"));
-const tauriConfig = JSON.parse(
-  fs.readFileSync(path.join(root, "src-tauri", "tauri.conf.json"), "utf8"),
-);
-
-const productName = tauriConfig.productName ?? pkg.name;
+const names = loadMacosReleaseNames(root);
+const { appBundleName } = names;
 const holdMsArg = process.argv.find((arg) => arg.startsWith("--hold-ms="));
 const holdMs = holdMsArg ? Number(holdMsArg.slice("--hold-ms=".length)) : 5000;
 const appPath =
@@ -21,12 +18,12 @@ const appPath =
     "release",
     "bundle",
     "macos",
-    `${productName}.app`,
+    appBundleName,
   );
-const executablePath = path.join(appPath, "Contents", "MacOS", productName);
+const executablePath = resolveMacosExecutable(appPath, names);
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${productName}.app] [--hold-ms=5000]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -103,7 +100,7 @@ await sleep(holdMs);
 if (earlyExit) {
   fail(
     [
-      `${productName}.app exited before ${holdMs}ms (code=${earlyExit.code}, signal=${earlyExit.signal})`,
+      `${appBundleName} exited before ${holdMs}ms (code=${earlyExit.code}, signal=${earlyExit.signal})`,
       stdout.trim() ? `stdout:\n${stdout.trim()}` : null,
       stderr.trim() ? `stderr:\n${stderr.trim()}` : null,
     ]
