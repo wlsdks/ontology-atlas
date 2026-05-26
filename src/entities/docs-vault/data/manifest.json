@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-26T00:17:37.788Z",
+  "generatedAt": "2026-05-26T00:25:10.623Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3525,8 +3525,8 @@
         }
       ],
       "excerpt": "202605 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (Firebase Hosting, Vercel, Netlify, GitHub Pages, S3 + CloudFront, …). The detailed Firebasespecific guide is archived in docs/archive/DEPLOYFIREBASE.md for reference. Th",
-      "wordCount": 430,
-      "updatedAt": "2026-05-26T00:17:16.312Z",
+      "wordCount": 463,
+      "updatedAt": "2026-05-26T00:24:02.972Z",
       "linksOut": [
         "archive/DEPLOY-FIREBASE"
       ]
@@ -3959,8 +3959,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 4838,
-      "updatedAt": "2026-05-26T00:05:56.802Z",
+      "wordCount": 4910,
+      "updatedAt": "2026-05-26T00:24:13.019Z",
       "linksOut": []
     },
     {
@@ -5154,9 +5154,9 @@
           "slug": "firebase-deploy-skill"
         }
       ],
-      "excerpt": ".claude/skills/firebasedeploy/SKILL.md is the agentrunbook for publishing the static promo/download website to Firebase Hosting. It reads local .env.prod identifiers, runs the docs/type/build/bundle gates, deploys with firebase deploy only hosting, and verifies the live web.app URL. The skill explicitly keeps Firebase ",
-      "wordCount": 101,
-      "updatedAt": "2026-05-25T18:36:47.656Z",
+      "excerpt": ".claude/skills/firebasedeploy/SKILL.md is the agentrunbook for publishing the static promo/download website to Firebase Hosting. It reads local .env.prod identifiers, runs the docs/type/build/bundle gates plus pnpm firebase:deploycheck, deploys with firebase deploy only hosting, and verifies the live web.app URL. The s",
+      "wordCount": 127,
+      "updatedAt": "2026-05-26T00:24:29.975Z",
       "linksOut": []
     },
     {

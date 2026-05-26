@@ -32,6 +32,10 @@ does not configure rewrites, Functions, Firestore, Storage, or auth.
 Maintainer deploys should copy `.env.prod.example` to the gitignored
 `.env.prod` first so the Firebase project id and live verification URLs are
 explicit before production Hosting is updated.
+Run `pnpm firebase:deploy-check` before `firebase deploy --only hosting`; it
+fails if `.env.prod` is missing, `.firebaserc` points at another project,
+Firebase config drifts away from static Hosting, or `.env.prod` could be
+committed/uploaded.
 
 Expected public URLs after deploy:
 
@@ -69,6 +73,7 @@ served at `/en/topology/`). Most hosts handle this out of the box.
 pnpm test:run        # unit + component
 pnpm exec tsc --noEmit
 pnpm lint
+pnpm firebase:deploy-check
 pnpm bundle:check    # local-first chunk leak guard
 pnpm build
 ```

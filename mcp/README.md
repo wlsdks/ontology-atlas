@@ -513,7 +513,7 @@ A successful run looks like this:
 ✓ list_concepts — vault total 50 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 20 evidence results for "project"
+✓ find_evidence — 21 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 49 total query results (limited true)

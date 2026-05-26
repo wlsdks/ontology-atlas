@@ -25,6 +25,7 @@ For user-facing UI changes, add the relevant Playwright route check.
 | App/type safety | `pnpm exec tsc --noEmit` | `pnpm build` |
 | Lint/style | `pnpm lint` | `pnpm test:run` |
 | Static deploy safety | `pnpm build` | `pnpm bundle:check` |
+| Firebase Hosting deploy | `pnpm firebase:deploy-check` | `pnpm desktop:verify-hosted` after deploy |
 | Static dogfood manifest | `pnpm docs-vault:check` | `pnpm test:docs-vault` |
 | macOS desktop readiness | `pnpm desktop:check` | `pnpm desktop:doctor`, then `pnpm test:desktop:check` / `pnpm test:desktop:bridge` |
 | Vault integrity | `pnpm vault:validate` | `pnpm vault:audit` |
@@ -42,6 +43,11 @@ the tracked `.mcp.json`, `.mcp.json.example`, and `.codex/config.toml`
 source-checkout templates so local agent registration keeps pointing at
 `node ./mcp/src/index.js` with `OMOT_VAULT=./docs/ontology`. Use
 `pnpm test:mcp:registration` when only those MCP registration templates changed.
+For production Firebase Hosting, `pnpm firebase:deploy-check` is the local
+deploy preflight: it requires `.env.prod`, verifies `.firebaserc` matches
+`FIREBASE_PROJECT_ID`, keeps `firebase.json` static Hosting-only, and confirms
+`.env.prod` is excluded from both git and Firebase deploy packaging before
+`firebase deploy --only hosting`.
 
 ## Vault Checks
 
@@ -297,6 +303,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 |---|---|
 | `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget |
 | `pnpm bundle:check` | Local-first static export bundle guard; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
+| `pnpm firebase:deploy-check` | Firebase Hosting deploy preflight for `.env.prod`, project-id alignment, static-only Hosting config, and deploy credential ignores |
 | `pnpm desktop:check` | macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files |
 | `pnpm desktop:doctor` | Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, and Xcode command line tools |
 | `pnpm desktop:smoke` | Built `out/` payload smoke for the packaged root app entry, locale routes, `_next` assets, and offline desktop docs before launching or bundling the `.app` / `.dmg` |

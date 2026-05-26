@@ -61,6 +61,7 @@ const releaseSlotScript = readText("scripts/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
 const releaseStatusScript = readText("scripts/check-macos-release-status.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/check-hosted-download-surface.mjs");
+const firebaseDeployEnvScript = readText("scripts/check-firebase-hosting-deploy-env.mjs");
 const requiredAppleSecretNames = [
   "APPLE_CERTIFICATE_P12_BASE64",
   "APPLE_CERTIFICATE_PASSWORD",
@@ -284,6 +285,22 @@ if (
 } else {
   fail(
     "package.json must expose desktop:verify-hosted, test:desktop:check must cover it, and scripts/check-hosted-download-surface.mjs must reject stale browser-vault CTAs while requiring the hosted /ko/download/ route",
+  );
+}
+
+if (
+  pkg.scripts?.["firebase:deploy-check"] ===
+  "node scripts/check-firebase-hosting-deploy-env.mjs" &&
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-firebase-hosting-deploy-env.test.mjs") &&
+  firebaseDeployEnvScript.includes(".env.prod is missing") &&
+  firebaseDeployEnvScript.includes("FIREBASE_PROJECT_ID") &&
+  firebaseDeployEnvScript.includes("Hosting-only") &&
+  firebaseDeployEnvScript.includes(".firebaseignore")
+) {
+  pass("Firebase Hosting deploy preflight checks env, project alignment, static-only config, and credential ignores");
+} else {
+  fail(
+    "package.json must expose firebase:deploy-check, test:desktop:check must cover it, and scripts/check-firebase-hosting-deploy-env.mjs must validate .env.prod, project alignment, static-only Hosting config, and credential ignores",
   );
 }
 

@@ -605,6 +605,7 @@ describe('package contract helpers', () => {
     const firebaserc = JSON.parse(readFileSync('.firebaserc', 'utf-8'));
     const firebaseIgnore = readFileSync('.firebaseignore', 'utf-8');
     const gitignore = readFileSync('.gitignore', 'utf-8');
+    const pkg = JSON.parse(readFileSync('package.json', 'utf-8'));
     const deployment = readFileSync('docs/DEPLOYMENT.md', 'utf-8');
     const skill = readFileSync('.claude/skills/firebase-deploy/SKILL.md', 'utf-8');
     const capability = readFileSync('docs/ontology/capabilities/firebase-deploy-skill.md', 'utf-8');
@@ -628,7 +629,7 @@ describe('package contract helpers', () => {
     assert.equal(Object.hasOwn(firebaseConfig.hosting ?? {}, 'frameworksBackend'), false);
     assert.equal(firebaserc.projects?.default, 'oh-my-ontology');
 
-    for (const entry of ['node_modules/', '.next/', 'out/', '.git/', '.local-credentials/', '*.log']) {
+    for (const entry of ['node_modules/', '.next/', 'out/', '.git/', '.env.prod', '.local-credentials/', '*.log']) {
       assert.match(firebaseIgnore, new RegExp(`^${regexEscape(entry)}$`, 'm'));
     }
     for (const entry of ['.env.prod', '.firebase/', '.local-credentials/']) {
@@ -636,10 +637,14 @@ describe('package contract helpers', () => {
     }
 
     assert.match(deployment, /does not configure rewrites, Functions, Firestore, Storage, or auth/);
+    assert.match(deployment, /pnpm firebase:deploy-check/);
     assert.match(skill, /firebase deploy --only hosting/);
+    assert.match(skill, /pnpm firebase:deploy-check/);
     assert.match(skill, /no Functions, Firestore, Storage, Auth, emulators, or server runtime/);
     assert.match(skill, /pnpm test:mcp:docs/);
+    assert.equal(pkg.scripts?.['firebase:deploy-check'], 'node scripts/check-firebase-hosting-deploy-env.mjs');
     assert.match(capability, /static host only/);
+    assert.match(capability, /pnpm firebase:deploy-check/);
     assert.match(capability, /Functions, Firestore, Storage, Auth, or committed credentials/);
   });
 

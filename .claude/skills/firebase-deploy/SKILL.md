@@ -34,6 +34,7 @@ set -a; source .env.prod; set +a
 test -n "$FIREBASE_PROJECT_ID"
 test -n "$FIREBASE_HOSTING_URL"
 pnpm test:mcp:docs
+pnpm firebase:deploy-check
 pnpm exec tsc --noEmit
 pnpm build
 pnpm bundle:check
@@ -46,6 +47,10 @@ firebase deploy --only hosting
 `pnpm test:mcp:docs` is part of this deploy path because it fails if
 `firebase.json` stops being static Hosting-only or if local deploy credentials
 stop being ignored.
+`pnpm firebase:deploy-check` is the local deploy preflight: it parses
+`.env.prod`, checks that `.firebaserc` points at the same project, confirms
+`firebase.json` is still Hosting-only, and refuses to continue if `.env.prod`
+could be committed or uploaded.
 
 If `firebase` is not installed, use `npx firebase-tools` for `use` and
 `deploy`, but keep the same arguments. If Firebase login is missing, run
@@ -61,6 +66,8 @@ Deployment is complete only when all are true:
 - `/sitemap.xml` returns `HTTP 200`.
 - `pnpm test:mcp:docs` proves Firebase config is Hosting-only and local deploy
   credentials remain ignored.
+- `pnpm firebase:deploy-check` proves `.env.prod`, `.firebaserc`,
+  `firebase.json`, `.gitignore`, and `.firebaseignore` agree before deploy.
 - `pnpm bundle:check` still reports Firebase SDK chunk `0`.
 
 For UI-sensitive landing changes, also run a short Playwright check against
