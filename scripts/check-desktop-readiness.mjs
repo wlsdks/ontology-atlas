@@ -201,10 +201,10 @@ if (firebaseDependencyMatches.length === 0) {
   );
 }
 
-if (pkg.scripts?.["cli:mcp-verify"]) {
+if (pkg.scripts?.["cli:mcp-verify"] && pkg.scripts?.["dogfood:agent-setup-gate"]) {
   pass("CLI/MCP setup gate is available for desktop handoff verification");
 } else {
-  fail("package.json must expose cli:mcp-verify for desktop handoff verification");
+  fail("package.json must expose cli:mcp-verify and dogfood:agent-setup-gate for desktop handoff verification");
 }
 
 if (pkg.scripts?.["desktop:doctor"] === "node scripts/desktop-doctor.mjs") {
@@ -423,12 +423,12 @@ if (
 
 if (
   pkg.scripts?.["desktop:release-preflight"] ===
-  "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:verify-app && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
+  "pnpm desktop:check && pnpm docs-vault:check && pnpm test:desktop:check && pnpm test:desktop:runtime && pnpm test:desktop:bridge && pnpm desktop:doctor -- --require-runtime && pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 && pnpm dogfood:agent-setup-gate && pnpm build && pnpm desktop:smoke && pnpm desktop:build && pnpm desktop:verify-app && pnpm desktop:verify-dmg && pnpm desktop:verify-install"
 ) {
-  pass("desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, build, route smoke, DMG, and install smoke");
+  pass("desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, DMG, and install smoke");
 } else {
   fail(
-    "package.json must expose desktop:release-preflight as the local pre-tag macOS release gate, including cli:mcp-verify against docs/ontology before building",
+    "package.json must expose desktop:release-preflight as the local pre-tag macOS release gate, including cli:mcp-verify and dogfood:agent-setup-gate against docs/ontology before building",
   );
 }
 

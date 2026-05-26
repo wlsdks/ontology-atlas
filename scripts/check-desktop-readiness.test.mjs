@@ -97,7 +97,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, build, route smoke, DMG, and install smoke/,
+    /✓ desktop local release preflight runs readiness, tests, runtime doctor, MCP handoff, agent JSON setup gate, build, route smoke, DMG, and install smoke/,
   );
   assert.match(
     result.stdout,
@@ -230,7 +230,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop local vault picker exposes recent vault recall, stale-path cleanup, and vault-local agent config validation/,
+    /✓ desktop local vault picker exposes recent vault recall, stale-path cleanup, hosted\/runtime filtering, and vault-local agent config validation/,
   );
   assert.match(
     result.stdout,

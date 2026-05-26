@@ -208,8 +208,9 @@ for a macOS prototype:
 - `pnpm desktop:release-preflight` is the local operator shortcut before a
   public tag: it runs readiness checks, docs-vault freshness, desktop checker
   tests, native bridge tests, runtime doctor, `cli:mcp-verify` against the
-  dogfood vault, static build, packaged-route smoke, app/DMG build, app launch
-  smoke, DMG mount/checksum smoke, and temporary install launch smoke.
+  dogfood vault, the `dogfood:agent-setup-gate` JSON fallback/performance gate,
+  static build, packaged-route smoke, app/DMG build, app launch smoke, DMG
+  mount/checksum smoke, and temporary install launch smoke.
 - In the Tauri app, the local vault tools panel shows the selected absolute
   vault path, lets the user copy it, and opens the folder in Finder, so local
   data location is visible instead of hidden behind a folder nickname.
@@ -237,7 +238,8 @@ for a macOS prototype:
 
 `desktop:doctor` checks the local machine runtime and the local ontology handoff
 surface: Tauri CLI, Cargo, rustc, macOS Xcode command line tools, the dogfood
-`docs/ontology` vault, the `cli:mcp-verify` setup gate, and offline desktop docs.
+`docs/ontology` vault, the `cli:mcp-verify` setup gate, the
+`dogfood:agent-setup-gate` JSON gate, and offline desktop docs.
 It exits successfully as a report by default, and
 `pnpm desktop:doctor -- --require-runtime` can be used in a local build session
 when missing prerequisites should fail fast.
@@ -352,6 +354,7 @@ instead of surfacing a raw GitHub API 404.
 
 Current local checkpoint (2026-05-26): `pnpm desktop:doctor -- --require-runtime`,
 `pnpm test:desktop:bridge`, `pnpm cli:mcp-verify docs/ontology --timeout-ms 15000`,
+`pnpm dogfood:agent-setup-gate`,
 `pnpm desktop:smoke`, `pnpm desktop:build`, `pnpm desktop:verify-app`,
 `pnpm desktop:verify-dmg`, and `pnpm desktop:verify-install` all pass locally.
 The unsigned Apple Silicon build produces

@@ -54,7 +54,7 @@ export function evaluateDesktopDoctor({
     checks,
     nextAction:
       requiredFailures[0]?.installHint ??
-      "Run pnpm desktop:build, smoke /docs, /ontology, /topology, and /ontology/edit, then run pnpm cli:mcp-verify docs/ontology --timeout-ms 15000.",
+      "Run pnpm desktop:build, smoke /docs, /ontology, /topology, and /ontology/edit, then run pnpm cli:mcp-verify docs/ontology --timeout-ms 15000 and pnpm dogfood:agent-setup-gate.",
   };
 }
 
@@ -78,6 +78,13 @@ function evaluateLocalOntologyChecks(root) {
       ok: Boolean(pkg.scripts?.["cli:mcp-verify"]),
       output: "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
       installHint: "Restore package.json script cli:mcp-verify before desktop handoff smoke.",
+    }),
+    evaluateStaticCheck({
+      id: "agent-setup-gate",
+      label: "Agent setup JSON gate",
+      ok: Boolean(pkg.scripts?.["dogfood:agent-setup-gate"]),
+      output: "pnpm dogfood:agent-setup-gate",
+      installHint: "Restore package.json script dogfood:agent-setup-gate before desktop handoff smoke.",
     }),
     evaluateStaticCheck({
       id: "desktop-docs",

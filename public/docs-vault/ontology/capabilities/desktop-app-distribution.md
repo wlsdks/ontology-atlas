@@ -166,9 +166,9 @@ verification, tag/package/Tauri/Cargo version alignment, or hosted-site
 deployment are still blocked.
 `pnpm desktop:release-preflight` is the local pre-tag gate for readiness,
 docs-vault freshness, desktop checker tests, runtime split tests, native bridge
-tests, runtime doctor, `cli:mcp-verify docs/ontology --timeout-ms 15000`, build,
-route smoke, DMG verification, and temporary install launch smoke before signing
-credentials enter the path.
+tests, runtime doctor, `cli:mcp-verify docs/ontology --timeout-ms 15000`,
+`dogfood:agent-setup-gate`, build, route smoke, DMG verification, and temporary
+install launch smoke before signing credentials enter the path.
 The hosted web surface now moves toward product introduction and macOS
 distribution: the landing/download primary CTAs open the GitHub Releases page
 instead of depending on `/releases/latest` before a public macOS DMG exists. The

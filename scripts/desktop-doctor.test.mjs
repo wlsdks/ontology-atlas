@@ -15,6 +15,7 @@ function makeDoctorRoot() {
     JSON.stringify({
       scripts: {
         "cli:mcp-verify": "node cli/src/index.mjs mcp-verify docs/ontology --timeout-ms 15000",
+        "dogfood:agent-setup-gate": "node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       },
     }),
   );
@@ -40,7 +41,7 @@ test("desktop doctor reports ready when required desktop tools are present", () 
   });
 
   assert.equal(report.status, "ready");
-  assert.equal(report.checks.filter((check) => check.status === "ok").length, 7);
+  assert.equal(report.checks.filter((check) => check.status === "ok").length, 8);
   assert.equal(
     report.checks.find((check) => check.id === "dogfood-vault")?.status,
     "ok",
@@ -49,8 +50,13 @@ test("desktop doctor reports ready when required desktop tools are present", () 
     report.checks.find((check) => check.id === "cli-mcp-verify")?.output,
     "pnpm cli:mcp-verify docs/ontology --timeout-ms 15000",
   );
+  assert.equal(
+    report.checks.find((check) => check.id === "agent-setup-gate")?.output,
+    "pnpm dogfood:agent-setup-gate",
+  );
   assert.match(report.nextAction, /pnpm desktop:build/);
   assert.match(report.nextAction, /pnpm cli:mcp-verify docs\/ontology/);
+  assert.match(report.nextAction, /pnpm dogfood:agent-setup-gate/);
 });
 
 test("desktop doctor reports missing Cargo as a build blocker", () => {
@@ -100,6 +106,10 @@ test("desktop doctor blocks when local ontology handoff files are missing", () =
   );
   assert.equal(
     report.checks.find((check) => check.id === "cli-mcp-verify")?.status,
+    "missing",
+  );
+  assert.equal(
+    report.checks.find((check) => check.id === "agent-setup-gate")?.status,
     "missing",
   );
   assert.match(report.nextAction, /docs\/ontology/);

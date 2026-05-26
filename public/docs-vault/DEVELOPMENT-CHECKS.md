@@ -204,8 +204,9 @@ directory, and removes the temp install;
 `pnpm desktop:release-preflight` is the local pre-tag operator shortcut that
 runs desktop readiness, docs-vault freshness, desktop checker tests, runtime
 split tests, native bridge tests, runtime doctor, `cli:mcp-verify` against
-`docs/ontology`, static build, packaged-route smoke, app/DMG build, app launch smoke,
-DMG mount/checksum smoke, and temporary install launch smoke;
+`docs/ontology`, the `dogfood:agent-setup-gate` JSON fallback/performance gate,
+static build, packaged-route smoke, app/DMG build, app launch smoke, DMG
+mount/checksum smoke, and temporary install launch smoke;
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the macOS app
 completion audit after PR/release work: it accepts an already merged PR or
 checks tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
@@ -333,12 +334,12 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm bundle:check` | Local-first static export bundle guard for the landing, download, docs, ontology, topology, and projects routes; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
 | `pnpm firebase:deploy-check` | Firebase Hosting deploy preflight for `.env.prod`, project-id alignment, static-only Hosting config, and deploy credential ignores |
 | `pnpm desktop:check` | macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files |
-| `pnpm desktop:doctor` | Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, and Xcode command line tools |
+| `pnpm desktop:doctor` | Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, Xcode command line tools, and CLI/MCP agent setup gates |
 | `pnpm desktop:smoke` | Built `out/` payload smoke for the packaged root app entry, locale routes, `_next` assets, and offline desktop docs before launching or bundling the `.app` / `.dmg` |
 | `pnpm desktop:build:app` | Build the Tauri `.app` before optional release signing or local DMG packaging |
 | `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes, then terminate it |
 | `pnpm desktop:verify-install` | Mount the DMG, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up |
-| `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, build, route smoke, DMG, and install smoke |
+| `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, agent JSON setup gate, build, route smoke, DMG, and install smoke |
 | `pnpm test:desktop:runtime` | Hosted-vs-installed runtime split tests for `/docs?intent=local`, first-run desktop routing, and hosted download routing |
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
 | `pnpm desktop:release-secrets` | Fail closed before tag release when any Apple signing or notarization secret is missing, blank, or structurally invalid |
