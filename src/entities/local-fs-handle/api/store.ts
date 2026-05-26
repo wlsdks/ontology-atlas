@@ -25,8 +25,13 @@ function recordKey(id: string): string {
   return `${KEY_PREFIX}${id}`;
 }
 
-function normalizeStoredRecord(record: LocalFsHandleRecord): LocalFsHandleRecord {
-  if (record.desktopRootPath && isTauriVaultRuntime()) {
+function canUseStoredRecord(record: LocalFsHandleRecord): boolean {
+  return !record.desktopRootPath || isTauriVaultRuntime();
+}
+
+function normalizeStoredRecord(record: LocalFsHandleRecord): LocalFsHandleRecord | undefined {
+  if (!canUseStoredRecord(record)) return undefined;
+  if (record.desktopRootPath) {
     return {
       ...record,
       handle: createTauriVaultHandle(record.desktopRootPath),
@@ -136,6 +141,7 @@ export async function listRecentLocalFsHandles(): Promise<LocalFsHandleRecord[]>
   const records = (await idbGet<LocalFsHandleRecord[]>(RECENT_KEY)) ?? [];
   return records
     .map(normalizeStoredRecord)
+    .filter((record): record is LocalFsHandleRecord => Boolean(record))
     .sort((a, b) => b.lastAccessedAt - a.lastAccessedAt)
     .slice(0, MAX_RECENT_HANDLES);
 }

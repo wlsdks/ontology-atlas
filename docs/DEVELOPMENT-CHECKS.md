@@ -277,7 +277,10 @@ locks the handle shim against the command names and relative-path behavior used
 by those flows. `VaultToolsMenu` and `LocalVaultPicker` keep the Tauri absolute
 vault path visible, copyable, and openable in Finder for local data location
 proof, and the picker exposes recently opened desktop vaults from persisted
-Tauri paths so close/reopen does not require another Finder selection.
+Tauri paths so close/reopen does not require another Finder selection. The
+handle store filters those Tauri path records outside the Tauri runtime, so a
+hosted browser session cannot resurrect installed-app vault paths as writable
+local state.
 `next.config.ts` is static-export source-of-truth; changes route to
 `pnpm desktop:check`, `pnpm exec tsc --noEmit`, `pnpm build`, and then
 `pnpm bundle:check`.

@@ -1138,6 +1138,9 @@ if (
 if (
   localFsHandleStore.includes("listRecentLocalFsHandles") &&
   localFsHandleStore.includes("forgetRecentLocalFsHandle") &&
+  localFsHandleStore.includes("canUseStoredRecord") &&
+  localFsHandleStore.includes("!record.desktopRootPath || isTauriVaultRuntime()") &&
+  localFsHandleStore.includes(".filter((record): record is LocalFsHandleRecord => Boolean(record))") &&
   localVaultHook.includes("recentVaults") &&
   localVaultHook.includes("mcpJsonValid: looksLikeOmotMcpJson(mcpJsonText, { expectedVault: '.' })") &&
   localVaultHook.includes("codexConfigValid: looksLikeOmotCodexToml(codexConfigText, { expectedVault: '.' })") &&
@@ -1147,10 +1150,10 @@ if (
   localVaultPicker.includes("recentOpenAriaLabel") &&
   localVaultPicker.includes("recentForgetAriaLabel")
 ) {
-  pass("desktop local vault picker exposes recent vault recall, stale-path cleanup, and vault-local agent config validation");
+  pass("desktop local vault picker exposes recent vault recall, stale-path cleanup, hosted/runtime filtering, and vault-local agent config validation");
 } else {
   fail(
-    "desktop local vault picker must expose recent vault recall, stale-path cleanup, and reject stale vault-local agent configs that do not use OMOT_VAULT=.",
+    "desktop local vault picker must expose recent vault recall, stale-path cleanup, hide Tauri desktop path records outside the Tauri runtime, and reject stale vault-local agent configs that do not use OMOT_VAULT=.",
   );
 }
 

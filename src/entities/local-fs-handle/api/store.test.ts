@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const memory = new Map<string, unknown>();
+const tauriApiMock = vi.hoisted(() => ({
+  runtimeAvailable: false,
+  invoke: vi.fn(),
+}));
 
 vi.mock('@/shared/lib/idb-kv', () => ({
   idbGet: vi.fn(async (key: string) => memory.get(key)),
@@ -10,6 +14,11 @@ vi.mock('@/shared/lib/idb-kv', () => ({
   idbDel: vi.fn(async (key: string) => {
     memory.delete(key);
   }),
+}));
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: tauriApiMock.invoke,
+  isTauri: () => tauriApiMock.runtimeAvailable,
 }));
 
 import {
@@ -29,9 +38,13 @@ function fakeHandle(name: string): FileSystemDirectoryHandle {
 
 beforeEach(() => {
   memory.clear();
+  tauriApiMock.runtimeAvailable = false;
+  tauriApiMock.invoke.mockReset();
 });
 afterEach(() => {
   memory.clear();
+  tauriApiMock.runtimeAvailable = false;
+  tauriApiMock.invoke.mockReset();
 });
 
 describe('local-fs-handle store', () => {
@@ -157,7 +170,6 @@ describe('local-fs-handle store', () => {
     const first: LocalFsHandleRecord = {
       id: 'current',
       handle: fakeHandle('Current'),
-      desktopRootPath: '/Users/jinan/vaults/current',
       name: 'Current',
       createdAt: 1,
       lastAccessedAt: 1,
@@ -165,7 +177,6 @@ describe('local-fs-handle store', () => {
     const second: LocalFsHandleRecord = {
       id: 'archive',
       handle: fakeHandle('Archive'),
-      desktopRootPath: '/Users/jinan/vaults/archive',
       name: 'Archive',
       createdAt: 2,
       lastAccessedAt: 2,
@@ -175,7 +186,6 @@ describe('local-fs-handle store', () => {
     await putLocalFsHandle(second);
     await forgetRecentLocalFsHandle({
       ...first,
-      id: 'different-current-id',
       handle: fakeHandle('Current'),
     });
 
@@ -183,5 +193,48 @@ describe('local-fs-handle store', () => {
       'Archive',
     ]);
     expect((await getLocalFsHandle('current'))?.name).toBe('Current');
+  });
+
+  it('브라우저 런타임에서는 Tauri desktop path record 를 복원하지 않는다', async () => {
+    await putLocalFsHandle({
+      id: CURRENT_LOCAL_FS_HANDLE_ID,
+      handle: fakeHandle('Desktop Vault'),
+      desktopRootPath: '/Users/jinan/vaults/desktop',
+      name: 'Desktop Vault',
+      createdAt: 1,
+      lastAccessedAt: 1,
+    });
+    await putLocalFsHandle({
+      id: 'browser',
+      handle: fakeHandle('Browser Vault'),
+      name: 'Browser Vault',
+      createdAt: 2,
+      lastAccessedAt: 2,
+    });
+
+    expect(await getLocalFsHandle()).toBeUndefined();
+    expect((await listRecentLocalFsHandles()).map((record) => record.name)).toEqual([
+      'Browser Vault',
+    ]);
+  });
+
+  it('Tauri 런타임에서는 저장된 desktop path record 를 handle shim 으로 복원한다', async () => {
+    tauriApiMock.runtimeAvailable = true;
+    await putLocalFsHandle({
+      id: CURRENT_LOCAL_FS_HANDLE_ID,
+      handle: fakeHandle('Desktop Vault'),
+      desktopRootPath: '/Users/jinan/vaults/desktop',
+      name: 'Desktop Vault',
+      createdAt: 1,
+      lastAccessedAt: 1,
+    });
+
+    const restored = await getLocalFsHandle();
+    const recent = await listRecentLocalFsHandles();
+
+    expect(restored?.name).toBe('Desktop Vault');
+    expect(restored?.handle.name).toBe('desktop');
+    expect(recent.map((record) => record.name)).toEqual(['Desktop Vault']);
+    expect(recent[0].handle.name).toBe('desktop');
   });
 });

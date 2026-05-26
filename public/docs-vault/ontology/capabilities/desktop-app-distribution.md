@@ -183,7 +183,9 @@ Once verified public DMGs are published and the hosted download route is live,
 `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0` hides that pre-release checklist on the next hosted rebuild without a code change.
 Hosted `/docs` sessions also keep local vault work disabled: `?intent=local`
 only opens the picker in the Tauri runtime, while browser users are sent back to
-the macOS download path for writable local work.
+the macOS download path for writable local work. The handle store also filters
+persisted Tauri path records outside the Tauri runtime, so installed-app recents
+cannot leak into the hosted browser as writable vault state.
 
 This keeps the desktop app aligned with the core ontology definition: the
 frontmatter graph remains the source of truth, the CLI/MCP graph engine remains

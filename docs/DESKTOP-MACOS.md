@@ -25,6 +25,8 @@ Use Tauri first for the prototype. The repository now includes the first
   user back through Finder every time.
 - Recent desktop vaults can also be removed from the picker, so stale paths from
   moved or deleted folders do not trap the user in a broken first-run loop.
+- Stored Tauri vault paths are ignored outside the Tauri runtime, so the hosted
+  website cannot revive installed-app recents as writable browser vault state.
 - The local vault, CLI graph engine, and MCP setup gates remain the authority.
 - Electron stays a fallback if a later slice needs bundled Node.js behavior.
 
