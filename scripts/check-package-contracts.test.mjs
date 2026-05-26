@@ -1953,6 +1953,14 @@ describe('package contract helpers', () => {
     assert.match(prTemplate, /If `scripts\/validate-vault\.mjs`, vault validation docs, or CI validation gates changed: `pnpm test:vault:validate`/);
     assert.match(prTemplate, /If `scripts\/audit-vault-paths\.mjs`, dogfood path audit docs, or CI audit gates changed: `pnpm test:vault:audit`/);
     assert.match(prTemplate, /If `docs\/`, `public\/docs-vault\/`, or static dogfood manifest behavior changed: `pnpm docs-vault:check`/);
+    assert.match(prTemplate, /If macOS desktop release, app-brand, release asset, or Tauri packaging changed: `pnpm desktop:check`/);
+    assert.match(prTemplate, /If hosted-vs-installed runtime routing changed: `pnpm test:desktop:runtime`/);
+    assert.match(prTemplate, /If Tauri native vault bridge changed: `pnpm test:desktop:bridge`/);
+    assert.match(prTemplate, /If macOS release scripts\/workflows changed: `pnpm test:desktop:check`/);
+    assert.match(prTemplate, /If Firebase Hosting config\/deploy workflow changed: `node --test scripts\/check-firebase-hosting-deploy-env\.test\.mjs`/);
+    assert.match(prTemplate, /Root package stays Firebase SDK\/Admin\/CLI-free; Firebase is Hosting-only and separate from macOS app release/);
+    assert.match(prTemplate, /Context Atlas remains the user-facing app\/web brand; `oh-my-ontology` remains repo\/CLI\/MCP\/release asset identity/);
+    assert.doesNotMatch(prTemplate, /cloud-mode-only path/);
   });
 
   it('keeps CLAUDE.md a thin AGENTS wrapper', () => {
