@@ -285,7 +285,8 @@ audit result. The snapshot carries `schemaVersion` and `generatedAt` so saved
 release evidence has a stable contract and timestamp; `status`, `readyAt`, and
 `blockedAt` make saved snapshots filterable by outcome, and each check carries a
 stable machine id with top-level `blockerIds` / `nextActions` so automation can
-branch without scraping human labels. Firebase
+branch without scraping human labels; actionable blockers also expose
+`commands[]` for exact diagnostics or setup prompts. Firebase
 Hosting remains a separate website
 deployment check, not a macOS app release dependency. This is
 evidence for goal completion, not a substitute for publishing signed/notarized

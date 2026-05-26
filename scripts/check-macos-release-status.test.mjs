@@ -131,6 +131,14 @@ test("desktop release status emits machine-readable blockers for automation", ()
         ["pull_request", "apple_release_secrets", "github_release"],
       );
       assert.deepEqual(
+        payload.nextActions.find((action) => action.id === "pull_request").commands,
+        [],
+      );
+      assert.deepEqual(
+        payload.nextActions.find((action) => action.id === "apple_release_secrets").commands.at(-1),
+        "gh secret set APPLE_TEAM_ID --repo wlsdks/oh-my-ontology < /path/to/APPLE_TEAM_ID",
+      );
+      assert.deepEqual(
         payload.checks.map((check) => check.id),
         [
           "github_cli_auth",
@@ -195,6 +203,10 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
           payload.nextActions.map((action) => action.id),
           ["pull_request", "apple_release_secrets", "github_release"],
         );
+        assert.equal(
+          payload.nextActions.find((action) => action.id === "apple_release_secrets").commands.length,
+          requiredSecrets.length,
+        );
         assert.deepEqual(
           payload.checks.filter((check) => check.status === "blocked").map((check) => check.id),
           ["pull_request", "apple_release_secrets", "github_release"],
@@ -243,6 +255,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /- \[ \] Apple release secrets \(`apple_release_secrets`\)/);
         assert.match(markdown, /- \[ \] GitHub Release \(`github_release`\)/);
         assert.match(markdown, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
+        assert.match(markdown, /  - Commands:\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/oh-my-ontology < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /## Checks/);
         assert.match(markdown, /- \[x\] GitHub CLI auth \(`github_cli_auth`\)/);
       } finally {
@@ -292,6 +305,36 @@ test("desktop release status reports current completion blockers together", () =
       assert.match(result.stdout, /release-macos\.yml can publish signed DMGs/);
       assert.doesNotMatch(result.stdout, /Firebase Hosting deploy secrets/);
       assert.match(result.stderr, /blocked: 3 release requirement/);
+    },
+  );
+});
+
+test("desktop release status exposes command arrays for actionable blockers", () => {
+  withFakeGh(
+    {
+      prMergeState: "BLOCKED",
+      prReviewDecision: "REVIEW_REQUIRED",
+      prChecks: [{ name: "build", status: "IN_PROGRESS", conclusion: null }],
+      secretNames: [],
+      releaseMissing: true,
+    },
+    (fakeGhPath) => {
+      const result = runStatus(fakeGhPath, ["--tag=v0.1.0", "--pr=274", "--json"]);
+
+      assert.equal(result.status, 1);
+      const payload = JSON.parse(result.stdout);
+      assert.deepEqual(
+        payload.nextActions.find((action) => action.id === "pull_request").commands,
+        ["gh pr checks 274 --repo wlsdks/oh-my-ontology"],
+      );
+      assert.equal(
+        payload.checks.find((check) => check.id === "apple_release_secrets").commands.length,
+        requiredSecrets.length,
+      );
+      assert.deepEqual(
+        payload.nextActions.find((action) => action.id === "github_release").commands,
+        [],
+      );
     },
   );
 });

@@ -226,7 +226,9 @@ so stored release evidence can be versioned, ordered, and filtered by outcome;
 top-level `blockerIds` and `nextActions` summarize the blocked checks, and each
 check also carries a stable `id` such as `pull_request`,
 `apple_release_secrets`, `github_release`, and `download_assets` so automation
-does not branch on translated or edited labels.
+does not branch on translated or edited labels. Actionable blockers include
+`commands[]` entries, so follow-up runners can execute known-safe diagnostics or
+secret setup prompts without parsing prose.
 Firebase Hosting is not part of the macOS
 app release gate; verify the separate website with `pnpm desktop:verify-hosted`;
 the hosted download page keeps macOS app release blockers aligned with

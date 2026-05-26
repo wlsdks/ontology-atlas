@@ -150,8 +150,12 @@ function ok(id, label, detail) {
   return { id, status: "ok", label, detail };
 }
 
-function blocked(id, label, detail, next) {
-  return { id, status: "blocked", label, detail, next };
+function blocked(id, label, detail, next, commands = []) {
+  const check = { id, status: "blocked", label, detail, next };
+  if (commands.length > 0) {
+    check.commands = commands;
+  }
+  return check;
 }
 
 function skipped(id, label, detail) {
@@ -184,6 +188,10 @@ function prNextAction({ checksOk, prNumber, repo, url }) {
   return `Run gh pr checks ${prNumber} --repo ${repo}, then ${reviewAndMerge}`;
 }
 
+function prNextCommands({ checksOk, prNumber, repo }) {
+  return checksOk ? [] : [`gh pr checks ${prNumber} --repo ${repo}`];
+}
+
 function prCheckLabel(check) {
   const name = check.name ?? check.context ?? check.workflowName ?? check.__typename ?? "unnamed check";
   const state = check.conclusion || check.status || "unknown";
@@ -201,6 +209,10 @@ function secretSetHints(repo, names) {
   return names.map((name) => `gh secret set ${name} --repo ${repo} < /path/to/${name}`).join("; ");
 }
 
+function secretSetCommands(repo, names) {
+  return names.map((name) => `gh secret set ${name} --repo ${repo} < /path/to/${name}`);
+}
+
 function isNotFound(message) {
   return /\b404\b|not found|release not found/i.test(message);
 }
@@ -211,7 +223,7 @@ async function main() {
 
   const auth = runGh(["auth", "status"]);
   if (!auth.ok) {
-    checks.push(blocked("github_cli_auth", "GitHub CLI auth", auth.message, "Run gh auth login, then rerun desktop:release-status."));
+    checks.push(blocked("github_cli_auth", "GitHub CLI auth", auth.message, "Run gh auth login, then rerun desktop:release-status.", ["gh auth login"]));
     renderAndExit(options, checks);
   }
   checks.push(ok("github_cli_auth", "GitHub CLI auth", "gh auth status succeeded"));
@@ -228,6 +240,7 @@ async function main() {
       "Version alignment",
       tagAlignment.message.replace(/^\[desktop-release-tag\]\s*/, ""),
       `Run pnpm desktop:release-tag -- --tag=${options.tag} and update package.json, src-tauri/tauri.conf.json, and src-tauri/Cargo.toml together before tagging.`,
+      [`pnpm desktop:release-tag -- --tag=${options.tag}`],
     ));
   }
 
@@ -263,6 +276,11 @@ async function main() {
             repo: options.repo,
             url: value.url,
           }),
+          prNextCommands({
+            checksOk,
+            prNumber: options.pr,
+            repo: options.repo,
+          }),
         ));
       }
     }
@@ -279,9 +297,9 @@ async function main() {
     "name",
   ], { parseJson: true });
   if (!secrets.ok) {
-    checks.push(blocked("apple_release_secrets", "Apple release secrets", secrets.message, `Run gh secret list --repo ${options.repo}.`));
+    checks.push(blocked("apple_release_secrets", "Apple release secrets", secrets.message, `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
   } else if (!Array.isArray(secrets.value)) {
-    checks.push(blocked("apple_release_secrets", "Apple release secrets", "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`));
+    checks.push(blocked("apple_release_secrets", "Apple release secrets", "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
   } else {
     const secretNames = new Set(secrets.value.map((secret) => secret?.name).filter(Boolean));
     const missing = REQUIRED_SECRETS.filter((name) => !secretNames.has(name));
@@ -293,6 +311,7 @@ async function main() {
         "Apple release secrets",
         `missing ${missing.join(", ")}`,
         secretSetHints(options.repo, missing),
+        secretSetCommands(options.repo, missing),
       ));
     }
   }
@@ -310,7 +329,10 @@ async function main() {
     const next = isNotFound(release.message)
       ? `Merge the desktop PR, add Apple release secrets, then push ${options.tag} so .github/workflows/release-macos.yml can publish signed DMGs.`
       : `Run gh release view ${options.tag} --repo ${options.repo}.`;
-    checks.push(blocked("github_release", "GitHub Release", release.message, next));
+    const commands = isNotFound(release.message)
+      ? []
+      : [`gh release view ${options.tag} --repo ${options.repo}`];
+    checks.push(blocked("github_release", "GitHub Release", release.message, next, commands));
   } else if (release.value?.isDraft || release.value?.isPrerelease) {
     checks.push(blocked(
       "github_release",
@@ -331,7 +353,13 @@ async function main() {
       if (download.ok) {
         checks.push(ok("download_assets", "Download assets", "public DMGs and .sha256 assets passed byte verification"));
       } else {
-        checks.push(blocked("download_assets", "Download assets", download.message, `Run pnpm desktop:verify-download -- --repo=${options.repo} --tag=${options.tag}.`));
+        checks.push(blocked(
+          "download_assets",
+          "Download assets",
+          download.message,
+          `Run pnpm desktop:verify-download -- --repo=${options.repo} --tag=${options.tag}.`,
+          [`pnpm desktop:verify-download -- --repo=${options.repo} --tag=${options.tag}`],
+        ));
       }
     }
   }
@@ -357,7 +385,12 @@ function renderAndExit(options, checks) {
     blockerIds: blockers.map((check) => check.id),
     nextActions: blockers
       .filter((check) => check.next)
-      .map((check) => ({ id: check.id, label: check.label, next: check.next })),
+      .map((check) => ({
+        id: check.id,
+        label: check.label,
+        next: check.next,
+        commands: check.commands ?? [],
+      })),
     checks,
   };
   if (options.jsonFile) {
@@ -420,6 +453,12 @@ function renderMarkdownChecklist(payload) {
       lines.push(`  - Detail: ${check.detail}`);
       if (check.next) {
         lines.push(`  - Next: \`${check.next}\``);
+      }
+      if (Array.isArray(check.commands) && check.commands.length > 0) {
+        lines.push("  - Commands:");
+        for (const command of check.commands) {
+          lines.push(`    - \`${command}\``);
+        }
       }
     }
     lines.push("");

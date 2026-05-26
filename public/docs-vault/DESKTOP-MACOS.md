@@ -334,7 +334,9 @@ operator needs a shareable checklist artifact. The snapshot includes
 `schemaVersion`, `generatedAt`, `status`, `readyAt`, and `blockedAt` for stored
 release evidence, top-level `blockerIds` / `nextActions`, and stable check ids
 such as `pull_request`, `apple_release_secrets`, `github_release`, and
-`download_assets`.
+`download_assets`. Actionable blockers also carry `commands[]` so release
+operators can copy exact diagnostic or setup commands from JSON or Markdown
+without parsing prose.
 Firebase Hosting is not part of the macOS app release gate;
 run `pnpm desktop:verify-hosted` after the separate website deploy.
 When it reports missing secrets, set each value through `gh secret set`, for

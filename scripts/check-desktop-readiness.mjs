@@ -834,6 +834,7 @@ if (
   releaseStatusScript.includes("blockerCount") &&
   releaseStatusScript.includes("blockerIds") &&
   releaseStatusScript.includes("nextActions") &&
+  releaseStatusScript.includes("commands") &&
   releaseStatusScript.includes("renderMarkdownChecklist") &&
   releaseStatusScript.includes("fs.writeFileSync") &&
   releaseStatusScript.includes("Firebase Hosting is intentionally excluded") &&
