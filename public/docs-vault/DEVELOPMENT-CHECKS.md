@@ -47,7 +47,12 @@ For production Firebase Hosting, `pnpm firebase:deploy-check` is the local
 deploy preflight: it requires `.env.prod`, verifies `.firebaserc` matches
 `FIREBASE_PROJECT_ID`, keeps `firebase.json` static Hosting-only, and confirms
 `.env.prod` is excluded from both git and Firebase deploy packaging before
-`firebase deploy --only hosting`. Firebase Hosting is deliberately separate
+`firebase deploy --only hosting`. Changes to `firebase.json`, `.firebaserc`,
+`.firebaseignore`, `.env.prod.example`, `.github/workflows/deploy-hosting.yml`,
+or `scripts/check-firebase-hosting-deploy-env.mjs` route first to the fixture
+backed `pnpm exec node --test scripts/check-firebase-hosting-deploy-env.test.mjs`;
+the live `pnpm firebase:deploy-check` still requires a local `.env.prod`.
+Firebase Hosting is deliberately separate
 from the macOS app release workflow: `.github/workflows/release-macos.yml`
 publishes signed/notarized local-only DMGs without Firebase secrets or deploy
 steps. The website maintainer path is `.github/workflows/deploy-hosting.yml` for

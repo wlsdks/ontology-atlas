@@ -434,6 +434,24 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests Firebase Hosting deploy checks without folding them into app release', () => {
+    const result = suggestFocusedChecks([
+      'scripts/check-firebase-hosting-deploy-env.mjs',
+      'firebase.json',
+      '.firebaserc',
+      '.firebaseignore',
+      '.github/workflows/deploy-hosting.yml',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test scripts/check-firebase-hosting-deploy-env.test.mjs',
+      'pnpm test:desktop:check',
+      'pnpm desktop:check',
+      'pnpm test:dogfood:script-refs',
+      'pnpm test:mcp:docs',
+    ]);
+  });
+
   it('suggests desktop readiness checks for macOS desktop distribution files', () => {
     const result = suggestFocusedChecks([
       'scripts/check-desktop-readiness.mjs',
