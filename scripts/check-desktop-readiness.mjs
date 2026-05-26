@@ -829,6 +829,8 @@ if (
   releaseStatusScript.includes("apple_release_secrets") &&
   releaseStatusScript.includes("download_assets") &&
   releaseStatusScript.includes("blockerCount") &&
+  releaseStatusScript.includes("blockerIds") &&
+  releaseStatusScript.includes("nextActions") &&
   releaseStatusScript.includes("fs.writeFileSync") &&
   releaseStatusScript.includes("Firebase Hosting is intentionally excluded") &&
   releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY") &&

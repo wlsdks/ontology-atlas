@@ -339,6 +339,10 @@ function renderAndExit(options, checks) {
     pr: options.pr || null,
     ready: blockers.length === 0,
     blockerCount: blockers.length,
+    blockerIds: blockers.map((check) => check.id),
+    nextActions: blockers
+      .filter((check) => check.next)
+      .map((check) => ({ id: check.id, label: check.label, next: check.next })),
     checks,
   };
   if (options.jsonFile) {

@@ -118,6 +118,15 @@ test("desktop release status emits machine-readable blockers for automation", ()
       assert.equal(payload.pr, "274");
       assert.equal(payload.ready, false);
       assert.equal(payload.blockerCount, 3);
+      assert.deepEqual(payload.blockerIds, [
+        "pull_request",
+        "apple_release_secrets",
+        "github_release",
+      ]);
+      assert.deepEqual(
+        payload.nextActions.map((action) => action.id),
+        ["pull_request", "apple_release_secrets", "github_release"],
+      );
       assert.deepEqual(
         payload.checks.map((check) => check.id),
         [
@@ -171,6 +180,15 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
         assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
         assert.equal(payload.ready, false);
         assert.equal(payload.blockerCount, 3);
+        assert.deepEqual(payload.blockerIds, [
+          "pull_request",
+          "apple_release_secrets",
+          "github_release",
+        ]);
+        assert.deepEqual(
+          payload.nextActions.map((action) => action.id),
+          ["pull_request", "apple_release_secrets", "github_release"],
+        );
         assert.deepEqual(
           payload.checks.filter((check) => check.status === "blocked").map((check) => check.id),
           ["pull_request", "apple_release_secrets", "github_release"],
@@ -273,6 +291,8 @@ test("desktop release status JSON reports ready when all release gates pass", ()
     assert.match(payload.generatedAt, /^\d{4}-\d{2}-\d{2}T/);
     assert.equal(payload.ready, true);
     assert.equal(payload.blockerCount, 0);
+    assert.deepEqual(payload.blockerIds, []);
+    assert.deepEqual(payload.nextActions, []);
     assert.deepEqual(
       payload.checks.map((check) => check.status),
       ["ok", "ok", "ok", "ok", "ok", "skipped"],
