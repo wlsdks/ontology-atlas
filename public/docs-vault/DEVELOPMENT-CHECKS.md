@@ -178,7 +178,9 @@ a fake `gh` binary, so workflow availability, required Apple secret-name
 detection, tag/version alignment, stale same-tag Git refs, and stale release-slot
 failures stay covered before a public tag is pushed. It also covers
 `scripts/watch-macos-release-run.mjs` so the post-tag operator command waits for
-the tag-commit push workflow run before handing control to `gh run watch`.
+the tag-commit push workflow run before handing control to `gh run watch`, and
+`scripts/lib/macos-dmg-layout.mjs` so DMG mount parsing plus the drag-to-Applications
+symlink target stay covered before install smoke.
 Native vault bridge changes route to
 `pnpm test:desktop:bridge`, which runs the WebView handle-shim tests plus
 `cargo test --manifest-path src-tauri/Cargo.toml` for the Rust path guard.
@@ -202,9 +204,10 @@ built `out/` payload has the root app entry, locale-prefixed docs, ontology,
 topology, builder routes, `_next` assets, and offline desktop docs;
 `pnpm desktop:verify-app` launches the built `.app` long enough to catch early
 Tauri/WebView startup crashes from inside the app executable directory and then
-terminates it; `pnpm desktop:verify-install` mounts the DMG, copies the app to a
-temporary install folder, launch-smokes that copied app from its own executable
-directory, and removes the temp install;
+terminates it; `pnpm desktop:verify-install` mounts the DMG, verifies the
+Applications symlink points to `/Applications`, copies the app to a temporary
+install folder, launch-smokes that copied app from its own executable directory,
+and removes the temp install;
 `pnpm desktop:release-preflight` is the local pre-tag operator shortcut that
 runs desktop readiness, docs-vault freshness, desktop checker tests, runtime
 split tests, native bridge tests, runtime doctor, `cli:mcp-verify` against
@@ -249,7 +252,7 @@ pass `pnpm desktop:release-secrets`, then run `pnpm desktop:sign` with a
 Developer ID Application certificate, wrap the app with
 `scripts/package-macos-dmg.mjs`, run `pnpm desktop:notarize` with Apple notary
 credentials, and finish with `pnpm desktop:verify-release-dmg`, which checks the
-DMG checksum, mounts it read-only, verifies the `.app` plus Applications symlink,
+DMG checksum, mounts it read-only, verifies the `.app` plus Applications symlink target,
 requires strict app code-signature verification, validates the stapled
 notarization ticket, and runs Gatekeeper assessment for the app execution and
 DMG open paths before release upload. `pnpm desktop:build` keeps the local
@@ -369,7 +372,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:smoke` | Built `out/` payload smoke for the packaged root app entry, locale routes, `_next` assets, and offline desktop docs before launching or bundling the `.app` / `.dmg` |
 | `pnpm desktop:build:app` | Build the Tauri `.app` before optional release signing or local DMG packaging |
 | `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes, then terminate it |
-| `pnpm desktop:verify-install` | Mount the DMG, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up |
+| `pnpm desktop:verify-install` | Mount the DMG, require the `/Applications` symlink target, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up |
 | `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, agent JSON setup gate, build, route smoke, DMG, and install smoke |
 | `pnpm test:desktop:runtime` | Hosted-vs-installed runtime split tests for `/docs?intent=local`, first-run desktop routing, and hosted download routing |
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
@@ -382,7 +385,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, Apple release secret names, public stable Release state, and public DMG/checksum download verification |
 | `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available |
-| `pnpm desktop:verify-dmg` | Mount and checksum smoke for the generated macOS DMG before GitHub Release upload |
+| `pnpm desktop:verify-dmg` | Mount and checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
 | `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment |
 | `pnpm desktop:verify-download` | Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported extra `oh-my-ontology_*.dmg` names, and verifies matching `.sha256` contents and downloaded bytes |
 | `pnpm desktop:verify-hosted` | Live hosted website verifier: requires `/ko/` to be promo/download-first and `/ko/download/` to exist with the GitHub Releases CTA, rejecting stale browser-vault CTAs |

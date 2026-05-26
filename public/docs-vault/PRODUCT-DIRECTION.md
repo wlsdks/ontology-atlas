@@ -236,9 +236,9 @@ landing page. The desktop picker also persists recent Tauri vault paths and can
 reopen them without another Finder selection. The build also writes a `.sha256` checksum, and
 `pnpm desktop:verify-app` launch-smokes the built `.app` long enough to catch
 early Tauri/WebView startup crashes before DMG verification. `pnpm
-desktop:verify-install` then mounts the generated DMG, copies the bundled app to
-a temporary install folder, and launch-smokes that installed copy before
-cleanup. The
+desktop:verify-install` then mounts the generated DMG, verifies the
+drag-to-Applications symlink target, copies the bundled app to a temporary
+install folder, and launch-smokes that installed copy before cleanup. The
 `.github/workflows/release-macos.yml` now fails closed on `v*` tags unless the
 Apple Developer ID and notary secrets are present and structurally usable, then
 passes docs-vault freshness, desktop checker tests, and native bridge tests

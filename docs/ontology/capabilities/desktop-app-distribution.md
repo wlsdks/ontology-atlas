@@ -44,7 +44,8 @@ the generated `README.md` instead of showing a generic empty document state.
 with a reproducible `hdiutil` DMG so the download artifact does not depend on
 Tauri's Finder AppleScript DMG styling step, then writes a `.sha256` checksum.
 `scripts/verify-macos-dmg.mjs` mounts the DMG read-only, verifies that checksum,
-and checks for the app bundle plus Applications symlink. `pnpm desktop:check`
+and checks for the app bundle plus an Applications symlink pointing to
+`/Applications`. `pnpm desktop:check`
 is the scaffold-aware gate for that slice: it checks the Next.js static export
 shape, static image mode, trailing-slash routes, docs-vault build freshness
 path, CLI/MCP verification script availability, `desktop:dev` /
@@ -58,9 +59,10 @@ offline desktop docs under `docs-vault/`. `pnpm desktop:verify-app` launches
 the built `.app` executable from inside its `Contents/MacOS` executable
 directory long enough to catch early Tauri/WebView startup crashes, then
 terminates it.
-`pnpm desktop:verify-install` mounts the generated DMG, copies the bundled app
-to a temporary install folder, launch-smokes that copied app from its own
-executable directory, and removes the temporary install after detaching the image.
+`pnpm desktop:verify-install` mounts the generated DMG, verifies the
+drag-to-Applications symlink target, copies the bundled app to a temporary
+install folder, launch-smokes that copied app from its own executable directory,
+and removes the temporary install after detaching the image.
 `pnpm test:desktop:bridge` locks the native vault bridge at the API boundary:
 Vitest exercises the WebView `FileSystemDirectoryHandle` shim and `cargo test`
 checks that Rust relative paths and symlinks cannot escape the selected vault

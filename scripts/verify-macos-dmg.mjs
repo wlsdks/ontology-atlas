@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import { parseHdiutilMountDir, verifyApplicationsSymlink } from "./lib/macos-dmg-layout.mjs";
 import { loadMacosReleaseNames } from "./lib/macos-release-names.mjs";
 
 const root = process.cwd();
@@ -106,10 +107,7 @@ if (actualChecksum !== expectedChecksum) {
 
 run("hdiutil", ["verify", dmgPath]);
 const attach = run("hdiutil", ["attach", "-readonly", "-nobrowse", dmgPath]);
-const mountLine = attach.stdout
-  .split("\n")
-  .find((line) => line.includes("/Volumes/"));
-const mountDir = mountLine?.match(/(\/Volumes\/.+)$/)?.[1]?.trim();
+const mountDir = parseHdiutilMountDir(attach.stdout);
 
 if (!mountDir) {
   fail(`could not find mounted volume in hdiutil output:\n${attach.stdout}`);
@@ -123,9 +121,7 @@ try {
   if (!fs.existsSync(appPath)) {
     throw new Error(`mounted DMG is missing ${appBundleName}`);
   }
-  if (!fs.lstatSync(applicationsLink).isSymbolicLink()) {
-    throw new Error("mounted DMG is missing Applications symlink");
-  }
+  verifyApplicationsSymlink(applicationsLink);
   if (requireSigned) {
     runCheck("codesign", ["--verify", "--deep", "--strict", "--verbose=2", appPath]);
   }

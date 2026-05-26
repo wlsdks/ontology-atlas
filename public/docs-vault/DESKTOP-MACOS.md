@@ -141,7 +141,7 @@ for a macOS prototype:
   long enough to catch early Tauri/WebView startup crashes, then terminates it.
 - `scripts/verify-macos-dmg.mjs` verifies that checksum, runs `hdiutil verify`,
   mounts the image read-only, and checks for `Context Atlas.app` plus the
-  Applications symlink. Release verification uses
+  Applications symlink pointing to `/Applications`. Release verification uses
   `pnpm desktop:verify-release-dmg`, which additionally requires strict
   `codesign` verification of the mounted app, a valid stapled notarization
   ticket on the DMG, and `spctl` Gatekeeper assessment for both the app
@@ -260,7 +260,8 @@ checks and DMG mounting cannot see without masking source-checkout path
 dependencies through the repo root cwd.
 
 `desktop:verify-install` checks the generated DMG from the user-install angle.
-It mounts the image, copies `Context Atlas.app` to a temporary install folder,
+It mounts the image, requires the drag target symlink to point to
+`/Applications`, copies `Context Atlas.app` to a temporary install folder,
 launches that copied app from its own executable directory for the same hold
 window, and cleans up the temp install after detaching the image.
 

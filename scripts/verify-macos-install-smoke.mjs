@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { parseHdiutilMountDir, verifyApplicationsSymlink } from "./lib/macos-dmg-layout.mjs";
 import { loadMacosReleaseNames, resolveMacosExecutable } from "./lib/macos-release-names.mjs";
 
 const root = process.cwd();
@@ -155,19 +156,18 @@ let verificationError = null;
 try {
   run("hdiutil", ["verify", dmgPath]);
   const attach = run("hdiutil", ["attach", "-readonly", "-nobrowse", dmgPath]);
-  const mountLine = attach.stdout
-    .split("\n")
-    .find((line) => line.includes("/Volumes/"));
-  mountDir = mountLine?.match(/(\/Volumes\/.+)$/)?.[1]?.trim() ?? null;
+  mountDir = parseHdiutilMountDir(attach.stdout);
 
   if (!mountDir) {
     throw new Error(`could not find mounted volume in hdiutil output:\n${attach.stdout}`);
   }
 
   const mountedApp = path.join(mountDir, appBundleName);
+  const applicationsLink = path.join(mountDir, "Applications");
   if (!fs.existsSync(mountedApp)) {
     throw new Error(`mounted DMG is missing ${appBundleName}`);
   }
+  verifyApplicationsSymlink(applicationsLink);
 
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "omot-install-smoke-"));
   const installedApp = path.join(tempDir, appBundleName);

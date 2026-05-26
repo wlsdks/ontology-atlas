@@ -494,7 +494,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm desktop:smoke` \| Built `out\/` payload smoke for the packaged root app entry, locale routes, `_next` assets, and offline desktop docs before launching or bundling the `\.app` \/ `\.dmg` \|/);
     assert.match(checksDoc, /\| `pnpm desktop:build:app` \| Build the Tauri `\.app` before optional release signing or local DMG packaging \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-app` \| Launch the built `\.app` from its executable directory long enough to catch early Tauri\/WebView startup crashes, then terminate it \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:verify-install` \| Mount the DMG, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:verify-install` \| Mount the DMG, require the `\/Applications` symlink target, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-preflight` \| Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI\/MCP handoff, agent JSON setup gate, build, route smoke, DMG, and install smoke \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-slot` \| Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-github` \| Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag\/version alignment, clean local\/remote same-tag Git ref slots, and clean same-tag Release slot \|/);
@@ -506,7 +506,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm desktop:release-source` \| Fail closed before release signing when the tag commit is not the current default-branch head \|/);
     assert.match(checksDoc, /\| `pnpm desktop:sign` \| Sign the built `\.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available \|/);
     assert.match(checksDoc, /\| `pnpm desktop:notarize` \| Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:verify-dmg` \| Mount and checksum smoke for the generated macOS DMG before GitHub Release upload \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:verify-dmg` \| Mount and checksum smoke for the generated macOS DMG, including app bundle presence and `\/Applications` symlink target, before GitHub Release upload \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-release-dmg` \| Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-download` \| Public GitHub Release verifier for the hosted download CTA: requires non-draft reachable same-version Apple Silicon and Intel DMG assets, rejects unsupported extra `oh-my-ontology_\*\.dmg` names, and verifies matching `\.sha256` contents and downloaded bytes \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-hosted` \| Live hosted website verifier: requires `\/ko\/` to be promo\/download-first and `\/ko\/download\/` to exist with the GitHub Releases CTA, rejecting stale browser-vault CTAs \|/);
