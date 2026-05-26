@@ -1,6 +1,6 @@
-import { fireEvent, render as rtlRender, screen } from '@testing-library/react';
+import { act, fireEvent, render as rtlRender, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import { LocalVaultPicker } from './LocalVaultPicker';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
@@ -25,6 +25,10 @@ function recentVault(name: string, rootPath: string, lastAccessedAt: number): Lo
 }
 
 describe('LocalVaultPicker', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('idle 상태에서 로컬 markdown vault 사용 모델을 설명한다', () => {
     render(
       <LocalVaultPicker
@@ -80,6 +84,41 @@ describe('LocalVaultPicker', () => {
     fireEvent.click(screen.getByRole('button', { name: '최근 vault 지우기: ontology' }));
 
     expect(onForgetRecent).toHaveBeenCalledWith(record);
+  });
+
+  it('idle 상태의 최근 vault 상대시각도 앱을 열어둔 동안 갱신한다', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(1779498839000);
+    const record = recentVault(
+      'ontology',
+      '/Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      1779498839000,
+    );
+
+    render(
+      <LocalVaultPicker
+        status="idle"
+        handleName={null}
+        docCount={0}
+        errorMessage={null}
+        lastLoadedAt={null}
+        recentVaults={[record]}
+        onOpen={vi.fn()}
+        onOpenRecent={vi.fn()}
+        onForgetRecent={vi.fn()}
+        onClose={vi.fn()}
+        onRefresh={vi.fn()}
+        onRequestPermission={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('방금 열었음')).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(15_000);
+    });
+
+    expect(screen.getByText('15초 전 열었음')).toBeInTheDocument();
   });
 
   it('권한 재승인 상태에서도 다른 최근 vault 로 바로 전환할 수 있다', () => {

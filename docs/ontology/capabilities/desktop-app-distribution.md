@@ -96,8 +96,9 @@ once, so the installed app starts in local work mode instead of the download
 page. The picker keeps a small recent-vault list from persisted Tauri paths,
 can reopen those vaults without another Finder selection, shows the last-opened
 time for each remembered vault so repeated desktop work does not become a blind
-path list, and can remove stale recent paths when folders have moved or been
-deleted. If a restored folder needs macOS permission re-authorization, the same
+path list, keeps that relative time live while the picker stays open, and can
+remove stale recent paths when folders have moved or been deleted. If a
+restored folder needs macOS permission re-authorization, the same
 recent-vault list stays visible so the user can switch to another remembered
 vault instead of clearing state or reopening Finder first. If a restored desktop
 handle no longer produces a manifest, the root entry sends the user back to the

@@ -91,13 +91,16 @@ export function LocalVaultPicker({
   const locale = useLocale();
   const dateLocale = locale === 'ko' ? 'ko-KR' : 'en-US';
   const [pathCopyState, setPathCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
-  // 상대시각이 실시간으로 업데이트되도록 15초 tick. loaded 상태일 때만 작동.
+  // 상대시각이 실시간으로 업데이트되도록 15초 tick.
   const [nowTick, setNowTick] = useState(() => Date.now());
   useEffect(() => {
-    if (status !== 'loaded' || lastLoadedAt === null) return;
+    const showsRelativeTime =
+      (status === 'loaded' && lastLoadedAt !== null) ||
+      recentVaults.length > 0;
+    if (!showsRelativeTime) return;
     const intervalId = setInterval(() => setNowTick(Date.now()), 15_000);
     return () => clearInterval(intervalId);
-  }, [status, lastLoadedAt]);
+  }, [status, lastLoadedAt, recentVaults.length]);
   if (status === 'unsupported') {
     return (
       <div className="flex flex-1 items-center gap-2 rounded-md border border-[color:rgba(244,183,49,0.35)] bg-[color:rgba(244,183,49,0.12)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-warning)]">
