@@ -385,7 +385,7 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /git push origin v0\.1\.0/);
         assert.match(markdown, /gh repo view wlsdks\/oh-my-ontology --json defaultBranchRef --jq \.defaultBranchRef\.name/);
         assert.match(markdown, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
-        assert.match(markdown, /  - Commands:\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/oh-my-ontology < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
+        assert.match(markdown, /  - Commands \(run in one shell session\):\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/oh-my-ontology < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /  - Missing secrets:\n    - `APPLE_CERTIFICATE_P12_BASE64`/);
         assert.match(markdown, /## Checks/);
         assert.match(markdown, /- \[x\] GitHub CLI auth \(`github_cli_auth`\)/);

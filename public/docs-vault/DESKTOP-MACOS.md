@@ -376,7 +376,10 @@ tag-push, tag-commit-scoped release-workflow watch, and public download verifica
 JSON or Markdown without parsing prose. The post-merge tag commands resolve the
 repository's current default branch through `gh repo view ... defaultBranchRef`
 before `git fetch`, `desktop:release-source`, or `git tag`, so the release
-handoff keeps following the real default branch if it is renamed. Apple signing blockers additionally
+handoff keeps following the real default branch if it is renamed. Markdown
+checklists label these commands as one-shell-session commands because
+`DEFAULT_BRANCH` is intentionally shared by the following fetch, source-check,
+and tag commands. Apple signing blockers additionally
 expose `missingSecrets[]` and hosted deploy blockers expose
 `missingHostedSecrets[]` for direct comparison against GitHub Secrets.
 Firebase Hosting is not part of the macOS app release gate;

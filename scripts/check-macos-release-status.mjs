@@ -771,7 +771,7 @@ function renderMarkdownChecklist(payload) {
         lines.push(`  - Next: \`${check.next}\``);
       }
       if (Array.isArray(check.commands) && check.commands.length > 0) {
-        lines.push("  - Commands:");
+        lines.push("  - Commands (run in one shell session):");
         for (const command of check.commands) {
           lines.push(`    - \`${command}\``);
         }

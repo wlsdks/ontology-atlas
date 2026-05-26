@@ -250,7 +250,10 @@ workflow watch scoped to the pushed tag commit, and public download verification
 The generated post-merge tag commands resolve the repository's current default
 branch through `gh repo view ... defaultBranchRef` before `git fetch`,
 `desktop:release-source`, or `git tag`, so the release handoff does not freeze a
-`main` assumption into the final macOS tag path.
+`main` assumption into the final macOS tag path. The Markdown checklist labels
+command groups as one-shell-session commands because the default-branch
+variable is intentionally shared by the following fetch, source-check, and tag
+commands.
 Firebase Hosting is not part of the macOS
 app release gate by default; verify the separate website with `pnpm desktop:verify-hosted`.
 When using the command as the full desktop goal audit, pass

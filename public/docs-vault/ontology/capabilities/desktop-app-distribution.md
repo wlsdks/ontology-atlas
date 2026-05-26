@@ -197,7 +197,9 @@ post-merge tag-push commands, plus the `desktop:release-run` tag-commit-scoped r
 verification. The post-merge tag commands resolve the repository's current
 default branch through `gh repo view ... defaultBranchRef` before `git fetch`,
 `desktop:release-source`, or `git tag`, so the release checklist follows the
-actual tag source branch instead of hardcoding `main`. Apple signing blockers expose `missingSecrets[]`, hosted deploy
+actual tag source branch instead of hardcoding `main`. The Markdown checklist
+labels these as one-shell-session commands because `DEFAULT_BRANCH` is shared by
+the following fetch, source-check, and tag commands. Apple signing blockers expose `missingSecrets[]`, hosted deploy
 blockers expose `missingHostedSecrets[]`, and the Markdown checklist renders
 both under each blocked row's missing-secret section for direct GitHub Secrets
 reconciliation.
