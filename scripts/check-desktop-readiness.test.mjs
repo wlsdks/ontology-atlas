@@ -145,11 +145,11 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ pull request CI uses Node 24-compatible checkout, pnpm, and setup-node actions/,
+    /✓ pull request CI uses Node 24 setup-node and Corepack pnpm without pnpm\/action-setup/,
   );
   assert.match(
     result.stdout,
-    /✓ macOS release workflow uses Node 24-compatible GitHub action majors/,
+    /✓ macOS release workflow uses Node 24 action majors and Corepack pnpm without pnpm\/action-setup/,
   );
   assert.match(
     result.stdout,

@@ -385,6 +385,12 @@ if (
   /FIREBASE_SERVICE_ACCOUNT_JSON/.test(hostingDeployWorkflow) &&
   /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/.test(hostingDeployWorkflow) &&
   /FIREBASE_PROJECT_ID:\s*\$\{\{\s*vars\.FIREBASE_PROJECT_ID/.test(hostingDeployWorkflow) &&
+  /uses:\s*actions\/setup-node@v6/.test(hostingDeployWorkflow) &&
+  /node-version:\s*24/.test(hostingDeployWorkflow) &&
+  /corepack enable/.test(hostingDeployWorkflow) &&
+  /corepack prepare pnpm@10\.18\.0 --activate/.test(hostingDeployWorkflow) &&
+  /pnpm --version/.test(hostingDeployWorkflow) &&
+  !/uses:\s*pnpm\/action-setup@/.test(hostingDeployWorkflow) &&
   /pnpm firebase:deploy-check/.test(hostingDeployWorkflow) &&
   /pnpm test:mcp:docs/.test(hostingDeployWorkflow) &&
   /pnpm build/.test(hostingDeployWorkflow) &&
@@ -395,7 +401,7 @@ if (
   pass("Firebase Hosting fallback workflow deploys the promo/download site after public macOS releases and verifies the live download route");
 } else {
   fail(
-    ".github/workflows/deploy-hosting.yml must deploy Hosting on release publication/manual dispatch, require FIREBASE_SERVICE_ACCOUNT_JSON, hide the first-release checklist, run the static deploy gates, deploy only Hosting, and verify the hosted download route",
+    ".github/workflows/deploy-hosting.yml must deploy Hosting on release publication/manual dispatch, require FIREBASE_SERVICE_ACCOUNT_JSON, hide the first-release checklist, use Node 24 with Corepack pnpm@10.18.0 without pnpm/action-setup, run the static deploy gates, deploy only Hosting, and verify the hosted download route",
   );
 }
 
@@ -667,29 +673,35 @@ if (
 
 if (
   /uses:\s*actions\/checkout@v6/.test(ciWorkflow) &&
-  /uses:\s*pnpm\/action-setup@v6/.test(ciWorkflow) &&
   /uses:\s*actions\/setup-node@v6/.test(ciWorkflow) &&
-  /node-version:\s*24/.test(ciWorkflow)
+  /node-version:\s*24/.test(ciWorkflow) &&
+  /corepack enable/.test(ciWorkflow) &&
+  /corepack prepare pnpm@10\.18\.0 --activate/.test(ciWorkflow) &&
+  /pnpm --version/.test(ciWorkflow) &&
+  !/uses:\s*pnpm\/action-setup@/.test(ciWorkflow)
 ) {
-  pass("pull request CI uses Node 24-compatible checkout, pnpm, and setup-node actions");
+  pass("pull request CI uses Node 24 setup-node and Corepack pnpm without pnpm/action-setup");
 } else {
   fail(
-    ".github/workflows/ci.yml must use Node 24-compatible actions/checkout@v6, pnpm/action-setup@v6, actions/setup-node@v6, and node-version 24",
+    ".github/workflows/ci.yml must use actions/checkout@v6, actions/setup-node@v6, node-version 24, and Corepack pnpm@10.18.0 without pnpm/action-setup",
   );
 }
 
 if (
   releaseWorkflow.match(/uses:\s*actions\/checkout@v6/g)?.length === 2 &&
-  releaseWorkflow.match(/uses:\s*pnpm\/action-setup@v6/g)?.length === 2 &&
   releaseWorkflow.match(/uses:\s*actions\/setup-node@v6/g)?.length === 2 &&
+  releaseWorkflow.match(/corepack enable/g)?.length === 2 &&
+  releaseWorkflow.match(/corepack prepare pnpm@10\.18\.0 --activate/g)?.length === 2 &&
+  releaseWorkflow.match(/pnpm --version/g)?.length === 2 &&
   /uses:\s*actions\/upload-artifact@v7/.test(releaseWorkflow) &&
   /uses:\s*actions\/download-artifact@v7/.test(releaseWorkflow) &&
-  /uses:\s*softprops\/action-gh-release@v3/.test(releaseWorkflow)
+  /uses:\s*softprops\/action-gh-release@v3/.test(releaseWorkflow) &&
+  !/uses:\s*pnpm\/action-setup@/.test(releaseWorkflow)
 ) {
-  pass("macOS release workflow uses Node 24-compatible GitHub action majors");
+  pass("macOS release workflow uses Node 24 action majors and Corepack pnpm without pnpm/action-setup");
 } else {
   fail(
-    ".github/workflows/release-macos.yml must use Node 24-compatible action majors: actions/checkout@v6, pnpm/action-setup@v6, actions/setup-node@v6, actions/upload-artifact@v7, actions/download-artifact@v7, and softprops/action-gh-release@v3",
+    ".github/workflows/release-macos.yml must use Node 24-compatible action majors plus Corepack pnpm@10.18.0 without pnpm/action-setup",
   );
 }
 
