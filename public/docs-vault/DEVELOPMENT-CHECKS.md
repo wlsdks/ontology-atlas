@@ -165,9 +165,9 @@ implementation changes route to
 `pnpm exec node --test scripts/desktop-smoke.test.mjs`, then
 `pnpm test:desktop:check`. The desktop checker suite also covers the
 operator-side GitHub release gate (`scripts/check-macos-release-github.mjs`) with
-a fake `gh` binary, so workflow availability, required Apple secret-name
-detection, tag/version alignment, and stale same-tag release-slot failures stay
-covered before a public tag is pushed. Native vault bridge changes route to
+a fake `gh` binary, so workflow availability, required Apple/Firebase
+secret-name detection, tag/version alignment, and stale same-tag release-slot
+failures stay covered before a public tag is pushed. Native vault bridge changes route to
 `pnpm test:desktop:bridge`, which runs the WebView handle-shim tests plus
 `cargo test --manifest-path src-tauri/Cargo.toml` for the Rust path guard.
 `pnpm desktop:doctor` reports local Tauri / Cargo /
@@ -198,7 +198,7 @@ DMG mount/checksum smoke, and temporary install launch smoke;
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the completion
 audit after PR/release work: it accepts an already merged PR or checks PR
 review/merge readiness, required
-Apple signing/notary secret names, public stable GitHub Release state, and
+Apple signing/notary and Firebase Hosting deploy secret names, public stable GitHub Release state, and
 public DMG/checksum download verification plus deployed hosted landing/download
 surface verification in one fail-closed pass;
 the hosted download page keeps its first-release availability copy aligned with
@@ -326,8 +326,8 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-source` | Fail closed before release signing when the tag commit is not the current default-branch head |
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
-| `pnpm desktop:release-github` | Operator-side GitHub release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, and clean same-tag Release slot |
-| `pnpm desktop:release-status` | Completion audit for PR review/merge readiness, Apple release secret names, public stable Release state, public DMG/checksum download verification, and hosted website deployment |
+| `pnpm desktop:release-github` | Operator-side GitHub release readiness check for gh auth, active release/deploy workflows, required Apple/Firebase secret names, optional tag/version alignment, and clean same-tag Release slot |
+| `pnpm desktop:release-status` | Completion audit for PR review/merge readiness, Apple/Firebase release/deploy secret names, public stable Release state, public DMG/checksum download verification, and hosted website deployment |
 | `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available |
 | `pnpm desktop:verify-dmg` | Mount and checksum smoke for the generated macOS DMG before GitHub Release upload |
@@ -595,8 +595,8 @@ pnpm desktop:verify-install
 pnpm desktop:notarize
 pnpm desktop:verify-release-dmg
 
-# Completion audit after PR review/merge, Apple secrets, tag workflow, and
-# public release publication plus Firebase Hosting deploy are expected to be done:
+# Completion audit after PR review/merge, Apple/Firebase secrets, tag workflow,
+# public release publication, and Firebase Hosting deploy are expected to be done:
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0
 ```
 

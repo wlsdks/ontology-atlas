@@ -158,11 +158,11 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop GitHub release readiness gate checks workflow, Apple secret names, and release slot before tag push/,
+    /✓ desktop GitHub release readiness gate checks release\/deploy workflows, Apple\/Firebase secret names, and release slot before tag push/,
   );
   assert.match(
     result.stdout,
-    /✓ desktop release status gate audits PR readiness, Apple secrets, public release state, download assets, and hosted website deployment/,
+    /✓ desktop release status gate audits PR readiness, Apple\/Firebase secrets, public release state, download assets, and hosted website deployment/,
   );
   assert.match(result.stdout, /✓ desktop signing script is available for release builds/);
   assert.match(result.stdout, /✓ desktop notarization script is available for release builds/);
@@ -329,6 +329,7 @@ test("desktop release helper scripts expose credential-aware help", () => {
   assert.equal(releaseGithub.status, 0, releaseGithub.stderr);
   assert.match(releaseGithub.stdout, /GitHub-side prerequisites/);
   assert.match(releaseGithub.stdout, /APPLE_CERTIFICATE_P12_BASE64/);
+  assert.match(releaseGithub.stdout, /FIREBASE_SERVICE_ACCOUNT_JSON/);
 
   assert.equal(releaseSource.status, 0, releaseSource.stderr);
   assert.match(releaseSource.stdout, /default-branch head/);
@@ -431,6 +432,7 @@ test("desktop GitHub release readiness gate accepts active workflow and required
     "APPLE_ID",
     "APPLE_APP_SPECIFIC_PASSWORD",
     "APPLE_TEAM_ID",
+    "FIREBASE_SERVICE_ACCOUNT_JSON",
   ];
   writeFileSync(
     ghPath,
@@ -466,7 +468,7 @@ process.exit(1);
     );
 
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stdout, /has an active release workflow/);
+    assert.match(result.stdout, /has active release\/deploy workflows/);
     assert.match(result.stdout, /v0\.1\.0 matches package, Tauri, and Cargo versions/);
     assert.match(result.stdout, /v0\.1\.0 has no existing GitHub Release/);
   } finally {
@@ -485,6 +487,7 @@ test("desktop GitHub release readiness gate rejects an occupied release slot", (
     "APPLE_ID",
     "APPLE_APP_SPECIFIC_PASSWORD",
     "APPLE_TEAM_ID",
+    "FIREBASE_SERVICE_ACCOUNT_JSON",
   ];
   writeFileSync(
     ghPath,

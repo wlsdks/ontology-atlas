@@ -11,21 +11,35 @@ const REQUIRED_SECRETS = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
+const REQUIRED_HOSTING_SECRETS = [
+  "FIREBASE_SERVICE_ACCOUNT_JSON",
+];
+const REQUIRED_WORKFLOWS = [
+  {
+    file: "release-macos.yml",
+    description: "macOS release",
+  },
+  {
+    file: "deploy-hosting.yml",
+    description: "Firebase Hosting deploy",
+  },
+];
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:release-github [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z]
 
 Checks GitHub-side prerequisites for the macOS release workflow before a public
-tag push: gh authentication, the release workflow file, required Apple signing
-and notarization secret names, optional local tag/version alignment, and an
-optional clean same-tag GitHub Release slot check.
+tag push: gh authentication, required release/deploy workflow files, Apple
+signing and notarization secret names, Firebase Hosting deploy secret names,
+optional local tag/version alignment, and an optional clean same-tag GitHub
+Release slot check.
 
 This check can only prove that required secret names exist. The tag workflow
 still runs desktop:release-secrets to verify that values are non-empty and the
 Developer ID certificate secret is structurally valid.
 
 Required GitHub Actions secret names:
-${REQUIRED_SECRETS.map((name) => `  ${name}`).join("\n")}
+${[...REQUIRED_SECRETS, ...REQUIRED_HOSTING_SECRETS].map((name) => `  ${name}`).join("\n")}
 `);
 }
 
@@ -82,11 +96,14 @@ function runGh(args, { parseJson = false } = {}) {
   }
   if (result.status !== 0) {
     if (
-      args.some((arg) => String(arg).includes("actions/workflows/release-macos.yml")) &&
+      args.some((arg) => String(arg).includes("actions/workflows/")) &&
       /\b404\b|not found/i.test(result.stderr || result.stdout)
     ) {
+      const workflowFile = String(args.find((arg) => String(arg).includes("actions/workflows/")) ?? "")
+        .split("/")
+        .pop() ?? "workflow";
       fail(
-        "release-macos.yml is not available to GitHub for this repo yet. If the workflow is still on a PR branch, merge that PR into the default branch before pushing the release tag. Otherwise, commit and push .github/workflows/release-macos.yml first.",
+        `${workflowFile} is not available to GitHub for this repo yet. If the workflow is still on a PR branch, merge that PR into the default branch before pushing the release tag. Otherwise, commit and push .github/workflows/${workflowFile} first.`,
       );
     }
     fail(`gh ${args.join(" ")} failed: ${(result.stderr || result.stdout).trim()}`);
@@ -113,12 +130,14 @@ const options = parseArgs(process.argv.slice(2));
 
 runGh(["auth", "status"]);
 
-const workflow = runGh([
-  "api",
-  `repos/${options.repo}/actions/workflows/release-macos.yml`,
-], { parseJson: true });
-if (workflow?.state !== "active") {
-  fail(`release-macos.yml workflow for ${options.repo} is not active.`);
+for (const workflowInfo of REQUIRED_WORKFLOWS) {
+  const workflow = runGh([
+    "api",
+    `repos/${options.repo}/actions/workflows/${workflowInfo.file}`,
+  ], { parseJson: true });
+  if (workflow?.state !== "active") {
+    fail(`${workflowInfo.file} workflow for ${options.repo} is not active.`);
+  }
 }
 
 const secrets = runGh([
@@ -133,10 +152,10 @@ if (!Array.isArray(secrets)) {
   fail("gh secret list did not return an array.");
 }
 const secretNames = new Set(secrets.map((secret) => secret?.name).filter(Boolean));
-const missing = REQUIRED_SECRETS.filter((name) => !secretNames.has(name));
+const missing = [...REQUIRED_SECRETS, ...REQUIRED_HOSTING_SECRETS].filter((name) => !secretNames.has(name));
 if (missing.length > 0) {
   fail(
-    `missing GitHub Actions secrets for ${options.repo}: ${missing.join(", ")}. Add the Apple Developer ID signing and notary secrets before pushing the release tag.\n\nSet them with:\n${secretSetHints(options.repo, missing)}`,
+    `missing GitHub Actions secrets for ${options.repo}: ${missing.join(", ")}. Add the Apple Developer ID signing/notary secrets and Firebase Hosting service account before pushing the release tag.\n\nSet them with:\n${secretSetHints(options.repo, missing)}`,
   );
 }
 
@@ -146,7 +165,7 @@ if (options.tag) {
 }
 
 console.log(
-  `[desktop-release-github] ${options.repo} has an active release workflow and all required Apple release secret names`,
+  `[desktop-release-github] ${options.repo} has active release/deploy workflows and all required Apple/Firebase release secret names`,
 );
 if (options.tag) {
   console.log(`[desktop-release-github] ${options.tag} matches package, Tauri, and Cargo versions`);

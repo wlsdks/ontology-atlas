@@ -13,6 +13,9 @@ const REQUIRED_SECRETS = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
+const REQUIRED_HOSTING_SECRETS = [
+  "FIREBASE_SERVICE_ACCOUNT_JSON",
+];
 
 function defaultTag() {
   const pkg = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8"));
@@ -23,9 +26,9 @@ function printHelp() {
   console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER]
 
 Checks the public macOS release completion state in one fail-closed pass:
-pull-request merge readiness, Apple signing/notary secret names, public GitHub
-Release state, downloadable DMG/checksum assets, and the deployed Hosted website
-download surface.
+pull-request merge readiness, Apple signing/notary secret names, Firebase Hosting
+deploy secret names, public GitHub Release state, downloadable DMG/checksum
+assets, and the deployed Hosted website download surface.
 
 This command is an operator/completion audit. It does not publish tags, set
 secrets, or edit releases.
@@ -205,8 +208,10 @@ async function main() {
   ], { parseJson: true });
   if (!secrets.ok) {
     checks.push(blocked("Apple release secrets", secrets.message, `Run gh secret list --repo ${options.repo}.`));
+    checks.push(blocked("Firebase Hosting deploy secrets", secrets.message, `Run gh secret list --repo ${options.repo}.`));
   } else if (!Array.isArray(secrets.value)) {
     checks.push(blocked("Apple release secrets", "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`));
+    checks.push(blocked("Firebase Hosting deploy secrets", "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`));
   } else {
     const secretNames = new Set(secrets.value.map((secret) => secret?.name).filter(Boolean));
     const missing = REQUIRED_SECRETS.filter((name) => !secretNames.has(name));
@@ -217,6 +222,16 @@ async function main() {
         "Apple release secrets",
         `missing ${missing.join(", ")}`,
         secretSetHints(options.repo, missing),
+      ));
+    }
+    const missingHosting = REQUIRED_HOSTING_SECRETS.filter((name) => !secretNames.has(name));
+    if (missingHosting.length === 0) {
+      checks.push(ok("Firebase Hosting deploy secrets", "Firebase service account secret exists for hosted download deployment"));
+    } else {
+      checks.push(blocked(
+        "Firebase Hosting deploy secrets",
+        `missing ${missingHosting.join(", ")}`,
+        secretSetHints(options.repo, missingHosting),
       ));
     }
   }
@@ -232,7 +247,7 @@ async function main() {
   ], { parseJson: true });
   if (!release.ok) {
     const next = isNotFound(release.message)
-      ? `Merge the desktop PR, add Apple secrets, then push ${options.tag} so .github/workflows/release-macos.yml can publish signed DMGs.`
+      ? `Merge the desktop PR, add Apple/Firebase release secrets, then push ${options.tag} so .github/workflows/release-macos.yml can publish signed DMGs and .github/workflows/deploy-hosting.yml can deploy the hosted download page.`
       : `Run gh release view ${options.tag} --repo ${options.repo}.`;
     checks.push(blocked("GitHub Release", release.message, next));
   } else if (release.value?.isDraft || release.value?.isPrerelease) {

@@ -132,9 +132,11 @@ is verifying a draft release with `--allow-draft`, the verifier also falls back
 from tag lookup to the releases list if GitHub hides draft releases from the tag
 endpoint, then matches the requested `tag_name` before checking asset bytes.
 `pnpm desktop:release-github` is the operator-side pre-tag guard for that final
-step: it checks `gh` authentication, the active `release-macos.yml` workflow,
-required Apple signing/notary secret names, optional tag/version alignment, and
-the clean same-tag Release slot before the release tag is pushed. It cannot read
+step: it checks `gh` authentication, the active `release-macos.yml` release
+workflow, the active `deploy-hosting.yml` Firebase Hosting deploy workflow,
+required Apple signing/notary and Firebase service-account secret names,
+optional tag/version alignment, and the clean same-tag Release slot before the
+release tag is pushed. It cannot read
 secret values, so the workflow still fails closed through
 `pnpm desktop:release-secrets`. The workflow also runs
 `pnpm desktop:release-source` before signing, so a tag pushed from an unmerged PR
@@ -142,14 +144,14 @@ branch or stale commit cannot publish signed DMGs. `pnpm test:desktop:check` cov
 operator-side gate with a fake `gh` binary so PR-only workflow,
 missing-secret, tag/version, and stale release-slot failures remain explicit in
 the PR gate. The operator-side guard also catches the
-current external blocker earlier: the repo has no Apple release secret names
-configured yet. Its missing-secret output includes `gh secret set <NAME> --repo
-wlsdks/oh-my-ontology` hints so the operator can move directly from readiness
-failure to secret registration.
+current external blocker earlier: the repo is missing Apple release secret names
+and the Firebase Hosting service-account secret. Its missing-secret output
+includes `gh secret set <NAME> --repo wlsdks/oh-my-ontology` hints so the
+operator can move directly from readiness failure to secret registration.
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the completion
 audit once the PR and release path are expected to be ready. It accepts an
 already merged PR or checks PR review/merge readiness, required Apple release
-secret names, public stable GitHub Release state, and then runs the public
+secret names, Firebase Hosting deploy secret names, public stable GitHub Release state, and then runs the public
 DMG/checksum download verifier plus the deployed hosted website verifier.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`
 landing/download pages and rejects a stale public deployment that still shows

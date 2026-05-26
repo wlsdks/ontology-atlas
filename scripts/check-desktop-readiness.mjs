@@ -673,13 +673,15 @@ if (
   releaseGithubScript.includes('"secret"') &&
   releaseGithubScript.includes('"list"') &&
   releaseGithubScript.includes("APPLE_CERTIFICATE_P12_BASE64") &&
-  releaseGithubScript.includes("actions/workflows/release-macos.yml") &&
+  releaseGithubScript.includes("FIREBASE_SERVICE_ACCOUNT_JSON") &&
+  releaseGithubScript.includes("release-macos.yml") &&
+  releaseGithubScript.includes("deploy-hosting.yml") &&
   releaseGithubScript.includes("check-macos-release-slot.mjs")
 ) {
-  pass("desktop GitHub release readiness gate checks workflow, Apple secret names, and release slot before tag push");
+  pass("desktop GitHub release readiness gate checks release/deploy workflows, Apple/Firebase secret names, and release slot before tag push");
 } else {
   fail(
-    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the release workflow, required Apple GitHub secret names, and same-tag release slot",
+    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check release/deploy workflows, required Apple/Firebase GitHub secret names, and same-tag release slot",
   );
 }
 
@@ -688,15 +690,16 @@ if (
   releaseStatusScript.includes('"pr"') &&
   releaseStatusScript.includes('"secret"') &&
   releaseStatusScript.includes('"release"') &&
+  releaseStatusScript.includes("FIREBASE_SERVICE_ACCOUNT_JSON") &&
   releaseStatusScript.includes("check-macos-download-release.mjs") &&
   releaseStatusScript.includes("check-hosted-download-surface.mjs") &&
   releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY") &&
   releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_HOSTED_VERIFY")
 ) {
-  pass("desktop release status gate audits PR readiness, Apple secrets, public release state, download assets, and hosted website deployment");
+  pass("desktop release status gate audits PR readiness, Apple/Firebase secrets, public release state, download assets, and hosted website deployment");
 } else {
   fail(
-    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit PR readiness, Apple secret names, public release state, public download assets, and the deployed hosted website",
+    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit PR readiness, Apple/Firebase secret names, public release state, public download assets, and the deployed hosted website",
   );
 }
 
