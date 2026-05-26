@@ -18,6 +18,8 @@ import {
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
   buildMcpConfigJson,
+  buildOntologyStarterAgentVerifyPrompt,
+  buildOntologyStarterJsonGateCommand,
   LocalVaultPicker,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
@@ -33,17 +35,22 @@ import {
 } from '@/shared/lib/tauri-vault-fs';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
-const AGENT_VERIFY_CLI_COMMAND = [
-  'oh-my-ontology validate .',
-  'oh-my-ontology workspace-brief .',
-  'oh-my-ontology agent-brief . --prompt',
-  'oh-my-ontology agent-brief . --graph-db-pack',
-  'oh-my-ontology agent-brief . --verify-fallbacks',
-  'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
-  'oh-my-ontology hubs . --plan --limit 10 --types depends_on,relates',
-  'oh-my-ontology hubs . --limit 10 --types depends_on,relates',
-  'oh-my-ontology mcp-verify . --timeout-ms 15000',
-].join('\n');
+function buildAgentVerifyCliCommand(vaultPath?: string | null): string {
+  const target = vaultPath ? shellQuoteForPacket(vaultPath) : '.';
+  return [
+    `oh-my-ontology validate ${target}`,
+    `oh-my-ontology workspace-brief ${target}`,
+    `oh-my-ontology agent-brief ${target} --prompt`,
+    `oh-my-ontology agent-brief ${target} --graph-db-pack`,
+    `oh-my-ontology agent-brief ${target} --verify-fallbacks`,
+    `oh-my-ontology agent-brief ${target} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `oh-my-ontology hubs ${target} --plan --limit 10 --types depends_on,relates`,
+    `oh-my-ontology hubs ${target} --limit 10 --types depends_on,relates`,
+    `oh-my-ontology mcp-verify ${target} --timeout-ms 15000`,
+  ].join('\n');
+}
+
+const AGENT_VERIFY_CLI_COMMAND = buildAgentVerifyCliCommand();
 
 const AGENT_VERIFY_CLI_PREVIEW = [
   'validate .',
@@ -294,6 +301,9 @@ export function VaultToolsMenu({
   >('idle');
   const [vaultRevealError, setVaultRevealError] = useState<string | null>(null);
   const agentStatus = localVault.agentConfigStatus;
+  const vaultRootPath = localVault.handle
+    ? getTauriVaultRootPath(localVault.handle)
+    : null;
   const agentSetupReady = Boolean(
     agentStatus?.mcpJson &&
       agentStatus.codexConfig &&
@@ -470,7 +480,7 @@ export function VaultToolsMenu({
   }
 
   async function handleCopyAgentVerifyPrompt() {
-    const copied = await copyText(ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT);
+    const copied = await copyText(buildOntologyStarterAgentVerifyPrompt(vaultRootPath));
     setAgentPromptCopyState(copied ? 'copied' : 'failed');
   }
 
@@ -482,12 +492,12 @@ export function VaultToolsMenu({
   }
 
   async function handleCopyAgentVerifyCli() {
-    const copied = await copyText(AGENT_VERIFY_CLI_COMMAND);
+    const copied = await copyText(buildAgentVerifyCliCommand(vaultRootPath));
     setAgentCliCopyState(copied ? 'copied' : 'failed');
   }
 
   async function handleCopyAgentJsonGate() {
-    const copied = await copyText(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
+    const copied = await copyText(buildOntologyStarterJsonGateCommand(vaultRootPath));
     setAgentJsonGateCopyState(copied ? 'copied' : 'failed');
   }
 
@@ -623,9 +633,7 @@ export function VaultToolsMenu({
       : agentCodexCliCopyState === 'failed'
         ? t('agentSetup.copyCodexCliFailed')
         : t('agentSetup.copyCodexCli');
-  const vaultRootPath = localVault.handle
-    ? getTauriVaultRootPath(localVault.handle)
-    : null;
+  const agentJsonGatePreview = buildOntologyStarterJsonGateCommand(vaultRootPath);
 
   return (
     <div
@@ -966,7 +974,7 @@ export function VaultToolsMenu({
                     {t('agentSetup.jsonGateLabel')}
                   </div>
                   <code className="mt-1 block truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-                    {ONTOLOGY_STARTER_JSON_GATE_COMMAND}
+                    {agentJsonGatePreview}
                   </code>
                 </div>
                 <dl

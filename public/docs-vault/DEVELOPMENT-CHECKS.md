@@ -282,9 +282,11 @@ by those flows. `VaultToolsMenu` and `LocalVaultPicker` keep the Tauri absolute
 vault path visible, copyable, and openable in Finder for local data location
 proof. `OntologyStarterCta` uses that same selected path when it copies CLI
 proof and JSON agent-gate commands, so first-run desktop users do not have to
-`cd` into the vault before checking agent readiness. The picker exposes
-recently opened desktop vaults from persisted Tauri paths so close/reopen does
-not require another Finder selection. The
+`cd` into the vault before checking agent readiness. The AI agent setup panel
+uses the selected path for its verification prompt, CLI graph runbook, and JSON
+gate as well, while preserving `.` fallbacks for browser or source-checkout
+contexts. The picker exposes recently opened desktop vaults from persisted
+Tauri paths so close/reopen does not require another Finder selection. The
 handle store filters those Tauri path records outside the Tauri runtime, so a
 hosted browser session cannot resurrect installed-app vault paths as writable
 local state.

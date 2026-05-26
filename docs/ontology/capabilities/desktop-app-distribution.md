@@ -105,7 +105,10 @@ handle no longer produces a manifest, the root entry sends the user back to the
 picker instead of rendering a broken workspace. The ontology starter also copies
 CLI proof and JSON agent-gate commands against the selected absolute vault path
 when Tauri exposes one, so first-run users can verify local agent readiness
-without first moving their terminal into the vault folder. The
+without first moving their terminal into the vault folder. The AI agent setup
+panel applies the same selected-path behavior to its verification prompt, CLI
+graph runbook, and JSON gate while keeping `.` fallbacks for browser and
+source-checkout contexts. The
 `.github/workflows/release-macos.yml` workflow builds those artifacts on `v*`
 tags, fails closed through `pnpm desktop:release-secrets` unless all Apple
 Developer ID and notary secrets are present and structurally usable, and runs

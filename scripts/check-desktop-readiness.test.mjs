@@ -230,6 +230,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop agent setup panel copies path-aware CLI runbooks and JSON gates/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop local vault tools expose, copy, and reveal the selected absolute vault path/,
   );
   assert.match(

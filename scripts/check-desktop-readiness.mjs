@@ -1150,6 +1150,20 @@ if (
 }
 
 if (
+  vaultToolsMenu.includes("buildAgentVerifyCliCommand") &&
+  vaultToolsMenu.includes("buildOntologyStarterAgentVerifyPrompt(vaultRootPath)") &&
+  vaultToolsMenu.includes("buildOntologyStarterJsonGateCommand(vaultRootPath)") &&
+  vaultToolsMenu.includes("agentJsonGatePreview") &&
+  vaultToolsMenu.includes("hubs ${target} --plan")
+) {
+  pass("desktop agent setup panel copies path-aware CLI runbooks and JSON gates");
+} else {
+  fail(
+    "VaultToolsMenu agent setup panel must copy CLI runbooks, verification prompts, and JSON gates against the selected Tauri vault path when available",
+  );
+}
+
+if (
   vaultToolsMenu.includes("getTauriVaultRootPath") &&
   vaultToolsMenu.includes("openTauriVaultInFinder") &&
   localVaultPicker.includes("rootPath") &&

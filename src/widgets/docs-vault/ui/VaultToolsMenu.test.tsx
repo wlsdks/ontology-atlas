@@ -693,6 +693,42 @@ describe('VaultToolsMenu', () => {
     ).toBeInTheDocument();
   });
 
+  it('Tauri vault 경로가 있으면 CLI graph runbook 을 절대경로 기준으로 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: {
+        name: 'team-vault',
+        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+      } as unknown as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'CLI 그래프 runbook 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology validate '/Users/jinan/Team Vault/docs/ontology'",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology hubs '/Users/jinan/Team Vault/docs/ontology' --plan --limit 10 --types depends_on,relates",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
+      ),
+    );
+  });
+
   it('AI agent 설정 패널에서 첫 연결 증거 패킷을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
     renderMenu({
@@ -802,6 +838,10 @@ describe('VaultToolsMenu', () => {
   it('AI agent 설정 패널에서 자동화 JSON gate 명령을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
     renderMenu({
+      handle: {
+        name: 'team-vault',
+        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+      } as unknown as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
         codexConfig: true,
@@ -816,12 +856,12 @@ describe('VaultToolsMenu', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
+      "oh-my-ontology agent-brief '/Users/jinan/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
     expect(screen.getByText('자동화 gate')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
+        "oh-my-ontology agent-brief '/Users/jinan/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       ),
     ).toBeInTheDocument();
     expect(
