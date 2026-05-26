@@ -11,10 +11,11 @@ const MAX_DMG_HASH_BYTES = 2 * 1024 * 1024 * 1024;
 function printHelp() {
   console.log(`Usage: pnpm desktop:verify-download [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--allow-prerelease] [--allow-draft]
 
-Verifies that a public GitHub Release exposes a reachable macOS DMG and a
-matching .sha256 checksum. Draft releases are never accepted because the hosted
-landing page cannot serve them as a real user download unless --allow-draft is
-explicitly passed for the pre-publish CI gate.
+Verifies that a public GitHub Release exposes reachable Apple Silicon
+(aarch64) and Intel (x64) macOS DMGs with matching .sha256 checksums. Draft
+releases are never accepted because the hosted landing page cannot serve them
+as a real user download unless --allow-draft is explicitly passed for the
+pre-publish CI gate.
 `);
 }
 
@@ -222,7 +223,7 @@ function isDmgAsset(asset) {
   return (
     asset &&
     typeof asset.name === "string" &&
-    /^oh-my-ontology_[^/]+_(aarch64|x64|universal)\.dmg$/.test(asset.name) &&
+    /^oh-my-ontology_[^/]+_(aarch64|x64)\.dmg$/.test(asset.name) &&
     typeof asset.browser_download_url === "string"
   );
 }
@@ -236,7 +237,7 @@ function isOhMyOntologyDmgAsset(asset) {
 }
 
 function parseDmgName(name) {
-  const match = name.match(/^oh-my-ontology_([^/]+)_(aarch64|x64|universal)\.dmg$/);
+  const match = name.match(/^oh-my-ontology_([^/]+)_(aarch64|x64)\.dmg$/);
   if (!match) return null;
   return { version: match[1], arch: match[2] };
 }
@@ -410,7 +411,7 @@ const unsupportedDmgs = assets
   .map((asset) => asset.name);
 if (unsupportedDmgs.length > 0) {
   fail(
-    `release ${release.tag_name ?? "(unknown tag)"} has unsupported macOS DMG asset names: ${unsupportedDmgs.join(", ")}. Expected oh-my-ontology_<version>_<aarch64|x64|universal>.dmg.`,
+    `release ${release.tag_name ?? "(unknown tag)"} has unsupported macOS DMG asset names: ${unsupportedDmgs.join(", ")}. Expected oh-my-ontology_<version>_<aarch64|x64>.dmg.`,
   );
 }
 const dmgs = assets.filter(isDmgAsset);
@@ -419,29 +420,24 @@ if (dmgs.length === 0) {
 }
 const parsedDmgs = dmgs.map((dmg) => ({ asset: dmg, ...parseDmgName(dmg.name) }));
 const arches = new Set(parsedDmgs.map((dmg) => dmg.arch).filter(Boolean));
-const hasUniversal = arches.has("universal");
-const missingArches = hasUniversal
-  ? []
-  : REQUIRED_MACOS_ARCHES.filter((arch) => !arches.has(arch));
+const missingArches = REQUIRED_MACOS_ARCHES.filter((arch) => !arches.has(arch));
 if (missingArches.length > 0) {
   fail(
     `release ${release.tag_name ?? "(unknown tag)"} is missing macOS DMG assets for: ${missingArches.join(", ")}.`,
   );
 }
-if (!hasUniversal) {
-  const requiredVersionByArch = new Map(
-    parsedDmgs
-      .filter((dmg) => REQUIRED_MACOS_ARCHES.includes(dmg.arch))
-      .map((dmg) => [dmg.arch, dmg.version]),
+const requiredVersionByArch = new Map(
+  parsedDmgs
+    .filter((dmg) => REQUIRED_MACOS_ARCHES.includes(dmg.arch))
+    .map((dmg) => [dmg.arch, dmg.version]),
+);
+const versions = new Set(requiredVersionByArch.values());
+if (versions.size > 1) {
+  fail(
+    `release ${release.tag_name ?? "(unknown tag)"} has mismatched macOS DMG versions: ${Array.from(requiredVersionByArch.entries())
+      .map(([arch, version]) => `${arch}=${version}`)
+      .join(", ")}.`,
   );
-  const versions = new Set(requiredVersionByArch.values());
-  if (versions.size > 1) {
-    fail(
-      `release ${release.tag_name ?? "(unknown tag)"} has mismatched macOS DMG versions: ${Array.from(requiredVersionByArch.entries())
-        .map(([arch, version]) => `${arch}=${version}`)
-        .join(", ")}.`,
-    );
-  }
 }
 const releaseVersion = releaseVersionFromTag(release.tag_name);
 if (!releaseVersion) {

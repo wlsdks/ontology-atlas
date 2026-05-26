@@ -89,7 +89,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop download verifier rejects stale DMG versions, unsupported DMG names, and checksum mismatches, including tagged draft pre-publish assets/,
+    /✓ desktop download verifier requires explicit Apple Silicon and Intel DMGs with checksum byte verification/,
   );
   assert.match(
     result.stdout,
@@ -335,7 +335,10 @@ test("desktop release helper scripts expose credential-aware help", () => {
 
   assert.equal(verifyDownload.status, 0, verifyDownload.stderr);
   assert.match(verifyDownload.stdout, /public GitHub Release/);
-  assert.match(verifyDownload.stdout, /reachable macOS DMG/);
+  assert.match(verifyDownload.stdout, /Apple Silicon/);
+  assert.match(verifyDownload.stdout, /aarch64/);
+  assert.match(verifyDownload.stdout, /Intel/);
+  assert.match(verifyDownload.stdout, /x64/);
   assert.match(verifyDownload.stdout, /--allow-prerelease/);
 
   assert.equal(releaseGithub.status, 0, releaseGithub.stderr);

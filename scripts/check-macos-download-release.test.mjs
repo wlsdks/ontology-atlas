@@ -181,6 +181,23 @@ test("download release verifier accepts pnpm forwarded argument separator", asyn
   });
 });
 
+test("download release verifier help describes the two architecture contract", async () => {
+  const { stdout } = await execFileAsync(
+    process.execPath,
+    ["scripts/check-macos-download-release.mjs", "--help"],
+    {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(stdout, /Apple Silicon/);
+  assert.match(stdout, /aarch64/);
+  assert.match(stdout, /Intel/);
+  assert.match(stdout, /x64/);
+  assert.match(stdout, /matching \.sha256 checksums/);
+});
+
 test("download release verifier rejects checksum assets without the DMG line", async () => {
   await withServer(makeHandler({ checksumTextFor: () => `${"b".repeat(64)}  other.dmg\n` }), async (baseUrl) => {
     await assert.rejects(
@@ -264,7 +281,26 @@ test("download release verifier rejects unsupported oh-my-ontology DMG asset nam
         (error) => {
           assert.match(error.stderr, /unsupported macOS DMG asset names/);
           assert.match(error.stderr, /oh-my-ontology_0\.1\.0_arm64\.dmg/);
-          assert.match(error.stderr, /aarch64\|x64\|universal/);
+          assert.match(error.stderr, /aarch64\|x64/);
+          return true;
+        },
+      );
+    },
+  );
+});
+
+test("download release verifier rejects universal DMGs so both release lanes stay explicit", async () => {
+  await withServer(
+    makeHandler({
+      names: ["oh-my-ontology_0.1.0_universal.dmg"],
+    }),
+    async (baseUrl) => {
+      await assert.rejects(
+        runVerifier(baseUrl),
+        (error) => {
+          assert.match(error.stderr, /unsupported macOS DMG asset names/);
+          assert.match(error.stderr, /oh-my-ontology_0\.1\.0_universal\.dmg/);
+          assert.match(error.stderr, /aarch64\|x64/);
           return true;
         },
       );
