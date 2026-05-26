@@ -174,7 +174,7 @@ implementation changes route to
 `pnpm test:desktop:check`. The desktop checker suite also covers the
 operator-side GitHub release gate (`scripts/check-macos-release-github.mjs`) with
 a fake `gh` binary, so workflow availability, required Apple secret-name
-detection, tag/version alignment, and stale same-tag release-slot
+detection, tag/version alignment, stale same-tag Git refs, and stale release-slot
 failures stay covered before a public tag is pushed. Native vault bridge changes route to
 `pnpm test:desktop:bridge`, which runs the WebView handle-shim tests plus
 `cargo test --manifest-path src-tauri/Cargo.toml` for the Rust path guard.
@@ -372,7 +372,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-source` | Fail closed before release signing when the tag commit is not the current default-branch head |
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
-| `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, and clean same-tag Release slot |
+| `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, clean same-tag Git ref slot, and clean same-tag Release slot |
 | `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, Apple release secret names, public stable Release state, and public DMG/checksum download verification |
 | `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available |

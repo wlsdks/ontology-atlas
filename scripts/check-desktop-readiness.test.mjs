@@ -174,7 +174,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop GitHub release readiness gate checks the release workflow, Apple secret names, and release slot before tag push/,
+    /✓ desktop GitHub release readiness gate checks the release workflow, Apple secret names, Git tag slot, and release slot before tag push/,
   );
   assert.match(
     result.stdout,
@@ -377,6 +377,10 @@ test("desktop GitHub release readiness gate reports missing Apple secrets", () =
 const args = process.argv.slice(2);
 if (args[0] === 'auth' && args[1] === 'status') process.exit(0);
 if (args[0] === 'api') {
+  if (args[1] && args[1].includes('/git/ref/tags/')) {
+    console.error('gh: Not Found (HTTP 404)');
+    process.exit(1);
+  }
   console.log(JSON.stringify({ state: 'active' }));
   process.exit(0);
 }
@@ -467,6 +471,10 @@ test("desktop GitHub release readiness gate accepts active workflow and required
 const args = process.argv.slice(2);
 if (args[0] === 'auth' && args[1] === 'status') process.exit(0);
 if (args[0] === 'api') {
+  if (args[1] && args[1].includes('/git/ref/tags/')) {
+    console.error('gh: Not Found (HTTP 404)');
+    process.exit(1);
+  }
   console.log(JSON.stringify({ state: 'active' }));
   process.exit(0);
 }
@@ -521,6 +529,10 @@ test("desktop GitHub release readiness gate rejects an occupied release slot", (
 const args = process.argv.slice(2);
 if (args[0] === 'auth' && args[1] === 'status') process.exit(0);
 if (args[0] === 'api') {
+  if (args[1] && args[1].includes('/git/ref/tags/')) {
+    console.error('gh: Not Found (HTTP 404)');
+    process.exit(1);
+  }
   console.log(JSON.stringify({ state: 'active' }));
   process.exit(0);
 }

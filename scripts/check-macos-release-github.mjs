@@ -23,8 +23,8 @@ function printHelp() {
 
 Checks GitHub-side prerequisites for the macOS release workflow before a public
 tag push: gh authentication, required release workflow file, Apple signing and
-notarization secret names, optional local tag/version alignment, and an optional
-clean same-tag GitHub Release slot check.
+notarization secret names, optional local tag/version alignment, an optional
+clean remote Git tag slot, and an optional clean same-tag GitHub Release slot.
 
 This check can only prove that required secret names exist. The tag workflow
 still runs desktop:release-secrets to verify that values are non-empty and the
@@ -112,6 +112,17 @@ function runGh(args, { parseJson = false } = {}) {
   }
 }
 
+function runGhStatus(args) {
+  const result = spawnSync(ghBin(), args, {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  if (result.error) {
+    fail(`failed to run gh ${args.join(" ")}: ${result.error.message}`);
+  }
+  return result;
+}
+
 function runNode(args) {
   const result = spawnSync(process.execPath, args, {
     cwd: process.cwd(),
@@ -157,6 +168,16 @@ if (missing.length > 0) {
 
 if (options.tag) {
   runNode(["scripts/check-macos-release-tag.mjs", `--tag=${options.tag}`]);
+  const tagRef = runGhStatus(["api", `repos/${options.repo}/git/ref/tags/${options.tag}`]);
+  if (tagRef.status === 0) {
+    fail(
+      `git tag ${options.tag} already exists for ${options.repo}. Inspect the existing tag workflow run or choose a new version before pushing a macOS release tag.`,
+    );
+  }
+  const tagRefOutput = `${tagRef.stderr || ""}\n${tagRef.stdout || ""}`;
+  if (!/\b404\b|not found/i.test(tagRefOutput)) {
+    fail(`gh api repos/${options.repo}/git/ref/tags/${options.tag} failed: ${tagRefOutput.trim() || `exit ${tagRef.status}`}`);
+  }
   runNode(["scripts/check-macos-release-slot.mjs", `--repo=${options.repo}`, `--tag=${options.tag}`]);
 }
 
@@ -165,5 +186,6 @@ console.log(
 );
 if (options.tag) {
   console.log(`[desktop-release-github] ${options.tag} matches package, Tauri, and Cargo versions`);
+  console.log(`[desktop-release-github] ${options.tag} has no existing Git tag`);
   console.log(`[desktop-release-github] ${options.tag} has no existing GitHub Release`);
 }

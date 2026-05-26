@@ -38,6 +38,14 @@ if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/oh-my-ontology/action
   out({ state: scenario.workflowState ?? "active" });
   process.exit(0);
 }
+if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/oh-my-ontology/git/ref/tags/")) {
+  if (scenario.gitTagExists) {
+    out({ ref: "refs/tags/" + args[1].split("/").pop(), object: { sha: "0".repeat(40) } });
+    process.exit(0);
+  }
+  err("HTTP 404: Not Found");
+  process.exit(1);
+}
 if (args[0] === "secret" && args[1] === "list") {
   const names = scenario.secretNames ?? ${JSON.stringify(requiredSecrets)};
   out(names.map((name) => ({ name })));
@@ -92,6 +100,7 @@ test("desktop GitHub release gate proves workflows, secrets, tag version, and cl
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /has the active macOS release workflow and all required Apple release secret names/);
     assert.match(result.stdout, /v0\.1\.0 matches package, Tauri, and Cargo versions/);
+    assert.match(result.stdout, /v0\.1\.0 has no existing Git tag/);
     assert.match(result.stdout, /v0\.1\.0 has no existing GitHub Release/);
   });
 });
@@ -124,6 +133,16 @@ test("desktop GitHub release gate blocks an existing same-tag release slot", () 
     assert.equal(result.status, 1);
     assert.match(result.stderr, /release v0\.1\.0 already exists/);
     assert.match(result.stderr, /Delete the existing draft release/);
+  });
+});
+
+test("desktop GitHub release gate blocks an existing same-tag Git ref before tag push", () => {
+  withFakeGh({ gitTagExists: true }, (fakeGhPath) => {
+    const result = runReleaseGithub(fakeGhPath);
+
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /git tag v0\.1\.0 already exists/);
+    assert.match(result.stderr, /Inspect the existing tag workflow run or choose a new version/);
   });
 });
 

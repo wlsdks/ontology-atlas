@@ -806,12 +806,13 @@ if (
   releaseGithubScript.includes("APPLE_CERTIFICATE_P12_BASE64") &&
   releaseGithubScript.includes("release-macos.yml") &&
   releaseGithubScript.includes("Firebase Hosting is intentionally excluded") &&
+  releaseGithubScript.includes("git/ref/tags") &&
   releaseGithubScript.includes("check-macos-release-slot.mjs")
 ) {
-  pass("desktop GitHub release readiness gate checks the release workflow, Apple secret names, and release slot before tag push");
+  pass("desktop GitHub release readiness gate checks the release workflow, Apple secret names, Git tag slot, and release slot before tag push");
 } else {
   fail(
-    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the release workflow, required Apple GitHub secret names, and same-tag release slot without requiring Firebase Hosting",
+    "package.json must expose desktop:release-github and scripts/check-macos-release-github.mjs must check the release workflow, required Apple GitHub secret names, same-tag Git tag slot, and same-tag release slot without requiring Firebase Hosting",
   );
 }
 
