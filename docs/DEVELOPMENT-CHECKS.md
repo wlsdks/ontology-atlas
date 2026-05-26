@@ -705,15 +705,17 @@ version before signing credentials enter the path, checks all Apple release
 secrets, signs the app, packages the DMG, notarizes/staples
 it, verifies the checksum/mount/signature/staple
 contract, copy-and-launch smokes the DMG app from a temporary install folder,
-uploads workflow artifacts, attaches both DMGs plus `.sha256` files to a draft
-GitHub Release, verifies those draft assets with
+records the generated DMG filename, byte size, and SHA-256 value in the GitHub
+Actions step summary, uploads workflow artifacts, attaches both DMGs plus
+`.sha256` files to a draft GitHub Release, verifies those draft assets with
 `pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --allow-draft`,
 publishes the release as stable, then runs
 `pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}"` so the same CI run
 proves the hosted download CTA can reach both public DMGs and that each checksum
-asset contains a SHA-256 line for the same DMG filename and bytes. The workflow
-then deploys the hosted promo/download site with the first-release checklist
-hidden and runs `pnpm desktop:verify-hosted`. The verifier
+asset contains a SHA-256 line for the same DMG filename and bytes. The separate
+`.github/workflows/deploy-hosting.yml` path deploys the hosted promo/download
+site after release publication or manual dispatch and then runs
+`pnpm desktop:verify-hosted`. The verifier
 rejects unsupported extra `oh-my-ontology_*.dmg` names, mixed-version
 architecture assets in the same release, duplicate architecture DMG assets, DMG
 filenames whose version does not match the release tag, and DMG bytes whose

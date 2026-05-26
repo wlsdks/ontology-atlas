@@ -126,7 +126,9 @@ checksum after stapling, redacts notary credentials from failed command logs,
 runs `pnpm desktop:verify-release-dmg` so the mounted
 app signature and stapled notarization ticket plus Gatekeeper assessment are
 required, runs `pnpm desktop:verify-install` so the DMG copy-and-launch path is
-exercised, and uploads workflow artifacts only after those release gates pass.
+exercised, writes the generated DMG filename, byte size, and SHA-256 value to
+the GitHub Actions step summary, and uploads workflow artifacts only after those
+release gates pass.
 The publish job checks that the same tag has no existing GitHub Release before
 attaching both DMGs plus checksums to a draft GitHub Release, runs the download
 verifier against draft assets with `--allow-draft`, publishes the verified

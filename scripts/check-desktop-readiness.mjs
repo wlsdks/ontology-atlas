@@ -745,6 +745,11 @@ if (
   /pnpm desktop:release-source -- --sha="\$\{GITHUB_SHA\}"/.test(releaseWorkflow) &&
   /pnpm desktop:verify-release-dmg/.test(releaseWorkflow) &&
   /pnpm desktop:verify-install/.test(releaseWorkflow) &&
+  /Summarize macOS release assets/.test(releaseWorkflow) &&
+  /GITHUB_STEP_SUMMARY/.test(releaseWorkflow) &&
+  /SHA-256/.test(releaseWorkflow) &&
+  /wc -c < "\$dmg"/.test(releaseWorkflow) &&
+  /cut -d ' ' -f 1 "\$checksum"/.test(releaseWorkflow) &&
   releaseWorkflow.match(/node-version:\s*24/g)?.length === 2 &&
   /arch:\s*aarch64/.test(releaseWorkflow) &&
   /runner:\s*macos-14/.test(releaseWorkflow) &&
@@ -759,7 +764,7 @@ if (
   pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24 and publishes verified public assets without Firebase Hosting dependencies");
 } else {
   fail(
-    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag commit is the default-branch head, verify the tag and secrets before signing, sign/notarize before upload, require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, and verify public downloads without requiring Firebase Hosting secrets or deploy steps",
+    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag commit is the default-branch head, verify the tag and secrets before signing, sign/notarize before upload, summarize DMG names/sizes/SHA-256 values to GITHUB_STEP_SUMMARY, require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, and verify public downloads without requiring Firebase Hosting secrets or deploy steps",
   );
 }
 

@@ -327,7 +327,10 @@ The tag workflow verifies `${GITHUB_SHA}` with
 `pnpm desktop:release-secrets`, builds the `.app`, imports the certificate,
 signs with `pnpm desktop:sign`, packages the DMG, notarizes/staples with
 `pnpm desktop:notarize`, and runs `pnpm desktop:verify-release-dmg` against the
-final artifact. If the tag was pushed from an unmerged or stale commit, the tag
+final artifact. Each architecture lane also writes the generated DMG filename,
+byte size, and SHA-256 value to the GitHub Actions step summary before uploading
+artifacts, so release reviewers can inspect the signed/notarized candidate
+without downloading every artifact first. If the tag was pushed from an unmerged or stale commit, the tag
 version drifts from package/Tauri/Cargo metadata, or the Apple secrets are not
 configured, blank, or structurally invalid, the workflow fails before uploading
 an unsigned or wrongly sourced distribution candidate.

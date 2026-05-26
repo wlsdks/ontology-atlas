@@ -125,6 +125,21 @@ jobs:
       - name: Verify temporary install
         run: pnpm desktop:verify-install
 
+      - name: Summarize macOS release assets
+        run: |
+          {
+            echo "## macOS DMG (${TAURI_ARCH})"
+            echo ""
+            echo "| Asset | Size | SHA-256 |"
+            echo "| --- | ---: | --- |"
+            for dmg in src-tauri/target/release/bundle/dmg/*.dmg; do
+              checksum="${dmg}.sha256"
+              size="$(wc -c < "$dmg" | tr -d ' ')"
+              sha="$(cut -d ' ' -f 1 "$checksum")"
+              echo "| \`$(basename "$dmg")\` | ${size} bytes | \`${sha}\` |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload workflow artifact
         uses: actions/upload-artifact@v7
         with:
