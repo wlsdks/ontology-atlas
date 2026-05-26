@@ -13,6 +13,9 @@ const REQUIRED_SECRETS = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
+const REQUIRED_HOSTED_SECRETS = [
+  "FIREBASE_SERVICE_ACCOUNT_JSON",
+];
 const CHECK_SCOPES = new Map([
   ["github_cli_auth", "local"],
   ["version_alignment", "local"],
@@ -23,6 +26,7 @@ const CHECK_SCOPES = new Map([
   ["github_release", "external"],
   ["download_assets", "external"],
   ["hosted_deploy_workflow", "external"],
+  ["hosted_deploy_secrets", "external"],
   ["hosted_surface", "external"],
 ]);
 const CHECK_OWNERS = new Map([
@@ -35,6 +39,7 @@ const CHECK_OWNERS = new Map([
   ["github_release", "release_operator"],
   ["download_assets", "release_operator"],
   ["hosted_deploy_workflow", "website_operator"],
+  ["hosted_deploy_secrets", "website_operator"],
   ["hosted_surface", "website_operator"],
 ]);
 function defaultTag() {
@@ -65,8 +70,9 @@ Use pnpm desktop:verify-hosted after the separate static promo/download website
 deploy.
 
 Pass --include-hosted-surface when using this command as the full desktop goal
-completion audit: it also runs the deployed promo/download website verifier and
-adds hosted_surface to the same blocker list.
+completion audit: it also checks the hosted deploy workflow, the
+FIREBASE_SERVICE_ACCOUNT_JSON website deploy secret, and the deployed
+promo/download website verifier in the same blocker list.
 `);
 }
 
@@ -481,6 +487,8 @@ async function main() {
     }
   }
 
+  let repoSecretNames = null;
+  let repoSecretListError = null;
   const secrets = runGh([
     "secret",
     "list",
@@ -490,12 +498,14 @@ async function main() {
     "name",
   ], { parseJson: true });
   if (!secrets.ok) {
+    repoSecretListError = secrets.message;
     checks.push(blocked("apple_release_secrets", "Apple release secrets", secrets.message, `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
   } else if (!Array.isArray(secrets.value)) {
+    repoSecretListError = "gh secret list did not return an array.";
     checks.push(blocked("apple_release_secrets", "Apple release secrets", "gh secret list did not return an array.", `Run gh secret list --repo ${options.repo}.`, [`gh secret list --repo ${options.repo}`]));
   } else {
-    const secretNames = new Set(secrets.value.map((secret) => secret?.name).filter(Boolean));
-    const missing = REQUIRED_SECRETS.filter((name) => !secretNames.has(name));
+    repoSecretNames = new Set(secrets.value.map((secret) => secret?.name).filter(Boolean));
+    const missing = REQUIRED_SECRETS.filter((name) => !repoSecretNames.has(name));
     if (missing.length === 0) {
       checks.push(ok("apple_release_secrets", "Apple release secrets", "all required Apple signing/notary secret names exist"));
     } else {
@@ -595,6 +605,30 @@ async function main() {
       checks.push(ok("hosted_deploy_workflow", "Hosted deploy workflow", "deploy-hosting.yml is active on GitHub"));
     }
 
+    if (repoSecretNames) {
+      const missing = REQUIRED_HOSTED_SECRETS.filter((name) => !repoSecretNames.has(name));
+      if (missing.length === 0) {
+        checks.push(ok("hosted_deploy_secrets", "Hosted deploy secrets", "required Firebase Hosting deploy secret name exists"));
+      } else {
+        checks.push(blocked(
+          "hosted_deploy_secrets",
+          "Hosted deploy secrets",
+          `missing ${missing.join(", ")}`,
+          secretSetHints(options.repo, missing),
+          secretSetCommands(options.repo, missing),
+          { missingHostedSecrets: missing },
+        ));
+      }
+    } else {
+      checks.push(blocked(
+        "hosted_deploy_secrets",
+        "Hosted deploy secrets",
+        repoSecretListError ?? "gh secret list did not return repository secrets.",
+        `Run gh secret list --repo ${options.repo}.`,
+        [`gh secret list --repo ${options.repo}`],
+      ));
+    }
+
     const hosted = runNode([
       "scripts/check-hosted-download-surface.mjs",
       `--base-url=${options.hostedBaseUrl}`,
@@ -644,6 +678,7 @@ function renderAndExit(options, checks) {
     externalBlockerIds: blockers.filter((check) => check.scope === "external").map((check) => check.id),
     blockersByOwner: groupBlockersByOwner(blockers),
     missingSecrets: checks.find((check) => check.id === "apple_release_secrets")?.missingSecrets ?? [],
+    missingHostedSecrets: checks.find((check) => check.id === "hosted_deploy_secrets")?.missingHostedSecrets ?? [],
     nextActions: blockers
       .filter((check) => check.next)
       .map((check) => ({

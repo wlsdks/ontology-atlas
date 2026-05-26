@@ -245,8 +245,8 @@ Firebase Hosting is not part of the macOS
 app release gate by default; verify the separate website with `pnpm desktop:verify-hosted`.
 When using the command as the full desktop goal audit, pass
 `--include-hosted-surface` to add the deployed promo/download website as
-`hosted_deploy_workflow` and `hosted_surface` blockers in the same JSON/Markdown
-snapshot;
+`hosted_deploy_workflow`, `hosted_deploy_secrets`, and `hosted_surface`
+blockers in the same JSON/Markdown snapshot;
 the hosted download page keeps macOS app release blockers aligned with
 review/signing/GitHub Release requirements while naming Firebase Hosting only
 as the separate hosted-route deploy gate instead of sending users into the
@@ -392,7 +392,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
 | `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, clean local/remote same-tag Git ref slots, and clean same-tag Release slot |
 | `pnpm desktop:release-run` | Wait for the tag-push `release-macos.yml` run scoped to the pushed tag commit, then watch that exact run to completion |
-| `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, active release workflow availability, clean local/remote same-tag Git ref slots, Apple release secret names, public stable Release state, public DMG/checksum download verification, and optional `--include-hosted-surface` deploy workflow plus website verification |
+| `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, active release workflow availability, clean local/remote same-tag Git ref slots, Apple release secret names, public stable Release state, public DMG/checksum download verification, and optional `--include-hosted-surface` deploy workflow, deploy secret, plus website verification |
 | `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials |
 | `pnpm desktop:verify-dmg` | Mount and checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |

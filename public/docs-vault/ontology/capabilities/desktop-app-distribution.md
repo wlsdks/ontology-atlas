@@ -198,9 +198,9 @@ GitHub Secrets reconciliation.
 Firebase Hosting remains a separate static
 website deployment checked with `pnpm desktop:verify-hosted`; when a goal runner
 needs the full desktop completion audit rather than only the app release gate,
-`--include-hosted-surface` adds that deployed promo/download workflow and
-website check as `hosted_deploy_workflow` and `hosted_surface` in the same
-blocker snapshot.
+`--include-hosted-surface` adds that deployed promo/download workflow, website
+deploy secret, and website check as `hosted_deploy_workflow`,
+`hosted_deploy_secrets`, and `hosted_surface` in the same blocker snapshot.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`
 landing/download pages and rejects a stale public deployment that still shows
 the old browser vault picker CTA or lacks `/ko/download/`.

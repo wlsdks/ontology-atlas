@@ -14,6 +14,9 @@ const requiredSecrets = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
+const requiredHostedSecrets = [
+  "FIREBASE_SERVICE_ACCOUNT_JSON",
+];
 function writeFakeGh(root, scenario) {
   const binPath = join(root, "fake-gh.mjs");
   writeFileSync(
@@ -88,7 +91,7 @@ if (args[0] === "secret" && args[1] === "list") {
     out("not-json");
     process.exit(0);
   }
-  const names = scenario.secretNames ?? ${JSON.stringify(requiredSecrets)};
+  const names = scenario.secretNames ?? ${JSON.stringify([...requiredSecrets, ...requiredHostedSecrets])};
   out(names.map((name) => ({ name })));
   process.exit(0);
 }
@@ -617,6 +620,35 @@ test("desktop release status blocks unavailable hosted deploy workflows in full 
   });
 });
 
+test("desktop release status blocks missing hosted deploy secrets in full goal audits", () => {
+  withFakeGh({ secretNames: requiredSecrets }, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath, [
+      "--tag=v0.1.0",
+      "--pr=274",
+      "--include-hosted-surface",
+      "--hosted-base-url=http://127.0.0.1:1",
+      "--json",
+    ]);
+
+    assert.equal(result.status, 1);
+    const payload = JSON.parse(result.stdout);
+    assert.deepEqual(payload.missingSecrets, []);
+    assert.deepEqual(payload.missingHostedSecrets, requiredHostedSecrets);
+    assert.deepEqual(payload.externalBlockerIds, ["hosted_deploy_secrets", "hosted_surface"]);
+    assert.deepEqual(payload.blockersByOwner, {
+      website_operator: ["hosted_deploy_secrets", "hosted_surface"],
+    });
+    const blocker = payload.checks.find((check) => check.id === "hosted_deploy_secrets");
+    assert.equal(blocker.scope, "external");
+    assert.equal(blocker.owner, "website_operator");
+    assert.equal(blocker.label, "Hosted deploy secrets");
+    assert.match(blocker.detail, /FIREBASE_SERVICE_ACCOUNT_JSON/);
+    assert.deepEqual(blocker.commands, [
+      "gh secret set FIREBASE_SERVICE_ACCOUNT_JSON --repo wlsdks/oh-my-ontology < /path/to/FIREBASE_SERVICE_ACCOUNT_JSON",
+    ]);
+  });
+});
+
 test("desktop release status blocks disabled hosted deploy workflows in full goal audits", () => {
   withFakeGh({ hostedWorkflowState: "disabled_manually" }, (fakeGhPath) => {
     const result = runStatus(fakeGhPath, [
@@ -825,6 +857,7 @@ test("desktop release status help describes the completion audit", () => {
   assert.match(stdout, /write that same payload to disk/);
   assert.match(stdout, /human-readable release checklist/);
   assert.match(stdout, /full desktop goal\s+completion audit/);
+  assert.match(stdout, /FIREBASE_SERVICE_ACCOUNT_JSON website deploy secret/);
   assert.match(stdout, /Firebase Hosting is intentionally excluded/);
   assert.doesNotMatch(stdout, /Hosted website/);
 });
