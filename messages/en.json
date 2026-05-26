@@ -2288,6 +2288,7 @@
       "recentAriaLabel": "Recently opened vaults",
       "recentTitle": "Recent vaults",
       "recentOpenAriaLabel": "Open recent vault: {name}",
+      "recentOpenedSuffix": "opened {relative}",
       "recentForgetTooltip": "Remove this vault from recents",
       "recentForgetAriaLabel": "Remove recent vault: {name}",
       "validationChip": "{errors, plural, =0 {⚠ {warnings}} other {✗ {errors}}}",

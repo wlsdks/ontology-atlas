@@ -153,6 +153,8 @@ export function LocalVaultPicker({
           disabled={false}
           onOpenRecent={onOpenRecent}
           onForgetRecent={onForgetRecent}
+          now={nowTick}
+          dateLocale={dateLocale}
           t={t}
         />
       </div>
@@ -301,6 +303,8 @@ export function LocalVaultPicker({
         disabled={status === 'opening' || status === 'loading'}
         onOpenRecent={onOpenRecent}
         onForgetRecent={onForgetRecent}
+        now={nowTick}
+        dateLocale={dateLocale}
         t={t}
       />
     </div>
@@ -312,12 +316,16 @@ function RecentVaultList({
   disabled,
   onOpenRecent,
   onForgetRecent,
+  now,
+  dateLocale,
   t,
 }: {
   recentVaults: LocalFsHandleRecord[];
   disabled: boolean;
   onOpenRecent?: (record: LocalFsHandleRecord) => void;
   onForgetRecent?: (record: LocalFsHandleRecord) => void;
+  now: number;
+  dateLocale: string;
   t: ReturnType<typeof useTranslations>;
 }) {
   if (!onOpenRecent || recentVaults.length === 0) return null;
@@ -359,6 +367,14 @@ function RecentVaultList({
                       {path}
                     </span>
                   ) : null}
+                  <span
+                    className="block truncate font-mono text-[9.5px] text-[color:var(--color-text-quaternary)]"
+                    title={new Date(record.lastAccessedAt).toLocaleString(dateLocale)}
+                  >
+                    {t('recentOpenedSuffix', {
+                      relative: formatRelative(now, record.lastAccessedAt, t),
+                    })}
+                  </span>
                 </span>
               </button>
               {onForgetRecent ? (

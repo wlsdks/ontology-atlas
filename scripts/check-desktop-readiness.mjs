@@ -1160,6 +1160,8 @@ if (
   localVaultHook.includes("forgetRecent") &&
   localVaultPicker.includes("recentVaults") &&
   localVaultPicker.includes("recentOpenAriaLabel") &&
+  localVaultPicker.includes("recentOpenedSuffix") &&
+  localVaultPicker.includes("record.lastAccessedAt") &&
   localVaultPicker.includes("recentForgetAriaLabel")
 ) {
   pass("desktop local vault picker exposes recent vault recall, stale-path cleanup, hosted/runtime filtering, and vault-local agent config validation");

@@ -73,6 +73,7 @@ describe('LocalVaultPicker', () => {
     );
 
     expect(screen.getByLabelText('최근에 열었던 vault')).toBeInTheDocument();
+    expect(screen.getByText(/열었음/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: '최근 vault 열기: ontology' }));
 
     expect(onOpenRecent).toHaveBeenCalledWith(record);
