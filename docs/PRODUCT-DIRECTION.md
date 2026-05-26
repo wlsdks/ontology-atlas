@@ -284,6 +284,9 @@ GitHub Release state, and public DMG/checksum download verification all pass. It
 goal runners or dashboards that need structured release blockers; stdout JSON is
 compact to avoid small-buffer truncation, `--json-file` writes the same snapshot
 as a pretty disk artifact when stdout may be wrapped by package-runner logs, and
+`--include-hosted-surface` adds the deployed promo/download website verifier to
+the same blocker snapshot for full goal-completion audits while leaving the
+macOS app release gate Firebase-free by default.
 `--markdown-file` writes a reviewer/operator checklist from the same audit
 result. The snapshot carries `schemaVersion` and `generatedAt` so saved
 release evidence has a stable contract and timestamp; `status`, `readyAt`, and

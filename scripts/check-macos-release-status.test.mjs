@@ -544,6 +544,34 @@ test("desktop release status blocks disabled release workflows", () => {
   });
 });
 
+test("desktop release status can include hosted surface blockers for full goal audits", () => {
+  withFakeGh({}, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath, [
+      "--tag=v0.1.0",
+      "--pr=274",
+      "--include-hosted-surface",
+      "--hosted-base-url=http://127.0.0.1:1",
+      "--json",
+    ]);
+
+    assert.equal(result.status, 1);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.includeHostedSurface, true);
+    assert.equal(payload.hostedBaseUrl, "http://127.0.0.1:1");
+    assert.deepEqual(payload.externalBlockerIds, ["hosted_surface"]);
+    assert.deepEqual(payload.blockersByOwner, { website_operator: ["hosted_surface"] });
+    const blocker = payload.checks.find((check) => check.id === "hosted_surface");
+    assert.equal(blocker.scope, "external");
+    assert.equal(blocker.owner, "website_operator");
+    assert.equal(blocker.label, "Hosted website");
+    assert.match(blocker.detail, /127\.0\.0\.1:1/);
+    assert.deepEqual(blocker.commands, [
+      "gh workflow run deploy-hosting.yml --repo wlsdks/oh-my-ontology",
+      "pnpm desktop:verify-hosted -- --base-url=http://127.0.0.1:1",
+    ]);
+  });
+});
+
 test("desktop release status separates local and external blockers", () => {
   withFakeGh({}, (fakeGhPath) => {
     const result = runStatus(fakeGhPath, ["--tag=v9.9.9", "--pr=274", "--json"]);
@@ -725,9 +753,11 @@ test("desktop release status help describes the completion audit", () => {
   assert.match(stdout, /--json/);
   assert.match(stdout, /--json-file=PATH/);
   assert.match(stdout, /--markdown-file=PATH/);
+  assert.match(stdout, /--include-hosted-surface/);
   assert.match(stdout, /machine-readable blocker list/);
   assert.match(stdout, /write that same payload to disk/);
   assert.match(stdout, /human-readable release checklist/);
+  assert.match(stdout, /full desktop goal\s+completion audit/);
   assert.match(stdout, /Firebase Hosting is intentionally excluded/);
   assert.doesNotMatch(stdout, /Hosted website/);
 });

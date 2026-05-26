@@ -22,6 +22,7 @@ const CHECK_SCOPES = new Map([
   ["apple_release_secrets", "external"],
   ["github_release", "external"],
   ["download_assets", "external"],
+  ["hosted_surface", "external"],
 ]);
 const CHECK_OWNERS = new Map([
   ["github_cli_auth", "developer"],
@@ -32,6 +33,7 @@ const CHECK_OWNERS = new Map([
   ["apple_release_secrets", "release_operator"],
   ["github_release", "release_operator"],
   ["download_assets", "release_operator"],
+  ["hosted_surface", "website_operator"],
 ]);
 function defaultTag() {
   const pkg = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8"));
@@ -39,7 +41,7 @@ function defaultTag() {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER] [--json] [--json-file=PATH] [--markdown-file=PATH]
+  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER] [--include-hosted-surface] [--hosted-base-url=https://oh-my-ontology.web.app] [--json] [--json-file=PATH] [--markdown-file=PATH]
 
 Checks the public macOS release completion state in one fail-closed pass:
 release tag version alignment, pull-request merge readiness, active macOS
@@ -59,6 +61,10 @@ reviewers and release operators.
 Firebase Hosting is intentionally excluded from this macOS app release audit.
 Use pnpm desktop:verify-hosted after the separate static promo/download website
 deploy.
+
+Pass --include-hosted-surface when using this command as the full desktop goal
+completion audit: it also runs the deployed promo/download website verifier and
+adds hosted_surface to the same blocker list.
 `);
 }
 
@@ -70,6 +76,8 @@ function parseArgs(argv) {
     json: false,
     jsonFile: "",
     markdownFile: "",
+    includeHostedSurface: false,
+    hostedBaseUrl: "https://oh-my-ontology.web.app",
   };
 
   for (const arg of argv) {
@@ -102,6 +110,14 @@ function parseArgs(argv) {
       options.markdownFile = arg.slice("--markdown-file=".length).trim();
       continue;
     }
+    if (arg === "--include-hosted-surface") {
+      options.includeHostedSurface = true;
+      continue;
+    }
+    if (arg.startsWith("--hosted-base-url=")) {
+      options.hostedBaseUrl = arg.slice("--hosted-base-url=".length).replace(/\/+$/, "");
+      continue;
+    }
     fail(`unknown argument: ${arg}`);
   }
 
@@ -119,6 +135,14 @@ function parseArgs(argv) {
   }
   if (options.markdownFile && options.markdownFile.includes("\0")) {
     fail("--markdown-file must not contain null bytes.");
+  }
+  try {
+    const hostedUrl = new URL(options.hostedBaseUrl);
+    if (!["http:", "https:"].includes(hostedUrl.protocol)) {
+      fail("--hosted-base-url must use http or https.");
+    }
+  } catch {
+    fail(`--hosted-base-url must be a valid URL, got ${options.hostedBaseUrl || "(empty)"}.`);
   }
   return options;
 }
@@ -532,6 +556,31 @@ async function main() {
     }
   }
 
+  if (options.includeHostedSurface) {
+    const hosted = runNode([
+      "scripts/check-hosted-download-surface.mjs",
+      `--base-url=${options.hostedBaseUrl}`,
+    ]);
+    if (hosted.ok) {
+      checks.push(ok(
+        "hosted_surface",
+        "Hosted website",
+        `${options.hostedBaseUrl} is promo/download aligned`,
+      ));
+    } else {
+      checks.push(blocked(
+        "hosted_surface",
+        "Hosted website",
+        hosted.message,
+        `Deploy the static promo/download website, then run pnpm desktop:verify-hosted -- --base-url=${options.hostedBaseUrl}.`,
+        [
+          `gh workflow run deploy-hosting.yml --repo ${options.repo}`,
+          `pnpm desktop:verify-hosted -- --base-url=${options.hostedBaseUrl}`,
+        ],
+      ));
+    }
+  }
+
   renderAndExit(options, checks);
 }
 
@@ -545,6 +594,8 @@ function renderAndExit(options, checks) {
     repo: options.repo,
     tag: options.tag,
     pr: options.pr || null,
+    includeHostedSurface: options.includeHostedSurface,
+    hostedBaseUrl: options.includeHostedSurface ? options.hostedBaseUrl : null,
     ready,
     status: ready ? "ready" : "blocked",
     readyAt: ready ? generatedAt : null,

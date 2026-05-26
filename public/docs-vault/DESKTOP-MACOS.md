@@ -348,6 +348,10 @@ release evidence, top-level `blockerIds` / `localBlockerIds` /
 `externalBlockerIds` / `blockersByOwner` / `nextActions`, and stable check ids
 plus `scope` and `owner` values such as `pull_request`,
 `apple_release_secrets`, `github_release`, and `download_assets`.
+For the full desktop goal audit, add `--include-hosted-surface`; this keeps the
+macOS app release gate local to GitHub Releases by default, but adds the live
+promo/download website as `hosted_surface` in the same JSON/Markdown blocker
+snapshot when goal completion needs both surfaces.
 `pnpm desktop:release-run -- --tag=v0.1.0` is the post-tag watcher used by that
 runbook. It waits until the `release-macos.yml` push run for the pushed tag
 commit appears, then runs `gh run watch --exit-status` against that exact run so
