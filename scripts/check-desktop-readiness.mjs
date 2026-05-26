@@ -864,7 +864,9 @@ if (
   releaseStatusScript.includes("actions/workflows/release-macos.yml") &&
   releaseStatusScript.includes("workflowUnavailableMessage") &&
   releaseStatusScript.includes("includeHostedSurface") &&
+  releaseStatusScript.includes("hosted_deploy_workflow") &&
   releaseStatusScript.includes("hosted_surface") &&
+  releaseStatusScript.includes("actions/workflows/deploy-hosting.yml") &&
   releaseStatusScript.includes("check-hosted-download-surface.mjs") &&
   releaseStatusScript.includes("apple_release_secrets") &&
   releaseStatusScript.includes("release_tag_slot") &&
@@ -893,10 +895,10 @@ if (
   releaseStatusScript.includes("OMOT_RELEASE_STATUS_SKIP_DOWNLOAD_VERIFY") &&
   releaseStatusScript.includes("--include-hosted-surface")
 ) {
-  pass("desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Apple secrets, public release state, download assets, optional hosted surface, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies by default");
+  pass("desktop release status gate audits version alignment, PR readiness, release workflow availability, tag slots, Apple secrets, public release state, download assets, optional hosted deploy workflow and surface, JSON blocker snapshots, and markdown operator checklists without Firebase Hosting dependencies by default");
 } else {
   fail(
-    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit version alignment, PR readiness, release workflow availability, local/remote Git tag slots, Apple secret names, public release state, public download assets, optional hosted surface checks, JSON blocker snapshots, and markdown operator checklists without requiring Firebase Hosting by default",
+    "package.json must expose desktop:release-status and scripts/check-macos-release-status.mjs must audit version alignment, PR readiness, release workflow availability, local/remote Git tag slots, Apple secret names, public release state, public download assets, optional hosted deploy workflow and surface checks, JSON blocker snapshots, and markdown operator checklists without requiring Firebase Hosting by default",
   );
 }
 

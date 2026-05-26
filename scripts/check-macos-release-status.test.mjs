@@ -55,6 +55,18 @@ if (args[0] === "api" && args[1] === "repos/wlsdks/oh-my-ontology/actions/workfl
   out({ state: scenario.workflowState ?? "active" });
   process.exit(0);
 }
+if (args[0] === "api" && args[1] === "repos/wlsdks/oh-my-ontology/actions/workflows/deploy-hosting.yml") {
+  if (scenario.hostedWorkflowMissing) {
+    err("HTTP 404: Not Found");
+    process.exit(1);
+  }
+  if (scenario.hostedWorkflowCheckFails) {
+    err("hosted workflow API unavailable");
+    process.exit(1);
+  }
+  out({ state: scenario.hostedWorkflowState ?? "active" });
+  process.exit(0);
+}
 if (args[0] === "api" && args[1]?.startsWith("repos/wlsdks/oh-my-ontology/git/ref/tags/")) {
   if (scenario.gitTagExists) {
     out({ ref: "refs/tags/" + args[1].split("/").pop(), object: { sha: "0".repeat(40) } });
@@ -560,6 +572,10 @@ test("desktop release status can include hosted surface blockers for full goal a
     assert.equal(payload.hostedBaseUrl, "http://127.0.0.1:1");
     assert.deepEqual(payload.externalBlockerIds, ["hosted_surface"]);
     assert.deepEqual(payload.blockersByOwner, { website_operator: ["hosted_surface"] });
+    const workflow = payload.checks.find((check) => check.id === "hosted_deploy_workflow");
+    assert.equal(workflow.status, "ok");
+    assert.equal(workflow.scope, "external");
+    assert.equal(workflow.owner, "website_operator");
     const blocker = payload.checks.find((check) => check.id === "hosted_surface");
     assert.equal(blocker.scope, "external");
     assert.equal(blocker.owner, "website_operator");
@@ -568,6 +584,57 @@ test("desktop release status can include hosted surface blockers for full goal a
     assert.deepEqual(blocker.commands, [
       "gh workflow run deploy-hosting.yml --repo wlsdks/oh-my-ontology",
       "pnpm desktop:verify-hosted -- --base-url=http://127.0.0.1:1",
+    ]);
+  });
+});
+
+test("desktop release status blocks unavailable hosted deploy workflows in full goal audits", () => {
+  withFakeGh({ hostedWorkflowMissing: true }, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath, [
+      "--tag=v0.1.0",
+      "--pr=274",
+      "--include-hosted-surface",
+      "--hosted-base-url=http://127.0.0.1:1",
+      "--json",
+    ]);
+
+    assert.equal(result.status, 1);
+    const payload = JSON.parse(result.stdout);
+    assert.deepEqual(payload.externalBlockerIds, ["hosted_deploy_workflow", "hosted_surface"]);
+    assert.deepEqual(payload.blockersByOwner, {
+      website_operator: ["hosted_deploy_workflow", "hosted_surface"],
+    });
+    const blocker = payload.checks.find((check) => check.id === "hosted_deploy_workflow");
+    assert.equal(blocker.scope, "external");
+    assert.equal(blocker.owner, "website_operator");
+    assert.equal(blocker.label, "Hosted deploy workflow");
+    assert.match(blocker.detail, /deploy-hosting\.yml is not available to GitHub/);
+    assert.match(blocker.next, /merged into the default branch/);
+    assert.deepEqual(blocker.commands, [
+      "gh api repos/wlsdks/oh-my-ontology/actions/workflows/deploy-hosting.yml",
+      "gh pr view 274 --repo wlsdks/oh-my-ontology --json state,mergedAt,reviewDecision,mergeStateStatus,url",
+    ]);
+  });
+});
+
+test("desktop release status blocks disabled hosted deploy workflows in full goal audits", () => {
+  withFakeGh({ hostedWorkflowState: "disabled_manually" }, (fakeGhPath) => {
+    const result = runStatus(fakeGhPath, [
+      "--tag=v0.1.0",
+      "--pr=274",
+      "--include-hosted-surface",
+      "--hosted-base-url=http://127.0.0.1:1",
+      "--json",
+    ]);
+
+    assert.equal(result.status, 1);
+    const payload = JSON.parse(result.stdout);
+    const blocker = payload.checks.find((check) => check.id === "hosted_deploy_workflow");
+    assert.equal(blocker.scope, "external");
+    assert.equal(blocker.owner, "website_operator");
+    assert.match(blocker.detail, /workflow is disabled_manually/);
+    assert.deepEqual(blocker.commands, [
+      "gh workflow enable deploy-hosting.yml --repo wlsdks/oh-my-ontology",
     ]);
   });
 });

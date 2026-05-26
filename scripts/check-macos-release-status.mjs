@@ -22,6 +22,7 @@ const CHECK_SCOPES = new Map([
   ["apple_release_secrets", "external"],
   ["github_release", "external"],
   ["download_assets", "external"],
+  ["hosted_deploy_workflow", "external"],
   ["hosted_surface", "external"],
 ]);
 const CHECK_OWNERS = new Map([
@@ -33,6 +34,7 @@ const CHECK_OWNERS = new Map([
   ["apple_release_secrets", "release_operator"],
   ["github_release", "release_operator"],
   ["download_assets", "release_operator"],
+  ["hosted_deploy_workflow", "website_operator"],
   ["hosted_surface", "website_operator"],
 ]);
 function defaultTag() {
@@ -326,6 +328,10 @@ function workflowUnavailableMessage(repo) {
   return `release-macos.yml is not available to GitHub for ${repo}. If the workflow is still on a PR branch, merge the desktop PR before pushing the release tag.`;
 }
 
+function hostedWorkflowUnavailableMessage(repo) {
+  return `deploy-hosting.yml is not available to GitHub for ${repo}. If the workflow is still on a PR branch, merge the desktop PR before deploying the hosted download page.`;
+}
+
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   const checks = [];
@@ -557,6 +563,38 @@ async function main() {
   }
 
   if (options.includeHostedSurface) {
+    const hostedWorkflow = runGh([
+      "api",
+      `repos/${options.repo}/actions/workflows/deploy-hosting.yml`,
+    ], { parseJson: true });
+    if (!hostedWorkflow.ok) {
+      const detail = isNotFound(hostedWorkflow.message)
+        ? hostedWorkflowUnavailableMessage(options.repo)
+        : hostedWorkflow.message;
+      checks.push(blocked(
+        "hosted_deploy_workflow",
+        "Hosted deploy workflow",
+        detail,
+        "Ensure .github/workflows/deploy-hosting.yml is merged into the default branch and active before deploying the hosted download page.",
+        [
+          `gh api repos/${options.repo}/actions/workflows/deploy-hosting.yml`,
+          options.pr
+            ? `gh pr view ${options.pr} --repo ${options.repo} --json state,mergedAt,reviewDecision,mergeStateStatus,url`
+            : `gh workflow view deploy-hosting.yml --repo ${options.repo}`,
+        ],
+      ));
+    } else if (hostedWorkflow.value?.state !== "active") {
+      checks.push(blocked(
+        "hosted_deploy_workflow",
+        "Hosted deploy workflow",
+        `deploy-hosting.yml workflow is ${hostedWorkflow.value?.state ?? "not active"}`,
+        "Enable the deploy-hosting.yml workflow before deploying the hosted download page.",
+        [`gh workflow enable deploy-hosting.yml --repo ${options.repo}`],
+      ));
+    } else {
+      checks.push(ok("hosted_deploy_workflow", "Hosted deploy workflow", "deploy-hosting.yml is active on GitHub"));
+    }
+
     const hosted = runNode([
       "scripts/check-hosted-download-surface.mjs",
       `--base-url=${options.hostedBaseUrl}`,
