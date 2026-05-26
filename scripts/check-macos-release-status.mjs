@@ -149,6 +149,13 @@ function prCheckSummary(pr) {
   return `${passed}/${checks.length} checks successful${failingSummary}`;
 }
 
+function prNextAction({ checksOk, prNumber, repo, url }) {
+  const reviewAndMerge =
+    `Resolve PR review/merge blockers: ${url ?? `https://github.com/${repo}/pull/${prNumber}`}`;
+  if (checksOk) return reviewAndMerge;
+  return `Run gh pr checks ${prNumber} --repo ${repo}, then ${reviewAndMerge}`;
+}
+
 function prCheckLabel(check) {
   const name = check.name ?? check.context ?? check.workflowName ?? check.__typename ?? "unnamed check";
   const state = check.conclusion || check.status || "unknown";
@@ -220,7 +227,12 @@ async function main() {
         checks.push(blocked(
           "Pull request",
           `PR #${options.pr} is not merge-ready: review=${value.reviewDecision ?? "unknown"}, merge=${value.mergeStateStatus ?? "unknown"}, ${prCheckSummary(value)}`,
-          `Run gh pr checks ${options.pr} --repo ${options.repo}, then resolve review/merge blockers: ${value.url ?? `https://github.com/${options.repo}/pull/${options.pr}`}`,
+          prNextAction({
+            checksOk,
+            prNumber: options.pr,
+            repo: options.repo,
+            url: value.url,
+          }),
         ));
       }
     }

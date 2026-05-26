@@ -81,4 +81,35 @@ describe('LocalVaultPicker', () => {
 
     expect(onForgetRecent).toHaveBeenCalledWith(record);
   });
+
+  it('권한 재승인 상태에서도 다른 최근 vault 로 바로 전환할 수 있다', () => {
+    const onOpenRecent = vi.fn();
+    const record = recentVault(
+      'client-vault',
+      '/Users/jinan/work/client-vault',
+      Date.now() - 60_000,
+    );
+
+    render(
+      <LocalVaultPicker
+        status="permission-needed"
+        handleName="old-vault"
+        docCount={0}
+        errorMessage={null}
+        lastLoadedAt={null}
+        recentVaults={[record]}
+        onOpen={vi.fn()}
+        onOpenRecent={onOpenRecent}
+        onForgetRecent={vi.fn()}
+        onClose={vi.fn()}
+        onRefresh={vi.fn()}
+        onRequestPermission={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/다시 승인하면 그대로 이어서 봅니다/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '최근 vault 열기: client-vault' }));
+
+    expect(onOpenRecent).toHaveBeenCalledWith(record);
+  });
 });

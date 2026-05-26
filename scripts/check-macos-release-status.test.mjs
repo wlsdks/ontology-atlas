@@ -142,6 +142,24 @@ test("desktop release status reports current completion blockers together", () =
   );
 });
 
+test("desktop release status skips check rerun advice when checks already pass", () => {
+  withFakeGh(
+    {
+      prMergeState: "BLOCKED",
+      prReviewDecision: "REVIEW_REQUIRED",
+      releaseMissing: true,
+    },
+    (fakeGhPath) => {
+      const result = runStatus(fakeGhPath);
+
+      assert.equal(result.status, 1);
+      assert.match(result.stdout, /1\/1 checks successful/);
+      assert.match(result.stdout, /next: Resolve PR review\/merge blockers:/);
+      assert.doesNotMatch(result.stdout, /next: Run gh pr checks 274/);
+    },
+  );
+});
+
 test("desktop release status passes when PR, secrets, and stable release are ready", () => {
   withFakeGh({}, (fakeGhPath) => {
     const result = runStatus(fakeGhPath);

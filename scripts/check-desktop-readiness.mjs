@@ -1162,12 +1162,13 @@ if (
   localVaultPicker.includes("recentOpenAriaLabel") &&
   localVaultPicker.includes("recentOpenedSuffix") &&
   localVaultPicker.includes("record.lastAccessedAt") &&
-  localVaultPicker.includes("recentForgetAriaLabel")
+  localVaultPicker.includes("recentForgetAriaLabel") &&
+  /status === ['"]permission-needed['"][\s\S]*<RecentVaultList/.test(localVaultPicker)
 ) {
   pass("desktop local vault picker exposes recent vault recall, stale-path cleanup, hosted/runtime filtering, and vault-local agent config validation");
 } else {
   fail(
-    "desktop local vault picker must expose recent vault recall, stale-path cleanup, hide Tauri desktop path records outside the Tauri runtime, and reject stale vault-local agent configs that do not use OMOT_VAULT=.",
+    "desktop local vault picker must expose recent vault recall, keep recent switching available during permission reauth, stale-path cleanup, hide Tauri desktop path records outside the Tauri runtime, and reject stale vault-local agent configs that do not use OMOT_VAULT=.",
   );
 }
 

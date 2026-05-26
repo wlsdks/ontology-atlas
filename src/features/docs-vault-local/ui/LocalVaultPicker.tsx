@@ -108,25 +108,36 @@ export function LocalVaultPicker({
   }
   if (status === 'permission-needed') {
     return (
-      <div className="flex flex-1 items-center gap-2 rounded-md border border-[color:rgba(244,183,49,0.35)] bg-[color:rgba(244,183,49,0.12)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-warning)]">
-        <Shield size={12} aria-hidden />
-        <span className="flex-1">{t('permissionNeeded')}</span>
-        <button
-          type="button"
-          onClick={onRequestPermission}
-          className="rounded-sm border border-[color:rgba(244,183,49,0.35)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:rgba(244,183,49,0.18)]"
-        >
-          {t('permissionReauth')}
-        </button>
-        <Tooltip content={t('permissionClearTooltip')} withProvider={false}>
+      <div className="grid flex-1 gap-2">
+        <div className="flex items-center gap-2 rounded-md border border-[color:rgba(244,183,49,0.35)] bg-[color:rgba(244,183,49,0.12)] px-3 py-1.5 text-[11.5px] text-[color:var(--color-status-warning)]">
+          <Shield size={12} aria-hidden />
+          <span className="flex-1">{t('permissionNeeded')}</span>
           <button
             type="button"
-            onClick={onClose}
-            className="rounded-sm border border-transparent px-1.5 py-0.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            onClick={onRequestPermission}
+            className="rounded-sm border border-[color:rgba(244,183,49,0.35)] px-2 py-0.5 text-[11px] transition-colors hover:bg-[color:rgba(244,183,49,0.18)]"
           >
-            {t('permissionClearLabel')}
+            {t('permissionReauth')}
           </button>
-        </Tooltip>
+          <Tooltip content={t('permissionClearTooltip')}>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-sm border border-transparent px-1.5 py-0.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            >
+              {t('permissionClearLabel')}
+            </button>
+          </Tooltip>
+        </div>
+        <RecentVaultList
+          recentVaults={recentVaults}
+          disabled={false}
+          onOpenRecent={onOpenRecent}
+          onForgetRecent={onForgetRecent}
+          now={nowTick}
+          dateLocale={dateLocale}
+          t={t}
+        />
       </div>
     );
   }
