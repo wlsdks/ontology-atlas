@@ -332,7 +332,8 @@ the command is wrapped by a package runner and the automation needs a clean JSON
 artifact on disk. Use `--markdown-file=<path>` when a reviewer or release
 operator needs a shareable checklist artifact. The snapshot includes
 `schemaVersion`, `generatedAt`, `status`, `readyAt`, and `blockedAt` for stored
-release evidence, top-level `blockerIds` / `nextActions`, and stable check ids
+release evidence, top-level `blockerIds` / `localBlockerIds` /
+`externalBlockerIds` / `nextActions`, and stable check ids plus `scope` values
 such as `pull_request`, `apple_release_secrets`, `github_release`, and
 `download_assets`. Actionable blockers also carry `commands[]` so release
 operators can copy exact diagnostic or setup commands from JSON or Markdown

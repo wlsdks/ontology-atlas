@@ -284,8 +284,9 @@ logs, and `--markdown-file` writes a reviewer/operator checklist from the same
 audit result. The snapshot carries `schemaVersion` and `generatedAt` so saved
 release evidence has a stable contract and timestamp; `status`, `readyAt`, and
 `blockedAt` make saved snapshots filterable by outcome, and each check carries a
-stable machine id with top-level `blockerIds` / `nextActions` so automation can
-branch without scraping human labels; actionable blockers also expose
+stable machine id and `scope` with top-level `blockerIds` / `localBlockerIds` /
+`externalBlockerIds` / `nextActions` so automation can branch without scraping
+human labels; actionable blockers also expose
 `commands[]` for exact diagnostics or setup prompts, and Apple signing blockers
 include `missingSecrets[]` for release-operator reconciliation. Firebase
 Hosting remains a separate website

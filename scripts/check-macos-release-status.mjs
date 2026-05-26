@@ -13,6 +13,14 @@ const REQUIRED_SECRETS = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
+const CHECK_SCOPES = new Map([
+  ["github_cli_auth", "local"],
+  ["version_alignment", "local"],
+  ["pull_request", "external"],
+  ["apple_release_secrets", "external"],
+  ["github_release", "external"],
+  ["download_assets", "external"],
+]);
 function defaultTag() {
   const pkg = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8"));
   return `v${pkg.version}`;
@@ -146,12 +154,16 @@ function fail(message) {
   process.exit(1);
 }
 
+function withScope(check) {
+  return { scope: CHECK_SCOPES.get(check.id) ?? "local", ...check };
+}
+
 function ok(id, label, detail) {
-  return { id, status: "ok", label, detail };
+  return withScope({ id, status: "ok", label, detail });
 }
 
 function blocked(id, label, detail, next, commands = [], extra = {}) {
-  const check = { id, status: "blocked", label, detail, next };
+  const check = withScope({ id, status: "blocked", label, detail, next });
   if (commands.length > 0) {
     check.commands = commands;
   }
@@ -160,7 +172,7 @@ function blocked(id, label, detail, next, commands = [], extra = {}) {
 }
 
 function skipped(id, label, detail) {
-  return { id, status: "skipped", label, detail };
+  return withScope({ id, status: "skipped", label, detail });
 }
 
 function prChecksPassed(pr) {
@@ -385,12 +397,15 @@ function renderAndExit(options, checks) {
     blockedAt: ready ? null : generatedAt,
     blockerCount: blockers.length,
     blockerIds: blockers.map((check) => check.id),
+    localBlockerIds: blockers.filter((check) => check.scope === "local").map((check) => check.id),
+    externalBlockerIds: blockers.filter((check) => check.scope === "external").map((check) => check.id),
     missingSecrets: checks.find((check) => check.id === "apple_release_secrets")?.missingSecrets ?? [],
     nextActions: blockers
       .filter((check) => check.next)
       .map((check) => ({
         id: check.id,
         label: check.label,
+        scope: check.scope,
         next: check.next,
         commands: check.commands ?? [],
       })),
@@ -453,6 +468,7 @@ function renderMarkdownChecklist(payload) {
   } else {
     for (const check of blockers) {
       lines.push(`- [ ] ${check.label} (\`${check.id}\`)`);
+      lines.push(`  - Scope: ${check.scope}`);
       lines.push(`  - Detail: ${check.detail}`);
       if (check.next) {
         lines.push(`  - Next: \`${check.next}\``);
