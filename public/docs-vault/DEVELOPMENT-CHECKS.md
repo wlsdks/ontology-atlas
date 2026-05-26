@@ -260,7 +260,9 @@ without a restored vault to `/docs/?intent=local` without rendering the hosted
 marketing page, and `DocsVaultPage` opens the native picker once for that
 intent. Hosted browser sessions must not treat `/docs/?intent=local` as a vault
 opening path; they keep local vault work disabled and leave installation as the
-path to writable local work. A loaded empty local vault must surface the
+path to writable local work. Runtime split changes in `RootEntryPage`,
+`DocsVaultPage` persistence, or `OperationsNav` route to
+`pnpm test:desktop:runtime` before the broader readiness gate. A loaded empty local vault must surface the
 ontology starter in the main workspace pane and select the generated `README.md`
 after creation, so the desktop first-run path does not dead-end behind a generic
 empty document state.

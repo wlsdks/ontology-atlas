@@ -48,6 +48,15 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm test:desktop:runtime',
+    reason: 'hosted-vs-installed desktop runtime split changed',
+    matches: [
+      /^src\/views\/docs-vault\/lib\/persistence(?:\.test)?\.ts$/,
+      /^src\/views\/root-entry\/ui\/RootEntryPage(?:\.test)?\.tsx$/,
+      /^src\/widgets\/operations-nav\/ui\/OperationsNav(?:\.test)?\.tsx$/,
+    ],
+  },
+  {
     command: 'pnpm test:desktop:bridge',
     reason: 'native macOS vault bridge changed',
     matches: [
@@ -66,9 +75,11 @@ const RULES = [
       /^scripts\/verify-macos-install-smoke\.mjs$/,
       /^scripts\/check-macos-download-release\.mjs$/,
       /^docs\/DESKTOP-MACOS\.md$/,
+      /^src\/views\/docs-vault\/lib\/persistence(?:\.test)?\.ts$/,
       /^src\/shared\/lib\/tauri-vault-fs(?:\.test)?\.ts$/,
       /^src\/views\/root-entry\/ui\/RootEntryPage(?:\.test)?\.tsx$/,
       /^src\/views\/docs-vault\/ui\/DocsVaultPage\.tsx$/,
+      /^src\/widgets\/operations-nav\/ui\/OperationsNav(?:\.test)?\.tsx$/,
       /^src-tauri\//,
       /^package\.json$/,
       /^next\.config\.ts$/,

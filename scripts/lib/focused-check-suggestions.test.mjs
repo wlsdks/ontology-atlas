@@ -449,7 +449,9 @@ describe('focused check suggestions', () => {
       'src/shared/lib/tauri-vault-fs.test.ts',
       'src/views/root-entry/ui/RootEntryPage.tsx',
       'src/views/root-entry/ui/RootEntryPage.test.tsx',
+      'src/views/docs-vault/lib/persistence.ts',
       'src/views/docs-vault/ui/DocsVaultPage.tsx',
+      'src/widgets/operations-nav/ui/OperationsNav.tsx',
       'src-tauri/src/lib.rs',
       'src-tauri/tauri.conf.json',
     ]);
@@ -460,8 +462,11 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/desktop-smoke.test.mjs',
       'pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts',
       'pnpm exec vitest run src/views/root-entry/ui/RootEntryPage.test.tsx',
+      'pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts',
+      'pnpm exec vitest run src/widgets/operations-nav/ui/OperationsNav.test.tsx',
       'pnpm docs-vault:check',
       'pnpm test:desktop:check',
+      'pnpm test:desktop:runtime',
       'pnpm test:desktop:bridge',
       'pnpm desktop:check',
       'pnpm exec tsc --noEmit',
@@ -581,7 +586,7 @@ describe('focused check suggestions', () => {
   it('suggests typecheck for app/source TypeScript files without sibling tests', () => {
     const result = suggestFocusedChecks([
       'src/shared/config/site.ts',
-      'src/widgets/operations-nav/ui/OperationsNav.tsx',
+      'src/shared/lib/theme.ts',
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), ['pnpm exec tsc --noEmit']);
