@@ -835,6 +835,8 @@ if (
   releaseStatusScript.includes("blockerIds") &&
   releaseStatusScript.includes("localBlockerIds") &&
   releaseStatusScript.includes("externalBlockerIds") &&
+  releaseStatusScript.includes("blockersByOwner") &&
+  releaseStatusScript.includes("CHECK_OWNERS") &&
   releaseStatusScript.includes("missingSecrets") &&
   releaseStatusScript.includes("nextActions") &&
   releaseStatusScript.includes("commands") &&

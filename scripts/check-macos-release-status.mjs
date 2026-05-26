@@ -21,6 +21,14 @@ const CHECK_SCOPES = new Map([
   ["github_release", "external"],
   ["download_assets", "external"],
 ]);
+const CHECK_OWNERS = new Map([
+  ["github_cli_auth", "developer"],
+  ["version_alignment", "developer"],
+  ["pull_request", "reviewer"],
+  ["apple_release_secrets", "release_operator"],
+  ["github_release", "release_operator"],
+  ["download_assets", "release_operator"],
+]);
 function defaultTag() {
   const pkg = JSON.parse(fs.readFileSync(path.join(process.cwd(), "package.json"), "utf8"));
   return `v${pkg.version}`;
@@ -155,7 +163,11 @@ function fail(message) {
 }
 
 function withScope(check) {
-  return { scope: CHECK_SCOPES.get(check.id) ?? "local", ...check };
+  return {
+    scope: CHECK_SCOPES.get(check.id) ?? "local",
+    owner: CHECK_OWNERS.get(check.id) ?? "developer",
+    ...check,
+  };
 }
 
 function ok(id, label, detail) {
@@ -399,6 +411,7 @@ function renderAndExit(options, checks) {
     blockerIds: blockers.map((check) => check.id),
     localBlockerIds: blockers.filter((check) => check.scope === "local").map((check) => check.id),
     externalBlockerIds: blockers.filter((check) => check.scope === "external").map((check) => check.id),
+    blockersByOwner: groupBlockersByOwner(blockers),
     missingSecrets: checks.find((check) => check.id === "apple_release_secrets")?.missingSecrets ?? [],
     nextActions: blockers
       .filter((check) => check.next)
@@ -406,6 +419,7 @@ function renderAndExit(options, checks) {
         id: check.id,
         label: check.label,
         scope: check.scope,
+        owner: check.owner,
         next: check.next,
         commands: check.commands ?? [],
       })),
@@ -445,6 +459,16 @@ function renderAndExit(options, checks) {
   console.log("[desktop-release-status] ready: public macOS release requirements are satisfied");
 }
 
+function groupBlockersByOwner(blockers) {
+  const byOwner = {};
+  for (const check of blockers) {
+    const owner = check.owner ?? "developer";
+    byOwner[owner] ??= [];
+    byOwner[owner].push(check.id);
+  }
+  return byOwner;
+}
+
 function renderMarkdownChecklist(payload) {
   const lines = [
     "# macOS Release Status",
@@ -469,6 +493,7 @@ function renderMarkdownChecklist(payload) {
     for (const check of blockers) {
       lines.push(`- [ ] ${check.label} (\`${check.id}\`)`);
       lines.push(`  - Scope: ${check.scope}`);
+      lines.push(`  - Owner: ${check.owner}`);
       lines.push(`  - Detail: ${check.detail}`);
       if (check.next) {
         lines.push(`  - Next: \`${check.next}\``);

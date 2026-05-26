@@ -133,6 +133,10 @@ test("desktop release status emits machine-readable blockers for automation", ()
         "apple_release_secrets",
         "github_release",
       ]);
+      assert.deepEqual(payload.blockersByOwner, {
+        reviewer: ["pull_request"],
+        release_operator: ["apple_release_secrets", "github_release"],
+      });
       assert.deepEqual(
         payload.nextActions.map((action) => action.id),
         ["pull_request", "apple_release_secrets", "github_release"],
@@ -140,6 +144,10 @@ test("desktop release status emits machine-readable blockers for automation", ()
       assert.deepEqual(
         payload.nextActions.map((action) => action.scope),
         ["external", "external", "external"],
+      );
+      assert.deepEqual(
+        payload.nextActions.map((action) => action.owner),
+        ["reviewer", "release_operator", "release_operator"],
       );
       assert.deepEqual(
         payload.nextActions.find((action) => action.id === "pull_request").commands,
@@ -162,6 +170,10 @@ test("desktop release status emits machine-readable blockers for automation", ()
       assert.deepEqual(
         payload.checks.filter((check) => check.status === "blocked").map((check) => check.scope),
         ["external", "external", "external"],
+      );
+      assert.deepEqual(
+        payload.checks.filter((check) => check.status === "blocked").map((check) => check.owner),
+        ["reviewer", "release_operator", "release_operator"],
       );
       assert.deepEqual(
         payload.checks.filter((check) => check.status === "blocked").map((check) => check.label),
@@ -216,6 +228,10 @@ test("desktop release status writes machine-readable blockers to a JSON file", (
           "apple_release_secrets",
           "github_release",
         ]);
+        assert.deepEqual(payload.blockersByOwner, {
+          reviewer: ["pull_request"],
+          release_operator: ["apple_release_secrets", "github_release"],
+        });
         assert.deepEqual(payload.blockerIds, [
           "pull_request",
           "apple_release_secrets",
@@ -275,7 +291,9 @@ test("desktop release status writes a human-readable markdown checklist", () => 
         assert.match(markdown, /## Blockers/);
         assert.match(markdown, /- \[ \] Pull request \(`pull_request`\)/);
         assert.match(markdown, /  - Scope: external/);
+        assert.match(markdown, /  - Owner: reviewer/);
         assert.match(markdown, /- \[ \] Apple release secrets \(`apple_release_secrets`\)/);
+        assert.match(markdown, /  - Owner: release_operator/);
         assert.match(markdown, /- \[ \] GitHub Release \(`github_release`\)/);
         assert.match(markdown, /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/);
         assert.match(markdown, /  - Commands:\n    - `gh secret set APPLE_CERTIFICATE_P12_BASE64 --repo wlsdks\/oh-my-ontology < \/path\/to\/APPLE_CERTIFICATE_P12_BASE64`/);
@@ -375,9 +393,14 @@ test("desktop release status separates local and external blockers", () => {
     const payload = JSON.parse(result.stdout);
     assert.deepEqual(payload.localBlockerIds, ["version_alignment"]);
     assert.deepEqual(payload.externalBlockerIds, []);
+    assert.deepEqual(payload.blockersByOwner, { developer: ["version_alignment"] });
     assert.equal(
       payload.checks.find((check) => check.id === "version_alignment").scope,
       "local",
+    );
+    assert.equal(
+      payload.checks.find((check) => check.id === "version_alignment").owner,
+      "developer",
     );
   });
 });
@@ -431,6 +454,7 @@ test("desktop release status JSON reports ready when all release gates pass", ()
     assert.deepEqual(payload.missingSecrets, []);
     assert.deepEqual(payload.localBlockerIds, []);
     assert.deepEqual(payload.externalBlockerIds, []);
+    assert.deepEqual(payload.blockersByOwner, {});
     assert.deepEqual(payload.blockerIds, []);
     assert.deepEqual(payload.nextActions, []);
     assert.deepEqual(

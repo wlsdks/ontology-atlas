@@ -223,9 +223,9 @@ a package runner that may add lifecycle text around stdout, and add
 human-readable checklist artifact. The JSON snapshot
 includes `schemaVersion`, `generatedAt`, `status`, `readyAt`, and `blockedAt`
 so stored release evidence can be versioned, ordered, and filtered by outcome;
-top-level `blockerIds`, `localBlockerIds`, `externalBlockerIds`, and
-`nextActions` summarize the blocked checks, and each check also carries a stable
-`id` and `scope` such as `pull_request`,
+top-level `blockerIds`, `localBlockerIds`, `externalBlockerIds`,
+`blockersByOwner`, and `nextActions` summarize the blocked checks, and each
+check also carries a stable `id`, `scope`, and `owner` such as `pull_request`,
 `apple_release_secrets`, `github_release`, and `download_assets` so automation
 does not branch on translated or edited labels. Actionable blockers include
 `commands[]` entries, and Apple signing blockers expose top-level
