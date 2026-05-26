@@ -136,7 +136,7 @@ from tag lookup to the releases list if GitHub hides draft releases from the tag
 endpoint, then matches the requested `tag_name` before checking asset bytes.
 `pnpm desktop:release-github` is the operator-side pre-tag guard for that final
 step: it checks `gh` authentication, the active `release-macos.yml` release
-workflow, the active `deploy-hosting.yml` Firebase Hosting deploy workflow,
+workflow, the fallback `deploy-hosting.yml` Firebase Hosting deploy workflow,
 required Apple signing/notary and Firebase service-account secret names,
 optional tag/version alignment, and the clean same-tag Release slot before the
 release tag is pushed. It cannot read

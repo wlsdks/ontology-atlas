@@ -144,7 +144,7 @@ for a macOS prototype:
   unsigned or unnotarized macOS artifact.
 - `scripts/check-macos-release-github.mjs` checks the GitHub-side prerequisites
   before pushing a public tag: `gh` authentication, the active
-  `release-macos.yml` release workflow, the active `deploy-hosting.yml` deploy
+  `release-macos.yml` release workflow, the fallback `deploy-hosting.yml` deploy
   workflow, required Apple signing/notary and Firebase Hosting service-account
   secret names, and optional tag/version alignment plus clean same-tag Release slot. It cannot
   inspect secret values, so the tag workflow still runs `desktop:release-secrets`

@@ -83,8 +83,10 @@ Deployment is complete only when all are true:
 - `pnpm firebase:deploy-check` proves `.env.prod`, `.firebaserc`,
   `firebase.json`, `.gitignore`, and `.firebaseignore` agree before deploy.
 - `pnpm bundle:check` still reports Firebase SDK chunk `0`.
-- In GitHub Actions, `.github/workflows/deploy-hosting.yml` publishes only the
-  static `out/` Hosting target and then runs `pnpm desktop:verify-hosted`.
+- In GitHub Actions, `.github/workflows/release-macos.yml` publishes only the
+  static `out/` Hosting target after the verified macOS Release is public, then
+  runs `pnpm desktop:verify-hosted`. `.github/workflows/deploy-hosting.yml`
+  preserves the same contract for manual fallback deploys.
 
 For UI-sensitive landing changes, also run a short Playwright check against
 `$FIREBASE_HOSTING_URL/en/` and `$FIREBASE_HOSTING_URL/en/docs/?intent=local`.

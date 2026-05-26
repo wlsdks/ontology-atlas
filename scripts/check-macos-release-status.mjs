@@ -284,7 +284,7 @@ async function main() {
       checks.push(blocked(
         "Hosted website",
         hosted.message,
-        "Deploy the current static out/ to Firebase Hosting, then rerun pnpm desktop:verify-hosted.",
+        `Let .github/workflows/release-macos.yml deploy Hosting after ${options.tag} publishes, or run the deploy-hosting fallback manually, then rerun pnpm desktop:verify-hosted.`,
       ));
     }
   }
