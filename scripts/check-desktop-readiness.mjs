@@ -446,13 +446,16 @@ if (
 }
 
 if (
-  pkg.scripts?.["desktop:goal-audit"] ===
-  "pnpm desktop:release-preflight && pnpm desktop:release-status -- --include-hosted-surface"
+  pkg.scripts?.["desktop:goal-audit"] === "node scripts/check-desktop-goal-audit.mjs" &&
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-desktop-goal-audit.test.mjs") &&
+  readText("scripts/check-desktop-goal-audit.mjs").includes("--pr=NUMBER is required") &&
+  readText("scripts/check-desktop-goal-audit.mjs").includes("desktop:release-preflight") &&
+  readText("scripts/check-desktop-goal-audit.mjs").includes("--include-hosted-surface")
 ) {
-  pass("desktop goal audit chains the full local preflight with the public release and hosted download blocker snapshot");
+  pass("desktop goal audit requires PR and tag evidence before chaining local preflight with public release and hosted download blockers");
 } else {
   fail(
-    "package.json must expose desktop:goal-audit as pnpm desktop:release-preflight && pnpm desktop:release-status -- --include-hosted-surface so goal completion proves both local app packaging and public release/download readiness",
+    "package.json must expose desktop:goal-audit through scripts/check-desktop-goal-audit.mjs, cover it in test:desktop:check, require --pr and --tag before preflight, then run desktop:release-preflight and desktop:release-status -- --include-hosted-surface",
   );
 }
 

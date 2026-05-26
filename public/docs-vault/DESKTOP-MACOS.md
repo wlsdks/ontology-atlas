@@ -222,11 +222,11 @@ for a macOS prototype:
   static build, packaged-route smoke, app/DMG build, app launch smoke, DMG
   mount/checksum smoke, and temporary install launch smoke.
 - `pnpm desktop:goal-audit -- --pr=274 --tag=v0.1.0` is the single goal-level
-  operator check: it runs the full local release preflight first, then runs the
-  public release status audit with `--include-hosted-surface` so local app
-  packaging, PR/release readiness, GitHub Release assets, hosted deploy
-  workflow/secrets, and the live download page are all represented before the
-  goal is called complete.
+  operator check: it requires PR and tag evidence before starting the expensive
+  local preflight, then runs the public release status audit with
+  `--include-hosted-surface` so local app packaging, PR/release readiness,
+  GitHub Release assets, hosted deploy workflow/secrets, and the live download
+  page are all represented before the goal is called complete.
 - In the Tauri app, the local vault tools panel shows the selected absolute
   vault path, lets the user copy it, and opens the folder in Finder, so local
   data location is visible instead of hidden behind a folder nickname.

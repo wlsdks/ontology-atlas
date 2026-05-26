@@ -186,7 +186,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop goal audit chains the full local preflight with the public release and hosted download blocker snapshot/,
+    /✓ desktop goal audit requires PR and tag evidence before chaining local preflight with public release and hosted download blockers/,
   );
   assert.match(result.stdout, /✓ desktop signing script is available for release builds/);
   assert.match(result.stdout, /✓ desktop notarization script is available for release builds/);
