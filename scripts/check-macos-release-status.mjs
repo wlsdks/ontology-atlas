@@ -250,7 +250,7 @@ function releasePublishCommands({ repo, tag, prNumber }) {
     `pnpm desktop:release-source -- --repo=${repo} --sha="$(git rev-parse origin/main)"`,
     `git tag ${tag} origin/main`,
     `git push origin ${tag}`,
-    `gh run watch --repo ${repo} "$(gh run list --repo ${repo} --workflow release-macos.yml --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status`,
+    `gh run watch --repo ${repo} "$(gh run list --repo ${repo} --workflow release-macos.yml --event push --commit $(git rev-list -n 1 ${tag}) --limit 1 --json databaseId --jq '.[0].databaseId')" --exit-status`,
     `gh release view ${tag} --repo ${repo}`,
     `pnpm desktop:verify-download -- --repo=${repo} --tag=${tag}`,
   ];

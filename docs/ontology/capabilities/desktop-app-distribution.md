@@ -187,7 +187,7 @@ stable `id` plus `scope` and `owner` (`pull_request`,
 `apple_release_secrets`, `github_release`, `download_assets`, and related setup
 checks) so automation does not branch on human labels. Actionable blockers also
 carry `commands[]` entries for exact diagnostic, setup, pre-tag source-check, or
-post-merge tag-push commands, plus release-workflow watch and public download
+post-merge tag-push commands, plus tag-commit-scoped release-workflow watch and public download
 verification, and Apple signing blockers expose `missingSecrets[]` for direct
 GitHub Secrets reconciliation.
 Firebase Hosting remains a separate static

@@ -232,7 +232,7 @@ does not branch on translated or edited labels. Actionable blockers include
 `commands[]` entries, and Apple signing blockers expose top-level
 `missingSecrets[]`, so follow-up runners can execute known diagnostics, secret
 setup prompts, pre-tag source checks, the post-merge release tag push, release
-workflow watch, and public download verification without parsing prose.
+workflow watch scoped to the pushed tag commit, and public download verification without parsing prose.
 Firebase Hosting is not part of the macOS
 app release gate; verify the separate website with `pnpm desktop:verify-hosted`;
 the hosted download page keeps macOS app release blockers aligned with

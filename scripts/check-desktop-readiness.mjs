@@ -846,6 +846,8 @@ if (
   releaseStatusScript.includes("desktop:release-source") &&
   releaseStatusScript.includes("git push origin") &&
   releaseStatusScript.includes("gh run watch") &&
+  releaseStatusScript.includes("--event push") &&
+  releaseStatusScript.includes("git rev-list -n 1") &&
   releaseStatusScript.includes("desktop:verify-download") &&
   releaseStatusScript.includes("renderMarkdownChecklist") &&
   releaseStatusScript.includes("fs.writeFileSync") &&
