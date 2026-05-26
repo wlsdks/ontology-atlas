@@ -362,7 +362,10 @@ For the full desktop goal audit, add `--include-hosted-surface`; this keeps the
 macOS app release gate local to GitHub Releases by default, but adds the live
 promo/download deployment as `hosted_deploy_workflow`, `hosted_deploy_secrets`,
 and `hosted_surface` in the same JSON/Markdown blocker snapshot when goal
-completion needs both surfaces.
+completion needs both surfaces. The Markdown checklist renders both Apple
+signing secrets and `FIREBASE_SERVICE_ACCOUNT_JSON` under each blocked row's
+missing-secret section, so handoff reviewers do not have to cross-read the JSON
+payload to finish the hosted deploy setup.
 `pnpm desktop:release-run -- --tag=v0.1.0` is the post-tag watcher used by that
 runbook. It waits until the `release-macos.yml` push run for the pushed tag
 commit appears, then runs `gh run watch --exit-status` against that exact run so
@@ -371,7 +374,8 @@ Actionable blockers also carry `commands[]` so reviewers and release operators
 can copy exact diagnostic, secret setup, pre-tag source checks, post-merge
 tag-push, tag-commit-scoped release-workflow watch, and public download verification commands from
 JSON or Markdown without parsing prose; Apple signing blockers additionally
-expose `missingSecrets[]` for direct comparison against GitHub Secrets.
+expose `missingSecrets[]` and hosted deploy blockers expose
+`missingHostedSecrets[]` for direct comparison against GitHub Secrets.
 Firebase Hosting is not part of the macOS app release gate;
 run `pnpm desktop:verify-hosted` after the separate website deploy.
 When it reports missing secrets, set each value through `gh secret set`, for

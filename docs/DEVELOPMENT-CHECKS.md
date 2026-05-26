@@ -242,8 +242,9 @@ top-level `blockerIds`, `localBlockerIds`, `externalBlockerIds`,
 check also carries a stable `id`, `scope`, and `owner` such as `pull_request`,
 `apple_release_secrets`, `github_release`, and `download_assets` so automation
 does not branch on translated or edited labels. Actionable blockers include
-`commands[]` entries, and Apple signing blockers expose top-level
-`missingSecrets[]`, so follow-up runners can execute known diagnostics, secret
+`commands[]` entries, Apple signing blockers expose top-level
+`missingSecrets[]`, and hosted deploy blockers expose `missingHostedSecrets[]`,
+so follow-up runners can execute known diagnostics, secret
 setup prompts, pre-tag source checks, the post-merge release tag push, release
 workflow watch scoped to the pushed tag commit, and public download verification without parsing prose.
 Firebase Hosting is not part of the macOS
@@ -251,7 +252,8 @@ app release gate by default; verify the separate website with `pnpm desktop:veri
 When using the command as the full desktop goal audit, pass
 `--include-hosted-surface` to add the deployed promo/download website as
 `hosted_deploy_workflow`, `hosted_deploy_secrets`, and `hosted_surface`
-blockers in the same JSON/Markdown snapshot;
+blockers in the same JSON/Markdown snapshot, including
+`FIREBASE_SERVICE_ACCOUNT_JSON` in the checklist's missing-secret section;
 the hosted download page keeps macOS app release blockers aligned with
 review/signing/GitHub Release requirements while naming Firebase Hosting only
 as the separate hosted-route deploy gate instead of sending users into the

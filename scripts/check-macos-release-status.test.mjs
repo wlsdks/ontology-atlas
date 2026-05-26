@@ -649,6 +649,31 @@ test("desktop release status blocks missing hosted deploy secrets in full goal a
   });
 });
 
+test("desktop release status markdown lists missing hosted deploy secrets", () => {
+  withFakeGh({ secretNames: requiredSecrets }, (fakeGhPath) => {
+    const root = mkdtempSync(join(tmpdir(), "omo-release-status-md-hosted-"));
+    try {
+      const markdownPath = join(root, "release-status.md");
+      const result = runStatus(fakeGhPath, [
+        "--tag=v0.1.0",
+        "--pr=274",
+        "--include-hosted-surface",
+        "--hosted-base-url=http://127.0.0.1:1",
+        `--markdown-file=${markdownPath}`,
+      ]);
+
+      assert.equal(result.status, 1);
+      assert.ok(existsSync(markdownPath));
+      const markdown = readFileSync(markdownPath, "utf8");
+      assert.match(markdown, /- \[ \] Hosted deploy secrets \(`hosted_deploy_secrets`\)/);
+      assert.match(markdown, /  - Owner: website_operator/);
+      assert.match(markdown, /  - Missing secrets:\n    - `FIREBASE_SERVICE_ACCOUNT_JSON`/);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
 test("desktop release status blocks disabled hosted deploy workflows in full goal audits", () => {
   withFakeGh({ hostedWorkflowState: "disabled_manually" }, (fakeGhPath) => {
     const result = runStatus(fakeGhPath, [

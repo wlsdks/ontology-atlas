@@ -194,8 +194,10 @@ stable `id` plus `scope` and `owner` (`pull_request`,
 checks) so automation does not branch on human labels. Actionable blockers also
 carry `commands[]` entries for exact diagnostic, setup, pre-tag source-check, or
 post-merge tag-push commands, plus the `desktop:release-run` tag-commit-scoped release-workflow watch and public download
-verification, and Apple signing blockers expose `missingSecrets[]` for direct
-GitHub Secrets reconciliation.
+verification. Apple signing blockers expose `missingSecrets[]`, hosted deploy
+blockers expose `missingHostedSecrets[]`, and the Markdown checklist renders
+both under each blocked row's missing-secret section for direct GitHub Secrets
+reconciliation.
 Firebase Hosting remains a separate static
 website deployment checked with `pnpm desktop:verify-hosted`; when a goal runner
 needs the full desktop completion audit rather than only the app release gate,

@@ -770,9 +770,13 @@ function renderMarkdownChecklist(payload) {
           lines.push(`    - \`${command}\``);
         }
       }
-      if (Array.isArray(check.missingSecrets) && check.missingSecrets.length > 0) {
+      const missingSecretNames = [
+        ...(Array.isArray(check.missingSecrets) ? check.missingSecrets : []),
+        ...(Array.isArray(check.missingHostedSecrets) ? check.missingHostedSecrets : []),
+      ];
+      if (missingSecretNames.length > 0) {
         lines.push("  - Missing secrets:");
-        for (const secret of check.missingSecrets) {
+        for (const secret of missingSecretNames) {
           lines.push(`    - \`${secret}\``);
         }
       }
