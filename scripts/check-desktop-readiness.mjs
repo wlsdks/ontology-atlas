@@ -211,11 +211,12 @@ if (
 if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-github.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-source.test.mjs") &&
-  pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-status.test.mjs")
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-status.test.mjs") &&
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/lib/macos-release-names.test.mjs")
 ) {
   pass("desktop checker tests cover the GitHub release operator, source, and completion gates");
 } else {
-  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs, scripts/check-macos-release-source.test.mjs, and scripts/check-macos-release-status.test.mjs so the macOS release operator, source, and completion gates stay covered");
+  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs, scripts/check-macos-release-source.test.mjs, scripts/check-macos-release-status.test.mjs, and scripts/lib/macos-release-names.test.mjs so the macOS release operator, source, completion, and app-vs-asset naming gates stay covered");
 }
 
 if (
