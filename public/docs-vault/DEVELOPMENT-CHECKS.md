@@ -160,6 +160,7 @@ The macOS desktop readiness gate is scaffold-aware and local-first: when
 `scripts/check-macos-release-secrets.mjs`, `scripts/check-macos-release-source.mjs`,
 `scripts/check-macos-release-tag.mjs`,
 `scripts/check-macos-release-slot.mjs`, `scripts/check-macos-release-github.mjs`,
+`scripts/watch-macos-release-run.mjs`,
 `scripts/sign-macos-app.mjs`,
 `scripts/notarize-macos-dmg.mjs`,
 `src/shared/lib/tauri-vault-fs.ts`, `docs/DESKTOP-MACOS.md`, `src-tauri/**`,
@@ -175,7 +176,10 @@ implementation changes route to
 operator-side GitHub release gate (`scripts/check-macos-release-github.mjs`) with
 a fake `gh` binary, so workflow availability, required Apple secret-name
 detection, tag/version alignment, stale same-tag Git refs, and stale release-slot
-failures stay covered before a public tag is pushed. Native vault bridge changes route to
+failures stay covered before a public tag is pushed. It also covers
+`scripts/watch-macos-release-run.mjs` so the post-tag operator command waits for
+the tag-commit push workflow run before handing control to `gh run watch`.
+Native vault bridge changes route to
 `pnpm test:desktop:bridge`, which runs the WebView handle-shim tests plus
 `cargo test --manifest-path src-tauri/Cargo.toml` for the Rust path guard.
 `pnpm desktop:doctor` reports local Tauri / Cargo /
@@ -374,6 +378,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-tag` | Fail closed before release signing when the v-prefixed Git tag does not match package.json, Tauri, and Cargo versions |
 | `pnpm desktop:release-slot` | Fail closed before GitHub Release upload when the same tag already has a draft, prerelease, or public release |
 | `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, clean same-tag Git ref slot, and clean same-tag Release slot |
+| `pnpm desktop:release-run` | Wait for the tag-push `release-macos.yml` run scoped to the pushed tag commit, then watch that exact run to completion |
 | `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, Apple release secret names, public stable Release state, and public DMG/checksum download verification |
 | `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available |
@@ -644,6 +649,7 @@ pnpm desktop:verify-release-dmg
 
 # macOS app completion audit after PR review/merge, Apple secrets, tag workflow,
 # public release publication, and DMG asset verification are expected to be done:
+pnpm desktop:release-run -- --tag=v0.1.0
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0 --json
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0 --json-file=.tmp/release-status.json

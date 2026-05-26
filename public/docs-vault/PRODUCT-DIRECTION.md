@@ -289,7 +289,7 @@ stable machine id, `scope`, and `owner` with top-level `blockerIds` /
 `localBlockerIds` / `externalBlockerIds` / `blockersByOwner` / `nextActions` so
 automation can branch without scraping human labels; actionable blockers also
 expose `commands[]` for exact diagnostics, setup prompts, pre-tag source
-checks, the post-merge release tag push, tag-commit-scoped release workflow watch, and public
+checks, the post-merge release tag push, `desktop:release-run` tag-commit-scoped workflow watch, and public
 download verification, and Apple signing blockers include `missingSecrets[]` for
 release-operator reconciliation. Firebase
 Hosting remains a separate website

@@ -67,6 +67,7 @@ const releaseSourceScript = readText("scripts/check-macos-release-source.mjs");
 const releaseTagScript = readText("scripts/check-macos-release-tag.mjs");
 const releaseSlotScript = readText("scripts/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
+const releaseRunScript = readText("scripts/watch-macos-release-run.mjs");
 const releaseStatusScript = readText("scripts/check-macos-release-status.mjs");
 const macosReleaseNamesHelper = readText("scripts/lib/macos-release-names.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/check-hosted-download-surface.mjs");
@@ -263,11 +264,12 @@ if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-github.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-source.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-status.test.mjs") &&
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/watch-macos-release-run.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/lib/macos-release-names.test.mjs")
 ) {
-  pass("desktop checker tests cover the GitHub release operator, source, and completion gates");
+  pass("desktop checker tests cover the GitHub release operator, source, run-watch, and completion gates");
 } else {
-  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs, scripts/check-macos-release-source.test.mjs, scripts/check-macos-release-status.test.mjs, and scripts/lib/macos-release-names.test.mjs so the macOS release operator, source, completion, and app-vs-asset naming gates stay covered");
+  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs, scripts/check-macos-release-source.test.mjs, scripts/watch-macos-release-run.test.mjs, scripts/check-macos-release-status.test.mjs, and scripts/lib/macos-release-names.test.mjs so the macOS release operator, source, run-watch, completion, and app-vs-asset naming gates stay covered");
 }
 
 if (
@@ -817,6 +819,28 @@ if (
 }
 
 if (
+  pkg.scripts?.["desktop:release-run"] === "node scripts/watch-macos-release-run.mjs" &&
+  releaseRunScript.includes('"run"') &&
+  releaseRunScript.includes('"list"') &&
+  releaseRunScript.includes("--event") &&
+  releaseRunScript.includes("push") &&
+  releaseRunScript.includes("--commit") &&
+  releaseRunScript.includes("git") &&
+  releaseRunScript.includes("rev-list") &&
+  releaseRunScript.includes('"watch"') &&
+  releaseRunScript.includes("--exit-status") &&
+  releaseRunScript.includes("attempts") &&
+  releaseRunScript.includes("interval-ms") &&
+  releaseStatusScript.includes("desktop:release-run")
+) {
+  pass("desktop release run watcher waits for the tag-push workflow run before watching it");
+} else {
+  fail(
+    "package.json must expose desktop:release-run, scripts/watch-macos-release-run.mjs must poll for the tag-commit push run before gh run watch, and desktop:release-status must route operators through that watcher",
+  );
+}
+
+if (
   pkg.scripts?.["desktop:release-status"] === "node scripts/check-macos-release-status.mjs" &&
   releaseStatusScript.includes('"pr"') &&
   releaseStatusScript.includes('"secret"') &&
@@ -845,9 +869,7 @@ if (
   releaseStatusScript.includes("desktop:release-github") &&
   releaseStatusScript.includes("desktop:release-source") &&
   releaseStatusScript.includes("git push origin") &&
-  releaseStatusScript.includes("gh run watch") &&
-  releaseStatusScript.includes("--event push") &&
-  releaseStatusScript.includes("git rev-list -n 1") &&
+  releaseStatusScript.includes("desktop:release-run") &&
   releaseStatusScript.includes("desktop:verify-download") &&
   releaseStatusScript.includes("renderMarkdownChecklist") &&
   releaseStatusScript.includes("fs.writeFileSync") &&

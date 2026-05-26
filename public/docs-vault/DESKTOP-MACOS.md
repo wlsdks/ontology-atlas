@@ -66,6 +66,7 @@ pnpm desktop:verify-install
 pnpm desktop:release-preflight         # full local pre-tag gate
 pnpm desktop:release-github -- --tag=v0.1.0  # GitHub workflow + Apple secret-name gate
 pnpm desktop:release-source -- --sha="$(git rev-parse HEAD)"  # tag only default-branch head
+pnpm desktop:release-run -- --tag=v0.1.0  # wait for the pushed tag workflow run
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0  # completion audit
 ```
 
@@ -85,7 +86,7 @@ for a macOS prototype:
 - `docs-vault:check`, `cli:mcp-verify`, `desktop:doctor`, `desktop:dev`,
   `desktop:smoke`, `desktop:verify-app`, `desktop:build:app`,
   `desktop:build`, `desktop:release-source`, `desktop:release-tag`,
-  `desktop:release-github`, `desktop:release-status`, `desktop:sign`,
+  `desktop:release-github`, `desktop:release-run`, `desktop:release-status`, `desktop:sign`,
   `desktop:notarize`, `desktop:verify-dmg`, `desktop:verify-install` are
   available for packaging,
   app launch, local runtime diagnosis, packaged-route smoke, startup crash
@@ -338,6 +339,10 @@ release evidence, top-level `blockerIds` / `localBlockerIds` /
 `externalBlockerIds` / `blockersByOwner` / `nextActions`, and stable check ids
 plus `scope` and `owner` values such as `pull_request`,
 `apple_release_secrets`, `github_release`, and `download_assets`.
+`pnpm desktop:release-run -- --tag=v0.1.0` is the post-tag watcher used by that
+runbook. It waits until the `release-macos.yml` push run for the pushed tag
+commit appears, then runs `gh run watch --exit-status` against that exact run so
+operators do not accidentally watch an unrelated latest workflow run.
 Actionable blockers also carry `commands[]` so reviewers and release operators
 can copy exact diagnostic, secret setup, pre-tag source checks, post-merge
 tag-push, tag-commit-scoped release-workflow watch, and public download verification commands from
