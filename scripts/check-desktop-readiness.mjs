@@ -78,6 +78,7 @@ const requiredAppleSecretNames = [
   "APPLE_APP_SPECIFIC_PASSWORD",
   "APPLE_TEAM_ID",
 ];
+const forbiddenFirebasePackages = ["firebase", "firebase-admin", "firebase-tools"];
 const rootEntryPage = readText("src/views/root-entry/ui/RootEntryPage.tsx");
 const docsVaultPage = readText("src/views/docs-vault/ui/DocsVaultPage.tsx");
 const ontologyViewPage = readText("src/views/ontology-view/ui/OntologyViewPage.tsx");
@@ -161,6 +162,25 @@ if (pkg.scripts?.["docs-vault:check"]) {
   pass("docs-vault freshness check is available before desktop packaging");
 } else {
   fail("package.json must expose docs-vault:check before desktop packaging");
+}
+
+const firebaseDependencyFields = [
+  "dependencies",
+  "devDependencies",
+  "optionalDependencies",
+  "peerDependencies",
+];
+const firebaseDependencyMatches = firebaseDependencyFields.flatMap((field) =>
+  forbiddenFirebasePackages
+    .filter((packageName) => Object.hasOwn(pkg[field] ?? {}, packageName))
+    .map((packageName) => `${field}.${packageName}`),
+);
+if (firebaseDependencyMatches.length === 0) {
+  pass("root package dependencies stay Firebase SDK and Firebase CLI free for the local-only app");
+} else {
+  fail(
+    `package.json must not depend on Firebase SDK/Admin/CLI packages in the local-only app package; found ${firebaseDependencyMatches.join(", ")}`,
+  );
 }
 
 if (pkg.scripts?.["cli:mcp-verify"]) {

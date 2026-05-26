@@ -25,6 +25,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
     result.stdout,
     /✓ desktop package, Tauri, and Rust crate versions stay aligned for release tags/,
   );
+  assert.match(
+    result.stdout,
+    /✓ root package dependencies stay Firebase SDK and Firebase CLI free for the local-only app/,
+  );
   assert.match(result.stdout, /✓ CLI\/MCP setup gate is available/);
   assert.match(result.stdout, /✓ desktop runtime doctor is available/);
   assert.match(result.stdout, /✓ desktop packaged-route smoke is available/);
