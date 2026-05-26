@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-26T13:10:41.524Z",
+  "generatedAt": "2026-05-26T13:19:06.021Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3959,8 +3959,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 5279,
-      "updatedAt": "2026-05-26T12:37:05.310Z",
+      "wordCount": 5309,
+      "updatedAt": "2026-05-26T13:18:50.541Z",
       "linksOut": []
     },
     {
@@ -5129,8 +5129,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 1929,
-      "updatedAt": "2026-05-26T13:10:36.593Z",
+      "wordCount": 1967,
+      "updatedAt": "2026-05-26T13:18:59.429Z",
       "linksOut": []
     },
     {

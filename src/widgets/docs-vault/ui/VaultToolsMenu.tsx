@@ -623,6 +623,9 @@ export function VaultToolsMenu({
       : agentCodexCliCopyState === 'failed'
         ? t('agentSetup.copyCodexCliFailed')
         : t('agentSetup.copyCodexCli');
+  const vaultRootPath = localVault.handle
+    ? getTauriVaultRootPath(localVault.handle)
+    : null;
 
   return (
     <div
@@ -656,9 +659,7 @@ export function VaultToolsMenu({
         <LocalVaultPicker
           status={localVault.status}
           handleName={localVault.handle?.name ?? null}
-          rootPath={
-            localVault.handle ? getTauriVaultRootPath(localVault.handle) : null
-          }
+          rootPath={vaultRootPath}
           docCount={localVault.manifest?.docs.length ?? 0}
           errorMessage={localVault.errorMessage}
           lastLoadedAt={localVault.lastLoadedAt}
@@ -1135,6 +1136,7 @@ export function VaultToolsMenu({
           <OntologyStarterCta
             onScaffold={localVault.scaffoldOntology}
             docCount={localVault.manifest?.docs.length ?? 0}
+            vaultPath={vaultRootPath}
           />
         ) : null}
         {canEditCurrent ? (

@@ -280,8 +280,11 @@ empty document state.
 locks the handle shim against the command names and relative-path behavior used
 by those flows. `VaultToolsMenu` and `LocalVaultPicker` keep the Tauri absolute
 vault path visible, copyable, and openable in Finder for local data location
-proof, and the picker exposes recently opened desktop vaults from persisted
-Tauri paths so close/reopen does not require another Finder selection. The
+proof. `OntologyStarterCta` uses that same selected path when it copies CLI
+proof and JSON agent-gate commands, so first-run desktop users do not have to
+`cd` into the vault before checking agent readiness. The picker exposes
+recently opened desktop vaults from persisted Tauri paths so close/reopen does
+not require another Finder selection. The
 handle store filters those Tauri path records outside the Tauri runtime, so a
 hosted browser session cannot resurrect installed-app vault paths as writable
 local state.

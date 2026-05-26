@@ -40,6 +40,50 @@ interface Props {
   /** 현재 vault 의 doc 수 — 0 이면 빈 vault. 0 보다 크면 "기존 vault 에
    *  starter 추가" 톤으로 보조 메시지 표시. */
   docCount: number;
+  /** Installed app 에서 선택한 vault 절대경로. 있으면 복사 명령이 바로 실행 가능해진다. */
+  vaultPath?: string | null;
+}
+
+function shellQuotePath(path: string): string {
+  return `'${path.replaceAll("'", "'\\''")}'`;
+}
+
+function commandTarget(vaultPath?: string | null): string {
+  return vaultPath ? shellQuotePath(vaultPath) : '.';
+}
+
+export function buildOntologyStarterCliVerifyCommands(
+  vaultPath?: string | null,
+): string {
+  const target = commandTarget(vaultPath);
+  return [
+    `oh-my-ontology validate ${target}`,
+    `oh-my-ontology workspace-brief ${target}`,
+    `oh-my-ontology agent-brief ${target} --prompt`,
+    `oh-my-ontology agent-brief ${target} --graph-db-pack`,
+    `oh-my-ontology agent-brief ${target} --verify-fallbacks`,
+    `oh-my-ontology mcp-verify ${target} --timeout-ms 15000`,
+  ].join('\n');
+}
+
+export function buildOntologyStarterJsonGateCommand(
+  vaultPath?: string | null,
+): string {
+  return `oh-my-ontology agent-brief ${commandTarget(vaultPath)} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`;
+}
+
+export function buildOntologyStarterAgentVerifyPrompt(
+  vaultPath?: string | null,
+): string {
+  const jsonGate = buildOntologyStarterJsonGateCommand(vaultPath);
+  return [
+    'Use the oh-my-ontology MCP server to run validate_vault, then query_ontology({ "operation": "workspace_brief" }), then query_ontology({ "operation": "agent_brief" }).',
+    'Tell me whether this vault is readable and the write tools are available before proposing changes.',
+    `If the MCP connector is unavailable, run this terminal setup gate instead: ${jsonGate}.`,
+    'Parse ok separately from performanceOk: ok=false means setup or fallback execution is broken; performanceOk=false with ok=true means the graph fallback works but local latency needs attention.',
+    'After any non-trivial code change, sync docs/ontology before finishing when the change introduces or renames a domain, capability, element, or relation. Skip sync for typos, comments, one-line style, lint config, or fixture-only changes.',
+    'Do not write to the ontology until one of those read-first checks succeeds.',
+  ].join(' ');
 }
 
 /**
@@ -51,7 +95,7 @@ interface Props {
  * AI agent (Claude Code 등) 등록 안내는 scaffold 후 toast 로 띄우는 게
  * 자연스럽지만 이 컴포넌트는 결과만 emit — 호출자 (DocsVaultPage) 가 toast.
  */
-export function OntologyStarterCta({ onScaffold, docCount }: Props) {
+export function OntologyStarterCta({ onScaffold, docCount, vaultPath = null }: Props) {
   const t = useTranslations('featuresMisc.starterCta');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,17 +129,17 @@ export function OntologyStarterCta({ onScaffold, docCount }: Props) {
   }
 
   async function handleCopyPrompt() {
-    const copied = await copyText(ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT);
+    const copied = await copyText(buildOntologyStarterAgentVerifyPrompt(vaultPath));
     setCopyState(copied ? 'copied' : 'failed');
   }
 
   async function handleCopyCliVerify() {
-    const copied = await copyText(ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS);
+    const copied = await copyText(buildOntologyStarterCliVerifyCommands(vaultPath));
     setCliCopyState(copied ? 'copied' : 'failed');
   }
 
   async function handleCopyJsonGate() {
-    const copied = await copyText(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
+    const copied = await copyText(buildOntologyStarterJsonGateCommand(vaultPath));
     setJsonGateCopyState(copied ? 'copied' : 'failed');
   }
 

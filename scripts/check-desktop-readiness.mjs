@@ -87,6 +87,7 @@ const ontologyViewPage = readText("src/views/ontology-view/ui/OntologyViewPage.t
 const topologyEmptyState = readText("src/widgets/topology-map-sigma/ui/TopologyEmptyState.tsx");
 const vaultToolsMenu = readText("src/widgets/docs-vault/ui/VaultToolsMenu.tsx");
 const localVaultPicker = readText("src/features/docs-vault-local/ui/LocalVaultPicker.tsx");
+const ontologyStarterCta = readText("src/features/docs-vault-local/ui/OntologyStarterCta.tsx");
 const localFsHandleStore = readText("src/entities/local-fs-handle/api/store.ts");
 const localVaultHook = readText("src/features/docs-vault-local/model/use-local-vault.ts");
 const ciWorkflow = readText(".github/workflows/ci.yml");
@@ -1129,6 +1130,22 @@ if (
 } else {
   fail(
     "src/views/docs-vault/ui/DocsVaultPage.tsx must show the ontology starter directly in the main pane for a loaded empty local vault and open README.md after starter creation",
+  );
+}
+
+if (
+  ontologyStarterCta.includes("buildOntologyStarterCliVerifyCommands") &&
+  ontologyStarterCta.includes("buildOntologyStarterJsonGateCommand") &&
+  ontologyStarterCta.includes("shellQuotePath") &&
+  ontologyStarterCta.includes("vaultPath") &&
+  docsVaultPage.includes("vaultPath={") &&
+  docsVaultPage.includes("getTauriVaultRootPath(localVault.handle)") &&
+  vaultToolsMenu.includes("vaultPath={vaultRootPath}")
+) {
+  pass("desktop ontology starter copies path-aware CLI and JSON agent gates");
+} else {
+  fail(
+    "OntologyStarterCta must copy CLI proof and JSON agent gate commands against the selected Tauri vault path when the installed app knows it",
   );
 }
 

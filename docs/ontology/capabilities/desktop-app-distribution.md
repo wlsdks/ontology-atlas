@@ -102,7 +102,10 @@ restored folder needs macOS permission re-authorization, the same
 recent-vault list stays visible so the user can switch to another remembered
 vault instead of clearing state or reopening Finder first. If a restored desktop
 handle no longer produces a manifest, the root entry sends the user back to the
-picker instead of rendering a broken workspace. The
+picker instead of rendering a broken workspace. The ontology starter also copies
+CLI proof and JSON agent-gate commands against the selected absolute vault path
+when Tauri exposes one, so first-run users can verify local agent readiness
+without first moving their terminal into the vault folder. The
 `.github/workflows/release-macos.yml` workflow builds those artifacts on `v*`
 tags, fails closed through `pnpm desktop:release-secrets` unless all Apple
 Developer ID and notary secrets are present and structurally usable, and runs

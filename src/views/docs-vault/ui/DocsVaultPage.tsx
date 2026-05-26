@@ -35,7 +35,10 @@ import { VaultToolsMenu } from '@/widgets/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
-import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
+import {
+  getTauriVaultRootPath,
+  isTauriVaultRuntime,
+} from '@/shared/lib/tauri-vault-fs';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { Tooltip, useToast } from '@/shared/ui';
 // 추출된 page-local helpers.
@@ -1648,6 +1651,11 @@ function DocsVaultContent() {
                 <OntologyStarterCta
                   onScaffold={handleScaffoldOntologyStarter}
                   docCount={0}
+                  vaultPath={
+                    localVault.handle
+                      ? getTauriVaultRootPath(localVault.handle)
+                      : null
+                  }
                 />
               </div>
             </div>

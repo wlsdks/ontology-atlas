@@ -9,6 +9,9 @@ export {
 } from './lib/ontology-starter';
 export { LocalVaultPicker } from './ui/LocalVaultPicker';
 export {
+  buildOntologyStarterAgentVerifyPrompt,
+  buildOntologyStarterCliVerifyCommands,
+  buildOntologyStarterJsonGateCommand,
   ONTOLOGY_POST_CHANGE_SYNC_LINES,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,

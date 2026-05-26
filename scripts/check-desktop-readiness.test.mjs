@@ -226,6 +226,10 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
+    /✓ desktop ontology starter copies path-aware CLI and JSON agent gates/,
+  );
+  assert.match(
+    result.stdout,
     /✓ desktop local vault tools expose, copy, and reveal the selected absolute vault path/,
   );
   assert.match(

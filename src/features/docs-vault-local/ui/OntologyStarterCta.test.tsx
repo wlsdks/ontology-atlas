@@ -3,6 +3,8 @@ import { NextIntlClientProvider } from 'next-intl';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import {
+  buildOntologyStarterCliVerifyCommands,
+  buildOntologyStarterJsonGateCommand,
   ONTOLOGY_STARTER_CLI_VERIFY_COMMANDS,
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
   OntologyStarterCta,
@@ -135,5 +137,34 @@ describe('OntologyStarterCta', () => {
       'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
     );
     expect(await screen.findByRole('button', { name: 'JSON gate 복사됨' })).toBeInTheDocument();
+  });
+
+  it('데스크톱 vault 절대경로가 있으면 바로 실행 가능한 proof 명령을 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    render(
+      <OntologyStarterCta
+        docCount={3}
+        onScaffold={vi.fn()}
+        vaultPath="/Users/jinan/Team Vault/docs/ontology"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'CLI proof 복사' }));
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      buildOntologyStarterCliVerifyCommands('/Users/jinan/Team Vault/docs/ontology'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology validate '/Users/jinan/Team Vault/docs/ontology'",
+      ),
+    );
+  });
+
+  it('vault 절대경로에 작은따옴표가 있어도 JSON gate 명령을 shell-safe 하게 만든다', () => {
+    expect(buildOntologyStarterJsonGateCommand("/Users/jinan/Client's Vault")).toContain(
+      "oh-my-ontology agent-brief '/Users/jinan/Client'\\''s Vault' --verify-fallbacks --json",
+    );
   });
 });
