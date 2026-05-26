@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -125,6 +125,41 @@ test("desktop release status emits machine-readable blockers for automation", ()
         /gh secret set APPLE_TEAM_ID --repo wlsdks\/oh-my-ontology/,
       );
       assert.match(result.stderr, /blocked: 3 release requirement/);
+    },
+  );
+});
+
+test("desktop release status writes machine-readable blockers to a JSON file", () => {
+  withFakeGh(
+    {
+      prMergeState: "BLOCKED",
+      prReviewDecision: "REVIEW_REQUIRED",
+      secretNames: [],
+      releaseMissing: true,
+    },
+    (fakeGhPath) => {
+      const root = mkdtempSync(join(tmpdir(), "omo-release-status-json-"));
+      try {
+        const jsonPath = join(root, "nested", "release-status.json");
+        const result = runStatus(fakeGhPath, [
+          "--tag=v0.1.0",
+          "--pr=274",
+          `--json-file=${jsonPath}`,
+        ]);
+
+        assert.equal(result.status, 1);
+        assert.match(result.stdout, /\[desktop-release-status\] wlsdks\/oh-my-ontology v0\.1\.0/);
+        assert.ok(existsSync(jsonPath));
+        const payload = JSON.parse(readFileSync(jsonPath, "utf8"));
+        assert.equal(payload.ready, false);
+        assert.equal(payload.blockerCount, 3);
+        assert.deepEqual(
+          payload.checks.filter((check) => check.status === "blocked").map((check) => check.label),
+          ["Pull request", "Apple release secrets", "GitHub Release"],
+        );
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
     },
   );
 });
@@ -282,7 +317,9 @@ test("desktop release status help describes the completion audit", () => {
   assert.match(stdout, /release tag version alignment/);
   assert.match(stdout, /downloadable\s+DMG\/checksum assets/);
   assert.match(stdout, /--json/);
+  assert.match(stdout, /--json-file=PATH/);
   assert.match(stdout, /machine-readable blocker list/);
+  assert.match(stdout, /write that same payload to disk/);
   assert.match(stdout, /Firebase Hosting is intentionally excluded/);
   assert.doesNotMatch(stdout, /Hosted website/);
 });

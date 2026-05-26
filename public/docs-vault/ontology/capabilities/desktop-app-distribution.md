@@ -174,7 +174,9 @@ checks pass but review or merge state still blocks release, it skips redundant
 check rerun advice and points directly at the PR review/merge blocker. With
 `--json`, the same audit emits `ready`, `blockerCount`, and per-check `next`
 actions so goal runners and release dashboards can consume blockers without
-scraping human text.
+scraping human text. With `--json-file=<path>`, it writes the same blocker
+snapshot to disk for package-runner contexts that may add lifecycle output
+around stdout.
 Firebase Hosting remains a separate static
 website deployment checked with `pnpm desktop:verify-hosted`.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`

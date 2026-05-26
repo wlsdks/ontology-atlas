@@ -19,7 +19,7 @@ function defaultTag() {
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER] [--json]
+  console.log(`Usage: pnpm desktop:release-status [--repo=${DEFAULT_REPO}] [--tag=vX.Y.Z] [--pr=NUMBER] [--json] [--json-file=PATH]
 
 Checks the public macOS release completion state in one fail-closed pass:
 release tag version alignment, pull-request merge readiness, Apple
@@ -31,6 +31,8 @@ secrets, or edit releases.
 
 Use --json when a goal runner, CI wrapper, or release dashboard needs a
 machine-readable blocker list. Human-readable output remains the default.
+Use --json-file=PATH to write that same payload to disk even when a package
+runner adds lifecycle text around stdout.
 
 Firebase Hosting is intentionally excluded from this macOS app release audit.
 Use pnpm desktop:verify-hosted after the separate static promo/download website
@@ -44,6 +46,7 @@ function parseArgs(argv) {
     tag: defaultTag(),
     pr: "",
     json: false,
+    jsonFile: "",
   };
 
   for (const arg of argv) {
@@ -68,6 +71,10 @@ function parseArgs(argv) {
       options.json = true;
       continue;
     }
+    if (arg.startsWith("--json-file=")) {
+      options.jsonFile = arg.slice("--json-file=".length).trim();
+      continue;
+    }
     fail(`unknown argument: ${arg}`);
   }
 
@@ -79,6 +86,9 @@ function parseArgs(argv) {
   }
   if (options.pr && !/^\d+$/.test(options.pr)) {
     fail(`--pr must be a pull request number, got ${options.pr}.`);
+  }
+  if (options.jsonFile && options.jsonFile.includes("\0")) {
+    fail("--json-file must not contain null bytes.");
   }
   return options;
 }
@@ -317,15 +327,21 @@ async function main() {
 
 function renderAndExit(options, checks) {
   const blockers = checks.filter((check) => check.status === "blocked");
+  const payload = {
+    repo: options.repo,
+    tag: options.tag,
+    pr: options.pr || null,
+    ready: blockers.length === 0,
+    blockerCount: blockers.length,
+    checks,
+  };
+  if (options.jsonFile) {
+    const jsonFilePath = path.resolve(process.cwd(), options.jsonFile);
+    fs.mkdirSync(path.dirname(jsonFilePath), { recursive: true });
+    fs.writeFileSync(jsonFilePath, `${JSON.stringify(payload, null, 2)}\n`);
+  }
   if (options.json) {
-    console.log(JSON.stringify({
-      repo: options.repo,
-      tag: options.tag,
-      pr: options.pr || null,
-      ready: blockers.length === 0,
-      blockerCount: blockers.length,
-      checks,
-    }, null, 2));
+    console.log(JSON.stringify(payload, null, 2));
     if (blockers.length > 0) {
       console.error(`[desktop-release-status] blocked: ${blockers.length} release requirement(s) are not satisfied`);
       process.exit(1);

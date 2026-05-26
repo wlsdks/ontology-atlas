@@ -217,7 +217,8 @@ the failing or pending GitHub check rows and prints the matching `gh pr checks`
 command, so operators do not have to infer the blocker from a count like
 `0/1 checks successful`. Add `--json` when a goal runner, CI wrapper, or release
 dashboard needs `ready`, `blockerCount`, and per-check `next` actions without
-parsing human text. Firebase Hosting is not part of the macOS
+parsing human text; add `--json-file=<path>` when the command is invoked through
+a package runner that may add lifecycle text around stdout. Firebase Hosting is not part of the macOS
 app release gate; verify the separate website with `pnpm desktop:verify-hosted`;
 the hosted download page keeps macOS app release blockers aligned with
 review/signing/GitHub Release requirements while naming Firebase Hosting only
@@ -630,6 +631,7 @@ pnpm desktop:verify-release-dmg
 # public release publication, and DMG asset verification are expected to be done:
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0
 pnpm desktop:release-status -- --pr=274 --tag=v0.1.0 --json
+pnpm desktop:release-status -- --pr=274 --tag=v0.1.0 --json-file=.tmp/release-status.json
 ```
 
 For local unsigned smoke, `pnpm desktop:build` is the shortcut for

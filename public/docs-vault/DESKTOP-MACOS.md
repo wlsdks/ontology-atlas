@@ -327,7 +327,9 @@ then delegates to the public DMG/checksum download verifier. If PR checks are
 still blocking the release, the audit prints the failing or pending check names
 plus `gh pr checks <number> --repo wlsdks/oh-my-ontology` as the next action.
 Use `--json` for automation that needs `ready`, `blockerCount`, and per-check
-`next` actions without scraping terminal text.
+`next` actions without scraping terminal text. Use `--json-file=<path>` when
+the command is wrapped by a package runner and the automation needs a clean JSON
+artifact on disk.
 Firebase Hosting is not part of the macOS app release gate;
 run `pnpm desktop:verify-hosted` after the separate website deploy.
 When it reports missing secrets, set each value through `gh secret set`, for
