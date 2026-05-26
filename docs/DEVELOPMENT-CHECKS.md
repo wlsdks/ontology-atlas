@@ -259,7 +259,7 @@ browser workbench;
 `pnpm desktop:dev` launches the Tauri shell for local prototype work, and
 `pnpm desktop:build:app` targets the macOS `.app`; release builds must first
 pass `pnpm desktop:release-secrets`, then run `pnpm desktop:sign` with a
-Developer ID Application certificate, wrap the app with
+Developer ID Application certificate and deep hardened-runtime signing, wrap the app with
 `scripts/package-macos-dmg.mjs`, run `pnpm desktop:notarize` with Apple notary
 credentials, and finish with `pnpm desktop:verify-release-dmg`, which checks the
 DMG checksum, mounts it read-only, verifies the `.app` plus Applications symlink target,
@@ -399,7 +399,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:release-github` | Operator-side macOS release readiness check for gh auth, active release workflow, required Apple secret names, optional tag/version alignment, clean local/remote same-tag Git ref slots, and clean same-tag Release slot |
 | `pnpm desktop:release-run` | Wait for the tag-push `release-macos.yml` run scoped to the pushed tag commit, then watch that exact run to completion |
 | `pnpm desktop:release-status` | macOS app completion audit for tag/package/Tauri/Cargo version alignment, PR review/merge readiness, active release workflow availability, clean local/remote same-tag Git ref slots, Apple release secret names, public stable Release state, public DMG/checksum download verification, and optional `--include-hosted-surface` deploy workflow, deploy secret, plus website verification |
-| `pnpm desktop:sign` | Sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
+| `pnpm desktop:sign` | Deeply sign the built `.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available |
 | `pnpm desktop:notarize` | Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials |
 | `pnpm desktop:verify-dmg` | Mount and checksum smoke for the generated macOS DMG, including app bundle presence and `/Applications` symlink target, before GitHub Release upload |
 | `pnpm desktop:verify-release-dmg` | Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment |

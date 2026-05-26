@@ -918,10 +918,17 @@ if (
   );
 }
 
-if (pkg.scripts?.["desktop:sign"] === "node scripts/sign-macos-app.mjs") {
-  pass("desktop signing script is available for release builds");
+if (
+  pkg.scripts?.["desktop:sign"] === "node scripts/sign-macos-app.mjs" &&
+  signMacosScript.includes('"--deep"') &&
+  signMacosScript.includes('"--options"') &&
+  signMacosScript.includes('"runtime"') &&
+  signMacosScript.includes('"--timestamp"') &&
+  signMacosScript.includes('["--verify", "--deep", "--strict", "--verbose=2", appPath]')
+) {
+  pass("desktop signing script deeply signs the release app with hardened runtime and strict verification");
 } else {
-  fail("package.json must expose desktop:sign as node scripts/sign-macos-app.mjs");
+  fail("package.json must expose desktop:sign as node scripts/sign-macos-app.mjs, and scripts/sign-macos-app.mjs must deeply sign the app with hardened runtime, timestamping, and strict deep verification");
 }
 
 if (pkg.scripts?.["desktop:notarize"] === "node scripts/notarize-macos-dmg.mjs") {

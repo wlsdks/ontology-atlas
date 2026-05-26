@@ -77,6 +77,7 @@ if (!signingIdentity) {
 
 run("codesign", [
   "--force",
+  "--deep",
   "--options",
   "runtime",
   "--timestamp",

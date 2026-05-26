@@ -167,8 +167,9 @@ for a macOS prototype:
   upload and fails if the same tag already has a draft, prerelease, or public
   GitHub Release, preventing stale DMG assets from mixing with newly signed
   artifacts during a rerun.
-- `scripts/sign-macos-app.mjs` signs the built `.app` with hardened runtime
-  using `APPLE_SIGNING_IDENTITY`, then runs strict `codesign` verification.
+- `scripts/sign-macos-app.mjs` deeply signs the built `.app` with hardened
+  runtime using `APPLE_SIGNING_IDENTITY`, then runs strict deep `codesign`
+  verification.
 - `scripts/notarize-macos-dmg.mjs` submits the DMG with `xcrun notarytool`,
   waits for notarization, staples and validates the ticket, then refreshes the
   `.sha256` file because stapling changes the DMG bytes. Notary failure logs

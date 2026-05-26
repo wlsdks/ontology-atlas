@@ -505,7 +505,7 @@ describe('package contract helpers', () => {
     assert.match(checksDoc, /\| `pnpm test:desktop:bridge` \| WebView handle-shim tests plus Rust path-guard tests for the native vault bridge \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-secrets` \| Fail closed before tag release when any Apple signing or notarization secret is missing, blank, or structurally invalid \|/);
     assert.match(checksDoc, /\| `pnpm desktop:release-source` \| Fail closed before release signing when the tag commit is not the current default-branch head \|/);
-    assert.match(checksDoc, /\| `pnpm desktop:sign` \| Sign the built `\.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available \|/);
+    assert.match(checksDoc, /\| `pnpm desktop:sign` \| Deeply sign the built `\.app` with hardened runtime when `APPLE_SIGNING_IDENTITY` and a Developer ID certificate are available \|/);
     assert.match(checksDoc, /\| `pnpm desktop:notarize` \| Submit, staple, validate, and re-checksum the DMG when Apple notary credentials are available; failed command logs redact notary credentials \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-dmg` \| Mount and checksum smoke for the generated macOS DMG, including app bundle presence and `\/Applications` symlink target, before GitHub Release upload \|/);
     assert.match(checksDoc, /\| `pnpm desktop:verify-release-dmg` \| Release-only DMG verifier that also requires app code signing, stapled notarization, and Gatekeeper assessment \|/);
