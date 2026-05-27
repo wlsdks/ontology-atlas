@@ -352,23 +352,23 @@ function BuilderWriteSummary({
             aria-label={`${item.label} ${item.order}: ${item.value}. ${item.chip}. ${item.body}. ${item.flow}`}
             className={`min-w-0 rounded-lg border px-3 py-2 ${accentClass}`}
           >
-            <div className="flex min-w-0 items-center justify-between gap-2 text-[color:var(--color-text-quaternary)]">
-              <div className="flex min-w-0 items-center gap-1.5">
-                <span className="shrink-0 text-[color:var(--color-indigo-accent)]">{item.icon}</span>
-                <p className="min-w-0 shrink-0 font-mono text-[9px] uppercase tracking-[0.14em]">
+            <div className="flex min-w-0 items-start gap-2 text-[color:var(--color-text-quaternary)]">
+              <span className="flex h-9 w-9 shrink-0 flex-col items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] text-[color:var(--color-text-quaternary)]">
+                <span className="font-mono text-[9px] leading-none tabular-nums">{item.order}</span>
+                <span className="mt-1 text-[color:var(--color-indigo-accent)]">{item.icon}</span>
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="min-w-0 truncate font-mono text-[9px] uppercase tracking-[0.14em]">
                   {item.label}
                 </p>
+                <p className="mt-0.5 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                  {item.value}
+                  <span className="ml-1.5 align-middle font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                    · {item.chip}
+                  </span>
+                </p>
               </div>
-              <span className="shrink-0 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] px-1.5 py-0.5 font-mono text-[9px] tabular-nums text-[color:var(--color-text-quaternary)]">
-                {item.order}
-              </span>
             </div>
-            <p className="mt-0.5 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-              {item.value}
-              <span className="ml-1.5 align-middle font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                · {item.chip}
-              </span>
-            </p>
             <p className="mt-1 truncate text-[10px] text-[color:var(--color-text-tertiary)]">
               {item.body}
             </p>
