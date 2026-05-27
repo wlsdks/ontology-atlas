@@ -309,7 +309,7 @@ Hosting remains a separate website
 deployment check, not a macOS app release dependency. This is
 evidence for goal completion, not a substitute for publishing signed/notarized
 release assets.
-hosted landing page should now bias toward "Download macOS app"
+The hosted landing page should now bias toward "Download macOS app"
 and product explanation, with the browser folder picker treated as a prototype
 fallback until public signed releases are uploaded.
 
@@ -352,14 +352,20 @@ Use after `pnpm dev`. No packaging. Document with environment variables.
 Pros: fastest. Zero new deps.
 Cons: blocks distribution (clone overhead).
 
-### Recommendation: option A now, macOS desktop as the next distribution track
+### Recommendation: macOS app + CLI/MCP as the daily workbench
 
-Publish `oh-my-ontology` as an npm package. Users run `npx oh-my-ontology` from any project root. AI agents participate via the same package's MCP server or CLI.
+The desktop proof has graduated from exploration into the primary visual
+distribution track. Context Atlas should be the daily local workbench for users
+who want to pick a vault folder, browse the ontology, repair relations, and run
+graph proof without opening a hosted web editor. The CLI and MCP package remain
+the developer/agent execution track: `oh-my-ontology` owns init, bootstrap,
+validation, graph DB-style queries, and write preflights; the MCP server exposes
+the same graph to Claude Code, Codex, Cursor, and other agents.
 
-In parallel, run a narrow Tauri/macOS proof before committing to desktop
-distribution: static `out/` shell, local vault open, route smoke, and MCP/CLI
-handoff proof. If that proof is clean, the desktop app becomes the preferred
-non-technical install path while the CLI remains the developer/agent path.
+The hosted website is now the product introduction and download surface. It
+should not be treated as the writable workbench. Keep browser-based local vault
+flows only as source/dev fallbacks, while installed macOS + CLI/MCP carry the
+real local-first product promise.
 
 ---
 
@@ -449,7 +455,7 @@ PM-primary 결정 reverted. v3 mission: developer + their AI agent only. T33-T36
 
 > The user writes prose; the system extracts concepts, relations, evidence; humans review and approve; the result grows into three views (topology, tree, ERD).
 
-### New mission (proposed in this doc)
+### Current mission
 
 > **A repo-native memory layer for AI coding agents, backed by an ontology of one codebase.**
 >
@@ -457,7 +463,8 @@ PM-primary 결정 reverted. v3 mission: developer + their AI agent only. T33-T36
 > - AI agents (Claude Code, Cursor, Codex): read, query, and propose updates via MCP or CLI.
 > - Bootstrap and sync reduce manual ontology authoring; the graph is maintained as a side effect of real code work.
 > - All inputs share one vault graph. All views (tree hub / topology sub-view / ERD) are optional workbench surfaces.
-> - Distributed as a package — `npx oh-my-ontology` from any codebase.
+> - Distributed as an installed macOS workbench plus CLI/MCP packages for
+>   terminal and AI-agent workflows.
 
 What changed:
 
@@ -467,26 +474,17 @@ What changed:
 
 ---
 
-## 8. Immediate next actions (waiting on user)
+## 8. Current completion bar
 
-This v2 doc only aligns *direction*. We still need to pick which phase to execute:
+The direction is no longer waiting on a phase pick. The active bar is evidence:
 
-### Option A — Start Phase 1 immediately (UI identity alignment)
-
-- `/` ↔ `/topology` swap
-- Demo slim
-- Landing copy
-- Est: 1–2 days, 5–7 commits
-
-### Option B — Phase 2 first (self-hosting)
-
-- npm packaging + CLI
-- Biggest tech change — accelerates everything else.
-- Est: 1–2 days
-
-### Option C — Review this doc + extra decisions
-
-- Refine v2 assumptions (cost / audience / priority)
-- Pick a phase afterwards.
-
-My first-principle take: **A first**. Once the UI identity is aligned, the first screen users see when self-hosting will already express the right mission. Self-hosting comes after.
+- Installed macOS app launches and route-smokes the ontology workbench surfaces.
+- `/ontology` presents Browse / Write / Query as one loop over the same vault
+  graph, not as documentation navigation.
+- `/ontology/edit` stays narrowly scoped to relation write review, source-file
+  patch preview, preflight, and proof handoff.
+- `/ontology/insights` proves the local markdown graph can be queried like a
+  small graph database through health, scans, paths, relation checks, and
+  explanation contracts.
+- CLI/MCP proof gates must stay runnable over `docs/ontology` before the goal is
+  treated as complete.

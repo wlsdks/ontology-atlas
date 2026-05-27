@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T19:07:51.152Z",
+  "generatedAt": "2026-05-27T19:10:46.345Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6634,8 +6634,8 @@
         },
         {
           "depth": 3,
-          "text": "Recommendation: option A now, macOS desktop as the next distribution track",
-          "slug": "recommendation-option-a-now-macos-desktop-as-the-next-distribution-track"
+          "text": "Recommendation: macOS app + CLI/MCP as the daily workbench",
+          "slug": "recommendation-macos-app-climcp-as-the-daily-workbench"
         },
         {
           "depth": 2,
@@ -6694,33 +6694,18 @@
         },
         {
           "depth": 3,
-          "text": "New mission (proposed in this doc)",
-          "slug": "new-mission-proposed-in-this-doc"
+          "text": "Current mission",
+          "slug": "current-mission"
         },
         {
           "depth": 2,
-          "text": "8. Immediate next actions (waiting on user)",
-          "slug": "8-immediate-next-actions-waiting-on-user"
-        },
-        {
-          "depth": 3,
-          "text": "Option A — Start Phase 1 immediately (UI identity alignment)",
-          "slug": "option-a-start-phase-1-immediately-ui-identity-alignment"
-        },
-        {
-          "depth": 3,
-          "text": "Option B — Phase 2 first (self-hosting)",
-          "slug": "option-b-phase-2-first-self-hosting"
-        },
-        {
-          "depth": 3,
-          "text": "Option C — Review this doc + extra decisions",
-          "slug": "option-c-review-this-doc-extra-decisions"
+          "text": "8. Current completion bar",
+          "slug": "8-current-completion-bar"
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 3477,
-      "updatedAt": "2026-05-27T04:33:39.328Z",
+      "wordCount": 3508,
+      "updatedAt": "2026-05-27T19:10:42.183Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
