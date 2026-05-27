@@ -19,10 +19,14 @@ mission v2 의 *사람 + AI agent 양립* 약속의 코드 구현. 빌더 epheme
   packet availability 를 한눈에 확인하게
   해 builder 가 단순한 그림판이 아니라 vault write surface 임을 드러낸다. `Proof`
   cell 은 `/ontology/insights` query cockpit 으로 이어지고, 첫 화면에서 곧바로
-  builder graph proof packet 도 복사한다. 선택 노드가 있으면 `node_profile` 과
-  incoming `blast_radius`, 없으면 `workspace_brief` / graph scan / `health` 로 시작해
-  builder write 이후 `relation_check`, `path`, `all_paths`, sync gate 를 graph DB-style 검증 흐름에서
-  다시 확인하게 한다. 각 cell 은 `local markdown` / `canvas draft` /
+  builder graph proof packet 도 복사한다. 선택 노드가 없으면
+  `workspace_brief` → `query_plan(match_nodes)` → `match_nodes` →
+  `query_plan(match_edges)` → `match_edges` → `facets` / `schema` / `health`
+  순서로 graph DB-style scan 을 시작한다. 선택 노드가 있으면 `node_profile`,
+  incoming `blast_radius`, incoming/outgoing `match_edges`, shell-safe CLI
+  fallback, bounded `all_paths` target placeholder, scan-to-proof checklist, sync
+  gate 를 함께 복사해 builder write 이후 `relation_check`, `path`, `all_paths`,
+  health 를 같은 검증 흐름에서 다시 확인하게 한다. 각 cell 은 `local markdown` / `canvas draft` /
   `relation guard` / `graph db + health` chip 을 함께 보여줘, 첫 화면에서
   쓰기 → 검증 → query handoff 의 폐루프가 바로 드러나게 한다. 각 cell 은
   `01`–`04` 순서와 짧은 loop action 도 함께 보여줘 source 확인 → draft 작성
