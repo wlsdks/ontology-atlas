@@ -522,11 +522,13 @@ try {
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:brief\s+Root checkout dogfood vault workspace_brief snapshot/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:growth\s+Root checkout dogfood vault growth_plan JSON snapshot/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:maintenance\s+Root checkout dogfood vault maintenance_plan JSON snapshot/);
+  assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:graph-db\s+Root checkout dogfood vault graph DB pack runtime gate/);
   assert.match(
     cliMcpVerifyHelp.stdout,
     /pnpm dogfood:status\s+Root checkout dogfood vault human-readable health \+ brief \+ agent handoff \+ maintenance; ends with \[dogfood:status\] health:N · workspace-brief:N · agent-brief:N · maintenance:N and focused hints before pnpm dogfood:verify on failure/,
   );
   assert.match(cliMcpVerifyHelp.stdout, /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
+  assert.match(cliMcpVerifyHelp.stdout, /pnpm test:dogfood:graph-db\s+Narrow dogfood graph DB pack runner contract/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm dogfood:verify\s+Root checkout dogfood vault verify shortcut/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm cli:mcp-verify docs\/ontology --timeout-ms 15000\s+Source-checkout dogfood verify with explicit args/);
   assert.match(cliMcpVerifyHelp.stdout, /pnpm cli:mcp-verify -- --help\s+Source-checkout shortcut for this help from the repo root/);
@@ -765,8 +767,10 @@ try {
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:brief\s+Cheap root checkout workspace_brief snapshot/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:growth\s+Cheap root checkout growth_plan snapshot/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:maintenance\s+Cheap root checkout maintenance_plan snapshot/);
+  assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:graph-db\s+Root checkout dogfood vault graph DB pack runtime gate/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:status\s+Cheap root checkout health \+ workspace-brief \+ agent-brief \+ maintenance preflight with focused hints before full verify/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm test:dogfood:status\s+Narrow dogfood status shortcut runner contract/);
+  assert.match(directMcpVerifyHelp.stdout, /pnpm test:dogfood:graph-db\s+Narrow dogfood graph DB pack runner contract/);
   assert.match(directMcpVerifyHelp.stdout, /pnpm dogfood:verify\s+Root checkout dogfood vault installed-style verify gate/);
 
   const mcpEmptyVerify = runRaw(

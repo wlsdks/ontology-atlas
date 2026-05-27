@@ -112,6 +112,7 @@ pnpm test:dogfood:compile-fix
 pnpm dogfood:health
 pnpm dogfood:agent
 pnpm dogfood:agent-graph-db-pack
+pnpm dogfood:graph-db
 pnpm dogfood:agent-setup-gate
 pnpm dogfood:agent-fallbacks
 pnpm dogfood:brief
@@ -119,6 +120,7 @@ pnpm dogfood:growth
 pnpm dogfood:maintenance
 pnpm dogfood:status
 pnpm test:dogfood:status
+pnpm test:dogfood:graph-db
 pnpm dogfood:verify
 pnpm dogfood:test
 pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
@@ -175,6 +177,8 @@ snapshot without running the full installed-style MCP verify walk.
 without running the full installed-style MCP verify walk.
 `dogfood:agent-graph-db-pack` prints the dogfood vault shell-pasteable graph DB pack
 without running the full installed-style MCP verify walk.
+`dogfood:graph-db` runs the dogfood vault graph DB pack runtime gate without
+running the full installed-style MCP verify walk.
 `dogfood:agent-setup-gate` prints the dogfood vault machine-readable agent setup gate with `ok` and `performanceOk` so agent automation can separate broken setup from slow local fallback latency.
 `dogfood:brief` prints the dogfood vault `workspace_brief` JSON snapshot
 without running the full installed-style MCP verify walk.
@@ -184,6 +188,7 @@ without running the full installed-style MCP verify walk.
 without running the full installed-style MCP verify walk.
 `dogfood:status` always runs health + workspace-brief + agent-brief + maintenance, prints `[dogfood:status] health:N · workspace-brief:N · agent-brief:N · maintenance:N`, preserves the first failing exit before escalating, and prints failed-child focused follow-ups (`pnpm dogfood:health`, `pnpm dogfood:brief`, `pnpm dogfood:agent`, or `pnpm dogfood:maintenance` + `pnpm test:mcp:maintenance`) before the `pnpm dogfood:verify` follow-up hint on failure.
 `test:dogfood:status` checks that always-run shortcut contract without the full dogfood suite.
+`test:dogfood:graph-db` checks the graph DB pack runner contract without invoking the live CLI pack.
 Use `OMOT_TEST_NAME_PATTERN` with `pnpm integration:mcp` when the touched MCP
 integration case has a different name. For Node's `--test-name-pattern`, use
 `pnpm exec node --test --test-name-pattern "..." mcp/src/integration.test.mjs`
@@ -207,6 +212,7 @@ subtracting skipped tests. File setup/import failures are reported separately as
 `pnpm test:dogfood:compile-fix` checks that idempotence guard without the full dogfood suite.
 `pnpm dogfood:health` is the shortest dogfood vault health gate.
 `pnpm dogfood:agent-graph-db-pack` is the shortest dogfood vault graph DB pack snapshot.
+`pnpm dogfood:graph-db` is the shortest dogfood vault graph DB pack runtime gate.
 `pnpm dogfood:agent-setup-gate` is the shortest dogfood vault machine-readable setup gate with `ok` and `performanceOk`.
 `pnpm dogfood:brief` is the shortest dogfood vault first-contact snapshot.
 `pnpm dogfood:growth` is the shortest dogfood vault growth candidate snapshot.
@@ -427,12 +433,14 @@ pnpm test:dogfood:compile-fix
 pnpm dogfood:health
 pnpm dogfood:agent
 pnpm dogfood:agent-graph-db-pack
+pnpm dogfood:graph-db
 pnpm dogfood:agent-setup-gate
 pnpm dogfood:agent-fallbacks
 pnpm dogfood:brief
 pnpm dogfood:growth
 pnpm dogfood:maintenance
 pnpm dogfood:status
+pnpm test:dogfood:graph-db
 pnpm dogfood:verify
 pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
 # Inside mcp/, the package-local verifier has the same smoke scope:

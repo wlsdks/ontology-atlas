@@ -100,6 +100,7 @@ pnpm test:dogfood:compile-fix
 pnpm dogfood:health
 pnpm dogfood:agent
 pnpm dogfood:agent-graph-db-pack
+pnpm dogfood:graph-db
 pnpm dogfood:agent-setup-gate
 pnpm dogfood:agent-fallbacks
 pnpm dogfood:brief
@@ -107,6 +108,7 @@ pnpm dogfood:growth
 pnpm dogfood:maintenance
 pnpm dogfood:status
 pnpm test:dogfood:status
+pnpm test:dogfood:graph-db
 pnpm dogfood:verify
 pnpm dogfood:test
 pnpm cli:mcp-verify docs/ontology --timeout-ms 15000
@@ -187,7 +189,7 @@ with `[dogfood:compile-fix] docs/ontology unchanged`,
 `test:dogfood:compile-fix` checks that idempotence guard without invoking the full dogfood suite,
 `dogfood:health` is the shortest root-checkout fail-closed health JSON gate, `dogfood:agent` is
 the shortest Claude Code/Codex handoff JSON snapshot, `dogfood:agent-graph-db-pack` prints
-the shell-pasteable graph DB pack for docs/ontology, including the machine-readable fallback self-check before the scan commands, `dogfood:agent-setup-gate` prints the machine-readable agent setup gate for docs/ontology with `ok` and `performanceOk`, `dogfood:agent-fallbacks` runs
+the shell-pasteable graph DB pack for docs/ontology, including the machine-readable fallback self-check before the scan commands, `dogfood:graph-db` runs the root-checkout graph DB pack runtime gate over docs/ontology, `dogfood:agent-setup-gate` prints the machine-readable agent setup gate for docs/ontology with `ok` and `performanceOk`, `dogfood:agent-fallbacks` runs
 the generated handoff CLI fallback commands against docs/ontology, `dogfood:brief` is
 the shortest root-checkout first-contact JSON snapshot, `dogfood:growth` is the
 shortest root-checkout growth_plan JSON snapshot, `dogfood:maintenance` is the
@@ -197,7 +199,8 @@ preserves the first failing exit before escalating, and prints failed-child focu
 follow-ups (`pnpm dogfood:health`, `pnpm dogfood:brief`, `pnpm dogfood:agent`, or `pnpm dogfood:maintenance`
 + `pnpm test:mcp:maintenance`) before the `pnpm dogfood:verify` follow-up hint
 on failure, `test:dogfood:status` checks
-that always-run shortcut contract without the full dogfood suite, `dogfood:verify` is
+that always-run shortcut contract without the full dogfood suite, `test:dogfood:graph-db`
+checks the graph DB pack runner contract without invoking the live CLI pack, `dogfood:verify` is
 the full root-checkout dogfood vault gate. `pnpm dogfood:compile-fix -- --help`
 and `pnpm dogfood:status -- --help` print shortcut usage without running those
 gates; unsupported shortcut arguments fail with exit 2 before any child check starts,

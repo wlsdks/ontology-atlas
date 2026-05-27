@@ -14,3 +14,10 @@ The cockpit now includes a live proof strip derived from the current graph manif
 The cockpit also accepts a focused node handoff from the builder via `?node=<slug>`. When present, `/ontology/insights` renders a focused proof panel with Browse and Builder return links plus a copyable packet containing CLI `node`, CLI incoming `blast-radius`, MCP `node_profile`, MCP incoming `blast_radius`, and the post-change sync gate. This makes the Builder `Proof` cell an executable graph verification step rather than a generic navigation link.
 
 The evidence flow is explicit: plan expensive work with `query_plan`, treat scan rows as candidates until follow-up calls narrow them, and close write decisions with `relation_check`, bounded `all_paths` evidence, and the shared sync gate.
+
+The cockpit promise is now backed by `scripts/dogfood-graph-db-pack.mjs` and
+`pnpm dogfood:graph-db`. That runner executes the same setup self-check, facets,
+planned node scan, planned edge scan, domain matrix, bounded path evidence, and
+relation explanation over `docs/ontology`, then fails closed when a result
+contract is missing. The UI can therefore claim "graph DB-style" exploration
+because the repo dogfoods the complete query pack against its own markdown graph.

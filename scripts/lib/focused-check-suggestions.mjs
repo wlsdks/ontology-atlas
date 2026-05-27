@@ -249,6 +249,11 @@ const RULES = [
     matches: [/^scripts\/dogfood-status\.(?:mjs|test\.mjs)$/],
   },
   {
+    command: 'pnpm test:dogfood:graph-db',
+    reason: 'dogfood graph DB pack gate changed',
+    matches: [/^scripts\/dogfood-graph-db-pack\.(?:mjs|test\.mjs)$/],
+  },
+  {
     command: 'pnpm benchmark --dry-run',
     reason: 'Codex benchmark runner config changed',
     matches: [/^scripts\/benchmark\.mjs$/],
@@ -558,6 +563,8 @@ const SCRIPT_DIRECT_LIB_TESTS = new Map([
   ['scripts/dogfood-mcp-walk.test.mjs', 'scripts/dogfood-mcp-walk.test.mjs'],
   ['scripts/dogfood-status.mjs', 'scripts/dogfood-status.test.mjs'],
   ['scripts/dogfood-status.test.mjs', 'scripts/dogfood-status.test.mjs'],
+  ['scripts/dogfood-graph-db-pack.mjs', 'scripts/dogfood-graph-db-pack.test.mjs'],
+  ['scripts/dogfood-graph-db-pack.test.mjs', 'scripts/dogfood-graph-db-pack.test.mjs'],
   ['scripts/run-focused-node-test.mjs', 'scripts/run-focused-node-test.test.mjs'],
   ['scripts/run-focused-node-test.test.mjs', 'scripts/run-focused-node-test.test.mjs'],
   ['scripts/lib/dogfood-args.mjs', 'scripts/lib/dogfood-args.test.mjs'],

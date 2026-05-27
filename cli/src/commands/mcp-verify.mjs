@@ -265,8 +265,10 @@ function printUsage(output = process.stderr) {
       `  pnpm dogfood:brief                Root checkout dogfood vault workspace_brief snapshot.\n` +
       `  pnpm dogfood:growth               Root checkout dogfood vault growth_plan JSON snapshot.\n` +
       `  pnpm dogfood:maintenance          Root checkout dogfood vault maintenance_plan JSON snapshot.\n` +
+      `  pnpm dogfood:graph-db             Root checkout dogfood vault graph DB pack runtime gate.\n` +
       `  pnpm dogfood:status               Root checkout dogfood vault human-readable health + brief + agent handoff + maintenance; ends with [dogfood:status] health:N · workspace-brief:N · agent-brief:N · maintenance:N and focused hints before pnpm dogfood:verify on failure.\n` +
       `  pnpm test:dogfood:status          Narrow dogfood status shortcut runner contract.\n` +
+      `  pnpm test:dogfood:graph-db        Narrow dogfood graph DB pack runner contract.\n` +
       `  pnpm dogfood:verify               Root checkout dogfood vault verify shortcut.\n` +
       `  pnpm cli:mcp-verify docs/ontology --timeout-ms 15000\n` +
       `                                      Source-checkout dogfood verify with explicit args.\n` +
