@@ -999,21 +999,32 @@ function InsightsQueryPackCockpit({
           {
             label: t("queryCockpitEvidencePlanLabel"),
             body: t("queryCockpitEvidencePlanBody"),
+            className:
+              "border-dashed border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]",
+            labelClassName: "text-[color:var(--color-text-quaternary)]",
           },
           {
             label: t("queryCockpitEvidenceFollowUpLabel"),
             body: t("queryCockpitEvidenceFollowUpBody"),
+            className:
+              "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]",
+            labelClassName: "text-[color:var(--color-text-quaternary)]",
           },
           {
             label: t("queryCockpitEvidenceProofLabel"),
             body: t("queryCockpitEvidenceProofBody"),
+            className:
+              "border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.055)]",
+            labelClassName: "text-[color:var(--color-indigo-accent)]",
           },
         ].map((item) => (
           <div
             key={item.label}
-            className="min-w-0 rounded-lg border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.045)] px-3 py-2"
+            className={`min-w-0 rounded-lg border px-3 py-2 ${item.className}`}
           >
-            <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(151,230,198,0.92)]">
+            <p
+              className={`font-mono text-[9px] uppercase tracking-[0.10em] ${item.labelClassName}`}
+            >
               {item.label}
             </p>
             <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
@@ -1027,7 +1038,7 @@ function InsightsQueryPackCockpit({
           {t("queryCockpitRunOrder")}
         </p>
         <ol className="mt-2 flex flex-wrap gap-1.5">
-          <li className="rounded-full border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
+          <li className="rounded-full border border-dashed border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)]">
             0 · {t("queryCockpitGate")}
           </li>
           {graphDbQueryPack.map((item, index) => (
@@ -1082,8 +1093,8 @@ function InsightsQueryPackCockpit({
           </div>
         ))}
       </div>
-      <div className="mt-3 rounded-md border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] px-3 py-2">
-        <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(151,230,198,0.92)]">
+      <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.20)] bg-[color:rgba(94,106,210,0.055)] px-3 py-2">
+        <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
           {t("queryCockpitGate")}
         </p>
         <code className="mt-1 block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
@@ -1097,7 +1108,7 @@ function InsightsQueryPackCockpit({
             {selfCheckFields.map((field) => (
               <div
                 key={field}
-                className="rounded-md border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1"
+                className="rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1"
               >
                 <dt className="sr-only">{t("queryCockpitProofField")}</dt>
                 <dd className="font-mono text-[10px] text-[color:var(--color-text-secondary)]">
@@ -2730,7 +2741,7 @@ function AgentReadinessPanel({
         : t("agentStatusNeedsShape");
   const statusTone =
     status === "ready"
-      ? "border-[color:rgba(73,190,146,0.36)] bg-[color:rgba(73,190,146,0.10)] text-[color:rgba(151,230,198,0.96)]"
+      ? "border-[color:rgba(94,106,210,0.34)] bg-[color:rgba(94,106,210,0.10)] text-[color:var(--color-indigo-accent)]"
       : status === "needs-links"
         ? "border-[color:rgba(255,179,71,0.34)] bg-[color:rgba(255,179,71,0.08)] text-[color:rgba(238,198,128,0.95)]"
         : "border-[color:rgba(229,72,77,0.30)] bg-[color:rgba(229,72,77,0.08)] text-[color:rgba(248,160,160,0.95)]";
@@ -2765,7 +2776,7 @@ function AgentReadinessPanel({
 
   return (
     <section
-      className="md:col-span-2 rounded-2xl border border-[color:rgba(139,151,255,0.24)] bg-[linear-gradient(135deg,rgba(139,151,255,0.12),rgba(73,190,146,0.06)_48%,rgba(255,179,71,0.05))] px-5 py-4"
+      className="md:col-span-2 rounded-2xl border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.055)] px-5 py-4"
       data-testid="insights-agent-readiness"
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
