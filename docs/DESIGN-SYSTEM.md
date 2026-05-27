@@ -101,7 +101,10 @@ click.
 The `/ontology` Browse / Write / Query cards should also carry a compact proof
 chip (`tree projection`, `frontmatter write`, `dogfood:graph-db`) so the first
 viewport states which runtime contract closes each mode instead of reading like
-three generic navigation cards.
+three generic navigation cards. Treat them as an ordered workbench loop: show
+`01` / `02` / `03` execution markers and one short loop-action line per card so
+Browse reads as selecting the slug, Write as editing that same slug, and Query
+as proving the graph after the change.
 
 Tree projection warnings should be named as projection notes, not generic data
 errors. The tree can only show one readable hierarchy, while the same

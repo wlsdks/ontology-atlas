@@ -20,3 +20,5 @@ This element is the `/ontology` browse counterpart to the Builder write summary 
 Before a node is selected, the tree area now shows a compact selection hint that names the same Browse / Write / Query outcome: selecting a row opens topology focus, builder focus, and node proof for the exact slug. This keeps the tree from reading like a passive file outline while preserving the selected-node panel for the richer detail state.
 
 When a tree node is selected, the detail panel repeats that same split as a compact Browse / Write / Query rail: Topology focus for visual inspection, Builder focus for frontmatter-backed repair, and Insights node proof for `node_profile` / `blast_radius` / sync-gate follow-up. The tree therefore remains a browse index while still making the ontology system's write and query exits visible at the exact concept under review.
+
+The first-viewport summary now makes that loop ordered instead of merely adjacent: `01 Browse` selects the concept slug, `02 Write` keeps that slug focused in Builder for frontmatter edits, and `03 Query` closes the loop with graph DB-style proof over the same local markdown graph.
