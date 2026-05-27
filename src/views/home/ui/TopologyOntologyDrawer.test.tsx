@@ -194,7 +194,7 @@ describe("TopologyOntologyDrawer", () => {
     );
   });
 
-  it("shows collaborator review questions in the visible drawer", () => {
+  it("keeps the drawer concise while retaining collaborator tools", () => {
     const selected = node("capabilities/topology-ontology-inspection");
     const domain = node("domains/views", "domain");
 
@@ -209,23 +209,17 @@ describe("TopologyOntologyDrawer", () => {
       />,
     );
 
+    expect(screen.getByText("Direct relations")).toBeInTheDocument();
+    expect(screen.getByText("Preview relations")).toBeInTheDocument();
+    expect(screen.getByText("Collaborator brief")).toBeInTheDocument();
     expect(screen.getByText("Review questions")).toBeInTheDocument();
-    expect(screen.getByText("Change impact")).toBeInTheDocument();
     expect(screen.getByText("Check incoming dependents first.")).toBeInTheDocument();
-    expect(screen.getByText("First incoming")).toBeInTheDocument();
     expect(screen.getByText("Graph handoff order")).toBeInTheDocument();
     expect(screen.getByText("Inspect profile first.")).toBeInTheDocument();
     expect(screen.getByText("Trace incoming impact.")).toBeInTheDocument();
     expect(screen.getByText("Run sync gate after changes.")).toBeInTheDocument();
-    expect(
-      screen.getByText("node_profile · capabilities/topology-ontology-inspection"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("blast_radius · incoming · depth 2"),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("health · cycles · growth_plan · maintenance_plan · validate"),
-    ).toBeInTheDocument();
+    expect(screen.queryByText("Change impact")).not.toBeInTheDocument();
+    expect(screen.queryByText("First incoming")).not.toBeInTheDocument();
     expect(screen.getByText("Who relies on this concept?")).toBeInTheDocument();
     expect(screen.getByText("What breaks if it changes?")).toBeInTheDocument();
     expect(screen.getByText("Who should confirm the change?")).toBeInTheDocument();

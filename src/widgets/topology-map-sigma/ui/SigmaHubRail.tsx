@@ -102,7 +102,7 @@ export function SigmaHubRail({
           type="button"
           onClick={() => setOpenPersisted(true)}
           aria-label={t('expandAriaLabel')}
-          className="pointer-events-auto absolute left-0 top-1/2 z-10 hidden h-16 w-5 -translate-y-1/2 items-center justify-center rounded-r-md border border-l-0 border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset md:flex"
+          className="pointer-events-auto absolute left-0 top-1/2 z-10 hidden h-16 w-5 -translate-y-1/2 items-center justify-center rounded-r-md border border-l-0 border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:ring-inset md:flex"
         >
           <ChevronRight className="h-3 w-3" />
         </button>
@@ -131,7 +131,7 @@ export function SigmaHubRail({
             type="button"
             onClick={() => setOpenPersisted(false)}
             aria-label={t('collapseAriaLabel')}
-            className="rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)]"
+            className="rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
           >
             <ChevronLeft className="h-3 w-3" />
           </button>
@@ -142,7 +142,7 @@ export function SigmaHubRail({
         const degree = degreeBySlug.get(hub.slug) ?? 0;
         const dotColor = active
           ? 'var(--color-indigo-accent)'
-          : 'rgba(139,151,255,0.5)';
+          : 'var(--color-overlay-3)';
         return (
           <button
             key={hub.slug}
@@ -173,9 +173,9 @@ export function SigmaHubRail({
               }
             }}
             title={t('itemTitle', { name: hub.name, degree })}
-            className={`relative flex items-center gap-2 rounded-sm px-2 py-1.5 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.5)] focus-visible:ring-inset ${
+            className={`relative flex items-center gap-2 rounded-sm px-2 py-1.5 text-left text-[11px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:ring-inset ${
               active
-                ? 'bg-[color:rgba(94,106,210,0.14)] text-[color:var(--color-text-primary)]'
+                ? 'bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]'
                 : 'text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]'
             }`}
           >
@@ -194,7 +194,7 @@ export function SigmaHubRail({
             <span
               className={`shrink-0 font-mono text-[9px] tabular-nums tracking-[0.04em] ${
                 active
-                  ? 'text-[color:rgba(139,151,255,0.95)]'
+                  ? 'text-[color:var(--color-text-secondary)]'
                   : 'text-[color:var(--color-text-quaternary)]'
               }`}
             >

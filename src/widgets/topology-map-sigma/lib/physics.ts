@@ -59,6 +59,7 @@ export interface PhysicsController {
 export function startPhysics(
   graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>,
   onTick?: () => void,
+  options: { autoStart?: boolean; initialAlpha?: number } = {},
 ): PhysicsController {
   const simNodes: SimNode[] = [];
   const simNodeById = new Map<string, SimNode>();
@@ -117,10 +118,16 @@ export function startPhysics(
       onTick?.();
     });
 
-  // 초기 몇 초만 self-settling — 이후엔 사용자 상호작용 때만 alphaTarget을 올려
-  // 시뮬레이션을 깨운다. 이렇게 하면 평상시엔 완전 정적이고 드래그 시에만
-  // 움직인다 (옵시디언 동작과 동일).
-  sim.alpha(0.85).alphaTarget(0).restart();
+  // 초기 self-settling 은 작은 그래프에서만 유리하다. 큰 vault 에서는 mount 직후
+  // 메인 스레드와 WebGL refresh 를 계속 점유해 "토폴로지가 느리다"는 체감을
+  // 만든다. 큰 그래프는 정적 초기 배치로 먼저 보여주고, 드래그/자동 정렬 때만
+  // 시뮬레이션을 깨운다.
+  if (options.autoStart === false) {
+    sim.stop();
+    sim.alpha(options.initialAlpha ?? 0.35).alphaTarget(0);
+  } else {
+    sim.alpha(options.initialAlpha ?? 0.85).alphaTarget(0).restart();
+  }
 
   return {
     pin: (nodeId, x, y) => {

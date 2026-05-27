@@ -207,9 +207,11 @@ export function buildGraph(
   const prefix = options?.stripNamePrefix?.trim() ?? '';
   const prefixWithSep = prefix ? `${prefix} · ` : '';
   const shortenName = (name: string): string => {
-    if (!prefixWithSep || !name.startsWith(prefixWithSep)) return name;
+    if (!prefixWithSep || !name.startsWith(prefixWithSep)) {
+      return compactGraphLabel(name);
+    }
     const rest = name.slice(prefixWithSep.length).trim();
-    return rest.length > 0 ? rest : name;
+    return compactGraphLabel(rest.length > 0 ? rest : name);
   };
 
   // Layer 0 컨테이너 시스템 폐기 후 모든 토폴로지가 단일 layer —
@@ -319,7 +321,7 @@ export function buildGraph(
         // (2.8). 위계가 *크기* 로 한눈에 — color 단일 제약 보존하면서 시각
         // 정보량 증가.
         size: ONTOLOGY_NODE_SIZE_BY_KIND[kind],
-        label: node.title,
+        label: compactGraphLabel(node.title),
         forceLabel: false,
         recentlyUpdated: false,
         // 흐린 무채색 fill — 헌장의 "허브만 유일한 채색" 과 충돌 안 함.
@@ -423,6 +425,11 @@ export function buildGraph(
   });
 
   return graph;
+}
+
+function compactGraphLabel(label: string): string {
+  const stripped = label.replace(/\s*\(.*$/, "").trim();
+  return stripped.length > 0 ? stripped : label;
 }
 
 /**

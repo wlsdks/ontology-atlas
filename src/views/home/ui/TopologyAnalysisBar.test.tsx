@@ -28,6 +28,8 @@ const labels = {
   healthOpenOntology: "Open ontology",
   healthRepair: "Repair in builder",
   healthCopied: "Copied",
+  actions: "Actions",
+  healthCopyTools: "Copy tools",
   healthMcpCopy: "Copy MCP check",
   healthMcpCopied: "MCP check copied",
   healthMcpImpactCopy: "Copy MCP impact",
@@ -249,8 +251,8 @@ describe("TopologyAnalysisBar", () => {
     const bar = screen.getByRole("region", {
       name: "Topology analysis mode",
     });
-    expect(bar.className).toContain("lg:left-[calc(50%_-_200px)]");
-    expect(bar.className).toContain("lg:w-[min(560px,calc(100vw_-_840px))]");
+    expect(bar.className).toContain("lg:left-4");
+    expect(bar.className).toContain("lg:w-[min(320px,calc(100vw_-_460px))]");
   });
 
   it("describes Path mode as a click source then click target workflow", () => {
@@ -429,7 +431,7 @@ describe("TopologyAnalysisBar", () => {
     );
   });
 
-  it("shows the focused node review order before edit handoff actions", () => {
+  it("keeps focus mode actions compact before advanced copy tools", () => {
     render(
       <TopologyAnalysisBar
         mode="focus"
@@ -453,14 +455,16 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    expect(screen.getByText("Focus review order")).toBeInTheDocument();
-    expect(screen.getByTestId("topology-focus-review-order")).toBeInTheDocument();
-    expect(screen.getByText("Read node profile")).toBeInTheDocument();
-    expect(screen.getByText("Trace incoming impact")).toBeInTheDocument();
-    expect(screen.getByText("Edit or confirm meaning")).toBeInTheDocument();
-    expect(screen.getByText("Run sync gate")).toBeInTheDocument();
-    expect(screen.getAllByText("required")).toHaveLength(2);
-    expect(screen.getAllByText("after write")).toHaveLength(2);
+    expect(screen.queryByText("Focus review order")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("topology-focus-review-order")).not.toBeInTheDocument();
+    expect(screen.queryByText("required")).not.toBeInTheDocument();
+    expect(screen.queryByText("after write")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Copy focus review brief" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open ontology" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Open builder" })).toBeInTheDocument();
+    expect(screen.getByText("Copy tools")).toBeInTheDocument();
   });
 
   it("copies a focused node review brief for collaborators and agents", async () => {
@@ -679,21 +683,15 @@ describe("TopologyAnalysisBar", () => {
     expect(
       screen.getByRole("button", { name: "Copy topology path MCP check" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Proof order")).toBeInTheDocument();
+    expect(screen.queryByText("Proof order")).not.toBeInTheDocument();
     expect(
       screen.getByText(
         "Use the visible path as a clue, then run relation_check, explain_relation, and a bounded all_paths plan before treating it as write evidence.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByTestId("topology-path-proof-checklist")).toBeInTheDocument();
-    expect(screen.getByText("Visible path clue")).toBeInTheDocument();
-    expect(screen.getByText("relation_check preflight")).toBeInTheDocument();
-    expect(screen.getByText("explain_relation context")).toBeInTheDocument();
-    expect(screen.getByText("bounded all_paths plan")).toBeInTheDocument();
-    expect(screen.getByText("post-write sync gate")).toBeInTheDocument();
-    expect(screen.getByText("ready")).toBeInTheDocument();
-    expect(screen.getAllByText("required")).toHaveLength(3);
-    expect(screen.getByText("after write")).toBeInTheDocument();
+    expect(screen.queryByTestId("topology-path-proof-checklist")).not.toBeInTheDocument();
+    expect(screen.queryByText("Visible path clue")).not.toBeInTheDocument();
+    expect(screen.queryByText("required")).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", {
         name: "Copy topology path relation preflight MCP check",
@@ -967,9 +965,7 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "Inspect stale: Legacy Project" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Legacy Project" }));
 
     expect(onHealthAction).toHaveBeenCalledWith("legacy-project");
   });
@@ -1038,20 +1034,15 @@ describe("TopologyAnalysisBar", () => {
       />,
     );
 
-    expect(screen.getByText("Next action:")).toBeInTheDocument();
     expect(
       screen.getByText(
         "Connect this node to its owner/domain or document why it should stay standalone.",
       ),
     ).toBeInTheDocument();
-    expect(screen.getByText("Repair order")).toBeInTheDocument();
     expect(screen.getByTestId("topology-health-repair-order")).toBeInTheDocument();
-    expect(screen.getByText("Inspect target")).toBeInTheDocument();
-    expect(screen.getByText("Repair ownership or evidence")).toBeInTheDocument();
-    expect(screen.getByText("Run sync gate")).toBeInTheDocument();
-    expect(screen.getByText("ready")).toBeInTheDocument();
-    expect(screen.getByText("required")).toBeInTheDocument();
-    expect(screen.getByText("after write")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Views" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Inspect" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Repair in builder" })).toBeInTheDocument();
   });
 
   it("copies the current health evidence brief", async () => {
@@ -1149,129 +1140,4 @@ describe("TopologyAnalysisBar", () => {
     );
   });
 
-  it("copies only the MCP health check for the actionable target", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText },
-    });
-
-    render(
-      <TopologyAnalysisBar
-        mode="health"
-        summary={{
-          mode: "health",
-          primaryMetric: 1,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 1,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={{
-          slug: "capability:topology-analysis-modes",
-          title: "Topology Analysis Modes",
-          kind: "stale",
-        }}
-        selectedTitle={null}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Copy health MCP check" }));
-
-    expect(writeText).toHaveBeenCalledWith(
-      'query_ontology({"operation":"node_profile","slug":"capability:topology-analysis-modes","depth":2,"limit":12})',
-    );
-  });
-
-  it("copies the MCP impact check for the actionable health target", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText },
-    });
-
-    render(
-      <TopologyAnalysisBar
-        mode="health"
-        summary={{
-          mode: "health",
-          primaryMetric: 1,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 1,
-            orphan: 0,
-            promotion: 0,
-          },
-        }}
-        healthAction={{
-          slug: "capability:topology-analysis-modes",
-          title: "Topology Analysis Modes",
-          kind: "stale",
-        }}
-        selectedTitle={null}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Copy health impact MCP check" }));
-
-    expect(writeText).toHaveBeenCalledWith(
-      'query_ontology({"operation":"blast_radius","slug":"capability:topology-analysis-modes","depth":2,"direction":"incoming"})',
-    );
-  });
-
-  it("copies the post-repair sync gate for a health target", async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText },
-    });
-
-    render(
-      <TopologyAnalysisBar
-        mode="health"
-        summary={{
-          mode: "health",
-          primaryMetric: 1,
-          secondaryMetric: 8,
-          needsSelection: false,
-          healthBreakdown: {
-            stale: 0,
-            orphan: 1,
-            promotion: 0,
-          },
-        }}
-        healthAction={{
-          slug: "domain:views",
-          title: "Views",
-          kind: "orphan",
-        }}
-        selectedTitle={null}
-        labels={labels}
-        onModeChange={vi.fn()}
-        onHealthAction={vi.fn()}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Copy health post-repair sync gate" }));
-
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("# Post-change ontology sync gate"),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining('"operation": "health"'),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining('"operation": "maintenance_plan"'),
-    );
-    expect(writeText).toHaveBeenCalledWith(
-      expect.stringContaining("oh-my-ontology validate [vault]"),
-    );
-  });
 });

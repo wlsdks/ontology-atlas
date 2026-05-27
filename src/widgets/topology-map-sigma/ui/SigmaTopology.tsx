@@ -78,7 +78,6 @@ import {
 import { SigmaContextMenu, type SigmaContextMenuData } from './SigmaContextMenu';
 import { SigmaFocusLabel } from './SigmaFocusLabel';
 import { SigmaEdgeTooltip, type SigmaEdgeTooltipData } from './SigmaEdgeTooltip';
-import { SigmaMinimap } from './SigmaMinimap';
 import { SigmaNodeTooltip, type SigmaNodeTooltipData } from './SigmaNodeTooltip';
 import { copyText } from '@/shared/lib/copy-text';
 
@@ -185,6 +184,14 @@ function createSigma(
   } as unknown as ConstructorParameters<typeof Sigma<SigmaNodeAttrs, SigmaEdgeAttrs>>[2];
 
   return new Sigma<SigmaNodeAttrs, SigmaEdgeAttrs>(graph, container, settings);
+}
+
+function getInitialSettleIterations(nodeCount: number, minimal: boolean): number {
+  if (minimal) return nodeCount > 200 ? 120 : 180;
+  if (nodeCount > 600) return 32;
+  if (nodeCount > 200) return 56;
+  if (nodeCount > 80) return 96;
+  return 140;
 }
 
 interface SigmaTopologyProps {
@@ -456,6 +463,9 @@ function SigmaTopologyImpl({
   const depthMapRef = useRef<Map<string, number>>(new Map());
   const rendererRefreshNeighbors = useRef<(() => void) | null>(null);
   const pathClearRef = useRef<(() => void) | null>(null);
+  const pathSelectionApplyRef = useRef<
+    ((selection: { sourceSlug: string | null; targetSlug: string | null } | null) => void) | null
+  >(null);
   const [pathAnchorSlug, setPathAnchorSlug] = useState<string | null>(null);
   // 경로 찾기 결과 노드 체인. 완성 시 set, 일반 클릭/Esc 로 clear.
   // 상단 배너에서 "A → B → C (N hop)" 표기 + 해제 버튼용.
@@ -547,7 +557,7 @@ function SigmaTopologyImpl({
             }
           : undefined,
     });
-    const iterations = g.order > 600 ? 120 : g.order > 200 ? 240 : 360;
+    const iterations = getInitialSettleIterations(g.order, minimal);
     settleLayout(g, iterations);
     // 사용자가 드래그로 옮긴 좌표가 있으면 settle 이후 해당 노드만 덮어쓰기.
     // 이렇게 하면 새 노드는 force 시뮬레이션 결과를 쓰고 기존에 "내가 저기
@@ -742,7 +752,11 @@ function SigmaTopologyImpl({
     // onTick에서 명시적 refresh를 호출하지 않는다 — updateEachNodeAttributes가
     // 발행하는 단일 'eachNodeAttributesUpdated' 이벤트에 Sigma가 자동으로
     // 반응하므로 중복 렌더를 피한다.
-    const physics = startPhysics(graph);
+    const autoStartPhysics = minimal || graph.order <= 120;
+    const physics = startPhysics(graph, undefined, {
+      autoStart: autoStartPhysics,
+      initialAlpha: autoStartPhysics ? 0.65 : 0.25,
+    });
     physicsRef.current = physics;
 
     // hover/선택 시 이웃만 강조하고 나머지는 dim. 옵시디언 그래프 뷰 동작과 동일.
@@ -933,9 +947,16 @@ function SigmaTopologyImpl({
       //   덮는다.
       // - Hover/선택/이웃은 예외로 즉시 라벨을 복원한다.
       const focus = selectedSlugRef.current ?? hoveredNode;
-      const isFocusOrNeighbor =
-        focus === node || (focus !== null && neighbors.has(node));
+      const isFocusNode = focus === node;
+      const isNeighbor = focus !== null && neighbors.has(node);
+      const isFocusOrNeighbor = isFocusNode || isNeighbor;
+      const shouldShowNeighborLabel =
+        isNeighbor && neighbors.size < 8 && cameraRatioRef.current <= 0.55;
       const ratio = cameraRatioRef.current;
+
+      if (!hidden && isNeighbor && !shouldShowNeighborLabel) {
+        return { ...base, label: undefined, forceLabel: false };
+      }
 
       if (!hidden && !isFocusOrNeighbor) {
         if (attrs.isHub) {
@@ -955,7 +976,7 @@ function SigmaTopologyImpl({
         return { ...base, forceLabel: ratio <= 0.55 };
       }
 
-      if (!hidden && !base.forceLabel && isFocusOrNeighbor) {
+      if (!hidden && !base.forceLabel && (isFocusNode || shouldShowNeighborLabel)) {
         return { ...base, forceLabel: true };
       }
       return base;
@@ -1249,6 +1270,7 @@ function SigmaTopologyImpl({
       });
       renderer.refresh();
     };
+    pathSelectionApplyRef.current = applyPathSelection;
     renderer.on('rightClickNode', ({ node, event }) => {
       event.preventSigmaDefault();
       event.original.preventDefault();
@@ -1359,6 +1381,7 @@ function SigmaTopologyImpl({
     };
     return () => {
       rendererRefreshNeighbors.current = null;
+      pathSelectionApplyRef.current = null;
       physics.stop();
       renderer.kill();
       sigmaRef.current = null;
@@ -1368,6 +1391,12 @@ function SigmaTopologyImpl({
     // graph 만 바뀌어도 renderer 재생성 필요.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [graph]);
+
+  useEffect(() => {
+    if (!pathWorkflowActive) return;
+    pathSelectionApplyRef.current?.(pathSelection);
+    sigmaRef.current?.refresh();
+  }, [pathWorkflowActive, pathSelection?.sourceSlug, pathSelection?.targetSlug]);
 
   // 라이트/다크 모드 토글 시 sigma label 색 + 노드 border + 엣지 색을 갱신.
   // html data-theme attribute 만 watch — 다른 변화에 끌려가지 않게
@@ -1741,24 +1770,6 @@ function SigmaTopologyImpl({
     onVisibleCountChange(count);
   }, [activeCategory, hubsOnly, searchQuery, selectedSlug, depthLimit, graph, onVisibleCountChange]);
 
-  const stats = useMemo(() => {
-    let hubs = 0;
-    graph.forEachNode((_, attrs) => {
-      if (attrs.isHub) hubs += 1;
-    });
-    // ontology extension 이 켜진 surface 에선 edge 카운트를 vault 의 원본
-    // 관계 (insight.edges.length) 와 정렬 — graphology 의 graph.size 는
-    // 같은 (from,to) 쌍을 1개로 dedup 해서 /ontology 의 "총 관계" 와
-    // 카운트가 어긋났다 (141 vs 135).
-    const originalRelationCount =
-      showOntologyNodes && ontologyInsight ? ontologyInsight.edges.length : graph.size;
-    return {
-      nodes: graph.order,
-      hubs,
-      edges: originalRelationCount,
-    };
-  }, [graph, showOntologyNodes, ontologyInsight]);
-
   return (
     <div className={`relative h-full w-full overflow-hidden ${className ?? ''}`}>
       {/* 깔끔한 solid canvas — 이전 radial dot grid 는 1979 노드의 원형
@@ -1801,8 +1812,6 @@ function SigmaTopologyImpl({
             'radial-gradient(ellipse at center, transparent 60%, var(--color-vignette) 100%)',
         }}
       />
-
-      {minimal ? null : <SigmaMinimap sigma={sigmaInstance} graph={graph} />}
 
       {/* minimal 모드 (상세 페이지 임베드 등) 전용 "정렬" 버튼 — 우상단.
           클릭 시 선택 노드가 있으면 그 노드를 중앙으로, 없으면 기본 시점
@@ -2054,52 +2063,6 @@ function SigmaTopologyImpl({
           onDismiss={() => setContextMenu(null)}
         />
       ) : null}
-
-      {/* 통계 미니패널 — 좌하단 모노 캡션. 지도 밀도 요약 + 활성 모드 배지.
-          minimal 모드에서는 임베드 영역이 작아서 노출 생략. */}
-      <div
-        className={`pointer-events-none absolute bottom-6 left-4 z-10 ${minimal ? 'hidden' : 'hidden md:flex'} items-center gap-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-1.5 font-mono text-[10px] tracking-[0.14em] text-[color:var(--color-text-quaternary)] md:left-6 xl:left-8`}
-      >
-        <span>
-          <span className="text-[color:var(--color-text-secondary)]">{stats.nodes}</span> {t('statsNodes')}
-        </span>
-        {stats.hubs > 0 ? (
-          <>
-            <span className="h-2 w-px bg-[color:var(--color-overlay-3)]" />
-            <span>
-              <span className="text-[color:var(--color-indigo-accent)]">{stats.hubs}</span> {t('statsHubs')}
-            </span>
-          </>
-        ) : null}
-        <span className="h-2 w-px bg-[color:var(--color-overlay-3)]" />
-        <span>
-          <span className="text-[color:var(--color-text-secondary)]">{stats.edges}</span> {t('statsEdges')}
-        </span>
-        {hubsOnly ? (
-          <>
-            <span className="h-2 w-px bg-[color:rgba(139,151,255,0.32)]" />
-            <span className="rounded-sm border border-[color:rgba(139,151,255,0.32)] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.95)]">
-              hubs only
-            </span>
-          </>
-        ) : null}
-        {depthLimit != null ? (
-          <>
-            <span className="h-2 w-px bg-[color:rgba(139,151,255,0.32)]" />
-            <span className="rounded-sm border border-[color:rgba(139,151,255,0.32)] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.95)]">
-              depth · {depthLimit}
-            </span>
-          </>
-        ) : null}
-        {pathWorkflowActive || pathAnchorSlug ? (
-          <>
-            <span className="h-2 w-px bg-[color:rgba(139,151,255,0.32)]" />
-            <span className="rounded-sm border border-[color:rgba(139,151,255,0.32)] px-1.5 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[color:rgba(139,151,255,0.95)]">
-              path
-            </span>
-          </>
-        ) : null}
-      </div>
 
       {/* Audit overlay 범례 — overlay on + non-minimal 에서만. 좌하단 stats 위로
           살짝 겹쳐 놓아 "지금 켜져 있는 해석" 을 명확히 드러낸다. */}

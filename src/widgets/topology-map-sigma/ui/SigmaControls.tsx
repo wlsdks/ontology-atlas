@@ -96,7 +96,7 @@ export function SigmaControls({
                   type="button"
                   onClick={onFitView}
                   aria-label={t('fitViewAriaLabel')}
-                  className="hidden h-9 w-9 items-center justify-center text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:rgba(94,106,210,0.18)] md:flex"
+                  className="hidden h-9 w-9 items-center justify-center text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-2)] md:flex"
                 >
                   <Maximize2 className="h-4 w-4" />
                 </button>
@@ -140,7 +140,7 @@ export function SigmaControls({
             type="button"
             onClick={onFitView}
             aria-label={t('fitViewAriaLabel')}
-            className="pointer-events-auto absolute right-4 top-[140px] z-20 flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:rgba(94,106,210,0.18)] md:right-6 xl:right-8"
+            className="pointer-events-auto absolute right-4 top-[140px] z-20 flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-2)] md:right-6 xl:right-8"
           >
             <Maximize2 className="h-4 w-4" />
           </button>
@@ -163,7 +163,7 @@ export function SigmaControls({
             <span
               className={`font-mono text-[9px] tracking-[0.08em] ${
                 filtering
-                  ? 'text-[color:rgba(139,151,255,0.9)]'
+                  ? 'text-[color:var(--color-text-secondary)]'
                   : 'text-[color:var(--color-text-quaternary)]'
               }`}
               aria-label={t('searchCountAriaLabel', { visible: visibleCount as number, total: totalCount as number })}
@@ -194,7 +194,7 @@ export function SigmaControls({
 
         {/* 허브만 보기 — 500노드 한눈에 보기 부담 줄이는 토글. 허브 11개 +
             허브-허브 엣지만 렌더. 클릭 한 번으로 전환. */}
-        <label className="pointer-events-auto flex cursor-pointer items-center justify-between rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.28)]">
+        <label className="pointer-events-auto flex cursor-pointer items-center justify-between rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)]">
           <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
             {t('hubsOnlyLabel')}
           </span>

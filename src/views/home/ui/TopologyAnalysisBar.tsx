@@ -44,6 +44,8 @@ interface TopologyAnalysisBarLabels {
   healthOpenOntology: string;
   healthRepair: string;
   healthCopied: string;
+  actions: string;
+  healthCopyTools: string;
   healthMcpCopy: string;
   healthMcpCopied: string;
   healthMcpImpactCopy: string;
@@ -239,9 +241,6 @@ export function TopologyAnalysisBar({
 }: TopologyAnalysisBarProps) {
   const [overviewBriefCopied, setOverviewBriefCopied] = useState(false);
   const [healthCopied, setHealthCopied] = useState(false);
-  const [healthMcpCopied, setHealthMcpCopied] = useState(false);
-  const [healthMcpImpactCopied, setHealthMcpImpactCopied] = useState(false);
-  const [healthSyncGateCopied, setHealthSyncGateCopied] = useState(false);
   const [focusBriefCopied, setFocusBriefCopied] = useState(false);
   const [focusMcpCopied, setFocusMcpCopied] = useState(false);
   const [focusMcpImpactCopied, setFocusMcpImpactCopied] = useState(false);
@@ -254,25 +253,32 @@ export function TopologyAnalysisBar({
     useState(false);
   const [pathAllPathsPlanCopied, setPathAllPathsPlanCopied] = useState(false);
   const [pathAllPathsCopied, setPathAllPathsCopied] = useState(false);
+  const displaySelectedTitle = selectedTitle ? compactAnalysisTitle(selectedTitle) : null;
+  const displayPathSourceTitle = pathSourceTitle
+    ? compactAnalysisTitle(pathSourceTitle)
+    : null;
+  const displayPathTargetTitle = pathTargetTitle
+    ? compactAnalysisTitle(pathTargetTitle)
+    : null;
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
   const resolvedPathTitle =
-    pathSourceTitle && pathTargetTitle
+    displayPathSourceTitle && displayPathTargetTitle
       ? labels.pathResolved
-          .replace("{source}", pathSourceTitle)
-          .replace("{target}", pathTargetTitle)
+          .replace("{source}", displayPathSourceTitle)
+          .replace("{target}", displayPathTargetTitle)
       : null;
   const prompt =
     mode === "focus"
-      ? selectedTitle
-        ? labels.focusSelected.replace("{title}", selectedTitle)
+      ? displaySelectedTitle
+        ? labels.focusSelected.replace("{title}", displaySelectedTitle)
         : labels.focusPrompt
       : mode === "path"
         ? resolvedPathTitle
           ? resolvedPathTitle
-          : pathSourceTitle || selectedTitle
+          : displayPathSourceTitle || displaySelectedTitle
           ? labels.pathSelected.replace(
               "{title}",
-              pathSourceTitle ?? selectedTitle ?? "",
+              displayPathSourceTitle ?? displaySelectedTitle ?? "",
             )
           : labels.pathPrompt
         : mode === "health"
@@ -370,30 +376,6 @@ export function TopologyAnalysisBar({
     setHealthCopied(true);
     window.setTimeout(() => setHealthCopied(false), 1600);
   }, [healthAction, labels, postChangeSyncPacket, summary]);
-
-  const copyHealthMcpCheck = useCallback(async () => {
-    if (!healthAction) return;
-    const ok = await copyText(formatTopologyHealthMcpCheck(healthAction.slug));
-    if (!ok) return;
-    setHealthMcpCopied(true);
-    window.setTimeout(() => setHealthMcpCopied(false), 1600);
-  }, [healthAction]);
-
-  const copyHealthMcpImpactCheck = useCallback(async () => {
-    if (!healthAction) return;
-    const ok = await copyText(formatTopologyHealthImpactMcpCheck(healthAction.slug));
-    if (!ok) return;
-    setHealthMcpImpactCopied(true);
-    window.setTimeout(() => setHealthMcpImpactCopied(false), 1600);
-  }, [healthAction]);
-
-  const copyHealthSyncGate = useCallback(async () => {
-    if (!healthAction) return;
-    const ok = await copyText(postChangeSyncPacket);
-    if (!ok) return;
-    setHealthSyncGateCopied(true);
-    window.setTimeout(() => setHealthSyncGateCopied(false), 1600);
-  }, [healthAction, postChangeSyncPacket]);
 
   const copyFocusMcpCheck = useCallback(async () => {
     if (!selectedSlug) return;
@@ -564,14 +546,14 @@ export function TopologyAnalysisBar({
   return (
     <section
       aria-label={labels.title}
-      className={`pointer-events-auto absolute inset-x-3 top-[72px] z-20 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2 shadow-[0_14px_34px_rgba(0,0,0,0.18)] md:hidden lg:right-auto lg:top-4 lg:block lg:-translate-x-1/2 ${
+      className={`pointer-events-auto absolute inset-x-3 top-[72px] z-20 max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 shadow-[0_14px_34px_rgba(0,0,0,0.18)] md:hidden lg:inset-x-auto lg:top-24 lg:block lg:max-h-[calc(100dvh-7rem)] lg:-translate-x-0 ${
         rightPanelReserved
-          ? "lg:left-[calc(50%_-_200px)] lg:w-[min(560px,calc(100vw_-_840px))]"
-          : "lg:left-1/2 lg:w-[min(680px,calc(100vw-440px))]"
+          ? "lg:left-4 lg:w-[min(320px,calc(100vw_-_460px))]"
+          : "lg:left-4 lg:w-[320px]"
       }`}
     >
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-        <div className="grid w-full grid-cols-4 gap-1 rounded-md border border-[color:var(--color-overlay-2)] bg-[color:var(--color-overlay-1)] p-1 lg:w-auto">
+      <div className="flex flex-col gap-2">
+        <div className="grid w-full grid-cols-4 gap-0.5 rounded-md bg-[color:var(--color-overlay-1)] p-0.5">
           {MODES.map(({ value, icon: Icon, labelKey }) => {
             const active = value === mode;
             return (
@@ -580,9 +562,9 @@ export function TopologyAnalysisBar({
                 type="button"
                 onClick={() => onModeChange(value)}
                 aria-pressed={active}
-                className={`inline-flex h-8 items-center gap-1.5 rounded px-2 text-[11px] font-[var(--font-weight-signature)] transition-colors ${
+                className={`inline-flex h-7 items-center justify-center gap-1 rounded px-1.5 text-[10.5px] font-[var(--font-weight-signature)] transition-colors ${
                   active
-                    ? "bg-[color:rgba(94,106,210,0.18)] text-[color:var(--color-text-primary)]"
+                    ? "bg-[color:var(--color-overlay-2)] text-[color:var(--color-text-primary)]"
                     : "text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
                 }`}
               >
@@ -592,8 +574,8 @@ export function TopologyAnalysisBar({
             );
           })}
         </div>
-        <div className="min-w-0 flex-1 border-t border-[color:var(--color-border-soft)] pt-2 lg:border-l lg:border-t-0 lg:pl-3 lg:pt-0">
-          <p className="truncate text-[12px] text-[color:var(--color-text-secondary)]">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-[11px] text-[color:var(--color-text-secondary)]">
             {prompt}
           </p>
           <div className="mt-1 flex items-center gap-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
@@ -613,7 +595,7 @@ export function TopologyAnalysisBar({
           </div>
           {mode === "health" ? (
             <>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-[color:var(--color-text-quaternary)]">
                 <HealthBreakdownChip
                   count={summary.healthBreakdown.stale}
                   label={labels.healthStale}
@@ -628,167 +610,90 @@ export function TopologyAnalysisBar({
                 />
               </div>
               {healthAction ? (
-                <div className="mt-2 min-w-0">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => onHealthAction(healthAction.slug)}
-                      className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:text-[color:var(--color-text-primary)]"
-                    >
-                      <HeartPulse size={12} aria-hidden />
-                      <span className="truncate">
-                        {labels.healthInspect} {healthAction.kind}:{" "}
-                        {healthAction.title}
-                      </span>
-                    </button>
-                    <Link
-                      href={buildOntologyNodeHref(healthAction.slug)}
-                      className="inline-flex h-[26px] items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
-                    >
-                      {labels.healthOpenOntology}
-                    </Link>
-                    <Link
-                      href={buildTopologyHealthRepairHref(healthAction.slug)}
-                      className="inline-flex h-[26px] items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
-                    >
-                      {labels.healthRepair}
-                    </Link>
-                  </div>
-                  {healthNextAction ? (
-                    <p className="mt-1 max-w-full truncate text-[10.5px] text-[color:var(--color-text-tertiary)]">
-                      <span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-                        {labels.healthEvidenceNextAction}:
-                      </span>{" "}
-                      {healthNextAction}
-                    </p>
-                  ) : null}
-                  <div className="mt-2 rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1.5">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(190,199,255,0.82)]">
-                      {labels.healthRepairOrderTitle}
-                    </p>
-                    <dl
-                      className="mt-2 grid gap-1.5 sm:grid-cols-3"
+                <div className="mt-3 min-w-0">
+                  <div className="border-t border-[color:var(--color-border-soft)] pt-2">
+                    <div className="flex min-w-0 items-start justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => onHealthAction(healthAction.slug)}
+                        className="min-w-0 truncate text-left text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:text-[color:var(--color-text-secondary)]"
+                      >
+                        {compactAnalysisTitle(healthAction.title)}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={copyHealthEvidence}
+                        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                        aria-label={
+                          healthCopied
+                            ? labels.healthCopiedAriaLabel
+                            : labels.healthCopyAriaLabel
+                        }
+                        title={healthCopied ? labels.healthCopied : labels.healthCopy}
+                      >
+                        {healthCopied ? (
+                          <Check size={12} aria-hidden />
+                        ) : (
+                          <Clipboard size={12} aria-hidden />
+                        )}
+                      </button>
+                    </div>
+                    <div
+                      className="mt-2 flex flex-wrap gap-1"
                       data-testid="topology-health-repair-order"
                     >
-                      <PathProofStep
-                        label={labels.healthRepairOrderInspect}
-                        status={labels.pathProofStatusReady}
-                        tone="ready"
-                      />
-                      <PathProofStep
-                        label={labels.healthRepairOrderRepair}
-                        status={labels.pathProofStatusRequired}
-                        tone="required"
-                      />
-                      <PathProofStep
-                        label={labels.healthRepairOrderSync}
-                        status={labels.pathProofStatusAfterWrite}
-                        tone="after"
-                      />
-                    </dl>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    <button
-                      type="button"
-                      onClick={copyHealthMcpCheck}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                      aria-label={
-                        healthMcpCopied
-                          ? labels.healthMcpCopiedAriaLabel
-                          : labels.healthMcpCopyAriaLabel
-                      }
-                    >
-                      {healthMcpCopied ? (
-                        <Check size={12} aria-hidden />
-                      ) : (
-                        <Clipboard size={12} aria-hidden />
-                      )}
-                      <span>
-                        {healthMcpCopied
-                          ? labels.healthMcpCopied
-                          : labels.healthMcpCopy}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={copyHealthMcpImpactCheck}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                      aria-label={
-                        healthMcpImpactCopied
-                          ? labels.healthMcpImpactCopiedAriaLabel
-                          : labels.healthMcpImpactCopyAriaLabel
-                      }
-                    >
-                      {healthMcpImpactCopied ? (
-                        <Check size={12} aria-hidden />
-                      ) : (
-                        <Clipboard size={12} aria-hidden />
-                      )}
-                      <span>
-                        {healthMcpImpactCopied
-                          ? labels.healthMcpImpactCopied
-                          : labels.healthMcpImpactCopy}
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={copyHealthSyncGate}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                      aria-label={
-                        healthSyncGateCopied
-                          ? labels.healthSyncGateCopiedAriaLabel
-                          : labels.healthSyncGateCopyAriaLabel
-                      }
-                    >
-                      {healthSyncGateCopied ? (
-                        <Check size={12} aria-hidden />
-                      ) : (
-                        <Clipboard size={12} aria-hidden />
-                      )}
-                      <span>
-                        {healthSyncGateCopied
-                          ? labels.healthSyncGateCopied
-                          : labels.healthSyncGateCopy}
-                      </span>
-                    </button>
+                      <Link
+                        href={buildTopologyHealthRepairHref(healthAction.slug)}
+                        className="inline-flex h-7 items-center rounded-md border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-3)]"
+                      >
+                        {labels.healthRepair}
+                      </Link>
+                      <Link
+                        href={buildOntologyNodeHref(healthAction.slug)}
+                        className="inline-flex h-7 items-center rounded-md px-2 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+                      >
+                        {labels.healthOpenOntology}
+                      </Link>
+                    </div>
+                    {healthNextAction ? (
+                      <details className="mt-2">
+                        <summary className="inline-flex cursor-pointer list-none items-center rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                          {labels.actions}
+                        </summary>
+                        <p className="mt-1 line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                          {healthNextAction}
+                        </p>
+                      </details>
+                    ) : null}
                   </div>
                 </div>
               ) : null}
-              <button
-                type="button"
-                onClick={copyHealthEvidence}
-                className="mt-2 ml-1 inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
-                aria-label={
-                  healthCopied
-                    ? labels.healthCopiedAriaLabel
-                    : labels.healthCopyAriaLabel
-                }
-              >
-                {healthCopied ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
-                <span>{healthCopied ? labels.healthCopied : labels.healthCopy}</span>
-              </button>
             </>
           ) : null}
           {mode === "overview" ? (
-            <div className="mt-2 grid gap-2">
-              <div className="rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5">
-                <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(190,199,255,0.78)]">
+            <details className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
+              <summary className="inline-flex cursor-pointer list-none items-center rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                {labels.actions}
+              </summary>
+              <div className="mt-2">
+              <div>
+                <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
                   {labels.overviewWorkOrderTitle}
                 </p>
                 <ol
-                  className="mt-2 grid gap-1.5 sm:grid-cols-4"
+                  className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1"
                   data-testid="topology-overview-work-order"
                 >
-                  <OverviewWorkStep index={1} label={labels.overviewWorkOrderRead} />
-                  <OverviewWorkStep index={2} label={labels.overviewWorkOrderFocus} />
-                  <OverviewWorkStep index={3} label={labels.overviewWorkOrderPath} />
-                  <OverviewWorkStep index={4} label={labels.overviewWorkOrderHealth} />
+                  <OverviewWorkStep label={labels.overviewWorkOrderRead} />
+                  <OverviewWorkStep label={labels.overviewWorkOrderFocus} />
+                  <OverviewWorkStep label={labels.overviewWorkOrderPath} />
+                  <OverviewWorkStep label={labels.overviewWorkOrderHealth} />
                 </ol>
               </div>
               <button
                 type="button"
                 onClick={copyOverviewBrief}
-                className="inline-flex w-fit items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
+                className="mt-2 inline-flex h-7 w-7 items-center justify-center rounded-md text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
                 aria-label={
                   overviewBriefCopied
                     ? labels.overviewBriefCopiedAriaLabel
@@ -796,63 +701,28 @@ export function TopologyAnalysisBar({
                 }
               >
                 {overviewBriefCopied ? (
-                  <Check size={12} aria-hidden />
+                  <Check size={13} aria-hidden />
                 ) : (
-                  <Clipboard size={12} aria-hidden />
+                  <Clipboard size={13} aria-hidden />
                 )}
-                <span>
-                  {overviewBriefCopied
-                    ? labels.overviewBriefCopied
-                    : labels.overviewBriefCopy}
-                </span>
               </button>
-            </div>
+              </div>
+            </details>
           ) : null}
           {mode === "path" && pathSourceSlug && pathTargetSlug ? (
-            <div className="mt-2 grid gap-2">
-              <div className="rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1.5">
-                <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(190,199,255,0.82)]">
-                  {labels.pathProofOrderTitle}
-                </p>
-                <p className="mt-1 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
-                  {labels.pathProofOrderDesc}
-                </p>
-                <dl
-                  className="mt-2 grid gap-1.5 sm:grid-cols-2"
-                  data-testid="topology-path-proof-checklist"
-                >
-                  <PathProofStep
-                    label={labels.pathProofVisiblePath}
-                    status={labels.pathProofStatusReady}
-                    tone="ready"
-                  />
-                  <PathProofStep
-                    label={labels.pathProofRelationPreflight}
-                    status={labels.pathProofStatusRequired}
-                    tone="required"
-                  />
-                  <PathProofStep
-                    label={labels.pathProofExplainRelation}
-                    status={labels.pathProofStatusRequired}
-                    tone="required"
-                  />
-                  <PathProofStep
-                    label={labels.pathProofBoundedTraversal}
-                    status={labels.pathProofStatusRequired}
-                    tone="required"
-                  />
-                  <PathProofStep
-                    label={labels.pathProofPostWriteSync}
-                    status={labels.pathProofStatusAfterWrite}
-                    tone="after"
-                  />
-                </dl>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
+            <details className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
+              <summary className="inline-flex cursor-pointer list-none items-center rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                {labels.actions}
+              </summary>
+              <div className="mt-2">
+              <p className="line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                {labels.pathProofOrderDesc}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1">
                 <button
                   type="button"
                   onClick={copyPathEvidence}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                   aria-label={
                     pathEvidenceCopied
                       ? labels.pathEvidenceCopiedAriaLabel
@@ -870,171 +740,118 @@ export function TopologyAnalysisBar({
                       : labels.pathEvidenceCopy}
                   </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={copyPathMcpCheck}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={
-                    pathMcpCopied
-                      ? labels.pathMcpCopiedAriaLabel
-                      : labels.pathMcpCopyAriaLabel
-                  }
-                >
-                  {pathMcpCopied ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                  <span>{pathMcpCopied ? labels.pathMcpCopied : labels.pathMcpCopy}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={copyPathRelationPreflight}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={
-                    pathRelationPreflightCopied
-                      ? labels.pathRelationPreflightCopiedAriaLabel
-                      : labels.pathRelationPreflightCopyAriaLabel
-                  }
-                >
-                  {pathRelationPreflightCopied ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                  <span>
-                    {pathRelationPreflightCopied
-                      ? labels.pathRelationPreflightCopied
-                      : labels.pathRelationPreflightCopy}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={copyPathExplainRelation}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={
-                    pathExplainRelationCopied
-                      ? labels.pathExplainRelationCopiedAriaLabel
-                      : labels.pathExplainRelationCopyAriaLabel
-                  }
-                >
-                  {pathExplainRelationCopied ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                  <span>
-                    {pathExplainRelationCopied
-                      ? labels.pathExplainRelationCopied
-                      : labels.pathExplainRelationCopy}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={copyPathAllPathsPlan}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={
-                    pathAllPathsPlanCopied
-                      ? labels.pathAllPathsPlanCopiedAriaLabel
-                      : labels.pathAllPathsPlanCopyAriaLabel
-                  }
-                >
-                  {pathAllPathsPlanCopied ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                  <span>
-                    {pathAllPathsPlanCopied
-                      ? labels.pathAllPathsPlanCopied
-                      : labels.pathAllPathsPlanCopy}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={copyPathAllPaths}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={
-                    pathAllPathsCopied
-                      ? labels.pathAllPathsCopiedAriaLabel
-                      : labels.pathAllPathsCopyAriaLabel
-                  }
-                >
-                  {pathAllPathsCopied ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                  <span>
-                    {pathAllPathsCopied
-                      ? labels.pathAllPathsCopied
-                      : labels.pathAllPathsCopy}
-                  </span>
-                </button>
                 <Link
                   href={buildOntologyNodeHref(pathSourceSlug)}
-                  className="inline-flex items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.pathSourceOntology}
                 </Link>
                 <Link
                   href={buildOntologyNodeHref(pathTargetSlug)}
-                  className="inline-flex items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.pathTargetOntology}
                 </Link>
                 <Link
                   href={buildTopologyHealthRepairHref(pathSourceSlug)}
-                  className="inline-flex items-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.pathSourceBuilder}
                 </Link>
                 <Link
                   href={buildTopologyHealthRepairHref(pathTargetSlug)}
-                  className="inline-flex items-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.pathTargetBuilder}
                 </Link>
               </div>
-            </div>
+              <details className="mt-2 group">
+                <summary className="inline-flex cursor-pointer list-none items-center rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                  {labels.healthCopyTools}
+                </summary>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  <CompactCopyButton
+                    copied={pathMcpCopied}
+                    label={pathMcpCopied ? labels.pathMcpCopied : labels.pathMcpCopy}
+                    ariaLabel={
+                      pathMcpCopied
+                        ? labels.pathMcpCopiedAriaLabel
+                        : labels.pathMcpCopyAriaLabel
+                    }
+                    onClick={copyPathMcpCheck}
+                  />
+                  <CompactCopyButton
+                    copied={pathRelationPreflightCopied}
+                    label={
+                      pathRelationPreflightCopied
+                        ? labels.pathRelationPreflightCopied
+                        : labels.pathRelationPreflightCopy
+                    }
+                    ariaLabel={
+                      pathRelationPreflightCopied
+                        ? labels.pathRelationPreflightCopiedAriaLabel
+                        : labels.pathRelationPreflightCopyAriaLabel
+                    }
+                    onClick={copyPathRelationPreflight}
+                  />
+                  <CompactCopyButton
+                    copied={pathExplainRelationCopied}
+                    label={
+                      pathExplainRelationCopied
+                        ? labels.pathExplainRelationCopied
+                        : labels.pathExplainRelationCopy
+                    }
+                    ariaLabel={
+                      pathExplainRelationCopied
+                        ? labels.pathExplainRelationCopiedAriaLabel
+                        : labels.pathExplainRelationCopyAriaLabel
+                    }
+                    onClick={copyPathExplainRelation}
+                  />
+                  <CompactCopyButton
+                    copied={pathAllPathsPlanCopied}
+                    label={
+                      pathAllPathsPlanCopied
+                        ? labels.pathAllPathsPlanCopied
+                        : labels.pathAllPathsPlanCopy
+                    }
+                    ariaLabel={
+                      pathAllPathsPlanCopied
+                        ? labels.pathAllPathsPlanCopiedAriaLabel
+                        : labels.pathAllPathsPlanCopyAriaLabel
+                    }
+                    onClick={copyPathAllPathsPlan}
+                  />
+                  <CompactCopyButton
+                    copied={pathAllPathsCopied}
+                    label={
+                      pathAllPathsCopied
+                        ? labels.pathAllPathsCopied
+                        : labels.pathAllPathsCopy
+                    }
+                    ariaLabel={
+                      pathAllPathsCopied
+                        ? labels.pathAllPathsCopiedAriaLabel
+                        : labels.pathAllPathsCopyAriaLabel
+                    }
+                    onClick={copyPathAllPaths}
+                  />
+                </div>
+              </details>
+              </div>
+            </details>
           ) : null}
           {mode === "focus" && selectedSlug ? (
-            <div className="mt-2 grid gap-2">
-              <div className="rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.055)] px-2 py-1.5">
-                <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(190,199,255,0.82)]">
-                  {labels.focusReviewOrderTitle}
-                </p>
-                <dl
-                  className="mt-2 grid gap-1.5 sm:grid-cols-2"
-                  data-testid="topology-focus-review-order"
-                >
-                  <PathProofStep
-                    label={labels.focusReviewOrderProfile}
-                    status={labels.pathProofStatusRequired}
-                    tone="required"
-                  />
-                  <PathProofStep
-                    label={labels.focusReviewOrderImpact}
-                    status={labels.pathProofStatusRequired}
-                    tone="required"
-                  />
-                  <PathProofStep
-                    label={labels.focusReviewOrderRepair}
-                    status={labels.pathProofStatusAfterWrite}
-                    tone="after"
-                  />
-                  <PathProofStep
-                    label={labels.focusReviewOrderSync}
-                    status={labels.pathProofStatusAfterWrite}
-                    tone="after"
-                  />
-                </dl>
-              </div>
-              <div className="flex flex-wrap gap-1.5">
+            <details className="mt-2 border-t border-[color:var(--color-border-soft)] pt-2">
+              <summary className="inline-flex cursor-pointer list-none items-center rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                {labels.actions}
+              </summary>
+              <div className="mt-2">
+              <div className="mt-2 flex flex-wrap gap-1">
                 <button
                   type="button"
                   onClick={copyFocusBrief}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                   aria-label={
                     focusBriefCopied
                       ? labels.focusBriefCopiedAriaLabel
@@ -1052,81 +869,66 @@ export function TopologyAnalysisBar({
                       : labels.focusBriefCopy}
                   </span>
                 </button>
-                <button
-                  type="button"
-                  onClick={copyFocusMcpCheck}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={
-                    focusMcpCopied
-                      ? labels.focusMcpCopiedAriaLabel
-                      : labels.focusMcpCopyAriaLabel
-                  }
-                >
-                  {focusMcpCopied ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                  <span>
-                    {focusMcpCopied ? labels.focusMcpCopied : labels.focusMcpCopy}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={copyFocusMcpImpactCheck}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={
-                    focusMcpImpactCopied
-                      ? labels.focusMcpImpactCopiedAriaLabel
-                      : labels.focusMcpImpactCopyAriaLabel
-                  }
-                >
-                  {focusMcpImpactCopied ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                  <span>
-                    {focusMcpImpactCopied
-                      ? labels.focusMcpImpactCopied
-                      : labels.focusMcpImpactCopy}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={copyFocusSyncGate}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.50)] hover:text-[color:var(--color-text-primary)]"
-                  aria-label={
-                    focusSyncGateCopied
-                      ? labels.focusSyncGateCopiedAriaLabel
-                      : labels.focusSyncGateCopyAriaLabel
-                  }
-                >
-                  {focusSyncGateCopied ? (
-                    <Check size={12} aria-hidden />
-                  ) : (
-                    <Clipboard size={12} aria-hidden />
-                  )}
-                  <span>
-                    {focusSyncGateCopied
-                      ? labels.focusSyncGateCopied
-                      : labels.focusSyncGateCopy}
-                  </span>
-                </button>
                 <Link
                   href={buildOntologyNodeHref(selectedSlug)}
-                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.focusOpenOntology}
                 </Link>
                 <Link
                   href={buildTopologyHealthRepairHref(selectedSlug)}
-                  className="inline-flex items-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex items-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-1 text-[10.5px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
                 >
                   {labels.focusOpenBuilder}
                 </Link>
               </div>
-            </div>
+              <details className="mt-2 group">
+                <summary className="inline-flex cursor-pointer list-none items-center rounded-md px-1 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+                  {labels.healthCopyTools}
+                </summary>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  <CompactCopyButton
+                    copied={focusMcpCopied}
+                    label={focusMcpCopied ? labels.focusMcpCopied : labels.focusMcpCopy}
+                    ariaLabel={
+                      focusMcpCopied
+                        ? labels.focusMcpCopiedAriaLabel
+                        : labels.focusMcpCopyAriaLabel
+                    }
+                    onClick={copyFocusMcpCheck}
+                  />
+                  <CompactCopyButton
+                    copied={focusMcpImpactCopied}
+                    label={
+                      focusMcpImpactCopied
+                        ? labels.focusMcpImpactCopied
+                        : labels.focusMcpImpactCopy
+                    }
+                    ariaLabel={
+                      focusMcpImpactCopied
+                        ? labels.focusMcpImpactCopiedAriaLabel
+                        : labels.focusMcpImpactCopyAriaLabel
+                    }
+                    onClick={copyFocusMcpImpactCheck}
+                  />
+                  <CompactCopyButton
+                    copied={focusSyncGateCopied}
+                    label={
+                      focusSyncGateCopied
+                        ? labels.focusSyncGateCopied
+                        : labels.focusSyncGateCopy
+                    }
+                    ariaLabel={
+                      focusSyncGateCopied
+                        ? labels.focusSyncGateCopiedAriaLabel
+                        : labels.focusSyncGateCopyAriaLabel
+                    }
+                    onClick={copyFocusSyncGate}
+                  />
+                </div>
+              </details>
+              </div>
+            </details>
           ) : null}
         </div>
       </div>
@@ -1141,6 +943,11 @@ function buildOverviewModeUrl(
   const url = new URL(currentUrl);
   url.searchParams.set("mode", mode);
   return url.toString();
+}
+
+function compactAnalysisTitle(title: string): string {
+  const stripped = title.replace(/\s*\(.*$/, "").trim();
+  return stripped.length > 0 ? stripped : title;
 }
 
 function buildHealthInspectUrl(currentUrl: string, slug: string): string {
@@ -1165,7 +972,7 @@ function HealthBreakdownChip({
   label: string;
 }) {
   return (
-    <span className="rounded-sm border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 text-[color:var(--color-text-tertiary)]">
+    <span className="inline-flex items-center gap-1 text-[color:var(--color-text-tertiary)]">
       <span className="text-[color:var(--color-text-secondary)]">{count}</span>{" "}
       {label}
     </span>
@@ -1173,50 +980,40 @@ function HealthBreakdownChip({
 }
 
 function OverviewWorkStep({
-  index,
   label,
 }: {
-  index: number;
   label: string;
 }) {
   return (
-    <li className="min-w-0 list-none rounded border border-[color:rgba(94,106,210,0.14)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1">
-      <span className="font-mono text-[8.5px] uppercase tracking-[0.10em] text-[color:rgba(190,199,255,0.72)]">
-        {String(index).padStart(2, "0")}
-      </span>
-      <span className="mt-0.5 block truncate text-[10.5px] text-[color:var(--color-text-secondary)]">
+    <li className="inline-flex min-w-0 list-none items-center gap-1.5">
+      <span className="h-1 w-1 shrink-0 rounded-full bg-[color:var(--color-overlay-3)]" aria-hidden />
+      <span className="block whitespace-nowrap text-[10.5px] leading-4 text-[color:var(--color-text-secondary)]">
         {label}
       </span>
     </li>
   );
 }
 
-function PathProofStep({
+function CompactCopyButton({
+  copied,
   label,
-  status,
-  tone,
+  ariaLabel,
+  onClick,
 }: {
+  copied: boolean;
   label: string;
-  status: string;
-  tone: "after" | "ready" | "required";
+  ariaLabel: string;
+  onClick: () => void;
 }) {
-  const toneClass =
-    tone === "ready"
-      ? "border-[color:rgba(73,190,146,0.24)] bg-[color:rgba(73,190,146,0.07)] text-[color:rgba(151,230,198,0.94)]"
-      : tone === "after"
-        ? "border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.06)] text-[color:rgba(255,207,122,0.94)]"
-        : "border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] text-[color:rgba(190,199,255,0.92)]";
-
   return (
-    <div className="min-w-0 rounded border border-[color:rgba(94,106,210,0.14)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1">
-      <dt className="truncate text-[10.5px] text-[color:var(--color-text-secondary)]">
-        {label}
-      </dt>
-      <dd
-        className={`mt-0.5 inline-flex rounded px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.10em] ${toneClass}`}
-      >
-        {status}
-      </dd>
-    </div>
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 rounded-md px-1.5 py-1 text-[10px] text-[color:var(--color-text-quaternary)] transition-colors hover:bg-[color:var(--color-overlay-1)] hover:text-[color:var(--color-text-primary)]"
+      aria-label={ariaLabel}
+    >
+      {copied ? <Check size={11} aria-hidden /> : <Clipboard size={11} aria-hidden />}
+      <span>{label}</span>
+    </button>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import type React from "react";
 import {
   ArrowUpRight,
   Clipboard,
@@ -28,7 +29,6 @@ import {
   formatTopologyNodeCliCheck,
   formatTopologyNodeMcpCheck,
   formatTopologyCollaboratorBrief,
-  formatTopologyImpactRelation,
   formatTopologyVocabularyReview,
   topologyReviewQuestionsForReview,
 } from "../lib/topology-ontology-drawer";
@@ -125,6 +125,8 @@ export function TopologyOntologyDrawer({
   const ontologyHref = buildOntologyNodeHref(node.id);
   const builderHref = buildOntologyBuilderNodeHref(node);
   const agentCheckSlug = model.sourceSlug ?? node.id;
+  const displayTitle = compactNodeTitle(node.title);
+  const sourceLabel = model.sourceSlug ? compactSourceLabel(model.sourceSlug) : null;
   const postChangeSyncPacket = formatAgentPostChangeSyncPacket();
   const copyCollaboratorBrief = async () => {
     const topologyUrl =
@@ -274,264 +276,85 @@ export function TopologyOntologyDrawer({
   return (
     <aside
       role="dialog"
-      aria-label={node.title}
-      className="fixed right-0 top-0 z-50 flex h-dvh w-full flex-col gap-4 overflow-y-auto border-l border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[0_24px_48px_rgba(0,0,0,0.24)] sm:w-[400px] md:px-6"
+      aria-label={displayTitle}
+      className="fixed right-0 top-0 z-50 flex h-dvh w-full min-w-0 flex-col gap-3 overflow-y-auto border-l border-[color:var(--color-divider)] bg-[color:var(--color-panel)] px-5 py-5 shadow-[0_24px_48px_rgba(0,0,0,0.24)] sm:w-[380px] md:px-5"
     >
-      <header className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex flex-col gap-1.5">
-          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-            {labels.caption}
-          </span>
-          <span className="inline-flex w-fit items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
-            {node.kind}
-          </span>
-          <h2 className="break-keep text-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-            {node.title}
-          </h2>
-          <p className="break-all font-mono text-[11px] text-[color:var(--color-text-quaternary)]">
-            {node.id}
-          </p>
-        </div>
-        <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(14,16,22,0.18)] px-2.5 py-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {labels.collaboratorBriefImpactSummary}
-          </p>
-          <p className="mt-1.5 break-keep text-[11.5px] leading-5 text-[color:var(--color-text-secondary)]">
-            {labels.collaboratorImpactLabels[model.impactSummary.level]}
-          </p>
-          <dl className="mt-2 flex flex-col gap-1 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-            <div className="flex min-w-0 gap-2">
-              <dt className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {labels.collaboratorBriefFirstIncoming}
-              </dt>
-              <dd className="min-w-0 flex-1 truncate">
-                {formatTopologyImpactRelation(
-                  model.impactSummary.firstIncoming,
-                  labels.collaboratorBriefNoImpactRelation,
-                )}
-              </dd>
+      <header className="grid min-w-0 gap-2">
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0 flex flex-col gap-1.5">
+            <h2 className="[overflow-wrap:anywhere] text-lg leading-7 font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              {displayTitle}
+            </h2>
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+              <span className="inline-flex items-center rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
+                {labels.collaboratorLensLabels[model.collaborator.lens]}
+              </span>
             </div>
-            <div className="flex min-w-0 gap-2">
-              <dt className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                {labels.collaboratorBriefFirstOutgoing}
-              </dt>
-              <dd className="min-w-0 flex-1 truncate">
-                {formatTopologyImpactRelation(
-                  model.impactSummary.firstOutgoing,
-                  labels.collaboratorBriefNoImpactRelation,
-                )}
-              </dd>
-            </div>
-          </dl>
-        </div>
+          </div>
         <button
           type="button"
           onClick={onClose}
           aria-label={closeLabel}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
         >
           <X size={16} />
         </button>
+        </div>
       </header>
 
       {node.summary ? (
-        <p className="break-keep text-sm leading-6 text-[color:var(--color-text-secondary)]">
-          {node.summary}
-        </p>
+        <details>
+          <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+            설명
+          </summary>
+          <p className="mt-2 line-clamp-3 [overflow-wrap:anywhere] text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+            {node.summary}
+          </p>
+        </details>
       ) : null}
 
-      <section className="rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] p-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-              {labels.collaboratorTitle}
-            </p>
-            <p className="mt-1 break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-              {labels.collaboratorLensLabels[model.collaborator.lens]}
-            </p>
-          </div>
-          <span className="shrink-0 rounded-sm border border-[color:rgba(94,106,210,0.28)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-[color:rgba(139,151,255,0.95)]">
-            {node.kind}
-          </span>
-        </div>
-        <p className="mt-2 break-keep text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
-          {labels.collaboratorBody}
-        </p>
-        <p className="mt-2 break-keep text-[12px] leading-5 text-[color:var(--color-text-primary)]">
-          {labels.collaboratorReviewLabels[model.collaborator.review]}
-        </p>
-        <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(14,16,22,0.22)] px-2.5 py-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {labels.collaboratorBriefReviewQuestions}
-          </p>
-          <ul className="mt-1.5 flex flex-col gap-1 text-[11.5px] leading-5 text-[color:var(--color-text-secondary)]">
-            {reviewQuestions.map((question) => (
-              <li key={question} className="break-keep">
-                {question}
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(14,16,22,0.22)] px-2.5 py-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {labels.collaboratorHandoffOrderTitle}
-          </p>
-          <ol className="mt-1.5 flex flex-col gap-1 text-[11.5px] leading-5 text-[color:var(--color-text-secondary)]">
-            <li className="grid grid-cols-[1.25rem_1fr] gap-2">
-              <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                1
-              </span>
-              <span className="min-w-0">
-                {labels.collaboratorHandoffProfileStep}
-                <span className="mt-0.5 block truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                  node_profile · {agentCheckSlug}
-                </span>
-              </span>
-            </li>
-            <li className="grid grid-cols-[1.25rem_1fr] gap-2">
-              <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                2
-              </span>
-              <span className="min-w-0">
-                {labels.collaboratorHandoffImpactStep}
-                <span className="mt-0.5 block truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                  blast_radius · incoming · depth 2
-                </span>
-              </span>
-            </li>
-            <li className="grid grid-cols-[1.25rem_1fr] gap-2">
-              <span className="font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                3
-              </span>
-              <span className="min-w-0">
-                {labels.collaboratorHandoffSyncStep}
-                <span className="mt-0.5 block truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                  health · cycles · growth_plan · maintenance_plan · validate
-                </span>
-              </span>
-            </li>
-          </ol>
-        </div>
-        <button
-          type="button"
-          onClick={copyCollaboratorBrief}
-          className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
-        >
-          <Clipboard size={12} aria-hidden />
-          {labels.collaboratorCopy}
-        </button>
-        <div className="mt-2 flex flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={copyVocabularyReview}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
-          >
-            <Clipboard size={12} aria-hidden />
-            {labels.collaboratorCopyVocabulary}
-          </button>
-          <button
-            type="button"
-            onClick={copyCliProfileCheck}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
-          >
-            <Clipboard size={12} aria-hidden />
-            {labels.collaboratorCopyCliProfile}
-          </button>
-          <button
-            type="button"
-            onClick={copyMcpProfileCheck}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
-          >
-            <Clipboard size={12} aria-hidden />
-            {labels.collaboratorCopyMcpProfile}
-          </button>
-          <button
-            type="button"
-            onClick={copyCliImpactCheck}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
-          >
-            <Clipboard size={12} aria-hidden />
-            {labels.collaboratorCopyCliImpact}
-          </button>
-          <button
-            type="button"
-            onClick={copyMcpImpactCheck}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
-          >
-            <Clipboard size={12} aria-hidden />
-            {labels.collaboratorCopyMcpImpact}
-          </button>
-          <button
-            type="button"
-            onClick={copySyncGate}
-            className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
-          >
-            <Clipboard size={12} aria-hidden />
-            {labels.collaboratorCopySyncGate}
-          </button>
-        </div>
-        {model.collaborator.chips.length > 0 ? (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {model.collaborator.chips.map((chip) => (
-              <span
-                key={chip}
-                className="rounded-full border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(14,16,22,0.28)] px-2 py-0.5 text-[10.5px] text-[color:var(--color-text-tertiary)]"
-              >
-                {labels.collaboratorChipLabels[chip]}
-              </span>
-            ))}
-          </div>
-        ) : null}
-      </section>
-
-      <section className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3">
+      <section className="border-t border-[color:var(--color-border-soft)] pt-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {labels.relations}
             </p>
-            <p className="mt-1 text-sm text-[color:var(--color-text-secondary)]">
+            <p className="mt-1 text-[12px] text-[color:var(--color-text-secondary)]">
               {labels.outgoing}: {model.outgoingCount} · {labels.incoming}: {model.incomingCount}
             </p>
           </div>
-          <GitBranch size={16} className="text-[color:var(--color-indigo-accent)]" />
+          <GitBranch size={15} className="text-[color:var(--color-text-quaternary)]" />
         </div>
-        {model.relationCounts.length > 0 ? (
-          <div className="mt-3 flex flex-wrap gap-1.5">
-            {model.relationCounts.map((row) => (
-              <span
-                key={row.type}
-                className="rounded-full border border-[color:var(--color-overlay-3)] px-2 py-0.5 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
-              >
-                {row.type} {row.count}
-              </span>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-3 text-xs leading-5 text-[color:var(--color-text-tertiary)]">
+        {model.relationCounts.length === 0 ? (
+          <p className="mt-2 text-xs leading-5 text-[color:var(--color-text-tertiary)]">
             {labels.noRelations}
           </p>
-        )}
+        ) : null}
         {model.previewRelations.length > 0 ? (
-          <ol className="mt-3 flex flex-col gap-2">
-            {model.previewRelations.map((relation) => (
-              <li
-                key={relation.edge.id}
-                className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 py-2"
-              >
-                <p className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                  {relation.direction === "outgoing" ? labels.outgoing : labels.incoming} · {relation.edge.type}
-                </p>
-                <p className="mt-1 truncate text-xs text-[color:var(--color-text-secondary)]">
-                  {relation.other?.title ?? relation.edge.id}
-                </p>
-              </li>
-            ))}
-          </ol>
+          <details className="mt-2">
+            <summary className="cursor-pointer list-none font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+              {labels.collaboratorBriefPreviewRelations}
+            </summary>
+            <ol className="mt-2 flex flex-col gap-1">
+              {model.previewRelations.map((relation) => (
+                <li
+                  key={relation.edge.id}
+                  className="grid min-w-0 grid-cols-[auto_1fr] gap-2 border-t border-[color:var(--color-border-soft)] py-1.5 first:border-t-0"
+                >
+                  <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    {relation.direction === "outgoing" ? labels.outgoing : labels.incoming}
+                  </span>
+                  <span className="min-w-0 truncate text-[11px] text-[color:var(--color-text-secondary)]">
+                    {relation.other?.title ?? relation.edge.id}
+                  </span>
+                </li>
+              ))}
+            </ol>
+          </details>
         ) : null}
       </section>
 
-      <section className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-3">
+      <section className="border-t border-[color:var(--color-border-soft)] pt-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
           {labels.source}
         </p>
@@ -541,7 +364,7 @@ export function TopologyOntologyDrawer({
             className="mt-2 inline-flex items-center gap-1.5 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)]"
           >
             <FileText size={14} aria-hidden />
-            <span className="break-all font-mono text-[11px]">{model.sourceSlug}</span>
+            <span className="text-[12px]">{sourceLabel}</span>
           </Link>
         ) : (
           <p className="mt-2 text-xs leading-5 text-[color:var(--color-text-tertiary)]">
@@ -550,24 +373,85 @@ export function TopologyOntologyDrawer({
         )}
       </section>
 
+      <details className="border-t border-[color:var(--color-border-soft)] pt-3">
+        <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
+          {labels.collaboratorTitle}
+        </summary>
+        <div className="mt-3 grid gap-3">
+          <div>
+            <p className="text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              {labels.collaboratorReviewLabels[model.collaborator.review]}
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {labels.collaboratorImpactLabels[model.impactSummary.level]}
+            </p>
+          </div>
+          <div>
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {labels.collaboratorBriefReviewQuestions}
+            </p>
+            <ul className="mt-1 flex flex-col gap-1 text-[11px] leading-5 text-[color:var(--color-text-secondary)]">
+              {reviewQuestions.map((question) => (
+                <li key={question} className="break-keep">
+                  {question}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {labels.collaboratorHandoffOrderTitle}
+            </p>
+            <ol className="mt-1 flex flex-col gap-1 text-[11px] leading-5 text-[color:var(--color-text-secondary)]">
+              <li>{labels.collaboratorHandoffProfileStep}</li>
+              <li>{labels.collaboratorHandoffImpactStep}</li>
+              <li>{labels.collaboratorHandoffSyncStep}</li>
+            </ol>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            <CompactDrawerButton onClick={copyCollaboratorBrief}>
+              {labels.collaboratorCopy}
+            </CompactDrawerButton>
+            <CompactDrawerButton onClick={copyVocabularyReview}>
+              {labels.collaboratorCopyVocabulary}
+            </CompactDrawerButton>
+            <CompactDrawerButton onClick={copyCliProfileCheck}>
+              {labels.collaboratorCopyCliProfile}
+            </CompactDrawerButton>
+            <CompactDrawerButton onClick={copyMcpProfileCheck}>
+              {labels.collaboratorCopyMcpProfile}
+            </CompactDrawerButton>
+            <CompactDrawerButton onClick={copyCliImpactCheck}>
+              {labels.collaboratorCopyCliImpact}
+            </CompactDrawerButton>
+            <CompactDrawerButton onClick={copyMcpImpactCheck}>
+              {labels.collaboratorCopyMcpImpact}
+            </CompactDrawerButton>
+            <CompactDrawerButton onClick={copySyncGate}>
+              {labels.collaboratorCopySyncGate}
+            </CompactDrawerButton>
+          </div>
+        </div>
+      </details>
+
       <div className="sticky bottom-0 -mx-5 mt-auto flex flex-col gap-2 border-t border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-5 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 md:-mx-6 md:px-6">
         <Link
           href={topologyFocusHref}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:var(--color-indigo-brand)] hover:bg-[color:rgba(94,106,210,0.16)]"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-border-strong)] bg-[color:var(--color-overlay-2)] px-3 text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-colors hover:bg-[color:var(--color-overlay-3)]"
         >
           <GitBranch size={14} aria-hidden />
           {labels.openTopologyFocus}
         </Link>
         <Link
           href={ontologyHref}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
         >
           {labels.openOntology}
           <ArrowUpRight size={14} aria-hidden />
         </Link>
         <Link
           href={builderHref}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
         >
           <PencilLine size={14} aria-hidden />
           {labels.openBuilder}
@@ -575,7 +459,7 @@ export function TopologyOntologyDrawer({
         {sourceHref ? (
           <Link
             href={sourceHref}
-            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-sm text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)]"
           >
             <FileText size={14} aria-hidden />
             {labels.openSource}
@@ -588,6 +472,36 @@ export function TopologyOntologyDrawer({
 
 function buildTopologyFocusHref(nodeId: string): string {
   return `/topology/?mode=focus&p=${encodeURIComponent(nodeId)}`;
+}
+
+function compactNodeTitle(title: string): string {
+  const stripped = title.replace(/\s*\(.*$/, "").trim();
+  return stripped.length > 0 ? stripped : title;
+}
+
+function compactSourceLabel(slug: string): string {
+  const normalized = slug.replace(/\.md$/i, "").replace(/^ontology\//, "");
+  const last = normalized.split("/").filter(Boolean).at(-1);
+  return last ?? normalized;
+}
+
+function CompactDrawerButton({
+  children,
+  onClick,
+}: {
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex h-7 items-center gap-1.5 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 text-[10px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+    >
+      <Clipboard size={11} aria-hidden />
+      {children}
+    </button>
+  );
 }
 
 function buildTopologyFocusUrl(currentUrl: string, nodeId: string): string {

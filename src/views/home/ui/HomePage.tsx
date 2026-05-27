@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BookOpen, X } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
@@ -132,7 +132,7 @@ export function HomePage() {
     localGraphStack.length > 0 ? localGraphStack[localGraphStack.length - 1] : null;
   const [fitViewToken, setFitViewToken] = useState(0);
   const [sigmaVisibleCount, setSigmaVisibleCount] = useState<number | null>(null);
-  const [sigmaHintDismissed, setSigmaHintDismissed] = useState(() => {
+  const [, setSigmaHintDismissed] = useState(() => {
     if (typeof window === 'undefined') return true;
     try {
       return window.localStorage.getItem('demo:sigma-hint-dismissed:v1') === '1';
@@ -436,8 +436,9 @@ export function HomePage() {
   ]);
 
   const drawerOpen = drawerProject !== null || selectedOntologyNode !== null;
-  const analysisSelectedTitle =
-    selectedProject?.name ?? selectedOntologyNode?.title ?? null;
+  const analysisSelectedTitle = compactTopologyPanelTitle(
+    selectedProject?.name ?? selectedOntologyNode?.title ?? null,
+  );
   const pathSourceTitle = useMemo(
     () =>
       resolveTopologyNodeTitle({
@@ -827,6 +828,8 @@ export function HomePage() {
                 healthOpenOntology: t("analysis.healthOpenOntology"),
                 healthRepair: t("analysis.healthRepair"),
                 healthCopied: t("analysis.healthCopied"),
+                actions: t("analysis.actions"),
+                healthCopyTools: t("analysis.healthCopyTools"),
                 healthMcpCopy: t("analysis.healthMcpCopy"),
                 healthMcpCopied: t("analysis.healthMcpCopied"),
                 healthMcpImpactCopy: t("analysis.healthMcpImpactCopy"),
@@ -1104,11 +1107,7 @@ export function HomePage() {
                   <TopologyEmptyState projectCount={sigmaVisibleCount} />
                 ) : null}
                 <SigmaTopology
-                  key={
-                    analysisMode === "path"
-                      ? `${localGraphRoot ?? "__root__"}:${pathSourceSlug ?? ""}:${pathTargetSlug ?? ""}`
-                      : (localGraphRoot ?? "__root__")
-                  }
+                  key={localGraphRoot ?? "__root__"}
                   projects={localGraphProjects}
                   categories={taxonomyCategories}
                   selectedSlug={canvasSelectedSlug}
@@ -1151,7 +1150,11 @@ export function HomePage() {
                 onChange={setSigmaControls}
                 onFitView={() => setFitViewToken((t) => t + 1)}
                 visibleCount={sigmaVisibleCount}
-                totalCount={localGraphProjects.length}
+                totalCount={
+                  localGraphRoot === null
+                    ? topologyTotalNodes
+                    : localGraphProjects.length
+                }
               />
               {/* 단축키 도움말 진입점 — 우상단 SigmaControls 아래 36×36 아이콘.
                   ? 키 단축키도 같은 sheet 를 열지만 시각적 affordance 가 없으면
@@ -1250,48 +1253,6 @@ export function HomePage() {
                 </div>
               ) : null}
 
-              {/* 첫 진입 온보딩 카드 — bottom-center 는 중앙 hub 노드(IAM 등)를
-                  가려 사용자가 "여기를 클릭해야 하는지" 알 수 없게 만들었다.
-                  좌하단 stats bar (bottom-6, ~32px) 위로 옮겨 중앙 시야를 비운다.
-                  bottom-20 (80px) → stats bar 와 24px gap. 이전 bottom-14 는
-                  카드와 stats 가 거의 붙어있어 두 박스가 한 덩어리처럼 보였다. */}
-              {hydrated && !sigmaHintDismissed && sigmaVisibleCount !== 0 ? (
-                <div className="pointer-events-auto absolute bottom-20 left-4 z-10 hidden max-w-[320px] flex-col gap-2 rounded-2xl border border-[color:rgba(139,151,255,0.32)] bg-[color:var(--color-panel)] px-4 py-3 text-[11px] text-[color:var(--color-text-tertiary)] shadow-[0_12px_28px_rgba(0,0,0,0.45)] sm:flex md:left-6 xl:left-8">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                      {t('hint.title')}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={dismissSigmaHint}
-                      aria-label={t('hint.dismissAriaLabel')}
-                      className="text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
-                    >
-                      <X size={12} />
-                    </button>
-                  </div>
-                  <p className="leading-5">
-                    {t('hint.body')}
-                  </p>
-                  <ul className="flex flex-col gap-1 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-                    <li>
-                      <span className="text-[color:var(--color-text-secondary)]">{t('hint.click')}</span>
-                      <span className="text-[color:var(--color-text-quaternary)]">{t('hint.clickDescription')}</span>
-                    </li>
-                    <li>
-                      <span className="text-[color:var(--color-text-secondary)]">{t('hint.drag')}</span>
-                      <span className="text-[color:var(--color-text-quaternary)]">{t('hint.dragDescription')}</span>
-                    </li>
-                    <li>
-                      <kbd className="rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1 font-mono text-[9px]">⌘</kbd>
-                      <kbd className="ml-0.5 rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1 font-mono text-[9px]">K</kbd>
-                      <span className="text-[color:var(--color-text-quaternary)]">{t('hint.searchDescription')}</span>
-                      <kbd className="rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1 font-mono text-[9px]">?</kbd>
-                      <span className="text-[color:var(--color-text-quaternary)]">{t('hint.shortcutsDescription')}</span>
-                    </li>
-                  </ul>
-                </div>
-              ) : null}
             </>
         </div>
         {projectsError ? (
@@ -1545,5 +1506,12 @@ function resolveTopologyNodeTitle({
   const project = projectBySlug.get(slug);
   if (project) return project.name;
 
-  return resolveTopologySelectedOntologyNode(slug, ontologyNodes)?.title ?? slug;
+  const title = resolveTopologySelectedOntologyNode(slug, ontologyNodes)?.title ?? slug;
+  return compactTopologyPanelTitle(title);
+}
+
+function compactTopologyPanelTitle(title: string | null): string | null {
+  if (!title) return null;
+  const stripped = title.replace(/\s*\(.*$/, "").trim();
+  return stripped.length > 0 ? stripped : title;
 }

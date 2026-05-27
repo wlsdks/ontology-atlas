@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type Sigma from 'sigma';
 import type Graph from 'graphology';
 import { INDIGO_HUB } from '@/shared/config/indigo-tokens';
@@ -23,6 +23,7 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const [tick, setTick] = useState(0);
   const draggingRef = useRef(false);
+  const model = useMemo(() => buildMinimapModel(graph), [graph]);
 
   useEffect(() => {
     if (!sigma) return;
@@ -40,9 +41,8 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
       const rect = svgRef.current.getBoundingClientRect();
       const svgX = ((clientX - rect.left) / rect.width) * MINI_W;
       const svgY = ((clientY - rect.top) / rect.height) * MINI_H;
-      const bbox = computeBbox(graph);
-      if (!bbox) return;
-      const { offsetX, offsetY, scale } = bbox;
+      if (!model) return;
+      const { offsetX, offsetY, scale } = model.bbox;
       const graphX = svgX / scale - offsetX;
       const graphY = svgY / scale - offsetY;
       // 임의 그래프 좌표 → Sigma 카메라 정규화 좌표로 정확히 환산하는 공용
@@ -78,7 +78,7 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
         );
       }
     },
-    [sigma, graph],
+    [sigma, graph, model],
   );
 
   const onPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
@@ -97,9 +97,8 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
 
   if (!sigma) return null;
 
-  const bbox = computeBbox(graph);
-  if (!bbox) return null;
-  const { offsetX, offsetY, scale } = bbox;
+  if (!model) return null;
+  const { offsetX, offsetY, scale } = model.bbox;
 
   const dim = sigma.getDimensions();
   const topLeftGraph = sigma.viewportToGraph({ x: 0, y: 0 });
@@ -128,58 +127,6 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   // overlap 이 충분할 때만 렌더. 2px 이하면 degenerate (가로/세로 줄) 이므로 숨김.
   const showViewportRect = viewportCoordsAreFinite && rectW > 2 && rectH > 2;
 
-  // 허브 + 일반 노드 샘플링. 허브는 전원, 일반은 sampleStep 간격.
-  const hubPositions = new Map<string, { x: number; y: number }>();
-  const sampledNodes: {
-    id: string;
-    x: number;
-    y: number;
-    size: number;
-    isHub: boolean;
-  }[] = [];
-  const totalNodes = graph.order;
-  const sampleStep = Math.max(1, Math.floor(totalNodes / 40));
-  let idx = 0;
-  let hubCount = 0;
-  graph.forEachNode((id, attrs) => {
-    if (attrs.isHub) {
-      hubCount += 1;
-      const x = (attrs.x + offsetX) * scale;
-      const y = (attrs.y + offsetY) * scale;
-      if (Number.isFinite(x) && Number.isFinite(y)) {
-        hubPositions.set(id, { x, y });
-      }
-    }
-    if (attrs.isHub || idx % sampleStep === 0) {
-      const x = (attrs.x + offsetX) * scale;
-      const y = (attrs.y + offsetY) * scale;
-      if (!Number.isFinite(x) || !Number.isFinite(y)) {
-        idx += 1;
-        return;
-      }
-      sampledNodes.push({
-        id,
-        x,
-        y,
-        size: attrs.isHub ? 3 : 1.2,
-        isHub: attrs.isHub,
-      });
-    }
-    idx += 1;
-  });
-  const primaryCount = hubCount;
-  const primaryLabel = 'hubs';
-
-  // 허브-허브 엣지 — 미니맵에서 전체 구조 힌트. 엣지 수가 많지 않아 렌더
-  // 부하 경미. 방향성은 무시하고 연결 여부만 표기.
-  const hubEdges: { key: string; x1: number; y1: number; x2: number; y2: number }[] = [];
-  graph.forEachEdge((edgeId, _attrs, src, tgt) => {
-    const a = hubPositions.get(src);
-    const b = hubPositions.get(tgt);
-    if (!a || !b) return;
-    hubEdges.push({ key: edgeId, x1: a.x, y1: a.y, x2: b.x, y2: b.y });
-  });
-
   void tick;
 
   return (
@@ -189,7 +136,9 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
           Map
         </span>
         <span className="font-mono text-[9px] tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
-          {primaryCount > 0 ? `${totalNodes} · ${primaryCount} ${primaryLabel}` : `${totalNodes} nodes`}
+          {model.primaryCount > 0
+            ? `${model.totalNodes} · ${model.primaryCount} hubs`
+            : `${model.totalNodes} nodes`}
         </span>
       </div>
       <svg
@@ -203,7 +152,7 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
         onPointerCancel={onPointerUp}
         className="cursor-crosshair touch-none"
       >
-        {hubEdges.map((e) => (
+        {model.hubEdges.map((e) => (
           <line
             key={e.key}
             x1={e.x1}
@@ -214,7 +163,7 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
             strokeWidth={0.6}
           />
         ))}
-        {sampledNodes.map((n) => (
+        {model.sampledNodes.map((n) => (
           <circle
             key={n.id}
             cx={n.x}
@@ -242,6 +191,67 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
       </svg>
     </div>
   );
+}
+
+function buildMinimapModel(graph: Graph<SigmaNodeAttrs, SigmaEdgeAttrs>) {
+  const bbox = computeBbox(graph);
+  if (!bbox) return null;
+  const { offsetX, offsetY, scale } = bbox;
+  const hubPositions = new Map<string, { x: number; y: number }>();
+  const sampledNodes: {
+    id: string;
+    x: number;
+    y: number;
+    size: number;
+    isHub: boolean;
+  }[] = [];
+  const totalNodes = graph.order;
+  const sampleStep = Math.max(1, Math.floor(totalNodes / 40));
+  let idx = 0;
+  let hubCount = 0;
+
+  graph.forEachNode((id, attrs) => {
+    if (attrs.isHub) {
+      hubCount += 1;
+      const x = (attrs.x + offsetX) * scale;
+      const y = (attrs.y + offsetY) * scale;
+      if (Number.isFinite(x) && Number.isFinite(y)) {
+        hubPositions.set(id, { x, y });
+      }
+    }
+    if (attrs.isHub || idx % sampleStep === 0) {
+      const x = (attrs.x + offsetX) * scale;
+      const y = (attrs.y + offsetY) * scale;
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        idx += 1;
+        return;
+      }
+      sampledNodes.push({
+        id,
+        x,
+        y,
+        size: attrs.isHub ? 3 : 1.2,
+        isHub: attrs.isHub,
+      });
+    }
+    idx += 1;
+  });
+
+  const hubEdges: { key: string; x1: number; y1: number; x2: number; y2: number }[] = [];
+  graph.forEachEdge((edgeId, _attrs, src, tgt) => {
+    const a = hubPositions.get(src);
+    const b = hubPositions.get(tgt);
+    if (!a || !b) return;
+    hubEdges.push({ key: edgeId, x1: a.x, y1: a.y, x2: b.x, y2: b.y });
+  });
+
+  return {
+    bbox,
+    hubEdges,
+    primaryCount: hubCount,
+    sampledNodes,
+    totalNodes,
+  };
 }
 
 function computeBbox(
