@@ -753,7 +753,8 @@
           "guardBody": "관계 저장은 key 추론, preflight, sync handoff 를 거칩니다.",
           "proofLabel": "Proof",
           "proofValue": "MCP/CLI handoff",
-          "proofBody": "relation_check · path · all_paths · sync gate 복사"
+          "proofBody": "relation_check · path · all_paths · sync gate 복사",
+          "proofAction": "인사이트 query 열기"
         },
         "exportButton": "md 내보내기 ↓",
         "exportAriaLabel": "현재 캔버스를 frontmatter md 로 내보내기",

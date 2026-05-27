@@ -17,6 +17,9 @@ test.describe("ontology builder workflow", () => {
     await expect(writeStatus).toContainText("Preview before write");
     await expect(writeStatus).toContainText("MCP/CLI handoff");
     await expect(writeStatus).toContainText("relation_check");
+    await expect(
+      writeStatus.getByRole("link", { name: "Open query cockpit" }),
+    ).toHaveAttribute("href", "/en/ontology/insights/");
 
     const inspector = page.getByLabel("Selected ontology node detail");
     await expect(inspector).toBeVisible();

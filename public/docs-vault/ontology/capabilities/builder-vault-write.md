@@ -17,7 +17,10 @@ mission v2 의 *사람 + AI agent 양립* 약속의 코드 구현. 빌더 epheme
   상태를 보여준다. sample read-only vs local write, persisted node/ref count,
   unsaved draft count, relation write preflight/sync handoff, MCP/CLI proof
   packet availability 를 한눈에 확인하게
-  해 builder 가 단순한 그림판이 아니라 vault write surface 임을 드러낸다.
+  해 builder 가 단순한 그림판이 아니라 vault write surface 임을 드러낸다. `Proof`
+  cell 은 `/ontology/insights` query cockpit 으로 이어져 builder write 이후
+  `relation_check`, `path`, `all_paths`, sync gate 를 graph DB-style 검증 흐름에서
+  다시 확인하게 한다.
 
 frontmatter 형식:
 

@@ -153,6 +153,8 @@ function BuilderWriteSummary({
       value: t("proofValue"),
       body: t("proofBody"),
       accent: "neutral",
+      href: "/ontology/insights/" as const,
+      actionLabel: t("proofAction"),
     },
   ] as const;
 
@@ -182,6 +184,14 @@ function BuilderWriteSummary({
             <p className="mt-1 truncate text-[10px] text-[color:var(--color-text-tertiary)]">
               {item.body}
             </p>
+            {"href" in item ? (
+              <Link
+                href={item.href}
+                className="mt-1.5 inline-flex text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              >
+                {item.actionLabel}
+              </Link>
+            ) : null}
           </article>
         );
       })}

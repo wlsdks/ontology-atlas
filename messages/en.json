@@ -753,7 +753,8 @@
           "guardBody": "Relation writes run key inference, preflight, and sync handoff.",
           "proofLabel": "Proof",
           "proofValue": "MCP/CLI handoff",
-          "proofBody": "Copy relation_check · path · all_paths · sync gates."
+          "proofBody": "Copy relation_check · path · all_paths · sync gates.",
+          "proofAction": "Open query cockpit"
         },
         "exportButton": "Export md ↓",
         "exportAriaLabel": "Export current canvas as frontmatter md",

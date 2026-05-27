@@ -95,7 +95,9 @@ canvas. Use compact `Source` / `Draft` / `Guard` / `Proof` status cells to
 distinguish local writable vaults from sample read-only data, unsaved canvas
 work from persisted graph data, preview/preflight checks from direct
 frontmatter writes, and the MCP/CLI proof packets that close a graph mutation
-after it lands.
+after it lands. The `Proof` cell should hand off to the query cockpit so a
+builder write naturally flows into graph DB-style verification instead of
+ending as a canvas-only action.
 
 Query surfaces should expose the executable query pack before deeper charts.
 Use a compact cockpit with readiness, pack size, MCP call count, CLI fallback
