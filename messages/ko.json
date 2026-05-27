@@ -745,6 +745,8 @@
           "sourceWritable": "로컬 vault write",
           "sourceReadonly": "샘플 read-only",
           "sourceBody": "저장 노드 {nodes}개 · frontmatter 참조 {relations}개",
+          "sourceActionLocal": "로컬 vault 열기",
+          "sourceActionDownload": "macOS 앱 받기",
           "draftLabel": "Draft",
           "draftValue": "노드 {nodes}개 · edge {edges}개",
           "draftBody": "임시 캔버스 작업은 Save 전까지 분리됩니다.",

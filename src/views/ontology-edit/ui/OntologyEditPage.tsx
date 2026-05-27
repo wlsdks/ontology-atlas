@@ -120,24 +120,44 @@ function CanvasSkeleton() {
 
 function BuilderWriteSummary({
   writable,
+  isDesktopRuntime,
   persistedNodes,
   persistedRelations,
   draftNodes,
   draftEdges,
 }: {
   writable: boolean;
+  isDesktopRuntime: boolean;
   persistedNodes: number;
   persistedRelations: number;
   draftNodes: number;
   draftEdges: number;
 }) {
   const t = useTranslations("ontologyPages.edit.page.writeSummary");
-  const items = [
+  type SummaryHref = "/docs/?intent=local" | "/download/" | "/ontology/insights/";
+  const sourceHref: SummaryHref = isDesktopRuntime ? "/docs/?intent=local" : "/download/";
+  const sourceAction = writable
+    ? {}
+    : {
+        href: sourceHref,
+        actionLabel: isDesktopRuntime
+          ? t("sourceActionLocal")
+          : t("sourceActionDownload"),
+      };
+  const items: Array<{
+    label: string;
+    value: string;
+    body: string;
+    accent: "indigo" | "amber" | "neutral";
+    href?: SummaryHref;
+    actionLabel?: string;
+  }> = [
     {
       label: t("sourceLabel"),
       value: writable ? t("sourceWritable") : t("sourceReadonly"),
       body: t("sourceBody", { nodes: persistedNodes, relations: persistedRelations }),
       accent: writable ? "indigo" : "amber",
+      ...sourceAction,
     },
     {
       label: t("draftLabel"),
@@ -159,7 +179,7 @@ function BuilderWriteSummary({
       href: "/ontology/insights/" as const,
       actionLabel: t("proofAction"),
     },
-  ] as const;
+  ];
 
   return (
     <section
@@ -187,7 +207,7 @@ function BuilderWriteSummary({
             <p className="mt-1 truncate text-[10px] text-[color:var(--color-text-tertiary)]">
               {item.body}
             </p>
-            {"href" in item ? (
+            {item.href && item.actionLabel ? (
               <Link
                 href={item.href}
                 className="mt-1.5 inline-flex text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:text-[color:var(--color-text-primary)]"
@@ -1084,6 +1104,7 @@ export function OntologyEditPage() {
         </header>
         <BuilderWriteSummary
           writable={hasLiveVault}
+          isDesktopRuntime={isDesktopRuntime}
           persistedNodes={builderGraphStats.persistedNodes}
           persistedRelations={builderGraphStats.persistedRelations}
           draftNodes={ephemeralNodes.length}

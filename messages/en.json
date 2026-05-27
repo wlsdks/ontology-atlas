@@ -745,6 +745,8 @@
           "sourceWritable": "Local vault write",
           "sourceReadonly": "Sample read-only",
           "sourceBody": "{nodes} persisted nodes · {relations} frontmatter refs",
+          "sourceActionLocal": "Open local vault",
+          "sourceActionDownload": "Get macOS app",
           "draftLabel": "Draft",
           "draftValue": "{nodes} nodes · {edges} edges",
           "draftBody": "Unsaved canvas work stays separate until Save.",
