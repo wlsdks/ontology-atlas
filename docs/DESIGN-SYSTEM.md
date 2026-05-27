@@ -94,6 +94,9 @@ for graph DB-style validation. The selected-node panel should repeat that as a
 small Browse / Write / Query rail before longer review content, so choosing a
 tree node immediately offers visual focus, builder focus, and node proof without
 requiring the user to parse the whole collaborator brief.
+When a tree row is selected, repeat the active canonical slug near the
+Browse/Write/Query summary; the tree is choosing the graph handle the next
+write and query will keep, not just highlighting a row.
 When no node is selected yet, the tree area should still expose a small
 selection hint that names the same Browse / Write / Query outcome. This makes
 row selection feel like the entrance to the workbench loop, not just a file-tree

@@ -2321,6 +2321,8 @@
     },
     "workbench": {
       "ariaLabel": "Ontology workbench primary actions",
+      "activeSlugLabel": "active concept · {slug}",
+      "activeSlugBody": "Write and Query keep the slug selected in Browse.",
       "treeLabel": "Browse",
       "treeValue": "{count} tree nodes",
       "treeBody": "Scan hierarchy, select a node, and inspect reachability, ego graph, and agent handoff context.",

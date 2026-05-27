@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T23:32:04.709Z",
+  "generatedAt": "2026-05-27T23:38:03.863Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1670,
-      "updatedAt": "2026-05-27T23:31:33.160Z",
+      "wordCount": 1704,
+      "updatedAt": "2026-05-27T23:37:38.047Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8145,
-      "updatedAt": "2026-05-27T23:31:39.428Z",
+      "wordCount": 8156,
+      "updatedAt": "2026-05-27T23:37:46.515Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6401,8 +6401,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatterbacked writes and Insights for graph DBstyle query validation. The first viewport now keep",
-      "wordCount": 659,
-      "updatedAt": "2026-05-27T23:26:29.136Z",
+      "wordCount": 712,
+      "updatedAt": "2026-05-27T23:37:53.273Z",
       "linksOut": []
     },
     {

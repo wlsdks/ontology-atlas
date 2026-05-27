@@ -24,6 +24,8 @@ When a tree node is selected, the detail panel repeats that same numbered split 
 
 The first-viewport summary now makes that loop ordered instead of merely adjacent: `01 Browse` selects the concept slug, `02 Write` keeps that slug focused in Builder for frontmatter edits, and `03 Query` closes the loop with graph DB-style proof over the same local markdown graph. The step number is part of the leading icon block rather than a tiny trailing badge, and each card's proof chip is labeled explicitly so `tree projection`, `frontmatter write`, and `dogfood:graph-db` read as runtime contracts instead of generic tags.
 
+When a tree node is selected, the summary repeats the canonical vault slug as the active concept handle above the Browse / Write / Query cards. This makes the tree's role explicit: it chooses the graph handle that Builder and Insights will keep, rather than merely highlighting a row in a hierarchy projection.
+
 Tree projection warnings now sit under that same contract. The warning panel groups raw tree builder notes by cause, so multiple-parent edges are presented as a hierarchy projection limit while the handoff buttons point to Insights for full graph scans and Builder for relation-direction repair.
 
 The graph proof rail is rendered as a compact execution strip rather than a large card: it keeps MCP/CLI query-pack counts, one sample MATCH intent, operation chips, and copy actions visible, but it no longer dominates the browse page before the user reaches the actual tree.

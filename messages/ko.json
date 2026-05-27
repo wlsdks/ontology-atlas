@@ -2321,6 +2321,8 @@
     },
     "workbench": {
       "ariaLabel": "온톨로지 워크벤치 주요 작업",
+      "activeSlugLabel": "활성 concept · {slug}",
+      "activeSlugBody": "Browse 에서 고른 slug 를 Write / Query 가 그대로 이어받습니다.",
       "treeLabel": "Browse",
       "treeValue": "트리 노드 {count}개",
       "treeBody": "계층을 빠르게 훑고, 노드를 선택해 reachability · ego graph · agent handoff 를 확인합니다.",

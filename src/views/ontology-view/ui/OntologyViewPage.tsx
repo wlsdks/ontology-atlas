@@ -341,6 +341,11 @@ export function OntologyViewPage() {
         semanticRelations={workbenchStats.semanticRelations}
         containmentRelations={workbenchStats.containmentRelations}
         builderHref={builderHref}
+        activeSlug={
+          selectedNode
+            ? resolveReachabilityQuerySlug(selectedNode) ?? selectedNode.id
+            : null
+        }
       />
 
       {/* tree contract strip. /ontology 트리는 전체 graph DB 편집기가 아니라
@@ -1822,11 +1827,13 @@ function GraphWorkbenchSummary({
   semanticRelations,
   containmentRelations,
   builderHref,
+  activeSlug,
 }: {
   treeNodes: number;
   semanticRelations: number;
   containmentRelations: number;
   builderHref: string;
+  activeSlug?: string | null;
 }) {
   const t = useTranslations("ontologyView.workbench");
   const items = [
@@ -1876,6 +1883,19 @@ function GraphWorkbenchSummary({
       aria-label={t("ariaLabel")}
       className="mb-6"
     >
+      {activeSlug ? (
+        <div
+          aria-live="polite"
+          className="mb-2 flex min-w-0 flex-col gap-1.5 rounded-lg border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.045)] px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <span className="min-w-0 truncate font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
+            {t("activeSlugLabel", { slug: activeSlug })}
+          </span>
+          <span className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t("activeSlugBody")}
+          </span>
+        </div>
+      ) : null}
       <div className="grid gap-2 lg:grid-cols-3">
         {items.map((item) => {
           const Icon = item.icon;
