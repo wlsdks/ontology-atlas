@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T22:53:35.271Z",
+  "generatedAt": "2026-05-27T22:59:21.549Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 7950,
-      "updatedAt": "2026-05-27T22:53:27.275Z",
+      "wordCount": 7947,
+      "updatedAt": "2026-05-27T22:58:59.871Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6076,8 +6076,8 @@
         }
       ],
       "excerpt": "src/views/ontologyedit/lib/resolvebuilderquerynode.ts normalizes the node query for src/views/ontologyedit/ui/OntologyEditPage.tsx, accepting exact livevault slugs, dogfood ontology/prefixed slugs, and frontmatter slug aliases. OntologyEditPage uses the resolved slug to select that vault node in the inspector while pan",
-      "wordCount": 192,
-      "updatedAt": "2026-05-27T22:38:26.742Z",
+      "wordCount": 187,
+      "updatedAt": "2026-05-27T22:58:46.855Z",
       "linksOut": []
     },
     {
@@ -6130,8 +6130,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. The strip makes the builder's write contract visible before the user draws: source tells whether the current graph is a writable local markdown vault, a restoring desktop vault, o",
-      "wordCount": 273,
-      "updatedAt": "2026-05-27T22:38:26.743Z",
+      "wordCount": 282,
+      "updatedAt": "2026-05-27T22:58:46.854Z",
       "linksOut": []
     },
     {

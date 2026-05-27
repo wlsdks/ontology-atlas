@@ -28,12 +28,24 @@ describe("resolveBuilderProofNodeId", () => {
   it("keeps the insights graph node id separate from the MCP/CLI vault slug", () => {
     expect(
       resolveBuilderProofTarget({
-        slug: "elements/insights-query-cockpit",
+        slug: "ontology/elements/insights-query-cockpit",
         frontmatter: { kind: "element", slug: "elements/insights-query-cockpit" },
       }),
     ).toEqual({
       graphNodeId: "element:insights-query-cockpit",
       vaultSlug: "elements/insights-query-cockpit",
+    });
+  });
+
+  it("falls back to the document path when frontmatter has no canonical slug", () => {
+    expect(
+      resolveBuilderProofTarget({
+        slug: "notes/manual-concept",
+        frontmatter: { kind: "element" },
+      }),
+    ).toEqual({
+      graphNodeId: "element:manual-concept",
+      vaultSlug: "notes/manual-concept",
     });
   });
 });

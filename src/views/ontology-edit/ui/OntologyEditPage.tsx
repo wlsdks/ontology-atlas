@@ -261,9 +261,11 @@ function BuilderWriteSummary({
     | "/ontology/insights/"
     | `/ontology/insights/?node=${string}`;
   const sourceHref: SummaryHref = isDesktopRuntime ? "/docs/?intent=local" : "/download/";
-  const proofHref: SummaryHref = selectedProofNodeId
-    ? `/ontology/insights/?node=${encodeURIComponent(selectedProofNodeId)}`
+  const selectedProofDisplaySlug = selectedProofSlug ?? selectedProofNodeId ?? null;
+  const proofHref: SummaryHref = selectedProofDisplaySlug
+    ? `/ontology/insights/?node=${encodeURIComponent(selectedProofDisplaySlug)}`
     : "/ontology/insights/";
+  const proofPacketSlug = selectedProofSlug ?? selectedProofNodeId;
   const sourceAction = writable
     ? {}
     : restoringVault
@@ -347,20 +349,20 @@ function BuilderWriteSummary({
       icon: <Network size={12} />,
       order: "04",
       label: t("proofLabel"),
-      value: selectedProofNodeId ? t("proofValueSelected") : t("proofValue"),
-      body: selectedProofNodeId
-        ? t("proofBodySelected", { slug: selectedProofNodeId })
+      value: selectedProofDisplaySlug ? t("proofValueSelected") : t("proofValue"),
+      body: selectedProofDisplaySlug
+        ? t("proofBodySelected", { slug: selectedProofDisplaySlug })
         : t("proofBody"),
-      chip: selectedProofNodeId ? t("proofChipSelected") : t("proofChip"),
-      flow: selectedProofNodeId ? t("proofFlowSelected") : t("proofFlow"),
+      chip: selectedProofDisplaySlug ? t("proofChipSelected") : t("proofChip"),
+      flow: selectedProofDisplaySlug ? t("proofFlowSelected") : t("proofFlow"),
       accent: "neutral",
       href: proofHref,
-      actionLabel: selectedProofNodeId ? t("proofActionSelected") : t("proofAction"),
-      copyLabel: selectedProofNodeId ? t("proofCopySelected") : t("proofCopy"),
-      copyAriaLabel: selectedProofNodeId
-        ? t("proofCopyAriaSelected", { slug: selectedProofNodeId })
+      actionLabel: selectedProofDisplaySlug ? t("proofActionSelected") : t("proofAction"),
+      copyLabel: selectedProofDisplaySlug ? t("proofCopySelected") : t("proofCopy"),
+      copyAriaLabel: selectedProofDisplaySlug
+        ? t("proofCopyAriaSelected", { slug: selectedProofDisplaySlug })
         : t("proofCopyAria"),
-      copyText: formatBuilderProofPacket(selectedProofSlug),
+      copyText: formatBuilderProofPacket(proofPacketSlug),
       copySuccess: t("proofCopyCopied"),
     },
   ];

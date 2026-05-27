@@ -22,5 +22,6 @@ export function resolveBuilderProofTarget(
     typeof doc.frontmatter?.slug === "string" ? doc.frontmatter.slug.trim() : "";
   const tailSlug = doc.slug.split("/").pop() || doc.slug;
   const idSlug = rawKind === "project" && frontmatterSlug ? frontmatterSlug : tailSlug;
-  return idSlug ? { graphNodeId: `${rawKind}:${idSlug}`, vaultSlug: doc.slug } : null;
+  const vaultSlug = frontmatterSlug || doc.slug;
+  return idSlug ? { graphNodeId: `${rawKind}:${idSlug}`, vaultSlug } : null;
 }
