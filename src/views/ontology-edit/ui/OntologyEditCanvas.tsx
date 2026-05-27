@@ -10,6 +10,7 @@ import {
   ConnectionLineType,
   MiniMap,
   ReactFlow,
+  useNodesInitialized,
   useReactFlow,
   type Connection,
   type Edge,
@@ -100,12 +101,19 @@ function FitViewOnGraphReady({
   anchorNodeId: string | null;
 }) {
   const reactFlow = useReactFlow();
+  const nodesInitialized = useNodesInitialized();
   const fittedGraphKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (nodeCount === 0 || fittedGraphKeyRef.current === graphKey) return;
+    if (
+      nodeCount === 0 ||
+      !nodesInitialized ||
+      fittedGraphKeyRef.current === graphKey
+    ) {
+      return;
+    }
     fittedGraphKeyRef.current = graphKey;
-    const timers = [220, 720].map((delay) =>
+    const timers = [80, 420].map((delay) =>
       setTimeout(() => {
         reactFlow.fitView({
           duration: 320,
@@ -116,7 +124,7 @@ function FitViewOnGraphReady({
       }, delay),
     );
     if (nodeCount > 20 && anchorNodeId) {
-      for (const delay of [940, 1800, 2800]) {
+      for (const delay of [720, 1400, 2400]) {
         timers.push(setTimeout(() => {
           // A full-vault overview can make 50+ node cards unreadably small.
           // After establishing the full graph bounds, fit the viewport to a
@@ -131,13 +139,26 @@ function FitViewOnGraphReady({
             maxZoom: 0.92,
             duration: 420,
           });
+          const anchorNode = reactFlow.getNode(anchorNodeId);
+          if (anchorNode) {
+            const width = anchorNode.width ?? 220;
+            const height = anchorNode.height ?? 64;
+            reactFlow.setCenter(
+              anchorNode.position.x + width / 2,
+              anchorNode.position.y + height / 2,
+              {
+                zoom: 0.82,
+                duration: 420,
+              },
+            );
+          }
         }, delay));
       }
     }
     return () => {
       timers.forEach((timer) => clearTimeout(timer));
     };
-  }, [anchorNodeId, graphKey, nodeCount, reactFlow]);
+  }, [anchorNodeId, graphKey, nodeCount, nodesInitialized, reactFlow]);
 
   return null;
 }
