@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T18:21:43.830Z",
+  "generatedAt": "2026-05-27T18:26:55.463Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6096,8 +6096,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. The strip is the builder persistence contract before the canvas: Source distinguishes local writable vaults from sample readonly data, Draft counts unsaved canvas nodes/edges, Gua",
-      "wordCount": 295,
-      "updatedAt": "2026-05-27T17:18:12.257Z",
+      "wordCount": 342,
+      "updatedAt": "2026-05-27T18:26:46.266Z",
       "linksOut": []
     },
     {

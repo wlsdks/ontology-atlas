@@ -316,6 +316,7 @@ function BuilderWriteSummary({
   return (
     <section
       aria-label={t("ariaLabel")}
+      role="list"
       className="mb-2 hidden grid-cols-4 gap-2 md:grid"
     >
       {items.map((item) => {
@@ -328,6 +329,8 @@ function BuilderWriteSummary({
         return (
           <article
             key={item.label}
+            role="listitem"
+            aria-label={`${item.label} ${item.order}: ${item.value}. ${item.chip}. ${item.body}. ${item.flow}`}
             className={`min-w-0 rounded-lg border px-3 py-2 ${accentClass}`}
           >
             <div className="flex min-w-0 items-center justify-between gap-2 text-[color:var(--color-text-quaternary)]">
