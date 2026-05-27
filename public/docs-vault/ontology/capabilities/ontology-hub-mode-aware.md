@@ -30,6 +30,11 @@ hook 한 번으로 vault frontmatter 의 stub 노드 + 엣지를 즉시 surface.
 workbench 안의 browse mode 로 좁히고, 새 관계 작성은 Builder, graph DB-style
 검증은 Insights 로 이어지게 한다.
 
+Browse 카드는 현재 route 에서 `aria-current="page"` 를 갖고 active 상태로
+표시된다. 그 아래 role strip 은 트리를 "계층 색인" 으로 명명하고,
+frontmatter 기반 node/ref count 와 evidence document 제외 규칙을 함께 보여줘
+트리가 전체 graph DB 를 대체하는 화면이 아니라 탐색 출발점임을 분명히 한다.
+
 노드 상세 패널은 선택 노드 기준 reachability 를 즉시 요약한다. 사용자는
 outgoing / incoming / both 방향과 1-3 hop depth 를 패널 안에서 바꾸며 layer 별
 reachable node 수, terminal node 수, relation 분포, BFS layer 별 도달 노드

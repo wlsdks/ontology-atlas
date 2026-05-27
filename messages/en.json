@@ -2119,6 +2119,17 @@
       "builder": "Open builder →"
     },
     "stat": {
+      "ariaLabel": "Ontology tree role and source status",
+      "role": "Tree role",
+      "roleValue": "Hierarchy index",
+      "roleHint": "Browse project → domain → capability → element. Write in Builder; query in Insights.",
+      "graphRefs": "Graph refs",
+      "graphRefsValue": "{nodes} nodes · {relations} refs",
+      "graphRefsHint": "Counts come from vault frontmatter, not a separate database.",
+      "evidence": "Evidence",
+      "evidenceValue": "{count} docs hidden",
+      "evidenceHiddenValue": "Docs excluded",
+      "evidenceHint": "Document nodes stay as evidence so the tree remains a concept map.",
       "treeNodes": "Tree nodes",
       "totalRelations": "Total relations",
       "documents": "Evidence docs",

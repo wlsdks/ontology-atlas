@@ -326,25 +326,39 @@ export function OntologyViewPage() {
         builderHref={builderHref}
       />
 
-      {/* tree node + relation stat strip. 사용자가 vault 에 document kind
-          노드를 만들면 추가 카운트만 surface (docCount > 0 일 때만).
-          treeResult.warnings 가 있으면 (multi-parent silent drop 등) amber
-          액션 칸을 추가 — 페이지 끝의 details disclosure 로 스크롤. */}
+      {/* tree contract strip. /ontology 트리는 전체 graph DB 편집기가 아니라
+          hierarchy browse index 라는 역할을 명확히 노출한다. 관계 작성은
+          Builder, graph scan 은 Insights 로 이어지게 분리. */}
       <section
+        aria-label={t('stat.ariaLabel')}
         className={
           (() => {
-            const cols = 2 + (docCount > 0 ? 1 : 0) + ((treeResult?.warnings.length ?? 0) > 0 ? 1 : 0);
+            const cols = 3 + ((treeResult?.warnings.length ?? 0) > 0 ? 1 : 0);
             if (cols >= 4) return "mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4";
             if (cols === 3) return "mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3";
             return "mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2";
           })()
         }
       >
-        <Stat label={t('stat.treeNodes')} value={String(totalNodes)} />
-        <Stat label={t('stat.totalRelations')} value={insight ? String(insight.edges.length) : "—"} />
-        {docCount > 0 ? (
-          <Stat label={t('stat.documents')} value={String(docCount)} />
-        ) : null}
+        <Stat
+          label={t('stat.role')}
+          value={t('stat.roleValue')}
+          hint={t('stat.roleHint')}
+          accent="indigo"
+        />
+        <Stat
+          label={t('stat.graphRefs')}
+          value={t('stat.graphRefsValue', {
+            nodes: totalNodes,
+            relations: insight?.edges.length ?? 0,
+          })}
+          hint={t('stat.graphRefsHint')}
+        />
+        <Stat
+          label={t('stat.evidence')}
+          value={docCount > 0 ? t('stat.evidenceValue', { count: docCount }) : t('stat.evidenceHiddenValue')}
+          hint={t('stat.evidenceHint')}
+        />
         {treeResult && treeResult.warnings.length > 0 ? (
           <Stat
             label={t('stat.warnings')}
@@ -1606,6 +1620,7 @@ function GraphWorkbenchSummary({
       href: "/ontology/",
       cta: t("treeCta"),
       ariaLabel: t("treeAriaLabel"),
+      current: true,
     },
     {
       icon: Network,
@@ -1615,6 +1630,7 @@ function GraphWorkbenchSummary({
       href: builderHref,
       cta: t("builderCta"),
       ariaLabel: t("builderAriaLabel"),
+      current: false,
     },
     {
       icon: BarChart3,
@@ -1624,13 +1640,14 @@ function GraphWorkbenchSummary({
       href: "/ontology/insights/",
       cta: t("graphDbCta"),
       ariaLabel: t("graphDbAriaLabel"),
+      current: false,
     },
   ] as const;
 
   return (
     <section
       aria-label={t("ariaLabel")}
-      className="mb-6 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2"
+      className="mb-6"
     >
       <div className="grid gap-2 lg:grid-cols-3">
         {items.map((item) => {
@@ -1639,8 +1656,13 @@ function GraphWorkbenchSummary({
             <Link
               key={item.label}
               href={item.href}
+              aria-current={item.current ? "page" : undefined}
               aria-label={item.ariaLabel}
-              className="group flex min-w-0 flex-col rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-3 py-3 transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.07)]"
+              className={
+                item.current
+                  ? "group flex min-w-0 flex-col rounded-lg border border-[color:rgba(94,106,210,0.42)] bg-[color:rgba(94,106,210,0.08)] px-3 py-3 transition-colors hover:border-[color:rgba(94,106,210,0.52)]"
+                  : "group flex min-w-0 flex-col rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-3 py-3 transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.07)]"
+              }
             >
               <div className="flex items-center gap-2">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors group-hover:border-[color:rgba(94,106,210,0.38)] group-hover:text-[color:var(--color-indigo-accent)]">

@@ -84,6 +84,12 @@ Avoid making large explanatory panels the first thing users read. Prefer compact
 action strips with labels that name the mode (`Browse`, `Write`, `Query`) and a
 short reason to click.
 
+Tree surfaces should explain their boundary instead of pretending to be the
+whole ontology. Use a compact role strip (`Tree role` / `Graph refs` /
+`Evidence`) to show that the tree is the hierarchy index, relation counts come
+from frontmatter refs, and document nodes remain evidence outside the concept
+tree.
+
 Builder write surfaces should make the persistence contract visible before the
 canvas. Use compact `Source` / `Draft` / `Guard` status cells to distinguish
 local writable vaults from sample read-only data, unsaved canvas work from

@@ -2119,6 +2119,17 @@
       "builder": "빌더 열기 →"
     },
     "stat": {
+      "ariaLabel": "온톨로지 트리 역할과 소스 상태",
+      "role": "역할",
+      "roleValue": "계층 색인",
+      "roleHint": "project → domain → capability → element 를 browse 합니다. 작성은 빌더, query 는 인사이트에서 합니다.",
+      "graphRefs": "참조",
+      "graphRefsValue": "노드 {nodes}개 · 참조 {relations}개",
+      "graphRefsHint": "별도 DB 가 아니라 vault frontmatter 에서 계산한 수치입니다.",
+      "evidence": "근거",
+      "evidenceValue": "문서 {count}개 숨김",
+      "evidenceHiddenValue": "문서 제외",
+      "evidenceHint": "문서 노드는 근거로 남기고, 트리는 개념 지도만 보여줍니다.",
       "treeNodes": "트리 노드",
       "totalRelations": "총 관계",
       "documents": "근거 문서",

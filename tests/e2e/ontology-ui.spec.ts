@@ -21,6 +21,13 @@ test.describe("ontology view UI", () => {
     await page.goto("/en/ontology/");
 
     await expect(page.getByRole("heading", { name: "Ontology workbench" })).toBeVisible();
+    await expect(page.getByLabel("Ontology hierarchy browse view")).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
+      "Hierarchy index",
+    );
     await expect(page.getByRole("link", { name: "Open Graph DB query pack insights" })).toBeVisible();
     await expect(page.locator('button[title="oh-my-ontology"]')).toBeVisible();
     await expect(page.locator('button[title="AI Agent Partner"]')).toBeVisible();
