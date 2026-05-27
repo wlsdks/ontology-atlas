@@ -324,6 +324,121 @@ describe("buildVaultGraphFlow", () => {
       },
     });
   });
+
+  it("큰 vault 에 일부 canvasPosition 만 있으면 자동 layout 으로 복구한다", () => {
+    const result = buildVaultGraphFlow(
+      makeManifest([
+        makeDoc({
+          slug: "project",
+          frontmatter: {
+            kind: "project",
+            domains: ["domains/a", "domains/b", "domains/c"],
+          },
+        }),
+        makeDoc({
+          slug: "domains/a",
+          frontmatter: {
+            kind: "domain",
+            title: "A",
+            canvasPosition: { x: 10_000, y: 10_000 },
+          },
+        }),
+        makeDoc({
+          slug: "domains/b",
+          frontmatter: {
+            kind: "domain",
+            title: "B",
+            canvasPosition: { x: 20_000, y: 20_000 },
+          },
+        }),
+        makeDoc({
+          slug: "domains/c",
+          frontmatter: { kind: "domain", title: "C" },
+        }),
+      ]),
+      { layoutMode: "dagre" },
+    );
+
+    const byId = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
+    expect(byId["domains/a"]?.position).not.toEqual({ x: 10_000, y: 10_000 });
+    expect(byId["domains/b"]?.position).not.toEqual({ x: 20_000, y: 20_000 });
+    expect(byId["project"]?.position.x).toBeLessThan(
+      byId["domains/a"]?.position.x ?? Number.NEGATIVE_INFINITY,
+    );
+  });
+
+  it("충분한 canvasPosition coverage 가 있으면 사용자 layout 을 복원한다", () => {
+    const result = buildVaultGraphFlow(
+      makeManifest([
+        makeDoc({
+          slug: "project",
+          frontmatter: {
+            kind: "project",
+            domains: ["domains/a", "domains/b"],
+            canvasPosition: { x: 10, y: 20 },
+          },
+        }),
+        makeDoc({
+          slug: "domains/a",
+          frontmatter: {
+            kind: "domain",
+            title: "A",
+            canvasPosition: { x: 300, y: 400 },
+          },
+        }),
+        makeDoc({
+          slug: "domains/b",
+          frontmatter: {
+            kind: "domain",
+            title: "B",
+            canvasPosition: { x: 500, y: 600 },
+          },
+        }),
+      ]),
+    );
+
+    const byId = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
+    expect(byId.project?.position).toEqual({ x: 10, y: 20 });
+    expect(byId["domains/a"]?.position).toEqual({ x: 300, y: 400 });
+    expect(byId["domains/b"]?.position).toEqual({ x: 500, y: 600 });
+  });
+
+  it("자동 정렬 옵션은 충분한 canvasPosition 도 무시한다", () => {
+    const result = buildVaultGraphFlow(
+      makeManifest([
+        makeDoc({
+          slug: "project",
+          frontmatter: {
+            kind: "project",
+            domains: ["domains/a", "domains/b"],
+            canvasPosition: { x: 10, y: 20 },
+          },
+        }),
+        makeDoc({
+          slug: "domains/a",
+          frontmatter: {
+            kind: "domain",
+            title: "A",
+            canvasPosition: { x: 300, y: 400 },
+          },
+        }),
+        makeDoc({
+          slug: "domains/b",
+          frontmatter: {
+            kind: "domain",
+            title: "B",
+            canvasPosition: { x: 500, y: 600 },
+          },
+        }),
+      ]),
+      { ignorePersistedPosition: true },
+    );
+
+    const byId = Object.fromEntries(result.nodes.map((n) => [n.id, n]));
+    expect(byId.project?.position).not.toEqual({ x: 10, y: 20 });
+    expect(byId["domains/a"]?.position).not.toEqual({ x: 300, y: 400 });
+    expect(byId["domains/b"]?.position).not.toEqual({ x: 500, y: 600 });
+  });
 });
 
 describe("stripTrailingParenthetical", () => {

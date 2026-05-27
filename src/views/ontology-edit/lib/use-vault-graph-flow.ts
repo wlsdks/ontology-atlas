@@ -73,6 +73,7 @@ export function useVaultGraphFlow(
 
 const NODE_WIDTH = 220;
 const NODE_HEIGHT = 60;
+const MIN_PERSISTED_CANVAS_POSITION_COVERAGE = 3;
 
 // 의미상 부모→자식 hierarchy 를 만드는 keys. 이들 엣지가 dagre rank 계산을
 // 주도해서 project → domain → capability → element 의 LR 골격을 형성한다.
@@ -108,6 +109,17 @@ type SemanticType = "containment" | "relation";
 
 function semanticTypeOf(key: string): SemanticType {
   return CONTAINMENT_KEY_SET.has(key) ? "containment" : "relation";
+}
+
+function resolveCanvasPosition(
+  doc: VaultDoc,
+): { x: number; y: number } | null {
+  const fm = doc.frontmatter as Record<string, unknown>;
+  const cp = fm.canvasPosition;
+  if (!cp || typeof cp !== "object") return null;
+  const x = (cp as Record<string, unknown>).x;
+  const y = (cp as Record<string, unknown>).y;
+  return typeof x === "number" && typeof y === "number" ? { x, y } : null;
 }
 
 /**
@@ -238,24 +250,28 @@ export function buildVaultGraphFlow(
     layoutMode === "force"
       ? computeForceLayout(ontologyDocs, allPairs)
       : computeDagreLayout(ontologyDocs, containmentPairs);
+  const persistedPositions = new Map(
+    ontologyDocs
+      .map((doc) => [doc.slug, resolveCanvasPosition(doc)] as const)
+      .filter((entry): entry is readonly [string, { x: number; y: number }] =>
+        entry[1] !== null
+      ),
+  );
+  const usePersistedPositions =
+    !ignorePersistedPosition &&
+    persistedPositions.size >=
+      Math.min(MIN_PERSISTED_CANVAS_POSITION_COVERAGE, ontologyDocs.length);
   const nodes: Node[] = ontologyDocs.map((doc) => {
-    // frontmatter.canvasPosition: { x, y } 가 있으면 우선. 없으면 dagre fallback.
+    // frontmatter.canvasPosition: { x, y } 는 충분한 coverage 가 있을 때만
+    // 우선. 큰 vault 에 일부 오래된 좌표만 남으면 전체 bounding box 가 튀어
+    // 첫 화면이 unreadable thumbnail 이 되므로 자동 layout 으로 복구한다.
     // 사용자가 빌더에서 drag-stop 시 canvasPosition patch — 다음 mount 부터
     // 같은 좌표 복원. AI agent (MCP) 도 같은 frontmatter 키 read 가능.
     // \`ignorePersistedPosition\` 이 true 면 강제로 dagre 결과 사용 — "자동
     // 정렬" 버튼이 in-memory 만 reset 할 때 활용 (frontmatter 자체는 그대로).
-    const fm = doc.frontmatter as Record<string, unknown>;
-    const cp = fm.canvasPosition;
-    const persistedPos =
-      !ignorePersistedPosition && cp && typeof cp === "object" && cp !== null
-        ? (() => {
-            const x = (cp as Record<string, unknown>).x;
-            const y = (cp as Record<string, unknown>).y;
-            return typeof x === "number" && typeof y === "number"
-              ? { x, y }
-              : null;
-          })()
-        : null;
+    const persistedPos = usePersistedPositions
+      ? persistedPositions.get(doc.slug)
+      : null;
     const pos = persistedPos ?? fallbackPositions.get(doc.slug) ?? { x: 0, y: 0 };
     const kind = String(doc.frontmatter.kind);
     const title = doc.title || doc.slug;
