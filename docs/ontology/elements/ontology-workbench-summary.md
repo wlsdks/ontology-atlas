@@ -11,4 +11,6 @@ It frames the tree as one browse mode inside the graph workbench, then hands off
 
 The local frontmatter compile proof below the role strip is intentionally compact: it states that the current graph was compiled from the selected vault, exposes node/relation counts and a Builder CTA, and keeps the kind census collapsed. It no longer renders the full kind-by-kind node list before the actual tree, so `/ontology` starts as a browse surface rather than a document inventory dump.
 
+The Korean surface now labels that proof as `프론트매터 그래프`, `노드 · 관계`, and `종류별 요약` instead of repeating English body captions such as `VAULT FRONTMATTER ONTOLOGY` or `KIND CENSUS`. This keeps the page header hierarchy intact while still proving that the browse tree is backed by a compiled local graph.
+
 This element is the `/ontology` browse counterpart to the Builder write summary and Insights query cockpit: Browse shows hierarchy and selection, Write mutates frontmatter, Query proves graph state through scans and paths.
