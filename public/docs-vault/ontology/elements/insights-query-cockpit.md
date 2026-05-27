@@ -25,3 +25,5 @@ evidence, and `relation_check` preflight plus relation explanation over
 missing. The UI can therefore claim
 "graph DB-style" exploration
 because the repo dogfoods the complete query pack against its own markdown graph.
+
+Its copy buttons keep the target name after success (for example `CLI pack 복사 · 복사됨`) so the dense Insights surface does not collapse multiple adjacent copy actions into an ambiguous generic `복사됨` state.

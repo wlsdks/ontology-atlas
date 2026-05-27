@@ -2814,7 +2814,11 @@ function CopyAgentTextButton({
   }
 
   const visibleLabel =
-    copyState === "copied" ? copiedLabel : copyState === "failed" ? t("agentCopyFailed") : label;
+    copyState === "copied"
+      ? `${label} · ${copiedLabel}`
+      : copyState === "failed"
+        ? t("agentCopyFailed")
+        : label;
   const toneClass =
     copyState === "failed"
       ? "border-[color:rgba(229,72,77,0.32)] bg-[color:rgba(229,72,77,0.08)] text-[color:rgba(248,160,160,0.95)] hover:border-[color:rgba(229,72,77,0.48)] hover:bg-[color:rgba(229,72,77,0.12)]"
