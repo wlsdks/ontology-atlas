@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T11:30:54.363Z",
+  "generatedAt": "2026-05-27T11:36:06.247Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1115,
-      "updatedAt": "2026-05-27T11:30:34.880Z",
+      "wordCount": 1139,
+      "updatedAt": "2026-05-27T11:35:49.230Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -6238,9 +6238,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands users to Builder for writes and Insights for graph DBstyle query packs.",
-      "wordCount": 41,
-      "updatedAt": "2026-05-27T10:33:44.824Z",
+      "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands users to Builder for writes and Insights for graph DBstyle query packs. When a user selects a tree node, the collaborato",
+      "wordCount": 95,
+      "updatedAt": "2026-05-27T11:35:49.229Z",
       "linksOut": []
     },
     {

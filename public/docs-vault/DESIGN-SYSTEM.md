@@ -88,7 +88,9 @@ Tree surfaces should explain their boundary instead of pretending to be the
 whole ontology. Use a compact role strip (`Tree role` / `Graph refs` /
 `Evidence`) to show that the tree is the hierarchy index, relation counts come
 from frontmatter refs, and document nodes remain evidence outside the concept
-tree.
+tree. Node-detail handoffs should always keep the three workbench exits visible:
+Topology for visual focus, Builder for frontmatter-backed edits, and Insights
+for graph DB-style validation.
 
 Builder write surfaces should make the persistence contract visible before the
 canvas. Use compact `Source` / `Draft` / `Guard` / `Proof` status cells to

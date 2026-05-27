@@ -2248,6 +2248,7 @@
       "reviewNoRelationTypes": "none",
       "reviewOpenTopology": "Open topology focus",
       "reviewOpenBuilder": "Focus in builder",
+      "reviewOpenQuery": "Open query cockpit",
       "reviewCopyMcpCheck": "Copy MCP check",
       "reviewCopyCliCheck": "Copy CLI check",
       "reviewCopyMcpImpactCheck": "Copy MCP impact",

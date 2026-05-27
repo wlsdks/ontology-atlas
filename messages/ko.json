@@ -2248,6 +2248,7 @@
       "reviewNoRelationTypes": "없음",
       "reviewOpenTopology": "토폴로지 focus 열기",
       "reviewOpenBuilder": "빌더에서 포커스",
+      "reviewOpenQuery": "query cockpit 열기",
       "reviewCopyMcpCheck": "MCP 점검 복사",
       "reviewCopyCliCheck": "CLI 점검 복사",
       "reviewCopyMcpImpactCheck": "MCP 영향 복사",

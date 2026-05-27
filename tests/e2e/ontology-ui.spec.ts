@@ -67,11 +67,15 @@ test.describe("ontology view UI", () => {
     await expect(brief).toContainText("Direct relation preview");
     await expect(brief.getByRole("link", { name: "Open topology" })).toHaveAttribute(
       "href",
-      /\/en\/topology\/\?p=capability%3Atopology-analysis-modes/,
+      /\/en\/topology\/\?mode=focus&p=capability%3Atopology-analysis-modes/,
     );
     await expect(brief.getByRole("link", { name: "Focus in builder" })).toHaveAttribute(
       "href",
       /\/en\/ontology\/edit\/\?node=capabilities%2Ftopology-analysis-modes/,
+    );
+    await expect(brief.getByRole("link", { name: "Open query cockpit" })).toHaveAttribute(
+      "href",
+      /\/en\/ontology\/insights\/?/,
     );
     await expect(
       brief.getByRole("button", { name: "Copy MCP check" }),
@@ -107,11 +111,12 @@ test.describe("ontology view UI", () => {
     expect(copiedBrief).toContain("## Direct relation preview");
     expect(copiedBrief).toMatch(/- (out|in) · [a-z_]+ · .+ \(.+, .+\)/);
     expect(copiedBrief).toContain(
-      "- Topology: /topology/?p=capability%3Atopology-analysis-modes",
+      "- Topology focus: /topology/?mode=focus&p=capability%3Atopology-analysis-modes",
     );
     expect(copiedBrief).toContain(
       "- Builder: /ontology/edit/?node=capabilities%2Ftopology-analysis-modes",
     );
+    expect(copiedBrief).toContain("- Query cockpit: /ontology/insights/");
     expect(copiedBrief).toContain(
       '- MCP check: query_ontology({"operation":"node_profile","slug":"capabilities/topology-analysis-modes","limit":8})',
     );
@@ -134,6 +139,7 @@ test.describe("ontology view UI", () => {
     expect(copiedVocabulary).toContain("## Meaning to keep");
     expect(copiedVocabulary).toContain("## Reuse context");
     expect(copiedVocabulary).toContain("## Relation anchors");
+    expect(copiedVocabulary).toContain("- Open query cockpit: /ontology/insights/");
     await brief.getByRole("button", { name: "Copy MCP impact" }).click();
     const copiedImpactMcp = await page.evaluate(
       () =>

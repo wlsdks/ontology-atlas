@@ -947,6 +947,7 @@ function NodeDetailPanel({
         handoff: t('reviewVocabularyHandoff'),
         topology: t('reviewOpenTopology'),
         builder: t('reviewOpenBuilder'),
+        query: t('reviewOpenQuery'),
         sourceFallback: t('reviewNoSource'),
         noRelationPreview: t('reviewRelationPreviewEmpty'),
         incoming: t('reviewRelationPreviewIn'),
@@ -1155,6 +1156,12 @@ function NodeDetailPanel({
             className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
           >
             {t('reviewOpenBuilder')}
+          </Link>
+          <Link
+            href={reviewBrief.handoffLinks.query}
+            className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {t('reviewOpenQuery')}
           </Link>
           <button
             type="button"

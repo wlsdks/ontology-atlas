@@ -39,6 +39,7 @@ export interface OntologyReviewBrief {
   handoffLinks: {
     topology: string;
     builder: string | null;
+    query: string;
   };
   agentChecks: {
     mcp: string;
@@ -73,6 +74,7 @@ export interface OntologyVocabularyReviewLabels {
   handoff: string;
   topology: string;
   builder: string;
+  query: string;
   sourceFallback: string;
   noRelationPreview: string;
   incoming: string;
@@ -152,6 +154,7 @@ export function buildOntologyReviewBrief({
     handoffLinks: {
       topology: topologyHref ?? buildOntologyReviewTopologyHref(node.id),
       builder: builderHref ?? null,
+      query: "/ontology/insights/",
     },
     agentChecks: agentCheckSlug
       ? {
@@ -242,6 +245,7 @@ export function formatOntologyReviewBrief({
     ...(brief.handoffLinks.builder
       ? [`- Builder: ${brief.handoffLinks.builder}`]
       : []),
+    `- Query cockpit: ${brief.handoffLinks.query}`,
     ...(brief.agentChecks
       ? [
           `- MCP check: ${brief.agentChecks.mcp}`,
@@ -299,6 +303,7 @@ export function formatOntologyVocabularyReview({
     ...(brief.handoffLinks.builder
       ? [`- ${labels.builder}: ${brief.handoffLinks.builder}`]
       : []),
+    `- ${labels.query}: ${brief.handoffLinks.query}`,
   ].join("\n");
 }
 

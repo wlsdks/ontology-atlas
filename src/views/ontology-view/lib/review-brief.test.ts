@@ -99,6 +99,7 @@ describe("buildOntologyReviewBrief", () => {
       handoffLinks: {
         topology: "/topology/?mode=focus&p=capability%3Amcp-server",
         builder: null,
+        query: "/ontology/insights/",
       },
       agentChecks: {
         mcp: 'query_ontology({"operation":"node_profile","slug":"capabilities/mcp-server","limit":8})',
@@ -204,6 +205,7 @@ describe("formatOntologyReviewBrief", () => {
     expect(text).toContain("- out · elements · Sigma (element, elements/sigma)");
     expect(text).toContain("- Topology focus: /topology/?mode=focus&p=capability%3Amcp-server");
     expect(text).toContain("- Builder: /ontology/edit/?node=capabilities%2Fmcp-server");
+    expect(text).toContain("- Query cockpit: /ontology/insights/");
     expect(text).toContain(
       '- MCP check: query_ontology({"operation":"node_profile","slug":"capabilities/mcp-server","limit":8})',
     );
@@ -267,6 +269,7 @@ describe("formatOntologyReviewBrief", () => {
           handoff: "Handoff",
           topology: "Topology focus",
           builder: "Builder",
+          query: "Query cockpit",
           sourceFallback: "no source",
           noRelationPreview: "No direct relation evidence",
           incoming: "Incoming",
@@ -298,6 +301,7 @@ describe("formatOntologyReviewBrief", () => {
         "## Handoff",
         "- Topology focus: /topology/?mode=focus&p=capability%3Amcp-server",
         "- Builder: /ontology/edit/?node=capabilities%2Fmcp-server",
+        "- Query cockpit: /ontology/insights/",
       ].join("\n"),
     );
   });
