@@ -13,6 +13,10 @@ mission v2 의 *사람 + AI agent 양립* 약속의 코드 구현. 빌더 epheme
 
 - **local**: `vault.createDoc(${kind}s/${slug}, md)` — vault 디스크 직접 작성. AI agent (MCP) 가 같은 vault 에서 즉시 본다.
 - **static**: 저장 차단 + 안내 toast ("내 markdown 폴더 열기" 유도).
+- **write status strip**: 캔버스 진입 전에 `Source` / `Draft` / `Guard`
+  상태를 보여준다. sample read-only vs local write, persisted node/ref count,
+  unsaved draft count, relation write preflight/sync handoff 를 한눈에 확인하게
+  해 builder 가 단순한 그림판이 아니라 vault write surface 임을 드러낸다.
 
 frontmatter 형식:
 

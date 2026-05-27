@@ -84,6 +84,12 @@ Avoid making large explanatory panels the first thing users read. Prefer compact
 action strips with labels that name the mode (`Browse`, `Write`, `Query`) and a
 short reason to click.
 
+Builder write surfaces should make the persistence contract visible before the
+canvas. Use compact `Source` / `Draft` / `Guard` status cells to distinguish
+local writable vaults from sample read-only data, unsaved canvas work from
+persisted graph data, and preview/preflight checks from direct frontmatter
+writes.
+
 ## Absolute rules (Don'ts)
 
 - ❌ Purple → pink gradients

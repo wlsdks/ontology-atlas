@@ -115,6 +115,74 @@ function CanvasSkeleton() {
   );
 }
 
+function BuilderWriteSummary({
+  writable,
+  persistedNodes,
+  persistedRelations,
+  draftNodes,
+  draftEdges,
+}: {
+  writable: boolean;
+  persistedNodes: number;
+  persistedRelations: number;
+  draftNodes: number;
+  draftEdges: number;
+}) {
+  const t = useTranslations("ontologyPages.edit.page.writeSummary");
+  const items = [
+    {
+      label: t("sourceLabel"),
+      value: writable ? t("sourceWritable") : t("sourceReadonly"),
+      body: t("sourceBody", { nodes: persistedNodes, relations: persistedRelations }),
+      accent: writable ? "indigo" : "amber",
+    },
+    {
+      label: t("draftLabel"),
+      value: t("draftValue", { nodes: draftNodes, edges: draftEdges }),
+      body: t("draftBody"),
+      accent: draftNodes > 0 || draftEdges > 0 ? "indigo" : "neutral",
+    },
+    {
+      label: t("guardLabel"),
+      value: t("guardValue"),
+      body: t("guardBody"),
+      accent: "neutral",
+    },
+  ] as const;
+
+  return (
+    <section
+      aria-label={t("ariaLabel")}
+      className="mb-2 hidden grid-cols-3 gap-2 md:grid"
+    >
+      {items.map((item) => {
+        const accentClass =
+          item.accent === "indigo"
+            ? "border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.07)]"
+            : item.accent === "amber"
+              ? "border-[color:rgba(244,183,49,0.30)] bg-[color:rgba(244,183,49,0.06)]"
+              : "border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)]";
+        return (
+          <article
+            key={item.label}
+            className={`min-w-0 rounded-lg border px-3 py-2 ${accentClass}`}
+          >
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              {item.label}
+            </p>
+            <p className="mt-0.5 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              {item.value}
+            </p>
+            <p className="mt-1 truncate text-[10px] text-[color:var(--color-text-tertiary)]">
+              {item.body}
+            </p>
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
 export function OntologyEditPage() {
   const t = useTranslations("ontologyPages.edit.page");
   const tKinds = useTranslations("kinds");
@@ -295,6 +363,32 @@ export function OntologyEditPage() {
   // read-only — patch 시도하면 disk 권한 없어 어차피 fail.
   const hasLiveVault = vault.manifest !== null;
   const effectiveManifest = vault.manifest ?? (staticVaultManifestRaw as VaultManifest);
+  const builderGraphStats = useMemo(() => {
+    const relationKeys = [
+      "domains",
+      "capabilities",
+      "elements",
+      "dependencies",
+      "depends_on",
+      "relates",
+      "contains",
+      "describes",
+    ] as const;
+    let persistedNodes = 0;
+    let persistedRelations = 0;
+    for (const doc of effectiveManifest.docs) {
+      if (typeof doc.frontmatter.kind !== "string") continue;
+      persistedNodes += 1;
+      const fm = doc.frontmatter as Record<string, unknown>;
+      for (const key of relationKeys) {
+        const value = fm[key];
+        if (Array.isArray(value)) {
+          persistedRelations += value.filter((item) => typeof item === "string").length;
+        }
+      }
+    }
+    return { persistedNodes, persistedRelations };
+  }, [effectiveManifest]);
   // slug → doc Map 한 번 — vaultSelected 재계산 외에도 다른 lookup 에서
   // 재사용. 이전엔 매 render 마다 manifest.docs.find 로 O(N) 스캔.
   const docsBySlug = useMemo(
@@ -960,6 +1054,13 @@ export function OntologyEditPage() {
             </button>
           </div>
         </header>
+        <BuilderWriteSummary
+          writable={hasLiveVault}
+          persistedNodes={builderGraphStats.persistedNodes}
+          persistedRelations={builderGraphStats.persistedRelations}
+          draftNodes={ephemeralNodes.length}
+          draftEdges={ephemeralEdges.length}
+        />
         {/* 빌더는 palette (200) + canvas + inspector (280) = 480px+ 의 ERD
             레이아웃 — 모바일 (<md, 768px 미만) viewport 에서는 컬럼이 겹쳐
             unreadable. 데스크톱 권장 안내 + 트리 / 토폴로지 fallback CTA 를

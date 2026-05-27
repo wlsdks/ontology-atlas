@@ -12,6 +12,9 @@ test.describe("ontology builder workflow", () => {
     await expect(
       page.getByRole("heading", { name: "Ontology Builder" }),
     ).toBeVisible();
+    const writeStatus = page.getByLabel("Builder write status");
+    await expect(writeStatus).toContainText("Sample read-only");
+    await expect(writeStatus).toContainText("Preview before write");
 
     const inspector = page.getByLabel("Selected ontology node detail");
     await expect(inspector).toBeVisible();
