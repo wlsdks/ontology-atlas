@@ -243,7 +243,9 @@ install launch smoke before signing credentials enter the path.
 evidence before starting that local gate, then chains it with
 `desktop:release-status -- --include-hosted-surface`, so the final desktop goal
 check covers both the installed app artifact path and the public GitHub
-Release/hosted download path.
+Release/hosted download path. The wrapper writes default evidence files at
+`.tmp/desktop-goal-status.json` and `.tmp/desktop-goal-status.md` unless the
+operator passes explicit output paths.
 The hosted web surface now moves toward product introduction and macOS
 distribution: the landing/download primary CTAs open the GitHub Releases page
 instead of depending on `/releases/latest` before a public macOS DMG exists. The

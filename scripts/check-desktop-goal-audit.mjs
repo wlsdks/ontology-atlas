@@ -3,6 +3,8 @@ import { spawnSync } from "node:child_process";
 
 const DEFAULT_REPO = "wlsdks/oh-my-ontology";
 const DEFAULT_HOSTED_BASE_URL = "https://oh-my-ontology.web.app";
+const DEFAULT_JSON_FILE = ".tmp/desktop-goal-status.json";
+const DEFAULT_MARKDOWN_FILE = ".tmp/desktop-goal-status.md";
 
 function printHelp() {
   console.log(`Usage: pnpm desktop:goal-audit -- --pr=NUMBER --tag=vX.Y.Z [--repo=${DEFAULT_REPO}] [--hosted-base-url=${DEFAULT_HOSTED_BASE_URL}] [--json-file=PATH] [--markdown-file=PATH]
@@ -12,6 +14,7 @@ Runs the full desktop goal gate:
 2. public completion audit: PR readiness, release workflow, signing secrets, GitHub Release assets, hosted deploy workflow/secrets, and live download page
 
 This wrapper requires --pr and --tag before starting the expensive local preflight so goal completion cannot accidentally skip PR evidence.
+By default it writes release evidence to ${DEFAULT_JSON_FILE} and ${DEFAULT_MARKDOWN_FILE}; pass --json-file or --markdown-file to override those paths.
 `);
 }
 
@@ -21,8 +24,8 @@ function parseArgs(argv) {
     pr: "",
     tag: "",
     hostedBaseUrl: DEFAULT_HOSTED_BASE_URL,
-    jsonFile: "",
-    markdownFile: "",
+    jsonFile: DEFAULT_JSON_FILE,
+    markdownFile: DEFAULT_MARKDOWN_FILE,
   };
 
   for (const arg of argv) {
@@ -117,12 +120,8 @@ function main() {
     "--include-hosted-surface",
     `--hosted-base-url=${options.hostedBaseUrl}`,
   ];
-  if (options.jsonFile) {
-    releaseArgs.push(`--json-file=${options.jsonFile}`);
-  }
-  if (options.markdownFile) {
-    releaseArgs.push(`--markdown-file=${options.markdownFile}`);
-  }
+  releaseArgs.push(`--json-file=${options.jsonFile}`);
+  releaseArgs.push(`--markdown-file=${options.markdownFile}`);
 
   process.exit(runPnpm(releaseArgs));
 }

@@ -70,6 +70,7 @@ output/
 
 # Temporary
 *.tmp
+.tmp/
 .cache/
 
 # Claude Code — 로컬 개인 상태만 ignore. 공유 가이드는 commit.

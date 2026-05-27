@@ -276,7 +276,9 @@ route smoke, DMG verification, and temporary install smoke before credentials
 are used. `pnpm desktop:goal-audit -- --pr=<number> --tag=<tag>` requires PR and
 tag evidence before starting that local preflight, then chains it with the
 public release/hosted download status audit, giving the macOS desktop goal one
-command that proves both the local artifact path and the public install path. The
+command that proves both the local artifact path and the public install path. It
+writes `.tmp/desktop-goal-status.json` and `.tmp/desktop-goal-status.md` by
+default, unless the operator overrides the evidence paths. The
 post-release completion audit is
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>`: it does not publish
 anything, but it fails closed until tag/package/Tauri/Cargo version alignment,

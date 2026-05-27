@@ -131,6 +131,8 @@ test("desktop goal audit returns the release status failure code", () => {
         "--tag=v0.1.0",
         "--include-hosted-surface",
         "--hosted-base-url=https://oh-my-ontology.web.app",
+        "--json-file=.tmp/desktop-goal-status.json",
+        "--markdown-file=.tmp/desktop-goal-status.md",
       ],
     ]);
   }, { releaseStatus: 9 });
@@ -142,4 +144,6 @@ test("desktop goal audit help describes the required evidence", () => {
   assert.equal(result.status, 0);
   assert.match(result.stdout, /--pr=NUMBER --tag=vX\.Y\.Z/);
   assert.match(result.stdout, /requires --pr and --tag before starting the expensive local preflight/);
+  assert.match(result.stdout, /\.tmp\/desktop-goal-status\.json/);
+  assert.match(result.stdout, /\.tmp\/desktop-goal-status\.md/);
 });

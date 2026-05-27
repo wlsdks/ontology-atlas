@@ -224,7 +224,10 @@ mount/checksum smoke, and temporary install launch smoke;
 evidence before starting the expensive local preflight, then chains that
 preflight with the full public release/hosted download blocker audit, so a
 single operator command proves both the installed-app artifact path and the
-public download readiness path before a desktop goal is marked done;
+public download readiness path before a desktop goal is marked done. Unless
+overridden, it writes the same final audit evidence to
+`.tmp/desktop-goal-status.json` and `.tmp/desktop-goal-status.md` so the goal
+handoff has stable local artifacts even when terminal output is truncated;
 `pnpm desktop:release-status -- --pr=<number> --tag=<tag>` is the macOS app
 completion audit after PR/release work: it accepts an already merged PR or
 checks tag/package/Tauri/Cargo version alignment, PR review/merge readiness,
@@ -669,6 +672,7 @@ For macOS app release candidates, use:
 ```bash
 pnpm desktop:release-preflight
 pnpm desktop:goal-audit -- --pr=274 --tag=v0.1.0
+# writes .tmp/desktop-goal-status.json and .tmp/desktop-goal-status.md by default
 
 # CI-only or local credentialed release signing path:
 pnpm desktop:check
