@@ -78,30 +78,47 @@ function FitViewOnAutoLayout({
  * Local vault restore can populate the builder graph after ReactFlow has
  * already mounted. The built-in `fitView` prop only covers the initial mount,
  * so the desktop app could show an apparently blank canvas until the user hit
- * the toolbar fit action. Fit exactly once when the graph first becomes
- * non-empty.
+ * the toolbar fit action. Fit once per graph source signature so static demo →
+ * local vault transitions also get a fresh viewport.
  */
-function FitViewOnGraphReady({ nodeCount }: { nodeCount: number }) {
+function FitViewOnGraphReady({
+  graphKey,
+  nodeCount,
+}: {
+  graphKey: string;
+  nodeCount: number;
+}) {
   const reactFlow = useReactFlow();
-  const prevNodeCountRef = useRef(0);
-  const fittedRef = useRef(false);
+  const fittedGraphKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const previous = prevNodeCountRef.current;
-    prevNodeCountRef.current = nodeCount;
-    if (nodeCount === 0) {
-      fittedRef.current = false;
-      return;
-    }
-    if (fittedRef.current || previous > 0) return;
-    fittedRef.current = true;
-    const t = setTimeout(() => {
-      reactFlow.fitView({ duration: 320, padding: 0.22, minZoom: 0.4, maxZoom: 1.2 });
-    }, 220);
-    return () => clearTimeout(t);
-  }, [nodeCount, reactFlow]);
+    if (nodeCount === 0 || fittedGraphKeyRef.current === graphKey) return;
+    fittedGraphKeyRef.current = graphKey;
+    const timers = [220, 720].map((delay) =>
+      setTimeout(() => {
+        reactFlow.fitView({ duration: 320, padding: 0.22, minZoom: 0.4, maxZoom: 1.2 });
+      }, delay),
+    );
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer));
+    };
+  }, [graphKey, nodeCount, reactFlow]);
 
   return null;
+}
+
+function buildGraphKey(args: {
+  hasLiveVault: boolean;
+  nodeCount: number;
+  edgeCount: number;
+  firstNodeId: string | null;
+}) {
+  return [
+    args.hasLiveVault ? "live" : "static",
+    args.nodeCount,
+    args.edgeCount,
+    args.firstNodeId ?? "empty",
+  ].join(":");
 }
 
 /**
@@ -241,6 +258,13 @@ export function OntologyEditCanvas({
   });
   const vaultNodes = vaultFlow.nodes;
   const vaultEdges = vaultFlow.edges;
+  const hasLiveVault = vaultManifest !== null;
+  const graphKey = buildGraphKey({
+    hasLiveVault,
+    nodeCount: vaultNodes.length,
+    edgeCount: vaultEdges.length,
+    firstNodeId: vaultNodes[0]?.id ?? null,
+  });
 
   const handleSelectionChange = useCallback(
     (params: OnSelectionChangeParams) => {
@@ -311,15 +335,20 @@ export function OntologyEditCanvas({
   // 부모 re-render 로 reset 되는 회귀 방지.
   // 단, autoLayoutToken 이나 layoutMode 가 변했을 땐 사용자 의도 = '재정렬'
   // 이므로 위치 preserve 안 하고 baseNodes 그대로 (auto-layout 결과) 적용.
+  // static dogfood → local vault 전환처럼 graph source 자체가 바뀐 경우도
+  // 기존 좌표를 붙잡지 않고 새 graph layout / persisted canvasPosition 으로 reset.
   const prevAutoLayoutTokenRef = useRef(autoLayoutToken);
   const prevLayoutModeRef = useRef(layoutMode);
+  const prevGraphKeyRef = useRef(graphKey);
   useEffect(() => {
     const isAutoLayoutTrigger = prevAutoLayoutTokenRef.current !== autoLayoutToken;
     const isLayoutModeChange = prevLayoutModeRef.current !== layoutMode;
+    const isGraphKeyChange = prevGraphKeyRef.current !== graphKey;
     prevAutoLayoutTokenRef.current = autoLayoutToken;
     prevLayoutModeRef.current = layoutMode;
+    prevGraphKeyRef.current = graphKey;
     setLocalNodes((current) => {
-      if (isAutoLayoutTrigger || isLayoutModeChange) {
+      if (isAutoLayoutTrigger || isLayoutModeChange || isGraphKeyChange) {
         return baseNodes;
       }
       const currentById = new Map(current.map((n) => [n.id, n]));
@@ -334,12 +363,12 @@ export function OntologyEditCanvas({
     // 자동정렬 / layoutMode 변경 시 transition 활성화 — 노드들이 새 위치로
     // 부드럽게 슬라이드. fitView duration (400ms) + transition duration (550ms)
     // 후에도 안정화 시간 여유 둬 750ms 까지 클래스 유지.
-    if (isAutoLayoutTrigger || isLayoutModeChange) {
+    if (isAutoLayoutTrigger || isLayoutModeChange || isGraphKeyChange) {
       setIsLayoutAnimating(true);
       const timer = setTimeout(() => setIsLayoutAnimating(false), 750);
       return () => clearTimeout(timer);
     }
-  }, [baseNodes, autoLayoutToken, layoutMode]);
+  }, [baseNodes, autoLayoutToken, layoutMode, graphKey]);
   const onNodesChange = useCallback((changes: NodeChange[]) => {
     setLocalNodes((current) => applyNodeChanges(changes, current));
   }, []);
@@ -413,7 +442,6 @@ export function OntologyEditCanvas({
     [allNodes, onConnect, onVaultConnect],
   );
 
-  const hasLiveVault = vaultManifest !== null;
   const handleNodeDragStop = useCallback(
     (_event: unknown, node: Node) => {
       // vault 노드만 patch — ephemeral 은 in-memory 가 진실원이라 무관.
@@ -560,7 +588,7 @@ export function OntologyEditCanvas({
             아이콘 흰색 등). 사용자 navigation 은 MiniMap (점프) + 자동정렬
             (fit) + 마우스 휠 (zoom) 으로 충분 → 별도 Controls 미노출. */}
         <FitViewOnAutoLayout token={autoLayoutToken} layoutMode={layoutMode} />
-        <FitViewOnGraphReady nodeCount={allNodes.length} />
+        <FitViewOnGraphReady graphKey={graphKey} nodeCount={allNodes.length} />
         <FocusNodeOnDemand token={focusToken} nodeId={focusNodeId} />
         {/* MiniMap — 노드 많아질 때 빠른 navigation. 헌장 §11 호환:
             인디고 alpha + 무채색 alpha mask. ephemeral 은 amber 로 vault

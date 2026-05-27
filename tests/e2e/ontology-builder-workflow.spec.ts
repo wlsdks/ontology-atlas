@@ -20,6 +20,9 @@ test.describe("ontology builder workflow", () => {
     await expect(
       writeStatus.getByRole("link", { name: "Open query cockpit" }),
     ).toHaveAttribute("href", "/en/ontology/insights/");
+    await expect(
+      page.getByRole("dialog", { name: "Builder onboarding" }),
+    ).toHaveCount(0);
 
     const inspector = page.getByLabel("Selected ontology node detail");
     await expect(inspector).toBeVisible();

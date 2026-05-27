@@ -1109,7 +1109,11 @@ export function OntologyEditPage() {
               selectedId={selectedId}
             />
             <BuilderOnboarding
-              empty={ephemeralNodes.length === 0 && ephemeralEdges.length === 0}
+              empty={
+                builderGraphStats.persistedNodes === 0 &&
+                ephemeralNodes.length === 0 &&
+                ephemeralEdges.length === 0
+              }
               isDesktopRuntime={isDesktopRuntime}
             />
             {pendingRelation && pendingRelationPreflight ? (

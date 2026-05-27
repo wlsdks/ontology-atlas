@@ -10,7 +10,8 @@ import { MousePointerClick, Plug, Save, X } from "lucide-react";
 const STORAGE_KEY = "demo:atlas-onboarding:dismissed:v1";
 
 /**
- * Builder onboarding coach mark — 첫 진입 + 빈 캔버스일 때 3-step 안내 노출.
+ * Builder onboarding coach mark — 첫 진입 + 실제 graph 가 비었을 때만
+ * 3-step 안내 노출. Persisted vault graph 가 있으면 지도를 먼저 보여준다.
  *
  * localStorage 로 dismissed 추적. '다시 보지 않기' 또는 첫 노드 추가 후 자동 닫힘.
  *
@@ -20,7 +21,7 @@ const STORAGE_KEY = "demo:atlas-onboarding:dismissed:v1";
  * - motion-reduce 자동 존중 (framer-motion)
  */
 export interface BuilderOnboardingProps {
-  /** 캔버스가 비어 있는지 — true 일 때만 노출 검토. */
+  /** persisted graph + draft canvas 가 모두 비어 있는지 — true 일 때만 노출 검토. */
   empty: boolean;
   /** true 면 데스크톱 앱 런타임이라 read-only 해소 CTA 가 folder picker 로 향함. */
   isDesktopRuntime?: boolean;
