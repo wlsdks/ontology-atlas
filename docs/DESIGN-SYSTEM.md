@@ -120,7 +120,7 @@ frontmatter writes, and the MCP/CLI proof packets that close a graph mutation
 after it lands. The `Proof` cell should hand off to the query cockpit so a
 builder write naturally flows into graph DB-style verification instead of
 ending as a canvas-only action. Each cell should also expose a compact proof
-chip (`local markdown`, `canvas draft`, `relation guard`, `graph db proof`) so
+chip (`local markdown`, `canvas draft`, `relation guard`, `graph db + health`) so
 the builder first viewport reads as a write/verify loop rather than a generic
 diagram toolbar. Number those cells as a visible execution order and add one
 short loop-action line per cell, so users can read the builder as source check

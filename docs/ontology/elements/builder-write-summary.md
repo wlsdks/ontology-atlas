@@ -9,7 +9,7 @@ domain: views
 
 The strip is the builder persistence contract before the canvas: `Source` distinguishes local writable vaults from sample read-only data, `Draft` counts unsaved canvas nodes/edges, `Guard` names relation preview and preflight, and `Proof` hands the user to `/ontology/insights` for query cockpit validation after graph writes.
 
-Each status cell now carries an icon plus a compact proof chip: `local markdown` / `read-only sample`, `canvas draft`, `relation guard` / `preflight active`, and `graph db proof` / `node proof pack`. The chip row makes the first viewport name the executable contract behind the builder instead of relying only on explanatory body copy.
+Each status cell now carries an icon plus a compact proof chip: `local markdown` / `read-only sample`, `canvas draft`, `relation guard` / `preflight active`, and `graph db + health` / `node health pack`. The chip row makes the first viewport name the executable contract behind the builder instead of relying only on explanatory body copy.
 
 The cells now also show a visible `01`–`04` execution order and a short loop-action line: read/write source, draw or select, preflight before write, and verify in the query cockpit. This keeps the Builder first viewport from reading as four unrelated status cards; it is the compact source → draft → guard → proof loop above the canvas.
 
