@@ -2320,7 +2320,14 @@
       "healthValue": "query_plan first",
       "operations": "Operations",
       "cta": "Open insights",
-      "ctaAria": "Open ontology insights for graph DB query evidence"
+      "ctaAria": "Open ontology insights for graph DB query evidence",
+      "copyMcp": "Copy MCP pack",
+      "copyMcpAria": "Copy the graph DB query MCP pack",
+      "copyMcpCopied": "Graph DB MCP pack copied",
+      "copyCli": "Copy CLI pack",
+      "copyCliAria": "Copy the graph DB query CLI fallback pack",
+      "copyCliCopied": "Graph DB CLI pack copied",
+      "copyFailed": "Copy failed"
     },
     "error": "Something went wrong while loading ontology data. {message}",
     "loading": "Loading…",

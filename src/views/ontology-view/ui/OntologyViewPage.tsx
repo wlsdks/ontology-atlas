@@ -1883,8 +1883,16 @@ function GraphWorkbenchSummary({
 
 function GraphProofRail({ model }: { model: GraphProofRailModel }) {
   const t = useTranslations("ontologyView.graphProof");
+  const { show } = useToast();
   const preview = model.previewIntents.slice(0, 3);
   const operationPreview = model.operations.slice(0, 5);
+  const copyPack = async (text: string, successMessage: string) => {
+    if (await copyText(text)) {
+      show(successMessage, "success");
+      return;
+    }
+    show(t("copyFailed"), "error");
+  };
 
   return (
     <section
@@ -1910,13 +1918,33 @@ function GraphProofRail({ model }: { model: GraphProofRailModel }) {
             {t("body")}
           </p>
         </div>
-        <Link
-          href="/ontology/insights/"
-          className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
-          aria-label={t("ctaAria")}
-        >
-          {t("cta")}
-        </Link>
+        <div className="flex shrink-0 flex-wrap gap-1.5">
+          <button
+            type="button"
+            onClick={() => void copyPack(model.queryPackText, t("copyMcpCopied"))}
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+            aria-label={t("copyMcpAria")}
+          >
+            <Clipboard size={12} aria-hidden />
+            {t("copyMcp")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void copyPack(model.cliPackText, t("copyCliCopied"))}
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.34)] hover:text-[color:var(--color-text-primary)]"
+            aria-label={t("copyCliAria")}
+          >
+            <Clipboard size={12} aria-hidden />
+            {t("copyCli")}
+          </button>
+          <Link
+            href="/ontology/insights/"
+            className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.34)] hover:text-[color:var(--color-text-primary)]"
+            aria-label={t("ctaAria")}
+          >
+            {t("cta")}
+          </Link>
+        </div>
       </div>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">

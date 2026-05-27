@@ -2320,7 +2320,14 @@
       "healthValue": "query_plan first",
       "operations": "Operation",
       "cta": "인사이트 열기",
-      "ctaAria": "graph DB query evidence 를 보려면 온톨로지 인사이트 열기"
+      "ctaAria": "graph DB query evidence 를 보려면 온톨로지 인사이트 열기",
+      "copyMcp": "MCP pack 복사",
+      "copyMcpAria": "graph DB query MCP pack 복사",
+      "copyMcpCopied": "Graph DB MCP pack 복사됨",
+      "copyCli": "CLI pack 복사",
+      "copyCliAria": "graph DB query CLI fallback pack 복사",
+      "copyCliCopied": "Graph DB CLI pack 복사됨",
+      "copyFailed": "복사 실패"
     },
     "error": "ontology 데이터를 불러오는 중 오류가 났어요. {message}",
     "loading": "불러오는 중…",

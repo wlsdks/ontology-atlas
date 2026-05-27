@@ -1,5 +1,7 @@
 import {
   countAgentGraphDbCliPackCommands,
+  formatAgentGraphDbCliPack,
+  formatAgentGraphDbQueryPack,
   formatAgentQueryCallCliCommand,
   type AgentGraphDbQueryPackItem,
 } from "@/shared/lib/ontology-tree";
@@ -10,6 +12,8 @@ export interface GraphProofRailModel {
   cliFallbackCount: number;
   previewIntents: string[];
   operations: string[];
+  queryPackText: string;
+  cliPackText: string;
 }
 
 export function buildGraphProofRailModel(
@@ -36,6 +40,8 @@ export function buildGraphProofRailModel(
       .filter((intent): intent is string => intent.length > 0)
       .slice(0, previewLimit),
     operations: Array.from(operations),
+    queryPackText: formatAgentGraphDbQueryPack(pack),
+    cliPackText: formatAgentGraphDbCliPack(pack),
   };
 }
 

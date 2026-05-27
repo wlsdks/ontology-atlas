@@ -44,5 +44,9 @@ describe("graph proof rail", () => {
       "all_paths",
       "explain_relation",
     ]);
+    expect(model.queryPackText).toContain("Use this oh-my-ontology graph DB query pack");
+    expect(model.queryPackText).toContain("query_ontology.match_nodes");
+    expect(model.cliPackText).toContain("Run these oh-my-ontology CLI commands");
+    expect(model.cliPackText).toContain("oh-my-ontology match-nodes [vault]");
   });
 });
