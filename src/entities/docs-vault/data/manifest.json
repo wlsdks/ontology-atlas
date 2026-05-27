@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T00:00:05.942Z",
+  "generatedAt": "2026-05-27T00:07:16.245Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3525,8 +3525,8 @@
         }
       ],
       "excerpt": "202605 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (Firebase Hosting, Vercel, Netlify, GitHub Pages, S3 + CloudFront, …). The detailed Firebasespecific guide is archived in docs/archive/DEPLOYFIREBASE.md for reference. Th",
-      "wordCount": 567,
-      "updatedAt": "2026-05-26T23:59:43.681Z",
+      "wordCount": 587,
+      "updatedAt": "2026-05-27T00:06:55.812Z",
       "linksOut": [
         "archive/DEPLOY-FIREBASE"
       ]
@@ -3959,8 +3959,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6058,
-      "updatedAt": "2026-05-26T23:59:39.092Z",
+      "wordCount": 6085,
+      "updatedAt": "2026-05-27T00:06:51.311Z",
       "linksOut": []
     },
     {
@@ -5129,8 +5129,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 2530,
-      "updatedAt": "2026-05-26T23:59:53.508Z",
+      "wordCount": 2553,
+      "updatedAt": "2026-05-27T00:07:05.747Z",
       "linksOut": []
     },
     {
@@ -5155,8 +5155,8 @@
         }
       ],
       "excerpt": ".claude/skills/firebasedeploy/SKILL.md is the agentrunbook for publishing the static promo/download website to Firebase Hosting. It reads local .env.prod identifiers, runs the docs/type/build/bundle gates plus pnpm firebase:deploycheck, deploys with firebase deploy only hosting, and verifies the live web.app URL. Fireb",
-      "wordCount": 218,
-      "updatedAt": "2026-05-26T23:59:48.083Z",
+      "wordCount": 243,
+      "updatedAt": "2026-05-27T00:07:00.016Z",
       "linksOut": []
     },
     {

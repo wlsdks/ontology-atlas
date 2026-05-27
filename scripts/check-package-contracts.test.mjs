@@ -676,6 +676,11 @@ describe('package contract helpers', () => {
     assert.match(hostingWorkflow, /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/);
     assert.match(hostingWorkflow, /if:\s*env\.PUBLISHED_RELEASE_TAG != ''/);
     assert.match(hostingWorkflow, /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/);
+    assert.match(hostingWorkflow, /Summarize hosted download deployment/);
+    assert.match(hostingWorkflow, /Hosted Download Site/);
+    assert.match(hostingWorkflow, /GITHUB_STEP_SUMMARY/);
+    assert.match(hostingWorkflow, /Verified routes:/);
+    assert.match(hostingWorkflow, /Verified release assets:/);
     assert.doesNotMatch(releaseWorkflow, /deploy-hosting:\s*\n\s+name:\s*Deploy hosted download site/);
     assert.doesNotMatch(releaseWorkflow, /FIREBASE_SERVICE_ACCOUNT_JSON/);
     assert.doesNotMatch(releaseWorkflow, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/);

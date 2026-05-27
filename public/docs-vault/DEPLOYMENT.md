@@ -48,7 +48,9 @@ deploys only Firebase Hosting with `firebase-tools@15.17.0`, then runs
 `pnpm desktop:verify-hosted` against the configured public URL. When the deploy
 was triggered by a published GitHub Release, or a manual dispatch supplies
 `release_tag`, it also runs `pnpm desktop:verify-download` for that tag so the
-website deploy record includes the public DMG/checksum asset proof.
+website deploy record includes the public DMG/checksum asset proof. The final
+workflow summary records the hosted URL, verified Korean landing/download
+routes, and whether release assets were verified or skipped.
 
 Expected public URLs after deploy:
 

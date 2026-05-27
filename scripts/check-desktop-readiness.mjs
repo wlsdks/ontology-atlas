@@ -409,12 +409,17 @@ if (
   /firebase-tools@15\.17\.0 deploy --only hosting/.test(hostingDeployWorkflow) &&
   /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/.test(hostingDeployWorkflow) &&
   /if:\s*env\.PUBLISHED_RELEASE_TAG != ''/.test(hostingDeployWorkflow) &&
-  /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(hostingDeployWorkflow)
+  /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(hostingDeployWorkflow) &&
+  /Summarize hosted download deployment/.test(hostingDeployWorkflow) &&
+  /Hosted Download Site/.test(hostingDeployWorkflow) &&
+  /GITHUB_STEP_SUMMARY/.test(hostingDeployWorkflow) &&
+  /Verified routes:/.test(hostingDeployWorkflow) &&
+  /Verified release assets:/.test(hostingDeployWorkflow)
 ) {
   pass("Firebase Hosting fallback workflow deploys the promo/download site after public macOS releases and verifies the live download route");
 } else {
   fail(
-    ".github/workflows/deploy-hosting.yml must deploy Hosting on release publication/manual dispatch, require FIREBASE_SERVICE_ACCOUNT_JSON, hide the first-release checklist, use Node 24 with Corepack pnpm@10.18.0 without pnpm/action-setup, run the static deploy gates, deploy only Hosting, verify the hosted download route, and verify published release assets when a release tag is available",
+    ".github/workflows/deploy-hosting.yml must deploy Hosting on release publication/manual dispatch, require FIREBASE_SERVICE_ACCOUNT_JSON, hide the first-release checklist, use Node 24 with Corepack pnpm@10.18.0 without pnpm/action-setup, run the static deploy gates, deploy only Hosting, verify the hosted download route, verify published release assets when a release tag is available, and summarize the hosted URL/routes/release tag to GITHUB_STEP_SUMMARY",
   );
 }
 

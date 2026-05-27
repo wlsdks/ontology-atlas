@@ -39,7 +39,9 @@ The workflow writes a temporary `.env.prod`, sets
 deploy only Hosting with `firebase-tools@15.17.0`, and verify the live download
 route. Release-published runs automatically verify the published release tag's
 DMG/checksum assets after deploy. Manual dispatches can do the same when the
-optional `release_tag` input is set.
+optional `release_tag` input is set. Each GitHub-hosted deploy writes the
+hosted URL, verified landing/download routes, and release asset verification
+status to the Actions step summary.
 
 ## Workflow
 
@@ -90,6 +92,8 @@ Deployment is complete only when all are true:
   static `out/` Hosting target and then runs `pnpm desktop:verify-hosted`.
   When `PUBLISHED_RELEASE_TAG` is present, it also runs
   `pnpm desktop:verify-download -- --tag="$PUBLISHED_RELEASE_TAG"`.
+  The workflow summary records the hosted URL, `/ko/`, `/ko/download/`, and
+  release asset verification status.
   `.github/workflows/release-macos.yml` is intentionally app-only.
 
 For UI-sensitive landing changes, also run a short Playwright check against

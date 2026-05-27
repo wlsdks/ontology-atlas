@@ -218,7 +218,9 @@ The deploy workflow can also receive a manual `release_tag`, and release
 published events set the same tag automatically; when present, the workflow runs
 `pnpm desktop:verify-download -- --tag="$PUBLISHED_RELEASE_TAG"` after hosted
 page verification so the website deploy run proves the public DMG/checksum
-assets still resolve.
+assets still resolve. The same run writes a hosted download summary with the
+public URL, verified Korean landing/download routes, and release asset
+verification status to `GITHUB_STEP_SUMMARY`.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`
 landing/download pages and rejects a stale public deployment that still shows
 the old browser vault picker CTA, lacks `/ko/download/`, or points the download

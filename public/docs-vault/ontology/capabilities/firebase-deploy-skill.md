@@ -23,7 +23,9 @@ only Hosting with `firebase-tools@15.17.0`, and runs
 `pnpm desktop:verify-hosted` against the live URL. Release-triggered runs, and
 manual dispatches with `release_tag`, also run `pnpm desktop:verify-download`
 for that tag so the website deploy evidence includes the public DMG/checksum
-asset proof.
+asset proof. The workflow writes a final GitHub Actions step summary with the
+hosted public URL, verified `/ko/` and `/ko/download/` routes, and the release
+asset verification status.
 
 The skill explicitly keeps Firebase as a static host only. It blocks accidental
 drift toward Functions, Firestore, Storage, Auth, or committed credentials.

@@ -64,7 +64,9 @@ download route can be verified separately from the app release. On
 Release-published events, or on manual dispatch when `release_tag` is supplied,
 it also runs `pnpm desktop:verify-download -- --tag="$PUBLISHED_RELEASE_TAG"` so
 the hosted deploy record proves the public DMG/checksum assets are still
-reachable.
+reachable. The workflow then writes the hosted public URL, verified `/ko/` and
+`/ko/download/` routes, and verified release tag status to the GitHub Actions
+step summary for reviewer handoff.
 
 ## Vault Checks
 

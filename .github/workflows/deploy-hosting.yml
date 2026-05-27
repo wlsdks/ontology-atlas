@@ -93,3 +93,21 @@ jobs:
         run: pnpm desktop:verify-download -- --tag="$PUBLISHED_RELEASE_TAG"
         env:
           GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Summarize hosted download deployment
+        run: |
+          {
+            echo "## Hosted Download Site"
+            echo ""
+            echo "Public URL: ${FIREBASE_HOSTING_URL}"
+            echo ""
+            echo "Verified routes:"
+            echo "- ${FIREBASE_HOSTING_URL}/ko/"
+            echo "- ${FIREBASE_HOSTING_URL}/ko/download/"
+            echo ""
+            if [ -n "$PUBLISHED_RELEASE_TAG" ]; then
+              echo "Verified release assets: ${PUBLISHED_RELEASE_TAG}"
+            else
+              echo "Verified release assets: skipped (no release tag supplied)"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
