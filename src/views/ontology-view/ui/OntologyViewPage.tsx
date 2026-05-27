@@ -394,6 +394,9 @@ export function OntologyViewPage() {
               <VaultOntologyStubsPanel />
             </div>
           ) : null}
+          {!selectedNode && treeResult.roots.length > 0 ? (
+            <TreeSelectionHint />
+          ) : null}
           <OntologyTreeView
             result={treeResult}
             onSelect={(node) => selectNode(node)}
@@ -604,6 +607,64 @@ function OntologyMetaFooter({
         {t('modePrefix')}: {modeLabel}
       </span>
     </footer>
+  );
+}
+
+function TreeSelectionHint() {
+  const t = useTranslations("ontologyView.selectionHint");
+  const items = [
+    {
+      icon: Network,
+      label: t("browseLabel"),
+      value: t("browseValue"),
+    },
+    {
+      icon: PencilLine,
+      label: t("writeLabel"),
+      value: t("writeValue"),
+    },
+    {
+      icon: BarChart3,
+      label: t("queryLabel"),
+      value: t("queryValue"),
+    },
+  ] as const;
+
+  return (
+    <section
+      aria-label={t("ariaLabel")}
+      className="mb-3 rounded-lg border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(139,151,255,0.045)] px-3 py-2.5"
+    >
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="min-w-0">
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+            {t("eyebrow")}
+          </p>
+          <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+            {t("body")}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-1.5">
+          {items.map((item) => {
+            const Icon = item.icon;
+            return (
+              <span
+                key={item.label}
+                className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1"
+              >
+                <Icon size={11} className="shrink-0 text-[color:var(--color-indigo-accent)]" aria-hidden />
+                <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  {item.label}
+                </span>
+                <span className="max-w-[120px] truncate text-[10px] text-[color:var(--color-text-secondary)]">
+                  {item.value}
+                </span>
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -94,6 +94,10 @@ for graph DB-style validation. The selected-node panel should repeat that as a
 small Browse / Write / Query rail before longer review content, so choosing a
 tree node immediately offers visual focus, builder focus, and node proof without
 requiring the user to parse the whole collaborator brief.
+When no node is selected yet, the tree area should still expose a small
+selection hint that names the same Browse / Write / Query outcome. This makes
+row selection feel like the entrance to the workbench loop, not just a file-tree
+click.
 The `/ontology` Browse / Write / Query cards should also carry a compact proof
 chip (`tree projection`, `frontmatter write`, `dogfood:graph-db`) so the first
 viewport states which runtime contract closes each mode instead of reading like

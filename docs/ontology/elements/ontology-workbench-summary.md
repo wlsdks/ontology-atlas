@@ -17,4 +17,6 @@ The Korean surface now labels that proof as `프론트매터 그래프`, `노드
 
 This element is the `/ontology` browse counterpart to the Builder write summary and Insights query cockpit: Browse shows hierarchy and selection, Write mutates frontmatter, Query proves graph state through scans and paths.
 
+Before a node is selected, the tree area now shows a compact selection hint that names the same Browse / Write / Query outcome: selecting a row opens topology focus, builder focus, and node proof for the exact slug. This keeps the tree from reading like a passive file outline while preserving the selected-node panel for the richer detail state.
+
 When a tree node is selected, the detail panel repeats that same split as a compact Browse / Write / Query rail: Topology focus for visual inspection, Builder focus for frontmatter-backed repair, and Insights node proof for `node_profile` / `blast_radius` / sync-gate follow-up. The tree therefore remains a browse index while still making the ontology system's write and query exits visible at the exact concept under review.
