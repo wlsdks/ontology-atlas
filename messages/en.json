@@ -2285,6 +2285,20 @@
       "graphDbCta": "Open insights",
       "graphDbAriaLabel": "Open Graph DB query pack insights"
     },
+    "graphProof": {
+      "ariaLabel": "Executable graph proof rail",
+      "eyebrow": "Graph DB proof",
+      "title": "Run query, validation, and path evidence against the same markdown graph",
+      "body": "This strip is derived from the agent graph DB pack, so the counts below are executable MCP calls and CLI fallbacks, not marketing copy.",
+      "intents": "Intents",
+      "mcpCalls": "MCP calls",
+      "cliFallbacks": "CLI fallbacks",
+      "health": "Gate",
+      "healthValue": "query_plan first",
+      "operations": "Operations",
+      "cta": "Open insights",
+      "ctaAria": "Open ontology insights for graph DB query evidence"
+    },
     "error": "Something went wrong while loading ontology data. {message}",
     "loading": "Loading…",
     "emptyHint": "The ontology hasn't grown yet. Follow the steps below to start your first graph.",

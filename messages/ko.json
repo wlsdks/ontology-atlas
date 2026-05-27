@@ -2285,6 +2285,20 @@
       "graphDbCta": "인사이트 열기",
       "graphDbAriaLabel": "Graph DB query pack 인사이트 열기"
     },
+    "graphProof": {
+      "ariaLabel": "실행 가능한 graph proof rail",
+      "eyebrow": "Graph DB proof",
+      "title": "같은 markdown graph 에 query, 검증, path evidence 를 실행합니다",
+      "body": "이 영역은 agent graph DB pack 에서 직접 계산합니다. 아래 수치는 문구가 아니라 실행 가능한 MCP call 과 CLI fallback 입니다.",
+      "intents": "Intent",
+      "mcpCalls": "MCP call",
+      "cliFallbacks": "CLI fallback",
+      "health": "Gate",
+      "healthValue": "query_plan first",
+      "operations": "Operation",
+      "cta": "인사이트 열기",
+      "ctaAria": "graph DB query evidence 를 보려면 온톨로지 인사이트 열기"
+    },
     "error": "ontology 데이터를 불러오는 중 오류가 났어요. {message}",
     "loading": "불러오는 중…",
     "emptyHint": "ontology 가 아직 자라지 않았어요. 아래 단계로 첫 그래프를 시작할 수 있어요.",

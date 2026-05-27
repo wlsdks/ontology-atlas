@@ -3,7 +3,7 @@ slug: domains/views
 kind: domain
 title: Views (Topology · Browse · Builder)
 capabilities: [agent-graph-readiness, builder-canvas-polish, builder-deep-link-focus, builder-relation-write-confirm, builder-vault-write, collaborator-reader-brief, ontology-hub-mode-aware, topology-analysis-modes, topology-ontology-inspection, topology-sigma-render]
-elements: [builder-node-query-focus, builder-relation-proposal, builder-relation-write-confirm-panel, elements/builder-write-summary, elements/insights-query-cockpit, elements/ontology-edit-canvas, insights-collaborator-brief, insights-orphan-repair-packet, ontology-deeplink-node-resolver, ontology-review-brief, ontology-workbench-summary, sigma-graphology, src/views/home, src/views/ontology-edit, src/views/ontology-view, src/widgets/global-search, src/widgets/topology-map-sigma, topology-analysis-bar, topology-analysis-state, topology-ontology-drawer, topology-ontology-drawer-model, topology-selected-node-resolver, xyflow]
+elements: [builder-node-query-focus, builder-relation-proposal, builder-relation-write-confirm-panel, elements/builder-write-summary, elements/insights-query-cockpit, elements/ontology-edit-canvas, elements/ontology-graph-proof-rail, insights-collaborator-brief, insights-orphan-repair-packet, ontology-deeplink-node-resolver, ontology-review-brief, ontology-workbench-summary, sigma-graphology, src/views/home, src/views/ontology-edit, src/views/ontology-view, src/widgets/global-search, src/widgets/topology-map-sigma, topology-analysis-bar, topology-analysis-state, topology-ontology-drawer, topology-ontology-drawer-model, topology-selected-node-resolver, xyflow]
 relates: [domains/onboarding-ux, domains/ontology-core]
 ---
 

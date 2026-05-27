@@ -3,6 +3,7 @@ slug: elements/ontology-workbench-summary
 kind: element
 title: Ontology Workbench Summary
 domain: views
+relates: [elements/ontology-graph-proof-rail]
 ---
 
 `src/views/ontology-view/ui/OntologyViewPage.tsx` renders the compact Browse / Write / Query summary at the top of `/ontology`.

@@ -16,11 +16,13 @@ import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { getProjectDetailHref, getTopologyProjectHref } from "@/entities/project";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import {
+  buildAgentGraphDbQueryPack,
   buildOntologyEgoSubgraph,
   buildOntologyReachability,
   buildOntologyTree,
   formatAgentPostChangeSyncPacket,
   countTreeNodes,
+  selectAgentQueryEntrypoints,
   type OntologyEgoSubgraph,
   type OntologyReachability,
   type OntologyReachabilityDirection,
@@ -56,6 +58,10 @@ import {
   ontologyReviewQuestionsForPrompt,
   type OntologyReviewRelationPreview,
 } from "../lib/review-brief";
+import {
+  buildGraphProofRailModel,
+  type GraphProofRailModel,
+} from "../lib/graph-proof-rail";
 
 /**
  * `/ontology` — ontology view.
@@ -216,6 +222,14 @@ export function OntologyViewPage() {
     };
   }, [insight]);
 
+  const graphProofRailModel = useMemo(() => {
+    if (!insight) {
+      return buildGraphProofRailModel([]);
+    }
+    const entrypoints = selectAgentQueryEntrypoints(insight.nodes, insight.edges, 4);
+    return buildGraphProofRailModel(buildAgentGraphDbQueryPack(entrypoints));
+  }, [insight]);
+
 
   return (
     <>
@@ -324,6 +338,8 @@ export function OntologyViewPage() {
         containmentRelations={workbenchStats.containmentRelations}
         builderHref={builderHref}
       />
+
+      <GraphProofRail model={graphProofRailModel} />
 
       {/* tree contract strip. /ontology 트리는 전체 graph DB 편집기가 아니라
           hierarchy browse index 라는 역할을 명확히 노출한다. 관계 작성은
@@ -1858,6 +1874,103 @@ function GraphWorkbenchSummary({
         })}
       </div>
     </section>
+  );
+}
+
+function GraphProofRail({ model }: { model: GraphProofRailModel }) {
+  const t = useTranslations("ontologyView.graphProof");
+  const preview = model.previewIntents.slice(0, 3);
+  const operationPreview = model.operations.slice(0, 5);
+
+  return (
+    <section
+      aria-label={t("ariaLabel")}
+      className="mb-6 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-3 py-3"
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] text-[color:var(--color-indigo-accent)]">
+              <BarChart3 size={14} aria-hidden />
+            </span>
+            <div className="min-w-0">
+              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                {t("eyebrow")}
+              </p>
+              <h2 className="mt-0.5 break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                {t("title")}
+              </h2>
+            </div>
+          </div>
+          <p className="mt-2 max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t("body")}
+          </p>
+        </div>
+        <Link
+          href="/ontology/insights/"
+          className="inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+          aria-label={t("ctaAria")}
+        >
+          {t("cta")}
+        </Link>
+      </div>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <GraphProofMetric label={t("intents")} value={model.intentCount} />
+        <GraphProofMetric label={t("mcpCalls")} value={model.mcpCallCount} />
+        <GraphProofMetric label={t("cliFallbacks")} value={model.cliFallbackCount} />
+        <GraphProofMetric label={t("health")} value={t("healthValue")} />
+      </div>
+
+      {preview.length > 0 ? (
+        <div className="mt-3 grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.34fr)]">
+          <ul className="grid gap-1.5">
+            {preview.map((intent) => (
+              <li
+                key={intent}
+                className="min-w-0 break-all rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(0,0,0,0.10)] px-2.5 py-1.5 font-mono text-[10px] leading-5 text-[color:var(--color-text-secondary)]"
+              >
+                {intent}
+              </li>
+            ))}
+          </ul>
+          <div className="rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2">
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              {t("operations")}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {operationPreview.map((operation) => (
+                <span
+                  key={operation}
+                  className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-tertiary)]"
+                >
+                  {operation}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function GraphProofMetric({
+  label,
+  value,
+}: {
+  label: string;
+  value: number | string;
+}) {
+  return (
+    <div className="min-w-0 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2">
+      <p className="truncate font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+        {label}
+      </p>
+      <p className="mt-1 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+        {value}
+      </p>
+    </div>
   );
 }
 
