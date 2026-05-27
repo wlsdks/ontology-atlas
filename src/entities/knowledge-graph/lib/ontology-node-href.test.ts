@@ -3,6 +3,7 @@ import type { KnowledgeGraphNode } from "../model";
 import {
   buildOntologyBuilderNodeHref,
   buildOntologyBuilderNodeHrefFromGraphId,
+  buildOntologyInsightsNodeHref,
   buildOntologyNodeHref,
   resolveOntologyBuilderNodeSlug,
   resolveOntologyBuilderNodeSlugFromGraphId,
@@ -125,6 +126,26 @@ describe("buildOntologyBuilderNodeHrefFromGraphId", () => {
     ).toBe(
       `/ontology/edit/?node=${encodeURIComponent(
         "capabilities/topology-analysis-modes",
+      )}`,
+    );
+  });
+});
+
+describe("buildOntologyInsightsNodeHref", () => {
+  it("uses the canonical vault slug for focused query proof", () => {
+    const selected: KnowledgeGraphNode = {
+      id: "capability:builder-vault-write",
+      title: "Builder Vault Write",
+      kind: "capability",
+      projectIds: [],
+      evidenceIds: ["ontology/capabilities/builder-vault-write"],
+      lastApprovedAt: new Date(0),
+      lastApprovedBy: "test",
+    };
+
+    expect(buildOntologyInsightsNodeHref(selected)).toBe(
+      `/ontology/insights/?node=${encodeURIComponent(
+        "capabilities/builder-vault-write",
       )}`,
     );
   });

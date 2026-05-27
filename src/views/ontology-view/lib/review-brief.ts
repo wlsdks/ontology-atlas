@@ -89,6 +89,7 @@ export function buildOntologyReviewBrief({
   relationPreview = [],
   topologyHref,
   builderHref,
+  queryHref,
   agentCheckSlug,
   agentCheckLimit = 8,
   impactDepth = 2,
@@ -100,6 +101,7 @@ export function buildOntologyReviewBrief({
   relationPreview?: OntologyReviewRelationPreview[];
   topologyHref?: string;
   builderHref?: string | null;
+  queryHref?: string;
   agentCheckSlug?: string | null;
   agentCheckLimit?: number;
   impactDepth?: 1 | 2 | 3;
@@ -154,7 +156,7 @@ export function buildOntologyReviewBrief({
     handoffLinks: {
       topology: topologyHref ?? buildOntologyReviewTopologyHref(node.id),
       builder: builderHref ?? null,
-      query: "/ontology/insights/",
+      query: queryHref ?? "/ontology/insights/",
     },
     agentChecks: agentCheckSlug
       ? {

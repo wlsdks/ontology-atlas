@@ -14,6 +14,7 @@ export type { EdgeTypeRow } from "./model";
 export {
   buildOntologyBuilderNodeHref,
   buildOntologyBuilderNodeHrefFromGraphId,
+  buildOntologyInsightsNodeHref,
   buildOntologyNodeHref,
   resolveOntologyBuilderNodeSlug,
   resolveOntologyBuilderNodeSlugFromGraphId,

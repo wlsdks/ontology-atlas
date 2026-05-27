@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { BarChart3, Clipboard, GitBranch, Info, Link2, Network, PencilLine, Search, X } from "lucide-react";
 import {
   buildOntologyBuilderNodeHref,
+  buildOntologyInsightsNodeHref,
   buildOntologyNodeHref,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
@@ -923,6 +924,7 @@ function NodeDetailPanel({
   const reachabilityQuerySlug = resolveReachabilityQuerySlug(node);
   const topologyHref = buildOntologyReviewTopologyHref(node.id);
   const builderHref = buildOntologyBuilderNodeHref(node);
+  const queryHref = buildOntologyInsightsNodeHref(node);
   const directNeighbors = ego?.neighbors.filter((neighbor) => neighbor.hop === 1) ?? [];
   const relationTypes = buildRelationTypeCounts(directNeighbors);
   const relationPreview = buildRelationPreviewRows(directNeighbors, getKindLabel);
@@ -934,6 +936,7 @@ function NodeDetailPanel({
     relationPreview,
     topologyHref,
     builderHref,
+    queryHref,
     agentCheckSlug: reachabilityQuerySlug,
   });
   const reviewAgentChecks = reviewBrief.agentChecks;

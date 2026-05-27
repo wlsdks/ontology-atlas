@@ -55,3 +55,11 @@ export function buildOntologyBuilderNodeHref(
     resolveOntologyBuilderNodeSlug(node),
   )}`;
 }
+
+export function buildOntologyInsightsNodeHref(
+  node: KnowledgeGraphNode,
+): string {
+  return `/ontology/insights/?node=${encodeURIComponent(
+    resolveOntologyBuilderNodeSlug(node),
+  )}`;
+}

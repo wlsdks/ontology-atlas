@@ -137,6 +137,17 @@ describe("buildOntologyReviewBrief", () => {
       }).prompt,
     ).toBe("confirm_dependents");
   });
+
+  it("keeps a focused query handoff when provided", () => {
+    expect(
+      buildOntologyReviewBrief({
+        node: node({ kind: "capability" }),
+        incomingCount: 1,
+        outgoingCount: 0,
+        queryHref: "/ontology/insights/?node=capabilities%2Fmcp-server",
+      }).handoffLinks.query,
+    ).toBe("/ontology/insights/?node=capabilities%2Fmcp-server");
+  });
 });
 
 describe("formatOntologyReviewBrief", () => {
@@ -166,6 +177,7 @@ describe("formatOntologyReviewBrief", () => {
       relationPreview,
       topologyHref: "/topology/?mode=focus&p=capability%3Amcp-server",
       builderHref: "/ontology/edit/?node=capabilities%2Fmcp-server",
+      queryHref: "/ontology/insights/?node=capabilities%2Fmcp-server",
       agentCheckSlug: "capabilities/mcp-server",
     });
     const text = formatOntologyReviewBrief({
@@ -205,7 +217,9 @@ describe("formatOntologyReviewBrief", () => {
     expect(text).toContain("- out · elements · Sigma (element, elements/sigma)");
     expect(text).toContain("- Topology focus: /topology/?mode=focus&p=capability%3Amcp-server");
     expect(text).toContain("- Builder: /ontology/edit/?node=capabilities%2Fmcp-server");
-    expect(text).toContain("- Query cockpit: /ontology/insights/");
+    expect(text).toContain(
+      "- Query cockpit: /ontology/insights/?node=capabilities%2Fmcp-server",
+    );
     expect(text).toContain(
       '- MCP check: query_ontology({"operation":"node_profile","slug":"capabilities/mcp-server","limit":8})',
     );
