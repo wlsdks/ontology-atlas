@@ -510,37 +510,37 @@ A successful run looks like this:
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
 ✓ maintenance cursor — ready page stable (0 remaining actions; phase none; severity none; kind none; executable none; review none)
 · maintenance cursor — resume skipped (ready page has no actions)
-✓ list_concepts — vault total 50 nodes (vaultRoot /path/to/docs/ontology)
+✓ list_concepts — vault total 54 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 21 evidence results for "project"
+✓ find_evidence — 22 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
-✓ query_concepts limited — 1 query result / 49 total query results (limited true)
+✓ query_concepts limited — 1 query result / 53 total query results (limited true)
 ✓ analyze_repo_structure — fsd (9 domain candidates, 20 capability candidates, 29 element candidates)
 ✓ infer_imports — 470 files scanned, 399 module edges (elements/src/views/docs-vault->elements/src/widgets/docs-vault x14 (static:13/dynamic:1), elements/src/widgets/docs-vault->capabilities/docs-vault x11 (static:11), +397 more)
 ✓ find_neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ find_path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
-✓ list_kinds — 50 nodes (capability:25, domain:6, element:17, project:1, vault-readme:1)
-✓ validate_vault — 50 files, 0 problem files
+✓ list_kinds — 54 nodes (capability:25, domain:6, element:21, project:1, vault-readme:1)
+✓ validate_vault — 54 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (50 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:182)
+✓ workspace_brief — healthy (54 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:182)
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 5 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (50 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:182; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (54 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:182; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
-✓ compile_ontology — graph 670f48aa6909 (50 nodes, 360 edges, issues 0)
-✓ compile_ontology page — 1/50 nodes, 1/360 edges
-✓ compile_ontology indexes — out 50, in 49, edgeById 360, aliases 99, edges 178/182/0
-✓ overview — graph 670f48aa6909 (50 nodes, 360 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 50, edges 360)
-✓ project_map query_plan — aggregate_scan (medium, nodes 50, edges 360)
+✓ compile_ontology — graph ee65046d9383 (54 nodes, 372 edges, issues 0)
+✓ compile_ontology page — 1/54 nodes, 1/372 edges
+✓ compile_ontology indexes — out 54, in 53, edgeById 372, aliases 107, edges 190/182/0
+✓ overview — graph ee65046d9383 (54 nodes, 372 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 54, edges 372)
+✓ project_map query_plan — aggregate_scan (medium, nodes 54, edges 372)
 ✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ all_paths — elements/file-system-access-api → project (5/28 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
-✓ project_scope — project (49 nodes, internalEdges 177)
-✓ read census consistency — 50 nodes across list_kinds/list_concepts/compile_ontology/overview, 5 kinds
+✓ project_scope — project (53 nodes, internalEdges 189)
+✓ read census consistency — 54 nodes across list_kinds/list_concepts/compile_ontology/overview, 5 kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2 (resume skipped: no actions), graph 13/13
 
 All passed — register .mcp.json with your MCP client and restart to use the 23 tools.

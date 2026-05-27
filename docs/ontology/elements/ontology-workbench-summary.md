@@ -9,6 +9,8 @@ domain: views
 
 It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatter-backed writes and Insights for graph DB-style query validation. The first viewport also keeps a separate role strip for Tree role / Graph refs / Evidence so the hierarchy view does not pretend to be the whole ontology system.
 
+The page header keeps those handoffs visible before the summary strip: search stays scoped to browse, the global search button keeps cross-surface lookup discoverable, `Insights` opens the graph DB query pack, and the primary `Builder` action opens the frontmatter-backed write canvas. The header icons use lucide symbols rather than one-off SVGs so the browse surface follows the same control language as the Builder and Insights pages.
+
 The local frontmatter compile proof below the role strip is intentionally compact: it states that the current graph was compiled from the selected vault, exposes node/relation counts and a Builder CTA, and keeps the kind census collapsed. It no longer renders the full kind-by-kind node list before the actual tree, so `/ontology` starts as a browse surface rather than a document inventory dump.
 
 The Korean surface now labels that proof as `프론트매터 그래프`, `노드 · 관계`, and `종류별 요약` instead of repeating English body captions such as `VAULT FRONTMATTER ONTOLOGY` or `KIND CENSUS`. This keeps the page header hierarchy intact while still proving that the browse tree is backed by a compiled local graph.

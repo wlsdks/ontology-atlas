@@ -2182,6 +2182,9 @@
       "globalSearchTooltip": "노드 + 프로젝트 통합 검색 (⇧⌘K)",
       "globalSearchAria": "노드와 프로젝트 통합 검색 열기",
       "globalSearch": "전체",
+      "queryTooltip": "인사이트 — graph DB pack 으로 scan, matrix, path evidence 검증",
+      "queryAria": "온톨로지 인사이트 — graph DB query pack 열기",
+      "query": "인사이트",
       "builderTooltip": "빌더 캔버스 — 왼쪽 palette 에서 종류 골라 클릭, 핸들 drag 로 관계 추가",
       "builderAria": "온톨로지 빌더 — 캔버스에서 직접 그리기",
       "builder": "빌더 열기 →"

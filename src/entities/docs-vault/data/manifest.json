@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T16:15:55.823Z",
+  "generatedAt": "2026-05-27T16:21:18.303Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5448,8 +5448,8 @@
         }
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (moduleload 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), la",
-      "wordCount": 307,
-      "updatedAt": "2026-05-27T10:51:10.076Z",
+      "wordCount": 350,
+      "updatedAt": "2026-05-27T16:21:11.848Z",
       "linksOut": []
     },
     {
@@ -6296,8 +6296,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatterbacked writes and Insights for graph DBstyle query validation. The first viewport also kee",
-      "wordCount": 218,
-      "updatedAt": "2026-05-27T15:55:03.125Z",
+      "wordCount": 284,
+      "updatedAt": "2026-05-27T16:21:04.607Z",
       "linksOut": []
     },
     {

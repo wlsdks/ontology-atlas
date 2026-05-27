@@ -30,6 +30,11 @@ hook 한 번으로 vault frontmatter 의 stub 노드 + 엣지를 즉시 surface.
 workbench 안의 browse mode 로 좁히고, 새 관계 작성은 Builder, graph DB-style
 검증은 Insights 로 이어지게 한다.
 
+상단 액션 row 도 같은 흐름을 즉시 노출한다. Browse 안의 search / global search
+다음에 `Insights` query CTA 를 두고, primary `Builder` CTA 로 write canvas 를
+열어 tree inspection 이 문서 탐색에서 끝나지 않고 query 검증 또는 frontmatter
+write 로 이어지게 한다.
+
 Browse 카드는 현재 route 에서 `aria-current="page"` 를 갖고 active 상태로
 표시된다. 그 아래 role strip 은 트리를 "계층 색인" 으로 명명하고,
 frontmatter 기반 node/ref count 와 evidence document 제외 규칙을 함께 보여줘

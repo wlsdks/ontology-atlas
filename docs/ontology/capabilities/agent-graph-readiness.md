@@ -61,13 +61,13 @@ readiness 판단에서 시작하게 한다.
 구조 품질을 같은 언어로 볼 수 있게 하는 것. `workspace_brief` / `health` 가 CLI
 와 MCP 의 첫 접점이라면, 이 패널은 웹 UI 의 첫 구조 품질 신호다.
 
-2026-05-25 dogfood verification 에서는 같은 vault 에 대해 `workspace-brief` 와
-`health` 가 모두 `healthy` 를 반환했고, 31 nodes / 296 edges / 0 unresolved edges /
+2026-05-28 dogfood verification 에서는 같은 vault 에 대해 `workspace-brief` 와
+`health` 가 모두 `healthy` 를 반환했고, 54 nodes / 372 edges / 0 unresolved edges /
 0 issues / 1 connected component 로 집계됐다. connector-less setup gate 도
 `agent-brief --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`
 에서 25/25 fallback commands pass, `ok=true`, `performanceOk=true`, `slow=0` 로
 통과했다. `scripts/perf-graph.mjs --json --check --n=1000` 은 1000 generated nodes / 3867 generated edges 에서
-budget failure 0, `graph_db_pack` 약 35ms, `agent_brief` 약 21ms, compile full 약
+budget failure 0, `graph_db_pack` 약 37ms, `agent_brief` 약 21ms, compile full 약
 18ms 로 통과했다. 이 수치는 "모든 graph DB workload 보다 빠르다"는 의미가 아니라,
 local codebase memory graph 를 agent 가 읽고 증거화하는 hot path 가 DB 서버 없이도
 충분히 빠른지 확인하는 회귀 근거다.

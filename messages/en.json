@@ -2182,6 +2182,9 @@
       "globalSearchTooltip": "Search nodes and projects together (⇧⌘K)",
       "globalSearchAria": "Open global search across nodes and projects",
       "globalSearch": "All",
+      "queryTooltip": "Insights — validate scans, matrix, and path evidence through the graph DB pack",
+      "queryAria": "Ontology insights — open the graph DB query pack",
+      "query": "Insights",
       "builderTooltip": "Builder canvas — pick a kind from the palette on the left, drag handles to add relations",
       "builderAria": "Ontology builder — draw directly on the canvas",
       "builder": "Open builder →"
