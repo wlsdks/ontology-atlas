@@ -16,3 +16,5 @@ The local frontmatter compile proof below the role strip is intentionally compac
 The Korean surface now labels that proof as `프론트매터 그래프`, `노드 · 관계`, and `종류별 요약` instead of repeating English body captions such as `VAULT FRONTMATTER ONTOLOGY` or `KIND CENSUS`. This keeps the page header hierarchy intact while still proving that the browse tree is backed by a compiled local graph.
 
 This element is the `/ontology` browse counterpart to the Builder write summary and Insights query cockpit: Browse shows hierarchy and selection, Write mutates frontmatter, Query proves graph state through scans and paths.
+
+When a tree node is selected, the detail panel repeats that same split as a compact Browse / Write / Query rail: Topology focus for visual inspection, Builder focus for frontmatter-backed repair, and Insights node proof for `node_profile` / `blast_radius` / sync-gate follow-up. The tree therefore remains a browse index while still making the ontology system's write and query exits visible at the exact concept under review.

@@ -90,7 +90,10 @@ whole ontology. Use a compact role strip (`Tree role` / `Graph refs` /
 from frontmatter refs, and document nodes remain evidence outside the concept
 tree. Node-detail handoffs should always keep the three workbench exits visible:
 Topology for visual focus, Builder for frontmatter-backed edits, and Insights
-for graph DB-style validation.
+for graph DB-style validation. The selected-node panel should repeat that as a
+small Browse / Write / Query rail before longer review content, so choosing a
+tree node immediately offers visual focus, builder focus, and node proof without
+requiring the user to parse the whole collaborator brief.
 The `/ontology` Browse / Write / Query cards should also carry a compact proof
 chip (`tree projection`, `frontmatter write`, `dogfood:graph-db`) so the first
 viewport states which runtime contract closes each mode instead of reading like

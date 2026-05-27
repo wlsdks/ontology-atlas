@@ -1043,6 +1043,53 @@ function NodeDetailPanel({
       <p className="mt-2 break-all font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
         {node.id}
       </p>
+      <nav
+        aria-label={t('handoffAriaLabel')}
+        className="mt-3 grid grid-cols-3 gap-1.5"
+      >
+        <Link
+          href={topologyHref}
+          className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:text-[color:var(--color-text-primary)]"
+        >
+          <span className="flex min-w-0 items-center gap-1.5">
+            <Network size={12} className="shrink-0 text-[color:var(--color-indigo-accent)]" aria-hidden />
+            <span className="truncate font-mono text-[9px] uppercase tracking-[0.10em]">
+              {t('handoffBrowseLabel')}
+            </span>
+          </span>
+          <span className="mt-1 block truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+            {t('handoffBrowseProof')}
+          </span>
+        </Link>
+        <Link
+          href={builderHref}
+          className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:text-[color:var(--color-text-primary)]"
+        >
+          <span className="flex min-w-0 items-center gap-1.5">
+            <PencilLine size={12} className="shrink-0 text-[color:var(--color-indigo-accent)]" aria-hidden />
+            <span className="truncate font-mono text-[9px] uppercase tracking-[0.10em]">
+              {t('handoffWriteLabel')}
+            </span>
+          </span>
+          <span className="mt-1 block truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+            {t('handoffWriteProof')}
+          </span>
+        </Link>
+        <Link
+          href={reviewBrief.handoffLinks.query}
+          className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:text-[color:var(--color-text-primary)]"
+        >
+          <span className="flex min-w-0 items-center gap-1.5">
+            <BarChart3 size={12} className="shrink-0 text-[color:var(--color-indigo-accent)]" aria-hidden />
+            <span className="truncate font-mono text-[9px] uppercase tracking-[0.10em]">
+              {t('handoffQueryLabel')}
+            </span>
+          </span>
+          <span className="mt-1 block truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+            {t('handoffQueryProof')}
+          </span>
+        </Link>
+      </nav>
       <div
         className="mt-4 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-3 py-3"
         data-testid="ontology-review-brief"
