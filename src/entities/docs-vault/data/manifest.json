@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T17:07:17.756Z",
+  "generatedAt": "2026-05-27T17:13:48.750Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1315,
-      "updatedAt": "2026-05-27T17:06:41.568Z",
+      "wordCount": 1320,
+      "updatedAt": "2026-05-27T17:13:37.941Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -4838,8 +4838,8 @@
         }
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
-      "wordCount": 3335,
-      "updatedAt": "2026-05-27T16:42:43.504Z",
+      "wordCount": 3346,
+      "updatedAt": "2026-05-27T17:13:44.310Z",
       "linksOut": []
     },
     {
@@ -6183,8 +6183,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. The cockpit makes the local markdown graph feel executable before the analytic charts begin. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the copyable graph DB pack, an",
-      "wordCount": 280,
-      "updatedAt": "2026-05-27T16:42:51.584Z",
+      "wordCount": 334,
+      "updatedAt": "2026-05-27T17:13:32.506Z",
       "linksOut": []
     },
     {

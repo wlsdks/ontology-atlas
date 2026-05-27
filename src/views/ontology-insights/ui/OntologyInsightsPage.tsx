@@ -942,7 +942,13 @@ function InsightsQueryPackCockpit({
   const mcpCount = graphDbQueryPack.reduce((count, item) => count + item.payloads.length, 0);
   const cliCount =
     graphDbQueryPack.length > 0 ? countAgentGraphDbCliPackCommands(graphDbQueryPack) : 0;
-  const visibleIntents = graphDbQueryPack.slice(0, 3);
+  const visibleIntents = graphDbQueryPack.slice(0, 3).map((item) => ({
+    ...item,
+    primaryOperation: item.payloads[0]?.operation.replace("query_ontology.", "") ?? "query_ontology",
+    cliFallbackCount: item.payloads
+      .map(formatAgentQueryCallCliCommand)
+      .filter((command): command is string => command !== null).length,
+  }));
   const selfCheckFields = ["ok", "performanceOk", "failed", "commands[].timedOut"];
 
   return (
@@ -1146,12 +1152,37 @@ function InsightsQueryPackCockpit({
             key={item.id}
             className="min-w-0 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2"
           >
-            <p className="truncate font-mono text-[10px] text-[color:var(--color-text-secondary)]">
-              {t(item.titleKey)}
-            </p>
-            <p className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-              {item.intent}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate font-mono text-[10px] text-[color:var(--color-text-secondary)]">
+                  {t(item.titleKey)}
+                </p>
+                <p className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                  {item.intent}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-md border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(0,0,0,0.16)] px-2 py-1 font-mono text-[9px] text-[color:var(--color-indigo-accent)]">
+                {item.primaryOperation}
+              </span>
+            </div>
+            <dl className="mt-2 grid grid-cols-2 gap-1.5">
+              <div className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1">
+                <dt className="truncate font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  {t("queryCockpitPayloads")}
+                </dt>
+                <dd className="mt-0.5 truncate font-mono text-[10px] tabular-nums text-[color:var(--color-text-secondary)]">
+                  {t("queryCockpitPayloadsValue", { count: item.payloads.length })}
+                </dd>
+              </div>
+              <div className="min-w-0 rounded-md border border-[color:rgba(139,151,255,0.12)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1">
+                <dt className="truncate font-mono text-[8px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  {t("queryCockpitCliFallback")}
+                </dt>
+                <dd className="mt-0.5 truncate font-mono text-[10px] tabular-nums text-[color:var(--color-text-secondary)]">
+                  {t("queryCockpitCliFallbackValue", { count: item.cliFallbackCount })}
+                </dd>
+              </div>
+            </dl>
           </article>
         ))}
       </div>

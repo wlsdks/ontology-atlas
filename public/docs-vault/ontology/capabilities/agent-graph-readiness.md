@@ -207,10 +207,11 @@ Graph DB query pack 카드 자체도 `CLI-only`, `MCP-connected`, `Graph DB pack
 
 Insights 상단에는 같은 pack 을 요약한 `Query cockpit` 을 둔다. 첫 viewport 에서
 readiness score, pack scan 수, MCP call 수, CLI fallback 수, 대표 `MATCH ...`
-intent, scan/path result contract, self-check gate 를 먼저 보여주고 `Copy CLI pack`
-/ `Copy graph DB pack` 을 바로 노출한다. 깊은 recipe 패널까지 내려가지 않아도 이
-local markdown graph 가 별도 DB 서버 없이 작은 graph database 처럼 scan 가능하다는
-제품 가치를 바로 확인하게 한다. Cockpit 안의 result contract 는
+intent, 시작 operation badge, intent 별 MCP payload / CLI fallback count,
+scan/path result contract, self-check gate 를 먼저 보여주고 `Copy CLI pack` /
+`Copy graph DB pack` 을 바로 노출한다. 깊은 recipe 패널까지 내려가지 않아도 이 local
+markdown graph 가 별도 DB 서버 없이 작은 graph database 처럼 scan 가능하다는 제품
+가치를 바로 확인하게 한다. Cockpit 안의 result contract 는
 `match_nodes` / `match_edges` 결과를 근거로 쓰기 전 `totalMatches`, `limited`,
 row count, `followUp` 을 보고하고, `all_paths` 는 `limit`, `searchBudget`,
 `expandedStates`, `exhaustive`, `totalPathsExact`, `evidence.pathsComplete` 를
