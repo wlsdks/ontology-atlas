@@ -48,7 +48,7 @@ import {
   type VaultRelationProposal,
 } from "../lib/relation-proposal";
 import { resolveBuilderQueryNodeSlug } from "../lib/resolve-builder-query-node";
-import { resolveBuilderProofNodeId } from "../lib/resolve-builder-proof-node";
+import { resolveBuilderProofTarget } from "../lib/resolve-builder-proof-node";
 import { RelationWriteConfirm } from "./RelationWriteConfirm";
 import { RelationPostSaveHandoff } from "./RelationPostSaveHandoff";
 import {
@@ -239,6 +239,7 @@ function BuilderWriteSummary({
   draftNodes,
   draftEdges,
   selectedProofNodeId,
+  selectedProofSlug,
   pendingRelation,
 }: {
   writable: boolean;
@@ -249,6 +250,7 @@ function BuilderWriteSummary({
   draftNodes: number;
   draftEdges: number;
   selectedProofNodeId?: string | null;
+  selectedProofSlug?: string | null;
   pendingRelation?: VaultRelationProposal | null;
 }) {
   const t = useTranslations("ontologyPages.edit.page.writeSummary");
@@ -358,7 +360,7 @@ function BuilderWriteSummary({
       copyAriaLabel: selectedProofNodeId
         ? t("proofCopyAriaSelected", { slug: selectedProofNodeId })
         : t("proofCopyAria"),
-      copyText: formatBuilderProofPacket(selectedProofNodeId),
+      copyText: formatBuilderProofPacket(selectedProofSlug),
       copySuccess: t("proofCopyCopied"),
     },
   ];
@@ -729,10 +731,12 @@ export function OntologyEditPage() {
       describes: asStrings(fm.describes),
     };
   }, [selectedId, ephemeralSelected, docsBySlug]);
-  const selectedProofNodeId = useMemo(
-    () => resolveBuilderProofNodeId(vaultSelected ? docsBySlug.get(vaultSelected.slug) : null),
+  const selectedProofTarget = useMemo(
+    () => resolveBuilderProofTarget(vaultSelected ? docsBySlug.get(vaultSelected.slug) : null),
     [docsBySlug, vaultSelected],
   );
+  const selectedProofNodeId = selectedProofTarget?.graphNodeId ?? null;
+  const selectedProofSlug = selectedProofTarget?.vaultSlug ?? null;
 
   const queryNodeId = searchParams.get("node");
   const resolvedQueryNodeId = useMemo(
@@ -1362,6 +1366,7 @@ export function OntologyEditPage() {
           draftNodes={ephemeralNodes.length}
           draftEdges={ephemeralEdges.length}
           selectedProofNodeId={selectedProofNodeId}
+          selectedProofSlug={selectedProofSlug}
           pendingRelation={pendingRelation}
         />
         {/* 빌더는 palette (200) + canvas + inspector (280) = 480px+ 의 ERD
