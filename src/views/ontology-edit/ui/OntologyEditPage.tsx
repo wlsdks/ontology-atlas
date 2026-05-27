@@ -46,6 +46,7 @@ import {
   type VaultRelationProposal,
 } from "../lib/relation-proposal";
 import { resolveBuilderQueryNodeSlug } from "../lib/resolve-builder-query-node";
+import { resolveBuilderProofNodeId } from "../lib/resolve-builder-proof-node";
 import { RelationWriteConfirm } from "./RelationWriteConfirm";
 import { RelationPostSaveHandoff } from "./RelationPostSaveHandoff";
 
@@ -217,7 +218,7 @@ function BuilderWriteSummary({
   persistedRelations,
   draftNodes,
   draftEdges,
-  selectedVaultSlug,
+  selectedProofNodeId,
   pendingRelation,
 }: {
   writable: boolean;
@@ -227,7 +228,7 @@ function BuilderWriteSummary({
   persistedRelations: number;
   draftNodes: number;
   draftEdges: number;
-  selectedVaultSlug?: string | null;
+  selectedProofNodeId?: string | null;
   pendingRelation?: VaultRelationProposal | null;
 }) {
   const t = useTranslations("ontologyPages.edit.page.writeSummary");
@@ -237,8 +238,8 @@ function BuilderWriteSummary({
     | "/ontology/insights/"
     | `/ontology/insights/?node=${string}`;
   const sourceHref: SummaryHref = isDesktopRuntime ? "/docs/?intent=local" : "/download/";
-  const proofHref: SummaryHref = selectedVaultSlug
-    ? `/ontology/insights/?node=${encodeURIComponent(selectedVaultSlug)}`
+  const proofHref: SummaryHref = selectedProofNodeId
+    ? `/ontology/insights/?node=${encodeURIComponent(selectedProofNodeId)}`
     : "/ontology/insights/";
   const sourceAction = writable
     ? {}
@@ -319,15 +320,15 @@ function BuilderWriteSummary({
       icon: <Network size={12} />,
       order: "04",
       label: t("proofLabel"),
-      value: selectedVaultSlug ? t("proofValueSelected") : t("proofValue"),
-      body: selectedVaultSlug
-        ? t("proofBodySelected", { slug: selectedVaultSlug })
+      value: selectedProofNodeId ? t("proofValueSelected") : t("proofValue"),
+      body: selectedProofNodeId
+        ? t("proofBodySelected", { slug: selectedProofNodeId })
         : t("proofBody"),
-      chip: selectedVaultSlug ? t("proofChipSelected") : t("proofChip"),
-      flow: selectedVaultSlug ? t("proofFlowSelected") : t("proofFlow"),
+      chip: selectedProofNodeId ? t("proofChipSelected") : t("proofChip"),
+      flow: selectedProofNodeId ? t("proofFlowSelected") : t("proofFlow"),
       accent: "neutral",
       href: proofHref,
-      actionLabel: selectedVaultSlug ? t("proofActionSelected") : t("proofAction"),
+      actionLabel: selectedProofNodeId ? t("proofActionSelected") : t("proofAction"),
     },
   ];
 
@@ -660,6 +661,10 @@ export function OntologyEditPage() {
       describes: asStrings(fm.describes),
     };
   }, [selectedId, ephemeralSelected, docsBySlug]);
+  const selectedProofNodeId = useMemo(
+    () => resolveBuilderProofNodeId(vaultSelected ? docsBySlug.get(vaultSelected.slug) : null),
+    [docsBySlug, vaultSelected],
+  );
 
   const queryNodeId = searchParams.get("node");
   const resolvedQueryNodeId = useMemo(
@@ -1288,7 +1293,7 @@ export function OntologyEditPage() {
           persistedRelations={builderGraphStats.persistedRelations}
           draftNodes={ephemeralNodes.length}
           draftEdges={ephemeralEdges.length}
-          selectedVaultSlug={vaultSelected?.slug ?? null}
+          selectedProofNodeId={selectedProofNodeId}
           pendingRelation={pendingRelation}
         />
         {/* 빌더는 palette (200) + canvas + inspector (280) = 480px+ 의 ERD

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T19:28:09.111Z",
+  "generatedAt": "2026-05-27T19:35:32.549Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6047,8 +6047,8 @@
         }
       ],
       "excerpt": "src/views/ontologyedit/lib/resolvebuilderquerynode.ts normalizes the node query for src/views/ontologyedit/ui/OntologyEditPage.tsx, accepting exact livevault slugs, dogfood ontology/prefixed slugs, and frontmatter slug aliases. OntologyEditPage uses the resolved slug to select that vault node in the inspector while pan",
-      "wordCount": 99,
-      "updatedAt": "2026-05-25T08:44:34.244Z",
+      "wordCount": 148,
+      "updatedAt": "2026-05-27T19:35:25.823Z",
       "linksOut": []
     },
     {
