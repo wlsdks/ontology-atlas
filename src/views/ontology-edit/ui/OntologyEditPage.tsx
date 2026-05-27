@@ -211,6 +211,7 @@ function BuilderCanvasEntryRail({
 
 function BuilderWriteSummary({
   writable,
+  restoringVault,
   isDesktopRuntime,
   persistedNodes,
   persistedRelations,
@@ -220,6 +221,7 @@ function BuilderWriteSummary({
   pendingRelation,
 }: {
   writable: boolean;
+  restoringVault: boolean;
   isDesktopRuntime: boolean;
   persistedNodes: number;
   persistedRelations: number;
@@ -240,6 +242,8 @@ function BuilderWriteSummary({
     : "/ontology/insights/";
   const sourceAction = writable
     ? {}
+    : restoringVault
+      ? {}
     : {
         href: sourceHref,
         actionLabel: isDesktopRuntime
@@ -262,13 +266,27 @@ function BuilderWriteSummary({
       icon: <Database size={12} />,
       order: "01",
       label: t("sourceLabel"),
-      value: writable ? t("sourceWritable") : t("sourceReadonly"),
-      body: writable
+      value: restoringVault
+        ? t("sourceRestoring")
+        : writable
+          ? t("sourceWritable")
+          : t("sourceReadonly"),
+      body: restoringVault
+        ? t("sourceBodyRestoring")
+        : writable
         ? t("sourceBodyWritable", { nodes: persistedNodes, relations: persistedRelations })
         : t("sourceBodyReadonly", { nodes: persistedNodes, relations: persistedRelations }),
-      chip: writable ? t("sourceChipWritable") : t("sourceChipReadonly"),
-      flow: writable ? t("sourceFlowWritable") : t("sourceFlowReadonly"),
-      accent: writable ? "indigo" : "amber",
+      chip: restoringVault
+        ? t("sourceChipRestoring")
+        : writable
+          ? t("sourceChipWritable")
+          : t("sourceChipReadonly"),
+      flow: restoringVault
+        ? t("sourceFlowRestoring")
+        : writable
+          ? t("sourceFlowWritable")
+          : t("sourceFlowReadonly"),
+      accent: writable ? "indigo" : restoringVault ? "neutral" : "amber",
       ...sourceAction,
     },
     {
@@ -546,6 +564,8 @@ export function OntologyEditPage() {
   // 클릭 시 정확한 frontmatter 를 본다. hasLiveVault 가 false 면 인스펙터는
   // read-only — patch 시도하면 disk 권한 없어 어차피 fail.
   const hasLiveVault = vault.manifest !== null;
+  const restoringVault =
+    !hasLiveVault && (vault.status === "loading" || vault.status === "opening");
   const effectiveManifest = vault.manifest ?? (staticVaultManifestRaw as VaultManifest);
   const builderGraphStats = useMemo(() => {
     const relationKeys = [
@@ -1262,6 +1282,7 @@ export function OntologyEditPage() {
         </header>
         <BuilderWriteSummary
           writable={hasLiveVault}
+          restoringVault={restoringVault}
           isDesktopRuntime={isDesktopRuntime}
           persistedNodes={builderGraphStats.persistedNodes}
           persistedRelations={builderGraphStats.persistedRelations}

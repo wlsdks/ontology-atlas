@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T19:17:41.748Z",
+  "generatedAt": "2026-05-27T19:22:10.092Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6100,9 +6100,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. The strip is the builder persistence contract before the canvas: Source distinguishes local writable vaults from sample readonly data, Draft counts unsaved canvas nodes/edges, Gua",
-      "wordCount": 343,
-      "updatedAt": "2026-05-27T19:03:15.216Z",
+      "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. The strip makes the builder's write contract visible before the user draws: source tells whether the current graph is a writable local markdown vault, a restoring desktop vault, o",
+      "wordCount": 113,
+      "updatedAt": "2026-05-27T19:22:04.807Z",
       "linksOut": []
     },
     {
