@@ -95,7 +95,11 @@ keeps the hosted web root as the marketing surface but routes first-run Tauri
 sessions without a restored vault to `/docs/?intent=local` without rendering
 the hosted marketing page; `DocsVaultPage` then shows a vault setup welcome
 with open/create/sample/recent choices, so the installed app starts in local
-work mode instead of the download page. The picker keeps a small recent-vault list from persisted Tauri paths,
+work mode instead of the download page. That native welcome now leads with a
+compact Files / Graph / Agent contract before its action cards: selected
+markdown files stay local and git-reviewable, frontmatter is the graph database
+input for browse/builder/query views, and Claude Code / Codex / Cursor read the
+same vault through MCP instead of a backend. The picker keeps a small recent-vault list from persisted Tauri paths,
 can reopen those vaults without another Finder selection, shows the last-opened
 time for each remembered vault so repeated desktop work does not become a blind
 path list, keeps that relative time live while the picker stays open, and can

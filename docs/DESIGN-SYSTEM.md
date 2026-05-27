@@ -102,6 +102,13 @@ count, representative `MATCH ...` intents, and the self-check gate. Deeper
 panels can explain contracts, but the first viewport should make it clear that
 the local markdown graph can be scanned like a small graph database.
 
+Source/setup surfaces should expose the vault execution contract before setup
+actions. Use compact `Files` / `Graph` / `Agent` cells to show that local
+markdown remains the source of truth, frontmatter compiles into graph/query
+surfaces, and MCP agents read the same vault. Action cards can follow, but the
+first native-app entry must make the ontology workbench contract clearer than
+the document-editor mechanics.
+
 ## Absolute rules (Don'ts)
 
 - ❌ Purple → pink gradients

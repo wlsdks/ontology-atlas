@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T11:02:57.180Z",
+  "generatedAt": "2026-05-27T11:09:20.433Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1001,
-      "updatedAt": "2026-05-27T10:57:53.738Z",
+      "wordCount": 1062,
+      "updatedAt": "2026-05-27T11:08:55.741Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -5134,8 +5134,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 2581,
-      "updatedAt": "2026-05-27T04:33:45.792Z",
+      "wordCount": 2632,
+      "updatedAt": "2026-05-27T11:09:13.898Z",
       "linksOut": []
     },
     {

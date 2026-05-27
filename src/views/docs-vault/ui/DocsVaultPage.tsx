@@ -15,6 +15,7 @@ import { useTranslations } from 'next-intl';
 import { AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
+  Bot,
   FilePlus,
   FolderCog,
   FolderOpen,
@@ -117,6 +118,26 @@ function DesktopVaultWelcome({
   t: ReturnType<typeof useTranslations>;
 }) {
   const busy = status === 'opening' || status === 'loading';
+  const contractItems = [
+    {
+      icon: HardDrive,
+      label: t('desktopWelcome.contractFilesLabel'),
+      value: t('desktopWelcome.contractFilesValue'),
+      body: t('desktopWelcome.contractFilesBody'),
+    },
+    {
+      icon: Network,
+      label: t('desktopWelcome.contractGraphLabel'),
+      value: t('desktopWelcome.contractGraphValue'),
+      body: t('desktopWelcome.contractGraphBody'),
+    },
+    {
+      icon: Bot,
+      label: t('desktopWelcome.contractAgentLabel'),
+      value: t('desktopWelcome.contractAgentValue'),
+      body: t('desktopWelcome.contractAgentBody'),
+    },
+  ] as const;
 
   return (
     <main className="flex min-h-0 flex-1 overflow-auto bg-[color:var(--color-canvas)]">
@@ -133,6 +154,38 @@ function DesktopVaultWelcome({
               {t('desktopWelcome.body')}
             </p>
           </div>
+        </section>
+
+        <section
+          aria-label={t('desktopWelcome.contractAriaLabel')}
+          className="grid gap-2 md:grid-cols-3"
+        >
+          {contractItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <article
+                key={item.label}
+                className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-3"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-tertiary)]">
+                    <Icon size={14} aria-hidden />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                      {item.label}
+                    </p>
+                    <p className="mt-0.5 truncate text-[12px] font-semibold text-[color:var(--color-text-primary)]">
+                      {item.value}
+                    </p>
+                  </div>
+                </div>
+                <p className="mt-2 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                  {item.body}
+                </p>
+              </article>
+            );
+          })}
         </section>
 
         <section
