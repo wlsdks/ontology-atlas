@@ -1866,19 +1866,17 @@ function GraphWorkbenchSummary({
                   : "group flex min-w-0 flex-col rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-3 py-3 transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.07)]"
               }
             >
-              <div className="flex items-start gap-2">
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors group-hover:border-[color:rgba(94,106,210,0.38)] group-hover:text-[color:var(--color-indigo-accent)]">
-                  <Icon size={14} aria-hidden />
+              <div className="flex items-start gap-2.5">
+                <span className="flex h-10 w-10 shrink-0 flex-col items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors group-hover:border-[color:rgba(94,106,210,0.38)] group-hover:text-[color:var(--color-indigo-accent)]">
+                  <span className="font-mono text-[10px] leading-none text-[color:var(--color-text-quaternary)]">
+                    {item.step}
+                  </span>
+                  <Icon size={13} className="mt-1" aria-hidden />
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="flex min-w-0 items-center justify-between gap-2">
-                    <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                      {item.label}
-                    </p>
-                    <span className="shrink-0 rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.025)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]">
-                      {item.step}
-                    </span>
-                  </div>
+                  <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                    {item.label}
+                  </p>
                   <p className="mt-0.5 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                     {item.value}
                   </p>
@@ -1891,8 +1889,12 @@ function GraphWorkbenchSummary({
                 {item.loopAction}
               </p>
               <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
-                <span className="min-w-0 truncate rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
-                  {item.proof}
+                <span className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                  <span className="uppercase tracking-[0.10em]">{t("proofLabel")}</span>
+                  <span className="h-3 w-px bg-[color:var(--color-border-soft)]" />
+                  <span className="truncate text-[color:var(--color-text-tertiary)]">
+                    {item.proof}
+                  </span>
                 </span>
                 <span className="text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)]">
                   {item.cta}

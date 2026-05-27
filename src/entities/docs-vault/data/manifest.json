@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T21:28:49.429Z",
+  "generatedAt": "2026-05-27T21:32:12.231Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6401,8 +6401,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatterbacked writes and Insights for graph DBstyle query validation. The first viewport also kee",
-      "wordCount": 529,
-      "updatedAt": "2026-05-27T20:37:08.311Z",
+      "wordCount": 568,
+      "updatedAt": "2026-05-27T21:32:05.453Z",
       "linksOut": []
     },
     {

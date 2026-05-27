@@ -2296,6 +2296,7 @@
       "treeValue": "트리 노드 {count}개",
       "treeBody": "계층을 빠르게 훑고, 노드를 선택해 reachability · ego graph · agent handoff 를 확인합니다.",
       "treeLoopAction": "먼저 다음 행동이 계속 붙잡을 concept slug 를 선택합니다.",
+      "proofLabel": "proof",
       "treeProof": "tree projection",
       "treeCta": "현재 화면",
       "treeAriaLabel": "온톨로지 계층 browse view",

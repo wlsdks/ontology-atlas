@@ -2296,6 +2296,7 @@
       "treeValue": "{count} tree nodes",
       "treeBody": "Scan hierarchy, select a node, and inspect reachability, ego graph, and agent handoff context.",
       "treeLoopAction": "Start by choosing the concept slug that the next action should keep in focus.",
+      "proofLabel": "proof",
       "treeProof": "tree projection",
       "treeCta": "Current view",
       "treeAriaLabel": "Ontology hierarchy browse view",
