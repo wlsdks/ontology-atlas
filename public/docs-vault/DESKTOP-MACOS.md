@@ -140,9 +140,10 @@ for a macOS prototype:
   checksum file next to the DMG.
 - `scripts/verify-macos-app-launch.mjs` launches the built `.app` executable
   long enough to catch early Tauri/WebView startup crashes, then terminates it.
-- `scripts/verify-macos-dmg.mjs` verifies that checksum, runs `hdiutil verify`,
-  mounts the image read-only, and checks for `Context Atlas.app` plus the
-  Applications symlink pointing to `/Applications`. Release verification uses
+- `scripts/verify-macos-dmg.mjs` verifies that the `.sha256` line names the DMG
+  basename, checks the bytes, runs `hdiutil verify`, mounts the image read-only,
+  and checks for `Context Atlas.app` plus the Applications symlink pointing to
+  `/Applications`. Release verification uses
   `pnpm desktop:verify-release-dmg`, which additionally requires strict
   `codesign` verification of the mounted app, a valid stapled notarization
   ticket on the DMG, and `spctl` Gatekeeper assessment for both the app

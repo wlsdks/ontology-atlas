@@ -268,11 +268,12 @@ if (
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-source.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-macos-release-status.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/watch-macos-release-run.test.mjs") &&
+  pkg.scripts?.["test:desktop:check"]?.includes("scripts/lib/macos-checksum.test.mjs") &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/lib/macos-release-names.test.mjs")
 ) {
-  pass("desktop checker tests cover the GitHub release operator, source, run-watch, and completion gates");
+  pass("desktop checker tests cover the GitHub release operator, source, run-watch, checksum, and completion gates");
 } else {
-  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs, scripts/check-macos-release-source.test.mjs, scripts/watch-macos-release-run.test.mjs, scripts/check-macos-release-status.test.mjs, and scripts/lib/macos-release-names.test.mjs so the macOS release operator, source, run-watch, completion, and app-vs-asset naming gates stay covered");
+  fail("package.json test:desktop:check must include scripts/check-macos-release-github.test.mjs, scripts/check-macos-release-source.test.mjs, scripts/watch-macos-release-run.test.mjs, scripts/check-macos-release-status.test.mjs, scripts/lib/macos-checksum.test.mjs, and scripts/lib/macos-release-names.test.mjs so the macOS release operator, source, run-watch, checksum, completion, and app-vs-asset naming gates stay covered");
 }
 
 if (
@@ -288,10 +289,14 @@ if (
   fail("src-tauri/src/lib.rs must reject symlink escapes for vault read/write/remove/mkdir paths without creating outside-vault directories");
 }
 
-if (pkg.scripts?.["desktop:verify-dmg"] === "node scripts/verify-macos-dmg.mjs") {
-  pass("desktop DMG verifier is available after packaging");
+if (
+  pkg.scripts?.["desktop:verify-dmg"] === "node scripts/verify-macos-dmg.mjs" &&
+  verifyDmgScript.includes("parseSha256Checksum") &&
+  verifyDmgScript.includes("expectedFilename: path.basename(dmgPath)")
+) {
+  pass("desktop DMG verifier is available after packaging and checks the checksum filename");
 } else {
-  fail("package.json must expose desktop:verify-dmg as node scripts/verify-macos-dmg.mjs");
+  fail("package.json must expose desktop:verify-dmg as node scripts/verify-macos-dmg.mjs, and scripts/verify-macos-dmg.mjs must verify the .sha256 line names the DMG basename");
 }
 
 if (
@@ -312,12 +317,14 @@ if (
 
 if (
   pkg.scripts?.["desktop:verify-install"] ===
-  "node scripts/verify-macos-install-smoke.mjs"
+  "node scripts/verify-macos-install-smoke.mjs" &&
+  verifyInstallScript.includes("parseSha256Checksum") &&
+  verifyInstallScript.includes("expectedFilename: path.basename(dmgPath)")
 ) {
-  pass("desktop install verifier copies the DMG app and launch-smokes the installed copy");
+  pass("desktop install verifier checks the checksum filename, copies the DMG app, and launch-smokes the installed copy");
 } else {
   fail(
-    "package.json must expose desktop:verify-install as node scripts/verify-macos-install-smoke.mjs",
+    "package.json must expose desktop:verify-install as node scripts/verify-macos-install-smoke.mjs, and scripts/verify-macos-install-smoke.mjs must verify the .sha256 line names the DMG basename",
   );
 }
 

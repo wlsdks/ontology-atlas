@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { parseSha256Checksum } from "./lib/macos-checksum.mjs";
 import { parseHdiutilMountDir, verifyApplicationsSymlink } from "./lib/macos-dmg-layout.mjs";
 import { loadMacosReleaseNames, resolveMacosExecutable } from "./lib/macos-release-names.mjs";
 
@@ -28,9 +29,10 @@ const checksumPath = `${dmgPath}.sha256`;
 function printHelp() {
   console.log(`Usage: pnpm desktop:verify-install [path/to/app.dmg] [--hold-ms=5000]
 
-Mounts the DMG read-only, copies ${appBundleName} to a temporary install
-directory with ditto, launches that copied app long enough to catch early
-startup crashes, then detaches and removes the temporary install.
+Checks the named .sha256 file, mounts the DMG read-only, copies ${appBundleName}
+to a temporary install directory with ditto, launches that copied app long
+enough to catch early startup crashes, then detaches and removes the temporary
+install.
 `);
 }
 
@@ -143,7 +145,9 @@ if (!fs.existsSync(checksumPath)) {
   fail(`missing checksum at ${checksumPath}; run pnpm desktop:build first.`);
 }
 
-const expectedChecksum = fs.readFileSync(checksumPath, "utf8").trim().split(/\s+/)[0];
+const { checksum: expectedChecksum } = parseSha256Checksum(fs.readFileSync(checksumPath, "utf8"), {
+  expectedFilename: path.basename(dmgPath),
+});
 const actualChecksum = crypto.createHash("sha256").update(fs.readFileSync(dmgPath)).digest("hex");
 if (actualChecksum !== expectedChecksum) {
   fail(`checksum mismatch for ${dmgPath}: expected ${expectedChecksum}, got ${actualChecksum}`);

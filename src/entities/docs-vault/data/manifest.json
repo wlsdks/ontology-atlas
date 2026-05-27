@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T00:20:50.293Z",
+  "generatedAt": "2026-05-27T00:31:46.111Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3901,8 +3901,8 @@
         }
       ],
       "excerpt": "Context Atlas is the userfacing macOS app name for the ohmyontology project. ohmyontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app ",
-      "wordCount": 3883,
-      "updatedAt": "2026-05-26T23:53:10.987Z",
+      "wordCount": 3892,
+      "updatedAt": "2026-05-27T00:31:39.526Z",
       "linksOut": []
     },
     {
@@ -5129,8 +5129,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 2570,
-      "updatedAt": "2026-05-27T00:13:32.179Z",
+      "wordCount": 2579,
+      "updatedAt": "2026-05-27T00:31:39.527Z",
       "linksOut": []
     },
     {

@@ -43,9 +43,9 @@ the generated `README.md` instead of showing a generic empty document state.
 `scripts/package-macos-dmg.mjs` wraps that `.app`
 with a reproducible `hdiutil` DMG so the download artifact does not depend on
 Tauri's Finder AppleScript DMG styling step, then writes a `.sha256` checksum.
-`scripts/verify-macos-dmg.mjs` mounts the DMG read-only, verifies that checksum,
-and checks for the app bundle plus an Applications symlink pointing to
-`/Applications`. `pnpm desktop:check`
+`scripts/verify-macos-dmg.mjs` verifies that the `.sha256` line names the DMG
+basename, checks the bytes, mounts the DMG read-only, and checks for the app
+bundle plus an Applications symlink pointing to `/Applications`. `pnpm desktop:check`
 is the scaffold-aware gate for that slice: it checks the Next.js static export
 shape, static image mode, trailing-slash routes, docs-vault build freshness
 path, CLI/MCP verification script availability, `desktop:dev` /
