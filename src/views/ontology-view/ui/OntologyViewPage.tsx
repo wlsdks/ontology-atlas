@@ -1152,6 +1152,68 @@ function NodeDetailPanel({
         </Link>
       </nav>
       <div
+        className="mt-4 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
+        data-testid="ontology-relation-preview"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {t('reviewRelationPreviewTitle')}
+            </p>
+            <p className="mt-1 break-keep text-[11.5px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t('reviewRelationPreviewDeck')}
+            </p>
+          </div>
+          <span className="shrink-0 rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+            {t('reviewRelations', {
+              outgoing: reviewBrief.relationSummary.outgoing,
+              incoming: reviewBrief.relationSummary.incoming,
+            })}
+          </span>
+        </div>
+        {relationPreview.length > 0 ? (
+          <ul className="mt-2 flex flex-col gap-1">
+            {relationPreview.map((row) => (
+              <li
+                key={`${row.direction}-${row.type}-${row.nodeId}`}
+                className="flex min-w-0 items-center gap-1.5 text-[11px] leading-5 text-[color:var(--color-text-secondary)]"
+              >
+                <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                  {row.direction === "outgoing" ? t('reviewRelationPreviewOut') : t('reviewRelationPreviewIn')}
+                </span>
+                <span className="shrink-0 rounded-sm border border-[color:rgba(94,106,210,0.20)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]">
+                  {row.type}
+                </span>
+                <span className="min-w-0 flex-1 truncate">{row.title}</span>
+                <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                  {row.kind}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t('reviewRelationPreviewEmpty')}
+          </p>
+        )}
+        <div className="mt-3 flex flex-wrap gap-1.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
+          <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
+            {t('reviewSource', {
+              source: reviewBrief.sourceSlug ?? t('reviewNoSource'),
+            })}
+          </span>
+          <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
+            {t('reviewRelationTypes', {
+              types: reviewBrief.relationTypes.length > 0
+                ? reviewBrief.relationTypes
+                    .map((row) => `${row.type} ${row.count}`)
+                    .join(', ')
+                : t('reviewNoRelationTypes'),
+            })}
+          </span>
+        </div>
+      </div>
+      <div
         className="mt-4 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-3 py-3"
         data-testid="ontology-review-brief"
       >
@@ -1219,58 +1281,6 @@ function NodeDetailPanel({
               </dd>
             </div>
           </dl>
-        </div>
-        <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.18)] bg-[color:rgba(14,16,22,0.18)] px-2.5 py-2">
-          <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
-            {t('reviewRelationPreviewTitle')}
-          </p>
-          {relationPreview.length > 0 ? (
-            <ul className="mt-1.5 flex flex-col gap-1">
-              {relationPreview.map((row) => (
-                <li
-                  key={`${row.direction}-${row.type}-${row.nodeId}`}
-                  className="flex min-w-0 items-center gap-1.5 text-[11px] leading-5 text-[color:var(--color-text-secondary)]"
-                >
-                  <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-                    {row.direction === "outgoing" ? t('reviewRelationPreviewOut') : t('reviewRelationPreviewIn')}
-                  </span>
-                  <span className="shrink-0 rounded-sm border border-[color:rgba(94,106,210,0.20)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]">
-                    {row.type}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate">{row.title}</span>
-                  <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                    {row.kind}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="mt-1.5 text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-              {t('reviewRelationPreviewEmpty')}
-            </p>
-          )}
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1.5 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-tertiary)]">
-          <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
-            {t('reviewSource', {
-              source: reviewBrief.sourceSlug ?? t('reviewNoSource'),
-            })}
-          </span>
-          <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
-            {t('reviewRelations', {
-              outgoing: reviewBrief.relationSummary.outgoing,
-              incoming: reviewBrief.relationSummary.incoming,
-            })}
-          </span>
-          <span className="rounded-full border border-[color:rgba(94,106,210,0.24)] px-2 py-0.5">
-            {t('reviewRelationTypes', {
-              types: reviewBrief.relationTypes.length > 0
-                ? reviewBrief.relationTypes
-                    .map((row) => `${row.type} ${row.count}`)
-                    .join(', ')
-                : t('reviewNoRelationTypes'),
-            })}
-          </span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <Link

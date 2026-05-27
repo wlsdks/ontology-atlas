@@ -2386,6 +2386,7 @@
         "bidirectional": "This concept has both dependents and dependencies. Trace both directions before changing messaging, scope, or implementation."
       },
       "reviewRelationPreviewTitle": "Direct relation preview",
+      "reviewRelationPreviewDeck": "Check this node's frontmatter edges first, then continue into topology, builder, or query.",
       "reviewRelationPreviewEmpty": "No direct relation evidence yet.",
       "reviewRelationPreviewOut": "out",
       "reviewRelationPreviewIn": "in",

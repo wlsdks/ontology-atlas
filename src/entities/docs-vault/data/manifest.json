@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T18:15:11.806Z",
+  "generatedAt": "2026-05-27T18:21:43.830Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5108,8 +5108,8 @@
       },
       "headings": [],
       "excerpt": "/topology, /ontology, and /ontology/insights expose a secondary collaborator reader lane without making nondevelopers the primary product target. The lane translates a selected ontology node into a plainlanguage lens, sourcebacked relation summary, and review prompt. Planners, marketers, and domain collaborators can in",
-      "wordCount": 618,
-      "updatedAt": "2026-05-25T08:56:39.896Z",
+      "wordCount": 631,
+      "updatedAt": "2026-05-27T18:21:33.784Z",
       "linksOut": []
     },
     {
@@ -6279,8 +6279,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/lib/reviewbrief.ts and the selectednode detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and direct ",
-      "wordCount": 503,
-      "updatedAt": "2026-05-27T17:06:52.996Z",
+      "wordCount": 531,
+      "updatedAt": "2026-05-27T18:21:24.446Z",
       "linksOut": []
     },
     {

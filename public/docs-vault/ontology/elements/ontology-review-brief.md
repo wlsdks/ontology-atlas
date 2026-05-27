@@ -9,7 +9,7 @@ domain: views
 
 The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and direct relation-type counts; and formats a copyable review prompt for non-developer collaborators. The visible card and markdown export now include prompt-specific review questions, matching the topology drawer reader lane: define owner for isolated concepts, explain usage for outgoing-only concepts, confirm dependents for incoming-only concepts, and trace impact for bidirectional concepts.
 
-The card and copied markdown also include a small direct relation preview. Each row names direction, relation type, neighbor title, neighbor kind, and node id, so a collaborator can see the concrete concepts behind the count before deciding whether a vocabulary change needs owner review, dependency review, or builder cleanup.
+The selected-node panel now shows a small direct relation preview before the collaborator card. Each row names direction, relation type, neighbor title, and neighbor kind, and the surrounding chips show source, in/out counts, and relation-type counts. This makes the first read graph-proof-first: a user sees the concrete frontmatter edges before deciding whether a vocabulary change needs owner review, dependency review, or builder cleanup. The copied markdown keeps the same direct relation evidence with node ids for handoff precision.
 
 The visible card and copied markdown now add a change-impact summary between the review questions and relation preview. It translates isolated, outgoing-only, incoming-only, and bidirectional relation shapes into the first collaborator action, and names the first incoming and outgoing neighbor when available.
 
