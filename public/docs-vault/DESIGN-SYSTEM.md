@@ -146,6 +146,11 @@ markdown remains the source of truth, frontmatter compiles into graph/query
 surfaces, and MCP agents read the same vault. Action cards can follow, but the
 first native-app entry must make the ontology workbench contract clearer than
 the document-editor mechanics.
+The global entry label and page header for `/docs` should say `Source` /
+`Source Vault`, not `Docs`, because that route is the local markdown source and
+agent setup surface for the graph. Keep `document` language for individual
+markdown files and evidence rows, but avoid making the route identity read like
+a documentation portal.
 
 ## Absolute rules (Don'ts)
 

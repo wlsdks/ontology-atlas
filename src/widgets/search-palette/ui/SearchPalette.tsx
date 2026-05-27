@@ -17,7 +17,7 @@ import {
 } from '@/entities/docs-vault';
 import { searchProjects } from '../model/fuzzy-search';
 
-// Docs Vault 매칭 — 가볍게 title/excerpt/slug includes. ⌘K 팔레트는
+// Source Vault 매칭 — 가볍게 title/excerpt/slug includes. ⌘K 팔레트는
 // 프로젝트 검색이 메인이고 문서는 보조 섹션이므로 score 정렬 없이 단순
 // 매치 top 3 만 보여준다.
 function matchVaultDocs(query: string, docs: VaultDoc[]): VaultDoc[] {

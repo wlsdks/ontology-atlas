@@ -21,7 +21,7 @@ interface Props {
   icon?: string | null;
   /** "프로젝트 목록" 버튼 대상 URL. 지정되면 검색 옆에 나란히 노출. */
   projectsListHref?: string;
-  /** "문서 볼트" (/docs) 진입용. 인증 사용자에게만 노출. */
+  /** Source Vault (/docs) 진입용. 인증 사용자에게만 노출. */
   docsVaultHref?: string;
   /** "온톨로지" (/ontology) 진입용. 권한은 라우트 측에서 게이팅. */
   ontologyHref?: string;

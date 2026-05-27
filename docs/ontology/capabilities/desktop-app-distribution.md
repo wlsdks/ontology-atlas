@@ -111,7 +111,10 @@ same vault through MCP instead of a backend. After a vault is opened, the same
 Files / Graph / Agent contract remains pinned below the `/docs` header with the
 current markdown count, compiled ontology node/relation counts, source/browse/query
 handoff links, and read-first agent proof framing, so the active workbench does
-not collapse back into a generic document editor once setup is complete. The picker keeps a small recent-vault list from persisted Tauri paths,
+not collapse back into a generic document editor once setup is complete. The
+visible global entry and page title now use `Source` / `Source Vault` language
+while individual markdown files remain documents, making `/docs` read as the
+graph source and setup surface instead of a documentation portal. The picker keeps a small recent-vault list from persisted Tauri paths,
 can reopen those vaults without another Finder selection, shows the last-opened
 time for each remembered vault so repeated desktop work does not become a blind
 path list, keeps that relative time live while the picker stays open, and can

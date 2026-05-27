@@ -1,5 +1,5 @@
 /**
- * Docs Vault 의 전역 명령 단위. 통합 팔레트 (DocsVaultUnifiedPalette) 가
+ * Source Vault 의 전역 명령 단위. 통합 팔레트 (DocsVaultUnifiedPalette) 가
  * 이 배열을 받아 `> ` prefix 모드에서 퍼지 매칭으로 실행.
  *
  * icon 은 string (이모지) 이나 React 엘리먼트 모두 받을 수 있다 —

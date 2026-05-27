@@ -928,7 +928,7 @@ export function useLocalVaultInternal() {
       README: [
         '# My vault',
         '',
-        'This folder is a Docs Vault + Folder-Topology vault.',
+        'This folder is a Source Vault + Folder-Topology vault.',
         '',
         '## Structure',
         '',

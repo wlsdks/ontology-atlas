@@ -265,7 +265,7 @@ export function ProjectDrawer({
       }))
     : [];
 
-  // 관련 문서 — Docs Vault 에서 이 프로젝트를 인용하는 md top 5.
+  // 관련 문서 — Source Vault에서 이 프로젝트를 인용하는 md top 5.
   // 권한 없으면 섹션 자체 숨김 (게스트/로그인 안 된 사용자에게 admin 문서
   // 링크 새는 것 방지).
   const relatedDocs = useMemo(() => {
@@ -321,7 +321,7 @@ export function ProjectDrawer({
   const detailHref = project
     ? getProjectDetailHref(project.slug)
     : "#";
-  // 관련 문서 top 1 slug — 있으면 문서 볼트가 그 문서를 바로 열게 딥링크.
+  // 관련 문서 top 1 slug — 있으면 Source Vault가 그 문서를 바로 열게 딥링크.
   // 없으면 볼트 홈 ('/docs/') 로. URL 형식은 buildDocsVaultHref 에 위임.
   const primaryRelatedDocSlug = relatedDocs[0]?.doc.slug ?? null;
   const docsVaultHref = buildDocsVaultHref({ slug: primaryRelatedDocSlug });

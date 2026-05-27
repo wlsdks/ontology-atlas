@@ -100,24 +100,24 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 - Suppressed when hero panel expanded (avoid overlap)
 
 #### Top-right buttons
-- **Docs button** (`D`) → `DocsQuickDrawer` overlay with pinned/recent docs preview
+- **Source button** (`D`) → `DocsQuickDrawer` overlay with pinned/recent markdown source preview
 - **Shortcuts button** (`?`) → `ShortcutSheet`
 
 #### Left workspace info panel
-- Expanded: workspace title + project/hub counts + 3 nav links (Projects / Docs / Ontology) + collapse button
+- Expanded: workspace title + project/hub counts + 3 nav links (Projects / Source / Ontology) + collapse button
 - Collapsed: pill with selected project name or workspace summary
 
 #### Right-side `ProjectDrawer` (when a node is selected)
 - Project name + icon + category badge · description · tags · stack
 - "View project" → `/project/[slug]/`
-- "Open docs vault" → `/docs/?slug=...`
+- "Open source vault" → `/docs/?slug=...`
 - Connections summary (dependencies / referencedBy)
 - Impact mode toggle (Default · Upstream · Downstream · Network)
 - Integrity checks · screenshots (lazy top 2) · timeline · links
 - Footer: "slug · updated DATE"
 
 #### Mobile-only
-- `BottomTabBar` (4 tabs: Ontology / Topology / Projects / Docs) at safe-area bottom
+- `BottomTabBar` (4 tabs: Ontology / Topology / Projects / Source) at safe-area bottom
 - `GestureHint` overlay (dismissible, not persisted)
 
 #### Global keyboard shortcuts (all `useTypingShortcuts`-gated)
@@ -125,13 +125,13 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 |---|---|
 | `⌘K` | Project search palette (`SearchPalette`) |
 | `⇧⌘K` | Global search (`MountedGlobalSearch` — nodes + projects) |
-| `D` | Toggle docs drawer |
+| `D` | Toggle source drawer |
 | `?` | Toggle shortcut sheet |
 | `Esc` | Layered: exit local graph → close drawer → clear search |
 
 ---
 
-### `/docs` — Docs Vault (reader + editor + palette)
+### `/docs` — Source Vault (reader + editor + palette)
 
 #### Header (always visible)
 - Back button · title + doc count · `Local` badge (when source=local)
@@ -338,7 +338,7 @@ Empty state: blue link to `/docs` (open vault).
 
 #### Header
 - Breadcrumb: Home → Projects → `{Name|Slug}`
-- Right actions: docs vault link · copy link · quick-edit menu (mobile)
+- Right actions: source vault link · copy link · quick-edit menu (mobile)
 
 #### Inline-editable fields (when `canManageProject`)
 - name · description · dependencies (picker with cycle check) · tags · stack · links (label|URL multiline)

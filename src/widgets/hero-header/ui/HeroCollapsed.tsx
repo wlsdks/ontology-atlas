@@ -20,7 +20,7 @@ interface Props {
    *  truthy 일 때 pill 왼쪽에 "← Workspace" 보조 버튼 노출. */
   workspaceMapHref?: string;
   onWorkspaceMapClick?: () => void;
-  /** 문서 볼트 (/docs) 바로 가기. 접힌 상태에서도 주 기능 접근 유지. */
+  /** Source Vault (/docs) 바로 가기. 접힌 상태에서도 주 기능 접근 유지. */
   docsVaultHref?: string;
   /** 온톨로지 (/ontology) 바로 가기. 접힌 상태에서도 트리 surface 접근 유지. */
   ontologyHref?: string;

@@ -257,7 +257,7 @@ Installed MCP verifier:
 For a non-developer or a first-time AI-agent session:
 
 1. Install the macOS app and open the local vault folder there.
-2. Open the Docs vault tools menu and check the AI agent setup card.
+2. Open the Source Vault tools menu and check the AI agent setup card.
 3. Read the root execution contract: `vault folder` sessions can use `.` as the
    vault path, while separate `codebase root` sessions must pass the ontology
    vault as an explicit absolute path.
