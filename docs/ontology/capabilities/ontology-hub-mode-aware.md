@@ -43,6 +43,12 @@ Browse 카드는 현재 route 에서 `aria-current="page"` 를 갖고 active 상
 표시된다. 그 아래 role strip 은 트리를 "계층 색인" 으로 명명하고,
 frontmatter 기반 node/ref count 와 evidence document 제외 규칙을 함께 보여줘
 트리가 전체 graph DB 를 대체하는 화면이 아니라 탐색 출발점임을 분명히 한다.
+이 role strip 이 graph proof strip 보다 먼저 나오기 때문에 `/ontology` 는 query
+증명 카드가 아니라 browse index 로 시작한다. graph proof 는 그 아래의 compact
+execution strip 으로 유지되어 MCP/CLI query pack count, sample `MATCH` intent,
+operation chip, pack copy action 만 빠르게 보여준다.
+local frontmatter compile proof 는 실제 tree 아래로 내려가므로, 사용자는 source
+inventory 를 먼저 읽지 않고 concept hierarchy 에 바로 진입한다.
 Tree projection 경고는 raw warning 목록만 보여주지 않고 multiple-parent /
 cycle / self-parent / duplicate / other 로 요약해, hierarchy projection 에서
 빠진 관계가 vault 오류인지 graph DB 탐색으로 넘길 합법적 관계인지 바로 구분하게 한다.

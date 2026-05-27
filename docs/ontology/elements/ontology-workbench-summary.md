@@ -8,11 +8,11 @@ relates: [elements/ontology-graph-proof-rail, elements/ontology-tree-projection-
 
 `src/views/ontology-view/ui/OntologyViewPage.tsx` renders the compact Browse / Write / Query summary at the top of `/ontology`.
 
-It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatter-backed writes and Insights for graph DB-style query validation. The first viewport also keeps a separate role strip for Tree role / Graph refs / Evidence so the hierarchy view does not pretend to be the whole ontology system.
+It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatter-backed writes and Insights for graph DB-style query validation. The first viewport now keeps the Tree role / Graph refs / Evidence strip before the graph proof strip, so the hierarchy view explains its boundary before showing query-pack evidence.
 
 The page header keeps those handoffs visible before the summary strip: search stays scoped to browse, the global search button keeps cross-surface lookup discoverable, `Insights` opens the graph DB query pack, and the primary `Builder` action opens the frontmatter-backed write canvas. The header icons use lucide symbols rather than one-off SVGs so the browse surface follows the same control language as the Builder and Insights pages.
 
-The local frontmatter compile proof below the role strip is intentionally compact: it states that the current graph was compiled from the selected vault, exposes node/relation counts and a Builder CTA, and keeps the kind census collapsed. It no longer renders the full kind-by-kind node list before the actual tree, so `/ontology` starts as a browse surface rather than a document inventory dump.
+The local frontmatter compile proof now sits below the actual tree. It states that the current graph was compiled from the selected vault, exposes node/relation counts and a Builder CTA, and keeps the kind census collapsed, but it no longer blocks first contact with the hierarchy. `/ontology` therefore starts as a browse surface rather than a document inventory dump.
 
 The Korean surface now labels that proof as `프론트매터 그래프`, `노드 · 관계`, and `종류별 요약` instead of repeating English body captions such as `VAULT FRONTMATTER ONTOLOGY` or `KIND CENSUS`. This keeps the page header hierarchy intact while still proving that the browse tree is backed by a compiled local graph.
 
@@ -25,3 +25,5 @@ When a tree node is selected, the detail panel repeats that same numbered split 
 The first-viewport summary now makes that loop ordered instead of merely adjacent: `01 Browse` selects the concept slug, `02 Write` keeps that slug focused in Builder for frontmatter edits, and `03 Query` closes the loop with graph DB-style proof over the same local markdown graph. The step number is part of the leading icon block rather than a tiny trailing badge, and each card's proof chip is labeled explicitly so `tree projection`, `frontmatter write`, and `dogfood:graph-db` read as runtime contracts instead of generic tags.
 
 Tree projection warnings now sit under that same contract. The warning panel groups raw tree builder notes by cause, so multiple-parent edges are presented as a hierarchy projection limit while the handoff buttons point to Insights for full graph scans and Builder for relation-direction repair.
+
+The graph proof rail is rendered as a compact execution strip rather than a large card: it keeps MCP/CLI query-pack counts, one sample MATCH intent, operation chips, and copy actions visible, but it no longer dominates the browse page before the user reaches the actual tree.

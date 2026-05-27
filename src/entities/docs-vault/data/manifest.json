@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T23:15:14.731Z",
+  "generatedAt": "2026-05-27T23:26:52.174Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1555,
-      "updatedAt": "2026-05-27T22:13:23.059Z",
+      "wordCount": 1635,
+      "updatedAt": "2026-05-27T23:26:43.416Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8007,
-      "updatedAt": "2026-05-27T23:14:33.045Z",
+      "wordCount": 8110,
+      "updatedAt": "2026-05-27T23:26:23.507Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5452,8 +5452,8 @@
         }
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (moduleload 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), la",
-      "wordCount": 432,
-      "updatedAt": "2026-05-27T20:37:08.311Z",
+      "wordCount": 499,
+      "updatedAt": "2026-05-27T23:26:37.838Z",
       "linksOut": []
     },
     {
@@ -6324,9 +6324,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontologyview/lib/graphproofrail.ts derives the compact graph proof model shown near the top of /ontology, and src/views/ontologyview/ui/OntologyViewPage.tsx renders it as an executable query proof rail. The rail is intentionally not a marketing card: it summarizes the same buildAgentGraphDbQueryPack payload u",
-      "wordCount": 123,
-      "updatedAt": "2026-05-27T21:07:34.217Z",
+      "excerpt": "src/views/ontologyview/lib/graphproofrail.ts derives the compact graph proof model shown near the top of /ontology, and src/views/ontologyview/ui/OntologyViewPage.tsx renders it as an executable query proof strip. The strip is intentionally not a marketing card and no longer sits above the tree role contract. /ontology",
+      "wordCount": 176,
+      "updatedAt": "2026-05-27T23:24:40.730Z",
       "linksOut": []
     },
     {
@@ -6400,9 +6400,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatterbacked writes and Insights for graph DBstyle query validation. The first viewport also kee",
-      "wordCount": 617,
-      "updatedAt": "2026-05-27T22:53:27.276Z",
+      "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatterbacked writes and Insights for graph DBstyle query validation. The first viewport now keep",
+      "wordCount": 659,
+      "updatedAt": "2026-05-27T23:26:29.136Z",
       "linksOut": []
     },
     {

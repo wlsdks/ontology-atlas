@@ -111,6 +111,13 @@ errors. The tree can only show one readable hierarchy, while the same
 frontmatter graph may contain valid multi-parent or cyclic semantic relations.
 When projection notes exist, the card should expand into a concrete warning
 list and hand off to Insights for graph scans or Builder for relation review.
+The graph DB proof rail on `/ontology` is a compact execution strip, not a
+second hero card. Keep the Tree role / Graph refs / Evidence strip above it so
+the browse surface first explains why the hierarchy exists and where its
+boundary is; then show the MCP/CLI pack counts and representative query intents
+as proof that the same markdown graph is queryable. Keep local frontmatter
+compile proof below the tree; it is source evidence, not the primary browse
+entry.
 
 Builder write surfaces should make the persistence contract visible before the
 canvas. Use compact `Source` / `Draft` / `Guard` / `Proof` status cells to

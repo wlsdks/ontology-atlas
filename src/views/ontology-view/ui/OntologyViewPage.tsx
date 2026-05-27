@@ -343,8 +343,6 @@ export function OntologyViewPage() {
         builderHref={builderHref}
       />
 
-      <GraphProofRail model={graphProofRailModel} />
-
       {/* tree contract strip. /ontology 트리는 전체 graph DB 편집기가 아니라
           hierarchy browse index 라는 역할을 명확히 노출한다. 관계 작성은
           Builder, graph scan 은 Insights 로 이어지게 분리. */}
@@ -395,6 +393,8 @@ export function OntologyViewPage() {
         ) : null}
       </section>
 
+      <GraphProofRail model={graphProofRailModel} />
+
       {error ? (
         <div
           role="alert"
@@ -410,11 +410,6 @@ export function OntologyViewPage() {
         </div>
       ) : (
         <>
-          {dataSourceMode === 'local' ? (
-            <div className="mb-4">
-              <VaultOntologyStubsPanel />
-            </div>
-          ) : null}
           {!selectedNode && treeResult.roots.length > 0 ? (
             <TreeSelectionHint />
           ) : null}
@@ -425,6 +420,11 @@ export function OntologyViewPage() {
             selectedId={selectedNode?.id ?? null}
             showWarnings={false}
           />
+          {dataSourceMode === 'local' ? (
+            <div className="mt-4">
+              <VaultOntologyStubsPanel />
+            </div>
+          ) : null}
           {treeResult.warnings.length > 0 ? (
             <TreeProjectionWarnings warnings={treeResult.warnings} />
           ) : null}
@@ -1938,6 +1938,7 @@ function GraphProofRail({ model }: { model: GraphProofRailModel }) {
   const { show } = useToast();
   const preview = model.previewIntents.slice(0, 3);
   const operationPreview = model.operations.slice(0, 5);
+  const primaryIntent = preview[0];
   const copyPack = async (text: string, successMessage: string) => {
     if (await copyText(text)) {
       show(successMessage, "success");
@@ -1949,26 +1950,24 @@ function GraphProofRail({ model }: { model: GraphProofRailModel }) {
   return (
     <section
       aria-label={t("ariaLabel")}
-      className="mb-6 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-3 py-3"
+      className="mb-4 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
     >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] text-[color:var(--color-indigo-accent)]">
-              <BarChart3 size={14} aria-hidden />
-            </span>
-            <div className="min-w-0">
-              <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                {t("eyebrow")}
-              </p>
-              <h2 className="mt-0.5 break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-                {t("title")}
-              </h2>
-            </div>
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-start gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] text-[color:var(--color-indigo-accent)]">
+            <BarChart3 size={14} aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              {t("eyebrow")}
+            </p>
+            <h2 className="mt-0.5 break-keep text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+              {t("title")}
+            </h2>
+            <p className="mt-1 max-w-2xl break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t("body")}
+            </p>
           </div>
-          <p className="mt-2 max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-            {t("body")}
-          </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-1.5">
           <button
@@ -1999,42 +1998,44 @@ function GraphProofRail({ model }: { model: GraphProofRailModel }) {
         </div>
       </div>
 
-      <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-        <GraphProofMetric label={t("intents")} value={model.intentCount} />
-        <GraphProofMetric label={t("mcpCalls")} value={model.mcpCallCount} />
-        <GraphProofMetric label={t("cliFallbacks")} value={model.cliFallbackCount} />
-        <GraphProofMetric label={t("health")} value={t("healthValue")} />
-      </div>
-
-      {preview.length > 0 ? (
-        <div className="mt-3 grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(220px,0.34fr)]">
-          <ul className="grid gap-1.5">
-            {preview.map((intent) => (
-              <li
-                key={intent}
-                className="min-w-0 break-all rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(0,0,0,0.10)] px-2.5 py-1.5 font-mono text-[10px] leading-5 text-[color:var(--color-text-secondary)]"
-              >
-                {intent}
-              </li>
-            ))}
-          </ul>
-          <div className="rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2">
+      <div className="mt-2 grid gap-1.5 lg:grid-cols-[minmax(0,0.58fr)_minmax(0,1fr)_minmax(200px,0.34fr)]">
+        <div className="grid min-w-0 grid-cols-4 gap-1.5">
+          <GraphProofMetric label={t("intents")} value={model.intentCount} />
+          <GraphProofMetric label={t("mcpCalls")} value={model.mcpCallCount} />
+          <GraphProofMetric label={t("cliFallbacks")} value={model.cliFallbackCount} />
+          <GraphProofMetric label={t("health")} value={t("healthValue")} />
+        </div>
+        {primaryIntent ? (
+          <div className="min-w-0 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1.5">
+            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              {t("sampleIntent")}
+            </p>
+            <p
+              className="mt-1 truncate font-mono text-[9px] leading-4 text-[color:var(--color-text-secondary)]"
+              title={primaryIntent}
+            >
+              {primaryIntent}
+            </p>
+          </div>
+        ) : null}
+        {operationPreview.length > 0 ? (
+          <div className="min-w-0 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5">
             <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("operations")}
             </p>
-            <div className="mt-2 flex flex-wrap gap-1.5">
+            <div className="mt-1.5 flex flex-wrap gap-1">
               {operationPreview.map((operation) => (
                 <span
                   key={operation}
-                  className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-tertiary)]"
+                  className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] px-1.5 py-0.5 font-mono text-[8.5px] text-[color:var(--color-text-tertiary)]"
                 >
                   {operation}
                 </span>
               ))}
             </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -2047,11 +2048,11 @@ function GraphProofMetric({
   value: number | string;
 }) {
   return (
-    <div className="min-w-0 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2.5 py-2">
+    <div className="min-w-0 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5">
       <p className="truncate font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
         {label}
       </p>
-      <p className="mt-1 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+      <p className="mt-0.5 truncate text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
         {value}
       </p>
     </div>

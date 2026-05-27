@@ -203,7 +203,10 @@ view-doc · view-folder-topology · pin · unpin · copy URL · print · edit ·
 - **Search button** (`⌘K`) — node-only `OntologyGlobalSearchAdapter`
 - **All / 전체 button** (R4 cut H, `⇧⌘K`) — `MountedGlobalSearch`, nodes + projects unified
 - **Builder CTA** (indigo solid) → `/ontology/edit/`
-- Stats strip: tree nodes · total relations · evidence documents
+- Browse / Write / Query summary: active Browse card selects the concept slug, Builder keeps that slug focused for frontmatter writes, and Insights closes with graph DB-style proof
+- Role strip: Tree role · Graph refs · Evidence · projection warnings, shown before the proof rail so the hierarchy reads as a browse index instead of the whole ontology
+- Graph proof strip: compact MCP/CLI query pack counts, one sample `MATCH` intent, operation chips, and copy buttons for the full graph DB MCP pack and CLI fallback pack
+- Local frontmatter compile proof is below the tree, not above it, so the browse page starts from concept selection rather than a source inventory
 
 #### Left: tree view (`OntologyTreeView`)
 - Hierarchical project → domain → capability → element (document kind excluded as evidence)

@@ -26,7 +26,7 @@ describe("graph proof rail", () => {
 
     expect(model.intentCount).toBe(5);
     expect(model.mcpCallCount).toBe(12);
-    expect(model.cliFallbackCount).toBe(12);
+    expect(model.cliFallbackCount).toBe(13);
     expect(countExecutableCliFallbacks(pack)).toBe(11);
     expect(model.previewIntents).toEqual([
       "MATCH graph RETURN kind/domain/degree/relation facets LIMIT 10",
@@ -47,6 +47,7 @@ describe("graph proof rail", () => {
     expect(model.queryPackText).toContain("Use this oh-my-ontology graph DB query pack");
     expect(model.queryPackText).toContain("query_ontology.match_nodes");
     expect(model.cliPackText).toContain("Run these oh-my-ontology CLI commands");
+    expect(model.cliPackText).toContain("pnpm dogfood:graph-db");
     expect(model.cliPackText).toContain("oh-my-ontology match-nodes [vault]");
   });
 });
