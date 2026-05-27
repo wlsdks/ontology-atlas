@@ -54,6 +54,8 @@ import { usePaletteState } from '../lib/use-palette-state';
 import { replaceDocsVaultUrlState } from '../lib/url-state';
 import {
   buildDocsVaultHref,
+  buildOntologyDeeplinkForDoc,
+  deriveOntologyFromVault,
   vaultManifest,
   type VaultManifest,
 } from '@/entities/docs-vault';
@@ -101,6 +103,110 @@ import {
   type DocsVaultSource as Source,
   type DocsVaultView,
 } from "../lib/persistence";
+
+function DocsVaultSourceContractBar({
+  source,
+  manifest,
+  nodeCount,
+  edgeCount,
+  graphHref,
+  t,
+}: {
+  source: Source;
+  manifest: VaultManifest;
+  nodeCount: number;
+  edgeCount: number;
+  graphHref: string;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  const sourceLabel =
+    source === 'local'
+      ? t('sourceContract.filesLocalValue', { count: manifest.docs.length })
+      : t('sourceContract.filesSampleValue', { count: manifest.docs.length });
+  const cells = [
+    {
+      key: 'files',
+      step: '01',
+      icon: HardDrive,
+      label: t('sourceContract.filesLabel'),
+      value: sourceLabel,
+      body: t('sourceContract.filesBody'),
+      chip: t('sourceContract.filesChip'),
+      href: '/docs/',
+      cta: t('sourceContract.filesCta'),
+    },
+    {
+      key: 'graph',
+      step: '02',
+      icon: Network,
+      label: t('sourceContract.graphLabel'),
+      value: t('sourceContract.graphValue', {
+        nodes: nodeCount,
+        edges: edgeCount,
+      }),
+      body: t('sourceContract.graphBody'),
+      chip: t('sourceContract.graphChip'),
+      href: graphHref,
+      cta: t('sourceContract.graphCta'),
+    },
+    {
+      key: 'agent',
+      step: '03',
+      icon: Bot,
+      label: t('sourceContract.agentLabel'),
+      value: t('sourceContract.agentValue'),
+      body: t('sourceContract.agentBody'),
+      chip: t('sourceContract.agentChip'),
+      href: '/ontology/insights/',
+      cta: t('sourceContract.agentCta'),
+    },
+  ] as const;
+
+  return (
+    <section
+      aria-label={t('sourceContract.ariaLabel')}
+      className="flex-none border-b border-[color:var(--color-border-soft)] bg-[color:rgba(16,17,21,0.92)] px-3 py-2 md:px-4"
+    >
+      <div className="grid gap-2 lg:grid-cols-3">
+        {cells.map((cell) => {
+          const Icon = cell.icon;
+          return (
+            <article
+              key={cell.key}
+              className="grid min-w-0 grid-cols-[34px_1fr_auto] items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 py-2"
+            >
+              <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.2)] bg-[color:rgba(94,106,210,0.06)] text-[color:rgba(205,212,255,0.9)]">
+                <Icon size={14} aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(200,210,255,0.82)]">
+                    {cell.step} {cell.label}
+                  </span>
+                  <span className="rounded-sm border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(94,106,210,0.06)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                    {cell.chip}
+                  </span>
+                </div>
+                <p className="mt-0.5 truncate text-[12px] font-semibold text-[color:var(--color-text-primary)]">
+                  {cell.value}
+                </p>
+                <p className="mt-0.5 line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
+                  {cell.body}
+                </p>
+              </div>
+              <Link
+                href={cell.href}
+                className="inline-flex h-7 shrink-0 items-center rounded-sm border border-[color:var(--color-divider)] px-2 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
+              >
+                {cell.cta}
+              </Link>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 
 function DesktopVaultWelcome({
   status,
@@ -519,6 +625,10 @@ function DocsVaultContent() {
     source === 'local' && localVault.manifest
       ? localVault.manifest
       : serverManifest;
+  const ontologyDerivation = useMemo(
+    () => deriveOntologyFromVault(manifest),
+    [manifest],
+  );
 
   // tagCounts — 팔레트에 매 render 새 array 가 들어가지 않도록 memo.
   // (manifest.tags 가 reference 안 바뀌면 array 도 동일.)
@@ -1632,7 +1742,20 @@ function DocsVaultContent() {
           t={t}
         />
       ) : (
-      <div className="flex min-h-0 flex-1">
+        <>
+          <DocsVaultSourceContractBar
+            source={source}
+            manifest={manifest}
+            nodeCount={ontologyDerivation.nodes.length}
+            edgeCount={ontologyDerivation.edges.length}
+            graphHref={
+              selectedDoc
+                ? (buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/')
+                : '/ontology/'
+            }
+            t={t}
+          />
+          <div className="flex min-h-0 flex-1">
         {/* 좌측 트리 — md+ 에서만 inline aside */}
         <aside className="hidden w-[260px] flex-none flex-col overflow-auto border-r border-[color:var(--color-overlay-2)] bg-[color:var(--color-elevated)] md:flex">
           {sidebarBody}
@@ -1867,7 +1990,8 @@ function DocsVaultContent() {
             <EmptyState />
           )}
         </main>
-      </div>
+          </div>
+        </>
       )}
 
       <AnimatePresence>

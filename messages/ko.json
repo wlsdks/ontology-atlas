@@ -1689,6 +1689,25 @@
       "recentTitle": "최근 vault",
       "recentEmpty": "아직 최근 vault 가 없습니다. 폴더를 열거나 만들면 여기에 고정됩니다."
     },
+    "sourceContract": {
+      "ariaLabel": "현재 vault 실행 계약",
+      "filesLabel": "Files",
+      "filesLocalValue": "로컬 markdown {count}개",
+      "filesSampleValue": "샘플 markdown {count}개",
+      "filesBody": "선택한 폴더가 source of truth 입니다. 모든 ontology 변경은 frontmatter diff 로 남습니다.",
+      "filesChip": "local md",
+      "filesCta": "Source",
+      "graphLabel": "Graph",
+      "graphValue": "노드 {nodes}개 · 관계 {edges}개",
+      "graphBody": "frontmatter 가 같은 vault 위의 browse, topology, builder, query 화면으로 컴파일됩니다.",
+      "graphChip": "compiled",
+      "graphCta": "Browse",
+      "agentLabel": "Agent",
+      "agentValue": "MCP / CLI proof",
+      "agentBody": "Claude Code, Codex, Cursor, 터미널 세션이 write 전에 같은 graph 를 검증합니다.",
+      "agentChip": "read-first",
+      "agentCta": "Query"
+    },
     "advanced": {
       "viewTopology": "토폴로지",
       "sourceServer": "샘플",

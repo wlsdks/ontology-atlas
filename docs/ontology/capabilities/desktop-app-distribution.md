@@ -107,7 +107,11 @@ work mode instead of the download page. That native welcome now leads with a
 compact Files / Graph / Agent contract before its action cards: selected
 markdown files stay local and git-reviewable, frontmatter is the graph database
 input for browse/builder/query views, and Claude Code / Codex / Cursor read the
-same vault through MCP instead of a backend. The picker keeps a small recent-vault list from persisted Tauri paths,
+same vault through MCP instead of a backend. After a vault is opened, the same
+Files / Graph / Agent contract remains pinned below the `/docs` header with the
+current markdown count, compiled ontology node/relation counts, source/browse/query
+handoff links, and read-first agent proof framing, so the active workbench does
+not collapse back into a generic document editor once setup is complete. The picker keeps a small recent-vault list from persisted Tauri paths,
 can reopen those vaults without another Finder selection, shows the last-opened
 time for each remembered vault so repeated desktop work does not become a blind
 path list, keeps that relative time live while the picker stays open, and can

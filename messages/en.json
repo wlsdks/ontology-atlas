@@ -1689,6 +1689,25 @@
       "recentTitle": "Recent vaults",
       "recentEmpty": "No recent vaults yet. Open or create a folder to pin it here."
     },
+    "sourceContract": {
+      "ariaLabel": "Active vault execution contract",
+      "filesLabel": "Files",
+      "filesLocalValue": "{count} local markdown files",
+      "filesSampleValue": "{count} sample markdown files",
+      "filesBody": "The selected folder is the source of truth; every ontology change is a frontmatter diff.",
+      "filesChip": "local md",
+      "filesCta": "Source",
+      "graphLabel": "Graph",
+      "graphValue": "{nodes} nodes · {edges} relations",
+      "graphBody": "Frontmatter compiles into browse, topology, builder, and query surfaces over the same vault.",
+      "graphChip": "compiled",
+      "graphCta": "Browse",
+      "agentLabel": "Agent",
+      "agentValue": "MCP / CLI proof",
+      "agentBody": "Claude Code, Codex, Cursor, and terminal sessions verify the same graph before writes.",
+      "agentChip": "read-first",
+      "agentCta": "Query"
+    },
     "advanced": {
       "viewTopology": "Topology",
       "sourceServer": "Sample",
