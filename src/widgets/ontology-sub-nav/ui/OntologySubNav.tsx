@@ -19,8 +19,9 @@ export { shouldShowOntologySubNav };
  * 데이터를 보지만 사이의 점프 affordance 가 없어 "단절된 시스템" 으로
  * 느껴짐. 본 위젯이
  * - 3 surface 에 동일 pill row 노출
- * - 좌측에 "ONTOLOGY · {N} 노드 · {E} 관계" caption — 모든 view 가 같은
- *   데이터를 보고 있다는 시각 cue
+ * - 좌측에 "ONTOLOGY · projection nodes · frontmatter refs" caption —
+ *   Browse tree projection 과 graph DB proof count 를 혼동하지 않게 하면서
+ *   모든 view 가 같은 vault-derived projection 을 보고 있다는 시각 cue
  * 로 일관성을 회복한다.
  *
  * OperationsNav 안에 inline 렌더 — 둘이 한 nav block 으로 시각적 융합돼
@@ -70,7 +71,10 @@ export function OntologySubNav() {
       aria-label={t('ariaLabel')}
       className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-[color:var(--color-divider)] px-4 py-1.5 md:px-6"
     >
-      <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+      <p
+        className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]"
+        title={t('countHint')}
+      >
         {t('caption')}
         {nodeCount !== null ? (
           <>

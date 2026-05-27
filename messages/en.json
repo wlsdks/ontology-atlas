@@ -40,8 +40,9 @@
   "ontologySubNav": {
     "ariaLabel": "Ontology submenu",
     "caption": "ONTOLOGY",
-    "nodeCount": "{count, plural, one {# node} other {# nodes}}",
-    "edgeCount": "{count, plural, one {# edge} other {# edges}}",
+    "nodeCount": "{count, plural, one {# projection node} other {# projection nodes}}",
+    "edgeCount": "{count, plural, one {# ref} other {# refs}}",
+    "countHint": "UI counts include the tree projection and implicit stubs. They may differ from canonical graph DB proof compile counts.",
     "tree": "Browse",
     "builder": "Builder",
     "insights": "Insights"
@@ -2275,8 +2276,8 @@
       "roleValue": "Hierarchy index",
       "roleHint": "Browse project → domain → capability → element. Write in Builder; query in Insights.",
       "graphRefs": "Graph refs",
-      "graphRefsValue": "{nodes} nodes · {relations} refs",
-      "graphRefsHint": "Counts come from vault frontmatter, not a separate database.",
+      "graphRefsValue": "{nodes} projection nodes · {relations} frontmatter refs",
+      "graphRefsHint": "UI counts include the tree projection and implicit stubs. They come from vault frontmatter, not a separate database.",
       "evidence": "Evidence",
       "evidenceValue": "{count} docs hidden",
       "evidenceHiddenValue": "Docs excluded",
@@ -2399,8 +2400,8 @@
       "snippetHelp": "Save the content above into your vault as something like <code>capabilities/auth.md</code>. More frontmatter keys: <code>domain</code> · <code>capabilities</code> · <code>elements</code> · <code>relates</code> · <code>dependencies</code>."
     },
     "footer": {
-      "counts": "{nodes} nodes · {edges} relations",
-      "countsHint": "Includes implicit stubs declared in frontmatter — may exceed the count of .md files in the vault.",
+      "counts": "{nodes} projection nodes · {edges} refs",
+      "countsHint": "Includes implicit stubs and the tree projection — may differ from the number of .md files or graph DB proof compile counts.",
       "modePrefix": "mode",
       "modeLocal": "Local vault",
       "modeStatic": "Static demo"
