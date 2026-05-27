@@ -15,6 +15,8 @@ export function parseVerifyAppLaunchArgs(argv, {
 } = {}) {
   const positional = argv.filter((arg) => !arg.startsWith("-"));
   const holdMsArg = argv.find((arg) => arg.startsWith("--hold-ms="));
+  const ownerNameArg = argv.find((arg) => arg.startsWith("--require-owner-name="));
+  const minWindowSizeArg = argv.find((arg) => arg.startsWith("--min-window-size="));
 
   return {
     appPath: positional[0] ?? defaultAppPath,
@@ -22,11 +24,17 @@ export function parseVerifyAppLaunchArgs(argv, {
     killExisting: argv.includes("--kill-existing"),
     openApp: argv.includes("--open-app"),
     requireWindow: argv.includes("--require-window"),
+    requireOwnerName: ownerNameArg
+      ? ownerNameArg.slice("--require-owner-name=".length)
+      : null,
+    minWindowSize: minWindowSizeArg
+      ? parseMinWindowSize(minWindowSizeArg.slice("--min-window-size=".length))
+      : null,
   };
 }
 
 function printHelp() {
-  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--open-app] [--require-window]
+  console.log(`Usage: pnpm desktop:verify-app [path/to/${appBundleName}] [--hold-ms=5000] [--kill-existing] [--open-app] [--require-window] [--require-owner-name="Context Atlas"] [--min-window-size=1040x720]
 
 Launches the packaged macOS .app executable, waits long enough to catch early
 startup crashes, then terminates it. This is an unsigned local runtime smoke;
@@ -36,6 +44,10 @@ Options:
   --kill-existing   Terminate already-running copies of this app executable before launch.
   --open-app        Launch through macOS LaunchServices (open -n) instead of spawning the executable directly.
   --require-window  Require an on-screen macOS window owned by the launched app process.
+  --require-owner-name=NAME
+                    Require the visible app window's macOS owner name to match NAME.
+  --min-window-size=WIDTHxHEIGHT
+                    Require the visible app window to be at least WIDTH by HEIGHT points.
 `);
 }
 
@@ -46,6 +58,15 @@ function fail(message) {
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export function parseMinWindowSize(value) {
+  const match = /^(\d+)x(\d+)$/.exec(value);
+  if (!match) return null;
+  return {
+    width: Number(match[1]),
+    height: Number(match[2]),
+  };
 }
 
 async function terminate(child) {
@@ -116,6 +137,32 @@ export function parseOnscreenWindows(payload, ownerPids) {
   });
 }
 
+export function validateWindowRequirements(windows, {
+  requireOwnerName = null,
+  minWindowSize = null,
+} = {}) {
+  if (requireOwnerName) {
+    const matchesOwnerName = windows.some((window) => window.kCGWindowOwnerName === requireOwnerName);
+    if (!matchesOwnerName) {
+      return `no visible app window has owner name "${requireOwnerName}"`;
+    }
+  }
+  if (minWindowSize) {
+    const matchesSize = windows.some((window) => {
+      const bounds = window.kCGWindowBounds;
+      return (
+        bounds &&
+        Number(bounds.Width) >= minWindowSize.width &&
+        Number(bounds.Height) >= minWindowSize.height
+      );
+    });
+    if (!matchesSize) {
+      return `no visible app window is at least ${minWindowSize.width}x${minWindowSize.height}`;
+    }
+  }
+  return null;
+}
+
 function readOnscreenWindows() {
   const swift = `
 import CoreGraphics
@@ -143,7 +190,12 @@ print(String(data: data, encoding: .utf8)!)
   return result.stdout;
 }
 
-function verifyOnscreenWindow({ appPath, executablePath }) {
+function verifyOnscreenWindow({
+  appPath,
+  executablePath,
+  requireOwnerName,
+  minWindowSize,
+}) {
   const pids = processIds(executablePath);
   if (pids.length === 0) {
     fail(`${path.basename(appPath)} has no running process for ${executablePath}.`);
@@ -155,9 +207,25 @@ function verifyOnscreenWindow({ appPath, executablePath }) {
       `${path.basename(appPath)} is running but has no on-screen macOS window for PID(s) ${pids.join(", ")}.`,
     );
   }
+  const unmetRequirement = validateWindowRequirements(windows, {
+    requireOwnerName,
+    minWindowSize,
+  });
+  if (unmetRequirement) {
+    fail(
+      `${path.basename(appPath)} has ${windows.length} visible window(s), but ${unmetRequirement}.`,
+    );
+  }
 }
 
-async function verifyOpenAppLaunch({ appPath, executablePath, holdMs, requireWindow }) {
+async function verifyOpenAppLaunch({
+  appPath,
+  executablePath,
+  holdMs,
+  requireWindow,
+  requireOwnerName,
+  minWindowSize,
+}) {
   const open = spawn("open", ["-n", appPath], {
     cwd: path.dirname(appPath),
     stdio: ["ignore", "pipe", "pipe"],
@@ -197,13 +265,25 @@ async function verifyOpenAppLaunch({ appPath, executablePath, holdMs, requireWin
   }
 
   if (requireWindow) {
-    verifyOnscreenWindow({ appPath, executablePath });
+    verifyOnscreenWindow({
+      appPath,
+      executablePath,
+      requireOwnerName,
+      minWindowSize,
+    });
   }
 
   terminateExisting({ appPath, executablePath });
 }
 
-async function verifyExecutableLaunch({ appPath, executablePath, holdMs, requireWindow }) {
+async function verifyExecutableLaunch({
+  appPath,
+  executablePath,
+  holdMs,
+  requireWindow,
+  requireOwnerName,
+  minWindowSize,
+}) {
   const child = spawn(executablePath, {
     cwd: path.dirname(executablePath),
     stdio: ["ignore", "pipe", "pipe"],
@@ -240,7 +320,12 @@ async function verifyExecutableLaunch({ appPath, executablePath, holdMs, require
   }
 
   if (requireWindow) {
-    verifyOnscreenWindow({ appPath, executablePath });
+    verifyOnscreenWindow({
+      appPath,
+      executablePath,
+      requireOwnerName,
+      minWindowSize,
+    });
   }
 
   await terminate(child);
@@ -262,6 +347,8 @@ async function main() {
     killExisting,
     openApp,
     requireWindow,
+    requireOwnerName,
+    minWindowSize,
   } = parseVerifyAppLaunchArgs(process.argv.slice(2), {
     defaultAppPath: path.join(
       root,
@@ -278,6 +365,12 @@ async function main() {
   if (!Number.isFinite(holdMs) || holdMs < 1000) {
     fail("--hold-ms must be a number >= 1000.");
   }
+  if (process.argv.some((arg) => arg.startsWith("--min-window-size=")) && !minWindowSize) {
+    fail("--min-window-size must use WIDTHxHEIGHT, e.g. 1040x720.");
+  }
+  if ((requireOwnerName || minWindowSize) && !requireWindow) {
+    fail("--require-owner-name and --min-window-size require --require-window.");
+  }
 
   if (!fs.existsSync(appPath)) {
     fail(`missing app bundle at ${appPath}; run pnpm desktop:build:app first.`);
@@ -293,14 +386,30 @@ async function main() {
   }
 
   if (openApp) {
-    await verifyOpenAppLaunch({ appPath, executablePath, holdMs, requireWindow });
+    await verifyOpenAppLaunch({
+      appPath,
+      executablePath,
+      holdMs,
+      requireWindow,
+      requireOwnerName,
+      minWindowSize,
+    });
   } else {
-    await verifyExecutableLaunch({ appPath, executablePath, holdMs, requireWindow });
+    await verifyExecutableLaunch({
+      appPath,
+      executablePath,
+      holdMs,
+      requireWindow,
+      requireOwnerName,
+      minWindowSize,
+    });
   }
 
   console.log(
     `[desktop-app-verify] launched ${appPath} for ${holdMs}ms without early exit${
       requireWindow ? " and with an on-screen window" : ""
+    }${requireOwnerName ? ` owned by ${requireOwnerName}` : ""}${
+      minWindowSize ? ` at least ${minWindowSize.width}x${minWindowSize.height}` : ""
     }`,
   );
 }

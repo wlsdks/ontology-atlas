@@ -210,9 +210,11 @@ built `out/` payload has the root app entry, locale-prefixed docs, ontology,
 topology, builder routes, `_next` assets, and offline desktop docs;
 `pnpm desktop:verify-app` launches the built `.app` long enough to catch early
 Tauri/WebView startup crashes from inside the app executable directory and then
-terminates it; add `-- --kill-existing --open-app --require-window` when a local
-dogfood session needs to clear stale packaged-app processes, launch through
-macOS LaunchServices, and fail if no on-screen app window appears;
+terminates it; add
+`-- --kill-existing --open-app --require-window --require-owner-name="Context Atlas" --min-window-size=1040x720`
+when a local dogfood session needs to clear stale packaged-app processes,
+launch through macOS LaunchServices, and fail unless the real Context Atlas
+window appears at desktop-builder size;
 `pnpm desktop:verify-install` mounts the DMG, verifies the
 Applications symlink points to `/Applications`, copies the app to a temporary
 install folder, launch-smokes that copied app from its own executable directory,
