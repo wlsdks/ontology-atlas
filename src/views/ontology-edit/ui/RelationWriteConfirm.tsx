@@ -181,7 +181,7 @@ export function RelationWriteConfirm({
   const targetBuilderHref = buildRelationBuilderHref(proposal.targetSlug);
   const sourceTopologyFocusHref = buildRelationTopologyFocusHref(proposal.sourceSlug);
   const targetTopologyFocusHref = buildRelationTopologyFocusHref(proposal.targetSlug);
-  const queryCockpitHref = buildRelationQueryCockpitHref();
+  const queryCockpitHref = buildRelationQueryCockpitHref(proposal.sourceSlug);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [cliPreflightCopyState, setCliPreflightCopyState] = useState<
     "idle" | "copied" | "failed"
@@ -774,7 +774,7 @@ function formatRelationWritePacket({
     )}`,
     `- Source topology focus: ${buildRelationTopologyFocusHref(proposal.sourceSlug)}`,
     `- Target topology focus: ${buildRelationTopologyFocusHref(proposal.targetSlug)}`,
-    `- Query cockpit: ${buildRelationQueryCockpitHref()}`,
+    `- Query cockpit: ${buildRelationQueryCockpitHref(proposal.sourceSlug)}`,
     `- Inferred key: ${proposal.inferredKey}`,
     `- Inference reason: ${explainOntologyRelationKeyInference(
       proposal.sourceKind,
@@ -1108,6 +1108,8 @@ export function buildRelationTopologyFocusHref(slug: string): string {
   return `/topology/?mode=focus&p=${encodeURIComponent(slug)}`;
 }
 
-export function buildRelationQueryCockpitHref(): string {
-  return "/ontology/insights/";
+export function buildRelationQueryCockpitHref(slug?: string): string {
+  return slug
+    ? `/ontology/insights/?node=${encodeURIComponent(slug)}`
+    : "/ontology/insights/";
 }

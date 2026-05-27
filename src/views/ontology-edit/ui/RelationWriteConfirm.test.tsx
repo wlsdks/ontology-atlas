@@ -289,7 +289,9 @@ describe("RelationWriteConfirm", () => {
     );
     expect(screen.getByRole("link", { name: "Open query cockpit" })).toHaveAttribute(
       "href",
-      expect.stringContaining("/ontology/insights/"),
+      expect.stringContaining(
+        "/ontology/insights/?node=capabilities%2Fmcp-server",
+      ),
     );
     expect(screen.getByText("Save decision checklist")).toBeInTheDocument();
     expect(
@@ -427,7 +429,9 @@ describe("RelationWriteConfirm", () => {
       ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining("- Query cockpit: /ontology/insights/"),
+      expect.stringContaining(
+        "- Query cockpit: /ontology/insights/?node=capabilities%2Fmcp-server",
+      ),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining("- Inferred key: elements"),
@@ -925,7 +929,7 @@ describe("RelationPostSaveHandoff", () => {
     );
     expect(screen.getByRole("link", { name: "Open query cockpit" })).toHaveAttribute(
       "href",
-      "/ontology/insights/",
+      "/ontology/insights/?node=capabilities%2Fmcp-server",
     );
   });
 
@@ -967,7 +971,9 @@ describe("RelationPostSaveHandoff", () => {
     expect(copied).toContain(
       "/topology/?mode=path&pathFrom=capabilities%2Fmcp-server&pathTo=elements%2Fmcp-index",
     );
-    expect(copied).toContain("- Query cockpit: /ontology/insights/");
+    expect(copied).toContain(
+      "- Query cockpit: /ontology/insights/?node=capabilities%2Fmcp-server",
+    );
     expect(copied).toContain(
       "oh-my-ontology relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
     );

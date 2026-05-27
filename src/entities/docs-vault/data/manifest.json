@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T18:40:01.826Z",
+  "generatedAt": "2026-05-27T18:43:39.144Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6083,8 +6083,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/RelationWriteConfirm.tsx is the confirmation panel shown after dragging between two persisted vault nodes. It presents the inferred edge with a dedicated inferredkey row and the schema reason behind that inference, selectable relation keys, a writescope table with the source markdown file, cha",
-      "wordCount": 1126,
-      "updatedAt": "2026-05-25T09:20:43.443Z",
+      "wordCount": 1135,
+      "updatedAt": "2026-05-27T18:43:33.496Z",
       "linksOut": []
     },
     {
