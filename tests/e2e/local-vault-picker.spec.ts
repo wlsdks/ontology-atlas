@@ -1,127 +1,60 @@
 import { test, expect } from "@playwright/test";
 
 /**
- * 로컬 볼트 picker 회귀 차단.
+ * 로컬 vault 진입 정책 회귀 차단.
  *
- * `showDirectoryPicker` 는 브라우저 native API 라 헤드리스에서 열 수 없으므로
- * `addInitScript` 로 가짜 `FileSystemDirectoryHandle` 을 주입한다. 가짜 핸들은
- * 단일 .md 파일 (sample.md) 을 가진 폴더를 흉내낸다.
+ * 현재 writable local vault 작업은 설치된 macOS 앱(Tauri runtime)에서만
+ * 시작한다. 브라우저 hosted/docs 표면은 read-only sample 문서와 macOS
+ * download 안내를 유지해야 한다.
  *
  * 검증 흐름:
- *  1. `/docs/` 의 source 토글을 'local' 로 미리 설정 (localStorage seed).
- *  2. 폴더 열기 버튼이 보인다.
- *  3. 클릭 → mock 핸들이 반환되며 buildLocalManifest 가 1 문서를 빌드.
- *  4. loaded 헤더가 문서 수를 보이고, auto-open tools panel 은 닫힌다.
- *     수동으로 tools 를 열면 vault 이름 (TestVault) 이 보인다.
+ *  1. 브라우저에서 `/docs/?intent=local` 로 직접 들어와도 sample source 유지.
+ *  2. local radio 는 disabled 이고 download 안내가 보인다.
+ *  3. localStorage 에 stale local source 가 있어도 hosted browser 에서는
+ *     writable picker / desktop welcome 을 열지 않는다.
  *
  * 실행: 별도 dev server (`next dev -p 3100`) 가 떠 있어야 함.
  *   pnpm exec playwright test tests/e2e/local-vault-picker.spec.ts
  */
-
-const MOCK_PICKER_SCRIPT = `
-  (() => {
-    const fileHandle = {
-      kind: 'file',
-      name: 'sample.md',
-      queryPermission: async () => 'granted',
-      requestPermission: async () => 'granted',
-      getFile: async () => ({
-        text: async () => '---\\ntitle: Sample Doc\\n---\\n\\n# Sample Doc\\n\\n로컬 볼트 e2e mock 의 본문.',
-        lastModified: 1700000000000,
-      }),
-    };
-    const root = {
-      kind: 'directory',
-      name: 'TestVault',
-      queryPermission: async () => 'granted',
-      requestPermission: async () => 'granted',
-      entries: async function*() {
-        yield ['sample.md', fileHandle];
-      },
-      getFileHandle: async () => fileHandle,
-    };
-    window.showDirectoryPicker = async () => root;
-  })();
-`;
 
 const PRESET_LOCAL_SOURCE = `
   try { window.localStorage.setItem('demo:docs-vault:source', 'local'); }
   catch (_) { /* private mode */ }
 `;
 
-const REMOVE_SHOW_DIRECTORY_PICKER = `
-  try { delete window.showDirectoryPicker; } catch (_) { /* ignore */ }
-`;
-
-test.describe("로컬 볼트 picker", () => {
-  test("first-time local intent shows the dogfood vault hint", async ({ page }) => {
+test.describe("로컬 vault browser gate", () => {
+  test("browser local intent keeps the hosted docs surface read-only", async ({
+    page,
+  }) => {
     await page.addInitScript(PRESET_LOCAL_SOURCE);
 
     await page.goto("/en/docs/?intent=local");
 
-    await expect(
-      page.getByText(/First time\? Try selecting this repo's/),
-    ).toBeVisible();
-    await expect(page.getByText("docs/ontology/")).toBeVisible();
-    await expect(
-      page.getByText(/this tool's own ontology vault appears/),
-    ).toBeVisible();
-  });
-
-  test("폴더 선택 후 매니페스트가 빌드되어 문서 1개 표시", async ({ page }) => {
-    await page.addInitScript(MOCK_PICKER_SCRIPT);
-    await page.addInitScript(PRESET_LOCAL_SOURCE);
-
-    await page.goto("/en/docs/?intent=local");
-
-    const openButton = page.getByRole("button", {
-      name: /Open my markdown folder/,
-    });
-    await expect(openButton).toBeVisible();
-    await openButton.click();
-
-    // loaded 헤더 — 문서 수가 먼저 보여야 하고, intent 로 자동 열린 tools
-    // panel 은 로드 완료 후 닫혀 본문을 가리지 않아야 한다.
-    await expect(page.getByText("1 DOCS").first()).toBeVisible();
-    await expect(page.locator('[role="menu"]')).not.toBeVisible();
-
-    await page.getByRole("button", { name: "Open vault tools menu" }).click();
-    await expect(page.getByText("TestVault")).toBeVisible({ timeout: 15_000 });
-  });
-
-  test("loaded 상태에서 닫기 클릭 시 idle 로 복귀", async ({ page }) => {
-    await page.addInitScript(MOCK_PICKER_SCRIPT);
-    await page.addInitScript(PRESET_LOCAL_SOURCE);
-
-    await page.goto("/en/docs/?intent=local");
-
-    const openButton = page.getByRole("button", {
-      name: /Open my markdown folder/,
-    });
-    await openButton.click();
-    await expect(page.getByText("1 DOCS").first()).toBeVisible({
-      timeout: 15_000,
-    });
-    await page.getByRole("button", { name: "Open vault tools menu" }).click();
-    await expect(page.getByText("TestVault")).toBeVisible();
-
-    // 닫기 버튼 (aria-label) 클릭 → 다시 idle 의 폴더 열기 버튼이 나타나야.
-    await page.getByRole("button", { name: "Close local vault" }).click();
-    await expect(openButton).toBeVisible();
-    await expect(page.getByText("TestVault")).not.toBeVisible();
-  });
-
-  test("File System Access API 미지원 브라우저는 안내 메시지", async ({ page }) => {
-    await page.addInitScript(REMOVE_SHOW_DIRECTORY_PICKER);
-    await page.addInitScript(PRESET_LOCAL_SOURCE);
-
-    await page.goto("/en/docs/?intent=local");
-
-    // unsupported 상태 — Shield 아이콘 + Chrome/Edge/Safari 18.2+ 안내 텍스트.
+    await expect(page.getByRole("heading", { name: "Docs Vault" })).toBeVisible();
+    await expect(page.getByRole("radio", { name: "Sample" })).toBeChecked();
+    await expect(page.getByRole("radio", { name: "Local" })).toBeDisabled();
     await expect(
       page.getByText(
-        /Local folders need Chrome, Edge, or Safari 18\.2\+/,
+        "Local vault work now starts in the installed macOS app. Use the download page to install it.",
       ),
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Open my markdown folder/ }),
+    ).not.toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /Open or create an ontology vault/ }),
+    ).not.toBeVisible();
+  });
+
+  test("browser local intent still shows sample graph docs", async ({ page }) => {
+    await page.goto("/en/docs/?intent=local");
+
+    await expect(page.getByText("90 docs")).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Document tree" }))
+      .toBeVisible();
+    await expect(page.getByRole("button", { name: "Agent Graph Workflow" }))
+      .toBeVisible();
+    await expect(page.getByRole("link", { name: "Open topology graph" }))
+      .toHaveAttribute("href", "/en/topology/");
   });
 });
