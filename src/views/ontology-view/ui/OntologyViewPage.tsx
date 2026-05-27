@@ -635,16 +635,19 @@ function TreeSelectionHint() {
   const t = useTranslations("ontologyView.selectionHint");
   const items = [
     {
+      step: "01",
       icon: Network,
       label: t("browseLabel"),
       value: t("browseValue"),
     },
     {
+      step: "02",
       icon: PencilLine,
       label: t("writeLabel"),
       value: t("writeValue"),
     },
     {
+      step: "03",
       icon: BarChart3,
       label: t("queryLabel"),
       value: t("queryValue"),
@@ -671,14 +674,21 @@ function TreeSelectionHint() {
             return (
               <span
                 key={item.label}
-                className="inline-flex min-w-0 items-center gap-1.5 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1"
+                className="inline-flex min-w-0 items-center gap-2 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-2 py-1.5"
               >
-                <Icon size={11} className="shrink-0 text-[color:var(--color-indigo-accent)]" aria-hidden />
-                <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-                  {item.label}
+                <span className="flex h-7 w-7 shrink-0 flex-col items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)]">
+                  <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">
+                    {item.step}
+                  </span>
+                  <Icon size={10} className="mt-0.5 text-[color:var(--color-indigo-accent)]" aria-hidden />
                 </span>
-                <span className="max-w-[120px] truncate text-[10px] text-[color:var(--color-text-secondary)]">
-                  {item.value}
+                <span className="min-w-0">
+                  <span className="block font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                    {item.label}
+                  </span>
+                  <span className="block max-w-[118px] truncate text-[10px] text-[color:var(--color-text-secondary)]">
+                    {item.value}
+                  </span>
                 </span>
               </span>
             );
@@ -1144,48 +1154,63 @@ function NodeDetailPanel({
       </p>
       <nav
         aria-label={t('handoffAriaLabel')}
-        className="mt-3 grid grid-cols-3 gap-1.5"
+        className="mt-3 grid grid-cols-1 gap-1.5 2xl:grid-cols-3"
       >
         <Link
           href={topologyHref}
           className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:text-[color:var(--color-text-primary)]"
         >
-          <span className="flex min-w-0 items-center gap-1.5">
-            <Network size={12} className="shrink-0 text-[color:var(--color-indigo-accent)]" aria-hidden />
-            <span className="truncate font-mono text-[9px] uppercase tracking-[0.10em]">
-              {t('handoffBrowseLabel')}
+          <span className="flex min-w-0 items-start gap-1">
+            <span className="flex h-6 w-6 shrink-0 flex-col items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
+              <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">01</span>
+              <Network size={9} className="mt-0.5 text-[color:var(--color-indigo-accent)]" aria-hidden />
             </span>
-          </span>
-          <span className="mt-1 block truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-            {t('handoffBrowseProof')}
+            <span className="min-w-0">
+              <span className="block truncate font-mono text-[8px] uppercase tracking-[0.08em]">
+                {t('handoffBrowseLabel')}
+              </span>
+              <span className="mt-0.5 block truncate font-mono text-[8px] uppercase tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
+                {t('handoffBrowseProof')}
+              </span>
+            </span>
           </span>
         </Link>
         <Link
           href={builderHref}
           className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:text-[color:var(--color-text-primary)]"
         >
-          <span className="flex min-w-0 items-center gap-1.5">
-            <PencilLine size={12} className="shrink-0 text-[color:var(--color-indigo-accent)]" aria-hidden />
-            <span className="truncate font-mono text-[9px] uppercase tracking-[0.10em]">
-              {t('handoffWriteLabel')}
+          <span className="flex min-w-0 items-start gap-1">
+            <span className="flex h-6 w-6 shrink-0 flex-col items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
+              <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">02</span>
+              <PencilLine size={9} className="mt-0.5 text-[color:var(--color-indigo-accent)]" aria-hidden />
             </span>
-          </span>
-          <span className="mt-1 block truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-            {t('handoffWriteProof')}
+            <span className="min-w-0">
+              <span className="block truncate font-mono text-[8px] uppercase tracking-[0.08em]">
+                {t('handoffWriteLabel')}
+              </span>
+              <span className="mt-0.5 block truncate font-mono text-[8px] uppercase tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
+                {t('handoffWriteProof')}
+              </span>
+            </span>
           </span>
         </Link>
         <Link
           href={reviewBrief.handoffLinks.query}
           className="min-w-0 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2 py-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:text-[color:var(--color-text-primary)]"
         >
-          <span className="flex min-w-0 items-center gap-1.5">
-            <BarChart3 size={12} className="shrink-0 text-[color:var(--color-indigo-accent)]" aria-hidden />
-            <span className="truncate font-mono text-[9px] uppercase tracking-[0.10em]">
-              {t('handoffQueryLabel')}
+          <span className="flex min-w-0 items-start gap-1">
+            <span className="flex h-6 w-6 shrink-0 flex-col items-center justify-center rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(0,0,0,0.12)]">
+              <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">03</span>
+              <BarChart3 size={9} className="mt-0.5 text-[color:var(--color-indigo-accent)]" aria-hidden />
             </span>
-          </span>
-          <span className="mt-1 block truncate font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
-            {t('handoffQueryProof')}
+            <span className="min-w-0">
+              <span className="block truncate font-mono text-[8px] uppercase tracking-[0.08em]">
+                {t('handoffQueryLabel')}
+              </span>
+              <span className="mt-0.5 block truncate font-mono text-[8px] uppercase tracking-[0.04em] text-[color:var(--color-text-quaternary)]">
+                {t('handoffQueryProof')}
+              </span>
+            </span>
           </span>
         </Link>
       </nav>
