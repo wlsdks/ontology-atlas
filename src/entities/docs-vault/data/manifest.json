@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T18:48:01.859Z",
+  "generatedAt": "2026-05-27T18:57:51.150Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1499,
-      "updatedAt": "2026-05-27T18:02:18.675Z",
+      "wordCount": 1501,
+      "updatedAt": "2026-05-27T18:57:16.594Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260525 (agent setup gate, graph DBstyle query pack, CLI/MCP verification snapshots, and fallback performance checks). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongside t",
-      "wordCount": 7651,
-      "updatedAt": "2026-05-27T11:44:50.027Z",
+      "wordCount": 7652,
+      "updatedAt": "2026-05-27T18:57:39.940Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6187,8 +6187,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. The cockpit makes the local markdown graph feel executable before the analytic charts begin. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the copyable graph DB pack, an",
-      "wordCount": 371,
-      "updatedAt": "2026-05-27T18:47:18.015Z",
+      "wordCount": 376,
+      "updatedAt": "2026-05-27T18:57:22.190Z",
       "linksOut": []
     },
     {

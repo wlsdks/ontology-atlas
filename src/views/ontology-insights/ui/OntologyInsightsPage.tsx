@@ -951,7 +951,14 @@ function InsightsQueryPackCockpit({
       .map(formatAgentQueryCallCliCommand)
       .filter((command): command is string => command !== null).length,
   }));
-  const selfCheckFields = ["ok", "performanceOk", "failed", "commands[].timedOut"];
+  const selfCheckFields = [
+    "ok",
+    "performanceOk",
+    "failed",
+    "commands[].timedOut",
+    "health.status",
+    "health.checks[].status",
+  ];
 
   return (
     <section
@@ -1974,6 +1981,9 @@ function AgentQueryRecipesPanel({
           </p>
           <code className="mt-1 block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
             {AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
+          </code>
+          <code className="mt-1 block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
+            {DOGFOOD_GRAPH_DB_RUNTIME_COMMAND}
           </code>
         </div>
         <div

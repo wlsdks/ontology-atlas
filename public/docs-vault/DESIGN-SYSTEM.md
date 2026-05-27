@@ -134,7 +134,8 @@ slug.
 Query surfaces should expose the executable query pack before deeper charts.
 Use a compact cockpit with readiness, pack size, MCP call count, CLI fallback
 count, representative `MATCH ...` intents, first-operation badges, per-intent
-payload/fallback counts, scan/path result contracts, and the self-check gate.
+payload/fallback counts, scan/path result contracts, and the self-check plus
+health gate.
 Deeper panels can explain contracts, but the first viewport should make it
 clear that the local markdown graph can be scanned like a small graph database
 without treating raw rows or partial paths as proof.

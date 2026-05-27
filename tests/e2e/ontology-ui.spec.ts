@@ -215,7 +215,8 @@ test.describe("ontology view UI", () => {
     await expect(queryCockpit).toContainText("totalMatches");
     await expect(queryCockpit).toContainText("Path contract");
     await expect(queryCockpit).toContainText("evidence.pathsComplete");
-    await expect(queryCockpit).toContainText("self-check gate");
+    await expect(queryCockpit).toContainText("self-check + health gate");
+    await expect(queryCockpit).toContainText("health.status");
     await queryCockpit.getByRole("button", { name: "Copy CLI pack" }).click();
     const copiedCockpitCliPack = await page.evaluate(
       () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
@@ -486,6 +487,9 @@ test.describe("ontology view UI", () => {
     await expect(recipes).toContainText("oh-my-ontology all-paths");
     await expect(recipes.getByTestId("insights-agent-graph-db-self-check")).toContainText(
       "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+    );
+    await expect(recipes.getByTestId("insights-agent-graph-db-self-check")).toContainText(
+      "pnpm dogfood:graph-db",
     );
     const graphDbModeGuide = recipes.getByTestId("insights-agent-graph-db-mode-guide");
     await expect(graphDbModeGuide).toContainText("CLI-only");
