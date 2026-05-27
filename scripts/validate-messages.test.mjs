@@ -98,11 +98,17 @@ describe('i18n message catalog', () => {
     assert.match(en.ontologyPages.edit.page.toastDemoModeDownload, /install the macOS app/i);
     assert.match(en.ontologyPages.edit.inspector.vaultFooterReadOnlyDownload, /install the macOS app/i);
     assert.match(en.ontologyPages.edit.onboarding.stepSaveBodyDownload, /install the macOS app/i);
+    assert.doesNotMatch(en.ontologyPages.edit.onboarding.stepConnectBody, /save automatically/i);
+    assert.match(en.ontologyPages.edit.onboarding.stepConnectBody, /write preview and preflight first/i);
+    assert.match(en.ontologyPages.edit.onboarding.stepConnectBody, /choose the relation key, then save/i);
     assert.match(en.ontologyPages.edit.page.toastDemoModePicker, /local vault folder/i);
     assert.match(en.ontologyPages.edit.inspector.vaultFooterReadOnlyPicker, /local vault folder/i);
     assert.match(en.ontologyPages.edit.onboarding.stepSaveBodyPicker, /top-right demo badge/i);
     assert.match(ko.ontologyPages.edit.page.toastDemoModeDownload, /macOS 앱 설치/);
     assert.match(ko.ontologyPages.edit.inspector.vaultFooterReadOnlyDownload, /macOS 앱/);
+    assert.doesNotMatch(ko.ontologyPages.edit.onboarding.stepConnectBody, /자동 저장/);
+    assert.match(ko.ontologyPages.edit.onboarding.stepConnectBody, /write preview 와 preflight/);
+    assert.match(ko.ontologyPages.edit.onboarding.stepConnectBody, /relation key 를 고른 뒤 저장/);
     assert.match(en.ontologyView.getStarted.stepStaticVaultDescDownload, /hosted browser is read-only/i);
     assert.match(en.ontologyView.getStarted.stepStaticVaultDescDownload, /install the macOS app/i);
     assert.match(en.ontologyView.getStarted.stepStaticVaultDescPicker, /local vault folder/i);

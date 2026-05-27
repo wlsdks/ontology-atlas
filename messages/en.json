@@ -1078,7 +1078,7 @@
         "stepPaletteStrong": "Click a kind on the left (or press P/D/C/E)",
         "stepPaletteBody": " — Project · Domain · Capability · Element. Hit the matching key to drop one without leaving the canvas.",
         "stepConnectStrong": "Drag from a node's edge handle",
-        "stepConnectBody": " and drop on another node — the two get a *relation (depends / contains / describes)* between them. Vault↔vault relations save automatically. If either endpoint is unsaved (amber), click the **Save** chip on the edge to persist both at once.",
+        "stepConnectBody": " and drop on another node — the two get a *relation (depends / contains / describes)* between them. Vault↔vault relations open a write preview and preflight first; choose the relation key, then save. If either endpoint is unsaved (amber), click the **Save** chip on the edge to persist both at once.",
         "stepSaveStrong": "Save",
         "stepSaveBodyDownload": " — straight to disk as `.md` when a vault is open. In the hosted browser this canvas is read-only; install the macOS app for writable local work. AI agents read and write the same map over MCP.",
         "stepSaveBodyPicker": " — straight to disk as `.md` when a vault is open. Without a vault the canvas is read-only; open one from the top-right demo badge. AI agents read and write the same map over MCP.",

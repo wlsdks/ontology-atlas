@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T18:09:30.938Z",
+  "generatedAt": "2026-05-27T18:15:11.806Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4868,8 +4868,8 @@
       },
       "headings": [],
       "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (20260514) 로 7 commit 단위 도입. n8nstyle edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 MCP dependency alias 호환 — dependson 으로 작성된 agent/CLI edge 도 builder graph 에서는 canonical depe",
-      "wordCount": 301,
-      "updatedAt": "2026-05-27T15:17:59.213Z",
+      "wordCount": 339,
+      "updatedAt": "2026-05-27T18:15:00.345Z",
       "linksOut": []
     },
     {
@@ -6245,8 +6245,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditCanvas.tsx renders the xyflow canvas inside /ontology/edit, while src/views/ontologyedit/ui/OntologyEditPage.tsx now owns the pagelevel graph entrypoint rail above that canvas. The canvas turns the local vault manifest into editable graph nodes and edges, keeps vault nodes draggabl",
-      "wordCount": 233,
-      "updatedAt": "2026-05-27T18:02:27.970Z",
+      "wordCount": 292,
+      "updatedAt": "2026-05-27T18:15:06.115Z",
       "linksOut": []
     },
     {
