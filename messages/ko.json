@@ -745,6 +745,8 @@
           "sourceWritable": "로컬 vault write",
           "sourceReadonly": "샘플 read-only",
           "sourceBody": "저장 노드 {nodes}개 · frontmatter 참조 {relations}개",
+          "sourceBodyWritable": "선택한 vault 에 직접 저장 · 노드 {nodes}개 · 참조 {relations}개",
+          "sourceBodyReadonly": "샘플 그래프만 보기 · 노드 {nodes}개 · 참조 {relations}개",
           "sourceActionLocal": "로컬 vault 열기",
           "sourceActionDownload": "macOS 앱 받기",
           "draftLabel": "Draft",

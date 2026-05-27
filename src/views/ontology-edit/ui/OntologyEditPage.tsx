@@ -159,7 +159,9 @@ function BuilderWriteSummary({
     {
       label: t("sourceLabel"),
       value: writable ? t("sourceWritable") : t("sourceReadonly"),
-      body: t("sourceBody", { nodes: persistedNodes, relations: persistedRelations }),
+      body: writable
+        ? t("sourceBodyWritable", { nodes: persistedNodes, relations: persistedRelations })
+        : t("sourceBodyReadonly", { nodes: persistedNodes, relations: persistedRelations }),
       accent: writable ? "indigo" : "amber",
       ...sourceAction,
     },

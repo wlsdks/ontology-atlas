@@ -745,6 +745,8 @@
           "sourceWritable": "Local vault write",
           "sourceReadonly": "Sample read-only",
           "sourceBody": "{nodes} persisted nodes · {relations} frontmatter refs",
+          "sourceBodyWritable": "Writes to the selected vault · {nodes} nodes · {relations} refs",
+          "sourceBodyReadonly": "Sample graph only · {nodes} nodes · {relations} refs",
           "sourceActionLocal": "Open local vault",
           "sourceActionDownload": "Get macOS app",
           "draftLabel": "Draft",

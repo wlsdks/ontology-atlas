@@ -7,6 +7,6 @@ domain: views
 
 `src/views/ontology-edit/ui/OntologyEditPage.tsx` owns the compact `Source` / `Draft` / `Guard` / `Proof` status strip above the `/ontology/edit` canvas.
 
-The strip makes the builder persistence contract visible before a user touches the canvas: source distinguishes local writable vaults from sample read-only data, draft counts unsaved canvas nodes and edges, guard explains relation key inference and preflight before frontmatter mutation, and proof hands off to `/ontology/insights/` for graph DB-style validation.
+The strip is the builder persistence contract before the canvas: `Source` distinguishes local writable vaults from sample read-only data, `Draft` counts unsaved canvas nodes/edges, `Guard` names relation preview and preflight, and `Proof` hands the user to `/ontology/insights` for query cockpit validation after graph writes.
 
-When a vault node is selected, the Proof cell changes from a generic MCP/CLI handoff into selected-node verification: `node_profile`, `blast_radius`, and the shared sync gate for that slug. When a relation write confirmation is open, the Guard cell names the concrete `source.key -> target` relation waiting for preflight, so the top-level builder contract reflects the active graph mutation rather than staying canvas-generic.
+`Source` body copy is mode-specific so the first viewport no longer relies only on a short value label: local mode says writes go directly to the selected vault, while sample mode says the graph is view-only and points users to the local vault picker. This keeps the builder experience aligned with the local-first workbench model instead of reading like a generic diagram editor.
