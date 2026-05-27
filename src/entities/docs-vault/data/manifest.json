@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T17:55:47.370Z",
+  "generatedAt": "2026-05-27T18:02:41.462Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1443,
-      "updatedAt": "2026-05-27T17:53:16.833Z",
+      "wordCount": 1499,
+      "updatedAt": "2026-05-27T18:02:18.675Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -6245,8 +6245,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditCanvas.tsx renders the xyflow canvas inside /ontology/edit, while src/views/ontologyedit/ui/OntologyEditPage.tsx now owns the pagelevel graph entrypoint rail above that canvas. The canvas turns the local vault manifest into editable graph nodes and edges, keeps vault nodes draggabl",
-      "wordCount": 196,
-      "updatedAt": "2026-05-27T17:34:08.843Z",
+      "wordCount": 233,
+      "updatedAt": "2026-05-27T18:02:27.970Z",
       "linksOut": []
     },
     {

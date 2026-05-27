@@ -782,6 +782,8 @@
         "canvasEntryRail": {
           "label": "Graph entrypoints",
           "stats": "{nodes} nodes · {relations} refs",
+          "focusChip": "focus saved slug",
+          "hint": "Pick a persisted anchor before drawing; focus, inspector, and proof links keep the same slug.",
           "anchorTitle": "{kind} anchor: {label}"
         },
         "exportButton": "Export md ↓",

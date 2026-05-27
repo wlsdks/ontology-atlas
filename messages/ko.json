@@ -782,6 +782,8 @@
         "canvasEntryRail": {
           "label": "그래프 진입점",
           "stats": "노드 {nodes} · 참조 {relations}",
+          "focusChip": "저장 slug 먼저",
+          "hint": "그리기 전에 저장된 기준점을 고르세요. 포커스, 인스펙터, proof 링크가 같은 slug 를 유지합니다.",
           "anchorTitle": "{kind} 기준점: {label}"
         },
         "exportButton": "md 내보내기 ↓",

@@ -182,6 +182,12 @@ function BuilderCanvasEntryRail({
         <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
           {t("stats", { nodes: nodeCount, relations: relationCount })}
         </p>
+        <span
+          className="rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)]"
+          title={t("hint")}
+        >
+          {t("focusChip")}
+        </span>
       </div>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {anchors.map((anchor) => (

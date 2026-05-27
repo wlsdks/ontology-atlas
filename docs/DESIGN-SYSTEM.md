@@ -125,6 +125,11 @@ the builder first viewport reads as a write/verify loop rather than a generic
 diagram toolbar. Number those cells as a visible execution order and add one
 short loop-action line per cell, so users can read the builder as source check
 → draft → guard → proof without opening the help popover.
+The canvas entry rail should then pick up that same loop at the graph level:
+name the rail as persisted graph entrypoints, show the node/ref counts, and add
+a compact `focus saved slug` chip plus hover hint that users should focus a
+saved anchor before drawing so the inspector and proof handoffs keep the same
+slug.
 
 Query surfaces should expose the executable query pack before deeper charts.
 Use a compact cockpit with readiness, pack size, MCP call count, CLI fallback
