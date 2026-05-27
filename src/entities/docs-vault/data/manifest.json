@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T23:38:03.863Z",
+  "generatedAt": "2026-05-27T23:51:44.636Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5431,6 +5431,7 @@
           "capabilities/mode-aware-adapter"
         ],
         "elements": [
+          "elements/ontology-sub-nav",
           "elements/ontology-tree-projection-summary",
           "ontology-workbench-summary",
           "src/features/vault-ontology/model/use-ontology-insight.ts",
@@ -5453,7 +5454,7 @@
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (moduleload 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), la",
       "wordCount": 499,
-      "updatedAt": "2026-05-27T23:26:37.838Z",
+      "updatedAt": "2026-05-27T23:51:29.623Z",
       "linksOut": []
     },
     {
@@ -6000,6 +6001,7 @@
           "elements/ontology-design-surface-guard",
           "elements/ontology-edit-canvas",
           "elements/ontology-graph-proof-rail",
+          "elements/ontology-sub-nav",
           "elements/ontology-tree-projection-summary",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
@@ -6033,7 +6035,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 designsystem 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-05-27T20:37:08.310Z",
+      "updatedAt": "2026-05-27T23:51:29.622Z",
       "linksOut": []
     },
     {
@@ -6361,6 +6363,23 @@
       "excerpt": "src/views/ontologyview/lib/reviewbrief.ts and the selectednode detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and direct ",
       "wordCount": 576,
       "updatedAt": "2026-05-27T22:53:27.276Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/ontology-sub-nav",
+      "path": "docs/ontology/elements/ontology-sub-nav.md",
+      "title": "Ontology Sub Nav",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-sub-nav",
+        "kind": "element",
+        "title": "Ontology Sub Nav",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/widgets/ontologysubnav/ui/OntologySubNav.tsx renders the shared /ontology surface switcher for Browse, Builder, and Insights. It labels counts as projection nodes and frontmatter references so the hierarchy browse surface is not confused with canonical graph DB proof compile counts.",
+      "wordCount": 36,
+      "updatedAt": "2026-05-27T23:51:18.245Z",
       "linksOut": []
     },
     {
@@ -7986,6 +8005,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-review-brief",
                 "title": "Ontology Review Brief"
+              },
+              {
+                "name": "ontology-sub-nav",
+                "path": "ontology/elements/ontology-sub-nav",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-sub-nav",
+                "title": "Ontology Sub Nav"
               },
               {
                 "name": "ontology-tree-projection-summary",
