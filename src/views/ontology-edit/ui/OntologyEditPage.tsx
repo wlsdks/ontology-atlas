@@ -1,17 +1,20 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
   Download,
+  Database,
   FileJson,
   Info,
   Maximize2,
   Minimize2,
   Network,
+  PencilLine,
+  ShieldCheck,
   Trash2,
   Wand2,
 } from "lucide-react";
@@ -238,29 +241,36 @@ function BuilderWriteSummary({
           : t("sourceActionDownload"),
       };
   const items: Array<{
+    icon: ReactNode;
     label: string;
     value: string;
     body: string;
+    chip: string;
     accent: "indigo" | "amber" | "neutral";
     href?: SummaryHref;
     actionLabel?: string;
   }> = [
     {
+      icon: <Database size={12} />,
       label: t("sourceLabel"),
       value: writable ? t("sourceWritable") : t("sourceReadonly"),
       body: writable
         ? t("sourceBodyWritable", { nodes: persistedNodes, relations: persistedRelations })
         : t("sourceBodyReadonly", { nodes: persistedNodes, relations: persistedRelations }),
+      chip: writable ? t("sourceChipWritable") : t("sourceChipReadonly"),
       accent: writable ? "indigo" : "amber",
       ...sourceAction,
     },
     {
+      icon: <PencilLine size={12} />,
       label: t("draftLabel"),
       value: t("draftValue", { nodes: draftNodes, edges: draftEdges }),
       body: t("draftBody"),
+      chip: t("draftChip"),
       accent: draftNodes > 0 || draftEdges > 0 ? "indigo" : "neutral",
     },
     {
+      icon: <ShieldCheck size={12} />,
       label: t("guardLabel"),
       value: pendingRelation ? t("guardValueReview") : t("guardValue"),
       body: pendingRelation
@@ -270,14 +280,17 @@ function BuilderWriteSummary({
             target: pendingRelation.targetSlug,
           })
         : t("guardBody"),
+      chip: pendingRelation ? t("guardChipReview") : t("guardChip"),
       accent: pendingRelation ? "indigo" : "neutral",
     },
     {
+      icon: <Network size={12} />,
       label: t("proofLabel"),
       value: selectedVaultSlug ? t("proofValueSelected") : t("proofValue"),
       body: selectedVaultSlug
         ? t("proofBodySelected", { slug: selectedVaultSlug })
         : t("proofBody"),
+      chip: selectedVaultSlug ? t("proofChipSelected") : t("proofChip"),
       accent: "neutral",
       href: proofHref,
       actionLabel: selectedVaultSlug ? t("proofActionSelected") : t("proofAction"),
@@ -301,11 +314,17 @@ function BuilderWriteSummary({
             key={item.label}
             className={`min-w-0 rounded-lg border px-3 py-2 ${accentClass}`}
           >
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-              {item.label}
-            </p>
+            <div className="flex min-w-0 items-center gap-1.5 text-[color:var(--color-text-quaternary)]">
+              <span className="shrink-0 text-[color:var(--color-indigo-accent)]">{item.icon}</span>
+              <p className="min-w-0 shrink-0 font-mono text-[9px] uppercase tracking-[0.14em]">
+                {item.label}
+              </p>
+            </div>
             <p className="mt-0.5 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
               {item.value}
+              <span className="ml-1.5 align-middle font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+                · {item.chip}
+              </span>
             </p>
             <p className="mt-1 truncate text-[10px] text-[color:var(--color-text-tertiary)]">
               {item.body}

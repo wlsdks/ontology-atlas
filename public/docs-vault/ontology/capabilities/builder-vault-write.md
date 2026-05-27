@@ -20,7 +20,9 @@ mission v2 의 *사람 + AI agent 양립* 약속의 코드 구현. 빌더 epheme
   해 builder 가 단순한 그림판이 아니라 vault write surface 임을 드러낸다. `Proof`
   cell 은 `/ontology/insights` query cockpit 으로 이어져 builder write 이후
   `relation_check`, `path`, `all_paths`, sync gate 를 graph DB-style 검증 흐름에서
-  다시 확인하게 한다.
+  다시 확인하게 한다. 각 cell 은 `local markdown` / `canvas draft` /
+  `relation guard` / `graph db proof` chip 을 함께 보여줘, 첫 화면에서
+  쓰기 → 검증 → query handoff 의 폐루프가 바로 드러나게 한다.
 
 frontmatter 형식:
 
