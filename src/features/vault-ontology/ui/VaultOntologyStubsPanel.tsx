@@ -1,7 +1,7 @@
 'use client';
 
 import { Link } from '@/i18n/navigation';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, GitBranch, Sparkles } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useVaultOntology } from '../model/use-vault-ontology';
 
@@ -40,7 +40,9 @@ export function VaultOntologyStubsPanel() {
     );
   }
 
-  // kind 별 그룹화 — UI 위계 — sorted by kind 알파벳 순.
+  // kind 별 그룹화 — 이 패널은 트리 앞의 보조 compile proof 다. 전체
+  // 노드 목록을 다시 펼치면 browse tree 보다 문서 목록 인상이 앞서므로
+  // kind census 만 남기고 실제 탐색은 아래 OntologyTreeView 로 넘긴다.
   const byKind = new Map<string, typeof nodes>();
   for (const n of nodes) {
     if (!byKind.has(n.kind)) byKind.set(n.kind, []);
@@ -51,70 +53,57 @@ export function VaultOntologyStubsPanel() {
   return (
     <section
       aria-labelledby="vault-stubs-heading"
-      className="rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-5 py-5"
+      className="rounded-xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-4 py-3"
     >
-      <header className="flex flex-wrap items-baseline justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Sparkles size={14} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
-          <h2
-            id="vault-stubs-heading"
-            className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]"
-          >
-            {t('headingFallback')}
-          </h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-2">
+          <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.08)] text-[color:var(--color-indigo-accent)]">
+            <GitBranch size={14} aria-hidden />
+          </span>
+          <div className="min-w-0">
+            <h2
+              id="vault-stubs-heading"
+              className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]"
+            >
+              {t('headingFallback')}
+            </h2>
+            <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t('intro')}
+            </p>
+          </div>
         </div>
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-          {t('summary', { nodes: nodes.length, edges: edges.length })}
-        </p>
-      </header>
-      <p className="mt-2 text-[12px] text-[color:var(--color-text-tertiary)]">
-        {t('intro')}
-      </p>
-
-      {/* 다음 단계 안내 — frontmatter 만으로도 ontology 가 자라지만,
-          시각적으로 다듬고 싶을 때 빌더 (\`/ontology/edit\`) 가 옵션. */}
-      <details className="mt-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] px-3 py-2 text-[12px] text-[color:var(--color-text-secondary)]">
-        <summary className="cursor-pointer font-[var(--font-weight-signature)]">
-          {t('polishSummary')}
-        </summary>
-        <div className="mt-2 space-y-2 text-[color:var(--color-text-tertiary)]">
-          <p>{t('polishBody')}</p>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <span className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-2)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+            {t('summary', { nodes: nodes.length, edges: edges.length })}
+          </span>
           <Link
             href="/ontology/edit/"
-            className="inline-flex h-7 items-center gap-1 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-3 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.66)]"
+            className="inline-flex h-7 items-center gap-1 rounded-md border border-[color:rgba(94,106,210,0.36)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.52)] hover:text-[color:var(--color-text-primary)]"
           >
             {t('polishCta')} <ArrowRight size={11} aria-hidden />
           </Link>
         </div>
-      </details>
-
-      <div className="mt-4 space-y-4">
-        {kinds.map((kind) => {
-          const group = byKind.get(kind)!;
-          return (
-            <div key={kind}>
-              <p className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
-                {t('groupSummary', { kind, count: group.length })}
-              </p>
-              <ul className="mt-2 grid gap-1.5 md:grid-cols-2">
-                {group.map((n) => (
-                  <li
-                    key={n.id}
-                    className="flex items-center gap-2 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)] px-3 py-1.5"
-                  >
-                    <span className="truncate text-[13px] text-[color:var(--color-text-primary)]">
-                      {n.title}
-                    </span>
-                    <span className="ml-auto font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-                      {n.sourceSlug}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
       </div>
+
+      <details className="mt-2 text-[12px] text-[color:var(--color-text-secondary)]">
+        <summary className="inline-flex cursor-pointer list-none items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)] hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-secondary)] [&::-webkit-details-marker]:hidden">
+          <Sparkles size={11} aria-hidden />
+          {t('censusSummary', { count: kinds.length })}
+        </summary>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {kinds.map((kind) => (
+            <span
+              key={kind}
+              className="rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-2)] px-2 py-1 font-mono text-[9.5px] uppercase tracking-[0.12em] text-[color:var(--color-text-tertiary)]"
+            >
+              {t('groupSummary', { kind, count: byKind.get(kind)!.length })}
+            </span>
+          ))}
+        </div>
+        <p className="mt-2 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+          {t('polishBody')}
+        </p>
+      </details>
     </section>
   );
 }

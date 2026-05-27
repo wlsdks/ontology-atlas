@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T14:42:49.203Z",
+  "generatedAt": "2026-05-27T14:52:20.143Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6276,9 +6276,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands users to Builder for writes and Insights for graph DBstyle query packs. When a user selects a tree node, the detail head",
-      "wordCount": 194,
-      "updatedAt": "2026-05-27T14:18:29.103Z",
+      "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatterbacked writes and Insights for graph DBstyle query validation. The first viewport also kee",
+      "wordCount": 167,
+      "updatedAt": "2026-05-27T14:52:13.195Z",
       "linksOut": []
     },
     {

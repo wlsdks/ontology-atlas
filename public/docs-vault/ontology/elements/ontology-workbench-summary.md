@@ -5,10 +5,10 @@ title: Ontology Workbench Summary
 domain: views
 ---
 
-`src/views/ontology-view/ui/OntologyViewPage.tsx` renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands users to Builder for writes and Insights for graph DB-style query packs.
+`src/views/ontology-view/ui/OntologyViewPage.tsx` renders the compact Browse / Write / Query summary at the top of `/ontology`.
 
-When a user selects a tree node, the detail header keeps the same handoff triangle visible immediately: topology focus for visual inspection, builder focus for frontmatter-backed edits, and the query cockpit for graph DB-style validation. The collaborator brief repeats those links below the review prompts, and the copied review and vocabulary packets include the same `/ontology/insights/` handoff so a tree review does not stop at hierarchy browsing.
+It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatter-backed writes and Insights for graph DB-style query validation. The first viewport also keeps a separate role strip for Tree role / Graph refs / Evidence so the hierarchy view does not pretend to be the whole ontology system.
 
-Tree projection warnings are surfaced as projection notes rather than generic data errors. The warnings card expands into the concrete tree-builder notes and links to `/ontology/insights/` and `/ontology/edit/`, making clear that valid graph relations can remain queryable even when the hierarchy view cannot display every parent or cycle.
+The local frontmatter compile proof below the role strip is intentionally compact: it states that the current graph was compiled from the selected vault, exposes node/relation counts and a Builder CTA, and keeps the kind census collapsed. It no longer renders the full kind-by-kind node list before the actual tree, so `/ontology` starts as a browse surface rather than a document inventory dump.
 
-Builder relation writes now preserve the same graph proof path. The write confirm and post-save handoff expose topology path/focus links plus `/ontology/insights/`, and copied packets include query cockpit context next to relation_check, path, bounded all_paths, and sync-gate commands.
+This element is the `/ontology` browse counterpart to the Builder write summary and Insights query cockpit: Browse shows hierarchy and selection, Write mutates frontmatter, Query proves graph state through scans and paths.

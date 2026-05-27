@@ -2459,10 +2459,11 @@
       "headingFallback": "vault frontmatter ontology",
       "emptyBody": "No `.md` in your vault has frontmatter `kind:` yet, so the ontology is empty. Add `kind: project` (or capability / element / workflow / decision) to a doc's frontmatter and a node appears immediately.",
       "summary": "{nodes} nodes · {edges} relations",
-      "intro": "Frontmatter `kind:` in your vault's `.md` files becomes nodes directly — no extraction or review step.",
+      "intro": "Current graph compiled from vault frontmatter. Browse it in the tree below; write relations in Builder.",
       "polishSummary": "Want to polish nodes and relations visually?",
       "polishBody": "Open the same vault in the `/ontology/edit/` builder canvas as an ERD-like view and edit node positions / frontmatter keys inline. Saves go directly back to the vault `.md` files — no separate promote step.",
       "polishCta": "Open builder",
+      "censusSummary": "{count} kind census",
       "groupSummary": "{kind} · {count}"
     },
     "themeToggle": {

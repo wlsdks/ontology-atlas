@@ -2459,10 +2459,11 @@
       "headingFallback": "vault frontmatter ontology",
       "emptyBody": "vault 의 .md 어디에도 frontmatter `kind:` 가 없어 ontology 가 비어 있어요. 문서 상단에 `kind: project` (또는 capability / element / workflow / decision) 추가 시 즉시 노드로 자랍니다.",
       "summary": "{nodes} nodes · {edges} relations",
-      "intro": "vault 안 .md 의 frontmatter `kind:` 가 그대로 노드. 추출·검수 단계 없이 즉시 그래프.",
+      "intro": "vault frontmatter 를 컴파일한 현재 그래프입니다. 실제 탐색은 아래 트리에서, 관계 작성은 빌더에서 이어갑니다.",
       "polishSummary": "노드·관계를 시각적으로 다듬고 싶다면?",
       "polishBody": "`/ontology/edit/` 빌더 캔버스에서 같은 vault 를 ERD-like 캔버스로 보고 노드 위치 / frontmatter 키를 inline 편집할 수 있어요. 저장은 같은 vault 의 .md 에 직접 — 별도 promote 단계 없음.",
       "polishCta": "빌더 열기",
+      "censusSummary": "kind census {count}개",
       "groupSummary": "{kind} · {count}"
     },
     "themeToggle": {
