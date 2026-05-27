@@ -215,6 +215,17 @@ local markdown graph 가 별도 DB 서버 없이 작은 graph database 처럼 sc
 row count, `followUp` 을 보고하고, `all_paths` 는 `limit`, `searchBudget`,
 `expandedStates`, `exhaustive`, `totalPathsExact`, `evidence.pathsComplete` 를
 확인하라고 고정해 raw row 나 partial path 를 proof 로 오인하지 않게 한다.
+R+ follow-up 에서는 cockpit 안에도 `self-check gate` → graph facets → node scan →
+edge scan → domain coupling → path evidence 순서의 run-order rail 을 추가했다.
+그래서 사용자는 pack 카드나 긴 handoff prompt 로 내려가기 전에 이 화면이 단순 통계
+요약이 아니라 실행 가능한 graph query queue 라는 점을 먼저 본다. self-check row 는
+`agent-brief --verify-fallbacks --json` 이 automation 에게 노출하는 `ok`,
+`performanceOk`, `failed`, `commands[].timedOut` 같은 proof field 도 함께 보여준다.
+2026-05-27 dogfood runtime 에서는 같은 vault 에 대해 이 JSON gate 가 fallback
+25/25 pass, `ok=true`, `performanceOk=true`, `slow=0`, `wallMs=1628` 로 통과했고,
+같은 세션에서 `match-nodes --kind capability --min-degree 2 --sort degree --limit 8`
+와 `domain-matrix --limit 6 --types depends_on,relates,describes` 도 51 nodes /
+363 edges / 0 unresolved edges graph hash 기준으로 실행됐다.
 
 `scripts/perf-graph.mjs` 는 같은 10-call pack 을 `graph_db_pack` hot path 로 재생해
 UI / handoff 에서 복사되는 실제 Graph DB-style sequence 가 scale budget 밖으로 밀리지
