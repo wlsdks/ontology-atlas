@@ -64,6 +64,19 @@ describe("dogfood graph DB pack", () => {
         },
       },
       {
+        operation: "relation_check",
+        from: "capabilities/cli-developer-entry",
+        to: "capabilities/mcp-server",
+        relation: "dependencies",
+        exists: true,
+        verdict: "already_exists",
+        recommendation: { decision: "skip_existing", severity: "info" },
+        matchingEdges: [{}],
+        inverseEdges: [],
+        schemaPattern: { count: 1 },
+        proposedAction: null,
+      },
+      {
         operation: "explain_relation",
         verdict: "direct",
         direct: { total: 1 },
@@ -79,8 +92,8 @@ describe("dogfood graph DB pack", () => {
 
     assert.equal(status, 0);
     assert.equal(stderr.join(""), "");
-    assert.equal(call, 7);
-    assert.match(stdout.join(""), /\[dogfood:graph-db\] ok · 7 runtime graph DB checks passed/);
+    assert.equal(call, 8);
+    assert.match(stdout.join(""), /\[dogfood:graph-db\] ok · 8 runtime graph DB checks passed/);
   });
 
   it("fails closed when a result contract is missing", () => {
@@ -170,5 +183,73 @@ describe("dogfood graph DB pack", () => {
 
     assert.equal(status, 1);
     assert.match(stderr.join(""), /all_paths evidence\.reason missing/);
+  });
+
+  it("fails closed when relation_check recommendation is missing", () => {
+    const stderr = [];
+    const payloads = [
+      { ok: true, performanceOk: true, failed: 0, commands: Array.from({ length: 25 }, () => ({})) },
+      { graph: { nodes: 2, edges: 1, unresolvedEdges: 0 }, nodes: { topByDegree: [{}] } },
+      {
+        plan: { execution: { shouldRun: true } },
+        result: {
+          operation: "match_nodes",
+          totalMatches: 1,
+          limited: false,
+          nodes: [{}],
+          followUp: { focusSlug: "a", calls: [{}], cliFallbackCommands: ["node a"] },
+        },
+      },
+      {
+        plan: { execution: { shouldRun: true } },
+        result: {
+          operation: "match_edges",
+          totalMatches: 1,
+          limited: false,
+          edges: [{}],
+          followUp: {
+            focusEdge: { from: "a", to: "b" },
+            calls: [{}],
+            cliFallbackCommands: ["explain a b"],
+          },
+        },
+      },
+      { summary: { domains: 2, crossDomainEdges: 1 }, domains: [{}] },
+      {
+        plan: { operation: "query_plan", targetOperation: "all_paths" },
+        result: {
+          operation: "all_paths",
+          found: true,
+          limit: 10,
+          searchBudget: 1000,
+          expandedStates: 12,
+          exhaustive: true,
+          truncatedByBudget: false,
+          totalPathsExact: true,
+          evidence: { status: "complete", reason: "exhaustive", pathsComplete: true },
+        },
+      },
+      {
+        operation: "relation_check",
+        from: "capabilities/cli-developer-entry",
+        to: "capabilities/mcp-server",
+        relation: "dependencies",
+        exists: true,
+        verdict: "already_exists",
+        matchingEdges: [{}],
+        inverseEdges: [],
+        schemaPattern: { count: 1 },
+        proposedAction: null,
+      },
+    ];
+    let call = 0;
+    const status = runDogfoodGraphDbPack({
+      spawn: () => ({ status: 0, stdout: JSON.stringify(payloads[call++]) }),
+      stdout: { write: () => {} },
+      stderr: { write: (text) => stderr.push(text) },
+    });
+
+    assert.equal(status, 1);
+    assert.match(stderr.join(""), /relation_check recommendation missing/);
   });
 });

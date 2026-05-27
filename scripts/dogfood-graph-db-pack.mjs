@@ -101,6 +101,19 @@ const GRAPH_DB_PACK_COMMANDS = [
     validate: validatePathEvidence,
   },
   {
+    id: "relation_preflight",
+    args: [
+      "cli/src/index.mjs",
+      "relation-check",
+      DEFAULT_FROM,
+      DEFAULT_TO,
+      "depends_on",
+      DEFAULT_VAULT,
+      "--json",
+    ],
+    validate: validateRelationPreflight,
+  },
+  {
     id: "relation_explain",
     args: [
       "cli/src/index.mjs",
@@ -286,6 +299,40 @@ function validatePathEvidence(value) {
   }
   return pass(
     `found=true evidence=${result.evidence.status}/${result.evidence.reason} pathsComplete=${result.evidence.pathsComplete} expanded=${result.expandedStates}`,
+  );
+}
+
+function validateRelationPreflight(value) {
+  if (value?.operation !== "relation_check") return fail("relation_check result missing");
+  if (value.from !== DEFAULT_FROM || value.to !== DEFAULT_TO) {
+    return fail("relation_check endpoint mismatch");
+  }
+  if (value.relation !== "dependencies") return fail(`relation_check relation=${value.relation}`);
+  if (typeof value.exists !== "boolean") return fail("relation_check exists flag missing");
+  if (typeof value.verdict !== "string") return fail("relation_check verdict missing");
+  const recommendation = value.recommendation;
+  if (!recommendation || typeof recommendation !== "object") {
+    return fail("relation_check recommendation missing");
+  }
+  if (typeof recommendation.decision !== "string") {
+    return fail("relation_check recommendation.decision missing");
+  }
+  if (typeof recommendation.severity !== "string") {
+    return fail("relation_check recommendation.severity missing");
+  }
+  if (!Array.isArray(value.matchingEdges)) return fail("relation_check matchingEdges missing");
+  if (!Array.isArray(value.inverseEdges)) return fail("relation_check inverseEdges missing");
+  if (value.exists === true && value.matchingEdges.length === 0) {
+    return fail("relation_check exists without matchingEdges");
+  }
+  if (!value.schemaPattern || typeof value.schemaPattern.count !== "number") {
+    return fail("relation_check schemaPattern missing");
+  }
+  if (value.proposedAction !== null && value.proposedAction?.tool !== "add_relation") {
+    return fail("relation_check proposedAction contract invalid");
+  }
+  return pass(
+    `decision=${recommendation.decision} exists=${value.exists} matching=${value.matchingEdges.length}`,
   );
 }
 

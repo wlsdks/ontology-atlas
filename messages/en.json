@@ -1150,7 +1150,7 @@
       "queryCockpitPathContractBody": "For all_paths, report limit, searchBudget, expandedStates, exhaustive, totalPathsExact, and evidence.pathsComplete.",
       "queryCockpitGate": "self-check gate",
       "queryCockpitProofBody": "This JSON gate proves connectivity and fallback performance before scan commands run. Automation reads ok, performanceOk, failure count, and per-command timeout flags separately.",
-      "queryCockpitRuntimeBody": "The dogfood runtime gate then replays the same graph DB pack over the local markdown vault and fails if scan follow-ups or all_paths completeness fields disappear.",
+      "queryCockpitRuntimeBody": "The dogfood runtime gate then replays the same graph DB pack over the local markdown vault and fails if scan follow-ups, all_paths completeness fields, or relation_check recommendation fields disappear.",
       "queryCockpitProofField": "Self-check proof field",
       "queryCockpitPayloads": "Payloads",
       "queryCockpitPayloadsValue": "{count} MCP",

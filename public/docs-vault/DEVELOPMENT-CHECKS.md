@@ -471,7 +471,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm test:mcp:suggestions` | Enum and argument suggestion quality; use the direct sibling `pnpm exec node --test mcp/src/suggestions.test.mjs` first when `pnpm checks:changed` prints one |
 | `pnpm test:mcp:package` | MCP/CLI package and tarball checks |
 | `pnpm test:mcp:dogfood` | Focused live dogfood helper contracts |
-| `pnpm dogfood:graph-db` | Executes the dogfood vault graph DB pack over real CLI commands: setup self-check, facets, node scan, edge scan, domain matrix, bounded path evidence, and relation explanation |
+| `pnpm dogfood:graph-db` | Executes the dogfood vault graph DB pack over real CLI commands: setup self-check, facets, node scan, edge scan, domain matrix, bounded path evidence, relation preflight, and relation explanation |
 | `pnpm dogfood:test` | Full dogfood helper regression suite |
 | `pnpm benchmark --dry-run` | Benchmark runner config without spawning Codex |
 | `pnpm benchmark:scale --dry-run` | Scale benchmark config without tmp vault or Codex spawn |
