@@ -99,9 +99,10 @@ after it lands.
 
 Query surfaces should expose the executable query pack before deeper charts.
 Use a compact cockpit with readiness, pack size, MCP call count, CLI fallback
-count, representative `MATCH ...` intents, and the self-check gate. Deeper
-panels can explain contracts, but the first viewport should make it clear that
-the local markdown graph can be scanned like a small graph database.
+count, representative `MATCH ...` intents, scan/path result contracts, and the
+self-check gate. Deeper panels can explain contracts, but the first viewport
+should make it clear that the local markdown graph can be scanned like a small
+graph database without treating raw rows or partial paths as proof.
 
 Source/setup surfaces should expose the vault execution contract before setup
 actions. Use compact `Files` / `Graph` / `Agent` cells to show that local

@@ -184,6 +184,10 @@ test.describe("ontology view UI", () => {
     await expect(queryCockpit).toContainText("MCP");
     await expect(queryCockpit).toContainText("CLI");
     await expect(queryCockpit).toContainText("MATCH graph RETURN");
+    await expect(queryCockpit).toContainText("Scan contract");
+    await expect(queryCockpit).toContainText("totalMatches");
+    await expect(queryCockpit).toContainText("Path contract");
+    await expect(queryCockpit).toContainText("evidence.pathsComplete");
     await expect(queryCockpit).toContainText("self-check gate");
     await queryCockpit.getByRole("button", { name: "Copy CLI pack" }).click();
     const copiedCockpitCliPack = await page.evaluate(
