@@ -286,7 +286,8 @@ credentials, and finish with `pnpm desktop:verify-release-dmg`, which checks the
 DMG checksum, mounts it read-only, verifies the `.app` plus Applications symlink target,
 requires strict app code-signature verification, validates the stapled
 notarization ticket, and runs Gatekeeper assessment for the app execution and
-DMG open paths before release upload. The release workflow also deletes the
+DMG open paths before release upload. The release workflow decodes the Developer
+ID `.p12` with macOS `base64 -D`, and also deletes the
 temporary signing keychain and decoded `.p12` with an `always()` cleanup step
 after the per-architecture artifact handoff. `pnpm desktop:build` keeps the local
 unsigned prototype shortcut by running the app build and DMG packager.

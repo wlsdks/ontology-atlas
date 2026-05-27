@@ -153,7 +153,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ tag release workflow builds Apple Silicon and Intel DMGs on Node 24, cleans up the signing keychain, and publishes verified public assets without Firebase Hosting dependencies/,
+    /✓ tag release workflow builds Apple Silicon and Intel DMGs on Node 24, decodes signing certificates with macOS base64, cleans up the signing keychain, and publishes verified public assets without Firebase Hosting dependencies/,
   );
   assert.match(
     result.stdout,
@@ -589,6 +589,8 @@ test("desktop readiness checker enforces release workflow order", () => {
     checker,
     /"name: Sign macOS app",\s+"name: Package macOS DMG",\s+"name: Notarize and staple DMG"/,
   );
+  assert.match(checker, /base64 -D > "\\\$CERTIFICATE_PATH"/);
+  assert.match(checker, /!\/base64 --decode\/\.test\(releaseWorkflow\)/);
   assert.match(checker, /"name: Upload workflow artifact",\s+"name: Cleanup Apple signing keychain"/);
   assert.match(checker, /security delete-keychain "\$KEYCHAIN_PATH" 2>\\\/dev\\\/null \\|\\| true/);
   assert.match(checker, /const releasePublishOrder = orderedIndexes\(releaseWorkflow, \[/);

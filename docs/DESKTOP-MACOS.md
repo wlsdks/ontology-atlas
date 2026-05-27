@@ -329,7 +329,8 @@ and the tag workflow fails closed unless these GitHub Secrets are all present:
 The tag workflow verifies `${GITHUB_SHA}` with
 `pnpm desktop:release-source` and `${GITHUB_REF_NAME}` with
 `pnpm desktop:release-tag` before signing credentials enter the path, then runs
-`pnpm desktop:release-secrets`, builds the `.app`, imports the certificate,
+`pnpm desktop:release-secrets`, builds the `.app`, imports the certificate with
+the macOS `base64 -D` decoder,
 signs with `pnpm desktop:sign`, packages the DMG, notarizes/staples with
 `pnpm desktop:notarize`, and runs `pnpm desktop:verify-release-dmg` against the
 final artifact. Each architecture lane also writes the generated DMG filename,
