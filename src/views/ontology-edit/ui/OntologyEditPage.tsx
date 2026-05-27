@@ -148,12 +148,18 @@ function BuilderWriteSummary({
       body: t("guardBody"),
       accent: "neutral",
     },
+    {
+      label: t("proofLabel"),
+      value: t("proofValue"),
+      body: t("proofBody"),
+      accent: "neutral",
+    },
   ] as const;
 
   return (
     <section
       aria-label={t("ariaLabel")}
-      className="mb-2 hidden grid-cols-3 gap-2 md:grid"
+      className="mb-2 hidden grid-cols-4 gap-2 md:grid"
     >
       {items.map((item) => {
         const accentClass =

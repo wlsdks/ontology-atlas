@@ -15,6 +15,8 @@ test.describe("ontology builder workflow", () => {
     const writeStatus = page.getByLabel("Builder write status");
     await expect(writeStatus).toContainText("Sample read-only");
     await expect(writeStatus).toContainText("Preview before write");
+    await expect(writeStatus).toContainText("MCP/CLI handoff");
+    await expect(writeStatus).toContainText("relation_check");
 
     const inspector = page.getByLabel("Selected ontology node detail");
     await expect(inspector).toBeVisible();

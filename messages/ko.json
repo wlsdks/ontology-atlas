@@ -750,7 +750,10 @@
           "draftBody": "임시 캔버스 작업은 Save 전까지 분리됩니다.",
           "guardLabel": "Guard",
           "guardValue": "write 전 preview",
-          "guardBody": "관계 저장은 key 추론, preflight, sync handoff 를 거칩니다."
+          "guardBody": "관계 저장은 key 추론, preflight, sync handoff 를 거칩니다.",
+          "proofLabel": "Proof",
+          "proofValue": "MCP/CLI handoff",
+          "proofBody": "relation_check · path · all_paths · sync gate 복사"
         },
         "exportButton": "md 내보내기 ↓",
         "exportAriaLabel": "현재 캔버스를 frontmatter md 로 내보내기",

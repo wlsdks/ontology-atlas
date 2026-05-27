@@ -91,10 +91,11 @@ from frontmatter refs, and document nodes remain evidence outside the concept
 tree.
 
 Builder write surfaces should make the persistence contract visible before the
-canvas. Use compact `Source` / `Draft` / `Guard` status cells to distinguish
-local writable vaults from sample read-only data, unsaved canvas work from
-persisted graph data, and preview/preflight checks from direct frontmatter
-writes.
+canvas. Use compact `Source` / `Draft` / `Guard` / `Proof` status cells to
+distinguish local writable vaults from sample read-only data, unsaved canvas
+work from persisted graph data, preview/preflight checks from direct
+frontmatter writes, and the MCP/CLI proof packets that close a graph mutation
+after it lands.
 
 Query surfaces should expose the executable query pack before deeper charts.
 Use a compact cockpit with readiness, pack size, MCP call count, CLI fallback

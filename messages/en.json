@@ -750,7 +750,10 @@
           "draftBody": "Unsaved canvas work stays separate until Save.",
           "guardLabel": "Guard",
           "guardValue": "Preview before write",
-          "guardBody": "Relation writes run key inference, preflight, and sync handoff."
+          "guardBody": "Relation writes run key inference, preflight, and sync handoff.",
+          "proofLabel": "Proof",
+          "proofValue": "MCP/CLI handoff",
+          "proofBody": "Copy relation_check · path · all_paths · sync gates."
         },
         "exportButton": "Export md ↓",
         "exportAriaLabel": "Export current canvas as frontmatter md",
