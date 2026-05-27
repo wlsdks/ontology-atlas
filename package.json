@@ -32,6 +32,7 @@
     "desktop:release-run": "node scripts/watch-macos-release-run.mjs",
     "desktop:release-status": "node scripts/check-macos-release-status.mjs",
     "desktop:verify-hosted": "node scripts/check-hosted-download-surface.mjs",
+    "design:ontology": "node scripts/check-ontology-design-surface.mjs",
     "firebase:deploy-check": "node scripts/check-firebase-hosting-deploy-env.mjs",
     "desktop:sign": "node scripts/sign-macos-app.mjs",
     "desktop:notarize": "node scripts/notarize-macos-dmg.mjs",

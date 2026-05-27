@@ -3,7 +3,7 @@ slug: capabilities/builder-canvas-polish
 kind: capability
 title: Builder Canvas Polish (n8n routing + 도메인 tint + 정렬 toolbar)
 domain: views
-elements: [elements/builder-graph-anchor-rail, elements/builder-write-summary, elements/ontology-edit-canvas, src/shared/lib/domain-color.ts, src/views/ontology-edit/lib/align-nodes.ts, src/views/ontology-edit/lib/use-vault-graph-flow.ts, src/views/ontology-edit/ui/AlignToolbar.tsx, src/views/ontology-edit/ui/AtlasNode.tsx, src/views/ontology-edit/ui/OntologyEditCanvas.tsx]
+elements: [elements/builder-graph-anchor-rail, elements/builder-write-summary, elements/ontology-design-surface-guard, elements/ontology-edit-canvas, src/shared/lib/domain-color.ts, src/views/ontology-edit/lib/align-nodes.ts, src/views/ontology-edit/lib/use-vault-graph-flow.ts, src/views/ontology-edit/ui/AlignToolbar.tsx, src/views/ontology-edit/ui/AtlasNode.tsx, src/views/ontology-edit/ui/OntologyEditCanvas.tsx]
 relates: [capabilities/builder-vault-write]
 ---
 
@@ -19,3 +19,4 @@ relates: [capabilities/builder-vault-write]
 - **Graph-first palette default** — 사용자 선호가 아직 없고 persisted graph 가 있으면 palette 를 접은 상태로 시작해, 큰 local vault 에서 캔버스와 MiniMap 을 먼저 읽게 함. 사용자가 다시 펼치면 localStorage 선호를 보존
 - **Read-only source recovery** — Builder write summary 의 `Source` 카드가 샘플 read-only 상태에서 바로 `로컬 vault 열기` / `Get macOS app` CTA 를 보여줘, 캔버스가 쓰기 불가인 이유와 writable vault 로 전환하는 다음 행동을 같은 persistence contract 안에서 노출
 - **MiniMap stability** — MiniMap 은 desktop 폭에서만, 노드가 생긴 뒤 첫 animation frame 이후에 렌더해 모바일 bottom nav 충돌과 xyflow 초기 측정 전 SVG 좌표가 `NaN` 으로 찍히는 콘솔 오류를 피함
+- **Design drift guard** — `/ontology`, `/ontology/edit`, `/ontology/insights`, ontology subnav, operation nav 의 금지 패턴을 `pnpm design:ontology` 로 검사해 glow hover, scale hover, glass blur, purple/pink, decorative gradient 가 다시 들어오지 않게 함

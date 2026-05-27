@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T20:23:45.988Z",
+  "generatedAt": "2026-05-27T20:28:59.146Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4856,6 +4856,7 @@
         "elements": [
           "elements/builder-graph-anchor-rail",
           "elements/builder-write-summary",
+          "elements/ontology-design-surface-guard",
           "elements/ontology-edit-canvas",
           "src/shared/lib/domain-color.ts",
           "src/views/ontology-edit/lib/align-nodes.ts",
@@ -4870,8 +4871,8 @@
       },
       "headings": [],
       "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (20260514) 로 7 commit 단위 도입. n8nstyle edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 MCP dependency alias 호환 — dependson 으로 작성된 agent/CLI edge 도 builder graph 에서는 canonical depe",
-      "wordCount": 339,
-      "updatedAt": "2026-05-27T20:19:15.266Z",
+      "wordCount": 372,
+      "updatedAt": "2026-05-27T20:28:21.123Z",
       "linksOut": []
     },
     {
@@ -5995,6 +5996,7 @@
           "elements/builder-graph-anchor-rail",
           "elements/builder-write-summary",
           "elements/insights-query-cockpit",
+          "elements/ontology-design-surface-guard",
           "elements/ontology-edit-canvas",
           "elements/ontology-graph-proof-rail",
           "insights-collaborator-brief",
@@ -6029,7 +6031,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 designsystem 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-05-27T20:19:15.265Z",
+      "updatedAt": "2026-05-27T20:28:21.123Z",
       "linksOut": []
     },
     {
@@ -6264,6 +6266,28 @@
       "excerpt": "src/views/ontologyview/lib/resolvedeeplinknode.ts resolves /ontology?node=... into the selected ontology node. It accepts both canonical ontology IDs such as capability:mcpserver and vault document slugs such as capabilities/mcpserver. This keeps links from topology, docs, and builder compatible even though the tree vi",
       "wordCount": 48,
       "updatedAt": "2026-05-27T14:47:15.408Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/ontology-design-surface-guard",
+      "path": "docs/ontology/elements/ontology-design-surface-guard.md",
+      "title": "Ontology Design Surface Guard",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-design-surface-guard",
+        "kind": "element",
+        "title": "Ontology Design Surface Guard",
+        "domain": "views",
+        "relates": [
+          "elements/builder-graph-anchor-rail",
+          "elements/insights-query-cockpit",
+          "elements/ontology-graph-proof-rail"
+        ]
+      },
+      "headings": [],
+      "excerpt": "scripts/checkontologydesignsurface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for designsystem drift: glowlike hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. The guard turns the designs",
+      "wordCount": 52,
+      "updatedAt": "2026-05-27T20:28:43.378Z",
       "linksOut": []
     },
     {
@@ -7903,6 +7927,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-deeplink-node-resolver",
                 "title": "Ontology Deeplink Node Resolver"
+              },
+              {
+                "name": "ontology-design-surface-guard",
+                "path": "ontology/elements/ontology-design-surface-guard",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-design-surface-guard",
+                "title": "Ontology Design Surface Guard"
               },
               {
                 "name": "ontology-edit-canvas",

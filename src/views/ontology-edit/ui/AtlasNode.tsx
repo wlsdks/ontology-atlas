@@ -124,7 +124,7 @@ export function AtlasNode({ data, selected }: NodeProps) {
         background: isEphemeral
           ? "rgba(255, 179, 71, 0.06)"
           : showDomainTint
-            ? `linear-gradient(to right, ${domainTint.bg}, ${tone.bg})`
+            ? domainTint.bg
             : tone.bg,
         color: "var(--color-text-primary)",
         boxShadow: selectedShadow ?? hoveredShadow ?? restShadow,
