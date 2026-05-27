@@ -85,6 +85,15 @@ result contract 가 하나라도 빠지면 실패한다. 그래서 `/ontology/in
 Query cockpit 이 보여주는 graph DB-style 가치가 문서 문구가 아니라 local markdown
 vault 위에서 매번 재현 가능한 런타임 검증으로 유지된다.
 
+Focused node proof 도 같은 계약을 따른다. `/ontology/insights?node=...` 는
+`capability:agent-graph-readiness` 같은 graph id 와
+`capabilities/agent-graph-readiness` 같은 canonical vault slug 를 모두 같은 노드로
+해석한다. 그래서 `/ontology` tree 의 Query handoff 와 Builder 의 graph-id handoff 가
+같은 panel 로 들어오고, 복사되는 packet 은 `node_profile`, incoming `blast_radius`,
+incoming/outgoing `match_edges`, `query_plan(all_paths)`, bounded `all_paths`,
+`relation_check`, `health`, shell-safe CLI fallback, scan/path evidence checklist,
+post-change sync gate 를 같은 vault slug 로 묶는다.
+
 후속 UI 로 agent query recipes 를 함께 노출한다. `query_ontology.workspace_brief`,
 `query_ontology.query_plan`, `query_ontology.health`,
 `query_ontology.components`, `query_ontology.cycles`,

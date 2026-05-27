@@ -79,6 +79,7 @@ import {
   formatInsightsOrphanRepairMcpPacket,
   formatInsightsOrphanRepairPacket,
 } from "../lib/orphan-node-actions";
+import { resolveInsightsQueryNode } from "../lib/resolve-insights-query-node";
 
 /**
  * 노드 row 좌측 accent bar 색 — 빌더의 도메인 grouping 과 시각 일관.
@@ -138,18 +139,6 @@ const DOMAIN_COUPLING_PATH_LIMIT = 10;
 const DOMAIN_COUPLING_PATH_SEARCH_BUDGET = 1000;
 const DOGFOOD_GRAPH_DB_RUNTIME_COMMAND = "pnpm dogfood:graph-db";
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
-
-function resolveInsightsQueryNode(
-  queryNodeId: string | null,
-  nodes: KnowledgeGraphNode[],
-): KnowledgeGraphNode | null {
-  const normalized = queryNodeId?.trim().replace(/^\/+/, "");
-  if (!normalized) return null;
-  const withoutOntologyPrefix = normalized.replace(/^ontology\//, "");
-  return (
-    nodes.find((node) => node.id === normalized || node.id === withoutOntologyPrefix) ?? null
-  );
-}
 
 /**
  * `/ontology/insights` — ontology 의 구조를 한눈에.
@@ -2671,6 +2660,10 @@ function formatInsightsQueryOntologyCall(payload: Record<string, unknown>): stri
   return `query_ontology(${JSON.stringify(payload)})`;
 }
 
+function shellArg(value: string): string {
+  return `'${value.replace(/'/g, "'\\''")}'`;
+}
+
 function CopyAgentTextButton({
   label,
   copiedLabel,
@@ -2746,18 +2739,83 @@ function InsightsFocusedNodeProofPanel({ node }: { node: KnowledgeGraphNode }) {
     slug: proofSlug,
     depth: 2,
     direction: "incoming",
+    limit: 12,
   });
+  const incomingEdgesPayload = formatInsightsQueryOntologyCall({
+    operation: "match_edges",
+    to: proofSlug,
+    limit: 10,
+  });
+  const outgoingEdgesPayload = formatInsightsQueryOntologyCall({
+    operation: "match_edges",
+    from: proofSlug,
+    limit: 10,
+  });
+  const allPathsPlanPayload = formatInsightsQueryOntologyCall({
+    operation: "query_plan",
+    targetOperation: "all_paths",
+    from: proofSlug,
+    to: "<target-slug>",
+    maxHops: 4,
+    searchBudget: 1000,
+    limit: 10,
+  });
+  const allPathsPayload = formatInsightsQueryOntologyCall({
+    operation: "all_paths",
+    from: proofSlug,
+    to: "<target-slug>",
+    maxHops: 4,
+    searchBudget: 1000,
+    limit: 10,
+  });
+  const relationCheckPayload = formatInsightsQueryOntologyCall({
+    operation: "relation_check",
+    from: proofSlug,
+    to: "<target-slug>",
+    type: "<relation-type>",
+  });
+  const healthPayload = formatInsightsQueryOntologyCall({
+    operation: "health",
+    limit: 5,
+  });
+  const slugArg = shellArg(proofSlug);
+  const targetArg = shellArg("<target-slug>");
+  const relationTypeArg = shellArg("<relation-type>");
   const nodeProofPacket = [
     `# ${t("focusedProofPacketTitle")}`,
     `- ${t("focusedProofPacketNode")}: ${node.title} (${node.id})`,
+    `- ${t("focusedProofPacketScope")}: ${proofSlug}`,
     `- ${t("focusedProofPacketKind")}: ${kindLabel(node.kind)}`,
     `- ${t("focusedProofPacketOntology")}: ${buildOntologyNodeHref(node.id)}`,
     `- ${t("focusedProofPacketBuilder")}: ${buildOntologyBuilderNodeHref(node)}`,
-    `- ${t("focusedProofPacketNodeProfileCli")}: oh-my-ontology node ${proofSlug} [vault] --limit 12`,
-    `- ${t("focusedProofPacketBlastRadiusCli")}: oh-my-ontology blast-radius ${proofSlug} [vault] --depth 2 --direction incoming`,
-    `- ${t("focusedProofPacketNodeProfileMcp")}: ${nodeProfilePayload}`,
-    `- ${t("focusedProofPacketBlastRadiusMcp")}: ${blastRadiusPayload}`,
     "",
+    "MCP checks:",
+    `1. ${nodeProfilePayload}`,
+    `2. ${blastRadiusPayload}`,
+    `3. ${incomingEdgesPayload}`,
+    `4. ${outgoingEdgesPayload}`,
+    `5. ${allPathsPlanPayload}`,
+    `6. ${allPathsPayload}`,
+    `7. ${relationCheckPayload}`,
+    `8. ${healthPayload}`,
+    "",
+    "CLI fallbacks:",
+    `1. oh-my-ontology node ${slugArg} [vault] --limit 12`,
+    `2. oh-my-ontology blast-radius ${slugArg} [vault] --depth 2 --direction incoming --limit 12`,
+    `3. oh-my-ontology match-edges [vault] --to ${slugArg} --limit 10`,
+    `4. oh-my-ontology match-edges [vault] --from ${slugArg} --limit 10`,
+    `5. oh-my-ontology all-paths ${slugArg} ${targetArg} [vault] --plan --max-hops 4 --limit 10 --search-budget 1000`,
+    `6. oh-my-ontology all-paths ${slugArg} ${targetArg} [vault] --max-hops 4 --limit 10 --search-budget 1000`,
+    `7. oh-my-ontology relation-check ${slugArg} ${targetArg} ${relationTypeArg} [vault]`,
+    "8. oh-my-ontology health [vault] --limit 5",
+    "",
+    "Evidence checklist:",
+    "1. Report totalMatches, limited, returned row count, and followUp for every match_edges scan.",
+    "2. Treat scan rows as candidates until node_profile, blast_radius, path, explain, or relation_check confirms the claim.",
+    "3. For all_paths, report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.",
+    "4. Run the sync gate after a frontmatter write before handing the graph to another agent.",
+    "",
+    "Post-change sync gate:",
     formatAgentPostChangeSyncPacket(),
   ].join("\n");
 
@@ -2800,19 +2858,23 @@ function InsightsFocusedNodeProofPanel({ node }: { node: KnowledgeGraphNode }) {
           />
         </div>
       </div>
-      <div className="mt-3 grid gap-2 lg:grid-cols-3">
+      <div className="mt-3 grid gap-2 lg:grid-cols-4">
         {[
           {
             label: t("focusedProofProfileLabel"),
             body: nodeProfilePayload,
           },
           {
-            label: t("focusedProofImpactLabel"),
-            body: blastRadiusPayload,
+            label: t("focusedProofEdgeScanLabel"),
+            body: `${incomingEdgesPayload} · ${outgoingEdgesPayload}`,
           },
           {
-            label: t("focusedProofSyncLabel"),
-            body: t("focusedProofSyncBody"),
+            label: t("focusedProofPathPlanLabel"),
+            body: allPathsPlanPayload,
+          },
+          {
+            label: t("focusedProofRelationCheckLabel"),
+            body: relationCheckPayload,
           },
         ].map((item) => (
           <div
