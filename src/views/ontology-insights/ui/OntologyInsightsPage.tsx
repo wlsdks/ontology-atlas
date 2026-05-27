@@ -136,6 +136,7 @@ const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as cons
 const DOMAIN_COUPLING_PATH_MAX_HOPS = 5;
 const DOMAIN_COUPLING_PATH_LIMIT = 10;
 const DOMAIN_COUPLING_PATH_SEARCH_BUDGET = 1000;
+const DOGFOOD_GRAPH_DB_RUNTIME_COMMAND = "pnpm dogfood:graph-db";
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
 
 function resolveInsightsQueryNode(
@@ -1217,13 +1218,23 @@ function InsightsQueryPackCockpit({
         <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
           {t("queryCockpitGate")}
         </p>
-        <code className="mt-1 block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-          {AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
-        </code>
+        <div className="mt-1 grid gap-1">
+          <code className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+            {AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
+          </code>
+          <code className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+            {DOGFOOD_GRAPH_DB_RUNTIME_COMMAND}
+          </code>
+        </div>
         <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
-          <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-            {t("queryCockpitProofBody")}
-          </p>
+          <div className="space-y-1">
+            <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t("queryCockpitProofBody")}
+            </p>
+            <p className="break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+              {t("queryCockpitRuntimeBody")}
+            </p>
+          </div>
           <dl className="flex flex-wrap gap-1.5">
             {selfCheckFields.map((field) => (
               <div
