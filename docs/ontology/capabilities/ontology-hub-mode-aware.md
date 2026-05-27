@@ -6,7 +6,7 @@ domain: mode-aware-adapters
 dependencies:
   - capabilities/frontmatter-to-ontology
   - capabilities/mode-aware-adapter
-elements: [ontology-workbench-summary, src/features/vault-ontology/model/use-ontology-insight.ts, src/shared/lib/ontology-tree/reachability.test.ts, src/shared/lib/ontology-tree/reachability.ts, src/views/ontology-view/ui/OntologyViewPage.tsx]
+elements: [elements/ontology-tree-projection-summary, ontology-workbench-summary, src/features/vault-ontology/model/use-ontology-insight.ts, src/shared/lib/ontology-tree/reachability.test.ts, src/shared/lib/ontology-tree/reachability.ts, src/views/ontology-view/ui/OntologyViewPage.tsx]
 relates: [capabilities/frontmatter-to-ontology, capabilities/mode-aware-adapter, domains/views]
 ---
 
@@ -43,6 +43,9 @@ Browse 카드는 현재 route 에서 `aria-current="page"` 를 갖고 active 상
 표시된다. 그 아래 role strip 은 트리를 "계층 색인" 으로 명명하고,
 frontmatter 기반 node/ref count 와 evidence document 제외 규칙을 함께 보여줘
 트리가 전체 graph DB 를 대체하는 화면이 아니라 탐색 출발점임을 분명히 한다.
+Tree projection 경고는 raw warning 목록만 보여주지 않고 multiple-parent /
+cycle / self-parent / duplicate / other 로 요약해, hierarchy projection 에서
+빠진 관계가 vault 오류인지 graph DB 탐색으로 넘길 합법적 관계인지 바로 구분하게 한다.
 
 노드 상세 패널은 선택 노드 기준 reachability 를 즉시 요약한다. 사용자는
 outgoing / incoming / both 방향과 1-3 hop depth 를 패널 안에서 바꾸며 layer 별

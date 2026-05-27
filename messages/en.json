@@ -2260,7 +2260,29 @@
       "body": "The graph is still queryable. These warnings mean the hierarchy view kept one parent or promoted a cycle so the tree stays readable. Use Insights for graph DB-style scans and Builder to review relation direction before changing frontmatter.",
       "hidden": "+ {count} more projection notes",
       "queryCta": "Open query cockpit",
-      "builderCta": "Review in builder"
+      "builderCta": "Review in builder",
+      "groups": {
+        "multiple-parent": {
+          "label": "Multiple parents",
+          "hint": "The tree shows the first parent only. Use Insights scan for the full relation set."
+        },
+        "cycle": {
+          "label": "Cycle",
+          "hint": "Cycle nodes are promoted to roots. Review relation direction in Builder."
+        },
+        "self-parent": {
+          "label": "Self parent",
+          "hint": "Edges where a node parents itself are ignored by the tree."
+        },
+        "duplicate": {
+          "label": "Duplicate reach",
+          "hint": "If one node is reached twice, the second tree position is skipped."
+        },
+        "other": {
+          "label": "Other projection note",
+          "hint": "Graph state outside the hierarchy projection."
+        }
+      }
     },
     "workbench": {
       "ariaLabel": "Ontology workbench primary actions",

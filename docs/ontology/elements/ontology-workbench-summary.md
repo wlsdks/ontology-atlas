@@ -3,7 +3,7 @@ slug: elements/ontology-workbench-summary
 kind: element
 title: Ontology Workbench Summary
 domain: views
-relates: [elements/ontology-graph-proof-rail]
+relates: [elements/ontology-graph-proof-rail, elements/ontology-tree-projection-summary]
 ---
 
 `src/views/ontology-view/ui/OntologyViewPage.tsx` renders the compact Browse / Write / Query summary at the top of `/ontology`.
@@ -23,3 +23,5 @@ Before a node is selected, the tree area now shows a compact selection hint that
 When a tree node is selected, the detail panel repeats that same split as a compact Browse / Write / Query rail: Topology focus for visual inspection, Builder focus for frontmatter-backed repair, and Insights node proof for `node_profile` / `blast_radius` / sync-gate follow-up. The Query handoff carries the selected node into `/ontology/insights?node=<vault-slug>`, so the focused proof panel copies executable CLI/MCP checks for the same concept instead of reopening a generic dashboard. The tree therefore remains a browse index while still making the ontology system's write and query exits visible at the exact concept under review.
 
 The first-viewport summary now makes that loop ordered instead of merely adjacent: `01 Browse` selects the concept slug, `02 Write` keeps that slug focused in Builder for frontmatter edits, and `03 Query` closes the loop with graph DB-style proof over the same local markdown graph.
+
+Tree projection warnings now sit under that same contract. The warning panel groups raw tree builder notes by cause, so multiple-parent edges are presented as a hierarchy projection limit while the handoff buttons point to Insights for full graph scans and Builder for relation-direction repair.

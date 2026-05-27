@@ -2260,7 +2260,29 @@
       "body": "그래프는 그대로 query 할 수 있습니다. 이 경고는 트리를 읽기 쉽게 유지하기 위해 부모 하나만 유지하거나 cycle 을 root 로 승격했다는 뜻입니다. graph DB-style scan 은 인사이트에서, frontmatter 관계 방향 검토는 빌더에서 이어가세요.",
       "hidden": "투영 메모 {count}건 더 있음",
       "queryCta": "query cockpit 열기",
-      "builderCta": "빌더에서 검토"
+      "builderCta": "빌더에서 검토",
+      "groups": {
+        "multiple-parent": {
+          "label": "여러 부모",
+          "hint": "트리는 첫 부모만 보여줍니다. 전체 관계는 인사이트 scan 에서 확인하세요."
+        },
+        "cycle": {
+          "label": "순환",
+          "hint": "순환 노드는 root 로 승격됩니다. 관계 방향은 빌더에서 검토하세요."
+        },
+        "self-parent": {
+          "label": "자기 부모",
+          "hint": "자기 자신을 부모로 둔 edge 는 트리에서 무시됩니다."
+        },
+        "duplicate": {
+          "label": "중복 도달",
+          "hint": "한 노드가 두 번 보이면 두 번째 위치는 생략됩니다."
+        },
+        "other": {
+          "label": "기타 투영 메모",
+          "hint": "트리 projection 밖의 graph 상태입니다."
+        }
+      }
     },
     "workbench": {
       "ariaLabel": "온톨로지 워크벤치 주요 작업",

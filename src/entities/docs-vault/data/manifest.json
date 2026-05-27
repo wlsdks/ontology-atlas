@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T20:33:05.939Z",
+  "generatedAt": "2026-05-27T20:37:27.403Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5431,6 +5431,7 @@
           "capabilities/mode-aware-adapter"
         ],
         "elements": [
+          "elements/ontology-tree-projection-summary",
           "ontology-workbench-summary",
           "src/features/vault-ontology/model/use-ontology-insight.ts",
           "src/shared/lib/ontology-tree/reachability.test.ts",
@@ -5451,8 +5452,8 @@
         }
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (moduleload 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), la",
-      "wordCount": 397,
-      "updatedAt": "2026-05-27T16:50:28.559Z",
+      "wordCount": 432,
+      "updatedAt": "2026-05-27T20:37:08.311Z",
       "linksOut": []
     },
     {
@@ -5999,6 +6000,7 @@
           "elements/ontology-design-surface-guard",
           "elements/ontology-edit-canvas",
           "elements/ontology-graph-proof-rail",
+          "elements/ontology-tree-projection-summary",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
           "ontology-deeplink-node-resolver",
@@ -6031,7 +6033,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 designsystem 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-05-27T20:28:21.123Z",
+      "updatedAt": "2026-05-27T20:37:08.310Z",
       "linksOut": []
     },
     {
@@ -6362,6 +6364,27 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/elements/ontology-tree-projection-summary",
+      "path": "docs/ontology/elements/ontology-tree-projection-summary.md",
+      "title": "Ontology Tree Projection Summary",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-tree-projection-summary",
+        "kind": "element",
+        "title": "Ontology Tree Projection Summary",
+        "domain": "views",
+        "relates": [
+          "elements/insights-query-cockpit",
+          "elements/ontology-workbench-summary"
+        ]
+      },
+      "headings": [],
+      "excerpt": "src/views/ontologyview/lib/treeprojectionwarnings.ts classifies raw /ontology tree build warnings into multipleparent, cycle, selfparent, duplicate, and other groups. The /ontology warning panel uses this summary to make the tree's role explicit: it is a hierarchy projection for browse, not the full graph. Multiplepare",
+      "wordCount": 80,
+      "updatedAt": "2026-05-27T20:37:22.063Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/elements/ontology-workbench-summary",
       "path": "docs/ontology/elements/ontology-workbench-summary.md",
       "title": "Ontology Workbench Summary",
@@ -6372,13 +6395,14 @@
         "title": "Ontology Workbench Summary",
         "domain": "views",
         "relates": [
-          "elements/ontology-graph-proof-rail"
+          "elements/ontology-graph-proof-rail",
+          "elements/ontology-tree-projection-summary"
         ]
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatterbacked writes and Insights for graph DBstyle query validation. The first viewport also kee",
-      "wordCount": 484,
-      "updatedAt": "2026-05-27T20:13:36.897Z",
+      "wordCount": 529,
+      "updatedAt": "2026-05-27T20:37:08.311Z",
       "linksOut": []
     },
     {
@@ -7962,6 +7986,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-review-brief",
                 "title": "Ontology Review Brief"
+              },
+              {
+                "name": "ontology-tree-projection-summary",
+                "path": "ontology/elements/ontology-tree-projection-summary",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-tree-projection-summary",
+                "title": "Ontology Tree Projection Summary"
               },
               {
                 "name": "ontology-workbench-summary",

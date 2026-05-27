@@ -62,6 +62,10 @@ import {
   buildGraphProofRailModel,
   type GraphProofRailModel,
 } from "../lib/graph-proof-rail";
+import {
+  summarizeTreeProjectionWarnings,
+  type TreeProjectionWarningGroup,
+} from "../lib/tree-projection-warnings";
 
 /**
  * `/ontology` — ontology view.
@@ -1978,6 +1982,10 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
   const t = useTranslations("ontologyView.treeWarnings");
   const preview = warnings.slice(0, 8);
   const hiddenCount = Math.max(0, warnings.length - preview.length);
+  const summary = useMemo(
+    () => summarizeTreeProjectionWarnings(warnings),
+    [warnings],
+  );
 
   return (
     <details
@@ -2000,6 +2008,13 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
       <p className="mt-3 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
         {t("body")}
       </p>
+      {summary.groups.length > 0 ? (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {summary.groups.map((group) => (
+            <TreeProjectionWarningGroupChip key={group.kind} group={group} />
+          ))}
+        </div>
+      ) : null}
       <ul className="mt-3 grid gap-1.5">
         {preview.map((warning) => (
           <li
@@ -2030,6 +2045,34 @@ function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
         </Link>
       </div>
     </details>
+  );
+}
+
+function TreeProjectionWarningGroupChip({
+  group,
+}: {
+  group: TreeProjectionWarningGroup;
+}) {
+  const t = useTranslations("ontologyView.treeWarnings.groups");
+  return (
+    <div className="rounded-md border border-[color:rgba(255,179,71,0.16)] bg-[color:rgba(0,0,0,0.10)] px-2.5 py-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+          {t(`${group.kind}.label`)}
+        </span>
+        <span className="shrink-0 rounded border border-[color:rgba(255,179,71,0.22)] bg-[color:rgba(255,179,71,0.06)] px-1.5 font-mono text-[10px] text-[color:rgba(238,198,128,0.95)]">
+          {group.count}
+        </span>
+      </div>
+      <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+        {t(`${group.kind}.hint`)}
+      </p>
+      {group.examples.length > 0 ? (
+        <p className="mt-1 truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+          {group.examples.join(" · ")}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
