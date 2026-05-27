@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T15:55:10.931Z",
+  "generatedAt": "2026-05-27T16:15:55.823Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -50,9 +50,9 @@
           "slug": "recommended-first-user-flow"
         }
       ],
-      "excerpt": "Current as of 20260525. This is the userfacing guide for running ohmyontology as a local PC graph memory: CLIonly, MCPconnected, and web workbench flows over the same markdown vault. ohmyontology is not a hosted graph database. It is a localfirst graph workbench where markdown frontmatter is the graph, git is the audit",
-      "wordCount": 1847,
-      "updatedAt": "2026-05-25T18:38:36.704Z",
+      "excerpt": "Current as of 20260528. This is the userfacing guide for running ohmyontology as a local PC graph memory: CLIonly, MCPconnected, and web workbench flows over the same markdown vault. ohmyontology is not a hosted graph database. It is a localfirst graph workbench where markdown frontmatter is the graph, git is the audit",
+      "wordCount": 1927,
+      "updatedAt": "2026-05-27T16:15:48.389Z",
       "linksOut": []
     },
     {

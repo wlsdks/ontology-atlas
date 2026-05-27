@@ -1,6 +1,6 @@
 # Agent Graph Workflow
 
-> Current as of 2026-05-25. This is the user-facing guide for running
+> Current as of 2026-05-28. This is the user-facing guide for running
 > `oh-my-ontology` as a local PC graph memory: CLI-only, MCP-connected, and web
 > workbench flows over the same markdown vault.
 
@@ -176,7 +176,7 @@ Use this scan-to-proof checklist:
 
 ## Actual Verification Snapshot
 
-These checks were run against this repository's dogfood vault on 2026-05-25.
+These checks were run against this repository's dogfood vault on 2026-05-28.
 
 CLI-only checks:
 
@@ -185,10 +185,10 @@ CLI-only checks:
   - `sideEffect: false`
   - `summary: { total: 4, ready: 2, missing: 2, review: 0, written: 0, examples: 0 }`
   - `modeIds: ["cli_only", "mcp_connected", "graph_db_pack", "setup_gate"]`
-- `node cli/src/index.mjs match-nodes docs/ontology --kind capability --limit 3 --json`
+- `node cli/src/index.mjs match-nodes docs/ontology --kind capability --min-degree 2 --sort degree --limit 8 --json`
   - `operation: "match_nodes"`
-  - `totalMatches: 19`
-  - `returned: 3`
+  - `totalMatches: 25`
+  - `returned: 8`
   - `limited: true`
   - `followUp.focusSlug: "capabilities/cli-developer-entry"`
 - `node cli/src/index.mjs agent-brief docs/ontology --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`
@@ -199,20 +199,20 @@ CLI-only checks:
   - `passed: 25`
   - `failed: 0`
   - `slow: 0`
-  - `wallMs: 2534`
-  - `totalMs: 9904`
-  - slowest fallback: `match-nodes --plan --kind capability --min-degree 2`
-    at `814ms`
+  - `wallMs: 1332`
+  - `totalMs: 5161`
+  - slowest fallback: `blast-radius capabilities/cli-developer-entry --plan --depth 2`
+    at `361ms`
 - Human terminal view for the same gate printed:
-  - `setup gate ok=true performanceOk=true wall=2447ms slow=0/25 failed=0`
+  - `setup gate ok=true performanceOk=true wall=1341ms slow=0/25 failed=0`
 - `node scripts/perf-graph.mjs --json --check --n=1000`
   - budgets: `compileMs <= 750`, `queryMs <= 750`
   - failures: `0`
   - 1000 generated nodes, 3867 generated edges
-  - `compile.fullMs: 17.83`
-  - `agent_brief: 21.12ms`
-  - `graph_db_pack: 34.68ms`
-  - `project_map: 9.57ms`
+  - `compile.fullMs: 17.69`
+  - `agent_brief: 20.67ms`
+  - `graph_db_pack: 37.17ms`
+  - `project_map: 9.26ms`
   - graph DB pack replayed 10 calls:
     `query_plan`, `match_nodes`, `query_plan`, `match_edges`,
     `domain_matrix`, `query_plan`, `centrality`, `query_plan`, `all_paths`,
@@ -223,15 +223,25 @@ CLI-only checks:
 
 MCP-connected checks from this Codex session:
 
-- `workspace-brief` returned `status: "healthy"`, graph hash
-  `0d31ec737ff4c261f7e12b958e86153484330cb0336566984dae13cc50f16d13`,
-  31 nodes, 296 edges, 1 project, 6 domains, 19 capabilities, 4 elements, 0
-  unresolved edges, 0 issues, and 0 growth actions.
-- `health` returned `status: "healthy"`, 115 resolved edges, 181 external
+- `compile_ontology({ summary: true })` returned graph hash
+  `ee65046d93839487ae14f81663a1a06e65ffe3e8d27320f30db66cc47853fe94`,
+  54 nodes, 372 edges, 190 resolved edges, 182 external edges, 0 unresolved
+  edges, 0 issues, and 0 canonicalization actions.
+- `validate_vault` scanned 54 files with 0 problem files.
+- `workspace_brief` returned `status: "healthy"`, 1 project, 6 domains, 25
+  capabilities, 21 elements, 0 unresolved edges, 0 issues, and 0 growth
+  actions.
+- `health` returned `status: "healthy"`, 190 resolved edges, 182 external
   edges, 1 connected component, 0 dependency cycles, 0 relation
   recommendations, and all five checks passing:
   `compile_issues`, `unresolved_edges`, `dependency_cycles`,
   `relation_recommendations`, and `components`.
+- `match_nodes` over capabilities with `minDegree: 2` returned 25 total
+  matches, 5 rows in the MCP sample, and the same
+  `followUp.focusSlug: "capabilities/cli-developer-entry"` evidence contract.
+- `domain_matrix` over `depends_on`, `relates`, and `describes` returned 6
+  domains, 52 assigned nodes, 41 cross-domain edges, 29 self-domain edges, and
+  0 unresolved edges.
 
 Installed MCP verifier:
 
@@ -239,8 +249,8 @@ Installed MCP verifier:
   - passed parser, server boot, 23-tool inventory, strict argument/enum checks,
     destructive dry-runs, batch no-write checks, health/workspace/agent briefs,
     graph query smokes, and structured content checks.
-  - compiled graph hash: `0d31ec737ff4`
-  - graph size: 31 nodes, 296 edges, 0 issues.
+  - compiled graph hash: `ee65046d9383`
+  - graph size: 54 nodes, 372 edges, 0 issues.
 
 ## Recommended First User Flow
 
