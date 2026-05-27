@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T14:52:20.143Z",
+  "generatedAt": "2026-05-27T14:59:01.695Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6180,9 +6180,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. It presents the local markdown vault as a small graph database without adding a server: readiness, graph DB pack size, MCP call count, CLI fallback count, run order, representative MATCH ... intents, r",
+      "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. The cockpit makes the local markdown graph feel executable before the analytic charts begin. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the copyable graph DB pack, an",
       "wordCount": 151,
-      "updatedAt": "2026-05-27T14:36:52.038Z",
+      "updatedAt": "2026-05-27T14:58:52.601Z",
       "linksOut": []
     },
     {

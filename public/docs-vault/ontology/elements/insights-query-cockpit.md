@@ -7,8 +7,8 @@ domain: views
 
 `src/views/ontology-insights/ui/OntologyInsightsPage.tsx` renders the first-viewport query cockpit for `/ontology/insights`.
 
-It presents the local markdown vault as a small graph database without adding a server: readiness, graph DB pack size, MCP call count, CLI fallback count, run order, representative `MATCH ...` intents, result contracts, and the JSON self-check gate all sit above the deeper charts.
+The cockpit makes the local markdown graph feel executable before the analytic charts begin. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the copyable graph DB pack, and the JSON self-check gate that proves connector/fallback health before scans run.
 
-The cockpit keeps the evidence flow visible before the run order: plan costly scans/traversal with `query_plan`, treat scan rows as candidates until follow-up calls such as `node_profile`, `match_edges`, `blast_radius`, and `explain_relation` narrow them, then close writes with `relation_check`, `all_paths` evidence, and the post-change sync gate.
+The cockpit now includes a live proof strip derived from the current graph manifest: shaped concept/relation counts, blocker counts for unresolved stubs and orphans, and traversal density through hub count plus average degree. This keeps the surface from reading like static documentation for query commands; the first viewport shows whether the current graph is actually ready for scan, path, blast radius, and domain matrix queries.
 
-The first-viewport styling follows `docs/DESIGN-SYSTEM.md`: neutral surfaces carry the cockpit, dashed borders distinguish planning, and indigo is the only accent for proof/gate affordances. Success is represented as a verified state, not a separate green color system, so the screen reads as an executable graph validation surface without breaking the local workbench visual contract.
+The evidence flow is explicit: plan expensive work with `query_plan`, treat scan rows as candidates until follow-up calls narrow them, and close write decisions with `relation_check`, bounded `all_paths` evidence, and the shared sync gate.
