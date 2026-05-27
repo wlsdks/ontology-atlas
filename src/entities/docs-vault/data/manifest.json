@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T23:26:52.174Z",
+  "generatedAt": "2026-05-27T23:32:04.709Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1635,
-      "updatedAt": "2026-05-27T23:26:43.416Z",
+      "wordCount": 1670,
+      "updatedAt": "2026-05-27T23:31:33.160Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8110,
-      "updatedAt": "2026-05-27T23:26:23.507Z",
+      "wordCount": 8145,
+      "updatedAt": "2026-05-27T23:31:39.428Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6053,8 +6053,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/lib/builderentryanchors.ts derives the saved graph anchors shown at the topleft of /ontology/edit. The rail now ranks persisted ontology nodes by graph degree while preserving project/domain/capability/element diversity. This makes the builder open from useful graph entrypoints instead of arbitra",
-      "wordCount": 136,
-      "updatedAt": "2026-05-27T21:50:58.167Z",
+      "wordCount": 190,
+      "updatedAt": "2026-05-27T23:31:45.858Z",
       "linksOut": []
     },
     {
@@ -6305,8 +6305,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditCanvas.tsx renders the xyflow canvas inside /ontology/edit, while src/views/ontologyedit/ui/OntologyEditPage.tsx now owns the pagelevel graph entrypoint rail above that canvas. The canvas turns the local vault manifest into editable graph nodes and edges, keeps vault nodes draggabl",
-      "wordCount": 382,
-      "updatedAt": "2026-05-27T21:28:42.282Z",
+      "wordCount": 410,
+      "updatedAt": "2026-05-27T23:31:54.960Z",
       "linksOut": []
     },
     {

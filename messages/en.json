@@ -793,6 +793,7 @@
           "label": "Graph anchors",
           "stats": "{nodes} nodes · {relations} refs",
           "focusChip": "focus saved slug",
+          "activeFocus": "focus {slug}",
           "hint": "Degree-ranked saved nodes. Pick one before drawing so focus, inspector, and proof links keep the same slug.",
           "flowFocus": "focus saved slug",
           "flowWrite": "edit or connect",

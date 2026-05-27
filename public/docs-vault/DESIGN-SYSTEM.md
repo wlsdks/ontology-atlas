@@ -136,7 +136,9 @@ The canvas entry rail should then pick up that same loop at the graph level:
 name the rail as persisted graph entrypoints, show the node/ref counts, and add
 a compact `focus saved slug` chip plus hover hint that users should focus a
 saved anchor before drawing so the inspector and proof handoffs keep the same
-slug.
+slug. When a saved anchor is focused, repeat that active slug in the rail and
+visually mark the matching anchor button; the builder should always make the
+current write/proof handle explicit before a relation is drawn.
 
 Query surfaces should expose the executable query pack before deeper charts.
 Use a compact cockpit with readiness, pack size, MCP call count, CLI fallback

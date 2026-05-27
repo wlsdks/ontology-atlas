@@ -133,15 +133,19 @@ function BuilderCanvasEntryRail({
   anchors,
   nodeCount,
   relationCount,
+  selectedAnchorId,
   onFocusAnchor,
 }: {
   anchors: BuilderEntryAnchor[];
   nodeCount: number;
   relationCount: number;
+  selectedAnchorId?: string | null;
   onFocusAnchor: (id: string) => void;
 }) {
   const t = useTranslations("ontologyPages.edit.page.canvasEntryRail");
   if (anchors.length === 0) return null;
+  const selectedAnchor = anchors.find((anchor) => anchor.id === selectedAnchorId);
+  const selectedAnchorLabel = selectedAnchor?.label ?? selectedAnchorId ?? null;
   const flow = [
     {
       step: "01",
@@ -178,6 +182,14 @@ function BuilderCanvasEntryRail({
         >
           {t("focusChip")}
         </span>
+        {selectedAnchorLabel ? (
+          <span
+            className="max-w-[230px] truncate rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
+            title={selectedAnchorId ?? selectedAnchorLabel}
+          >
+            {t("activeFocus", { slug: selectedAnchorLabel })}
+          </span>
+        ) : null}
       </div>
       <div className="mt-1.5 grid gap-1 sm:grid-cols-3">
         {flow.map((item) => {
@@ -205,8 +217,13 @@ function BuilderCanvasEntryRail({
           <button
             key={anchor.id}
             type="button"
+            aria-pressed={selectedAnchorId === anchor.id}
             onClick={() => onFocusAnchor(anchor.id)}
-            className="pointer-events-auto flex max-w-[190px] items-center gap-1.5 truncate rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.13)] hover:text-[color:var(--color-text-primary)]"
+            className={
+              selectedAnchorId === anchor.id
+                ? "pointer-events-auto flex max-w-[190px] items-center gap-1.5 truncate rounded-md border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.15)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(139,151,255,0.54)]"
+                : "pointer-events-auto flex max-w-[190px] items-center gap-1.5 truncate rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.13)] hover:text-[color:var(--color-text-primary)]"
+            }
             title={t("anchorTitle", {
               kind: anchor.kind,
               label: anchor.label,
@@ -219,7 +236,11 @@ function BuilderCanvasEntryRail({
             <span className="truncate">{anchor.label}</span>
             <span
               aria-label={t("degreeAriaLabel", { degree: anchor.degree })}
-              className="ml-auto shrink-0 rounded border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(0,0,0,0.16)] px-1 font-mono text-[9px] tabular-nums text-[color:var(--color-text-quaternary)]"
+              className={
+                selectedAnchorId === anchor.id
+                  ? "ml-auto shrink-0 rounded border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(0,0,0,0.20)] px-1 font-mono text-[9px] tabular-nums text-[color:var(--color-text-secondary)]"
+                  : "ml-auto shrink-0 rounded border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(0,0,0,0.16)] px-1 font-mono text-[9px] tabular-nums text-[color:var(--color-text-quaternary)]"
+              }
             >
               {anchor.degree}
             </span>
@@ -1390,6 +1411,7 @@ export function OntologyEditPage() {
               anchors={builderEntryAnchors}
               nodeCount={builderGraphStats.persistedNodes}
               relationCount={builderGraphStats.persistedRelations}
+              selectedAnchorId={vaultSelected?.slug ?? null}
               onFocusAnchor={focusBuilderAnchor}
             />
             <OntologyEditCanvas
