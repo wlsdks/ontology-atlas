@@ -11,6 +11,8 @@ The strip is the builder persistence contract before the canvas: `Source` distin
 
 Each status cell now carries an icon plus a compact proof chip: `local markdown` / `read-only sample`, `canvas draft`, `relation guard` / `preflight active`, and `graph db proof` / `node proof pack`. The chip row makes the first viewport name the executable contract behind the builder instead of relying only on explanatory body copy.
 
+The cells now also show a visible `01`–`04` execution order and a short loop-action line: read/write source, draw or select, preflight before write, and verify in the query cockpit. This keeps the Builder first viewport from reading as four unrelated status cards; it is the compact source → draft → guard → proof loop above the canvas.
+
 When a vault node is selected, the `Proof` action now carries that node slug into `/ontology/insights?node=...` instead of opening only the generic query cockpit. The builder therefore preserves write context when it hands off to graph DB-style verification: the target Insights panel can copy `node_profile`, incoming `blast_radius`, and the shared sync gate for the exact concept the user was editing.
 
 `Source` body copy is mode-specific so the first viewport no longer relies only on a short value label: local mode says writes go directly to the selected vault, while sample mode says the graph is view-only and points users to the local vault picker. This keeps the builder experience aligned with the local-first workbench model instead of reading like a generic diagram editor.

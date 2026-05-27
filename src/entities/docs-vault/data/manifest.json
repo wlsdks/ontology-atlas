@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T17:13:48.750Z",
+  "generatedAt": "2026-05-27T17:18:23.109Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1320,
-      "updatedAt": "2026-05-27T17:13:37.941Z",
+      "wordCount": 1356,
+      "updatedAt": "2026-05-27T17:18:05.311Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -4943,8 +4943,8 @@
         }
       ],
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 빌더 ephemeral 노드 → mode 별 분기 저장: local: vault.createDoc(${kind}s/${slug}, md) — vault 디스크 직접 작성. AI agent (MCP) 가 같은 vault 에서 즉시 본다. static: 저장 차단 + 안내 toast (\"내 markdown 폴더 열기\" 유도). write status strip: 캔버스 진입 전에 Source / Draft / Guard / Proof 상태를 보여준다. sample readonly vs local w",
-      "wordCount": 184,
-      "updatedAt": "2026-05-27T16:56:48.631Z",
+      "wordCount": 211,
+      "updatedAt": "2026-05-27T17:18:18.364Z",
       "linksOut": []
     },
     {
@@ -6096,8 +6096,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. The strip is the builder persistence contract before the canvas: Source distinguishes local writable vaults from sample readonly data, Draft counts unsaved canvas nodes/edges, Gua",
-      "wordCount": 238,
-      "updatedAt": "2026-05-27T16:56:55.193Z",
+      "wordCount": 295,
+      "updatedAt": "2026-05-27T17:18:12.257Z",
       "linksOut": []
     },
     {

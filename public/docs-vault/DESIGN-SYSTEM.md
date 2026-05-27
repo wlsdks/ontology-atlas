@@ -115,7 +115,9 @@ builder write naturally flows into graph DB-style verification instead of
 ending as a canvas-only action. Each cell should also expose a compact proof
 chip (`local markdown`, `canvas draft`, `relation guard`, `graph db proof`) so
 the builder first viewport reads as a write/verify loop rather than a generic
-diagram toolbar.
+diagram toolbar. Number those cells as a visible execution order and add one
+short loop-action line per cell, so users can read the builder as source check
+→ draft → guard → proof without opening the help popover.
 
 Query surfaces should expose the executable query pack before deeper charts.
 Use a compact cockpit with readiness, pack size, MCP call count, CLI fallback

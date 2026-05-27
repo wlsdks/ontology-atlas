@@ -242,35 +242,42 @@ function BuilderWriteSummary({
       };
   const items: Array<{
     icon: ReactNode;
+    order: string;
     label: string;
     value: string;
     body: string;
     chip: string;
+    flow: string;
     accent: "indigo" | "amber" | "neutral";
     href?: SummaryHref;
     actionLabel?: string;
   }> = [
     {
       icon: <Database size={12} />,
+      order: "01",
       label: t("sourceLabel"),
       value: writable ? t("sourceWritable") : t("sourceReadonly"),
       body: writable
         ? t("sourceBodyWritable", { nodes: persistedNodes, relations: persistedRelations })
         : t("sourceBodyReadonly", { nodes: persistedNodes, relations: persistedRelations }),
       chip: writable ? t("sourceChipWritable") : t("sourceChipReadonly"),
+      flow: writable ? t("sourceFlowWritable") : t("sourceFlowReadonly"),
       accent: writable ? "indigo" : "amber",
       ...sourceAction,
     },
     {
       icon: <PencilLine size={12} />,
+      order: "02",
       label: t("draftLabel"),
       value: t("draftValue", { nodes: draftNodes, edges: draftEdges }),
       body: t("draftBody"),
       chip: t("draftChip"),
+      flow: t("draftFlow"),
       accent: draftNodes > 0 || draftEdges > 0 ? "indigo" : "neutral",
     },
     {
       icon: <ShieldCheck size={12} />,
+      order: "03",
       label: t("guardLabel"),
       value: pendingRelation ? t("guardValueReview") : t("guardValue"),
       body: pendingRelation
@@ -281,16 +288,19 @@ function BuilderWriteSummary({
           })
         : t("guardBody"),
       chip: pendingRelation ? t("guardChipReview") : t("guardChip"),
+      flow: pendingRelation ? t("guardFlowReview") : t("guardFlow"),
       accent: pendingRelation ? "indigo" : "neutral",
     },
     {
       icon: <Network size={12} />,
+      order: "04",
       label: t("proofLabel"),
       value: selectedVaultSlug ? t("proofValueSelected") : t("proofValue"),
       body: selectedVaultSlug
         ? t("proofBodySelected", { slug: selectedVaultSlug })
         : t("proofBody"),
       chip: selectedVaultSlug ? t("proofChipSelected") : t("proofChip"),
+      flow: selectedVaultSlug ? t("proofFlowSelected") : t("proofFlow"),
       accent: "neutral",
       href: proofHref,
       actionLabel: selectedVaultSlug ? t("proofActionSelected") : t("proofAction"),
@@ -314,11 +324,16 @@ function BuilderWriteSummary({
             key={item.label}
             className={`min-w-0 rounded-lg border px-3 py-2 ${accentClass}`}
           >
-            <div className="flex min-w-0 items-center gap-1.5 text-[color:var(--color-text-quaternary)]">
-              <span className="shrink-0 text-[color:var(--color-indigo-accent)]">{item.icon}</span>
-              <p className="min-w-0 shrink-0 font-mono text-[9px] uppercase tracking-[0.14em]">
-                {item.label}
-              </p>
+            <div className="flex min-w-0 items-center justify-between gap-2 text-[color:var(--color-text-quaternary)]">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <span className="shrink-0 text-[color:var(--color-indigo-accent)]">{item.icon}</span>
+                <p className="min-w-0 shrink-0 font-mono text-[9px] uppercase tracking-[0.14em]">
+                  {item.label}
+                </p>
+              </div>
+              <span className="shrink-0 rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)] px-1.5 py-0.5 font-mono text-[9px] tabular-nums text-[color:var(--color-text-quaternary)]">
+                {item.order}
+              </span>
             </div>
             <p className="mt-0.5 truncate text-[12px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
               {item.value}
@@ -328,6 +343,9 @@ function BuilderWriteSummary({
             </p>
             <p className="mt-1 truncate text-[10px] text-[color:var(--color-text-tertiary)]">
               {item.body}
+            </p>
+            <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
+              {item.flow}
             </p>
             {item.href && item.actionLabel ? (
               <Link
