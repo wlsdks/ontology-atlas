@@ -21,6 +21,12 @@ describe("dogfood graph DB pack", () => {
       { ok: true, performanceOk: true, failed: 0, commands: Array.from({ length: 25 }, () => ({})) },
       { graph: { nodes: 2, edges: 1, unresolvedEdges: 0 }, nodes: { topByDegree: [{}] } },
       {
+        operation: "health",
+        status: "healthy",
+        summary: { nodes: 2, edges: 1, unresolvedEdges: 0, issues: 0 },
+        checks: [{ id: "compile_issues", status: "pass", count: 0 }],
+      },
+      {
         plan: { execution: { shouldRun: true } },
         result: {
           operation: "match_nodes",
@@ -92,8 +98,9 @@ describe("dogfood graph DB pack", () => {
 
     assert.equal(status, 0);
     assert.equal(stderr.join(""), "");
-    assert.equal(call, 8);
-    assert.match(stdout.join(""), /\[dogfood:graph-db\] ok · 8 runtime graph DB checks passed/);
+    assert.equal(call, 9);
+    assert.match(stdout.join(""), /\[dogfood:graph-db\] health_gate: status=healthy checks=1 issues=0 unresolved=0/);
+    assert.match(stdout.join(""), /\[dogfood:graph-db\] ok · 9 runtime graph DB checks passed/);
   });
 
   it("fails closed when a result contract is missing", () => {
@@ -114,6 +121,12 @@ describe("dogfood graph DB pack", () => {
       { ok: true, performanceOk: true, failed: 0, commands: Array.from({ length: 25 }, () => ({})) },
       { graph: { nodes: 2, edges: 1, unresolvedEdges: 0 }, nodes: { topByDegree: [{}] } },
       {
+        operation: "health",
+        status: "healthy",
+        summary: { nodes: 2, edges: 1, unresolvedEdges: 0, issues: 0 },
+        checks: [{ id: "compile_issues", status: "pass", count: 0 }],
+      },
+      {
         plan: { execution: { shouldRun: true } },
         result: { operation: "match_nodes", totalMatches: 1, limited: false, nodes: [{}] },
       },
@@ -129,11 +142,63 @@ describe("dogfood graph DB pack", () => {
     assert.match(stderr.join(""), /match_nodes followUp\.focusSlug missing/);
   });
 
+  it("fails closed when the health gate is not clean", () => {
+    const stderr = [];
+    const payloads = [
+      { ok: true, performanceOk: true, failed: 0, commands: Array.from({ length: 25 }, () => ({})) },
+      { graph: { nodes: 2, edges: 1, unresolvedEdges: 0 }, nodes: { topByDegree: [{}] } },
+      {
+        operation: "health",
+        status: "needs_attention",
+        summary: { nodes: 2, edges: 1, unresolvedEdges: 1, issues: 0 },
+        checks: [{ id: "unresolved_edges", status: "fail", count: 1 }],
+      },
+    ];
+    let call = 0;
+    const status = runDogfoodGraphDbPack({
+      spawn: () => ({ status: 0, stdout: JSON.stringify(payloads[call++]) }),
+      stdout: { write: () => {} },
+      stderr: { write: (text) => stderr.push(text) },
+    });
+
+    assert.equal(status, 1);
+    assert.match(stderr.join(""), /health_gate failed: health status=needs_attention/);
+  });
+
+  it("fails closed when health check rows are malformed", () => {
+    const stderr = [];
+    const payloads = [
+      { ok: true, performanceOk: true, failed: 0, commands: Array.from({ length: 25 }, () => ({})) },
+      { graph: { nodes: 2, edges: 1, unresolvedEdges: 0 }, nodes: { topByDegree: [{}] } },
+      {
+        operation: "health",
+        status: "healthy",
+        summary: { nodes: 2, edges: 1, unresolvedEdges: 0, issues: 0 },
+        checks: [{ id: "compile_issues", status: "pass" }],
+      },
+    ];
+    let call = 0;
+    const status = runDogfoodGraphDbPack({
+      spawn: () => ({ status: 0, stdout: JSON.stringify(payloads[call++]) }),
+      stdout: { write: () => {} },
+      stderr: { write: (text) => stderr.push(text) },
+    });
+
+    assert.equal(status, 1);
+    assert.match(stderr.join(""), /health check compile_issues count invalid/);
+  });
+
   it("fails closed when all_paths completeness fields are missing", () => {
     const stderr = [];
     const payloads = [
       { ok: true, performanceOk: true, failed: 0, commands: Array.from({ length: 25 }, () => ({})) },
       { graph: { nodes: 2, edges: 1, unresolvedEdges: 0 }, nodes: { topByDegree: [{}] } },
+      {
+        operation: "health",
+        status: "healthy",
+        summary: { nodes: 2, edges: 1, unresolvedEdges: 0, issues: 0 },
+        checks: [{ id: "compile_issues", status: "pass", count: 0 }],
+      },
       {
         plan: { execution: { shouldRun: true } },
         result: {
@@ -190,6 +255,12 @@ describe("dogfood graph DB pack", () => {
     const payloads = [
       { ok: true, performanceOk: true, failed: 0, commands: Array.from({ length: 25 }, () => ({})) },
       { graph: { nodes: 2, edges: 1, unresolvedEdges: 0 }, nodes: { topByDegree: [{}] } },
+      {
+        operation: "health",
+        status: "healthy",
+        summary: { nodes: 2, edges: 1, unresolvedEdges: 0, issues: 0 },
+        checks: [{ id: "compile_issues", status: "pass", count: 0 }],
+      },
       {
         plan: { execution: { shouldRun: true } },
         result: {

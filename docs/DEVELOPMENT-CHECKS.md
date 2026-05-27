@@ -471,7 +471,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm test:mcp:suggestions` | Enum and argument suggestion quality; use the direct sibling `pnpm exec node --test mcp/src/suggestions.test.mjs` first when `pnpm checks:changed` prints one |
 | `pnpm test:mcp:package` | MCP/CLI package and tarball checks |
 | `pnpm test:mcp:dogfood` | Focused live dogfood helper contracts |
-| `pnpm dogfood:graph-db` | Executes the dogfood vault graph DB pack over real CLI commands: setup self-check, facets, node scan, edge scan, domain matrix, bounded path evidence, relation preflight, and relation explanation |
+| `pnpm dogfood:graph-db` | Executes the dogfood vault graph DB pack over real CLI commands: setup self-check, facets, health gate, node scan, edge scan, domain matrix, bounded path evidence, relation preflight, and relation explanation |
 | `pnpm dogfood:test` | Full dogfood helper regression suite |
 | `pnpm benchmark --dry-run` | Benchmark runner config without spawning Codex |
 | `pnpm benchmark:scale --dry-run` | Scale benchmark config without tmp vault or Codex spawn |
@@ -558,9 +558,11 @@ prints the machine-readable agent setup gate for docs/ontology with `ok` and
 slow local fallback latency without parsing the larger graph DB pack.
 `pnpm dogfood:graph-db` is the runtime gate for the same graph DB-style promise
 shown in `/ontology/insights`: it runs the connector-less setup self-check,
-facets, planned `match-nodes`, planned `match-edges`, `domain-matrix`, bounded
-`all-paths --plan --force`, and `explain` over `docs/ontology`, then fails if
-any result contract is missing. The scan checks require follow-up packets
+facets, `health --json`, planned `match-nodes`, planned `match-edges`,
+`domain-matrix`, bounded `all-paths --plan --force`, and `explain` over
+`docs/ontology`, then fails if any result contract or health check is missing.
+The health gate requires `status=healthy`, zero issues, zero unresolved edges,
+and pass/count rows for every health check. The scan checks require follow-up packets
 (`focusSlug` / `focusEdge`, MCP calls, and CLI fallbacks), and the bounded
 path check requires the full completeness contract (`limit`, `searchBudget`,
 `expandedStates`, `exhaustive`, `truncatedByBudget`, `totalPathsExact`, and

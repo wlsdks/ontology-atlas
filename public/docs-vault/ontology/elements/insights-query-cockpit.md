@@ -19,8 +19,9 @@ The evidence flow is explicit: plan expensive work with `query_plan`, treat scan
 
 The cockpit promise is now backed by `scripts/dogfood-graph-db-pack.mjs` and
 `pnpm dogfood:graph-db`. That runner executes the same setup self-check, facets,
-planned node scan, planned edge scan, domain matrix, bounded path evidence, and
-`relation_check` preflight plus relation explanation over `docs/ontology`, then
-fails closed when a result contract is missing. The UI can therefore claim
+health gate, planned node scan, planned edge scan, domain matrix, bounded path
+evidence, and `relation_check` preflight plus relation explanation over
+`docs/ontology`, then fails closed when a result contract or health check is
+missing. The UI can therefore claim
 "graph DB-style" exploration
 because the repo dogfoods the complete query pack against its own markdown graph.

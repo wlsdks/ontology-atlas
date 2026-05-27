@@ -31,6 +31,11 @@ const GRAPH_DB_PACK_COMMANDS = [
     validate: validateFacets,
   },
   {
+    id: "health_gate",
+    args: ["cli/src/index.mjs", "health", DEFAULT_VAULT, "--json"],
+    validate: validateHealthGate,
+  },
+  {
     id: "node_scan",
     args: [
       "cli/src/index.mjs",
@@ -210,6 +215,38 @@ function validateFacets(value) {
     return fail("facets topByDegree rows missing");
   }
   return pass(`${graph.nodes} nodes · ${graph.edges} edges · unresolved=${graph.unresolvedEdges}`);
+}
+
+function validateHealthGate(value) {
+  if (value?.operation !== "health") return fail("health result missing");
+  if (value.status !== "healthy") return fail(`health status=${value.status}`);
+  const summary = value.summary;
+  if (!summary || typeof summary.nodes !== "number" || typeof summary.edges !== "number") {
+    return fail("health summary graph counts missing");
+  }
+  if (summary.unresolvedEdges !== 0) {
+    return fail(`expected health unresolvedEdges=0, received ${summary.unresolvedEdges}`);
+  }
+  if (summary.issues !== 0) {
+    return fail(`expected health issues=0, received ${summary.issues}`);
+  }
+  if (!Array.isArray(value.checks) || value.checks.length === 0) {
+    return fail("health checks missing");
+  }
+  for (const check of value.checks) {
+    if (typeof check?.id !== "string" || check.id.trim() === "") {
+      return fail("health check id missing");
+    }
+    if (check.status !== "pass") {
+      return fail(`health check ${check.id} status=${check.status}`);
+    }
+    if (typeof check.count !== "number" || check.count < 0) {
+      return fail(`health check ${check.id} count invalid`);
+    }
+  }
+  return pass(
+    `status=healthy checks=${value.checks.length} issues=${summary.issues} unresolved=${summary.unresolvedEdges}`,
+  );
 }
 
 function validateNodeScan(value) {

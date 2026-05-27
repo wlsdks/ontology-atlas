@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T18:43:39.144Z",
+  "generatedAt": "2026-05-27T18:48:01.859Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3964,8 +3964,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6303,
-      "updatedAt": "2026-05-27T18:08:57.622Z",
+      "wordCount": 6327,
+      "updatedAt": "2026-05-27T18:47:38.572Z",
       "linksOut": []
     },
     {
@@ -4838,8 +4838,8 @@
         }
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
-      "wordCount": 3374,
-      "updatedAt": "2026-05-27T18:09:09.605Z",
+      "wordCount": 3384,
+      "updatedAt": "2026-05-27T18:47:45.388Z",
       "linksOut": []
     },
     {
@@ -5295,8 +5295,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 12886,
-      "updatedAt": "2026-05-27T18:09:20.361Z",
+      "wordCount": 12904,
+      "updatedAt": "2026-05-27T18:47:58.525Z",
       "linksOut": []
     },
     {
@@ -6187,8 +6187,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. The cockpit makes the local markdown graph feel executable before the analytic charts begin. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the copyable graph DB pack, an",
-      "wordCount": 366,
-      "updatedAt": "2026-05-27T18:34:56.286Z",
+      "wordCount": 371,
+      "updatedAt": "2026-05-27T18:47:18.015Z",
       "linksOut": []
     },
     {

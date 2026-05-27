@@ -73,10 +73,11 @@ local codebase memory graph 를 agent 가 읽고 증거화하는 hot path 가 DB
 충분히 빠른지 확인하는 회귀 근거다.
 
 같은 약속을 실제 dogfood gate 로도 닫는다. `pnpm dogfood:graph-db` 는
-`docs/ontology` 에 대해 setup self-check, facets, planned `match-nodes`,
+`docs/ontology` 에 대해 setup self-check, facets, `health --json`, planned `match-nodes`,
 planned `match-edges`, `domain-matrix`, bounded `all-paths`, `relation-check`, `explain` 을 실제 CLI
-명령으로 실행하고, `ok` / `performanceOk`, unresolved edge 0, scan row
-`totalMatches`, scan follow-up packet, path `limit` / `searchBudget` /
+명령으로 실행하고, `ok` / `performanceOk`, health `status=healthy`, issue 0,
+unresolved edge 0, health check pass/count rows, scan row `totalMatches`,
+scan follow-up packet, path `limit` / `searchBudget` /
 `expandedStates` / `exhaustive` / `truncatedByBudget` / `totalPathsExact` /
 `evidence.status` / `reason` / `pathsComplete`, `relation_check` recommendation /
 matching edge / schema pattern, relation explain shortest path 같은
