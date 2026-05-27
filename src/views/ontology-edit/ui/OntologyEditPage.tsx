@@ -142,9 +142,26 @@ function BuilderCanvasEntryRail({
 }) {
   const t = useTranslations("ontologyPages.edit.page.canvasEntryRail");
   if (anchors.length === 0) return null;
+  const flow = [
+    {
+      step: "01",
+      label: t("flowFocus"),
+      icon: Network,
+    },
+    {
+      step: "02",
+      label: t("flowWrite"),
+      icon: PencilLine,
+    },
+    {
+      step: "03",
+      label: t("flowProof"),
+      icon: Database,
+    },
+  ] as const;
 
   return (
-    <div className="pointer-events-none absolute left-3 top-3 z-10 max-w-[min(520px,calc(100%-1.5rem))] rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.94)] p-2 shadow-[0_14px_34px_rgba(0,0,0,0.30)]">
+    <div className="pointer-events-none absolute left-3 top-3 z-10 max-w-[min(620px,calc(100%-1.5rem))] rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.94)] p-2 shadow-[0_14px_34px_rgba(0,0,0,0.30)]">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <div className="flex min-w-0 items-center gap-1.5">
           <Network size={12} className="text-[color:var(--color-indigo-accent)]" />
@@ -161,6 +178,27 @@ function BuilderCanvasEntryRail({
         >
           {t("focusChip")}
         </span>
+      </div>
+      <div className="mt-1.5 grid gap-1 sm:grid-cols-3">
+        {flow.map((item) => {
+          const Icon = item.icon;
+          return (
+            <span
+              key={item.step}
+              className="flex min-w-0 items-center gap-1.5 rounded-md border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
+            >
+              <span className="flex h-6 w-6 shrink-0 flex-col items-center justify-center rounded border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)]">
+                <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">
+                  {item.step}
+                </span>
+                <Icon size={9} className="mt-0.5 text-[color:var(--color-indigo-accent)]" aria-hidden />
+              </span>
+              <span className="truncate font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)]">
+                {item.label}
+              </span>
+            </span>
+          );
+        })}
       </div>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {anchors.map((anchor) => (
