@@ -142,9 +142,10 @@ for a macOS prototype:
   checksum file next to the DMG.
 - `scripts/verify-macos-app-launch.mjs` launches the built `.app` executable
   long enough to catch early Tauri/WebView startup crashes, then terminates it.
-  Use `--kill-existing --open-app` when checking the actual LaunchServices app
-  window after iterative local builds so stale processes from the same bundle do
-  not hide the freshly built app.
+  Use `--kill-existing --open-app --require-window` when checking the actual
+  LaunchServices app window after iterative local builds so stale processes from
+  the same bundle do not hide the freshly built app and the smoke fails if no
+  on-screen macOS window appears.
 - `scripts/verify-macos-dmg.mjs` verifies that the `.sha256` line names the DMG
   basename, checks the bytes, runs `hdiutil verify`, mounts the image read-only,
   and checks for `Context Atlas.app` plus the Applications symlink pointing to
@@ -286,8 +287,9 @@ fails if the Tauri process exits early. This is not a substitute for a visual
 native-picker smoke, but it catches the startup failures that static route
 checks and DMG mounting cannot see without masking source-checkout path
 dependencies through the repo root cwd. For desktop UI dogfood sessions, run
-`pnpm desktop:verify-app -- --kill-existing --open-app --hold-ms=5000` to clear
-stale copies and launch the packaged `.app` through macOS LaunchServices.
+`pnpm desktop:verify-app -- --kill-existing --open-app --require-window --hold-ms=5000`
+to clear stale copies, launch the packaged `.app` through macOS LaunchServices,
+and require an on-screen macOS window owned by the launched app process.
 
 `desktop:verify-install` checks the generated DMG from the user-install angle.
 It mounts the image, requires the drag target symlink to point to

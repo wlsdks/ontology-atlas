@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T20:53:02.058Z",
+  "generatedAt": "2026-05-27T21:00:19.650Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -1794,9 +1794,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260526): macOS app distribution track 반영. localfirst 4 surface (macOS app · CLI · MCP · Website), dogfood 50 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR ",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260526): macOS app distribution track 반영. localfirst 4 surface (macOS app · CLI · MCP · Website), dogfood 59 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR ",
       "wordCount": 1499,
-      "updatedAt": "2026-05-25T23:24:55.922Z",
+      "updatedAt": "2026-05-27T21:00:02.211Z",
       "linksOut": []
     },
     {
@@ -3906,8 +3906,8 @@
         }
       ],
       "excerpt": "Context Atlas is the userfacing macOS app name for the ohmyontology project. ohmyontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app ",
-      "wordCount": 4017,
-      "updatedAt": "2026-05-27T20:51:47.344Z",
+      "wordCount": 4040,
+      "updatedAt": "2026-05-27T20:57:52.317Z",
       "linksOut": []
     },
     {
@@ -3964,8 +3964,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6354,
-      "updatedAt": "2026-05-27T20:51:47.344Z",
+      "wordCount": 6368,
+      "updatedAt": "2026-05-27T20:57:59.460Z",
       "linksOut": []
     },
     {
@@ -5140,8 +5140,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 2686,
-      "updatedAt": "2026-05-27T20:51:47.345Z",
+      "wordCount": 2707,
+      "updatedAt": "2026-05-27T20:58:04.786Z",
       "linksOut": []
     },
     {

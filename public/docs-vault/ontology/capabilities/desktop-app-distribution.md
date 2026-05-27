@@ -60,10 +60,12 @@ under `docs-vault/`. `pnpm desktop:verify-app` launches
 the built `.app` executable from inside its `Contents/MacOS` executable
 directory long enough to catch early Tauri/WebView startup crashes, then
 terminates it. For local desktop dogfood sessions it also supports
-`--kill-existing --open-app`, which clears stale copies of the same packaged
-executable and launches the `.app` through LaunchServices before the hold
-window. This keeps iterative UI verification from accidentally inspecting an
-older installed bundle or a hidden stale process.
+`--kill-existing --open-app --require-window`, which clears stale copies of the
+same packaged executable, launches the `.app` through LaunchServices before the
+hold window, and requires an on-screen macOS window owned by the launched
+process. This keeps iterative UI verification from accidentally inspecting an
+older installed bundle, a hidden stale process, or a process that stayed alive
+without rendering the workbench window.
 `pnpm desktop:verify-install` mounts the generated DMG, verifies the
 drag-to-Applications symlink target, copies the bundled app to a temporary
 install folder, launch-smokes that copied app from its own executable directory,

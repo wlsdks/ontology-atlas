@@ -210,9 +210,10 @@ built `out/` payload has the root app entry, locale-prefixed docs, ontology,
 topology, builder routes, `_next` assets, and offline desktop docs;
 `pnpm desktop:verify-app` launches the built `.app` long enough to catch early
 Tauri/WebView startup crashes from inside the app executable directory and then
-terminates it; add `-- --kill-existing --open-app` when a local dogfood session
-needs to clear stale packaged-app processes and launch through macOS
-LaunchServices; `pnpm desktop:verify-install` mounts the DMG, verifies the
+terminates it; add `-- --kill-existing --open-app --require-window` when a local
+dogfood session needs to clear stale packaged-app processes, launch through
+macOS LaunchServices, and fail if no on-screen app window appears;
+`pnpm desktop:verify-install` mounts the DMG, verifies the
 Applications symlink points to `/Applications`, copies the app to a temporary
 install folder, launch-smokes that copied app from its own executable directory,
 and removes the temp install;
@@ -412,7 +413,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:doctor` | Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, Xcode command line tools, and CLI/MCP agent setup gates |
 | `pnpm desktop:smoke` | Built `out/` payload smoke for the packaged root app entry, locale routes including `/ontology/insights`, ontology workbench route titles, `_next` assets, and offline desktop docs before launching or bundling the `.app` / `.dmg` |
 | `pnpm desktop:build:app` | Build the Tauri `.app` before optional release signing or local DMG packaging |
-| `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes, then terminate it; supports `--kill-existing --open-app` for LaunchServices dogfood checks |
+| `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes, then terminate it; supports `--kill-existing --open-app --require-window` for LaunchServices dogfood checks with an on-screen window assertion |
 | `pnpm desktop:verify-install` | Mount the DMG, require the `/Applications` symlink target, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up |
 | `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, agent JSON setup gate, build, route smoke, DMG, and install smoke |
 | `pnpm desktop:goal-audit` | Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, GitHub Release, hosted deploy, and download blockers, writing default `.tmp/desktop-goal-status` evidence |
