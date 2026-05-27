@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T04:59:43.308Z",
+  "generatedAt": "2026-05-27T10:34:07.944Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3806,6 +3806,11 @@
         },
         {
           "depth": 2,
+          "text": "Product Surface Hierarchy",
+          "slug": "product-surface-hierarchy"
+        },
+        {
+          "depth": 2,
           "text": "Absolute rules (Don'ts)",
           "slug": "absolute-rules-donts"
         },
@@ -3850,9 +3855,9 @@
           "slug": "changelog"
         }
       ],
-      "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. Linear's \"starlight rising from darkness\" aesthetic aligns precisely with the constellation metaphor of the topology. The extreme constraint of blackandwhite plus a single indi",
-      "wordCount": 694,
-      "updatedAt": "2026-05-11T00:08:39.981Z",
+      "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
+      "wordCount": 848,
+      "updatedAt": "2026-05-27T10:33:01.601Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -5420,6 +5425,7 @@
           "capabilities/mode-aware-adapter"
         ],
         "elements": [
+          "ontology-workbench-summary",
           "src/features/vault-ontology/model/use-ontology-insight.ts",
           "src/shared/lib/ontology-tree/reachability.test.ts",
           "src/shared/lib/ontology-tree/reachability.ts",
@@ -5439,8 +5445,8 @@
         }
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (moduleload 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), la",
-      "wordCount": 235,
-      "updatedAt": "2026-05-23T18:40:27.028Z",
+      "wordCount": 263,
+      "updatedAt": "2026-05-27T10:33:52.996Z",
       "linksOut": []
     },
     {
@@ -5980,6 +5986,7 @@
           "insights-orphan-repair-packet",
           "ontology-deeplink-node-resolver",
           "ontology-review-brief",
+          "ontology-workbench-summary",
           "sigma-graphology",
           "src/views/home",
           "src/views/ontology-edit",
@@ -6007,7 +6014,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합.",
       "wordCount": 38,
-      "updatedAt": "2026-05-24T22:06:20.043Z",
+      "updatedAt": "2026-05-27T10:34:00.689Z",
       "linksOut": []
     },
     {
@@ -6217,6 +6224,23 @@
       "excerpt": "src/views/ontologyview/lib/reviewbrief.ts and the selectednode detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and direct ",
       "wordCount": 433,
       "updatedAt": "2026-05-25T07:27:37.301Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/ontology-workbench-summary",
+      "path": "docs/ontology/elements/ontology-workbench-summary.md",
+      "title": "Ontology Workbench Summary",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-workbench-summary",
+        "kind": "element",
+        "title": "Ontology Workbench Summary",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands users to Builder for writes and Insights for graph DBstyle query packs.",
+      "wordCount": 41,
+      "updatedAt": "2026-05-27T10:33:44.824Z",
       "linksOut": []
     },
     {
@@ -7051,7 +7075,7 @@
     "design-references/DESIGN-linear": [
       {
         "fromSlug": "DESIGN-SYSTEM",
-        "context": "System > This document is maintained based on Section 3 of the design spec. For the original Linear specification, see **[`design-references/DESIGN-linear.md`]**. ## Why this direction Linear's \"starlight rising from darkness\" aesthetic aligns precisely with the constellation me",
+        "context": "System > This document is maintained based on Section 3 of the design spec. For the original Linear specification, see **[`design-references/DESIGN-linear.md`]**. ## Why this direction `oh-my-ontology` should feel like a compact graph workbench, not a documentation portal with a",
         "linkText": "`design-references/DESIGN-linear.md`"
       }
     ],
@@ -7756,6 +7780,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-review-brief",
                 "title": "Ontology Review Brief"
+              },
+              {
+                "name": "ontology-workbench-summary",
+                "path": "ontology/elements/ontology-workbench-summary",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-workbench-summary",
+                "title": "Ontology Workbench Summary"
               },
               {
                 "name": "sigma-graphology",

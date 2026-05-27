@@ -2087,13 +2087,13 @@
   },
   "ontologyView": {
     "eyebrow": "Ontology",
-    "title": "온톨로지 트리",
+    "title": "온톨로지 워크벤치",
     "titleTooltip": {
-      "heading": "ontology 노드의 계층 뷰",
-      "body": "vault 안 .md 파일의 frontmatter 가 그대로 자란 트리. 검수 단계 없이 즉시 반영 — <hierarchy>project → domain → capability → element</hierarchy> 순서로 펼쳐서 보여줍니다.",
-      "footer": "문서 노드는 근거 역할이라 트리에서 제외돼요. <strong>그래프를 직접 그리려면 우측 ‘빌더 열기’</strong> 버튼을 눌러보세요."
+      "heading": "local markdown graph workbench",
+      "body": "vault 안 .md 파일의 frontmatter 가 그대로 자란 ontology graph 입니다. 트리는 <hierarchy>project → domain → capability → element</hierarchy> 계층을 빠르게 훑는 browse view 입니다.",
+      "footer": "문서 노드는 근거 역할이라 트리에서 제외돼요. <strong>관계를 만들거나 graph DB-style scan 을 하려면 빌더와 인사이트로 이어가세요.</strong>"
     },
-    "titleTooltipAria": "온톨로지 트리가 무엇인지 설명",
+    "titleTooltipAria": "온톨로지 워크벤치가 무엇인지 설명",
     "actions": {
       "searchTooltip": "이 화면 노드 검색 (⌘K)",
       "searchAria": "ontology 노드 검색 열기",
@@ -2112,6 +2112,24 @@
       "warnings": "데이터 경고",
       "warningsHint": "다중 부모 등으로 트리에서 누락된 관계",
       "warningsAria": "데이터 경고 {count}건 — 클릭해서 자세히 보기"
+    },
+    "workbench": {
+      "ariaLabel": "온톨로지 워크벤치 주요 작업",
+      "treeLabel": "Browse",
+      "treeValue": "트리 노드 {count}개",
+      "treeBody": "계층을 빠르게 훑고, 노드를 선택해 reachability · ego graph · agent handoff 를 확인합니다.",
+      "treeCta": "현재 화면",
+      "treeAriaLabel": "온톨로지 계층 browse view",
+      "builderLabel": "Write",
+      "builderValue": "빌더",
+      "builderBody": "계층 관계 {count}개를 캔버스에서 정리하고, 새 노드와 relation 을 같은 vault frontmatter 에 저장합니다.",
+      "builderCta": "빌더 열기",
+      "builderAriaLabel": "온톨로지 빌더에서 관계 작성",
+      "graphDbLabel": "Query",
+      "graphDbValue": "의미 관계 {count}개",
+      "graphDbBody": "node scan, edge scan, domain matrix, path evidence 를 graph DB pack 으로 검증합니다.",
+      "graphDbCta": "인사이트 열기",
+      "graphDbAriaLabel": "Graph DB query pack 인사이트 열기"
     },
     "error": "ontology 데이터를 불러오는 중 오류가 났어요. {message}",
     "loading": "불러오는 중…",

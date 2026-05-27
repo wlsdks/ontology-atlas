@@ -6,7 +6,7 @@ domain: mode-aware-adapters
 dependencies:
   - capabilities/frontmatter-to-ontology
   - capabilities/mode-aware-adapter
-elements: [src/features/vault-ontology/model/use-ontology-insight.ts, src/shared/lib/ontology-tree/reachability.test.ts, src/shared/lib/ontology-tree/reachability.ts, src/views/ontology-view/ui/OntologyViewPage.tsx]
+elements: [ontology-workbench-summary, src/features/vault-ontology/model/use-ontology-insight.ts, src/shared/lib/ontology-tree/reachability.test.ts, src/shared/lib/ontology-tree/reachability.ts, src/views/ontology-view/ui/OntologyViewPage.tsx]
 relates: [capabilities/frontmatter-to-ontology, capabilities/mode-aware-adapter, domains/views]
 ---
 
@@ -25,6 +25,10 @@ OntologyStubNode → KnowledgeGraphNode 변환:
 
 OntologyViewPage / SigmaTopology / GlobalSearch 등 모든 surface 가 같은
 hook 한 번으로 vault frontmatter 의 stub 노드 + 엣지를 즉시 surface.
+
+`/ontology` 상단은 Browse / Write / Query 요약으로 tree 의 역할을
+workbench 안의 browse mode 로 좁히고, 새 관계 작성은 Builder, graph DB-style
+검증은 Insights 로 이어지게 한다.
 
 노드 상세 패널은 선택 노드 기준 reachability 를 즉시 요약한다. 사용자는
 outgoing / incoming / both 방향과 1-3 hop depth 를 패널 안에서 바꾸며 layer 별

@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Clipboard, Info, Link2, PencilLine, X } from "lucide-react";
+import { BarChart3, Clipboard, GitBranch, Info, Link2, Network, PencilLine, X } from "lucide-react";
 import {
   buildOntologyBuilderNodeHref,
   buildOntologyNodeHref,
@@ -199,6 +199,21 @@ export function OntologyViewPage() {
   const builderHref = selectedNode
     ? buildOntologyBuilderNodeHref(selectedNode)
     : "/ontology/edit/";
+  const workbenchStats = useMemo(() => {
+    if (!insight) {
+      return {
+        semanticRelations: 0,
+        containmentRelations: 0,
+      };
+    }
+    const containmentRelations = insight.edges.filter(
+      (edge) => edge.type === "contains" || edge.type === "belongs_to",
+    ).length;
+    return {
+      semanticRelations: Math.max(insight.edges.length - containmentRelations, 0),
+      containmentRelations,
+    };
+  }, [insight]);
 
 
   return (
@@ -303,6 +318,13 @@ export function OntologyViewPage() {
           </div>
         </div>
       </section>
+
+      <GraphWorkbenchSummary
+        treeNodes={totalNodes}
+        semanticRelations={workbenchStats.semanticRelations}
+        containmentRelations={workbenchStats.containmentRelations}
+        builderHref={builderHref}
+      />
 
       {/* tree node + relation stat strip. 사용자가 vault 에 document kind
           노드를 만들면 추가 카운트만 surface (docCount > 0 일 때만).
@@ -1561,6 +1583,90 @@ function buildRelationPreviewRows(
     kind: neighbor.node ? getKindLabel(neighbor.node.kind) : "missing",
     nodeId: neighbor.neighborId,
   }));
+}
+
+function GraphWorkbenchSummary({
+  treeNodes,
+  semanticRelations,
+  containmentRelations,
+  builderHref,
+}: {
+  treeNodes: number;
+  semanticRelations: number;
+  containmentRelations: number;
+  builderHref: string;
+}) {
+  const t = useTranslations("ontologyView.workbench");
+  const items = [
+    {
+      icon: GitBranch,
+      label: t("treeLabel"),
+      value: t("treeValue", { count: treeNodes }),
+      body: t("treeBody"),
+      href: "/ontology/",
+      cta: t("treeCta"),
+      ariaLabel: t("treeAriaLabel"),
+    },
+    {
+      icon: Network,
+      label: t("builderLabel"),
+      value: t("builderValue"),
+      body: t("builderBody", { count: containmentRelations }),
+      href: builderHref,
+      cta: t("builderCta"),
+      ariaLabel: t("builderAriaLabel"),
+    },
+    {
+      icon: BarChart3,
+      label: t("graphDbLabel"),
+      value: t("graphDbValue", { count: semanticRelations }),
+      body: t("graphDbBody"),
+      href: "/ontology/insights/",
+      cta: t("graphDbCta"),
+      ariaLabel: t("graphDbAriaLabel"),
+    },
+  ] as const;
+
+  return (
+    <section
+      aria-label={t("ariaLabel")}
+      className="mb-6 rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2"
+    >
+      <div className="grid gap-2 lg:grid-cols-3">
+        {items.map((item) => {
+          const Icon = item.icon;
+          return (
+            <Link
+              key={item.label}
+              href={item.href}
+              aria-label={item.ariaLabel}
+              className="group flex min-w-0 flex-col rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-3 py-3 transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.07)]"
+            >
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-tertiary)] transition-colors group-hover:border-[color:rgba(94,106,210,0.38)] group-hover:text-[color:var(--color-indigo-accent)]">
+                  <Icon size={14} aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+                    {item.label}
+                  </p>
+                  <p className="mt-0.5 truncate text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                    {item.value}
+                  </p>
+                </div>
+              </div>
+              <p className="mt-2 min-h-10 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                {item.body}
+              </p>
+              <span className="mt-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)]">
+                {item.cta}
+              </span>
+            </Link>
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 function Stat({

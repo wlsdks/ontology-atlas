@@ -2087,13 +2087,13 @@
   },
   "ontologyView": {
     "eyebrow": "Ontology",
-    "title": "Ontology tree",
+    "title": "Ontology workbench",
     "titleTooltip": {
-      "heading": "Hierarchical view of ontology nodes",
-      "body": "A tree grown directly from the frontmatter of `.md` files in your vault. No review step — changes apply instantly. Expanded in the order <hierarchy>project → domain → capability → element</hierarchy>.",
-      "footer": "Document nodes act as evidence and are excluded from the tree. <strong>To draw the graph yourself, use the ‘Open builder’</strong> button on the right."
+      "heading": "Local markdown graph workbench",
+      "body": "An ontology graph grown directly from the frontmatter of `.md` files in your vault. The tree is the browse view for scanning <hierarchy>project → domain → capability → element</hierarchy> hierarchy.",
+      "footer": "Document nodes act as evidence and are excluded from the tree. <strong>Use Builder for writes and Insights for graph DB-style scans.</strong>"
     },
-    "titleTooltipAria": "Explain what the ontology tree is",
+    "titleTooltipAria": "Explain what the ontology workbench is",
     "actions": {
       "searchTooltip": "Search this view's nodes (⌘K)",
       "searchAria": "Open ontology node search",
@@ -2112,6 +2112,24 @@
       "warnings": "Data warnings",
       "warningsHint": "Relations dropped from the tree (multi-parent etc.)",
       "warningsAria": "Data warnings {count} — click for details"
+    },
+    "workbench": {
+      "ariaLabel": "Ontology workbench primary actions",
+      "treeLabel": "Browse",
+      "treeValue": "{count} tree nodes",
+      "treeBody": "Scan hierarchy, select a node, and inspect reachability, ego graph, and agent handoff context.",
+      "treeCta": "Current view",
+      "treeAriaLabel": "Ontology hierarchy browse view",
+      "builderLabel": "Write",
+      "builderValue": "Builder",
+      "builderBody": "Organize {count} containment relations on canvas and save new nodes or relations to the same vault frontmatter.",
+      "builderCta": "Open builder",
+      "builderAriaLabel": "Write relations in the ontology builder",
+      "graphDbLabel": "Query",
+      "graphDbValue": "{count} semantic relations",
+      "graphDbBody": "Validate node scans, edge scans, domain matrix, and path evidence through the graph DB pack.",
+      "graphDbCta": "Open insights",
+      "graphDbAriaLabel": "Open Graph DB query pack insights"
     },
     "error": "Something went wrong while loading ontology data. {message}",
     "loading": "Loading…",

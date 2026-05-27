@@ -20,10 +20,11 @@ test.describe("ontology view UI", () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/ontology/");
 
-    await expect(page.getByRole("heading", { name: "Ontology tree" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Ontology workbench" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open Graph DB query pack insights" })).toBeVisible();
     await expect(page.locator('button[title="oh-my-ontology"]')).toBeVisible();
     await expect(page.locator('button[title="AI Agent Partner"]')).toBeVisible();
-    await expect(page.getByRole("link", { name: "Browse" })).toHaveAttribute(
+    await expect(page.getByRole("link", { name: "Browse", exact: true })).toHaveAttribute(
       "aria-current",
       "page",
     );

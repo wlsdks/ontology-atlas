@@ -9,7 +9,20 @@ tags: [design, ux, linear, overview]
 
 ## Why this direction
 
-Linear's "starlight rising from darkness" aesthetic aligns precisely with the constellation metaphor of the topology. The extreme constraint of black-and-white plus a single indigo accent is **the strongest defense against AI-generated UI clichés**. Rendering hub nodes (IAM/Reactor) in indigo makes them the only colored elements in the system, naturally forming the visual focal point.
+`oh-my-ontology` should feel like a compact graph workbench, not a documentation
+portal with a graph attached. The visual direction is still restrained: dark or
+light neutral surfaces, one indigo accent, dense but readable controls, and no
+decorative gradients. The product value comes from moving between three modes
+over the same local markdown graph:
+
+- **Browse** — hierarchy, node detail, reachability, and ego graph.
+- **Write** — builder canvas edits that write back to vault frontmatter.
+- **Query** — graph DB-style scans, health checks, domain matrix, and path
+  evidence.
+
+The tree is therefore a browse mode, not the whole product identity. Headers,
+cards, and navigation should point users from tree inspection into Builder and
+Insights whenever the next action is writing or graph-level verification.
 
 ## Design tokens
 
@@ -56,6 +69,20 @@ Differentiate by **border style**, not color — the only color (indigo) is rese
 | In progress        | Indigo underline                          |
 | Planned            | Dashed border                             |
 | Hub (IAM/Reactor)  | Indigo background and border (only color) |
+
+## Product Surface Hierarchy
+
+Operational pages should expose intent before visual flourish:
+
+1. **Primary task** — what the user can do on this screen now.
+2. **Graph evidence** — node count, relation count, warnings, health, or query
+   packet readiness.
+3. **Next graph action** — Builder for writes, Insights for graph DB-style
+   queries, Topology for spatial/path inspection.
+
+Avoid making large explanatory panels the first thing users read. Prefer compact
+action strips with labels that name the mode (`Browse`, `Write`, `Query`) and a
+short reason to click.
 
 ## Absolute rules (Don'ts)
 
