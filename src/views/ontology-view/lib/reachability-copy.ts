@@ -150,10 +150,17 @@ export function buildAgentContextBundle({
 }): string {
   const inOutEdgeLimit = 10;
   const blastDepth = Math.min(depth, 2) as 1 | 2;
+  const targetSlug = "<target-slug>";
+  const relationType = "<relation-type>";
+  const pathLimit = 10;
+  const pathMaxHops = 4;
+  const pathSearchBudget = 1000;
   return [
     "# Selected ontology node proof",
     "",
-    "Use oh-my-ontology for this selected node before editing frontmatter.",
+    "Use oh-my-ontology for this selected node before editing frontmatter or trusting a scan row as proof.",
+    "",
+    `- Scope: selected node ${slug}`,
     "",
     "MCP:",
     `1. ${buildNodeProfileMcpCall({ slug, limit: profileLimit })}`,
@@ -161,7 +168,10 @@ export function buildAgentContextBundle({
     `3. ${mcpCall({ operation: "match_edges", from: slug, limit: inOutEdgeLimit })}`,
     `4. ${mcpCall({ operation: "match_edges", to: slug, limit: inOutEdgeLimit })}`,
     `5. ${buildReachabilityMcpCall({ slug, direction, depth, limit: reachabilityLimit })}`,
-    `6. ${mcpCall({ operation: "health", limit: 5 })}`,
+    `6. ${mcpCall({ operation: "query_plan", targetOperation: "all_paths", from: slug, to: targetSlug, maxHops: pathMaxHops, searchBudget: pathSearchBudget, limit: pathLimit })}`,
+    `7. ${mcpCall({ operation: "all_paths", from: slug, to: targetSlug, maxHops: pathMaxHops, searchBudget: pathSearchBudget, limit: pathLimit })}`,
+    `8. ${mcpCall({ operation: "relation_check", from: slug, to: targetSlug, type: relationType })}`,
+    `9. ${mcpCall({ operation: "health", limit: 5 })}`,
     "",
     "CLI fallback:",
     `1. ${buildNodeProfileCliCommand({ slug, limit: profileLimit })}`,
@@ -169,13 +179,17 @@ export function buildAgentContextBundle({
     `3. oh-my-ontology match-edges [vault] --from ${shellQuote(slug)} --limit ${inOutEdgeLimit}`,
     `4. oh-my-ontology match-edges [vault] --to ${shellQuote(slug)} --limit ${inOutEdgeLimit}`,
     `5. ${buildReachabilityCliCommand({ slug, direction, depth, limit: reachabilityLimit })}`,
-    "6. oh-my-ontology health [vault] --limit 5",
+    `6. oh-my-ontology all-paths ${shellQuote(slug)} ${shellQuote(targetSlug)} [vault] --plan --max-hops ${pathMaxHops} --limit ${pathLimit} --search-budget ${pathSearchBudget}`,
+    `7. oh-my-ontology all-paths ${shellQuote(slug)} ${shellQuote(targetSlug)} [vault] --max-hops ${pathMaxHops} --limit ${pathLimit} --search-budget ${pathSearchBudget}`,
+    `8. oh-my-ontology relation-check ${shellQuote(slug)} ${shellQuote(targetSlug)} ${shellQuote(relationType)} [vault]`,
+    "9. oh-my-ontology health [vault] --limit 5",
     "",
     "Evidence checklist:",
     "1. Report direct relation counts from node_profile before making a write claim.",
     "2. Report totalMatches, limited, and returned row count for incoming/outgoing match_edges scans.",
-    "3. Treat scan rows as candidates until node_profile, blast_radius, path, explain, or relation_check confirms the exact claim.",
-    "4. Run the post-change sync gate below after any frontmatter edit.",
+    "3. Treat scan rows as candidates until node_profile, blast_radius, path, explain, all_paths, or relation_check confirms the exact claim.",
+    "4. For all_paths, report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.",
+    "5. Run the post-change sync gate below after any frontmatter edit.",
     "",
     "Post-change sync gate:",
     formatAgentPostChangeSyncPacket(),

@@ -115,8 +115,24 @@ describe("reachability copy helpers", () => {
     expect(bundle).toContain(
       '5. query_ontology({"operation":"reachability","slug":"capabilities/cli-developer-entry","direction":"outgoing","depth":3,"limit":12})',
     );
+    expect(bundle).toContain(
+      '6. query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"capabilities/cli-developer-entry","to":"<target-slug>","maxHops":4,"searchBudget":1000,"limit":10})',
+    );
+    expect(bundle).toContain(
+      '7. query_ontology({"operation":"all_paths","from":"capabilities/cli-developer-entry","to":"<target-slug>","maxHops":4,"searchBudget":1000,"limit":10})',
+    );
+    expect(bundle).toContain(
+      '8. query_ontology({"operation":"relation_check","from":"capabilities/cli-developer-entry","to":"<target-slug>","type":"<relation-type>"})',
+    );
     expect(bundle).toContain("oh-my-ontology match-edges [vault] --from capabilities/cli-developer-entry --limit 10");
+    expect(bundle).toContain(
+      "oh-my-ontology all-paths capabilities/cli-developer-entry '<target-slug>' [vault] --plan --max-hops 4 --limit 10 --search-budget 1000",
+    );
+    expect(bundle).toContain(
+      "oh-my-ontology relation-check capabilities/cli-developer-entry '<target-slug>' '<relation-type>' [vault]",
+    );
     expect(bundle).toContain("Report totalMatches, limited, and returned row count");
+    expect(bundle).toContain("For all_paths, report limit, searchBudget");
     expect(bundle).toContain("# Post-change ontology sync gate");
   });
 

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T22:48:09.813Z",
+  "generatedAt": "2026-05-27T22:53:35.271Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 7946,
-      "updatedAt": "2026-05-27T22:47:57.590Z",
+      "wordCount": 7950,
+      "updatedAt": "2026-05-27T22:53:27.275Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6359,8 +6359,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/lib/reviewbrief.ts and the selectednode detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and direct ",
-      "wordCount": 572,
-      "updatedAt": "2026-05-27T22:27:05.272Z",
+      "wordCount": 576,
+      "updatedAt": "2026-05-27T22:53:27.276Z",
       "linksOut": []
     },
     {
@@ -6401,8 +6401,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatterbacked writes and Insights for graph DBstyle query validation. The first viewport also kee",
-      "wordCount": 613,
-      "updatedAt": "2026-05-27T22:47:57.592Z",
+      "wordCount": 617,
+      "updatedAt": "2026-05-27T22:53:27.276Z",
       "linksOut": []
     },
     {
