@@ -989,6 +989,15 @@ function NodeDetailPanel({
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <CopyNodeLinkButton node={node} />
+          <Tooltip content={t('reviewOpenTopology')} withProvider={false}>
+            <Link
+              href={topologyHref}
+              aria-label={t('reviewOpenTopology')}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <Network size={15} aria-hidden />
+            </Link>
+          </Tooltip>
           <Tooltip content={t('builderFocus')} withProvider={false}>
             <Link
               href={builderHref}
@@ -996,6 +1005,15 @@ function NodeDetailPanel({
               className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
             >
               <PencilLine size={15} aria-hidden />
+            </Link>
+          </Tooltip>
+          <Tooltip content={t('reviewOpenQuery')} withProvider={false}>
+            <Link
+              href={reviewBrief.handoffLinks.query}
+              aria-label={t('reviewOpenQuery')}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            >
+              <BarChart3 size={15} aria-hidden />
             </Link>
           </Tooltip>
           {/* 새 edge 는 vault frontmatter array (capabilities / elements /

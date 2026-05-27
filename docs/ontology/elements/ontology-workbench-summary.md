@@ -7,7 +7,7 @@ domain: views
 
 `src/views/ontology-view/ui/OntologyViewPage.tsx` renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands users to Builder for writes and Insights for graph DB-style query packs.
 
-When a user selects a tree node, the collaborator brief exposes the same handoff triangle: topology focus for visual inspection, builder focus for frontmatter-backed edits, and the query cockpit for graph DB-style validation. The copied review and vocabulary packets include the same `/ontology/insights/` handoff so a tree review does not stop at hierarchy browsing.
+When a user selects a tree node, the detail header keeps the same handoff triangle visible immediately: topology focus for visual inspection, builder focus for frontmatter-backed edits, and the query cockpit for graph DB-style validation. The collaborator brief repeats those links below the review prompts, and the copied review and vocabulary packets include the same `/ontology/insights/` handoff so a tree review does not stop at hierarchy browsing.
 
 Tree projection warnings are surfaced as projection notes rather than generic data errors. The warnings card expands into the concrete tree-builder notes and links to `/ontology/insights/` and `/ontology/edit/`, making clear that valid graph relations can remain queryable even when the hierarchy view cannot display every parent or cycle.
 
