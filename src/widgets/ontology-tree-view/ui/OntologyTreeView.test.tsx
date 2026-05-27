@@ -490,7 +490,7 @@ describe("OntologyTreeView — orphans + warnings", () => {
         }}
       />,
     );
-    expect(screen.getByText("데이터 경고 2 건")).toBeInTheDocument();
+    expect(screen.getByText("트리 투영 메모 2건")).toBeInTheDocument();
   });
 });
 

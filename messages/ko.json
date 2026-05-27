@@ -299,7 +299,7 @@
       "orphansHeading": "연결되지 않은 노드 {count}",
       "orphansHeadingFiltered": "연결되지 않은 노드 {filtered} / {total}",
       "orphansMore": "…외 {count} 건",
-      "warningsSummary": "데이터 경고 {count} 건"
+      "warningsSummary": "트리 투영 메모 {count}건"
     },
     "egoGraph": {
       "ariaLabelOneHop": "{title} 의 관계 그래프 (1-hop)",
@@ -2167,9 +2167,18 @@
       "treeNodes": "트리 노드",
       "totalRelations": "총 관계",
       "documents": "근거 문서",
-      "warnings": "데이터 경고",
-      "warningsHint": "다중 부모 등으로 트리에서 누락된 관계",
-      "warningsAria": "데이터 경고 {count}건 — 클릭해서 자세히 보기"
+      "warnings": "트리 투영",
+      "warningsHint": "하나의 계층으로는 일부 graph 관계를 모두 표시할 수 없습니다.",
+      "warningsAria": "트리 투영 경고 {count}건 — 클릭해서 자세히 보기"
+    },
+    "treeWarnings": {
+      "eyebrow": "Tree projection",
+      "title": "계층 밖 관계 {count}건",
+      "badge": "vault 오류 아님",
+      "body": "그래프는 그대로 query 할 수 있습니다. 이 경고는 트리를 읽기 쉽게 유지하기 위해 부모 하나만 유지하거나 cycle 을 root 로 승격했다는 뜻입니다. graph DB-style scan 은 인사이트에서, frontmatter 관계 방향 검토는 빌더에서 이어가세요.",
+      "hidden": "투영 메모 {count}건 더 있음",
+      "queryCta": "query cockpit 열기",
+      "builderCta": "빌더에서 검토"
     },
     "workbench": {
       "ariaLabel": "온톨로지 워크벤치 주요 작업",

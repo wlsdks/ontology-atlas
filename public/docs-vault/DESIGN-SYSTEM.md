@@ -92,6 +92,12 @@ tree. Node-detail handoffs should always keep the three workbench exits visible:
 Topology for visual focus, Builder for frontmatter-backed edits, and Insights
 for graph DB-style validation.
 
+Tree projection warnings should be named as projection notes, not generic data
+errors. The tree can only show one readable hierarchy, while the same
+frontmatter graph may contain valid multi-parent or cyclic semantic relations.
+When projection notes exist, the card should expand into a concrete warning
+list and hand off to Insights for graph scans or Builder for relation review.
+
 Builder write surfaces should make the persistence contract visible before the
 canvas. Use compact `Source` / `Draft` / `Guard` / `Proof` status cells to
 distinguish local writable vaults from sample read-only data, unsaved canvas

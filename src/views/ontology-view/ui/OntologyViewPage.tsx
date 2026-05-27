@@ -401,7 +401,11 @@ export function OntologyViewPage() {
             onSelect={(node) => selectNode(node)}
             emptyHint={t('emptyHint')}
             selectedId={selectedNode?.id ?? null}
+            showWarnings={false}
           />
+          {treeResult.warnings.length > 0 ? (
+            <TreeProjectionWarnings warnings={treeResult.warnings} />
+          ) : null}
           {/* 빈 상태 onboarding — tree / orphans 모두 비었을 때만 노출.
               "온톨로지란 무엇이고, 어떻게 자라는지" 가이드. 데이터 있을 때
               화면 뺏지 않게 빈 상태 한정. mode 별로 다른 다음-단계 안내:
@@ -1695,6 +1699,65 @@ function GraphWorkbenchSummary({
         })}
       </div>
     </section>
+  );
+}
+
+function TreeProjectionWarnings({ warnings }: { warnings: string[] }) {
+  const t = useTranslations("ontologyView.treeWarnings");
+  const preview = warnings.slice(0, 8);
+  const hiddenCount = Math.max(0, warnings.length - preview.length);
+
+  return (
+    <details
+      id="tree-data-warnings"
+      className="mt-4 rounded-lg border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.045)] px-4 py-3"
+    >
+      <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3">
+        <span className="min-w-0">
+          <span className="block font-mono text-[9px] uppercase tracking-[0.14em] text-[color:rgba(238,198,128,0.95)]">
+            {t("eyebrow")}
+          </span>
+          <span className="mt-1 block break-keep text-sm font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {t("title", { count: warnings.length })}
+          </span>
+        </span>
+        <span className="rounded-md border border-[color:rgba(255,179,71,0.24)] bg-[color:rgba(255,179,71,0.07)] px-2 py-1 font-mono text-[10px] text-[color:rgba(238,198,128,0.95)]">
+          {t("badge")}
+        </span>
+      </summary>
+      <p className="mt-3 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+        {t("body")}
+      </p>
+      <ul className="mt-3 grid gap-1.5">
+        {preview.map((warning) => (
+          <li
+            key={warning}
+            className="break-all rounded-md border border-[color:rgba(255,179,71,0.16)] bg-[color:rgba(0,0,0,0.08)] px-2.5 py-1.5 font-mono text-[10px] text-[color:var(--color-text-secondary)]"
+          >
+            {warning}
+          </li>
+        ))}
+      </ul>
+      {hiddenCount > 0 ? (
+        <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+          {t("hidden", { count: hiddenCount })}
+        </p>
+      ) : null}
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Link
+          href="/ontology/insights/"
+          className="inline-flex h-8 items-center rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
+        >
+          {t("queryCta")}
+        </Link>
+        <Link
+          href="/ontology/edit/"
+          className="inline-flex h-8 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+        >
+          {t("builderCta")}
+        </Link>
+      </div>
+    </details>
   );
 }
 

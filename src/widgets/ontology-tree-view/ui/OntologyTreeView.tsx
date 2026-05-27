@@ -53,6 +53,8 @@ export interface OntologyTreeViewProps {
   /** 외부에서 선택된 노드 id (deeplink ?node=..., panel 클릭 등). 트리 행
    *  하나만 시각/접근성 selected 상태로 표시한다. */
   selectedId?: string | null;
+  /** 상위 page 가 projection warning panel 을 직접 렌더할 때 false. */
+  showWarnings?: boolean;
 }
 
 const KIND_TONE: Record<
@@ -234,6 +236,7 @@ export function OntologyTreeView({
   collapseCapabilitiesByDefault = true,
   onSelect,
   selectedId,
+  showWarnings = true,
 }: OntologyTreeViewProps) {
   const t = useTranslations('ontologyWidgets');
   // expand 상태 — 노드 ID 단위. defaultExpanded 면 처음 모두 펼침.
@@ -720,9 +723,9 @@ export function OntologyTreeView({
           </ul>
         </div>
       ) : null}
-      {result.warnings.length > 0 ? (
+      {showWarnings && result.warnings.length > 0 ? (
         <details
-          id="tree-data-warnings"
+          id="tree-inline-projection-warnings"
           // R+ PR #223 의 stat strip amber pill 과 톤 통일 — red (status-danger)
           // 은 *error* 신호, multi-parent drop 은 *warning* 신호. 디자인
           // 헌장도 amber 가 stub/warning, red 가 error. 같은 신호인데 두 톤

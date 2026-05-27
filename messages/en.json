@@ -299,7 +299,7 @@
       "orphansHeading": "Unconnected nodes {count}",
       "orphansHeadingFiltered": "Unconnected nodes {filtered} / {total}",
       "orphansMore": "…and {count} more",
-      "warningsSummary": "Data warnings — {count}"
+      "warningsSummary": "Tree projection notes — {count}"
     },
     "egoGraph": {
       "ariaLabelOneHop": "Relation graph for {title} (1-hop)",
@@ -2167,9 +2167,18 @@
       "treeNodes": "Tree nodes",
       "totalRelations": "Total relations",
       "documents": "Evidence docs",
-      "warnings": "Data warnings",
-      "warningsHint": "Relations dropped from the tree (multi-parent etc.)",
-      "warningsAria": "Data warnings {count} — click for details"
+      "warnings": "Tree projection",
+      "warningsHint": "Some valid graph relations cannot be shown as one hierarchy.",
+      "warningsAria": "Tree projection warnings {count} — click for details"
+    },
+    "treeWarnings": {
+      "eyebrow": "Tree projection",
+      "title": "{count} relations outside the hierarchy",
+      "badge": "not a vault error",
+      "body": "The graph is still queryable. These warnings mean the hierarchy view kept one parent or promoted a cycle so the tree stays readable. Use Insights for graph DB-style scans and Builder to review relation direction before changing frontmatter.",
+      "hidden": "+ {count} more projection notes",
+      "queryCta": "Open query cockpit",
+      "builderCta": "Review in builder"
     },
     "workbench": {
       "ariaLabel": "Ontology workbench primary actions",

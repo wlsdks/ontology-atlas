@@ -7,13 +7,20 @@ import { expect, test } from "@playwright/test";
  * browse surface rather than the removed knowledge/review queue surfaces.
  */
 test.describe("ontology view UI", () => {
-  test("desktop: landing CTA 로 ontology browse 진입 가능", async ({ page }) => {
+  test("desktop: landing CTA exposes app download path", async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto("/en/");
-    const demoLink = page.getByRole("link", { name: "See the demo first" });
-    await expect(demoLink).toBeVisible();
-    await demoLink.click();
-    await expect(page).toHaveURL(/\/en\/ontology\/?$/);
+    await expect(
+      page.getByRole("heading", { name: "Codebase ontology that grows with AI" }),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Download macOS app" })).toHaveAttribute(
+      "href",
+      "https://github.com/wlsdks/oh-my-ontology/releases",
+    );
+    await expect(page.getByRole("link", { name: "Installation guide" })).toHaveAttribute(
+      "href",
+      "/en/download/",
+    );
   });
 
   test("desktop: ontology tree renders dogfood nodes", async ({ page }) => {
@@ -28,6 +35,20 @@ test.describe("ontology view UI", () => {
     await expect(page.getByLabel("Ontology tree role and source status")).toContainText(
       "Hierarchy index",
     );
+    await expect(page.getByLabel(/Tree projection warnings/)).toContainText(
+      "Tree projection",
+    );
+    await page.getByLabel(/Tree projection warnings/).click();
+    const projectionWarnings = page.locator("#tree-data-warnings");
+    await expect(projectionWarnings).toBeVisible();
+    await expect(projectionWarnings).toContainText("not a vault error");
+    await expect(projectionWarnings).toContainText("The graph is still queryable");
+    await expect(
+      projectionWarnings.getByRole("link", { name: "Open query cockpit" }),
+    ).toHaveAttribute("href", "/en/ontology/insights/");
+    await expect(
+      projectionWarnings.getByRole("link", { name: "Review in builder" }),
+    ).toHaveAttribute("href", "/en/ontology/edit/");
     await expect(page.getByRole("link", { name: "Open Graph DB query pack insights" })).toBeVisible();
     await expect(page.locator('button[title="oh-my-ontology"]')).toBeVisible();
     await expect(page.locator('button[title="AI Agent Partner"]')).toBeVisible();
