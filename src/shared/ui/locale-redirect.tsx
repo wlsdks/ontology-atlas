@@ -23,16 +23,39 @@ export function LocaleRedirect() {
   }, []);
 
   return (
-    <div className="flex min-h-[60vh] items-center justify-center">
-      <p className="text-sm text-[color:var(--color-text-tertiary)]">
-        Loading…{' '}
+    <div
+      className="flex min-h-[60vh] items-center justify-center"
+      style={{
+        minHeight: '60vh',
+        background: '#08090a',
+        color: '#d0d6e0',
+        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
+      }}
+    >
+      <p
+        className="text-sm text-[color:var(--color-text-tertiary)]"
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.5rem',
+          margin: 0,
+          fontSize: '0.875rem',
+        }}
+      >
+        Opening Context Atlas…
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- root redirect fallback must survive failed hydration */}
+        <a style={{ color: '#8b97ff' }} href="/en/">
+          English
+        </a>
+        <span aria-hidden="true">·</span>
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- root redirect fallback must survive failed hydration */}
+        <a style={{ color: '#8b97ff' }} href="/ko/">
+          한국어
+        </a>
         <noscript>
-          JavaScript is required.{' '}
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- intentional cross-locale fallback when JS is disabled */}
-          <a href="/en/">Continue in English</a>
-          {' · '}
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- intentional cross-locale fallback */}
-          <a href="/ko/">한국어</a>
+          JavaScript is required for automatic routing.
         </noscript>
       </p>
     </div>

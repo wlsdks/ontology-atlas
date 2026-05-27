@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T19:10:46.345Z",
+  "generatedAt": "2026-05-27T19:17:41.748Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5864,6 +5864,7 @@
           "cli-developer-entry"
         ],
         "elements": [
+          "elements/root-locale-redirect",
           "src/features/theme-toggle",
           "src/shared/ui/live-announcer.tsx",
           "src/shared/ui/toast.tsx",
@@ -5883,7 +5884,7 @@
       ],
       "excerpt": "crosscutting. 라이트/다크 토글 (html[datatheme=\"light\"]), Sonner기반 toast, arialive 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefersreducedmotion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5node vault README/setup 내용을 제공하고, Claude Code/Cursor .mcp",
       "wordCount": 303,
-      "updatedAt": "2026-05-25T18:36:41.921Z",
+      "updatedAt": "2026-05-27T19:17:36.554Z",
       "linksOut": []
     },
     {
@@ -6306,6 +6307,23 @@
       "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatterbacked writes and Insights for graph DBstyle query validation. The first viewport also kee",
       "wordCount": 484,
       "updatedAt": "2026-05-27T18:39:55.390Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/root-locale-redirect",
+      "path": "docs/ontology/elements/root-locale-redirect.md",
+      "title": "Root Locale Redirect Fallback",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/root-locale-redirect",
+        "kind": "element",
+        "title": "Root Locale Redirect Fallback",
+        "domain": "onboarding-ux"
+      },
+      "headings": [],
+      "excerpt": "src/shared/ui/localeredirect.tsx renders the staticexport root / locale redirect fallback. It detects omot:locale or navigator.language, redirects to /en/ or /ko/, and now keeps a dark inline fallback with direct locale links so the macOS app does not show a blank white root screen when hydration or stale bundled asset",
+      "wordCount": 53,
+      "updatedAt": "2026-05-27T19:17:33.837Z",
       "linksOut": []
     },
     {
@@ -7858,6 +7876,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-workbench-summary",
                 "title": "Ontology Workbench Summary"
+              },
+              {
+                "name": "root-locale-redirect",
+                "path": "ontology/elements/root-locale-redirect",
+                "type": "doc",
+                "slug": "ontology/elements/root-locale-redirect",
+                "title": "Root Locale Redirect Fallback"
               },
               {
                 "name": "sigma-graphology",
