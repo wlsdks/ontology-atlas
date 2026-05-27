@@ -42,7 +42,6 @@ import {
   formatAgentGuardrailPrompt,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
-  formatAgentGraphDbQueryPackItemPrompt,
   formatAgentPlaybookPrompt,
   formatAgentQueryCallCliCommand,
   buildOntologyTree,
@@ -1846,13 +1845,6 @@ function AgentQueryRecipesPanel({
     .map(formatAgentQueryCallCliCommand)
     .filter((command): command is string => command !== null)
     .filter(uniqueString).length;
-  const graphDbPayloadCount = graphDbQueryPack.reduce(
-    (count, item) => count + item.payloads.length,
-    0,
-  );
-  const graphDbCliFallbackCount = graphDbQueryPack.length > 0
-    ? countAgentGraphDbCliPackCommands(graphDbQueryPack)
-    : 0;
   const firstRunRecipes = useMemo(() => recipes.slice(0, 5), [recipes]);
   const firstRunPrompt = useMemo(
     () => formatAgentRunOrderPrompt(firstRunRecipes),
@@ -1935,136 +1927,6 @@ function AgentQueryRecipesPanel({
           </div>
         ))}
       </dl>
-      <div
-        className="mb-3 rounded-lg border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(139,151,255,0.045)] px-3 py-3"
-        data-testid="insights-agent-graph-db-pack"
-      >
-        <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <p className="font-mono text-[11px] text-[color:var(--color-text-secondary)]">
-              {t("agentGraphDbPackTitle")}
-            </p>
-            <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-              {t("agentGraphDbPackSubtitle")}
-            </p>
-            <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
-              {t("agentGraphDbPackMeta", {
-                mcp: graphDbPayloadCount,
-                cli: graphDbCliFallbackCount,
-              })}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            <CopyAgentTextButton
-              label={t("agentCopyGraphDbCliPack")}
-              copiedLabel={t("agentCopied")}
-              text={formatAgentGraphDbCliPack(graphDbQueryPack)}
-              compact
-            />
-            <CopyAgentTextButton
-              label={t("agentCopyGraphDbPack")}
-              copiedLabel={t("agentCopied")}
-              text={formatAgentGraphDbQueryPack(graphDbQueryPack)}
-              compact
-            />
-          </div>
-        </div>
-        <div
-          className="mb-2 rounded-md border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] px-2.5 py-2"
-          data-testid="insights-agent-graph-db-self-check"
-        >
-          <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(151,230,198,0.92)]">
-            {t("agentGraphDbSelfCheckLabel")}
-          </p>
-          <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-            {t("agentGraphDbSelfCheckHint")}
-          </p>
-          <code className="mt-1 block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-            {AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
-          </code>
-          <code className="mt-1 block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-            {DOGFOOD_GRAPH_DB_RUNTIME_COMMAND}
-          </code>
-        </div>
-        <div
-          className="mb-2 grid gap-2 md:grid-cols-4"
-          aria-label={t("agentGraphDbModeGuideAriaLabel")}
-          data-testid="insights-agent-graph-db-mode-guide"
-        >
-          {[
-            ["agentGraphDbModeCliTerm", "agentGraphDbModeCliDesc"],
-            ["agentGraphDbModeMcpTerm", "agentGraphDbModeMcpDesc"],
-            ["agentGraphDbModePackTerm", "agentGraphDbModePackDesc"],
-            ["agentGraphDbModeGateTerm", "agentGraphDbModeGateDesc"],
-          ].map(([termKey, descKey]) => (
-            <div
-              key={termKey}
-              className="rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(139,151,255,0.04)] px-2.5 py-2"
-            >
-              <p className="font-mono text-[10px] text-[color:var(--color-text-secondary)]">
-                {t(termKey)}
-              </p>
-              <p className="mt-1 break-keep text-[11px] leading-4 text-[color:var(--color-text-tertiary)]">
-                {t(descKey)}
-              </p>
-            </div>
-          ))}
-        </div>
-        <div className="grid min-w-0 gap-2 lg:grid-cols-4">
-          {graphDbQueryPack.map((item) => {
-            const cliCommands = item.payloads
-              .map(formatAgentQueryCallCliCommand)
-              .filter((command): command is string => command !== null)
-              .filter(uniqueString);
-
-            return (
-              <article
-                key={item.id}
-                className="flex min-w-0 flex-col gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:rgba(255,255,255,0.035)] px-2.5 py-2.5"
-                data-pack={item.id}
-              >
-                <div className="min-w-0 flex-1">
-                  <p className="font-mono text-[11px] text-[color:var(--color-text-secondary)]">
-                    {t(item.titleKey)}
-                  </p>
-                  <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-                    {t(item.promptKey)}
-                  </p>
-                  <code className="mt-2 block overflow-x-auto whitespace-nowrap rounded border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(3,7,18,0.22)] px-2 py-1.5 font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                    {item.intent}
-                  </code>
-                  <ol className="mt-2 flex flex-wrap gap-1" aria-label={t("agentGraphDbPackStepsLabel")}>
-                    {item.payloads.map((payload, index) => (
-                      <li
-                        key={`${item.id}-${payload.operation}-${index}`}
-                        className="rounded border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(139,151,255,0.055)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]"
-                      >
-                        {index + 1}. {payload.arguments.operation as string}
-                      </li>
-                    ))}
-                  </ol>
-                  {cliCommands.length > 0 ? (
-                    <div className="mt-2 min-w-0 rounded-md border border-[color:rgba(73,190,146,0.16)] bg-[color:rgba(73,190,146,0.045)] p-2">
-                      <p className="mb-1 font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(151,230,198,0.92)]">
-                        {t("agentCliCommandLabel")}
-                      </p>
-                      <code className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] leading-4 text-[color:var(--color-text-tertiary)]">
-                        {cliCommands[0]}
-                      </code>
-                    </div>
-                  ) : null}
-                </div>
-                <CopyAgentTextButton
-                  label={t("agentCopyGraphDbQuery")}
-                  copiedLabel={t("agentCopied")}
-                  text={formatAgentGraphDbQueryPackItemPrompt(item)}
-                  compact
-                />
-              </article>
-            );
-          })}
-        </div>
-      </div>
       <div className="mb-3 rounded-lg border border-[color:rgba(73,190,146,0.22)] bg-[color:rgba(73,190,146,0.055)] px-3 py-3">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
