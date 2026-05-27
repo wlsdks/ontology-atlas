@@ -781,7 +781,13 @@
           "proofFlow": "query cockpit 검증",
           "proofFlowSelected": "선택 노드 검증",
           "proofAction": "인사이트 query 열기",
-          "proofActionSelected": "선택 노드 query 열기"
+          "proofActionSelected": "선택 노드 query 열기",
+          "proofCopy": "proof 복사",
+          "proofCopySelected": "노드 proof 복사",
+          "proofCopyAria": "builder graph proof packet 복사",
+          "proofCopyAriaSelected": "{slug} builder graph proof packet 복사",
+          "proofCopyCopied": "builder proof packet 복사됨",
+          "proofCopyFailed": "복사 실패"
         },
         "canvasEntryRail": {
           "label": "그래프 앵커",

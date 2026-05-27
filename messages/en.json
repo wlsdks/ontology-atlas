@@ -781,7 +781,13 @@
           "proofFlow": "verify in query cockpit",
           "proofFlowSelected": "verify selected node",
           "proofAction": "Open query cockpit",
-          "proofActionSelected": "Open node query"
+          "proofActionSelected": "Open node query",
+          "proofCopy": "Copy proof",
+          "proofCopySelected": "Copy node proof",
+          "proofCopyAria": "Copy builder graph proof packet",
+          "proofCopyAriaSelected": "Copy builder graph proof packet for {slug}",
+          "proofCopyCopied": "Builder proof packet copied",
+          "proofCopyFailed": "Copy failed"
         },
         "canvasEntryRail": {
           "label": "Graph anchors",

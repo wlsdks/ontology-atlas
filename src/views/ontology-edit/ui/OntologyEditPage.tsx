@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
+  Clipboard,
   Download,
   Database,
   FileJson,
@@ -28,6 +29,7 @@ import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { slugify } from "@/shared/lib/slugify";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { MountedGlobalSearch } from "@/widgets/global-search";
+import { copyText } from "@/shared/lib/copy-text";
 import { Tooltip, useToast } from "@/shared/ui";
 import { useEphemeralNodes } from "../lib/use-ephemeral-nodes";
 import { useEphemeralEdges } from "../lib/use-ephemeral-edges";
@@ -53,6 +55,7 @@ import {
   buildBuilderEntryAnchors,
   type BuilderEntryAnchor,
 } from "../lib/builder-entry-anchors";
+import { formatBuilderProofPacket } from "../lib/builder-proof-packet";
 
 /**
  * 빌더 ephemeral 노드 → `${kind}s/${slug}.md` 로 vault 직접 작성.
@@ -211,6 +214,7 @@ function BuilderWriteSummary({
   pendingRelation?: VaultRelationProposal | null;
 }) {
   const t = useTranslations("ontologyPages.edit.page.writeSummary");
+  const toast = useToast();
   type SummaryHref =
     | "/docs/?intent=local"
     | "/download/"
@@ -241,6 +245,10 @@ function BuilderWriteSummary({
     accent: "indigo" | "amber" | "neutral";
     href?: SummaryHref;
     actionLabel?: string;
+    copyLabel?: string;
+    copyAriaLabel?: string;
+    copyText?: string;
+    copySuccess?: string;
   }> = [
     {
       icon: <Database size={12} />,
@@ -308,8 +316,21 @@ function BuilderWriteSummary({
       accent: "neutral",
       href: proofHref,
       actionLabel: selectedProofNodeId ? t("proofActionSelected") : t("proofAction"),
+      copyLabel: selectedProofNodeId ? t("proofCopySelected") : t("proofCopy"),
+      copyAriaLabel: selectedProofNodeId
+        ? t("proofCopyAriaSelected", { slug: selectedProofNodeId })
+        : t("proofCopyAria"),
+      copyText: formatBuilderProofPacket(selectedProofNodeId),
+      copySuccess: t("proofCopyCopied"),
     },
   ];
+  const copyProof = async (text: string, successMessage: string) => {
+    if (await copyText(text)) {
+      toast.show(successMessage, "success");
+      return;
+    }
+    toast.show(t("proofCopyFailed"), "error");
+  };
 
   return (
     <section
@@ -355,12 +376,25 @@ function BuilderWriteSummary({
               {item.flow}
             </p>
             {item.href && item.actionLabel ? (
-              <Link
-                href={item.href}
-                className="mt-1.5 inline-flex text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:text-[color:var(--color-text-primary)]"
-              >
-                {item.actionLabel}
-              </Link>
+              <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                <Link
+                  href={item.href}
+                  className="inline-flex text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                >
+                  {item.actionLabel}
+                </Link>
+                {item.copyText && item.copyLabel && item.copyAriaLabel && item.copySuccess ? (
+                  <button
+                    type="button"
+                    onClick={() => void copyProof(item.copyText!, item.copySuccess!)}
+                    aria-label={item.copyAriaLabel}
+                    className="inline-flex items-center gap-1 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  >
+                    <Clipboard size={11} aria-hidden />
+                    {item.copyLabel}
+                  </button>
+                ) : null}
+              </div>
             ) : null}
           </article>
         );
