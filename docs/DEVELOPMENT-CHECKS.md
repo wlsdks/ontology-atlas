@@ -560,7 +560,11 @@ slow local fallback latency without parsing the larger graph DB pack.
 shown in `/ontology/insights`: it runs the connector-less setup self-check,
 facets, planned `match-nodes`, planned `match-edges`, `domain-matrix`, bounded
 `all-paths --plan --force`, and `explain` over `docs/ontology`, then fails if
-any result contract is missing.
+any result contract is missing. The scan checks require follow-up packets
+(`focusSlug` / `focusEdge`, MCP calls, and CLI fallbacks), and the bounded
+path check requires the full completeness contract (`limit`, `searchBudget`,
+`expandedStates`, `exhaustive`, `truncatedByBudget`, `totalPathsExact`, and
+`evidence.status` / `reason` / `pathsComplete`).
 `pnpm test:dogfood:graph-db` checks the runner and fail-closed result contract
 handling without invoking the live CLI pack.
 `pnpm dogfood:status` runs the

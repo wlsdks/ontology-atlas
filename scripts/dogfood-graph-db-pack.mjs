@@ -208,7 +208,22 @@ function validateNodeScan(value) {
   if (typeof result.totalMatches !== "number" || result.totalMatches < result.nodes.length) {
     return fail("match_nodes totalMatches contract invalid");
   }
-  return pass(`totalMatches=${result.totalMatches} limited=${Boolean(result.limited)}`);
+  const followUp = result.followUp;
+  if (typeof followUp?.focusSlug !== "string" || followUp.focusSlug.length === 0) {
+    return fail("match_nodes followUp.focusSlug missing");
+  }
+  if (!Array.isArray(followUp.calls) || followUp.calls.length === 0) {
+    return fail("match_nodes followUp.calls missing");
+  }
+  if (
+    !Array.isArray(followUp.cliFallbackCommands) ||
+    followUp.cliFallbackCommands.length === 0
+  ) {
+    return fail("match_nodes followUp.cliFallbackCommands missing");
+  }
+  return pass(
+    `totalMatches=${result.totalMatches} limited=${Boolean(result.limited)} followUp=${followUp.calls.length}`,
+  );
 }
 
 function validateEdgeScan(value) {
@@ -220,7 +235,22 @@ function validateEdgeScan(value) {
   if (typeof result.totalMatches !== "number" || result.totalMatches < result.edges.length) {
     return fail("match_edges totalMatches contract invalid");
   }
-  return pass(`totalMatches=${result.totalMatches} limited=${Boolean(result.limited)}`);
+  const followUp = result.followUp;
+  if (!followUp?.focusEdge || typeof followUp.focusEdge !== "object") {
+    return fail("match_edges followUp.focusEdge missing");
+  }
+  if (!Array.isArray(followUp.calls) || followUp.calls.length === 0) {
+    return fail("match_edges followUp.calls missing");
+  }
+  if (
+    !Array.isArray(followUp.cliFallbackCommands) ||
+    followUp.cliFallbackCommands.length === 0
+  ) {
+    return fail("match_edges followUp.cliFallbackCommands missing");
+  }
+  return pass(
+    `totalMatches=${result.totalMatches} limited=${Boolean(result.limited)} followUp=${followUp.calls.length}`,
+  );
 }
 
 function validateDomainCoupling(value) {
@@ -238,12 +268,24 @@ function validatePathEvidence(value) {
     return fail("all_paths query plan missing");
   }
   if (result?.operation !== "all_paths" || result.found !== true) return fail("all_paths result missing");
-  if (!result.evidence || typeof result.evidence.pathsComplete !== "boolean") {
-    return fail("all_paths evidence contract missing pathsComplete");
+  const requiredNumbers = ["limit", "searchBudget", "expandedStates"];
+  for (const field of requiredNumbers) {
+    if (typeof result[field] !== "number") return fail(`all_paths ${field} missing`);
   }
-  if (typeof result.totalPathsExact !== "boolean") return fail("all_paths totalPathsExact missing");
+  const requiredBooleans = ["exhaustive", "truncatedByBudget", "totalPathsExact"];
+  for (const field of requiredBooleans) {
+    if (typeof result[field] !== "boolean") return fail(`all_paths ${field} missing`);
+  }
+  if (!result.evidence || typeof result.evidence !== "object") {
+    return fail("all_paths evidence contract missing");
+  }
+  if (typeof result.evidence.status !== "string") return fail("all_paths evidence.status missing");
+  if (typeof result.evidence.reason !== "string") return fail("all_paths evidence.reason missing");
+  if (typeof result.evidence.pathsComplete !== "boolean") {
+    return fail("all_paths evidence.pathsComplete missing");
+  }
   return pass(
-    `found=true evidence=${result.evidence.status} pathsComplete=${result.evidence.pathsComplete}`,
+    `found=true evidence=${result.evidence.status}/${result.evidence.reason} pathsComplete=${result.evidence.pathsComplete} expanded=${result.expandedStates}`,
   );
 }
 

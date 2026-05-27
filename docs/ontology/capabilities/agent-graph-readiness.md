@@ -76,7 +76,9 @@ local codebase memory graph 를 agent 가 읽고 증거화하는 hot path 가 DB
 `docs/ontology` 에 대해 setup self-check, facets, planned `match-nodes`,
 planned `match-edges`, `domain-matrix`, bounded `all-paths`, `explain` 을 실제 CLI
 명령으로 실행하고, `ok` / `performanceOk`, unresolved edge 0, scan row
-`totalMatches`, path `evidence.pathsComplete`, relation explain shortest path 같은
+`totalMatches`, scan follow-up packet, path `limit` / `searchBudget` /
+`expandedStates` / `exhaustive` / `truncatedByBudget` / `totalPathsExact` /
+`evidence.status` / `reason` / `pathsComplete`, relation explain shortest path 같은
 result contract 가 하나라도 빠지면 실패한다. 그래서 `/ontology/insights` 의
 Query cockpit 이 보여주는 graph DB-style 가치가 문서 문구가 아니라 local markdown
 vault 위에서 매번 재현 가능한 런타임 검증으로 유지된다.
