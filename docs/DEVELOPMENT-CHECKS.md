@@ -410,7 +410,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 | `pnpm desktop:verify-app` | Launch the built `.app` from its executable directory long enough to catch early Tauri/WebView startup crashes, then terminate it |
 | `pnpm desktop:verify-install` | Mount the DMG, require the `/Applications` symlink target, copy the app to a temporary install folder, launch-smoke that copy from its executable directory, then clean it up |
 | `pnpm desktop:release-preflight` | Local pre-tag macOS release gate: readiness, docs-vault, checker tests, runtime split tests, bridge tests, runtime doctor, CLI/MCP handoff, agent JSON setup gate, build, route smoke, DMG, and install smoke |
-| `pnpm desktop:goal-audit` | Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, GitHub Release, hosted deploy, and download blockers |
+| `pnpm desktop:goal-audit` | Full desktop goal gate: requires `--pr` and `--tag`, runs the local release preflight, then checks PR, signing, GitHub Release, hosted deploy, and download blockers, writing default `.tmp/desktop-goal-status` evidence |
 | `pnpm test:desktop:runtime` | Hosted-vs-installed runtime split tests for `/docs?intent=local`, first-run desktop routing, and hosted download routing |
 | `pnpm test:desktop:bridge` | WebView handle-shim tests plus Rust path-guard tests for the native vault bridge |
 | `pnpm desktop:release-secrets` | Fail closed before tag release when any Apple signing or notarization secret is missing, blank, invalid base64, or not a PKCS#12 DER certificate payload |

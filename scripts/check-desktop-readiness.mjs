@@ -70,6 +70,7 @@ const releaseSlotScript = readText("scripts/check-macos-release-slot.mjs");
 const releaseGithubScript = readText("scripts/check-macos-release-github.mjs");
 const releaseRunScript = readText("scripts/watch-macos-release-run.mjs");
 const releaseStatusScript = readText("scripts/check-macos-release-status.mjs");
+const goalAuditScript = readText("scripts/check-desktop-goal-audit.mjs");
 const macosReleaseNamesHelper = readText("scripts/lib/macos-release-names.mjs");
 const hostedDownloadSurfaceScript = readText("scripts/check-hosted-download-surface.mjs");
 const firebaseDeployEnvScript = readText("scripts/check-firebase-hosting-deploy-env.mjs");
@@ -461,14 +462,19 @@ if (
 if (
   pkg.scripts?.["desktop:goal-audit"] === "node scripts/check-desktop-goal-audit.mjs" &&
   pkg.scripts?.["test:desktop:check"]?.includes("scripts/check-desktop-goal-audit.test.mjs") &&
-  readText("scripts/check-desktop-goal-audit.mjs").includes("--pr=NUMBER is required") &&
-  readText("scripts/check-desktop-goal-audit.mjs").includes("desktop:release-preflight") &&
-  readText("scripts/check-desktop-goal-audit.mjs").includes("--include-hosted-surface")
+  goalAuditScript.includes("--pr=NUMBER is required") &&
+  goalAuditScript.includes("desktop:release-preflight") &&
+  goalAuditScript.includes("--include-hosted-surface") &&
+  goalAuditScript.includes(".tmp/desktop-goal-status.json") &&
+  goalAuditScript.includes(".tmp/desktop-goal-status.md") &&
+  goalAuditScript.includes("--json-file=${options.jsonFile}") &&
+  goalAuditScript.includes("--markdown-file=${options.markdownFile}") &&
+  readText(".gitignore").includes(".tmp/")
 ) {
-  pass("desktop goal audit requires PR and tag evidence before chaining local preflight with public release and hosted download blockers");
+  pass("desktop goal audit requires PR and tag evidence before chaining local preflight with public release and hosted download blockers while writing default JSON and markdown evidence");
 } else {
   fail(
-    "package.json must expose desktop:goal-audit through scripts/check-desktop-goal-audit.mjs, cover it in test:desktop:check, require --pr and --tag before preflight, then run desktop:release-preflight and desktop:release-status -- --include-hosted-surface",
+    "package.json must expose desktop:goal-audit through scripts/check-desktop-goal-audit.mjs, cover it in test:desktop:check, require --pr and --tag before preflight, then run desktop:release-preflight and desktop:release-status -- --include-hosted-surface while writing default .tmp JSON and markdown evidence ignored by git",
   );
 }
 
