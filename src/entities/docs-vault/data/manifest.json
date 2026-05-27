@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T22:27:12.273Z",
+  "generatedAt": "2026-05-27T22:32:53.711Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 7851,
-      "updatedAt": "2026-05-27T22:27:05.274Z",
+      "wordCount": 7852,
+      "updatedAt": "2026-05-27T22:32:45.598Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4946,8 +4946,8 @@
         }
       ],
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 빌더 ephemeral 노드 → mode 별 분기 저장: local: vault.createDoc(${kind}s/${slug}, md) — vault 디스크 직접 작성. AI agent (MCP) 가 같은 vault 에서 즉시 본다. static: 저장 차단 + 안내 toast (\"내 markdown 폴더 열기\" 유도). write status strip: 캔버스 진입 전에 Source / Draft / Guard / Proof 상태를 보여준다. sample readonly vs local w",
-      "wordCount": 265,
-      "updatedAt": "2026-05-27T22:21:54.544Z",
+      "wordCount": 267,
+      "updatedAt": "2026-05-27T22:32:45.600Z",
       "linksOut": []
     },
     {
@@ -6130,8 +6130,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. The strip makes the builder's write contract visible before the user draws: source tells whether the current graph is a writable local markdown vault, a restoring desktop vault, o",
-      "wordCount": 244,
-      "updatedAt": "2026-05-27T21:36:27.183Z",
+      "wordCount": 252,
+      "updatedAt": "2026-05-27T22:32:45.599Z",
       "linksOut": []
     },
     {

@@ -277,7 +277,7 @@ Empty state: blue link to `/docs` (open vault).
   - vault↔vault drag → auto-persist to source frontmatter array (R4 verified)
   - ephemeral endpoint drag → amber dashed `EphemeralEdge` with center "Save" chip (R4 cut I, R5 cut N validates title before persist to prevent `untitled.md` pollution)
   - relation write confirm and post-save handoff keep the graph proof path visible: Topology Path, endpoint focus, `/ontology/insights/` query cockpit, copyable CLI/MCP preflight, bounded `all_paths` contract, and post-change sync gate.
-- **Proof packet**: the header `Proof` cell copies a graph DB-style runbook. Overview mode starts with `workspace_brief`, `query_plan(match_nodes)`, `match_nodes`, `query_plan(match_edges)`, `match_edges`, `facets`, `schema`, and `health`; selected-node mode adds `node_profile`, incoming `blast_radius`, incoming/outgoing edge scans, shell-safe CLI fallbacks, a bounded `all_paths` target placeholder, the scan-to-proof checklist, and the shared post-change sync gate.
+- **Proof packet**: the header `Proof` cell copies a graph DB-style runbook. Overview mode starts with `workspace_brief`, `query_plan(match_nodes)`, `match_nodes`, `query_plan(match_edges)`, `match_edges`, `facets`, `schema`, and `health`; selected-node mode adds `node_profile`, incoming `blast_radius`, incoming/outgoing edge scans, `query_plan(all_paths)`, bounded `all_paths`, `relation_check` target/type placeholders, shell-safe CLI fallbacks, the scan-to-proof checklist, and the shared post-change sync gate.
 
 #### Right inspector
 - **Ephemeral node**: name input (auto-focus + select) · slug preview · coordinate display · Save button (`Enter`, disabled if title empty/placeholder)

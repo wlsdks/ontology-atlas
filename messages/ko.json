@@ -775,7 +775,7 @@
           "proofValue": "MCP/CLI handoff",
           "proofBody": "relation_check · path · all_paths · sync gate 복사",
           "proofValueSelected": "선택 노드 검증",
-          "proofBodySelected": "{slug} node_profile · blast_radius · sync gate",
+          "proofBodySelected": "{slug} node_profile · edge scan · path plan · relation_check",
           "proofChip": "graph db + health",
           "proofChipSelected": "node health pack",
           "proofFlow": "query cockpit 검증",

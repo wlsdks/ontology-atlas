@@ -22,12 +22,17 @@ export function formatBuilderProofPacket(selectedProofNodeId?: string | null): s
   ];
 
   if (selected) {
+    const target = "<target-slug>";
+    const relationType = "<relation-type>";
     lines.push(
       `1. ${mcpCall({ operation: "node_profile", slug: selected, depth: 2, limit: 12 })}`,
       `2. ${mcpCall({ operation: "blast_radius", slug: selected, depth: 2, direction: "incoming", limit: 12 })}`,
       `3. ${mcpCall({ operation: "match_edges", from: selected, limit: 10 })}`,
       `4. ${mcpCall({ operation: "match_edges", to: selected, limit: 10 })}`,
-      `5. ${mcpCall({ operation: "health", limit: 5 })}`,
+      `5. ${mcpCall({ operation: "query_plan", targetOperation: "all_paths", from: selected, to: target, maxHops: 4, searchBudget: 1000, limit: 10 })}`,
+      `6. ${mcpCall({ operation: "all_paths", from: selected, to: target, maxHops: 4, searchBudget: 1000, limit: 10 })}`,
+      `7. ${mcpCall({ operation: "relation_check", from: selected, to: target, type: relationType })}`,
+      `8. ${mcpCall({ operation: "health", limit: 5 })}`,
     );
   } else {
     lines.push(
@@ -45,13 +50,17 @@ export function formatBuilderProofPacket(selectedProofNodeId?: string | null): s
   lines.push("", "CLI fallbacks:");
   if (selected) {
     const slug = shellArg(selected);
+    const target = shellArg("<target-slug>");
+    const relationType = shellArg("<relation-type>");
     lines.push(
       `1. oh-my-ontology node ${slug} [vault] --limit 12`,
       `2. oh-my-ontology blast-radius ${slug} [vault] --depth 2 --direction incoming --limit 12`,
       `3. oh-my-ontology match-edges [vault] --from ${slug} --limit 10`,
       `4. oh-my-ontology match-edges [vault] --to ${slug} --limit 10`,
-      `5. oh-my-ontology all-paths ${slug} '[target-slug]' [vault] --plan --max-hops 4 --limit 10`,
-      "6. oh-my-ontology health [vault] --limit 5",
+      `5. oh-my-ontology all-paths ${slug} ${target} [vault] --plan --max-hops 4 --limit 10 --search-budget 1000`,
+      `6. oh-my-ontology all-paths ${slug} ${target} [vault] --max-hops 4 --limit 10 --search-budget 1000`,
+      `7. oh-my-ontology relation-check ${slug} ${target} ${relationType} [vault]`,
+      "8. oh-my-ontology health [vault] --limit 5",
     );
   } else {
     lines.push(

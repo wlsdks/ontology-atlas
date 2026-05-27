@@ -27,10 +27,22 @@ describe("formatBuilderProofPacket", () => {
       'query_ontology({"operation":"match_edges","from":"capability:mcp-server"',
     );
     expect(packet).toContain(
+      'query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"capability:mcp-server","to":"<target-slug>"',
+    );
+    expect(packet).toContain(
+      'query_ontology({"operation":"all_paths","from":"capability:mcp-server","to":"<target-slug>"',
+    );
+    expect(packet).toContain(
+      'query_ontology({"operation":"relation_check","from":"capability:mcp-server","to":"<target-slug>","type":"<relation-type>"})',
+    );
+    expect(packet).toContain(
       "oh-my-ontology blast-radius 'capability:mcp-server' [vault]",
     );
     expect(packet).toContain(
-      "oh-my-ontology all-paths 'capability:mcp-server' '[target-slug]' [vault] --plan",
+      "oh-my-ontology all-paths 'capability:mcp-server' '<target-slug>' [vault] --plan",
+    );
+    expect(packet).toContain(
+      "oh-my-ontology relation-check 'capability:mcp-server' '<target-slug>' '<relation-type>' [vault]",
     );
     expect(packet).toContain("# Post-change ontology sync gate");
   });

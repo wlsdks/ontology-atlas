@@ -775,7 +775,7 @@
           "proofValue": "MCP/CLI handoff",
           "proofBody": "Copy relation_check · path · all_paths · sync gates.",
           "proofValueSelected": "Selected node proof",
-          "proofBodySelected": "{slug} node_profile · blast_radius · sync gate",
+          "proofBodySelected": "{slug} node_profile · edge scan · path plan · relation_check",
           "proofChip": "graph db + health",
           "proofChipSelected": "node health pack",
           "proofFlow": "verify in query cockpit",
