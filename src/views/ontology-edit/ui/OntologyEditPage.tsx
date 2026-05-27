@@ -106,6 +106,9 @@ const OntologyEditCanvas = dynamic<{
   { ssr: false, loading: () => <CanvasSkeleton /> },
 );
 
+const BUILDER_PALETTE_COLLAPSED_KEY = "demo:builder-palette:collapsed:v1";
+const BUILDER_INSPECTOR_COLLAPSED_KEY = "demo:builder-inspector:collapsed:v1";
+
 function CanvasSkeleton() {
   const t = useTranslations("ontologyPages.edit.page");
   return (
@@ -246,38 +249,34 @@ export function OntologyEditPage() {
   // layout 알고리즘 — dagre (default, kind 계층 LR) 또는 force (organic).
   // 헤더 토글로 사용자가 선택. 변경 시 in-memory layout 만 재계산 (frontmatter 그대로).
   const [layoutMode, setLayoutMode] = useState<"dagre" | "force">("dagre");
-  // 팔레트 / 인스펙터 접기 상태 — 사용자가 캔버스 공간 더 필요할 때.
-  // localStorage 저장 (페이지 재진입 시 마지막 선호 유지).
-  const [paletteCollapsed, setPaletteCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false;
+  // 팔레트 선호 — null 은 아직 사용자가 선택하지 않았다는 뜻. 이 경우
+  // persisted graph 가 있으면 graph-first 로 접고, 빈 캔버스면 펼쳐 둔다.
+  const [paletteCollapsedPreference, setPaletteCollapsedPreference] = useState<
+    boolean | null
+  >(() => {
+    if (typeof window === "undefined") return null;
     try {
-      return window.localStorage.getItem("demo:builder-palette:collapsed:v1") === "1";
+      const stored = window.localStorage.getItem(BUILDER_PALETTE_COLLAPSED_KEY);
+      return stored === null ? null : stored === "1";
     } catch {
-      return false;
+      return null;
     }
   });
+  // 인스펙터 접기 상태 — 사용자가 캔버스 공간 더 필요할 때.
+  // localStorage 저장 (페이지 재진입 시 마지막 선호 유지).
   const [inspectorCollapsed, setInspectorCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
-      return window.localStorage.getItem("demo:builder-inspector:collapsed:v1") === "1";
+      return window.localStorage.getItem(BUILDER_INSPECTOR_COLLAPSED_KEY) === "1";
     } catch {
       return false;
     }
   });
-  const togglePalette = useCallback(() => {
-    setPaletteCollapsed((current) => {
-      const next = !current;
-      try {
-        window.localStorage.setItem("demo:builder-palette:collapsed:v1", next ? "1" : "0");
-      } catch { /* private mode */ }
-      return next;
-    });
-  }, []);
   const toggleInspector = useCallback(() => {
     setInspectorCollapsed((current) => {
       const next = !current;
       try {
-        window.localStorage.setItem("demo:builder-inspector:collapsed:v1", next ? "1" : "0");
+        window.localStorage.setItem(BUILDER_INSPECTOR_COLLAPSED_KEY, next ? "1" : "0");
       } catch { /* private mode */ }
       return next;
     });
@@ -405,6 +404,17 @@ export function OntologyEditPage() {
     }
     return { persistedNodes, persistedRelations };
   }, [effectiveManifest]);
+  const paletteCollapsed =
+    paletteCollapsedPreference ?? (builderGraphStats.persistedNodes > 0);
+  const togglePalette = useCallback(() => {
+    const next = !paletteCollapsed;
+    try {
+      window.localStorage.setItem(BUILDER_PALETTE_COLLAPSED_KEY, next ? "1" : "0");
+    } catch {
+      // private mode
+    }
+    setPaletteCollapsedPreference(next);
+  }, [paletteCollapsed]);
   // slug → doc Map 한 번 — vaultSelected 재계산 외에도 다른 lookup 에서
   // 재사용. 이전엔 매 render 마다 manifest.docs.find 로 O(N) 스캔.
   const docsBySlug = useMemo(
