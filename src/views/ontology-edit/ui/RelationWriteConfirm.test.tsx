@@ -82,6 +82,7 @@ const labels = {
   postSavePathHandoff: "Open topology path",
   postSaveSourceFocus: "Source topology focus",
   postSaveTargetFocus: "Target topology focus",
+  postSaveQueryCockpit: "Open query cockpit",
   saveChecklist: "Save decision checklist",
   saveChecklistSelectedKey: "Selected key matches intended meaning",
   saveChecklistPreflight: "Relation preflight result",
@@ -165,6 +166,7 @@ const postSaveLabels = {
   openPath: "Open topology path",
   sourceFocus: "Source topology focus",
   targetFocus: "Target topology focus",
+  queryCockpit: "Open query cockpit",
   copyProofPacket: "Copy proof packet",
   copyProofPacketCopied: "Proof packet copied",
   copyProofPacketFailed: "Copy failed",
@@ -284,6 +286,10 @@ describe("RelationWriteConfirm", () => {
     expect(screen.getByRole("link", { name: "Target topology focus" })).toHaveAttribute(
       "href",
       expect.stringContaining("/topology/?mode=focus&p=elements%2Fmcp-index"),
+    );
+    expect(screen.getByRole("link", { name: "Open query cockpit" })).toHaveAttribute(
+      "href",
+      expect.stringContaining("/ontology/insights/"),
     );
     expect(screen.getByText("Save decision checklist")).toBeInTheDocument();
     expect(
@@ -419,6 +425,9 @@ describe("RelationWriteConfirm", () => {
       expect.stringContaining(
         "- Target topology focus: /topology/?mode=focus&p=elements%2Fmcp-index",
       ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining("- Query cockpit: /ontology/insights/"),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining("- Inferred key: elements"),
@@ -914,6 +923,10 @@ describe("RelationPostSaveHandoff", () => {
       "href",
       "/topology/?mode=focus&p=elements%2Fmcp-index",
     );
+    expect(screen.getByRole("link", { name: "Open query cockpit" })).toHaveAttribute(
+      "href",
+      "/ontology/insights/",
+    );
   });
 
   it("copies the shared sync gate from the post-save handoff", async () => {
@@ -954,6 +967,7 @@ describe("RelationPostSaveHandoff", () => {
     expect(copied).toContain(
       "/topology/?mode=path&pathFrom=capabilities%2Fmcp-server&pathTo=elements%2Fmcp-index",
     );
+    expect(copied).toContain("- Query cockpit: /ontology/insights/");
     expect(copied).toContain(
       "oh-my-ontology relation-check capabilities/mcp-server elements/mcp-index elements [vault]",
     );

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T11:36:06.247Z",
+  "generatedAt": "2026-05-27T11:45:01.916Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260525 (agent setup gate, graph DBstyle query pack, CLI/MCP verification snapshots, and fallback performance checks). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongside t",
-      "wordCount": 7621,
-      "updatedAt": "2026-05-27T04:33:30.267Z",
+      "wordCount": 7651,
+      "updatedAt": "2026-05-27T11:44:50.027Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6239,8 +6239,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands users to Builder for writes and Insights for graph DBstyle query packs. When a user selects a tree node, the collaborato",
-      "wordCount": 95,
-      "updatedAt": "2026-05-27T11:35:49.229Z",
+      "wordCount": 133,
+      "updatedAt": "2026-05-27T11:44:55.558Z",
       "linksOut": []
     },
     {

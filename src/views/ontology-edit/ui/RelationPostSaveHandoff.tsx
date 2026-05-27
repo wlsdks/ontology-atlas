@@ -7,6 +7,7 @@ import { copyText } from "@/shared/lib/copy-text";
 import { formatAgentPostChangeSyncPacket } from "@/shared/lib/ontology-tree";
 import type { VaultRelationKey, VaultRelationProposal } from "../lib/relation-proposal";
 import {
+  buildRelationQueryCockpitHref,
   buildRelationTopologyFocusHref,
   buildRelationTopologyPathHref,
 } from "./RelationWriteConfirm";
@@ -18,6 +19,7 @@ type RelationPostSaveHandoffLabels = {
   openPath: string;
   sourceFocus: string;
   targetFocus: string;
+  queryCockpit: string;
   copyProofPacket: string;
   copyProofPacketCopied: string;
   copyProofPacketFailed: string;
@@ -120,6 +122,12 @@ export function RelationPostSaveHandoff({
         >
           {labels.targetFocus}
         </Link>
+        <Link
+          href={buildRelationQueryCockpitHref()}
+          className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.09)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+        >
+          {labels.queryCockpit}
+        </Link>
         <button
           type="button"
           onClick={() => void handleCopyProofPacket()}
@@ -156,6 +164,7 @@ function formatSavedRelationProofPacket(
     )}`,
     `- Source focus: ${buildRelationTopologyFocusHref(relation.sourceSlug)}`,
     `- Target focus: ${buildRelationTopologyFocusHref(relation.targetSlug)}`,
+    `- Query cockpit: ${buildRelationQueryCockpitHref()}`,
     "",
     "CLI proof:",
     `1. oh-my-ontology relation-check ${relation.sourceSlug} ${relation.targetSlug} ${relation.selectedKey} [vault]`,

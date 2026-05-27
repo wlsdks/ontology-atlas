@@ -1170,6 +1170,9 @@ export function OntologyEditPage() {
                   ),
                   postSaveSourceFocus: t("relationConfirm.postSaveSourceFocus"),
                   postSaveTargetFocus: t("relationConfirm.postSaveTargetFocus"),
+                  postSaveQueryCockpit: t(
+                    "relationConfirm.postSaveQueryCockpit",
+                  ),
                   saveChecklist: t("relationConfirm.saveChecklist"),
                   saveChecklistSelectedKey: t(
                     "relationConfirm.saveChecklistSelectedKey",
@@ -1284,6 +1287,7 @@ export function OntologyEditPage() {
                   openPath: t("relationPostSave.openPath"),
                   sourceFocus: t("relationPostSave.sourceFocus"),
                   targetFocus: t("relationPostSave.targetFocus"),
+                  queryCockpit: t("relationPostSave.queryCockpit"),
                   copyProofPacket: t("relationPostSave.copyProofPacket"),
                   copyProofPacketCopied: t(
                     "relationPostSave.copyProofPacketCopied",

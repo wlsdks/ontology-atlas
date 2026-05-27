@@ -58,6 +58,7 @@ interface RelationWriteConfirmLabels {
   postSavePathHandoff: string;
   postSaveSourceFocus: string;
   postSaveTargetFocus: string;
+  postSaveQueryCockpit: string;
   saveChecklist: string;
   saveChecklistSelectedKey: string;
   saveChecklistPreflight: string;
@@ -180,6 +181,7 @@ export function RelationWriteConfirm({
   const targetBuilderHref = buildRelationBuilderHref(proposal.targetSlug);
   const sourceTopologyFocusHref = buildRelationTopologyFocusHref(proposal.sourceSlug);
   const targetTopologyFocusHref = buildRelationTopologyFocusHref(proposal.targetSlug);
+  const queryCockpitHref = buildRelationQueryCockpitHref();
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [cliPreflightCopyState, setCliPreflightCopyState] = useState<
     "idle" | "copied" | "failed"
@@ -566,6 +568,12 @@ export function RelationWriteConfirm({
             >
               {labels.postSaveTargetFocus}
             </Link>
+            <Link
+              href={queryCockpitHref}
+              className="inline-flex h-7 items-center rounded-md border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.08)] px-2 text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)]"
+            >
+              {labels.postSaveQueryCockpit}
+            </Link>
           </div>
         </div>
       </div>
@@ -766,6 +774,7 @@ function formatRelationWritePacket({
     )}`,
     `- Source topology focus: ${buildRelationTopologyFocusHref(proposal.sourceSlug)}`,
     `- Target topology focus: ${buildRelationTopologyFocusHref(proposal.targetSlug)}`,
+    `- Query cockpit: ${buildRelationQueryCockpitHref()}`,
     `- Inferred key: ${proposal.inferredKey}`,
     `- Inference reason: ${explainOntologyRelationKeyInference(
       proposal.sourceKind,
@@ -1097,4 +1106,8 @@ export function buildRelationTopologyPathHref(sourceSlug: string, targetSlug: st
 
 export function buildRelationTopologyFocusHref(slug: string): string {
   return `/topology/?mode=focus&p=${encodeURIComponent(slug)}`;
+}
+
+export function buildRelationQueryCockpitHref(): string {
+  return "/ontology/insights/";
 }

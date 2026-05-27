@@ -276,6 +276,7 @@ Empty state: blue link to `/docs` (open vault).
 - **Edge persistence**:
   - vault↔vault drag → auto-persist to source frontmatter array (R4 verified)
   - ephemeral endpoint drag → amber dashed `EphemeralEdge` with center "Save" chip (R4 cut I, R5 cut N validates title before persist to prevent `untitled.md` pollution)
+  - relation write confirm and post-save handoff keep the graph proof path visible: Topology Path, endpoint focus, `/ontology/insights/` query cockpit, copyable CLI/MCP preflight, bounded `all_paths` contract, and post-change sync gate.
 
 #### Right inspector
 - **Ephemeral node**: name input (auto-focus + select) · slug preview · coordinate display · Save button (`Enter`, disabled if title empty/placeholder)
