@@ -96,6 +96,12 @@ local writable vaults from sample read-only data, unsaved canvas work from
 persisted graph data, and preview/preflight checks from direct frontmatter
 writes.
 
+Query surfaces should expose the executable query pack before deeper charts.
+Use a compact cockpit with readiness, pack size, MCP call count, CLI fallback
+count, representative `MATCH ...` intents, and the self-check gate. Deeper
+panels can explain contracts, but the first viewport should make it clear that
+the local markdown graph can be scanned like a small graph database.
+
 ## Absolute rules (Don'ts)
 
 - ❌ Purple → pink gradients

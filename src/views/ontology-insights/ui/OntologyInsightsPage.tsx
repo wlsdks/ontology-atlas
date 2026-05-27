@@ -382,6 +382,13 @@ export function OntologyInsightsPage() {
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {agentGraphDbQueryPack.length > 0 ? (
+            <InsightsQueryPackCockpit
+              graphDbQueryPack={agentGraphDbQueryPack}
+              readiness={agentReadiness}
+            />
+          ) : null}
+
           {collaboratorBrief ? (
             <InsightsCollaboratorBriefPanel
               brief={collaboratorBrief}
@@ -895,6 +902,115 @@ export function OntologyInsightsPage() {
       )}
       </main>
     </div>
+  );
+}
+
+function InsightsQueryPackCockpit({
+  graphDbQueryPack,
+  readiness,
+}: {
+  graphDbQueryPack: ReturnType<typeof buildAgentGraphDbQueryPack>;
+  readiness: ReturnType<typeof buildAgentReadinessSummary> | null;
+}) {
+  const t = useTranslations("ontologyPages.insights");
+  const mcpCount = graphDbQueryPack.reduce((count, item) => count + item.payloads.length, 0);
+  const cliCount =
+    graphDbQueryPack.length > 0 ? countAgentGraphDbCliPackCommands(graphDbQueryPack) : 0;
+  const visibleIntents = graphDbQueryPack.slice(0, 3);
+
+  return (
+    <section
+      aria-label={t("queryCockpitAriaLabel")}
+      className="md:col-span-2 rounded-2xl border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.055)] px-4 py-4"
+      data-testid="insights-query-cockpit"
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {t("queryCockpitEyebrow")}
+          </p>
+          <h2 className="mt-1 break-keep text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {t("queryCockpitTitle")}
+          </h2>
+          <p className="mt-1 max-w-2xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t("queryCockpitBody")}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-1.5">
+          <CopyAgentTextButton
+            label={t("agentCopyGraphDbCliPack")}
+            copiedLabel={t("agentCopied")}
+            text={formatAgentGraphDbCliPack(graphDbQueryPack)}
+            compact
+          />
+          <CopyAgentTextButton
+            label={t("agentCopyGraphDbPack")}
+            copiedLabel={t("agentCopied")}
+            text={formatAgentGraphDbQueryPack(graphDbQueryPack)}
+            compact
+          />
+        </div>
+      </div>
+      <dl className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+        {[
+          {
+            key: "readiness",
+            label: t("queryCockpitReadiness"),
+            value: readiness ? t("queryCockpitReadinessValue", { score: readiness.score }) : "—",
+          },
+          {
+            key: "pack",
+            label: t("queryCockpitPack"),
+            value: t("queryCockpitPackValue", { count: graphDbQueryPack.length }),
+          },
+          {
+            key: "mcp",
+            label: t("queryCockpitMcp"),
+            value: t("queryCockpitMcpValue", { count: mcpCount }),
+          },
+          {
+            key: "cli",
+            label: t("queryCockpitCli"),
+            value: t("queryCockpitCliValue", { count: cliCount }),
+          },
+        ].map((item) => (
+          <div
+            key={item.key}
+            className="min-w-0 rounded-lg border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(0,0,0,0.16)] px-3 py-2"
+          >
+            <dt className="truncate font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {item.label}
+            </dt>
+            <dd className="mt-1 truncate font-mono text-[12px] tabular-nums text-[color:var(--color-text-primary)]">
+              {item.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <div className="mt-3 grid gap-2 lg:grid-cols-3">
+        {visibleIntents.map((item) => (
+          <article
+            key={item.id}
+            className="min-w-0 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-2"
+          >
+            <p className="truncate font-mono text-[10px] text-[color:var(--color-text-secondary)]">
+              {t(item.titleKey)}
+            </p>
+            <p className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+              {item.intent}
+            </p>
+          </article>
+        ))}
+      </div>
+      <div className="mt-3 rounded-md border border-[color:rgba(73,190,146,0.18)] bg-[color:rgba(73,190,146,0.045)] px-3 py-2">
+        <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(151,230,198,0.92)]">
+          {t("queryCockpitGate")}
+        </p>
+        <code className="mt-1 block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+          {AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
+        </code>
+      </div>
+    </section>
   );
 }
 

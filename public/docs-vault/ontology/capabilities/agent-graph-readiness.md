@@ -204,6 +204,13 @@ Graph DB query pack 카드 자체도 `CLI-only`, `MCP-connected`, `Graph DB pack
 차이를 같은 화면에서 확인할 수 있다. `Copy CLI pack` 텍스트에도 같은 mode guide 를
 넣어, 복사된 runbook 만 다른 Claude Code/Codex 세션에 전달되어도 모드 선택 기준이
 사라지지 않는다.
+
+Insights 상단에는 같은 pack 을 요약한 `Query cockpit` 을 둔다. 첫 viewport 에서
+readiness score, pack scan 수, MCP call 수, CLI fallback 수, 대표 `MATCH ...`
+intent, self-check gate 를 먼저 보여주고 `Copy CLI pack` / `Copy graph DB pack` 을 바로
+노출한다. 깊은 recipe 패널까지 내려가지 않아도 이 local markdown graph 가 별도 DB
+서버 없이 작은 graph database 처럼 scan 가능하다는 제품 가치를 바로 확인하게 한다.
+
 `scripts/perf-graph.mjs` 는 같은 10-call pack 을 `graph_db_pack` hot path 로 재생해
 UI / handoff 에서 복사되는 실제 Graph DB-style sequence 가 scale budget 밖으로 밀리지
 않는지도 확인한다.

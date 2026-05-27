@@ -176,6 +176,28 @@ test.describe("ontology view UI", () => {
     });
     await page.goto("/en/ontology/insights/");
 
+    const queryCockpit = page.getByTestId("insights-query-cockpit");
+    await expect(queryCockpit).toBeVisible();
+    await expect(queryCockpit).toContainText("Run the local graph like a small database");
+    await expect(queryCockpit).toContainText("Readiness");
+    await expect(queryCockpit).toContainText("Pack");
+    await expect(queryCockpit).toContainText("MCP");
+    await expect(queryCockpit).toContainText("CLI");
+    await expect(queryCockpit).toContainText("MATCH graph RETURN");
+    await expect(queryCockpit).toContainText("self-check gate");
+    await queryCockpit.getByRole("button", { name: "Copy CLI pack" }).click();
+    const copiedCockpitCliPack = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
+    );
+    expect(copiedCockpitCliPack).toContain("oh-my-ontology agent-brief [vault] --verify-fallbacks");
+    expect(copiedCockpitCliPack).toContain("oh-my-ontology match-nodes [vault] --plan");
+    await queryCockpit.getByRole("button", { name: "Copy graph DB pack" }).click();
+    const copiedCockpitMcpPack = await page.evaluate(
+      () => (window as typeof window & { __lastCopiedAgentText?: string }).__lastCopiedAgentText,
+    );
+    expect(copiedCockpitMcpPack).toContain('"operation": "facets"');
+    expect(copiedCockpitMcpPack).toContain('"operation": "all_paths"');
+
     const collaboratorBrief = page.getByTestId("insights-collaborator-brief");
     await expect(collaboratorBrief).toBeVisible();
     await expect(collaboratorBrief).toContainText("Collaborator insight brief");
