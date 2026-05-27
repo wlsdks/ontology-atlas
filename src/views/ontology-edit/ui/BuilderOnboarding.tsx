@@ -63,9 +63,9 @@ export function BuilderOnboarding({
           transition={{ duration: 0.22, ease: [0.42, 0, 0.58, 1] }}
           role="dialog"
           aria-label={t("dialogAriaLabel")}
-          className="pointer-events-auto absolute left-1/2 top-1/2 z-20 w-[min(560px,calc(100%-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[color:rgba(94,106,210,0.32)] bg-[color:var(--color-panel)] p-5 shadow-[0_24px_48px_rgba(0,0,0,0.42)]"
+          className="pointer-events-auto absolute left-4 top-4 z-20 w-[min(430px,calc(100%-2rem))] rounded-xl border border-[color:rgba(94,106,210,0.28)] bg-[color:var(--color-panel)] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.34)]"
         >
-          <header className="mb-4 flex items-start justify-between gap-3">
+          <header className="mb-3 flex items-start justify-between gap-3">
             <div>
               <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-indigo-accent)]">
                 {t("eyebrow")}
@@ -86,7 +86,7 @@ export function BuilderOnboarding({
               <X size={13} />
             </button>
           </header>
-          <ol className="space-y-3 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
+          <ol className="space-y-2.5 text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
             <li className="flex gap-2.5">
               <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] text-[color:var(--color-indigo-accent)]">
                 <MousePointerClick size={12} />
@@ -125,7 +125,7 @@ export function BuilderOnboarding({
               </p>
             </li>
           </ol>
-          <footer className="mt-5 flex flex-col items-stretch gap-3 border-t border-[color:var(--color-border-soft)] pt-3 sm:flex-row sm:items-center sm:justify-between">
+          <footer className="mt-4 flex flex-col items-stretch gap-3 border-t border-[color:var(--color-border-soft)] pt-3 sm:flex-row sm:items-center sm:justify-between">
             <p className="break-keep font-mono text-[10px] tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
               {t("shortcutsHint")}
             </p>

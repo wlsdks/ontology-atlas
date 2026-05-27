@@ -147,14 +147,14 @@ export function OntologyInspector({
   return (
     <aside
       aria-label={t("ariaLabel")}
-      className="flex h-full w-[360px] shrink-0 flex-col gap-3 overflow-y-auto border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-3 xl:w-[400px]"
+      className="flex h-full w-[320px] shrink-0 flex-col gap-3 overflow-y-auto border-l border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 xl:w-[360px]"
     >
-      <header className="flex items-start justify-between gap-2">
+      <header className="flex items-center justify-between gap-2 px-1">
         <div className="flex-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
             {t("eyebrow")}
           </p>
-          <p className="mt-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+          <p className="mt-0.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
             {t("subtitle")}
           </p>
         </div>
@@ -175,9 +175,9 @@ export function OntologyInspector({
           <motion.div
             key="empty"
             {...FADE_MOTION}
-            className="rounded-md border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] p-3"
+            className="rounded-md border border-dashed border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] p-2.5"
           >
-            <p className="text-[12px] leading-5 text-[color:var(--color-text-quaternary)]">
+            <p className="text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
               {t("emptyHint")}
             </p>
           </motion.div>

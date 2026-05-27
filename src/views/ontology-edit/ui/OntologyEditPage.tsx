@@ -5,7 +5,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { Info, Maximize2, Minimize2, Wand2 } from "lucide-react";
+import {
+  Download,
+  FileJson,
+  Info,
+  Maximize2,
+  Minimize2,
+  Network,
+  Trash2,
+  Wand2,
+} from "lucide-react";
 import {
   vaultManifest as staticVaultManifestRaw,
   type VaultManifest,
@@ -784,17 +793,24 @@ export function OntologyEditPage() {
         className={
           fullscreen
             ? "flex h-dvh w-full flex-col px-2 py-2"
-            : "mx-auto flex h-[calc(100dvh-3.5rem)] w-full max-w-[1800px] flex-col px-3 py-3 md:px-5 md:py-4"
+            : "mx-auto flex h-[calc(100dvh-5.75rem)] w-full max-w-[1800px] flex-col px-3 py-3 md:px-5 md:py-4"
         }
       >
-        <header className="mb-2 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+        <header className="mb-2 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2">
+          <div className="flex min-w-0 items-center gap-2">
             {/* eyebrow 'ONTOLOGY BUILDER' 는 OperationsNav 의 SubNav 행이
                 같은 caption ('ONTOLOGY') + active '빌더' pill 로 이미 노출 →
                 중복 제거. h1 만 남겨 페이지 정체성 유지. */}
-            <h1 className="text-xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            <h1 className="truncate text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
               {t("title")}
             </h1>
+            <span className="hidden h-4 w-px bg-[color:var(--color-border-soft)] sm:block" />
+            <span className="hidden font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] sm:inline">
+              {t("statusSummary", {
+                nodes: ephemeralNodes.length,
+                edges: ephemeralEdges.length,
+              })}
+            </span>
             <Tooltip content={helpTooltip} withProvider={false}>
               <span
                 role="img"
@@ -805,7 +821,7 @@ export function OntologyEditPage() {
               </span>
             </Tooltip>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
             {ephemeralNodes.length > 0 || ephemeralEdges.length > 0 ? (
               <>
                 <button
@@ -816,10 +832,11 @@ export function OntologyEditPage() {
                       ephemeralEdges,
                     })
                   }
-                  className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-xs text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.16)]"
+                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-2.5 text-[11px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.16)]"
                   aria-label={t("exportAriaLabel")}
                 >
-                  {t("exportButton")}
+                  <Download size={12} />
+                  <span className="hidden lg:inline">{t("exportButton")}</span>
                 </button>
                 <button
                   type="button"
@@ -829,10 +846,11 @@ export function OntologyEditPage() {
                       ephemeralEdges,
                     })
                   }
-                  className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)]"
                   aria-label={t("exportJsonLdAriaLabel")}
                 >
-                  {t("exportJsonLdButton")}
+                  <FileJson size={12} />
+                  <span className="hidden xl:inline">{t("exportJsonLdButton")}</span>
                 </button>
                 <button
                   type="button"
@@ -842,10 +860,11 @@ export function OntologyEditPage() {
                       ephemeralEdges,
                     })
                   }
-                  className="inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)]"
+                  className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.32)] hover:text-[color:var(--color-text-primary)]"
                   aria-label={t("exportGraphMlAriaLabel")}
                 >
-                  {t("exportGraphMlButton")}
+                  <Network size={12} />
+                  <span className="hidden xl:inline">{t("exportGraphMlButton")}</span>
                 </button>
                 <button
                   type="button"
@@ -860,14 +879,15 @@ export function OntologyEditPage() {
                   }}
                   className={
                     clearConfirming
-                      ? "inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(229,72,77,0.55)] bg-[color:rgba(229,72,77,0.18)] px-3 text-xs text-[color:rgba(236,116,116,0.95)] transition-colors hover:bg-[color:rgba(229,72,77,0.28)]"
-                      : "inline-flex h-8 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(229,72,77,0.32)] hover:text-[color:var(--color-text-primary)]"
+                      ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:rgba(229,72,77,0.55)] bg-[color:rgba(229,72,77,0.18)] px-2.5 text-[11px] text-[color:rgba(236,116,116,0.95)] transition-colors hover:bg-[color:rgba(229,72,77,0.28)]"
+                      : "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(229,72,77,0.32)] hover:text-[color:var(--color-text-primary)]"
                   }
                   aria-label={t("clearAriaLabel", {
                     nodes: ephemeralNodes.length,
                     edges: ephemeralEdges.length,
                   })}
                 >
+                  <Trash2 size={12} />
                   {clearConfirming
                     ? t("clearButtonConfirm", {
                         nodes: ephemeralNodes.length,
@@ -884,7 +904,7 @@ export function OntologyEditPage() {
             <div
               role="radiogroup"
               aria-label={t("layoutGroupAriaLabel")}
-              className="inline-flex h-8 shrink-0 items-center rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] p-0.5"
+              className="inline-flex h-8 shrink-0 items-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] p-0.5"
             >
               <button
                 type="button"
@@ -892,7 +912,7 @@ export function OntologyEditPage() {
                 aria-checked={layoutMode === "dagre"}
                 onClick={() => setLayoutMode("dagre")}
                 title={t("layoutDagreTitle")}
-                className={`rounded-full px-2 text-[10px] tracking-[0.04em] transition-colors ${
+                className={`rounded px-2 text-[10px] tracking-[0.04em] transition-colors ${
                   layoutMode === "dagre"
                     ? "bg-[color:rgba(94,106,210,0.18)] text-[color:rgba(159,170,235,0.95)]"
                     : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
@@ -906,7 +926,7 @@ export function OntologyEditPage() {
                 aria-checked={layoutMode === "force"}
                 onClick={() => setLayoutMode("force")}
                 title={t("layoutForceTitle")}
-                className={`rounded-full px-2 text-[10px] tracking-[0.04em] transition-colors ${
+                className={`rounded px-2 text-[10px] tracking-[0.04em] transition-colors ${
                   layoutMode === "force"
                     ? "bg-[color:rgba(94,106,210,0.18)] text-[color:rgba(159,170,235,0.95)]"
                     : "text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-secondary)]"
@@ -944,7 +964,7 @@ export function OntologyEditPage() {
             레이아웃 — 모바일 (<md, 768px 미만) viewport 에서는 컬럼이 겹쳐
             unreadable. 데스크톱 권장 안내 + 트리 / 토폴로지 fallback CTA 를
             모바일에만 노출. md+ 에서는 정상 빌더. */}
-        <section className="relative hidden flex-1 overflow-hidden rounded-xl border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] md:flex">
+        <section className="relative hidden flex-1 overflow-hidden rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-canvas)] md:flex">
           <OntologyKindPalette
             collapsed={paletteCollapsed}
             onToggleCollapsed={togglePalette}

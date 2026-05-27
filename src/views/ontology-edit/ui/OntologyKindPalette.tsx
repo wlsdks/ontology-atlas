@@ -13,7 +13,7 @@ import type { ManualNodeKind } from "@/entities/knowledge-graph";
  * - hover 시 인디고 alpha 톤만 변화 (헌장 §11 — scale 없이 색만)
  * - label + hint 2-line hierarchy
  *
- * collapsed 시 280→44px 로 축소, 아이콘만 노출. 인스펙터와 같은 폭으로
+ * collapsed 시 248→44px 로 축소, 아이콘만 노출. 인스펙터와 같은 폭으로
  * 좌우 대칭 + 사용자가 캔버스 공간 더 필요할 때 접을 수 있다.
  */
 const PALETTE_KINDS: Array<{
@@ -86,14 +86,14 @@ export function OntologyKindPalette({
   return (
     <aside
       aria-label={t("ariaLabel")}
-      className="flex h-full w-[280px] shrink-0 flex-col gap-2 overflow-y-auto border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-3"
+      className="flex h-full w-[248px] shrink-0 flex-col gap-2 overflow-y-auto border-r border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5"
     >
-      <header className="flex items-start justify-between gap-2">
+      <header className="flex items-center justify-between gap-2 px-1">
         <div className="flex-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-text-quaternary)]">
             {t("eyebrow")}
           </p>
-          <p className="mt-1 text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+          <p className="mt-0.5 text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
             {t("subtitle")}
           </p>
         </div>
@@ -109,7 +109,7 @@ export function OntologyKindPalette({
           </button>
         ) : null}
       </header>
-      <ul className="flex flex-col gap-1.5">
+      <ul className="flex flex-col gap-1">
         {PALETTE_KINDS.map((entry) => {
           const Icon = getOntologyKindIcon(entry.kind);
           const label = kindLabel(entry.kind);
@@ -119,7 +119,7 @@ export function OntologyKindPalette({
               <button
                 type="button"
                 onClick={() => onAddNode(entry.kind)}
-                className="group flex w-full items-start gap-2.5 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-3 py-2.5 text-left transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.08)]"
+                className="group flex w-full items-start gap-2 rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-elevated)] px-2.5 py-2 text-left transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:bg-[color:rgba(94,106,210,0.08)]"
                 aria-label={t("addAriaLabel", { label, hint })}
               >
                 <span
@@ -149,7 +149,7 @@ export function OntologyKindPalette({
           );
         })}
       </ul>
-      <footer className="mt-auto pt-3">
+      <footer className="mt-auto px-1 pt-3">
         <p className="text-[10px] leading-4 text-[color:var(--color-text-quaternary)]">
           {t("footerHint")}
         </p>
