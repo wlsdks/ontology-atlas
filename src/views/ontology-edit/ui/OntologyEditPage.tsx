@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -582,6 +582,23 @@ export function OntologyEditPage() {
     setFocusNodeId(id);
     setFocusToken((n) => n + 1);
   }, []);
+  const autoFocusedGraphKeyRef = useRef<string | null>(null);
+  const builderEntryGraphKey = [
+    hasLiveVault ? "live" : "static",
+    builderGraphStats.persistedNodes,
+    builderGraphStats.persistedRelations,
+    builderEntryAnchors[0]?.id ?? "empty",
+  ].join(":");
+  useEffect(() => {
+    const firstAnchor = builderEntryAnchors[0];
+    if (!firstAnchor || autoFocusedGraphKeyRef.current === builderEntryGraphKey) {
+      return;
+    }
+    autoFocusedGraphKeyRef.current = builderEntryGraphKey;
+    if (selectedId !== null && selectedId !== firstAnchor.id) return;
+    const timer = window.setTimeout(() => focusBuilderAnchor(firstAnchor.id), 0);
+    return () => window.clearTimeout(timer);
+  }, [builderEntryAnchors, builderEntryGraphKey, focusBuilderAnchor, selectedId]);
   const paletteCollapsed =
     paletteCollapsedPreference ?? (builderGraphStats.persistedNodes > 0);
   const togglePalette = useCallback(() => {
