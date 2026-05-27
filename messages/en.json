@@ -1152,6 +1152,8 @@
       "queryCockpitEvidenceAriaLabel": "Graph query evidence flow",
       "queryCockpitEvidencePlanLabel": "Plan",
       "queryCockpitEvidencePlanBody": "Run query_plan first for costly scans and traversal so cost and bounds are explicit.",
+      "queryCockpitEvidenceScanLabel": "Scan",
+      "queryCockpitEvidenceScanBody": "Run match_nodes, match_edges, domain_matrix, and path queries over the same local markdown graph.",
       "queryCockpitEvidenceFollowUpLabel": "Follow-up",
       "queryCockpitEvidenceFollowUpBody": "Scan rows are candidates. Narrow them with node_profile, match_edges, blast_radius, and explain_relation.",
       "queryCockpitEvidenceProofLabel": "Proof",

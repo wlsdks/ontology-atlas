@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T21:51:07.754Z",
+  "generatedAt": "2026-05-27T22:02:03.193Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6217,8 +6217,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the selfcheck + health gate befor",
-      "wordCount": 122,
-      "updatedAt": "2026-05-27T20:42:35.065Z",
+      "wordCount": 175,
+      "updatedAt": "2026-05-27T22:01:55.323Z",
       "linksOut": []
     },
     {

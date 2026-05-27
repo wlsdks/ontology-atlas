@@ -1096,10 +1096,12 @@ function InsightsQueryPackCockpit({
       ) : null}
       <div
         aria-label={t("queryCockpitEvidenceAriaLabel")}
-        className="mt-3 grid gap-2 lg:grid-cols-3"
+        className="mt-3 grid gap-2 lg:grid-cols-4"
       >
         {[
           {
+            step: "01",
+            icon: SearchCheck,
             label: t("queryCockpitEvidencePlanLabel"),
             body: t("queryCockpitEvidencePlanBody"),
             className:
@@ -1107,6 +1109,17 @@ function InsightsQueryPackCockpit({
             labelClassName: "text-[color:var(--color-text-quaternary)]",
           },
           {
+            step: "02",
+            icon: Network,
+            label: t("queryCockpitEvidenceScanLabel"),
+            body: t("queryCockpitEvidenceScanBody"),
+            className:
+              "border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]",
+            labelClassName: "text-[color:var(--color-text-quaternary)]",
+          },
+          {
+            step: "03",
+            icon: GitBranch,
             label: t("queryCockpitEvidenceFollowUpLabel"),
             body: t("queryCockpitEvidenceFollowUpBody"),
             className:
@@ -1114,27 +1127,42 @@ function InsightsQueryPackCockpit({
             labelClassName: "text-[color:var(--color-text-quaternary)]",
           },
           {
+            step: "04",
+            icon: Check,
             label: t("queryCockpitEvidenceProofLabel"),
             body: t("queryCockpitEvidenceProofBody"),
             className:
               "border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.055)]",
             labelClassName: "text-[color:var(--color-indigo-accent)]",
           },
-        ].map((item) => (
-          <div
-            key={item.label}
-            className={`min-w-0 rounded-lg border px-3 py-2 ${item.className}`}
-          >
-            <p
-              className={`font-mono text-[9px] uppercase tracking-[0.10em] ${item.labelClassName}`}
+        ].map((item) => {
+          const Icon = item.icon;
+          return (
+            <div
+              key={item.label}
+              className={`min-w-0 rounded-lg border px-3 py-2 ${item.className}`}
             >
-              {item.label}
-            </p>
-            <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-              {item.body}
-            </p>
-          </div>
-        ))}
+              <div className="flex min-w-0 items-start gap-2">
+                <span className="flex h-8 w-8 shrink-0 flex-col items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)]">
+                  <span className="font-mono text-[9px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">
+                    {item.step}
+                  </span>
+                  <Icon size={10} className="mt-0.5 text-[color:var(--color-indigo-accent)]" aria-hidden />
+                </span>
+                <div className="min-w-0">
+                  <p
+                    className={`truncate font-mono text-[9px] uppercase tracking-[0.10em] ${item.labelClassName}`}
+                  >
+                    {item.label}
+                  </p>
+                  <p className="mt-1 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
+                    {item.body}
+                  </p>
+                </div>
+              </div>
+            </div>
+          );
+        })}
       </div>
       <div className="mt-3 rounded-lg border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.12)] px-3 py-2">
         <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">

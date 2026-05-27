@@ -1152,6 +1152,8 @@
       "queryCockpitEvidenceAriaLabel": "그래프 query 증거 흐름",
       "queryCockpitEvidencePlanLabel": "Plan",
       "queryCockpitEvidencePlanBody": "무거운 scan 과 traversal 은 query_plan 으로 비용과 bound 를 먼저 확인합니다.",
+      "queryCockpitEvidenceScanLabel": "Scan",
+      "queryCockpitEvidenceScanBody": "match_nodes, match_edges, domain_matrix, path 질의를 같은 local markdown graph 위에서 실행합니다.",
       "queryCockpitEvidenceFollowUpLabel": "Follow-up",
       "queryCockpitEvidenceFollowUpBody": "scan row 는 후보입니다. node_profile, match_edges, blast_radius, explain_relation 으로 좁힙니다.",
       "queryCockpitEvidenceProofLabel": "Proof",
