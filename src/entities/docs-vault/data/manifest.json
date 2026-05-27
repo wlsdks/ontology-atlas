@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T16:46:10.486Z",
+  "generatedAt": "2026-05-27T16:50:35.757Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1199,
-      "updatedAt": "2026-05-27T11:52:47.611Z",
+      "wordCount": 1238,
+      "updatedAt": "2026-05-27T16:50:21.338Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -5448,8 +5448,8 @@
         }
       ],
       "excerpt": "vault 활성 시 / 가 자동으로 그 데이터로 전환. mission v2 ideal \"Notion 처럼 폴더만 골라도 사용\" 의 ontology hub 표현. useOntologyInsight() 분기: local → useVaultOntology 결과를 KnowledgeProjectInsight shape 으로 변환 static → 빌드타임 dogfood 매니페스트 derivation (moduleload 1 회 메모이즈) OntologyStubNode → KnowledgeGraphNode 변환: sentinel lastApprovedAt = Date(0), la",
-      "wordCount": 350,
-      "updatedAt": "2026-05-27T16:21:11.848Z",
+      "wordCount": 397,
+      "updatedAt": "2026-05-27T16:50:28.559Z",
       "linksOut": []
     },
     {

@@ -91,6 +91,10 @@ from frontmatter refs, and document nodes remain evidence outside the concept
 tree. Node-detail handoffs should always keep the three workbench exits visible:
 Topology for visual focus, Builder for frontmatter-backed edits, and Insights
 for graph DB-style validation.
+The `/ontology` Browse / Write / Query cards should also carry a compact proof
+chip (`tree projection`, `frontmatter write`, `dogfood:graph-db`) so the first
+viewport states which runtime contract closes each mode instead of reading like
+three generic navigation cards.
 
 Tree projection warnings should be named as projection notes, not generic data
 errors. The tree can only show one readable hierarchy, while the same

@@ -304,17 +304,12 @@ export function OntologyViewPage() {
 	              </Link>
 	            </Tooltip>
 	            <Tooltip content={t('actions.builderTooltip')} withProvider={false}>
-	              <Link
-	                href={builderHref}
+              <Link
+                href={builderHref}
                 className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-brand)] px-4 text-xs font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-opacity hover:opacity-90"
                 aria-label={t('actions.builderAria')}
               >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <rect x="3" y="3" width="7" height="7" rx="1" />
-                  <rect x="14" y="3" width="7" height="7" rx="1" />
-                  <rect x="14" y="14" width="7" height="7" rx="1" />
-                  <path d="M10 6.5h4M17.5 10v4M10 17.5h4" />
-                </svg>
+                <PencilLine size={13} aria-hidden />
                 {t('actions.builder')}
               </Link>
             </Tooltip>
@@ -1649,6 +1644,7 @@ function GraphWorkbenchSummary({
       label: t("treeLabel"),
       value: t("treeValue", { count: treeNodes }),
       body: t("treeBody"),
+      proof: t("treeProof"),
       href: "/ontology/",
       cta: t("treeCta"),
       ariaLabel: t("treeAriaLabel"),
@@ -1659,6 +1655,7 @@ function GraphWorkbenchSummary({
       label: t("builderLabel"),
       value: t("builderValue"),
       body: t("builderBody", { count: containmentRelations }),
+      proof: t("builderProof"),
       href: builderHref,
       cta: t("builderCta"),
       ariaLabel: t("builderAriaLabel"),
@@ -1669,6 +1666,7 @@ function GraphWorkbenchSummary({
       label: t("graphDbLabel"),
       value: t("graphDbValue", { count: semanticRelations }),
       body: t("graphDbBody"),
+      proof: t("graphDbProof"),
       href: "/ontology/insights/",
       cta: t("graphDbCta"),
       ariaLabel: t("graphDbAriaLabel"),
@@ -1712,9 +1710,14 @@ function GraphWorkbenchSummary({
               <p className="mt-2 min-h-10 break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
                 {item.body}
               </p>
-              <span className="mt-2 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)]">
-                {item.cta}
-              </span>
+              <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
+                <span className="min-w-0 truncate rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                  {item.proof}
+                </span>
+                <span className="text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)]">
+                  {item.cta}
+                </span>
+              </div>
             </Link>
           );
         })}
