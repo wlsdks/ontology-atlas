@@ -1,7 +1,7 @@
 # FEATURES — oh-my-ontology
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-05-25 (agent setup gate, graph DB-style query pack, CLI/MCP verification snapshots, and fallback performance checks).
+> Last updated: 2026-05-28 (graph DB health gate, `/ontology` Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke).
 > Routes section UI detail remains a maintained product snapshot. When route
 > behavior changes, update this file alongside the PR body and CHANGELOG.
 > Update trigger: reflect immediately when surfaces are added or removed. Update alongside the PR body and CHANGELOG.
@@ -551,7 +551,7 @@ without extra node lookups.
 
 ---
 
-## 6. What was removed / added (Rounds 1–17)
+## 6. What was removed / added (Rounds 1–18+)
 
 For full reasoning see `docs/CHANGELOG.md`. High-level:
 
@@ -564,6 +564,7 @@ For full reasoning see `docs/CHANGELOG.md`. High-level:
 - **Round 15** — VSCode plugin 제거 (4 surface → 3). CLI `init` 의 mcp 등록 마찰 1 step 제거 (`.mcp.json` 자체 생성, cwd + vault 양쪽). Later follow-up extends this to Codex by writing repo-local `.codex/config.toml` in cwd + vault and by making the app starter write vault-local `.mcp.json` / `.codex/config.toml`. `add` / `import` 의 `--auto-prefix` default on (starter layout 일관). `--raw-slug` opt-out.
 - **Round 16** — fresh repo bootstrap path. `analyze_repo_structure` / CLI `analyze` propose project/domain/capability/element candidates from package metadata, README headings, and source layout with side effect 0.
 - **Round 17** — import-derived dependency evidence. `infer_imports` / CLI `infer-imports` parse TS/JS imports, resolve relative and tsconfig alias paths, and propose `depends_on` edges without mutating the vault.
+- **Round 18+** — workbench loop consolidation. `/ontology` now frames Tree as Browse and immediately hands selected slugs to Builder (Write), Topology (visual focus), and Insights (Query). `/ontology/edit` is kept as a constrained relation write-review surface with source-file patch preview, preflight, post-save proof packets, and focused Insights handoff. `/ontology/insights` exposes the graph DB query pack as an executable local markdown graph cockpit, and `pnpm dogfood:graph-db` now fail-closes on setup self-check, `health --json`, graph scan follow-ups, bounded path completeness, relation preflight, and relation explanation contracts.
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T19:05:47.430Z",
+  "generatedAt": "2026-05-27T19:07:51.152Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4488,8 +4488,8 @@
         },
         {
           "depth": 2,
-          "text": "6. What was removed / added (Rounds 1–17)",
-          "slug": "6-what-was-removed-added-rounds-117"
+          "text": "6. What was removed / added (Rounds 1–18+)",
+          "slug": "6-what-was-removed-added-rounds-118"
         },
         {
           "depth": 2,
@@ -4502,9 +4502,9 @@
           "slug": "8-source-of-truth-files"
         }
       ],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260525 (agent setup gate, graph DBstyle query pack, CLI/MCP verification snapshots, and fallback performance checks). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongside t",
-      "wordCount": 7697,
-      "updatedAt": "2026-05-27T19:05:37.711Z",
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
+      "wordCount": 7786,
+      "updatedAt": "2026-05-27T19:07:45.549Z",
       "linksOut": [
         "slug",
         "project:slug",
