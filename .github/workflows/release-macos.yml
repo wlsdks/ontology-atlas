@@ -149,6 +149,14 @@ jobs:
             src-tauri/target/release/bundle/dmg/*.sha256
           if-no-files-found: error
 
+      - name: Cleanup Apple signing keychain
+        if: ${{ always() }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/apple-developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
+          rm -f "$CERTIFICATE_PATH"
+
   publish-macos:
     name: Publish macOS Release
     runs-on: ubuntu-latest

@@ -120,6 +120,7 @@ const releaseBuildOrder = orderedIndexes(releaseWorkflow, [
   "name: Verify DMG",
   "name: Verify temporary install",
   "name: Upload workflow artifact",
+  "name: Cleanup Apple signing keychain",
 ]);
 const releasePublishOrder = orderedIndexes(releaseWorkflow, [
   "name: Require clean GitHub Release slot",
@@ -769,6 +770,10 @@ if (
   /pnpm desktop:verify-release-dmg/.test(releaseWorkflow) &&
   /pnpm desktop:verify-install/.test(releaseWorkflow) &&
   /Summarize macOS release assets/.test(releaseWorkflow) &&
+  /name:\s*Cleanup Apple signing keychain/.test(releaseWorkflow) &&
+  /if:\s*\$\{\{\s*always\(\)\s*\}\}/.test(releaseWorkflow) &&
+  /security delete-keychain "\$KEYCHAIN_PATH" 2>\/dev\/null \|\| true/.test(releaseWorkflow) &&
+  /rm -f "\$CERTIFICATE_PATH"/.test(releaseWorkflow) &&
   /Summarize published macOS release/.test(releaseWorkflow) &&
   /Published macOS Release/.test(releaseWorkflow) &&
   /gh release view "\$\{GITHUB_REF_NAME\}" --json url --jq \.url/.test(releaseWorkflow) &&
@@ -788,10 +793,10 @@ if (
   hasStrictOrder(releaseBuildOrder) &&
   hasStrictOrder(releasePublishOrder)
 ) {
-  pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24 and publishes verified public assets without Firebase Hosting dependencies");
+  pass("tag release workflow builds Apple Silicon and Intel DMGs on Node 24, cleans up the signing keychain, and publishes verified public assets without Firebase Hosting dependencies");
 } else {
   fail(
-    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag commit is the default-branch head, verify the tag and secrets before signing, sign/notarize before upload, summarize DMG names/sizes/SHA-256 values to GITHUB_STEP_SUMMARY, require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, verify public downloads, and summarize the published release URL/assets without requiring Firebase Hosting secrets or deploy steps",
+    ".github/workflows/release-macos.yml must build Apple Silicon and Intel DMGs on Node 24, test the desktop checker/native bridge, smoke the static desktop payload, verify the tag commit is the default-branch head, verify the tag and secrets before signing, sign/notarize before upload, summarize DMG names/sizes/SHA-256 values to GITHUB_STEP_SUMMARY, clean up the temporary signing keychain with always(), require a clean GitHub Release slot, upload checksum assets as a draft release, verify draft assets, publish the release as stable, verify public downloads, and summarize the published release URL/assets without requiring Firebase Hosting secrets or deploy steps",
   );
 }
 

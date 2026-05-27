@@ -169,6 +169,10 @@ for a macOS prototype:
   upload and fails if the same tag already has a draft, prerelease, or public
   GitHub Release, preventing stale DMG assets from mixing with newly signed
   artifacts during a rerun.
+- `.github/workflows/release-macos.yml` removes the temporary Developer ID
+  keychain and decoded `.p12` with an `always()` cleanup step after the per-arch
+  artifact handoff, so failed signing/notarization attempts do not leave release
+  credentials on the runner filesystem for the rest of the job.
 - `scripts/sign-macos-app.mjs` deeply signs the built `.app` with hardened
   runtime using `APPLE_SIGNING_IDENTITY`, then runs strict deep `codesign`
   verification.
