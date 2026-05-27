@@ -118,6 +118,88 @@ function CanvasSkeleton() {
   );
 }
 
+type BuilderEntryAnchor = {
+  id: string;
+  kind: string;
+  label: string;
+};
+
+function buildBuilderEntryAnchors(manifest: VaultManifest): BuilderEntryAnchor[] {
+  const picked = new Map<string, BuilderEntryAnchor>();
+  const addFirst = (kind: string) => {
+    const doc = manifest.docs.find((candidate) => candidate.frontmatter?.kind === kind);
+    if (!doc || picked.has(doc.slug)) return;
+    picked.set(doc.slug, {
+      id: doc.slug,
+      kind,
+      label: doc.title || doc.slug,
+    });
+  };
+
+  addFirst("project");
+  for (const kind of ["domain", "capability", "element"]) {
+    for (const doc of manifest.docs) {
+      if (picked.size >= 6) break;
+      if (doc.frontmatter?.kind !== kind || picked.has(doc.slug)) continue;
+      picked.set(doc.slug, {
+        id: doc.slug,
+        kind,
+        label: doc.title || doc.slug,
+      });
+    }
+    if (picked.size >= 6) break;
+  }
+
+  return Array.from(picked.values());
+}
+
+function BuilderCanvasEntryRail({
+  anchors,
+  nodeCount,
+  relationCount,
+  onFocusAnchor,
+}: {
+  anchors: BuilderEntryAnchor[];
+  nodeCount: number;
+  relationCount: number;
+  onFocusAnchor: (id: string) => void;
+}) {
+  const t = useTranslations("ontologyPages.edit.page.canvasEntryRail");
+  if (anchors.length === 0) return null;
+
+  return (
+    <div className="pointer-events-none absolute left-3 top-3 z-10 max-w-[min(520px,calc(100%-1.5rem))] rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.94)] p-2 shadow-[0_14px_34px_rgba(0,0,0,0.30)]">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <div className="flex min-w-0 items-center gap-1.5">
+          <Network size={12} className="text-[color:var(--color-indigo-accent)]" />
+          <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {t("label")}
+          </p>
+        </div>
+        <p className="font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--color-text-tertiary)]">
+          {t("stats", { nodes: nodeCount, relations: relationCount })}
+        </p>
+      </div>
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {anchors.map((anchor) => (
+          <button
+            key={anchor.id}
+            type="button"
+            onClick={() => onFocusAnchor(anchor.id)}
+            className="pointer-events-auto flex max-w-[190px] items-center gap-1.5 truncate rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.13)] hover:text-[color:var(--color-text-primary)]"
+            title={t("anchorTitle", { kind: anchor.kind, label: anchor.label })}
+          >
+            <span className="shrink-0 font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {anchor.kind.slice(0, 1)}
+            </span>
+            <span className="truncate">{anchor.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function BuilderWriteSummary({
   writable,
   isDesktopRuntime,
@@ -438,6 +520,15 @@ export function OntologyEditPage() {
     }
     return { persistedNodes, persistedRelations };
   }, [effectiveManifest]);
+  const builderEntryAnchors = useMemo(
+    () => buildBuilderEntryAnchors(effectiveManifest),
+    [effectiveManifest],
+  );
+  const focusBuilderAnchor = useCallback((id: string) => {
+    setSelectedId(id);
+    setFocusNodeId(id);
+    setFocusToken((n) => n + 1);
+  }, []);
   const paletteCollapsed =
     paletteCollapsedPreference ?? (builderGraphStats.persistedNodes > 0);
   const togglePalette = useCallback(() => {
@@ -1141,6 +1232,12 @@ export function OntologyEditPage() {
             }}
           />
           <div className="relative flex-1">
+            <BuilderCanvasEntryRail
+              anchors={builderEntryAnchors}
+              nodeCount={builderGraphStats.persistedNodes}
+              relationCount={builderGraphStats.persistedRelations}
+              onFocusAnchor={focusBuilderAnchor}
+            />
             <OntologyEditCanvas
               vaultManifest={vault.manifest ?? null}
               ephemeralNodes={ephemeralNodes}

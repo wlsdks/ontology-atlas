@@ -765,6 +765,11 @@
           "proofAction": "Open query cockpit",
           "proofActionSelected": "Open node query"
         },
+        "canvasEntryRail": {
+          "label": "Graph entrypoints",
+          "stats": "{nodes} nodes · {relations} refs",
+          "anchorTitle": "{kind} anchor: {label}"
+        },
         "exportButton": "Export md ↓",
         "exportAriaLabel": "Export current canvas as frontmatter md",
         "exportJsonLdButton": "JSON-LD ↓",
@@ -974,7 +979,6 @@
         "ephemeralEdgeSaveTooltip": "Save this relation. Unsaved nodes are saved first.",
         "emptyHint": "Click a kind in the left palette to create your first node.",
         "minimapAriaLabel": "Canvas minimap — click/drag to navigate",
-        "anchorRailLabel": "Graph anchors",
         "edgeLabels": {
           "capabilities": "capability",
           "elements": "element",

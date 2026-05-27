@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T15:18:06.188Z",
+  "generatedAt": "2026-05-27T15:49:46.016Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6244,9 +6244,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyedit/ui/OntologyEditCanvas.tsx renders the xyflow canvas inside /ontology/edit. The canvas turns the local vault manifest into editable graph nodes and edges, keeps vault nodes draggable, and writes persisted positions back to canvasPosition when a live vault is open. It also owns the largegraph viewp",
-      "wordCount": 130,
-      "updatedAt": "2026-05-27T15:17:07.389Z",
+      "excerpt": "src/views/ontologyedit/ui/OntologyEditCanvas.tsx renders the xyflow canvas inside /ontology/edit, while src/views/ontologyedit/ui/OntologyEditPage.tsx now owns the pagelevel graph entrypoint rail above that canvas. The canvas turns the local vault manifest into editable graph nodes and edges, keeps vault nodes draggabl",
+      "wordCount": 171,
+      "updatedAt": "2026-05-27T15:49:36.245Z",
       "linksOut": []
     },
     {

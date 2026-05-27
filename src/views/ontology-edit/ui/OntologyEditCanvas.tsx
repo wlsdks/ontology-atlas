@@ -9,7 +9,6 @@ import {
   BackgroundVariant,
   ConnectionLineType,
   MiniMap,
-  Panel,
   ReactFlow,
   useReactFlow,
   type Connection,
@@ -184,46 +183,6 @@ function FocusNodeOnDemand({
     });
   }, [token, nodeId, reactFlow]);
   return null;
-}
-
-function GraphAnchorRail({
-  anchors,
-}: {
-  anchors: Array<{ id: string; label: string }>;
-}) {
-  const t = useTranslations("ontologyPages.edit.canvas");
-  const reactFlow = useReactFlow();
-  if (anchors.length === 0) return null;
-  return (
-    <Panel position="top-left" className="!m-3">
-      <div className="max-w-[420px] rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.92)] p-2 shadow-[0_12px_32px_rgba(0,0,0,0.26)]">
-        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-          {t("anchorRailLabel")}
-        </p>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          {anchors.map((anchor) => (
-            <button
-              key={anchor.id}
-              type="button"
-              onClick={() => {
-                const node = reactFlow.getNode(anchor.id);
-                if (!node) return;
-                const w = node.width ?? 220;
-                const h = node.height ?? 60;
-                reactFlow.setCenter(node.position.x + w / 2, node.position.y + h / 2, {
-                  zoom: 0.85,
-                  duration: 320,
-                });
-              }}
-              className="max-w-[180px] truncate rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:text-[color:var(--color-text-primary)]"
-            >
-              {anchor.label}
-            </button>
-          ))}
-        </div>
-      </div>
-    </Panel>
-  );
 }
 
 /**
@@ -454,24 +413,6 @@ export function OntologyEditCanvas({
     });
     return project?.id ?? allNodes[0]?.id ?? null;
   }, [allNodes]);
-  const graphAnchorRail = useMemo(() => {
-    const picked = new Map<string, { id: string; label: string }>();
-    const add = (node: Node | undefined) => {
-      if (!node || picked.has(node.id)) return;
-      const data = node.data as { label?: string } | undefined;
-      picked.set(node.id, { id: node.id, label: data?.label ?? node.id });
-    };
-    add(allNodes.find((node) => (node.data as { kind?: string } | undefined)?.kind === "project"));
-    for (const kind of ["domain", "capability", "element"]) {
-      for (const node of allNodes) {
-        const data = node.data as { kind?: string } | undefined;
-        if (data?.kind === kind) add(node);
-        if (picked.size >= 5) break;
-      }
-      if (picked.size >= 5) break;
-    }
-    return Array.from(picked.values());
-  }, [allNodes]);
   const [miniMapReady, setMiniMapReady] = useState(false);
   const [showMiniMap, setShowMiniMap] = useState(false);
 
@@ -698,7 +639,6 @@ export function OntologyEditCanvas({
           anchorNodeId={graphAnchorNodeId}
         />
         <FocusNodeOnDemand token={focusToken} nodeId={focusNodeId} />
-        <GraphAnchorRail anchors={graphAnchorRail} />
         {/* MiniMap — 노드 많아질 때 빠른 navigation. 헌장 §11 호환:
             인디고 alpha + 무채색 alpha mask. ephemeral 은 amber 로 vault
             와 차별. 좌하단 — Controls (우하단) 와 분리. */}
