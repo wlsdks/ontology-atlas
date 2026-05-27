@@ -70,6 +70,25 @@ const GRAPH_DB_PACK_COMMANDS = [
     validate: validateEdgeScan,
   },
   {
+    id: "frontmatter_edge_scan",
+    args: [
+      "cli/src/index.mjs",
+      "match-edges",
+      DEFAULT_VAULT,
+      "--plan",
+      "--from-kind",
+      "capability",
+      "--to-kind",
+      "element",
+      "--type",
+      "elements",
+      "--limit",
+      "10",
+      "--json",
+    ],
+    validate: validateFrontmatterEdgeScan,
+  },
+  {
     id: "domain_coupling",
     args: [
       "cli/src/index.mjs",
@@ -300,6 +319,49 @@ function validateEdgeScan(value) {
   }
   return pass(
     `totalMatches=${result.totalMatches} limited=${Boolean(result.limited)} followUp=${followUp.calls.length}`,
+  );
+}
+
+function validateFrontmatterEdgeScan(value) {
+  const plan = value?.plan;
+  const result = value?.result;
+  if (plan?.execution?.shouldRun !== true) return fail("frontmatter match_edges plan did not recommend run");
+  if (result?.operation !== "match_edges") return fail("frontmatter match_edges result missing");
+  if (result?.filters?.fromKind !== "capability") {
+    return fail(`frontmatter match_edges fromKind=${result?.filters?.fromKind}`);
+  }
+  if (result?.filters?.toKind !== "element") {
+    return fail(`frontmatter match_edges toKind=${result?.filters?.toKind}`);
+  }
+  const relationTypes = result?.filters?.relationTypes ?? result?.filters?.types;
+  if (!Array.isArray(relationTypes) || !relationTypes.includes("elements")) {
+    return fail("frontmatter match_edges relationTypes missing elements");
+  }
+  if (!Array.isArray(result.edges) || result.edges.length === 0) {
+    return fail("frontmatter match_edges returned no elements rows");
+  }
+  if (typeof result.totalMatches !== "number" || result.totalMatches < result.edges.length) {
+    return fail("frontmatter match_edges totalMatches contract invalid");
+  }
+  const firstEdge = result.edges[0];
+  if (firstEdge?.relationType !== "elements" || firstEdge?.via !== "elements") {
+    return fail("frontmatter match_edges did not expose elements relation key");
+  }
+  const followUp = result.followUp;
+  if (followUp?.focusEdge?.relationType !== "elements") {
+    return fail("frontmatter match_edges followUp relationType missing elements");
+  }
+  if (!Array.isArray(followUp.calls) || followUp.calls.length === 0) {
+    return fail("frontmatter match_edges followUp.calls missing");
+  }
+  if (
+    !Array.isArray(followUp.cliFallbackCommands) ||
+    !followUp.cliFallbackCommands.some((command) => command.includes(" relation-check ") && command.includes(" elements "))
+  ) {
+    return fail("frontmatter match_edges relation-check fallback missing elements");
+  }
+  return pass(
+    `totalMatches=${result.totalMatches} relation=elements followUp=${followUp.calls.length}`,
   );
 }
 

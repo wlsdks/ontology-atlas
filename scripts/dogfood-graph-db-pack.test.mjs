@@ -6,6 +6,28 @@ import {
   runDogfoodGraphDbPack,
 } from "./dogfood-graph-db-pack.mjs";
 
+function frontmatterEdgeScanPayload() {
+  return {
+    plan: { execution: { shouldRun: true } },
+    result: {
+      operation: "match_edges",
+      filters: {
+        fromKind: "capability",
+        toKind: "element",
+        relationTypes: ["elements"],
+      },
+      totalMatches: 1,
+      limited: false,
+      edges: [{ via: "elements", relationType: "elements" }],
+      followUp: {
+        focusEdge: { from: "capabilities/a", to: "elements/b", relationType: "elements" },
+        calls: [{}],
+        cliFallbackCommands: ["oh-my-ontology relation-check capabilities/a elements/b elements [vault]"],
+      },
+    },
+  };
+}
+
 describe("dogfood graph DB pack", () => {
   it("rejects invalid JSON output with the command label", () => {
     const parsed = parseJsonOutput("not-json", "facets");
@@ -54,6 +76,7 @@ describe("dogfood graph DB pack", () => {
           },
         },
       },
+      frontmatterEdgeScanPayload(),
       { summary: { domains: 2, crossDomainEdges: 1 }, domains: [{}] },
       {
         plan: { operation: "query_plan", targetOperation: "all_paths" },
@@ -98,9 +121,10 @@ describe("dogfood graph DB pack", () => {
 
     assert.equal(status, 0);
     assert.equal(stderr.join(""), "");
-    assert.equal(call, 9);
+    assert.equal(call, 10);
     assert.match(stdout.join(""), /\[dogfood:graph-db\] health_gate: status=healthy checks=1 issues=0 unresolved=0/);
-    assert.match(stdout.join(""), /\[dogfood:graph-db\] ok · 9 runtime graph DB checks passed/);
+    assert.match(stdout.join(""), /\[dogfood:graph-db\] frontmatter_edge_scan: totalMatches=1 relation=elements followUp=1/);
+    assert.match(stdout.join(""), /\[dogfood:graph-db\] ok · 10 runtime graph DB checks passed/);
   });
 
   it("fails closed when a result contract is missing", () => {
@@ -223,6 +247,7 @@ describe("dogfood graph DB pack", () => {
           },
         },
       },
+      frontmatterEdgeScanPayload(),
       { summary: { domains: 2, crossDomainEdges: 1 }, domains: [{}] },
       {
         plan: { operation: "query_plan", targetOperation: "all_paths" },
@@ -285,6 +310,7 @@ describe("dogfood graph DB pack", () => {
           },
         },
       },
+      frontmatterEdgeScanPayload(),
       { summary: { domains: 2, crossDomainEdges: 1 }, domains: [{}] },
       {
         plan: { operation: "query_plan", targetOperation: "all_paths" },
