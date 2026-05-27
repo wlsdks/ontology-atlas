@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T22:59:21.549Z",
+  "generatedAt": "2026-05-27T23:09:18.739Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 7947,
-      "updatedAt": "2026-05-27T22:58:59.871Z",
+      "wordCount": 7965,
+      "updatedAt": "2026-05-27T23:09:07.190Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4839,8 +4839,8 @@
         }
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
-      "wordCount": 3508,
-      "updatedAt": "2026-05-27T22:47:57.593Z",
+      "wordCount": 3535,
+      "updatedAt": "2026-05-27T23:09:14.133Z",
       "linksOut": []
     },
     {
@@ -6216,9 +6216,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the selfcheck + health gate befor",
-      "wordCount": 240,
-      "updatedAt": "2026-05-27T22:47:57.591Z",
+      "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the selfcheck + runtime health ga",
+      "wordCount": 280,
+      "updatedAt": "2026-05-27T23:07:45.358Z",
       "linksOut": []
     },
     {

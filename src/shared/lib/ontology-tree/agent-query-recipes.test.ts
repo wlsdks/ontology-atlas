@@ -759,8 +759,9 @@ describe("buildAgentQueryRecipes", () => {
     expect(cliPack).toContain("CLI-only: validate, workspace-brief, graph scans, graph DB pack");
     expect(cliPack).toContain("MCP-connected: Claude Code, Codex, or Cursor can call local read/write tools");
     expect(cliPack).toContain("Setup gate: run the JSON fallback check before edits");
-    expect(cliPack).toContain("Self-check first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs");
+    expect(cliPack).toContain("Gate first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs");
     expect(cliPack).toContain("[self_check] oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
+    expect(cliPack).toContain("1. [runtime_gate] pnpm dogfood:graph-db");
     expect(countAgentGraphDbCliPackCommands(graphDbQueryPack)).toBe(
       cliPack.split("\n").filter((row) => /^\d+\. /.test(row)).length,
     );

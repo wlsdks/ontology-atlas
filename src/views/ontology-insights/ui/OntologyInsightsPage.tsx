@@ -27,6 +27,7 @@ import { useOntologyInsight } from "@/features/vault-ontology";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
+  AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
   UNKNOWN_TONE,
   buildAgentReadinessCliCommands,
   formatAgentPostChangeSyncPacket,
@@ -137,7 +138,6 @@ const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as cons
 const DOMAIN_COUPLING_PATH_MAX_HOPS = 5;
 const DOMAIN_COUPLING_PATH_LIMIT = 10;
 const DOMAIN_COUPLING_PATH_SEARCH_BUDGET = 1000;
-const DOGFOOD_GRAPH_DB_RUNTIME_COMMAND = "pnpm dogfood:graph-db";
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
 
 /**
@@ -1247,7 +1247,7 @@ function InsightsQueryPackCockpit({
             {AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
           </code>
           <code className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-            {DOGFOOD_GRAPH_DB_RUNTIME_COMMAND}
+            {AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}
           </code>
         </div>
         <div className="mt-2 grid gap-2 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">

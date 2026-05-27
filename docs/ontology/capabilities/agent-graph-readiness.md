@@ -316,8 +316,8 @@ Graph DB query pack 상단에는 `Copy CLI pack` 도 별도로 제공해 MCP con
 Codex / Claude Code 세션이나 터미널 사용자도 JSON 을 읽지 않고 같은 node scan,
 edge scan, domain coupling, path evidence 명령 묶음을 바로 실행할 수 있다. 이 UI
 copy pack 도 `agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`
-self-check 를 맨 앞에 포함해, 웹에서 복사한 runbook 과 CLI `--graph-db-pack` runbook 이
-같은 자동화 gate 로 시작한다. UI 카드 안에도 같은 self-check 명령을 별도 preflight
+self-check 다음에 `pnpm dogfood:graph-db` runtime gate 를 포함해, 웹에서 복사한 runbook 이
+자동화 gate 와 실제 graph DB dogfood gate 로 시작한다. CLI `--graph-db-pack` runbook 은 임의 vault path 에서도 붙여 넣을 수 있도록 선택된 vault self-check 와 scan queue 만 유지한다. UI 카드 안에도 같은 self-check 명령과 runtime gate 를 별도 preflight
 row 로 보여주므로, 화면의 CLI fallback 개수와 실제 복사되는 runbook 이 어긋나지 않는다.
 CLI-only 사용자는 같은 경로를 `oh-my-ontology agent-brief [vault] --graph-db-pack`
 으로 바로 뽑을 수 있어, 웹 UI 를 열지 못하는 terminal-first 세션도 graph DB-style

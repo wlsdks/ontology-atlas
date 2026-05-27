@@ -153,6 +153,7 @@ export interface AgentGraphDbQueryPackItem {
 
 export const AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND =
   "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4";
+export const AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND = "pnpm dogfood:graph-db";
 
 const ALL_PATHS_RESULT_CONTRACT = [
   "For all_paths, report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.",
@@ -713,8 +714,9 @@ export function formatAgentGraphDbCliPack(
     "Run these oh-my-ontology CLI commands when the MCP connector is unavailable.",
     "They mirror the Graph DB query pack: plan scans first, keep traversal bounded, and use follow-up evidence before writing.",
     ...AGENT_MODE_GUIDE,
-    "Self-check first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs.",
+    "Gate first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs; then the runtime gate replays the graph DB pack against docs/ontology.",
     `0. [self_check] ${AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}`,
+    `1. [runtime_gate] ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
     "",
     "Evidence rule: scan rows are candidates, not proof; cite follow-up detail before writing or refactoring.",
     "Proof checklist: report totalMatches/limited/row count, run node_profile or blast_radius for node rows, run explain/path/relation-check for edge rows, and report evidence.pathsComplete for paths.",
@@ -722,7 +724,7 @@ export function formatAgentGraphDbCliPack(
     ...commands.map(({ itemId, command }, index) => {
       const item = items.find((candidate) => candidate.id === itemId);
       const intent = item?.intent ? `\n   intent: ${item.intent}` : "";
-      return `${index + 1}. [${itemId}] ${command}${intent}`;
+      return `${index + 2}. [${itemId}] ${command}${intent}`;
     }),
   ].join("\n");
 }
@@ -730,7 +732,7 @@ export function formatAgentGraphDbCliPack(
 export function countAgentGraphDbCliPackCommands(
   items: readonly AgentGraphDbQueryPackItem[],
 ): number {
-  return 1 + agentGraphDbCliPackCommands(items).length;
+  return 2 + agentGraphDbCliPackCommands(items).length;
 }
 
 function agentGraphDbCliPackCommands(items: readonly AgentGraphDbQueryPackItem[]) {

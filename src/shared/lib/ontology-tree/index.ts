@@ -60,6 +60,7 @@ export type {
 } from "./agent-query-recipes";
 export {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
+  AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
   buildAgentGraphDbQueryPack,
   buildAgentTraversalStrategies,
   buildAgentWriteGuardrails,
