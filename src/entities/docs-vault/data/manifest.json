@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T20:19:22.793Z",
+  "generatedAt": "2026-05-27T20:23:45.988Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6212,9 +6212,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. The cockpit makes the local markdown graph feel executable before the analytic charts begin. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the copyable graph DB pack, an",
-      "wordCount": 410,
-      "updatedAt": "2026-05-27T19:28:00.827Z",
+      "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the selfcheck + health gate befor",
+      "wordCount": 75,
+      "updatedAt": "2026-05-27T20:23:39.666Z",
       "linksOut": []
     },
     {

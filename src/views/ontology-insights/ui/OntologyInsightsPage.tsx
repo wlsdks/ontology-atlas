@@ -93,15 +93,15 @@ function rowAccentColor(node: { id: string; kind: string }): string | null {
 }
 
 /**
- * 노드 row 에 일관 적용하는 hover elevation + transition + 선택적 accent bar.
- * 빌더의 노드 hover 패턴 (box-shadow 강화, scale 금지) 그대로 — 시각 시스템 일치.
+ * 노드 row 에 일관 적용하는 hover transition + 선택적 accent bar.
+ * 디자인 시스템의 no-glow 규칙에 맞춰 hover 는 border/background 로만 표시한다.
  */
 const ROW_BASE_CLASS =
   "flex items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] " +
   "bg-[color:var(--color-overlay-1)] px-2.5 py-1.5 text-[12px] " +
-  "transition-[border-color,box-shadow] duration-200 " +
+  "transition-[border-color,background-color] duration-200 " +
   "hover:border-[color:rgba(139,151,255,0.4)] " +
-  "hover:shadow-[0_4px_14px_rgba(94,106,210,0.18)]";
+  "hover:bg-[color:rgba(94,106,210,0.07)]";
 
 const RELATION_DECISIONS = [
   {
@@ -876,7 +876,7 @@ export function OntologyInsightsPage() {
                   return (
                     <li
                       key={node.id}
-                      className="rounded-md border border-[color:rgba(255,179,71,0.18)] bg-[color:rgba(255,179,71,0.04)] px-2.5 py-1.5 text-[12px] transition-[border-color,box-shadow,background-color] duration-200 hover:border-[color:rgba(255,179,71,0.40)] hover:bg-[color:rgba(255,179,71,0.08)] hover:shadow-[0_4px_14px_rgba(255,179,71,0.18)]"
+                      className="rounded-md border border-[color:rgba(255,179,71,0.18)] bg-[color:rgba(255,179,71,0.04)] px-2.5 py-1.5 text-[12px] transition-[border-color,background-color] duration-200 hover:border-[color:rgba(255,179,71,0.40)] hover:bg-[color:rgba(255,179,71,0.08)]"
                     >
                       <div className="flex items-center gap-2">
                         <span className="inline-flex shrink-0 items-center rounded-full border border-[color:rgba(255,179,71,0.30)] bg-[color:rgba(255,179,71,0.08)] px-1.5 py-[1px] font-mono text-[9px] uppercase tracking-[0.10em] text-[color:rgba(238,198,128,0.95)]">
