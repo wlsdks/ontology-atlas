@@ -3,10 +3,8 @@ slug: capabilities/ontology-hub-mode-aware
 kind: capability
 title: Ontology Hub — Mode-Aware (Q1=(a))
 domain: mode-aware-adapters
-dependencies:
-  - capabilities/frontmatter-to-ontology
-  - capabilities/mode-aware-adapter
-elements: [elements/ontology-tree-projection-summary, ontology-workbench-summary, src/features/vault-ontology/model/use-ontology-insight.ts, src/shared/lib/ontology-tree/reachability.test.ts, src/shared/lib/ontology-tree/reachability.ts, src/views/ontology-view/ui/OntologyViewPage.tsx]
+dependencies: [capabilities/frontmatter-to-ontology, capabilities/mode-aware-adapter]
+elements: [elements/ontology-sub-nav, elements/ontology-tree-projection-summary, ontology-workbench-summary, src/features/vault-ontology/model/use-ontology-insight.ts, src/shared/lib/ontology-tree/reachability.test.ts, src/shared/lib/ontology-tree/reachability.ts, src/views/ontology-view/ui/OntologyViewPage.tsx]
 relates: [capabilities/frontmatter-to-ontology, capabilities/mode-aware-adapter, domains/views]
 ---
 
