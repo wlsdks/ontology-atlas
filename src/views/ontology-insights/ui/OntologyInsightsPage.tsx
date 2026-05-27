@@ -19,6 +19,7 @@ import {
   buildEdgeTypeRows,
   buildOntologyBuilderNodeHref,
   buildOntologyNodeHref,
+  resolveOntologyBuilderNodeSlug,
   type KnowledgeGraphNode,
   useEdgeTypeLabel,
 } from "@/entities/knowledge-graph";
@@ -2829,15 +2830,16 @@ function CopyAgentTextButton({
 function InsightsFocusedNodeProofPanel({ node }: { node: KnowledgeGraphNode }) {
   const t = useTranslations("ontologyPages.insights");
   const kindLabel = useOntologyKindLabel();
+  const proofSlug = resolveOntologyBuilderNodeSlug(node);
   const nodeProfilePayload = formatInsightsQueryOntologyCall({
     operation: "node_profile",
-    slug: node.id,
+    slug: proofSlug,
     depth: 2,
     limit: 12,
   });
   const blastRadiusPayload = formatInsightsQueryOntologyCall({
     operation: "blast_radius",
-    slug: node.id,
+    slug: proofSlug,
     depth: 2,
     direction: "incoming",
   });
@@ -2847,8 +2849,8 @@ function InsightsFocusedNodeProofPanel({ node }: { node: KnowledgeGraphNode }) {
     `- ${t("focusedProofPacketKind")}: ${kindLabel(node.kind)}`,
     `- ${t("focusedProofPacketOntology")}: ${buildOntologyNodeHref(node.id)}`,
     `- ${t("focusedProofPacketBuilder")}: ${buildOntologyBuilderNodeHref(node)}`,
-    `- ${t("focusedProofPacketNodeProfileCli")}: oh-my-ontology node ${node.id} [vault] --limit 12`,
-    `- ${t("focusedProofPacketBlastRadiusCli")}: oh-my-ontology blast-radius ${node.id} [vault] --depth 2 --direction incoming`,
+    `- ${t("focusedProofPacketNodeProfileCli")}: oh-my-ontology node ${proofSlug} [vault] --limit 12`,
+    `- ${t("focusedProofPacketBlastRadiusCli")}: oh-my-ontology blast-radius ${proofSlug} [vault] --depth 2 --direction incoming`,
     `- ${t("focusedProofPacketNodeProfileMcp")}: ${nodeProfilePayload}`,
     `- ${t("focusedProofPacketBlastRadiusMcp")}: ${blastRadiusPayload}`,
     "",
@@ -2870,7 +2872,7 @@ function InsightsFocusedNodeProofPanel({ node }: { node: KnowledgeGraphNode }) {
             {node.title}
           </h2>
           <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
-            {t("focusedProofBody", { slug: node.id, kind: kindLabel(node.kind) })}
+            {t("focusedProofBody", { slug: proofSlug, kind: kindLabel(node.kind) })}
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-1.5">
