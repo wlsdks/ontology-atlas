@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T19:03:46.012Z",
+  "generatedAt": "2026-05-27T19:05:47.430Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260525 (agent setup gate, graph DBstyle query pack, CLI/MCP verification snapshots, and fallback performance checks). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongside t",
-      "wordCount": 7652,
-      "updatedAt": "2026-05-27T18:57:39.940Z",
+      "wordCount": 7697,
+      "updatedAt": "2026-05-27T19:05:37.711Z",
       "linksOut": [
         "slug",
         "project:slug",

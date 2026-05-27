@@ -569,7 +569,7 @@ For full reasoning see `docs/CHANGELOG.md`. High-level:
 
 ## 7. Deferred (future rounds — wait-for-signal)
 
-- `/ontology/edit` builder reconsideration — UX persona walkthrough (R3) found dev/PM/AI all skip. design call needed. (R11 #25 PM-drop 후 재평가 — dev 가 frontmatter 직접 편집이 더 빠르면 builder 의 ROI 의문)
+- `/ontology/edit` builder reconsideration — **closed as a constrained workbench surface, not a general diagram editor**. The builder stays because it now has a narrow job: focus a saved slug, preview source-file frontmatter writes, run relation preflight before save, and hand off to Insights/Topology for graph proof after save. Users who prefer direct markdown can still edit frontmatter in `/docs` or CLI/MCP; the builder exists for visual relation repair and write review, not as the primary authoring path.
 - ~~Phase 4 PM polish~~ — **dropped** (R11 #25, PRODUCT-DIRECTION v3). PM-primary 결정 reverted.
 - Search palette unification (`⌘K` + `⇧⌘K`) — R5 skip: not duplicates, would require ranking/section redesign.
 - LocalVaultPicker hoist out of dropdown — R5 skip: dead-end already closed by R4 J.
