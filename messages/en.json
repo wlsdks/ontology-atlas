@@ -753,10 +753,15 @@
           "guardLabel": "Guard",
           "guardValue": "Preview before write",
           "guardBody": "Relation writes run key inference, preflight, and sync handoff.",
+          "guardValueReview": "Preflight queued",
+          "guardBodyReview": "{source}.{key} → {target} before saving",
           "proofLabel": "Proof",
           "proofValue": "MCP/CLI handoff",
           "proofBody": "Copy relation_check · path · all_paths · sync gates.",
-          "proofAction": "Open query cockpit"
+          "proofValueSelected": "Selected node proof",
+          "proofBodySelected": "{slug} node_profile · blast_radius · sync gate",
+          "proofAction": "Open query cockpit",
+          "proofActionSelected": "Open node query"
         },
         "exportButton": "Export md ↓",
         "exportAriaLabel": "Export current canvas as frontmatter md",

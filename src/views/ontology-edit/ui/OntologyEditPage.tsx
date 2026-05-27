@@ -125,6 +125,8 @@ function BuilderWriteSummary({
   persistedRelations,
   draftNodes,
   draftEdges,
+  selectedVaultSlug,
+  pendingRelation,
 }: {
   writable: boolean;
   isDesktopRuntime: boolean;
@@ -132,6 +134,8 @@ function BuilderWriteSummary({
   persistedRelations: number;
   draftNodes: number;
   draftEdges: number;
+  selectedVaultSlug?: string | null;
+  pendingRelation?: VaultRelationProposal | null;
 }) {
   const t = useTranslations("ontologyPages.edit.page.writeSummary");
   type SummaryHref = "/docs/?intent=local" | "/download/" | "/ontology/insights/";
@@ -167,17 +171,25 @@ function BuilderWriteSummary({
     },
     {
       label: t("guardLabel"),
-      value: t("guardValue"),
-      body: t("guardBody"),
-      accent: "neutral",
+      value: pendingRelation ? t("guardValueReview") : t("guardValue"),
+      body: pendingRelation
+        ? t("guardBodyReview", {
+            source: pendingRelation.sourceSlug,
+            key: pendingRelation.inferredKey,
+            target: pendingRelation.targetSlug,
+          })
+        : t("guardBody"),
+      accent: pendingRelation ? "indigo" : "neutral",
     },
     {
       label: t("proofLabel"),
-      value: t("proofValue"),
-      body: t("proofBody"),
+      value: selectedVaultSlug ? t("proofValueSelected") : t("proofValue"),
+      body: selectedVaultSlug
+        ? t("proofBodySelected", { slug: selectedVaultSlug })
+        : t("proofBody"),
       accent: "neutral",
       href: "/ontology/insights/" as const,
-      actionLabel: t("proofAction"),
+      actionLabel: selectedVaultSlug ? t("proofActionSelected") : t("proofAction"),
     },
   ];
 
@@ -1109,6 +1121,8 @@ export function OntologyEditPage() {
           persistedRelations={builderGraphStats.persistedRelations}
           draftNodes={ephemeralNodes.length}
           draftEdges={ephemeralEdges.length}
+          selectedVaultSlug={vaultSelected?.slug ?? null}
+          pendingRelation={pendingRelation}
         />
         {/* 빌더는 palette (200) + canvas + inspector (280) = 480px+ 의 ERD
             레이아웃 — 모바일 (<md, 768px 미만) viewport 에서는 컬럼이 겹쳐

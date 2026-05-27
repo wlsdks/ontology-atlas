@@ -753,10 +753,15 @@
           "guardLabel": "Guard",
           "guardValue": "write 전 preview",
           "guardBody": "관계 저장은 key 추론, preflight, sync handoff 를 거칩니다.",
+          "guardValueReview": "preflight 대기",
+          "guardBodyReview": "{source}.{key} → {target} 저장 전 검증",
           "proofLabel": "Proof",
           "proofValue": "MCP/CLI handoff",
           "proofBody": "relation_check · path · all_paths · sync gate 복사",
-          "proofAction": "인사이트 query 열기"
+          "proofValueSelected": "선택 노드 검증",
+          "proofBodySelected": "{slug} node_profile · blast_radius · sync gate",
+          "proofAction": "인사이트 query 열기",
+          "proofActionSelected": "선택 노드 query 열기"
         },
         "exportButton": "md 내보내기 ↓",
         "exportAriaLabel": "현재 캔버스를 frontmatter md 로 내보내기",

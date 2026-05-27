@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T14:18:44.702Z",
+  "generatedAt": "2026-05-27T14:25:10.671Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4852,6 +4852,7 @@
         "title": "Builder Canvas Polish (n8n routing + 도메인 tint + 정렬 toolbar)",
         "domain": "views",
         "elements": [
+          "elements/builder-write-summary",
           "src/shared/lib/domain-color.ts",
           "src/views/ontology-edit/lib/align-nodes.ts",
           "src/views/ontology-edit/lib/use-vault-graph-flow.ts",
@@ -4866,7 +4867,7 @@
       "headings": [],
       "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (20260514) 로 7 commit 단위 도입. n8nstyle edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 MCP dependency alias 호환 — dependson 으로 작성된 agent/CLI edge 도 builder graph 에서는 canonical depe",
       "wordCount": 301,
-      "updatedAt": "2026-05-27T14:14:04.862Z",
+      "updatedAt": "2026-05-27T14:24:52.973Z",
       "linksOut": []
     },
     {
@@ -5982,6 +5983,7 @@
           "builder-node-query-focus",
           "builder-relation-proposal",
           "builder-relation-write-confirm-panel",
+          "elements/builder-write-summary",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
           "ontology-deeplink-node-resolver",
@@ -6014,7 +6016,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 designsystem 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-05-27T13:44:21.368Z",
+      "updatedAt": "2026-05-27T14:24:52.972Z",
       "linksOut": []
     },
     {
@@ -6075,6 +6077,23 @@
       "excerpt": "src/views/ontologyedit/ui/RelationWriteConfirm.tsx is the confirmation panel shown after dragging between two persisted vault nodes. It presents the inferred edge with a dedicated inferredkey row and the schema reason behind that inference, selectable relation keys, a writescope table with the source markdown file, cha",
       "wordCount": 1126,
       "updatedAt": "2026-05-25T09:20:43.443Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/builder-write-summary",
+      "path": "docs/ontology/elements/builder-write-summary.md",
+      "title": "Builder Write Summary",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/builder-write-summary",
+        "kind": "element",
+        "title": "Builder Write Summary",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. The strip makes the builder persistence contract visible before a user touches the canvas: source distinguishes local writable vaults from sample readonly data, draft counts unsav",
+      "wordCount": 129,
+      "updatedAt": "2026-05-27T14:24:48.570Z",
       "linksOut": []
     },
     {
@@ -7731,6 +7750,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/builder-relation-write-confirm-panel",
                 "title": "Builder Relation Write Confirm Panel"
+              },
+              {
+                "name": "builder-write-summary",
+                "path": "ontology/elements/builder-write-summary",
+                "type": "doc",
+                "slug": "ontology/elements/builder-write-summary",
+                "title": "Builder Write Summary"
               },
               {
                 "name": "file-system-access-api",
