@@ -907,29 +907,31 @@ export function OntologyEditPage() {
         }
       >
         <header className="mb-2 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2">
-          <div className="flex min-w-0 items-center gap-2">
-            {/* eyebrow 'ONTOLOGY BUILDER' 는 OperationsNav 의 SubNav 행이
-                같은 caption ('ONTOLOGY') + active '빌더' pill 로 이미 노출 →
-                중복 제거. h1 만 남겨 페이지 정체성 유지. */}
-            <h1 className="truncate text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-              {t("title")}
-            </h1>
-            <span className="hidden h-4 w-px bg-[color:var(--color-border-soft)] sm:block" />
-            <span className="hidden font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] sm:inline">
-              {t("statusSummary", {
-                nodes: ephemeralNodes.length,
-                edges: ephemeralEdges.length,
-              })}
-            </span>
-            <Tooltip content={helpTooltip} withProvider={false}>
-              <span
-                role="img"
-                aria-label={t("helpAriaLabel")}
-                className="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-indigo-accent)]"
-              >
-                <Info size={13} />
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+              {t("eyebrow")}
+            </p>
+            <div className="mt-0.5 flex min-w-0 items-center gap-2">
+              <h1 className="truncate text-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-xl">
+                {t("title")}
+              </h1>
+              <span className="hidden h-4 w-px bg-[color:var(--color-border-soft)] sm:block" />
+              <span className="hidden font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)] sm:inline">
+                {t("statusSummary", {
+                  nodes: ephemeralNodes.length,
+                  edges: ephemeralEdges.length,
+                })}
               </span>
-            </Tooltip>
+              <Tooltip content={helpTooltip} withProvider={false}>
+                <span
+                  role="img"
+                  aria-label={t("helpAriaLabel")}
+                  className="inline-flex h-4 w-4 cursor-help items-center justify-center rounded-full text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-indigo-accent)]"
+                >
+                  <Info size={13} />
+                </span>
+              </Tooltip>
+            </div>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-1.5">
             {ephemeralNodes.length > 0 || ephemeralEdges.length > 0 ? (

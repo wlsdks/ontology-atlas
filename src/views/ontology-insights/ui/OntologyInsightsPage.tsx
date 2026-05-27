@@ -340,11 +340,14 @@ export function OntologyInsightsPage() {
       <MountedGlobalSearch />
 
       <section className="mb-8 space-y-3">
-        {/* eyebrow + back pill 은 OperationsNav 의 SubNav 행이 'ONTOLOGY'
-            caption + active '인사이트' pill 로 이미 노출 → 중복 제거. */}
-        <h1 className="break-keep text-2xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-          {t("title")}
-        </h1>
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {t("eyebrow")}
+          </p>
+          <h1 className="mt-1 break-keep text-2xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {t("title")}
+          </h1>
+        </div>
         <p className="break-keep text-sm leading-7 text-[color:var(--color-text-secondary)]">
           {t("subtitle")}
         </p>
