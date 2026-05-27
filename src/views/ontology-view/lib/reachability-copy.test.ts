@@ -90,27 +90,47 @@ describe("reachability copy helpers", () => {
     );
   });
 
-  it("builds an agent-ready node context bundle", () => {
-    expect(
-      buildAgentContextBundle({
-        slug: "capabilities/cli-developer-entry",
-        direction: "outgoing",
-        depth: 3,
-        reachabilityLimit: 12,
-        profileLimit: 8,
-      }),
-    ).toBe(
-      [
-        "Use oh-my-ontology for this selected node before editing.",
-        "",
-        "MCP:",
-        '1. query_ontology({"operation":"node_profile","slug":"capabilities/cli-developer-entry","limit":8})',
-        '2. query_ontology({"operation":"reachability","slug":"capabilities/cli-developer-entry","direction":"outgoing","depth":3,"limit":12})',
-        "",
-        "CLI fallback:",
-        "1. oh-my-ontology node capabilities/cli-developer-entry --limit 8",
-        "2. oh-my-ontology reachability capabilities/cli-developer-entry --direction outgoing --depth 3 --limit 12",
-      ].join("\n"),
+  it("builds an agent-ready node proof bundle with graph DB checks", () => {
+    const bundle = buildAgentContextBundle({
+      slug: "capabilities/cli-developer-entry",
+      direction: "outgoing",
+      depth: 3,
+      reachabilityLimit: 12,
+      profileLimit: 8,
+    });
+
+    expect(bundle).toContain("# Selected ontology node proof");
+    expect(bundle).toContain(
+      '1. query_ontology({"operation":"node_profile","slug":"capabilities/cli-developer-entry","limit":8})',
+    );
+    expect(bundle).toContain(
+      '2. query_ontology({"operation":"blast_radius","slug":"capabilities/cli-developer-entry","depth":2,"direction":"incoming"})',
+    );
+    expect(bundle).toContain(
+      '3. query_ontology({"operation":"match_edges","from":"capabilities/cli-developer-entry","limit":10})',
+    );
+    expect(bundle).toContain(
+      '4. query_ontology({"operation":"match_edges","to":"capabilities/cli-developer-entry","limit":10})',
+    );
+    expect(bundle).toContain(
+      '5. query_ontology({"operation":"reachability","slug":"capabilities/cli-developer-entry","direction":"outgoing","depth":3,"limit":12})',
+    );
+    expect(bundle).toContain("oh-my-ontology match-edges [vault] --from capabilities/cli-developer-entry --limit 10");
+    expect(bundle).toContain("Report totalMatches, limited, and returned row count");
+    expect(bundle).toContain("# Post-change ontology sync gate");
+  });
+
+  it("shell-quotes selected slugs in bundled CLI edge scans", () => {
+    const bundle = buildAgentContextBundle({
+      slug: "capabilities/bob's-builder",
+      direction: "incoming",
+      depth: 1,
+      reachabilityLimit: 12,
+      profileLimit: 8,
+    });
+
+    expect(bundle).toContain(
+      "oh-my-ontology match-edges [vault] --from 'capabilities/bob'\\''s-builder' --limit 10",
     );
   });
 });

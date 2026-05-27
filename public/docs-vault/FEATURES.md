@@ -212,7 +212,7 @@ view-doc · view-folder-topology · pin · unpin · copy URL · print · edit ·
 #### Right: detail panel (`NodeDetailPanel`)
 - Kind badge + title · `ManualSourceChip` (currently no-op — all sources `manual`)
 - Copy node link button
-- Agent context copy actions: canonical frontmatter nodes expose copyable MCP `node_profile`, CLI `oh-my-ontology node`, and a combined agent bundle with profile + reachability MCP/CLI calls
+- Agent context copy actions: canonical frontmatter nodes expose copyable MCP `node_profile`, CLI `oh-my-ontology node`, and a combined selected-node proof bundle with `node_profile`, incoming `blast_radius`, incoming/outgoing `match_edges`, reachability, `health`, evidence checklist, CLI fallbacks, and the shared post-change sync gate
 - Stats: linked projects, evidence count
 - Reachability summary: outgoing / incoming / both direction controls, 1-3 hop depth controls, layer counts, terminal count, top relation distribution, clickable reachable-node previews by BFS layer, copyable MCP/CLI reachability commands for canonical frontmatter nodes, and empty-state feedback when the current traversal has no reachable nodes
 - Ego graph (1-hop default, 2-hop toggle radio), circular SVG
