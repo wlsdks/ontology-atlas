@@ -784,11 +784,12 @@
           "proofActionSelected": "선택 노드 query 열기"
         },
         "canvasEntryRail": {
-          "label": "그래프 진입점",
+          "label": "그래프 앵커",
           "stats": "노드 {nodes} · 참조 {relations}",
           "focusChip": "저장 slug 먼저",
-          "hint": "그리기 전에 저장된 기준점을 고르세요. 포커스, 인스펙터, proof 링크가 같은 slug 를 유지합니다.",
-          "anchorTitle": "{kind} 기준점: {label}"
+          "hint": "degree 높은 저장 노드입니다. 그리기 전에 기준점을 고르면 포커스, 인스펙터, proof 링크가 같은 slug 를 유지합니다.",
+          "anchorTitle": "{kind} 앵커: {label} · degree {degree}",
+          "degreeAriaLabel": "degree {degree}"
         },
         "exportButton": "md 내보내기 ↓",
         "exportAriaLabel": "현재 캔버스를 frontmatter md 로 내보내기",

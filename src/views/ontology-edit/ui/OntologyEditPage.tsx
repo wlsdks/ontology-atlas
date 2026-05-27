@@ -49,6 +49,10 @@ import { resolveBuilderQueryNodeSlug } from "../lib/resolve-builder-query-node";
 import { resolveBuilderProofNodeId } from "../lib/resolve-builder-proof-node";
 import { RelationWriteConfirm } from "./RelationWriteConfirm";
 import { RelationPostSaveHandoff } from "./RelationPostSaveHandoff";
+import {
+  buildBuilderEntryAnchors,
+  type BuilderEntryAnchor,
+} from "../lib/builder-entry-anchors";
 
 /**
  * 빌더 ephemeral 노드 → `${kind}s/${slug}.md` 로 vault 직접 작성.
@@ -122,41 +126,6 @@ function CanvasSkeleton() {
   );
 }
 
-type BuilderEntryAnchor = {
-  id: string;
-  kind: string;
-  label: string;
-};
-
-function buildBuilderEntryAnchors(manifest: VaultManifest): BuilderEntryAnchor[] {
-  const picked = new Map<string, BuilderEntryAnchor>();
-  const addFirst = (kind: string) => {
-    const doc = manifest.docs.find((candidate) => candidate.frontmatter?.kind === kind);
-    if (!doc || picked.has(doc.slug)) return;
-    picked.set(doc.slug, {
-      id: doc.slug,
-      kind,
-      label: doc.title || doc.slug,
-    });
-  };
-
-  addFirst("project");
-  for (const kind of ["domain", "capability", "element"]) {
-    for (const doc of manifest.docs) {
-      if (picked.size >= 6) break;
-      if (doc.frontmatter?.kind !== kind || picked.has(doc.slug)) continue;
-      picked.set(doc.slug, {
-        id: doc.slug,
-        kind,
-        label: doc.title || doc.slug,
-      });
-    }
-    if (picked.size >= 6) break;
-  }
-
-  return Array.from(picked.values());
-}
-
 function BuilderCanvasEntryRail({
   anchors,
   nodeCount,
@@ -197,12 +166,22 @@ function BuilderCanvasEntryRail({
             type="button"
             onClick={() => onFocusAnchor(anchor.id)}
             className="pointer-events-auto flex max-w-[190px] items-center gap-1.5 truncate rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.13)] hover:text-[color:var(--color-text-primary)]"
-            title={t("anchorTitle", { kind: anchor.kind, label: anchor.label })}
+            title={t("anchorTitle", {
+              kind: anchor.kind,
+              label: anchor.label,
+              degree: anchor.degree,
+            })}
           >
             <span className="shrink-0 font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
               {anchor.kind.slice(0, 1)}
             </span>
             <span className="truncate">{anchor.label}</span>
+            <span
+              aria-label={t("degreeAriaLabel", { degree: anchor.degree })}
+              className="ml-auto shrink-0 rounded border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(0,0,0,0.16)] px-1 font-mono text-[9px] tabular-nums text-[color:var(--color-text-quaternary)]"
+            >
+              {anchor.degree}
+            </span>
           </button>
         ))}
       </div>

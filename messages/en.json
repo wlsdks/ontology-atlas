@@ -784,11 +784,12 @@
           "proofActionSelected": "Open node query"
         },
         "canvasEntryRail": {
-          "label": "Graph entrypoints",
+          "label": "Graph anchors",
           "stats": "{nodes} nodes · {relations} refs",
           "focusChip": "focus saved slug",
-          "hint": "Pick a persisted anchor before drawing; focus, inspector, and proof links keep the same slug.",
-          "anchorTitle": "{kind} anchor: {label}"
+          "hint": "Degree-ranked saved nodes. Pick one before drawing so focus, inspector, and proof links keep the same slug.",
+          "anchorTitle": "{kind} anchor: {label} · degree {degree}",
+          "degreeAriaLabel": "degree {degree}"
         },
         "exportButton": "Export md ↓",
         "exportAriaLabel": "Export current canvas as frontmatter md",
