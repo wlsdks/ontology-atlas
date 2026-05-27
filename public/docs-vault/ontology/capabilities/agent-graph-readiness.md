@@ -3,18 +3,9 @@ slug: capabilities/agent-graph-readiness
 kind: capability
 title: Agent Graph Readiness
 domain: views
-dependencies:
-  - capabilities/ontology-hub-mode-aware
-elements:
-  - src/shared/lib/ontology-tree/agent-query-recipes.ts
-  - src/shared/lib/ontology-tree/agent-readiness.ts
-  - src/shared/lib/ontology-tree/insights.ts
-  - src/views/ontology-insights/ui/OntologyInsightsPage.tsx
-relates:
-  - capabilities/mcp-server
-  - capabilities/ontology-hub-mode-aware
-  - domains/ai-agent-partner
-  - domains/views
+dependencies: [capabilities/ontology-hub-mode-aware]
+elements: [elements/insights-query-cockpit, src/shared/lib/ontology-tree/agent-query-recipes.ts, src/shared/lib/ontology-tree/agent-readiness.ts, src/shared/lib/ontology-tree/insights.ts, src/views/ontology-insights/ui/OntologyInsightsPage.tsx]
+relates: [capabilities/mcp-server, capabilities/ontology-hub-mode-aware, domains/ai-agent-partner, domains/views]
 ---
 
 # Agent Graph Readiness

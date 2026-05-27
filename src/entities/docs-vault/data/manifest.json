@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T14:25:10.671Z",
+  "generatedAt": "2026-05-27T14:30:12.667Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4817,6 +4817,7 @@
           "capabilities/ontology-hub-mode-aware"
         ],
         "elements": [
+          "elements/insights-query-cockpit",
           "src/shared/lib/ontology-tree/agent-query-recipes.ts",
           "src/shared/lib/ontology-tree/agent-readiness.ts",
           "src/shared/lib/ontology-tree/insights.ts",
@@ -4838,7 +4839,7 @@
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
       "wordCount": 3261,
-      "updatedAt": "2026-05-27T14:06:51.685Z",
+      "updatedAt": "2026-05-27T14:29:55.986Z",
       "linksOut": []
     },
     {
@@ -5984,6 +5985,7 @@
           "builder-relation-proposal",
           "builder-relation-write-confirm-panel",
           "elements/builder-write-summary",
+          "elements/insights-query-cockpit",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
           "ontology-deeplink-node-resolver",
@@ -6016,7 +6018,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 designsystem 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-05-27T14:24:52.972Z",
+      "updatedAt": "2026-05-27T14:29:55.985Z",
       "linksOut": []
     },
     {
@@ -6164,6 +6166,23 @@
       "excerpt": "src/views/ontologyinsights/lib/orphannodeactions.ts turns each /ontology/insights orphan or open ownership question into actionable links and a copyable repair packet. The row actions keep the same selected node across the ontology tree, topology health mode, and builder focus view. The packet adds the readfirst agent ",
       "wordCount": 184,
       "updatedAt": "2026-05-25T02:32:37.411Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/insights-query-cockpit",
+      "path": "docs/ontology/elements/insights-query-cockpit.md",
+      "title": "Insights Query Cockpit",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/insights-query-cockpit",
+        "kind": "element",
+        "title": "Insights Query Cockpit",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. It presents the local markdown vault as a small graph database without adding a server: readiness, graph DB pack size, MCP call count, CLI fallback count, run order, representative MATCH ... intents, r",
+      "wordCount": 117,
+      "updatedAt": "2026-05-27T14:29:50.004Z",
       "linksOut": []
     },
     {
@@ -7778,6 +7797,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/insights-orphan-repair-packet",
                 "title": "Insights Orphan Repair Packet"
+              },
+              {
+                "name": "insights-query-cockpit",
+                "path": "ontology/elements/insights-query-cockpit",
+                "type": "doc",
+                "slug": "ontology/elements/insights-query-cockpit",
+                "title": "Insights Query Cockpit"
               },
               {
                 "name": "mcp-sdk",
