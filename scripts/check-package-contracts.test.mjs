@@ -667,11 +667,15 @@ describe('package contract helpers', () => {
     assert.match(capability, /Functions, Firestore, Storage, Auth, or committed credentials/);
     assert.match(hostingWorkflow, /release:\s*\n\s+types:\s*\[published\]/);
     assert.match(hostingWorkflow, /workflow_dispatch:/);
+    assert.match(hostingWorkflow, /release_tag:/);
+    assert.match(hostingWorkflow, /PUBLISHED_RELEASE_TAG:\s*\$\{\{\s*github\.event\.release\.tag_name\s*\|\|\s*github\.event\.inputs\.release_tag\s*\|\|\s*''\s*\}\}/);
     assert.match(hostingWorkflow, /FIREBASE_SERVICE_ACCOUNT_JSON/);
     assert.match(hostingWorkflow, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/);
     assert.match(hostingWorkflow, /pnpm firebase:deploy-check/);
     assert.match(hostingWorkflow, /npx --yes firebase-tools@15\.17\.0 deploy --only hosting/);
     assert.match(hostingWorkflow, /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/);
+    assert.match(hostingWorkflow, /if:\s*env\.PUBLISHED_RELEASE_TAG != ''/);
+    assert.match(hostingWorkflow, /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/);
     assert.doesNotMatch(releaseWorkflow, /deploy-hosting:\s*\n\s+name:\s*Deploy hosted download site/);
     assert.doesNotMatch(releaseWorkflow, /FIREBASE_SERVICE_ACCOUNT_JSON/);
     assert.doesNotMatch(releaseWorkflow, /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/);

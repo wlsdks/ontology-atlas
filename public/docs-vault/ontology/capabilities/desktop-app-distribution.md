@@ -214,6 +214,11 @@ needs the full desktop completion audit rather than only the app release gate,
 `--include-hosted-surface` adds that deployed promo/download workflow, website
 deploy secret, and website check as `hosted_deploy_workflow`,
 `hosted_deploy_secrets`, and `hosted_surface` in the same blocker snapshot.
+The deploy workflow can also receive a manual `release_tag`, and release
+published events set the same tag automatically; when present, the workflow runs
+`pnpm desktop:verify-download -- --tag="$PUBLISHED_RELEASE_TAG"` after hosted
+page verification so the website deploy run proves the public DMG/checksum
+assets still resolve.
 `pnpm desktop:verify-hosted` fetches the live `oh-my-ontology.web.app`
 landing/download pages and rejects a stale public deployment that still shows
 the old browser vault picker CTA, lacks `/ko/download/`, or points the download

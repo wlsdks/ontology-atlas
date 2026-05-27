@@ -391,6 +391,8 @@ if (
 if (
   /release:\s*\n\s+types:\s*\[published\]/.test(hostingDeployWorkflow) &&
   /workflow_dispatch:/.test(hostingDeployWorkflow) &&
+  /release_tag:/.test(hostingDeployWorkflow) &&
+  /PUBLISHED_RELEASE_TAG:\s*\$\{\{\s*github\.event\.release\.tag_name\s*\|\|\s*github\.event\.inputs\.release_tag\s*\|\|\s*''\s*\}\}/.test(hostingDeployWorkflow) &&
   /FIREBASE_SERVICE_ACCOUNT_JSON/.test(hostingDeployWorkflow) &&
   /NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING:\s*["']0["']/.test(hostingDeployWorkflow) &&
   /FIREBASE_PROJECT_ID:\s*\$\{\{\s*vars\.FIREBASE_PROJECT_ID/.test(hostingDeployWorkflow) &&
@@ -405,12 +407,14 @@ if (
   /pnpm build/.test(hostingDeployWorkflow) &&
   /pnpm bundle:check/.test(hostingDeployWorkflow) &&
   /firebase-tools@15\.17\.0 deploy --only hosting/.test(hostingDeployWorkflow) &&
-  /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/.test(hostingDeployWorkflow)
+  /pnpm desktop:verify-hosted -- --base-url="\$FIREBASE_HOSTING_URL"/.test(hostingDeployWorkflow) &&
+  /if:\s*env\.PUBLISHED_RELEASE_TAG != ''/.test(hostingDeployWorkflow) &&
+  /pnpm desktop:verify-download -- --tag="\$PUBLISHED_RELEASE_TAG"/.test(hostingDeployWorkflow)
 ) {
   pass("Firebase Hosting fallback workflow deploys the promo/download site after public macOS releases and verifies the live download route");
 } else {
   fail(
-    ".github/workflows/deploy-hosting.yml must deploy Hosting on release publication/manual dispatch, require FIREBASE_SERVICE_ACCOUNT_JSON, hide the first-release checklist, use Node 24 with Corepack pnpm@10.18.0 without pnpm/action-setup, run the static deploy gates, deploy only Hosting, and verify the hosted download route",
+    ".github/workflows/deploy-hosting.yml must deploy Hosting on release publication/manual dispatch, require FIREBASE_SERVICE_ACCOUNT_JSON, hide the first-release checklist, use Node 24 with Corepack pnpm@10.18.0 without pnpm/action-setup, run the static deploy gates, deploy only Hosting, verify the hosted download route, and verify published release assets when a release tag is available",
   );
 }
 

@@ -35,9 +35,11 @@ repository settings:
   `FIREBASE_HOSTING_ALT_URL` (defaults match `.env.prod.example`)
 
 The workflow writes a temporary `.env.prod`, sets
-`NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, run `pnpm firebase:deploy-check`,
+`NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, runs `pnpm firebase:deploy-check`,
 deploy only Hosting with `firebase-tools@15.17.0`, and verify the live download
-route.
+route. Release-published runs automatically verify the published release tag's
+DMG/checksum assets after deploy. Manual dispatches can do the same when the
+optional `release_tag` input is set.
 
 ## Workflow
 
@@ -86,6 +88,8 @@ Deployment is complete only when all are true:
 - `pnpm bundle:check` still reports Firebase SDK chunk `0`.
 - In GitHub Actions, `.github/workflows/deploy-hosting.yml` publishes only the
   static `out/` Hosting target and then runs `pnpm desktop:verify-hosted`.
+  When `PUBLISHED_RELEASE_TAG` is present, it also runs
+  `pnpm desktop:verify-download -- --tag="$PUBLISHED_RELEASE_TAG"`.
   `.github/workflows/release-macos.yml` is intentionally app-only.
 
 For UI-sensitive landing changes, also run a short Playwright check against

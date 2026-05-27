@@ -60,7 +60,11 @@ manual dispatch or human-created Release events. It writes `.env.prod` from
 repository variables, authenticates with `FIREBASE_SERVICE_ACCOUNT_JSON`, sets
 `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, deploys only Hosting with
 `firebase-tools@15.17.0`, and runs `pnpm desktop:verify-hosted` so the hosted
-download route can be verified separately from the app release.
+download route can be verified separately from the app release. On
+Release-published events, or on manual dispatch when `release_tag` is supplied,
+it also runs `pnpm desktop:verify-download -- --tag="$PUBLISHED_RELEASE_TAG"` so
+the hosted deploy record proves the public DMG/checksum assets are still
+reachable.
 
 ## Vault Checks
 

@@ -45,7 +45,10 @@ workflow writes `.env.prod` from GitHub repository variables, authenticates with
 the `FIREBASE_SERVICE_ACCOUNT_JSON` secret, sets
 `NEXT_PUBLIC_OMOT_FIRST_RELEASE_PENDING=0`, runs the same static deploy gates,
 deploys only Firebase Hosting with `firebase-tools@15.17.0`, then runs
-`pnpm desktop:verify-hosted` against the configured public URL.
+`pnpm desktop:verify-hosted` against the configured public URL. When the deploy
+was triggered by a published GitHub Release, or a manual dispatch supplies
+`release_tag`, it also runs `pnpm desktop:verify-download` for that tag so the
+website deploy record includes the public DMG/checksum asset proof.
 
 Expected public URLs after deploy:
 
