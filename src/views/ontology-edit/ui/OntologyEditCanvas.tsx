@@ -75,6 +75,36 @@ function FitViewOnAutoLayout({
 }
 
 /**
+ * Local vault restore can populate the builder graph after ReactFlow has
+ * already mounted. The built-in `fitView` prop only covers the initial mount,
+ * so the desktop app could show an apparently blank canvas until the user hit
+ * the toolbar fit action. Fit exactly once when the graph first becomes
+ * non-empty.
+ */
+function FitViewOnGraphReady({ nodeCount }: { nodeCount: number }) {
+  const reactFlow = useReactFlow();
+  const prevNodeCountRef = useRef(0);
+  const fittedRef = useRef(false);
+
+  useEffect(() => {
+    const previous = prevNodeCountRef.current;
+    prevNodeCountRef.current = nodeCount;
+    if (nodeCount === 0) {
+      fittedRef.current = false;
+      return;
+    }
+    if (fittedRef.current || previous > 0) return;
+    fittedRef.current = true;
+    const t = setTimeout(() => {
+      reactFlow.fitView({ duration: 320, padding: 0.22, minZoom: 0.4, maxZoom: 1.2 });
+    }, 220);
+    return () => clearTimeout(t);
+  }, [nodeCount, reactFlow]);
+
+  return null;
+}
+
+/**
  * focusToken 이 증가할 때마다 focusNodeId 노드로 viewport 부드럽게 pan.
  * 검색 (⇧⌘K) 결과 클릭 → 인스펙터에서 노드 보이지만 canvas 위치 모르는
  * 문제 해소. setCenter(x, y, { zoom, duration }).
@@ -530,6 +560,7 @@ export function OntologyEditCanvas({
             아이콘 흰색 등). 사용자 navigation 은 MiniMap (점프) + 자동정렬
             (fit) + 마우스 휠 (zoom) 으로 충분 → 별도 Controls 미노출. */}
         <FitViewOnAutoLayout token={autoLayoutToken} layoutMode={layoutMode} />
+        <FitViewOnGraphReady nodeCount={allNodes.length} />
         <FocusNodeOnDemand token={focusToken} nodeId={focusNodeId} />
         {/* MiniMap — 노드 많아질 때 빠른 navigation. 헌장 §11 호환:
             인디고 alpha + 무채색 alpha mask. ephemeral 은 amber 로 vault
