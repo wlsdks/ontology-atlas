@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T16:21:18.303Z",
+  "generatedAt": "2026-05-27T16:31:25.753Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6096,8 +6096,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. The strip is the builder persistence contract before the canvas: Source distinguishes local writable vaults from sample readonly data, Draft counts unsaved canvas nodes/edges, Gua",
-      "wordCount": 124,
-      "updatedAt": "2026-05-27T14:42:39.382Z",
+      "wordCount": 184,
+      "updatedAt": "2026-05-27T16:31:07.683Z",
       "linksOut": []
     },
     {
@@ -6183,8 +6183,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. The cockpit makes the local markdown graph feel executable before the analytic charts begin. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the copyable graph DB pack, an",
-      "wordCount": 151,
-      "updatedAt": "2026-05-27T14:58:52.601Z",
+      "wordCount": 215,
+      "updatedAt": "2026-05-27T16:31:16.136Z",
       "linksOut": []
     },
     {

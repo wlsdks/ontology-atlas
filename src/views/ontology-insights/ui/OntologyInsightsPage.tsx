@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
@@ -137,6 +138,18 @@ const DOMAIN_COUPLING_PATH_LIMIT = 10;
 const DOMAIN_COUPLING_PATH_SEARCH_BUDGET = 1000;
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
 
+function resolveInsightsQueryNode(
+  queryNodeId: string | null,
+  nodes: KnowledgeGraphNode[],
+): KnowledgeGraphNode | null {
+  const normalized = queryNodeId?.trim().replace(/^\/+/, "");
+  if (!normalized) return null;
+  const withoutOntologyPrefix = normalized.replace(/^ontology\//, "");
+  return (
+    nodes.find((node) => node.id === normalized || node.id === withoutOntologyPrefix) ?? null
+  );
+}
+
 /**
  * `/ontology/insights` — ontology 의 구조를 한눈에.
  *
@@ -151,8 +164,10 @@ export function OntologyInsightsPage() {
   const t = useTranslations("ontologyPages.insights");
   const kindLabel = useOntologyKindLabel();
   const edgeTypeLabel = useEdgeTypeLabel();
+  const searchParams = useSearchParams();
 
   const { insight, error } = useOntologyInsight();
+  const queryNodeId = searchParams.get("node");
 
   const kindDist = useMemo(
     () => (insight ? computeKindDistribution(insight.nodes) : new Map<string, number>()),
@@ -216,6 +231,10 @@ export function OntologyInsightsPage() {
 
   const totalNodes = insight?.nodes.length ?? 0;
   const totalEdges = insight?.edges.length ?? 0;
+  const focusedQueryNode = useMemo(
+    () => (insight ? resolveInsightsQueryNode(queryNodeId, insight.nodes) : null),
+    [insight, queryNodeId],
+  );
 
   // kind 분포 — sorted desc + 시각용 합계.
   const kindRows = useMemo(() => {
@@ -390,6 +409,10 @@ export function OntologyInsightsPage() {
               graphDbQueryPack={agentGraphDbQueryPack}
               readiness={agentReadiness}
             />
+          ) : null}
+
+          {focusedQueryNode ? (
+            <InsightsFocusedNodeProofPanel node={focusedQueryNode} />
           ) : null}
 
           {collaboratorBrief ? (
@@ -2758,6 +2781,106 @@ function CopyAgentTextButton({
       {copyState === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
       {visibleLabel}
     </button>
+  );
+}
+
+function InsightsFocusedNodeProofPanel({ node }: { node: KnowledgeGraphNode }) {
+  const t = useTranslations("ontologyPages.insights");
+  const kindLabel = useOntologyKindLabel();
+  const nodeProfilePayload = formatInsightsQueryOntologyCall({
+    operation: "node_profile",
+    slug: node.id,
+    depth: 2,
+    limit: 12,
+  });
+  const blastRadiusPayload = formatInsightsQueryOntologyCall({
+    operation: "blast_radius",
+    slug: node.id,
+    depth: 2,
+    direction: "incoming",
+  });
+  const nodeProofPacket = [
+    `# ${t("focusedProofPacketTitle")}`,
+    `- ${t("focusedProofPacketNode")}: ${node.title} (${node.id})`,
+    `- ${t("focusedProofPacketKind")}: ${kindLabel(node.kind)}`,
+    `- ${t("focusedProofPacketOntology")}: ${buildOntologyNodeHref(node.id)}`,
+    `- ${t("focusedProofPacketBuilder")}: ${buildOntologyBuilderNodeHref(node)}`,
+    `- ${t("focusedProofPacketNodeProfileCli")}: oh-my-ontology node ${node.id} [vault] --limit 12`,
+    `- ${t("focusedProofPacketBlastRadiusCli")}: oh-my-ontology blast-radius ${node.id} [vault] --depth 2 --direction incoming`,
+    `- ${t("focusedProofPacketNodeProfileMcp")}: ${nodeProfilePayload}`,
+    `- ${t("focusedProofPacketBlastRadiusMcp")}: ${blastRadiusPayload}`,
+    "",
+    formatAgentPostChangeSyncPacket(),
+  ].join("\n");
+
+  return (
+    <section
+      aria-label={t("focusedProofAriaLabel")}
+      className="md:col-span-2 rounded-2xl border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.07)] px-4 py-4"
+      data-testid="insights-focused-node-proof"
+    >
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {t("focusedProofEyebrow")}
+          </p>
+          <h2 className="mt-1 truncate text-base font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+            {node.title}
+          </h2>
+          <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+            {t("focusedProofBody", { slug: node.id, kind: kindLabel(node.kind) })}
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap gap-1.5">
+          <Link
+            href={buildOntologyNodeHref(node.id)}
+            className="inline-flex shrink-0 items-center justify-center rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-2 py-1 font-mono text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:text-[color:var(--color-text-primary)]"
+          >
+            {t("focusedProofOpenBrowse")}
+          </Link>
+          <Link
+            href={buildOntologyBuilderNodeHref(node)}
+            className="inline-flex shrink-0 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] px-2 py-1 font-mono text-[10px] text-[color:rgba(211,215,255,0.96)] transition-colors hover:border-[color:rgba(139,151,255,0.42)] hover:bg-[color:rgba(139,151,255,0.13)]"
+          >
+            {t("focusedProofOpenBuilder")}
+          </Link>
+          <CopyAgentTextButton
+            label={t("focusedProofCopyPacket")}
+            copiedLabel={t("agentCopied")}
+            text={nodeProofPacket}
+            compact
+          />
+        </div>
+      </div>
+      <div className="mt-3 grid gap-2 lg:grid-cols-3">
+        {[
+          {
+            label: t("focusedProofProfileLabel"),
+            body: nodeProfilePayload,
+          },
+          {
+            label: t("focusedProofImpactLabel"),
+            body: blastRadiusPayload,
+          },
+          {
+            label: t("focusedProofSyncLabel"),
+            body: t("focusedProofSyncBody"),
+          },
+        ].map((item) => (
+          <div
+            key={item.label}
+            className="min-w-0 rounded-lg border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(0,0,0,0.16)] px-3 py-2"
+          >
+            <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+              {item.label}
+            </p>
+            <p className="mt-1 overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
+              {item.body}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 

@@ -11,4 +11,6 @@ The cockpit makes the local markdown graph feel executable before the analytic c
 
 The cockpit now includes a live proof strip derived from the current graph manifest: shaped concept/relation counts, blocker counts for unresolved stubs and orphans, and traversal density through hub count plus average degree. This keeps the surface from reading like static documentation for query commands; the first viewport shows whether the current graph is actually ready for scan, path, blast radius, and domain matrix queries.
 
+The cockpit also accepts a focused node handoff from the builder via `?node=<slug>`. When present, `/ontology/insights` renders a focused proof panel with Browse and Builder return links plus a copyable packet containing CLI `node`, CLI incoming `blast-radius`, MCP `node_profile`, MCP incoming `blast_radius`, and the post-change sync gate. This makes the Builder `Proof` cell an executable graph verification step rather than a generic navigation link.
+
 The evidence flow is explicit: plan expensive work with `query_plan`, treat scan rows as candidates until follow-up calls narrow them, and close write decisions with `relation_check`, bounded `all_paths` evidence, and the shared sync gate.

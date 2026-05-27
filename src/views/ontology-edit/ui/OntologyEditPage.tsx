@@ -220,8 +220,15 @@ function BuilderWriteSummary({
   pendingRelation?: VaultRelationProposal | null;
 }) {
   const t = useTranslations("ontologyPages.edit.page.writeSummary");
-  type SummaryHref = "/docs/?intent=local" | "/download/" | "/ontology/insights/";
+  type SummaryHref =
+    | "/docs/?intent=local"
+    | "/download/"
+    | "/ontology/insights/"
+    | `/ontology/insights/?node=${string}`;
   const sourceHref: SummaryHref = isDesktopRuntime ? "/docs/?intent=local" : "/download/";
+  const proofHref: SummaryHref = selectedVaultSlug
+    ? `/ontology/insights/?node=${encodeURIComponent(selectedVaultSlug)}`
+    : "/ontology/insights/";
   const sourceAction = writable
     ? {}
     : {
@@ -272,7 +279,7 @@ function BuilderWriteSummary({
         ? t("proofBodySelected", { slug: selectedVaultSlug })
         : t("proofBody"),
       accent: "neutral",
-      href: "/ontology/insights/" as const,
+      href: proofHref,
       actionLabel: selectedVaultSlug ? t("proofActionSelected") : t("proofAction"),
     },
   ];
