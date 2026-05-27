@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-25T09:29:34.816Z",
+  "generatedAt": "2026-05-27T00:44:08.382Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -51,8 +51,8 @@
         }
       ],
       "excerpt": "Current as of 20260525. This is the userfacing guide for running ohmyontology as a local PC graph memory: CLIonly, MCPconnected, and web workbench flows over the same markdown vault. ohmyontology is not a hosted graph database. It is a localfirst graph workbench where markdown frontmatter is the graph, git is the audit",
-      "wordCount": 1844,
-      "updatedAt": "2026-05-25T09:29:22.210Z",
+      "wordCount": 1847,
+      "updatedAt": "2026-05-25T18:38:36.704Z",
       "linksOut": []
     },
     {
@@ -109,8 +109,8 @@
         }
       ],
       "excerpt": "Current product framing for launch, README copy, and prioritization. Last updated: 20260518. A reponative memory layer for Claude Code, Cursor, and Codex. ohmyontology keeps a local, gitbacked mental model of a codebase that AI coding agents can read, query, and maintain through MCP. AI coding agents are useful, but th",
-      "wordCount": 591,
-      "updatedAt": "2026-05-18T06:48:02.192Z",
+      "wordCount": 589,
+      "updatedAt": "2026-05-25T18:39:37.017Z",
       "linksOut": []
     },
     {
@@ -158,8 +158,8 @@
         },
         {
           "depth": 3,
-          "text": "Vault mode (user picked a markdown folder)",
-          "slug": "vault-mode-user-picked-a-markdown-folder"
+          "text": "Vault mode (user picked a markdown folder in the desktop app)",
+          "slug": "vault-mode-user-picked-a-markdown-folder-in-the-desktop-app"
         },
         {
           "depth": 3,
@@ -193,8 +193,8 @@
         }
       ],
       "excerpt": "20260518 update — the current architecture is a localfirst, gitbacked memory layer for AI coding agents. Round 10 permanently removed all auth + cloud surface; later rounds added deterministic graph compilation, graphengine queries, health/workspace briefs, bootstrap analysis, and import inference. Earlier cloudmode de",
-      "wordCount": 1137,
-      "updatedAt": "2026-05-18T09:11:00.703Z",
+      "wordCount": 1208,
+      "updatedAt": "2026-05-26T10:42:47.351Z",
       "linksOut": [
         "../AGENTS",
         "PRODUCT-DIRECTION",
@@ -1794,9 +1794,9 @@
           "slug": "참조-문서"
         }
       ],
-      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260518): reponative AIagent memory layer 포지셔닝 반영. localfirst 3 surface (CLI · MCP · Web), dogfood 50 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR | 항목 | 결",
-      "wordCount": 1483,
-      "updatedAt": "2026-05-25T06:22:21.356Z",
+      "excerpt": "작업 순번 만. user 가 \"T?? 진행해\" 하면 그것만 분해해서 실행. 완료된 항목은 ✅ 표시 후 별도 batch 정리 시 일괄 삭제. 갱신 (20260526): macOS app distribution track 반영. localfirst 4 surface (macOS app · CLI · MCP · Website), dogfood 50 노드, CLI 43 commands, MCP 23 tools, compiler/query/health/agentbrief/workspacebrief/bootstrap/importinference 루프 기준으로 재정렬. | PR ",
+      "wordCount": 1499,
+      "updatedAt": "2026-05-25T23:24:55.922Z",
       "linksOut": []
     },
     {
@@ -1877,9 +1877,9 @@
           "slug": "graph-engine-scale-audit"
         }
       ],
-      "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · 14 tools · web workbench all on top of one a",
-      "wordCount": 1265,
-      "updatedAt": "2026-05-23T22:24:03.316Z",
+      "excerpt": "The single biggest unverified premise of this project: \"AI agents work better when they can read and write the codebase ontology vault.\" Until we have data, this is a belief, not a claim. This folder is the first attempt to put it on a measurement scale. We built CLI · MCP · graph tooling · a macOS local workbench all ",
+      "wordCount": 1267,
+      "updatedAt": "2026-05-25T18:40:22.580Z",
       "linksOut": [
         "benchmark/tasks",
         "benchmark/rubric",
@@ -3525,8 +3525,8 @@
         }
       ],
       "excerpt": "202605 update — Round 10 removed all backend dependencies. The OSS now builds to a pure static site (output: 'export'), deployable to any static host (Firebase Hosting, Vercel, Netlify, GitHub Pages, S3 + CloudFront, …). The detailed Firebasespecific guide is archived in docs/archive/DEPLOYFIREBASE.md for reference. Th",
-      "wordCount": 404,
-      "updatedAt": "2026-05-18T06:48:02.151Z",
+      "wordCount": 587,
+      "updatedAt": "2026-05-27T00:06:55.812Z",
       "linksOut": [
         "archive/DEPLOY-FIREBASE"
       ]
@@ -3891,13 +3891,18 @@
         },
         {
           "depth": 2,
+          "text": "Release Signing and Notarization",
+          "slug": "release-signing-and-notarization"
+        },
+        {
+          "depth": 2,
           "text": "Later Distribution Work",
           "slug": "later-distribution-work"
         }
       ],
-      "excerpt": "ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app should be a native shell around the same local markdown vault, not a backend, cloud sync layer, or second data store. Use Tauri first for the prototype. The repository now includes the first srctauri/ shell so desktop wor",
-      "wordCount": 699,
-      "updatedAt": "2026-05-25T09:24:31.648Z",
+      "excerpt": "Context Atlas is the userfacing macOS app name for the ohmyontology project. ohmyontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app ",
+      "wordCount": 3938,
+      "updatedAt": "2026-05-27T00:44:00.366Z",
       "linksOut": []
     },
     {
@@ -3954,8 +3959,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 3230,
-      "updatedAt": "2026-05-25T09:25:03.564Z",
+      "wordCount": 6155,
+      "updatedAt": "2026-05-27T00:44:00.367Z",
       "linksOut": []
     },
     {
@@ -4493,8 +4498,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260525 (agent setup gate, graph DBstyle query pack, CLI/MCP verification snapshots, and fallback performance checks). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongside t",
-      "wordCount": 7321,
-      "updatedAt": "2026-05-25T07:48:41.315Z",
+      "wordCount": 7619,
+      "updatedAt": "2026-05-26T23:11:40.170Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4555,8 +4560,8 @@
         }
       ],
       "excerpt": "README 첫 화면에 박을 30초 GIF / mp4 의 스토리보드. claim → proof 5 컷 시퀀스. 각 컷 ~6초. screen: 좌측 vscode (또는 Obsidian) 가 domains/auth.md 를 열어 frontmatter 보임. 우측 Claude Code terminal 에서 ohmyontology 도구 호출 결과 표시. action: 사람이 markdown 의 capabilities: 키에 capabilities/login 추가 → 저장. AI 가 같은 vault 의 capabilities/login.md 를 addconcept 로 생성. ",
-      "wordCount": 414,
-      "updatedAt": "2026-05-18T06:48:02.168Z",
+      "wordCount": 420,
+      "updatedAt": "2026-05-26T11:03:52.305Z",
       "linksOut": []
     },
     {
@@ -4699,8 +4704,8 @@
         }
       ],
       "excerpt": "Reddit responds best to honest, problemfirst framing. Each subreddit has its own norms; copy below tuned per audience. Title: ohmyontology — frontmatter as a codebase ontology, AI agents read it via MCP Body (400~500 words, Reddit allows longform better than HN): myproject/ ├── project.md ├── domains/ │ ├── auth.md │ └",
-      "wordCount": 921,
-      "updatedAt": "2026-05-23T01:24:31.461Z",
+      "wordCount": 934,
+      "updatedAt": "2026-05-25T18:38:12.027Z",
       "linksOut": []
     },
     {
@@ -5072,8 +5077,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
-      "wordCount": 10265,
-      "updatedAt": "2026-05-25T02:44:11.389Z",
+      "wordCount": 10264,
+      "updatedAt": "2026-05-25T18:39:42.549Z",
       "linksOut": []
     },
     {
@@ -5114,6 +5119,9 @@
           "capabilities/frontmatter-to-ontology",
           "capabilities/vault-live-updates"
         ],
+        "elements": [
+          "scripts/check-macos-release-slot.mjs"
+        ],
         "relates": [
           "domains/ai-agent-partner",
           "domains/views"
@@ -5121,8 +5129,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 374,
-      "updatedAt": "2026-05-25T09:24:54.291Z",
+      "wordCount": 2579,
+      "updatedAt": "2026-05-27T00:31:39.527Z",
       "linksOut": []
     },
     {
@@ -5146,9 +5154,9 @@
           "slug": "firebase-deploy-skill"
         }
       ],
-      "excerpt": ".claude/skills/firebasedeploy/SKILL.md is the agentrunbook for publishing the static web workbench to Firebase Hosting. It reads local .env.prod identifiers, runs the docs/type/build/bundle gates, deploys with firebase deploy only hosting, and verifies the live web.app URL. The skill explicitly keeps Firebase as a stat",
-      "wordCount": 80,
-      "updatedAt": "2026-05-18T07:03:59.625Z",
+      "excerpt": ".claude/skills/firebasedeploy/SKILL.md is the agentrunbook for publishing the static promo/download website to Firebase Hosting. It reads local .env.prod identifiers, runs the docs/type/build/bundle gates plus pnpm firebase:deploycheck, deploys with firebase deploy only hosting, and verifies the live web.app URL. Fireb",
+      "wordCount": 243,
+      "updatedAt": "2026-05-27T00:07:00.016Z",
       "linksOut": []
     },
     {
@@ -5864,9 +5872,9 @@
           "slug": "onboarding-ux"
         }
       ],
-      "excerpt": "crosscutting. 라이트/다크 토글 (html[datatheme=\"light\"]), Sonner기반 toast, arialive 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefersreducedmotion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 web workbench starter 가 같은 5node vault README/setup 내용을 제공하고, Claude Code/Cursor .mc",
-      "wordCount": 302,
-      "updatedAt": "2026-05-25T06:59:49.690Z",
+      "excerpt": "crosscutting. 라이트/다크 토글 (html[datatheme=\"light\"]), Sonner기반 toast, arialive 스크린리더 announce, 모바일 BottomTabBar + gesture hint, ⌘K · ⇧⌘K · ? · F · N · Esc 단축키, prefersreducedmotion 자동 존중. fresh vault onboarding 도 이 domain 의 일부: CLI init 과 설치된 macOS 앱의 starter 가 같은 5node vault README/setup 내용을 제공하고, Claude Code/Cursor .mcp",
+      "wordCount": 303,
+      "updatedAt": "2026-05-25T18:36:41.921Z",
       "linksOut": []
     },
     {
@@ -6106,8 +6114,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyinsights/lib/collaboratorinsightsbrief.ts derives the copyable collaborator overview shown on /ontology/insights. It summarizes node, relation, domain, crossdomain impact, and openquestion counts, highlights the top shared vocabulary hubs, and chooses the review focus: resolve orphan ownership questio",
-      "wordCount": 867,
-      "updatedAt": "2026-05-25T07:48:12.075Z",
+      "wordCount": 935,
+      "updatedAt": "2026-05-25T09:33:35.038Z",
       "linksOut": []
     },
     {
@@ -6622,8 +6630,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 2538,
-      "updatedAt": "2026-05-25T08:36:51.011Z",
+      "wordCount": 3469,
+      "updatedAt": "2026-05-27T00:13:25.833Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]
@@ -6692,8 +6700,8 @@
         },
         {
           "depth": 3,
-          "text": "C) Start a user vault (workbench path)",
-          "slug": "c-start-a-user-vault-workbench-path"
+          "text": "C) Start a user vault (desktop app path)",
+          "slug": "c-start-a-user-vault-desktop-app-path"
         },
         {
           "depth": 2,
@@ -6717,8 +6725,8 @@
         }
       ],
       "excerpt": "This project publishes two npm packages: | Package | Path | What | Required? | ||||| | ohmyontologymcp | mcp/ | MCP server (AI agents read/write the vault) | Required — the core of the AI agent integration | | ohmyontology | cli/ | 25command developer CLI (vault scaffold, bootstrap, compile, graph CRUD/deep dive) | Rec",
-      "wordCount": 1151,
-      "updatedAt": "2026-05-23T01:23:50.824Z",
+      "wordCount": 1158,
+      "updatedAt": "2026-05-25T18:35:27.689Z",
       "linksOut": []
     },
     {
@@ -6755,8 +6763,8 @@
         }
       ],
       "excerpt": "Current as of 20260518. This repository moves quickly; when a document and code disagree, trust package.json, next.config.ts, app/[locale]/layout.tsx, mcp/src/index.js, mcp/src/ontologyengine.mjs, and cli/src/index.mjs first. ohmyontology is now best described as a reponative memory layer for Claude Code, Cursor, and C",
-      "wordCount": 606,
-      "updatedAt": "2026-05-25T06:17:05.212Z",
+      "wordCount": 619,
+      "updatedAt": "2026-05-25T18:38:48.379Z",
       "linksOut": [
         "../README",
         "PRODUCT-DIRECTION",
@@ -6788,8 +6796,8 @@
         },
         {
           "depth": 2,
-          "text": "Vault scaffold (`npx oh-my-ontology init`, web `/docs` button)",
-          "slug": "vault-scaffold-npx-oh-my-ontology-init-web-docs-button"
+          "text": "Vault scaffold (`npx oh-my-ontology init`, desktop app `/docs` button)",
+          "slug": "vault-scaffold-npx-oh-my-ontology-init-desktop-app-docs-button"
         },
         {
           "depth": 3,
@@ -6803,13 +6811,13 @@
         },
         {
           "depth": 3,
-          "text": "Web scaffold button stays grayed out",
-          "slug": "web-scaffold-button-stays-grayed-out"
+          "text": "Desktop app scaffold button stays grayed out",
+          "slug": "desktop-app-scaffold-button-stays-grayed-out"
         },
         {
           "depth": 3,
-          "text": "Browser refuses to write to the picked folder",
-          "slug": "browser-refuses-to-write-to-the-picked-folder"
+          "text": "Local vault picker refuses to write to the picked folder",
+          "slug": "local-vault-picker-refuses-to-write-to-the-picked-folder"
         },
         {
           "depth": 2,
@@ -6868,8 +6876,8 @@
         },
         {
           "depth": 2,
-          "text": "Web workbench (dev / prod)",
-          "slug": "web-workbench-dev-prod"
+          "text": "Desktop app / source workbench (dev / prod)",
+          "slug": "desktop-app-source-workbench-dev-prod"
         },
         {
           "depth": 3,
@@ -6948,8 +6956,8 @@
         }
       ],
       "excerpt": "Common issues users hit when starting with ohmyontology. If your case isn't here, open an issue: https://github.com/wlsdks/ohmyontology/issues npm caches the package locally. Force a fresh fetch: The target folder already has README.md / project.md / etc. — the CLI never overwrites existing files. Either: Delete the co",
-      "wordCount": 1214,
-      "updatedAt": "2026-05-23T01:23:44.722Z",
+      "wordCount": 1216,
+      "updatedAt": "2026-05-25T18:35:19.798Z",
       "linksOut": []
     }
   ],
@@ -6981,7 +6989,7 @@
       },
       {
         "fromSlug": "README",
-        "context": "MCP-connected agents, graph-DB-style query packs, and actual verification evidence | Canonical user-facing workflow | | **[`FEATURES.md`]** | Complete inventory of shipping CLI, MCP, and web surfaces | Canonical feature inventory | | [`ARCHITECTURE.md`](ARCHI",
+        "context": "MCP-connected agents, graph-DB-style query packs, and actual verification evidence | Canonical user-facing workflow | | **[`FEATURES.md`]** | Complete inventory of shipping macOS app, CLI, MCP, and website surfaces | Canonical feature inventory | | [`ARCHITEC",
         "linkText": "`FEATURES.md`"
       }
     ],
@@ -7090,7 +7098,7 @@
     "ARCHITECTURE": [
       {
         "fromSlug": "README",
-        "context": "EATURES.md`](FEATURES.md) | Complete inventory of shipping CLI, MCP, and web surfaces | Canonical feature inventory | | **[`ARCHITECTURE.md`]** | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview | | [`DEVELOPMENT-CHECK",
+        "context": "ATURES.md) | Complete inventory of shipping macOS app, CLI, MCP, and website surfaces | Canonical feature inventory | | **[`ARCHITECTURE.md`]** | Local-first architecture, route/data flow, build/test pipeline | Canonical technical overview | | [`DEVELOPMENT-CHECK",
         "linkText": "`ARCHITECTURE.md`"
       }
     ],

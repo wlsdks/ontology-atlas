@@ -22,9 +22,14 @@ const STORAGE_KEY = "demo:atlas-onboarding:dismissed:v1";
 export interface BuilderOnboardingProps {
   /** 캔버스가 비어 있는지 — true 일 때만 노출 검토. */
   empty: boolean;
+  /** true 면 데스크톱 앱 런타임이라 read-only 해소 CTA 가 folder picker 로 향함. */
+  isDesktopRuntime?: boolean;
 }
 
-export function BuilderOnboarding({ empty }: BuilderOnboardingProps) {
+export function BuilderOnboarding({
+  empty,
+  isDesktopRuntime = false,
+}: BuilderOnboardingProps) {
   const t = useTranslations("ontologyPages.edit.onboarding");
   const [visible, setVisible] = useState(false);
 
@@ -112,7 +117,11 @@ export function BuilderOnboarding({ empty }: BuilderOnboardingProps) {
                 <strong className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
                   {t("stepSaveStrong")}
                 </strong>
-                {t("stepSaveBody")}
+                {t(
+                  isDesktopRuntime
+                    ? "stepSaveBodyPicker"
+                    : "stepSaveBodyDownload",
+                )}
               </p>
             </li>
           </ol>

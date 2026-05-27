@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isBottomTabActive } from "./is-tab-active";
+import { isBottomTabActive, shouldHideBottomTabBar } from "./is-tab-active";
 
 describe("isBottomTabActive", () => {
   it("home 탭 ('/') — / 에서 active", () => {
@@ -48,5 +48,18 @@ describe("isBottomTabActive", () => {
   it("home 탭 ('/') — 다른 path 에서는 prefix 아니면 false", () => {
     // matchPrefixes 빈 가상의 home 탭
     expect(isBottomTabActive("/docs", "/", [])).toBe(false);
+  });
+});
+
+describe("shouldHideBottomTabBar", () => {
+  it("hides mobile app navigation on public marketing and download pages", () => {
+    expect(shouldHideBottomTabBar("/", false)).toBe(true);
+    expect(shouldHideBottomTabBar("/download", false)).toBe(true);
+    expect(shouldHideBottomTabBar("/download/", true)).toBe(true);
+  });
+
+  it("keeps mobile app navigation once the root is an active local workspace", () => {
+    expect(shouldHideBottomTabBar("/", true)).toBe(false);
+    expect(shouldHideBottomTabBar("/docs", false)).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "oh-my-ontology",
+  "productName": "Context Atlas",
   "version": "0.1.0",
   "identifier": "dev.jinan.oh-my-ontology",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "oh-my-ontology",
+        "title": "Context Atlas",
         "width": 1280,
         "height": 820,
         "minWidth": 1040,
@@ -23,12 +23,23 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": {
+        "default-src": "'self' customprotocol: asset:",
+        "connect-src": "ipc: http://ipc.localhost",
+        "font-src": "'self' data:",
+        "img-src": "'self' asset: http://asset.localhost blob: data:",
+        "script-src": "'self'",
+        "style-src": "'unsafe-inline' 'self'"
+      }
     }
   },
   "bundle": {
     "active": true,
     "targets": ["app"],
+    "category": "DeveloperTool",
+    "shortDescription": "Local-first codebase ontology workbench for Context Atlas",
+    "longDescription": "Context Atlas is a local-first macOS app for opening a markdown ontology vault, editing codebase meaning, and handing the same graph to AI agents without a backend or login. The repository, CLI, and release assets remain under the oh-my-ontology project name.",
+    "copyright": "Copyright © 2026 oh-my-ontology contributors",
     "macOS": {
       "minimumSystemVersion": "12.0"
     }

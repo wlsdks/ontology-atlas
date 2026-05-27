@@ -2,6 +2,7 @@ node_modules/
 .next/
 out/
 .git/
+.env.prod
 .local-credentials/
 .claude/cache/
 .claude/local/

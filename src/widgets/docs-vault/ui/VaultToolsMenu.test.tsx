@@ -4,14 +4,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import koMessages from '../../../../messages/ko.json';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
+import { openTauriVaultInFinder } from '@/shared/lib/tauri-vault-fs';
 import { TooltipProvider } from '@/shared/ui';
 import { VaultToolsMenu } from './VaultToolsMenu';
 
 vi.mock('@/shared/lib/copy-text', () => ({
   copyText: vi.fn(),
 }));
+vi.mock('@/shared/lib/tauri-vault-fs', () => ({
+  getTauriVaultRootPath: (handle: FileSystemDirectoryHandle) =>
+    (handle as unknown as { rootPath?: string }).rootPath,
+  openTauriVaultInFinder: vi.fn(),
+}));
 
 const copyTextMock = vi.mocked(copyText);
+const openTauriVaultInFinderMock = vi.mocked(openTauriVaultInFinder);
 
 function render(ui: React.ReactElement) {
   return rtlRender(
@@ -59,7 +66,10 @@ function makeLocalVault(
     lastLoadedAt: 1779498839000,
     scaffoldOntology: vi.fn().mockResolvedValue({ created: 0, skipped: 0 }),
     ensureAgentConfigs: vi.fn().mockResolvedValue({ created: 2, skipped: 1 }),
+    recentVaults: [],
     open: vi.fn(),
+    openRecent: vi.fn(),
+    forgetRecent: vi.fn(),
     close: vi.fn(),
     refresh: vi.fn(),
     requestPermission: vi.fn(),
@@ -90,6 +100,7 @@ function renderMenu(
 describe('VaultToolsMenu', () => {
   beforeEach(() => {
     copyTextMock.mockReset();
+    openTauriVaultInFinderMock.mockReset();
   });
 
   it('로컬 vault의 AI agent 설정 누락 상태와 복구 버튼을 보여준다', async () => {
@@ -199,6 +210,54 @@ describe('VaultToolsMenu', () => {
 
     await waitFor(() => expect(localVault.ensureAgentConfigs).toHaveBeenCalledTimes(1));
     expect(localVault.scaffoldOntology).not.toHaveBeenCalled();
+  });
+
+  it('Tauri 데스크톱 vault 경로를 표시하고 복사할 수 있다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: {
+        name: 'ontology',
+        rootPath: '/Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      } as unknown as FileSystemDirectoryHandle,
+    });
+
+    const copyPathButton = screen.getByRole('button', {
+      name: '로컬 vault 경로 복사: /Users/jinan/side-project/oh-my-ontology/docs/ontology',
+    });
+
+    expect(
+      screen.getByText('/Users/jinan/side-project/oh-my-ontology/docs/ontology'),
+    ).toBeInTheDocument();
+
+    fireEvent.click(copyPathButton);
+
+    await waitFor(() => {
+      expect(copyTextMock).toHaveBeenCalledWith(
+        '/Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      );
+    });
+  });
+
+  it('Tauri 데스크톱 vault를 Finder에서 열 수 있다', async () => {
+    openTauriVaultInFinderMock.mockResolvedValue();
+    renderMenu({
+      handle: {
+        name: 'ontology',
+        rootPath: '/Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      } as unknown as FileSystemDirectoryHandle,
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Finder에서 로컬 vault 열기: /Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      }),
+    );
+
+    await waitFor(() => {
+      expect(openTauriVaultInFinderMock).toHaveBeenCalledWith(
+        '/Users/jinan/side-project/oh-my-ontology/docs/ontology',
+      );
+    });
   });
 
   it('AI agent 설정이 모두 있으면 준비됨으로 표시하고 복구 버튼을 숨긴다', () => {
@@ -527,6 +586,51 @@ describe('VaultToolsMenu', () => {
     ).toBeInTheDocument();
   });
 
+  it('Tauri vault 경로가 있으면 setup packet 이 selected path 를 사용한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: {
+        name: 'team-vault',
+        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+      } as unknown as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: '설정 패킷 복사' }));
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'The ontology vault path below came from the installed desktop app',
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining('Ontology vault: /Users/jinan/Team Vault/docs/ontology'),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.not.stringContaining('<absolute path to your team-vault folder>'),
+    );
+  });
+
   it('AI agent 설정 패널에서 codebase-root agent-setup 명령을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
     renderMenu({
@@ -553,6 +657,30 @@ describe('VaultToolsMenu', () => {
     ).toBeInTheDocument();
   });
 
+  it('Tauri vault 경로가 있으면 codebase-root agent-setup 명령에 selected path 를 넣는다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: {
+        name: 'team-vault',
+        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+      } as unknown as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'agent-setup 명령 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      "oh-my-ontology agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
+    );
+  });
+
   it('AI agent 설정 패널에서 codebase-root setup state 확인 명령을 먼저 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
     renderMenu({
@@ -577,6 +705,30 @@ describe('VaultToolsMenu', () => {
         name: '설정 상태 확인 명령 복사됨',
       }),
     ).toBeInTheDocument();
+  });
+
+  it('Tauri vault 경로가 있으면 setup state 확인 명령에 selected path 를 넣는다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: {
+        name: 'team-vault',
+        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+      } as unknown as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '설정 상태 확인 명령 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      "oh-my-ontology agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
+    );
   });
 
   it('AI agent 설정 패널에서 CLI graph runbook 을 복사한다', async () => {
@@ -632,6 +784,42 @@ describe('VaultToolsMenu', () => {
     expect(
       await screen.findByRole('button', { name: 'CLI 그래프 runbook 복사됨' }),
     ).toBeInTheDocument();
+  });
+
+  it('Tauri vault 경로가 있으면 CLI graph runbook 을 절대경로 기준으로 복사한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: {
+        name: 'team-vault',
+        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+      } as unknown as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: 'CLI 그래프 runbook 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology validate '/Users/jinan/Team Vault/docs/ontology'",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology hubs '/Users/jinan/Team Vault/docs/ontology' --plan --limit 10 --types depends_on,relates",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
+      ),
+    );
   });
 
   it('AI agent 설정 패널에서 첫 연결 증거 패킷을 복사한다', async () => {
@@ -740,9 +928,57 @@ describe('VaultToolsMenu', () => {
     ).toBeInTheDocument();
   });
 
+  it('Tauri vault 경로가 있으면 첫 연결 증거 패킷이 selected path 를 사용한다', async () => {
+    copyTextMock.mockResolvedValue(true);
+    renderMenu({
+      handle: {
+        name: 'team-vault',
+        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+      } as unknown as FileSystemDirectoryHandle,
+      agentConfigStatus: {
+        mcpJson: true,
+        codexConfig: true,
+        mcpExample: true,
+      },
+    });
+
+    fireEvent.click(
+      screen.getByRole('button', { name: '첫 연결 증거 복사' }),
+    );
+
+    await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --json",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "If setup state reports missing configs: oh-my-ontology agent-setup '/Users/jinan/Team Vault/docs/ontology' --root '<absolute path to your codebase root>' --write",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology mcp-verify '/Users/jinan/Team Vault/docs/ontology' --timeout-ms 15000",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "oh-my-ontology agent-brief '/Users/jinan/Team Vault/docs/ontology' --graph-db-pack",
+      ),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.not.stringContaining('<absolute path to your team-vault folder>'),
+    );
+  });
+
   it('AI agent 설정 패널에서 자동화 JSON gate 명령을 복사한다', async () => {
     copyTextMock.mockResolvedValue(true);
     renderMenu({
+      handle: {
+        name: 'team-vault',
+        rootPath: '/Users/jinan/Team Vault/docs/ontology',
+      } as unknown as FileSystemDirectoryHandle,
       agentConfigStatus: {
         mcpJson: true,
         codexConfig: true,
@@ -757,12 +993,12 @@ describe('VaultToolsMenu', () => {
 
     await waitFor(() => expect(copyTextMock).toHaveBeenCalledTimes(1));
     expect(copyTextMock).toHaveBeenCalledWith(
-      'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
+      "oh-my-ontology agent-brief '/Users/jinan/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
     expect(screen.getByText('자동화 gate')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
+        "oh-my-ontology agent-brief '/Users/jinan/Team Vault/docs/ontology' --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
       ),
     ).toBeInTheDocument();
     expect(

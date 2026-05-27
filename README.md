@@ -12,9 +12,14 @@
 
 | Open it | Link |
 |---|---|
-| **Web workbench** | **https://oh-my-ontology.web.app** |
+| **App brand** | **Context Atlas** (repo, CLI, MCP package, and release assets stay `oh-my-ontology`) |
+| **Website / downloads** | **https://oh-my-ontology.web.app** |
 | **GitHub repository** | https://github.com/wlsdks/oh-my-ontology |
 | **MCP docs** | [`mcp/README.md`](mcp/README.md) |
+
+**Context Atlas** is the installable macOS app and public product name for the
+`oh-my-ontology` project. `oh-my-ontology` remains the repository, CLI, MCP, and
+release-artifact identity.
 
 `oh-my-ontology` is a local-first workbench for the shared memory between a
 developer and their AI coding agent. The graph is not stored in a hosted
@@ -56,9 +61,10 @@ The product is not "please maintain an ontology." The useful loop is:
 
 | Surface | What you use it for |
 |---|---|
+| **macOS app** | Install once, pick a local vault folder, and use the visual tree, topology, docs, projects, and ERD builder without returning to the website. |
 | **CLI** | Init a vault, bootstrap from a repo, validate frontmatter, compile graphs, inspect paths, find backlinks, rename/merge/delete nodes safely. |
 | **MCP server** | Give Claude Code, Cursor, Codex, and other agents 23 local read/write tools over stdio JSON-RPC. |
-| **Web workbench** | Browse and edit the same vault through `/docs`, `/ontology`, `/topology`, `/projects`, and the ERD builder. |
+| **Website** | Explain the product, show a read-only demo, and route users to the signed macOS release download. |
 | **Compiler + query engine** | Turn markdown files into a deterministic graph artifact with `graphHash`, issues, indexes, health checks, impact, lineage, cycles, and maintenance actions. |
 
 ## How The Memory Works
@@ -125,17 +131,21 @@ oh-my-ontology workspace-brief ./ontology
 relations from real repo structure. `infer-imports` can add TS/JS import
 evidence for dependency edges.
 
-### 3. Run the visual workbench
+### 3. Use the visual app
+
+The hosted site is the product introduction and download entry point. Daily
+visual editing starts in the installed macOS app: download the signed DMG from
+the GitHub Releases page after the release gate publishes it, launch the app,
+and pick your local vault folder.
+
+Maintainers can run the desktop shell from source while developing:
 
 ```bash
 git clone https://github.com/wlsdks/oh-my-ontology
 cd oh-my-ontology
 pnpm install
-pnpm dev
+pnpm desktop:dev
 ```
-
-Open `http://localhost:3000`, go to `/docs`, and choose a markdown vault folder.
-The browser reads and writes local files through the File System Access API.
 
 ## Three views plus MCP, one vault
 
@@ -187,22 +197,24 @@ agent-maintained memory after that.
 
 | Route | Purpose |
 |---|---|
-| `/` | Landing page or ontology hub after a vault is selected |
-| `/docs` | Local vault picker, markdown editor, command palette |
+| `/` | Hosted landing page, or local ontology hub inside the installed app after a vault is selected |
+| `/download` | macOS release download and install guide |
+| `/docs` | Desktop local vault picker, markdown editor, command palette |
 | `/ontology` | Tree and ego graph hub |
 | `/ontology/edit` | ERD canvas builder |
 | `/ontology/insights` | Kind census, hubs, relation breakdown |
 | `/topology` | Spatial graph view |
 | `/projects` | Project list from `kind: project` docs |
 
-The public demo is a static site. Real vault editing happens only after the
-browser receives permission to access a local folder on your machine.
+The public website is a static promo/download site with a read-only demo. Real
+vault editing happens in the installed macOS app after it receives permission
+to access a local folder on your machine.
 
 ## Verifiable promises
 
 | Promise | How this repo checks it |
 |---|---|
-| **No backend** | `pnpm bundle:check` keeps Firebase/server chunks out of local-first routes. |
+| **No backend** | `pnpm bundle:check` keeps Firebase/server chunks out of landing, download, and local-first app routes. |
 | **Static deploy** | `pnpm build` exports to `out/`; Firebase Hosting serves only static files. |
 | **Static dogfood manifest** | `pnpm docs-vault:check` keeps committed `src/entities/docs-vault/data/manifest.json` and `public/docs-vault/` in sync with `docs/`. |
 | **Vault integrity** | `pnpm vault:validate`, `test:vault:validate`, `vault:audit`, and `test:vault:audit` run in CI. |
@@ -270,10 +282,10 @@ CI runs `pnpm docs-vault:check`, `pnpm vault:validate`, `pnpm test:vault:validat
 
 | Area | Stack |
 |---|---|
-| App | Next.js 16, React 19, TypeScript 5, App Router, static export |
+| App | Next.js 16, React 19, TypeScript 5, App Router, static export, Tauri macOS shell |
 | UI | Tailwind CSS 4, Radix primitives, lucide icons |
 | Graph | Sigma.js, Graphology, ForceAtlas2, xyflow |
-| Local-first | File System Access API, IndexedDB handle persistence |
+| Local-first | Tauri native vault bridge, source-browser File System Access fallback, IndexedDB handle/path persistence |
 | Agent interface | `@modelcontextprotocol/sdk`, stdio JSON-RPC |
 | Tests | Vitest, Testing Library, jsdom, Playwright, Node test runner |
 
@@ -337,15 +349,14 @@ oh-my-ontology agent-brief ./ontology
 oh-my-ontology agent-brief ./ontology --graph-db-pack
 ```
 
-웹 workbench를 로컬에서 실행하려면:
+시각 편집은 설치된 macOS 앱에서 시작합니다. 웹 사이트는 제품 소개와
+다운로드 진입점이고, 실제 vault 폴더 열기와 저장은 앱 안에서 이뤄집니다.
+개발 중 데스크톱 shell 을 소스에서 실행하려면:
 
 ```bash
 pnpm install
-pnpm dev
+pnpm desktop:dev
 ```
-
-브라우저에서 `http://localhost:3000/docs`를 열고 vault 폴더를 선택하면 됩니다.
-실제 파일 읽기/쓰기는 브라우저의 로컬 폴더 권한으로만 동작합니다.
 
 제품의 목표는 “온톨로지를 손으로 관리하게 만드는 도구”가 아닙니다. 목표는
 repo를 열면 초안을 만들고, agent가 작업 후 mental model 업데이트를 제안하고,

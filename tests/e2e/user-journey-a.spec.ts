@@ -57,13 +57,13 @@ test("A1·A2·A5 공개 여정 한 플로우", async ({ page }) => {
   // ── A2. 루트 landing ────────────────────────────────────────────────────
   const landingStart = Date.now();
   await page.goto("/en/", { waitUntil: "domcontentloaded" });
-  const productName = page.getByText("oh-my-ontology", { exact: true }).first();
+  const productName = page.getByText("Context Atlas", { exact: true }).first();
   await expect(productName).toBeVisible({ timeout: 10_000 });
   const landingTtfb = Date.now() - landingStart;
   if (landingTtfb > 5_000) {
     findings.push(`A2 landing product mark까지 ${landingTtfb}ms (5s 초과)`);
   }
-  const landingSub = page.getByText("Map your codebase — projects, features");
+  const landingSub = page.getByText("Install the app, pick a local vault folder, and start.");
   if ((await landingSub.count()) === 0) {
     findings.push("A2 landing subtitle missing");
   }

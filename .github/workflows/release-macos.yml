@@ -1,0 +1,238 @@
+name: Release macOS
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-macos:
+    name: Build macOS DMG (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: aarch64
+            runner: macos-14
+          - arch: x64
+            runner: macos-15-intel
+    env:
+      TAURI_ARCH: ${{ matrix.arch }}
+      APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_KEYCHAIN_PASSWORD: ${{ secrets.APPLE_KEYCHAIN_PASSWORD }}
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Desktop readiness
+        run: pnpm desktop:check
+
+      - name: Docs vault freshness
+        run: pnpm docs-vault:check
+
+      - name: Desktop checker tests
+        run: pnpm test:desktop:check
+
+      - name: Desktop runtime split tests
+        run: pnpm test:desktop:runtime
+
+      - name: Native vault bridge tests
+        run: pnpm test:desktop:bridge
+
+      - name: Desktop runtime doctor
+        run: pnpm desktop:doctor -- --require-runtime
+
+      - name: Build static desktop payload
+        run: pnpm build
+
+      - name: Static desktop route smoke
+        run: pnpm desktop:smoke
+
+      - name: Verify release source commit
+        run: pnpm desktop:release-source -- --sha="${GITHUB_SHA}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Verify release tag version
+        run: pnpm desktop:release-tag -- --tag="${GITHUB_REF_NAME}"
+
+      - name: Require Apple release signing secrets
+        run: pnpm desktop:release-secrets
+
+      - name: Build macOS app
+        run: pnpm desktop:build:app
+
+      - name: Import Apple Developer ID certificate
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/apple-developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          echo "$APPLE_CERTIFICATE_P12_BASE64" | base64 -D > "$CERTIFICATE_PATH"
+          security create-keychain -p "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$APPLE_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH"
+          security default-keychain -s "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$APPLE_KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+      - name: Sign macOS app
+        run: pnpm desktop:sign
+
+      - name: Package macOS DMG
+        run: node scripts/package-macos-dmg.mjs
+
+      - name: Notarize and staple DMG
+        run: pnpm desktop:notarize
+
+      - name: Verify DMG
+        run: pnpm desktop:verify-release-dmg
+
+      - name: Verify temporary install
+        run: pnpm desktop:verify-install
+
+      - name: Summarize macOS release assets
+        run: |
+          {
+            echo "## macOS DMG (${TAURI_ARCH})"
+            echo ""
+            echo "| Asset | Size | SHA-256 |"
+            echo "| --- | ---: | --- |"
+            for dmg in src-tauri/target/release/bundle/dmg/*.dmg; do
+              checksum="${dmg}.sha256"
+              size="$(wc -c < "$dmg" | tr -d ' ')"
+              sha="$(cut -d ' ' -f 1 "$checksum")"
+              echo "| \`$(basename "$dmg")\` | ${size} bytes | \`${sha}\` |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: oh-my-ontology-macos-${{ matrix.arch }}
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/dmg/*.sha256
+          if-no-files-found: error
+
+      - name: Cleanup Apple signing keychain
+        if: ${{ always() }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/apple-developer-id.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          security delete-keychain "$KEYCHAIN_PATH" 2>/dev/null || true
+          rm -f "$CERTIFICATE_PATH"
+
+  publish-macos:
+    name: Publish macOS Release
+    runs-on: ubuntu-latest
+    needs: build-macos
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Enable Corepack pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.18.0 --activate
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v7
+        with:
+          pattern: oh-my-ontology-macos-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Require clean GitHub Release slot
+        run: pnpm desktop:release-slot -- --tag="${GITHUB_REF_NAME}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Upload draft GitHub Release assets
+        uses: softprops/action-gh-release@v3
+        with:
+          draft: true
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            release-assets/*.dmg
+            release-assets/*.sha256
+
+      - name: Verify draft release assets
+        run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}" --allow-draft
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Publish verified stable release
+        run: gh release edit "${GITHUB_REF_NAME}" --draft=false --prerelease=false
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Verify public download assets
+        run: pnpm desktop:verify-download -- --tag="${GITHUB_REF_NAME}"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Summarize published macOS release
+        run: |
+          release_url="$(gh release view "${GITHUB_REF_NAME}" --json url --jq .url)"
+          {
+            echo "## Published macOS Release"
+            echo ""
+            echo "Release: ${release_url}"
+            echo ""
+            echo "| Asset | Size | SHA-256 |"
+            echo "| --- | ---: | --- |"
+            for dmg in release-assets/*.dmg; do
+              checksum="${dmg}.sha256"
+              size="$(wc -c < "$dmg" | tr -d ' ')"
+              sha="$(cut -d ' ' -f 1 "$checksum")"
+              echo "| \`$(basename "$dmg")\` | ${size} bytes | \`${sha}\` |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}

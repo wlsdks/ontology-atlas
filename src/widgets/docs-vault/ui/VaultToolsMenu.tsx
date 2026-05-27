@@ -13,11 +13,11 @@ import {
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import {
-  buildAgentSetupCheckCliCommandTemplate,
-  buildAgentSetupCliCommandTemplate,
   buildCodexConfigTomlTemplate,
   buildCodexMcpAddCommandTemplate,
   buildMcpConfigJson,
+  buildOntologyStarterAgentVerifyPrompt,
+  buildOntologyStarterJsonGateCommand,
   LocalVaultPicker,
   ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
   ONTOLOGY_STARTER_JSON_GATE_COMMAND,
@@ -27,18 +27,28 @@ import {
 import { formatAgentPostChangeSyncPacket } from '@/shared/lib/ontology-tree';
 import type { VaultManifest } from '@/entities/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
+import {
+  getTauriVaultRootPath,
+  openTauriVaultInFinder,
+} from '@/shared/lib/tauri-vault-fs';
+import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 
-const AGENT_VERIFY_CLI_COMMAND = [
-  'oh-my-ontology validate .',
-  'oh-my-ontology workspace-brief .',
-  'oh-my-ontology agent-brief . --prompt',
-  'oh-my-ontology agent-brief . --graph-db-pack',
-  'oh-my-ontology agent-brief . --verify-fallbacks',
-  'oh-my-ontology agent-brief . --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4',
-  'oh-my-ontology hubs . --plan --limit 10 --types depends_on,relates',
-  'oh-my-ontology hubs . --limit 10 --types depends_on,relates',
-  'oh-my-ontology mcp-verify . --timeout-ms 15000',
-].join('\n');
+function buildAgentVerifyCliCommand(vaultPath?: string | null): string {
+  const target = vaultPath ? shellQuoteForPacket(vaultPath) : '.';
+  return [
+    `oh-my-ontology validate ${target}`,
+    `oh-my-ontology workspace-brief ${target}`,
+    `oh-my-ontology agent-brief ${target} --prompt`,
+    `oh-my-ontology agent-brief ${target} --graph-db-pack`,
+    `oh-my-ontology agent-brief ${target} --verify-fallbacks`,
+    `oh-my-ontology agent-brief ${target} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
+    `oh-my-ontology hubs ${target} --plan --limit 10 --types depends_on,relates`,
+    `oh-my-ontology hubs ${target} --limit 10 --types depends_on,relates`,
+    `oh-my-ontology mcp-verify ${target} --timeout-ms 15000`,
+  ].join('\n');
+}
+
+const AGENT_VERIFY_CLI_COMMAND = buildAgentVerifyCliCommand();
 
 const AGENT_VERIFY_CLI_PREVIEW = [
   'validate .',
@@ -82,10 +92,33 @@ const AGENT_MCP_CONNECTED_PROOF_LINES = [
   'Use these MCP calls only after mcp-verify succeeds; if MCP is unavailable, use the CLI proof below.',
 ];
 
-function buildAgentFirstContactProofPacket(vaultName: string): string {
-  const vaultPathPlaceholder = `<absolute path to your ${vaultName} folder>`;
-  const vaultPathArg = shellQuoteForPacket(vaultPathPlaceholder);
-  const setupStateCommand = buildAgentSetupCheckCliCommandTemplate(vaultName);
+function vaultPathForPacket(vaultName: string, vaultPath?: string | null): string {
+  return vaultPath ?? `<absolute path to your ${vaultName} folder>`;
+}
+
+function buildAgentSetupCliCommand(
+  vaultName: string,
+  mode: 'json' | 'write',
+  vaultPath?: string | null,
+): string {
+  const command = [
+    'oh-my-ontology',
+    'agent-setup',
+    shellQuoteForPacket(vaultPathForPacket(vaultName, vaultPath)),
+    '--root',
+    shellQuoteForPacket('<absolute path to your codebase root>'),
+  ];
+  command.push(mode === 'json' ? '--json' : '--write');
+  return command.join(' ');
+}
+
+function buildAgentFirstContactProofPacket(
+  vaultName: string,
+  vaultPath?: string | null,
+): string {
+  const vaultPathLabel = vaultPathForPacket(vaultName, vaultPath);
+  const vaultPathArg = shellQuoteForPacket(vaultPathLabel);
+  const setupStateCommand = buildAgentSetupCliCommand(vaultName, 'json', vaultPath);
 
   return [
     'oh-my-ontology first-contact agent proof',
@@ -94,7 +127,7 @@ function buildAgentFirstContactProofPacket(vaultName: string): string {
     '',
     'Setup gate:',
     `1. ${setupStateCommand}`,
-    `2. If setup state reports missing configs: ${buildAgentSetupCliCommandTemplate(vaultName)}`,
+    `2. If setup state reports missing configs: ${buildAgentSetupCliCommand(vaultName, 'write', vaultPath)}`,
     `3. Restart Claude Code / Cursor / Codex from the codebase root after repair.`,
     `4. oh-my-ontology mcp-verify ${vaultPathArg} --timeout-ms 15000`,
     `5. oh-my-ontology agent-brief ${vaultPathArg} --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4`,
@@ -115,22 +148,24 @@ function buildAgentFirstContactProofPacket(vaultName: string): string {
   ].join('\n');
 }
 
-function buildAgentSetupPacket(vaultName: string): string {
-  const vaultPathPlaceholder = `<absolute path to your ${vaultName} folder>`;
-  const vaultPathArg = shellQuoteForPacket(vaultPathPlaceholder);
+function buildAgentSetupPacket(vaultName: string, vaultPath?: string | null): string {
+  const vaultPathLabel = vaultPathForPacket(vaultName, vaultPath);
+  const vaultPathArg = shellQuoteForPacket(vaultPathLabel);
   const codebaseRootPlaceholder = '<absolute path to your codebase root>';
-  const setupStateCommand = buildAgentSetupCheckCliCommandTemplate(vaultName);
-  const setupRepairCommand = buildAgentSetupCliCommandTemplate(vaultName);
+  const setupStateCommand = buildAgentSetupCliCommand(vaultName, 'json', vaultPath);
+  const setupRepairCommand = buildAgentSetupCliCommand(vaultName, 'write', vaultPath);
 
   return [
     'oh-my-ontology agent setup packet',
     '',
     'Use this when Claude Code, Cursor, or Codex is opened at a separate codebase root.',
-    'Replace every <absolute path...> placeholder before using the config.',
+    vaultPath
+      ? 'The ontology vault path below came from the installed desktop app; replace only the agent root placeholder before using codebase-root commands.'
+      : 'Replace every <absolute path...> placeholder before using the config.',
     '',
     'Root check:',
     `- Agent root: ${codebaseRootPlaceholder}`,
-    `- Ontology vault: ${vaultPathPlaceholder}`,
+    `- Ontology vault: ${vaultPathLabel}`,
     '- Run the setup gate from the agent root; pass the ontology vault path explicitly when the vault is not the cwd.',
     '',
     ...AGENT_MODE_PACKET_LINES,
@@ -158,13 +193,13 @@ function buildAgentSetupPacket(vaultName: string): string {
     'docs/AGENT-GRAPH-WORKFLOW.md',
     '',
     'Claude Code / Cursor .mcp.json:',
-    buildMcpConfigJson(vaultName),
+    buildMcpConfigJson(vaultName, vaultPath),
     '',
     'Codex .codex/config.toml:',
-    buildCodexConfigTomlTemplate(vaultName),
+    buildCodexConfigTomlTemplate(vaultName, vaultPath),
     '',
     'Codex one-line registration:',
-    buildCodexMcpAddCommandTemplate(vaultName),
+    buildCodexMcpAddCommandTemplate(vaultName, vaultPath),
     '',
     'After registering, restart the agent and paste this verification prompt:',
     ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT,
@@ -225,7 +260,10 @@ interface LocalVaultLike {
   lastLoadedAt: number | null;
   scaffoldOntology: () => Promise<{ created: number; skipped: number }>;
   ensureAgentConfigs: () => Promise<{ created: number; skipped: number }>;
+  recentVaults: LocalFsHandleRecord[];
   open: () => void;
+  openRecent: (record: LocalFsHandleRecord) => void;
+  forgetRecent: (record: LocalFsHandleRecord) => void;
   close: () => void;
   refresh: () => void;
   requestPermission: () => void;
@@ -284,7 +322,11 @@ export function VaultToolsMenu({
   const [agentCodexCliCopyState, setAgentCodexCliCopyState] = useState<
     'idle' | 'copied' | 'failed'
   >('idle');
+  const [vaultRevealError, setVaultRevealError] = useState<string | null>(null);
   const agentStatus = localVault.agentConfigStatus;
+  const vaultRootPath = localVault.handle
+    ? getTauriVaultRootPath(localVault.handle)
+    : null;
   const agentSetupReady = Boolean(
     agentStatus?.mcpJson &&
       agentStatus.codexConfig &&
@@ -461,24 +503,24 @@ export function VaultToolsMenu({
   }
 
   async function handleCopyAgentVerifyPrompt() {
-    const copied = await copyText(ONTOLOGY_STARTER_AGENT_VERIFY_PROMPT);
+    const copied = await copyText(buildOntologyStarterAgentVerifyPrompt(vaultRootPath));
     setAgentPromptCopyState(copied ? 'copied' : 'failed');
   }
 
   async function handleCopyAgentSetupPacket() {
     const copied = await copyText(
-      buildAgentSetupPacket(localVault.handle?.name ?? 'vault'),
+      buildAgentSetupPacket(localVault.handle?.name ?? 'vault', vaultRootPath),
     );
     setAgentPacketCopyState(copied ? 'copied' : 'failed');
   }
 
   async function handleCopyAgentVerifyCli() {
-    const copied = await copyText(AGENT_VERIFY_CLI_COMMAND);
+    const copied = await copyText(buildAgentVerifyCliCommand(vaultRootPath));
     setAgentCliCopyState(copied ? 'copied' : 'failed');
   }
 
   async function handleCopyAgentJsonGate() {
-    const copied = await copyText(ONTOLOGY_STARTER_JSON_GATE_COMMAND);
+    const copied = await copyText(buildOntologyStarterJsonGateCommand(vaultRootPath));
     setAgentJsonGateCopyState(copied ? 'copied' : 'failed');
   }
 
@@ -489,7 +531,7 @@ export function VaultToolsMenu({
 
   async function handleCopyAgentFirstContactProof() {
     const copied = await copyText(
-      buildAgentFirstContactProofPacket(localVault.handle?.name ?? 'vault'),
+      buildAgentFirstContactProofPacket(localVault.handle?.name ?? 'vault', vaultRootPath),
     );
     setAgentFirstContactProofCopyState(copied ? 'copied' : 'failed');
   }
@@ -503,14 +545,14 @@ export function VaultToolsMenu({
 
   async function handleCopyAgentSetupCheckCliCommand() {
     const copied = await copyText(
-      buildAgentSetupCheckCliCommandTemplate(localVault.handle?.name ?? 'vault'),
+      buildAgentSetupCliCommand(localVault.handle?.name ?? 'vault', 'json', vaultRootPath),
     );
     setAgentSetupCheckCliCopyState(copied ? 'copied' : 'failed');
   }
 
   async function handleCopyAgentSetupCliCommand() {
     const copied = await copyText(
-      buildAgentSetupCliCommandTemplate(localVault.handle?.name ?? 'vault'),
+      buildAgentSetupCliCommand(localVault.handle?.name ?? 'vault', 'write', vaultRootPath),
     );
     setAgentSetupCliCopyState(copied ? 'copied' : 'failed');
   }
@@ -527,6 +569,15 @@ export function VaultToolsMenu({
       buildCodexMcpAddCommandTemplate(localVault.handle?.name ?? 'vault'),
     );
     setAgentCodexCliCopyState(copied ? 'copied' : 'failed');
+  }
+
+  async function handleRevealVaultPath(rootPath: string) {
+    setVaultRevealError(null);
+    try {
+      await openTauriVaultInFinder(rootPath);
+    } catch (err) {
+      setVaultRevealError(err instanceof Error ? err.message : t('vaultReveal.errorFallback'));
+    }
   }
 
   const copyPromptLabel =
@@ -605,6 +656,7 @@ export function VaultToolsMenu({
       : agentCodexCliCopyState === 'failed'
         ? t('agentSetup.copyCodexCliFailed')
         : t('agentSetup.copyCodexCli');
+  const agentJsonGatePreview = buildOntologyStarterJsonGateCommand(vaultRootPath);
 
   return (
     <div
@@ -638,15 +690,25 @@ export function VaultToolsMenu({
         <LocalVaultPicker
           status={localVault.status}
           handleName={localVault.handle?.name ?? null}
+          rootPath={vaultRootPath}
           docCount={localVault.manifest?.docs.length ?? 0}
           errorMessage={localVault.errorMessage}
           lastLoadedAt={localVault.lastLoadedAt}
           validationSummary={validationSummary}
+          recentVaults={localVault.recentVaults}
           onOpen={localVault.open}
+          onOpenRecent={localVault.openRecent}
+          onForgetRecent={localVault.forgetRecent}
           onClose={localVault.close}
           onRefresh={localVault.refresh}
           onRequestPermission={localVault.requestPermission}
+          onReveal={handleRevealVaultPath}
         />
+        {vaultRevealError ? (
+          <p className="rounded-sm border border-[color:rgba(229,72,77,0.24)] bg-[color:rgba(229,72,77,0.08)] px-2 py-1 text-[10.5px] leading-4 text-[color:var(--color-status-danger)]">
+            {t('vaultReveal.error', { message: vaultRevealError })}
+          </p>
+        ) : null}
         {localVault.status === 'loaded' && agentStatus ? (
           <section
             aria-label={t('agentSetup.ariaLabel')}
@@ -935,7 +997,7 @@ export function VaultToolsMenu({
                     {t('agentSetup.jsonGateLabel')}
                   </div>
                   <code className="mt-1 block truncate font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
-                    {ONTOLOGY_STARTER_JSON_GATE_COMMAND}
+                    {agentJsonGatePreview}
                   </code>
                 </div>
                 <dl
@@ -1105,6 +1167,7 @@ export function VaultToolsMenu({
           <OntologyStarterCta
             onScaffold={localVault.scaffoldOntology}
             docCount={localVault.manifest?.docs.length ?? 0}
+            vaultPath={vaultRootPath}
           />
         ) : null}
         {canEditCurrent ? (

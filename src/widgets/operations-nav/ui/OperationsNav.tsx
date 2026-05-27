@@ -7,6 +7,7 @@ import { useLocalVault } from '@/features/docs-vault-local';
 import { ThemeToggle } from '@/features/theme-toggle';
 import { LocaleSwitch } from '@/features/locale-switch';
 import { Tooltip } from '@/shared/ui';
+import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { OntologySubNav, shouldShowOntologySubNav } from '@/widgets/ontology-sub-nav';
 import { isOperationsTabActive } from '../lib/is-tab-active';
 
@@ -72,6 +73,14 @@ function ModeBadge({ mode }: { mode: 'static' | 'local' }) {
   // useLocalVault 자체는 SSR-safe (window 가드).
   const vault = useLocalVault();
   const t = useTranslations('modeBadge');
+  const isDesktopRuntime = isTauriVaultRuntime();
+  const demoHref = isDesktopRuntime ? '/docs/?intent=local' : '/download/';
+  const demoTooltip = isDesktopRuntime
+    ? t('demoTooltipPicker')
+    : t('demoTooltipDownload');
+  const demoAriaLabel = isDesktopRuntime
+    ? t('demoAriaLabelPicker')
+    : t('demoAriaLabelDownload');
   if (mode === 'local') {
     const docCount = vault.manifest?.docs.length ?? 0;
     const handleName = vault.handle?.name ?? 'vault';
@@ -90,14 +99,13 @@ function ModeBadge({ mode }: { mode: 'static' | 'local' }) {
       </Tooltip>
     );
   }
-  // demo (vault 미선택) chip 은 클릭 가능 — vault picker (/docs/) 로 직행.
-  // 이전엔 단순 정보 chip 이라 사용자가 "벗어나려면 어디" 헤매는 dead-end
-  // 였다. onboarding step 3 카피 ('오른쪽 위 마크다운 폴더 열기') 와 일치.
+  // demo (vault 미선택) chip 은 클릭 가능. Hosted browser 에서는 앱 설치
+  // 안내로, 설치된 Tauri 앱에서는 native vault picker 로 이동한다.
   return (
-    <Tooltip content={t('demoTooltipClickable')}>
+    <Tooltip content={demoTooltip}>
       <Link
-        href="/docs/?intent=local"
-        aria-label={t('demoAriaLabelClickable')}
+        href={demoHref}
+        aria-label={demoAriaLabel}
         className="inline-flex h-7 items-center gap-1.5 rounded-full border border-[color:rgba(244,183,49,0.32)] bg-[color:rgba(244,183,49,0.08)] px-2.5 font-mono text-[10px] uppercase tracking-[0.08em] text-[color:rgba(238,198,128,0.95)] transition-colors hover:border-[color:rgba(244,183,49,0.55)] hover:bg-[color:rgba(244,183,49,0.14)]"
       >
         <span aria-hidden>●</span>

@@ -12,6 +12,7 @@ import {
 } from "@/entities/docs-vault";
 import { useDataSourceMode } from "@/features/data-source-mode";
 import { VaultConflictError, useLocalVault } from "@/features/docs-vault-local";
+import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { slugify } from "@/shared/lib/slugify";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { MountedGlobalSearch } from "@/widgets/global-search";
@@ -111,6 +112,13 @@ export function OntologyEditPage() {
   const searchParams = useSearchParams();
   const dataSourceMode = useDataSourceMode();
   const vault = useLocalVault();
+  const isDesktopRuntime = isTauriVaultRuntime();
+  const demoSaveToastKey = isDesktopRuntime
+    ? "toastDemoModePicker"
+    : "toastDemoModeDownload";
+  const demoEdgeToastKey = isDesktopRuntime
+    ? "toastVaultEdgeDemoPicker"
+    : "toastVaultEdgeDemoDownload";
 
   const { nodes: ephemeralNodes, addNode: addNodeRaw, clearAll, updateNode, findById, removeNode } =
     useEphemeralNodes();
@@ -255,8 +263,8 @@ export function OntologyEditPage() {
           // capabilities 등 frontmatter 편집 흐름이 끊기지 않게.
           setSelectedId(vaultSlug);
         } else {
-          // vault 미선택 (static) 시 vault picker 안내 — static 은 read-only.
-          toast.show(t("toastDemoMode"), "error");
+          // vault 미선택 (static) 시 runtime 별 local-work 진입점 안내.
+          toast.show(t(demoSaveToastKey), "error");
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : t("toastSaveFailed");
@@ -265,7 +273,7 @@ export function OntologyEditPage() {
         setSavingId(null);
       }
     },
-    [dataSourceMode, findById, removeNode, t, toast, vault],
+    [dataSourceMode, demoSaveToastKey, findById, removeNode, t, toast, vault],
   );
   const ephemeralSelected = findById(selectedId);
   // vault 모드에서는 selectedId 가 vault slug. manifest 에서 lookup 해
@@ -415,7 +423,7 @@ export function OntologyEditPage() {
     ): Promise<boolean> => {
       // dogfood vault (read-only) 에선 patch 불가 — 안내 토스트.
       if (!hasLiveVault) {
-        toast.show(t("toastVaultEdgeDemo"), "error");
+        toast.show(t(demoEdgeToastKey), "error");
         return false;
       }
       const sourceDoc = effectiveManifest.docs.find((d) => d.slug === sourceSlug);
@@ -445,7 +453,7 @@ export function OntologyEditPage() {
         return false;
       }
     },
-    [effectiveManifest, getExpectedMtime, hasLiveVault, showVaultWriteError, t, toast, vault],
+    [demoEdgeToastKey, effectiveManifest, getExpectedMtime, hasLiveVault, showVaultWriteError, t, toast, vault],
   );
 
   // 캔버스에서 vault A 핸들 → vault B 드래그 시 호출. 바로 쓰지 않고
@@ -458,7 +466,7 @@ export function OntologyEditPage() {
       targetKind: string,
     ) => {
       if (!hasLiveVault) {
-        toast.show(t("toastVaultEdgeDemo"), "error");
+        toast.show(t(demoEdgeToastKey), "error");
         return;
       }
       if (sourceSlug === targetSlug) {
@@ -486,7 +494,7 @@ export function OntologyEditPage() {
       setPendingRelationKey(inferredKey);
       setLastSavedRelation(null);
     },
-    [docsBySlug, hasLiveVault, t, toast],
+    [demoEdgeToastKey, docsBySlug, hasLiveVault, t, toast],
   );
   /**
    * Round 4 cut I — ephemeral edge "Save" 칩 클릭 orchestrator.
@@ -515,7 +523,7 @@ export function OntologyEditPage() {
       const edge = ephemeralEdges.find((e) => e.id === edgeId);
       if (!edge) return;
       if (!hasLiveVault) {
-        toast.show(t("toastVaultEdgeDemo"), "error");
+        toast.show(t(demoEdgeToastKey), "error");
         return;
       }
       const resolveEndpoint = async (
@@ -579,6 +587,7 @@ export function OntologyEditPage() {
       removeEphemeralEdge(edgeId);
     },
     [
+      demoEdgeToastKey,
       ephemeralEdges,
       hasLiveVault,
       toast,
@@ -964,6 +973,7 @@ export function OntologyEditPage() {
             />
             <BuilderOnboarding
               empty={ephemeralNodes.length === 0 && ephemeralEdges.length === 0}
+              isDesktopRuntime={isDesktopRuntime}
             />
             {pendingRelation && pendingRelationPreflight ? (
               <RelationWriteConfirm
@@ -1158,6 +1168,7 @@ export function OntologyEditPage() {
             vaultBacklinks={vaultBacklinks}
             onSelectBacklink={setSelectedId}
             vaultReadOnly={!hasLiveVault}
+            isDesktopRuntime={isDesktopRuntime}
             untitledPlaceholder={t('untitledPlaceholder')}
             onRenameEphemeral={(id, title) => updateNode(id, { title })}
             onSaveEphemeral={saveEphemeral}

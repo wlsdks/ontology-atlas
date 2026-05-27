@@ -42,6 +42,10 @@ const LABELS = {
   decisionRecordOwner: "Owner",
   decisionRecordEvidence: "Evidence",
   decisionRecordFollowUp: "Follow-up",
+  meetingAgenda: "Meeting agenda",
+  meetingAgendaDecision: "Decision to make",
+  meetingAgendaEvidence: "Evidence to review",
+  meetingAgendaAction: "Next graph action",
   reviewQuestions: "Review questions",
   alignVocabularyQuestions: [
     "Which terms should be reused in planning docs?",
@@ -207,6 +211,14 @@ describe("buildInsightsCollaboratorBrief", () => {
     );
     expect(formatInsightsCollaboratorBrief({ brief, labels: LABELS })).toContain(
       [
+        "## Meeting agenda",
+        "1. Decision to make: Approve reused terms and confirm vocabulary owners.",
+        "2. Evidence to review: Agent Graph Readiness (Topology focus)",
+        "3. Next graph action: Open hub handoffs before copying terms into plans.",
+      ].join("\n"),
+    );
+    expect(formatInsightsCollaboratorBrief({ brief, labels: LABELS })).toContain(
+      [
         "## Review questions",
         "- Which terms should be reused in planning docs?",
         "- Which term should be renamed before handoff?",
@@ -277,6 +289,14 @@ describe("buildInsightsCollaboratorBrief", () => {
         '- MCP check: query_ontology({"operation":"workspace_brief","limit":5})',
       ].join("\n"),
     );
+    expect(formatted).toContain(
+      [
+        "## Meeting agenda",
+        "1. Decision to make: Confirm affected domains and scope boundaries.",
+        "2. Evidence to review: Trace cross-domain impact before changing scope or ownership.; CLI check: oh-my-ontology workspace-brief [vault] --limit 5",
+        "3. Next graph action: Open the Topology Path handoff and replay domain-matrix checks.",
+      ].join("\n"),
+    );
   });
 
   it("formats a compact vocabulary review packet without agent handoff noise", () => {
@@ -309,6 +329,8 @@ describe("buildInsightsCollaboratorBrief", () => {
     expect(formatted).toContain("## Decision record");
     expect(formatted).toContain("- Decision: Approve reused terms and confirm vocabulary owners.");
     expect(formatted).toContain("- Evidence: Views (Topology focus)");
+    expect(formatted).toContain("## Meeting agenda");
+    expect(formatted).toContain("1. Decision to make: Approve reused terms and confirm vocabulary owners.");
     expect(formatted).toContain("## Review questions");
     expect(formatted).toContain("- Which terms should be reused in planning docs?");
     expect(formatted).toContain(

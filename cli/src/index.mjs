@@ -448,8 +448,9 @@ ${COLORS.bold}Next steps:${COLORS.reset}
        ${COLORS.cyan}${codexSetupCommand}${COLORS.reset}
        ${COLORS.dim}Codex can store MCP servers globally too, so the command is optional when the repo-local config is enough.${COLORS.reset}
 
-  ${COLORS.dim}6.${COLORS.reset} ${COLORS.bold}See the graph${COLORS.reset} (optional, web UI):
-       ${COLORS.cyan}git clone https://github.com/wlsdks/oh-my-ontology${COLORS.reset}
+  ${COLORS.dim}6.${COLORS.reset} ${COLORS.bold}See the graph${COLORS.reset} (optional, macOS app):
+       Install the oh-my-ontology macOS app from:
+       ${COLORS.cyan}https://oh-my-ontology.web.app/download/${COLORS.reset}
        Point its ${COLORS.bold}/docs${COLORS.reset} picker at this vault.
 
 ${COLORS.dim}AI agents and humans now share the same vault. Have fun.${COLORS.reset}

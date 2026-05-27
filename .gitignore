@@ -19,6 +19,7 @@ dist/
 
 # Tauri / Rust desktop build output
 src-tauri/target/
+src-tauri/gen/
 
 # Production
 *.tsbuildinfo
@@ -59,6 +60,8 @@ references/
 *.png
 !public/logo.png
 !public/og-image.png
+!src-tauri/icons/
+!src-tauri/icons/**
 
 # Testing
 coverage/
@@ -67,6 +70,7 @@ output/
 
 # Temporary
 *.tmp
+.tmp/
 .cache/
 
 # Claude Code — 로컬 개인 상태만 ignore. 공유 가이드는 commit.
@@ -75,10 +79,6 @@ output/
 .claude/local/
 .claude/LOOP-TASK.md
 .claude/scheduled_tasks.lock
-
-# Docs Vault 빌드 결과물 — public/ raw 사본만 gitignore, manifest.json 은
-# TS import 안정성 때문에 커밋해서 fresh checkout 에서도 타입체크 통과하게.
-public/docs-vault/
 
 # 로컬 운영 자격 증명 — 자율 루프가 매 사이클 로드. 절대 commit 금지.
 .local-credentials/

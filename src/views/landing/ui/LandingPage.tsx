@@ -3,10 +3,11 @@
 import { Link } from "@/i18n/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ArrowRight, ExternalLink, FolderOpen, Orbit } from "lucide-react";
+import { ArrowRight, Download, ExternalLink, Orbit } from "lucide-react";
 import { cn } from "@/shared/lib/cn";
 import { buttonVariants, StaggeredFadeIn } from "@/shared/ui";
 import { LocaleSwitch } from "@/features/locale-switch";
+import { MacosDownloadLink } from "@/features/macos-download-link";
 
 /**
  * Landing — `/` 에서 vault 미선택 사용자가 처음 보는 화면.
@@ -25,8 +26,8 @@ export function LandingPage() {
   return (
     <main
       id="main"
-      // 모바일 BottomTabBar (56px) + safe-area 만큼 더 padding-bottom 확보 —
-      // eval H3 finding: 모바일에서 '01' 카드를 탭바가 가리던 회귀.
+      // 모바일 safe-area 만큼 padding-bottom 확보 — 공개 landing 에서는
+      // BottomTabBar 를 숨기지만 iOS 하단 제스처 영역과 footer 충돌은 피한다.
       className="relative flex min-h-screen flex-col bg-[color:var(--color-canvas)] px-[max(1.5rem,env(safe-area-inset-left))] py-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.5rem,env(safe-area-inset-right))] pb-[calc(56px+env(safe-area-inset-bottom)+1rem)] md:px-10 md:py-10 md:pb-10"
     >
       <header className="flex flex-wrap items-center justify-between gap-3">
@@ -35,7 +36,7 @@ export function LandingPage() {
             <Orbit size={15} />
           </span>
           <span className="text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)]">
-            oh-my-ontology
+            Context Atlas
           </span>
           <span className="hidden font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)] md:inline">
             {t('headerKicker')}
@@ -166,24 +167,28 @@ function LandingActions({ className }: { className?: string }) {
   const t = useTranslations('landing');
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-3", className)}>
-      <Link
-        href="/docs/?intent=local"
-        className={cn(buttonVariants({ size: "lg" }), "rounded-full min-w-[14rem]")}
-      >
-        <FolderOpen size={16} />
-        {t('openVaultCta')}
-      </Link>
-      <Link
-        href="/ontology/"
-        className={cn(
-          buttonVariants({ variant: "outline", size: "lg" }),
-          "rounded-full",
-        )}
-      >
-        {t('exploreCta')}
-        <ArrowRight size={16} />
-      </Link>
+    <div className={cn("space-y-3", className)}>
+      <div className="flex flex-wrap items-center gap-3">
+        <MacosDownloadLink
+          className={cn(buttonVariants({ size: "lg" }), "rounded-full min-w-[14rem]")}
+        >
+          <Download size={16} />
+          {t('downloadMacCta')}
+        </MacosDownloadLink>
+        <Link
+          href="/download/"
+          className={cn(
+            buttonVariants({ variant: "outline", size: "lg" }),
+            "rounded-full",
+          )}
+        >
+          {t('exploreCta')}
+          <ArrowRight size={16} />
+        </Link>
+      </div>
+      <p className="max-w-xl text-[11px] leading-5 text-[color:var(--color-text-quaternary)]">
+        {t('downloadNote')}
+      </p>
     </div>
   );
 }

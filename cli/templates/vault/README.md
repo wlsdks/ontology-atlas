@@ -49,7 +49,7 @@ nodes. If you edited a starter file, it is preserved.
 
 ## AI agent setup
 
-If this vault came from `oh-my-ontology init` or the web workbench starter,
+If this vault came from `oh-my-ontology init` or the installed app starter,
 the vault folder already has:
 
 - `.mcp.json` for Claude Code / Cursor

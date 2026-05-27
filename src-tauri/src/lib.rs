@@ -1,5 +1,447 @@
+use serde::Serialize;
+use std::fs;
+use std::path::{Component, Path, PathBuf};
+use std::process::Command;
+use std::time::UNIX_EPOCH;
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TauriVaultEntry {
+    name: String,
+    kind: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TauriTextFile {
+    text: String,
+    last_modified: u128,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TauriBinaryFile {
+    bytes: Vec<u8>,
+    last_modified: u128,
+}
+
+fn normalize_relative_path(relative_path: &str) -> Result<PathBuf, String> {
+    let mut out = PathBuf::new();
+    for component in Path::new(relative_path).components() {
+        match component {
+            Component::Normal(part) => out.push(part),
+            Component::CurDir => {}
+            Component::Prefix(_) | Component::RootDir | Component::ParentDir => {
+                return Err("relative path must stay inside the selected vault".into());
+            }
+        }
+    }
+    Ok(out)
+}
+
+fn resolve_inside(root_path: &str, relative_path: &str) -> Result<PathBuf, String> {
+    let root = PathBuf::from(root_path);
+    let relative = normalize_relative_path(relative_path)?;
+    Ok(root.join(relative))
+}
+
+fn canonical_root(root_path: &str) -> Result<PathBuf, String> {
+    let root = fs::canonicalize(root_path).map_err(|err| err.to_string())?;
+    let metadata = fs::metadata(&root).map_err(|err| err.to_string())?;
+    if !metadata.is_dir() {
+        return Err("vault root must be a directory".into());
+    }
+    Ok(root)
+}
+
+fn ensure_inside_canonical(root_path: &str, path: &Path) -> Result<PathBuf, String> {
+    let root = canonical_root(root_path)?;
+    let canonical_path = fs::canonicalize(path).map_err(|err| err.to_string())?;
+    if !canonical_path.starts_with(&root) {
+        return Err("resolved path must stay inside the selected vault".into());
+    }
+    Ok(canonical_path)
+}
+
+fn resolve_existing_inside(root_path: &str, relative_path: &str) -> Result<PathBuf, String> {
+    let path = resolve_inside(root_path, relative_path)?;
+    ensure_inside_canonical(root_path, &path)
+}
+
+fn resolve_write_target_inside(root_path: &str, relative_path: &str) -> Result<PathBuf, String> {
+    let path = resolve_inside(root_path, relative_path)?;
+    if path.exists() {
+        return ensure_inside_canonical(root_path, &path);
+    }
+    let parent = path
+        .parent()
+        .ok_or_else(|| "write target must have a parent directory".to_string())?;
+    let root = canonical_root(root_path)?;
+    let mut ancestor = parent;
+    while !ancestor.exists() {
+        ancestor = ancestor
+            .parent()
+            .ok_or_else(|| "write target must stay inside the selected vault".to_string())?;
+    }
+    let canonical_ancestor = fs::canonicalize(ancestor).map_err(|err| err.to_string())?;
+    if !canonical_ancestor.starts_with(&root) {
+        return Err("resolved path must stay inside the selected vault".into());
+    }
+    fs::create_dir_all(parent).map_err(|err| err.to_string())?;
+    let canonical_parent = ensure_inside_canonical(root_path, parent)?;
+    let file_name = path
+        .file_name()
+        .ok_or_else(|| "write target must include a file name".to_string())?;
+    Ok(canonical_parent.join(file_name))
+}
+
+fn resolve_directory_target_inside(root_path: &str, relative_path: &str) -> Result<PathBuf, String> {
+    let path = resolve_inside(root_path, relative_path)?;
+    if path.exists() {
+        return ensure_inside_canonical(root_path, &path);
+    }
+    let root = canonical_root(root_path)?;
+    let mut ancestor = path
+        .parent()
+        .ok_or_else(|| "directory target must have a parent directory".to_string())?;
+    while !ancestor.exists() {
+        ancestor = ancestor
+            .parent()
+            .ok_or_else(|| "directory target must stay inside the selected vault".to_string())?;
+    }
+    let canonical_ancestor = fs::canonicalize(ancestor).map_err(|err| err.to_string())?;
+    if !canonical_ancestor.starts_with(&root) {
+        return Err("resolved path must stay inside the selected vault".into());
+    }
+    Ok(path)
+}
+
+fn metadata_mtime_ms(path: &Path) -> Result<u128, String> {
+    let metadata = fs::metadata(path).map_err(|err| err.to_string())?;
+    let modified = metadata.modified().map_err(|err| err.to_string())?;
+    Ok(modified
+        .duration_since(UNIX_EPOCH)
+        .map_err(|err| err.to_string())?
+        .as_millis())
+}
+
+#[tauri::command]
+fn pick_vault_directory() -> Result<Option<String>, String> {
+    Ok(rfd::FileDialog::new()
+        .set_title("Open ontology vault")
+        .pick_folder()
+        .map(|path| path.to_string_lossy().to_string()))
+}
+
+#[tauri::command]
+fn list_vault_directory(
+    root_path: String,
+    relative_path: String,
+) -> Result<Vec<TauriVaultEntry>, String> {
+    let dir = resolve_existing_inside(&root_path, &relative_path)?;
+    let entries = fs::read_dir(dir).map_err(|err| err.to_string())?;
+    let mut out = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(|err| err.to_string())?;
+        let file_type = entry.file_type().map_err(|err| err.to_string())?;
+        let kind = if file_type.is_dir() {
+            "directory"
+        } else if file_type.is_file() {
+            "file"
+        } else {
+            continue;
+        };
+        out.push(TauriVaultEntry {
+            name: entry.file_name().to_string_lossy().to_string(),
+            kind: kind.into(),
+        });
+    }
+    out.sort_by(|a, b| a.name.cmp(&b.name));
+    Ok(out)
+}
+
+#[tauri::command]
+fn read_vault_text_file(root_path: String, relative_path: String) -> Result<TauriTextFile, String> {
+    let path = resolve_existing_inside(&root_path, &relative_path)?;
+    let text = fs::read_to_string(&path).map_err(|err| err.to_string())?;
+    let last_modified = metadata_mtime_ms(&path)?;
+    Ok(TauriTextFile {
+        text,
+        last_modified,
+    })
+}
+
+#[tauri::command]
+fn read_vault_binary_file(
+    root_path: String,
+    relative_path: String,
+) -> Result<TauriBinaryFile, String> {
+    let path = resolve_existing_inside(&root_path, &relative_path)?;
+    let bytes = fs::read(&path).map_err(|err| err.to_string())?;
+    let last_modified = metadata_mtime_ms(&path)?;
+    Ok(TauriBinaryFile {
+        bytes,
+        last_modified,
+    })
+}
+
+#[tauri::command]
+fn write_vault_text_file(
+    root_path: String,
+    relative_path: String,
+    content: String,
+) -> Result<(), String> {
+    let path = resolve_write_target_inside(&root_path, &relative_path)?;
+    fs::write(path, content).map_err(|err| err.to_string())
+}
+
+#[tauri::command]
+fn remove_vault_entry(
+    root_path: String,
+    relative_path: String,
+    recursive: Option<bool>,
+) -> Result<(), String> {
+    if normalize_relative_path(&relative_path)?
+        .as_os_str()
+        .is_empty()
+    {
+        return Err("refusing to remove the selected vault root".into());
+    }
+    let path = resolve_existing_inside(&root_path, &relative_path)?;
+    let metadata = fs::metadata(&path).map_err(|err| err.to_string())?;
+    if metadata.is_dir() {
+        if recursive.unwrap_or(false) {
+            fs::remove_dir_all(path).map_err(|err| err.to_string())
+        } else {
+            fs::remove_dir(path).map_err(|err| err.to_string())
+        }
+    } else {
+        fs::remove_file(path).map_err(|err| err.to_string())
+    }
+}
+
+#[tauri::command]
+fn ensure_vault_directory(root_path: String, relative_path: String) -> Result<(), String> {
+    let path = resolve_directory_target_inside(&root_path, &relative_path)?;
+    fs::create_dir_all(&path).map_err(|err| err.to_string())?;
+    ensure_inside_canonical(&root_path, &path)?;
+    Ok(())
+}
+
+#[tauri::command]
+fn vault_path_exists(
+    root_path: String,
+    relative_path: String,
+    kind: String,
+) -> Result<bool, String> {
+    let path = resolve_inside(&root_path, &relative_path)?;
+    let root = canonical_root(&root_path)?;
+    let path = match fs::canonicalize(&path) {
+        Ok(path) => path,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(err) => return Err(err.to_string()),
+    };
+    if !path.starts_with(&root) {
+        return Err("resolved path must stay inside the selected vault".into());
+    }
+    let metadata = match fs::metadata(path) {
+        Ok(metadata) => metadata,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(err) => return Err(err.to_string()),
+    };
+    Ok(match kind.as_str() {
+        "file" => metadata.is_file(),
+        "directory" => metadata.is_dir(),
+        _ => false,
+    })
+}
+
+#[tauri::command]
+fn open_vault_in_finder(root_path: String) -> Result<(), String> {
+    let root = PathBuf::from(&root_path);
+    let metadata = fs::metadata(&root).map_err(|err| err.to_string())?;
+    if !metadata.is_dir() {
+        return Err("vault root must be a directory".into());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let status = Command::new("open")
+            .arg(&root)
+            .status()
+            .map_err(|err| err.to_string())?;
+        if status.success() {
+            Ok(())
+        } else {
+            Err(format!("open exited with status {status}"))
+        }
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = root;
+        Err("Finder reveal is only available on macOS".into())
+    }
+}
+
 pub fn run() {
     tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![
+            pick_vault_directory,
+            list_vault_directory,
+            read_vault_text_file,
+            read_vault_binary_file,
+            write_vault_text_file,
+            remove_vault_entry,
+            ensure_vault_directory,
+            vault_path_exists,
+            open_vault_in_finder,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running oh-my-ontology desktop app");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn normalize_relative_path_accepts_nested_vault_paths() {
+        assert_eq!(
+            normalize_relative_path("docs/ontology/project.md").unwrap(),
+            PathBuf::from("docs/ontology/project.md")
+        );
+        assert_eq!(
+            normalize_relative_path("./docs//ontology").unwrap(),
+            PathBuf::from("docs/ontology")
+        );
+    }
+
+    #[test]
+    fn normalize_relative_path_rejects_escape_paths() {
+        for path in [
+            "../outside.md",
+            "docs/../../outside.md",
+            "/tmp/outside.md",
+            "docs/../outside.md",
+        ] {
+            let error = normalize_relative_path(path).unwrap_err();
+            assert_eq!(error, "relative path must stay inside the selected vault");
+        }
+    }
+
+    #[test]
+    fn resolve_inside_keeps_paths_under_the_selected_root() {
+        assert_eq!(
+            resolve_inside("/Users/me/vault", "docs/project.md").unwrap(),
+            PathBuf::from("/Users/me/vault/docs/project.md")
+        );
+    }
+
+    #[test]
+    fn open_vault_in_finder_rejects_non_directory_root() {
+        let error = open_vault_in_finder("/path/that/does/not/exist".into()).unwrap_err();
+        assert!(!error.is_empty());
+    }
+
+    #[test]
+    fn remove_vault_entry_rejects_root_removal() {
+        let error = remove_vault_entry("/tmp/vault".into(), "".into(), Some(true)).unwrap_err();
+        assert_eq!(error, "refusing to remove the selected vault root");
+    }
+
+    #[test]
+    fn remove_vault_entry_removes_files_and_directories() {
+        let root = std::env::temp_dir().join(format!(
+            "omot-remove-test-{}",
+            std::time::SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(root.join("docs/nested")).unwrap();
+        fs::write(root.join("note.md"), "hello").unwrap();
+        fs::write(root.join("docs/nested/file.md"), "nested").unwrap();
+
+        remove_vault_entry(root.to_string_lossy().to_string(), "note.md".into(), None).unwrap();
+        assert!(!root.join("note.md").exists());
+
+        let non_recursive_error = remove_vault_entry(
+            root.to_string_lossy().to_string(),
+            "docs".into(),
+            Some(false),
+        )
+        .unwrap_err();
+        assert!(!non_recursive_error.is_empty());
+        assert!(root.join("docs").exists());
+
+        remove_vault_entry(
+            root.to_string_lossy().to_string(),
+            "docs".into(),
+            Some(true),
+        )
+        .unwrap();
+        assert!(!root.join("docs").exists());
+
+        fs::remove_dir_all(root).ok();
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn vault_commands_reject_symlink_escapes() {
+        use std::os::unix::fs::symlink;
+
+        let nonce = std::time::SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("omot-vault-root-{nonce}"));
+        let outside = std::env::temp_dir().join(format!("omot-vault-outside-{nonce}"));
+        fs::create_dir_all(&root).unwrap();
+        fs::create_dir_all(&outside).unwrap();
+        fs::write(outside.join("outside.md"), "outside").unwrap();
+        symlink(outside.join("outside.md"), root.join("linked.md")).unwrap();
+        symlink(&outside, root.join("linked-dir")).unwrap();
+
+        let root_path = root.to_string_lossy().to_string();
+        let read_error = read_vault_text_file(root_path.clone(), "linked.md".into()).unwrap_err();
+        assert_eq!(read_error, "resolved path must stay inside the selected vault");
+
+        let write_error = write_vault_text_file(
+            root_path.clone(),
+            "linked.md".into(),
+            "changed".into(),
+        )
+        .unwrap_err();
+        assert_eq!(write_error, "resolved path must stay inside the selected vault");
+        assert_eq!(fs::read_to_string(outside.join("outside.md")).unwrap(), "outside");
+
+        let exists_error =
+            vault_path_exists(root_path.clone(), "linked.md".into(), "file".into()).unwrap_err();
+        assert_eq!(exists_error, "resolved path must stay inside the selected vault");
+
+        let mkdir_error =
+            ensure_vault_directory(root_path.clone(), "linked-dir/new".into()).unwrap_err();
+        assert_eq!(mkdir_error, "resolved path must stay inside the selected vault");
+        assert!(!outside.join("new").exists());
+
+        let nested_write_error = write_vault_text_file(
+            root_path.clone(),
+            "linked-dir/new/created-outside.md".into(),
+            "outside".into(),
+        )
+        .unwrap_err();
+        assert_eq!(
+            nested_write_error,
+            "resolved path must stay inside the selected vault"
+        );
+        assert!(!outside.join("new").exists());
+
+        let remove_error =
+            remove_vault_entry(root_path, "linked.md".into(), Some(false)).unwrap_err();
+        assert_eq!(remove_error, "resolved path must stay inside the selected vault");
+
+        fs::remove_dir_all(root).ok();
+        fs::remove_dir_all(outside).ok();
+    }
 }

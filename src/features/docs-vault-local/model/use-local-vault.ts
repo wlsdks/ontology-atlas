@@ -10,17 +10,24 @@ import {
 import {
   CURRENT_LOCAL_FS_HANDLE_ID,
   deleteLocalFsHandle,
+  forgetRecentLocalFsHandle,
   getLocalFsHandle,
+  listRecentLocalFsHandles,
   putLocalFsHandle,
   touchLocalFsHandle,
   verifyHandlePermission,
 } from '@/entities/local-fs-handle';
+import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 import {
   ONTOLOGY_STARTER_FILES,
   buildCodexConfigToml,
   buildMcpConfigJson,
   buildVaultMcpConfigJson,
 } from '../lib/ontology-starter';
+import {
+  isTauriVaultRuntime,
+  pickTauriVaultDirectory,
+} from '@/shared/lib/tauri-vault-fs';
 /** 탭 포커스 복귀 시 자동 refresh 의 최소 간격 (ms). 너무 자주 돌면
  *  사용자가 IDE 로 짧게 오갈 때마다 번쩍이므로 2초 간격으로 throttle. */
 const AUTO_REFRESH_DEBOUNCE_MS = 2000;
@@ -208,7 +215,8 @@ function needsQuote(s: string): boolean {
 
 function isSupported(): boolean {
   return (
-    typeof window !== 'undefined' && 'showDirectoryPicker' in window
+    typeof window !== 'undefined' &&
+    ('showDirectoryPicker' in window || isTauriVaultRuntime())
   );
 }
 
@@ -244,7 +252,10 @@ async function readTextFileIfPresent(
   }
 }
 
-function looksLikeOmotMcpJson(raw: string | null): boolean {
+export function looksLikeOmotMcpJson(
+  raw: string | null,
+  options: { expectedVault?: string } = {},
+): boolean {
   if (!raw) return false;
   try {
     const parsed = JSON.parse(raw) as {
@@ -260,19 +271,27 @@ function looksLikeOmotMcpJson(raw: string | null): boolean {
     return (
       args.some((arg) => String(arg).includes('oh-my-ontology-mcp')) &&
       typeof env.OMOT_VAULT === 'string' &&
-      env.OMOT_VAULT.trim().length > 0
+      env.OMOT_VAULT.trim().length > 0 &&
+      (options.expectedVault === undefined ||
+        env.OMOT_VAULT.trim() === options.expectedVault)
     );
   } catch {
     return false;
   }
 }
 
-function looksLikeOmotCodexToml(raw: string | null): boolean {
+export function looksLikeOmotCodexToml(
+  raw: string | null,
+  options: { expectedVault?: string } = {},
+): boolean {
   if (!raw) return false;
+  const vaultMatch = raw.match(/\bOMOT_VAULT\s*=\s*"([^"]+)"/);
   return (
     raw.includes('[mcp_servers.oh-my-ontology]') &&
     raw.includes('oh-my-ontology-mcp') &&
-    /\bOMOT_VAULT\s*=/.test(raw)
+    Boolean(vaultMatch) &&
+    (options.expectedVault === undefined ||
+      vaultMatch?.[1]?.trim() === options.expectedVault)
   );
 }
 
@@ -292,8 +311,8 @@ async function readAgentConfigStatus(
     mcpJson: mcpJsonText !== null,
     codexConfig: codexConfigText !== null,
     mcpExample: mcpExampleText !== null,
-    mcpJsonValid: looksLikeOmotMcpJson(mcpJsonText),
-    codexConfigValid: looksLikeOmotCodexToml(codexConfigText),
+    mcpJsonValid: looksLikeOmotMcpJson(mcpJsonText, { expectedVault: '.' }),
+    codexConfigValid: looksLikeOmotCodexToml(codexConfigText, { expectedVault: '.' }),
     mcpExampleValid: looksLikeOmotMcpJson(mcpExampleText),
   };
 }
@@ -374,6 +393,8 @@ export function useLocalVaultInternal() {
   // FSA 미지원 시 'unsupported' 로 전환 — 첫 paint 1 frame 동안 잠깐
   // supported 로 보이지만 hydration 에러는 사라짐.
   const [state, setState] = useState<State>(() => emptyState('idle'));
+  const [restoreAttempted, setRestoreAttempted] = useState(false);
+  const [recentVaults, setRecentVaults] = useState<LocalFsHandleRecord[]>([]);
 
   /** 마지막 성공 빌드의 fingerprint — auto-refresh 시 변경 없으면 skip 의 비교 기준. */
   const lastFingerprintRef = useRef<string | null>(null);
@@ -431,6 +452,10 @@ export function useLocalVaultInternal() {
     }
   }, []);
 
+  const refreshRecentVaults = useCallback(async () => {
+    setRecentVaults(await listRecentLocalFsHandles());
+  }, []);
+
   const open = useCallback(async () => {
     if (!isSupported()) {
       setState(emptyState('unsupported'));
@@ -438,13 +463,19 @@ export function useLocalVaultInternal() {
     }
     setState((s) => ({ ...s, status: 'opening', errorMessage: null }));
     try {
-      const handle = await (
-        window as unknown as {
-          showDirectoryPicker: (opts?: {
-            mode?: 'read' | 'readwrite';
-          }) => Promise<FileSystemDirectoryHandle>;
-        }
-      ).showDirectoryPicker({ mode: 'read' });
+      const handle = isTauriVaultRuntime()
+        ? await pickTauriVaultDirectory()
+        : await (
+            window as unknown as {
+              showDirectoryPicker: (opts?: {
+                mode?: 'read' | 'readwrite';
+              }) => Promise<FileSystemDirectoryHandle>;
+            }
+          ).showDirectoryPicker({ mode: 'read' });
+      if (!handle) {
+        setState((s) => ({ ...s, status: s.handle ? 'loaded' : 'idle' }));
+        return;
+      }
       const now = Date.now();
       await putLocalFsHandle({
         id: CURRENT_LOCAL_FS_HANDLE_ID,
@@ -453,6 +484,7 @@ export function useLocalVaultInternal() {
         createdAt: now,
         lastAccessedAt: now,
       });
+      await refreshRecentVaults();
       await load(handle);
     } catch (err) {
       // AbortError = 사용자가 취소한 것이니 idle 로 복귀.
@@ -468,12 +500,49 @@ export function useLocalVaultInternal() {
         errorMessage: err instanceof Error ? err.message : null,
       }));
     }
-  }, [load]);
+  }, [load, refreshRecentVaults]);
+
+  const openRecent = useCallback(
+    async (record: LocalFsHandleRecord) => {
+      if (!isSupported()) {
+        setState(emptyState('unsupported'));
+        return;
+      }
+      setState((s) => ({ ...s, status: 'opening', errorMessage: null }));
+      try {
+        const now = Date.now();
+        const nextRecord: LocalFsHandleRecord = {
+          ...record,
+          id: CURRENT_LOCAL_FS_HANDLE_ID,
+          lastAccessedAt: now,
+        };
+        await putLocalFsHandle(nextRecord);
+        await refreshRecentVaults();
+        await load(nextRecord.handle);
+      } catch (err) {
+        setState((s) => ({
+          ...s,
+          status: 'error',
+          errorMessage: err instanceof Error ? err.message : null,
+        }));
+      }
+    },
+    [load, refreshRecentVaults],
+  );
+
+  const forgetRecent = useCallback(
+    async (record: LocalFsHandleRecord) => {
+      await forgetRecentLocalFsHandle(record);
+      await refreshRecentVaults();
+    },
+    [refreshRecentVaults],
+  );
 
   const close = useCallback(async () => {
     await deleteLocalFsHandle();
+    await refreshRecentVaults();
     setState(emptyState(isSupported() ? 'idle' : 'unsupported'));
-  }, []);
+  }, [refreshRecentVaults]);
 
   /**
    * 사용자 주도 refresh. fingerprint 가 같으면 (외부 변경 없음) 전체 재빌드를
@@ -812,12 +881,18 @@ export function useLocalVaultInternal() {
   useEffect(() => {
     if (!isSupported()) {
       setState((s) => ({ ...s, status: 'unsupported' }));
+      setRestoreAttempted(true);
       return;
     }
     let cancelled = false;
     (async () => {
       const record = await getLocalFsHandle();
-      if (!record || cancelled) return;
+      await refreshRecentVaults();
+      if (!record) {
+        if (!cancelled) setRestoreAttempted(true);
+        return;
+      }
+      if (cancelled) return;
       const handle = record.handle;
       void touchLocalFsHandle();
       const permission = await verifyRead(handle, false);
@@ -836,11 +911,12 @@ export function useLocalVaultInternal() {
           lastLoadedAt: null,
         });
       }
+      setRestoreAttempted(true);
     })();
     return () => {
       cancelled = true;
     };
-  }, [load]);
+  }, [load, refreshRecentVaults]);
 
   /**
    * 볼트를 Folder-Topology 규격으로 초기화 — projects/ 디렉터리 + sample 2개
@@ -925,7 +1001,7 @@ export function useLocalVaultInternal() {
   /**
    * mission v2 ontology starter — `npx oh-my-ontology init` 과 동일한
    * 5 md + .mcp.json / .mcp.json.example / .codex/config.toml 시드를 vault 에
-   * 작성. 비개발자가 터미널 없이 web workbench 의 picker → "starter 만들기"
+   * 작성. 비개발자가 터미널 없이 desktop app 의 picker → "starter 만들기"
    * 버튼만으로 시작 가능하게.
    *
    * 이미 존재하는 파일은 덮어쓰지 않고 skip. 사용자가 기존 vault 에 호출해도
@@ -990,14 +1066,18 @@ export function useLocalVaultInternal() {
     handle: state.handle,
     manifest: state.manifest,
     agentConfigStatus: state.agentConfigStatus,
+    recentVaults,
     fileHandles: state.fileHandles,
     imageHandles: state.imageHandles,
     errorMessage: state.errorMessage,
     lastLoadedAt: state.lastLoadedAt,
+    restoreAttempted,
     // state-derived — SSR 일치 (lazy initializer 의 isSupported() 호출
     // 회피). 'unsupported' 로 전환되는 시점은 mount 후 useEffect.
     isSupported: state.status !== 'unsupported',
     open,
+    openRecent,
+    forgetRecent,
     close,
     refresh,
     requestPermission,

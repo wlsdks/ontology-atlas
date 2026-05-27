@@ -62,6 +62,8 @@ export interface OntologyInspectorProps {
   /** true 면 vault 가 read-only (빌드타임 dogfood 매니페스트 기반). 인스펙터의
    *  rename/array/literal/delete 모두 disabled — disk 권한 없어 patch 불가. */
   vaultReadOnly?: boolean;
+  /** true 면 데스크톱 앱 런타임이라 read-only 해소 CTA 가 folder picker 로 향함. */
+  isDesktopRuntime?: boolean;
   /** ephemeral 노드 생성 시 부여된 placeholder 제목 — locale 별로 다르므로
    *  (\`(이름 입력)\` / \`(enter a name)\`) caller 가 그대로 전달. previewSlug /
    *  titleEmpty 가 placeholder vs 실제 title 을 구분하는 데 사용. */
@@ -95,6 +97,7 @@ export function OntologyInspector({
   vaultBacklinks = [],
   onSelectBacklink,
   vaultReadOnly = false,
+  isDesktopRuntime = false,
   untitledPlaceholder,
   onRenameEphemeral,
   onSaveEphemeral,
@@ -200,6 +203,7 @@ export function OntologyInspector({
               backlinks={vaultBacklinks}
               onSelectBacklink={onSelectBacklink}
               readOnly={vaultReadOnly}
+              isDesktopRuntime={isDesktopRuntime}
               onSaveRename={onSaveVaultRename}
               onEditArrayKey={onEditVaultArrayKey}
               onEditLiteral={onEditVaultLiteral}
@@ -346,6 +350,7 @@ function VaultDetail({
   backlinks,
   onSelectBacklink,
   readOnly,
+  isDesktopRuntime,
   onSaveRename,
   onEditArrayKey,
   onEditLiteral,
@@ -359,6 +364,7 @@ function VaultDetail({
   backlinks: VaultBacklinkMatch[];
   onSelectBacklink?: (slug: string) => void;
   readOnly: boolean;
+  isDesktopRuntime: boolean;
   onSaveRename?: (slug: string, nextTitle: string) => Promise<void> | void;
   onEditArrayKey?: (
     slug: string,
@@ -449,7 +455,13 @@ function VaultDetail({
         </button>
       ) : null}
       <p className="text-[11px] leading-4 text-[color:var(--color-text-quaternary)]">
-        {readOnly ? t("vaultFooterReadOnly") : t("vaultFooterEditable")}
+        {readOnly
+          ? t(
+              isDesktopRuntime
+                ? "vaultFooterReadOnlyPicker"
+                : "vaultFooterReadOnlyDownload",
+            )
+          : t("vaultFooterEditable")}
       </p>
       {!readOnly && onEditLiteral ? (
         <div className="flex flex-col gap-2">

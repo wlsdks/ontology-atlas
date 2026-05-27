@@ -434,6 +434,24 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests Firebase Hosting deploy checks without folding them into app release', () => {
+    const result = suggestFocusedChecks([
+      'scripts/check-firebase-hosting-deploy-env.mjs',
+      'firebase.json',
+      '.firebaserc',
+      '.firebaseignore',
+      '.github/workflows/deploy-hosting.yml',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test scripts/check-firebase-hosting-deploy-env.test.mjs',
+      'pnpm test:desktop:check',
+      'pnpm desktop:check',
+      'pnpm test:dogfood:script-refs',
+      'pnpm test:mcp:docs',
+    ]);
+  });
+
   it('suggests desktop readiness checks for macOS desktop distribution files', () => {
     const result = suggestFocusedChecks([
       'scripts/check-desktop-readiness.mjs',
@@ -442,7 +460,20 @@ describe('focused check suggestions', () => {
       'scripts/desktop-doctor.test.mjs',
       'scripts/desktop-smoke.mjs',
       'scripts/desktop-smoke.test.mjs',
+      'scripts/verify-macos-dmg.mjs',
+      'scripts/verify-macos-install-smoke.mjs',
+      'scripts/lib/macos-dmg-layout.mjs',
+      'scripts/lib/redact-command.mjs',
+      'scripts/check-macos-download-release.mjs',
       'docs/DESKTOP-MACOS.md',
+      'src/shared/lib/tauri-vault-fs.ts',
+      'src/shared/lib/tauri-vault-fs.test.ts',
+      'src/views/root-entry/ui/RootEntryPage.tsx',
+      'src/views/root-entry/ui/RootEntryPage.test.tsx',
+      'src/views/docs-vault/lib/persistence.ts',
+      'src/views/docs-vault/ui/DocsVaultPage.tsx',
+      'src/widgets/operations-nav/ui/OperationsNav.tsx',
+      'src-tauri/src/lib.rs',
       'src-tauri/tauri.conf.json',
     ]);
 
@@ -450,9 +481,18 @@ describe('focused check suggestions', () => {
       'pnpm exec node --test scripts/check-desktop-readiness.test.mjs',
       'pnpm exec node --test scripts/desktop-doctor.test.mjs',
       'pnpm exec node --test scripts/desktop-smoke.test.mjs',
+      'pnpm exec node --test scripts/lib/macos-dmg-layout.test.mjs',
+      'pnpm exec node --test scripts/lib/redact-command.test.mjs',
+      'pnpm exec vitest run src/shared/lib/tauri-vault-fs.test.ts',
+      'pnpm exec vitest run src/views/root-entry/ui/RootEntryPage.test.tsx',
+      'pnpm exec vitest run src/views/docs-vault/lib/persistence.test.ts',
+      'pnpm exec vitest run src/widgets/operations-nav/ui/OperationsNav.test.tsx',
       'pnpm docs-vault:check',
       'pnpm test:desktop:check',
+      'pnpm test:desktop:runtime',
+      'pnpm test:desktop:bridge',
       'pnpm desktop:check',
+      'pnpm exec tsc --noEmit',
     ]);
     assert.deepEqual(result.commands[0].paths, [
       'scripts/check-desktop-readiness.mjs',
@@ -569,8 +609,7 @@ describe('focused check suggestions', () => {
   it('suggests typecheck for app/source TypeScript files without sibling tests', () => {
     const result = suggestFocusedChecks([
       'src/shared/config/site.ts',
-      'src/widgets/operations-nav/ui/OperationsNav.tsx',
-      'src/views/root-entry/ui/RootEntryPage.tsx',
+      'src/shared/lib/theme.ts',
     ]);
 
     assert.deepEqual(result.commands.map((row) => row.command), ['pnpm exec tsc --noEmit']);

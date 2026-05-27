@@ -47,6 +47,7 @@ const SDK_MIN_TOKEN_HITS = 4;
 const LOCALES = ['en', 'ko'];
 const LOCAL_FIRST_BASE_ROUTES = [
   '',
+  'download',
   'topology',
   'docs',
   'ontology',

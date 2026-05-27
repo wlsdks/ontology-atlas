@@ -17,6 +17,7 @@ export const dynamic = 'force-static';
 const STATIC_ROUTES = [
   '',
   'projects',
+  'download',
   'topology',
   'docs',
   'ontology',
