@@ -2402,6 +2402,7 @@
       "handoffWriteProof": "builder focus",
       "handoffQueryLabel": "Query",
       "handoffQueryProof": "node proof",
+      "handoffCopyProof": "Copy selected-node proof packet",
       "reviewTitle": "Collaborator brief",
       "reviewCopy": "Copy",
       "reviewCopyVocabulary": "Copy vocabulary",

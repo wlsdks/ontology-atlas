@@ -2402,6 +2402,7 @@
       "handoffWriteProof": "builder focus",
       "handoffQueryLabel": "Query",
       "handoffQueryProof": "node proof",
+      "handoffCopyProof": "선택 노드 proof packet 복사",
       "reviewTitle": "Collaborator brief",
       "reviewCopy": "복사",
       "reviewCopyVocabulary": "어휘 복사",

@@ -996,6 +996,21 @@ function NodeDetailPanel({
     }
     show(t('reviewCopySyncGateError'), 'error');
   };
+  const copySelectedNodeProof = async () => {
+    if (!reachabilityQuerySlug) return;
+    const text = buildAgentContextBundle({
+      slug: reachabilityQuerySlug,
+      direction: reachabilityDirection,
+      depth: reachabilityDepth,
+      reachabilityLimit: 12,
+      profileLimit: 8,
+    });
+    if (await copyText(text)) {
+      show(t('agentContextBundleToastSuccess'), 'success');
+      return;
+    }
+    show(t('agentContextBundleToastError'), 'error');
+  };
   const copyReviewBrief = async () => {
     const text = formatOntologyReviewBrief({
       node,
@@ -1174,6 +1189,16 @@ function NodeDetailPanel({
           </span>
         </Link>
       </nav>
+      {reachabilityQuerySlug ? (
+        <button
+          type="button"
+          onClick={() => void copySelectedNodeProof()}
+          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.28)] bg-[color:rgba(94,106,210,0.08)] px-2.5 py-2 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.44)] hover:text-[color:var(--color-text-primary)]"
+        >
+          <Clipboard size={12} aria-hidden />
+          {t('handoffCopyProof')}
+        </button>
+      ) : null}
       <div
         className="mt-4 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-3"
         data-testid="ontology-relation-preview"
