@@ -16,6 +16,7 @@ elements:
 relates:
   - domains/mode-aware-adapters
   - domains/ontology-core
+canvasPosition: { x: 352, y: 2304 }
 ---
 
 # Vault — Local-First

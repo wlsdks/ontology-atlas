@@ -3,6 +3,7 @@ slug: elements/ontology-deeplink-node-resolver
 kind: element
 title: Ontology Deeplink Node Resolver
 domain: views
+canvasPosition: { x: 880, y: 1792 }
 ---
 
 `src/views/ontology-view/lib/resolve-deeplink-node.ts` resolves `/ontology?node=...` into the selected ontology node.

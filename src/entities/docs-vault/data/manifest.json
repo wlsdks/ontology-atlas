@@ -5946,7 +5946,11 @@
         "relates": [
           "domains/mode-aware-adapters",
           "domains/ontology-core"
-        ]
+        ],
+        "canvasPosition": {
+          "x": 352,
+          "y": 2304
+        }
       },
       "headings": [
         {
@@ -5957,7 +5961,7 @@
       ],
       "excerpt": "사용자 디스크 폴더를 진실원으로. File System Access API + IndexedDB 기반 핸들 영속. focus / visibility 시 fingerprint 비교로 재스캔 shortcircuit. R14 부터는 visible 인 동안 5s polling 으로 focus 안 해도 자동 반영 (vaultliveupdates). 자세한 원칙: .claude/rules/localfirst.md. 사용자 surface: docs/FEATURES.md.",
       "wordCount": 45,
-      "updatedAt": "2026-05-25T06:11:00.010Z",
+      "updatedAt": "2026-05-27T14:47:08.662Z",
       "linksOut": []
     },
     {
@@ -6224,12 +6228,16 @@
         "slug": "elements/ontology-deeplink-node-resolver",
         "kind": "element",
         "title": "Ontology Deeplink Node Resolver",
-        "domain": "views"
+        "domain": "views",
+        "canvasPosition": {
+          "x": 880,
+          "y": 1792
+        }
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/lib/resolvedeeplinknode.ts resolves /ontology?node=... into the selected ontology node. It accepts both canonical ontology IDs such as capability:mcpserver and vault document slugs such as capabilities/mcpserver. This keeps links from topology, docs, and builder compatible even though the tree vi",
       "wordCount": 48,
-      "updatedAt": "2026-05-24T19:21:46.256Z",
+      "updatedAt": "2026-05-27T14:47:15.408Z",
       "linksOut": []
     },
     {
