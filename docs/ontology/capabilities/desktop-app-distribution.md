@@ -21,8 +21,8 @@ internal prototype.
 The first slice is a feasibility proof, not a second product architecture:
 wrap the existing Next.js static export in a Tauri shell, open the same local
 vault folder, render `/download`, `/docs`, `/ontology`, `/topology`, and
-`/ontology/edit`, then verify the same CLI/MCP setup gates still work for
-Claude Code and Codex.
+`/ontology/edit`, and `/ontology/insights`, then verify the same CLI/MCP setup
+gates still work for Claude Code and Codex.
 The hosted Firebase site is intentionally demoted to product introduction,
 download, and read-only demo: hosted empty states and demo badges route users to
 `/download`, while the installed Tauri runtime keeps `/docs/?intent=local` as
@@ -54,8 +54,9 @@ path, CLI/MCP verification script availability, `desktop:dev` /
 desktop-grade quality bar, and the first prototype route-smoke scope. `pnpm
 desktop:smoke` checks the built `out/` payload that the `.app` / `.dmg`
 packages: the root app entry, locale-prefixed `/download`, `/docs`,
-`/ontology`, `/topology`, and `/ontology/edit` routes, `_next` assets, and
-offline desktop docs under `docs-vault/`. `pnpm desktop:verify-app` launches
+`/ontology`, `/topology`, `/ontology/edit`, and `/ontology/insights` routes,
+their ontology workbench route titles, `_next` assets, and offline desktop docs
+under `docs-vault/`. `pnpm desktop:verify-app` launches
 the built `.app` executable from inside its `Contents/MacOS` executable
 directory long enough to catch early Tauri/WebView startup crashes, then
 terminates it.

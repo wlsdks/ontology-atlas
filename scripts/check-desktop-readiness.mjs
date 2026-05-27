@@ -1052,6 +1052,7 @@ const prototypeRouteChecks = [
   ["/ontology", /\/ontology/],
   ["/topology", /\/topology/],
   ["/ontology/edit", /\/ontology\/edit/],
+  ["/ontology/insights", /\/ontology\/insights/],
 ];
 
 const missingPrototypeRoutes = prototypeRouteChecks
@@ -1059,7 +1060,7 @@ const missingPrototypeRoutes = prototypeRouteChecks
   .map(([route]) => route);
 
 if (missingPrototypeRoutes.length === 0) {
-  pass("desktop prototype smoke names download, docs, ontology, topology, and builder routes");
+  pass("desktop prototype smoke names download, docs, ontology, topology, builder, and insights routes");
 } else {
   fail(
     `docs/DESKTOP-MACOS.md must keep the first desktop smoke routes explicit: missing ${missingPrototypeRoutes.join(", ")}`,

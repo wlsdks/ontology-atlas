@@ -3,12 +3,27 @@ import fs from "node:fs";
 import path from "node:path";
 
 export const DESKTOP_SMOKE_LOCALES = ["en", "ko"];
-export const DESKTOP_SMOKE_ROUTES = ["/download", "/docs", "/ontology", "/topology", "/ontology/edit"];
+export const DESKTOP_SMOKE_ROUTES = [
+  "/download",
+  "/docs",
+  "/ontology",
+  "/topology",
+  "/ontology/edit",
+  "/ontology/insights",
+];
 export const DESKTOP_SMOKE_ROOT_ENTRY = "index.html";
 export const DESKTOP_SMOKE_DOCS = [
   "docs-vault/DESKTOP-MACOS.md",
   "docs-vault/ontology/capabilities/desktop-app-distribution.md",
 ];
+export const DESKTOP_SMOKE_ROUTE_TITLES = {
+  "en:/ontology": "Ontology · Context Atlas",
+  "ko:/ontology": "온톨로지 · Context Atlas",
+  "en:/ontology/edit": "Ontology Builder · Context Atlas",
+  "ko:/ontology/edit": "온톨로지 빌더 · Context Atlas",
+  "en:/ontology/insights": "Ontology Insights · Context Atlas",
+  "ko:/ontology/insights": "온톨로지 인사이트 · Context Atlas",
+};
 
 function routeIndexPath({ locale, route }) {
   const cleanRoute = route.replace(/^\/+|\/+$/g, "");
@@ -19,11 +34,22 @@ function existsUnder(root, relativePath) {
   return fs.existsSync(path.join(root, relativePath));
 }
 
+function readTextUnder(root, relativePath) {
+  const filePath = path.join(root, relativePath);
+  if (!fs.existsSync(filePath)) return null;
+  return fs.readFileSync(filePath, "utf8");
+}
+
+function hasTitle(html, title) {
+  return html.includes(`<title>${title}</title>`);
+}
+
 export function evaluateDesktopSmoke({
   outDir = path.join(process.cwd(), "out"),
   locales = DESKTOP_SMOKE_LOCALES,
   routes = DESKTOP_SMOKE_ROUTES,
   docs = DESKTOP_SMOKE_DOCS,
+  routeTitles = DESKTOP_SMOKE_ROUTE_TITLES,
 } = {}) {
   const checks = [];
   const addCheck = (id, label, ok, details = "") => {
@@ -42,12 +68,23 @@ export function evaluateDesktopSmoke({
   for (const locale of locales) {
     for (const route of routes) {
       const relativePath = routeIndexPath({ locale, route });
+      const exists = existsUnder(outDir, relativePath);
       addCheck(
         `route:${locale}:${route}`,
         `${locale}${route} static route exists`,
-        existsUnder(outDir, relativePath),
+        exists,
         relativePath,
       );
+      const expectedTitle = routeTitles[`${locale}:${route}`];
+      if (expectedTitle) {
+        const html = readTextUnder(outDir, relativePath);
+        addCheck(
+          `route-title:${locale}:${route}`,
+          `${locale}${route} static route title matches`,
+          typeof html === "string" && hasTitle(html, expectedTitle),
+          expectedTitle,
+        );
+      }
     }
   }
 

@@ -21,19 +21,72 @@ test("desktop smoke proves packaged locale routes and offline docs exist", () =>
   touch(outDir, "index.html");
 
   for (const locale of ["en", "ko"]) {
-    for (const route of ["/download", "/docs", "/ontology", "/topology", "/ontology/edit"]) {
+    for (const route of ["/download", "/docs", "/ontology", "/topology", "/ontology/edit", "/ontology/insights"]) {
       touch(outDir, path.join(locale, route.replace(/^\/+/, ""), "index.html"));
     }
   }
   touch(outDir, "docs-vault/DESKTOP-MACOS.md");
   touch(outDir, "docs-vault/ontology/capabilities/desktop-app-distribution.md");
 
-  const report = evaluateDesktopSmoke({ outDir });
+  const report = evaluateDesktopSmoke({ outDir, routeTitles: {} });
 
   assert.equal(report.ok, true);
   assert.equal(report.missing.length, 0);
   assert.ok(report.checks.some((check) => check.id === "root-entry"));
   assert.match(report.nextAction, /pnpm desktop:dev/);
+});
+
+test("desktop smoke checks ontology workbench route titles", () => {
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+
+  const routes = {
+    "en/ontology/index.html": "Ontology · Context Atlas",
+    "ko/ontology/index.html": "온톨로지 · Context Atlas",
+    "en/ontology/edit/index.html": "Ontology Builder · Context Atlas",
+    "ko/ontology/edit/index.html": "온톨로지 빌더 · Context Atlas",
+    "en/ontology/insights/index.html": "Ontology Insights · Context Atlas",
+    "ko/ontology/insights/index.html": "온톨로지 인사이트 · Context Atlas",
+  };
+  for (const [relativePath, title] of Object.entries(routes)) {
+    const filePath = path.join(outDir, relativePath);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, `<!doctype html><title>${title}</title>`, "utf8");
+  }
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    routes: ["/ontology", "/ontology/edit", "/ontology/insights"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+  });
+
+  assert.equal(report.ok, true);
+  assert.equal(report.missing.length, 0);
+  assert.ok(report.checks.some((check) => check.id === "route-title:en:/ontology/insights"));
+  assert.ok(report.checks.some((check) => check.id === "route-title:ko:/ontology/insights"));
+});
+
+test("desktop smoke fails when an ontology route title is stale", () => {
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+  touch(outDir, "en/ontology/insights/index.html");
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/ontology/insights"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    ["route-title:en:/ontology/insights"],
+  );
 });
 
 test("desktop smoke reports the exact missing packaged route", () => {

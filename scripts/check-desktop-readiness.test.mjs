@@ -202,7 +202,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop prototype smoke names download, docs, ontology, topology, and builder routes/,
+    /✓ desktop prototype smoke names download, docs, ontology, topology, builder, and insights routes/,
   );
   assert.match(result.stdout, /✓ Tauri scaffold exists/);
   assert.match(result.stdout, /✓ Tauri loads the Next\.js static export from out\//);

@@ -43,8 +43,9 @@ next to Obsidian, Claude Desktop, and Codex Desktop:
   stored, and what will be written before ontology edits touch markdown.
 - agent confidence: Claude Code and Codex setup checks remain one click or one
   copied command away, and desktop smoke must include MCP verification.
-- offline usefulness: `/docs`, `/ontology`, `/topology`, and `/ontology/edit`
-  remain usable from the packaged app against the local vault.
+- offline usefulness: `/docs`, `/ontology`, `/topology`, `/ontology/edit`, and
+  `/ontology/insights` remain usable from the packaged app against the local
+  vault.
 
 If a prototype cannot meet these standards, keep desktop as an exploration
 track instead of shipping a weaker app under the product name.
@@ -259,7 +260,7 @@ for a macOS prototype:
   launch, vault-folder permissions, recent vault recall, visible local data
   location, agent setup visibility, and offline route usefulness.
 - the first prototype smoke keeps the same route contract explicit: `/docs`,
-  `/ontology`, `/topology`, and `/ontology/edit`.
+  `/ontology`, `/topology`, `/ontology/edit`, and `/ontology/insights`.
 
 `desktop:doctor` checks the local machine runtime and the local ontology handoff
 surface: Tauri CLI, Cargo, rustc, macOS Xcode command line tools, the dogfood
@@ -271,9 +272,10 @@ when missing prerequisites should fail fast.
 
 `desktop:smoke` checks the built `out/` payload that Tauri packages. It verifies
 that the root `out/index.html` app entry exists, that both `en` and `ko` static
-routes exist for `/download`, `/docs`, `/ontology`, `/topology`, and
-`/ontology/edit`, that `_next` assets are present, and that the desktop docs
-are bundled under `docs-vault/` for offline reference.
+routes exist for `/download`, `/docs`, `/ontology`, `/topology`,
+`/ontology/edit`, and `/ontology/insights`, that the ontology workbench route
+titles match the expected app surfaces, that `_next` assets are present, and
+that the desktop docs are bundled under `docs-vault/` for offline reference.
 
 `desktop:verify-app` checks the built `.app` runtime after packaging. It runs
 the app executable from inside `Contents/MacOS` for a short hold window and
@@ -295,7 +297,7 @@ window, and cleans up the temp install after detaching the image.
 2. Run `pnpm install` so `@tauri-apps/cli` is available.
 3. Build `out/` with `pnpm build`.
 4. Run `pnpm desktop:smoke` to prove the packaged static payload includes the
-   desktop routes and offline docs.
+   desktop routes, ontology workbench route titles, and offline docs.
 5. Run `pnpm test:desktop:runtime` to prove hosted `/docs?intent=local` stays
    desktop-only while installed-app first-run routing opens the local vault path.
 6. Run `pnpm test:desktop:bridge` to prove the WebView handle shim and Rust path

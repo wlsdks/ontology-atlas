@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T17:38:05.963Z",
+  "generatedAt": "2026-05-27T17:49:00.197Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3906,8 +3906,8 @@
         }
       ],
       "excerpt": "Context Atlas is the userfacing macOS app name for the ohmyontology project. ohmyontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app ",
-      "wordCount": 3947,
-      "updatedAt": "2026-05-27T04:33:34.660Z",
+      "wordCount": 3965,
+      "updatedAt": "2026-05-27T17:48:44.415Z",
       "linksOut": []
     },
     {
@@ -3964,8 +3964,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6295,
-      "updatedAt": "2026-05-27T17:38:00.475Z",
+      "wordCount": 6301,
+      "updatedAt": "2026-05-27T17:48:44.415Z",
       "linksOut": []
     },
     {
@@ -5137,8 +5137,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 2632,
-      "updatedAt": "2026-05-27T11:09:13.898Z",
+      "wordCount": 2640,
+      "updatedAt": "2026-05-27T17:48:18.433Z",
       "linksOut": []
     },
     {
