@@ -1109,7 +1109,12 @@ if (
 if (
   tauriConfig?.productName === "Context Atlas" &&
   tauriConfig?.identifier === "dev.jinan.oh-my-ontology" &&
-  tauriConfig?.app?.windows?.some((windowConfig) => windowConfig?.title === "Context Atlas") &&
+  tauriConfig?.app?.windows?.some(
+    (windowConfig) =>
+      windowConfig?.title === "Context Atlas" &&
+      windowConfig?.label === "main" &&
+      windowConfig?.center === true,
+  ) &&
   macosReleaseNamesHelper.includes("const releaseAssetName = pkg.name") &&
   verifyDmgScript.includes("releaseAssetName") &&
   verifyInstallScript.includes("releaseAssetName") &&
@@ -1119,10 +1124,10 @@ if (
   signMacosScript.includes("appBundleName") &&
   notarizeMacosDmgScript.includes("releaseAssetName")
 ) {
-  pass("Tauri presents Context Atlas as the app bundle while release scripts keep oh-my-ontology DMG assets");
+  pass("Tauri presents Context Atlas as the centered app bundle while release scripts keep oh-my-ontology DMG assets");
 } else {
   fail(
-    "src-tauri/tauri.conf.json must use Context Atlas as the app productName/window title, keep the oh-my-ontology bundle identifier, and route release scripts through appBundleName vs releaseAssetName so GitHub DMG assets stay oh-my-ontology_*",
+    "src-tauri/tauri.conf.json must use Context Atlas as the app productName/window title, center the main window, keep the oh-my-ontology bundle identifier, and route release scripts through appBundleName vs releaseAssetName so GitHub DMG assets stay oh-my-ontology_*",
   );
 }
 
