@@ -118,15 +118,17 @@ function FitViewOnGraphReady({
     if (nodeCount > 20 && anchorNodeId) {
       for (const delay of [940, 1800, 2800]) {
         timers.push(setTimeout(() => {
-          const anchor = reactFlow.getNode(anchorNodeId);
-          if (!anchor) return;
-          const w = anchor.width ?? 220;
-          const h = anchor.height ?? 60;
           // A full-vault overview can make 50+ node cards unreadably small.
-          // After establishing the full graph bounds, land on a concrete card
-          // so the builder never opens as an empty-looking canvas.
-          reactFlow.setCenter(anchor.position.x + w / 2, anchor.position.y + h / 2, {
-            zoom: 0.65,
+          // After establishing the full graph bounds, fit the viewport to a
+          // concrete card by id. `fitView({ nodes })` is more reliable than
+          // setCenter while xyflow is still measuring node dimensions in the
+          // Tauri WebView, and prevents the builder from opening as a tiny
+          // unreadable whole-graph thumbnail.
+          reactFlow.fitView({
+            nodes: [{ id: anchorNodeId }],
+            padding: 1.1,
+            minZoom: 0.72,
+            maxZoom: 0.92,
             duration: 420,
           });
         }, delay));
