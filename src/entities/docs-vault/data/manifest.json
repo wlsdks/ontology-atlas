@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T14:59:01.695Z",
+  "generatedAt": "2026-05-27T15:18:06.188Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4854,6 +4854,7 @@
         "domain": "views",
         "elements": [
           "elements/builder-write-summary",
+          "elements/ontology-edit-canvas",
           "src/shared/lib/domain-color.ts",
           "src/views/ontology-edit/lib/align-nodes.ts",
           "src/views/ontology-edit/lib/use-vault-graph-flow.ts",
@@ -4868,7 +4869,7 @@
       "headings": [],
       "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (20260514) 로 7 commit 단위 도입. n8nstyle edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 MCP dependency alias 호환 — dependson 으로 작성된 agent/CLI edge 도 builder graph 에서는 canonical depe",
       "wordCount": 301,
-      "updatedAt": "2026-05-27T14:24:52.973Z",
+      "updatedAt": "2026-05-27T15:17:59.213Z",
       "linksOut": []
     },
     {
@@ -5986,6 +5987,7 @@
           "builder-relation-write-confirm-panel",
           "elements/builder-write-summary",
           "elements/insights-query-cockpit",
+          "elements/ontology-edit-canvas",
           "insights-collaborator-brief",
           "insights-orphan-repair-packet",
           "ontology-deeplink-node-resolver",
@@ -6018,7 +6020,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 designsystem 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-05-27T14:29:55.985Z",
+      "updatedAt": "2026-05-27T15:17:59.212Z",
       "linksOut": []
     },
     {
@@ -6228,6 +6230,23 @@
       "excerpt": "src/views/ontologyview/lib/resolvedeeplinknode.ts resolves /ontology?node=... into the selected ontology node. It accepts both canonical ontology IDs such as capability:mcpserver and vault document slugs such as capabilities/mcpserver. This keeps links from topology, docs, and builder compatible even though the tree vi",
       "wordCount": 48,
       "updatedAt": "2026-05-24T19:21:46.256Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/elements/ontology-edit-canvas",
+      "path": "docs/ontology/elements/ontology-edit-canvas.md",
+      "title": "Ontology Edit Canvas",
+      "tags": [],
+      "frontmatter": {
+        "slug": "elements/ontology-edit-canvas",
+        "kind": "element",
+        "title": "Ontology Edit Canvas",
+        "domain": "views"
+      },
+      "headings": [],
+      "excerpt": "src/views/ontologyedit/ui/OntologyEditCanvas.tsx renders the xyflow canvas inside /ontology/edit. The canvas turns the local vault manifest into editable graph nodes and edges, keeps vault nodes draggable, and writes persisted positions back to canvasPosition when a live vault is open. It also owns the largegraph viewp",
+      "wordCount": 130,
+      "updatedAt": "2026-05-27T15:17:07.389Z",
       "linksOut": []
     },
     {
@@ -7818,6 +7837,13 @@
                 "type": "doc",
                 "slug": "ontology/elements/ontology-deeplink-node-resolver",
                 "title": "Ontology Deeplink Node Resolver"
+              },
+              {
+                "name": "ontology-edit-canvas",
+                "path": "ontology/elements/ontology-edit-canvas",
+                "type": "doc",
+                "slug": "ontology/elements/ontology-edit-canvas",
+                "title": "Ontology Edit Canvas"
               },
               {
                 "name": "ontology-relation-key-inference",

@@ -974,6 +974,7 @@
         "ephemeralEdgeSaveTooltip": "이 관계를 저장합니다. 미저장 노드가 있으면 함께 저장됩니다.",
         "emptyHint": "왼쪽 palette 에서 종류를 골라 클릭하면 첫 노드가 생겨요.",
         "minimapAriaLabel": "캔버스 미니맵 — 클릭/드래그로 빠른 이동",
+        "anchorRailLabel": "Graph anchors",
         "edgeLabels": {
           "capabilities": "역량",
           "elements": "요소",

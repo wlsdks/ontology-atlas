@@ -9,6 +9,7 @@ import {
   BackgroundVariant,
   ConnectionLineType,
   MiniMap,
+  Panel,
   ReactFlow,
   useReactFlow,
   type Connection,
@@ -37,6 +38,8 @@ import { resolveDomainTint } from "@/shared/lib/domain-color";
 const EDGE_TYPES = { ephemeral: EphemeralEdgeComponent };
 
 const staticVaultManifest = staticVaultManifestRaw as VaultManifest;
+const BUILDER_OVERVIEW_MIN_ZOOM = 0.05;
+const BUILDER_OVERVIEW_MAX_ZOOM = 1.2;
 
 /**
  * autoLayoutToken / layoutMode 변할 때 viewport fitView 를 부드럽게
@@ -64,10 +67,17 @@ function FitViewOnAutoLayout({
     // 자동 layout 결과가 baseNodes → localNodes 로 propagate 된 후 fit.
     // setTimeout 180ms — useEffect → setLocalNodes → ReactFlow re-render →
     // 새 position propagate 가 완료된 후 fitView 가 정확한 bounding box 계산.
-    // minZoom 0.4 — force layout 은 spread 큰 좌표 사용 → 더 작은 zoom 필요.
+    // minZoom 0.05 — persisted canvasPosition + 50개 이상 vault nodes 는
+    // bounding box 가 커질 수 있다. 0.4 로 clamp 하면 중앙 빈 영역만 보이는
+    // desktop blank-canvas 회귀가 난다.
     // maxZoom 1.2 — 적은 노드일 때 과도 확대 약간 허용.
     const t = setTimeout(() => {
-      reactFlow.fitView({ duration: 400, padding: 0.2, minZoom: 0.4, maxZoom: 1.2 });
+      reactFlow.fitView({
+        duration: 400,
+        padding: 0.2,
+        minZoom: BUILDER_OVERVIEW_MIN_ZOOM,
+        maxZoom: BUILDER_OVERVIEW_MAX_ZOOM,
+      });
     }, 180);
     return () => clearTimeout(t);
   }, [token, layoutMode, reactFlow]);
@@ -84,9 +94,11 @@ function FitViewOnAutoLayout({
 function FitViewOnGraphReady({
   graphKey,
   nodeCount,
+  anchorNodeId,
 }: {
   graphKey: string;
   nodeCount: number;
+  anchorNodeId: string | null;
 }) {
   const reactFlow = useReactFlow();
   const fittedGraphKeyRef = useRef<string | null>(null);
@@ -96,13 +108,35 @@ function FitViewOnGraphReady({
     fittedGraphKeyRef.current = graphKey;
     const timers = [220, 720].map((delay) =>
       setTimeout(() => {
-        reactFlow.fitView({ duration: 320, padding: 0.22, minZoom: 0.4, maxZoom: 1.2 });
+        reactFlow.fitView({
+          duration: 320,
+          padding: 0.22,
+          minZoom: BUILDER_OVERVIEW_MIN_ZOOM,
+          maxZoom: BUILDER_OVERVIEW_MAX_ZOOM,
+        });
       }, delay),
     );
+    if (nodeCount > 20 && anchorNodeId) {
+      for (const delay of [940, 1800, 2800]) {
+        timers.push(setTimeout(() => {
+          const anchor = reactFlow.getNode(anchorNodeId);
+          if (!anchor) return;
+          const w = anchor.width ?? 220;
+          const h = anchor.height ?? 60;
+          // A full-vault overview can make 50+ node cards unreadably small.
+          // After establishing the full graph bounds, land on a concrete card
+          // so the builder never opens as an empty-looking canvas.
+          reactFlow.setCenter(anchor.position.x + w / 2, anchor.position.y + h / 2, {
+            zoom: 0.65,
+            duration: 420,
+          });
+        }, delay));
+      }
+    }
     return () => {
       timers.forEach((timer) => clearTimeout(timer));
     };
-  }, [graphKey, nodeCount, reactFlow]);
+  }, [anchorNodeId, graphKey, nodeCount, reactFlow]);
 
   return null;
 }
@@ -150,6 +184,46 @@ function FocusNodeOnDemand({
     });
   }, [token, nodeId, reactFlow]);
   return null;
+}
+
+function GraphAnchorRail({
+  anchors,
+}: {
+  anchors: Array<{ id: string; label: string }>;
+}) {
+  const t = useTranslations("ontologyPages.edit.canvas");
+  const reactFlow = useReactFlow();
+  if (anchors.length === 0) return null;
+  return (
+    <Panel position="top-left" className="!m-3">
+      <div className="max-w-[420px] rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.92)] p-2 shadow-[0_12px_32px_rgba(0,0,0,0.26)]">
+        <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          {t("anchorRailLabel")}
+        </p>
+        <div className="mt-1.5 flex flex-wrap gap-1.5">
+          {anchors.map((anchor) => (
+            <button
+              key={anchor.id}
+              type="button"
+              onClick={() => {
+                const node = reactFlow.getNode(anchor.id);
+                if (!node) return;
+                const w = node.width ?? 220;
+                const h = node.height ?? 60;
+                reactFlow.setCenter(node.position.x + w / 2, node.position.y + h / 2, {
+                  zoom: 0.85,
+                  duration: 320,
+                });
+              }}
+              className="max-w-[180px] truncate rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.36)] hover:text-[color:var(--color-text-primary)]"
+            >
+              {anchor.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </Panel>
+  );
 }
 
 /**
@@ -373,6 +447,31 @@ export function OntologyEditCanvas({
     setLocalNodes((current) => applyNodeChanges(changes, current));
   }, []);
   const allNodes = localNodes;
+  const graphAnchorNodeId = useMemo(() => {
+    const project = allNodes.find((node) => {
+      const data = node.data as { kind?: string } | undefined;
+      return data?.kind === "project";
+    });
+    return project?.id ?? allNodes[0]?.id ?? null;
+  }, [allNodes]);
+  const graphAnchorRail = useMemo(() => {
+    const picked = new Map<string, { id: string; label: string }>();
+    const add = (node: Node | undefined) => {
+      if (!node || picked.has(node.id)) return;
+      const data = node.data as { label?: string } | undefined;
+      picked.set(node.id, { id: node.id, label: data?.label ?? node.id });
+    };
+    add(allNodes.find((node) => (node.data as { kind?: string } | undefined)?.kind === "project"));
+    for (const kind of ["domain", "capability", "element"]) {
+      for (const node of allNodes) {
+        const data = node.data as { kind?: string } | undefined;
+        if (data?.kind === kind) add(node);
+        if (picked.size >= 5) break;
+      }
+      if (picked.size >= 5) break;
+    }
+    return Array.from(picked.values());
+  }, [allNodes]);
   const [miniMapReady, setMiniMapReady] = useState(false);
   const [showMiniMap, setShowMiniMap] = useState(false);
 
@@ -557,16 +656,21 @@ export function OntologyEditCanvas({
           }
         }}
         fitView
-        fitViewOptions={{ padding: 0.2, minZoom: 0.4, maxZoom: 1.2 }}
-        // viewport 밖 노드는 render 스킵 — vault 가 50+ 노드로 자라도
-        // pan/zoom 부드럽게 유지 (xyflow 권장 perf 옵션).
-        onlyRenderVisibleElements
+        fitViewOptions={{
+          padding: 0.2,
+          minZoom: BUILDER_OVERVIEW_MIN_ZOOM,
+          maxZoom: BUILDER_OVERVIEW_MAX_ZOOM,
+        }}
+        // Tauri WebView + large fitView 에서 visible-element 계산이 어긋나면
+        // accessibility tree 에는 노드가 잡히는데 화면은 빈 canvas 처럼 보일 수
+        // 있다. 이 빌더의 dogfood vault 는 50여 노드 규모라 전체 렌더링이 더
+        // 신뢰성 높다.
         // 더블클릭 줌 disable — 사용자가 노드 inline rename 등 다른
         // 더블클릭 인터랙션 추가했을 때 viewport 줌과 충돌 회피.
         zoomOnDoubleClick={false}
         // panel 토글 / 자동정렬 등 stateful 변화를 부드럽게 — viewport
         // transition 200ms 이내라 사용자 의도와 충돌 없음.
-        minZoom={0.2}
+        minZoom={BUILDER_OVERVIEW_MIN_ZOOM}
         maxZoom={2}
       >
         {/* R+ canvas spacing: gap 24 → 36 (dot 간격 50% ↑). 24 는 NODE_WIDTH
@@ -588,8 +692,13 @@ export function OntologyEditCanvas({
             아이콘 흰색 등). 사용자 navigation 은 MiniMap (점프) + 자동정렬
             (fit) + 마우스 휠 (zoom) 으로 충분 → 별도 Controls 미노출. */}
         <FitViewOnAutoLayout token={autoLayoutToken} layoutMode={layoutMode} />
-        <FitViewOnGraphReady graphKey={graphKey} nodeCount={allNodes.length} />
+        <FitViewOnGraphReady
+          graphKey={graphKey}
+          nodeCount={allNodes.length}
+          anchorNodeId={graphAnchorNodeId}
+        />
         <FocusNodeOnDemand token={focusToken} nodeId={focusNodeId} />
+        <GraphAnchorRail anchors={graphAnchorRail} />
         {/* MiniMap — 노드 많아질 때 빠른 navigation. 헌장 §11 호환:
             인디고 alpha + 무채색 alpha mask. ephemeral 은 amber 로 vault
             와 차별. 좌하단 — Controls (우하단) 와 분리. */}
