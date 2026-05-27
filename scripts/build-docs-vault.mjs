@@ -3,6 +3,7 @@
 // docs/**/*.md 를 스캔해서:
 //  1. public/docs-vault/{slug}.md 로 raw 복사
 //  2. src/entities/docs-vault/data/manifest.json 생성 — tree, docs, backlinks, tags
+//  3. src/entities/docs-vault/data/content.json 생성 — desktop/static export fallback
 // static export 빌드 중 'next build' 직전에 실행. 런타임 의존성 없음.
 
 import { readFile, writeFile, mkdir, readdir, stat, rm } from 'node:fs/promises';
@@ -22,6 +23,14 @@ const MANIFEST_OUT = path.join(
   'docs-vault',
   'data',
   'manifest.json',
+);
+const CONTENT_OUT = path.join(
+  ROOT,
+  'src',
+  'entities',
+  'docs-vault',
+  'data',
+  'content.json',
 );
 
 export function usage() {
@@ -243,7 +252,7 @@ export function comparableDoc(doc) {
   };
 }
 
-async function assertOutputsCurrent({ manifest, publicFiles }) {
+async function assertOutputsCurrent({ manifest, content, publicFiles }) {
   const issues = [];
   const currentManifest = await readJsonIfExists(MANIFEST_OUT);
   if (!currentManifest) {
@@ -253,6 +262,13 @@ async function assertOutputsCurrent({ manifest, publicFiles }) {
     stableStringify(comparableManifest(manifest))
   ) {
     issues.push(`stale ${path.relative(ROOT, MANIFEST_OUT)}`);
+  }
+
+  const currentContent = await readJsonIfExists(CONTENT_OUT);
+  if (!currentContent) {
+    issues.push(`missing ${path.relative(ROOT, CONTENT_OUT)}`);
+  } else if (stableStringify(currentContent) !== stableStringify(content)) {
+    issues.push(`stale ${path.relative(ROOT, CONTENT_OUT)}`);
   }
 
   const expectedPublic = new Map(publicFiles.map((file) => [file.relativePath, file.raw]));
@@ -315,6 +331,7 @@ async function buildDocsVault({ check = false } = {}) {
   );
   const docs = [];
   const publicFiles = [];
+  const content = {};
   // backlinksDetail 만 유지 — 단순 backlinks (deprecated) 는 manifest 에서 제거.
   const backlinksDetailMap = new Map(); // slug -> Array<{ fromSlug, context, linkText }>
   const tagsMap = new Map(); // tag -> Set<slug>
@@ -378,6 +395,7 @@ async function buildDocsVault({ check = false } = {}) {
     docs.push(nextDoc);
 
     publicFiles.push({ relativePath: `${slug}.md`, raw });
+    content[slug] = raw;
 
     if (!check) {
       // raw md 를 public/docs-vault 아래 slug 로 복사. 경로의 서브디렉토리까지 생성.
@@ -427,7 +445,7 @@ async function buildDocsVault({ check = false } = {}) {
   }
 
   if (check) {
-    await assertOutputsCurrent({ manifest, publicFiles });
+    await assertOutputsCurrent({ manifest, content, publicFiles });
     console.log(
       `[docs-vault] current · ${docs.length} docs · ${Object.keys(backlinksDetail).length} backlinked · ${Object.keys(tags).length} tags`,
     );
@@ -435,6 +453,7 @@ async function buildDocsVault({ check = false } = {}) {
   }
 
   await writeFile(MANIFEST_OUT, JSON.stringify(manifest, null, 2), 'utf8');
+  await writeFile(CONTENT_OUT, JSON.stringify(content, null, 2), 'utf8');
   console.log(
     `[docs-vault] ${docs.length} docs · ${Object.keys(backlinksDetail).length} backlinked · ${Object.keys(tags).length} tags → ${path.relative(ROOT, MANIFEST_OUT)}`,
   );

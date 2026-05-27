@@ -226,7 +226,7 @@ test("desktop readiness check proves Tauri macOS shell prerequisites", () => {
   );
   assert.match(
     result.stdout,
-    /✓ desktop docs intent opens the native vault picker once/,
+    /✓ desktop docs intent shows a vault setup welcome before opening the native picker/,
   );
   assert.match(
     result.stdout,

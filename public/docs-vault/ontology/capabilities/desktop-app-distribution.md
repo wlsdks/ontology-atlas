@@ -93,9 +93,9 @@ flows work inside the desktop WebView even when browser
 File System Access APIs are absent. `src/views/root-entry/ui/RootEntryPage.tsx`
 keeps the hosted web root as the marketing surface but routes first-run Tauri
 sessions without a restored vault to `/docs/?intent=local` without rendering
-the hosted marketing page; `DocsVaultPage` then opens the native vault picker
-once, so the installed app starts in local work mode instead of the download
-page. The picker keeps a small recent-vault list from persisted Tauri paths,
+the hosted marketing page; `DocsVaultPage` then shows a vault setup welcome
+with open/create/sample/recent choices, so the installed app starts in local
+work mode instead of the download page. The picker keeps a small recent-vault list from persisted Tauri paths,
 can reopen those vaults without another Finder selection, shows the last-opened
 time for each remembered vault so repeated desktop work does not become a blind
 path list, keeps that relative time live while the picker stays open, and can

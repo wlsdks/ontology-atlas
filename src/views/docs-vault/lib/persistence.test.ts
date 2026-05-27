@@ -6,6 +6,7 @@ import {
   parseDocsVaultView,
   readStoredSource,
   scheduleStateSync,
+  shouldShowDesktopVaultWelcome,
   shouldHonorLocalIntent,
   storeSource,
 } from "./persistence";
@@ -90,6 +91,41 @@ describe("desktop-only local vault source", () => {
         localVaultStatus: "unsupported",
       }),
     ).toBe(true);
+  });
+
+  it("shows the desktop vault welcome before a local vault is selected", () => {
+    expect(
+      shouldShowDesktopVaultWelcome({
+        isDesktopRuntime: true,
+        source: "local",
+        localVaultStatus: "idle",
+        hasLocalManifest: false,
+      }),
+    ).toBe(true);
+    expect(
+      shouldShowDesktopVaultWelcome({
+        isDesktopRuntime: true,
+        source: "local",
+        localVaultStatus: "loaded",
+        hasLocalManifest: true,
+      }),
+    ).toBe(false);
+    expect(
+      shouldShowDesktopVaultWelcome({
+        isDesktopRuntime: false,
+        source: "local",
+        localVaultStatus: "idle",
+        hasLocalManifest: false,
+      }),
+    ).toBe(false);
+    expect(
+      shouldShowDesktopVaultWelcome({
+        isDesktopRuntime: true,
+        source: "server",
+        localVaultStatus: "idle",
+        hasLocalManifest: false,
+      }),
+    ).toBe(false);
   });
 });
 

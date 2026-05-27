@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T00:44:08.382Z",
+  "generatedAt": "2026-05-27T04:59:43.308Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3901,8 +3901,8 @@
         }
       ],
       "excerpt": "Context Atlas is the userfacing macOS app name for the ohmyontology project. ohmyontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app ",
-      "wordCount": 3938,
-      "updatedAt": "2026-05-27T00:44:00.366Z",
+      "wordCount": 3947,
+      "updatedAt": "2026-05-27T04:33:34.660Z",
       "linksOut": []
     },
     {
@@ -3959,8 +3959,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6155,
-      "updatedAt": "2026-05-27T00:44:00.367Z",
+      "wordCount": 6163,
+      "updatedAt": "2026-05-27T04:33:22.447Z",
       "linksOut": []
     },
     {
@@ -4498,8 +4498,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260525 (agent setup gate, graph DBstyle query pack, CLI/MCP verification snapshots, and fallback performance checks). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongside t",
-      "wordCount": 7619,
-      "updatedAt": "2026-05-26T23:11:40.170Z",
+      "wordCount": 7621,
+      "updatedAt": "2026-05-27T04:33:30.267Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5129,8 +5129,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 2579,
-      "updatedAt": "2026-05-27T00:31:39.527Z",
+      "wordCount": 2581,
+      "updatedAt": "2026-05-27T04:33:45.792Z",
       "linksOut": []
     },
     {
@@ -6630,8 +6630,8 @@
         }
       ],
       "excerpt": "Written (v2): 20260501 Decisions captured: the user confirmed Direction A (ontologyfirst) and added dogfooding + AIagent partnership as a new direction. This file overlays v2 on top of v1's strategic diagnosis (left in place); the decisions and the new direction below are what's current. One codebase, one ontology, tha",
-      "wordCount": 3469,
-      "updatedAt": "2026-05-27T00:13:25.833Z",
+      "wordCount": 3477,
+      "updatedAt": "2026-05-27T04:33:39.328Z",
       "linksOut": [
         "AGENT-MEMORY-POSITIONING"
       ]

@@ -7,7 +7,12 @@ import ReactMarkdown, { type Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useTranslations } from 'next-intl';
 import { ExternalLink, Hash } from 'lucide-react';
-import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
+import {
+  buildDocsVaultHref,
+  vaultContent,
+  type VaultDoc,
+} from '@/entities/docs-vault';
+import { fetchServerDocContent } from '../lib/server-doc-content';
 
 interface Props {
   doc: VaultDoc;
@@ -96,12 +101,11 @@ export function DocsVaultViewer({
     let cancelled = false;
     const fetcher = getDocContent
       ? getDocContent(doc.slug)
-      : fetch(`/docs-vault/${doc.slug}.md`, { cache: 'no-cache' }).then(
-          async (r) => {
-            if (!r.ok) throw new Error(`HTTP ${r.status}`);
-            return r.text();
-          },
-        );
+      : fetchServerDocContent(doc.slug, {
+          bundledContent: vaultContent as Record<string, string>,
+          locationHref:
+            typeof window === 'undefined' ? undefined : window.location.href,
+        });
     fetcher
       .then((text) => {
         if (cancelled) return;

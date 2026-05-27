@@ -331,8 +331,8 @@ such as Documents, Downloads, Desktop, network volumes, and removable volumes.
 The installed app must also keep first-run
 entry local: `src/views/root-entry/ui/RootEntryPage.tsx` routes Tauri sessions
 without a restored vault to `/docs/?intent=local` without rendering the hosted
-marketing page, and `DocsVaultPage` opens the native picker once for that
-intent. Hosted browser sessions must not treat `/docs/?intent=local` as a vault
+marketing page, and `DocsVaultPage` shows a vault setup welcome that opens the
+native picker only after an explicit user action. Hosted browser sessions must not treat `/docs/?intent=local` as a vault
 opening path; they keep local vault work disabled and leave installation as the
 path to writable local work. Runtime split changes in `RootEntryPage`,
 `DocsVaultPage` persistence, or `OperationsNav` route to

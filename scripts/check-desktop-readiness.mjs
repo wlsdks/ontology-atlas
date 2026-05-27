@@ -1251,13 +1251,14 @@ if (
 }
 
 if (
-  docsVaultPage.includes("desktopIntentPickerOpenedRef") &&
+  docsVaultPage.includes("DesktopVaultWelcome") &&
+  docsVaultPage.includes("shouldShowDesktopVaultWelcome") &&
   docsVaultPage.includes("isTauriVaultRuntime()") &&
   docsVaultPage.includes("openLocalVault()")
 ) {
-  pass("desktop docs intent opens the native vault picker once");
+  pass("desktop docs intent shows a vault setup welcome before opening the native picker");
 } else {
-  fail("src/views/docs-vault/ui/DocsVaultPage.tsx must open the native picker once for Tauri ?intent=local");
+  fail("src/views/docs-vault/ui/DocsVaultPage.tsx must show an app-style vault setup welcome for Tauri ?intent=local and open the native picker only after an explicit user action");
 }
 
 if (

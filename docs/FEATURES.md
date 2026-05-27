@@ -21,7 +21,7 @@ diff review -> better next agent task`.
 
 | Surface | Entry | Audience |
 |---|---|---|
-| **macOS app** (Context Atlas desktop distribution track) | signed DMG → installed local workbench; first run opens `/docs/?intent=local` native vault picker; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/edit`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
+| **macOS app** (Context Atlas desktop distribution track) | signed DMG → installed local workbench; first run opens `/docs/?intent=local` vault setup welcome; visual routes `/docs`, `/ontology`, `/topology`, `/projects`, `/ontology/edit`, `/ontology/insights` | daily visual ontology work — pick a local vault folder, edit markdown-backed nodes/relations, reopen recent vaults without visiting the hosted site |
 | **CLI** (R12 / R14 / R15+ · 43 commands) | `init / agent-setup / add / import / list / find / validate / mcp-verify / query / compile` (vault basics + existing-vault Claude/Codex config repair + installed MCP health/graph-query smoke + deterministic graph compile) · `analyze / infer-imports / bootstrap` (autonomous ingest) · `backlinks / orphans / path / explain / all-paths / reachability / relation-check / rename / merge / delete` (graph CRUD + direct/path/common-neighbor explanation + bounded traversal + transitive closure + write preflight) · `match-nodes / match-edges / domain-matrix / facets / schema / pattern-walk / project-map / overview / hubs / blast-radius / cycles / components / topological-order / health / agent-brief / workspace-brief / growth / maintenance / node / similar` (graph deep dive — `query_ontology` ops, including graph DB-style node/edge scans, relation dashboard facets, relation schema patterns, explicit traversal and project maps, connected island checks, prerequisite ordering, relationship explanation, domain coupling matrix, agent handoff, and growth/maintenance queues) | developer terminal — vault scaffold, daily exploration, bulk import, MCP sanity check, graph deep dive (same authority as AI agent via MCP) |
 | **MCP** (R5 / R7 / R11 / R14 / R16 / R17) | 23 tools (15 read · 8 write) over JSON-RPC | AI agent (Claude Code, Codex, Cursor) — read for context · write back findings · bootstrap empty vault (R16 `analyze_repo_structure` · R17 `infer_imports`) · compile/query/health/agent-brief/workspace-brief as graph-engine memory access |
 | **Website** | Firebase static hosting / `/download` | product introduction, release download path, and read-only demo. Hosted pages do not open or edit local vault folders. |
@@ -59,7 +59,7 @@ input (humans + AI agents)     parse           store              output
 ### `/` — Smart entry
 
 - **Hosted web, no vault** → `LandingPage`
-- **macOS app, no restored vault** → local redirect state, then `/docs/?intent=local` opens the native vault picker once; the installed app does not render the hosted marketing page on first run
+- **macOS app, no restored vault** → local redirect state, then `/docs/?intent=local` shows a vault setup welcome with open/create/sample/recent choices; the installed app does not render the hosted marketing page on first run
 - **Recent desktop vaults** → the picker stores recently opened Tauri vault paths, can reopen them without another Finder selection, and can remove stale paths from the list
 - **Vault loaded** → `OntologyViewPage` (tree + ego graph hub)
 

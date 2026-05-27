@@ -125,7 +125,8 @@ for a macOS prototype:
   after the stored-vault restore attempt when no vault is loaded, without
   rendering the hosted marketing page inside the installed app.
 - `src/views/docs-vault/ui/DocsVaultPage.tsx` treats that desktop intent as the
-  installed-app first-run path and opens the native vault picker once.
+  installed-app first-run path and shows a vault setup welcome before opening
+  the native picker from an explicit user action.
 - `pnpm test:desktop:bridge` verifies that shim against the Tauri command names,
   vault-local agent config validation, and Rust unit tests for the relative-path guard that keeps file
   operations inside the selected vault root. The Rust guard canonicalizes

@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   FilePlus,
   FolderCog,
+  FolderOpen,
   HardDrive,
   Menu,
   Network,
@@ -41,6 +42,7 @@ import {
 } from '@/shared/lib/tauri-vault-fs';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { Tooltip, useToast } from '@/shared/ui';
+import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 // 추출된 page-local helpers.
 import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
 import { useAdvancedMenu } from '../lib/use-advanced-menu';
@@ -92,11 +94,154 @@ import {
   isDocsVaultLocalSourceDisabled,
   readStoredSource,
   scheduleStateSync,
+  shouldShowDesktopVaultWelcome,
   shouldHonorLocalIntent,
   storeSource,
   type DocsVaultSource as Source,
   type DocsVaultView,
 } from "../lib/persistence";
+
+function DesktopVaultWelcome({
+  status,
+  recentVaults,
+  onOpen,
+  onOpenRecent,
+  onOpenSample,
+  t,
+}: {
+  status: string;
+  recentVaults: LocalFsHandleRecord[];
+  onOpen: () => void;
+  onOpenRecent: (record: LocalFsHandleRecord) => void;
+  onOpenSample: () => void;
+  t: ReturnType<typeof useTranslations>;
+}) {
+  const busy = status === 'opening' || status === 'loading';
+
+  return (
+    <main className="flex min-h-0 flex-1 overflow-auto bg-[color:var(--color-canvas)]">
+      <div className="mx-auto grid w-full max-w-5xl content-start gap-8 px-5 py-8 md:px-8 md:py-12">
+        <section className="grid gap-3">
+          <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+            {t('desktopWelcome.eyebrow')}
+          </p>
+          <div className="grid max-w-2xl gap-3">
+            <h2 className="text-[28px] font-semibold leading-tight text-[color:var(--color-text-primary)] md:text-[34px]">
+              {t('desktopWelcome.title')}
+            </h2>
+            <p className="text-[14px] leading-6 text-[color:var(--color-text-tertiary)]">
+              {t('desktopWelcome.body')}
+            </p>
+          </div>
+        </section>
+
+        <section
+          aria-label={t('desktopWelcome.actionsAriaLabel')}
+          className="grid gap-3 md:grid-cols-3"
+        >
+          <button
+            type="button"
+            onClick={onOpen}
+            disabled={busy}
+            className="grid min-h-[136px] content-between rounded-md border border-[color:rgba(139,151,255,0.34)] bg-[color:rgba(94,106,210,0.09)] p-4 text-left transition-colors hover:border-[color:rgba(139,151,255,0.56)] hover:bg-[color:rgba(94,106,210,0.14)] disabled:opacity-60"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.28)] text-[color:rgba(205,212,255,0.94)]">
+              <FolderOpen size={17} aria-hidden />
+            </span>
+            <span className="grid gap-1">
+              <span className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">
+                {busy
+                  ? status === 'opening'
+                    ? t('desktopWelcome.openingTitle')
+                    : t('desktopWelcome.loadingTitle')
+                  : t('desktopWelcome.openTitle')}
+              </span>
+              <span className="text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                {t('desktopWelcome.openBody')}
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpen}
+            disabled={busy}
+            className="grid min-h-[136px] content-between rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-4 text-left transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:bg-[color:var(--color-overlay-1)] disabled:opacity-60"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
+              <FilePlus size={17} aria-hidden />
+            </span>
+            <span className="grid gap-1">
+              <span className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">
+                {t('desktopWelcome.createTitle')}
+              </span>
+              <span className="text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                {t('desktopWelcome.createBody')}
+              </span>
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenSample}
+            className="grid min-h-[136px] content-between rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] p-4 text-left transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:bg-[color:var(--color-overlay-1)]"
+          >
+            <span className="flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] text-[color:var(--color-text-secondary)]">
+              <Package size={17} aria-hidden />
+            </span>
+            <span className="grid gap-1">
+              <span className="text-[14px] font-semibold text-[color:var(--color-text-primary)]">
+                {t('desktopWelcome.sampleTitle')}
+              </span>
+              <span className="text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                {t('desktopWelcome.sampleBody')}
+              </span>
+            </span>
+          </button>
+        </section>
+
+        <section className="grid gap-3">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
+              {t('desktopWelcome.recentTitle')}
+            </h3>
+          </div>
+          {recentVaults.length > 0 ? (
+            <div className="grid gap-2">
+              {recentVaults.map((record) => (
+                <button
+                  key={record.desktopRootPath ?? `${record.id}:${record.name}`}
+                  type="button"
+                  onClick={() => onOpenRecent(record)}
+                  disabled={busy}
+                  className="grid min-w-0 grid-cols-[32px_1fr] items-center gap-3 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-2 text-left transition-colors hover:border-[color:rgba(139,151,255,0.34)] hover:bg-[color:var(--color-overlay-1)] disabled:opacity-60"
+                >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.22)] text-[color:rgba(205,212,255,0.9)]">
+                    <HardDrive size={15} aria-hidden />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[13px] font-medium text-[color:var(--color-text-primary)]">
+                      {record.name}
+                    </span>
+                    {record.desktopRootPath ? (
+                      <span className="block truncate font-mono text-[10px] text-[color:var(--color-text-quaternary)]">
+                        {record.desktopRootPath}
+                      </span>
+                    ) : null}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-3 py-2 text-[12px] text-[color:var(--color-text-tertiary)]">
+              {t('desktopWelcome.recentEmpty')}
+            </p>
+          )}
+        </section>
+      </div>
+    </main>
+  );
+}
 
 function DocsVaultContent() {
   const t = useTranslations('docsVault');
@@ -135,7 +280,10 @@ function DocsVaultContent() {
   // source 초기값을 'local' 로 박아 처음부터 picker UI 가 우측 sidebar 에
   // 보이게 (eval B4 finding — 이전엔 picker 가 4-단계 깊숙이 묻혀 있었음).
   const [source, setSource] = useState<Source>('server');
-  const isDesktopRuntime = isTauriVaultRuntime();
+  const [isDesktopRuntime, setIsDesktopRuntime] = useState(false);
+  useEffect(() => {
+    setIsDesktopRuntime(isTauriVaultRuntime());
+  }, []);
   // ?intent=local 진입 시: source 'local' + advanced panel 펼침. SSR 시점엔
   // searchParams 가 stale 일 수 있어 mount 후 직접 window.location 에서 read.
   // landing 의 '내 마크다운 폴더 열기' CTA 가 dead-end 안 되도록.
@@ -146,7 +294,7 @@ function DocsVaultContent() {
       window.queueMicrotask(() => {
         localIntentAutoOpenRef.current = true;
         setSource('local');
-        setAdvancedOpen(true);
+        setAdvancedOpen(false);
       });
     }
     // mount 1회만 — 사용자가 직접 닫은 후 reload 시 다시 안 열리게.
@@ -158,7 +306,6 @@ function DocsVaultContent() {
   const localVaultStatus = localVault.status;
   const openLocalVault = localVault.open;
   const toast = useToast();
-  const desktopIntentPickerOpenedRef = useRef(false);
   const localSourceDisabled = isDocsVaultLocalSourceDisabled({
     isDesktopRuntime,
     localVaultStatus: localVault.status,
@@ -288,17 +435,6 @@ function DocsVaultContent() {
     }
   }, [source, localVaultStatus, setAdvancedOpen]);
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    if (desktopIntentPickerOpenedRef.current) return;
-    if (!isDesktopRuntime) return;
-    const intent = new URLSearchParams(window.location.search).get('intent');
-    if (intent !== 'local') return;
-    if (source !== 'local' || localVaultStatus !== 'idle') return;
-    desktopIntentPickerOpenedRef.current = true;
-    void openLocalVault();
-  }, [isDesktopRuntime, source, localVaultStatus, openLocalVault]);
-
   const handleSourceChange = useCallback((next: Source) => {
     setSource(next);
     storeSource(next);
@@ -310,15 +446,20 @@ function DocsVaultContent() {
       view: next === 'server' && view === 'folder-topology' ? 'doc' : view,
     });
     if (next === 'server' && view === 'folder-topology') setView('doc');
-    // Local 로 전환 시 vault picker 가 dropdown 안 깊숙이 묻혀 dead-end
-    // 발생 → ?intent=local 의 자동-펼침 동작과 동일하게, 헤더 토글
-    // 클릭만으로도 picker 즉시 노출. 이미 vault loaded 면 dropdown 펼칠
-    // 필요 없음 (사용자는 picker 가 아니라 문서 작업하러 옴).
+    // Local 로 전환 시 Obsidian 스타일 welcome 화면에서 직접 선택하게 한다.
+    // native picker 는 사용자가 "폴더 열기" 를 눌렀을 때만 열린다.
     if (next === 'local' && isDesktopRuntime && localVault.status !== 'loaded') {
       localIntentAutoOpenRef.current = true;
-      setAdvancedOpen(true);
+      setAdvancedOpen(false);
     }
   }, [isDesktopRuntime, replaceUrlState, view, localVault.status, setAdvancedOpen]);
+
+  const showDesktopWelcome = shouldShowDesktopVaultWelcome({
+    isDesktopRuntime,
+    source,
+    localVaultStatus,
+    hasLocalManifest: Boolean(localVault.manifest),
+  });
 
   // 현재 활성 매니페스트 — source 에 따라 분기. 로컬은 loaded 이전엔 null.
   const manifest: VaultManifest =
@@ -1428,6 +1569,16 @@ function DocsVaultContent() {
         </div>
       ) : null}
 
+      {showDesktopWelcome ? (
+        <DesktopVaultWelcome
+          status={localVault.status}
+          recentVaults={localVault.recentVaults}
+          onOpen={() => void openLocalVault()}
+          onOpenRecent={(record) => void localVault.openRecent(record)}
+          onOpenSample={() => handleSourceChange('server')}
+          t={t}
+        />
+      ) : (
       <div className="flex min-h-0 flex-1">
         {/* 좌측 트리 — md+ 에서만 inline aside */}
         <aside className="hidden w-[260px] flex-none flex-col overflow-auto border-r border-[color:var(--color-overlay-2)] bg-[color:var(--color-elevated)] md:flex">
@@ -1664,6 +1815,7 @@ function DocsVaultContent() {
           )}
         </main>
       </div>
+      )}
 
       <AnimatePresence>
         {paletteOpen ? (

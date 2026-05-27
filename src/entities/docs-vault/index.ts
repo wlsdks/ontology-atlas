@@ -6,6 +6,7 @@ export type {
   VaultTreeNode,
 } from './model/types';
 export { default as vaultManifest } from './data/manifest.json';
+export { default as vaultContent } from './data/content.json';
 export {
   buildLocalManifest,
   computeLocalVaultFingerprint,

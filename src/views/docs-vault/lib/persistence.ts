@@ -59,6 +59,27 @@ export function isDocsVaultLocalSourceDisabled({
   return !isDesktopRuntime || localVaultStatus === "unsupported";
 }
 
+export function shouldShowDesktopVaultWelcome({
+  isDesktopRuntime,
+  source,
+  localVaultStatus,
+  hasLocalManifest,
+}: {
+  isDesktopRuntime: boolean;
+  source: DocsVaultSource;
+  localVaultStatus: string;
+  hasLocalManifest: boolean;
+}): boolean {
+  return (
+    isDesktopRuntime &&
+    source === "local" &&
+    !hasLocalManifest &&
+    (localVaultStatus === "idle" ||
+      localVaultStatus === "opening" ||
+      localVaultStatus === "loading")
+  );
+}
+
 /**
  * 외부 popout / print 용 HTML 생성 시 사용자 입력 (title / 본문) 를 안전하게
  * 이스케이프. 4 개 entity 만 처리 (SVG / iframe 안 사용 안 하므로 충분).

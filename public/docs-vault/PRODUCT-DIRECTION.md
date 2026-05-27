@@ -231,8 +231,8 @@ when WebView `showDirectoryPicker` is unavailable, it opens a native folder
 dialog and adapts that folder into the same manifest/editor/image handle shape
 used by the web prototype. The desktop root now waits for stored-vault restore;
 if no vault is loaded in the Tauri runtime, it routes to `/docs/?intent=local`
-and opens the native vault picker once instead of showing the hosted marketing
-landing page. The desktop picker also persists recent Tauri vault paths and can
+and shows a vault setup welcome instead of showing the hosted marketing
+landing page or immediately throwing a native picker over the workspace. The desktop picker also persists recent Tauri vault paths and can
 reopen them without another Finder selection. The build also writes a `.sha256` checksum, and
 `pnpm desktop:verify-app` launch-smokes the built `.app` long enough to catch
 early Tauri/WebView startup crashes before DMG verification. `pnpm
