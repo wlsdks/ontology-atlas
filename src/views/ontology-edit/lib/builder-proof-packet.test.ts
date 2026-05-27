@@ -6,11 +6,19 @@ describe("formatBuilderProofPacket", () => {
     const packet = formatBuilderProofPacket();
 
     expect(packet).toContain("# Builder graph proof");
+    expect(packet).toContain("Setup gate:");
+    expect(packet).toContain(
+      "0. oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
+    );
+    expect(packet).toContain("1. oh-my-ontology agent-brief [vault] --graph-db-pack");
     expect(packet).toContain("query_ontology({\"operation\":\"workspace_brief\"");
     expect(packet).toContain("query_ontology({\"operation\":\"query_plan\",\"targetOperation\":\"match_nodes\"");
     expect(packet).toContain("query_ontology({\"operation\":\"facets\"");
     expect(packet).toContain("query_ontology({\"operation\":\"schema\"");
+    expect(packet).toContain("oh-my-ontology match-nodes [vault] --plan");
+    expect(packet).toContain("oh-my-ontology match-edges [vault] --plan");
     expect(packet).toContain("oh-my-ontology match-nodes [vault]");
+    expect(packet).toContain("Run the setup gate first");
     expect(packet).toContain("Report totalMatches, limited, and returned row count");
     expect(packet).toContain("evidence.pathsComplete");
     expect(packet).toContain("# Post-change ontology sync gate");
@@ -27,6 +35,12 @@ describe("formatBuilderProofPacket", () => {
       'query_ontology({"operation":"match_edges","from":"capabilities/mcp-server"',
     );
     expect(packet).toContain(
+      'query_ontology({"operation":"query_plan","targetOperation":"match_edges","from":"capabilities/mcp-server"',
+    );
+    expect(packet).toContain(
+      'query_ontology({"operation":"query_plan","targetOperation":"match_edges","to":"capabilities/mcp-server"',
+    );
+    expect(packet).toContain(
       'query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"capabilities/mcp-server","to":"<target-slug>"',
     );
     expect(packet).toContain(
@@ -37,6 +51,12 @@ describe("formatBuilderProofPacket", () => {
     );
     expect(packet).toContain(
       "oh-my-ontology blast-radius 'capabilities/mcp-server' [vault]",
+    );
+    expect(packet).toContain(
+      "oh-my-ontology match-edges [vault] --plan --from 'capabilities/mcp-server'",
+    );
+    expect(packet).toContain(
+      "oh-my-ontology match-edges [vault] --plan --to 'capabilities/mcp-server'",
     );
     expect(packet).toContain(
       "oh-my-ontology all-paths 'capabilities/mcp-server' '<target-slug>' [vault] --plan",
