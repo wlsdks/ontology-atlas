@@ -1286,6 +1286,7 @@ export function OntologyEditPage() {
         }}
       />
       <main
+        id="main"
         className={
           fullscreen
             ? "flex h-dvh w-full flex-col px-2 py-2"

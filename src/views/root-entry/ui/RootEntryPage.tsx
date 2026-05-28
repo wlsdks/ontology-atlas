@@ -55,6 +55,7 @@ function DesktopVaultRedirect() {
 
   return (
     <main
+      id="main"
       aria-busy="true"
       className="flex min-h-screen items-center justify-center bg-[color:var(--color-canvas)] px-6"
     >
