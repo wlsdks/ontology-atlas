@@ -164,7 +164,9 @@ actions. Use compact `Files` / `Graph` / `Agent` cells to show that local
 markdown remains the source of truth, frontmatter compiles into graph/query
 surfaces, and MCP agents read the same vault. Action cards can follow, but the
 first native-app entry must make the ontology workbench contract clearer than
-the document-editor mechanics.
+the document-editor mechanics. The `Agent` cell should expose a copyable graph
+DB runtime gate, so Source Vault can prove the same read-first agent loop
+without sending the user to a deeper panel first.
 The global entry label and page header for `/docs` should say `Source` /
 `Source Vault`, not `Docs`, because that route is the local markdown source and
 agent setup surface for the graph. Keep `document` language for individual

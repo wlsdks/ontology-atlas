@@ -17,6 +17,8 @@ import { AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft,
   Bot,
+  Check,
+  Clipboard,
   FilePlus,
   FolderCog,
   FolderOpen,
@@ -42,7 +44,10 @@ import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
 } from '@/shared/lib/tauri-vault-fs';
-import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from '@/shared/lib/ontology-tree';
+import {
+  AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+  AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
+} from '@/shared/lib/ontology-tree';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { Tooltip, useToast } from '@/shared/ui';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
@@ -125,6 +130,8 @@ function DocsVaultSourceContractBar({
   graphHref: string;
   t: ReturnType<typeof useTranslations>;
 }) {
+  const toast = useToast();
+  const [copiedGate, setCopiedGate] = useState(false);
   const sourceLabel =
     source === 'local'
       ? t('sourceContract.filesLocalValue', { count: manifest.docs.length })
@@ -167,8 +174,23 @@ function DocsVaultSourceContractBar({
       chip: t('sourceContract.agentChip'),
       href: '/ontology/insights/',
       cta: t('sourceContract.agentCta'),
+      copyText: AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
+      copyCta: t('sourceContract.agentCopyGate'),
+      copyAriaLabel: t('sourceContract.agentCopyGateAriaLabel'),
+      copySuccess: t('sourceContract.agentCopyGateSuccess'),
     },
   ] as const;
+
+  async function handleCopyGate(text: string, successMessage: string) {
+    const ok = await copyText(text);
+    if (!ok) {
+      toast.show(t('sourceContract.copyFailed'), 'error');
+      return;
+    }
+    setCopiedGate(true);
+    toast.show(successMessage, 'success');
+    window.setTimeout(() => setCopiedGate(false), 1500);
+  }
 
   return (
     <section
@@ -202,12 +224,25 @@ function DocsVaultSourceContractBar({
                   {cell.body}
                 </p>
               </div>
-              <Link
-                href={cell.href}
-                className="inline-flex h-7 shrink-0 items-center rounded-sm border border-[color:var(--color-divider)] px-2 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
-              >
-                {cell.cta}
-              </Link>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <Link
+                  href={cell.href}
+                  className="inline-flex h-7 items-center rounded-sm border border-[color:var(--color-divider)] px-2 text-[10.5px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
+                >
+                  {cell.cta}
+                </Link>
+                {'copyText' in cell ? (
+                  <button
+                    type="button"
+                    aria-label={cell.copyAriaLabel}
+                    onClick={() => void handleCopyGate(cell.copyText, cell.copySuccess)}
+                    className="inline-flex h-6 items-center gap-1 rounded-sm border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(94,106,210,0.06)] px-1.5 font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.38)] hover:text-[color:var(--color-text-primary)]"
+                  >
+                    {copiedGate ? <Check size={10} aria-hidden /> : <Clipboard size={10} aria-hidden />}
+                    {cell.copyCta}
+                  </button>
+                ) : null}
+              </div>
             </article>
           );
         })}

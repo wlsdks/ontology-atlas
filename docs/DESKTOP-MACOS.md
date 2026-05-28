@@ -278,7 +278,8 @@ when missing prerequisites should fail fast.
 that the root `out/index.html` app entry exists, that both `en` and `ko` static
 routes exist for `/download`, `/docs`, `/ontology`, `/topology`,
 `/ontology/edit`, and `/ontology/insights`, that the ontology workbench route
-titles match the expected app surfaces, that `/ontology`, `/ontology/edit`, and
+titles match the expected app surfaces, that `/docs` bundles the Source Vault
+graph-gate copy action, that `/ontology`, `/ontology/edit`, and
 `/ontology/insights` bundle the graph DB proof copy (`Graph DB proof`,
 `Browse`, `Write`, `Query`, and `dogfood:graph-db`), that `/ontology` also
 bundles the canonical slug handle copy used by the Browse tree handoff, that

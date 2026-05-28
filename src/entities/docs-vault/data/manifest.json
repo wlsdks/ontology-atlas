@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T02:40:26.451Z",
+  "generatedAt": "2026-05-28T02:46:18.477Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1782,
-      "updatedAt": "2026-05-28T02:39:58.112Z",
+      "wordCount": 1812,
+      "updatedAt": "2026-05-28T02:45:50.081Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -3906,8 +3906,8 @@
         }
       ],
       "excerpt": "Context Atlas is the userfacing macOS app name for the ohmyontology project. ohmyontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app ",
-      "wordCount": 4121,
-      "updatedAt": "2026-05-28T02:39:47.540Z",
+      "wordCount": 4130,
+      "updatedAt": "2026-05-28T02:45:50.082Z",
       "linksOut": []
     },
     {
@@ -3964,8 +3964,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6423,
-      "updatedAt": "2026-05-28T02:39:47.541Z",
+      "wordCount": 6428,
+      "updatedAt": "2026-05-28T02:45:50.082Z",
       "linksOut": []
     },
     {
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8279,
-      "updatedAt": "2026-05-28T01:43:19.115Z",
+      "wordCount": 8289,
+      "updatedAt": "2026-05-28T02:45:50.081Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5140,8 +5140,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 2874,
-      "updatedAt": "2026-05-28T02:39:47.541Z",
+      "wordCount": 2879,
+      "updatedAt": "2026-05-28T02:45:50.081Z",
       "linksOut": []
     },
     {
@@ -6158,9 +6158,9 @@
           "slug": "file-system-access-api"
         }
       ],
-      "excerpt": "브라우저 native API — showDirectoryPicker() 로 사용자 폴더 선택, FileSystemDirectoryHandle 로 read/write. 우리는 IndexedDB 에 핸들 영속, focus / visibility 시 fingerprint 비교 재스캔. SSRsafe (window 가드). 미지원 브라우저는 LocalVaultPicker 가 명시적 안내.",
-      "wordCount": 38,
-      "updatedAt": "2026-05-04T01:27:35.687Z",
+      "excerpt": "브라우저 native API — showDirectoryPicker() 로 사용자 폴더 선택, FileSystemDirectoryHandle 로 read/write. 우리는 IndexedDB 에 핸들 영속, focus / visibility 시 fingerprint 비교 재스캔. SSRsafe (window 가드). 미지원 브라우저는 LocalVaultPicker 가 명시적 안내. The Source Vault first viewport treats that runtime as an ontology execution contract instead of a plain ",
+      "wordCount": 115,
+      "updatedAt": "2026-05-28T02:45:50.082Z",
       "linksOut": []
     },
     {

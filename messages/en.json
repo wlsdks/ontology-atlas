@@ -1737,7 +1737,11 @@
       "agentValue": "{count} graph checks",
       "agentBody": "Claude Code, Codex, Cursor, and terminal sessions run the same graph DB proof gate before writes.",
       "agentChip": "read-first",
-      "agentCta": "Query"
+      "agentCta": "Query",
+      "agentCopyGate": "Copy graph gate",
+      "agentCopyGateAriaLabel": "Copy the source vault graph DB runtime gate",
+      "agentCopyGateSuccess": "Source vault graph gate copied.",
+      "copyFailed": "Copy failed"
     },
     "advanced": {
       "viewTopology": "Topology",

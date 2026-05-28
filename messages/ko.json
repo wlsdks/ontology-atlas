@@ -1737,7 +1737,11 @@
       "agentValue": "graph 검사 {count}개",
       "agentBody": "Claude Code, Codex, Cursor, 터미널 세션이 write 전에 같은 graph DB proof gate 를 실행합니다.",
       "agentChip": "read-first",
-      "agentCta": "Query"
+      "agentCta": "Query",
+      "agentCopyGate": "graph gate 복사",
+      "agentCopyGateAriaLabel": "Source Vault graph DB runtime gate 복사",
+      "agentCopyGateSuccess": "Source Vault graph gate를 복사했습니다.",
+      "copyFailed": "복사 실패"
     },
     "advanced": {
       "viewTopology": "토폴로지",

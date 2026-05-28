@@ -53,6 +53,17 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "/ontology must keep Browse / Write / Query cards plus the graph DB proof rail from docs/DESIGN-SYSTEM.md.",
   },
   {
+    id: "source-vault-execution-contract",
+    file: "src/views/docs-vault/ui/DocsVaultPage.tsx",
+    markers: [
+      "function DocsVaultSourceContractBar",
+      "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
+      "sourceContract.agentCopyGate",
+    ],
+    reason:
+      "/docs must read as Source Vault with Files / Graph / Agent execution contract and a copyable graph gate.",
+  },
+  {
     id: "builder-write-verify-loop",
     file: "src/views/ontology-edit/ui/OntologyEditPage.tsx",
     markers: [
