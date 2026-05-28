@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T06:41:37.184Z",
+  "generatedAt": "2026-05-28T06:48:29.111Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 2062,
-      "updatedAt": "2026-05-28T06:40:35.367Z",
+      "wordCount": 2075,
+      "updatedAt": "2026-05-28T06:48:01.940Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]

@@ -25,8 +25,8 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
   "ko:/ontology/insights": "온톨로지 인사이트 · Context Atlas",
 };
 export const DESKTOP_SMOKE_ROUTE_TEXT = {
-  "en:/docs": ["Source Vault", "Files", "Graph", "Agent", "local markdown", "frontmatter", "MCP", "runtime gate", "relation_name_parity", "pattern_walk/project_map", "Copy graph gate"],
-  "ko:/docs": ["Source Vault", "Files", "Graph", "Agent", "local markdown", "frontmatter", "MCP", "runtime gate", "relation_name_parity", "pattern_walk/project_map", "graph gate 복사"],
+  "en:/docs": ["Source Vault", "source records", "Files", "Graph", "Agent", "local markdown", "frontmatter", "MCP", "runtime gate", "relation_name_parity", "pattern_walk/project_map", "Copy graph gate"],
+  "ko:/docs": ["Source Vault", "소스 기록", "Files", "Graph", "Agent", "local markdown", "frontmatter", "MCP", "runtime gate", "relation_name_parity", "pattern_walk/project_map", "graph gate 복사"],
   "en:/ontology": ["Tree role", "Graph refs", "Evidence", "Graph DB proof", "Browse", "Write", "Query", "01", "02", "03", "tree projection", "frontmatter write", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "canonical slug", "graph handle", "Copy runtime gate"],
   "ko:/ontology": ["역할", "참조", "근거", "Graph DB proof", "Browse", "Write", "Query", "01", "02", "03", "tree projection", "frontmatter write", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "canonical slug", "graph handle", "runtime gate 복사"],
   "en:/ontology/edit": ["Source", "Draft", "Guard", "Proof", "01", "02", "03", "04", "local markdown", "canvas draft", "relation guard", "graph db + health", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "runtime replay", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "focus saved slug", "active slug", "Focus saved anchor", "Copy guard", "Copy sync gate"],
