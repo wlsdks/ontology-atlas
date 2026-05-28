@@ -1006,6 +1006,23 @@ describe('package contract helpers', () => {
     assert.match(line, /depends_on` are normalized to stored graph keys/);
   });
 
+  it('keeps user-facing source vault naming out of legacy Docs framing', () => {
+    const features = readFileSync('docs/FEATURES.md', 'utf-8');
+    const labels = readFileSync('src/widgets/topology-map-sigma/lib/labels.ts', 'utf-8');
+
+    assert.match(features, /Sticky header: 3 nav items \(Source \/ Ontology \/ Topology\)/);
+    assert.match(features, /Source \(`\/docs`\)/);
+    assert.match(features, /Source Vault palette exposes the same prompt/);
+    assert.match(features, /source vault palette · source graph · source files · source actions/);
+    assert.match(features, /Source Vault palette \| Cycle mode/);
+    assert.doesNotMatch(features, /Docs \/ Ontology \/ Topology/);
+    assert.doesNotMatch(features, /Docs \(`\/docs`\)/);
+    assert.doesNotMatch(features, /Docs palette/);
+    assert.doesNotMatch(features, /docs palette · docs graph · docs source · docs actions/);
+    assert.doesNotMatch(labels, /docs: 'Docs'/);
+    assert.match(labels, /docs: 'Source Vault'/);
+  });
+
   it('keeps docs aligned with compile_ontology large-vault options', () => {
     const features = readFileSync('docs/FEATURES.md', 'utf-8');
     const mcpReadme = readFileSync('mcp/README.md', 'utf-8');
