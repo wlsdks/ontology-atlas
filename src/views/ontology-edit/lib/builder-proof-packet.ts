@@ -38,10 +38,12 @@ export function formatBuilderProofPacket(selectedProofNodeId?: string | null): s
       `4. ${mcpCall({ operation: "match_edges", from: selected, limit: 10 })}`,
       `5. ${mcpCall({ operation: "query_plan", targetOperation: "match_edges", to: selected, limit: 10 })}`,
       `6. ${mcpCall({ operation: "match_edges", to: selected, limit: 10 })}`,
-      `7. ${mcpCall({ operation: "query_plan", targetOperation: "all_paths", from: selected, to: target, maxHops: 4, searchBudget: 1000, limit: 10 })}`,
-      `8. ${mcpCall({ operation: "all_paths", from: selected, to: target, maxHops: 4, searchBudget: 1000, limit: 10 })}`,
-      `9. ${mcpCall({ operation: "relation_check", from: selected, to: target, type: relationType })}`,
-      `10. ${mcpCall({ operation: "health", limit: 5 })}`,
+      `7. ${mcpCall({ operation: "query_plan", targetOperation: "match_edges", fromKind: "capability", toKind: "element", type: "elements", limit: 10 })}`,
+      `8. ${mcpCall({ operation: "match_edges", fromKind: "capability", toKind: "element", type: "elements", limit: 10 })}`,
+      `9. ${mcpCall({ operation: "query_plan", targetOperation: "all_paths", from: selected, to: target, maxHops: 4, searchBudget: 1000, limit: 10 })}`,
+      `10. ${mcpCall({ operation: "all_paths", from: selected, to: target, maxHops: 4, searchBudget: 1000, limit: 10 })}`,
+      `11. ${mcpCall({ operation: "relation_check", from: selected, to: target, type: relationType })}`,
+      `12. ${mcpCall({ operation: "health", limit: 5 })}`,
     );
   } else {
     lines.push(
@@ -50,9 +52,11 @@ export function formatBuilderProofPacket(selectedProofNodeId?: string | null): s
       `3. ${mcpCall({ operation: "match_nodes", kind: "capability", minDegree: 1, sort: "degree", limit: 10 })}`,
       `4. ${mcpCall({ operation: "query_plan", targetOperation: "match_edges", limit: 10 })}`,
       `5. ${mcpCall({ operation: "match_edges", limit: 10 })}`,
-      `6. ${mcpCall({ operation: "facets", limit: 10 })}`,
-      `7. ${mcpCall({ operation: "schema", limit: 10 })}`,
-      `8. ${mcpCall({ operation: "health", limit: 5 })}`,
+      `6. ${mcpCall({ operation: "query_plan", targetOperation: "match_edges", fromKind: "capability", toKind: "element", type: "elements", limit: 10 })}`,
+      `7. ${mcpCall({ operation: "match_edges", fromKind: "capability", toKind: "element", type: "elements", limit: 10 })}`,
+      `8. ${mcpCall({ operation: "facets", limit: 10 })}`,
+      `9. ${mcpCall({ operation: "schema", limit: 10 })}`,
+      `10. ${mcpCall({ operation: "health", limit: 5 })}`,
     );
   }
 
@@ -68,10 +72,12 @@ export function formatBuilderProofPacket(selectedProofNodeId?: string | null): s
       `4. oh-my-ontology match-edges [vault] --from ${slug} --limit 10`,
       `5. oh-my-ontology match-edges [vault] --plan --to ${slug} --limit 10`,
       `6. oh-my-ontology match-edges [vault] --to ${slug} --limit 10`,
-      `7. oh-my-ontology all-paths ${slug} ${target} [vault] --plan --max-hops 4 --limit 10 --search-budget 1000`,
-      `8. oh-my-ontology all-paths ${slug} ${target} [vault] --max-hops 4 --limit 10 --search-budget 1000`,
-      `9. oh-my-ontology relation-check ${slug} ${target} ${relationType} [vault]`,
-      "10. oh-my-ontology health [vault] --limit 5",
+      "7. oh-my-ontology match-edges [vault] --plan --from-kind capability --to-kind element --type elements --limit 10",
+      "8. oh-my-ontology match-edges [vault] --from-kind capability --to-kind element --type elements --limit 10",
+      `9. oh-my-ontology all-paths ${slug} ${target} [vault] --plan --max-hops 4 --limit 10 --search-budget 1000`,
+      `10. oh-my-ontology all-paths ${slug} ${target} [vault] --max-hops 4 --limit 10 --search-budget 1000`,
+      `11. oh-my-ontology relation-check ${slug} ${target} ${relationType} [vault]`,
+      "12. oh-my-ontology health [vault] --limit 5",
     );
   } else {
     lines.push(
@@ -80,9 +86,11 @@ export function formatBuilderProofPacket(selectedProofNodeId?: string | null): s
       "3. oh-my-ontology match-nodes [vault] --kind capability --min-degree 1 --sort degree --limit 10",
       "4. oh-my-ontology match-edges [vault] --plan --limit 10",
       "5. oh-my-ontology match-edges [vault] --limit 10",
-      "6. oh-my-ontology facets [vault] --limit 10",
-      "7. oh-my-ontology schema [vault] --limit 10",
-      "8. oh-my-ontology health [vault] --limit 5",
+      "6. oh-my-ontology match-edges [vault] --plan --from-kind capability --to-kind element --type elements --limit 10",
+      "7. oh-my-ontology match-edges [vault] --from-kind capability --to-kind element --type elements --limit 10",
+      "8. oh-my-ontology facets [vault] --limit 10",
+      "9. oh-my-ontology schema [vault] --limit 10",
+      "10. oh-my-ontology health [vault] --limit 5",
     );
   }
 
@@ -91,9 +99,10 @@ export function formatBuilderProofPacket(selectedProofNodeId?: string | null): s
     "Evidence checklist:",
     "1. Run the setup gate first and use the graph DB pack when you need the whole scan queue.",
     "2. Report totalMatches, limited, and returned row count for every match_nodes or match_edges scan.",
-    "3. Treat scan rows as candidates until a node_profile, blast_radius, path, explain, or relation_check follow-up confirms the specific claim.",
-    "4. For path evidence, report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, and evidence.pathsComplete before using it as write evidence.",
-    "5. After a frontmatter change, run the post-change sync gate below before claiming the ontology is healthy.",
+    "3. For frontmatter-key scans, report relationType and via so stored keys like elements/dependencies are not mistaken for generic contains/relates edges.",
+    "4. Treat scan rows as candidates until a node_profile, blast_radius, path, explain, or relation_check follow-up confirms the specific claim.",
+    "5. For path evidence, report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, and evidence.pathsComplete before using it as write evidence.",
+    "6. After a frontmatter change, run the post-change sync gate below before claiming the ontology is healthy.",
     "",
     "Post-change sync gate:",
     formatAgentPostChangeSyncPacket(),

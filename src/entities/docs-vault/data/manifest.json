@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-27T23:51:44.636Z",
+  "generatedAt": "2026-05-27T23:59:37.437Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6132,8 +6132,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. The strip makes the builder's write contract visible before the user draws: source tells whether the current graph is a writable local markdown vault, a restoring desktop vault, o",
-      "wordCount": 346,
-      "updatedAt": "2026-05-27T23:14:43.356Z",
+      "wordCount": 390,
+      "updatedAt": "2026-05-27T23:58:55.054Z",
       "linksOut": []
     },
     {

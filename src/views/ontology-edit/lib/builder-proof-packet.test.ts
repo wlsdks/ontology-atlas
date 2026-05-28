@@ -15,11 +15,18 @@ describe("formatBuilderProofPacket", () => {
     expect(packet).toContain("query_ontology({\"operation\":\"query_plan\",\"targetOperation\":\"match_nodes\"");
     expect(packet).toContain("query_ontology({\"operation\":\"facets\"");
     expect(packet).toContain("query_ontology({\"operation\":\"schema\"");
+    expect(packet).toContain(
+      'query_ontology({"operation":"match_edges","fromKind":"capability","toKind":"element","type":"elements"',
+    );
     expect(packet).toContain("oh-my-ontology match-nodes [vault] --plan");
     expect(packet).toContain("oh-my-ontology match-edges [vault] --plan");
+    expect(packet).toContain(
+      "oh-my-ontology match-edges [vault] --plan --from-kind capability --to-kind element --type elements",
+    );
     expect(packet).toContain("oh-my-ontology match-nodes [vault]");
     expect(packet).toContain("Run the setup gate first");
     expect(packet).toContain("Report totalMatches, limited, and returned row count");
+    expect(packet).toContain("report relationType and via");
     expect(packet).toContain("evidence.pathsComplete");
     expect(packet).toContain("# Post-change ontology sync gate");
   });
@@ -41,6 +48,12 @@ describe("formatBuilderProofPacket", () => {
       'query_ontology({"operation":"query_plan","targetOperation":"match_edges","to":"capabilities/mcp-server"',
     );
     expect(packet).toContain(
+      'query_ontology({"operation":"query_plan","targetOperation":"match_edges","fromKind":"capability","toKind":"element","type":"elements"',
+    );
+    expect(packet).toContain(
+      'query_ontology({"operation":"match_edges","fromKind":"capability","toKind":"element","type":"elements"',
+    );
+    expect(packet).toContain(
       'query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"capabilities/mcp-server","to":"<target-slug>"',
     );
     expect(packet).toContain(
@@ -57,6 +70,9 @@ describe("formatBuilderProofPacket", () => {
     );
     expect(packet).toContain(
       "oh-my-ontology match-edges [vault] --plan --to 'capabilities/mcp-server'",
+    );
+    expect(packet).toContain(
+      "oh-my-ontology match-edges [vault] --plan --from-kind capability --to-kind element --type elements",
     );
     expect(packet).toContain(
       "oh-my-ontology all-paths 'capabilities/mcp-server' '<target-slug>' [vault] --plan",
