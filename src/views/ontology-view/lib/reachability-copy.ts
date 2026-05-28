@@ -1,5 +1,6 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import {
+  AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   formatAgentPostChangeSyncPacket,
   type OntologyReachabilityDirection,
 } from "@/shared/lib/ontology-tree";
@@ -189,7 +190,7 @@ export function buildAgentContextBundle({
     "2. Report totalMatches, limited, and returned row count for incoming/outgoing match_edges scans.",
     "3. Treat scan rows as candidates until node_profile, blast_radius, path, explain, all_paths, or relation_check confirms the exact claim.",
     "4. For all_paths, report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.",
-    "5. Run the post-change sync gate below after any frontmatter edit.",
+    `5. Run the post-change sync gate below after any frontmatter edit; it starts with ${AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT} runtime graph DB checks.`,
     "",
     "Post-change sync gate:",
     formatAgentPostChangeSyncPacket(),
