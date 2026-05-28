@@ -24,7 +24,11 @@ function writeCleanWorkbenchFixtures(root) {
     "src/views/ontology-view/ui/OntologyViewPage.tsx",
     [
       "function GraphWorkbenchSummary() {}",
+      "function TreeSelectionHint() {}",
       "<GraphProofRail model={graphProofRailModel} />",
+      "copyRuntimeGate",
+      "activeSlugLabel",
+      "treeProof",
       "formatAgentPostChangeSyncPacket",
     ].join("\n"),
   );
@@ -34,8 +38,11 @@ function writeCleanWorkbenchFixtures(root) {
     [
       "function BuilderWriteSummary() {}",
       "function BuilderCanvasEntryRail() {}",
+      "formatBuilderGuardPacket",
       "formatBuilderProofPacket",
       "formatAgentPostChangeSyncPacket",
+      "activeFocus",
+      "proofChipSelected",
     ].join("\n"),
   );
   writeFixture(
@@ -45,7 +52,20 @@ function writeCleanWorkbenchFixtures(root) {
       "function InsightsQueryPackCockpit() {}",
       "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
       "AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND",
+      "queryCockpitCopyRuntimeGate",
       "queryCockpitContractsAriaLabel",
+      "queryCockpitLiveProofAriaLabel",
+      "queryCockpitEvidenceAriaLabel",
+      "focused_blast_radius",
+    ].join("\n"),
+  );
+  writeFixture(
+    root,
+    "src/views/docs-vault/ui/DocsVaultPage.tsx",
+    [
+      "function DocsVaultSourceContractBar() {}",
+      "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
+      "sourceContract.agentCopyGate",
     ].join("\n"),
   );
 }
@@ -60,9 +80,9 @@ test("ontology design surface passes when visual and workbench contracts are pre
   });
 
   assert.equal(report.ok, true);
-  assert.equal(report.requiredSurfaceMarkerCount, 3);
+  assert.equal(report.requiredSurfaceMarkerCount, 4);
   assert.equal(report.violations.length, 0);
-  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /3 workbench structure contracts/);
+  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /4 workbench structure contracts/);
 });
 
 test("ontology design surface reports forbidden visual drift", () => {
@@ -106,8 +126,17 @@ test("ontology design surface reports missing workbench structure markers", () =
 
   assert.equal(report.ok, false);
   assert.deepEqual(
-    report.violations.map((violation) => violation.check.id),
+    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
     ["query-cockpit-runtime-gate"],
   );
-  assert.match(report.violations[0].source, /missing marker: queryCockpitContractsAriaLabel/);
+  assert.deepEqual(
+    report.violations.map((violation) => violation.source),
+    [
+      "missing marker: queryCockpitCopyRuntimeGate",
+      "missing marker: queryCockpitContractsAriaLabel",
+      "missing marker: queryCockpitLiveProofAriaLabel",
+      "missing marker: queryCockpitEvidenceAriaLabel",
+      "missing marker: focused_blast_radius",
+    ],
+  );
 });

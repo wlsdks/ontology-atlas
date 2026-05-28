@@ -46,8 +46,11 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     file: "src/views/ontology-view/ui/OntologyViewPage.tsx",
     markers: [
       "function GraphWorkbenchSummary",
+      "function TreeSelectionHint",
       "<GraphProofRail model={graphProofRailModel} />",
       "copyRuntimeGate",
+      "activeSlugLabel",
+      "treeProof",
       "formatAgentPostChangeSyncPacket",
     ],
     reason:
@@ -73,6 +76,8 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "formatBuilderGuardPacket",
       "formatBuilderProofPacket",
       "formatAgentPostChangeSyncPacket",
+      "activeFocus",
+      "proofChipSelected",
     ],
     reason:
       "/ontology/edit must expose Source / Draft / Guard / Proof plus persisted graph anchors before canvas work.",
@@ -86,6 +91,9 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND",
       "queryCockpitCopyRuntimeGate",
       "queryCockpitContractsAriaLabel",
+      "queryCockpitLiveProofAriaLabel",
+      "queryCockpitEvidenceAriaLabel",
+      "focused_blast_radius",
     ],
     reason:
       "/ontology/insights must lead with executable graph DB query pack, runtime gate, and result contracts.",
