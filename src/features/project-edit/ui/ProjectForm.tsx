@@ -1020,8 +1020,9 @@ export function ProjectForm({
           </FieldRow>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FieldRow label={t("fields.tagsCsv")}>
+            <FieldRow label={t("fields.tagsCsv")} fieldId={PROJECT_FIELD_IDS.tagsCsv}>
               <Input
+                id={PROJECT_FIELD_IDS.tagsCsv}
                 name="tagsCsv"
                 value={values.tagsCsv ?? ""}
                 onChange={(v) => setValue("tagsCsv", v)}
@@ -1029,8 +1030,9 @@ export function ProjectForm({
               />
             </FieldRow>
 
-            <FieldRow label={t("fields.stackCsv")}>
+            <FieldRow label={t("fields.stackCsv")} fieldId={PROJECT_FIELD_IDS.stackCsv}>
               <Input
+                id={PROJECT_FIELD_IDS.stackCsv}
                 name="stackCsv"
                 value={values.stackCsv ?? ""}
                 onChange={(v) => setValue("stackCsv", v)}
@@ -1044,8 +1046,10 @@ export function ProjectForm({
             label={t("fields.linksText")}
             error={errors.linksText}
             errorTestId="project-error-links"
+            fieldId={PROJECT_FIELD_IDS.linksText}
           >
             <Textarea
+              id={PROJECT_FIELD_IDS.linksText}
               name="linksText"
               data-testid="project-input-links"
               value={values.linksText ?? ""}
@@ -1112,8 +1116,10 @@ export function ProjectForm({
               label={t("fields.startedAt")}
               error={errors.startedAt}
               errorTestId="project-error-startedAt"
+              fieldId={PROJECT_FIELD_IDS.startedAt}
             >
               <Input
+                id={PROJECT_FIELD_IDS.startedAt}
                 name="startedAt"
                 data-testid="project-input-started-at"
                 type="date"
@@ -1126,8 +1132,10 @@ export function ProjectForm({
               label={t("fields.launchedAt")}
               error={errors.launchedAt}
               errorTestId="project-error-launchedAt"
+              fieldId={PROJECT_FIELD_IDS.launchedAt}
             >
               <Input
+                id={PROJECT_FIELD_IDS.launchedAt}
                 name="launchedAt"
                 data-testid="project-input-launched-at"
                 type="date"
@@ -1138,8 +1146,9 @@ export function ProjectForm({
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <FieldRow label={t("fields.owner")}>
+            <FieldRow label={t("fields.owner")} fieldId={PROJECT_FIELD_IDS.owner}>
               <Input
+                id={PROJECT_FIELD_IDS.owner}
                 name="owner"
                 value={values.owner ?? ""}
                 onChange={(v) => setValue("owner", v)}
@@ -1147,8 +1156,9 @@ export function ProjectForm({
               />
             </FieldRow>
 
-            <FieldRow label={t("fields.icon")}>
+            <FieldRow label={t("fields.icon")} fieldId={PROJECT_FIELD_IDS.icon}>
               <Input
+                id={PROJECT_FIELD_IDS.icon}
                 name="icon"
                 value={values.icon ?? ""}
                 onChange={(v) => setValue("icon", v)}
@@ -1156,8 +1166,9 @@ export function ProjectForm({
               />
             </FieldRow>
 
-            <FieldRow label={t("fields.progress")}>
+            <FieldRow label={t("fields.progress")} fieldId={PROJECT_FIELD_IDS.progress}>
               <Input
+                id={PROJECT_FIELD_IDS.progress}
                 name="progress"
                 type="number"
                 value={
