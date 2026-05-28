@@ -223,7 +223,7 @@ function EditorContent({
   }
 
   return (
-    <main className="min-h-screen bg-[color:var(--color-canvas)] px-4 py-8 md:px-12 md:py-10">
+    <main id="main" className="min-h-screen bg-[color:var(--color-canvas)] px-4 py-8 md:px-12 md:py-10">
       <div className="mx-auto max-w-4xl">
         <Link
           href={safeReturnTo}
