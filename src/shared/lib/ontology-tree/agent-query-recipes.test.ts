@@ -1039,6 +1039,7 @@ describe("buildAgentQueryRecipes", () => {
       "oh-my-ontology cycles [vault] --max-hops 8",
       "oh-my-ontology growth [vault] --limit 20",
       "oh-my-ontology maintenance [vault] --limit 20",
+      "pnpm dogfood:graph-db # 10 runtime graph DB checks",
       "oh-my-ontology validate [vault]",
     ]);
   });

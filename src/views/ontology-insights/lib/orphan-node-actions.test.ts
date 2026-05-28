@@ -98,6 +98,9 @@ describe("formatInsightsOrphanRepairPacket", () => {
 
 Run this after a non-trivial code change before handing work to Claude Code, Codex, or another collaborator.
 
+## Runtime graph DB gate
+10 checks · pnpm dogfood:graph-db
+
 ## Run when
 - a domain, capability, element, or relation was introduced, renamed, split, merged, or made more explicit
 - a UI, CLI, MCP, or docs change changes what this codebase is or how an agent should navigate it
@@ -150,7 +153,8 @@ Run this after a non-trivial code change before handing work to Claude Code, Cod
 2. oh-my-ontology cycles [vault] --max-hops 8
 3. oh-my-ontology growth [vault] --limit 20
 4. oh-my-ontology maintenance [vault] --limit 20
-5. oh-my-ontology validate [vault]
+5. pnpm dogfood:graph-db # 10 runtime graph DB checks
+6. oh-my-ontology validate [vault]
 
 ## Skip when
 - typo-only, comment-only, one-line style, lint config, or test fixture changes with no ontology shape change`);
@@ -193,6 +197,9 @@ Run this after a non-trivial code change before handing work to Claude Code, Cod
 
 Run this after a non-trivial code change before handing work to Claude Code, Codex, or another collaborator.
 
+## Runtime graph DB gate
+10 checks · pnpm dogfood:graph-db
+
 ## Run when
 - a domain, capability, element, or relation was introduced, renamed, split, merged, or made more explicit
 - a UI, CLI, MCP, or docs change changes what this codebase is or how an agent should navigate it
@@ -245,7 +252,8 @@ Run this after a non-trivial code change before handing work to Claude Code, Cod
 2. oh-my-ontology cycles [vault] --max-hops 8
 3. oh-my-ontology growth [vault] --limit 20
 4. oh-my-ontology maintenance [vault] --limit 20
-5. oh-my-ontology validate [vault]
+5. pnpm dogfood:graph-db # 10 runtime graph DB checks
+6. oh-my-ontology validate [vault]
 
 ## Skip when
 - typo-only, comment-only, one-line style, lint config, or test fixture changes with no ontology shape change`);

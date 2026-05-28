@@ -537,7 +537,10 @@ describe("RelationWriteConfirm", () => {
       expect.stringContaining("Post-save graph DB proof + sync gate:"),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining("Runtime gate: 10 checks · pnpm dogfood:graph-db"),
+      expect.stringContaining("## Runtime graph DB gate"),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining("10 checks · pnpm dogfood:graph-db"),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining("# Post-change ontology sync gate"),
@@ -991,7 +994,8 @@ describe("RelationPostSaveHandoff", () => {
     );
     expect(copied).toContain("Evidence contract: report limit, searchBudget");
     expect(copied).toContain("Post-save graph DB proof + sync gate:");
-    expect(copied).toContain("Runtime gate: 10 checks · pnpm dogfood:graph-db");
+    expect(copied).toContain("## Runtime graph DB gate");
+    expect(copied).toContain("10 checks · pnpm dogfood:graph-db");
     expect(copied).toContain("# Post-change ontology sync gate");
     expect(
       screen.getByRole("button", { name: "Proof packet copied" }),

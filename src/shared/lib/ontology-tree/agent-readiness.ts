@@ -32,6 +32,11 @@ export interface AgentReadinessCliCommand {
   command: string;
 }
 
+export const AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND =
+  "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4";
+export const AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND = "pnpm dogfood:graph-db";
+export const AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT = 10;
+
 const AGENT_READINESS_TOOLS = new Set([
   "analyze_repo_structure",
   "find_evidence",
@@ -67,7 +72,7 @@ const ACTION_GUIDANCE: Record<AgentReadinessActionKey, string> = {
   inspectHubs:
     "Inspect suggested hubs with workspace_brief, node_profile, path, and blast_radius before editing.",
   syncAfterChanges:
-    "After code changes, run health, cycles, growth_plan, maintenance_plan, and validate_vault so Claude Code and Codex share a clean graph memory.",
+    "After code changes, run the dogfood graph DB gate plus health, cycles, growth_plan, maintenance_plan, and validate_vault so Claude Code and Codex share a clean graph memory.",
 };
 
 const ACTION_PAYLOADS: Record<AgentReadinessActionKey, AgentReadinessToolCall[]> = {
@@ -161,6 +166,10 @@ const ACTION_CLI_COMMANDS: Record<AgentReadinessActionKey, AgentReadinessCliComm
   ],
   syncAfterChanges: [
     {
+      key: "graph_db_runtime_gate",
+      command: `${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND} # ${AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT} runtime graph DB checks`,
+    },
+    {
       key: "validate_vault",
       command: "oh-my-ontology validate [vault]",
     },
@@ -172,6 +181,7 @@ const POST_CHANGE_SYNC_CLI_KEYS = new Set([
   "cycles",
   "growth",
   "maintenance",
+  "graph_db_runtime_gate",
   "validate_vault",
 ]);
 
@@ -217,6 +227,9 @@ export function formatAgentPostChangeSyncPacket(): string {
     "# Post-change ontology sync gate",
     "",
     "Run this after a non-trivial code change before handing work to Claude Code, Codex, or another collaborator.",
+    "",
+    "## Runtime graph DB gate",
+    `${AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT} checks · ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
     "",
     "## Run when",
     "- a domain, capability, element, or relation was introduced, renamed, split, merged, or made more explicit",

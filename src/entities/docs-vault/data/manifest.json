@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T01:13:15.720Z",
+  "generatedAt": "2026-05-28T01:21:04.015Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8228,
-      "updatedAt": "2026-05-28T01:13:10.646Z",
+      "wordCount": 8243,
+      "updatedAt": "2026-05-28T01:20:58.317Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4839,8 +4839,8 @@
         }
       ],
       "excerpt": "/ontology/insights 에서 현재 vault 가 AI agent 가 탐색하기 좋은 그래프인지 즉시 판단하는 readiness surface. MCP 서버를 브라우저에서 직접 호출하지 않고, 이미 derive 된 frontmatter graph 로 개념 수, 관계 수, 미연결 노드, unresolved stub, hub 수, 평균 degree 를 계산한다. readiness 는 점수만 보여주지 않고 상태별 다음 작업도 함께 계산한다. unknown/stub 노드가 있으면 getconcept / findevidence 후 patchconcept 또는 merge",
-      "wordCount": 3535,
-      "updatedAt": "2026-05-27T23:09:14.133Z",
+      "wordCount": 3555,
+      "updatedAt": "2026-05-28T01:20:58.317Z",
       "linksOut": []
     },
     {
@@ -5088,8 +5088,8 @@
         }
       ],
       "excerpt": "R12 (20260504) 에 도입된 developerprimary 진입점. R14 에서 import, R15 followup 에서 graphlevel 5 명령, R16R17 에서 analyze / inferimports, R+ cycle 에서 path / explain / allpaths / reachability / orphans + 두 apply 플래그 + bootstrap 합본 명령, compile, growth, maintenance, graph DBstyle scan 인 matchnodes / matchedges, domain coupling matrix ",
-      "wordCount": 10264,
-      "updatedAt": "2026-05-25T18:39:42.549Z",
+      "wordCount": 10270,
+      "updatedAt": "2026-05-28T01:20:58.319Z",
       "linksOut": []
     },
     {
@@ -6361,8 +6361,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/lib/reviewbrief.ts and the selectednode detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and direct ",
-      "wordCount": 576,
-      "updatedAt": "2026-05-27T22:53:27.276Z",
+      "wordCount": 582,
+      "updatedAt": "2026-05-28T01:20:58.318Z",
       "linksOut": []
     },
     {
@@ -6481,8 +6481,8 @@
       },
       "headings": [],
       "excerpt": "src/views/home/ui/TopologyAnalysisBar.tsx is the compact mode switcher shown over /topology. It owns the visible Overview / Focus / Path / Health controls, the small metrics line, the Overview graph handoff brief, the Health stale/orphan/promotion chips, and the first actionable Health inspect target. The bar is reacha",
-      "wordCount": 1027,
-      "updatedAt": "2026-05-25T09:11:36.716Z",
+      "wordCount": 1038,
+      "updatedAt": "2026-05-28T01:20:58.318Z",
       "linksOut": []
     },
     {
