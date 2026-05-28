@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T03:16:48.385Z",
+  "generatedAt": "2026-05-28T03:21:03.083Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6132,8 +6132,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. src/views/ontologyedit/lib/buildersourcestatus.ts keeps the Source cell state machine explicit and tested, so writable, restoring, unavailable, and readonly states cannot collapse",
-      "wordCount": 560,
-      "updatedAt": "2026-05-28T03:16:38.818Z",
+      "wordCount": 614,
+      "updatedAt": "2026-05-28T03:20:49.960Z",
       "linksOut": []
     },
     {

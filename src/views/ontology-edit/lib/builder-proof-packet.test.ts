@@ -67,6 +67,10 @@ describe("formatBuilderProofPacket", () => {
       "oh-my-ontology blast-radius 'capabilities/mcp-server' [vault]",
     );
     expect(packet).toContain(
+      "oh-my-ontology blast-radius 'capabilities/mcp-server' [vault] --depth 2 --direction incoming",
+    );
+    expect(packet).not.toContain("blast-radius 'capabilities/mcp-server' [vault] --depth 2 --direction incoming --limit");
+    expect(packet).toContain(
       "oh-my-ontology match-edges [vault] --plan --from 'capabilities/mcp-server'",
     );
     expect(packet).toContain(
