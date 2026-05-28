@@ -19,14 +19,22 @@ describe("formatBuilderProofPacket", () => {
     expect(packet).toContain(
       'query_ontology({"operation":"match_edges","fromKind":"capability","toKind":"element","type":"elements"',
     );
+    expect(packet).toContain(
+      'query_ontology({"operation":"query_plan","targetOperation":"match_edges","type":"depends_on"',
+    );
+    expect(packet).toContain(
+      'query_ontology({"operation":"match_edges","type":"depends_on"',
+    );
     expect(packet).toContain("oh-my-ontology match-nodes [vault] --plan");
     expect(packet).toContain("oh-my-ontology match-edges [vault] --plan");
+    expect(packet).toContain("oh-my-ontology match-edges [vault] --plan --type depends_on");
     expect(packet).toContain(
       "oh-my-ontology match-edges [vault] --plan --from-kind capability --to-kind element --type elements",
     );
     expect(packet).toContain("oh-my-ontology match-nodes [vault]");
     expect(packet).toContain("Run the setup gate first: self-check, graph DB pack, and runtime dogfood replay including relation_name_parity.");
     expect(packet).toContain("Report totalMatches, limited, and returned row count");
+    expect(packet).toContain("report relationType and via so depends_on is visibly backed by the dependencies frontmatter key");
     expect(packet).toContain("report relationType and via");
     expect(packet).toContain("evidence.pathsComplete");
     expect(packet).toContain("# Post-change ontology sync gate");
@@ -50,6 +58,12 @@ describe("formatBuilderProofPacket", () => {
     );
     expect(packet).toContain(
       'query_ontology({"operation":"query_plan","targetOperation":"match_edges","fromKind":"capability","toKind":"element","type":"elements"',
+    );
+    expect(packet).toContain(
+      'query_ontology({"operation":"query_plan","targetOperation":"match_edges","type":"depends_on"',
+    );
+    expect(packet).toContain(
+      'query_ontology({"operation":"match_edges","type":"depends_on"',
     );
     expect(packet).toContain(
       'query_ontology({"operation":"match_edges","fromKind":"capability","toKind":"element","type":"elements"',
@@ -76,6 +90,8 @@ describe("formatBuilderProofPacket", () => {
     expect(packet).toContain(
       "oh-my-ontology match-edges [vault] --plan --to 'capabilities/mcp-server'",
     );
+    expect(packet).toContain("oh-my-ontology match-edges [vault] --plan --type depends_on");
+    expect(packet).toContain("oh-my-ontology match-edges [vault] --type depends_on");
     expect(packet).toContain(
       "oh-my-ontology match-edges [vault] --plan --from-kind capability --to-kind element --type elements",
     );

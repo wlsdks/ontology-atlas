@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T05:21:30.958Z",
+  "generatedAt": "2026-05-28T05:40:18.794Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8356,
-      "updatedAt": "2026-05-28T05:16:57.424Z",
+      "wordCount": 8371,
+      "updatedAt": "2026-05-28T05:39:48.669Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6132,8 +6132,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. src/views/ontologyedit/lib/buildersourcestatus.ts keeps the Source cell state machine explicit and tested, so writable, restoring, unavailable, and readonly states cannot collapse",
-      "wordCount": 628,
-      "updatedAt": "2026-05-28T05:16:43.364Z",
+      "wordCount": 649,
+      "updatedAt": "2026-05-28T05:40:07.238Z",
       "linksOut": []
     },
     {
