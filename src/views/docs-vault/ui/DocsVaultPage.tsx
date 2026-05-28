@@ -309,7 +309,7 @@ function DesktopVaultWelcome({
   ] as const;
 
   return (
-    <main className="flex min-h-0 flex-1 overflow-auto bg-[color:var(--color-canvas)]">
+    <main id="main" className="flex min-h-0 flex-1 overflow-auto bg-[color:var(--color-canvas)]">
       <div className="mx-auto grid w-full max-w-5xl content-start gap-8 px-5 py-8 md:px-8 md:py-12">
         <section className="grid gap-3">
           <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-[color:var(--color-text-quaternary)]">
@@ -1855,7 +1855,7 @@ function DocsVaultContent() {
         ) : null}
 
         {/* 본문 + 우측 사이드 */}
-        <main className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <main id="main" className="flex min-w-0 flex-1 flex-col overflow-hidden">
           {view === 'folder-topology' ? (
             <div className="relative flex min-h-0 flex-1">
               {canEditCurrent && folderTopo && folderTopo.projects.length > 0 ? (
