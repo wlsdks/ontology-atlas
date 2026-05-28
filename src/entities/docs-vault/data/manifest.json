@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T02:57:18.015Z",
+  "generatedAt": "2026-05-28T03:03:22.479Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1846,
-      "updatedAt": "2026-05-28T02:57:11.889Z",
+      "wordCount": 1865,
+      "updatedAt": "2026-05-28T03:01:57.983Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -3964,8 +3964,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6433,
-      "updatedAt": "2026-05-28T02:51:37.969Z",
+      "wordCount": 6437,
+      "updatedAt": "2026-05-28T03:02:51.895Z",
       "linksOut": []
     },
     {
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8297,
-      "updatedAt": "2026-05-28T02:56:43.036Z",
+      "wordCount": 8304,
+      "updatedAt": "2026-05-28T03:02:21.946Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5140,8 +5140,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 2884,
-      "updatedAt": "2026-05-28T02:51:31.614Z",
+      "wordCount": 2888,
+      "updatedAt": "2026-05-28T03:03:00.242Z",
       "linksOut": []
     },
     {
@@ -6132,8 +6132,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. src/views/ontologyedit/lib/buildersourcestatus.ts keeps the Source cell state machine explicit and tested, so writable, restoring, unavailable, and readonly states cannot collapse",
-      "wordCount": 496,
-      "updatedAt": "2026-05-28T02:57:04.325Z",
+      "wordCount": 503,
+      "updatedAt": "2026-05-28T03:02:42.158Z",
       "linksOut": []
     },
     {
