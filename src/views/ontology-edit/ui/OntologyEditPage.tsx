@@ -149,7 +149,8 @@ function BuilderCanvasEntryRail({
   const t = useTranslations("ontologyPages.edit.page.canvasEntryRail");
   if (anchors.length === 0) return null;
   const selectedAnchor = anchors.find((anchor) => anchor.id === selectedAnchorId);
-  const selectedAnchorLabel = selectedAnchor?.label ?? selectedAnchorId ?? null;
+  const selectedAnchorSlug = selectedAnchor?.id ?? selectedAnchorId ?? null;
+  const selectedAnchorLabel = selectedAnchor?.label ?? selectedAnchorSlug ?? null;
   const flow = [
     {
       step: "01",
@@ -186,12 +187,12 @@ function BuilderCanvasEntryRail({
         >
           {t("focusChip")}
         </span>
-        {selectedAnchorLabel ? (
+        {selectedAnchorSlug ? (
           <span
             className="max-w-[230px] truncate rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
-            title={selectedAnchorId ?? selectedAnchorLabel}
+            title={selectedAnchorLabel ?? undefined}
           >
-            {t("activeFocus", { slug: selectedAnchorLabel })}
+            {t("activeFocus", { slug: selectedAnchorSlug })}
           </span>
         ) : null}
         <div className="hidden min-w-0 flex-1 items-center gap-1 lg:flex">
