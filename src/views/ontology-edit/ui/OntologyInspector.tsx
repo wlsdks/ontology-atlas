@@ -628,6 +628,7 @@ function LiteralEditor({
       </p>
       {multiline ? (
         <textarea
+          name={`literal-${fieldKey}`}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onBlur={commit}
@@ -638,6 +639,7 @@ function LiteralEditor({
         />
       ) : (
         <input
+          name={`literal-${fieldKey}`}
           type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
