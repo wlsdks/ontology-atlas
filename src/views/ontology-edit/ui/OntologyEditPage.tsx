@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
@@ -608,6 +608,16 @@ export function OntologyEditPage() {
       return false;
     }
   });
+  // hydration 가드 — SSR(정적 export) HTML 은 localStorage 를 못 읽어 기본값
+  // (팔레트 펼침 / 인스펙터 펼침) 으로 렌더된다. 첫 client 렌더가 곧장
+  // localStorage 선호를 반영하면 그 기본값 HTML 과 어긋나 hydration mismatch
+  // (트리 재생성) 가 난다. hydrated 가 false 인 동안엔 서버 기본값을 그대로 쓰고
+  // mount 후 true 로 바뀌면 저장된 선호를 적용한다. (HomePage 와 동일 패턴)
+  const hydrated = useSyncExternalStore(
+    () => () => undefined,
+    () => true,
+    () => false,
+  );
   const toggleInspector = useCallback(() => {
     setInspectorCollapsed((current) => {
       const next = !current;
@@ -774,8 +784,10 @@ export function OntologyEditPage() {
     const timer = window.setTimeout(() => focusBuilderAnchor(firstAnchor.id), 0);
     return () => window.clearTimeout(timer);
   }, [builderEntryAnchors, builderEntryGraphKey, focusBuilderAnchor, selectedId]);
-  const paletteCollapsed =
-    paletteCollapsedPreference ?? (builderGraphStats.persistedNodes > 0);
+  // hydrated 전엔 서버 기본값(펼침)을 유지해 hydration mismatch 를 막는다.
+  const paletteCollapsed = hydrated
+    ? (paletteCollapsedPreference ?? builderGraphStats.persistedNodes > 0)
+    : false;
   const togglePalette = useCallback(() => {
     const next = !paletteCollapsed;
     try {
@@ -1725,7 +1737,7 @@ export function OntologyEditPage() {
             onDeleteVault={deleteVaultDoc}
             saving={savingId !== null || renamingId !== null}
             onClearSelection={() => setSelectedId(null)}
-            collapsed={inspectorCollapsed}
+            collapsed={hydrated ? inspectorCollapsed : false}
             onToggleCollapsed={toggleInspector}
           />
         </section>
