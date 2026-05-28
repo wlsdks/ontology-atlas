@@ -625,6 +625,7 @@ export function OntologyTreeView({
         <Search size={12} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
         <input
           type="search"
+          name="ontology-tree-search"
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
           placeholder={t('tree.searchPlaceholder')}
@@ -655,6 +656,7 @@ export function OntologyTreeView({
                 {t('tree.sortLabel')}
               </span>
               <select
+                name="ontology-tree-sort"
                 value={sortKey}
                 onChange={(event) =>
                   setSortKey(event.target.value as OntologyRootSortKey)
