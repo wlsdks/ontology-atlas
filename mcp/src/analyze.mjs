@@ -272,11 +272,24 @@ function detectDomainsFromReadme(rootPath) {
         const m = lines[i].match(/^##\s+(.+?)\s*$/);
         if (!m) continue;
         const title = m[1].trim();
-        // skip generic README sections
+        // README H2 is a heuristic domain source. Skip headers that are almost
+        // never real codebase domains and only add bootstrap noise: generic doc
+        // sections, narrative / question-style headers ("Why It Exists"),
+        // language-guide headers ("한국어 가이드"), and sentence-like headers
+        // ("Three views plus MCP, one vault").
+        const wordCount = title.split(/\s+/).filter(Boolean).length;
         if (
-          /^(usage|installation|getting started|quick start|license|contributing|requirements|features|setup|status|tech stack|architecture|folder map|routes|tests?|documentation)$/i.test(
+          // generic doc sections (exact match)
+          /^(usage|installation|getting started|quick start|license|contributing|requirements|features|setup|status|tech stack|architecture|folder map|routes|tests?|documentation|overview|development|deployment|changelog|roadmap|faq|demo|examples?|guides?|table of contents|toc|acknowledge?ments?)$/i.test(
             title,
-          )
+          ) ||
+          // narrative / question-style headers
+          /^(why|what|how|when|where|who)\b/i.test(title) ||
+          // language-guide / translation section headers
+          /가이드|\bguide\b/i.test(title) ||
+          // sentence-like headers (clause separator or long phrase)
+          title.includes(',') ||
+          wordCount > 5
         ) {
           continue;
         }
