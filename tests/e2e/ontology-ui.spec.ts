@@ -79,6 +79,11 @@ test.describe("ontology view UI", () => {
     const detail = page.getByTestId("ontology-node-detail");
     await expect(detail).toBeVisible();
     await expect(detail).toContainText("Topology Analysis Modes");
+    await expect(page.getByText("active concept · capabilities/topology-analysis-modes")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open Graph DB query pack insights" })).toHaveAttribute(
+      "href",
+      "/en/ontology/insights/?node=capabilities%2Ftopology-analysis-modes",
+    );
 
     const brief = page.getByTestId("ontology-review-brief");
     await expect(brief).toBeVisible();

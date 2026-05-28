@@ -210,6 +210,9 @@ export function OntologyViewPage() {
   const builderHref = selectedNode
     ? buildOntologyBuilderNodeHref(selectedNode)
     : "/ontology/edit/";
+  const queryHref = selectedNode
+    ? buildOntologyInsightsNodeHref(selectedNode)
+    : "/ontology/insights/";
   const workbenchStats = useMemo(() => {
     if (!insight) {
       return {
@@ -341,6 +344,7 @@ export function OntologyViewPage() {
         semanticRelations={workbenchStats.semanticRelations}
         containmentRelations={workbenchStats.containmentRelations}
         builderHref={builderHref}
+        queryHref={queryHref}
         activeSlug={
           selectedNode
             ? resolveReachabilityQuerySlug(selectedNode) ?? selectedNode.id
@@ -1833,12 +1837,14 @@ function GraphWorkbenchSummary({
   semanticRelations,
   containmentRelations,
   builderHref,
+  queryHref,
   activeSlug,
 }: {
   treeNodes: number;
   semanticRelations: number;
   containmentRelations: number;
   builderHref: string;
+  queryHref: string;
   activeSlug?: string | null;
 }) {
   const t = useTranslations("ontologyView.workbench");
@@ -1877,7 +1883,7 @@ function GraphWorkbenchSummary({
       body: t("graphDbBody"),
       loopAction: t("graphDbLoopAction"),
       proof: t("graphDbProof"),
-      href: "/ontology/insights/",
+      href: queryHref,
       cta: t("graphDbCta"),
       ariaLabel: t("graphDbAriaLabel"),
       current: false,

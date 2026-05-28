@@ -26,6 +26,8 @@ The first-viewport summary now makes that loop ordered instead of merely adjacen
 
 When a tree node is selected, the summary repeats the canonical vault slug as the active concept handle above the Browse / Write / Query cards. This makes the tree's role explicit: it chooses the graph handle that Builder and Insights will keep, rather than merely highlighting a row in a hierarchy projection.
 
+The first-viewport Query card now uses the selected node's canonical vault slug when one is active, so the top Browse / Write / Query loop and the selected-node detail rail both land in `/ontology/insights?node=<vault-slug>` instead of reopening a generic query dashboard. That keeps the active concept handle honest before the user scrolls to the detail panel.
+
 Tree projection warnings now sit under that same contract. The warning panel groups raw tree builder notes by cause, so multiple-parent edges are presented as a hierarchy projection limit while the handoff buttons point to Insights for full graph scans and Builder for relation-direction repair.
 
 The graph proof rail is rendered as a compact execution strip rather than a large card: it keeps MCP/CLI query-pack counts, the `10 checks` dogfood runtime gate count, one sample MATCH intent, operation chips, and copy actions visible, but it no longer dominates the browse page before the user reaches the actual tree.
