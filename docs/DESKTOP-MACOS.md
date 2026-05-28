@@ -280,8 +280,9 @@ routes exist for `/download`, `/docs`, `/ontology`, `/topology`,
 `/ontology/edit`, and `/ontology/insights`, that the ontology workbench route
 titles match the expected app surfaces, that `/ontology`, `/ontology/edit`, and
 `/ontology/insights` bundle the graph DB proof copy (`Graph DB proof`,
-`Browse`, `Write`, `Query`, and `dogfood:graph-db`), that `/ontology/edit`
-also bundles the active slug handle copy used by the Builder proof rail, that
+`Browse`, `Write`, `Query`, and `dogfood:graph-db`), that `/ontology` also
+bundles the canonical slug handle copy used by the Browse tree handoff, that
+`/ontology/edit` also bundles the active slug handle copy used by the Builder proof rail, that
 `_next` assets are present, and that the desktop docs are bundled under
 `docs-vault/` for offline reference.
 

@@ -2431,6 +2431,8 @@
     "selectionHint": {
       "ariaLabel": "Tree selection handoff hint",
       "eyebrow": "Select a tree row",
+      "slugChip": "canonical slug",
+      "slugChipTitle": "Tree selection chooses the graph handle that Builder and Insights keep in focus.",
       "body": "Selecting a concept opens the right-side workbench loop for that exact node: visual focus, frontmatter edit, and graph proof stay tied to the same slug.",
       "browseLabel": "Browse",
       "browseValue": "topology focus",

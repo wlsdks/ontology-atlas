@@ -25,7 +25,7 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
   "ko:/ontology/insights": "온톨로지 인사이트 · Context Atlas",
 };
 export const DESKTOP_SMOKE_ROUTE_TEXT = {
-  "/ontology": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db"],
+  "/ontology": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "canonical slug"],
   "en:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "active slug"],
   "ko:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "활성 slug"],
   "/ontology/insights": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db"],

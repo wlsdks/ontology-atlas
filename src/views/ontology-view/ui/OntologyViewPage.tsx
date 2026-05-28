@@ -669,6 +669,12 @@ function TreeSelectionHint() {
           <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
             {t("eyebrow")}
           </p>
+          <span
+            className="mt-1 inline-flex rounded-md border border-[color:rgba(139,151,255,0.18)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]"
+            title={t("slugChipTitle")}
+          >
+            {t("slugChip")}
+          </span>
           <p className="mt-1 break-keep text-[12px] leading-5 text-[color:var(--color-text-secondary)]">
             {t("body")}
           </p>
