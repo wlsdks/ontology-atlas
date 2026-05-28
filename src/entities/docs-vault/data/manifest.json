@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T01:31:24.262Z",
+  "generatedAt": "2026-05-28T01:35:40.967Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6202,8 +6202,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyinsights/lib/orphannodeactions.ts turns each /ontology/insights orphan or open ownership question into actionable links and a copyable repair packet. The row actions keep the same selected node across the ontology tree, topology health mode, and builder focus view. The packet adds the readfirst agent ",
-      "wordCount": 184,
-      "updatedAt": "2026-05-25T02:32:37.411Z",
+      "wordCount": 191,
+      "updatedAt": "2026-05-28T01:35:30.841Z",
       "linksOut": []
     },
     {
@@ -6219,8 +6219,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the 10 checks runtime gate, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the s",
-      "wordCount": 310,
-      "updatedAt": "2026-05-28T00:40:55.546Z",
+      "wordCount": 334,
+      "updatedAt": "2026-05-28T01:35:30.841Z",
       "linksOut": []
     },
     {
