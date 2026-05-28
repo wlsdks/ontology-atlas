@@ -30,6 +30,7 @@
         "font-src": "'self' data:",
         "img-src": "'self' asset: http://asset.localhost blob: data:",
         "script-src": "'self'",
+        "worker-src": "'self' blob:",
         "style-src": "'unsafe-inline' 'self'"
       }
     }

@@ -6,6 +6,25 @@
 
 ---
 
+## 2026-05-28 — Topology layout off the main thread (web worker)
+
+토폴로지 force 레이아웃을 Web Worker 로 이전해 데스크톱(WKWebView)에서 드래그 ·
+자동 정렬 시 끊김을 줄였다. 진단상 Sigma WebGL 렌더는 2000노드까지도 병목이
+아니었고(120fps), 끊김의 원인은 메인스레드에서 도는 d3-force 계산이었다.
+
+- **워커 기반 레이아웃** — d3-force 스프링-질량 시뮬을 Web Worker 에서 계산하고
+  좌표만 메인으로 스트림한다. 자동 정렬 중 메인스레드 프레임 스파이크(이전
+  ~132ms)가 사라졌다. 기존 `PhysicsController` 인터페이스를 그대로 구현해
+  드래그/정렬/튠 동작은 동일하며, Worker 미지원 환경은 메인스레드 시뮬로
+  안전하게 fallback 한다.
+- **Tauri CSP** — 워커 로딩을 위해 데스크톱 앱 CSP 에 `worker-src 'self' blob:`
+  추가.
+- **dev 서버 블로커 fix** — CodeGraph MCP 의 `.codegraph/`(live unix socket
+  포함)가 gitignore 되지 않아 Tailwind v4 소스 스캔이 소켓을 읽다 죽으며
+  `pnpm dev` 첫 화면이 500 이 되던 문제를 정정 (`.codegraph/` ignore).
+- **문서 vault 위생** — `docs/superpowers/`(AI 에이전트 내부 계획·스펙)를
+  docs-vault 빌드 스캔에서 제외해 사용자 docs 콘텐츠 오염을 막았다.
+
 ## 2026-05-23 — Starter agent loop verification
 
 Starter vaults now tell users how to prove the Claude Code / Cursor / Codex MCP

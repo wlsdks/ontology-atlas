@@ -63,6 +63,9 @@ async function walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     if (entry.name.startsWith('.')) continue;
+    // superpowers/ 는 AI 에이전트 내부 계획·스펙 문서함 (docs/superpowers/plans·specs).
+    // 사용자 docs vault 콘텐츠가 아니므로 빌드 스캔에서 제외 — content.json 오염 방지.
+    if (entry.isDirectory() && entry.name === 'superpowers') continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) {
       const nested = await walk(full);
