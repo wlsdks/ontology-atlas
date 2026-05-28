@@ -271,7 +271,7 @@ Empty state: blue link to `/docs` (open vault).
 - Collapsed state: 44 px, icon-only (localStorage)
 
 #### Center canvas (`ReactFlow` + dagre/force layout)
-- Graph anchor rail: degree-ranked persisted project/domain/capability/element anchors, explicit `focus saved slug` contract, active focused-slug chip, and highlighted current anchor so inspector, relation writes, and proof handoffs stay on the same vault slug before drawing
+- Graph anchor rail: flat full-width canvas status strip with degree-ranked persisted project/domain/capability/element anchors, explicit `focus saved slug` contract, active focused-slug chip, and highlighted current anchor so inspector, relation writes, and proof handoffs stay on the same vault slug before drawing
 - Layout modes: Hierarchy (dagre LR, default) / Force (FA2)
 - Auto-layout button (Wand2 icon) ignores frontmatter `canvasPosition` (in-memory only)
 - Vault nodes: draggable, drag-stop patches `canvasPosition`
