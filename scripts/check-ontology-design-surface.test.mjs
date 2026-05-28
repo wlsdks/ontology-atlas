@@ -98,6 +98,11 @@ function writeCleanWorkbenchFixtures(root) {
       "sourceContract.agentCopyGate",
     ].join("\n"),
   );
+  writeFixture(
+    root,
+    "src/widgets/docs-vault/ui/DocsVaultTree.tsx",
+    "export function DocsVaultTree() { return null; }",
+  );
 }
 
 test("ontology design surface passes when visual and workbench contracts are present", () => {
@@ -106,13 +111,43 @@ test("ontology design surface passes when visual and workbench contracts are pre
 
   const report = evaluateOntologyDesignSurface({
     root,
-    targetDirs: ["src/views/ontology-view", "src/views/ontology-edit", "src/views/ontology-insights"],
+    targetDirs: [
+      "src/views/docs-vault",
+      "src/widgets/docs-vault",
+      "src/views/ontology-view",
+      "src/views/ontology-edit",
+      "src/views/ontology-insights",
+    ],
   });
 
   assert.equal(report.ok, true);
   assert.equal(report.requiredSurfaceMarkerCount, 5);
   assert.equal(report.violations.length, 0);
-  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 workbench structure contracts/);
+  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 surfaces \+ 5 workbench structure contracts/);
+});
+
+test("ontology design surface ignores test fixtures when scanning forbidden visuals", () => {
+  const root = makeFixture();
+  writeCleanWorkbenchFixtures(root);
+  writeFixture(
+    root,
+    "src/views/docs-vault/lib/popout-template.test.ts",
+    "expect(html).not.toMatch(/linear-gradient/);",
+  );
+
+  const report = evaluateOntologyDesignSurface({
+    root,
+    targetDirs: [
+      "src/views/docs-vault",
+      "src/widgets/docs-vault",
+      "src/views/ontology-view",
+      "src/views/ontology-edit",
+      "src/views/ontology-insights",
+    ],
+  });
+
+  assert.equal(report.ok, true);
+  assert.equal(report.violations.length, 0);
 });
 
 test("ontology design surface reports forbidden visual drift", () => {

@@ -3,6 +3,8 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 
 export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
+  "src/views/docs-vault",
+  "src/widgets/docs-vault",
   "src/views/ontology-view",
   "src/views/ontology-edit",
   "src/views/ontology-insights",
@@ -11,6 +13,7 @@ export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
 ];
 
 const DEFAULT_ALLOWED_EXTENSIONS = new Set([".css", ".ts", ".tsx"]);
+const DEFAULT_IGNORED_FILE_PATTERN = /(?:^|\/)(?:[^/]+\.)?(?:test|spec)\.[^/]+$/;
 
 export const ONTOLOGY_DESIGN_FORBIDDEN_CHECKS = [
   {
@@ -132,7 +135,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   },
 ];
 
-function collectFiles(root, dir, allowedExtensions) {
+function collectFiles(root, dir, allowedExtensions, ignoredFilePattern) {
   const absoluteDir = join(root, dir);
   const files = [];
 
@@ -141,11 +144,18 @@ function collectFiles(root, dir, allowedExtensions) {
     const stat = statSync(absolutePath);
 
     if (stat.isDirectory()) {
-      files.push(...collectFiles(root, relative(root, absolutePath), allowedExtensions));
+      files.push(
+        ...collectFiles(root, relative(root, absolutePath), allowedExtensions, ignoredFilePattern),
+      );
       continue;
     }
 
-    if (stat.isFile() && allowedExtensions.has(extname(entry))) {
+    const relativePath = relative(root, absolutePath);
+    if (
+      stat.isFile() &&
+      allowedExtensions.has(extname(entry)) &&
+      !ignoredFilePattern.test(relativePath)
+    ) {
       files.push(absolutePath);
     }
   }
@@ -211,11 +221,12 @@ export function evaluateOntologyDesignSurface({
   root = process.cwd(),
   targetDirs = DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS,
   allowedExtensions = DEFAULT_ALLOWED_EXTENSIONS,
+  ignoredFilePattern = DEFAULT_IGNORED_FILE_PATTERN,
   checks = ONTOLOGY_DESIGN_FORBIDDEN_CHECKS,
   requiredSurfaceMarkers = ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS,
 } = {}) {
   const files = targetDirs
-    .flatMap((dir) => collectFiles(root, dir, allowedExtensions))
+    .flatMap((dir) => collectFiles(root, dir, allowedExtensions, ignoredFilePattern))
     .sort();
   const violations = [
     ...files.flatMap((file) => findForbiddenPatternViolations({ root, file, checks })),
