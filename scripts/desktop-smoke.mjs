@@ -24,6 +24,11 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
   "en:/ontology/insights": "Ontology Insights · Context Atlas",
   "ko:/ontology/insights": "온톨로지 인사이트 · Context Atlas",
 };
+export const DESKTOP_SMOKE_ROUTE_TEXT = {
+  "/ontology": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db"],
+  "/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db"],
+  "/ontology/insights": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db"],
+};
 
 function routeIndexPath({ locale, route }) {
   const cleanRoute = route.replace(/^\/+|\/+$/g, "");
@@ -44,12 +49,17 @@ function hasTitle(html, title) {
   return html.includes(`<title>${title}</title>`);
 }
 
+function hasAllText(html, fragments) {
+  return fragments.every((fragment) => html.includes(fragment));
+}
+
 export function evaluateDesktopSmoke({
   outDir = path.join(process.cwd(), "out"),
   locales = DESKTOP_SMOKE_LOCALES,
   routes = DESKTOP_SMOKE_ROUTES,
   docs = DESKTOP_SMOKE_DOCS,
   routeTitles = DESKTOP_SMOKE_ROUTE_TITLES,
+  routeText = DESKTOP_SMOKE_ROUTE_TEXT,
 } = {}) {
   const checks = [];
   const addCheck = (id, label, ok, details = "") => {
@@ -83,6 +93,16 @@ export function evaluateDesktopSmoke({
           `${locale}${route} static route title matches`,
           typeof html === "string" && hasTitle(html, expectedTitle),
           expectedTitle,
+        );
+      }
+      const expectedText = routeText[route];
+      if (expectedText) {
+        const html = readTextUnder(outDir, relativePath);
+        addCheck(
+          `route-text:${locale}:${route}`,
+          `${locale}${route} workbench proof copy is bundled`,
+          typeof html === "string" && hasAllText(html, expectedText),
+          expectedText.join(", "),
         );
       }
     }

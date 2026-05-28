@@ -278,8 +278,11 @@ when missing prerequisites should fail fast.
 that the root `out/index.html` app entry exists, that both `en` and `ko` static
 routes exist for `/download`, `/docs`, `/ontology`, `/topology`,
 `/ontology/edit`, and `/ontology/insights`, that the ontology workbench route
-titles match the expected app surfaces, that `_next` assets are present, and
-that the desktop docs are bundled under `docs-vault/` for offline reference.
+titles match the expected app surfaces, that `/ontology`, `/ontology/edit`, and
+`/ontology/insights` bundle the graph DB proof copy (`Graph DB proof`,
+`Browse`, `Write`, `Query`, and `dogfood:graph-db`), that `_next` assets are
+present, and that the desktop docs are bundled under `docs-vault/` for offline
+reference.
 
 `desktop:verify-app` checks the built `.app` runtime after packaging. It runs
 the app executable from inside `Contents/MacOS` for a short hold window and

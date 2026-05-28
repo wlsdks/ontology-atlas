@@ -55,7 +55,8 @@ desktop-grade quality bar, and the first prototype route-smoke scope. `pnpm
 desktop:smoke` checks the built `out/` payload that the `.app` / `.dmg`
 packages: the root app entry, locale-prefixed `/download`, `/docs`,
 `/ontology`, `/topology`, `/ontology/edit`, and `/ontology/insights` routes,
-their ontology workbench route titles, `_next` assets, and offline desktop docs
+their ontology workbench route titles, bundled graph DB proof copy, `_next`
+assets, and offline desktop docs
 under `docs-vault/`. `pnpm desktop:verify-app` launches
 the built `.app` executable from inside its `Contents/MacOS` executable
 directory long enough to catch early Tauri/WebView startup crashes, then
