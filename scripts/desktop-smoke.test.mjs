@@ -294,7 +294,7 @@ test("desktop smoke fails when builder guard copy action is absent", () => {
   assert.match(report.missing[0].details, /Copy guard/);
 });
 
-test("desktop smoke fails when builder runtime replay proof is absent", () => {
+test("desktop smoke fails when builder focused blast-radius replay proof is absent", () => {
   const outDir = makeOutDir();
   fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
   touch(outDir, "index.html");
@@ -320,7 +320,7 @@ test("desktop smoke fails when builder runtime replay proof is absent", () => {
     report.missing.map((check) => check.id),
     ["route-text:en:/ontology/edit"],
   );
-  assert.match(report.missing[0].details, /runtime replay/);
+  assert.match(report.missing[0].details, /focused blast_radius/);
 });
 
 test("desktop smoke fails when insights runtime gate copy action is absent", () => {
