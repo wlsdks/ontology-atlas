@@ -503,6 +503,22 @@ describe('focused check suggestions', () => {
     ]);
   });
 
+  it('suggests ontology design guard checks when the design surface guard changes', () => {
+    const result = suggestFocusedChecks([
+      'scripts/check-ontology-design-surface.mjs',
+      'scripts/check-ontology-design-surface.test.mjs',
+    ]);
+
+    assert.deepEqual(result.commands.map((row) => row.command), [
+      'pnpm exec node --test scripts/check-ontology-design-surface.test.mjs',
+      'pnpm design:ontology',
+    ]);
+    assert.deepEqual(result.commands[0].paths, [
+      'scripts/check-ontology-design-surface.mjs',
+      'scripts/check-ontology-design-surface.test.mjs',
+    ]);
+  });
+
   it('suggests static export gates when Next config changes', () => {
     const result = suggestFocusedChecks(['next.config.ts']);
 

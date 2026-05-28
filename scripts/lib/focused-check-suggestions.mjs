@@ -74,6 +74,11 @@ const RULES = [
     ],
   },
   {
+    command: 'pnpm design:ontology',
+    reason: 'ontology workbench design surface guard changed',
+    matches: [/^scripts\/check-ontology-design-surface\.(?:mjs|test\.mjs)$/],
+  },
+  {
     command: 'pnpm test:desktop:bridge',
     reason: 'native macOS vault bridge changed',
     matches: [
@@ -549,6 +554,8 @@ const SCRIPT_DIRECT_LIB_TESTS = new Map([
   ['scripts/build-docs-vault.test.mjs', 'scripts/build-docs-vault.test.mjs'],
   ['scripts/check-desktop-readiness.mjs', 'scripts/check-desktop-readiness.test.mjs'],
   ['scripts/check-desktop-readiness.test.mjs', 'scripts/check-desktop-readiness.test.mjs'],
+  ['scripts/check-ontology-design-surface.mjs', 'scripts/check-ontology-design-surface.test.mjs'],
+  ['scripts/check-ontology-design-surface.test.mjs', 'scripts/check-ontology-design-surface.test.mjs'],
   ['scripts/desktop-doctor.mjs', 'scripts/desktop-doctor.test.mjs'],
   ['scripts/desktop-doctor.test.mjs', 'scripts/desktop-doctor.test.mjs'],
   ['scripts/desktop-smoke.mjs', 'scripts/desktop-smoke.test.mjs'],

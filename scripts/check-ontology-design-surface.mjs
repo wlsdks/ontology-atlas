@@ -2,8 +2,7 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 
-const root = process.cwd();
-const targetDirs = [
+export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
   "src/views/ontology-view",
   "src/views/ontology-edit",
   "src/views/ontology-insights",
@@ -11,9 +10,9 @@ const targetDirs = [
   "src/widgets/operations-nav",
 ];
 
-const allowedExtensions = new Set([".css", ".ts", ".tsx"]);
+const DEFAULT_ALLOWED_EXTENSIONS = new Set([".css", ".ts", ".tsx"]);
 
-const checks = [
+export const ONTOLOGY_DESIGN_FORBIDDEN_CHECKS = [
   {
     id: "no-hover-shadow",
     pattern: /hover:shadow/g,
@@ -41,7 +40,7 @@ const checks = [
   },
 ];
 
-const requiredSurfaceMarkers = [
+export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
   {
     id: "browse-workbench-loop",
     file: "src/views/ontology-view/ui/OntologyViewPage.tsx",
@@ -79,7 +78,7 @@ const requiredSurfaceMarkers = [
   },
 ];
 
-function collectFiles(dir) {
+function collectFiles(root, dir, allowedExtensions) {
   const absoluteDir = join(root, dir);
   const files = [];
 
@@ -88,7 +87,7 @@ function collectFiles(dir) {
     const stat = statSync(absolutePath);
 
     if (stat.isDirectory()) {
-      files.push(...collectFiles(relative(root, absolutePath)));
+      files.push(...collectFiles(root, relative(root, absolutePath), allowedExtensions));
       continue;
     }
 
@@ -100,7 +99,11 @@ function collectFiles(dir) {
   return files;
 }
 
-function findViolations(file) {
+export function findForbiddenPatternViolations({
+  root,
+  file,
+  checks = ONTOLOGY_DESIGN_FORBIDDEN_CHECKS,
+}) {
   const source = readFileSync(file, "utf8");
   const lines = source.split(/\r?\n/);
   const violations = [];
@@ -123,7 +126,10 @@ function findViolations(file) {
   return violations;
 }
 
-function findRequiredMarkerViolations() {
+export function findRequiredMarkerViolations({
+  root,
+  requiredSurfaceMarkers = ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS,
+}) {
   const violations = [];
 
   for (const requirement of requiredSurfaceMarkers) {
@@ -147,28 +153,58 @@ function findRequiredMarkerViolations() {
   return violations;
 }
 
-const files = targetDirs.flatMap(collectFiles).sort();
-const violations = [
-  ...files.flatMap(findViolations),
-  ...findRequiredMarkerViolations(),
-];
+export function evaluateOntologyDesignSurface({
+  root = process.cwd(),
+  targetDirs = DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS,
+  allowedExtensions = DEFAULT_ALLOWED_EXTENSIONS,
+  checks = ONTOLOGY_DESIGN_FORBIDDEN_CHECKS,
+  requiredSurfaceMarkers = ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS,
+} = {}) {
+  const files = targetDirs
+    .flatMap((dir) => collectFiles(root, dir, allowedExtensions))
+    .sort();
+  const violations = [
+    ...files.flatMap((file) => findForbiddenPatternViolations({ root, file, checks })),
+    ...findRequiredMarkerViolations({ root, requiredSurfaceMarkers }),
+  ];
 
-if (violations.length > 0) {
-  console.error(
-    `[ontology-design-surface] ${violations.length} design drift violation(s) found`,
-  );
-
-  for (const violation of violations) {
-    console.error(
-      `- ${violation.file}:${violation.line}:${violation.column} ${violation.check.id}`,
-    );
-    console.error(`  ${violation.check.reason}`);
-    console.error(`  ${violation.source}`);
-  }
-
-  process.exit(1);
+  return {
+    ok: violations.length === 0,
+    files,
+    targetDirCount: targetDirs.length,
+    requiredSurfaceMarkerCount: requiredSurfaceMarkers.length,
+    violations,
+  };
 }
 
-console.log(
-  `[ontology-design-surface] clean · checked ${files.length} files across ${targetDirs.length} surfaces + ${requiredSurfaceMarkers.length} workbench structure contracts`,
-);
+export function renderOntologyDesignSurfaceReport(report) {
+  if (report.ok) {
+    return [
+      `[ontology-design-surface] clean · checked ${report.files.length} files across ${report.targetDirCount} surfaces + ${report.requiredSurfaceMarkerCount} workbench structure contracts`,
+    ];
+  }
+
+  const lines = [
+    `[ontology-design-surface] ${report.violations.length} design drift violation(s) found`,
+  ];
+
+  for (const violation of report.violations) {
+    lines.push(
+      `- ${violation.file}:${violation.line}:${violation.column} ${violation.check.id}`,
+    );
+    lines.push(`  ${violation.check.reason}`);
+    lines.push(`  ${violation.source}`);
+  }
+
+  return lines;
+}
+
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const report = evaluateOntologyDesignSurface();
+  const lines = renderOntologyDesignSurfaceReport(report);
+  for (const line of lines) {
+    if (report.ok) console.log(line);
+    else console.error(line);
+  }
+  if (!report.ok) process.exit(1);
+}
