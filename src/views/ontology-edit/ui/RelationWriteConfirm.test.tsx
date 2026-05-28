@@ -993,6 +993,20 @@ describe("RelationPostSaveHandoff", () => {
       'query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"capabilities/mcp-server","to":"elements/mcp-index","maxHops":5,"limit":10,"searchBudget":1000})',
     );
     expect(copied).toContain("Evidence contract: report limit, searchBudget");
+    expect(copied).toContain("Structural containment replay:");
+    expect(copied).toContain(
+      "oh-my-ontology pattern-walk <project-slug> [vault] --pattern domains,capabilities --limit 10",
+    );
+    expect(copied).toContain(
+      "oh-my-ontology project-map <project-slug> [vault] --limit 10",
+    );
+    expect(copied).toContain(
+      'query_ontology({"operation":"pattern_walk","start":"<project-slug>","pattern":["domains","capabilities"],"limit":10})',
+    );
+    expect(copied).toContain(
+      'query_ontology({"operation":"project_map","project":"<project-slug>","limit":10})',
+    );
+    expect(copied).toContain("project_map summary.unresolvedEdges");
     expect(copied).toContain("Post-save graph DB proof + sync gate:");
     expect(copied).toContain("## Runtime graph DB gate");
     expect(copied).toContain("14 checks · pnpm dogfood:graph-db");
