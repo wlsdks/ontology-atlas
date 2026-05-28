@@ -410,7 +410,7 @@ unless the changed behavior itself needs installed-style dogfood verification.
 |---|---|
 | `pnpm package:check` | Package files, lockfiles, entrypoints, docs contracts, and graph hot-path perf budget |
 | `pnpm bundle:check` | Local-first static export bundle guard for the landing, download, docs, ontology, topology, and projects routes; run after `pnpm build` when `scripts/check-bundle.mjs` changed |
-| `pnpm design:ontology` | Ontology workbench design drift guard for forbidden visual patterns across Source Vault and ontology operation surfaces plus Source Vault execution, Browse/Write/Query, Builder write/proof, and Insights query cockpit structure contracts |
+| `pnpm design:ontology` | Ontology workbench design drift guard for forbidden visual patterns across Source Vault, ontology operation surfaces, and shared UI primitives plus Source Vault execution, Browse/Write/Query, Builder write/proof, and Insights query cockpit structure contracts |
 | `pnpm firebase:deploy-check` | Firebase Hosting deploy preflight for `.env.prod`, project-id alignment, static-only Hosting config, and deploy credential ignores |
 | `pnpm desktop:check` | macOS desktop Tauri scaffold readiness gate for static export, image mode, docs-vault freshness, CLI/MCP verification, desktop-grade quality bar coverage, route smoke scope, and `src-tauri` shell files |
 | `pnpm desktop:doctor` | Local machine prerequisite report for macOS desktop builds: Tauri CLI, Cargo, rustc, Xcode command line tools, and CLI/MCP agent setup gates |

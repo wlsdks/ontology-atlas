@@ -10,6 +10,7 @@ export const DEFAULT_ONTOLOGY_DESIGN_TARGET_DIRS = [
   "src/views/ontology-insights",
   "src/widgets/ontology-sub-nav",
   "src/widgets/operations-nav",
+  "src/shared/ui",
 ];
 
 const DEFAULT_ALLOWED_EXTENSIONS = new Set([".css", ".ts", ".tsx"]);

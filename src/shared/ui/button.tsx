@@ -23,11 +23,11 @@ const buttonVariants = cva(
     variants: {
       variant: {
         primary:
-          'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-border-strong),0_10px_24px_rgba(94,106,210,0.22)] hover:bg-[color:var(--color-indigo-hover)] hover:shadow-[inset_0_1px_0_var(--color-border-strong),0_14px_30px_rgba(94,106,210,0.28)] active:shadow-[inset_0_1px_0_var(--color-divider),0_6px_14px_rgba(94,106,210,0.2)]',
+          'bg-[color:var(--color-indigo-brand)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-border-strong),0_10px_24px_rgba(94,106,210,0.22)] hover:border-[color:rgba(205,212,255,0.28)] hover:bg-[color:var(--color-indigo-hover)] active:shadow-[inset_0_1px_0_var(--color-divider),0_6px_14px_rgba(94,106,210,0.2)]',
         ghost:
-          'bg-transparent text-[color:var(--color-text-primary)] hover:bg-[color:var(--color-overlay-2)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.14)] active:bg-[color:var(--color-border-soft)] active:shadow-[0_4px_10px_rgba(0,0,0,0.1)]',
+          'bg-transparent text-[color:var(--color-text-primary)] hover:border-[color:var(--color-border-soft)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-border-soft)] active:shadow-[0_4px_10px_rgba(0,0,0,0.1)]',
         outline:
-          'border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-overlay-2)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] hover:shadow-[inset_0_1px_0_var(--color-border-soft),0_10px_22px_rgba(0,0,0,0.16)] active:bg-[color:var(--color-overlay-2)] active:shadow-[inset_0_1px_0_var(--color-overlay-2),0_5px_12px_rgba(0,0,0,0.12)]',
+          'border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-primary)] shadow-[inset_0_1px_0_var(--color-overlay-2)] hover:border-[color:var(--color-border-strong)] hover:bg-[color:var(--color-overlay-2)] active:bg-[color:var(--color-overlay-2)] active:shadow-[inset_0_1px_0_var(--color-overlay-2),0_5px_12px_rgba(0,0,0,0.12)]',
       },
       size: {
         sm: 'h-8 px-3.5',

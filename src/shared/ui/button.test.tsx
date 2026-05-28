@@ -51,6 +51,20 @@ describe('Button', () => {
     expect(btn.className).toContain('disabled:opacity-55');
   });
 
+  it('uses border/background hover states without hover shadows', () => {
+    const variants = [
+      buttonVariants({ variant: 'primary' }),
+      buttonVariants({ variant: 'ghost' }),
+      buttonVariants({ variant: 'outline' }),
+    ];
+
+    for (const cls of variants) {
+      expect(cls).not.toContain('hover:shadow');
+    }
+    expect(variants.join(' ')).toContain('hover:border');
+    expect(variants.join(' ')).toContain('hover:bg');
+  });
+
   it('motion-reduce variant disables transition + transform', () => {
     render(<Button>m</Button>);
     const btn = screen.getByRole('button');
