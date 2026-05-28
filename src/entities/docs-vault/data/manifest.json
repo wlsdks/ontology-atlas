@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T06:31:54.706Z",
+  "generatedAt": "2026-05-28T06:35:20.753Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -6361,8 +6361,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/lib/reviewbrief.ts and the selectednode detail panel create a compact collaborator review brief for /ontology. The brief classifies the selected node as product scope, domain vocabulary, capability, implementation element, or generic concept; summarizes source, direct relation counts, and direct ",
-      "wordCount": 631,
-      "updatedAt": "2026-05-28T05:47:12.553Z",
+      "wordCount": 639,
+      "updatedAt": "2026-05-28T06:34:59.866Z",
       "linksOut": []
     },
     {
@@ -6420,8 +6420,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/ui/OntologyViewPage.tsx renders the compact Browse / Write / Query summary at the top of /ontology. It frames the tree as one browse mode inside the graph workbench, then hands off to Builder for frontmatterbacked writes and Insights for graph DBstyle query validation. The first viewport now keep",
-      "wordCount": 943,
-      "updatedAt": "2026-05-28T06:19:10.304Z",
+      "wordCount": 958,
+      "updatedAt": "2026-05-28T06:35:13.468Z",
       "linksOut": []
     },
     {

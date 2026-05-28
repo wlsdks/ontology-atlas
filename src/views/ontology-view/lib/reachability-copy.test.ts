@@ -137,6 +137,15 @@ describe("reachability copy helpers", () => {
       '12. query_ontology({"operation":"relation_check","from":"capabilities/cli-developer-entry","to":"<target-slug>","type":"<relation-type>"})',
     );
     expect(bundle).toContain(
+      '14. query_ontology({"operation":"query_plan","targetOperation":"pattern_walk","start":"<project-slug>","pattern":["domains","capabilities"],"limit":10})',
+    );
+    expect(bundle).toContain(
+      '15. query_ontology({"operation":"pattern_walk","start":"<project-slug>","pattern":["domains","capabilities"],"limit":10})',
+    );
+    expect(bundle).toContain(
+      '17. query_ontology({"operation":"project_map","project":"<project-slug>","limit":10})',
+    );
+    expect(bundle).toContain(
       "oh-my-ontology match-edges [vault] --plan --from capabilities/cli-developer-entry --limit 10",
     );
     expect(bundle).toContain("oh-my-ontology match-edges [vault] --from capabilities/cli-developer-entry --limit 10");
@@ -150,11 +159,17 @@ describe("reachability copy helpers", () => {
     expect(bundle).toContain(
       "oh-my-ontology relation-check capabilities/cli-developer-entry '<target-slug>' '<relation-type>' [vault]",
     );
+    expect(bundle).toContain(
+      "oh-my-ontology pattern-walk <project-slug> [vault] --pattern domains,capabilities --limit 10",
+    );
+    expect(bundle).toContain("oh-my-ontology project-map <project-slug> [vault] --limit 10");
     expect(bundle).toContain("Report totalMatches, limited, and returned row count");
     expect(bundle).toContain(
       "report relationType and via so depends_on is visibly backed by the dependencies frontmatter key",
     );
     expect(bundle).toContain("For all_paths, report limit, searchBudget");
+    expect(bundle).toContain("pattern_walk paths.total/paths.limited");
+    expect(bundle).toContain("project_map summary.unresolvedEdges");
     expect(bundle).toContain("# Post-change ontology sync gate");
     expect(bundle).toContain("it starts with 14 runtime graph DB checks");
     expect(bundle).toContain("## Runtime graph DB gate");
