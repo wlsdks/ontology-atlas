@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T05:54:59.250Z",
+  "generatedAt": "2026-05-28T06:05:00.415Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8426,
-      "updatedAt": "2026-05-28T05:54:03.479Z",
+      "wordCount": 8432,
+      "updatedAt": "2026-05-28T06:04:37.767Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6055,8 +6055,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/lib/builderentryanchors.ts derives the saved graph anchors shown at the topleft of /ontology/edit. The rail now ranks persisted ontology nodes by graph degree while preserving project/domain/capability/element diversity. This makes the builder open from useful graph entrypoints instead of arbitra",
-      "wordCount": 245,
-      "updatedAt": "2026-05-28T00:51:50.903Z",
+      "wordCount": 311,
+      "updatedAt": "2026-05-28T06:04:52.390Z",
       "linksOut": []
     },
     {

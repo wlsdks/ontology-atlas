@@ -53,6 +53,8 @@ function writeCleanWorkbenchFixtures(root) {
       "formatAgentPostChangeSyncPacket",
       "aria-label={t(\"ariaLabel\"",
       "anchorAriaLabel",
+      "anchorSlugLabel",
+      "data-anchor-slug",
       "activeFocusAriaLabel",
       "activeFocus",
       "proofChipSelected",

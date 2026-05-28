@@ -826,8 +826,9 @@
           "flowFocus": "저장 slug 포커스",
           "flowWrite": "편집 또는 연결",
           "flowProof": "같은 slug 검증",
-          "anchorTitle": "{kind} 앵커: {label} · degree {degree}",
-          "anchorAriaLabel": "저장 anchor 포커스: {label}, {kind}, degree {degree}",
+          "anchorTitle": "{kind} 앵커: {label} · slug {slug} · degree {degree}",
+          "anchorAriaLabel": "저장 anchor 포커스: {label}, slug {slug}, {kind}, degree {degree}",
+          "anchorSlugLabel": "slug {slug}",
           "degreeAriaLabel": "degree {degree}"
         },
         "exportButton": "md 내보내기 ↓",

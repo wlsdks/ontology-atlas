@@ -253,9 +253,11 @@ function BuilderCanvasEntryRail({
             aria-label={t("anchorAriaLabel", {
               kind: anchor.kind,
               label: anchor.label,
+              slug: anchor.id,
               degree: anchor.degree,
             })}
             onClick={() => onFocusAnchor(anchor.id)}
+            data-anchor-slug={anchor.id}
             className={
               selectedAnchorId === anchor.id
                 ? "pointer-events-auto flex min-w-[130px] max-w-[190px] shrink-0 items-center gap-1.5 truncate rounded-md border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.15)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(139,151,255,0.54)]"
@@ -264,13 +266,19 @@ function BuilderCanvasEntryRail({
             title={t("anchorTitle", {
               kind: anchor.kind,
               label: anchor.label,
+              slug: anchor.id,
               degree: anchor.degree,
             })}
           >
             <span className="shrink-0 font-mono uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
               {anchor.kind.slice(0, 1)}
             </span>
-            <span className="truncate">{anchor.label}</span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate">{anchor.label}</span>
+              <span className="truncate font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)]">
+                {t("anchorSlugLabel", { slug: anchor.id })}
+              </span>
+            </span>
             <span
               aria-label={t("degreeAriaLabel", { degree: anchor.degree })}
               className={

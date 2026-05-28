@@ -826,8 +826,9 @@
           "flowFocus": "focus saved slug",
           "flowWrite": "edit or connect",
           "flowProof": "proof same slug",
-          "anchorTitle": "{kind} anchor: {label} · degree {degree}",
-          "anchorAriaLabel": "Focus saved anchor {label}, {kind}, degree {degree}",
+          "anchorTitle": "{kind} anchor: {label} · slug {slug} · degree {degree}",
+          "anchorAriaLabel": "Focus saved anchor {label}, slug {slug}, {kind}, degree {degree}",
+          "anchorSlugLabel": "slug {slug}",
           "degreeAriaLabel": "degree {degree}"
         },
         "exportButton": "Export md ↓",

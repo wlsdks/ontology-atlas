@@ -99,6 +99,8 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "formatAgentPostChangeSyncPacket",
       "aria-label={t(\"ariaLabel\"",
       "anchorAriaLabel",
+      "anchorSlugLabel",
+      "data-anchor-slug",
       "activeFocusAriaLabel",
       "activeFocus",
       "proofChipSelected",
