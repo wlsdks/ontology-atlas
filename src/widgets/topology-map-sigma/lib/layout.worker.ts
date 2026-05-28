@@ -33,7 +33,10 @@ self.onmessage = (e: MessageEvent<MainToWorker>) => {
         initialAlpha: m.initialAlpha,
       });
       post({ type: 'ids', ids: engine.ids() });
-      startLoop();
+      // Mirror physics.ts: only self-settle when autoStart (small graphs).
+      // Large graphs keep their pre-computed (FA2) positions and stay idle
+      // until a drag/tune/reheat wakes the loop — no mount-time disturbance.
+      if (m.autoStart) startLoop();
       break;
     case 'pin':
       engine.pin(m.id, m.x, m.y);

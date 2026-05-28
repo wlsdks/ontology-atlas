@@ -39,6 +39,7 @@ import { resolveTopologyPalette } from '../lib/topology-palette';
 import { useGraphKeyboardNav } from '../lib/use-graph-keyboard-nav';
 import type { SigmaForces, SigmaOverlays } from '../model/controls-state';
 import { startPhysics, type PhysicsController } from '../lib/physics';
+import { createWorkerLayoutController } from '../lib/worker-layout-controller';
 import { extractDomainLabel } from '../lib/labels';
 import {
   BOUNCE_AMPLITUDE,
@@ -754,10 +755,26 @@ function SigmaTopologyImpl({
     // 발행하는 단일 'eachNodeAttributesUpdated' 이벤트에 Sigma가 자동으로
     // 반응하므로 중복 렌더를 피한다.
     const autoStartPhysics = minimal || graph.order <= 120;
-    const physics = startPhysics(graph, undefined, {
-      autoStart: autoStartPhysics,
-      initialAlpha: autoStartPhysics ? 0.65 : 0.25,
-    });
+    // Live force layout runs in a Web Worker so the main thread / WKWebView
+    // compositor stays free (drag / auto-arrange smoothness at scale). Falls
+    // back to the main-thread d3-force sim if the worker can't be created
+    // (no Worker support, or a CSP block in an unexpected host).
+    let physics: PhysicsController;
+    try {
+      if (typeof Worker === 'undefined') throw new Error('no Worker');
+      const layoutWorker = new Worker(new URL('../lib/layout.worker.ts', import.meta.url), {
+        type: 'module',
+      });
+      physics = createWorkerLayoutController(graph, layoutWorker, {
+        autoStart: autoStartPhysics,
+        initialAlpha: autoStartPhysics ? 0.65 : 0.25,
+      });
+    } catch {
+      physics = startPhysics(graph, undefined, {
+        autoStart: autoStartPhysics,
+        initialAlpha: autoStartPhysics ? 0.65 : 0.25,
+      });
+    }
     physicsRef.current = physics;
 
     // hover/선택 시 이웃만 강조하고 나머지는 dim. 옵시디언 그래프 뷰 동작과 동일.
