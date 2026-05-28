@@ -28,6 +28,7 @@ import { useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
+  AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   UNKNOWN_TONE,
   buildAgentReadinessCliCommands,
   formatAgentPostChangeSyncPacket,
@@ -981,7 +982,7 @@ function InsightsQueryPackCockpit({
           />
         </div>
       </div>
-      <dl className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-4">
+      <dl className="mt-3 grid grid-cols-2 gap-2 md:grid-cols-5">
         {[
           {
             key: "readiness",
@@ -1002,6 +1003,13 @@ function InsightsQueryPackCockpit({
             key: "cli",
             label: t("queryCockpitCli"),
             value: t("queryCockpitCliValue", { count: cliCount }),
+          },
+          {
+            key: "runtime",
+            label: t("queryCockpitRuntime"),
+            value: t("queryCockpitRuntimeValue", {
+              count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+            }),
           },
         ].map((item) => (
           <div

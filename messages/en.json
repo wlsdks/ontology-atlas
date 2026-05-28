@@ -1154,6 +1154,8 @@
       "queryCockpitMcpValue": "{count} calls",
       "queryCockpitCli": "CLI",
       "queryCockpitCliValue": "{count} fallbacks",
+      "queryCockpitRuntime": "Runtime gate",
+      "queryCockpitRuntimeValue": "{count} checks",
       "queryCockpitLiveProofAriaLabel": "Current vault graph queryability proof",
       "queryCockpitLiveGraphLabel": "Live graph",
       "queryCockpitLiveGraphValue": "{concepts} concepts · {relations} relations",

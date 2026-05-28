@@ -154,6 +154,7 @@ export interface AgentGraphDbQueryPackItem {
 export const AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND =
   "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4";
 export const AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND = "pnpm dogfood:graph-db";
+export const AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT = 10;
 
 const ALL_PATHS_RESULT_CONTRACT = [
   "For all_paths, report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete.",

@@ -1154,6 +1154,8 @@
       "queryCockpitMcpValue": "호출 {count}개",
       "queryCockpitCli": "CLI",
       "queryCockpitCliValue": "fallback {count}개",
+      "queryCockpitRuntime": "런타임 게이트",
+      "queryCockpitRuntimeValue": "검사 {count}개",
       "queryCockpitLiveProofAriaLabel": "현재 vault 그래프 query 가능성 증거",
       "queryCockpitLiveGraphLabel": "Live graph",
       "queryCockpitLiveGraphValue": "개념 {concepts} · 관계 {relations}",
