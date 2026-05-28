@@ -16,7 +16,7 @@ function touch(root, relativePath) {
 }
 
 function htmlWithWorkbenchProof(title = "Context Atlas") {
-  return `<!doctype html><title>${title}</title><main>Source Vault Files Graph Agent Copy graph gate graph gate 복사 Source Draft Guard Proof Tree role Graph refs Evidence 역할 참조 근거 Query cockpit Readiness Pack MCP CLI self-check + health gate Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius runtime replay canonical slug active slug 활성 slug Copy guard Guard 복사 Copy runtime gate runtime gate 복사</main>`;
+  return `<!doctype html><title>${title}</title><main>Source Vault Files Graph Agent Copy graph gate graph gate 복사 Source Draft Guard Proof Tree role Graph refs Evidence 역할 참조 근거 Query cockpit Readiness Pack MCP CLI self-check + health gate Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius runtime replay canonical slug active slug 활성 slug Copy guard Guard 복사 Copy sync gate sync gate 복사 Copy runtime gate runtime gate 복사</main>`;
 }
 
 test("desktop smoke proves packaged locale routes and offline docs exist", () => {
@@ -355,6 +355,35 @@ test("desktop smoke fails when builder guard copy action is absent", () => {
     ["route-text:en:/ontology/edit"],
   );
   assert.match(report.missing[0].details, /Copy guard/);
+});
+
+test("desktop smoke fails when builder sync gate copy action is absent", () => {
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+
+  const filePath = path.join(outDir, "en/ontology/edit/index.html");
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(
+    filePath,
+    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Source Draft Guard Proof Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard</main>",
+    "utf8",
+  );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/ontology/edit"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    ["route-text:en:/ontology/edit"],
+  );
+  assert.match(report.missing[0].details, /Copy sync gate/);
 });
 
 test("desktop smoke fails when builder focused blast-radius replay proof is absent", () => {
