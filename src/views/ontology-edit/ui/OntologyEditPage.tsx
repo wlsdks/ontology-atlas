@@ -165,8 +165,8 @@ function BuilderCanvasEntryRail({
   ] as const;
 
   return (
-    <div className="pointer-events-none absolute left-3 top-3 z-10 max-w-[min(620px,calc(100%-1.5rem))] rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.94)] p-2 shadow-[0_14px_34px_rgba(0,0,0,0.30)]">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+    <div className="pointer-events-none absolute left-3 right-3 top-3 z-10 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.94)] px-2 py-1.5">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <div className="flex min-w-0 items-center gap-1.5">
           <Network size={12} className="text-[color:var(--color-indigo-accent)]" />
           <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
@@ -190,21 +190,39 @@ function BuilderCanvasEntryRail({
             {t("activeFocus", { slug: selectedAnchorLabel })}
           </span>
         ) : null}
+        <div className="hidden min-w-0 flex-1 items-center gap-1 lg:flex">
+          <span className="h-5 w-px bg-[color:var(--color-border-soft)]" />
+          {flow.map((item) => {
+            const Icon = item.icon;
+            return (
+              <span
+                key={item.step}
+                className="flex min-w-0 items-center gap-1 rounded-md border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-0.5"
+              >
+                <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">
+                  {item.step}
+                </span>
+                <Icon size={9} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
+                <span className="truncate font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)]">
+                  {item.label}
+                </span>
+              </span>
+            );
+          })}
+        </div>
       </div>
-      <div className="mt-1.5 grid gap-1 sm:grid-cols-3">
+      <div className="mt-1 flex gap-1 overflow-x-auto pb-0.5 lg:hidden">
         {flow.map((item) => {
           const Icon = item.icon;
           return (
             <span
               key={item.step}
-              className="flex min-w-0 items-center gap-1.5 rounded-md border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-1"
+              className="flex shrink-0 items-center gap-1 rounded-md border border-[color:rgba(255,255,255,0.07)] bg-[color:rgba(0,0,0,0.12)] px-1.5 py-0.5"
             >
-              <span className="flex h-6 w-6 shrink-0 flex-col items-center justify-center rounded border border-[color:rgba(139,151,255,0.14)] bg-[color:rgba(0,0,0,0.14)]">
-                <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">
-                  {item.step}
-                </span>
-                <Icon size={9} className="mt-0.5 text-[color:var(--color-indigo-accent)]" aria-hidden />
+              <span className="font-mono text-[8px] leading-none tabular-nums text-[color:var(--color-text-quaternary)]">
+                {item.step}
               </span>
+              <Icon size={9} className="text-[color:var(--color-indigo-accent)]" aria-hidden />
               <span className="truncate font-mono text-[8px] uppercase tracking-[0.06em] text-[color:var(--color-text-tertiary)]">
                 {item.label}
               </span>
@@ -212,7 +230,7 @@ function BuilderCanvasEntryRail({
           );
         })}
       </div>
-      <div className="mt-1.5 flex flex-wrap gap-1.5">
+      <div className="mt-1 flex gap-1.5 overflow-x-auto pb-0.5">
         {anchors.map((anchor) => (
           <button
             key={anchor.id}
@@ -221,8 +239,8 @@ function BuilderCanvasEntryRail({
             onClick={() => onFocusAnchor(anchor.id)}
             className={
               selectedAnchorId === anchor.id
-                ? "pointer-events-auto flex max-w-[190px] items-center gap-1.5 truncate rounded-md border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.15)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(139,151,255,0.54)]"
-                : "pointer-events-auto flex max-w-[190px] items-center gap-1.5 truncate rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.13)] hover:text-[color:var(--color-text-primary)]"
+                ? "pointer-events-auto flex min-w-[130px] max-w-[190px] shrink-0 items-center gap-1.5 truncate rounded-md border border-[color:rgba(139,151,255,0.42)] bg-[color:rgba(139,151,255,0.15)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-primary)] transition-colors hover:border-[color:rgba(139,151,255,0.54)]"
+                : "pointer-events-auto flex min-w-[130px] max-w-[190px] shrink-0 items-center gap-1.5 truncate rounded-md border border-[color:rgba(94,106,210,0.22)] bg-[color:rgba(94,106,210,0.08)] px-2 py-1 text-left text-[10px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.38)] hover:bg-[color:rgba(94,106,210,0.13)] hover:text-[color:var(--color-text-primary)]"
             }
             title={t("anchorTitle", {
               kind: anchor.kind,
