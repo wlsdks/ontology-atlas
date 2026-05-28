@@ -153,7 +153,10 @@ a compact `focus saved slug` chip plus hover hint that users should focus a
 saved anchor before drawing so the inspector and proof handoffs keep the same
 slug. When a saved anchor is focused, repeat that active slug in the rail and
 visually mark the matching anchor button; the builder should always make the
-current write/proof handle explicit before a relation is drawn.
+current write/proof handle explicit before a relation is drawn. The rail is a
+real operation control, not decoration: expose it as a labelled region, give
+each saved anchor a direct focus label, and make the active saved slug readable
+to keyboard and assistive-technology users.
 
 Query surfaces should expose the executable query pack before deeper charts.
 Use a compact cockpit with readiness, pack size, MCP call count, CLI fallback

@@ -812,15 +812,18 @@
           "proofCopyFailed": "Copy failed"
         },
         "canvasEntryRail": {
+          "ariaLabel": "Persisted graph anchors · {nodes} nodes · {relations} refs",
           "label": "Graph anchors",
           "stats": "{nodes} nodes · {relations} refs",
           "focusChip": "focus saved slug",
           "activeFocus": "active slug {slug}",
+          "activeFocusAriaLabel": "Active saved slug {slug}",
           "hint": "Degree-ranked saved nodes. Pick one before drawing so focus, inspector, and proof links keep the same slug.",
           "flowFocus": "focus saved slug",
           "flowWrite": "edit or connect",
           "flowProof": "proof same slug",
           "anchorTitle": "{kind} anchor: {label} · degree {degree}",
+          "anchorAriaLabel": "Focus saved anchor {label}, {kind}, degree {degree}",
           "degreeAriaLabel": "degree {degree}"
         },
         "exportButton": "Export md ↓",

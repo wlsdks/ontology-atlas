@@ -173,7 +173,12 @@ function BuilderCanvasEntryRail({
   ] as const;
 
   return (
-    <div className="pointer-events-none absolute left-3 right-3 top-3 z-10 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.94)] px-2 py-1.5">
+    <div
+      role="region"
+      aria-label={t("ariaLabel", { nodes: nodeCount, relations: relationCount })}
+      className="pointer-events-none absolute left-3 right-3 top-3 z-10 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:rgba(15,16,17,0.94)] px-2 py-1.5"
+    >
+      <p className="sr-only">{t("hint")}</p>
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
         <div className="flex min-w-0 items-center gap-1.5">
           <Network size={12} className="text-[color:var(--color-indigo-accent)]" />
@@ -192,6 +197,7 @@ function BuilderCanvasEntryRail({
         </span>
         {selectedAnchorSlug ? (
           <span
+            aria-label={t("activeFocusAriaLabel", { slug: selectedAnchorSlug })}
             className="max-w-[230px] truncate rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.06)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-secondary)]"
             title={selectedAnchorLabel ?? undefined}
           >
@@ -244,6 +250,11 @@ function BuilderCanvasEntryRail({
             key={anchor.id}
             type="button"
             aria-pressed={selectedAnchorId === anchor.id}
+            aria-label={t("anchorAriaLabel", {
+              kind: anchor.kind,
+              label: anchor.label,
+              degree: anchor.degree,
+            })}
             onClick={() => onFocusAnchor(anchor.id)}
             className={
               selectedAnchorId === anchor.id

@@ -812,15 +812,18 @@
           "proofCopyFailed": "복사 실패"
         },
         "canvasEntryRail": {
+          "ariaLabel": "저장 graph anchor · 노드 {nodes} · 참조 {relations}",
           "label": "그래프 앵커",
           "stats": "노드 {nodes} · 참조 {relations}",
           "focusChip": "저장 slug 먼저",
           "activeFocus": "활성 slug {slug}",
+          "activeFocusAriaLabel": "활성 저장 slug {slug}",
           "hint": "degree 높은 저장 노드입니다. 그리기 전에 기준점을 고르면 포커스, 인스펙터, proof 링크가 같은 slug 를 유지합니다.",
           "flowFocus": "저장 slug 포커스",
           "flowWrite": "편집 또는 연결",
           "flowProof": "같은 slug 검증",
           "anchorTitle": "{kind} 앵커: {label} · degree {degree}",
+          "anchorAriaLabel": "저장 anchor 포커스: {label}, {kind}, degree {degree}",
           "degreeAriaLabel": "degree {degree}"
         },
         "exportButton": "md 내보내기 ↓",
