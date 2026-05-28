@@ -243,9 +243,11 @@ export function DependencyPicker({
         <Search size={13} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
         <input
           type="text"
+          name="dependency-search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t('searchPlaceholder')}
+          aria-label={t('searchPlaceholder')}
           className="flex-1 bg-transparent text-xs text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
         />
       </div>
