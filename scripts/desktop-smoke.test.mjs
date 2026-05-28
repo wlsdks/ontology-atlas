@@ -415,6 +415,35 @@ test("desktop smoke fails when builder focused blast-radius replay proof is abse
   assert.match(report.missing[0].details, /focused blast_radius/);
 });
 
+test("desktop smoke fails when builder runtime replay proof is absent", () => {
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+
+  const filePath = path.join(outDir, "en/ontology/edit/index.html");
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(
+    filePath,
+    "<!doctype html><title>Ontology Builder · Context Atlas</title><main>Source Draft Guard Proof Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius active slug Copy guard Copy sync gate</main>",
+    "utf8",
+  );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/ontology/edit"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    ["route-text:en:/ontology/edit"],
+  );
+  assert.match(report.missing[0].details, /runtime replay/);
+});
+
 test("desktop smoke fails when insights runtime gate copy action is absent", () => {
   const outDir = makeOutDir();
   fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
