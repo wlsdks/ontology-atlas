@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T06:35:20.753Z",
+  "generatedAt": "2026-05-28T06:41:37.184Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 2031,
-      "updatedAt": "2026-05-28T06:24:47.427Z",
+      "wordCount": 2062,
+      "updatedAt": "2026-05-28T06:40:35.367Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -3964,8 +3964,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6580,
-      "updatedAt": "2026-05-28T06:20:49.162Z",
+      "wordCount": 6584,
+      "updatedAt": "2026-05-28T06:40:52.766Z",
       "linksOut": []
     },
     {
@@ -5140,8 +5140,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 2888,
-      "updatedAt": "2026-05-28T03:03:00.242Z",
+      "wordCount": 2892,
+      "updatedAt": "2026-05-28T06:41:29.329Z",
       "linksOut": []
     },
     {
@@ -6290,8 +6290,8 @@
       },
       "headings": [],
       "excerpt": "scripts/checkontologydesignsurface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for designsystem drift: glowlike hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. It also checks that the fou",
-      "wordCount": 143,
-      "updatedAt": "2026-05-28T06:25:51.016Z",
+      "wordCount": 150,
+      "updatedAt": "2026-05-28T06:41:22.344Z",
       "linksOut": []
     },
     {

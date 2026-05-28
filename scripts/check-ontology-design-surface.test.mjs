@@ -93,6 +93,8 @@ function writeCleanWorkbenchFixtures(root) {
       "sourceContract.agentLabel",
       "sourceContract.agentChip",
       "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
+      "SOURCE_VAULT_RUNTIME_REPLAY_MARKERS",
+      "pattern_walk/project_map",
       "sourceContract.agentCopyGate",
     ].join("\n"),
   );
@@ -208,6 +210,8 @@ test("ontology design surface reports missing source vault execution cells", () 
       "missing marker: sourceContract.graphChip",
       "missing marker: sourceContract.agentLabel",
       "missing marker: sourceContract.agentChip",
+      "missing marker: SOURCE_VAULT_RUNTIME_REPLAY_MARKERS",
+      "missing marker: pattern_walk/project_map",
     ],
   );
 });

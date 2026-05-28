@@ -115,6 +115,11 @@ import {
   type DocsVaultView,
 } from "../lib/persistence";
 
+const SOURCE_VAULT_RUNTIME_REPLAY_MARKERS = [
+  "relation_name_parity",
+  "pattern_walk/project_map",
+] as const;
+
 function DocsVaultSourceContractBar({
   source,
   manifest,
@@ -178,6 +183,7 @@ function DocsVaultSourceContractBar({
       copyCta: t('sourceContract.agentCopyGate'),
       copyAriaLabel: t('sourceContract.agentCopyGateAriaLabel'),
       copySuccess: t('sourceContract.agentCopyGateSuccess'),
+      proofMarkers: SOURCE_VAULT_RUNTIME_REPLAY_MARKERS,
     },
   ] as const;
 
@@ -223,6 +229,18 @@ function DocsVaultSourceContractBar({
                 <p className="mt-0.5 line-clamp-2 text-[10.5px] leading-4 text-[color:var(--color-text-tertiary)]">
                   {cell.body}
                 </p>
+                {'proofMarkers' in cell ? (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {cell.proofMarkers.map((marker) => (
+                      <span
+                        key={marker}
+                        className="rounded-sm border border-[color:rgba(139,151,255,0.16)] bg-[color:rgba(94,106,210,0.05)] px-1.5 py-0.5 font-mono text-[9px] text-[color:var(--color-text-quaternary)]"
+                      >
+                        {marker}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
                 <Link

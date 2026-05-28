@@ -1743,7 +1743,7 @@
       "graphCta": "Browse",
       "agentLabel": "Agent",
       "agentValue": "{count} graph checks",
-      "agentBody": "Claude Code, Codex, Cursor, and terminal sessions run the same graph DB proof gate before writes.",
+      "agentBody": "Claude Code, Codex, Cursor, and terminal sessions run the same graph DB proof gate before writes, including relation_name_parity and pattern_walk/project_map containment replay.",
       "agentChip": "read-first",
       "agentCta": "Query",
       "agentCopyGate": "Copy graph gate",

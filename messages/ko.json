@@ -1743,7 +1743,7 @@
       "graphCta": "Browse",
       "agentLabel": "Agent",
       "agentValue": "graph 검사 {count}개",
-      "agentBody": "Claude Code, Codex, Cursor, 터미널 세션이 write 전에 같은 graph DB proof gate 를 실행합니다.",
+      "agentBody": "Claude Code, Codex, Cursor, 터미널 세션이 write 전에 같은 graph DB proof gate 를 실행합니다. relation_name_parity 와 pattern_walk/project_map containment replay 까지 포함합니다.",
       "agentChip": "read-first",
       "agentCta": "Query",
       "agentCopyGate": "graph gate 복사",

@@ -83,6 +83,8 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "sourceContract.agentLabel",
       "sourceContract.agentChip",
       "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
+      "SOURCE_VAULT_RUNTIME_REPLAY_MARKERS",
+      "pattern_walk/project_map",
       "sourceContract.agentCopyGate",
     ],
     reason:
