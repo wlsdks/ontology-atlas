@@ -135,6 +135,7 @@ Both routes render the same `HomePage` (R3 keep-both decision: `/` = home/back-l
 
 #### Header (always visible)
 - Back button · title + doc count · `Local` badge (when source=local)
+- Pinned `Files` / `Graph` / `Agent` execution strip: source markdown count, compiled ontology node/relation counts, and the same 10-check graph DB proof gate used by the local dogfood runtime pack
 - **Source toggle** (R3 cut C — radio: Sample / Local). Round 4 J: clicking Local auto-opens vault tools dropdown if no vault loaded yet
 - **Palette button** (`⌘K`)
 - **Vault tools dropdown** (gear icon, only when source=local + supported):

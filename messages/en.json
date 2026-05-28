@@ -1724,8 +1724,8 @@
       "graphChip": "compiled",
       "graphCta": "Browse",
       "agentLabel": "Agent",
-      "agentValue": "MCP / CLI proof",
-      "agentBody": "Claude Code, Codex, Cursor, and terminal sessions verify the same graph before writes.",
+      "agentValue": "{count} graph checks",
+      "agentBody": "Claude Code, Codex, Cursor, and terminal sessions run the same graph DB proof gate before writes.",
       "agentChip": "read-first",
       "agentCta": "Query"
     },

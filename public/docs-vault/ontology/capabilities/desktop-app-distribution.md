@@ -110,7 +110,8 @@ input for browse/builder/query views, and Claude Code / Codex / Cursor read the
 same vault through MCP instead of a backend. After a vault is opened, the same
 Files / Graph / Agent contract remains pinned below the `/docs` header with the
 current markdown count, compiled ontology node/relation counts, source/browse/query
-handoff links, and read-first agent proof framing, so the active workbench does
+handoff links, and the same 10-check graph DB proof gate used by the dogfood
+runtime pack, so the active workbench does
 not collapse back into a generic document editor once setup is complete. The
 visible global entry and page title now use `Source` / `Source Vault` language
 while individual markdown files remain documents, making `/docs` read as the

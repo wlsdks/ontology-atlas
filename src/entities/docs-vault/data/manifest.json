@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T00:57:41.867Z",
+  "generatedAt": "2026-05-28T01:02:49.146Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8162,
-      "updatedAt": "2026-05-28T00:54:31.937Z",
+      "wordCount": 8193,
+      "updatedAt": "2026-05-28T01:02:43.986Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5140,8 +5140,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 2837,
-      "updatedAt": "2026-05-28T00:08:34.116Z",
+      "wordCount": 2846,
+      "updatedAt": "2026-05-28T01:02:39.796Z",
       "linksOut": []
     },
     {

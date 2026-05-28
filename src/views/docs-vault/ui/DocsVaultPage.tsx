@@ -42,6 +42,7 @@ import {
   getTauriVaultRootPath,
   isTauriVaultRuntime,
 } from '@/shared/lib/tauri-vault-fs';
+import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from '@/shared/lib/ontology-tree';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
 import { Tooltip, useToast } from '@/shared/ui';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
@@ -159,7 +160,9 @@ function DocsVaultSourceContractBar({
       step: '03',
       icon: Bot,
       label: t('sourceContract.agentLabel'),
-      value: t('sourceContract.agentValue'),
+      value: t('sourceContract.agentValue', {
+        count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+      }),
       body: t('sourceContract.agentBody'),
       chip: t('sourceContract.agentChip'),
       href: '/ontology/insights/',

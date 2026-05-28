@@ -1724,8 +1724,8 @@
       "graphChip": "compiled",
       "graphCta": "Browse",
       "agentLabel": "Agent",
-      "agentValue": "MCP / CLI proof",
-      "agentBody": "Claude Code, Codex, Cursor, 터미널 세션이 write 전에 같은 graph 를 검증합니다.",
+      "agentValue": "graph 검사 {count}개",
+      "agentBody": "Claude Code, Codex, Cursor, 터미널 세션이 write 전에 같은 graph DB proof gate 를 실행합니다.",
       "agentChip": "read-first",
       "agentCta": "Query"
     },
