@@ -346,7 +346,7 @@ export function OntologyInsightsPage() {
   return (
     <div>
       <OperationsNav />
-      <main id="main" className="mx-auto max-w-5xl px-5 py-8 md:px-8 md:py-12">
+      <main id="main" className="mx-auto w-full max-w-5xl px-5 py-8 md:px-8 md:py-12">
       <MountedGlobalSearch />
 
       <section className="mb-8 space-y-3">
