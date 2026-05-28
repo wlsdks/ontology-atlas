@@ -8,6 +8,7 @@ import {
   useMemo,
   useRef,
   useState,
+  useSyncExternalStore,
 } from 'react';
 import { Link } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
@@ -85,6 +86,10 @@ const DocsVaultFolderTopology = dynamic(
 );
 
 const serverManifest = vaultManifest as VaultManifest;
+
+const subscribeDesktopRuntime = () => () => undefined;
+const readDesktopRuntime = () => isTauriVaultRuntime();
+const readServerDesktopRuntime = () => false;
 
 // view 파싱 / persistence helpers — 다른 도메인의 view 와 collision 회피용
 // `DocsVault*` 네임스페이스. 본 파일 안에선 짧은 별칭으로 alias.
@@ -439,10 +444,11 @@ function DocsVaultContent() {
   // source 초기값을 'local' 로 박아 처음부터 picker UI 가 우측 sidebar 에
   // 보이게 (eval B4 finding — 이전엔 picker 가 4-단계 깊숙이 묻혀 있었음).
   const [source, setSource] = useState<Source>('server');
-  const [isDesktopRuntime, setIsDesktopRuntime] = useState(false);
-  useEffect(() => {
-    setIsDesktopRuntime(isTauriVaultRuntime());
-  }, []);
+  const isDesktopRuntime = useSyncExternalStore(
+    subscribeDesktopRuntime,
+    readDesktopRuntime,
+    readServerDesktopRuntime,
+  );
   // ?intent=local 진입 시: source 'local' + advanced panel 펼침. SSR 시점엔
   // searchParams 가 stale 일 수 있어 mount 후 직접 window.location 에서 read.
   // landing 의 '내 마크다운 폴더 열기' CTA 가 dead-end 안 되도록.

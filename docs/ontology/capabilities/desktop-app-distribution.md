@@ -114,7 +114,11 @@ handoff links, and read-first agent proof framing, so the active workbench does
 not collapse back into a generic document editor once setup is complete. The
 visible global entry and page title now use `Source` / `Source Vault` language
 while individual markdown files remain documents, making `/docs` read as the
-graph source and setup surface instead of a documentation portal. The picker keeps a small recent-vault list from persisted Tauri paths,
+graph source and setup surface instead of a documentation portal. `DocsVaultPage`
+reads the desktop/Tauri runtime through a hydration-safe external-store snapshot
+instead of a mount-time state effect, so the source-vault entry contract stays
+lint-clean while still resolving to native vault controls inside the installed
+app. The picker keeps a small recent-vault list from persisted Tauri paths,
 can reopen those vaults without another Finder selection, shows the last-opened
 time for each remembered vault so repeated desktop work does not become a blind
 path list, keeps that relative time live while the picker stays open, and can
