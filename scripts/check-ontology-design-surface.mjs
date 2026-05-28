@@ -117,6 +117,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "queryCockpitLiveProofAriaLabel",
       "queryCockpitEvidenceAriaLabel",
       "focused_blast_radius",
+      "relation_name_parity",
     ],
     reason:
       "/ontology/insights must lead with executable graph DB query pack, runtime gate, and result contracts.",

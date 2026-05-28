@@ -947,6 +947,7 @@ function InsightsQueryPackCockpit({
     "commands[].timedOut",
     "health.status",
     "focused_blast_radius",
+    "relation_name_parity",
     "health.checks[].status",
   ];
 

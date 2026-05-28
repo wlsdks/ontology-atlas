@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T05:09:30.964Z",
+  "generatedAt": "2026-05-28T05:17:30.505Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1997,
-      "updatedAt": "2026-05-28T05:01:28.469Z",
+      "wordCount": 2004,
+      "updatedAt": "2026-05-28T05:14:44.893Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8354,
-      "updatedAt": "2026-05-28T05:08:39.335Z",
+      "wordCount": 8356,
+      "updatedAt": "2026-05-28T05:16:57.424Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6132,8 +6132,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditPage.tsx owns the compact Source / Draft / Guard / Proof status strip above the /ontology/edit canvas. src/views/ontologyedit/lib/buildersourcestatus.ts keeps the Source cell state machine explicit and tested, so writable, restoring, unavailable, and readonly states cannot collapse",
-      "wordCount": 625,
-      "updatedAt": "2026-05-28T03:38:57.081Z",
+      "wordCount": 628,
+      "updatedAt": "2026-05-28T05:16:43.364Z",
       "linksOut": []
     },
     {
