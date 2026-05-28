@@ -1153,7 +1153,7 @@
       "queryCockpitAriaLabel": "Graph DB query cockpit",
       "queryCockpitEyebrow": "Query cockpit",
       "queryCockpitTitle": "로컬 그래프를 작은 DB처럼 실행",
-      "queryCockpitBody": "허브, coupling, path 를 해석하기 전에 bounded query pack 부터 실행합니다. node scan, edge scan, domain matrix, path evidence 가 같은 markdown vault 근거에 묶입니다.",
+      "queryCockpitBody": "허브, coupling, path 를 해석하기 전에 bounded MATCH-style query pack 부터 실행합니다. node scan, edge scan, domain matrix, path evidence 가 같은 markdown vault 근거에 묶입니다.",
       "queryCockpitReadiness": "Readiness",
       "queryCockpitReadinessValue": "{score}/100",
       "queryCockpitPack": "Pack",

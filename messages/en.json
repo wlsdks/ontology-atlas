@@ -1153,7 +1153,7 @@
       "queryCockpitAriaLabel": "Graph DB query cockpit",
       "queryCockpitEyebrow": "Query cockpit",
       "queryCockpitTitle": "Run the local graph like a small database",
-      "queryCockpitBody": "Start with the bounded query pack before interpreting hubs, coupling, or paths. It keeps node scans, edge scans, domain matrix, and path evidence tied to the same markdown vault.",
+      "queryCockpitBody": "Start with the bounded MATCH-style query pack before interpreting hubs, coupling, or paths. It keeps node scans, edge scans, domain matrix, and path evidence tied to the same markdown vault.",
       "queryCockpitReadiness": "Readiness",
       "queryCockpitReadinessValue": "{score}/100",
       "queryCockpitPack": "Pack",
