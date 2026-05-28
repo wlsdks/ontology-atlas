@@ -336,7 +336,7 @@ export function ProjectSelectorPage() {
           {filteredProjects.length === 0 ? (
             <Card className="rounded-[24px]">
               <CardHeader>
-                <CardTitle>
+                <CardTitle as="h2">
                   {projects.length === 0
                     ? t("emptyTitleNoProjects")
                     : t("emptyTitleNoResults")}
@@ -430,7 +430,7 @@ export function ProjectSelectorPage() {
                           aria-label={t("cardDetailAriaLabel", { name: project.name })}
                           className="min-w-0 rounded-md after:absolute after:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-panel)]"
                         >
-                          <CardTitle className="truncate break-keep">{project.name}</CardTitle>
+                          <CardTitle as="h2" className="truncate break-keep">{project.name}</CardTitle>
                           <CardDescription className="mt-2 line-clamp-2 break-keep">
                             {project.description || t("cardDescriptionFallback")}
                           </CardDescription>

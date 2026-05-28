@@ -22,18 +22,19 @@ export const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
 );
 CardHeader.displayName = 'CardHeader';
 
-export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
-  ({ className, ...props }, ref) => (
-    <h3
-      ref={ref}
-      className={cn(
-        'text-lg tracking-[var(--tracking-card)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]',
-        className,
-      )}
-      {...props}
-    />
-  ),
-);
+export const CardTitle = forwardRef<
+  HTMLHeadingElement,
+  HTMLAttributes<HTMLHeadingElement> & { as?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' }
+>(({ className, as: Tag = 'h3', ...props }, ref) => (
+  <Tag
+    ref={ref}
+    className={cn(
+      'text-lg tracking-[var(--tracking-card)] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]',
+      className,
+    )}
+    {...props}
+  />
+));
 CardTitle.displayName = 'CardTitle';
 
 export const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
