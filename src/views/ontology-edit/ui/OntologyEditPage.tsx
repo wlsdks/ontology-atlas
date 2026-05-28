@@ -23,7 +23,6 @@ import {
   vaultManifest as staticVaultManifestRaw,
   type VaultManifest,
 } from "@/entities/docs-vault";
-import { useDataSourceMode } from "@/features/data-source-mode";
 import { VaultConflictError, useLocalVault } from "@/features/docs-vault-local";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { slugify } from "@/shared/lib/slugify";
@@ -470,7 +469,6 @@ export function OntologyEditPage() {
   const t = useTranslations("ontologyPages.edit.page");
   const tKinds = useTranslations("kinds");
   const searchParams = useSearchParams();
-  const dataSourceMode = useDataSourceMode();
   const vault = useLocalVault();
   const isDesktopRuntime = isTauriVaultRuntime();
   const demoSaveToastKey = isDesktopRuntime
@@ -568,6 +566,11 @@ export function OntologyEditPage() {
     return () => clearTimeout(timer);
   }, [clearConfirming]);
   const toast = useToast();
+  // Builder writes are gated by the actual writable vault handle/manifest, not
+  // by route-level mode copy. This keeps create/save aligned with the summary,
+  // inspector, and relation-write paths when restored vault state races route
+  // transitions in the desktop WebView.
+  const hasLiveVault = vault.manifest !== null;
 
   const saveEphemeral = useCallback(
     async (nodeId: string) => {
@@ -588,7 +591,7 @@ export function OntologyEditPage() {
       }
       setSavingId(nodeId);
       try {
-        if (dataSourceMode === "local") {
+        if (hasLiveVault) {
           // vault `.md` 직접 작성. 경로 = `${kind}s/${slug}.md`
           // (capabilities/auth-platform — dogfood vault 와 같은 폴더 패턴).
           // kind 복수형: capability→capabilities, element→elements,
@@ -629,7 +632,7 @@ export function OntologyEditPage() {
         setSavingId(null);
       }
     },
-    [dataSourceMode, demoSaveToastKey, findById, removeNode, t, toast, vault],
+    [demoSaveToastKey, findById, hasLiveVault, removeNode, t, toast, vault],
   );
   const ephemeralSelected = findById(selectedId);
   // vault 모드에서는 selectedId 가 vault slug. manifest 에서 lookup 해
@@ -640,7 +643,6 @@ export function OntologyEditPage() {
   // 인스펙터 lookup 도 같은 우선순위 — vault 안 고른 사용자가 dogfood 노드
   // 클릭 시 정확한 frontmatter 를 본다. hasLiveVault 가 false 면 인스펙터는
   // read-only — patch 시도하면 disk 권한 없어 어차피 fail.
-  const hasLiveVault = vault.manifest !== null;
   const restoringVault =
     !hasLiveVault && (vault.status === "loading" || vault.status === "opening");
   const effectiveManifest = vault.manifest ?? (staticVaultManifestRaw as VaultManifest);
