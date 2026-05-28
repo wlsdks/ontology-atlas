@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T01:08:19.092Z",
+  "generatedAt": "2026-05-28T01:13:15.720Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8223,
-      "updatedAt": "2026-05-28T01:08:11.635Z",
+      "wordCount": 8228,
+      "updatedAt": "2026-05-28T01:13:10.646Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4919,8 +4919,8 @@
       },
       "headings": [],
       "excerpt": "/ontology/edit does not write a vault↔vault edge immediately after a drag. It opens a confirmation step that explains the inferred relation key and the reason for that inference, lets the user choose an alternate frontmatter key, and breaks the write scope into the file path, changed markdown files, unchanged markdown ",
-      "wordCount": 740,
-      "updatedAt": "2026-05-25T07:30:30.635Z",
+      "wordCount": 744,
+      "updatedAt": "2026-05-28T01:13:03.731Z",
       "linksOut": []
     },
     {
@@ -6115,8 +6115,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/RelationWriteConfirm.tsx is the confirmation panel shown after dragging between two persisted vault nodes. It presents the inferred edge with a dedicated inferredkey row and the schema reason behind that inference, selectable relation keys, a writescope table with the source markdown file, cha",
-      "wordCount": 1135,
-      "updatedAt": "2026-05-27T18:43:33.496Z",
+      "wordCount": 1156,
+      "updatedAt": "2026-05-28T01:12:44.993Z",
       "linksOut": []
     },
     {

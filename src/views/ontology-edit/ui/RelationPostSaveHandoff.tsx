@@ -4,7 +4,11 @@ import { useState } from "react";
 import { Clipboard, GitBranch, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
-import { formatAgentPostChangeSyncPacket } from "@/shared/lib/ontology-tree";
+import {
+  AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+  AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
+  formatAgentPostChangeSyncPacket,
+} from "@/shared/lib/ontology-tree";
 import type { VaultRelationKey, VaultRelationProposal } from "../lib/relation-proposal";
 import {
   buildRelationQueryCockpitHref,
@@ -204,7 +208,8 @@ function formatSavedRelationProofPacket(
     "",
     "Evidence contract: report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete before using paths as proof.",
     "",
-    "Post-save sync gate:",
+    "Post-save graph DB proof + sync gate:",
+    `Runtime gate: ${AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT} checks · ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
     formatAgentPostChangeSyncPacket(),
   ].join("\n");
 }

@@ -6,6 +6,8 @@ import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
 import { explainOntologyRelationKeyInference } from "@/shared/lib/ontology-relation-key";
 import {
+  AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+  AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
   buildAgentPostChangeSyncCliCommands,
   formatAgentPostChangeSyncPacket,
 } from "@/shared/lib/ontology-tree";
@@ -830,7 +832,8 @@ function formatRelationWritePacket({
     "Post-save graph checks:",
     ...buildPostSaveCheckCommands(),
     "",
-    "Post-save MCP/CLI sync gate:",
+    "Post-save graph DB proof + sync gate:",
+    `Runtime gate: ${AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT} checks · ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
     formatAgentPostChangeSyncPacket(),
   ].join("\n");
 }
@@ -990,7 +993,10 @@ function buildRelationCheckCommand({
 }
 
 function buildPostSaveCheckCommands(): string[] {
-  return buildAgentPostChangeSyncCliCommands().map((item) => item.command);
+  return [
+    `${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND} # ${AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT} runtime graph DB checks`,
+    ...buildAgentPostChangeSyncCliCommands().map((item) => item.command),
+  ];
 }
 
 function formatMcpAddRelationArgs({

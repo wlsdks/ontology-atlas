@@ -531,7 +531,13 @@ describe("RelationWriteConfirm", () => {
       expect.stringContaining("Post-save graph checks:"),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
-      expect.stringContaining("Post-save MCP/CLI sync gate:"),
+      expect.stringContaining("pnpm dogfood:graph-db # 10 runtime graph DB checks"),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining("Post-save graph DB proof + sync gate:"),
+    );
+    expect(copyTextMock).toHaveBeenCalledWith(
+      expect.stringContaining("Runtime gate: 10 checks · pnpm dogfood:graph-db"),
     );
     expect(copyTextMock).toHaveBeenCalledWith(
       expect.stringContaining("# Post-change ontology sync gate"),
@@ -984,6 +990,8 @@ describe("RelationPostSaveHandoff", () => {
       'query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"capabilities/mcp-server","to":"elements/mcp-index","maxHops":5,"limit":10,"searchBudget":1000})',
     );
     expect(copied).toContain("Evidence contract: report limit, searchBudget");
+    expect(copied).toContain("Post-save graph DB proof + sync gate:");
+    expect(copied).toContain("Runtime gate: 10 checks · pnpm dogfood:graph-db");
     expect(copied).toContain("# Post-change ontology sync gate");
     expect(
       screen.getByRole("button", { name: "Proof packet copied" }),
