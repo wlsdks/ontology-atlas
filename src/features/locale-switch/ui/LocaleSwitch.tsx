@@ -56,7 +56,7 @@ export function LocaleSwitch() {
             onClick={() => switchTo(code)}
             disabled={isPending}
             aria-pressed={active}
-            aria-label={t(nameKey)}
+            aria-label={`${label} ${t(nameKey)}`}
             className={
               'rounded-[4px] px-2 py-1 font-medium transition-colors ' +
               (active
