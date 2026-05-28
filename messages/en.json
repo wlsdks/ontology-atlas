@@ -361,7 +361,7 @@
       "recentSection": "Recent searches",
       "helpRecent": "Showing recently updated projects first. Narrow down by name, tags, or stack.",
       "helpKeyboard": "Use up/down arrows to move through results and Enter to select. ESC to close.",
-      "docsSection": "Docs · {count}",
+      "docsSection": "Source records · {count}",
       "emptyNoProjectsTitle": "No projects in this space yet.",
       "emptyNoProjectsBody": "Once projects are added, you can search and jump straight to them here.",
       "emptyClose": "Close",
@@ -656,7 +656,7 @@
       "secCommonCommands": "Common commands",
       "secCommands": "Commands",
       "secTags": "Tags",
-      "secDocs": "Documents",
+      "secDocs": "Source records",
       "tagMeta": "{count}",
       "footerMove": "Move",
       "footerRun": "Run",
@@ -694,7 +694,7 @@
         "unpinTooltip": "Unpin"
       },
       "empty": {
-        "selectPrompt": "Pick a document from the document tree"
+        "selectPrompt": "Pick a source record from the source tree"
       },
       "outline": {
         "pinTooltip": "Pin this document",
@@ -723,7 +723,7 @@
       "rowTitle": "{tag} · {count} items"
     },
     "tree": {
-      "navAria": "Document tree"
+      "navAria": "Source tree"
     }
   },
   "ontologyPages": {

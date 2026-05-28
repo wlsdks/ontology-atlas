@@ -114,7 +114,7 @@ function TreeNode({
 }
 
 /**
- * Vault 문서 트리. 디렉터리는 접기/펼치기, 문서는 클릭 시 onSelect.
+ * Source Vault tree. 디렉터리는 접기/펼치기, source record 는 클릭 시 onSelect.
  */
 export function DocsVaultTree({
   tree,

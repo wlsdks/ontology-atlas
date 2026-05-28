@@ -19,4 +19,7 @@ contract instead of a plain document picker: the `Files` / `Graph` / `Agent`
 strip shows local markdown as the source of truth, compiled graph counts, and
 the shared graph DB proof gate. The `Agent` cell can copy the runtime graph gate
 directly, so a user can prove Claude Code / Codex / terminal readiness from the
-source surface before moving into Browse, Builder, or Insights.
+source surface before moving into Browse, Builder, or Insights. Palette groups,
+search sections, empty states, and navigation labels call those markdown entries
+`Source records` in a `Source tree`, reserving document language for individual
+file actions and evidence rows.

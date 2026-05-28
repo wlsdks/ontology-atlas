@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T03:03:22.479Z",
+  "generatedAt": "2026-05-28T03:08:43.641Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1865,
-      "updatedAt": "2026-05-28T03:01:57.983Z",
+      "wordCount": 1893,
+      "updatedAt": "2026-05-28T03:08:36.576Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -6159,8 +6159,8 @@
         }
       ],
       "excerpt": "브라우저 native API — showDirectoryPicker() 로 사용자 폴더 선택, FileSystemDirectoryHandle 로 read/write. 우리는 IndexedDB 에 핸들 영속, focus / visibility 시 fingerprint 비교 재스캔. SSRsafe (window 가드). 미지원 브라우저는 LocalVaultPicker 가 명시적 안내. The Source Vault first viewport treats that runtime as an ontology execution contract instead of a plain ",
-      "wordCount": 115,
-      "updatedAt": "2026-05-28T02:45:50.082Z",
+      "wordCount": 144,
+      "updatedAt": "2026-05-28T03:08:36.577Z",
       "linksOut": []
     },
     {

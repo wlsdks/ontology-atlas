@@ -361,7 +361,7 @@
       "recentSection": "최근 검색",
       "helpRecent": "최근 업데이트된 프로젝트부터 보여줍니다. 이름, 태그, 스택으로 바로 좁혀볼 수 있습니다.",
       "helpKeyboard": "위아래 화살표로 결과를 이동하고 엔터로 선택할 수 있습니다. ESC로 닫습니다.",
-      "docsSection": "문서 · {count}",
+      "docsSection": "소스 기록 · {count}",
       "emptyNoProjectsTitle": "이 공간에는 아직 프로젝트가 없어요.",
       "emptyNoProjectsBody": "프로젝트가 추가되면 여기서 바로 검색·점프할 수 있어요.",
       "emptyClose": "닫기",
@@ -656,7 +656,7 @@
       "secCommonCommands": "자주 쓰는 명령",
       "secCommands": "명령",
       "secTags": "태그",
-      "secDocs": "문서",
+      "secDocs": "소스 기록",
       "tagMeta": "{count}건",
       "footerMove": "이동",
       "footerRun": "실행",
@@ -694,7 +694,7 @@
         "unpinTooltip": "고정 해제"
       },
       "empty": {
-        "selectPrompt": "문서 트리에서 문서를 선택하세요"
+        "selectPrompt": "소스 트리에서 항목을 선택하세요"
       },
       "outline": {
         "pinTooltip": "이 문서 고정",
@@ -723,7 +723,7 @@
       "rowTitle": "{tag} · {count}건"
     },
     "tree": {
-      "navAria": "문서 트리"
+      "navAria": "소스 트리"
     }
   },
   "ontologyPages": {

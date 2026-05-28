@@ -176,7 +176,9 @@ The global entry label and page header for `/docs` should say `Source` /
 `Source Vault`, not `Docs`, because that route is the local markdown source and
 agent setup surface for the graph. Keep `document` language for individual
 markdown files and evidence rows, but avoid making the route identity read like
-a documentation portal.
+a documentation portal. Palette groups, search sections, empty-state prompts,
+and tree navigation labels should say `Source records` / `Source tree` when
+they name the surface rather than one specific markdown file.
 
 ## Absolute rules (Don'ts)
 
