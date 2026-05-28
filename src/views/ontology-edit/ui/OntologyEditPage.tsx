@@ -253,6 +253,7 @@ function BuilderCanvasEntryRail({
 function BuilderWriteSummary({
   writable,
   restoringVault,
+  vaultUnavailable,
   isDesktopRuntime,
   persistedNodes,
   persistedRelations,
@@ -264,6 +265,7 @@ function BuilderWriteSummary({
 }: {
   writable: boolean;
   restoringVault: boolean;
+  vaultUnavailable: boolean;
   isDesktopRuntime: boolean;
   persistedNodes: number;
   persistedRelations: number;
@@ -320,22 +322,30 @@ function BuilderWriteSummary({
         ? t("sourceRestoring")
         : writable
           ? t("sourceWritable")
-          : t("sourceReadonly"),
+          : vaultUnavailable
+            ? t("sourceUnavailable")
+            : t("sourceReadonly"),
       body: restoringVault
         ? t("sourceBodyRestoring")
         : writable
-        ? t("sourceBodyWritable", { nodes: persistedNodes, relations: persistedRelations })
-        : t("sourceBodyReadonly", { nodes: persistedNodes, relations: persistedRelations }),
+          ? t("sourceBodyWritable", { nodes: persistedNodes, relations: persistedRelations })
+          : vaultUnavailable
+            ? t("sourceBodyUnavailable")
+            : t("sourceBodyReadonly", { nodes: persistedNodes, relations: persistedRelations }),
       chip: restoringVault
         ? t("sourceChipRestoring")
         : writable
           ? t("sourceChipWritable")
-          : t("sourceChipReadonly"),
+          : vaultUnavailable
+            ? t("sourceChipUnavailable")
+            : t("sourceChipReadonly"),
       flow: restoringVault
         ? t("sourceFlowRestoring")
         : writable
           ? t("sourceFlowWritable")
-          : t("sourceFlowReadonly"),
+          : vaultUnavailable
+            ? t("sourceFlowUnavailable")
+            : t("sourceFlowReadonly"),
       accent: writable ? "indigo" : restoringVault ? "neutral" : "amber",
       ...sourceAction,
     },
@@ -571,6 +581,8 @@ export function OntologyEditPage() {
   // inspector, and relation-write paths when restored vault state races route
   // transitions in the desktop WebView.
   const hasLiveVault = vault.manifest !== null;
+  const vaultUnavailable =
+    !hasLiveVault && (vault.status === "permission-needed" || vault.status === "error");
 
   const saveEphemeral = useCallback(
     async (nodeId: string) => {
@@ -1385,6 +1397,7 @@ export function OntologyEditPage() {
         <BuilderWriteSummary
           writable={hasLiveVault}
           restoringVault={restoringVault}
+          vaultUnavailable={vaultUnavailable}
           isDesktopRuntime={isDesktopRuntime}
           persistedNodes={builderGraphStats.persistedNodes}
           persistedRelations={builderGraphStats.persistedRelations}

@@ -17,6 +17,9 @@ mission v2 의 *사람 + AI agent 양립* 약속의 코드 구현. 빌더 epheme
   relation write 는 모두 같은 live manifest 계약으로 writable 여부를
   판단해 desktop WebView route transition 중 mode label 과 write handle 이
   잠깐 어긋나도 builder write path 가 데모 토스트로 잘못 빠지지 않는다.
+- **unavailable**: 저장된 desktop vault handle 이 permission-needed/error 상태면
+  샘플 그래프를 보여주되 Source cell 을 `vault 접근 필요` 로 분리해, route
+  restore 실패를 일반 sample read-only 와 혼동하지 않게 한다.
 - **static**: 저장 차단 + 안내 toast ("내 markdown 폴더 열기" 유도).
 - **write status strip**: 캔버스 진입 전에 `Source` / `Draft` / `Guard` / `Proof`
   상태를 보여준다. sample read-only vs local write, persisted node/ref count,

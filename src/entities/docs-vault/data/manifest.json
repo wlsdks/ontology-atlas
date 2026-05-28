@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T00:17:38.520Z",
+  "generatedAt": "2026-05-28T00:23:47.011Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4946,8 +4946,8 @@
         }
       ],
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 빌더 ephemeral 노드 → mode 별 분기 저장: local: vault.manifest 가 있는 live vault 에서 vault.createDoc(${kind}s/${slug}, md) — vault 디스크 직접 작성. AI agent (MCP) 가 같은 vault 에서 즉시 본다. 새 노드 저장, inspector write, relation write 는 모두 같은 live manifest 계약으로 writable 여부를 판단해 desktop WebView route transi",
-      "wordCount": 332,
-      "updatedAt": "2026-05-28T00:17:31.520Z",
+      "wordCount": 362,
+      "updatedAt": "2026-05-28T00:23:41.802Z",
       "linksOut": []
     },
     {
