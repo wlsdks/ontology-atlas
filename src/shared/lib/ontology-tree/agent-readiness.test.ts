@@ -150,7 +150,7 @@ describe("buildAgentReadinessSummary", () => {
       "oh-my-ontology maintenance [vault] --limit 20",
       "oh-my-ontology node <hub-slug> [vault] --limit 12",
       "oh-my-ontology blast-radius <hub-slug> [vault] --depth 2 --direction incoming",
-      "pnpm dogfood:graph-db # 11 runtime graph DB checks",
+      "pnpm dogfood:graph-db # 12 runtime graph DB checks",
       "oh-my-ontology validate [vault]",
     ]);
     expect(new Set(commands.map((item) => item.command)).size).toBe(commands.length);
@@ -160,7 +160,7 @@ describe("buildAgentReadinessSummary", () => {
       "3. oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
     expect(formatted).toContain("8. oh-my-ontology maintenance [vault] --limit 20");
-    expect(formatted).toContain("11. pnpm dogfood:graph-db # 11 runtime graph DB checks");
+    expect(formatted).toContain("11. pnpm dogfood:graph-db # 12 runtime graph DB checks");
     expect(formatted).toContain("12. oh-my-ontology validate [vault]");
   });
 
@@ -173,12 +173,12 @@ describe("buildAgentReadinessSummary", () => {
       "oh-my-ontology cycles [vault] --max-hops 8",
       "oh-my-ontology growth [vault] --limit 20",
       "oh-my-ontology maintenance [vault] --limit 20",
-      "pnpm dogfood:graph-db # 11 runtime graph DB checks",
+      "pnpm dogfood:graph-db # 12 runtime graph DB checks",
       "oh-my-ontology validate [vault]",
     ]);
     expect(packet).toContain("# Post-change ontology sync gate");
     expect(packet).toContain("## Runtime graph DB gate");
-    expect(packet).toContain("11 checks · pnpm dogfood:graph-db");
+    expect(packet).toContain("12 checks · pnpm dogfood:graph-db");
     expect(packet).toContain("## Run when");
     expect(packet).toContain(
       "a domain, capability, element, or relation was introduced, renamed, split, merged, or made more explicit",
@@ -193,7 +193,7 @@ describe("buildAgentReadinessSummary", () => {
     expect(packet).toContain('"tool": "validate_vault"');
     expect(packet).toContain("## CLI fallback");
     expect(packet).toContain("1. oh-my-ontology health [vault]");
-    expect(packet).toContain("5. pnpm dogfood:graph-db # 11 runtime graph DB checks");
+    expect(packet).toContain("5. pnpm dogfood:graph-db # 12 runtime graph DB checks");
     expect(packet).toContain("6. oh-my-ontology validate [vault]");
     expect(packet).toContain("typo-only, comment-only");
   });

@@ -63,6 +63,7 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "queryCockpitEvidenceAriaLabel",
     "queryCockpitCopyRuntimeGate",
     "focused_blast_radius",
+    "relation_name_parity",
   ],
 };
 

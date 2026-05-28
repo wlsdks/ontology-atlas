@@ -762,7 +762,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(cliPack).toContain("Gate first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs");
     expect(cliPack).toContain("[self_check] oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
     expect(cliPack).toContain("1. [runtime_gate] pnpm dogfood:graph-db");
-    expect(cliPack).toContain("Runtime replay includes: health --json, focused_blast_radius, scan follow-ups, bounded all_paths evidence, relation_check, and relation explanation.");
+    expect(cliPack).toContain("Runtime replay includes: health --json, focused_blast_radius, scan follow-ups, relation_name_parity, bounded all_paths evidence, relation_check, and relation explanation.");
     expect(countAgentGraphDbCliPackCommands(graphDbQueryPack)).toBe(
       cliPack.split("\n").filter((row) => /^\d+\. /.test(row)).length,
     );
@@ -1040,7 +1040,7 @@ describe("buildAgentQueryRecipes", () => {
       "oh-my-ontology cycles [vault] --max-hops 8",
       "oh-my-ontology growth [vault] --limit 20",
       "oh-my-ontology maintenance [vault] --limit 20",
-      "pnpm dogfood:graph-db # 11 runtime graph DB checks",
+      "pnpm dogfood:graph-db # 12 runtime graph DB checks",
       "oh-my-ontology validate [vault]",
     ]);
   });

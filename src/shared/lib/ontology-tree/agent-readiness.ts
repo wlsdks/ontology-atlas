@@ -35,7 +35,7 @@ export interface AgentReadinessCliCommand {
 export const AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND =
   "oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4";
 export const AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND = "pnpm dogfood:graph-db";
-export const AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT = 11;
+export const AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT = 12;
 
 const AGENT_READINESS_TOOLS = new Set([
   "analyze_repo_structure",

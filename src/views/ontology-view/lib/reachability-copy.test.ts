@@ -134,9 +134,9 @@ describe("reachability copy helpers", () => {
     expect(bundle).toContain("Report totalMatches, limited, and returned row count");
     expect(bundle).toContain("For all_paths, report limit, searchBudget");
     expect(bundle).toContain("# Post-change ontology sync gate");
-    expect(bundle).toContain("it starts with 11 runtime graph DB checks");
+    expect(bundle).toContain("it starts with 12 runtime graph DB checks");
     expect(bundle).toContain("## Runtime graph DB gate");
-    expect(bundle).toContain("11 checks · pnpm dogfood:graph-db");
+    expect(bundle).toContain("12 checks · pnpm dogfood:graph-db");
   });
 
   it("shell-quotes selected slugs in bundled CLI edge scans", () => {

@@ -111,10 +111,10 @@ work mode instead of the download page. That native welcome now leads with a
 compact Files / Graph / Agent contract before its action cards: selected
 markdown files stay local and git-reviewable, frontmatter is the graph database
 input for browse/builder/query views, and Claude Code / Codex / Cursor start from
-the same 11-check local graph DB proof gate instead of a backend. After a vault is opened, the same
+the same 12-check local graph DB proof gate instead of a backend. After a vault is opened, the same
 Files / Graph / Agent contract remains pinned below the `/docs` header with the
 current markdown count, compiled ontology node/relation counts, source/browse/query
-handoff links, and the same 11-check graph DB proof gate used by the dogfood
+handoff links, and the same 12-check graph DB proof gate used by the dogfood
 runtime pack, so the active workbench does
 not collapse back into a generic document editor once setup is complete. The
 visible global entry and page title now use `Source` / `Source Vault` language

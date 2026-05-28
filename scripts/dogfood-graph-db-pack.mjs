@@ -86,6 +86,21 @@ const GRAPH_DB_PACK_COMMANDS = [
     validate: validateEdgeScan,
   },
   {
+    id: "relation_name_parity",
+    args: [
+      "cli/src/index.mjs",
+      "match-edges",
+      DEFAULT_VAULT,
+      "--plan",
+      "--types",
+      "depends_on",
+      "--limit",
+      "5",
+      "--json",
+    ],
+    validate: validateRelationNameParity,
+  },
+  {
     id: "frontmatter_edge_scan",
     args: [
       "cli/src/index.mjs",
@@ -370,6 +385,48 @@ function validateEdgeScan(value) {
   }
   return pass(
     `totalMatches=${result.totalMatches} limited=${Boolean(result.limited)} followUp=${followUp.calls.length}`,
+  );
+}
+
+function validateRelationNameParity(value) {
+  const plan = value?.plan;
+  const result = value?.result;
+  if (plan?.execution?.shouldRun !== true) return fail("relation-name parity plan did not recommend run");
+  const normalizedRelationTypes = plan?.normalized?.relationTypes;
+  if (!Array.isArray(normalizedRelationTypes) || !normalizedRelationTypes.includes("depends_on")) {
+    return fail("query_plan did not preserve public depends_on relation name");
+  }
+  if (!Array.isArray(plan?.normalized?.types) || !plan.normalized.types.includes("dependencies")) {
+    return fail("query_plan did not normalize depends_on to dependencies frontmatter key");
+  }
+  if (result?.operation !== "match_edges") return fail("relation-name parity match_edges result missing");
+  const resultRelationTypes = result?.filters?.relationTypes;
+  if (!Array.isArray(resultRelationTypes) || !resultRelationTypes.includes("depends_on")) {
+    return fail("match_edges filters did not expose public depends_on relation name");
+  }
+  if (!Array.isArray(result?.filters?.types) || !result.filters.types.includes("dependencies")) {
+    return fail("match_edges filters did not expose dependencies frontmatter key");
+  }
+  if (!Array.isArray(result.edges) || result.edges.length === 0) {
+    return fail("relation-name parity returned no depends_on rows");
+  }
+  for (const edge of result.edges) {
+    if (edge?.relationType !== "depends_on" || edge?.via !== "dependencies") {
+      return fail("depends_on row did not round-trip public relation name and frontmatter key");
+    }
+  }
+  const followUp = result.followUp;
+  if (followUp?.focusEdge?.relationType !== "depends_on" || followUp.focusEdge?.via !== "dependencies") {
+    return fail("relation-name parity followUp focusEdge did not preserve relation names");
+  }
+  if (
+    !Array.isArray(followUp.cliFallbackCommands) ||
+    !followUp.cliFallbackCommands.some((command) => command.includes(" relation-check ") && command.includes(" depends_on "))
+  ) {
+    return fail("relation-name parity relation-check fallback missing public depends_on name");
+  }
+  return pass(
+    `public=depends_on frontmatter=dependencies rows=${result.edges.length} totalMatches=${result.totalMatches}`,
   );
 }
 
