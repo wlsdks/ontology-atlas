@@ -721,6 +721,7 @@ export function formatAgentGraphDbCliPack(
     "Gate first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs, slowThresholdMs, slow, commands[].timedOut, commands[].slow, and slowest.elapsedMs; then the runtime gate replays the graph DB pack against docs/ontology.",
     `0. [self_check] ${AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}`,
     `1. [runtime_gate] ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
+    "Runtime replay includes: health --json, focused_blast_radius, scan follow-ups, bounded all_paths evidence, relation_check, and relation explanation.",
     "",
     "Evidence rule: scan rows are candidates, not proof; cite follow-up detail before writing or refactoring.",
     "Proof checklist: report totalMatches/limited/row count, run node_profile or blast_radius for node rows, run explain/path/relation-check for edge rows, and report evidence.pathsComplete for paths.",

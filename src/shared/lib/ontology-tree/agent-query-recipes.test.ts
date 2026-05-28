@@ -762,6 +762,7 @@ describe("buildAgentQueryRecipes", () => {
     expect(cliPack).toContain("Gate first: Claude Code/Codex automation can parse ok, performanceOk, failed, timeoutMs");
     expect(cliPack).toContain("[self_check] oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4");
     expect(cliPack).toContain("1. [runtime_gate] pnpm dogfood:graph-db");
+    expect(cliPack).toContain("Runtime replay includes: health --json, focused_blast_radius, scan follow-ups, bounded all_paths evidence, relation_check, and relation explanation.");
     expect(countAgentGraphDbCliPackCommands(graphDbQueryPack)).toBe(
       cliPack.split("\n").filter((row) => /^\d+\. /.test(row)).length,
     );

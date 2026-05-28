@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T03:43:15.819Z",
+  "generatedAt": "2026-05-28T03:48:53.136Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8304,
-      "updatedAt": "2026-05-28T03:02:21.946Z",
+      "wordCount": 8320,
+      "updatedAt": "2026-05-28T03:48:48.949Z",
       "linksOut": [
         "slug",
         "project:slug",
