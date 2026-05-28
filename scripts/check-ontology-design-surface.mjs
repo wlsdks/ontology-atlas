@@ -72,6 +72,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "function InsightsQueryPackCockpit",
       "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
       "AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND",
+      "queryCockpitCopyRuntimeGate",
       "queryCockpitContractsAriaLabel",
     ],
     reason:

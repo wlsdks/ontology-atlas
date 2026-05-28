@@ -284,7 +284,8 @@ titles match the expected app surfaces, that `/ontology`, `/ontology/edit`, and
 bundles the canonical slug handle copy used by the Browse tree handoff, that
 `/ontology/edit` also bundles the active slug handle copy used by the Builder
 proof rail and the Guard packet copy action that carries relation preflight into
-query verification, that
+query verification, that `/ontology/insights` bundles the runtime gate copy
+action for graph DB pack verification, that
 `_next` assets are present, and that the desktop docs are bundled under
 `docs-vault/` for offline reference.
 

@@ -1247,9 +1247,25 @@ function InsightsQueryPackCockpit({
         ))}
       </div>
       <div className="mt-3 rounded-md border border-[color:rgba(94,106,210,0.20)] bg-[color:rgba(94,106,210,0.055)] px-3 py-2">
-        <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
-          {t("queryCockpitGate")}
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-indigo-accent)]">
+            {t("queryCockpitGate")}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            <CopyAgentTextButton
+              label={t("queryCockpitCopySetupGate")}
+              copiedLabel={t("agentCopied")}
+              text={AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}
+              compact
+            />
+            <CopyAgentTextButton
+              label={t("queryCockpitCopyRuntimeGate")}
+              copiedLabel={t("agentCopied")}
+              text={AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}
+              compact
+            />
+          </div>
+        </div>
         <div className="mt-1 grid gap-1">
           <code className="block overflow-hidden text-ellipsis whitespace-nowrap font-mono text-[10px] text-[color:var(--color-text-tertiary)]">
             {AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}

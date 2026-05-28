@@ -152,7 +152,9 @@ Query surfaces should expose the executable query pack before deeper charts.
 Use a compact cockpit with readiness, pack size, MCP call count, CLI fallback
 count, representative `MATCH ...` intents, first-operation badges, per-intent
 payload/fallback counts, scan/path result contracts, and the self-check plus
-health gate.
+health gate. The setup self-check and `dogfood:graph-db` runtime gate should be
+copyable from the first viewport so the query surface is executable, not just
+descriptive.
 Deeper panels can explain contracts, but the first viewport should make it
 clear that the local markdown graph can be scanned like a small graph database
 without treating raw rows or partial paths as proof.

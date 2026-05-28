@@ -57,7 +57,7 @@ packages: the root app entry, locale-prefixed `/download`, `/docs`,
 `/ontology`, `/topology`, `/ontology/edit`, and `/ontology/insights` routes,
 their ontology workbench route titles, bundled graph DB proof copy, Browse
 canonical slug handle copy, Builder active slug handle copy, Builder guard copy
-action, `_next` assets, and offline desktop docs
+action, Insights runtime gate copy action, `_next` assets, and offline desktop docs
 under `docs-vault/`. `pnpm desktop:verify-app` launches
 the built `.app` executable from inside its `Contents/MacOS` executable
 directory long enough to catch early Tauri/WebView startup crashes, then
