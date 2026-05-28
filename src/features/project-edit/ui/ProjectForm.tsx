@@ -1022,6 +1022,7 @@ export function ProjectForm({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <FieldRow label={t("fields.tagsCsv")}>
               <Input
+                name="tagsCsv"
                 value={values.tagsCsv ?? ""}
                 onChange={(v) => setValue("tagsCsv", v)}
                 placeholder={t("fields.tagsPlaceholder")}
@@ -1030,6 +1031,7 @@ export function ProjectForm({
 
             <FieldRow label={t("fields.stackCsv")}>
               <Input
+                name="stackCsv"
                 value={values.stackCsv ?? ""}
                 onChange={(v) => setValue("stackCsv", v)}
                 placeholder={t("fields.stackPlaceholder")}
@@ -1044,6 +1046,7 @@ export function ProjectForm({
             errorTestId="project-error-links"
           >
             <Textarea
+              name="linksText"
               data-testid="project-input-links"
               value={values.linksText ?? ""}
               onChange={(v) => setValue("linksText", v)}
@@ -1111,6 +1114,7 @@ export function ProjectForm({
               errorTestId="project-error-startedAt"
             >
               <Input
+                name="startedAt"
                 data-testid="project-input-started-at"
                 type="date"
                 value={values.startedAt ?? ""}
@@ -1124,6 +1128,7 @@ export function ProjectForm({
               errorTestId="project-error-launchedAt"
             >
               <Input
+                name="launchedAt"
                 data-testid="project-input-launched-at"
                 type="date"
                 value={values.launchedAt ?? ""}
@@ -1135,6 +1140,7 @@ export function ProjectForm({
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <FieldRow label={t("fields.owner")}>
               <Input
+                name="owner"
                 value={values.owner ?? ""}
                 onChange={(v) => setValue("owner", v)}
                 placeholder={t("fields.ownerPlaceholder")}
@@ -1143,6 +1149,7 @@ export function ProjectForm({
 
             <FieldRow label={t("fields.icon")}>
               <Input
+                name="icon"
                 value={values.icon ?? ""}
                 onChange={(v) => setValue("icon", v)}
                 placeholder={t("fields.iconPlaceholder")}
@@ -1151,6 +1158,7 @@ export function ProjectForm({
 
             <FieldRow label={t("fields.progress")}>
               <Input
+                name="progress"
                 type="number"
                 value={
                   values.progress !== undefined ? String(values.progress) : ""
@@ -1166,6 +1174,7 @@ export function ProjectForm({
           <label className="flex items-center gap-2 text-sm text-[color:var(--color-text-secondary)]">
             <input
               type="checkbox"
+              name="isHub"
               checked={values.isHub}
               onChange={(e) => setValue("isHub", e.target.checked)}
               className="h-4 w-4 accent-[color:var(--color-indigo-brand)]"
