@@ -587,6 +587,7 @@ function SigmaTopologyImpl({
     runtimeRecentSlugs,
     showOntologyNodes,
     ontologyInsight,
+    minimal,
   ]);
 
   useEffect(() => {
@@ -1396,7 +1397,7 @@ function SigmaTopologyImpl({
     if (!pathWorkflowActive) return;
     pathSelectionApplyRef.current?.(pathSelection);
     sigmaRef.current?.refresh();
-  }, [pathWorkflowActive, pathSelection?.sourceSlug, pathSelection?.targetSlug]);
+  }, [pathWorkflowActive, pathSelection]);
 
   // 라이트/다크 모드 토글 시 sigma label 색 + 노드 border + 엣지 색을 갱신.
   // html data-theme attribute 만 watch — 다른 변화에 끌려가지 않게
