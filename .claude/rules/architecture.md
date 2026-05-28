@@ -34,7 +34,8 @@ src/
 - 새 라우트는 `app/[locale]/` 아래에만. `src/views/` 의 페이지 컴포넌트가 1:1 대응.
 - 살아있는 라우트: `/`, `/topology/`, `/docs/`, `/ontology/`, `/ontology/edit/`,
   `/ontology/insights/`, `/projects/`, `/project/[slug]/`,
-  `/project/[slug]/edit/`, `/project/new/`, `/project/fallback/`. R10 (auth +
+  `/project/[slug]/edit/`, `/project/new/`, `/project/fallback/`, `/download/`
+  (macOS 데스크톱 앱 배포). R10 (auth +
   cloud surface 영구 제거) 이후 외 namespace (`/login`, `/signup`, `/account`,
   `/reset-password`, `/settings/*`, `/admin/*`, `/review/*`, `/diagnostics/*`,
   `/knowledge/*`) 부활 금지. `/ontology/relations` 도 R12 에서 제거되어 그
