@@ -25,7 +25,10 @@ import {
 } from "@/entities/docs-vault";
 import { VaultConflictError, useLocalVault } from "@/features/docs-vault-local";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
-import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/shared/lib/ontology-tree";
+import {
+  AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+  formatAgentPostChangeSyncPacket,
+} from "@/shared/lib/ontology-tree";
 import { slugify } from "@/shared/lib/slugify";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { MountedGlobalSearch } from "@/widgets/global-search";
@@ -336,6 +339,10 @@ function BuilderWriteSummary({
     copyAriaLabel?: string;
     copyText?: string;
     copySuccess?: string;
+    syncCopyLabel?: string;
+    syncCopyAriaLabel?: string;
+    syncCopyText?: string;
+    syncCopySuccess?: string;
   }> = [
     {
       icon: <Database size={12} />,
@@ -400,6 +407,10 @@ function BuilderWriteSummary({
         : t("proofCopyAria"),
       copyText: formatBuilderProofPacket(proofPacketSlug),
       copySuccess: t("proofCopyCopied"),
+      syncCopyLabel: t("proofSyncCopy"),
+      syncCopyAriaLabel: t("proofSyncCopyAria"),
+      syncCopyText: formatAgentPostChangeSyncPacket(),
+      syncCopySuccess: t("proofSyncCopyCopied"),
     },
   ];
   const copyProof = async (text: string, successMessage: string) => {
@@ -470,6 +481,17 @@ function BuilderWriteSummary({
                   >
                     <Clipboard size={11} aria-hidden />
                     {item.copyLabel}
+                  </button>
+                ) : null}
+                {item.syncCopyText && item.syncCopyLabel && item.syncCopyAriaLabel && item.syncCopySuccess ? (
+                  <button
+                    type="button"
+                    onClick={() => void copyProof(item.syncCopyText!, item.syncCopySuccess!)}
+                    aria-label={item.syncCopyAriaLabel}
+                    className="inline-flex items-center gap-1 text-[10px] font-[var(--font-weight-signature)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  >
+                    <Clipboard size={11} aria-hidden />
+                    {item.syncCopyLabel}
                   </button>
                 ) : null}
               </div>

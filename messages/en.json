@@ -789,7 +789,7 @@
           "proofValue": "{count} graph checks",
           "proofBody": "Copy setup gate · graph DB pack · relation_check · sync gates.",
           "proofValueSelected": "Node proof · {count} checks",
-          "proofBodySelected": "{slug} setup gate · planned edge scan · path plan · relation_check",
+          "proofBodySelected": "{slug} setup gate · planned edge scan · path plan · relation_check · sync gate",
           "proofChip": "graph db + health",
           "proofChipSelected": "node health pack",
           "proofFlow": "verify in query cockpit",
@@ -801,6 +801,9 @@
           "proofCopyAria": "Copy builder graph proof packet",
           "proofCopyAriaSelected": "Copy builder graph proof packet for {slug}",
           "proofCopyCopied": "Builder proof packet copied",
+          "proofSyncCopy": "Copy sync gate",
+          "proofSyncCopyAria": "Copy builder post-change sync gate",
+          "proofSyncCopyCopied": "Builder sync gate copied",
           "proofCopyFailed": "Copy failed"
         },
         "canvasEntryRail": {
