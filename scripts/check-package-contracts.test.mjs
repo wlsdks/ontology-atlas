@@ -1330,7 +1330,12 @@ describe('package contract helpers', () => {
     );
     assert.match(
       verifySection,
-      new RegExp(`✓ infer_imports — ${countLabel(inferredImports.filesScanned, 'file')} scanned, ${countLabel(inferredImports.moduleEdges.length, 'module edge')} \\(${topModuleEdgeSummary}`),
+      // infer_imports "files scanned" is intentionally NOT pinned to the exact
+      // live count: it changes on every source-file add/remove (incidental), so
+      // pinning it forced a README bump on unrelated PRs. The module-edge count
+      // and top-edge summary stay pinned — they reflect the actual dependency
+      // graph, which is the meaningful contract.
+      new RegExp(`✓ infer_imports — \\d+ files? scanned, ${countLabel(inferredImports.moduleEdges.length, 'module edge')} \\(${topModuleEdgeSummary}`),
     );
     assert.match(verifySection, new RegExp(`✓ find_neighbors — ${neighborSmokeLine}`));
     assert.match(verifySection, /✓ find_path — elements\/file-system-access-api → project \(2 hops, 2 edges\)/);
