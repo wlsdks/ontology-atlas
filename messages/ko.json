@@ -1512,7 +1512,7 @@
       "workspaceMap": "워크스페이스 지도",
       "headerEyebrow": "프로젝트 목록",
       "headerTitle": "프로젝트",
-      "documentTitle": "프로젝트 · oh-my-ontology",
+      "documentTitle": "프로젝트 · Context Atlas",
       "countTotal": "{count}개",
       "countFiltered": "{filtered} / {total}",
       "searchPlaceholder": "이름, 설명, 태그로 검색…",
@@ -1637,8 +1637,8 @@
       "linksRemoveAria": "{label} 제거"
     },
     "editor": {
-      "documentTitleEdit": "프로젝트 편집 · oh-my-ontology",
-      "documentTitleNew": "새 프로젝트 · oh-my-ontology",
+      "documentTitleEdit": "프로젝트 편집 · Context Atlas",
+      "documentTitleNew": "새 프로젝트 · Context Atlas",
       "confirmDiscardChanges": "저장하지 않은 변경사항이 있습니다. 정말 나갈까요?",
       "loadErrorEdit": "프로젝트를 찾을 수 없습니다.",
       "loadErrorDuplicate": "복제할 프로젝트를 찾을 수 없습니다.",
