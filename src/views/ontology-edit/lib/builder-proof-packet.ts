@@ -107,7 +107,7 @@ export function formatBuilderProofPacket(selectedProofNodeId?: string | null): s
   lines.push(
     "",
     "Evidence checklist:",
-    "1. Run the setup gate first: self-check, graph DB pack, and runtime dogfood replay including relation_name_parity.",
+    "1. Run the setup gate first: self-check, graph DB pack, and runtime dogfood replay including relation_name_parity, pattern_walk, and project_map.",
     "2. Report totalMatches, limited, and returned row count for every match_nodes or match_edges scan.",
     "3. For public relation scans, report relationType and via so depends_on is visibly backed by the dependencies frontmatter key.",
     "4. For frontmatter-key scans, report relationType and via so stored keys like elements/dependencies are not mistaken for generic contains/relates edges.",

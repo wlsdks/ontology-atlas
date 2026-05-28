@@ -27,12 +27,12 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
 export const DESKTOP_SMOKE_ROUTE_TEXT = {
   "en:/docs": ["Source Vault", "Files", "Graph", "Agent", "local markdown", "frontmatter", "MCP", "runtime gate", "Copy graph gate"],
   "ko:/docs": ["Source Vault", "Files", "Graph", "Agent", "local markdown", "frontmatter", "MCP", "runtime gate", "graph gate 복사"],
-  "en:/ontology": ["Tree role", "Graph refs", "Evidence", "Graph DB proof", "Browse", "Write", "Query", "01", "02", "03", "tree projection", "frontmatter write", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "canonical slug", "graph handle", "Copy runtime gate"],
-  "ko:/ontology": ["역할", "참조", "근거", "Graph DB proof", "Browse", "Write", "Query", "01", "02", "03", "tree projection", "frontmatter write", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "canonical slug", "graph handle", "runtime gate 복사"],
-  "en:/ontology/edit": ["Source", "Draft", "Guard", "Proof", "01", "02", "03", "04", "local markdown", "canvas draft", "relation guard", "graph db + health", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "runtime replay", "focused blast_radius", "relation_name_parity", "focus saved slug", "active slug", "Focus saved anchor", "Copy guard", "Copy sync gate"],
-  "ko:/ontology/edit": ["Source", "Draft", "Guard", "Proof", "01", "02", "03", "04", "local markdown", "canvas draft", "relation guard", "graph db + health", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "runtime replay", "focused blast_radius", "relation_name_parity", "저장 slug 먼저", "활성 slug", "저장 anchor 포커스", "Guard 복사", "sync gate 복사"],
-  "en:/ontology/insights": ["Query cockpit", "Readiness", "Pack", "MCP", "CLI", "MATCH", "Run order", "Payloads", "CLI fallback", "Scan contract", "Path contract", "setup gate", "self-check + health gate", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "Copy runtime gate"],
-  "ko:/ontology/insights": ["Query cockpit", "Readiness", "Pack", "MCP", "CLI", "MATCH", "실행 순서", "Payloads", "CLI fallback", "Scan contract", "Path contract", "setup gate", "self-check + health gate", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "runtime gate 복사"],
+  "en:/ontology": ["Tree role", "Graph refs", "Evidence", "Graph DB proof", "Browse", "Write", "Query", "01", "02", "03", "tree projection", "frontmatter write", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "canonical slug", "graph handle", "Copy runtime gate"],
+  "ko:/ontology": ["역할", "참조", "근거", "Graph DB proof", "Browse", "Write", "Query", "01", "02", "03", "tree projection", "frontmatter write", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "canonical slug", "graph handle", "runtime gate 복사"],
+  "en:/ontology/edit": ["Source", "Draft", "Guard", "Proof", "01", "02", "03", "04", "local markdown", "canvas draft", "relation guard", "graph db + health", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "runtime replay", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "focus saved slug", "active slug", "Focus saved anchor", "Copy guard", "Copy sync gate"],
+  "ko:/ontology/edit": ["Source", "Draft", "Guard", "Proof", "01", "02", "03", "04", "local markdown", "canvas draft", "relation guard", "graph db + health", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "runtime replay", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "저장 slug 먼저", "활성 slug", "저장 anchor 포커스", "Guard 복사", "sync gate 복사"],
+  "en:/ontology/insights": ["Query cockpit", "Readiness", "Pack", "MCP", "CLI", "MATCH", "Run order", "Payloads", "CLI fallback", "Scan contract", "Path contract", "setup gate", "self-check + health gate", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "Copy runtime gate"],
+  "ko:/ontology/insights": ["Query cockpit", "Readiness", "Pack", "MCP", "CLI", "MATCH", "실행 순서", "Payloads", "CLI fallback", "Scan contract", "Path contract", "setup gate", "self-check + health gate", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "relation_name_parity", "pattern_walk/project_map", "runtime gate 복사"],
 };
 export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
   "/docs": [
@@ -64,6 +64,7 @@ export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
     "queryCockpitCopyRuntimeGate",
     "focused_blast_radius",
     "relation_name_parity",
+    "pattern_walk/project_map",
   ],
 };
 

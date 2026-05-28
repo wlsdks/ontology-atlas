@@ -32,7 +32,7 @@ describe("formatBuilderProofPacket", () => {
       "oh-my-ontology match-edges [vault] --plan --from-kind capability --to-kind element --type elements",
     );
     expect(packet).toContain("oh-my-ontology match-nodes [vault]");
-    expect(packet).toContain("Run the setup gate first: self-check, graph DB pack, and runtime dogfood replay including relation_name_parity.");
+    expect(packet).toContain("Run the setup gate first: self-check, graph DB pack, and runtime dogfood replay including relation_name_parity, pattern_walk, and project_map.");
     expect(packet).toContain("Report totalMatches, limited, and returned row count");
     expect(packet).toContain("report relationType and via so depends_on is visibly backed by the dependencies frontmatter key");
     expect(packet).toContain("report relationType and via");
