@@ -1009,6 +1009,8 @@ describe('package contract helpers', () => {
   it('keeps user-facing source vault naming out of legacy Docs framing', () => {
     const features = readFileSync('docs/FEATURES.md', 'utf-8');
     const labels = readFileSync('src/widgets/topology-map-sigma/lib/labels.ts', 'utf-8');
+    const enMessages = JSON.parse(readFileSync('messages/en.json', 'utf-8'));
+    const koMessages = JSON.parse(readFileSync('messages/ko.json', 'utf-8'));
 
     assert.match(features, /Sticky header: 3 nav items \(Source \/ Ontology \/ Topology\)/);
     assert.match(features, /Source \(`\/docs`\)/);
@@ -1021,6 +1023,18 @@ describe('package contract helpers', () => {
     assert.doesNotMatch(features, /docs palette · docs graph · docs source · docs actions/);
     assert.doesNotMatch(labels, /docs: 'Docs'/);
     assert.match(labels, /docs: 'Source Vault'/);
+    assert.equal(enMessages.modeBadge.vaultDocs, '{count} records');
+    assert.match(enMessages.modeBadge.vaultTooltip, /source records/);
+    assert.equal(enMessages.docsVault.header.docCount, '{count} source records');
+    assert.equal(enMessages.topology.controls.pinnedDocsCount, '{count} pinned source records');
+    assert.notEqual(enMessages.modeBadge.vaultDocs, '{count} docs');
+    assert.notEqual(enMessages.docsVault.header.docCount, '{count} docs');
+    assert.notEqual(enMessages.topology.controls.pinnedDocsCount, '{count} pinned docs');
+    assert.equal(koMessages.modeBadge.vaultDocs, '기록 {count}개');
+    assert.match(koMessages.modeBadge.vaultTooltip, /소스 기록/);
+    assert.equal(koMessages.docsVault.header.docCount, '소스 기록 {count}개');
+    assert.equal(koMessages.topology.controls.pinnedDocsCount, '고정된 소스 기록 {count}개');
+    assert.notEqual(koMessages.topology.controls.pinnedDocsCount, '고정된 문서 {count}개');
   });
 
   it('keeps docs aligned with compile_ontology large-vault options', () => {

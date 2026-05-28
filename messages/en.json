@@ -2249,7 +2249,7 @@
       "docsTooltip": "Source vault quick look (D)",
       "docsAriaLabel": "Open source vault quick look (D)",
       "docsLabel": "Source",
-      "pinnedDocsCount": "{count} pinned docs",
+      "pinnedDocsCount": "{count} pinned source records",
       "close": "Close",
       "shortcutsTooltip": "Keyboard shortcuts (?)",
       "shortcutsAriaLabel": "View keyboard shortcuts"

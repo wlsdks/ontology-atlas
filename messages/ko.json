@@ -2249,7 +2249,7 @@
       "docsTooltip": "Source vault 빠른 보기 (D)",
       "docsAriaLabel": "Source vault 빠른 보기 열기 (D)",
       "docsLabel": "소스",
-      "pinnedDocsCount": "고정된 문서 {count}개",
+      "pinnedDocsCount": "고정된 소스 기록 {count}개",
       "close": "닫기",
       "shortcutsTooltip": "키보드 단축키 (?)",
       "shortcutsAriaLabel": "키보드 단축키 보기"
