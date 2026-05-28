@@ -104,6 +104,7 @@ scripts/                   vault tooling (R11) + perf baseline (R11) + dogfood w
 /ontology                  tree + ego graph hub
 /ontology/edit             ERD canvas builder (xyflow → vault md export)
 /ontology/insights         graph insights (kind census · hubs · relation breakdown)
+/download                  macOS desktop app download (DMG)
 ```
 
 > Round 10 (2026-05) permanently removed: `/login`, `/signup`, `/account`, `/reset-password`, `/settings/*`, and earlier rounds had already removed `/admin/*`, `/review/*`, `/diagnostics/*`, `/knowledge/*`. Cloud entity API, Firestore subscribers, manual node/edge cloud modals, screenshot uploader (Firebase Storage) are all gone. Future cloud collab features will be re-designed when sponsorship / collaboration requests come.
