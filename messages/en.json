@@ -1512,7 +1512,7 @@
       "workspaceMap": "Workspace map",
       "headerEyebrow": "Project list",
       "headerTitle": "Projects",
-      "documentTitle": "Projects · oh-my-ontology",
+      "documentTitle": "Projects · Context Atlas",
       "countTotal": "{count}",
       "countFiltered": "{filtered} / {total}",
       "searchPlaceholder": "Search by name, description, tag…",
@@ -1637,8 +1637,8 @@
       "linksRemoveAria": "Remove {label}"
     },
     "editor": {
-      "documentTitleEdit": "Edit project · oh-my-ontology",
-      "documentTitleNew": "New project · oh-my-ontology",
+      "documentTitleEdit": "Edit project · Context Atlas",
+      "documentTitleNew": "New project · Context Atlas",
       "confirmDiscardChanges": "You have unsaved changes. Leave anyway?",
       "loadErrorEdit": "Project not found.",
       "loadErrorDuplicate": "The project to duplicate could not be found.",
