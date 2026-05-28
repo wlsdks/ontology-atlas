@@ -292,6 +292,7 @@ function EphemeralDetail({
         </span>
         <input
           ref={nameInputRef}
+          name="node-title"
           type="text"
           value={node.title}
           onChange={(e) => onRename(node.id, e.target.value)}
@@ -417,6 +418,7 @@ function VaultDetail({
           {t("vaultTitleLabel")}
         </span>
         <input
+          name="vault-title"
           type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -748,6 +750,7 @@ function ArrayKeyEditor({
       ) : null}
       <div className="mt-2 flex gap-1">
         <input
+          name="array-item"
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
