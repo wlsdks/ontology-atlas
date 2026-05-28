@@ -125,6 +125,35 @@ test('Generic README sections (Usage / Installation / Tests) skipped from domain
   }
 });
 
+test('Narrative / language-guide / sentence README H2s skipped from domains', () => {
+  const root = withRepo((r) => {
+    writeFileSync(
+      join(r, 'README.md'),
+      [
+        '# X',
+        '',
+        '## Why It Exists', // question/narrative prefix
+        '## What It Does', // narrative prefix
+        '## How The Memory Works', // narrative prefix
+        '## Three views plus MCP, one vault', // sentence (comma)
+        '## 한국어 가이드', // language guide
+        '## English Guide', // language guide
+        '## Billing', // real domain — kept
+        '',
+      ].join('\n'),
+    );
+  });
+  try {
+    const r = analyzeRepoStructure(root);
+    assert.deepEqual(
+      r.domains.map((d) => d.slug),
+      ['domains/billing'],
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('Ignored folders skip — node_modules / .git / dist', () => {
   const root = withRepo((r) => {
     mkdirSync(join(r, 'src/real'), { recursive: true });
