@@ -1999,6 +1999,9 @@ function GraphProofRail({ model }: { model: GraphProofRailModel }) {
             <p className="mt-1 max-w-2xl break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
               {t("body")}
             </p>
+            <p className="mt-1.5 max-w-2xl break-keep font-mono text-[9.5px] leading-4 text-[color:var(--color-text-quaternary)]">
+              {t("runtimeReplay")}
+            </p>
           </div>
         </div>
         <div className="flex shrink-0 flex-wrap gap-1.5">

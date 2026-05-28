@@ -2382,6 +2382,7 @@
       "eyebrow": "Graph DB proof",
       "title": "같은 markdown graph 를 query pack 으로 검증합니다",
       "body": "agent graph DB pack 에서 계산한 MCP call, CLI fallback, 변경 후 sync gate 입니다.",
+      "runtimeReplay": "Runtime replay: setup self-check · health --json · focused blast_radius · scan follow-up · all_paths evidence · relation_check",
       "intents": "Intent",
       "mcpCalls": "MCP call",
       "cliFallbacks": "CLI fallback",

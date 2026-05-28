@@ -2382,6 +2382,7 @@
       "eyebrow": "Graph DB proof",
       "title": "Validate the same markdown graph through the query pack",
       "body": "Derived from the agent graph DB pack: executable MCP calls, CLI fallbacks, and the post-change sync gate.",
+      "runtimeReplay": "Runtime replay: setup self-check · health --json · focused blast_radius · scan follow-ups · all_paths evidence · relation_check",
       "intents": "Intents",
       "mcpCalls": "MCP calls",
       "cliFallbacks": "CLI fallbacks",
