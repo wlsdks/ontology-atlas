@@ -480,6 +480,31 @@ describe("OntologyTreeView — orphans + warnings", () => {
     expect(screen.getByText("고립 요소")).toBeInTheDocument();
   });
 
+  it("lets orphan rows select the same graph handle as tree rows", () => {
+    const handleSelect = vi.fn();
+    render(
+      <OntologyTreeView
+        result={{
+          roots: [],
+          orphans: [makeNode("orph1", "element", "고립 요소")],
+          warnings: [],
+        }}
+        onSelect={handleSelect}
+        selectedId="orph1"
+      />,
+    );
+
+    const orphanButton = screen.getByRole("button", {
+      name: /고립 요소 선택; graph handle orph1; Browse, Write, Query/,
+    });
+    expect(orphanButton).toHaveAttribute("data-orphan-selected", "true");
+    expect(screen.getByText("graph handle · orph1")).toBeInTheDocument();
+
+    fireEvent.click(orphanButton);
+    expect(handleSelect).toHaveBeenCalledTimes(1);
+    expect(handleSelect.mock.calls[0]![0]!.id).toBe("orph1");
+  });
+
   it("renders warnings details when present", () => {
     render(
       <OntologyTreeView

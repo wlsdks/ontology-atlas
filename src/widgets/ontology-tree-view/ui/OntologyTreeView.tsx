@@ -725,9 +725,37 @@ export function OntologyTreeView({
           </p>
           <ul className="mt-2 space-y-0.5">
             {filteredOrphans.slice(0, 8).map((node) => (
-              <li key={node.id} className="flex min-w-0 items-center gap-2" title={node.title}>
-                <KindChip kind={node.kind} />
-                <span className="min-w-0 flex-1 truncate">{node.title}</span>
+              <li key={node.id} className="min-w-0" title={node.title}>
+                <button
+                  type="button"
+                  onClick={() => onSelect?.(node)}
+                  aria-label={t('tree.selectAriaLabel', {
+                    title: node.title,
+                    slug: node.id,
+                  })}
+                  title={t('tree.selectTitle', {
+                    title: node.title,
+                    slug: node.id,
+                  })}
+                  data-orphan-select-button="true"
+                  data-orphan-selected={selectedId === node.id ? "true" : "false"}
+                  className={`flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left transition-colors ${
+                    selectedId === node.id
+                      ? "bg-[color:rgba(94,106,210,0.12)] ring-1 ring-inset ring-[color:rgba(94,106,210,0.32)]"
+                      : "hover:bg-[color:rgba(255,255,255,0.04)]"
+                  }`}
+                >
+                  <KindChip kind={node.kind} />
+                  <span className="min-w-0 flex-1 truncate">{node.title}</span>
+                  {selectedId === node.id ? (
+                    <span
+                      className="ml-auto hidden max-w-[180px] shrink-0 truncate rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] md:inline-flex"
+                      title={t('tree.selectedHandleTitle', { slug: node.id })}
+                    >
+                      {t('tree.selectedHandleLabel', { slug: node.id })}
+                    </span>
+                  ) : null}
+                </button>
               </li>
             ))}
             {filteredOrphans.length > 8 ? (

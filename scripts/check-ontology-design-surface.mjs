@@ -63,6 +63,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "selectAriaLabel",
       "selectedHandleLabel",
       "selectedHandleTitle",
+      "data-orphan-select-button",
     ],
     reason:
       "/ontology tree rows must name the selected graph handle so Browse / Write / Query keep the same slug.",

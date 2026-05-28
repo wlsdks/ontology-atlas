@@ -39,6 +39,7 @@ function writeCleanWorkbenchFixtures(root) {
       "selectAriaLabel",
       "selectedHandleLabel",
       "selectedHandleTitle",
+      "data-orphan-select-button",
     ].join("\n"),
   );
   writeFixture(
