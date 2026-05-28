@@ -18,8 +18,11 @@ test.describe("ontology builder workflow", () => {
     await expect(writeStatus).toContainText("MCP/CLI handoff");
     await expect(writeStatus).toContainText("relation_check");
     await expect(
-      writeStatus.getByRole("link", { name: "Open query cockpit" }),
-    ).toHaveAttribute("href", "/en/ontology/insights/");
+      writeStatus.getByRole("link", { name: "Open node query" }),
+    ).toHaveAttribute(
+      "href",
+      "/en/ontology/insights/?node=capabilities%2Ftopology-analysis-modes",
+    );
     await expect(
       page.getByRole("dialog", { name: "Builder onboarding" }),
     ).toHaveCount(0);

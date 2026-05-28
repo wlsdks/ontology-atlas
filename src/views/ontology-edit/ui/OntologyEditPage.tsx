@@ -51,7 +51,10 @@ import {
   type VaultRelationProposal,
 } from "../lib/relation-proposal";
 import { resolveBuilderQueryNodeSlug } from "../lib/resolve-builder-query-node";
-import { resolveBuilderProofTarget } from "../lib/resolve-builder-proof-node";
+import {
+  buildBuilderProofHref,
+  resolveBuilderProofTarget,
+} from "../lib/resolve-builder-proof-node";
 import { RelationWriteConfirm } from "./RelationWriteConfirm";
 import { RelationPostSaveHandoff } from "./RelationPostSaveHandoff";
 import {
@@ -308,9 +311,11 @@ function BuilderWriteSummary({
     | `/ontology/insights/?node=${string}`;
   const sourceHref: SummaryHref = isDesktopRuntime ? "/docs/?intent=local" : "/download/";
   const selectedProofDisplaySlug = selectedProofSlug ?? selectedProofNodeId ?? null;
-  const proofHref: SummaryHref = selectedProofDisplaySlug
-    ? `/ontology/insights/?node=${encodeURIComponent(selectedProofDisplaySlug)}`
-    : "/ontology/insights/";
+  const proofHref: SummaryHref = buildBuilderProofHref(
+    selectedProofSlug
+      ? { graphNodeId: selectedProofNodeId ?? selectedProofSlug, vaultSlug: selectedProofSlug }
+      : null,
+  );
   const proofPacketSlug = selectedProofSlug ?? selectedProofNodeId;
   const sourceStatus = getBuilderSourceStatus({
     writable,

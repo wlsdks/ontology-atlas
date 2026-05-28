@@ -8,6 +8,13 @@ export interface BuilderProofTarget {
   vaultSlug: string;
 }
 
+export function buildBuilderProofHref(
+  target: BuilderProofTarget | null | undefined,
+): "/ontology/insights/" | `/ontology/insights/?node=${string}` {
+  if (!target?.vaultSlug) return "/ontology/insights/";
+  return `/ontology/insights/?node=${encodeURIComponent(target.vaultSlug)}`;
+}
+
 export function resolveBuilderProofNodeId(doc: BuilderProofDoc | null | undefined): string | null {
   return resolveBuilderProofTarget(doc)?.graphNodeId ?? null;
 }

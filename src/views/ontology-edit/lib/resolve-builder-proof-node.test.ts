@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { resolveBuilderProofNodeId, resolveBuilderProofTarget } from "./resolve-builder-proof-node";
+import {
+  buildBuilderProofHref,
+  resolveBuilderProofNodeId,
+  resolveBuilderProofTarget,
+} from "./resolve-builder-proof-node";
 
 describe("resolveBuilderProofNodeId", () => {
   it("uses the project frontmatter slug so Insights receives the graph node id", () => {
@@ -47,5 +51,20 @@ describe("resolveBuilderProofNodeId", () => {
       graphNodeId: "element:manual-concept",
       vaultSlug: "notes/manual-concept",
     });
+  });
+});
+
+describe("buildBuilderProofHref", () => {
+  it("opens the focused Insights proof for the canonical vault slug", () => {
+    expect(
+      buildBuilderProofHref({
+        graphNodeId: "capability:topology-analysis-modes",
+        vaultSlug: "capabilities/topology-analysis-modes",
+      }),
+    ).toBe("/ontology/insights/?node=capabilities%2Ftopology-analysis-modes");
+  });
+
+  it("falls back to the generic query cockpit without a proof target", () => {
+    expect(buildBuilderProofHref(null)).toBe("/ontology/insights/");
   });
 });
