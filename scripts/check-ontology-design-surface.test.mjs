@@ -64,6 +64,15 @@ function writeCleanWorkbenchFixtures(root) {
     "src/views/docs-vault/ui/DocsVaultPage.tsx",
     [
       "function DocsVaultSourceContractBar() {}",
+      "step: '01'",
+      "step: '02'",
+      "step: '03'",
+      "sourceContract.filesLabel",
+      "sourceContract.filesChip",
+      "sourceContract.graphLabel",
+      "sourceContract.graphChip",
+      "sourceContract.agentLabel",
+      "sourceContract.agentChip",
       "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
       "sourceContract.agentCopyGate",
     ].join("\n"),
@@ -137,6 +146,45 @@ test("ontology design surface reports missing workbench structure markers", () =
       "missing marker: queryCockpitLiveProofAriaLabel",
       "missing marker: queryCockpitEvidenceAriaLabel",
       "missing marker: focused_blast_radius",
+    ],
+  );
+});
+
+test("ontology design surface reports missing source vault execution cells", () => {
+  const root = makeFixture();
+  writeCleanWorkbenchFixtures(root);
+  writeFixture(
+    root,
+    "src/views/docs-vault/ui/DocsVaultPage.tsx",
+    [
+      "function DocsVaultSourceContractBar() {}",
+      "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
+      "sourceContract.agentCopyGate",
+    ].join("\n"),
+  );
+
+  const report = evaluateOntologyDesignSurface({
+    root,
+    targetDirs: ["src/views/ontology-view", "src/views/ontology-edit", "src/views/ontology-insights"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    Array.from(new Set(report.violations.map((violation) => violation.check.id))),
+    ["source-vault-execution-contract"],
+  );
+  assert.deepEqual(
+    report.violations.map((violation) => violation.source),
+    [
+      "missing marker: step: '01'",
+      "missing marker: step: '02'",
+      "missing marker: step: '03'",
+      "missing marker: sourceContract.filesLabel",
+      "missing marker: sourceContract.filesChip",
+      "missing marker: sourceContract.graphLabel",
+      "missing marker: sourceContract.graphChip",
+      "missing marker: sourceContract.agentLabel",
+      "missing marker: sourceContract.agentChip",
     ],
   );
 });
