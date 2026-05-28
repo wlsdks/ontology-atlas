@@ -16,7 +16,7 @@ export function createWorkerLayoutController(
   worker: Worker,
   options: { autoStart: boolean; initialAlpha: number },
 ): PhysicsController {
-  let ids: string[] = [];
+  let indexById = new Map<string, number>();
   const send = (m: MainToWorker) => worker.postMessage(m);
 
   const nodes = graph.mapNodes((id, a) => ({ id, x: a.x ?? 0, y: a.y ?? 0, size: a.size ?? 4 }));
@@ -28,15 +28,17 @@ export function createWorkerLayoutController(
   worker.onmessage = (e: MessageEvent<WorkerToMain>) => {
     const m = e.data;
     if (m.type === 'ids') {
-      ids = m.ids;
+      // O(1) id→index lookup so the per-frame positions apply stays O(N), not
+      // O(N²) — critical at large vault scale (the apply runs on the main thread).
+      indexById = new Map(m.ids.map((id, i) => [id, i]));
       return;
     }
     if (m.type === 'positions') {
       const { x, y } = m;
       // Same batch path as physics.ts onTick: one 'eachNodeAttributesUpdated'.
       graph.updateEachNodeAttributes((id, attrs) => {
-        const i = ids.indexOf(id);
-        if (i >= 0) {
+        const i = indexById.get(id);
+        if (i !== undefined) {
           attrs.x = x[i];
           attrs.y = y[i];
         }
