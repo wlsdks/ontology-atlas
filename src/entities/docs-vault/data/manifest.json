@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T01:48:56.042Z",
+  "generatedAt": "2026-05-28T01:55:33.968Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3964,8 +3964,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6380,
-      "updatedAt": "2026-05-28T01:48:28.211Z",
+      "wordCount": 6404,
+      "updatedAt": "2026-05-28T01:55:17.539Z",
       "linksOut": []
     },
     {
@@ -4871,8 +4871,8 @@
       },
       "headings": [],
       "excerpt": "빌더 (/ontology/edit) 캔버스의 시각 정리 + 손 정렬 도구. PR 261 (20260514) 로 7 commit 단위 도입. n8nstyle edge routing — containment edge 는 smoothstep + rounded corner + marker, dependency edge 는 directional marker, loose relation 은 낮은 alpha 로 표현 MCP dependency alias 호환 — dependson 으로 작성된 agent/CLI edge 도 builder graph 에서는 canonical depe",
-      "wordCount": 416,
-      "updatedAt": "2026-05-27T20:32:57.184Z",
+      "wordCount": 448,
+      "updatedAt": "2026-05-28T01:55:13.009Z",
       "linksOut": []
     },
     {
@@ -6289,9 +6289,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "scripts/checkontologydesignsurface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for designsystem drift: glowlike hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. The guard turns the designs",
-      "wordCount": 52,
-      "updatedAt": "2026-05-27T20:28:43.378Z",
+      "excerpt": "scripts/checkontologydesignsurface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for designsystem drift: glowlike hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. It also checks that the thr",
+      "wordCount": 102,
+      "updatedAt": "2026-05-28T01:55:06.767Z",
       "linksOut": []
     },
     {

@@ -41,6 +41,44 @@ const checks = [
   },
 ];
 
+const requiredSurfaceMarkers = [
+  {
+    id: "browse-workbench-loop",
+    file: "src/views/ontology-view/ui/OntologyViewPage.tsx",
+    markers: [
+      "function GraphWorkbenchSummary",
+      "<GraphProofRail model={graphProofRailModel} />",
+      "formatAgentPostChangeSyncPacket",
+    ],
+    reason:
+      "/ontology must keep Browse / Write / Query cards plus the graph DB proof rail from docs/DESIGN-SYSTEM.md.",
+  },
+  {
+    id: "builder-write-verify-loop",
+    file: "src/views/ontology-edit/ui/OntologyEditPage.tsx",
+    markers: [
+      "function BuilderWriteSummary",
+      "function BuilderCanvasEntryRail",
+      "formatBuilderProofPacket",
+      "formatAgentPostChangeSyncPacket",
+    ],
+    reason:
+      "/ontology/edit must expose Source / Draft / Guard / Proof plus persisted graph anchors before canvas work.",
+  },
+  {
+    id: "query-cockpit-runtime-gate",
+    file: "src/views/ontology-insights/ui/OntologyInsightsPage.tsx",
+    markers: [
+      "function InsightsQueryPackCockpit",
+      "AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND",
+      "AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND",
+      "queryCockpitContractsAriaLabel",
+    ],
+    reason:
+      "/ontology/insights must lead with executable graph DB query pack, runtime gate, and result contracts.",
+  },
+];
+
 function collectFiles(dir) {
   const absoluteDir = join(root, dir);
   const files = [];
@@ -85,8 +123,35 @@ function findViolations(file) {
   return violations;
 }
 
+function findRequiredMarkerViolations() {
+  const violations = [];
+
+  for (const requirement of requiredSurfaceMarkers) {
+    const absolutePath = join(root, requirement.file);
+    const source = readFileSync(absolutePath, "utf8");
+    for (const marker of requirement.markers) {
+      if (source.includes(marker)) continue;
+      violations.push({
+        file: requirement.file,
+        line: 1,
+        column: 1,
+        check: {
+          id: requirement.id,
+          reason: requirement.reason,
+        },
+        source: `missing marker: ${marker}`,
+      });
+    }
+  }
+
+  return violations;
+}
+
 const files = targetDirs.flatMap(collectFiles).sort();
-const violations = files.flatMap(findViolations);
+const violations = [
+  ...files.flatMap(findViolations),
+  ...findRequiredMarkerViolations(),
+];
 
 if (violations.length > 0) {
   console.error(
@@ -105,5 +170,5 @@ if (violations.length > 0) {
 }
 
 console.log(
-  `[ontology-design-surface] clean · checked ${files.length} files across ${targetDirs.length} surfaces`,
+  `[ontology-design-surface] clean · checked ${files.length} files across ${targetDirs.length} surfaces + ${requiredSurfaceMarkers.length} workbench structure contracts`,
 );
