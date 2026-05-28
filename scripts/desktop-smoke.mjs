@@ -31,8 +31,8 @@ export const DESKTOP_SMOKE_ROUTE_TEXT = {
   "ko:/ontology": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "canonical slug", "runtime gate 복사"],
   "en:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "active slug", "Copy guard"],
   "ko:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "활성 slug", "Guard 복사"],
-  "en:/ontology/insights": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "Copy runtime gate"],
-  "ko:/ontology/insights": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "runtime gate 복사"],
+  "en:/ontology/insights": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "Copy runtime gate"],
+  "ko:/ontology/insights": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "runtime gate 복사"],
 };
 
 function routeIndexPath({ locale, route }) {

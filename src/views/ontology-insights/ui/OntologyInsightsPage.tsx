@@ -946,6 +946,7 @@ function InsightsQueryPackCockpit({
     "failed",
     "commands[].timedOut",
     "health.status",
+    "focused_blast_radius",
     "health.checks[].status",
   ];
 

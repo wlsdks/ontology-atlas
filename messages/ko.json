@@ -1191,7 +1191,7 @@
       "queryCockpitPathContractBody": "all_paths 는 limit, searchBudget, expandedStates, exhaustive, totalPathsExact, evidence.pathsComplete 를 보고합니다.",
       "queryCockpitGate": "self-check + health gate",
       "queryCockpitProofBody": "이 JSON gate가 scan 실행 전 연결성과 fallback 성능을 먼저 증명합니다. 자동화는 ok, performanceOk, 실패 수, 명령별 timeout 플래그를 분리해서 읽습니다.",
-      "queryCockpitRuntimeBody": "그 다음 dogfood runtime gate 가 같은 graph DB pack 을 로컬 markdown vault 위에서 재생하고 health --json 결과가 healthy 인지 확인합니다. scan follow-up, all_paths completeness, relation_check recommendation, health check 상태가 사라지면 실패합니다.",
+      "queryCockpitRuntimeBody": "그 다음 dogfood runtime gate 가 같은 graph DB pack 을 로컬 markdown vault 위에서 재생합니다. health --json, focused blast_radius, scan follow-up, all_paths completeness, relation_check recommendation, health check 상태가 사라지면 실패합니다.",
       "queryCockpitProofField": "Gate proof field",
       "queryCockpitCopySetupGate": "setup gate 복사",
       "queryCockpitCopyRuntimeGate": "runtime gate 복사",

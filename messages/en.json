@@ -1191,7 +1191,7 @@
       "queryCockpitPathContractBody": "For all_paths, report limit, searchBudget, expandedStates, exhaustive, totalPathsExact, and evidence.pathsComplete.",
       "queryCockpitGate": "self-check + health gate",
       "queryCockpitProofBody": "This JSON gate proves connectivity and fallback performance before scan commands run. Automation reads ok, performanceOk, failure count, and per-command timeout flags separately.",
-      "queryCockpitRuntimeBody": "The dogfood runtime gate then replays the same graph DB pack over the local markdown vault and verifies that health --json reports healthy. It fails if scan follow-ups, all_paths completeness fields, relation_check recommendation fields, or health check status disappear.",
+      "queryCockpitRuntimeBody": "The dogfood runtime gate then replays the same graph DB pack over the local markdown vault: health --json, focused blast_radius, scan follow-ups, all_paths completeness, relation_check recommendation, and health check status all fail closed if their contract disappears.",
       "queryCockpitProofField": "Gate proof field",
       "queryCockpitCopySetupGate": "Copy setup gate",
       "queryCockpitCopyRuntimeGate": "Copy runtime gate",

@@ -352,6 +352,35 @@ test("desktop smoke fails when insights runtime gate copy action is absent", () 
   assert.match(report.missing[0].details, /Copy runtime gate/);
 });
 
+test("desktop smoke fails when insights runtime gate does not name focused blast-radius replay", () => {
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+
+  const filePath = path.join(outDir, "en/ontology/insights/index.html");
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(
+    filePath,
+    "<!doctype html><title>Ontology Insights · Context Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db Copy runtime gate</main>",
+    "utf8",
+  );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/ontology/insights"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    ["route-text:en:/ontology/insights"],
+  );
+  assert.match(report.missing[0].details, /focused blast_radius/);
+});
+
 test("desktop smoke reports the exact missing packaged route", () => {
   const outDir = makeOutDir();
   fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
