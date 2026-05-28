@@ -296,7 +296,7 @@ export function OntologyViewPage() {
 	              >
 	                <Search size={13} aria-hidden />
 	                <span className="hidden sm:inline">{t('actions.search')}</span>
-	                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline">⌘K</kbd>
+	                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⌘K</kbd>
 	              </button>
 	            </Tooltip>
             {/* 노드 + 프로젝트 통합 검색 — ⇧⌘K 단축키 (이전엔 단축키만
@@ -307,12 +307,12 @@ export function OntologyViewPage() {
               <button
                 type="button"
                 onClick={() => setGlobalSearchOpen(true)}
-                aria-label={t('actions.globalSearchAria')}
+                aria-label={`${t('actions.globalSearch')} — ${t('actions.globalSearchAria')}`}
 	                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
 	              >
 	                <Network size={13} aria-hidden />
 	                <span className="hidden sm:inline">{t('actions.globalSearch')}</span>
-	                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline">⇧⌘K</kbd>
+	                <kbd className="hidden font-mono text-[10px] text-[color:var(--color-text-quaternary)] sm:inline" aria-hidden>⇧⌘K</kbd>
 	              </button>
 	            </Tooltip>
 	            <Tooltip content={t('actions.queryTooltip')} withProvider={false}>
@@ -329,7 +329,7 @@ export function OntologyViewPage() {
               <Link
                 href={builderHref}
                 className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-brand)] px-4 text-xs font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-opacity hover:opacity-90"
-                aria-label={t('actions.builderAria')}
+                aria-label={`${t('actions.builder')} — ${t('actions.builderAria')}`}
               >
                 <PencilLine size={13} aria-hidden />
                 {t('actions.builder')}
