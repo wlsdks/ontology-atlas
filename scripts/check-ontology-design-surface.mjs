@@ -47,6 +47,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     markers: [
       "function GraphWorkbenchSummary",
       "<GraphProofRail model={graphProofRailModel} />",
+      "copyRuntimeGate",
       "formatAgentPostChangeSyncPacket",
     ],
     reason:

@@ -119,8 +119,9 @@ second hero card. Keep the Tree role / Graph refs / Evidence strip above it so
 the browse surface first explains why the hierarchy exists and where its
 boundary is; then show the MCP/CLI pack counts and representative query intents
 as proof that the same markdown graph is queryable. The rail should also expose
-the shared post-change sync gate, so query proof can close a write without
-making the user find a deeper panel first. Keep local frontmatter
+the graph DB runtime gate plus the shared post-change sync gate, so browse can
+prove the graph now and close a write without making the user find a deeper
+panel first. Keep local frontmatter
 compile proof below the tree; it is source evidence, not the primary browse
 entry.
 

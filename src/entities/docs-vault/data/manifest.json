@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T02:46:18.477Z",
+  "generatedAt": "2026-05-28T02:54:06.949Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1812,
-      "updatedAt": "2026-05-28T02:45:50.081Z",
+      "wordCount": 1822,
+      "updatedAt": "2026-05-28T02:50:58.545Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -3906,8 +3906,8 @@
         }
       ],
       "excerpt": "Context Atlas is the userfacing macOS app name for the ohmyontology project. ohmyontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app ",
-      "wordCount": 4130,
-      "updatedAt": "2026-05-28T02:45:50.082Z",
+      "wordCount": 4145,
+      "updatedAt": "2026-05-28T02:51:25.266Z",
       "linksOut": []
     },
     {
@@ -3964,8 +3964,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6428,
-      "updatedAt": "2026-05-28T02:45:50.082Z",
+      "wordCount": 6433,
+      "updatedAt": "2026-05-28T02:51:37.969Z",
       "linksOut": []
     },
     {
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8289,
-      "updatedAt": "2026-05-28T02:45:50.081Z",
+      "wordCount": 8291,
+      "updatedAt": "2026-05-28T02:51:58.753Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5140,8 +5140,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 2879,
-      "updatedAt": "2026-05-28T02:45:50.081Z",
+      "wordCount": 2884,
+      "updatedAt": "2026-05-28T02:51:31.614Z",
       "linksOut": []
     },
     {
@@ -6289,9 +6289,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "scripts/checkontologydesignsurface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for designsystem drift: glowlike hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. It also checks that the thr",
-      "wordCount": 102,
-      "updatedAt": "2026-05-28T01:55:06.767Z",
+      "excerpt": "scripts/checkontologydesignsurface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for designsystem drift: glowlike hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. It also checks that the fou",
+      "wordCount": 111,
+      "updatedAt": "2026-05-28T02:54:00.973Z",
       "linksOut": []
     },
     {
@@ -6327,8 +6327,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/lib/graphproofrail.ts derives the compact graph proof model shown near the top of /ontology, and src/views/ontologyview/ui/OntologyViewPage.tsx renders it as an executable query proof strip. The strip is intentionally not a marketing card and no longer sits above the tree role contract. /ontology",
-      "wordCount": 180,
-      "updatedAt": "2026-05-28T01:27:07.138Z",
+      "wordCount": 186,
+      "updatedAt": "2026-05-28T02:53:53.233Z",
       "linksOut": []
     },
     {

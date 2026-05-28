@@ -282,7 +282,8 @@ titles match the expected app surfaces, that `/docs` bundles the Source Vault
 graph-gate copy action, that `/ontology`, `/ontology/edit`, and
 `/ontology/insights` bundle the graph DB proof copy (`Graph DB proof`,
 `Browse`, `Write`, `Query`, and `dogfood:graph-db`), that `/ontology` also
-bundles the canonical slug handle copy used by the Browse tree handoff, that
+bundles the canonical slug handle copy used by the Browse tree handoff and the
+runtime gate copy action used to prove the graph DB pack from Browse, that
 `/ontology/edit` also bundles the active slug handle copy used by the Builder
 proof rail and the Guard packet copy action that carries relation preflight into
 query verification, that `/ontology/insights` bundles the runtime gate copy

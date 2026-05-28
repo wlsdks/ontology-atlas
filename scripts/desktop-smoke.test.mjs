@@ -207,6 +207,35 @@ test("desktop smoke fails when browse canonical slug proof handle is absent", ()
   assert.match(report.missing[0].details, /canonical slug/);
 });
 
+test("desktop smoke fails when browse runtime gate copy action is absent", () => {
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+
+  const filePath = path.join(outDir, "en/ontology/index.html");
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(
+    filePath,
+    "<!doctype html><title>Ontology · Context Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db canonical slug</main>",
+    "utf8",
+  );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/ontology"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    ["route-text:en:/ontology"],
+  );
+  assert.match(report.missing[0].details, /Copy runtime gate/);
+});
+
 test("desktop smoke fails when builder guard copy action is absent", () => {
   const outDir = makeOutDir();
   fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });

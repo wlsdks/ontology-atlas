@@ -27,7 +27,8 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
 export const DESKTOP_SMOKE_ROUTE_TEXT = {
   "en:/docs": ["Source Vault", "Files", "Graph", "Agent", "Copy graph gate"],
   "ko:/docs": ["Source Vault", "Files", "Graph", "Agent", "graph gate 복사"],
-  "/ontology": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "canonical slug"],
+  "en:/ontology": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "canonical slug", "Copy runtime gate"],
+  "ko:/ontology": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "canonical slug", "runtime gate 복사"],
   "en:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "active slug", "Copy guard"],
   "ko:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "활성 slug", "Guard 복사"],
   "en:/ontology/insights": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "Copy runtime gate"],
