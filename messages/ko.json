@@ -1399,7 +1399,7 @@
       "agentGuardrailRenameTitle": "rename / merge 전",
       "agentGuardrailRenamePrompt": "다른 concept가 참조하는 slug를 바꾸기 전에 backlink와 local node profile을 먼저 확인.",
       "agentGuardrailSyncTitle": "코드 변경 후",
-      "agentGuardrailSyncPrompt": "다른 agent에게 넘기기 전에 10-check runtime graph DB pack, health, cycles, growth_plan, maintenance_plan, validate_vault로 변경된 graph를 gate.",
+      "agentGuardrailSyncPrompt": "다른 agent에게 넘기기 전에 11-check runtime graph DB pack, health, cycles, growth_plan, maintenance_plan, validate_vault로 변경된 graph를 gate.",
       "agentGuardrailStepsLabel": "MCP write gate 순서",
       "agentCopyHandoff": "handoff 복사",
       "agentCopyPayload": "JSON 복사",

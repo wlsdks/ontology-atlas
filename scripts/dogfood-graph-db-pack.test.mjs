@@ -28,6 +28,20 @@ function frontmatterEdgeScanPayload() {
   };
 }
 
+function focusedBlastRadiusPayload() {
+  return {
+    operation: "blast_radius",
+    center: "capabilities/mcp-server",
+    direction: "incoming",
+    depth: 2,
+    risk: "high",
+    node: { slug: "capabilities/mcp-server" },
+    summary: { affectedNodes: 3, affectedEdges: 4 },
+    nodes: { total: 3, rows: [{}] },
+    edges: { total: 4, rows: [{}] },
+  };
+}
+
 describe("dogfood graph DB pack", () => {
   it("rejects invalid JSON output with the command label", () => {
     const parsed = parseJsonOutput("not-json", "facets");
@@ -62,6 +76,7 @@ describe("dogfood graph DB pack", () => {
           },
         },
       },
+      focusedBlastRadiusPayload(),
       {
         plan: { execution: { shouldRun: true } },
         result: {
@@ -121,10 +136,11 @@ describe("dogfood graph DB pack", () => {
 
     assert.equal(status, 0);
     assert.equal(stderr.join(""), "");
-    assert.equal(call, 10);
+    assert.equal(call, 11);
     assert.match(stdout.join(""), /\[dogfood:graph-db\] health_gate: status=healthy checks=1 issues=0 unresolved=0/);
+    assert.match(stdout.join(""), /\[dogfood:graph-db\] focused_blast_radius: center=capabilities\/mcp-server risk=high nodes=3 edges=4/);
     assert.match(stdout.join(""), /\[dogfood:graph-db\] frontmatter_edge_scan: totalMatches=1 relation=elements followUp=1/);
-    assert.match(stdout.join(""), /\[dogfood:graph-db\] ok · 10 runtime graph DB checks passed/);
+    assert.match(stdout.join(""), /\[dogfood:graph-db\] ok · 11 runtime graph DB checks passed/);
   });
 
   it("fails closed when a result contract is missing", () => {
@@ -164,6 +180,49 @@ describe("dogfood graph DB pack", () => {
 
     assert.equal(status, 1);
     assert.match(stderr.join(""), /match_nodes followUp\.focusSlug missing/);
+  });
+
+  it("fails closed when focused blast-radius rows are missing", () => {
+    const stderr = [];
+    const payloads = [
+      { ok: true, performanceOk: true, failed: 0, commands: Array.from({ length: 25 }, () => ({})) },
+      { graph: { nodes: 2, edges: 1, unresolvedEdges: 0 }, nodes: { topByDegree: [{}] } },
+      {
+        operation: "health",
+        status: "healthy",
+        summary: { nodes: 2, edges: 1, unresolvedEdges: 0, issues: 0 },
+        checks: [{ id: "compile_issues", status: "pass", count: 0 }],
+      },
+      {
+        plan: { execution: { shouldRun: true } },
+        result: {
+          operation: "match_nodes",
+          totalMatches: 1,
+          limited: false,
+          nodes: [{}],
+          followUp: { focusSlug: "a", calls: [{}], cliFallbackCommands: ["node a"] },
+        },
+      },
+      {
+        operation: "blast_radius",
+        center: "capabilities/mcp-server",
+        direction: "incoming",
+        depth: 2,
+        node: { slug: "capabilities/mcp-server" },
+        summary: { affectedNodes: 0, affectedEdges: 0 },
+        nodes: { total: 0, rows: [] },
+        edges: { total: 0, rows: [] },
+      },
+    ];
+    let call = 0;
+    const status = runDogfoodGraphDbPack({
+      spawn: () => ({ status: 0, stdout: JSON.stringify(payloads[call++]) }),
+      stdout: { write: () => {} },
+      stderr: { write: (text) => stderr.push(text) },
+    });
+
+    assert.equal(status, 1);
+    assert.match(stderr.join(""), /focused_blast_radius failed: blast_radius affectedNodes summary missing/);
   });
 
   it("fails closed when the health gate is not clean", () => {
@@ -233,6 +292,7 @@ describe("dogfood graph DB pack", () => {
           followUp: { focusSlug: "a", calls: [{}], cliFallbackCommands: ["node a"] },
         },
       },
+      focusedBlastRadiusPayload(),
       {
         plan: { execution: { shouldRun: true } },
         result: {
@@ -296,6 +356,7 @@ describe("dogfood graph DB pack", () => {
           followUp: { focusSlug: "a", calls: [{}], cliFallbackCommands: ["node a"] },
         },
       },
+      focusedBlastRadiusPayload(),
       {
         plan: { execution: { shouldRun: true } },
         result: {

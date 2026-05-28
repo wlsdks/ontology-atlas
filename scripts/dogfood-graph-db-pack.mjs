@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 const DEFAULT_VAULT = "docs/ontology";
 const DEFAULT_FROM = "capabilities/cli-developer-entry";
 const DEFAULT_TO = "capabilities/mcp-server";
+const DEFAULT_FOCUS = "capabilities/mcp-server";
 
 const GRAPH_DB_PACK_COMMANDS = [
   {
@@ -53,6 +54,21 @@ const GRAPH_DB_PACK_COMMANDS = [
       "--json",
     ],
     validate: validateNodeScan,
+  },
+  {
+    id: "focused_blast_radius",
+    args: [
+      "cli/src/index.mjs",
+      "blast-radius",
+      DEFAULT_FOCUS,
+      DEFAULT_VAULT,
+      "--depth",
+      "2",
+      "--direction",
+      "incoming",
+      "--json",
+    ],
+    validate: validateFocusedBlastRadius,
   },
   {
     id: "edge_scan",
@@ -292,6 +308,41 @@ function validateNodeScan(value) {
   }
   return pass(
     `totalMatches=${result.totalMatches} limited=${Boolean(result.limited)} followUp=${followUp.calls.length}`,
+  );
+}
+
+function validateFocusedBlastRadius(value) {
+  if (value?.operation !== "blast_radius") return fail("blast_radius result missing");
+  if (value.center !== DEFAULT_FOCUS) {
+    return fail(`blast_radius center=${value.center}`);
+  }
+  if (value.direction !== "incoming") {
+    return fail(`blast_radius direction=${value.direction}`);
+  }
+  if (value.depth !== 2) {
+    return fail(`blast_radius depth=${value.depth}`);
+  }
+  if (!value.node || value.node.slug !== DEFAULT_FOCUS) {
+    return fail("blast_radius focused node missing");
+  }
+  const summary = value.summary;
+  if (!summary || typeof summary.affectedNodes !== "number" || summary.affectedNodes <= 0) {
+    return fail("blast_radius affectedNodes summary missing");
+  }
+  if (typeof summary.affectedEdges !== "number" || summary.affectedEdges <= 0) {
+    return fail("blast_radius affectedEdges summary missing");
+  }
+  if (!value.nodes || typeof value.nodes.total !== "number" || !Array.isArray(value.nodes.rows)) {
+    return fail("blast_radius nodes contract missing");
+  }
+  if (!value.edges || typeof value.edges.total !== "number" || !Array.isArray(value.edges.rows)) {
+    return fail("blast_radius edges contract missing");
+  }
+  if (value.nodes.rows.length === 0 || value.edges.rows.length === 0) {
+    return fail("blast_radius returned no affected rows");
+  }
+  return pass(
+    `center=${value.center} risk=${value.risk} nodes=${summary.affectedNodes} edges=${summary.affectedEdges}`,
   );
 }
 

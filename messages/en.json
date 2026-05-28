@@ -1399,7 +1399,7 @@
       "agentGuardrailRenameTitle": "Before rename or merge",
       "agentGuardrailRenamePrompt": "Inspect backlinks and the local node profile before rewriting slugs that other concepts cite.",
       "agentGuardrailSyncTitle": "After code changes",
-      "agentGuardrailSyncPrompt": "Gate the resulting graph with the 10-check runtime graph DB pack, health, cycles, growth_plan, maintenance_plan, and validate_vault before handing work back to another agent.",
+      "agentGuardrailSyncPrompt": "Gate the resulting graph with the 11-check runtime graph DB pack, health, cycles, growth_plan, maintenance_plan, and validate_vault before handing work back to another agent.",
       "agentGuardrailStepsLabel": "MCP write gate sequence",
       "agentCopyHandoff": "Copy handoff",
       "agentCopyPayload": "Copy JSON",
