@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T05:17:30.505Z",
+  "generatedAt": "2026-05-28T05:21:30.958Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3906,8 +3906,8 @@
         }
       ],
       "excerpt": "Context Atlas is the userfacing macOS app name for the ohmyontology project. ohmyontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app ",
-      "wordCount": 4145,
-      "updatedAt": "2026-05-28T02:51:25.266Z",
+      "wordCount": 4147,
+      "updatedAt": "2026-05-28T05:21:08.508Z",
       "linksOut": []
     },
     {
@@ -3964,8 +3964,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6568,
-      "updatedAt": "2026-05-28T05:07:37.521Z",
+      "wordCount": 6573,
+      "updatedAt": "2026-05-28T05:21:00.008Z",
       "linksOut": []
     },
     {
