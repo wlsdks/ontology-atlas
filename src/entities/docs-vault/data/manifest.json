@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T07:00:15.649Z",
+  "generatedAt": "2026-05-28T14:25:56.236Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2415,6 +2415,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-28 — Topology layout off the main thread (web worker)",
+          "slug": "2026-05-28-topology-layout-off-the-main-thread-web-worker"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-23 — Starter agent loop verification",
           "slug": "2026-05-23-starter-agent-loop-verification"
         },
@@ -3459,9 +3464,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. Starter vaults now tell users how to prove the Claude Code / Cursor / Codex MCP loop works",
-      "wordCount": 17507,
-      "updatedAt": "2026-05-23T14:09:24.237Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 토폴로지 force 레이아웃을 Web Worker 로 이전해 데스크톱(WKWebView)에서 드래그 · 자동 정렬 시 끊김을 줄였다. 진단상 Sigma WebGL",
+      "wordCount": 17652,
+      "updatedAt": "2026-05-28T14:23:21.490Z",
       "linksOut": [
         "slug"
       ]
@@ -5606,7 +5611,7 @@
       ],
       "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount.",
       "wordCount": 42,
-      "updatedAt": "2026-05-13T00:02:55.338Z",
+      "updatedAt": "2026-05-28T14:25:55.870Z",
       "linksOut": []
     },
     {
@@ -6035,7 +6040,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 designsystem 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-05-27T23:51:29.622Z",
+      "updatedAt": "2026-05-28T14:25:55.870Z",
       "linksOut": []
     },
     {
