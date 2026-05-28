@@ -19,6 +19,19 @@ function htmlWithWorkbenchProof(title = "Context Atlas") {
   return `<!doctype html><title>${title}</title><main>Source Vault Files Graph Agent local markdown frontmatter MCP runtime gate Copy graph gate graph gate 복사 Source Draft Guard Proof 01 02 03 04 canvas draft relation guard graph db + health tree projection frontmatter write Tree role Graph refs Evidence 역할 참조 근거 Query cockpit Readiness Pack CLI MATCH Run order 실행 순서 Payloads CLI fallback Scan contract Path contract setup gate self-check + health gate Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius runtime replay canonical slug active slug 활성 slug Copy guard Guard 복사 Copy sync gate sync gate 복사 Copy runtime gate runtime gate 복사</main>`;
 }
 
+function writeRouteWithChunk(root, relativePath, htmlBody, chunkBody) {
+  const chunkPath = "_next/static/chunks/app-route.js";
+  const filePath = path.join(root, relativePath);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.mkdirSync(path.join(root, "_next/static/chunks"), { recursive: true });
+  fs.writeFileSync(path.join(root, chunkPath), chunkBody, "utf8");
+  fs.writeFileSync(
+    filePath,
+    `${htmlBody}<script src="/${chunkPath}"></script>`,
+    "utf8",
+  );
+}
+
 test("desktop smoke proves packaged locale routes and offline docs exist", () => {
   const outDir = makeOutDir();
   fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
@@ -72,6 +85,78 @@ test("desktop smoke checks ontology workbench route titles", () => {
   assert.ok(report.checks.some((check) => check.id === "route-title:ko:/ontology/insights"));
   assert.ok(report.checks.some((check) => check.id === "route-text:en:/ontology/insights"));
   assert.ok(report.checks.some((check) => check.id === "route-text:ko:/ontology/insights"));
+});
+
+test("desktop smoke checks route component chunk markers when requested", () => {
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+  writeRouteWithChunk(
+    outDir,
+    "en/docs/index.html",
+    htmlWithWorkbenchProof("Context Atlas"),
+    [
+      "sourceContract.filesLabel",
+      "sourceContract.graphLabel",
+      "sourceContract.agentLabel",
+      "sourceContract.agentCopyGate",
+    ].join("\n"),
+  );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/docs"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+    routeChunkText: {
+      "/docs": [
+        "sourceContract.filesLabel",
+        "sourceContract.graphLabel",
+        "sourceContract.agentLabel",
+        "sourceContract.agentCopyGate",
+      ],
+    },
+  });
+
+  assert.equal(report.ok, true);
+  assert.ok(report.checks.some((check) => check.id === "route-chunk-text:en:/docs"));
+});
+
+test("desktop smoke fails when route component chunk contract is absent", () => {
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+  writeRouteWithChunk(
+    outDir,
+    "en/docs/index.html",
+    htmlWithWorkbenchProof("Context Atlas"),
+    "sourceContract.filesLabel\nsourceContract.graphLabel",
+  );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/docs"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+    routeChunkText: {
+      "/docs": [
+        "sourceContract.filesLabel",
+        "sourceContract.graphLabel",
+        "sourceContract.agentLabel",
+        "sourceContract.agentCopyGate",
+      ],
+    },
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    ["route-chunk-text:en:/docs"],
+  );
+  assert.match(report.missing[0].details, /sourceContract.agentLabel/);
+  assert.match(report.missing[0].details, /sourceContract.agentCopyGate/);
 });
 
 test("desktop smoke fails when source vault graph gate copy action is absent", () => {

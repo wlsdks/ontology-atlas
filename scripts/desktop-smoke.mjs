@@ -34,6 +34,32 @@ export const DESKTOP_SMOKE_ROUTE_TEXT = {
   "en:/ontology/insights": ["Query cockpit", "Readiness", "Pack", "MCP", "CLI", "MATCH", "Run order", "Payloads", "CLI fallback", "Scan contract", "Path contract", "setup gate", "self-check + health gate", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "Copy runtime gate"],
   "ko:/ontology/insights": ["Query cockpit", "Readiness", "Pack", "MCP", "CLI", "MATCH", "실행 순서", "Payloads", "CLI fallback", "Scan contract", "Path contract", "setup gate", "self-check + health gate", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "runtime gate 복사"],
 };
+export const DESKTOP_SMOKE_ROUTE_CHUNK_TEXT = {
+  "/docs": [
+    "sourceContract.filesLabel",
+    "sourceContract.graphLabel",
+    "sourceContract.agentLabel",
+    "sourceContract.agentCopyGate",
+  ],
+  "/ontology": [
+    "activeSlugLabel",
+    "treeLoopAction",
+    "graphDbLoopAction",
+    "copySyncGate",
+  ],
+  "/ontology/edit": [
+    "proofChipSelected",
+    "syncCopyText",
+    "copySyncGate",
+    "activeFocus",
+  ],
+  "/ontology/insights": [
+    "queryCockpitContractsAriaLabel",
+    "queryCockpitEvidenceAriaLabel",
+    "queryCockpitCopyRuntimeGate",
+    "focused_blast_radius",
+  ],
+};
 
 function routeIndexPath({ locale, route }) {
   const cleanRoute = route.replace(/^\/+|\/+$/g, "");
@@ -58,6 +84,18 @@ function hasAllText(html, fragments) {
   return fragments.every((fragment) => html.includes(fragment));
 }
 
+function scriptChunkPathsFromHtml(html) {
+  return Array.from(html.matchAll(/\bsrc=["']([^"']*_next\/static\/chunks\/[^"']+\.js)["']/g))
+    .map((match) => match[1].replace(/^\//, ""))
+    .filter((value, index, array) => array.indexOf(value) === index);
+}
+
+function readRouteChunkText(outDir, html) {
+  return scriptChunkPathsFromHtml(html)
+    .map((chunkPath) => readTextUnder(outDir, chunkPath) ?? "")
+    .join("\n");
+}
+
 export function evaluateDesktopSmoke({
   outDir = path.join(process.cwd(), "out"),
   locales = DESKTOP_SMOKE_LOCALES,
@@ -65,6 +103,7 @@ export function evaluateDesktopSmoke({
   docs = DESKTOP_SMOKE_DOCS,
   routeTitles = DESKTOP_SMOKE_ROUTE_TITLES,
   routeText = DESKTOP_SMOKE_ROUTE_TEXT,
+  routeChunkText = {},
 } = {}) {
   const checks = [];
   const addCheck = (id, label, ok, details = "") => {
@@ -110,6 +149,18 @@ export function evaluateDesktopSmoke({
           expectedText.join(", "),
         );
       }
+      const expectedChunkText =
+        routeChunkText[`${locale}:${route}`] ?? routeChunkText[route];
+      if (expectedChunkText) {
+        const html = readTextUnder(outDir, relativePath);
+        const chunkText = typeof html === "string" ? readRouteChunkText(outDir, html) : "";
+        addCheck(
+          `route-chunk-text:${locale}:${route}`,
+          `${locale}${route} workbench component contract is bundled`,
+          typeof html === "string" && hasAllText(chunkText, expectedChunkText),
+          expectedChunkText.join(", "),
+        );
+      }
     }
   }
 
@@ -139,7 +190,9 @@ function renderDesktopSmoke(report) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const report = evaluateDesktopSmoke();
+  const report = evaluateDesktopSmoke({
+    routeChunkText: DESKTOP_SMOKE_ROUTE_CHUNK_TEXT,
+  });
   console.log(renderDesktopSmoke(report));
   if (!report.ok) process.exitCode = 1;
 }
