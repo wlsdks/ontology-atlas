@@ -57,6 +57,17 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "/ontology must keep Browse / Write / Query cards plus the graph DB proof rail from docs/DESIGN-SYSTEM.md.",
   },
   {
+    id: "browse-tree-row-graph-handle",
+    file: "src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx",
+    markers: [
+      "selectAriaLabel",
+      "selectedHandleLabel",
+      "selectedHandleTitle",
+    ],
+    reason:
+      "/ontology tree rows must name the selected graph handle so Browse / Write / Query keep the same slug.",
+  },
+  {
     id: "source-vault-execution-contract",
     file: "src/views/docs-vault/ui/DocsVaultPage.tsx",
     markers: [

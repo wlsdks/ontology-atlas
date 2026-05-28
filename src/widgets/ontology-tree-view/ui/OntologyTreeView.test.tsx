@@ -533,6 +533,17 @@ describe("OntologyTreeView — selectedId 강조·자동 expand", () => {
     expect(selected!.getAttribute("data-selected")).toBe("true");
   });
 
+  it("선택 버튼과 선택 행이 graph handle handoff 를 노출", () => {
+    render(<OntologyTreeView result={deepResult()} selectedId="c1" />);
+
+    expect(
+      screen.getByRole("button", {
+        name: /로그인 선택; graph handle c1; Browse, Write, Query/,
+      }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("graph handle · c1")).toBeInTheDocument();
+  });
+
   it("선택되지 않은 행은 aria-selected=false", () => {
     render(<OntologyTreeView result={deepResult()} selectedId="c1" />);
     const rows = screen.getAllByTestId("ontology-tree-row");

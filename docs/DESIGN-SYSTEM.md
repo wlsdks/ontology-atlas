@@ -96,7 +96,11 @@ tree node immediately offers visual focus, builder focus, and node proof without
 requiring the user to parse the whole collaborator brief.
 When a tree row is selected, repeat the active canonical slug near the
 Browse/Write/Query summary; the tree is choosing the graph handle the next
-write and query will keep, not just highlighting a row.
+write and query will keep, not just highlighting a row. Tree rows themselves
+should also name the graph handle they select: the row button label should
+include the slug handoff, and the selected row should show a compact handle
+chip so keyboard focus, the detail panel, Builder, and Insights are visibly
+using the same concept id.
 When no node is selected yet, the tree area should still expose a small
 selection hint that names the same Browse / Write / Query outcome. This makes
 row selection feel like the entrance to the workbench loop, not just a file-tree

@@ -211,7 +211,7 @@ view-doc · view-folder-topology · pin · unpin · copy URL · print · edit ·
 
 #### Left: tree view (`OntologyTreeView`)
 - Hierarchical project → domain → capability → element (document kind excluded as evidence)
-- Click row → select node (also updates URL `?node=…`)
+- Click row → select the node graph handle (button labels include the canonical slug and Browse / Write / Query handoff), highlight the same handle in-row, and update URL `?node=…`
 
 #### Right: detail panel (`NodeDetailPanel`)
 - Kind badge + title · `ManualSourceChip` (currently no-op — all sources `manual`)

@@ -34,6 +34,15 @@ function writeCleanWorkbenchFixtures(root) {
   );
   writeFixture(
     root,
+    "src/widgets/ontology-tree-view/ui/OntologyTreeView.tsx",
+    [
+      "selectAriaLabel",
+      "selectedHandleLabel",
+      "selectedHandleTitle",
+    ].join("\n"),
+  );
+  writeFixture(
+    root,
     "src/views/ontology-edit/ui/OntologyEditPage.tsx",
     [
       "function BuilderWriteSummary() {}",
@@ -92,9 +101,9 @@ test("ontology design surface passes when visual and workbench contracts are pre
   });
 
   assert.equal(report.ok, true);
-  assert.equal(report.requiredSurfaceMarkerCount, 4);
+  assert.equal(report.requiredSurfaceMarkerCount, 5);
   assert.equal(report.violations.length, 0);
-  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /4 workbench structure contracts/);
+  assert.match(renderOntologyDesignSurfaceReport(report).join("\n"), /5 workbench structure contracts/);
 });
 
 test("ontology design surface reports forbidden visual drift", () => {

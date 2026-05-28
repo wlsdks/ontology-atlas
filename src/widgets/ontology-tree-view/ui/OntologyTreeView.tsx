@@ -178,7 +178,14 @@ function TreeRow({
       <button
         type="button"
         onClick={() => onSelect?.(treeNode.node)}
-        title={treeNode.node.title}
+        aria-label={t('tree.selectAriaLabel', {
+          title: treeNode.node.title,
+          slug: treeNode.node.id,
+        })}
+        title={t('tree.selectTitle', {
+          title: treeNode.node.title,
+          slug: treeNode.node.id,
+        })}
         data-tree-select-button="true"
         data-row-slug={treeNode.node.id}
         data-row-depth={treeNode.depth}
@@ -210,6 +217,14 @@ function TreeRow({
             </span>
           );
         })()}
+        {selected ? (
+          <span
+            className="ml-auto hidden max-w-[180px] shrink-0 truncate rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] md:inline-flex"
+            title={t('tree.selectedHandleTitle', { slug: treeNode.node.id })}
+          >
+            {t('tree.selectedHandleLabel', { slug: treeNode.node.id })}
+          </span>
+        ) : null}
         {/* EvidenceCountChip / ProjectIdChip 모두 R10 후 vault 모드에서
             evidenceCount / projectIds 가 영구 빈 값이라 미렌더되어 cycle
             15 / 24 에서 제거. 미래에 vault 측에서 해당 값을 derive 해

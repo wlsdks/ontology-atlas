@@ -16,7 +16,7 @@ function touch(root, relativePath) {
 }
 
 function htmlWithWorkbenchProof(title = "Context Atlas") {
-  return `<!doctype html><title>${title}</title><main>Source Vault Files Graph Agent local markdown frontmatter MCP runtime gate Copy graph gate graph gate 복사 Source Draft Guard Proof 01 02 03 04 canvas draft relation guard graph db + health tree projection frontmatter write Tree role Graph refs Evidence 역할 참조 근거 Query cockpit Readiness Pack CLI MATCH Run order 실행 순서 Payloads CLI fallback Scan contract Path contract setup gate self-check + health gate Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius runtime replay canonical slug focus saved slug active slug Focus saved anchor 저장 slug 먼저 활성 slug 저장 anchor 포커스 Copy guard Guard 복사 Copy sync gate sync gate 복사 Copy runtime gate runtime gate 복사</main>`;
+  return `<!doctype html><title>${title}</title><main>Source Vault Files Graph Agent local markdown frontmatter MCP runtime gate Copy graph gate graph gate 복사 Source Draft Guard Proof 01 02 03 04 canvas draft relation guard graph db + health tree projection frontmatter write Tree role Graph refs Evidence 역할 참조 근거 Query cockpit Readiness Pack CLI MATCH Run order 실행 순서 Payloads CLI fallback Scan contract Path contract setup gate self-check + health gate Graph DB proof Browse Write Query dogfood:graph-db focused blast_radius runtime replay canonical slug graph handle focus saved slug active slug Focus saved anchor 저장 slug 먼저 활성 slug 저장 anchor 포커스 Copy guard Guard 복사 Copy sync gate sync gate 복사 Copy runtime gate runtime gate 복사</main>`;
 }
 
 function writeRouteWithChunk(root, relativePath, htmlBody, chunkBody) {
@@ -121,6 +121,89 @@ test("desktop smoke checks route component chunk markers when requested", () => 
 
   assert.equal(report.ok, true);
   assert.ok(report.checks.some((check) => check.id === "route-chunk-text:en:/docs"));
+});
+
+test("desktop smoke checks ontology browse component chunk markers when requested", () => {
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+  writeRouteWithChunk(
+    outDir,
+    "en/ontology/index.html",
+    htmlWithWorkbenchProof("Ontology · Context Atlas"),
+    [
+      "activeSlugLabel",
+      "selectedHandleLabel",
+      "selectAriaLabel",
+      "treeLoopAction",
+      "graphDbLoopAction",
+      "copySyncGate",
+    ].join("\n"),
+  );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/ontology"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+    routeChunkText: {
+      "/ontology": [
+        "activeSlugLabel",
+        "selectedHandleLabel",
+        "selectAriaLabel",
+        "treeLoopAction",
+        "graphDbLoopAction",
+        "copySyncGate",
+      ],
+    },
+  });
+
+  assert.equal(report.ok, true);
+  assert.ok(report.checks.some((check) => check.id === "route-chunk-text:en:/ontology"));
+});
+
+test("desktop smoke fails when ontology browse graph-handle row contract is absent", () => {
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+  writeRouteWithChunk(
+    outDir,
+    "en/ontology/index.html",
+    htmlWithWorkbenchProof("Ontology · Context Atlas"),
+    [
+      "activeSlugLabel",
+      "treeLoopAction",
+      "graphDbLoopAction",
+      "copySyncGate",
+    ].join("\n"),
+  );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["en"],
+    routes: ["/ontology"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+    routeChunkText: {
+      "/ontology": [
+        "activeSlugLabel",
+        "selectedHandleLabel",
+        "selectAriaLabel",
+        "treeLoopAction",
+        "graphDbLoopAction",
+        "copySyncGate",
+      ],
+    },
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    ["route-chunk-text:en:/ontology"],
+  );
+  assert.match(report.missing[0].details, /selectedHandleLabel/);
+  assert.match(report.missing[0].details, /selectAriaLabel/);
 });
 
 test("desktop smoke fails when route component chunk contract is absent", () => {

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T04:57:15.844Z",
+  "generatedAt": "2026-05-28T05:02:12.879Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1951,
-      "updatedAt": "2026-05-28T04:57:04.116Z",
+      "wordCount": 1997,
+      "updatedAt": "2026-05-28T05:01:28.469Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8323,
-      "updatedAt": "2026-05-28T04:52:02.159Z",
+      "wordCount": 8344,
+      "updatedAt": "2026-05-28T05:01:28.470Z",
       "linksOut": [
         "slug",
         "project:slug",
