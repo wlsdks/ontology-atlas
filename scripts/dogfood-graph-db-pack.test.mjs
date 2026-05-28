@@ -77,6 +77,52 @@ function relationNameParityPayload() {
   };
 }
 
+function structuralTraversalPayload() {
+  return {
+    operation: "pattern_walk",
+    start: "project",
+    direction: "outgoing",
+    pattern: ["domains", "capabilities"],
+    summary: { steps: 2, matchedPaths: 5, endNodes: 5, traversedEdges: 6 },
+    layers: [
+      { step: 1, relation: "domains", totalNodes: 2, rows: [{}] },
+      { step: 2, relation: "capabilities", totalNodes: 5, rows: [{}] },
+    ],
+    paths: { total: 6, limited: true, rows: [{}] },
+    edges: { total: 6, rows: [{}] },
+  };
+}
+
+function projectMapPayload() {
+  return {
+    operation: "project_map",
+    project: "project",
+    summary: {
+      nodes: 59,
+      domains: 6,
+      capabilities: 25,
+      elements: 27,
+      unassignedNodes: 0,
+      internalEdges: 216,
+      boundaryEdges: 0,
+      externalEdges: 182,
+      unresolvedEdges: 0,
+    },
+    limited: true,
+    domains: [
+      {
+        slug: "domains/cli",
+        node: { slug: "domains/cli", title: "CLI" },
+        summary: { capabilities: 2, elements: 2 },
+        capabilities: { total: 2, nodes: [{}] },
+        elements: { total: 2, nodes: [{}] },
+      },
+    ],
+    unassigned: { total: 0, rows: [] },
+    hotspots: [{}],
+  };
+}
+
 describe("dogfood graph DB pack", () => {
   it("rejects invalid JSON output with the command label", () => {
     const parsed = parseJsonOutput("not-json", "facets");
@@ -129,6 +175,8 @@ describe("dogfood graph DB pack", () => {
       relationNameParityPayload(),
       frontmatterEdgeScanPayload(),
       { summary: { domains: 2, crossDomainEdges: 1 }, domains: [{}] },
+      structuralTraversalPayload(),
+      projectMapPayload(),
       {
         plan: { operation: "query_plan", targetOperation: "all_paths" },
         result: {
@@ -172,12 +220,14 @@ describe("dogfood graph DB pack", () => {
 
     assert.equal(status, 0);
     assert.equal(stderr.join(""), "");
-    assert.equal(call, 12);
+    assert.equal(call, 14);
     assert.match(stdout.join(""), /\[dogfood:graph-db\] health_gate: status=healthy checks=1 issues=0 unresolved=0/);
     assert.match(stdout.join(""), /\[dogfood:graph-db\] focused_blast_radius: center=capabilities\/mcp-server risk=high nodes=3 edges=4/);
     assert.match(stdout.join(""), /\[dogfood:graph-db\] relation_name_parity: public=depends_on frontmatter=dependencies rows=2 totalMatches=2/);
     assert.match(stdout.join(""), /\[dogfood:graph-db\] frontmatter_edge_scan: totalMatches=1 relation=elements followUp=1/);
-    assert.match(stdout.join(""), /\[dogfood:graph-db\] ok · 12 runtime graph DB checks passed/);
+    assert.match(stdout.join(""), /\[dogfood:graph-db\] structural_traversal: pattern=domains→capabilities paths=6 endNodes=5/);
+    assert.match(stdout.join(""), /\[dogfood:graph-db\] project_map: domains=6 capabilities=25 elements=27 unresolved=0/);
+    assert.match(stdout.join(""), /\[dogfood:graph-db\] ok · 14 runtime graph DB checks passed/);
   });
 
   it("fails closed when a result contract is missing", () => {
@@ -405,6 +455,8 @@ describe("dogfood graph DB pack", () => {
       relationNameParityPayload(),
       frontmatterEdgeScanPayload(),
       { summary: { domains: 2, crossDomainEdges: 1 }, domains: [{}] },
+      structuralTraversalPayload(),
+      projectMapPayload(),
       {
         plan: { operation: "query_plan", targetOperation: "all_paths" },
         result: {
@@ -470,6 +522,8 @@ describe("dogfood graph DB pack", () => {
       relationNameParityPayload(),
       frontmatterEdgeScanPayload(),
       { summary: { domains: 2, crossDomainEdges: 1 }, domains: [{}] },
+      structuralTraversalPayload(),
+      projectMapPayload(),
       {
         plan: { operation: "query_plan", targetOperation: "all_paths" },
         result: {
@@ -506,5 +560,119 @@ describe("dogfood graph DB pack", () => {
 
     assert.equal(status, 1);
     assert.match(stderr.join(""), /relation_check recommendation missing/);
+  });
+
+  it("fails closed when structural traversal rows are missing", () => {
+    const stderr = [];
+    const payloads = [
+      { ok: true, performanceOk: true, failed: 0, commands: Array.from({ length: 25 }, () => ({})) },
+      { graph: { nodes: 2, edges: 1, unresolvedEdges: 0 }, nodes: { topByDegree: [{}] } },
+      {
+        operation: "health",
+        status: "healthy",
+        summary: { nodes: 2, edges: 1, unresolvedEdges: 0, issues: 0 },
+        checks: [{ id: "compile_issues", status: "pass", count: 0 }],
+      },
+      {
+        plan: { execution: { shouldRun: true } },
+        result: {
+          operation: "match_nodes",
+          totalMatches: 1,
+          limited: false,
+          nodes: [{}],
+          followUp: { focusSlug: "a", calls: [{}], cliFallbackCommands: ["node a"] },
+        },
+      },
+      focusedBlastRadiusPayload(),
+      {
+        plan: { execution: { shouldRun: true } },
+        result: {
+          operation: "match_edges",
+          totalMatches: 1,
+          limited: false,
+          edges: [{}],
+          followUp: {
+            focusEdge: { from: "a", to: "b" },
+            calls: [{}],
+            cliFallbackCommands: ["explain a b"],
+          },
+        },
+      },
+      relationNameParityPayload(),
+      frontmatterEdgeScanPayload(),
+      { summary: { domains: 2, crossDomainEdges: 1 }, domains: [{}] },
+      {
+        ...structuralTraversalPayload(),
+        paths: { total: 0, limited: false, rows: [] },
+      },
+    ];
+    let call = 0;
+    const status = runDogfoodGraphDbPack({
+      spawn: () => ({ status: 0, stdout: JSON.stringify(payloads[call++]) }),
+      stdout: { write: () => {} },
+      stderr: { write: (text) => stderr.push(text) },
+    });
+
+    assert.equal(status, 1);
+    assert.match(stderr.join(""), /structural_traversal failed: pattern_walk paths total missing/);
+  });
+
+  it("fails closed when project map contains unresolved edges", () => {
+    const stderr = [];
+    const payloads = [
+      { ok: true, performanceOk: true, failed: 0, commands: Array.from({ length: 25 }, () => ({})) },
+      { graph: { nodes: 2, edges: 1, unresolvedEdges: 0 }, nodes: { topByDegree: [{}] } },
+      {
+        operation: "health",
+        status: "healthy",
+        summary: { nodes: 2, edges: 1, unresolvedEdges: 0, issues: 0 },
+        checks: [{ id: "compile_issues", status: "pass", count: 0 }],
+      },
+      {
+        plan: { execution: { shouldRun: true } },
+        result: {
+          operation: "match_nodes",
+          totalMatches: 1,
+          limited: false,
+          nodes: [{}],
+          followUp: { focusSlug: "a", calls: [{}], cliFallbackCommands: ["node a"] },
+        },
+      },
+      focusedBlastRadiusPayload(),
+      {
+        plan: { execution: { shouldRun: true } },
+        result: {
+          operation: "match_edges",
+          totalMatches: 1,
+          limited: false,
+          edges: [{}],
+          followUp: {
+            focusEdge: { from: "a", to: "b" },
+            calls: [{}],
+            cliFallbackCommands: ["explain a b"],
+          },
+        },
+      },
+      relationNameParityPayload(),
+      frontmatterEdgeScanPayload(),
+      { summary: { domains: 2, crossDomainEdges: 1 }, domains: [{}] },
+      structuralTraversalPayload(),
+      {
+        ...projectMapPayload(),
+        summary: {
+          ...projectMapPayload().summary,
+          unresolvedEdges: 1,
+        },
+      },
+    ];
+    let call = 0;
+    const status = runDogfoodGraphDbPack({
+      spawn: () => ({ status: 0, stdout: JSON.stringify(payloads[call++]) }),
+      stdout: { write: () => {} },
+      stderr: { write: (text) => stderr.push(text) },
+    });
+
+    assert.equal(status, 1);
+    assert.match(stderr.join(""), /project_map failed: project_map unresolvedEdges=1/);
   });
 });

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T06:05:00.415Z",
+  "generatedAt": "2026-05-28T06:13:39.303Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3964,8 +3964,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6573,
-      "updatedAt": "2026-05-28T05:21:00.008Z",
+      "wordCount": 6576,
+      "updatedAt": "2026-05-28T06:12:59.391Z",
       "linksOut": []
     },
     {
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8432,
-      "updatedAt": "2026-05-28T06:04:37.767Z",
+      "wordCount": 8437,
+      "updatedAt": "2026-05-28T06:13:08.098Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -5298,8 +5298,8 @@
         }
       ],
       "excerpt": "@modelcontextprotocol/sdk 기반 stdio JSONRPC 서버. 23 도구 노출 (read 15 + write 8): | 도구 | 동작 | ||| | listconcepts | vault 의 모든 노드 (enumvalidated kind 필터, limit default 100 / max 500) | | getconcept | 단일 slug 의 frontmatter + body excerpt + graph neighbors + outgoingEdges[] | | getconcepts | R+ 배치 reader — 여러 slug 한 호출에 (max 5",
-      "wordCount": 12939,
-      "updatedAt": "2026-05-28T05:08:57.585Z",
+      "wordCount": 12962,
+      "updatedAt": "2026-05-28T06:13:28.782Z",
       "linksOut": []
     },
     {
@@ -6218,9 +6218,9 @@
         "domain": "views"
       },
       "headings": [],
-      "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the 12 checks runtime gate, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the s",
+      "excerpt": "src/views/ontologyinsights/ui/OntologyInsightsPage.tsx renders the firstviewport query cockpit for /ontology/insights. It exposes readiness, graph DB pack size, MCP call count, CLI fallback count, the 14 checks runtime gate, live graph facts, health blockers, traversal density, run order, scan/path contracts, and the s",
       "wordCount": 396,
-      "updatedAt": "2026-05-28T05:08:13.403Z",
+      "updatedAt": "2026-05-28T06:12:39.468Z",
       "linksOut": []
     },
     {

@@ -134,6 +134,34 @@ const GRAPH_DB_PACK_COMMANDS = [
     validate: validateDomainCoupling,
   },
   {
+    id: "structural_traversal",
+    args: [
+      "cli/src/index.mjs",
+      "pattern-walk",
+      "project",
+      DEFAULT_VAULT,
+      "--pattern",
+      "domains,capabilities",
+      "--limit",
+      "5",
+      "--json",
+    ],
+    validate: validateStructuralTraversal,
+  },
+  {
+    id: "project_map",
+    args: [
+      "cli/src/index.mjs",
+      "project-map",
+      "project",
+      DEFAULT_VAULT,
+      "--limit",
+      "5",
+      "--json",
+    ],
+    validate: validateProjectMap,
+  },
+  {
     id: "path_evidence",
     args: [
       "cli/src/index.mjs",
@@ -479,6 +507,91 @@ function validateDomainCoupling(value) {
   if (typeof summary.crossDomainEdges !== "number") return fail("domain matrix crossDomainEdges missing");
   if (!Array.isArray(value?.domains) || value.domains.length === 0) return fail("domain rows missing");
   return pass(`domains=${summary.domains} crossDomainEdges=${summary.crossDomainEdges}`);
+}
+
+function validateStructuralTraversal(value) {
+  if (value?.operation !== "pattern_walk") return fail("pattern_walk result missing");
+  if (value.start !== "project") return fail(`pattern_walk start=${value.start}`);
+  if (!Array.isArray(value.pattern) || value.pattern.join(",") !== "domains,capabilities") {
+    return fail("pattern_walk pattern did not preserve domains,capabilities");
+  }
+  const summary = value.summary;
+  if (!summary || summary.steps !== 2) return fail("pattern_walk summary steps missing");
+  if (typeof summary.matchedPaths !== "number" || summary.matchedPaths <= 0) {
+    return fail("pattern_walk matchedPaths missing");
+  }
+  if (typeof summary.endNodes !== "number" || summary.endNodes <= 0) {
+    return fail("pattern_walk endNodes missing");
+  }
+  if (typeof summary.traversedEdges !== "number" || summary.traversedEdges <= 0) {
+    return fail("pattern_walk traversedEdges missing");
+  }
+  if (!Array.isArray(value.layers) || value.layers.length < 2) {
+    return fail("pattern_walk layers missing");
+  }
+  const relations = value.layers.slice(0, 2).map((layer) => layer?.relation);
+  if (relations[0] !== "domains" || relations[1] !== "capabilities") {
+    return fail(`pattern_walk layer relations=${relations.join(",")}`);
+  }
+  for (const layer of value.layers.slice(0, 2)) {
+    if (typeof layer?.totalNodes !== "number" || layer.totalNodes <= 0) {
+      return fail("pattern_walk layer totalNodes missing");
+    }
+  }
+  if (!value.paths || typeof value.paths.total !== "number" || value.paths.total <= 0) {
+    return fail("pattern_walk paths total missing");
+  }
+  if (!Array.isArray(value.paths.rows) || value.paths.rows.length === 0) {
+    return fail("pattern_walk paths rows missing");
+  }
+  if (!value.edges || typeof value.edges.total !== "number" || value.edges.total <= 0) {
+    return fail("pattern_walk edges total missing");
+  }
+  if (!Array.isArray(value.edges.rows) || value.edges.rows.length === 0) {
+    return fail("pattern_walk edges rows missing");
+  }
+  return pass(
+    `pattern=${value.pattern.join("→")} paths=${value.paths.total} endNodes=${summary.endNodes}`,
+  );
+}
+
+function validateProjectMap(value) {
+  if (value?.operation !== "project_map") return fail("project_map result missing");
+  if (value.project !== "project") return fail(`project_map project=${value.project}`);
+  const summary = value.summary;
+  if (!summary || typeof summary !== "object") return fail("project_map summary missing");
+  const positiveFields = ["nodes", "domains", "capabilities", "elements", "internalEdges"];
+  for (const field of positiveFields) {
+    if (typeof summary[field] !== "number" || summary[field] <= 0) {
+      return fail(`project_map summary.${field} missing`);
+    }
+  }
+  if (summary.unresolvedEdges !== 0) {
+    return fail(`project_map unresolvedEdges=${summary.unresolvedEdges}`);
+  }
+  if (summary.unassignedNodes !== 0) {
+    return fail(`project_map unassignedNodes=${summary.unassignedNodes}`);
+  }
+  if (!Array.isArray(value.domains) || value.domains.length === 0) {
+    return fail("project_map domains rows missing");
+  }
+  if (!Array.isArray(value.hotspots) || value.hotspots.length === 0) {
+    return fail("project_map hotspots missing");
+  }
+  const firstDomain = value.domains[0];
+  const firstDomainSlug = firstDomain?.slug ?? firstDomain?.domain?.slug ?? firstDomain?.node?.slug;
+  if (typeof firstDomainSlug !== "string" || !firstDomain?.summary) {
+    return fail("project_map domain summary missing");
+  }
+  if (
+    !Array.isArray(firstDomain.capabilities?.nodes) ||
+    !Array.isArray(firstDomain.elements?.nodes)
+  ) {
+    return fail("project_map domain capability/element rows missing");
+  }
+  return pass(
+    `domains=${summary.domains} capabilities=${summary.capabilities} elements=${summary.elements} unresolved=0`,
+  );
 }
 
 function validatePathEvidence(value) {
