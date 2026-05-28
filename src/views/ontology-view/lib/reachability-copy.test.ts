@@ -107,24 +107,43 @@ describe("reachability copy helpers", () => {
       '2. query_ontology({"operation":"blast_radius","slug":"capabilities/cli-developer-entry","depth":2,"direction":"incoming"})',
     );
     expect(bundle).toContain(
-      '3. query_ontology({"operation":"match_edges","from":"capabilities/cli-developer-entry","limit":10})',
+      '3. query_ontology({"operation":"query_plan","targetOperation":"match_edges","from":"capabilities/cli-developer-entry","limit":10})',
     );
     expect(bundle).toContain(
-      '4. query_ontology({"operation":"match_edges","to":"capabilities/cli-developer-entry","limit":10})',
+      '4. query_ontology({"operation":"match_edges","from":"capabilities/cli-developer-entry","limit":10})',
     );
     expect(bundle).toContain(
-      '5. query_ontology({"operation":"reachability","slug":"capabilities/cli-developer-entry","direction":"outgoing","depth":3,"limit":12})',
+      '5. query_ontology({"operation":"query_plan","targetOperation":"match_edges","to":"capabilities/cli-developer-entry","limit":10})',
     );
     expect(bundle).toContain(
-      '6. query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"capabilities/cli-developer-entry","to":"<target-slug>","maxHops":4,"searchBudget":1000,"limit":10})',
+      '6. query_ontology({"operation":"match_edges","to":"capabilities/cli-developer-entry","limit":10})',
     );
     expect(bundle).toContain(
-      '7. query_ontology({"operation":"all_paths","from":"capabilities/cli-developer-entry","to":"<target-slug>","maxHops":4,"searchBudget":1000,"limit":10})',
+      '7. query_ontology({"operation":"query_plan","targetOperation":"match_edges","type":"depends_on","limit":10})',
     );
     expect(bundle).toContain(
-      '8. query_ontology({"operation":"relation_check","from":"capabilities/cli-developer-entry","to":"<target-slug>","type":"<relation-type>"})',
+      '8. query_ontology({"operation":"match_edges","type":"depends_on","limit":10})',
+    );
+    expect(bundle).toContain(
+      '9. query_ontology({"operation":"reachability","slug":"capabilities/cli-developer-entry","direction":"outgoing","depth":3,"limit":12})',
+    );
+    expect(bundle).toContain(
+      '10. query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"capabilities/cli-developer-entry","to":"<target-slug>","maxHops":4,"searchBudget":1000,"limit":10})',
+    );
+    expect(bundle).toContain(
+      '11. query_ontology({"operation":"all_paths","from":"capabilities/cli-developer-entry","to":"<target-slug>","maxHops":4,"searchBudget":1000,"limit":10})',
+    );
+    expect(bundle).toContain(
+      '12. query_ontology({"operation":"relation_check","from":"capabilities/cli-developer-entry","to":"<target-slug>","type":"<relation-type>"})',
+    );
+    expect(bundle).toContain(
+      "oh-my-ontology match-edges [vault] --plan --from capabilities/cli-developer-entry --limit 10",
     );
     expect(bundle).toContain("oh-my-ontology match-edges [vault] --from capabilities/cli-developer-entry --limit 10");
+    expect(bundle).toContain(
+      "oh-my-ontology match-edges [vault] --plan --type depends_on --limit 10",
+    );
+    expect(bundle).toContain("oh-my-ontology match-edges [vault] --type depends_on --limit 10");
     expect(bundle).toContain(
       "oh-my-ontology all-paths capabilities/cli-developer-entry '<target-slug>' [vault] --plan --max-hops 4 --limit 10 --search-budget 1000",
     );
@@ -132,6 +151,9 @@ describe("reachability copy helpers", () => {
       "oh-my-ontology relation-check capabilities/cli-developer-entry '<target-slug>' '<relation-type>' [vault]",
     );
     expect(bundle).toContain("Report totalMatches, limited, and returned row count");
+    expect(bundle).toContain(
+      "report relationType and via so depends_on is visibly backed by the dependencies frontmatter key",
+    );
     expect(bundle).toContain("For all_paths, report limit, searchBudget");
     expect(bundle).toContain("# Post-change ontology sync gate");
     expect(bundle).toContain("it starts with 12 runtime graph DB checks");

@@ -70,6 +70,8 @@ function writeCleanWorkbenchFixtures(root) {
       "queryCockpitEvidenceAriaLabel",
       "focused_blast_radius",
       "relation_name_parity",
+      "--type depends_on",
+      "relationType and via",
     ].join("\n"),
   );
   writeFixture(
@@ -160,6 +162,8 @@ test("ontology design surface reports missing workbench structure markers", () =
       "missing marker: queryCockpitEvidenceAriaLabel",
       "missing marker: focused_blast_radius",
       "missing marker: relation_name_parity",
+      "missing marker: --type depends_on",
+      "missing marker: relationType and via",
     ],
   );
 });

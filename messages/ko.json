@@ -1208,7 +1208,7 @@
       "queryCockpitCliFallbackValue": "명령 {count}개",
       "focusedProofAriaLabel": "선택 노드 graph proof",
       "focusedProofEyebrow": "Focused proof",
-      "focusedProofBody": "{kind} · {slug}. Builder 와 tree handoff 가 여기로 들어오면 node_profile, edge scan, bounded path plan, relation_check, sync gate 를 바로 복사할 수 있습니다.",
+      "focusedProofBody": "{kind} · {slug}. Builder 와 tree handoff 가 여기로 들어오면 node_profile, 계획된 edge scan, relation parity, bounded path plan, relation_check, sync gate 를 바로 복사할 수 있습니다.",
       "focusedProofOpenBrowse": "노드 보기",
       "focusedProofOpenBuilder": "빌더 열기",
       "focusedProofCopyPacket": "노드 proof 복사",
