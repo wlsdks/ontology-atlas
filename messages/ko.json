@@ -2301,6 +2301,7 @@
       "totalRelations": "총 관계",
       "documents": "근거 문서",
       "warnings": "트리 투영",
+      "warningsValue": "메모 {count}건",
       "warningsHint": "하나의 계층으로는 일부 graph 관계를 모두 표시할 수 없습니다.",
       "warningsAria": "트리 투영 경고 {count}건 — 클릭해서 자세히 보기"
     },

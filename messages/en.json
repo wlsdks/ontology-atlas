@@ -2301,6 +2301,7 @@
       "totalRelations": "Total relations",
       "documents": "Evidence docs",
       "warnings": "Tree projection",
+      "warningsValue": "{count, plural, one {# note} other {# notes}}",
       "warningsHint": "Some valid graph relations cannot be shown as one hierarchy.",
       "warningsAria": "Tree projection warnings {count} — click for details"
     },

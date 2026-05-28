@@ -384,7 +384,7 @@ export function OntologyViewPage() {
         {treeResult && treeResult.warnings.length > 0 ? (
           <Stat
             label={t('stat.warnings')}
-            value={`⚠ ${treeResult.warnings.length}`}
+            value={t('stat.warningsValue', { count: treeResult.warnings.length })}
             accent="amber"
             hint={t('stat.warningsHint')}
             ariaLabel={t('stat.warningsAria', { count: treeResult.warnings.length })}
