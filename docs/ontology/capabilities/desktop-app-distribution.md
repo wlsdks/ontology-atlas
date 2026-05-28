@@ -106,8 +106,8 @@ with open/create/sample/recent choices, so the installed app starts in local
 work mode instead of the download page. That native welcome now leads with a
 compact Files / Graph / Agent contract before its action cards: selected
 markdown files stay local and git-reviewable, frontmatter is the graph database
-input for browse/builder/query views, and Claude Code / Codex / Cursor read the
-same vault through MCP instead of a backend. After a vault is opened, the same
+input for browse/builder/query views, and Claude Code / Codex / Cursor start from
+the same 10-check local graph DB proof gate instead of a backend. After a vault is opened, the same
 Files / Graph / Agent contract remains pinned below the `/docs` header with the
 current markdown count, compiled ontology node/relation counts, source/browse/query
 handoff links, and the same 10-check graph DB proof gate used by the dogfood

@@ -59,7 +59,7 @@ input (humans + AI agents)     parse           store              output
 ### `/` — Smart entry
 
 - **Hosted web, no vault** → `LandingPage`
-- **macOS app, no restored vault** → local redirect state, then `/docs/?intent=local` shows a vault setup welcome with open/create/sample/recent choices; the installed app does not render the hosted marketing page on first run
+- **macOS app, no restored vault** → local redirect state, then `/docs/?intent=local` shows a vault setup welcome with Files / Graph / Agent contract cells, the same 10-check graph DB proof gate, and open/create/sample/recent choices; the installed app does not render the hosted marketing page on first run
 - **Recent desktop vaults** → the picker stores recently opened Tauri vault paths, can reopen them without another Finder selection, and can remove stale paths from the list
 - **Vault loaded** → `OntologyViewPage` (tree + ego graph hub)
 

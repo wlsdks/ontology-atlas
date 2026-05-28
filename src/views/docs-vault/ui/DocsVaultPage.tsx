@@ -248,7 +248,9 @@ function DesktopVaultWelcome({
     {
       icon: Bot,
       label: t('desktopWelcome.contractAgentLabel'),
-      value: t('desktopWelcome.contractAgentValue'),
+      value: t('desktopWelcome.contractAgentValue', {
+        count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+      }),
       body: t('desktopWelcome.contractAgentBody'),
     },
   ] as const;
