@@ -16,7 +16,7 @@ function touch(root, relativePath) {
 }
 
 function htmlWithWorkbenchProof(title = "Context Atlas") {
-  return `<!doctype html><title>${title}</title><main>Graph DB proof Browse Write Query dogfood:graph-db</main>`;
+  return `<!doctype html><title>${title}</title><main>Graph DB proof Browse Write Query dogfood:graph-db active slug 활성 slug</main>`;
 }
 
 test("desktop smoke proves packaged locale routes and offline docs exist", () => {
@@ -118,6 +118,35 @@ test("desktop smoke fails when ontology workbench proof copy is absent", () => {
     report.missing.map((check) => check.id),
     ["route-text:en:/ontology/edit"],
   );
+});
+
+test("desktop smoke fails when builder active slug proof handle is absent", () => {
+  const outDir = makeOutDir();
+  fs.mkdirSync(path.join(outDir, "_next"), { recursive: true });
+  touch(outDir, "index.html");
+  touch(outDir, "docs-vault/DESKTOP-MACOS.md");
+
+  const filePath = path.join(outDir, "ko/ontology/edit/index.html");
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(
+    filePath,
+    "<!doctype html><title>온톨로지 빌더 · Context Atlas</title><main>Graph DB proof Browse Write Query dogfood:graph-db</main>",
+    "utf8",
+  );
+
+  const report = evaluateDesktopSmoke({
+    outDir,
+    locales: ["ko"],
+    routes: ["/ontology/edit"],
+    docs: ["docs-vault/DESKTOP-MACOS.md"],
+  });
+
+  assert.equal(report.ok, false);
+  assert.deepEqual(
+    report.missing.map((check) => check.id),
+    ["route-text:ko:/ontology/edit"],
+  );
+  assert.match(report.missing[0].details, /활성 slug/);
 });
 
 test("desktop smoke reports the exact missing packaged route", () => {

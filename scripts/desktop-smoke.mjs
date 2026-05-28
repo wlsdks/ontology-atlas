@@ -26,7 +26,8 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
 };
 export const DESKTOP_SMOKE_ROUTE_TEXT = {
   "/ontology": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db"],
-  "/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db"],
+  "en:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "active slug"],
+  "ko:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "활성 slug"],
   "/ontology/insights": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db"],
 };
 
@@ -95,7 +96,7 @@ export function evaluateDesktopSmoke({
           expectedTitle,
         );
       }
-      const expectedText = routeText[route];
+      const expectedText = routeText[`${locale}:${route}`] ?? routeText[route];
       if (expectedText) {
         const html = readTextUnder(outDir, relativePath);
         addCheck(
