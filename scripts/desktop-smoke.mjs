@@ -29,8 +29,8 @@ export const DESKTOP_SMOKE_ROUTE_TEXT = {
   "ko:/docs": ["Source Vault", "Files", "Graph", "Agent", "graph gate 복사"],
   "en:/ontology": ["Tree role", "Graph refs", "Evidence", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "canonical slug", "Copy runtime gate"],
   "ko:/ontology": ["역할", "참조", "근거", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "canonical slug", "runtime gate 복사"],
-  "en:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "active slug", "Copy guard"],
-  "ko:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "활성 slug", "Guard 복사"],
+  "en:/ontology/edit": ["Source", "Draft", "Guard", "Proof", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "active slug", "Copy guard"],
+  "ko:/ontology/edit": ["Source", "Draft", "Guard", "Proof", "Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "활성 slug", "Guard 복사"],
   "en:/ontology/insights": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "Copy runtime gate"],
   "ko:/ontology/insights": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "focused blast_radius", "runtime gate 복사"],
 };
