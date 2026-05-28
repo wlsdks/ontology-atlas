@@ -121,6 +121,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
       "queryCockpitEvidenceAriaLabel",
       "focused_blast_radius",
       "relation_name_parity",
+      "pattern_walk/project_map",
       "--type depends_on",
       "relationType and via",
     ],

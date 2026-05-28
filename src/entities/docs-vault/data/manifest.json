@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T06:21:25.360Z",
+  "generatedAt": "2026-05-28T06:26:07.366Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 2004,
-      "updatedAt": "2026-05-28T05:14:44.893Z",
+      "wordCount": 2031,
+      "updatedAt": "2026-05-28T06:24:47.427Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -6290,8 +6290,8 @@
       },
       "headings": [],
       "excerpt": "scripts/checkontologydesignsurface.mjs powers pnpm design:ontology. It scans /ontology, /ontology/edit, /ontology/insights, ontology subnav, and operations nav source files for designsystem drift: glowlike hover shadows, scale hover, glass blur, purple/pink accents, and decorative gradients. It also checks that the fou",
-      "wordCount": 111,
-      "updatedAt": "2026-05-28T02:54:00.973Z",
+      "wordCount": 143,
+      "updatedAt": "2026-05-28T06:25:51.016Z",
       "linksOut": []
     },
     {

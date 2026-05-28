@@ -948,6 +948,7 @@ function InsightsQueryPackCockpit({
     "health.status",
     "focused_blast_radius",
     "relation_name_parity",
+    "pattern_walk/project_map",
     "health.checks[].status",
   ];
 

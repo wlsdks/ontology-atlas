@@ -127,9 +127,10 @@ the graph DB runtime gate plus the shared post-change sync gate, so browse can
 prove the graph now and close a write without making the user find a deeper
 panel first. The runtime gate copy should name the replay shape directly:
 setup self-check, `health --json`, focused `blast_radius`, scan follow-ups,
-public relation-name parity (`relation_name_parity`), bounded `all_paths`
-evidence, and `relation_check`. Keep local frontmatter compile proof below the
-tree; it is source evidence, not the primary browse entry.
+public relation-name parity (`relation_name_parity`), `pattern_walk` /
+`project_map` containment replay, bounded `all_paths` evidence, and
+`relation_check`. Keep local frontmatter compile proof below the tree; it is
+source evidence, not the primary browse entry.
 
 Builder write surfaces should make the persistence contract visible before the
 canvas. Use compact `Source` / `Draft` / `Guard` / `Proof` status cells to
@@ -145,7 +146,9 @@ canvas-only action. The copied proof packet should start with the same setup
 self-check, graph DB pack, and `pnpm dogfood:graph-db` runtime replay exposed
 elsewhere in the workbench, and the visible Proof cell copy should name that
 runtime replay, including relation-name parity, rather than hiding it inside a
-larger packet. Each cell should also expose a compact proof chip
+larger packet. The replay also needs to name structural containment checks
+(`pattern_walk` / `project_map`) so Builder proof is visibly stronger than a
+path-only guard. Each cell should also expose a compact proof chip
 (`local markdown`, `canvas draft`, `relation guard`, `graph db + health`) so
 the builder first viewport reads as a write/verify loop rather than a generic
 diagram toolbar. Number those cells as a visible execution order and add one
