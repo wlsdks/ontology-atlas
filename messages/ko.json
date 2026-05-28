@@ -1204,7 +1204,7 @@
       "focusedProofRelationCheckLabel": "relation_check",
       "focusedProofImpactLabel": "blast_radius",
       "focusedProofSyncLabel": "sync gate",
-      "focusedProofSyncBody": "graph 검사 10개 · health · cycles · growth_plan · maintenance_plan · validate_vault",
+      "focusedProofSyncBody": "graph 검사 {count}개 · health · cycles · growth_plan · maintenance_plan · validate_vault",
       "focusedProofPacketTitle": "선택 노드 graph proof",
       "focusedProofPacketNode": "노드",
       "focusedProofPacketScope": "Vault slug",

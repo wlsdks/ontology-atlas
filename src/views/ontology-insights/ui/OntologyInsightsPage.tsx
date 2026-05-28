@@ -2866,7 +2866,7 @@ function InsightsFocusedNodeProofPanel({ node }: { node: KnowledgeGraphNode }) {
           />
         </div>
       </div>
-      <div className="mt-3 grid gap-2 lg:grid-cols-4">
+      <div className="mt-3 grid gap-2 lg:grid-cols-3 xl:grid-cols-5">
         {[
           {
             label: t("focusedProofProfileLabel"),
@@ -2883,6 +2883,12 @@ function InsightsFocusedNodeProofPanel({ node }: { node: KnowledgeGraphNode }) {
           {
             label: t("focusedProofRelationCheckLabel"),
             body: relationCheckPayload,
+          },
+          {
+            label: t("focusedProofSyncLabel"),
+            body: t("focusedProofSyncBody", {
+              count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
+            }),
           },
         ].map((item) => (
           <div

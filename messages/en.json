@@ -1204,7 +1204,7 @@
       "focusedProofRelationCheckLabel": "relation_check",
       "focusedProofImpactLabel": "blast_radius",
       "focusedProofSyncLabel": "sync gate",
-      "focusedProofSyncBody": "10 graph checks · health · cycles · growth_plan · maintenance_plan · validate_vault",
+      "focusedProofSyncBody": "{count} graph checks · health · cycles · growth_plan · maintenance_plan · validate_vault",
       "focusedProofPacketTitle": "Focused node graph proof",
       "focusedProofPacketNode": "Node",
       "focusedProofPacketScope": "Vault slug",
