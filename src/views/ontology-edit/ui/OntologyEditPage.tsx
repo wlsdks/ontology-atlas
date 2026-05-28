@@ -25,6 +25,7 @@ import {
 } from "@/entities/docs-vault";
 import { VaultConflictError, useLocalVault } from "@/features/docs-vault-local";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
+import { AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT } from "@/shared/lib/ontology-tree";
 import { slugify } from "@/shared/lib/slugify";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { MountedGlobalSearch } from "@/widgets/global-search";
@@ -382,7 +383,9 @@ function BuilderWriteSummary({
       icon: <Network size={12} />,
       order: "04",
       label: t("proofLabel"),
-      value: selectedProofDisplaySlug ? t("proofValueSelected") : t("proofValue"),
+      value: selectedProofDisplaySlug
+        ? t("proofValueSelected", { count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT })
+        : t("proofValue", { count: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT }),
       body: selectedProofDisplaySlug
         ? t("proofBodySelected", { slug: selectedProofDisplaySlug })
         : t("proofBody"),
