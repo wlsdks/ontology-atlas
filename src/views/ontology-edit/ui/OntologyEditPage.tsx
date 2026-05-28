@@ -1220,7 +1220,7 @@ export function OntologyEditPage() {
               {t("eyebrow")}
             </p>
             <div className="mt-0.5 flex min-w-0 items-center gap-2">
-              <h1 className="truncate text-lg font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-xl">
+              <h1 className="truncate text-xl font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] md:text-2xl">
                 {t("title")}
               </h1>
               <span className="hidden h-4 w-px bg-[color:var(--color-border-soft)] sm:block" />
