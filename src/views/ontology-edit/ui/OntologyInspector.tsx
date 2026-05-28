@@ -623,11 +623,15 @@ function LiteralEditor({
     "w-full rounded-md border border-[color:var(--color-overlay-3)] bg-[color:var(--color-elevated)] px-2 py-1 text-[12px] text-[color:var(--color-text-primary)] outline-none transition-colors focus:border-[color:var(--color-indigo-brand)] disabled:opacity-50";
   return (
     <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <label
+        htmlFor={`literal-${fieldKey}`}
+        className="block font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+      >
         {literalLabel(t, fieldKey)}
-      </p>
+      </label>
       {multiline ? (
         <textarea
+          id={`literal-${fieldKey}`}
           name={`literal-${fieldKey}`}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -639,6 +643,7 @@ function LiteralEditor({
         />
       ) : (
         <input
+          id={`literal-${fieldKey}`}
           name={`literal-${fieldKey}`}
           type="text"
           value={draft}
@@ -720,9 +725,12 @@ function ArrayKeyEditor({
   };
   return (
     <div className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] p-2.5">
-      <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+      <label
+        htmlFor={`array-${fieldKey}`}
+        className="block font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]"
+      >
         {arrayLabel(t, fieldKey)}
-      </p>
+      </label>
       {values.length > 0 ? (
         <ul className="mt-2 flex flex-wrap gap-1">
           {values.map((slug) => {
@@ -752,6 +760,7 @@ function ArrayKeyEditor({
       ) : null}
       <div className="mt-2 flex gap-1">
         <input
+          id={`array-${fieldKey}`}
           name="array-item"
           type="text"
           value={input}
