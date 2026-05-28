@@ -55,6 +55,7 @@ import {
   type BuilderEntryAnchor,
 } from "../lib/builder-entry-anchors";
 import { formatBuilderProofPacket } from "../lib/builder-proof-packet";
+import { getBuilderSourceStatus } from "../lib/builder-source-status";
 
 /**
  * 빌더 ephemeral 노드 → `${kind}s/${slug}.md` 로 vault 직접 작성.
@@ -288,16 +289,19 @@ function BuilderWriteSummary({
     ? `/ontology/insights/?node=${encodeURIComponent(selectedProofDisplaySlug)}`
     : "/ontology/insights/";
   const proofPacketSlug = selectedProofSlug ?? selectedProofNodeId;
-  const sourceAction = writable
-    ? {}
-    : restoringVault
-      ? {}
-    : {
+  const sourceStatus = getBuilderSourceStatus({
+    writable,
+    restoringVault,
+    vaultUnavailable,
+  });
+  const sourceAction = sourceStatus.showSourceAction
+    ? {
         href: sourceHref,
         actionLabel: isDesktopRuntime
           ? t("sourceActionLocal")
           : t("sourceActionDownload"),
-      };
+      }
+    : {};
   const items: Array<{
     icon: ReactNode;
     order: string;
@@ -318,35 +322,16 @@ function BuilderWriteSummary({
       icon: <Database size={12} />,
       order: "01",
       label: t("sourceLabel"),
-      value: restoringVault
-        ? t("sourceRestoring")
-        : writable
-          ? t("sourceWritable")
-          : vaultUnavailable
-            ? t("sourceUnavailable")
-            : t("sourceReadonly"),
-      body: restoringVault
-        ? t("sourceBodyRestoring")
-        : writable
-          ? t("sourceBodyWritable", { nodes: persistedNodes, relations: persistedRelations })
-          : vaultUnavailable
-            ? t("sourceBodyUnavailable")
-            : t("sourceBodyReadonly", { nodes: persistedNodes, relations: persistedRelations }),
-      chip: restoringVault
-        ? t("sourceChipRestoring")
-        : writable
-          ? t("sourceChipWritable")
-          : vaultUnavailable
-            ? t("sourceChipUnavailable")
-            : t("sourceChipReadonly"),
-      flow: restoringVault
-        ? t("sourceFlowRestoring")
-        : writable
-          ? t("sourceFlowWritable")
-          : vaultUnavailable
-            ? t("sourceFlowUnavailable")
-            : t("sourceFlowReadonly"),
-      accent: writable ? "indigo" : restoringVault ? "neutral" : "amber",
+      value: t(`source.${sourceStatus.status}.value`),
+      body:
+        sourceStatus.status === "writable"
+          ? t("source.writable.body", { nodes: persistedNodes, relations: persistedRelations })
+          : sourceStatus.status === "readonly"
+            ? t("source.readonly.body", { nodes: persistedNodes, relations: persistedRelations })
+            : t(`source.${sourceStatus.status}.body`),
+      chip: t(`source.${sourceStatus.status}.chip`),
+      flow: t(`source.${sourceStatus.status}.flow`),
+      accent: sourceStatus.accent,
       ...sourceAction,
     },
     {

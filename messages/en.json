@@ -743,25 +743,34 @@
         "writeSummary": {
           "ariaLabel": "Builder write status",
           "sourceLabel": "Source",
-          "sourceWritable": "Local vault write",
-          "sourceRestoring": "Restoring vault",
-          "sourceUnavailable": "Vault access needed",
-          "sourceReadonly": "Sample read-only",
-          "sourceBody": "{nodes} persisted nodes · {relations} frontmatter refs",
-          "sourceBodyWritable": "Writes to the selected vault · {nodes} nodes · {relations} refs",
-          "sourceBodyRestoring": "Reloading the selected desktop vault before writes are enabled.",
-          "sourceBodyUnavailable": "The saved vault path is waiting for permission or re-selection. The sample graph is visible, but writes are locked.",
-          "sourceBodyReadonly": "Sample graph only · {nodes} nodes · {relations} refs",
-          "sourceChipWritable": "local markdown",
-          "sourceChipRestoring": "desktop restore",
-          "sourceChipUnavailable": "vault paused",
-          "sourceChipReadonly": "read-only sample",
-          "sourceFlowWritable": "read/write source",
-          "sourceFlowRestoring": "waiting for vault",
-          "sourceFlowUnavailable": "reopen vault",
-          "sourceFlowReadonly": "choose writable vault",
           "sourceActionLocal": "Open local vault",
           "sourceActionDownload": "Get macOS app",
+          "source": {
+            "writable": {
+              "value": "Local vault write",
+              "body": "Writes to the selected vault · {nodes} nodes · {relations} refs",
+              "chip": "local markdown",
+              "flow": "read/write source"
+            },
+            "restoring": {
+              "value": "Restoring vault",
+              "body": "Reloading the selected desktop vault before writes are enabled.",
+              "chip": "desktop restore",
+              "flow": "waiting for vault"
+            },
+            "unavailable": {
+              "value": "Vault access needed",
+              "body": "The saved vault path is waiting for permission or re-selection. The sample graph is visible, but writes are locked.",
+              "chip": "vault paused",
+              "flow": "reopen vault"
+            },
+            "readonly": {
+              "value": "Sample read-only",
+              "body": "Sample graph only · {nodes} nodes · {relations} refs",
+              "chip": "read-only sample",
+              "flow": "choose writable vault"
+            }
+          },
           "draftLabel": "Draft",
           "draftValue": "{nodes} nodes · {edges} edges",
           "draftBody": "Unsaved canvas work stays separate until Save.",

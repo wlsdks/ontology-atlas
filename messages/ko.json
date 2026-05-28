@@ -743,25 +743,34 @@
         "writeSummary": {
           "ariaLabel": "빌더 쓰기 상태",
           "sourceLabel": "Source",
-          "sourceWritable": "로컬 vault write",
-          "sourceRestoring": "vault 복원 중",
-          "sourceUnavailable": "vault 접근 필요",
-          "sourceReadonly": "샘플 read-only",
-          "sourceBody": "저장 노드 {nodes}개 · frontmatter 참조 {relations}개",
-          "sourceBodyWritable": "선택한 vault 에 직접 저장 · 노드 {nodes}개 · 참조 {relations}개",
-          "sourceBodyRestoring": "쓰기 활성화 전에 선택한 desktop vault 를 다시 불러오는 중입니다.",
-          "sourceBodyUnavailable": "저장된 vault 경로가 권한 재승인 또는 재선택을 기다립니다. 샘플 그래프는 보이지만 쓰기는 잠겨 있습니다.",
-          "sourceBodyReadonly": "샘플 그래프만 보기 · 노드 {nodes}개 · 참조 {relations}개",
-          "sourceChipWritable": "local markdown",
-          "sourceChipRestoring": "desktop restore",
-          "sourceChipUnavailable": "vault paused",
-          "sourceChipReadonly": "read-only sample",
-          "sourceFlowWritable": "source 읽기/쓰기",
-          "sourceFlowRestoring": "vault 대기",
-          "sourceFlowUnavailable": "vault 다시 열기",
-          "sourceFlowReadonly": "writable vault 선택",
           "sourceActionLocal": "로컬 vault 열기",
           "sourceActionDownload": "macOS 앱 받기",
+          "source": {
+            "writable": {
+              "value": "로컬 vault write",
+              "body": "선택한 vault 에 직접 저장 · 노드 {nodes}개 · 참조 {relations}개",
+              "chip": "local markdown",
+              "flow": "source 읽기/쓰기"
+            },
+            "restoring": {
+              "value": "vault 복원 중",
+              "body": "쓰기 활성화 전에 선택한 desktop vault 를 다시 불러오는 중입니다.",
+              "chip": "desktop restore",
+              "flow": "vault 대기"
+            },
+            "unavailable": {
+              "value": "vault 접근 필요",
+              "body": "저장된 vault 경로가 권한 재승인 또는 재선택을 기다립니다. 샘플 그래프는 보이지만 쓰기는 잠겨 있습니다.",
+              "chip": "vault paused",
+              "flow": "vault 다시 열기"
+            },
+            "readonly": {
+              "value": "샘플 read-only",
+              "body": "샘플 그래프만 보기 · 노드 {nodes}개 · 참조 {relations}개",
+              "chip": "read-only sample",
+              "flow": "writable vault 선택"
+            }
+          },
           "draftLabel": "Draft",
           "draftValue": "노드 {nodes}개 · edge {edges}개",
           "draftBody": "임시 캔버스 작업은 Save 전까지 분리됩니다.",
