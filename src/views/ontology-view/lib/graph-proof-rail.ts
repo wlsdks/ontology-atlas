@@ -1,6 +1,7 @@
 import {
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   countAgentGraphDbCliPackCommands,
+  formatAgentPostChangeSyncPacket,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
   formatAgentQueryCallCliCommand,
@@ -16,6 +17,7 @@ export interface GraphProofRailModel {
   operations: string[];
   queryPackText: string;
   cliPackText: string;
+  syncGateText: string;
 }
 
 export function buildGraphProofRailModel(
@@ -45,6 +47,7 @@ export function buildGraphProofRailModel(
     operations: Array.from(operations),
     queryPackText: formatAgentGraphDbQueryPack(pack),
     cliPackText: formatAgentGraphDbCliPack(pack),
+    syncGateText: formatAgentPostChangeSyncPacket(),
   };
 }
 

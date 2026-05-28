@@ -2367,7 +2367,7 @@
       "ariaLabel": "Executable graph proof rail",
       "eyebrow": "Graph DB proof",
       "title": "Validate the same markdown graph through the query pack",
-      "body": "Derived from the agent graph DB pack: executable MCP calls and CLI fallbacks.",
+      "body": "Derived from the agent graph DB pack: executable MCP calls, CLI fallbacks, and the post-change sync gate.",
       "intents": "Intents",
       "mcpCalls": "MCP calls",
       "cliFallbacks": "CLI fallbacks",
@@ -2383,6 +2383,9 @@
       "copyCli": "Copy CLI pack",
       "copyCliAria": "Copy the graph DB query CLI fallback pack",
       "copyCliCopied": "Graph DB CLI pack copied",
+      "copySyncGate": "Copy sync gate",
+      "copySyncGateAria": "Copy the post-change ontology sync gate",
+      "copySyncGateCopied": "Ontology sync gate copied",
       "copyFailed": "Copy failed"
     },
     "error": "Something went wrong while loading ontology data. {message}",

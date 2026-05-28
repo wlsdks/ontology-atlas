@@ -2367,7 +2367,7 @@
       "ariaLabel": "실행 가능한 graph proof rail",
       "eyebrow": "Graph DB proof",
       "title": "같은 markdown graph 를 query pack 으로 검증합니다",
-      "body": "agent graph DB pack 에서 계산한 MCP call 과 CLI fallback 입니다.",
+      "body": "agent graph DB pack 에서 계산한 MCP call, CLI fallback, 변경 후 sync gate 입니다.",
       "intents": "Intent",
       "mcpCalls": "MCP call",
       "cliFallbacks": "CLI fallback",
@@ -2383,6 +2383,9 @@
       "copyCli": "CLI pack 복사",
       "copyCliAria": "graph DB query CLI fallback pack 복사",
       "copyCliCopied": "Graph DB CLI pack 복사됨",
+      "copySyncGate": "Sync gate 복사",
+      "copySyncGateAria": "변경 후 ontology sync gate 복사",
+      "copySyncGateCopied": "Ontology sync gate 복사됨",
       "copyFailed": "복사 실패"
     },
     "error": "ontology 데이터를 불러오는 중 오류가 났어요. {message}",

@@ -50,5 +50,8 @@ describe("graph proof rail", () => {
     expect(model.cliPackText).toContain("Run these oh-my-ontology CLI commands");
     expect(model.cliPackText).toContain("pnpm dogfood:graph-db");
     expect(model.cliPackText).toContain("oh-my-ontology match-nodes [vault]");
+    expect(model.syncGateText).toContain("## Runtime graph DB gate");
+    expect(model.syncGateText).toContain("10 checks · pnpm dogfood:graph-db");
+    expect(model.syncGateText).toContain("validate_vault");
   });
 });

@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T01:21:04.015Z",
+  "generatedAt": "2026-05-28T01:27:17.382Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1704,
-      "updatedAt": "2026-05-27T23:37:38.047Z",
+      "wordCount": 1730,
+      "updatedAt": "2026-05-28T01:27:07.137Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -4503,8 +4503,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8243,
-      "updatedAt": "2026-05-28T01:20:58.317Z",
+      "wordCount": 8247,
+      "updatedAt": "2026-05-28T01:27:07.136Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -6327,8 +6327,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyview/lib/graphproofrail.ts derives the compact graph proof model shown near the top of /ontology, and src/views/ontologyview/ui/OntologyViewPage.tsx renders it as an executable query proof strip. The strip is intentionally not a marketing card and no longer sits above the tree role contract. /ontology",
-      "wordCount": 176,
-      "updatedAt": "2026-05-27T23:24:40.730Z",
+      "wordCount": 180,
+      "updatedAt": "2026-05-28T01:27:07.138Z",
       "linksOut": []
     },
     {

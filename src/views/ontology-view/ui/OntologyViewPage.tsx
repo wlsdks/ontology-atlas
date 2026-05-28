@@ -2008,6 +2008,15 @@ function GraphProofRail({ model }: { model: GraphProofRailModel }) {
             <Clipboard size={12} aria-hidden />
             {t("copyCli")}
           </button>
+          <button
+            type="button"
+            onClick={() => void copyPack(model.syncGateText, t("copySyncGateCopied"))}
+            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.06)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
+            aria-label={t("copySyncGateAria")}
+          >
+            <Clipboard size={12} aria-hidden />
+            {t("copySyncGate")}
+          </button>
           <Link
             href="/ontology/insights/"
             className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.34)] hover:text-[color:var(--color-text-primary)]"
