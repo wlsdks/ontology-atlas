@@ -11,6 +11,7 @@ describe("formatBuilderProofPacket", () => {
       "0. oh-my-ontology agent-brief [vault] --verify-fallbacks --json --fallback-timeout-ms 15000 --fallback-slow-ms 5000 --fallback-concurrency 4",
     );
     expect(packet).toContain("1. oh-my-ontology agent-brief [vault] --graph-db-pack");
+    expect(packet).toContain("2. pnpm dogfood:graph-db");
     expect(packet).toContain("query_ontology({\"operation\":\"workspace_brief\"");
     expect(packet).toContain("query_ontology({\"operation\":\"query_plan\",\"targetOperation\":\"match_nodes\"");
     expect(packet).toContain("query_ontology({\"operation\":\"facets\"");
@@ -24,7 +25,7 @@ describe("formatBuilderProofPacket", () => {
       "oh-my-ontology match-edges [vault] --plan --from-kind capability --to-kind element --type elements",
     );
     expect(packet).toContain("oh-my-ontology match-nodes [vault]");
-    expect(packet).toContain("Run the setup gate first");
+    expect(packet).toContain("Run the setup gate first: self-check, graph DB pack, and runtime dogfood replay.");
     expect(packet).toContain("Report totalMatches, limited, and returned row count");
     expect(packet).toContain("report relationType and via");
     expect(packet).toContain("evidence.pathsComplete");

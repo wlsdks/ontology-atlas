@@ -1,5 +1,6 @@
 import {
   AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND,
+  AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
   formatAgentPostChangeSyncPacket,
 } from "@/shared/lib/ontology-tree";
 
@@ -24,6 +25,7 @@ export function formatBuilderProofPacket(selectedProofNodeId?: string | null): s
     "Setup gate:",
     `0. ${AGENT_GRAPH_DB_CLI_SELF_CHECK_COMMAND}`,
     "1. oh-my-ontology agent-brief [vault] --graph-db-pack",
+    `2. ${AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND}`,
     "",
     "MCP checks:",
   ];
@@ -97,7 +99,7 @@ export function formatBuilderProofPacket(selectedProofNodeId?: string | null): s
   lines.push(
     "",
     "Evidence checklist:",
-    "1. Run the setup gate first and use the graph DB pack when you need the whole scan queue.",
+    "1. Run the setup gate first: self-check, graph DB pack, and runtime dogfood replay.",
     "2. Report totalMatches, limited, and returned row count for every match_nodes or match_edges scan.",
     "3. For frontmatter-key scans, report relationType and via so stored keys like elements/dependencies are not mistaken for generic contains/relates edges.",
     "4. Treat scan rows as candidates until a node_profile, blast_radius, path, explain, or relation_check follow-up confirms the specific claim.",
