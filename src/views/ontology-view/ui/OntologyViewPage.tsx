@@ -2023,7 +2023,10 @@ function GraphProofRail({ model }: { model: GraphProofRailModel }) {
           <GraphProofMetric label={t("intents")} value={model.intentCount} />
           <GraphProofMetric label={t("mcpCalls")} value={model.mcpCallCount} />
           <GraphProofMetric label={t("cliFallbacks")} value={model.cliFallbackCount} />
-          <GraphProofMetric label={t("health")} value={t("healthValue")} />
+          <GraphProofMetric
+            label={t("health")}
+            value={t("runtimeChecksValue", { count: model.runtimeCheckCount })}
+          />
         </div>
         {primaryIntent ? (
           <div className="min-w-0 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1.5">

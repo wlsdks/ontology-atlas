@@ -2371,7 +2371,7 @@
       "mcpCalls": "MCP call",
       "cliFallbacks": "CLI fallback",
       "health": "Gate",
-      "healthValue": "query_plan first",
+      "runtimeChecksValue": "검사 {count}개",
       "sampleIntent": "Sample intent",
       "operations": "Operation",
       "cta": "인사이트 열기",

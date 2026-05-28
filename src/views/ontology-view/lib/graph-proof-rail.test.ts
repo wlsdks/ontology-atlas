@@ -27,6 +27,7 @@ describe("graph proof rail", () => {
     expect(model.intentCount).toBe(5);
     expect(model.mcpCallCount).toBe(12);
     expect(model.cliFallbackCount).toBe(13);
+    expect(model.runtimeCheckCount).toBe(10);
     expect(countExecutableCliFallbacks(pack)).toBe(11);
     expect(model.previewIntents).toEqual([
       "MATCH graph RETURN kind/domain/degree/relation facets LIMIT 10",

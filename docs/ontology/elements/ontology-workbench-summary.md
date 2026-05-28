@@ -28,4 +28,4 @@ When a tree node is selected, the summary repeats the canonical vault slug as th
 
 Tree projection warnings now sit under that same contract. The warning panel groups raw tree builder notes by cause, so multiple-parent edges are presented as a hierarchy projection limit while the handoff buttons point to Insights for full graph scans and Builder for relation-direction repair.
 
-The graph proof rail is rendered as a compact execution strip rather than a large card: it keeps MCP/CLI query-pack counts, one sample MATCH intent, operation chips, and copy actions visible, but it no longer dominates the browse page before the user reaches the actual tree.
+The graph proof rail is rendered as a compact execution strip rather than a large card: it keeps MCP/CLI query-pack counts, the `10 checks` dogfood runtime gate count, one sample MATCH intent, operation chips, and copy actions visible, but it no longer dominates the browse page before the user reaches the actual tree.

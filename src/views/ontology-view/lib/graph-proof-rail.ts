@@ -1,4 +1,5 @@
 import {
+  AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   countAgentGraphDbCliPackCommands,
   formatAgentGraphDbCliPack,
   formatAgentGraphDbQueryPack,
@@ -10,6 +11,7 @@ export interface GraphProofRailModel {
   intentCount: number;
   mcpCallCount: number;
   cliFallbackCount: number;
+  runtimeCheckCount: number;
   previewIntents: string[];
   operations: string[];
   queryPackText: string;
@@ -35,6 +37,7 @@ export function buildGraphProofRailModel(
     intentCount: pack.length,
     mcpCallCount,
     cliFallbackCount: countAgentGraphDbCliPackCommands(pack),
+    runtimeCheckCount: AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
     previewIntents: pack
       .map((item) => item.intent)
       .filter((intent): intent is string => intent.length > 0)
