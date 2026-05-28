@@ -58,7 +58,7 @@ import {
   buildBuilderEntryAnchors,
   type BuilderEntryAnchor,
 } from "../lib/builder-entry-anchors";
-import { formatBuilderProofPacket } from "../lib/builder-proof-packet";
+import { formatBuilderGuardPacket, formatBuilderProofPacket } from "../lib/builder-proof-packet";
 import { getBuilderSourceStatus } from "../lib/builder-source-status";
 
 /**
@@ -386,6 +386,15 @@ function BuilderWriteSummary({
       chip: pendingRelation ? t("guardChipReview") : t("guardChip"),
       flow: pendingRelation ? t("guardFlowReview") : t("guardFlow"),
       accent: pendingRelation ? "indigo" : "neutral",
+      copyLabel: pendingRelation ? t("guardCopyReview") : t("guardCopy"),
+      copyAriaLabel: pendingRelation
+        ? t("guardCopyAriaReview", {
+            source: pendingRelation.sourceSlug,
+            target: pendingRelation.targetSlug,
+          })
+        : t("guardCopyAria"),
+      copyText: formatBuilderGuardPacket(pendingRelation),
+      copySuccess: t("guardCopyCopied"),
     },
     {
       icon: <Network size={12} />,
@@ -465,14 +474,16 @@ function BuilderWriteSummary({
             <p className="mt-1 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
               {item.flow}
             </p>
-            {item.href && item.actionLabel ? (
+            {item.href || item.copyText || item.syncCopyText ? (
               <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                <Link
-                  href={item.href}
-                  className="inline-flex text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:text-[color:var(--color-text-primary)]"
-                >
-                  {item.actionLabel}
-                </Link>
+                {item.href && item.actionLabel ? (
+                  <Link
+                    href={item.href}
+                    className="inline-flex text-[10px] font-[var(--font-weight-signature)] text-[color:rgba(159,170,235,0.95)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                  >
+                    {item.actionLabel}
+                  </Link>
+                ) : null}
                 {item.copyText && item.copyLabel && item.copyAriaLabel && item.copySuccess ? (
                   <button
                     type="button"

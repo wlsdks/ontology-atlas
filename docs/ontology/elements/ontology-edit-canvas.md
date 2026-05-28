@@ -17,4 +17,6 @@ Persisted canvas coordinates are treated as a complete layout only when enough n
 
 The builder onboarding copy now matches that same contract: vault-to-vault edges are described as opening a write preview and relation preflight before save, not as automatic writes. This keeps the empty-vault coach mark aligned with the `Guard` status cell and the relation confirmation panel, so first-time users learn the graph write safety loop before drawing their first saved relation.
 
+The `Guard` status cell is now executable even before the relation confirmation modal is open. It can copy a builder relation guard packet with bounded `all_paths` planning, `relation_check`, `explain_relation`, CLI fallbacks, the all_paths evidence contract, and the shared post-change sync gate. When a relation is queued, that same packet is scoped to the concrete source, inferred key, and target, so the write strip moves directly from canvas intent into graph DB-style verification.
+
 The builder page header now follows the operations-page hierarchy from the design system: a small mono `Ontology Builder` caption and a stronger Korean h1. This keeps `/ontology/edit` from reading like a secondary diagram toolbar and aligns it with the Insights query surface while preserving the dense desktop canvas layout.

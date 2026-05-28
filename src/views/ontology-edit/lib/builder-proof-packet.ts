@@ -109,3 +109,53 @@ export function formatBuilderProofPacket(selectedProofNodeId?: string | null): s
   );
   return lines.join("\n");
 }
+
+export interface BuilderGuardPacketProposal {
+  sourceSlug: string;
+  targetSlug: string;
+  inferredKey: string;
+}
+
+export function formatBuilderGuardPacket(proposal?: BuilderGuardPacketProposal | null): string {
+  const source = proposal?.sourceSlug ?? "<source-slug>";
+  const target = proposal?.targetSlug ?? "<target-slug>";
+  const relationType = proposal?.inferredKey ?? "<relation-type>";
+  const sourceArg = shellArg(source);
+  const targetArg = shellArg(target);
+  const relationTypeArg = shellArg(relationType);
+  const lines = [
+    "# Builder relation guard",
+    "",
+    "- Surface: /ontology/edit",
+    `- Scope: ${
+      proposal
+        ? `${proposal.sourceSlug}.${proposal.inferredKey} -> ${proposal.targetSlug}`
+        : "next canvas relation"
+    }`,
+    "- Boundary: source frontmatter only; target file remains unchanged",
+    "- Loop: Source -> Draft -> Guard -> Proof",
+    "",
+    "MCP guard checks:",
+    `1. ${mcpCall({ operation: "query_plan", targetOperation: "all_paths", from: source, to: target, maxHops: 4, searchBudget: 1000, limit: 10 })}`,
+    `2. ${mcpCall({ operation: "all_paths", from: source, to: target, maxHops: 4, searchBudget: 1000, limit: 10 })}`,
+    `3. ${mcpCall({ operation: "relation_check", from: source, to: target, type: relationType })}`,
+    `4. ${mcpCall({ operation: "explain_relation", from: source, to: target, type: relationType })}`,
+    "",
+    "CLI guard fallbacks:",
+    `1. oh-my-ontology all-paths ${sourceArg} ${targetArg} [vault] --plan --max-hops 4 --limit 10 --search-budget 1000`,
+    `2. oh-my-ontology all-paths ${sourceArg} ${targetArg} [vault] --max-hops 4 --limit 10 --search-budget 1000`,
+    `3. oh-my-ontology relation-check ${sourceArg} ${targetArg} ${relationTypeArg} [vault]`,
+    `4. oh-my-ontology explain ${sourceArg} ${targetArg} [vault] --type ${relationTypeArg}`,
+    "",
+    "Guard checklist:",
+    "1. Confirm the inferred key names the frontmatter meaning, not just canvas direction.",
+    "2. Treat all_paths as partial evidence unless evidence.pathsComplete is true.",
+    "3. Save only when relation_check says safe_to_add or the duplicate/review state is intentional.",
+    "4. After saving, run the post-change sync gate before claiming the graph is healthy.",
+    "",
+    "Post-change sync gate:",
+    formatAgentPostChangeSyncPacket(),
+  ];
+
+  return lines.join("\n");
+}

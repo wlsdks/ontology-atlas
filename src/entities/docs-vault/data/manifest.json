@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T02:28:18.529Z",
+  "generatedAt": "2026-05-28T02:35:48.281Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -3856,8 +3856,8 @@
         }
       ],
       "excerpt": "This document is maintained based on Section 3 of the design spec. For the original Linear specification, see designreferences/DESIGNlinear.md. ohmyontology should feel like a compact graph workbench, not a documentation portal with a graph attached. The visual direction is still restrained: dark or light neutral surfa",
-      "wordCount": 1730,
-      "updatedAt": "2026-05-28T01:27:07.137Z",
+      "wordCount": 1759,
+      "updatedAt": "2026-05-28T02:33:32.381Z",
       "linksOut": [
         "design-references/DESIGN-linear"
       ]
@@ -3906,8 +3906,8 @@
         }
       ],
       "excerpt": "Context Atlas is the userfacing macOS app name for the ohmyontology project. ohmyontology stays the repository, CLI, MCP, and current release asset identity so existing package and GitHub Release contracts remain stable. ohmyontology can become a macOSinstalled app without changing the source of truth. The desktop app ",
-      "wordCount": 4095,
-      "updatedAt": "2026-05-28T02:28:08.964Z",
+      "wordCount": 4108,
+      "updatedAt": "2026-05-28T02:33:21.464Z",
       "linksOut": []
     },
     {
@@ -3964,8 +3964,8 @@
         }
       ],
       "excerpt": "Maintaineronly checks live here so the public README stays readable. Use this page when you touch mcp/, cli/, package manifests, release scripts, or the dogfood ontology. Run this before pushing broad docs, package, MCP, or web changes: For userfacing UI changes, add the relevant Playwright route check. | Area | First ",
-      "wordCount": 6414,
-      "updatedAt": "2026-05-28T02:28:08.965Z",
+      "wordCount": 6418,
+      "updatedAt": "2026-05-28T02:33:21.464Z",
       "linksOut": []
     },
     {
@@ -5140,8 +5140,8 @@
       },
       "headings": [],
       "excerpt": "ohmyontology should explore a macOSfirst desktop app as a local install path over the same markdown vault. The quality bar is Obsidian / Claude Desktop / Codex Desktop class: a stable native .app, trustworthy vaultfolder permission UX, recent vault recall, clear local data location, offline operation, and visible Claud",
-      "wordCount": 2865,
-      "updatedAt": "2026-05-28T02:28:08.965Z",
+      "wordCount": 2869,
+      "updatedAt": "2026-05-28T02:33:21.464Z",
       "linksOut": []
     },
     {
@@ -6307,8 +6307,8 @@
       },
       "headings": [],
       "excerpt": "src/views/ontologyedit/ui/OntologyEditCanvas.tsx renders the xyflow canvas inside /ontology/edit, while src/views/ontologyedit/ui/OntologyEditPage.tsx now owns the pagelevel graph entrypoint rail above that canvas. The canvas turns the local vault manifest into editable graph nodes and edges, keeps vault nodes draggabl",
-      "wordCount": 459,
-      "updatedAt": "2026-05-28T00:02:23.236Z",
+      "wordCount": 531,
+      "updatedAt": "2026-05-28T02:35:43.771Z",
       "linksOut": []
     },
     {

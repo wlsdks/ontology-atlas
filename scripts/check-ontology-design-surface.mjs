@@ -58,6 +58,7 @@ export const ONTOLOGY_DESIGN_REQUIRED_SURFACE_MARKERS = [
     markers: [
       "function BuilderWriteSummary",
       "function BuilderCanvasEntryRail",
+      "formatBuilderGuardPacket",
       "formatBuilderProofPacket",
       "formatAgentPostChangeSyncPacket",
     ],

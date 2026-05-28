@@ -26,8 +26,8 @@ export const DESKTOP_SMOKE_ROUTE_TITLES = {
 };
 export const DESKTOP_SMOKE_ROUTE_TEXT = {
   "/ontology": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "canonical slug"],
-  "en:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "active slug"],
-  "ko:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "활성 slug"],
+  "en:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "active slug", "Copy guard"],
+  "ko:/ontology/edit": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db", "활성 slug", "Guard 복사"],
   "/ontology/insights": ["Graph DB proof", "Browse", "Write", "Query", "dogfood:graph-db"],
 };
 

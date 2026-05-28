@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatBuilderProofPacket } from "./builder-proof-packet";
+import { formatBuilderGuardPacket, formatBuilderProofPacket } from "./builder-proof-packet";
 
 describe("formatBuilderProofPacket", () => {
   it("formats an overview proof packet when no node is selected", () => {
@@ -87,5 +87,42 @@ describe("formatBuilderProofPacket", () => {
     const packet = formatBuilderProofPacket("capabilities/bob's-builder");
 
     expect(packet).toContain("oh-my-ontology node 'capabilities/bob'\\''s-builder' [vault]");
+  });
+
+  it("formats a relation guard packet before a canvas edge is saved", () => {
+    const packet = formatBuilderGuardPacket({
+      sourceSlug: "capabilities/builder",
+      targetSlug: "elements/frontmatter-writer",
+      inferredKey: "elements",
+    });
+
+    expect(packet).toContain("# Builder relation guard");
+    expect(packet).toContain(
+      "- Scope: capabilities/builder.elements -> elements/frontmatter-writer",
+    );
+    expect(packet).toContain("- Boundary: source frontmatter only; target file remains unchanged");
+    expect(packet).toContain(
+      'query_ontology({"operation":"query_plan","targetOperation":"all_paths","from":"capabilities/builder","to":"elements/frontmatter-writer"',
+    );
+    expect(packet).toContain(
+      'query_ontology({"operation":"relation_check","from":"capabilities/builder","to":"elements/frontmatter-writer","type":"elements"})',
+    );
+    expect(packet).toContain(
+      "oh-my-ontology relation-check 'capabilities/builder' 'elements/frontmatter-writer' 'elements' [vault]",
+    );
+    expect(packet).toContain(
+      "oh-my-ontology explain 'capabilities/builder' 'elements/frontmatter-writer' [vault] --type 'elements'",
+    );
+    expect(packet).toContain("evidence.pathsComplete");
+    expect(packet).toContain("# Post-change ontology sync gate");
+  });
+
+  it("formats a placeholder guard packet when no relation is queued", () => {
+    const packet = formatBuilderGuardPacket();
+
+    expect(packet).toContain("- Scope: next canvas relation");
+    expect(packet).toContain("<source-slug>");
+    expect(packet).toContain("<target-slug>");
+    expect(packet).toContain("<relation-type>");
   });
 });
