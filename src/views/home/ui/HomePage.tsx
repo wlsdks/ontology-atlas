@@ -1300,7 +1300,11 @@ export function HomePage() {
                     canvas. sigmaVisibleCount 은 Sigma 가 첫 mount 후 reports.
                     null 일 땐 가짜 카드 깜빡임 회피 위해 mount 만 기다림. */}
                 {sigmaVisibleCount !== null && sigmaVisibleCount <= 1 ? (
-                  <TopologyEmptyState projectCount={sigmaVisibleCount} />
+                  <TopologyEmptyState
+                    projectCount={sigmaVisibleCount}
+                    canCreateNode={canCreateNode}
+                    onCreateNode={() => setCreateNodeOpen(true)}
+                  />
                 ) : null}
                 <SigmaTopology
                   key={localGraphRoot ?? "__root__"}

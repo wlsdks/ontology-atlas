@@ -30,6 +30,7 @@ const messages = {
       bodyNoProjectsDownload: "데스크톱 앱을 받으세요",
       bodyNoDeps: "관계를 추가해 보세요",
       crossViewHint: "트리에서 전체 ontology 를 볼 수 있어요",
+      ctaCreateNode: "첫 노드 만들기",
       ctaTree: "트리에서 보기",
       ctaBuilder: "빌더 열기",
       ctaOpenVaultPicker: "vault 열기",
@@ -68,5 +69,23 @@ describe("TopologyEmptyState", () => {
       expect(link.className).toContain("focus-visible:ring-2");
       expect(link.className).toContain("focus-visible:outline-none");
     }
+  });
+
+  it("기본(canCreateNode 미지정) — 노드 생성 CTA 없음", () => {
+    renderEmpty(0);
+    expect(screen.queryByTestId("empty-create-node")).not.toBeInTheDocument();
+  });
+
+  it("canCreateNode — '첫 노드 만들기' 1차 CTA 노출 + 클릭 시 onCreateNode (S6)", () => {
+    const onCreateNode = vi.fn();
+    render(
+      <NextIntlClientProvider locale="ko" messages={messages}>
+        <TopologyEmptyState projectCount={0} canCreateNode onCreateNode={onCreateNode} />
+      </NextIntlClientProvider>,
+    );
+    const btn = screen.getByTestId("empty-create-node");
+    expect(btn).toHaveTextContent("첫 노드 만들기");
+    btn.click();
+    expect(onCreateNode).toHaveBeenCalledTimes(1);
   });
 });

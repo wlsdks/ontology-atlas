@@ -2338,6 +2338,7 @@
       "bodyNoProjectsPicker": "Open a local vault folder or create your first project in the builder. Fill in `dependencies:` in the frontmatter and lines appear here automatically.",
       "bodyNoDeps": "Add a single dependency between two projects (`dependencies:` frontmatter) and a line will appear here automatically. The builder canvas can also draw them via drag.",
       "crossViewHint": "This view only shows *project dependencies*. Other node kinds — domains, capabilities, elements — live in the tree and the builder.",
+      "ctaCreateNode": "Create your first node",
       "ctaTree": "See everything in the tree",
       "ctaBuilder": "Add a dependency in the builder",
       "ctaOpenVaultDownload": "Download macOS app",
