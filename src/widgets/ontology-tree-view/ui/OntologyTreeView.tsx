@@ -624,7 +624,7 @@ export function OntologyTreeView({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-1.5">
+      <div className="flex items-center gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-3 py-1.5 transition-colors focus-within:border-[color:var(--color-indigo-accent)]">
         <Search size={12} className="shrink-0 text-[color:var(--color-text-quaternary)]" />
         <input
           type="search"

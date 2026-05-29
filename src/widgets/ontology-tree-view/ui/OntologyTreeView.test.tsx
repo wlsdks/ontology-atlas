@@ -68,6 +68,15 @@ describe("OntologyTreeView — basic render", () => {
     expect(screen.getByText("역량")).toBeInTheDocument();
   });
 
+  it("검색 입력 컨테이너가 키보드 focus 표시(focus-within border)를 가진다 (a11y)", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+    const search = screen.getByRole("searchbox");
+    const container = search.parentElement;
+    // 입력의 focus:outline-none 을 컨테이너 focus-within 보더가 대체 — 키보드
+    // 사용자가 검색창 focus 를 볼 수 있어야 한다 (WCAG 2.4.7).
+    expect(container?.className).toContain("focus-within:border");
+  });
+
   it("treeitem 에 깊이별 aria-level(1-based) 부여 (WAI-ARIA tree)", () => {
     render(<OntologyTreeView result={makeResult()} />);
     // Sample(depth0)→인증(depth1)→로그인(depth2) = aria-level 1/2/3.
