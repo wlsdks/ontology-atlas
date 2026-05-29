@@ -1601,47 +1601,43 @@ function SigmaTopologyImpl({
 
   useEffect(() => {
     searchQueryRef.current = searchQuery;
+    // dim/highlight 피드백은 키 입력마다 즉시.
     sigmaRef.current?.refresh();
 
-    // 검색어 매칭 노드들의 중심·평균 좌표를 계산해 카메라 이동. 매칭이 뷰포트
-    // 밖에 있으면 dim만 보고 어디 있는지 못 찾는 문제를 방지.
     const q = searchQuery?.trim().toLowerCase();
     if (!q || !sigmaRef.current) return;
-    let count = 0;
-    let sumX = 0;
-    let sumY = 0;
-    graph.forEachNode((_, attrs) => {
-      if (
-        attrs.projectSlug.toLowerCase().includes(q) ||
-        attrs.label.toLowerCase().includes(q)
-      ) {
-        sumX += attrs.x;
-        sumY += attrs.y;
+    // 검색어 매칭 노드로 카메라 이동(매칭이 뷰포트 밖이면 dim만 보고 위치를
+    // 못 찾는 문제 방지). 단 이 작업은 그래프 전체를 훑고(O(N)) 카메라를
+    // animate 하므로, 키 입력마다 돌면 카메라가 튀고 비싸다 → 타이핑이 멈춘
+    // 뒤 1회만 실행하도록 디바운스. 매칭 판정은 build 시 계산해 둔 searchText
+    // (slug\nlabel lowercased) 재사용 — per-keystroke toLowerCase 재계산 제거.
+    const handle = window.setTimeout(() => {
+      const renderer = sigmaRef.current;
+      if (!renderer) return;
+      let count = 0;
+      let targetX = 0;
+      let targetY = 0;
+      let found = false;
+      graph.forEachNode((id, attrs) => {
+        const hay =
+          attrs.searchText ??
+          `${attrs.projectSlug}\n${attrs.label}`.toLowerCase();
+        if (!hay.includes(q)) return;
         count += 1;
-      }
-    });
-    if (count === 0) return;
-    const cx = sumX / count;
-    const cy = sumY / count;
-    // 간이 방법: 매칭 노드의 display data 중 평균 근처 대표점을 기준으로 이동.
-    void cx;
-    void cy;
-    let target = { x: 0.5, y: 0.5 };
-    graph.forEachNode((id, attrs) => {
-      if (
-        attrs.projectSlug.toLowerCase().includes(q) ||
-        attrs.label.toLowerCase().includes(q)
-      ) {
-        const disp = sigmaRef.current?.getNodeDisplayData(id);
-        if (disp) target = { x: disp.x, y: disp.y };
-        return;
-      }
-    });
-    const camera = sigmaRef.current.getCamera();
-    camera.animate(
-      { x: target.x, y: target.y, ratio: count === 1 ? 0.45 : 0.8 },
-      { duration: 460, easing: CAMERA_EASING },
-    );
+        const disp = renderer.getNodeDisplayData(id);
+        if (disp) {
+          targetX = disp.x;
+          targetY = disp.y;
+          found = true;
+        }
+      });
+      if (count === 0 || !found) return;
+      renderer.getCamera().animate(
+        { x: targetX, y: targetY, ratio: count === 1 ? 0.45 : 0.8 },
+        { duration: 460, easing: CAMERA_EASING },
+      );
+    }, 220);
+    return () => window.clearTimeout(handle);
   }, [searchQuery, graph]);
 
   // d3-force 파라미터 실시간 튜닝
