@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import {
   buildVaultMarkdown,
+  vaultFolderForKind,
   vaultManifest as staticVaultManifestRaw,
   type VaultManifest,
 } from "@/entities/docs-vault";
@@ -660,21 +661,11 @@ export function OntologyEditPage() {
       setSavingId(nodeId);
       try {
         if (hasLiveVault) {
-          // vault `.md` 직접 작성. 경로 = `${kind}s/${slug}.md`
+          // vault `.md` 직접 작성. 경로 = `${폴더}/${slug}.md`
           // (capabilities/auth-platform — dogfood vault 와 같은 폴더 패턴).
-          // kind 복수형: capability→capabilities, element→elements,
-          // domain→domains, project→projects. 그 외는 kind 그대로 +s.
-          const folder =
-            node.kind === "capability"
-              ? "capabilities"
-              : node.kind === "element"
-                ? "elements"
-                : node.kind === "domain"
-                  ? "domains"
-                  : node.kind === "project"
-                    ? "projects"
-                    : `${node.kind}s`;
-          const vaultSlug = `${folder}/${slug}`;
+          // 폴더 복수형 규칙은 entities/docs-vault 의 vaultFolderForKind 로
+          // 단일화 (토폴로지 노드 생성 S2 와 drift 방지).
+          const vaultSlug = `${vaultFolderForKind(node.kind)}/${slug}`;
           const md = buildVaultMarkdown({
             kind: node.kind,
             title: node.title,
