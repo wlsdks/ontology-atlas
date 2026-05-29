@@ -2324,6 +2324,16 @@
       "primeAgentCopied": "Agent briefing copied — readiness {status} ({score}/100). Paste into Claude Code / Codex / Cursor.",
       "primeAgentCopyError": "Couldn't copy the briefing. Try again."
     },
+    "changes": {
+      "ariaLabel": "Ontology change tracking",
+      "eyebrow": "Changes",
+      "mark": "Mark baseline",
+      "remark": "Reset baseline to now",
+      "clear": "Clear",
+      "emptyHint": "Mark a baseline to track what changes from now — added, edited, and removed concepts appear here as you and your AI agent edit the vault. Ideal for reviewing a session in a meeting.",
+      "none": "No changes since baseline",
+      "summary": "{added} added · {changed} edited · {removed} removed"
+    },
     "stat": {
       "ariaLabel": "Ontology tree role and source status",
       "role": "Tree role",

@@ -21,15 +21,19 @@ import {
   buildOntologyEgoSubgraph,
   buildOntologyReachability,
   buildOntologyTree,
+  computeOntologyChangeset,
   formatAgentPostChangeSyncPacket,
   countTreeNodes,
   selectAgentQueryEntrypoints,
+  snapshotOntology,
   type OntologyEgoSubgraph,
   type OntologyReachability,
   type OntologyReachabilityDirection,
+  type OntologySnapshot,
   type OntologyTreeBuildResult,
 } from "@/shared/lib/ontology-tree";
 import { copyText } from "@/shared/lib/copy-text";
+import { OntologyChangePanel } from "./parts/OntologyChangePanel";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { GlobalSearch, MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
 import { OntologyEgoGraph } from "@/widgets/ontology-ego-graph";
@@ -187,6 +191,24 @@ export function OntologyViewPage() {
       show(t('actions.primeAgentCopyError'), "error");
     }
   }, [agentBriefing, show, t]);
+
+  // 변경점(changeset) — 세션 baseline 스냅샷 대비 added/changed/removed. baseline
+  // 안 찍으면 빈 changeset. 회의·설계 리뷰에서 "지금까지 뭐 바뀌었나" 시각화.
+  const [changeBaseline, setChangeBaseline] = useState<OntologySnapshot | null>(null);
+  const ontologyChangeset = useMemo(
+    () => computeOntologyChangeset(changeBaseline, insight?.nodes ?? [], insight?.edges ?? []),
+    [changeBaseline, insight],
+  );
+  const nodeById = useMemo(() => {
+    const map = new Map<string, KnowledgeGraphNode>();
+    if (insight) for (const n of insight.nodes) map.set(n.id, n);
+    return map;
+  }, [insight]);
+  const markChangeBaseline = useCallback(() => {
+    if (!insight) return;
+    setChangeBaseline(snapshotOntology(insight.nodes, insight.edges, Date.now()));
+  }, [insight]);
+  const clearChangeBaseline = useCallback(() => setChangeBaseline(null), []);
 
   // treeResult / insight 가 동일할 때 매 selection re-render 마다 재계산
   // 회피. countTreeNodes 는 트리 walk + filter 는 O(N) — 작아도 매 클릭마다
@@ -379,6 +401,19 @@ export function OntologyViewPage() {
           </div>
         </div>
       </section>
+
+      {insight ? (
+        <div className="mb-6">
+          <OntologyChangePanel
+            changeset={ontologyChangeset}
+            hasBaseline={changeBaseline !== null}
+            nodeById={nodeById}
+            onMarkBaseline={markChangeBaseline}
+            onClearBaseline={clearChangeBaseline}
+            onSelectNode={(node) => selectNode(node)}
+          />
+        </div>
+      ) : null}
 
       <GraphWorkbenchSummary
         treeNodes={totalNodes}
