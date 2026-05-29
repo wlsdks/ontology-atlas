@@ -22,6 +22,10 @@ import { buildDocsVaultHref } from "@/entities/docs-vault";
 import type { VaultRelationKey } from "@/entities/docs-vault/lib/relation-proposal";
 import { InlineFieldEdit, type InlineFieldEditLabels } from "./InlineFieldEdit";
 import {
+  NodeExplanationEdit,
+  type NodeExplanationEditLabels,
+} from "./NodeExplanationEdit";
+import {
   RelationCreateForm,
   type RelationCreateFormLabels,
   type RelationTargetOption,
@@ -133,6 +137,16 @@ interface Props {
     onCreate: (input: { targetSlug: string; relationKey: VaultRelationKey }) => void | Promise<void>;
     labels: RelationCreateFormLabels;
   } | null;
+  /**
+   * S4.1b — "문서 = 노드 설명". writable vault 면 HomePage 가 *전체 본문*(raw 에서
+   * 로드, manifest excerpt 아님)과 onSave 를 주입 → 읽기 전용 summary details 대신
+   * NodeExplanationEdit 로 본문 편집. null 이면 기존 summary details(읽기) 유지.
+   */
+  explanationEdit?: {
+    value: string;
+    onSave: (next: string) => void | Promise<void>;
+    labels: NodeExplanationEditLabels;
+  } | null;
 }
 
 export function TopologyOntologyDrawer({
@@ -144,6 +158,7 @@ export function TopologyOntologyDrawer({
   labels,
   domainEdit,
   relationEdit,
+  explanationEdit,
 }: Props) {
   const model = buildTopologyOntologyDrawerModel(node, nodes, edges);
   const toast = useToast();
@@ -353,7 +368,15 @@ export function TopologyOntologyDrawer({
         </div>
       ) : null}
 
-      {node.summary ? (
+      {explanationEdit ? (
+        <div className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-explanation-edit">
+          <NodeExplanationEdit
+            value={explanationEdit.value}
+            onSave={explanationEdit.onSave}
+            labels={explanationEdit.labels}
+          />
+        </div>
+      ) : node.summary ? (
         <details>
           <summary className="cursor-pointer list-none font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-secondary)]">
             설명

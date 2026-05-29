@@ -342,6 +342,31 @@ describe("TopologyOntologyDrawer", () => {
     expect(screen.queryByTestId("drawer-domain-edit")).not.toBeInTheDocument();
   });
 
+  it("explanationEdit 주입 — summary details 대신 본문 편집기 + 저장 onSave", async () => {
+    const onSave = vi.fn();
+    render(
+      <TopologyOntologyDrawer
+        node={node("capabilities/auth")}
+        nodes={[node("capabilities/auth")]}
+        edges={[]}
+        onClose={() => {}}
+        closeLabel="close"
+        labels={labels}
+        explanationEdit={{
+          value: "auth flow explanation",
+          onSave,
+          labels: { heading: "설명", edit: "편집", save: "저장", cancel: "취소", placeholder: "...", empty: "없음", saving: "저장중" },
+        }}
+      />,
+    );
+    const section = screen.getByTestId("drawer-explanation-edit");
+    expect(section).toHaveTextContent("auth flow explanation");
+    fireEvent.click(screen.getByTestId("node-explanation-edit-button"));
+    fireEvent.change(screen.getByTestId("node-explanation-input"), { target: { value: "updated body" } });
+    fireEvent.click(screen.getByTestId("node-explanation-save"));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith("updated body"));
+  });
+
   it("domainEdit 주입 — 인라인 편집 + 저장 시 onSave 호출", async () => {
     const onSave = vi.fn();
     render(
