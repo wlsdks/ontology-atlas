@@ -39,7 +39,7 @@ import {
   useOntologyInsight,
 } from "@/features/vault-ontology";
 import { OperationsNav } from "@/widgets/operations-nav";
-import { Tooltip, useToast } from "@/shared/ui";
+import { StaggeredFadeIn, Tooltip, useToast } from "@/shared/ui";
 import {
   buildAgentContextBundle,
   buildNodeProfileCliCommand,
@@ -355,8 +355,9 @@ export function OntologyViewPage() {
       {/* tree contract strip. /ontology 트리는 전체 graph DB 편집기가 아니라
           hierarchy browse index 라는 역할을 명확히 노출한다. 관계 작성은
           Builder, graph scan 은 Insights 로 이어지게 분리. */}
-      <section
-        aria-label={t('stat.ariaLabel')}
+      <StaggeredFadeIn
+        as="section"
+        ariaLabel={t('stat.ariaLabel')}
         className={
           (() => {
             const cols = 3 + ((treeResult?.warnings.length ?? 0) > 0 ? 1 : 0);
@@ -400,7 +401,7 @@ export function OntologyViewPage() {
             }}
           />
         ) : null}
-      </section>
+      </StaggeredFadeIn>
 
       <GraphProofRail model={graphProofRailModel} />
 
@@ -2227,6 +2228,7 @@ function Stat({
   hintFull,
   className,
   ariaLabel,
+  style,
 }: {
   label: string;
   value: string;
@@ -2243,6 +2245,8 @@ function Stat({
   /** grid 안에서 col-span 등 layout 변형. */
   className?: string;
   ariaLabel?: string;
+  /** StaggeredFadeIn 등 composition 컨테이너가 주입하는 inline style 전달. */
+  style?: React.CSSProperties;
 }) {
   const accentClass =
     accent === "amber"
@@ -2277,6 +2281,7 @@ function Stat({
     return (
       <Link
         href={href}
+        style={style}
         className={`${wrapperClass} block transition-colors hover:border-[color:rgba(94,106,210,0.32)]`}
       >
         {body}
@@ -2289,11 +2294,12 @@ function Stat({
         type="button"
         onClick={onClick}
         aria-label={ariaLabel}
+        style={style}
         className={`${wrapperClass} block w-full text-left transition-colors hover:border-[color:rgba(94,106,210,0.32)]`}
       >
         {body}
       </button>
     );
   }
-  return <div className={wrapperClass}>{body}</div>;
+  return <div className={wrapperClass} style={style}>{body}</div>;
 }

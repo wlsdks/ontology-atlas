@@ -16,6 +16,8 @@ interface StaggeredFadeInProps {
   className?: string;
   /** Y 이동량 (px). default 8 — Toss/Apple 톤 살짝. */
   translateY?: number;
+  /** 컨테이너에 그대로 전달할 aria-label (의미 있는 region wrapper 용). */
+  ariaLabel?: string;
 }
 
 /**
@@ -44,6 +46,7 @@ export function StaggeredFadeIn({
   as: Tag = 'div',
   className,
   translateY = 8,
+  ariaLabel,
 }: StaggeredFadeInProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -60,7 +63,7 @@ export function StaggeredFadeIn({
   const items = Array.isArray(children) ? children : [children];
 
   return (
-    <Tag className={className}>
+    <Tag className={className} aria-label={ariaLabel}>
       {items.map((child, i) =>
         applyTransitionStyle(child, i, {
           mounted,
