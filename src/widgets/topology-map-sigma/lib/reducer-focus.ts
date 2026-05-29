@@ -1,4 +1,4 @@
-import { INDIGO_FOCUS, INDIGO_HIGHLIGHT } from '@/shared/config/indigo-tokens';
+import { INDIGO_FOCUS, INDIGO_HIGHLIGHT, indigoRgba } from '@/shared/config/indigo-tokens';
 import type { SigmaNodeAttrs } from './graph-build';
 
 /**
@@ -17,6 +17,14 @@ import type { SigmaNodeAttrs } from './graph-build';
  */
 
 export const FOCUS_DENSE_THRESHOLD = 8;
+
+// focus / neighbor tint 의 인디고 highlight 톤 — indigo-tokens 단일 진실원에서
+// 파생(흩뿌린 rgba 리터럴 제거). 모듈 로드 시 1회 계산이라 reducer hot-path
+// (노드별·프레임별 호출)에 per-call 문자열 할당을 더하지 않는다.
+const FOCUS_BORDER = indigoRgba('highlight', 0.95);
+const FOCUS_OUTER_BORDER = indigoRgba('highlight', 0.22);
+const NEIGHBOR_DENSE_COLOR = indigoRgba('highlight', 0.92);
+const NEIGHBOR_HUB_BORDER = indigoRgba('highlight', 0.6);
 
 export interface FocusContext {
   focusNode: string;
@@ -51,8 +59,8 @@ export function applyFocusOverlay(
     return {
       ...attrs,
       color: INDIGO_HIGHLIGHT,
-      borderColor: 'rgba(139, 151, 255, 0.95)',
-      outerBorderColor: 'rgba(139, 151, 255, 0.22)',
+      borderColor: FOCUS_BORDER,
+      outerBorderColor: FOCUS_OUTER_BORDER,
       size: attrs.size * focusScale * ctx.bounceFactor,
       zIndex: 10,
       label: undefined,
@@ -78,7 +86,7 @@ export function applyFocusOverlay(
     if (denseFocus) {
       return {
         ...attrs,
-        color: 'rgba(139, 151, 255, 0.92)',
+        color: NEIGHBOR_DENSE_COLOR,
         borderColor: 'rgba(180, 190, 255, 0.7)',
         zIndex: 9,
       };
@@ -89,7 +97,7 @@ export function applyFocusOverlay(
       ...attrs,
       color: attrs.isHub ? INDIGO_FOCUS : 'rgba(190, 200, 225, 0.92)',
       borderColor: attrs.isHub
-        ? 'rgba(139, 151, 255, 0.6)'
+        ? NEIGHBOR_HUB_BORDER
         : 'rgba(220, 230, 245, 0.35)',
       zIndex: 9,
       label: attrs.label,

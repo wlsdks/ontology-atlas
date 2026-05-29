@@ -1,15 +1,17 @@
+import { indigoRgba } from '@/shared/config/indigo-tokens';
 import type { SigmaNodeAttrs } from './graph-build';
 
 /**
  * Audit overlay 색·border 토큰. SigmaTopology 전체에서 단일 진실원으로
- * 쓰여 reducer 와 legend / overlay UI 가 같은 톤 공유.
+ * 쓰여 reducer 와 legend / overlay UI 가 같은 톤 공유. promotion 톤은
+ * indigo highlight — indigo-tokens 에서 파생해 인디고 단일 진실원 유지.
  */
 export const AUDIT_STALE_COLOR = 'rgba(232, 196, 162, 0.96)';
 export const AUDIT_STALE_BORDER = 'rgba(232, 196, 162, 0.55)';
 export const AUDIT_ORPHAN_COLOR = 'rgba(204, 150, 120, 0.92)';
 export const AUDIT_ORPHAN_BORDER = 'rgba(204, 150, 120, 0.5)';
-export const AUDIT_PROMOTION_COLOR = 'rgba(139, 151, 255, 0.96)';
-export const AUDIT_PROMOTION_BORDER = 'rgba(139, 151, 255, 0.65)';
+export const AUDIT_PROMOTION_COLOR = indigoRgba('highlight', 0.96);
+export const AUDIT_PROMOTION_BORDER = indigoRgba('highlight', 0.65);
 
 /**
  * audit overlay 가 켜졌을 때 노드 분류. 한 노드가 여러 set 에 속해도

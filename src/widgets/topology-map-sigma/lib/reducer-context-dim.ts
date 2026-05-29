@@ -1,4 +1,4 @@
-import { INDIGO_HIGHLIGHT } from '@/shared/config/indigo-tokens';
+import { INDIGO_HIGHLIGHT, indigoRgba } from '@/shared/config/indigo-tokens';
 import type { SigmaNodeAttrs } from './graph-build';
 
 /**
@@ -18,8 +18,8 @@ import type { SigmaNodeAttrs } from './graph-build';
 export const CONTEXT_DIM_COLOR = 'rgba(120, 125, 140, 0.08)';
 export const CONTEXT_HOVER_DIM_COLOR = 'rgba(120, 125, 140, 0.2)';
 export const CONTEXT_HIGHLIGHT_COLOR = INDIGO_HIGHLIGHT;
-export const CONTEXT_HIGHLIGHT_BORDER_STRONG = 'rgba(139, 151, 255, 0.95)';
-export const CONTEXT_HIGHLIGHT_BORDER_HOVER = 'rgba(139, 151, 255, 0.9)';
+export const CONTEXT_HIGHLIGHT_BORDER_STRONG = indigoRgba('highlight', 0.95);
+export const CONTEXT_HIGHLIGHT_BORDER_HOVER = indigoRgba('highlight', 0.9);
 
 export interface ContextDimContext {
   /** matchesSearch 결과 — false 면 dim. */
