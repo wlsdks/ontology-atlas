@@ -51,6 +51,7 @@ import { AgentReadinessPanel } from "./parts/AgentReadinessPanel";
 import { AgentQueryRecipesPanel } from "./parts/AgentQueryRecipesPanel";
 import { InsightsFocusedNodeProofPanel } from "./parts/InsightsFocusedNodeProofPanel";
 import { InsightsCollaboratorBriefPanel } from "./parts/InsightsCollaboratorBriefPanel";
+import { Panel } from "./parts/Panel";
 
 /**
  * 노드 row 좌측 accent bar 색 — 빌더의 도메인 grouping 과 시각 일관.
@@ -877,35 +878,5 @@ export function OntologyInsightsPage() {
       )}
       </main>
     </div>
-  );
-}
-
-function Panel({
-  title,
-  subtitle,
-  accent,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  accent?: "amber";
-  children: React.ReactNode;
-}) {
-  const accentClass =
-    accent === "amber"
-      ? "border-[color:rgba(255,179,71,0.30)] bg-[color:rgba(255,179,71,0.06)]"
-      : "border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)]";
-  return (
-    <section className={`rounded-2xl border px-5 py-4 ${accentClass}`}>
-      <header className="mb-3">
-        <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-          {title}
-        </p>
-        {subtitle ? (
-          <p className="mt-0.5 text-[11px] text-[color:var(--color-text-tertiary)]">{subtitle}</p>
-        ) : null}
-      </header>
-      {children}
-    </section>
   );
 }
