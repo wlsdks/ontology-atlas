@@ -42,3 +42,48 @@ describe('SigmaControls — range slider 접근명', () => {
     expect(search.parentElement?.className).toContain('focus-within:border');
   });
 });
+
+function expectAllButtonsHaveFocusRing(container: HTMLElement) {
+  const buttons = Array.from(container.querySelectorAll('button'));
+  expect(buttons.length).toBeGreaterThan(0);
+  for (const button of buttons) {
+    expect(
+      button.className,
+      `버튼(${button.getAttribute('aria-label') ?? button.textContent?.trim() ?? ''})에 focus 링 필요`,
+    ).toMatch(/focus-visible:ring-2/);
+    expect(button.className).toContain('focus-visible:outline-none');
+  }
+}
+
+/**
+ * 컨트롤 버튼 키보드 focus 가시성 회귀 가드 (WCAG 2.4.7). 줌/필터/레이아웃
+ * 버튼이 hover 스타일만 있고 focus-visible 링이 0 이라, 전역 focus 규칙이
+ * 없는 상태에서 키보드 사용자가 현재 컨트롤을 못 봤다. 접힘/펼침/고급/도움말
+ * 각 단계의 모든 버튼이 링을 갖는지 단언.
+ */
+describe('SigmaControls — 키보드 focus 가시성 (a11y, WCAG 2.4.7)', () => {
+  it('접힘 상태 버튼이 모두 focus 링을 가진다', () => {
+    const { container } = render(
+      <SigmaControls value={DEFAULT_SIGMA_CONTROLS} onChange={() => {}} onFitView={() => {}} />,
+    );
+    expectAllButtonsHaveFocusRing(container);
+  });
+
+  it('펼침 + 고급 설정 + 단축키 도움말 단계의 모든 버튼이 focus 링을 가진다', () => {
+    const { container } = render(
+      <SigmaControls
+        value={DEFAULT_SIGMA_CONTROLS}
+        onChange={() => {}}
+        onFitView={() => {}}
+        visibleCount={5}
+        totalCount={10}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: '그래프 컨트롤 열기' }));
+    expectAllButtonsHaveFocusRing(container);
+    fireEvent.click(screen.getByRole('button', { name: /고급 설정/ }));
+    expectAllButtonsHaveFocusRing(container);
+    fireEvent.click(screen.getByRole('button', { name: '단축키 도움말' }));
+    expectAllButtonsHaveFocusRing(container);
+  });
+});

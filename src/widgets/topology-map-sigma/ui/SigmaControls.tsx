@@ -96,7 +96,7 @@ export function SigmaControls({
                   type="button"
                   onClick={onFitView}
                   aria-label={t('fitViewAriaLabel')}
-                  className="hidden h-9 w-9 items-center justify-center text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-2)] md:flex"
+                  className="hidden h-9 w-9 items-center justify-center text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset md:flex"
                 >
                   <Maximize2 className="h-4 w-4" />
                 </button>
@@ -109,7 +109,7 @@ export function SigmaControls({
               type="button"
               onClick={() => setExpanded(true)}
               aria-label={t('openAriaLabel')}
-              className="flex h-9 w-9 items-center justify-center text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="flex h-9 w-9 items-center justify-center text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
             >
               <SlidersHorizontal className="h-4 w-4" />
             </button>
@@ -140,7 +140,7 @@ export function SigmaControls({
             type="button"
             onClick={onFitView}
             aria-label={t('fitViewAriaLabel')}
-            className="pointer-events-auto absolute right-4 top-[140px] z-20 flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-2)] md:right-6 xl:right-8"
+            className="pointer-events-auto absolute right-4 top-[140px] z-20 flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:var(--color-panel)] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] active:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset md:right-6 xl:right-8"
           >
             <Maximize2 className="h-4 w-4" />
           </button>
@@ -175,7 +175,7 @@ export function SigmaControls({
             <button
               type="button"
               onClick={() => onChange({ ...value, searchQuery: '' })}
-              className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="rounded-sm font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
               aria-label={t('clearSearchAriaLabel')}
             >
               Esc
@@ -184,7 +184,7 @@ export function SigmaControls({
             <button
               type="button"
               onClick={() => setExpanded(false)}
-              className="text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+              className="rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
               aria-label={t('closeAriaLabel')}
             >
               <X className="h-3.5 w-3.5" />
@@ -231,7 +231,7 @@ export function SigmaControls({
           <button
             type="button"
             onClick={() => setAdvancedOpen((v) => !v)}
-            className="flex w-full items-center justify-between text-left transition-colors hover:text-[color:var(--color-text-primary)]"
+            className="flex w-full items-center justify-between rounded-sm text-left transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
             aria-expanded={advancedOpen}
           >
             <span className="flex items-center gap-2">
@@ -297,7 +297,7 @@ export function SigmaControls({
                 <button
                   type="button"
                   onClick={() => setForcesOpen((v) => !v)}
-                  className="flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)]"
+                  className="flex w-full items-center justify-between rounded-sm px-3 py-2.5 text-left transition-colors hover:bg-[color:var(--color-overlay-1)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
                 >
                   <span className="flex items-center gap-2">
                     <Sliders className="h-3 w-3 text-[color:var(--color-text-quaternary)]" />
@@ -356,7 +356,7 @@ export function SigmaControls({
                   }
                   window.location.reload();
                 }}
-                className="rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+                className="rounded-md border border-[color:var(--color-border-soft)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
                 aria-label={t('resetLayoutAriaLabel')}
               >
                 {t('resetLayoutButton')}
@@ -369,7 +369,7 @@ export function SigmaControls({
           <button
             type="button"
             onClick={() => setHelpOpen(true)}
-            className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            className="rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2 py-1 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
             aria-label={t('shortcutsAriaLabel')}
           >
             {t('shortcutsButton')}
@@ -527,7 +527,7 @@ function HelpOverlay({ onClose }: { onClose: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)]"
+            className="rounded-sm text-[color:var(--color-text-quaternary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
             aria-label={t('helpCloseAriaLabel')}
           >
             <X className="h-3.5 w-3.5" />
