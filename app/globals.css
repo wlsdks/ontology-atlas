@@ -338,16 +338,27 @@ html[data-theme="light"] [class*="border-[color:rgba(94,106,210,0.46)]"] {
 }
 
 /*
- * 라이트 모드 — 인디고 overlay 위 "active text" rgba(200,210,255,*) 시프트.
+ * 라이트 모드 — pale indigo "active text" 계열 일괄 시프트.
  * 다크에선 짙은 캔버스에서 pale indigo text 가 active 시그널이지만 라이트
- * 흰 캔버스에선 거의 invisible (사용자 보고: "LOCAL 글자가 안 보여").
+ * 흰 캔버스(또는 adapting overlay) 위에선 거의 invisible (사용자 보고:
+ * "LOCAL 글자가 안 보여"). 모두 deep indigo 로 시프트해 readable.
  *
- * 9 callsite — DocsVaultPage 의 LOCAL badge / vault picker buttons /
- * outline panel 의 current section pill / DocsVaultTags 활성 태그 /
- * DocsVaultViewer 의 inline code 등. 모두 인디고 alpha background 위에
- * 얹는 텍스트라 라이트 모드에선 deep indigo 로 시프트해 readable.
+ * 커버 계열(모두 adapting bg 위 텍스트로 확인 — opaque-dark 면 위 사용 0):
+ *   200,210,255 · 159,170,235 · 184,191,255 · 205,212,255 ·
+ *   210,216,255 · 210,218,255 · 211,215,255
+ *
+ * 의도적 제외: rgba(139,151,255,*) — Sigma 노드/엣지 tooltip 이 opaque-dark
+ * (bg rgba(12,14,20,1)) 위에서 이 톤을 쓰므로 라이트에서 dark 로 시프트하면
+ * tooltip 텍스트가 dark-on-dark 로 사라진다. 이 계열은 callsite 별 배경
+ * 확인이 필요한 별도 패스에서 처리.
  */
-html[data-theme="light"] [class*="text-[color:rgba(200,210,255"] {
+html[data-theme="light"] [class*="text-[color:rgba(200,210,255"],
+html[data-theme="light"] [class*="text-[color:rgba(159,170,235"],
+html[data-theme="light"] [class*="text-[color:rgba(184,191,255"],
+html[data-theme="light"] [class*="text-[color:rgba(205,212,255"],
+html[data-theme="light"] [class*="text-[color:rgba(210,216,255"],
+html[data-theme="light"] [class*="text-[color:rgba(210,218,255"],
+html[data-theme="light"] [class*="text-[color:rgba(211,215,255"] {
   color: rgba(40, 50, 175, 0.96);
 }
 
