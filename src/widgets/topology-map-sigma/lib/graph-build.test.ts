@@ -125,3 +125,45 @@ describe("buildGraph — ontologyCountsBySlug", () => {
     expect(graph.getNodeAttribute("p-1", "ontologyTopKind")).toBeUndefined();
   });
 });
+
+describe("buildGraph — project 의존성 엣지 분류 (depProject 룩업)", () => {
+  // projectBySlug Map 으로 dep→project 를 O(1) 조회하도록 바꾼 뒤,
+  // 그 조회 결과(depProject.isHub)에 따른 엣지 분류가 그대로인지 가드.
+  it("비허브→허브는 contains, 비허브→비허브는 depends_on", () => {
+    const projects = [
+      project({ slug: "hub", isHub: true }),
+      project({ slug: "app", isHub: false, dependencies: ["hub"] }),
+      project({ slug: "lib", isHub: false, dependencies: ["app"] }),
+    ];
+    const graph = buildGraph(projects, []);
+
+    expect(graph.hasEdge("app", "hub")).toBe(true);
+    expect(graph.getEdgeAttribute(graph.edge("app", "hub"), "relationType")).toBe(
+      "contains",
+    );
+    expect(graph.getEdgeAttribute(graph.edge("app", "hub"), "kind")).toBe("contains");
+
+    expect(graph.hasEdge("lib", "app")).toBe(true);
+    expect(graph.getEdgeAttribute(graph.edge("lib", "app"), "relationType")).toBe(
+      "depends_on",
+    );
+  });
+
+  it("허브→허브는 depends_on + 두꺼운 curvature(0.28)", () => {
+    const projects = [
+      project({ slug: "h1", isHub: true, dependencies: ["h2"] }),
+      project({ slug: "h2", isHub: true }),
+    ];
+    const graph = buildGraph(projects, []);
+    const edge = graph.edge("h1", "h2");
+    expect(graph.getEdgeAttribute(edge, "relationType")).toBe("depends_on");
+    expect(graph.getEdgeAttribute(edge, "curvature")).toBe(0.28);
+  });
+
+  it("존재하지 않는 dep slug 는 엣지를 만들지 않는다", () => {
+    const projects = [project({ slug: "solo", isHub: false, dependencies: ["ghost"] })];
+    const graph = buildGraph(projects, []);
+    expect(graph.hasNode("ghost")).toBe(false);
+    expect(graph.size).toBe(0); // 엣지 0
+  });
+});

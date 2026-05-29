@@ -284,10 +284,14 @@ export function buildGraph(
   // 향후 "카테고리별 섹터" 배치가 필요할 때 재활용)
   void categoryById;
 
+  // slug → project 룩업 1회 빌드. 아래 이중 루프에서 dep 마다
+  // projects.find (O(P)) 를 돌면 O(P²·D) — 대형 프로젝트 그래프에서 매
+  // 그래프 재빌드 시 누적. Map.get (O(1)) 으로 O(P·D) 로 낮춘다.
+  const projectBySlug = new Map(projects.map((p) => [p.slug, p]));
   for (const project of projects) {
     for (const dep of project.dependencies) {
       if (graph.hasNode(dep) && dep !== project.slug && !graph.hasEdge(project.slug, dep)) {
-        const depProject = projects.find((p) => p.slug === dep);
+        const depProject = projectBySlug.get(dep);
         const hubToHub = project.isHub && depProject?.isHub === true;
         // node → hub 는 "소속" 관계 (contains). 그 외는 같은 레벨 의존성.
         const isContainsRelation =
