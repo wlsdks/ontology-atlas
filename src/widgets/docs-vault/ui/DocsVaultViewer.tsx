@@ -12,6 +12,7 @@ import {
   vaultContent,
   type VaultDoc,
 } from '@/entities/docs-vault';
+import { splitHighlightSegments } from '@/shared/lib/highlight-match';
 import { fetchServerDocContent } from '../lib/server-doc-content';
 
 interface Props {
@@ -145,30 +146,21 @@ export function DocsVaultViewer({
     ): React.ReactNode => {
       if (!q) return children;
       if (typeof children === 'string') {
-        const lower = children.toLowerCase();
-        if (!lower.includes(q)) return children;
-        const parts: React.ReactNode[] = [];
-        let cursor = 0;
-        let i = 0;
-        while (cursor < children.length) {
-          const idx = lower.indexOf(q, cursor);
-          if (idx === -1) {
-            parts.push(children.slice(cursor));
-            break;
-          }
-          if (idx > cursor) parts.push(children.slice(cursor, idx));
-          parts.push(
+        // 부분 문자열 분절은 공용 splitHighlightSegments 재사용(복잡도↓).
+        // 첫 매치로 scrollIntoView 하는 effect 가 `.docs-match` 를 찾으므로
+        // mark className 은 그대로 보존.
+        return splitHighlightSegments(children, q).map((seg, i) =>
+          seg.match ? (
             <mark
               key={`${key}-${i}`}
               className="docs-match rounded-sm bg-[color:rgba(139,151,255,0.22)] px-0.5 text-[color:rgba(210,218,255,0.98)]"
             >
-              {children.slice(idx, idx + q.length)}
-            </mark>,
-          );
-          cursor = idx + q.length;
-          i += 1;
-        }
-        return parts;
+              {seg.text}
+            </mark>
+          ) : (
+            seg.text
+          ),
+        );
       }
       if (Array.isArray(children)) {
         return children.map((c, idx) => hl(c, q, `${key}-${idx}`));
