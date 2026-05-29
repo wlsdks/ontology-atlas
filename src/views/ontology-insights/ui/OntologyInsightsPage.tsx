@@ -374,6 +374,19 @@ export function OntologyInsightsPage() {
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* census vs proof 내러티브 분리 (A4) — 같은 그리드를 두 의도 밴드로
+              라벨링. proof = "agent 가 쓸 준비/검증", census = "뭐가 들어있나". */}
+          {agentReadiness ? (
+            <header className="md:col-span-2" data-testid="insights-band-proof">
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-indigo-accent)]">
+                {t("bandProofEyebrow")}
+              </p>
+              <p className="mt-0.5 break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
+                {t("bandProofDesc")}
+              </p>
+            </header>
+          ) : null}
+
           {agentGraphDbQueryPack.length > 0 ? (
             <InsightsQueryPackCockpit
               graphDbQueryPack={agentGraphDbQueryPack}
@@ -419,6 +432,15 @@ export function OntologyInsightsPage() {
               guardrails={agentGuardrails}
             />
           ) : null}
+
+          <header className="md:col-span-2" data-testid="insights-band-census">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)]">
+              {t("bandCensusEyebrow")}
+            </p>
+            <p className="mt-0.5 break-keep text-[12px] leading-5 text-[color:var(--color-text-quaternary)]">
+              {t("bandCensusDesc")}
+            </p>
+          </header>
 
           {/* kind 분포 */}
           <Panel
