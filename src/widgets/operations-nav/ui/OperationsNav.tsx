@@ -6,6 +6,7 @@ import { useDataSourceMode } from '@/features/data-source-mode';
 import { useLocalVault } from '@/features/docs-vault-local';
 import { ThemeToggle } from '@/features/theme-toggle';
 import { LocaleSwitch } from '@/features/locale-switch';
+import { LiveActivityIndicator } from '@/features/vault-ontology';
 import { Tooltip } from '@/shared/ui';
 import { isTauriVaultRuntime } from '@/shared/lib/tauri-vault-fs';
 import { OntologySubNav, shouldShowOntologySubNav } from '@/widgets/ontology-sub-nav';
@@ -185,6 +186,7 @@ export function OperationsNav() {
           </ul>
         </div>
         <div className="flex items-center gap-2">
+          <LiveActivityIndicator />
           <ModeBadge mode={dataSourceMode} />
           <LocaleSwitch />
           <ThemeToggle />
@@ -211,8 +213,11 @@ export function OperationsNav() {
         >
           {NAV_ITEMS.map((item) => renderTab(item, 'mobile'))}
         </ul>
-        <div className="ml-auto hidden shrink-0 min-[360px]:block">
-          <ModeBadge mode={dataSourceMode} />
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
+          <LiveActivityIndicator />
+          <span className="hidden min-[360px]:block">
+            <ModeBadge mode={dataSourceMode} />
+          </span>
         </div>
       </div>
 

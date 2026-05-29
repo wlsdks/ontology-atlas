@@ -50,6 +50,10 @@
     "builderTooltip": "Write — draw relations on canvas, saved to vault frontmatter",
     "insightsTooltip": "Query — scan the graph: hubs, paths, health"
   },
+  "liveActivity": {
+    "live": "Live",
+    "changed": "{count} changed since baseline"
+  },
   "modeBadge": {
     "vaultLabel": "vault",
     "vaultDocs": "{count} records",

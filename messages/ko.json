@@ -50,6 +50,10 @@
     "builderTooltip": "쓰기 — 캔버스에서 관계를 그려 vault frontmatter 에 저장",
     "insightsTooltip": "쿼리 — 그래프 스캔: 허브·경로·건강도"
   },
+  "liveActivity": {
+    "live": "Live",
+    "changed": "기준 이후 {count}개 변경"
+  },
   "modeBadge": {
     "vaultLabel": "vault",
     "vaultDocs": "기록 {count}개",
