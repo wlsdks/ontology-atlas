@@ -33,4 +33,12 @@ describe('SigmaControls — range slider 접근명', () => {
     fireEvent.click(screen.getByRole('button', { name: /Forces/ }));
     expect(screen.getByRole('slider', { name: 'Repel' })).toBeInTheDocument();
   });
+
+  it('검색 입력 컨테이너가 키보드 focus 표시(focus-within)를 가진다 (WCAG 2.4.7)', () => {
+    render(<SigmaControls value={DEFAULT_SIGMA_CONTROLS} onChange={() => {}} />);
+    fireEvent.click(screen.getByRole('button', { name: '그래프 컨트롤 열기' }));
+    const search = screen.getByRole('searchbox');
+    // input 의 outline-none 을 컨테이너 focus-within 보더가 대체.
+    expect(search.parentElement?.className).toContain('focus-within:border');
+  });
 });

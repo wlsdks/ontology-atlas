@@ -147,7 +147,7 @@ export function SigmaControls({
         </Tooltip>
       ) : null}
       <div className="pointer-events-none absolute right-4 top-[184px] z-20 flex max-h-[calc(100vh-260px)] w-[248px] flex-col gap-1.5 overflow-y-auto overscroll-contain md:right-6 xl:right-8">
-        <div className="pointer-events-auto flex h-9 items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5">
+        <div className="pointer-events-auto flex h-9 items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-2.5 transition-colors focus-within:border-[color:var(--color-indigo-accent)]">
           <Search className="h-3.5 w-3.5 text-[color:var(--color-text-quaternary)]" />
           <input
             id="sigma-search-input"
