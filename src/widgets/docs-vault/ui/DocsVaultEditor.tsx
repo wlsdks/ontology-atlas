@@ -470,6 +470,7 @@ export function DocsVaultEditor({
         >
           <textarea
             ref={taRef}
+            aria-label={t('textareaAriaLabel')}
             value={content}
             onChange={(e) => {
               const next = e.target.value;

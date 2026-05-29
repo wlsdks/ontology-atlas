@@ -621,6 +621,7 @@
       "loadFailed": "Failed to load file",
       "close": "Close",
       "editorEyebrow": "Edit · {slug}",
+      "textareaAriaLabel": "Markdown editor",
       "dirty": "Unsaved changes",
       "saved": "Saved",
       "preview": "Preview",

@@ -621,6 +621,7 @@
       "loadFailed": "파일을 불러오지 못했어요",
       "close": "닫기",
       "editorEyebrow": "편집 · {slug}",
+      "textareaAriaLabel": "마크다운 편집기",
       "dirty": "변경 사항 있음",
       "saved": "저장됨",
       "preview": "미리보기",

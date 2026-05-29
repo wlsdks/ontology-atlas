@@ -74,4 +74,19 @@ describe('DocsVaultEditor', () => {
 
     confirmSpy.mockRestore();
   });
+
+  it('마크다운 편집 textarea 가 접근명(aria-label)을 가진다', async () => {
+    render(
+      <DocsVaultEditor
+        doc={doc}
+        getDocContent={async () => 'initial'}
+        onSave={vi.fn().mockResolvedValue(undefined)}
+        onClose={vi.fn()}
+      />,
+    );
+    await screen.findByDisplayValue('initial');
+    expect(
+      screen.getByRole('textbox', { name: '마크다운 편집기' }),
+    ).toBeInTheDocument();
+  });
 });
