@@ -338,6 +338,7 @@
       "emptyNoCorpus": "Nothing indexed yet. Create your first node in vault frontmatter or the builder and it will appear here.",
       "emptyIndexed": "{count} items indexed. KR/EN both work.",
       "emptyNoMatch": "No results match \"{query}\".",
+      "emptyNoMatchFiltered": "No results match \"{query}\" with the active filters. Clear the filters above to widen the search.",
       "groupConceptRecent": "Concept · recent",
       "groupConceptMatch": "Concept · matches",
       "groupProjectRecent": "Project · recent",

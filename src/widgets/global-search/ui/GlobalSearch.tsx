@@ -307,7 +307,9 @@ export function GlobalSearch({
               ? totalCorpus === 0
                 ? t('emptyNoCorpus')
                 : t('emptyIndexed', { count: totalCorpus })
-              : t('emptyNoMatch', { query })}
+              : hasFilter
+                ? t('emptyNoMatchFiltered', { query })
+                : t('emptyNoMatch', { query })}
           </Command.Empty>
 
           {ontologyResults.length > 0 ? (

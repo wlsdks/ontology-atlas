@@ -338,6 +338,7 @@
       "emptyNoCorpus": "아직 색인된 개념·글이 없어요. vault frontmatter 또는 빌더에서 첫 노드를 만들면 여기로 자라요.",
       "emptyIndexed": "{count}개 항목이 색인되어 있어요. 한·영 모두 OK.",
       "emptyNoMatch": "\"{query}\" 와 일치하는 결과가 없어요.",
+      "emptyNoMatchFiltered": "활성 필터 안에서 \"{query}\" 와 일치하는 결과가 없어요. 위의 필터를 해제하면 더 넓게 찾아요.",
       "groupConceptRecent": "개념 · 최근",
       "groupConceptMatch": "개념 · 매치",
       "groupProjectRecent": "프로젝트 · 최근",
