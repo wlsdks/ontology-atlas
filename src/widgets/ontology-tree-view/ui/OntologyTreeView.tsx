@@ -120,6 +120,31 @@ function KindChip({ kind }: { kind: string }) {
   );
 }
 
+/**
+ * 검색어 매치를 mark 로 강조한 텍스트. query 없으면 plain 텍스트(fast path).
+ * 트리 행 제목과 orphan 행 제목에서 공통 사용.
+ */
+function HighlightedText({ text, query }: { text: string; query?: string }) {
+  const segs = query ? splitHighlightSegments(text, query) : null;
+  if (!segs) return <>{text}</>;
+  return (
+    <>
+      {segs.map((seg, i) =>
+        seg.match ? (
+          <mark
+            key={i}
+            className="rounded-sm bg-[color:rgba(139,151,255,0.22)] text-[color:rgba(210,218,255,0.98)]"
+          >
+            {seg.text}
+          </mark>
+        ) : (
+          <Fragment key={i}>{seg.text}</Fragment>
+        ),
+      )}
+    </>
+  );
+}
+
 function TreeRow({
   treeNode,
   expanded,
@@ -210,23 +235,9 @@ function TreeRow({
           const isElementPath =
             treeNode.node.kind === "element" && title.includes("/") && !title.includes(" ");
           if (!isElementPath) {
-            const segs = query ? splitHighlightSegments(title, query) : null;
             return (
               <span className="min-w-0 flex-1 truncate">
-                {segs
-                  ? segs.map((seg, i) =>
-                      seg.match ? (
-                        <mark
-                          key={i}
-                          className="rounded-sm bg-[color:rgba(139,151,255,0.22)] text-[color:rgba(210,218,255,0.98)]"
-                        >
-                          {seg.text}
-                        </mark>
-                      ) : (
-                        <Fragment key={i}>{seg.text}</Fragment>
-                      ),
-                    )
-                  : title}
+                <HighlightedText text={title} query={query} />
               </span>
             );
           }
@@ -783,7 +794,12 @@ export function OntologyTreeView({
                   }`}
                 >
                   <KindChip kind={node.kind} />
-                  <span className="min-w-0 flex-1 truncate">{node.title}</span>
+                  <span className="min-w-0 flex-1 truncate">
+                    <HighlightedText
+                      text={node.title}
+                      query={isFiltering ? searchQuery : undefined}
+                    />
+                  </span>
                   {selectedId === node.id ? (
                     <span
                       className="ml-auto hidden max-w-[180px] shrink-0 truncate rounded-md border border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-indigo-accent)] md:inline-flex"

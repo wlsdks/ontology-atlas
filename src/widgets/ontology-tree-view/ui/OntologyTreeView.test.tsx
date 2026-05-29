@@ -86,6 +86,18 @@ describe("OntologyTreeView — basic render", () => {
     expect(marked.tagName).toBe("MARK");
   });
 
+  it("orphan 행 제목도 검색 매치 강조 (main tree 와 일관)", () => {
+    const result = {
+      ...makeResult(),
+      orphans: [makeNode("orphan-widget", "element", "Orphan Widget")],
+    };
+    render(<OntologyTreeView result={result} />);
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "Orphan" },
+    });
+    expect(screen.getByText("Orphan").tagName).toBe("MARK");
+  });
+
   it("검색어가 없으면 제목에 mark 가 없다 (정상 텍스트)", () => {
     render(<OntologyTreeView result={makeResult()} />);
     // 기본(필터 off) 상태 — Sample 은 mark 가 아닌 일반 텍스트로 렌더.
