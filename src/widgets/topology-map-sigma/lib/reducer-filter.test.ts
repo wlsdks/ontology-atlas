@@ -50,6 +50,52 @@ describe('matchesSearch', () => {
   it('trims whitespace before comparing', () => {
     expect(matchesSearch(attrs(), '  iam  ')).toBe(true);
   });
+
+  describe('precomputed searchText (hot-path)', () => {
+    it('uses searchText when present — authoritative over raw label / projectSlug', () => {
+      // searchText 가 진실원: label 에 "authentication" 이 있어도 searchText
+      // 에 없으면 매칭 안 함 → 미리 계산된 필드를 쓴다는 증거.
+      expect(
+        matchesSearch(
+          attrs({ label: 'Authentication Service', searchText: 'demo-iam' }),
+          'authentication',
+        ),
+      ).toBe(false);
+      // searchText 에 있으면 매칭.
+      expect(
+        matchesSearch(
+          attrs({ searchText: 'demo-iam\nauthentication service' }),
+          'authentication',
+        ),
+      ).toBe(true);
+    });
+
+    it('searchText 경로도 query 대소문자 무시', () => {
+      expect(
+        matchesSearch(
+          attrs({ searchText: 'demo-iam\nauthentication service' }),
+          'AUTHENTICATION',
+        ),
+      ).toBe(true);
+    });
+
+    it('searchText 가 lowercased slug\\nlabel 와 동치 (cross-boundary false-positive 없음)', () => {
+      // "ab\ncd" 에 "abcd" 쿼리는 매칭되면 안 됨 (어느 필드에도 없음).
+      expect(matchesSearch(attrs({ searchText: 'ab\ncd' }), 'abcd')).toBe(false);
+      expect(matchesSearch(attrs({ searchText: 'ab\ncd' }), 'ab')).toBe(true);
+      expect(matchesSearch(attrs({ searchText: 'ab\ncd' }), 'cd')).toBe(true);
+    });
+
+    it('falls back to label / projectSlug when searchText absent', () => {
+      expect(matchesSearch(attrs({ searchText: undefined }), 'authentication')).toBe(true);
+      expect(matchesSearch(attrs({ searchText: undefined }), 'iam')).toBe(true);
+    });
+
+    it('empty query short-circuits even with searchText present', () => {
+      expect(matchesSearch(attrs({ searchText: 'demo-iam\nfoo' }), '')).toBe(true);
+      expect(matchesSearch(attrs({ searchText: 'demo-iam\nfoo' }), '   ')).toBe(true);
+    });
+  });
 });
 
 describe('matchesCategory', () => {

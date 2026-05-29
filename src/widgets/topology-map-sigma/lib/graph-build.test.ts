@@ -39,6 +39,22 @@ function counts(
   };
 }
 
+describe("buildGraph — searchText (검색 hot-path precompute)", () => {
+  it("각 노드에 lowercased `projectSlug\\nlabel` searchText 를 미리 계산", () => {
+    const graph = buildGraph(
+      [project({ slug: "demo-iam", name: "Authentication Service" })],
+      [],
+    );
+    const searchText = graph.getNodeAttribute("demo-iam", "searchText");
+    expect(searchText).toBeDefined();
+    // 전부 소문자 (build 시 1회 정규화).
+    expect(searchText).toBe(searchText!.toLowerCase());
+    // slug 와 label 양쪽을 포함 — 기존 matchesSearch 의 두 필드 매칭 보존.
+    expect(searchText).toContain("demo-iam");
+    expect(searchText).toContain("authentication service");
+  });
+});
+
 describe("buildGraph — ontologyCountsBySlug", () => {
   it("plain project 노드는 ontology 도미넌트 kind 별 borderColor 분기", () => {
     const projects = [

@@ -31,6 +31,15 @@ export interface SigmaNodeAttrs {
    *  transparent. 선택 시 nodeReducer 가 α 를 올려 선택 halo 역할도 겸함. */
   outerBorderColor: string;
   projectSlug: string;
+  /**
+   * 검색 필터 hot-path 최적화 — `${projectSlug}\n${label}` 를 build 시 1회
+   * 소문자화해 둔다. nodeReducer / edgeReducer 가 매 프레임 (라이브 검색 중
+   * 물리 시뮬레이션이 돌면 60fps) 모든 노드의 label·slug 를 toLowerCase 로
+   * 재계산하던 비용 (N×2 문자열 할당/프레임) 을 제거. 구분자 `\n` 는 사용자
+   * 쿼리에 등장하지 않아 cross-boundary false-positive 가 없다. 빌드 외 경로
+   * (테스트 fixture 등) 에서 비어있으면 matchesSearch 가 label/slug 로 폴백.
+   */
+  searchText?: string;
   categoryId: string;
   isHub: boolean;
   /** Sigma label grid 우회 — true면 zoom/density 무관 항상 라벨 렌더. 허브에 적용. */
@@ -240,6 +249,7 @@ export function buildGraph(
     const ontologyKind = pickDominantOntologyKind(ontologyCounts);
     const ontologyTone = ontologyBorderTone(ontologyKind);
 
+    const projectLabel = shortenName(project.name);
     graph.addNode(project.slug, {
       x: Math.cos(theta) * r,
       y: Math.sin(theta) * r,
@@ -247,7 +257,7 @@ export function buildGraph(
       // hub vs leaf 명확한 시각 차이로 \"별 + 위성\" 메타포 강화). 2nd pass
       // 에서 degree 스케일 미세 조정.
       size: project.isHub ? 13 : 5.5,
-      label: shortenName(project.name),
+      label: projectLabel,
       // Hub 는 forceLabel — 토폴로지 상시 노출 anchor. Node 는 threshold 로
       // 점진 노출.
       forceLabel: project.isHub,
@@ -260,6 +270,7 @@ export function buildGraph(
         : ontologyTone?.borderColor ?? palette.nodeBorder,
       outerBorderColor: project.isHub ? palette.hubOuterHalo : palette.nodeOuterHalo,
       projectSlug: project.slug,
+      searchText: buildSearchText(project.slug, projectLabel),
       categoryId: project.category ?? '',
       isHub: Boolean(project.isHub),
       ownerKey: project.owner?.trim() || 'unassigned',
@@ -314,6 +325,7 @@ export function buildGraph(
       // (r 90~140) 에 배치 → settleLayout 이 두 집합을 부드럽게 섞어준다.
       const theta = jitter(idx + 1000) * Math.PI * 2;
       const r = 90 + jitter(idx + 2000) * 50;
+      const ontologyLabel = compactGraphLabel(node.title);
       graph.addNode(node.id, {
         x: Math.cos(theta) * r,
         y: Math.sin(theta) * r,
@@ -321,7 +333,7 @@ export function buildGraph(
         // (2.8). 위계가 *크기* 로 한눈에 — color 단일 제약 보존하면서 시각
         // 정보량 증가.
         size: ONTOLOGY_NODE_SIZE_BY_KIND[kind],
-        label: compactGraphLabel(node.title),
+        label: ontologyLabel,
         forceLabel: false,
         recentlyUpdated: false,
         // 흐린 무채색 fill — 헌장의 "허브만 유일한 채색" 과 충돌 안 함.
@@ -333,6 +345,7 @@ export function buildGraph(
         // 된다 — 일단 id 를 그대로 박아두고 후속 단계에서 ontology 전용
         // 핸들링을 추가한다 (TODO: ontology 노드 클릭 시 vault md 열기).
         projectSlug: node.id,
+        searchText: buildSearchText(node.id, ontologyLabel),
         categoryId: 'ontology',
         isHub: false,
         ownerKey: 'unassigned',
@@ -425,6 +438,14 @@ export function buildGraph(
   });
 
   return graph;
+}
+
+/**
+ * 검색 필터용 정규화 텍스트 — slug 와 label 을 `\n` 으로 이어 1회 소문자화.
+ * matchesSearch 가 `includes(query)` 한 번으로 두 필드를 동시에 검사하게 한다.
+ */
+function buildSearchText(slug: string, label: string): string {
+  return `${slug}\n${label}`.toLowerCase();
 }
 
 function compactGraphLabel(label: string): string {

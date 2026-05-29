@@ -11,6 +11,11 @@ import type { SigmaNodeAttrs } from './graph-build';
 /**
  * 검색 쿼리 매칭 — projectSlug 또는 label (소문자) 포함이면 true.
  * query null/undefined/공백이면 항상 true (필터 비활성).
+ *
+ * Hot-path: nodeReducer / edgeReducer 가 매 프레임 모든 노드에 대해 호출하므로
+ * build 시 1회 계산해 둔 `attrs.searchText` (= `slug\nlabel` lowercased) 를
+ * 우선 사용해 per-frame toLowerCase 할당을 없앤다. searchText 가 없는 경로
+ * (테스트 fixture 등) 는 기존처럼 label/slug 를 즉석 소문자화하는 폴백.
  */
 export function matchesSearch(
   attrs: SigmaNodeAttrs,
@@ -18,6 +23,9 @@ export function matchesSearch(
 ): boolean {
   const q = rawQuery?.trim().toLowerCase();
   if (!q) return true;
+  if (attrs.searchText !== undefined) {
+    return attrs.searchText.includes(q);
+  }
   return (
     attrs.projectSlug.toLowerCase().includes(q) ||
     attrs.label.toLowerCase().includes(q)
