@@ -94,6 +94,11 @@ export function SigmaHubRail({
     );
   if (hubs.length === 0) return null;
   const railLabel = t('label');
+  // Roving tabindex — listbox 는 tab stop 1개만 가져야 한다. 선택된 option 이
+  // 유일한 tab 진입점이고, 선택이 없으면 첫 option 이 진입점. 나머지는 -1 로
+  // 빼서 방향키로만 이동(WAI-ARIA listbox 패턴). 이전엔 모든 native button 이
+  // tabIndex 0 이라 Tab 이 허브마다 멈췄다.
+  const hasActiveOption = hubs.some((hub) => hub.slug === selectedSlug);
 
   if (!open) {
     return (
@@ -154,6 +159,7 @@ export function SigmaHubRail({
             type="button"
             role="option"
             aria-selected={active}
+            tabIndex={active || (!hasActiveOption && idx === 0) ? 0 : -1}
             onClick={() => onSelect(hub.slug)}
             onKeyDown={(e) => {
               if (e.key === 'ArrowDown') {
