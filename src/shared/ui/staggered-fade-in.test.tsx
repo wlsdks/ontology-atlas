@@ -48,4 +48,22 @@ describe('StaggeredFadeIn', () => {
     expect(style).toContain('opacity');
     expect(style).toContain('transition');
   });
+
+  it('큰 리스트에서 stagger delay 를 maxStaggerSteps 로 상한 (절름발이 cascade 방지)', () => {
+    render(
+      <StaggeredFadeIn stagger={60} maxStaggerSteps={8}>
+        {Array.from({ length: 12 }, (_, i) => (
+          <div key={i} data-testid={`c${i}`}>
+            {i}
+          </div>
+        ))}
+      </StaggeredFadeIn>,
+    );
+    // 상한 이내(index 2) → 2*60 = 120ms
+    expect(screen.getByTestId('c2').getAttribute('style')).toContain('120ms');
+    // 상한 초과(index 11) → 12초가 아니라 8*60 = 480ms 로 cap (660ms 아님)
+    const capped = screen.getByTestId('c11').getAttribute('style') ?? '';
+    expect(capped).toContain('480ms');
+    expect(capped).not.toContain('660ms');
+  });
 });

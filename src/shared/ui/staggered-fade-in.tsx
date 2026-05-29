@@ -8,6 +8,13 @@ interface StaggeredFadeInProps {
   children: React.ReactNode;
   /** 한 자식 사이의 stagger 간격 (ms). default 60ms — 디자인 시스템 권장. */
   stagger?: number;
+  /**
+   * stagger delay 가 적용되는 최대 자식 수. 이 인덱스를 넘는 자식은 모두 같은
+   * (capped) delay 로 함께 나타난다. 큰 리스트(예: 프로젝트 200개)에서 마지막
+   * 카드가 수 초 뒤 나타나는 절름발이 cascade 를 방지. default 8 →
+   * 최대 cascade 8 * stagger(=480ms@60).
+   */
+  maxStaggerSteps?: number;
   /** 트랜지션 길이 (ms). default 200ms. */
   duration?: number;
   /** 컨테이너 element 종류 — 의미 있는 wrapper 면 div 가 아닐 수도. */
@@ -47,6 +54,7 @@ export function StaggeredFadeIn({
   className,
   translateY = 8,
   ariaLabel,
+  maxStaggerSteps = 8,
 }: StaggeredFadeInProps) {
   const [mounted, setMounted] = useState(false);
 
@@ -68,7 +76,8 @@ export function StaggeredFadeIn({
         applyTransitionStyle(child, i, {
           mounted,
           duration,
-          delay: i * stagger,
+          // 큰 리스트에서 마지막 자식이 수 초 뒤 나타나지 않도록 delay 상한.
+          delay: Math.min(i, maxStaggerSteps) * stagger,
           translateY,
         }),
       )}
