@@ -42,7 +42,6 @@ import { startPhysics, type PhysicsController } from '../lib/physics';
 import { createWorkerLayoutController } from '../lib/worker-layout-controller';
 import { extractDomainLabel } from '../lib/labels';
 import {
-  BOUNCE_AMPLITUDE,
   BOUNCE_DURATION_MS,
   computeBounceFactor,
 } from '../lib/reducer-anim';
@@ -427,6 +426,12 @@ function SigmaTopologyImpl({
   // BOUNCE_DURATION_MS 경과 후 null. nodeReducer 가 이 값으로 phase 계산해
   // focus 노드 size 를 1 → 1.2 → 1 sine 으로 변조.
   const bounceStartRef = useRef<number | null>(null);
+  // pulseSinRef 와 같은 이유 — bounce phase 도 한 프레임 안에서는 모든 노드에
+  // 동일하다. 매 노드마다 performance.now() + computeBounceFactor 를 부르지
+  // 않도록 프레임당 1회 (bounce RAF 루프) 계산해 ref 로 공유. focus(선택/hover)
+  // 상태가 살아있는 동안 nodeReducer 가 노드마다 읽던 비용 제거. bounce 비활성
+  // 기본값 1.0 = size 변화 없음.
+  const bounceFactorRef = useRef(1);
   const bounceRafRef = useRef<number | null>(null);
   // 테마 (light/dark) 별 토폴로지 색 팔레트. 토글 시 mutation observer 가
   // 새 팔레트로 교체 + graph attr 재페인트 + sigma.refresh().
@@ -940,21 +945,15 @@ function SigmaTopologyImpl({
       const focus = activeNode();
       if (!focus) return attrs;
       // focus / neighbor / 2-hop tint 분기는 ../lib/reducer-focus 의
-      // applyFocusOverlay 에서 (A3-1 추출). bounceFactor 만 컴포넌트
-      // 안에서 계산해 ctx 로 전달.
-      const bounceFactor = computeBounceFactor(
-        bounceStartRef.current,
-        performance.now(),
-        BOUNCE_DURATION_MS,
-        BOUNCE_AMPLITUDE,
-      );
+      // applyFocusOverlay 에서 (A3-1 추출). bounceFactor 는 프레임당 1회
+      // bounce RAF 루프가 계산해둔 ref 값 (한 프레임 안 모든 노드 동일).
       return applyFocusOverlay(node, attrs, {
         focusNode: focus,
         neighbors,
         secondHop,
         backrefNodes,
         backrefHighlight: overlayState.backrefHighlight,
-        bounceFactor,
+        bounceFactor: bounceFactorRef.current,
       });
     };
     renderer.setSetting('nodeReducer', (node, attrs) => {
@@ -1509,16 +1508,22 @@ function SigmaTopologyImpl({
       bounceStartRef.current = performance.now();
       // 애니메이션 중 지속적으로 refresh — pulsePhase interval 이 120ms
       // 라 너무 간격이 커서 별도 RAF 루프로 60fps 부드럽게. 280ms 경과
-      // 후 자동 종료.
+      // 후 자동 종료. 프레임당 1회 bounce phase 를 계산해 ref 에 저장 →
+      // nodeReducer 는 노드마다 ref 만 읽는다.
       const animate = () => {
         const start = bounceStartRef.current;
-        if (start === null) return;
-        const elapsed = performance.now() - start;
-        if (elapsed >= BOUNCE_DURATION_MS) {
+        if (start === null) {
+          bounceFactorRef.current = 1;
+          return;
+        }
+        const now = performance.now();
+        if (now - start >= BOUNCE_DURATION_MS) {
           bounceStartRef.current = null;
+          bounceFactorRef.current = 1;
           sigmaRef.current?.refresh();
           return;
         }
+        bounceFactorRef.current = computeBounceFactor(start, now);
         sigmaRef.current?.refresh();
         bounceRafRef.current = requestAnimationFrame(animate);
       };
