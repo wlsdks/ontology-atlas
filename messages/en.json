@@ -300,6 +300,7 @@
       "collapseAll": "Collapse all",
       "noResults": "No nodes match \"{query}\".",
       "noResultsClear": "Clear search",
+      "emptyFallback": "The ontology hasn't grown yet.",
       "implicitElementsShow": "📂 Show {count} files",
       "implicitElementsHide": "▴ Collapse files",
       "orphansHeading": "Unconnected nodes {count}",

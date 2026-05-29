@@ -472,9 +472,11 @@ describe("OntologyTreeView — empty state", () => {
       <OntologyTreeView result={{ roots: [], orphans: [], warnings: [] }} />,
     );
     expect(screen.getByTestId("ontology-tree-empty")).toBeInTheDocument();
-    // emptyHint prop 미전달 시 widget 내 기본 영문 fallback 사용 (caller 가
-    // 항상 i18n 키로 전달하기 때문에 fallback 은 빈 안전망 정도).
-    expect(screen.getByText(/hasn't grown yet/i)).toBeInTheDocument();
+    // emptyHint prop 미전달 시 i18n 폴백(tree.emptyFallback) 사용 — 하드코딩
+    // 영어가 ko 로케일로 새던 회귀를 막는다. render 헬퍼가 ko 메시지라 ko 노출.
+    expect(
+      screen.getByText("온톨로지가 아직 자라지 않았어요."),
+    ).toBeInTheDocument();
   });
 
   it("uses custom emptyHint", () => {
