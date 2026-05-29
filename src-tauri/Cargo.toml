@@ -17,3 +17,4 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 rfd = "0.15"
 serde = { version = "1", features = ["derive"] }
+notify-debouncer-full = "0.3"

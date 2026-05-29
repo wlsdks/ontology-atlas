@@ -1,8 +1,22 @@
+use notify_debouncer_full::notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use notify_debouncer_full::{new_debouncer, DebounceEventResult, Debouncer, FileIdMap};
 use serde::Serialize;
 use std::fs;
 use std::path::{Component, Path, PathBuf};
 use std::process::Command;
-use std::time::UNIX_EPOCH;
+use std::sync::Mutex;
+use std::time::{Duration, UNIX_EPOCH};
+use tauri::{AppHandle, Emitter, State};
+
+/// notify-debouncer-full 의 기본 watcher 타입 별칭 — State 저장용.
+type VaultDebouncer = Debouncer<RecommendedWatcher, FileIdMap>;
+
+/// live-tauri — vault 파일워처를 앱 수명 동안 살려두는 State. start_vault_watch
+/// 가 여기에 debouncer 를 넣어둬야 drop 되지 않고 계속 감시한다.
+#[derive(Default)]
+struct VaultWatcherState {
+    debouncer: Mutex<Option<VaultDebouncer>>,
+}
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -284,8 +298,50 @@ fn open_vault_in_finder(root_path: String) -> Result<(), String> {
     }
 }
 
+/// live-tauri — vault 디렉터리를 recursive 로 감시해 `.md` 변경 시 webview 에
+/// `vault-changed` 이벤트를 emit. 500ms debounce 로 에디터의 다중 write 를 묶는다.
+/// JS 측은 이 이벤트를 listen 해 즉시 refresh — 5초 폴링 대기 없이 반영.
+/// debouncer 를 State 에 보관해 앱 수명 동안 살린다(재호출 시 이전 것을 교체·drop).
+#[tauri::command]
+fn start_vault_watch(
+    app: AppHandle,
+    root_path: String,
+    state: State<'_, VaultWatcherState>,
+) -> Result<(), String> {
+    let canonical = canonical_root(&root_path)?;
+    let app_handle = app.clone();
+    let mut debouncer = new_debouncer(
+        Duration::from_millis(500),
+        None,
+        move |result: DebounceEventResult| {
+            if let Ok(events) = result {
+                let md_changed = events.iter().any(|event| {
+                    event
+                        .paths
+                        .iter()
+                        .any(|path| path.extension().map_or(false, |ext| ext == "md"))
+                });
+                if md_changed {
+                    let _ = app_handle.emit("vault-changed", ());
+                }
+            }
+        },
+    )
+    .map_err(|err| err.to_string())?;
+    debouncer
+        .watcher()
+        .watch(&canonical, RecursiveMode::Recursive)
+        .map_err(|err| err.to_string())?;
+    *state
+        .debouncer
+        .lock()
+        .map_err(|_| "vault watcher state poisoned".to_string())? = Some(debouncer);
+    Ok(())
+}
+
 pub fn run() {
     tauri::Builder::default()
+        .manage(VaultWatcherState::default())
         .invoke_handler(tauri::generate_handler![
             pick_vault_directory,
             list_vault_directory,
@@ -296,6 +352,7 @@ pub fn run() {
             ensure_vault_directory,
             vault_path_exists,
             open_vault_in_finder,
+            start_vault_watch,
         ])
         .run(tauri::generate_context!())
         .expect("error while running oh-my-ontology desktop app");
