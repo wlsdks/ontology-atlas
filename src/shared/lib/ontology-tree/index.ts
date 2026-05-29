@@ -29,7 +29,6 @@ export {
   computeDomainCouplingMatrix,
   computeKindDistribution,
   rankAllByDegree,
-  selectTopByDegree,
   selectRecentNodes,
 } from "./insights";
 export type {

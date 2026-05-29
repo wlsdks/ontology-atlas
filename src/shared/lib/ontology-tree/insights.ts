@@ -106,20 +106,6 @@ export function rankAllByDegree(
 }
 
 /**
- * degree 가 높은 순 top N 노드 — "이 ontology 의 허브" 식별. document / project
- * 는 기본 제외 (메타·구조 노드라 사용자 관심 단위가 아님). 호출자가 includeKinds
- * 로 override 가능. 전체 후보가 필요하면 `rankAllByDegree` 를 직접 쓴다.
- */
-export function selectTopByDegree(
-  nodes: readonly KnowledgeGraphNode[],
-  edges: readonly KnowledgeGraphEdge[],
-  limit = 8,
-  options?: { includeKinds?: ReadonlyArray<string>; excludeKinds?: ReadonlyArray<string> },
-): OntologyDegreeRow[] {
-  return rankAllByDegree(nodes, edges, options).slice(0, limit);
-}
-
-/**
  * 도메인 간 결합 행렬 — MCP `query_ontology(domain_matrix)` 의 브라우저
  * local-first 대응. 서버/MCP 없이 현재 derive 된 frontmatter graph 만으로
  * "어느 도메인이 어느 도메인에 의존/연결되는지"를 계산한다.

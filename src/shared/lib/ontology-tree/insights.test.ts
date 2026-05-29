@@ -6,7 +6,6 @@ import {
   computeKindDistribution,
   rankAllByDegree,
   selectRecentNodes,
-  selectTopByDegree,
 } from "./insights";
 
 const node = (
@@ -81,7 +80,7 @@ describe("computeDegreeCentrality", () => {
   });
 });
 
-describe("selectTopByDegree", () => {
+describe("rankAllByDegree", () => {
   const nodes = [
     node("hub", "capability"),
     node("leaf-1", "element"),
@@ -96,39 +95,30 @@ describe("selectTopByDegree", () => {
     edge("e4", "proj", "hub"),
   ];
 
-  it("default — document / project 제외, degree desc", () => {
-    const top = selectTopByDegree(nodes, edges);
-    expect(top).toHaveLength(3); // hub + leaf-1 + leaf-2 (doc / proj 제외)
-    expect(top[0]?.node.id).toBe("hub");
-    expect(top[0]?.degree).toBeGreaterThanOrEqual(top[1]?.degree ?? 0);
+  it("default — document / project 제외, degree desc, 전체 반환", () => {
+    const all = rankAllByDegree(nodes, edges);
+    expect(all).toHaveLength(3); // hub + leaf-1 + leaf-2 (doc / proj 제외)
+    expect(all[0]?.node.id).toBe("hub");
+    expect(all[0]?.degree).toBeGreaterThanOrEqual(all[1]?.degree ?? 0);
   });
 
   it("degree 0 노드 제외", () => {
     const isolated = node("isolated", "capability");
-    const top = selectTopByDegree([...nodes, isolated], edges);
-    expect(top.find((r) => r.node.id === "isolated")).toBeUndefined();
-  });
-
-  it("limit 적용", () => {
-    const top = selectTopByDegree(nodes, edges, 1);
-    expect(top).toHaveLength(1);
+    const all = rankAllByDegree([...nodes, isolated], edges);
+    expect(all.find((r) => r.node.id === "isolated")).toBeUndefined();
   });
 
   it("includeKinds — 명시 kind 만", () => {
-    const top = selectTopByDegree(nodes, edges, 10, { includeKinds: ["element"] });
-    expect(top.every((r) => r.node.kind === "element")).toBe(true);
+    const all = rankAllByDegree(nodes, edges, { includeKinds: ["element"] });
+    expect(all.every((r) => r.node.kind === "element")).toBe(true);
   });
 
-  it("rankAllByDegree — limit 없이 전체 후보를 degree desc 로 반환 (truncation 신호용)", () => {
+  it("limit 없이 전체 후보 반환 — 호출자가 slice 로 truncation 신호 계산", () => {
     const all = rankAllByDegree(nodes, edges);
-    // selectTopByDegree 와 동일한 필터 (doc / proj 제외, degree 0 제외)
     expect(all).toHaveLength(3);
-    expect(all[0]?.node.id).toBe("hub");
-    // selectTopByDegree(limit) 는 rankAll 의 prefix 와 일치 — "상위 N / 전체 M"
-    // 을 계산할 수 있다.
-    const top1 = selectTopByDegree(nodes, edges, 1);
-    expect(top1).toEqual(all.slice(0, 1));
-    expect(all.length).toBeGreaterThan(top1.length);
+    // 상위 N 은 호출자가 all.slice(0, N) — "상위 N / 전체 M".
+    expect(all.slice(0, 1)).toHaveLength(1);
+    expect(all.length).toBeGreaterThan(1);
   });
 });
 
