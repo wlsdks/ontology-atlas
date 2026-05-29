@@ -47,10 +47,14 @@ export function CopyAgentTextButton({
       : copyState === "failed"
         ? t("agentCopyFailed")
         : label;
+  // 텍스트 색은 mode-aware 토큰(indigo-accent / status-danger)으로 — 라이트
+  // 모드에서 하드코딩 light-on-dark rgba(예 rgba(211,215,255,*))는 흰 배경에
+  // 묻혀 버튼이 안 보이던 회귀. border/bg 의 인디고·레드 alpha 는 양 모드에서
+  // 충분히 은은해 유지.
   const toneClass =
     copyState === "failed"
-      ? "border-[color:rgba(229,72,77,0.32)] bg-[color:rgba(229,72,77,0.08)] text-[color:rgba(248,160,160,0.95)] hover:border-[color:rgba(229,72,77,0.48)] hover:bg-[color:rgba(229,72,77,0.12)]"
-      : "border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] text-[color:rgba(211,215,255,0.96)] hover:border-[color:rgba(139,151,255,0.42)] hover:bg-[color:rgba(139,151,255,0.13)]";
+      ? "border-[color:rgba(229,72,77,0.32)] bg-[color:rgba(229,72,77,0.08)] text-[color:var(--color-status-danger)] hover:border-[color:rgba(229,72,77,0.48)] hover:bg-[color:rgba(229,72,77,0.12)]"
+      : "border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] text-[color:var(--color-indigo-accent)] hover:border-[color:rgba(139,151,255,0.42)] hover:bg-[color:rgba(139,151,255,0.13)]";
 
   return (
     <>
