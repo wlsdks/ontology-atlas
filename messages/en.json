@@ -2317,7 +2317,12 @@
       "query": "Insights",
       "builderTooltip": "Builder canvas — pick a kind from the palette on the left, drag handles to add relations",
       "builderAria": "Ontology builder — draw directly on the canvas",
-      "builder": "Open builder →"
+      "builder": "Open builder →",
+      "primeAgent": "Prime your AI agent",
+      "primeAgentTooltip": "Copy one complete briefing — mental model, readiness, MCP query order, traversal + write guardrails, entry points, CLI fallback. Paste once into Claude Code / Codex / Cursor.",
+      "primeAgentAria": "Copy the complete agent onboarding briefing to the clipboard",
+      "primeAgentCopied": "Agent briefing copied — readiness {status} ({score}/100). Paste into Claude Code / Codex / Cursor.",
+      "primeAgentCopyError": "Couldn't copy the briefing. Try again."
     },
     "stat": {
       "ariaLabel": "Ontology tree role and source status",

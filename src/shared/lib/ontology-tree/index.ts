@@ -91,6 +91,8 @@ export {
   validateAgentMcpQueryCall,
   validateAgentMcpToolCall,
 } from "./agent-query-recipes";
+export type { AgentBriefingPacket } from "./agent-briefing-packet";
+export { buildAgentBriefingPacket } from "./agent-briefing-packet";
 export type { MeaningfulOntologyKind, OntologyKindStats } from "./kind-stats";
 export {
   MEANINGFUL_ONTOLOGY_KINDS,

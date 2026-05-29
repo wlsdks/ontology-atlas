@@ -16,6 +16,7 @@ import { useOntologyKindLabel } from "@/entities/ontology-class";
 import { getProjectDetailHref, getTopologyProjectHref } from "@/entities/project";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import {
+  buildAgentBriefingPacket,
   buildAgentGraphDbQueryPack,
   buildOntologyEgoSubgraph,
   buildOntologyReachability,
@@ -80,6 +81,7 @@ export function OntologyViewPage() {
   const router = useRouter();
   const dataSourceMode = useDataSourceMode();
   const isDesktopRuntime = isTauriVaultRuntime();
+  const { show } = useToast();
 
   const { insight, error } = useOntologyInsight();
   // 트리 row 클릭 시 우측 (mobile bottom) 패널에 노드 상세 노출.
@@ -160,6 +162,31 @@ export function OntologyViewPage() {
     if (!insight) return null;
     return buildOntologyTree(insight.nodes, insight.edges);
   }, [insight]);
+
+  // 단일 "에이전트 브리핑" — 흩어진 패킷들을 하나로 묶어 1-paste 로 AI 에이전트에
+  // 코드베이스 온톨로지 메모리를 로드. /ontology 허브(개발자+에이전트 시작점)에
+  // 가장 prominent 한 액션으로 노출.
+  const agentBriefing = useMemo(
+    () =>
+      insight && treeResult
+        ? buildAgentBriefingPacket(insight.nodes, insight.edges, treeResult)
+        : null,
+    [insight, treeResult],
+  );
+  const handleCopyAgentBriefing = useCallback(async () => {
+    if (!agentBriefing) return;
+    if (await copyText(agentBriefing.briefing)) {
+      show(
+        t('actions.primeAgentCopied', {
+          status: agentBriefing.readiness.status,
+          score: agentBriefing.readiness.score,
+        }),
+        "success",
+      );
+    } else {
+      show(t('actions.primeAgentCopyError'), "error");
+    }
+  }, [agentBriefing, show, t]);
 
   // treeResult / insight 가 동일할 때 매 selection re-render 마다 재계산
   // 회피. countTreeNodes 는 트리 walk + filter 는 O(N) — 작아도 매 클릭마다
@@ -325,7 +352,21 @@ export function OntologyViewPage() {
 	                <span className="hidden sm:inline">{t('actions.query')}</span>
 	              </Link>
 	            </Tooltip>
-	            <Tooltip content={t('actions.builderTooltip')} withProvider={false}>
+	            {agentBriefing ? (
+              <Tooltip content={t('actions.primeAgentTooltip')} withProvider={false}>
+                <button
+                  type="button"
+                  onClick={handleCopyAgentBriefing}
+                  aria-label={t('actions.primeAgentAria')}
+                  data-testid="prime-agent-cta"
+                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-4 text-xs font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors hover:border-[color:rgba(94,106,210,0.66)] hover:bg-[color:rgba(94,106,210,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+                >
+                  <Clipboard size={13} aria-hidden />
+                  {t('actions.primeAgent')}
+                </button>
+              </Tooltip>
+            ) : null}
+            <Tooltip content={t('actions.builderTooltip')} withProvider={false}>
               <Link
                 href={builderHref}
                 className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-brand)] px-4 text-xs font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-opacity hover:opacity-90"
