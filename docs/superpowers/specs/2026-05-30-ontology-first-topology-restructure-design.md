@@ -86,4 +86,4 @@ User's words (verbatim intent):
 
 ## 진행 상황 (loop 갱신)
 
-- [x] S1.0 직렬화 추출 (7fd46b20) · [x] S1.1.0 편집 모델 (2fcc3e4b) · [x] S1.1.1a InlineFieldEdit primitive (69faf463) · [x] S1.1.1b-i drawer 슬롯 (a84f5fb6) · [ ] S1.1.1b-ii HomePage write 글루 · [ ] S2 · [ ] S3 · [ ] S4 · [ ] S5(비파괴) · [ ] S6 · [ ] live-web · [ ] live-tauri
+- [x] S1.0 직렬화 추출 (7fd46b20) · [x] S1.1.0 편집 모델 (2fcc3e4b) · [x] S1.1.1a InlineFieldEdit primitive (69faf463) · [x] S1.1.1b-i drawer 슬롯 (a84f5fb6) · [x] S1.1.1b-ii HomePage write 글루 (95b351c5) — **S1 완성: 토폴로지에서 domain 직접 편집 e2e** · [ ] S2 · [ ] S3 · [ ] S4 · [ ] S5(비파괴) · [ ] S6 · [ ] live-web · [ ] live-tauri
