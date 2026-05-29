@@ -155,6 +155,9 @@ function TreeRow({
       role="treeitem"
       aria-expanded={hasChildren ? expanded : undefined}
       aria-selected={selected}
+      // WAI-ARIA tree — 1-based nesting level. DOM group 중첩만으로는 일부
+      // 스크린리더(VoiceOver)가 깊이를 일관되게 읽지 못해 명시한다.
+      aria-level={treeNode.depth + 1}
       data-testid="ontology-tree-row"
       data-kind={treeNode.node.kind}
       data-depth={treeNode.depth}

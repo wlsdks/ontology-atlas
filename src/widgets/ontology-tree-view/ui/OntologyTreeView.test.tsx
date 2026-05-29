@@ -68,6 +68,20 @@ describe("OntologyTreeView — basic render", () => {
     expect(screen.getByText("역량")).toBeInTheDocument();
   });
 
+  it("treeitem 에 깊이별 aria-level(1-based) 부여 (WAI-ARIA tree)", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+    // Sample(depth0)→인증(depth1)→로그인(depth2) = aria-level 1/2/3.
+    expect(
+      screen.getByText("Sample").closest('[role="treeitem"]'),
+    ).toHaveAttribute("aria-level", "1");
+    expect(
+      screen.getByText("인증").closest('[role="treeitem"]'),
+    ).toHaveAttribute("aria-level", "2");
+    expect(
+      screen.getByText("로그인").closest('[role="treeitem"]'),
+    ).toHaveAttribute("aria-level", "3");
+  });
+
   it("indents rows by depth", () => {
     render(<OntologyTreeView result={makeResult()} />);
     const rows = screen.getAllByTestId("ontology-tree-row");
