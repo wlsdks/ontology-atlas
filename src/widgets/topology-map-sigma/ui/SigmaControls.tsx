@@ -283,6 +283,12 @@ export function SigmaControls({
                     const next = Number(e.target.value);
                     onChange({ ...value, depthLimit: next >= 7 ? null : next });
                   }}
+                  aria-label={t('depthLabel')}
+                  aria-valuetext={
+                    value.depthLimit == null
+                      ? t('depthAll')
+                      : t('depthHop', { count: value.depthLimit })
+                  }
                   className="sigma-range mt-2 w-full"
                 />
               </div>
@@ -468,6 +474,8 @@ function SliderRow({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={label}
+        aria-valuetext={display(value)}
         className="sigma-range mt-1.5 w-full"
       />
     </div>
