@@ -2754,19 +2754,31 @@ function CopyAgentTextButton({
       : "border-[color:rgba(139,151,255,0.22)] bg-[color:rgba(139,151,255,0.08)] text-[color:rgba(211,215,255,0.96)] hover:border-[color:rgba(139,151,255,0.42)] hover:bg-[color:rgba(139,151,255,0.13)]";
 
   return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className={[
-        "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border font-mono text-[10px] transition-colors",
-        toneClass,
-        compact ? "px-2 py-1" : "px-3 py-2",
-      ].join(" ")}
-      aria-label={visibleLabel}
-    >
-      {copyState === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
-      {visibleLabel}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={handleCopy}
+        className={[
+          "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md border font-mono text-[10px] transition-colors",
+          toneClass,
+          compact ? "px-2 py-1" : "px-3 py-2",
+        ].join(" ")}
+        aria-label={visibleLabel}
+      >
+        {copyState === "copied" ? <Check size={12} aria-hidden /> : <Clipboard size={12} aria-hidden />}
+        {visibleLabel}
+      </button>
+      {/* 복사 성공/실패를 스크린리더에 announce — 포커스된 버튼의 aria-label
+          변경은 자동 재낭독되지 않으므로 별도 polite live region 사용
+          (CopyProjectLinkButton 과 동일 패턴). idle 엔 비워 reset 소음 방지. */}
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {copyState === "copied"
+          ? copiedLabel
+          : copyState === "failed"
+            ? t("agentCopyFailed")
+            : ""}
+      </span>
+    </>
   );
 }
 
