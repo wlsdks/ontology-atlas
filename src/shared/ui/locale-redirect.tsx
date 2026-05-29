@@ -27,8 +27,11 @@ export function LocaleRedirect() {
       className="flex min-h-[60vh] items-center justify-center"
       style={{
         minHeight: '60vh',
-        background: '#08090a',
-        color: '#d0d6e0',
+        // 디자인 토큰 참조 — globals.css 가 static <link> 로 항상 로드되고
+        // data-theme 스크립트가 render 전 동기 실행되므로, 라이트 모드 사용자가
+        // 루트 redirect 진입 시 다크 hex 가 깜빡이던 회귀를 제거한다.
+        background: 'var(--color-canvas)',
+        color: 'var(--color-text-secondary)',
         fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif',
       }}
     >
@@ -46,12 +49,12 @@ export function LocaleRedirect() {
       >
         Opening Context Atlas…
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- root redirect fallback must survive failed hydration */}
-        <a style={{ color: '#8b97ff' }} href="/en/">
+        <a style={{ color: 'var(--color-indigo-accent)' }} href="/en/">
           English
         </a>
         <span aria-hidden="true">·</span>
         {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- root redirect fallback must survive failed hydration */}
-        <a style={{ color: '#8b97ff' }} href="/ko/">
+        <a style={{ color: 'var(--color-indigo-accent)' }} href="/ko/">
           한국어
         </a>
         <noscript>
