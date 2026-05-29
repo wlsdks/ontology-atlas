@@ -1,6 +1,7 @@
 "use client";
 
-import { createElement, useMemo, useRef, useState } from "react";
+import { createElement, Fragment, useMemo, useRef, useState } from "react";
+import { splitHighlightSegments } from "@/shared/lib/highlight-match";
 import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Search, X } from "lucide-react";
 import { getOntologyKindIcon, useOntologyKindLabel } from "@/entities/ontology-class";
@@ -125,6 +126,7 @@ function TreeRow({
   onToggle,
   onSelect,
   selected,
+  query,
 }: {
   treeNode: OntologyTreeNode;
   expanded: boolean;
@@ -132,6 +134,8 @@ function TreeRow({
   onSelect?: (node: OntologyTreeNode["node"]) => void;
   /** 외부 selection 과 일치하는 행 — aria-selected + 시각 active 톤. */
   selected: boolean;
+  /** 활성 검색어 — 제목 내 매치 부분을 mark 로 강조 (필터링 중에만). */
+  query?: string;
 }) {
   const t = useTranslations('ontologyWidgets');
   const hasChildren = treeNode.children.length > 0;
@@ -206,7 +210,25 @@ function TreeRow({
           const isElementPath =
             treeNode.node.kind === "element" && title.includes("/") && !title.includes(" ");
           if (!isElementPath) {
-            return <span className="min-w-0 flex-1 truncate">{title}</span>;
+            const segs = query ? splitHighlightSegments(title, query) : null;
+            return (
+              <span className="min-w-0 flex-1 truncate">
+                {segs
+                  ? segs.map((seg, i) =>
+                      seg.match ? (
+                        <mark
+                          key={i}
+                          className="rounded-sm bg-[color:rgba(139,151,255,0.22)] text-[color:rgba(210,218,255,0.98)]"
+                        >
+                          {seg.text}
+                        </mark>
+                      ) : (
+                        <Fragment key={i}>{seg.text}</Fragment>
+                      ),
+                    )
+                  : title}
+              </span>
+            );
           }
           const lastSlash = title.lastIndexOf("/");
           const prefix = title.slice(0, lastSlash + 1);
@@ -616,6 +638,7 @@ export function OntologyTreeView({
           onToggle={() => toggle(treeNode.node.id)}
           onSelect={onSelect}
           selected={selectedId === treeNode.node.id}
+          query={isFiltering ? searchQuery : undefined}
         />
         {childrenNode}
       </div>

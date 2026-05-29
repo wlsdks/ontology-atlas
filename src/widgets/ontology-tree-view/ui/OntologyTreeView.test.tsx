@@ -77,6 +77,21 @@ describe("OntologyTreeView — basic render", () => {
     expect(container?.className).toContain("focus-within:border");
   });
 
+  it("검색 시 제목 내 매치 부분을 <mark> 로 강조", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+    fireEvent.change(screen.getByRole("searchbox"), {
+      target: { value: "Sample" },
+    });
+    const marked = screen.getByText("Sample");
+    expect(marked.tagName).toBe("MARK");
+  });
+
+  it("검색어가 없으면 제목에 mark 가 없다 (정상 텍스트)", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+    // 기본(필터 off) 상태 — Sample 은 mark 가 아닌 일반 텍스트로 렌더.
+    expect(screen.getByText("Sample").tagName).not.toBe("MARK");
+  });
+
   it("treeitem 에 깊이별 aria-level(1-based) 부여 (WAI-ARIA tree)", () => {
     render(<OntologyTreeView result={makeResult()} />);
     // Sample(depth0)→인증(depth1)→로그인(depth2) = aria-level 1/2/3.
