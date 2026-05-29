@@ -93,6 +93,8 @@ export {
 } from "./agent-query-recipes";
 export type { AgentBriefingPacket } from "./agent-briefing-packet";
 export { buildAgentBriefingPacket } from "./agent-briefing-packet";
+export type { OntologySnapshot, OntologyChangeset } from "./ontology-changeset";
+export { snapshotOntology, computeOntologyChangeset } from "./ontology-changeset";
 export type { MeaningfulOntologyKind, OntologyKindStats } from "./kind-stats";
 export {
   MEANINGFUL_ONTOLOGY_KINDS,
