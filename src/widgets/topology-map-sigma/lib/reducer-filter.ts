@@ -21,7 +21,12 @@ export function matchesSearch(
   attrs: SigmaNodeAttrs,
   rawQuery: string | undefined,
 ): boolean {
-  const q = rawQuery?.trim().toLowerCase();
+  // 검색 비활성(undefined 또는 빈 문자열)이 steady-state 의 압도적 다수다.
+  // trim()/toLowerCase() 는 매번 새 문자열을 할당하므로, falsy 를 *먼저*
+  // 걸러 hot-path(매 프레임 × 모든 노드/엣지)의 빈 문자열 재할당을 없앤다.
+  // 기존 `rawQuery?.…` 는 undefined 만 단축했고 '' 는 그대로 할당했다.
+  if (!rawQuery) return true;
+  const q = rawQuery.trim().toLowerCase();
   if (!q) return true;
   if (attrs.searchText !== undefined) {
     return attrs.searchText.includes(q);
