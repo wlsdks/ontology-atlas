@@ -358,22 +358,26 @@ export function OntologyTreeView({
     return !collapsed.has(id);
   };
 
+  // 트리 평탄화는 result.roots 당 한 번만 — collapsibleIds / defaultCollapsedIds
+  // 가 공유해 대형 vault 에서 매 렌더 재평탄화(O(N))를 피한다.
+  const flatNodes = useMemo(() => flattenTree(result.roots), [result.roots]);
+
   // children-있는 노드 ID 만 toggle 의미 — 잎노드는 collapsed 무관.
   const collapsibleIds = useMemo(() => {
     const ids = new Set<string>();
-    for (const flat of flattenTree(result.roots)) {
+    for (const flat of flatNodes) {
       if (flat.children.length > 0) ids.add(flat.node.id);
     }
     return ids;
-  }, [result.roots]);
+  }, [flatNodes]);
 
   // R12 — first-impression UX: capability 노드는 default 접힘.
   // capability 가 children (element) 을 가질 때만 의미. element/domain/project 는 영향 X.
-  // 작은 트리 (수십 노드) 라 매 렌더 O(N) 계산 — useMemo 는 lint 의 manual
-  // memoization 보존 룰과 충돌해서 인라인.
+  // 인라인 유지(useMemo 는 react-hooks/preserve-manual-memoization 경고) —
+  // 단, 비싼 평탄화는 위 flatNodes 메모를 재사용해 매 렌더 재평탄화는 없다.
   const defaultCollapsedIds = new Set<string>();
   if (collapseCapabilitiesByDefault) {
-    for (const flat of flattenTree(result.roots)) {
+    for (const flat of flatNodes) {
       if (flat.node.kind === "capability" && flat.children.length > 0) {
         defaultCollapsedIds.add(flat.node.id);
       }
