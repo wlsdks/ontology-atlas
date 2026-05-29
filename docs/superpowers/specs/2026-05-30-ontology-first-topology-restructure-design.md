@@ -47,6 +47,9 @@ User's words (verbatim intent):
 각 슬라이스 = 한 루프 iteration의 단위. 슬라이스 시작 전 codegraph 로 정확한 통합 지점 매핑.
 
 - **S1 — 토폴로지 인라인 편집.** 노드 선택 → kind/domain/summary 편집 → vault md write (builder-vault-write 재사용). 읽기 drawer 를 편집 가능으로.
+  - *통합 매핑 (codegraph, 2026-05-30):* 빌더 저장 경로 = `src/views/ontology-edit/ui/OntologyEditPage.tsx` `saveEphemeral` → `slugify(title)` → `${kind}s/${slug}.md` → `buildVaultMarkdown` → 로컬 vault write(`useLocalVault()` = `src/features/docs-vault-local`, views/home 가 import 가능 — FSD OK). 그러나 `buildVaultMarkdown`/`slugify` 는 `src/views/ontology-edit/lib` (다른 view) → cross-view import 금지.
+  - **S1.0 (groundwork, 비파괴):** `buildVaultMarkdown` + `slugify` + frontmatter 직렬화를 shared 레이어(`src/entities/docs-vault/lib` 또는 `src/shared/lib`)로 추출. 빌더는 그 위치에서 import (동작 무변). 단위/contract test 로 drift 차단. ← 토폴로지 재사용 unblock.
+  - **S1.1:** 토폴로지 drawer(`src/views/home/ui/TopologyOntologyDrawer.tsx`)에 편집 어포던스 추가 → `useLocalVault()` 저장 + S1.0 의 공용 직렬화 사용. 빈이름/`isUntitledTitle` 가드 + 동시편집(expected_mtime) 가드 재사용.
 - **S2 — 토폴로지 노드 생성.** 그래프에서 새 노드 추가 → add_concept 와 같은 schema 로 vault md.
 - **S3 — 토폴로지 관계 생성.** 두 노드 드래그 연결 → RelationWriteConfirm 재사용 → vault md.
 - **S4 — 문서탭 = 노드 설명.** `/docs` 를 노드 본문(설명) 편집으로 재구성, 온톨로지 스코프. 자유 노트 성격 약화.
