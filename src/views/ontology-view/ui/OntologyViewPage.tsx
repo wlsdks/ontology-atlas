@@ -1119,7 +1119,7 @@ function NodeDetailPanel({
             <Link
               href={topologyHref}
               aria-label={t('reviewOpenTopology')}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
             >
               <Network size={15} aria-hidden />
             </Link>
@@ -1128,7 +1128,7 @@ function NodeDetailPanel({
             <Link
               href={builderHref}
               aria-label={t('builderFocus')}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
             >
               <PencilLine size={15} aria-hidden />
             </Link>
@@ -1137,7 +1137,7 @@ function NodeDetailPanel({
             <Link
               href={reviewBrief.handoffLinks.query}
               aria-label={t('reviewOpenQuery')}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
             >
               <BarChart3 size={15} aria-hidden />
             </Link>
@@ -1149,7 +1149,7 @@ function NodeDetailPanel({
             type="button"
             onClick={onClose}
             aria-label={t('close')}
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]"
           >
             <X size={16} />
           </button>

@@ -305,7 +305,7 @@ export function DocsVaultEditor({
         <button
           type="button"
           onClick={requestClose}
-          className="mt-2 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-[11px] text-[color:var(--color-text-tertiary)] hover:border-[color:rgba(139,151,255,0.3)] hover:text-[color:var(--color-text-primary)]"
+          className="mt-2 rounded-sm border border-[color:var(--color-divider)] px-2 py-1 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.3)] hover:text-[color:var(--color-text-primary)]"
         >
           {t('close')}
         </button>
