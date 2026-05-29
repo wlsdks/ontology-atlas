@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Link2 } from "lucide-react";
 import { getProjectDetailUrl } from "@/entities/project";
-import { copyText } from "@/shared/lib/copy-text";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { Button, type ButtonProps, useToast } from "@/shared/ui";
 
 interface Props extends Omit<ButtonProps, "onClick"> {
@@ -12,8 +11,6 @@ interface Props extends Omit<ButtonProps, "onClick"> {
   testId?: string;
   href?: string;
 }
-
-type CopyState = "idle" | "copied" | "error";
 
 export function CopyProjectLinkButton({
   slug,
@@ -24,40 +21,30 @@ export function CopyProjectLinkButton({
   size = "sm",
   ...props
 }: Props) {
-  const [state, setState] = useState<CopyState>("idle");
+  // 복사 상태(idle/copied/failed)는 공용 useCopyFeedback 으로 — toast 는 별도.
+  const { state, copy } = useCopyFeedback(2000);
   const toast = useToast();
   const t = useTranslations("copyProjectLink");
 
-  useEffect(() => {
-    if (state === "idle") return;
-    const timeout = window.setTimeout(() => setState("idle"), 2000);
-    return () => window.clearTimeout(timeout);
-  }, [state]);
-
   const handleClick = async () => {
+    let url: string;
     try {
-      const url = href
+      url = href
         ? new URL(href, window.location.origin).toString()
         : getProjectDetailUrl(window.location.origin, slug);
-      const copied = await copyText(url);
-      if (copied) {
-        setState("copied");
-        toast.show(t("toastSuccess"), "success");
-      } else {
-        setState("error");
-        toast.show(t("toastError"), "error");
-      }
     } catch {
-      setState("error");
       toast.show(t("toastError"), "error");
+      return;
     }
+    const copied = await copy(url);
+    toast.show(copied ? t("toastSuccess") : t("toastError"), copied ? "success" : "error");
   };
 
   const icon = state === "copied" ? <Check size={14} /> : <Link2 size={14} />;
   const label =
     state === "copied"
       ? t("labelCopied")
-      : state === "error"
+      : state === "failed"
         ? t("labelError")
         : t("labelIdle");
 
