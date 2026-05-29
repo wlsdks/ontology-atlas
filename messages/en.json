@@ -2087,6 +2087,15 @@
         "source": "source-backed",
         "impact": "impact trace",
         "vocabulary": "review vocabulary"
+      },
+      "domainEdit": {
+        "field": "Domain",
+        "edit": "Edit domain",
+        "save": "Save domain",
+        "cancel": "Cancel",
+        "placeholder": "domain slug",
+        "empty": "none",
+        "saving": "Saving…"
       }
     },
     "analysis": {

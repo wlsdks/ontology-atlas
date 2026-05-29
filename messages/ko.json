@@ -2087,6 +2087,15 @@
         "source": "근거 있음",
         "impact": "impact 추적",
         "vocabulary": "어휘 리뷰"
+      },
+      "domainEdit": {
+        "field": "도메인",
+        "edit": "도메인 편집",
+        "save": "도메인 저장",
+        "cancel": "취소",
+        "placeholder": "도메인 slug",
+        "empty": "없음",
+        "saving": "저장 중…"
       }
     },
     "analysis": {

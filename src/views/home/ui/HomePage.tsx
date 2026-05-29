@@ -15,6 +15,7 @@ import { BookOpen } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
+import { useLocalVault } from "@/features/docs-vault-local";
 // 타입/기본값은 Sigma(WebGL) 의존성 없는 별도 모듈에서 직접 import해서
 // SSR 평가 경로에 WebGL 참조가 끼지 않도록 한다.
 import {
@@ -117,6 +118,10 @@ import {
   buildTopologyHealthActionTarget,
 } from "../lib/topology-analysis";
 import { resolveTopologySelectedOntologyNode } from "../lib/resolve-topology-selected-node";
+import {
+  buildNodeFrontmatterEdit,
+  resolveTopologyNodeEditTarget,
+} from "../lib/topology-node-edit";
 import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 
@@ -257,6 +262,34 @@ export function HomePage() {
     if (!ontologyInsight) return null;
     return resolveTopologySelectedOntologyNode(selectedSlug, ontologyInsight.nodes);
   }, [selectedSlug, selectedProject, ontologyInsight]);
+  // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
+  // 선택 노드를 자기 .md 문서로 해석해 drawer 에서 domain 인라인 편집을 허용.
+  const vault = useLocalVault();
+  const nodeEditTarget = useMemo(
+    () =>
+      selectedOntologyNode
+        ? resolveTopologyNodeEditTarget(selectedOntologyNode, vault.manifest?.docs ?? [])
+        : null,
+    [selectedOntologyNode, vault.manifest],
+  );
+  const saveNodeDomain = useCallback(
+    async (next: string) => {
+      if (!nodeEditTarget) return;
+      const { updates, changed } = buildNodeFrontmatterEdit(nodeEditTarget.frontmatter, {
+        domain: next,
+      });
+      if (!changed) return;
+      try {
+        await vault.updateFrontmatter(nodeEditTarget.vaultSlug, updates, {
+          expectedMtime: nodeEditTarget.mtime,
+        });
+        toast.show(t("ontologyDrawer.domainEdit.saved"), "success");
+      } catch {
+        toast.show(t("ontologyDrawer.domainEdit.error"), "error");
+      }
+    },
+    [nodeEditTarget, vault, toast, t],
+  );
   const combinedFitToken = fitViewToken;
   const analysisModeRef = useRef<TopologyAnalysisMode>("overview");
   // 클라이언트 사이드 동적 타이틀 — 선택 프로젝트 컨텍스트를 브라우저 탭에
@@ -1463,6 +1496,26 @@ export function HomePage() {
                 vocabulary: t("ontologyDrawer.collaboratorChip.vocabulary"),
               },
             }}
+            domainEdit={
+              nodeEditTarget && vault.manifest !== null
+                ? {
+                    value:
+                      typeof nodeEditTarget.frontmatter.domain === "string"
+                        ? nodeEditTarget.frontmatter.domain
+                        : "",
+                    onSave: saveNodeDomain,
+                    labels: {
+                      field: t("ontologyDrawer.domainEdit.field"),
+                      edit: t("ontologyDrawer.domainEdit.edit"),
+                      save: t("ontologyDrawer.domainEdit.save"),
+                      cancel: t("ontologyDrawer.domainEdit.cancel"),
+                      placeholder: t("ontologyDrawer.domainEdit.placeholder"),
+                      empty: t("ontologyDrawer.domainEdit.empty"),
+                      saving: t("ontologyDrawer.domainEdit.saving"),
+                    },
+                  }
+                : null
+            }
           />
         ) : null}
         <SearchPalette
