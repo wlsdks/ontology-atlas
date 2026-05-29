@@ -18,7 +18,6 @@ export { buildRadialEgoLayout } from "./ego-layout";
 export {
   filterTreeByQuery,
   countMatchingTreeNodes,
-  nodeMatchesTreeQuery,
   knowledgeNodeMatchesQuery,
 } from "./filter-tree";
 export {

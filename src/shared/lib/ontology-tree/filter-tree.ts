@@ -17,14 +17,6 @@ export function knowledgeNodeMatchesQuery(
   );
 }
 
-/** 트리 노드 wrapper 용 — 내부 KnowledgeGraphNode 로 위임. */
-export function nodeMatchesTreeQuery(
-  node: OntologyTreeNode,
-  trimmedLowerQuery: string,
-): boolean {
-  return knowledgeNodeMatchesQuery(node.node, trimmedLowerQuery);
-}
-
 /**
  * query 에 실제로 매치되는 트리 노드 수 (조상만 살아남은 구조 노드는 제외).
  * 검색 결과 카운트 표시용 — filterTreeByQuery 와 같은 매치 기준.
@@ -38,7 +30,7 @@ export function countMatchingTreeNodes(
   if (trimmed === "") return 0;
   let count = 0;
   const walk = (node: OntologyTreeNode): void => {
-    if (nodeMatchesTreeQuery(node, trimmed)) count += 1;
+    if (knowledgeNodeMatchesQuery(node.node, trimmed)) count += 1;
     for (const child of node.children) walk(child);
   };
   for (const root of roots) walk(root);
@@ -69,7 +61,7 @@ export function filterTreeByQuery(
   if (trimmed === "") return roots.slice();
 
   function visit(node: OntologyTreeNode): OntologyTreeNode | null {
-    const titleMatch = nodeMatchesTreeQuery(node, trimmed);
+    const titleMatch = knowledgeNodeMatchesQuery(node.node, trimmed);
     const filteredChildren = node.children
       .map(visit)
       .filter((c): c is OntologyTreeNode => c !== null);
