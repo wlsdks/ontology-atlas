@@ -64,6 +64,7 @@ import {
 } from "@/shared/lib/ontology-tree";
 import { copyText } from "@/shared/lib/copy-text";
 import { formatQueryOntologyCall as formatInsightsQueryOntologyCall } from "@/shared/lib/ontology-query-call";
+import { shellArg } from "@/shared/lib/shell-arg";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { EmptyState } from "@/shared/ui";
@@ -2704,9 +2705,6 @@ function formatDomainCouplingPathCheck({
 }
 
 
-function shellArg(value: string): string {
-  return `'${value.replace(/'/g, "'\\''")}'`;
-}
 
 function CopyAgentTextButton({
   label,

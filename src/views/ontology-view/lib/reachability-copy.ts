@@ -1,4 +1,5 @@
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { formatQueryOntologyCall as mcpCall } from "@/shared/lib/ontology-query-call";
 import {
   AGENT_GRAPH_DB_RUNTIME_GATE_CHECK_COUNT,
   formatAgentPostChangeSyncPacket,
@@ -213,9 +214,6 @@ export function buildAgentContextBundle({
   ].join("\n");
 }
 
-function mcpCall(payload: Record<string, unknown>): string {
-  return `query_ontology(${JSON.stringify(payload)})`;
-}
 
 function shellQuote(value: string): string {
   if (/^[A-Za-z0-9_./:@+-]+$/.test(value)) return value;

@@ -3,14 +3,8 @@ import {
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
   formatAgentPostChangeSyncPacket,
 } from "@/shared/lib/ontology-tree";
-
-function mcpCall(payload: Record<string, unknown>): string {
-  return `query_ontology(${JSON.stringify(payload)})`;
-}
-
-function shellArg(value: string): string {
-  return `'${value.replace(/'/g, "'\\''")}'`;
-}
+import { formatQueryOntologyCall as mcpCall } from "@/shared/lib/ontology-query-call";
+import { shellArg } from "@/shared/lib/shell-arg";
 
 export function formatBuilderProofPacket(selectedProofNodeId?: string | null): string {
   const selected = typeof selectedProofNodeId === "string" && selectedProofNodeId.length > 0
