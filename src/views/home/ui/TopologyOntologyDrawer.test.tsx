@@ -317,4 +317,49 @@ describe("TopologyOntologyDrawer", () => {
       "- Incoming contains: domains/views (domains/views)",
     );
   });
+
+  const domainEditLabels = {
+    field: "도메인",
+    edit: "도메인 편집",
+    save: "저장",
+    cancel: "취소",
+    placeholder: "도메인 slug",
+    empty: "없음",
+    saving: "저장 중",
+  };
+
+  it("domainEdit 미지정 — 도메인 편집 섹션 없음 (읽기 전용 현행)", () => {
+    render(
+      <TopologyOntologyDrawer
+        node={node("capabilities/auth")}
+        nodes={[node("capabilities/auth")]}
+        edges={[]}
+        onClose={() => {}}
+        closeLabel="close"
+        labels={labels}
+      />,
+    );
+    expect(screen.queryByTestId("drawer-domain-edit")).not.toBeInTheDocument();
+  });
+
+  it("domainEdit 주입 — 인라인 편집 + 저장 시 onSave 호출", async () => {
+    const onSave = vi.fn();
+    render(
+      <TopologyOntologyDrawer
+        node={node("capabilities/auth")}
+        nodes={[node("capabilities/auth")]}
+        edges={[]}
+        onClose={() => {}}
+        closeLabel="close"
+        labels={labels}
+        domainEdit={{ value: "auth", onSave, labels: domainEditLabels }}
+      />,
+    );
+    const section = screen.getByTestId("drawer-domain-edit");
+    expect(section).toHaveTextContent("auth");
+    fireEvent.click(screen.getByTestId("inline-field-edit-button"));
+    fireEvent.change(screen.getByTestId("inline-field-input"), { target: { value: "billing" } });
+    fireEvent.click(screen.getByTestId("inline-field-save"));
+    await waitFor(() => expect(onSave).toHaveBeenCalledWith("billing"));
+  });
 });

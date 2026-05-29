@@ -19,6 +19,7 @@ import {
   buildOntologyNodeHref,
 } from "@/entities/knowledge-graph";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
+import { InlineFieldEdit, type InlineFieldEditLabels } from "./InlineFieldEdit";
 import { copyText } from "@/shared/lib/copy-text";
 import { useToast } from "@/shared/ui";
 import { formatAgentPostChangeSyncPacket } from "@/shared/lib/ontology-tree";
@@ -106,6 +107,15 @@ interface Props {
     collaboratorReviewQuestionLabels: Record<CollaboratorReview, readonly string[]>;
     collaboratorChipLabels: Record<CollaboratorChip, string>;
   };
+  /**
+   * S1.1.1b — 토폴로지를 1차 편집 surface 로. 쓰기 가능한 vault 의 노드면
+   * HomePage 가 domain 인라인 편집을 주입. null/미지정이면 읽기 전용(현행).
+   */
+  domainEdit?: {
+    value: string;
+    onSave: (next: string) => void | Promise<void>;
+    labels: InlineFieldEditLabels;
+  } | null;
 }
 
 export function TopologyOntologyDrawer({
@@ -115,6 +125,7 @@ export function TopologyOntologyDrawer({
   onClose,
   closeLabel,
   labels,
+  domainEdit,
 }: Props) {
   const model = buildTopologyOntologyDrawerModel(node, nodes, edges);
   const toast = useToast();
@@ -301,6 +312,16 @@ export function TopologyOntologyDrawer({
         </button>
         </div>
       </header>
+
+      {domainEdit ? (
+        <div className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-domain-edit">
+          <InlineFieldEdit
+            value={domainEdit.value}
+            onSave={domainEdit.onSave}
+            labels={domainEdit.labels}
+          />
+        </div>
+      ) : null}
 
       {node.summary ? (
         <details>
