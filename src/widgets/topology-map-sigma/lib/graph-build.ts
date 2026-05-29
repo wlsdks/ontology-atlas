@@ -208,6 +208,12 @@ export function buildGraph(
       nodes: readonly KnowledgeGraphNode[];
       edges: readonly KnowledgeGraphEdge[];
     };
+    /**
+     * 변경점(changeset) baseline 대비 added/changed 된 노드 id 집합. 여기 든
+     * 노드는 recentlyUpdated 로 표시돼 기존 pulse 로 시각 강조된다(회의·리뷰에서
+     * "기준 이후 바뀐 개념"). 비어있으면 기존 동작 유지.
+     */
+    changedSlugs?: ReadonlySet<string>;
   },
 ): Graph<SigmaNodeAttrs, SigmaEdgeAttrs> {
   const graph = new Graph<SigmaNodeAttrs, SigmaEdgeAttrs>({ type: 'directed', multi: false });
@@ -237,7 +243,8 @@ export function buildGraph(
     const r = jitter(index + 7) * 40;
     const recent =
       isProjectRecentlyUpdated(project, 7) ||
-      options?.runtimeRecentSlugs?.has(project.slug) === true;
+      options?.runtimeRecentSlugs?.has(project.slug) === true ||
+      options?.changedSlugs?.has(project.slug) === true;
 
     // O-9b: 일반 project 노드 (hub 제외) 만 ontology 도미넌트 kind 에 따라
     // borderColor 분기. fill 은 분기 안 함 — 헌장 "허브만 유일한 채색" +
@@ -345,7 +352,7 @@ export function buildGraph(
         size: ONTOLOGY_NODE_SIZE_BY_KIND[kind],
         label: ontologyLabel,
         forceLabel: false,
-        recentlyUpdated: false,
+        recentlyUpdated: options?.changedSlugs?.has(node.id) === true,
         // 흐린 무채색 fill — 헌장의 "허브만 유일한 채색" 과 충돌 안 함.
         color: palette.ontologyFill,
         borderColor: tone?.borderColor ?? palette.nodeBorder,

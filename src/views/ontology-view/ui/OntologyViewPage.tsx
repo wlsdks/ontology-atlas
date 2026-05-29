@@ -21,15 +21,16 @@ import {
   buildOntologyEgoSubgraph,
   buildOntologyReachability,
   buildOntologyTree,
+  clearChangeBaseline,
   computeOntologyChangeset,
   formatAgentPostChangeSyncPacket,
   countTreeNodes,
+  markChangeBaseline,
   selectAgentQueryEntrypoints,
-  snapshotOntology,
+  useChangeBaseline,
   type OntologyEgoSubgraph,
   type OntologyReachability,
   type OntologyReachabilityDirection,
-  type OntologySnapshot,
   type OntologyTreeBuildResult,
 } from "@/shared/lib/ontology-tree";
 import { copyText } from "@/shared/lib/copy-text";
@@ -193,8 +194,9 @@ export function OntologyViewPage() {
   }, [agentBriefing, show, t]);
 
   // 변경점(changeset) — 세션 baseline 스냅샷 대비 added/changed/removed. baseline
-  // 안 찍으면 빈 changeset. 회의·설계 리뷰에서 "지금까지 뭐 바뀌었나" 시각화.
-  const [changeBaseline, setChangeBaseline] = useState<OntologySnapshot | null>(null);
+  // 은 공유 스토어(useChangeBaseline) 라 /topology 등 다른 surface 와 같은 기준을
+  // 본다. 안 찍으면 빈 changeset. 회의·설계 리뷰에서 "지금까지 뭐 바뀌었나" 시각화.
+  const changeBaseline = useChangeBaseline();
   const ontologyChangeset = useMemo(
     () => computeOntologyChangeset(changeBaseline, insight?.nodes ?? [], insight?.edges ?? []),
     [changeBaseline, insight],
@@ -204,11 +206,10 @@ export function OntologyViewPage() {
     if (insight) for (const n of insight.nodes) map.set(n.id, n);
     return map;
   }, [insight]);
-  const markChangeBaseline = useCallback(() => {
+  const handleMarkChangeBaseline = useCallback(() => {
     if (!insight) return;
-    setChangeBaseline(snapshotOntology(insight.nodes, insight.edges, Date.now()));
+    markChangeBaseline(insight.nodes, insight.edges, Date.now());
   }, [insight]);
-  const clearChangeBaseline = useCallback(() => setChangeBaseline(null), []);
 
   // treeResult / insight 가 동일할 때 매 selection re-render 마다 재계산
   // 회피. countTreeNodes 는 트리 walk + filter 는 O(N) — 작아도 매 클릭마다
@@ -408,7 +409,7 @@ export function OntologyViewPage() {
             changeset={ontologyChangeset}
             hasBaseline={changeBaseline !== null}
             nodeById={nodeById}
-            onMarkBaseline={markChangeBaseline}
+            onMarkBaseline={handleMarkChangeBaseline}
             onClearBaseline={clearChangeBaseline}
             onSelectNode={(node) => selectNode(node)}
           />

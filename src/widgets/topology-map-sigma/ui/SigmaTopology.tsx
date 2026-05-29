@@ -243,6 +243,12 @@ interface SigmaTopologyProps {
    */
   stripNamePrefix?: string;
   /**
+   * 변경점 baseline 대비 added/changed 된 노드 id 집합. 여기 든 노드는 기존
+   * recent-pulse 로 시각 강조된다 — 회의·리뷰에서 "기준 이후 바뀐 개념"을
+   * 토폴로지에서 바로 본다. 비어있으면 기존 동작 유지.
+   */
+  changedSlugs?: ReadonlySet<string>;
+  /**
    * R14: true 면 vault 의 ontology 도메인/역량/요소 노드와 그 관계를 같은
    * 그래프에 그린다. project↔project dependencies 는 그대로 살아있고
    * 그 위에 ontology 골격이 얹힌다. `/topology` 라우트 (HomePage) 에서 켠다.
@@ -282,6 +288,7 @@ function SigmaTopologyImpl({
   onFirstInteraction,
   minimal = false,
   stripNamePrefix,
+  changedSlugs,
   showOntologyNodes = false,
   pathWorkflowActive = false,
   pathSelection = null,
@@ -559,6 +566,7 @@ function SigmaTopologyImpl({
       stripNamePrefix,
       ontologyCountsBySlug,
       runtimeRecentSlugs,
+      changedSlugs,
       // R14: showOntologyNodes 켜진 surface (HomePage / /topology) 에서만
       // ontology 노드를 그래프에 추가. project mini map 등은 켜지 않음.
       ontologyExtension:
@@ -597,6 +605,7 @@ function SigmaTopologyImpl({
     stripNamePrefix,
     ontologyCountsBySlug,
     runtimeRecentSlugs,
+    changedSlugs,
     showOntologyNodes,
     ontologyInsight,
     minimal,

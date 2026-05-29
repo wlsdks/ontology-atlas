@@ -167,3 +167,70 @@ describe("buildGraph — project 의존성 엣지 분류 (depProject 룩업)", (
     expect(graph.size).toBe(0); // 엣지 0
   });
 });
+
+describe("buildGraph — changedSlugs (변경점 pulse)", () => {
+  it("changedSlugs 의 project 노드는 recentlyUpdated 로 표시", () => {
+    // 날짜를 과거로 둬 isProjectRecentlyUpdated 영향 제거 → changedSlugs 만 격리.
+    const old = new Date(0);
+    const projects = [
+      project({ slug: "a", isHub: false, createdAt: old, updatedAt: old }),
+      project({ slug: "b", isHub: false, createdAt: old, updatedAt: old }),
+    ];
+    const graph = buildGraph(projects, [], { changedSlugs: new Set(["a"]) });
+    expect(graph.getNodeAttribute("a", "recentlyUpdated")).toBe(true);
+    expect(graph.getNodeAttribute("b", "recentlyUpdated")).toBe(false);
+  });
+
+  it("changedSlugs 의 ontology ext 노드도 recentlyUpdated 로 표시", () => {
+    const projects = [project({ slug: "p", isHub: false })];
+    const graph = buildGraph(projects, [], {
+      changedSlugs: new Set(["capabilities/x"]),
+      ontologyExtension: {
+        nodes: [
+          {
+            id: "capabilities/x",
+            title: "X",
+            kind: "capability",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+          {
+            id: "capabilities/y",
+            title: "Y",
+            kind: "capability",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+        ],
+        edges: [],
+      },
+    });
+    expect(graph.getNodeAttribute("capabilities/x", "recentlyUpdated")).toBe(true);
+    expect(graph.getNodeAttribute("capabilities/y", "recentlyUpdated")).toBe(false);
+  });
+
+  it("changedSlugs 미지정 시 ontology 노드 recentlyUpdated=false (기존 동작)", () => {
+    const projects = [project({ slug: "p", isHub: false })];
+    const graph = buildGraph(projects, [], {
+      ontologyExtension: {
+        nodes: [
+          {
+            id: "domains/d",
+            title: "D",
+            kind: "domain",
+            projectIds: [],
+            evidenceIds: [],
+            lastApprovedAt: new Date(0),
+            lastApprovedBy: "t",
+          },
+        ],
+        edges: [],
+      },
+    });
+    expect(graph.getNodeAttribute("domains/d", "recentlyUpdated")).toBe(false);
+  });
+});

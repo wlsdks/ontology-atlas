@@ -106,6 +106,7 @@ import {
   buildOntologyHealthSignals,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
+import { computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
 import {
   selectTopologyNodeRouteState,
@@ -241,6 +242,16 @@ export function HomePage() {
   // 매칭이 없을 때만 사용 — 즉 토폴로지에서 domain/capability/element
   // 노드 클릭한 케이스.
   const { insight: ontologyInsight } = useOntologyInsight();
+  // 변경점 baseline(공유 스토어)이 찍혀 있으면, 기준 이후 added/changed 된
+  // ontology 노드를 토폴로지에서 pulse 로 강조 — /ontology 변경 패널과 같은
+  // 기준을 spatial view 에서도 본다(회의·리뷰).
+  const changeBaseline = useChangeBaseline();
+  const changedSlugs = useMemo(
+    () =>
+      computeOntologyChangeset(changeBaseline, ontologyInsight?.nodes ?? [], ontologyInsight?.edges ?? [])
+        .touchedNodeIds,
+    [changeBaseline, ontologyInsight],
+  );
   const selectedOntologyNode = useMemo(() => {
     if (!selectedSlug || selectedProject) return null;
     if (!ontologyInsight) return null;
@@ -1124,6 +1135,7 @@ export function HomePage() {
                   forces={sigmaControls.forces}
                   hubsOnly={sigmaControls.hubsOnly}
                   overlays={sigmaControls.overlays}
+                  changedSlugs={changedSlugs}
                   // R14: /topology 는 vault ontology 의 도메인/역량/요소
                   // 노드와 그 관계까지 같은 그래프에 그린다. project 1 개 +
                   // dependencies 0 인 dogfood 상황에서 빈 화면이었던 회귀를
