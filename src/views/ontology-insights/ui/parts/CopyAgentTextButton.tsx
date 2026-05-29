@@ -1,13 +1,13 @@
 import { Check, Clipboard } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useRef, useState } from "react";
-import { copyText } from "@/shared/lib/copy-text";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 
 /**
  * 인사이트 페이지 전반에서 쓰이는 "복사" 버튼. 클립보드 복사 + 성공/실패
  * 토스트 톤 + 스크린리더 announce(별도 polite live region — 포커스된 버튼의
  * aria-label 변경은 자동 재낭독되지 않으므로). OntologyInsightsPage 모놀리스
- * 에서 분리해 추출된 패널들이 공용으로 import.
+ * 에서 분리해 추출된 패널들이 공용으로 import. 복사 상태 로직은 공용
+ * useCopyFeedback 훅(16+곳 중복 제거) 사용.
  */
 export function CopyAgentTextButton({
   label,
@@ -21,24 +21,10 @@ export function CopyAgentTextButton({
   compact?: boolean;
 }) {
   const t = useTranslations("ontologyPages.insights");
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
-  const resetTimer = useRef<number | null>(null);
+  const { state: copyState, copy } = useCopyFeedback();
 
-  useEffect(() => {
-    return () => {
-      if (resetTimer.current !== null) {
-        window.clearTimeout(resetTimer.current);
-      }
-    };
-  }, []);
-
-  async function handleCopy() {
-    const ok = await copyText(text);
-    if (resetTimer.current !== null) {
-      window.clearTimeout(resetTimer.current);
-    }
-    setCopyState(ok ? "copied" : "failed");
-    resetTimer.current = window.setTimeout(() => setCopyState("idle"), 1500);
+  function handleCopy() {
+    void copy(text);
   }
 
   const visibleLabel =
