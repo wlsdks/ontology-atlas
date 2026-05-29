@@ -67,7 +67,19 @@ User's words (verbatim intent):
 - FSD 경계: 토폴로지 위젯이 빌더의 write 로직을 직접 import 못 함 → 공용 write 로직을 shared/entities 로 끌어내리는 소규모 리팩터 필요할 수 있음(현재 위치 먼저 확인).
 - 정적 export 제약 유지 (server action 금지).
 
-## Out of scope (별도 쓰레드)
+## 사용자 결정 (2026-05-30, "진행해줘 한번에")
 
-- **Live agent-activity 모드** (자동 baseline + ambient indicator + Tauri 파일워처) — 설계 완료, 별도 구현 예정.
-- **T3 live glow** — 디자인 헌장(forbidden: glow/neon) 결정 사항. 헌장 유지(은은한 인디고 ring/밝기) vs 진화(먼저 forbidden.md 갱신). 사용자 결정 대기.
+전체 프로그램을 무중단 연속 구현하도록 승인됨. per-step 승인 대기 없이 진행하되, *진짜* blocker(빌드 깨짐·모호한 데이터·되돌릴 수 없는 외부 영향)만 surface.
+- **glow(T3) = 옵션 (a) 확정.** 디자인 헌장 유지. "반짝/눈에 띔"은 **헌장 호환**(인디고 ring + 밝기/opacity pulse). `forbidden.md` 의 glow/neon 금지 그대로, 헌장 파일 수정 금지.
+- **S5(빌더) = 비파괴 강등 확정.** `/ontology/edit` 라우트 *유지*. 토폴로지를 1차 편집 surface 로 올리고 빌더는 내비에서 "고급"으로 강등(되돌림 가능). 라우트 삭제·문서 폐기 금지.
+
+## Live agent-activity 모드 (이 프로그램에 포함 — 설계 완료)
+
+에이전트가 vault 를 편집하면 클릭 없이 화면에 *티나게* 반영. (기존 R13 폴링/toast 위에 얹음)
+
+- **웹:** vault 첫 load 시 자동 baseline 1회(`markChangeBaseline`, local 모드 + nodes>0 + baseline 없음일 때) → 이후 폴링이 변경 감지하면 `changedSlugs`(=touchedNodeIds) 가 채워져 토폴로지가 자동 pulse(기존 B1 경로 재사용). 초기 load 는 변경으로 표시하지 않음. + 상시 ambient indicator(`src/widgets/operations-nav` 에 "🟢 Live · 방금 N개 변경" 배지, transient toast 아님, 헌장 호환 인디고 emphasis). static/dogfood 모드는 live 없음.
+- **Tauri 데스크톱:** `src-tauri/Cargo.toml` 에 `notify-debouncer-full`(500ms debounce) 추가 → `start_vault_watch(root)` 커맨드(`#[tauri::command]`, lib.rs:288 `generate_handler!` 등록 + `.manage(VaultWatcherState)`)가 `.md` 변경 시 `AppHandle.emit("vault-changed", {path,kind})` → JS `listen('vault-changed')`(`@tauri-apps/api/event`) 가 기존 refresh 트리거. `capabilities/default.json` 에 `fs:read-all`/`fs:list-all` 추가. *검증 한계:* `cargo build`/`cargo test --manifest-path src-tauri/Cargo.toml` 까지는 가능, 전체 데스크톱 e2e 는 이 환경에서 불가 — 정직하게 표기.
+
+## 진행 상황 (loop 갱신)
+
+- [ ] S1.0 직렬화 추출 · [ ] S1.1 토폴로지 편집 · [ ] S2 · [ ] S3 · [ ] S4 · [ ] S5(비파괴) · [ ] S6 · [ ] live-web · [ ] live-tauri
