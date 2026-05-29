@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Clipboard, GitBranch, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
@@ -128,6 +128,28 @@ export function RelationWriteConfirm({
   onCancel,
   onConfirm,
 }: RelationWriteConfirmProps) {
+  // Modal a11y — sibling BlastRadiusConfirm 과 동일 패턴: 열릴 때 닫기 버튼으로
+  // 초기 focus 이동(키보드/스크린리더 사용자가 trigger 에 갇히지 않게), 언마운트
+  // 시 직전 focus 복원, Escape 로 취소.
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+    return () => {
+      previousFocusRef.current?.focus?.();
+    };
+  }, []);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onCancel]);
+
   const preview = buildVaultRelationWritePreview(
     proposal.sourceSlug,
     selectedKey,
@@ -300,6 +322,7 @@ export function RelationWriteConfirm({
           </div>
         </div>
         <button
+          ref={closeButtonRef}
           type="button"
           onClick={onCancel}
           aria-label={labels.closeAriaLabel}

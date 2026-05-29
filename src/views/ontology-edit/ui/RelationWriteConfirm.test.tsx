@@ -1032,3 +1032,37 @@ describe("RelationPostSaveHandoff", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("RelationWriteConfirm — modal a11y", () => {
+  it("열릴 때 닫기 버튼으로 초기 focus 이동", () => {
+    render(
+      <RelationWriteConfirm
+        proposal={proposal}
+        selectedKey="elements"
+        preflight={safePreflight}
+        labels={labels}
+        onSelectKey={vi.fn()}
+        onCancel={vi.fn()}
+        onConfirm={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Close" })).toHaveFocus();
+  });
+
+  it("Escape 키로 onCancel 호출", () => {
+    const onCancel = vi.fn();
+    render(
+      <RelationWriteConfirm
+        proposal={proposal}
+        selectedKey="elements"
+        preflight={safePreflight}
+        labels={labels}
+        onSelectKey={vi.fn()}
+        onCancel={onCancel}
+        onConfirm={vi.fn()}
+      />,
+    );
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+});
