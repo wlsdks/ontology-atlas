@@ -414,7 +414,11 @@ export function OntologyViewPage() {
       ) : null}
 
       {!treeResult ? (
-        <div className="rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-6 py-10 text-center text-sm text-[color:var(--color-text-tertiary)]">
+        <div
+          role="status"
+          aria-live="polite"
+          className="rounded-2xl border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-6 py-10 text-center text-sm text-[color:var(--color-text-tertiary)]"
+        >
           {t('loading')}
         </div>
       ) : (
