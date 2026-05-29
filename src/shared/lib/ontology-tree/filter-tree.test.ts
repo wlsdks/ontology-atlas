@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { buildOntologyTree } from "./build-tree";
-import { filterTreeByQuery } from "./filter-tree";
+import { countMatchingTreeNodes, filterTreeByQuery } from "./filter-tree";
 
 const APPROVED_AT = new Date("2026-04-27T00:00:00Z");
 const node = (id: string, title: string, kind = "capability"): KnowledgeGraphNode => ({
@@ -144,5 +144,36 @@ describe("filterTreeByQuery", () => {
     const r = filterTreeByQuery(enTree.roots, "auth");
     expect(r).toHaveLength(1);
     expect(r[0]?.children).toHaveLength(1);
+  });
+});
+
+describe("countMatchingTreeNodes", () => {
+  const nodes = [
+    node("root", "프로젝트", "project"),
+    withParent(node("child-1", "로그인")),
+    withParent(node("grand-1", "세션", "element")),
+    withParent(node("child-2", "로그아웃")),
+  ];
+  const edges = [
+    { id: "e1", from: "root", to: "child-1", type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: APPROVED_AT, lastApprovedBy: "test" },
+    { id: "e2", from: "child-1", to: "grand-1", type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: APPROVED_AT, lastApprovedBy: "test" },
+    { id: "e3", from: "root", to: "child-2", type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: APPROVED_AT, lastApprovedBy: "test" },
+  ];
+  const tree = buildOntologyTree(nodes, edges);
+
+  it("빈 query → 0", () => {
+    expect(countMatchingTreeNodes(tree.roots, "")).toBe(0);
+    expect(countMatchingTreeNodes(tree.roots, "   ")).toBe(0);
+  });
+
+  it("매치 노드 수만 카운트 (조상 구조 노드 제외)", () => {
+    // "로그" → 로그인 + 로그아웃 = 2 (root/세션 은 비매치)
+    expect(countMatchingTreeNodes(tree.roots, "로그")).toBe(2);
+    // "세션" → grand-1 1개 (조상 root/child-1 은 카운트 안 함)
+    expect(countMatchingTreeNodes(tree.roots, "세션")).toBe(1);
+  });
+
+  it("매치 없음 → 0", () => {
+    expect(countMatchingTreeNodes(tree.roots, "xyzqwerty")).toBe(0);
   });
 });

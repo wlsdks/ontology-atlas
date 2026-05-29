@@ -15,7 +15,11 @@ export type {
   OntologyReachabilitySummary,
 } from "./reachability";
 export { buildRadialEgoLayout } from "./ego-layout";
-export { filterTreeByQuery } from "./filter-tree";
+export {
+  filterTreeByQuery,
+  countMatchingTreeNodes,
+  nodeMatchesTreeQuery,
+} from "./filter-tree";
 export {
   computeEdgeTypeDistribution,
   countCrossProjectEdges,

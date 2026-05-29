@@ -7,6 +7,7 @@ import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Search, X } 
 import { getOntologyKindIcon, useOntologyKindLabel } from "@/entities/ontology-class";
 import {
   filterTreeByQuery,
+  countMatchingTreeNodes,
   flattenTree,
   UNKNOWN_TONE,
   type OntologyTreeBuildResult,
@@ -310,6 +311,14 @@ export function OntologyTreeView({
     );
   }, [result.orphans, searchQuery]);
   const isFiltering = searchQuery.trim() !== "";
+  // 검색 매치 수 — 트리 노드 매치 + orphan 매치 (조상만 살아남은 구조 노드 제외).
+  const matchCount = useMemo(
+    () =>
+      isFiltering
+        ? countMatchingTreeNodes(sortedRoots, searchQuery) + filteredOrphans.length
+        : 0,
+    [isFiltering, sortedRoots, searchQuery, filteredOrphans.length],
+  );
 
   const toggle = (id: string) => {
     setCollapsed((prev) => {
@@ -655,6 +664,14 @@ export function OntologyTreeView({
           </button>
         ) : null}
       </div>
+      {isFiltering && matchCount > 0 ? (
+        <p
+          className="px-1 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]"
+          aria-live="polite"
+        >
+          {t('tree.matchCount', { count: matchCount })}
+        </p>
+      ) : null}
       {collapsibleIds.size > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-[11px] text-[color:var(--color-text-tertiary)]">
           <span className="font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">

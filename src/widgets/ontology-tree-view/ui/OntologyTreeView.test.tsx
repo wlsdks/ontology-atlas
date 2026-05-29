@@ -86,6 +86,13 @@ describe("OntologyTreeView — basic render", () => {
     expect(marked.tagName).toBe("MARK");
   });
 
+  it("검색 시 매치 수 카운트 표시", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+    // makeResult: Sample > 인증 > 로그인. "인증" 검색 → 1 매치.
+    fireEvent.change(screen.getByRole("searchbox"), { target: { value: "인증" } });
+    expect(screen.getByText("1개 일치")).toBeInTheDocument();
+  });
+
   it("orphan 행 제목도 검색 매치 강조 (main tree 와 일관)", () => {
     const result = {
       ...makeResult(),

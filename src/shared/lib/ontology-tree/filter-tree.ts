@@ -1,6 +1,42 @@
 import type { OntologyTreeNode } from "./types";
 
 /**
+ * 트리 노드가 검색어에 매치되는지 — title 또는 id(kind:slug) 의 소문자 포함.
+ * `query` 는 이미 trim + 소문자화된 값을 기대. filterTreeByQuery 와
+ * countMatchingTreeNodes 가 동일 기준을 쓰도록 단일 predicate 로 추출.
+ */
+export function nodeMatchesTreeQuery(
+  node: OntologyTreeNode,
+  trimmedLowerQuery: string,
+): boolean {
+  if (trimmedLowerQuery === "") return false;
+  return (
+    node.node.title.toLowerCase().includes(trimmedLowerQuery)
+    || node.node.id.toLowerCase().includes(trimmedLowerQuery)
+  );
+}
+
+/**
+ * query 에 실제로 매치되는 트리 노드 수 (조상만 살아남은 구조 노드는 제외).
+ * 검색 결과 카운트 표시용 — filterTreeByQuery 와 같은 매치 기준.
+ * 빈 query 면 0.
+ */
+export function countMatchingTreeNodes(
+  roots: readonly OntologyTreeNode[],
+  query: string,
+): number {
+  const trimmed = query.trim().toLowerCase();
+  if (trimmed === "") return 0;
+  let count = 0;
+  const walk = (node: OntologyTreeNode): void => {
+    if (nodeMatchesTreeQuery(node, trimmed)) count += 1;
+    for (const child of node.children) walk(child);
+  };
+  for (const root of roots) walk(root);
+  return count;
+}
+
+/**
  * 트리에서 query 매치하는 노드만 남기되 **부모 chain 보존**.
  *
  * 매치 기준: node.title 또는 node.id (kind:slug 형태) 의 lower-case includes
@@ -24,9 +60,7 @@ export function filterTreeByQuery(
   if (trimmed === "") return roots.slice();
 
   function visit(node: OntologyTreeNode): OntologyTreeNode | null {
-    const titleMatch =
-      node.node.title.toLowerCase().includes(trimmed)
-      || node.node.id.toLowerCase().includes(trimmed);
+    const titleMatch = nodeMatchesTreeQuery(node, trimmed);
     const filteredChildren = node.children
       .map(visit)
       .filter((c): c is OntologyTreeNode => c !== null);
