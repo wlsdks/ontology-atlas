@@ -82,4 +82,4 @@ User's words (verbatim intent):
 
 ## 진행 상황 (loop 갱신)
 
-- [ ] S1.0 직렬화 추출 · [ ] S1.1 토폴로지 편집 · [ ] S2 · [ ] S3 · [ ] S4 · [ ] S5(비파괴) · [ ] S6 · [ ] live-web · [ ] live-tauri
+- [x] S1.0 직렬화 추출 (buildVaultMarkdown → entities/docs-vault, 커밋 7fd46b20) · [ ] S1.1 토폴로지 편집 · [ ] S2 · [ ] S3 · [ ] S4 · [ ] S5(비파괴) · [ ] S6 · [ ] live-web · [ ] live-tauri
