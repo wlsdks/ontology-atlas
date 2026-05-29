@@ -135,12 +135,12 @@ export function OntologyKindPalette({
                     </span>
                     <kbd
                       aria-hidden
-                      className="shrink-0 rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-px font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)] group-hover:text-[color:var(--color-text-tertiary)]"
+                      className="shrink-0 rounded border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-1.5 py-px font-mono text-[9px] uppercase tracking-[0.06em] text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-tertiary)]"
                     >
                       {entry.shortcut}
                     </kbd>
                   </span>
-                  <span className="text-[11px] leading-4 text-[color:var(--color-text-quaternary)] group-hover:text-[color:var(--color-text-tertiary)]">
+                  <span className="text-[11px] leading-4 text-[color:var(--color-text-quaternary)] transition-colors group-hover:text-[color:var(--color-text-tertiary)]">
                     {hint}
                   </span>
                 </span>

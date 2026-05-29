@@ -83,7 +83,7 @@ function BacklinkItem({
             className="flex-none opacity-60"
             aria-hidden
           />
-          <span className="truncate text-[color:var(--color-text-tertiary)] group-hover:text-[color:var(--color-text-primary)]">
+          <span className="truncate text-[color:var(--color-text-tertiary)] transition-colors group-hover:text-[color:var(--color-text-primary)]">
             {doc.title}
           </span>
         </button>
