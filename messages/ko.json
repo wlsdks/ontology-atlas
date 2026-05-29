@@ -2116,6 +2116,24 @@
       "toastExists": "같은 slug 의 노드가 이미 있어요.",
       "toastError": "노드를 만들지 못했어요."
     },
+    "relationCreate": {
+      "heading": "관계 추가",
+      "target": "대상",
+      "targetPlaceholder": "대상 노드 선택",
+      "relation": "종류",
+      "create": "연결",
+      "cancel": "취소",
+      "keyDomains": "domains",
+      "keyCapabilities": "capabilities",
+      "keyElements": "elements",
+      "keyDependencies": "의존",
+      "keyContains": "포함",
+      "keyDescribes": "설명",
+      "keyRelates": "관련",
+      "toastSaved": "{key} → {target} 연결됨",
+      "toastExists": "이미 있는 관계예요.",
+      "toastError": "관계를 쓰지 못했어요."
+    },
     "analysis": {
       "title": "토폴로지 분석 모드",
       "overview": "전체",

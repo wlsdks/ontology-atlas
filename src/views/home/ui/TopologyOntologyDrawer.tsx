@@ -19,7 +19,13 @@ import {
   buildOntologyNodeHref,
 } from "@/entities/knowledge-graph";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
+import type { VaultRelationKey } from "@/entities/docs-vault/lib/relation-proposal";
 import { InlineFieldEdit, type InlineFieldEditLabels } from "./InlineFieldEdit";
+import {
+  RelationCreateForm,
+  type RelationCreateFormLabels,
+  type RelationTargetOption,
+} from "./RelationCreateForm";
 import { copyText } from "@/shared/lib/copy-text";
 import { useToast } from "@/shared/ui";
 import { formatAgentPostChangeSyncPacket } from "@/shared/lib/ontology-tree";
@@ -116,6 +122,17 @@ interface Props {
     onSave: (next: string) => void | Promise<void>;
     labels: InlineFieldEditLabels;
   } | null;
+  /**
+   * S3.1b — 토폴로지에서 선택 노드(source)로부터 관계를 긋는다. writable vault
+   * 면 HomePage 가 후보 target + onCreate 주입. null 이면 관계 추가 UI 숨김.
+   */
+  relationEdit?: {
+    targets: readonly RelationTargetOption[];
+    relationKeys: readonly VaultRelationKey[];
+    defaultRelationKey?: VaultRelationKey;
+    onCreate: (input: { targetSlug: string; relationKey: VaultRelationKey }) => void | Promise<void>;
+    labels: RelationCreateFormLabels;
+  } | null;
 }
 
 export function TopologyOntologyDrawer({
@@ -126,6 +143,7 @@ export function TopologyOntologyDrawer({
   closeLabel,
   labels,
   domainEdit,
+  relationEdit,
 }: Props) {
   const model = buildTopologyOntologyDrawerModel(node, nodes, edges);
   const toast = useToast();
@@ -319,6 +337,18 @@ export function TopologyOntologyDrawer({
             value={domainEdit.value}
             onSave={domainEdit.onSave}
             labels={domainEdit.labels}
+          />
+        </div>
+      ) : null}
+
+      {relationEdit ? (
+        <div className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-relation-edit">
+          <RelationCreateForm
+            targets={relationEdit.targets}
+            relationKeys={relationEdit.relationKeys}
+            defaultRelationKey={relationEdit.defaultRelationKey}
+            onCreate={relationEdit.onCreate}
+            labels={relationEdit.labels}
           />
         </div>
       ) : null}

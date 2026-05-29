@@ -2116,6 +2116,24 @@
       "toastExists": "A node with that slug already exists.",
       "toastError": "Could not create the node."
     },
+    "relationCreate": {
+      "heading": "Add relation",
+      "target": "To",
+      "targetPlaceholder": "Pick a target node",
+      "relation": "Type",
+      "create": "Connect",
+      "cancel": "Cancel",
+      "keyDomains": "domains",
+      "keyCapabilities": "capabilities",
+      "keyElements": "elements",
+      "keyDependencies": "depends on",
+      "keyContains": "contains",
+      "keyDescribes": "describes",
+      "keyRelates": "relates",
+      "toastSaved": "Linked {key} → {target}",
+      "toastExists": "That relation already exists.",
+      "toastError": "Could not write the relation."
+    },
     "analysis": {
       "title": "Topology analysis mode",
       "overview": "All",

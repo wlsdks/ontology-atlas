@@ -123,6 +123,11 @@ import {
   resolveTopologyNodeEditTarget,
 } from "../lib/topology-node-edit";
 import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
+import {
+  buildVaultRelationPatch,
+  VAULT_RELATION_KEYS,
+  type VaultRelationKey,
+} from "@/entities/docs-vault/lib/relation-proposal";
 import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 
@@ -307,6 +312,46 @@ export function HomePage() {
       }
     },
     [vault, toast, t],
+  );
+  // S3 — 토폴로지에서 선택 노드(source)로부터 관계 생성. 후보 target = 자기 제외한
+  // vault 문서 노드. 빌더와 같은 buildVaultRelationPatch 경로 재사용(본문 보존 append).
+  const relationTargets = useMemo(() => {
+    if (!nodeEditTarget || !ontologyInsight) return [];
+    const seen = new Set<string>();
+    const out: { slug: string; title: string }[] = [];
+    for (const n of ontologyInsight.nodes) {
+      const slug = n.evidenceIds[0];
+      if (!slug || slug === nodeEditTarget.vaultSlug || seen.has(slug)) continue;
+      seen.add(slug);
+      out.push({ slug, title: n.title });
+    }
+    return out.sort((a, b) => a.title.localeCompare(b.title));
+  }, [nodeEditTarget, ontologyInsight]);
+  const createRelation = useCallback(
+    async (input: { targetSlug: string; relationKey: VaultRelationKey }) => {
+      if (!nodeEditTarget) return;
+      const { patch, alreadyExists } = buildVaultRelationPatch(
+        nodeEditTarget.frontmatter,
+        input.relationKey,
+        input.targetSlug,
+      );
+      if (alreadyExists) {
+        toast.show(t("relationCreate.toastExists"), "info");
+        return;
+      }
+      try {
+        await vault.updateFrontmatter(nodeEditTarget.vaultSlug, patch, {
+          expectedMtime: nodeEditTarget.mtime,
+        });
+        toast.show(
+          t("relationCreate.toastSaved", { key: input.relationKey, target: input.targetSlug }),
+          "success",
+        );
+      } catch {
+        toast.show(t("relationCreate.toastError"), "error");
+      }
+    },
+    [nodeEditTarget, vault, toast, t],
   );
   const combinedFitToken = fitViewToken;
   const analysisModeRef = useRef<TopologyAnalysisMode>("overview");
@@ -1570,6 +1615,33 @@ export function HomePage() {
                       placeholder: t("ontologyDrawer.domainEdit.placeholder"),
                       empty: t("ontologyDrawer.domainEdit.empty"),
                       saving: t("ontologyDrawer.domainEdit.saving"),
+                    },
+                  }
+                : null
+            }
+            relationEdit={
+              nodeEditTarget && vault.manifest !== null
+                ? {
+                    targets: relationTargets,
+                    relationKeys: VAULT_RELATION_KEYS,
+                    defaultRelationKey: "relates",
+                    onCreate: createRelation,
+                    labels: {
+                      heading: t("relationCreate.heading"),
+                      target: t("relationCreate.target"),
+                      targetPlaceholder: t("relationCreate.targetPlaceholder"),
+                      relation: t("relationCreate.relation"),
+                      create: t("relationCreate.create"),
+                      cancel: t("relationCreate.cancel"),
+                      relationKeyLabels: {
+                        domains: t("relationCreate.keyDomains"),
+                        capabilities: t("relationCreate.keyCapabilities"),
+                        elements: t("relationCreate.keyElements"),
+                        dependencies: t("relationCreate.keyDependencies"),
+                        contains: t("relationCreate.keyContains"),
+                        describes: t("relationCreate.keyDescribes"),
+                        relates: t("relationCreate.keyRelates"),
+                      },
                     },
                   }
                 : null
