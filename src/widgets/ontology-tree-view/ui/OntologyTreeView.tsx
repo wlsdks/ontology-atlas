@@ -705,8 +705,17 @@ export function OntologyTreeView({
         {filteredRoots.map((root) => renderSubtree(root))}
       </div>
       {isFiltering && filteredRoots.length === 0 && filteredOrphans.length === 0 ? (
-        <div className="rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 text-center text-xs text-[color:var(--color-text-tertiary)]">
-          {t('tree.noResults', { query: searchQuery })}
+        <div className="flex flex-col items-center gap-2 rounded-lg border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-4 py-3 text-center text-xs text-[color:var(--color-text-tertiary)]">
+          <span>{t('tree.noResults', { query: searchQuery })}</span>
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            data-testid="ontology-tree-noresults-clear"
+            className="inline-flex items-center gap-1 rounded-md border border-[color:var(--color-divider)] px-2 py-1 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
+          >
+            <X size={11} />
+            {t('tree.noResultsClear')}
+          </button>
         </div>
       ) : null}
       {filteredOrphans.length > 0 ? (

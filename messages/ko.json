@@ -299,6 +299,7 @@
       "expandAll": "전체 펼치기",
       "collapseAll": "전체 접기",
       "noResults": "\"{query}\" 와 일치하는 노드가 없어요.",
+      "noResultsClear": "검색 지우기",
       "implicitElementsShow": "📂 파일 {count}개 펼치기",
       "implicitElementsHide": "▴ 파일 묶기",
       "orphansHeading": "연결되지 않은 노드 {count}",

@@ -599,3 +599,25 @@ describe("OntologyTreeView — selectedId 강조·자동 expand", () => {
     expect(screen.getByText("Sample")).toBeInTheDocument();
   });
 });
+
+describe("OntologyTreeView — no-results 검색 복구", () => {
+  it("매치 없는 검색 → no-results 안내 + '검색 지우기' 버튼으로 한 번에 복구", () => {
+    render(<OntologyTreeView result={makeResult()} />);
+    const search = screen.getByRole("searchbox");
+
+    // 어떤 노드와도 일치하지 않는 쿼리 입력 → 트리 행 사라지고 안내 노출.
+    fireEvent.change(search, { target: { value: "zzz-no-match" } });
+    expect(screen.queryByText("Sample")).not.toBeInTheDocument();
+    const clearButton = screen.getByTestId("ontology-tree-noresults-clear");
+    expect(clearButton).toBeInTheDocument();
+
+    // 복구 버튼 클릭 → 입력 비워지고 트리 전체가 다시 보임.
+    fireEvent.click(clearButton);
+    expect((search as HTMLInputElement).value).toBe("");
+    expect(screen.getByText("Sample")).toBeInTheDocument();
+    expect(screen.getByText("인증")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("ontology-tree-noresults-clear"),
+    ).not.toBeInTheDocument();
+  });
+});
