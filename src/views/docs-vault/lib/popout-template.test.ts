@@ -23,15 +23,24 @@ describe("buildDocsVaultPopoutHtml", () => {
     expect(html).toContain("width=device-width,initial-scale=1");
   });
 
-  it("body 안 dark theme 무채색 + 인디고 alpha 만 (헌장 §11)", () => {
+  it("body 안 dark theme 무채색 + 인디고 alpha 만", () => {
     const html = buildDocsVaultPopoutHtml("a", "<p>x</p>");
-    // dark canvas
-    expect(html).toContain("background: #0d0e12");
-    // 인디고 alpha (linkc / code bg)
+    // 무채색 surface/텍스트는 design token 리터럴 값 (globals.css 와 동일)
+    expect(html).toContain("background: #0f1011"); // panel
+    expect(html).toContain("color: #f7f8f8"); // text-primary (heading)
+    expect(html).toContain("color: #d0d6e0"); // text-secondary (body)
+    // 인디고 alpha (link / code bg) — 단일 채색
     expect(html).toContain("rgba(139,151,255,0.9)");
     // glow / scale / 보라핑크 그라디언트 없음
     expect(html).not.toMatch(/linear-gradient/);
     expect(html).not.toMatch(/box-shadow/);
+  });
+
+  it("standalone 문서라 정의 안 되는 var(--..) CSS 토큰을 쓰지 않는다 (회귀 가드)", () => {
+    // popout 은 앱 밖 self-contained HTML — :root 토큰이 없어 var() 가
+    // 해석 안 돼 border 가 조용히 깨졌던 회귀. 리터럴 값만 허용.
+    const html = buildDocsVaultPopoutHtml("a", "<p>x</p>");
+    expect(html).not.toMatch(/var\(--/);
   });
 
   it("button display:none — popout 의 호스트 페이지 컨트롤이 노출 안 됨", () => {
