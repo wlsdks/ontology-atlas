@@ -63,6 +63,7 @@ import {
   selectRecentNodes,
 } from "@/shared/lib/ontology-tree";
 import { copyText } from "@/shared/lib/copy-text";
+import { formatQueryOntologyCall as formatInsightsQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import { MountedGlobalSearch } from "@/widgets/global-search";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { EmptyState } from "@/shared/ui";
@@ -2702,9 +2703,6 @@ function formatDomainCouplingPathCheck({
   ].join("\n");
 }
 
-function formatInsightsQueryOntologyCall(payload: Record<string, unknown>): string {
-  return `query_ontology(${JSON.stringify(payload)})`;
-}
 
 function shellArg(value: string): string {
   return `'${value.replace(/'/g, "'\\''")}'`;

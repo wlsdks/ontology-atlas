@@ -1,3 +1,4 @@
+import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import type { TopologyAnalysisMode } from "../model/url-state";
 import {
   explainOntologyRelationKeyForGraphIds,
@@ -561,9 +562,6 @@ export function formatTopologyPathAllPathsMcpCheck(from: string, to: string): st
   });
 }
 
-function formatQueryOntologyCall(payload: Record<string, unknown>): string {
-  return `query_ontology(${JSON.stringify(payload)})`;
-}
 
 export function buildTopologyHealthRepairHref(slug: string): string {
   return buildOntologyBuilderNodeHrefFromGraphId(slug);

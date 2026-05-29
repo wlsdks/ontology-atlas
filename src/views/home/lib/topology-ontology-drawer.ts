@@ -1,3 +1,4 @@
+import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import type {
   KnowledgeGraphEdge,
   KnowledgeGraphNode,
@@ -314,9 +315,6 @@ export function formatTopologyNodeImpactMcpCheck(slug: string): string {
   });
 }
 
-function formatQueryOntologyCall(payload: Record<string, unknown>): string {
-  return `query_ontology(${JSON.stringify(payload)})`;
-}
 
 export function topologyReviewQuestionsForReview(
   review: TopologyOntologyDrawerModel["collaborator"]["review"],

@@ -2,6 +2,7 @@ import {
   explainOntologyRelationKeyForGraphIds,
   inferOntologyRelationKeyForGraphIds,
 } from "@/shared/lib/ontology-relation-key";
+import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 
 export function shouldUsePathSelectionGesture({
   pathWorkflowActive,
@@ -281,9 +282,6 @@ export function formatPathExplainRelationMcpCheck(from: string, to: string): str
   });
 }
 
-function formatQueryOntologyCall(payload: Record<string, unknown>): string {
-  return `query_ontology(${JSON.stringify(payload)})`;
-}
 
 export function formatPathOntologyHref(slug: string): string {
   return `/ontology/?node=${encodeURIComponent(slug)}`;

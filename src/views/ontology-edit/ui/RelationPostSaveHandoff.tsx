@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Clipboard, GitBranch, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
+import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import { formatAgentPostChangeSyncPacket } from "@/shared/lib/ontology-tree";
 import type { VaultRelationKey, VaultRelationProposal } from "../lib/relation-proposal";
 import {
@@ -239,6 +240,3 @@ function formatSavedRelationProofPacket(
   ].join("\n");
 }
 
-function formatQueryOntologyCall(payload: Record<string, unknown>): string {
-  return `query_ontology(${JSON.stringify(payload)})`;
-}

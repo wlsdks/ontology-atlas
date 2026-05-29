@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Clipboard, GitBranch, X } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { copyText } from "@/shared/lib/copy-text";
+import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import { explainOntologyRelationKeyInference } from "@/shared/lib/ontology-relation-key";
 import {
   buildAgentPostChangeSyncCliCommands,
@@ -1105,9 +1106,6 @@ function formatMcpAllPathsPayloads({
   ];
 }
 
-function formatQueryOntologyCall(payload: Record<string, unknown>): string {
-  return `query_ontology(${JSON.stringify(payload)})`;
-}
 
 function formatAllPathsEvidenceContractLine(): string {
   return "all_paths evidence contract: report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete before using paths as write evidence";
