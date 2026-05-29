@@ -81,3 +81,40 @@ export function filterTreeByQuery(
     .map(visit)
     .filter((n): n is OntologyTreeNode => n !== null);
 }
+
+/**
+ * 트리에서 주어진 id 집합(`ids`)에 속한 노드만 남기되 **부모 chain 보존** —
+ * "변경점만 보기"(B2) 의 트리 스코핑.
+ *
+ * `filterTreeByQuery` 와 알고리즘은 같지만 두 가지가 다르다:
+ *   1. 매치 기준이 문자열 포함이 아니라 `ids.has(node.id)` (added|changed 노드).
+ *   2. 매치 노드의 자손을 *전부* 살리지 않고 **매치된 자손만** 살린다 —
+ *      변경 안 한 형제·자식을 노이즈로 끌고 오지 않게. 결과는 변경 노드 +
+ *      그 조상 경로만 남은 최소 트리.
+ *
+ * 빈 `ids` 는 빈 배열 반환 (보여줄 변경점 없음 → 호출자가 hint 노출).
+ */
+export function filterTreeByNodeIds(
+  roots: readonly OntologyTreeNode[],
+  ids: ReadonlySet<string>,
+): OntologyTreeNode[] {
+  if (ids.size === 0) return [];
+
+  function visit(node: OntologyTreeNode): OntologyTreeNode | null {
+    const match = ids.has(node.node.id);
+    const filteredChildren = node.children
+      .map(visit)
+      .filter((c): c is OntologyTreeNode => c !== null);
+
+    // 변경 노드이거나(=match) 변경된 자손을 가진 조상이면 살린다. 두 경우
+    // 모두 자손은 filtered (변경된 것만) — match 노드라도 변경 안 한 자식은 숨김.
+    if (match || filteredChildren.length > 0) {
+      return { ...node, children: filteredChildren };
+    }
+    return null;
+  }
+
+  return roots
+    .map(visit)
+    .filter((n): n is OntologyTreeNode => n !== null);
+}

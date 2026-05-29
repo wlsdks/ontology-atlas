@@ -2334,7 +2334,11 @@
       "clear": "해제",
       "emptyHint": "기준(baseline)을 찍으면 그 이후 변경점을 추적해요 — 개발자·AI 에이전트가 vault 를 수정하면 추가·수정·삭제된 개념이 여기 나타납니다. 회의에서 세션 변경 리뷰에 딱 좋아요.",
       "none": "기준 이후 변경 없음",
-      "summary": "추가 {added} · 수정 {changed} · 삭제 {removed}"
+      "summary": "추가 {added} · 수정 {changed} · 삭제 {removed}",
+      "changesOnly": "변경점만",
+      "scopedHint": "변경된 노드 {count}개(+상위 경로)로 트리 좁힘",
+      "scopedShowAll": "전체 보기",
+      "scopedEmpty": "기준 이후 트리에 보이는 변경이 없어요."
     },
     "stat": {
       "ariaLabel": "온톨로지 트리 역할과 소스 상태",

@@ -1,5 +1,5 @@
 import { useTranslations } from "next-intl";
-import { GitBranch, Plus, Minus, PencilLine, Flag } from "lucide-react";
+import { GitBranch, Plus, Minus, PencilLine, Flag, ListFilter } from "lucide-react";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
 
@@ -86,6 +86,8 @@ export function OntologyChangePanel({
   onMarkBaseline,
   onClearBaseline,
   onSelectNode,
+  changesOnly,
+  onToggleChangesOnly,
 }: {
   changeset: OntologyChangeset;
   hasBaseline: boolean;
@@ -93,8 +95,14 @@ export function OntologyChangePanel({
   onMarkBaseline: () => void;
   onClearBaseline: () => void;
   onSelectNode: (node: KnowledgeGraphNode) => void;
+  /** /ontology 트리를 변경 노드만으로 스코프할지 — B2. */
+  changesOnly: boolean;
+  onToggleChangesOnly: () => void;
 }) {
   const t = useTranslations("ontologyView.changes");
+  // 트리에 보이는 변경(added|changed)이 있을 때만 "변경점만" 토글이 의미 있음.
+  // removed 노드는 그래프에 없어 트리 필터 대상이 아님.
+  const canScopeTree = changeset.touchedNodeIds.size > 0;
 
   const markButton = (
     <button
@@ -160,6 +168,22 @@ export function OntologyChangePanel({
           </span>
         </div>
         <div className="flex items-center gap-1.5">
+          {canScopeTree ? (
+            <button
+              type="button"
+              onClick={onToggleChangesOnly}
+              aria-pressed={changesOnly}
+              data-testid="changes-only-toggle"
+              className={
+                changesOnly
+                  ? "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.16)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+                  : "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+              }
+            >
+              <ListFilter size={12} aria-hidden />
+              {t("changesOnly")}
+            </button>
+          ) : null}
           {markButton}
           <button
             type="button"

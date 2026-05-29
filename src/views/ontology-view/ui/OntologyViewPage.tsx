@@ -23,6 +23,7 @@ import {
   buildOntologyTree,
   clearChangeBaseline,
   computeOntologyChangeset,
+  filterTreeByNodeIds,
   formatAgentPostChangeSyncPacket,
   countTreeNodes,
   markChangeBaseline,
@@ -93,6 +94,8 @@ export function OntologyViewPage() {
   const [selectedNode, setSelectedNode] = useState<KnowledgeGraphNode | null>(null);
   // 글로벌 검색 — ⌘K / Ctrl+K 로 토글, 결과 선택 시 selectedNode 로 점프 / 문서 라우트로 점프.
   const [searchOpen, setSearchOpen] = useState(false);
+  // B2 — "변경점만 보기": 트리를 baseline 대비 added|changed 노드 + 조상 경로로 스코프.
+  const [changesOnly, setChangesOnly] = useState(false);
   // 1-hop 기본, 사용자가 토글로 2-hop 까지 확장 가능. 노드 변경 시 자동
   // 1-hop 으로 복귀해 2-hop 의 큰 ego 를 누적해 보지 않게.
   const [egoHops, setEgoHops] = useState<1 | 2>(1);
@@ -210,6 +213,22 @@ export function OntologyViewPage() {
     if (!insight) return;
     markChangeBaseline(insight.nodes, insight.edges, Date.now());
   }, [insight]);
+
+  // "변경점만" 토글은 baseline 이 있고 트리에 보이는 변경(added|changed)이 있을 때만
+  // 실효 — 그 외에는 토글이 켜져 있어도 전체 트리를 보여준다 (빈 트리 회피).
+  const changesOnlyActive =
+    changesOnly && changeBaseline !== null && ontologyChangeset.touchedNodeIds.size > 0;
+  // 트리 표시본: 스코프 활성 시 변경 노드 + 조상 경로만. count strip / 빈상태
+  // onboarding / warning 은 원본 treeResult 기준 유지 (전체 그래프 사실 보존).
+  const displayTreeResult: OntologyTreeBuildResult | null = useMemo(() => {
+    if (!treeResult) return null;
+    if (!changesOnlyActive) return treeResult;
+    return {
+      roots: filterTreeByNodeIds(treeResult.roots, ontologyChangeset.touchedNodeIds),
+      orphans: treeResult.orphans.filter((o) => ontologyChangeset.touchedNodeIds.has(o.id)),
+      warnings: [],
+    };
+  }, [treeResult, changesOnlyActive, ontologyChangeset]);
 
   // treeResult / insight 가 동일할 때 매 selection re-render 마다 재계산
   // 회피. countTreeNodes 는 트리 walk + filter 는 O(N) — 작아도 매 클릭마다
@@ -410,8 +429,13 @@ export function OntologyViewPage() {
             hasBaseline={changeBaseline !== null}
             nodeById={nodeById}
             onMarkBaseline={handleMarkChangeBaseline}
-            onClearBaseline={clearChangeBaseline}
+            onClearBaseline={() => {
+              clearChangeBaseline();
+              setChangesOnly(false);
+            }}
             onSelectNode={(node) => selectNode(node)}
+            changesOnly={changesOnly}
+            onToggleChangesOnly={() => setChangesOnly((v) => !v)}
           />
         </div>
       ) : null}
@@ -501,13 +525,31 @@ export function OntologyViewPage() {
         </div>
       ) : (
         <>
-          {!selectedNode && treeResult.roots.length > 0 ? (
+          {!selectedNode && treeResult.roots.length > 0 && !changesOnlyActive ? (
             <TreeSelectionHint />
           ) : null}
+          {changesOnlyActive ? (
+            <div
+              className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[color:rgba(94,106,210,0.26)] bg-[color:rgba(94,106,210,0.06)] px-3 py-2"
+              data-testid="changes-only-banner"
+              role="status"
+            >
+              <p className="font-mono text-[11px] text-[color:var(--color-indigo-accent)]">
+                {t('changes.scopedHint', { count: ontologyChangeset.touchedNodeIds.size })}
+              </p>
+              <button
+                type="button"
+                onClick={() => setChangesOnly(false)}
+                className="inline-flex h-7 shrink-0 items-center rounded-full px-2 text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset"
+              >
+                {t('changes.scopedShowAll')}
+              </button>
+            </div>
+          ) : null}
           <OntologyTreeView
-            result={treeResult}
+            result={displayTreeResult ?? treeResult}
             onSelect={(node) => selectNode(node)}
-            emptyHint={t('emptyHint')}
+            emptyHint={changesOnlyActive ? t('changes.scopedEmpty') : t('emptyHint')}
             selectedId={selectedNode?.id ?? null}
             showWarnings={false}
           />

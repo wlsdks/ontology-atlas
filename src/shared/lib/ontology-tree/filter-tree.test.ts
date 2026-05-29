@@ -3,6 +3,7 @@ import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { buildOntologyTree } from "./build-tree";
 import {
   countMatchingTreeNodes,
+  filterTreeByNodeIds,
   filterTreeByQuery,
   knowledgeNodeMatchesQuery,
 } from "./filter-tree";
@@ -192,5 +193,62 @@ describe("countMatchingTreeNodes", () => {
 
   it("매치 없음 → 0", () => {
     expect(countMatchingTreeNodes(tree.roots, "xyzqwerty")).toBe(0);
+  });
+});
+
+describe("filterTreeByNodeIds", () => {
+  // root
+  // ├─ child-1 (로그인)
+  // │  └─ grand-1 (세션)
+  // └─ child-2 (로그아웃)
+  const nodes = [
+    node("root", "프로젝트", "project"),
+    withParent(node("child-1", "로그인")),
+    withParent(node("grand-1", "세션", "element")),
+    withParent(node("child-2", "로그아웃")),
+  ];
+  const edges = [
+    { id: "e1", from: "root", to: "child-1", type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: APPROVED_AT, lastApprovedBy: "test" },
+    { id: "e2", from: "child-1", to: "grand-1", type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: APPROVED_AT, lastApprovedBy: "test" },
+    { id: "e3", from: "root", to: "child-2", type: "contains", projectIds: [], evidenceIds: [], lastApprovedAt: APPROVED_AT, lastApprovedBy: "test" },
+  ];
+  const tree = buildOntologyTree(nodes, edges);
+
+  it("빈 ids — 빈 배열 (보여줄 변경점 없음)", () => {
+    expect(filterTreeByNodeIds(tree.roots, new Set())).toEqual([]);
+  });
+
+  it("변경 노드 + 조상 chain 살림, 변경 안 한 형제 제외", () => {
+    const r = filterTreeByNodeIds(tree.roots, new Set(["child-1"]));
+    expect(r).toHaveLength(1); // root (조상)
+    expect(r[0]?.node.id).toBe("root");
+    expect(r[0]?.children).toHaveLength(1); // child-1 만 (child-2 제외)
+    expect(r[0]?.children[0]?.node.id).toBe("child-1");
+  });
+
+  it("변경 노드의 자손은 *변경된 것만* 살림 (전 subtree 아님)", () => {
+    // child-1 변경 but grand-1 미변경 → grand-1 은 숨김 (query filter 와 다른 점)
+    const r = filterTreeByNodeIds(tree.roots, new Set(["child-1"]));
+    expect(r[0]?.children[0]?.children).toHaveLength(0);
+  });
+
+  it("자손만 변경 시 부모 chain 으로 살아남고, 변경된 자손만 남김", () => {
+    const r = filterTreeByNodeIds(tree.roots, new Set(["grand-1"]));
+    expect(r).toHaveLength(1); // root
+    expect(r[0]?.children).toHaveLength(1); // child-1 (조상)
+    expect(r[0]?.children[0]?.node.id).toBe("child-1");
+    expect(r[0]?.children[0]?.children).toHaveLength(1); // grand-1
+    expect(r[0]?.children[0]?.children[0]?.node.id).toBe("grand-1");
+  });
+
+  it("여러 변경 노드 — 각자의 조상 경로 합집합", () => {
+    const r = filterTreeByNodeIds(tree.roots, new Set(["child-1", "child-2"]));
+    expect(r).toHaveLength(1);
+    expect(r[0]?.children.map((c) => c.node.id).sort()).toEqual(["child-1", "child-2"]);
+  });
+
+  it("트리에 없는 id 는 무시 (제거된 노드 등)", () => {
+    const r = filterTreeByNodeIds(tree.roots, new Set(["ghost"]));
+    expect(r).toEqual([]);
   });
 });
