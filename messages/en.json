@@ -2134,6 +2134,17 @@
       "toastExists": "That relation already exists.",
       "toastError": "Could not write the relation."
     },
+    "explanationEdit": {
+      "heading": "Explanation",
+      "edit": "Edit explanation",
+      "save": "Save explanation",
+      "cancel": "Cancel",
+      "placeholder": "Explain what this node is — humans and agents read this.",
+      "empty": "No explanation yet",
+      "saving": "Saving…",
+      "saved": "Explanation saved",
+      "error": "Could not save the explanation."
+    },
     "analysis": {
       "title": "Topology analysis mode",
       "overview": "All",

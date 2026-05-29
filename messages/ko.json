@@ -2134,6 +2134,17 @@
       "toastExists": "이미 있는 관계예요.",
       "toastError": "관계를 쓰지 못했어요."
     },
+    "explanationEdit": {
+      "heading": "설명",
+      "edit": "설명 편집",
+      "save": "설명 저장",
+      "cancel": "취소",
+      "placeholder": "이 노드가 무엇인지 설명 — 사람과 에이전트가 읽어요.",
+      "empty": "아직 설명 없음",
+      "saving": "저장 중…",
+      "saved": "설명 저장됨",
+      "error": "설명을 저장하지 못했어요."
+    },
     "analysis": {
       "title": "토폴로지 분석 모드",
       "overview": "전체",

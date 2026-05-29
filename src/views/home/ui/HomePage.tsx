@@ -128,6 +128,8 @@ import {
   VAULT_RELATION_KEYS,
   type VaultRelationKey,
 } from "@/entities/docs-vault/lib/relation-proposal";
+import { parseFrontmatter } from "@/shared/lib/parse-frontmatter";
+import { replaceVaultBody } from "@/shared/lib/replace-vault-body";
 import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 
@@ -352,6 +354,53 @@ export function HomePage() {
       }
     },
     [nodeEditTarget, vault, toast, t],
+  );
+  // S4 — 노드 "설명"(본문) 편집. manifest 의 excerpt 는 잘려 있어 편집 시
+  // 손실 위험 → 편집 전 fileHandle 로 *raw 전체*를 읽어 본문을 시드한다.
+  // 본문 로드 완료 전엔 explanationEdit 를 안 띄워 truncation 을 막는다.
+  const [nodeBody, setNodeBody] = useState<{ slug: string; raw: string; body: string } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const target = nodeEditTarget;
+    const fh =
+      target && vault.manifest !== null ? vault.fileHandles.get(target.vaultSlug) : null;
+    if (!target || !fh) {
+      // 동기 setState 회피(cascading-render 경고) — microtask 로 defer.
+      window.queueMicrotask(() => {
+        if (!cancelled) setNodeBody(null);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }
+    fh.getFile()
+      .then((f) => f.text())
+      .then((raw) => {
+        if (!cancelled) {
+          setNodeBody({ slug: target.vaultSlug, raw, body: parseFrontmatter(raw).body.trim() });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setNodeBody(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [nodeEditTarget, vault.manifest, vault.fileHandles]);
+  const saveNodeExplanation = useCallback(
+    async (next: string) => {
+      if (!nodeEditTarget || !nodeBody || nodeBody.slug !== nodeEditTarget.vaultSlug) return;
+      try {
+        const content = replaceVaultBody(nodeBody.raw, next);
+        await vault.saveDoc(nodeEditTarget.vaultSlug, content, {
+          expectedMtime: nodeEditTarget.mtime,
+        });
+        toast.show(t("explanationEdit.saved"), "success");
+      } catch {
+        toast.show(t("explanationEdit.error"), "error");
+      }
+    },
+    [nodeEditTarget, nodeBody, vault, toast, t],
   );
   const combinedFitToken = fitViewToken;
   const analysisModeRef = useRef<TopologyAnalysisMode>("overview");
@@ -1642,6 +1691,26 @@ export function HomePage() {
                         describes: t("relationCreate.keyDescribes"),
                         relates: t("relationCreate.keyRelates"),
                       },
+                    },
+                  }
+                : null
+            }
+            explanationEdit={
+              nodeEditTarget &&
+              vault.manifest !== null &&
+              nodeBody &&
+              nodeBody.slug === nodeEditTarget.vaultSlug
+                ? {
+                    value: nodeBody.body,
+                    onSave: saveNodeExplanation,
+                    labels: {
+                      heading: t("explanationEdit.heading"),
+                      edit: t("explanationEdit.edit"),
+                      save: t("explanationEdit.save"),
+                      cancel: t("explanationEdit.cancel"),
+                      placeholder: t("explanationEdit.placeholder"),
+                      empty: t("explanationEdit.empty"),
+                      saving: t("explanationEdit.saving"),
                     },
                   }
                 : null
