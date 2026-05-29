@@ -609,6 +609,7 @@
     },
     "viewer": {
       "loadFailed": "Failed to load document",
+      "loadingLabel": "Loading document…",
       "wikilinkMissing": "Link not in vault: {slug}",
       "projectLinkTitle": "Project: {slug}",
       "imageMissing": "Image missing in vault: {src}",
@@ -619,6 +620,7 @@
     },
     "editor": {
       "loadFailed": "Failed to load file",
+      "loadingLabel": "Loading file…",
       "close": "Close",
       "editorEyebrow": "Edit · {slug}",
       "textareaAriaLabel": "Markdown editor",

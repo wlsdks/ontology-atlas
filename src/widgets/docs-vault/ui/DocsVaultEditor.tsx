@@ -314,10 +314,10 @@ export function DocsVaultEditor({
   }
   if (loading || content === null) {
     return (
-      <div className="flex flex-col gap-3 p-8">
-        <div className="h-3 w-2/3 animate-pulse rounded bg-[color:var(--color-border-soft)]" />
-        <div className="h-3 w-5/6 animate-pulse rounded bg-[color:var(--color-overlay-2)]" />
-        <div className="h-3 w-1/2 animate-pulse rounded bg-[color:var(--color-overlay-2)]" />
+      <div className="flex flex-col gap-3 p-8" role="status" aria-label={t('loadingLabel')}>
+        <div className="h-3 w-2/3 animate-pulse rounded bg-[color:var(--color-border-soft)]" aria-hidden />
+        <div className="h-3 w-5/6 animate-pulse rounded bg-[color:var(--color-overlay-2)]" aria-hidden />
+        <div className="h-3 w-1/2 animate-pulse rounded bg-[color:var(--color-overlay-2)]" aria-hidden />
       </div>
     );
   }

@@ -609,6 +609,7 @@
     },
     "viewer": {
       "loadFailed": "문서를 불러오지 못했어요",
+      "loadingLabel": "문서 불러오는 중…",
       "wikilinkMissing": "볼트에 없는 링크: {slug}",
       "projectLinkTitle": "프로젝트: {slug}",
       "imageMissing": "볼트에 이미지 없음: {src}",
@@ -619,6 +620,7 @@
     },
     "editor": {
       "loadFailed": "파일을 불러오지 못했어요",
+      "loadingLabel": "파일 불러오는 중…",
       "close": "닫기",
       "editorEyebrow": "편집 · {slug}",
       "textareaAriaLabel": "마크다운 편집기",

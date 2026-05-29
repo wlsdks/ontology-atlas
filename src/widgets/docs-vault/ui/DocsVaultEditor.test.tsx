@@ -89,4 +89,23 @@ describe('DocsVaultEditor', () => {
       screen.getByRole('textbox', { name: '마크다운 편집기' }),
     ).toBeInTheDocument();
   });
+
+  it('로딩 스켈레톤이 role=status 로 announce 된다 (a11y)', async () => {
+    // content 가 resolve 되기 전 초기 로딩 상태 — 스켈레톤이 스크린리더에
+    // "불러오는 중" 으로 announce 돼야 한다.
+    let resolve!: (v: string) => void;
+    render(
+      <DocsVaultEditor
+        doc={doc}
+        getDocContent={() => new Promise<string>((r) => (resolve = r))}
+        onSave={vi.fn().mockResolvedValue(undefined)}
+        onClose={vi.fn()}
+      />,
+    );
+    const status = screen.getByRole('status');
+    expect(status).toHaveAttribute('aria-label', '파일 불러오는 중…');
+    // 마무리: resolve 해서 dangling promise 정리.
+    resolve('done');
+    await screen.findByDisplayValue('done');
+  });
 });
