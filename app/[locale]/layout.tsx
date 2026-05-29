@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { MotionProvider } from '@/app-providers/providers';
 import { TaxonomyProvider } from '@/features/taxonomy';
 import { LocalVaultProvider } from '@/features/docs-vault-local';
+import { OntologyLiveBaselineInit } from '@/features/vault-ontology';
 import { BottomTabBar } from '@/widgets/bottom-tab-bar';
 import { ToastProvider, TooltipProvider } from '@/shared/ui';
 import { routing } from '@/i18n/routing';
@@ -79,6 +80,9 @@ export default async function LocaleLayout({
           <LocalVaultProvider>
             <ToastProvider>
               <TooltipProvider delayDuration={300}>
+                {/* live-web — 로컬 vault 로드 시 변경 baseline 자동 1회.
+                    이후 에이전트 편집이 클릭 없이 토폴로지에 pulse. 헤드리스. */}
+                <OntologyLiveBaselineInit />
                 {children}
                 <BottomTabBar />
               </TooltipProvider>

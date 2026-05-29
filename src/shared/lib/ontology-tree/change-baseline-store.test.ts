@@ -5,6 +5,7 @@ import {
   clearChangeBaseline,
   getChangeBaseline,
   markChangeBaseline,
+  shouldAutoMarkBaseline,
   useChangeBaseline,
 } from "./change-baseline-store";
 
@@ -46,5 +47,20 @@ describe("change-baseline-store", () => {
     act(() => markChangeBaseline(nodes, edges, 9));
     expect(a.result.current?.takenAt).toBe(9);
     expect(b.result.current?.takenAt).toBe(9);
+  });
+});
+
+describe("shouldAutoMarkBaseline (live-web 자동 baseline)", () => {
+  it("local + baseline 없음 + 노드>0 → true", () => {
+    expect(shouldAutoMarkBaseline({ mode: "local", hasBaseline: false, nodeCount: 5 })).toBe(true);
+  });
+  it("static 모드 → false (dogfood 는 안 변함)", () => {
+    expect(shouldAutoMarkBaseline({ mode: "static", hasBaseline: false, nodeCount: 5 })).toBe(false);
+  });
+  it("이미 baseline 있음 → false (재설정 안 함)", () => {
+    expect(shouldAutoMarkBaseline({ mode: "local", hasBaseline: true, nodeCount: 5 })).toBe(false);
+  });
+  it("노드 0 → false (빈 vault 에 의미 없음)", () => {
+    expect(shouldAutoMarkBaseline({ mode: "local", hasBaseline: false, nodeCount: 0 })).toBe(false);
   });
 });

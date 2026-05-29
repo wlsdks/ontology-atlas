@@ -50,3 +50,19 @@ function subscribe(onChange: () => void): () => void {
 export function useChangeBaseline(): OntologySnapshot | null {
   return useSyncExternalStore(subscribe, getChangeBaseline, () => null);
 }
+
+/**
+ * live 모드(live-web): 로컬 vault 가 로드되어 노드가 있고 아직 baseline 이
+ * 없으면 자동으로 기준을 잡을지 결정. 이후 에이전트 편집이 클릭 없이 pulse.
+ * static/dogfood 모드는 변하지 않으니 자동 baseline 없음.
+ *
+ * *호출자(OntologyLiveBaselineInit)는 마운트당 1회만 자동 mark* — 그래야 사용자가
+ * 명시적으로 Clear 했을 때 곧장 다시 잡히지 않는다(수동 의도 존중).
+ */
+export function shouldAutoMarkBaseline(input: {
+  mode: "static" | "local";
+  hasBaseline: boolean;
+  nodeCount: number;
+}): boolean {
+  return input.mode === "local" && !input.hasBaseline && input.nodeCount > 0;
+}

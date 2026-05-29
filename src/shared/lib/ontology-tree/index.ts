@@ -101,6 +101,7 @@ export {
   clearChangeBaseline,
   getChangeBaseline,
   useChangeBaseline,
+  shouldAutoMarkBaseline,
 } from "./change-baseline-store";
 export type { MeaningfulOntologyKind, OntologyKindStats } from "./kind-stats";
 export {
