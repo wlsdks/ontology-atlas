@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Plus } from "lucide-react";
 import { useTypingShortcuts } from "@/shared/lib/use-typing-shortcut";
 import { useProjects } from "@/features/project-data-source";
 import { useOntologyInsight } from "@/features/vault-ontology";
@@ -102,7 +102,7 @@ import {
   type Project,
   type ProjectImpactMode,
 } from "@/entities/project";
-import { buildDocsVaultHref } from "@/entities/docs-vault";
+import { buildDocsVaultHref, buildNewNodeDoc } from "@/entities/docs-vault";
 import {
   buildOntologyHealthSignals,
   type KnowledgeGraphNode,
@@ -122,6 +122,7 @@ import {
   buildNodeFrontmatterEdit,
   resolveTopologyNodeEditTarget,
 } from "../lib/topology-node-edit";
+import { CreateNodeForm, type CreateNodeKind } from "./CreateNodeForm";
 import { TopologyOntologyDrawer } from "./TopologyOntologyDrawer";
 import { TopologyAnalysisBar } from "./TopologyAnalysisBar";
 
@@ -289,6 +290,23 @@ export function HomePage() {
       }
     },
     [nodeEditTarget, vault, toast, t],
+  );
+  // S2 — 토폴로지에서 새 노드를 직접 생성. writable 로컬 vault 일 때만.
+  const [createNodeOpen, setCreateNodeOpen] = useState(false);
+  const canCreateNode = vault.manifest !== null;
+  const createNode = useCallback(
+    async (input: { title: string; kind: CreateNodeKind; domain?: string }) => {
+      try {
+        const { slug, markdown } = buildNewNodeDoc(input);
+        await vault.createDoc(slug, markdown);
+        toast.show(t("createNode.toastSaved", { slug }), "success");
+        setCreateNodeOpen(false);
+      } catch (err) {
+        const exists = err instanceof Error && err.message.includes("already exists");
+        toast.show(exists ? t("createNode.toastExists") : t("createNode.toastError"), "error");
+      }
+    },
+    [vault, toast, t],
   );
   const combinedFitToken = fitViewToken;
   const analysisModeRef = useRef<TopologyAnalysisMode>("overview");
@@ -841,7 +859,47 @@ export function HomePage() {
                 </kbd>
               </button>
               </Tooltip>
+              {canCreateNode ? (
+                <Tooltip content={t('createNode.toggleTooltip')} side="bottom" withProvider={false}>
+                  <button
+                    type="button"
+                    onClick={() => setCreateNodeOpen((v) => !v)}
+                    aria-expanded={createNodeOpen}
+                    aria-label={t('createNode.toggleAria')}
+                    data-testid="topology-create-node-toggle"
+                    className="inline-flex h-11 items-center gap-2 rounded-full border border-[color:rgba(94,106,210,0.46)] bg-[color:rgba(94,106,210,0.14)] px-3.5 text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-indigo-accent)] shadow-[0_10px_26px_rgba(0,0,0,0.14)] transition-[background-color,border-color] duration-180 ease-out hover:bg-[color:rgba(94,106,210,0.2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--color-canvas)] motion-reduce:transition-none"
+                  >
+                    <Plus size={15} aria-hidden />
+                    <span>{t('createNode.toggleLabel')}</span>
+                  </button>
+                </Tooltip>
+              ) : null}
             </div>
+            {canCreateNode && createNodeOpen ? (
+              <div
+                className="absolute right-4 top-[68px] z-20 w-[300px] max-w-[calc(100vw-2rem)] md:right-6 md:top-[72px] xl:right-8"
+                data-testid="topology-create-node-panel"
+              >
+                <CreateNodeForm
+                  onCreate={createNode}
+                  onCancel={() => setCreateNodeOpen(false)}
+                  labels={{
+                    heading: t('createNode.heading'),
+                    titlePlaceholder: t('createNode.titlePlaceholder'),
+                    kind: t('createNode.kind'),
+                    domain: t('createNode.domain'),
+                    domainPlaceholder: t('createNode.domainPlaceholder'),
+                    create: t('createNode.create'),
+                    cancel: t('createNode.cancel'),
+                    kindLabels: {
+                      domain: t('createNode.kindDomain'),
+                      capability: t('createNode.kindCapability'),
+                      element: t('createNode.kindElement'),
+                    },
+                  }}
+                />
+              </div>
+            ) : null}
             <TopologyAnalysisBar
               mode={analysisMode}
               summary={analysisSummary}

@@ -2098,6 +2098,24 @@
         "saving": "저장 중…"
       }
     },
+    "createNode": {
+      "toggleLabel": "노드",
+      "toggleAria": "온톨로지 노드 추가",
+      "toggleTooltip": "그래프에서 바로 새 노드 만들기",
+      "heading": "노드 추가",
+      "titlePlaceholder": "노드 이름",
+      "kind": "종류",
+      "domain": "도메인",
+      "domainPlaceholder": "도메인 slug (선택)",
+      "create": "만들기",
+      "cancel": "취소",
+      "kindDomain": "도메인",
+      "kindCapability": "역량",
+      "kindElement": "요소",
+      "toastSaved": "{slug} 생성됨",
+      "toastExists": "같은 slug 의 노드가 이미 있어요.",
+      "toastError": "노드를 만들지 못했어요."
+    },
     "analysis": {
       "title": "토폴로지 분석 모드",
       "overview": "전체",

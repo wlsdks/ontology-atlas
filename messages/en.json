@@ -2098,6 +2098,24 @@
         "saving": "Saving…"
       }
     },
+    "createNode": {
+      "toggleLabel": "Node",
+      "toggleAria": "Add an ontology node",
+      "toggleTooltip": "Create a new node directly on the graph",
+      "heading": "Add node",
+      "titlePlaceholder": "Node title",
+      "kind": "Kind",
+      "domain": "Domain",
+      "domainPlaceholder": "domain slug (optional)",
+      "create": "Create",
+      "cancel": "Cancel",
+      "kindDomain": "Domain",
+      "kindCapability": "Capability",
+      "kindElement": "Element",
+      "toastSaved": "Created {slug}",
+      "toastExists": "A node with that slug already exists.",
+      "toastError": "Could not create the node."
+    },
     "analysis": {
       "title": "Topology analysis mode",
       "overview": "All",
