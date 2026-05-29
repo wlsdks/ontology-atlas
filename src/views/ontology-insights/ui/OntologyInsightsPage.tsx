@@ -2,11 +2,12 @@
 
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import {
   buildEdgeTypeRows,
   buildOntologyBuilderNodeHref,
+  buildOntologyInsightsNodeHref,
   buildOntologyNodeHref,
   type KnowledgeGraphNode,
   useEdgeTypeLabel,
@@ -26,11 +27,13 @@ import {
   computeDomainCouplingMatrix,
   computeEdgeTypeDistribution,
   computeKindDistribution,
+  computeOntologyChangeset,
   countCrossProjectEdges,
   selectAgentProjectEntrypoint,
   selectAgentQueryEntrypoints,
   rankAllByDegree,
   selectRecentNodes,
+  useChangeBaseline,
 } from "@/shared/lib/ontology-tree";
 import { formatQueryOntologyCall as formatInsightsQueryOntologyCall } from "@/shared/lib/ontology-query-call";
 import { MountedGlobalSearch } from "@/widgets/global-search";
@@ -51,6 +54,7 @@ import { AgentReadinessPanel } from "./parts/AgentReadinessPanel";
 import { AgentQueryRecipesPanel } from "./parts/AgentQueryRecipesPanel";
 import { InsightsFocusedNodeProofPanel } from "./parts/InsightsFocusedNodeProofPanel";
 import { InsightsCollaboratorBriefPanel } from "./parts/InsightsCollaboratorBriefPanel";
+import { InsightsChangeStrip } from "./parts/InsightsChangeStrip";
 import { Panel } from "./parts/Panel";
 
 /**
@@ -96,9 +100,23 @@ export function OntologyInsightsPage() {
   const kindLabel = useOntologyKindLabel();
   const edgeTypeLabel = useEdgeTypeLabel();
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   const { insight, error } = useOntologyInsight();
   const queryNodeId = searchParams.get("node");
+
+  // B2 (insights half) — /ontology·/topology 와 공유하는 baseline 스토어를 읽어
+  // "기준 이후 변경점" 요약을 분석 surface 에도 노출. baseline 있을 때만 마운트.
+  const changeBaseline = useChangeBaseline();
+  const insightsChangeset = useMemo(
+    () => computeOntologyChangeset(changeBaseline, insight?.nodes ?? [], insight?.edges ?? []),
+    [changeBaseline, insight],
+  );
+  const insightsNodeById = useMemo(() => {
+    const map = new Map<string, KnowledgeGraphNode>();
+    if (insight) for (const n of insight.nodes) map.set(n.id, n);
+    return map;
+  }, [insight]);
 
   const kindDist = useMemo(
     () => (insight ? computeKindDistribution(insight.nodes) : new Map<string, number>()),
@@ -309,6 +327,16 @@ export function OntologyInsightsPage() {
           {t("subtitle")}
         </p>
       </section>
+
+      {insight && changeBaseline !== null ? (
+        <InsightsChangeStrip
+          changeset={insightsChangeset}
+          nodeById={insightsNodeById}
+          onSelectNode={(node) =>
+            router.replace(buildOntologyInsightsNodeHref(node), { scroll: false })
+          }
+        />
+      ) : null}
 
       {error ? (
         <div
