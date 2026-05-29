@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type Sigma from 'sigma';
 import type Graph from 'graphology';
 import { INDIGO_HUB } from '@/shared/config/indigo-tokens';
+import { coalesceRaf } from '@/shared/lib/coalesce-raf';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
 
 interface SigmaMinimapProps {
@@ -28,10 +29,13 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
   useEffect(() => {
     if (!sigma) return;
     const camera = sigma.getCamera();
-    const handler = () => setTick((t) => (t + 1) % 1_000_000);
-    camera.on('updated', handler);
+    // 'updated' 는 pan/zoom/animate 중 프레임당 여러 번 발화한다. 매 발화마다
+    // setTick → 미니맵 전체 리렌더는 낭비라, rAF 로 합쳐 프레임당 1회만 리렌더.
+    const coalesced = coalesceRaf(() => setTick((t) => (t + 1) % 1_000_000));
+    camera.on('updated', coalesced.trigger);
     return () => {
-      camera.off('updated', handler);
+      camera.off('updated', coalesced.trigger);
+      coalesced.cancel();
     };
   }, [sigma]);
 
