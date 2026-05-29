@@ -310,13 +310,22 @@ html[data-theme="light"] [class*="bg-[color:var(--color-elevated)]"]:not([data-n
 /*
  * 라이트 모드 인디고 알파 backgrounds 톤다운 — Tailwind 의 inline
  * `bg-[color:rgba(94,106,210,N)]` 클래스가 cmd/ctrl active state /
- * search palette pill / "active" 표시 등에 ~199 곳 사용. 다크에선 짙은
+ * search palette pill / "active" 표시 등에 다수 사용. 다크에선 짙은
  * 캔버스 위 살짝 인디고 글로우 로 자연스럽지만 라이트에선 흰 위에 진한
  * 보라 글로우 → 사용자 보고 "버튼 보라색이 좀 그러네". 같은 클래스를
- * 라이트에서만 더 차분한 인디고 알파로 시프트.
+ * 라이트에서만 더 차분한 인디고 알파(rgba(77,86,200,*) = light --color-
+ * indigo-brand 계열) 로 시프트.
  *
- * 가장 prominent 한 active alpha 들 (0.14 / 0.16 / 0.18 / 0.22 / 0.28 /
- * 0.32) 만 시프트 — hover/뉘앙스 알파 (0.06 / 0.08 / 0.10) 는 그대로.
+ * 실제 시프트 범위 (아래 selector 와 1:1):
+ *   - bg  0.14 / 0.16 / 0.18  → rgba(77,86,200,0.12)
+ *   - border 0.4 / 0.46       → rgba(77,86,200,0.32)
+ * hover/뉘앙스 알파 (bg 0.06 / 0.08 / 0.10) 는 의도적으로 그대로 둔다.
+ *
+ * 알려진 미커버 gap: 코드에서 많이 쓰이지만 아직 라이트 시프트가 없는
+ * prominent 알파 — bg 0.22 / 0.28, border 0.24 / 0.26 / 0.28 / 0.32(최다).
+ * 이들은 흰 배경에서 여전히 다크-인디고 hue 로 보인다. selector 별 매핑
+ * 색을 시각 확인하며 한 번에 끝내야 회귀가 안 나므로(부분 시프트가 과거
+ * alpha 회귀를 만들었다), 별도 light-mode 인디고 일괄 패스에서 처리한다.
  */
 html[data-theme="light"] [class*="bg-[color:rgba(94,106,210,0.14)]"],
 html[data-theme="light"] [class*="bg-[color:rgba(94,106,210,0.16)]"],
