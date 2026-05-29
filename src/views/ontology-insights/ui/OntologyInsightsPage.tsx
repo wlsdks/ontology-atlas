@@ -84,6 +84,7 @@ import {
   formatInsightsOrphanRepairPacket,
 } from "../lib/orphan-node-actions";
 import { resolveInsightsQueryNode } from "../lib/resolve-insights-query-node";
+import { getTraversalGuardFacts } from "../lib/traversal-guard-facts";
 
 /**
  * 노드 row 좌측 accent bar 색 — 빌더의 도메인 grouping 과 시각 일관.
@@ -2596,50 +2597,6 @@ function TraversalGuardFacts({
   );
 }
 
-function getTraversalGuardFacts(argumentsPayload?: Record<string, unknown>) {
-  if (!argumentsPayload) return [];
-  const operation = argumentsPayload.operation;
-  const targetOperation = argumentsPayload.targetOperation;
-  const isCentralityPlan = operation === "query_plan" && targetOperation === "centrality";
-  const isBoundedTraversal =
-    operation === "all_paths" || (operation === "query_plan" && targetOperation === "all_paths");
-  if (!isBoundedTraversal && !isCentralityPlan) return [];
-
-  const facts: Array<{ key: string; label: string }> = [];
-  const searchBudget = positiveInteger(argumentsPayload.searchBudget);
-  const maxHops = nonNegativeInteger(argumentsPayload.maxHops);
-  const limit = positiveInteger(argumentsPayload.limit);
-  const iterations = positiveInteger(argumentsPayload.iterations);
-  const types = Array.isArray(argumentsPayload.types)
-    ? argumentsPayload.types.filter(
-        (value): value is string => typeof value === "string" && value.length > 0,
-      )
-    : [];
-
-  if (operation === "query_plan") facts.push({ key: "plan", label: "plan first" });
-  if (isCentralityPlan) {
-    facts.push({ key: "ranking-work", label: "estimate rankingWorkUnits" });
-    facts.push({ key: "dangling", label: "report danglingNodes" });
-  }
-  if (operation === "all_paths") {
-    facts.push({ key: "evidence-status", label: "report evidence.status" });
-    facts.push({ key: "paths-complete", label: "check pathsComplete" });
-  }
-  if (searchBudget !== null) facts.push({ key: "budget", label: `budget ${searchBudget}` });
-  if (maxHops !== null) facts.push({ key: "maxHops", label: `maxHops ${maxHops}` });
-  if (iterations !== null) facts.push({ key: "iterations", label: `iterations ${iterations}` });
-  if (limit !== null) facts.push({ key: "limit", label: `limit ${limit}` });
-  if (types.length > 0) facts.push({ key: "types", label: `types ${types.join(", ")}` });
-  return facts;
-}
-
-function positiveInteger(value: unknown): number | null {
-  return Number.isInteger(value) && Number(value) > 0 ? Number(value) : null;
-}
-
-function nonNegativeInteger(value: unknown): number | null {
-  return Number.isInteger(value) && Number(value) >= 0 ? Number(value) : null;
-}
 
 function uniqueString(value: string, index: number, values: string[]): boolean {
   return values.indexOf(value) === index;
