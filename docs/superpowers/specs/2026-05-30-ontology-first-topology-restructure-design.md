@@ -58,7 +58,9 @@ User's words (verbatim intent):
   - **S2.0 (완료, 커밋 71a099aa):** `buildNewNodeDoc({title,kind,domain?})→{slug,markdown}` + `vaultFolderForKind` + `buildVaultMarkdown` domain 지원 (entities/docs-vault). 빌더도 vaultFolderForKind 로 통일(비파괴). 14+ test.
   - **S2.1a (완료, 커밋 97c01789):** `src/views/home/ui/CreateNodeForm.tsx` — title + kind(domain/capability/element) + optional domain → onCreate 콜백. 라벨 prop 주입, Enter 제출. 6 test.
   - **S2.1b (다음, 마운트+글루):** HomePage 에 CreateNodeForm 진입점(토글 버튼 → form, writable 로컬 vault 일 때만) → onCreate 에서 `buildNewNodeDoc({title,kind,domain})` → `vault.createDoc(slug, markdown)`(중복 slug 면 throw→toast). 저장 후 자동 refresh→재-derive 로 그래프 등장. i18n `topology.createNode.*` en·ko. writable 게이트.
-- **S3 — 토폴로지 관계 생성.** 두 노드 드래그 연결 → RelationWriteConfirm 재사용 → vault md.
+- **S3 — 토폴로지 관계 생성.** 두 노드 연결 → RelationWriteConfirm 로직 재사용 → vault md.
+  - **S3.0 (완료, 커밋 cc4b1387):** `relation-proposal`(+test)을 `entities/docs-vault/lib` 로 이동(비파괴, 빌더는 re-export shim). `preflightVaultRelation`·`inferVaultRelationKey`·`buildVaultRelationFrontmatterPatch`·`VAULT_RELATION_KEYS`·`VaultRelationProposal` 등이 토폴로지에서도 import 가능.
+  - **S3.1 (다음):** 토폴로지 drawer 에 "관계 추가" — source=현재 선택 노드, target=노드 선택(검색/드롭다운), relation key=inferVaultRelationKey 추론 + 사용자 조정 → `buildVaultRelationFrontmatterPatch` → `vault.updateFrontmatter(sourceSlug, patch, {expectedMtime})`(관계 키 배열 append, 본문 보존). 큰 단계라 S3.1a(관계 picker 컴포넌트/모델) + S3.1b(drawer+HomePage 글루)로 분할 예정. Sigma 드래그 연결은 네이티브 미지원 → 선택+드롭다운 UX 로.
 - **S4 — 문서탭 = 노드 설명.** `/docs` 를 노드 본문(설명) 편집으로 재구성, 온톨로지 스코프. 자유 노트 성격 약화.
 - **S5 — 빌더 강등/흡수 (⚠️ 파괴적, 사용자 승인 필수).** `/ontology/edit` 를 "고급 캔버스"로 강등하거나 핵심 흐름을 토폴로지로 흡수. 라우트/문서 영향 → 반드시 사전 확인.
 - **S6 — ontology-first 빈 상태/온보딩.** 첫 노드를 문서가 아니라 토폴로지에서 만들도록.
@@ -89,4 +91,4 @@ User's words (verbatim intent):
 
 ## 진행 상황 (loop 갱신)
 
-- [x] S1.0 직렬화 추출 (7fd46b20) · [x] S1.1.0 편집 모델 (2fcc3e4b) · [x] S1.1.1a InlineFieldEdit primitive (69faf463) · [x] S1.1.1b-i drawer 슬롯 (a84f5fb6) · [x] S1.1.1b-ii HomePage write 글루 (95b351c5) — **S1 완성: 토폴로지에서 domain 직접 편집 e2e** · [x] S2.0 새 노드 생성 모델 (71a099aa) · [x] S2.1a CreateNodeForm (97c01789) · [x] S2.1b 마운트+createDoc 글루 (b49f9478) — **S2 완성: 토폴로지에서 노드 직접 생성** · [ ] S3 · [ ] S4 · [ ] S5(비파괴) · [ ] S6 · [ ] live-web · [ ] live-tauri
+- [x] S1.0 직렬화 추출 (7fd46b20) · [x] S1.1.0 편집 모델 (2fcc3e4b) · [x] S1.1.1a InlineFieldEdit primitive (69faf463) · [x] S1.1.1b-i drawer 슬롯 (a84f5fb6) · [x] S1.1.1b-ii HomePage write 글루 (95b351c5) — **S1 완성: 토폴로지에서 domain 직접 편집 e2e** · [x] S2.0 새 노드 생성 모델 (71a099aa) · [x] S2.1a CreateNodeForm (97c01789) · [x] S2.1b 마운트+createDoc 글루 (b49f9478) — **S2 완성: 토폴로지에서 노드 직접 생성** · [x] S3.0 relation-proposal 추출 (cc4b1387) · [ ] S3.1 토폴로지 관계 생성 UI · [ ] S4 · [ ] S5(비파괴) · [ ] S6 · [ ] live-web · [ ] live-tauri
