@@ -4,6 +4,7 @@ import { Link, usePathname } from '@/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { BarChart3, GitBranch, Network } from 'lucide-react';
 import { useOntologyInsight } from '@/features/vault-ontology';
+import { Tooltip } from '@/shared/ui';
 import {
   isOntologySubItemActive,
   shouldShowOntologySubNav,
@@ -36,6 +37,8 @@ interface SubItem {
   // R2 cut A 에서 'relations' 라우트가 제거됐으므로 labelKey 도 3 가지로
   // 좁힌다. 미래 collab 단계에서 다시 도입되면 union 확장.
   labelKey: 'tree' | 'builder' | 'insights';
+  /** 모드의 목적을 설명하는 tooltip — "직관적 선택" (Browse/Write/Query 분리). */
+  tooltipKey: 'treeTooltip' | 'builderTooltip' | 'insightsTooltip';
   icon: typeof Network;
   /** pathname 정규화 (끝 / 제거) 후 정확히 일치하는 경로들. tree 는
    *  '' (루트) + '/ontology' 모두 — vault 선택 시 RootEntryPage 가 같은
@@ -46,9 +49,9 @@ interface SubItem {
 }
 
 const SUB_ITEMS: ReadonlyArray<SubItem> = [
-  { href: '/ontology/', labelKey: 'tree', icon: Network, exactMatches: ['', '/ontology'], prefixMatches: [] },
-  { href: '/ontology/edit/', labelKey: 'builder', icon: GitBranch, exactMatches: [], prefixMatches: ['/ontology/edit'] },
-  { href: '/ontology/insights/', labelKey: 'insights', icon: BarChart3, exactMatches: [], prefixMatches: ['/ontology/insights'] },
+  { href: '/ontology/', labelKey: 'tree', tooltipKey: 'treeTooltip', icon: Network, exactMatches: ['', '/ontology'], prefixMatches: [] },
+  { href: '/ontology/edit/', labelKey: 'builder', tooltipKey: 'builderTooltip', icon: GitBranch, exactMatches: [], prefixMatches: ['/ontology/edit'] },
+  { href: '/ontology/insights/', labelKey: 'insights', tooltipKey: 'insightsTooltip', icon: BarChart3, exactMatches: [], prefixMatches: ['/ontology/insights'] },
 ];
 
 function isItemActive(pathname: string, item: SubItem): boolean {
@@ -95,18 +98,20 @@ export function OntologySubNav() {
           const Icon = item.icon;
           return (
             <li key={item.href}>
-              <Link
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className={
-                  active
-                    ? 'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full border border-[color:rgba(94,106,210,0.4)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]'
-                    : 'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
-                }
-              >
-                <Icon size={12} aria-hidden />
-                <span>{t(item.labelKey)}</span>
-              </Link>
+              <Tooltip content={t(item.tooltipKey)}>
+                <Link
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={
+                    active
+                      ? 'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full border border-[color:rgba(94,106,210,0.4)] bg-[color:rgba(94,106,210,0.14)] px-2.5 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]'
+                      : 'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[11px] text-[color:var(--color-text-tertiary)] transition-colors hover:bg-[color:var(--color-overlay-2)] hover:text-[color:var(--color-text-primary)]'
+                  }
+                >
+                  <Icon size={12} aria-hidden />
+                  <span>{t(item.labelKey)}</span>
+                </Link>
+              </Tooltip>
             </li>
           );
         })}

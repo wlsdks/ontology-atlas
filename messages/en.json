@@ -45,7 +45,10 @@
     "countHint": "UI counts include the tree projection and implicit stubs. They may differ from canonical graph DB proof compile counts.",
     "tree": "Browse",
     "builder": "Builder",
-    "insights": "Insights"
+    "insights": "Insights",
+    "treeTooltip": "Browse — explore the hierarchy & neighbor graph",
+    "builderTooltip": "Write — draw relations on canvas, saved to vault frontmatter",
+    "insightsTooltip": "Query — scan the graph: hubs, paths, health"
   },
   "modeBadge": {
     "vaultLabel": "vault",

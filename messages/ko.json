@@ -45,7 +45,10 @@
     "countHint": "트리 projection 과 stub 를 포함한 화면용 수치입니다. graph DB proof 의 canonical compile 수치와 다를 수 있습니다.",
     "tree": "둘러보기",
     "builder": "빌더",
-    "insights": "인사이트"
+    "insights": "인사이트",
+    "treeTooltip": "둘러보기 — 계층·이웃 그래프 탐색",
+    "builderTooltip": "쓰기 — 캔버스에서 관계를 그려 vault frontmatter 에 저장",
+    "insightsTooltip": "쿼리 — 그래프 스캔: 허브·경로·건강도"
   },
   "modeBadge": {
     "vaultLabel": "vault",
