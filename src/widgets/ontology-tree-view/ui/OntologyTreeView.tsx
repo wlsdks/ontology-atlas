@@ -8,6 +8,7 @@ import { getOntologyKindIcon, useOntologyKindLabel } from "@/entities/ontology-c
 import {
   filterTreeByQuery,
   countMatchingTreeNodes,
+  knowledgeNodeMatchesQuery,
   flattenTree,
   UNKNOWN_TONE,
   type OntologyTreeBuildResult,
@@ -304,11 +305,7 @@ export function OntologyTreeView({
   const filteredOrphans = useMemo(() => {
     const trimmed = searchQuery.trim().toLowerCase();
     if (trimmed === "") return result.orphans;
-    return result.orphans.filter(
-      (n) =>
-        n.title.toLowerCase().includes(trimmed)
-        || n.id.toLowerCase().includes(trimmed),
-    );
+    return result.orphans.filter((n) => knowledgeNodeMatchesQuery(n, trimmed));
   }, [result.orphans, searchQuery]);
   const isFiltering = searchQuery.trim() !== "";
   // 검색 매치 수 — 트리 노드 매치 + orphan 매치 (조상만 살아남은 구조 노드 제외).

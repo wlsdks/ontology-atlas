@@ -1,19 +1,28 @@
+import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { OntologyTreeNode } from "./types";
 
 /**
- * 트리 노드가 검색어에 매치되는지 — title 또는 id(kind:slug) 의 소문자 포함.
- * `query` 는 이미 trim + 소문자화된 값을 기대. filterTreeByQuery 와
- * countMatchingTreeNodes 가 동일 기준을 쓰도록 단일 predicate 로 추출.
+ * ontology 노드가 검색어에 매치되는지 — title 또는 id(kind:slug) 의 소문자
+ * 포함. `query` 는 이미 trim + 소문자화된 값을 기대. 트리 필터/카운트(트리
+ * 노드)와 orphan 필터(raw 노드)가 같은 매치 기준을 공유하도록 단일화.
  */
-export function nodeMatchesTreeQuery(
-  node: OntologyTreeNode,
+export function knowledgeNodeMatchesQuery(
+  node: KnowledgeGraphNode,
   trimmedLowerQuery: string,
 ): boolean {
   if (trimmedLowerQuery === "") return false;
   return (
-    node.node.title.toLowerCase().includes(trimmedLowerQuery)
-    || node.node.id.toLowerCase().includes(trimmedLowerQuery)
+    node.title.toLowerCase().includes(trimmedLowerQuery)
+    || node.id.toLowerCase().includes(trimmedLowerQuery)
   );
+}
+
+/** 트리 노드 wrapper 용 — 내부 KnowledgeGraphNode 로 위임. */
+export function nodeMatchesTreeQuery(
+  node: OntologyTreeNode,
+  trimmedLowerQuery: string,
+): boolean {
+  return knowledgeNodeMatchesQuery(node.node, trimmedLowerQuery);
 }
 
 /**

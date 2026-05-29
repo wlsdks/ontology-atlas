@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import { buildOntologyTree } from "./build-tree";
-import { countMatchingTreeNodes, filterTreeByQuery } from "./filter-tree";
+import {
+  countMatchingTreeNodes,
+  filterTreeByQuery,
+  knowledgeNodeMatchesQuery,
+} from "./filter-tree";
 
 const APPROVED_AT = new Date("2026-04-27T00:00:00Z");
 const node = (id: string, title: string, kind = "capability"): KnowledgeGraphNode => ({
@@ -144,6 +148,19 @@ describe("filterTreeByQuery", () => {
     const r = filterTreeByQuery(enTree.roots, "auth");
     expect(r).toHaveLength(1);
     expect(r[0]?.children).toHaveLength(1);
+  });
+});
+
+describe("knowledgeNodeMatchesQuery", () => {
+  const n = node("capability:mcp-server", "MCP Server");
+  it("title 또는 id 소문자 포함이면 true", () => {
+    expect(knowledgeNodeMatchesQuery(n, "mcp")).toBe(true); // title
+    expect(knowledgeNodeMatchesQuery(n, "server")).toBe(true);
+    expect(knowledgeNodeMatchesQuery(n, "capability")).toBe(true); // id
+  });
+  it("매치 없거나 빈 query 면 false", () => {
+    expect(knowledgeNodeMatchesQuery(n, "zzz")).toBe(false);
+    expect(knowledgeNodeMatchesQuery(n, "")).toBe(false);
   });
 });
 

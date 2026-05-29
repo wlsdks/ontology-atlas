@@ -19,6 +19,7 @@ export {
   filterTreeByQuery,
   countMatchingTreeNodes,
   nodeMatchesTreeQuery,
+  knowledgeNodeMatchesQuery,
 } from "./filter-tree";
 export {
   computeEdgeTypeDistribution,
