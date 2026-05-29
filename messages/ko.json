@@ -1119,6 +1119,8 @@
         "arrayContains": "포함한 노드",
         "arrayDescribes": "설명하는 노드",
         "arrayRelates": "관련된 노드",
+        "arrayGroupHierarchy": "계층",
+        "arrayGroupRelations": "관계",
         "arrayInputPlaceholder": "노드 경로 입력 후 Enter",
         "arrayAddAriaLabel": "추가",
         "arrayRemoveAriaLabel": "{slug} 제거",

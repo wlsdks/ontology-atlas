@@ -1119,6 +1119,8 @@
         "arrayContains": "Contained nodes",
         "arrayDescribes": "Described nodes",
         "arrayRelates": "Related nodes",
+        "arrayGroupHierarchy": "Hierarchy",
+        "arrayGroupRelations": "Relations",
         "arrayInputPlaceholder": "Type a node path + Enter",
         "arrayAddAriaLabel": "Add",
         "arrayRemoveAriaLabel": "Remove {slug}",

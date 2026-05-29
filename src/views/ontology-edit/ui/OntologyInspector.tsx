@@ -488,27 +488,28 @@ function VaultDetail({
         </div>
       ) : null}
       {!readOnly && onEditArrayKey ? (
-        <div className="flex flex-col gap-3">
-          {(
-            [
-              "domains",
-              "capabilities",
-              "elements",
-              "dependencies",
-              "contains",
-              "describes",
-              "relates",
-            ] as const
-          ).map((key) => (
-            <ArrayKeyEditor
-              t={t}
-              key={key}
-              fieldKey={key}
-              values={node[key]}
-              onChange={(next) => onEditArrayKey(node.slug, key, next)}
-              disabled={saving}
-            />
-          ))}
+        <div className="flex flex-col gap-2">
+          {/* 7개 배열 에디터를 계층(domain/capability/element) + 관계 2 그룹
+              아코디언으로. 계층은 기본 펼침(주 편집), 관계는 접힘 → 스크롤·
+              시각 밀도↓. native <details> 라 닫혀도 자식이 DOM 에 남아 라벨-입력
+              연결(#296)·검증 그대로. */}
+          <ArrayEditorGroup
+            t={t}
+            title={t("arrayGroupHierarchy")}
+            keys={["domains", "capabilities", "elements"]}
+            node={node}
+            saving={saving}
+            onEditArrayKey={onEditArrayKey}
+            defaultOpen
+          />
+          <ArrayEditorGroup
+            t={t}
+            title={t("arrayGroupRelations")}
+            keys={["dependencies", "contains", "describes", "relates"]}
+            node={node}
+            saving={saving}
+            onEditArrayKey={onEditArrayKey}
+          />
         </div>
       ) : readOnly ? (
         <ReadOnlyArraySummary t={t} node={node} />
@@ -665,6 +666,65 @@ function LiteralEditor({
         {dirty ? t("literalAutoSaveDirty") : t("literalAutoSaveClean")}
       </p>
     </div>
+  );
+}
+
+/**
+ * 배열 에디터 그룹 아코디언 — 7개 array 키를 계층/관계 2 그룹으로 접어 인스펙터
+ * 스크롤·시각 밀도를 줄인다. summary 에 그룹 내 총 항목 수 badge. native
+ * <details> 사용(닫혀도 자식 DOM 유지 → 라벨-입력 연결 보존).
+ */
+function ArrayEditorGroup({
+  t,
+  title,
+  keys,
+  node,
+  saving,
+  onEditArrayKey,
+  defaultOpen,
+}: {
+  t: InspectorTranslator;
+  title: string;
+  keys: readonly VaultArrayKey[];
+  node: VaultSelected;
+  saving: boolean;
+  onEditArrayKey: (slug: string, key: VaultArrayKey, next: string[]) => void;
+  defaultOpen?: boolean;
+}) {
+  const count = keys.reduce((sum, key) => sum + node[key].length, 0);
+  return (
+    <details
+      open={defaultOpen}
+      className="group rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)]"
+    >
+      <summary className="flex cursor-pointer list-none items-center justify-between rounded-md px-3 py-2 transition-colors hover:bg-[color:var(--color-overlay-2)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(94,106,210,0.46)] focus-visible:ring-inset">
+        <span className="flex items-center gap-2">
+          <ChevronRight
+            size={12}
+            aria-hidden
+            className="text-[color:var(--color-text-quaternary)] transition-transform group-open:rotate-90"
+          />
+          <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {title}
+          </span>
+        </span>
+        <span className="rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-2)] px-1.5 font-mono text-[9px] tabular-nums text-[color:var(--color-text-tertiary)]">
+          {count}
+        </span>
+      </summary>
+      <div className="flex flex-col gap-3 border-t border-[color:var(--color-overlay-2)] px-2.5 pb-2.5 pt-2.5">
+        {keys.map((key) => (
+          <ArrayKeyEditor
+            t={t}
+            key={key}
+            fieldKey={key}
+            values={node[key]}
+            onChange={(next) => onEditArrayKey(node.slug, key, next)}
+            disabled={saving}
+          />
+        ))}
+      </div>
+    </details>
   );
 }
 
