@@ -665,6 +665,7 @@
       "inputAriaLabel": "Source Vault 검색, 명령, 태그",
       "closeAriaLabel": "닫기",
       "noMatches": "일치하는 항목이 없어요",
+      "resultsAnnounce": "결과 {count}개",
       "secPinned": "고정",
       "secRecent": "최근",
       "secCommonCommands": "자주 쓰는 명령",

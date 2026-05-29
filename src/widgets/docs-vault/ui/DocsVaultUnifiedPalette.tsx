@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { buildDocsVaultHref, type VaultDoc } from '@/entities/docs-vault';
+import { LiveAnnouncer } from '@/shared/ui';
 import { searchDocs, type DocsSearchMatch } from '../lib/search';
 import type { VaultCommand } from '../model/command';
 
@@ -383,6 +384,17 @@ export function DocsVaultUnifiedPalette({
     return offsets;
   }, [sections]);
 
+  // 검색어가 있을 때만 결과 수를 스크린리더에 알린다 (combobox 표준 관행).
+  // aria-activedescendant 만으로는 "몇 건 나왔는지"가 전달되지 않아, 타이핑
+  // 중 결과 0건/N건 변화를 polite live-region 으로 announce. 빈 쿼리(기본
+  // recent/pinned 뷰)에서는 알리지 않아 첫 오픈 시 소음 방지.
+  const resultAnnouncement =
+    query.trim() === ''
+      ? ''
+      : rows.length === 0
+        ? t('noMatches')
+        : t('resultsAnnounce', { count: rows.length });
+
   const handleQueryChange = (next: string) => {
     setQuery(next);
     setActiveIdx(0);
@@ -522,6 +534,7 @@ export function DocsVaultUnifiedPalette({
             })
           )}
         </ul>
+        <LiveAnnouncer message={resultAnnouncement} />
         <div className="flex items-center gap-3 border-t border-[color:var(--color-overlay-2)] px-3 py-2 font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
           <span>
             <kbd className="rounded border border-[color:var(--color-divider)] px-1">

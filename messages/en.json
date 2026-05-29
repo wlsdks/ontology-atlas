@@ -665,6 +665,7 @@
       "inputAriaLabel": "Source Vault search, command, tag",
       "closeAriaLabel": "Close",
       "noMatches": "No matches",
+      "resultsAnnounce": "{count} results available",
       "secPinned": "Pinned",
       "secRecent": "Recent",
       "secCommonCommands": "Common commands",
