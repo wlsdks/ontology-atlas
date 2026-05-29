@@ -22,7 +22,7 @@ import {
 } from "@/shared/lib/ontology-tree";
 import { OperationsNav } from "@/widgets/operations-nav";
 import { WorkspaceOntologyStrip } from "@/widgets/workspace-ontology-strip";
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/shared/ui";
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, StaggeredFadeIn } from "@/shared/ui";
 import { useDocumentTitle } from "@/shared/lib/use-document-title";
 
 const PROJECT_LIST_PAGE_SIZE = 60;
@@ -414,7 +414,7 @@ export function ProjectSelectorPage() {
                   </span>
                 ) : null}
               </div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <StaggeredFadeIn className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                 {visibleProjects.map((project) => (
                 <article key={project.slug} className="relative h-full">
                   {/* 카드 전체가 프로젝트 상세로 가는 stretched link.
@@ -513,7 +513,7 @@ export function ProjectSelectorPage() {
                   </Card>
                 </article>
                 ))}
-              </div>
+              </StaggeredFadeIn>
               {hasMoreProjects ? (
                 <div className="mt-6 flex justify-center">
                   <Button
