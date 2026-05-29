@@ -84,6 +84,7 @@ import {
   formatInsightsOrphanRepairPacket,
 } from "../lib/orphan-node-actions";
 import { resolveInsightsQueryNode } from "../lib/resolve-insights-query-node";
+import { formatDomainCouplingPathCheck } from "../lib/domain-coupling-path-check";
 import { getTraversalGuardFacts } from "../lib/traversal-guard-facts";
 
 /**
@@ -139,9 +140,6 @@ const DOMAIN_COUPLING_LIMIT = 6;
 const DOMAIN_COUPLING_LOCAL_TYPES = ["depends_on", "related_to", "describes"] as const;
 const DOMAIN_COUPLING_CLI_TYPES = "depends_on,relates,describes";
 const DOMAIN_COUPLING_MCP_TYPES = ["depends_on", "relates", "describes"] as const;
-const DOMAIN_COUPLING_PATH_MAX_HOPS = 5;
-const DOMAIN_COUPLING_PATH_LIMIT = 10;
-const DOMAIN_COUPLING_PATH_SEARCH_BUDGET = 1000;
 const EMPTY_ORPHANS: KnowledgeGraphNode[] = [];
 
 /**
@@ -2602,64 +2600,6 @@ function uniqueString(value: string, index: number, values: string[]): boolean {
   return values.indexOf(value) === index;
 }
 
-function formatDomainCouplingPathCheck({
-  from,
-  labels,
-  relationType,
-  to,
-  topologyPathHref,
-}: {
-  from: string;
-  labels: {
-    title: string;
-    source: string;
-    target: string;
-    relation: string;
-    topology: string;
-    cli: string;
-    mcpPlan: string;
-    mcp: string;
-    evidenceContract: string;
-  };
-  relationType: string;
-  to: string;
-  topologyPathHref: string;
-}): string {
-  const mcpPlanPayload = formatInsightsQueryOntologyCall({
-    operation: "query_plan",
-    targetOperation: "all_paths",
-    from,
-    to,
-    maxHops: DOMAIN_COUPLING_PATH_MAX_HOPS,
-    limit: DOMAIN_COUPLING_PATH_LIMIT,
-    searchBudget: DOMAIN_COUPLING_PATH_SEARCH_BUDGET,
-  });
-  const mcpPayload = formatInsightsQueryOntologyCall({
-    operation: "all_paths",
-    from,
-    to,
-    maxHops: DOMAIN_COUPLING_PATH_MAX_HOPS,
-    limit: DOMAIN_COUPLING_PATH_LIMIT,
-    searchBudget: DOMAIN_COUPLING_PATH_SEARCH_BUDGET,
-  });
-  const cliCommand =
-    `oh-my-ontology all-paths ${from} ${to} [vault] --plan ` +
-    `--max-hops ${DOMAIN_COUPLING_PATH_MAX_HOPS} ` +
-    `--limit ${DOMAIN_COUPLING_PATH_LIMIT} ` +
-    `--search-budget ${DOMAIN_COUPLING_PATH_SEARCH_BUDGET}`;
-
-  return [
-    `# ${labels.title}`,
-    `- ${labels.source}: ${from}`,
-    `- ${labels.target}: ${to}`,
-    `- ${labels.relation}: ${relationType}`,
-    `- ${labels.topology}: ${topologyPathHref}`,
-    `- ${labels.cli}: ${cliCommand}`,
-    `- ${labels.mcpPlan}: ${mcpPlanPayload}`,
-    `- ${labels.mcp}: ${mcpPayload}`,
-    `- ${labels.evidenceContract}: report limit, searchBudget, expandedStates, exhaustive, truncatedByBudget, totalPathsExact, evidence.status, evidence.reason, and evidence.pathsComplete before using paths as coupling evidence`,
-  ].join("\n");
-}
 
 
 
