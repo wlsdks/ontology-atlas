@@ -191,6 +191,16 @@
     /* Vignette 라이트 — 검정 알파 0.28 이 흰 캔버스 위에선 grey smudge.
        매우 약한 alpha 로 시각적 vignette 효과만 살짝. */
     --color-vignette: rgba(15, 23, 42, 0.05);
+
+    /* 신호색 mode-aware tone-down — 다크 캔버스(#08090a) 용으로 밝게 튜닝된
+       status hex 는 라이트 캔버스(#f3f5f9) 위에서 text 로 쓰면 대비가 무너진다
+       (특히 warning #f4b731 노랑 = 1.65:1, WCAG AA 4.5 한참 미달 → 거의 안 보임).
+       라이트 전용으로 어둡게 시프트해 흰 배경에서 AA(>=4.5:1) 충족. hue 는
+       같은 신호 계열(녹/앰버/회/적) 유지 — 신호색 예외 원칙 그대로. */
+    --color-status-success: #177233;
+    --color-status-warning: #8a5a00;
+    --color-status-paused: #57606a;
+    --color-status-danger: #c0353a;
   }
 
   body {
