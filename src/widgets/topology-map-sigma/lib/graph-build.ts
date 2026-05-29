@@ -287,7 +287,13 @@ export function buildGraph(
   // slug → project 룩업 1회 빌드. 아래 이중 루프에서 dep 마다
   // projects.find (O(P)) 를 돌면 O(P²·D) — 대형 프로젝트 그래프에서 매
   // 그래프 재빌드 시 누적. Map.get (O(1)) 으로 O(P·D) 로 낮춘다.
-  const projectBySlug = new Map(projects.map((p) => [p.slug, p]));
+  // 중복 slug 시 projects.find 는 *첫* 항목을 반환하므로 Map 도 첫 항목만
+  // 유지(set-if-absent)해 동작을 정확히 보존한다. `new Map(entries)` 는
+  // 마지막 항목을 남겨 find 와 갈라지므로 쓰지 않는다.
+  const projectBySlug = new Map<string, (typeof projects)[number]>();
+  for (const p of projects) {
+    if (!projectBySlug.has(p.slug)) projectBySlug.set(p.slug, p);
+  }
   for (const project of projects) {
     for (const dep of project.dependencies) {
       if (graph.hasNode(dep) && dep !== project.slug && !graph.hasEdge(project.slug, dep)) {
