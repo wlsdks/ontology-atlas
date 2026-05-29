@@ -80,8 +80,11 @@ function derivationToInsight(
       const projectSlug = p.id.replace(/^project:/, '');
       const visited = new Set<string>([p.id]);
       const queue: string[] = [p.id];
-      while (queue.length > 0) {
-        const cur = queue.shift()!;
+      // head pointer 로 dequeue O(1) — `Array.shift()` 는 O(n) 이라 큰 vault
+      // 에서 O(n²) (depth.ts / reachability.ts 와 동일 패턴).
+      let head = 0;
+      while (head < queue.length) {
+        const cur = queue[head++];
         const children = containsAdj.get(cur);
         if (!children) continue;
         for (const c of children) {

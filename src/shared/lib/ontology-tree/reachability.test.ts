@@ -102,4 +102,26 @@ describe("buildOntologyReachability", () => {
     expect(filtered.byRelation).toEqual({ relates: 1 });
     expect(filtered.limited).toBe(false);
   });
+
+  it("깊은 체인에서 BFS distance 순서 보존 (head-pointer dequeue 회귀 가드)", () => {
+    // start → n1 → n2 → n3 → n4 일직선 체인. head pointer 로 바꾼 BFS 가
+    // FIFO(breadth-first) 순서를 유지하는지 — 각 노드가 정확한 hop 거리의
+    // 레이어에 들어가야 한다.
+    const nodes = ["start", "n1", "n2", "n3", "n4"].map((id) => node(id));
+    const edges = [
+      edge("e1", "start", "n1"),
+      edge("e2", "n1", "n2"),
+      edge("e3", "n2", "n3"),
+      edge("e4", "n3", "n4"),
+    ];
+    const result = buildOntologyReachability("start", nodes, edges, { depth: 4 });
+    expect(
+      result.layers.map((layer) => [layer.distance, layer.nodes.map((n) => n.id)]),
+    ).toEqual([
+      [1, ["n1"]],
+      [2, ["n2"]],
+      [3, ["n3"]],
+      [4, ["n4"]],
+    ]);
+  });
 });

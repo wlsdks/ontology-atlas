@@ -70,10 +70,13 @@ export function buildOntologyReachability(
     [startId, { id: startId, distance: 0 }],
   ]);
   const queue: DiscoveredNode[] = [{ id: startId, distance: 0 }];
+  // head pointer 로 dequeue O(1) — `Array.shift()` 는 O(n) 이라 큰 그래프에서
+  // O(n²) 회귀 (depth.ts 와 동일 패턴).
+  let head = 0;
   const traversedEdges = new Map<string, KnowledgeGraphEdge>();
 
-  while (queue.length > 0) {
-    const current = queue.shift()!;
+  while (head < queue.length) {
+    const current = queue[head++];
     if (current.distance >= depth) continue;
     for (const candidate of traversalCandidates(current.id, adjacency, direction)) {
       traversedEdges.set(candidate.edge.id, candidate.edge);
