@@ -409,14 +409,17 @@ export function OntologyViewPage() {
                 </button>
               </Tooltip>
             ) : null}
+            {/* S5 — 빌더 비파괴 강등: 1차 편집은 토폴로지(노드 선택 → 편집)로
+                이동. 빌더(/ontology/edit)는 ERD 고급 캔버스로 남기되, filled-
+                primary → secondary outline 으로 시각 강등. 라우트·링크는 유지. */}
             <Tooltip content={t('actions.builderTooltip')} withProvider={false}>
               <Link
                 href={builderHref}
-                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-indigo-brand)] bg-[color:var(--color-indigo-brand)] px-4 text-xs font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)] transition-opacity hover:opacity-90"
+                className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border border-[color:var(--color-overlay-3)] bg-[color:var(--color-overlay-1)] px-3 text-xs text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.32)] hover:text-[color:var(--color-text-primary)]"
                 aria-label={`${t('actions.builder')} — ${t('actions.builderAria')}`}
               >
                 <PencilLine size={13} aria-hidden />
-                {t('actions.builder')}
+                <span className="hidden sm:inline">{t('actions.builder')}</span>
               </Link>
             </Tooltip>
           </div>
