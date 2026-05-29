@@ -49,7 +49,7 @@ import {
   AGENT_GRAPH_DB_RUNTIME_GATE_COMMAND,
 } from '@/shared/lib/ontology-tree';
 import { summarizeVaultValidation } from '@/shared/lib/validate-vault-document';
-import { Tooltip, useToast } from '@/shared/ui';
+import { StaggeredFadeIn, Tooltip, useToast } from '@/shared/ui';
 import type { LocalFsHandleRecord } from '@/entities/local-fs-handle';
 // 추출된 page-local helpers.
 import { buildDocsVaultPopoutHtml } from '../lib/popout-template';
@@ -203,7 +203,7 @@ function DocsVaultSourceContractBar({
       aria-label={t('sourceContract.ariaLabel')}
       className="flex-none border-b border-[color:var(--color-border-soft)] bg-[color:rgba(16,17,21,0.92)] px-3 py-2 md:px-4"
     >
-      <div className="grid gap-2 lg:grid-cols-3">
+      <StaggeredFadeIn className="grid gap-2 lg:grid-cols-3">
         {cells.map((cell) => {
           const Icon = cell.icon;
           return (
@@ -264,7 +264,7 @@ function DocsVaultSourceContractBar({
             </article>
           );
         })}
-      </div>
+      </StaggeredFadeIn>
     </section>
   );
 }
@@ -325,8 +325,9 @@ function DesktopVaultWelcome({
           </div>
         </section>
 
-        <section
-          aria-label={t('desktopWelcome.contractAriaLabel')}
+        <StaggeredFadeIn
+          as="section"
+          ariaLabel={t('desktopWelcome.contractAriaLabel')}
           className="grid gap-2 md:grid-cols-3"
         >
           {contractItems.map((item) => {
@@ -355,7 +356,7 @@ function DesktopVaultWelcome({
               </article>
             );
           })}
-        </section>
+        </StaggeredFadeIn>
 
         <section
           aria-label={t('desktopWelcome.actionsAriaLabel')}
