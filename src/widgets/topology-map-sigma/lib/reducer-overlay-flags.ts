@@ -27,8 +27,12 @@ export interface OverlayFlagsContext {
   /** zoom LOD threshold — minimal 모드 2.4 / 일반 1.8. */
   lodHideRatio: number;
   recentPulseEnabled: boolean;
-  /** sine phase (radian). 매 프레임 sin() 으로 size 변조. */
-  pulsePhase: number;
+  /**
+   * 현재 프레임의 sine 값 (= `Math.sin(phase)`). caller 가 매 프레임 1회
+   * 계산해 넘긴다 — 노드마다 `Math.sin` 을 재계산하던 per-element 비용을
+   * 제거 (한 프레임 안에서는 모든 노드/엣지가 같은 phase 라 sin 값도 동일).
+   */
+  pulseSin: number;
 }
 
 /**
@@ -59,16 +63,16 @@ export function applyOverlaySize(
   attrs: SigmaNodeAttrs,
   ctx: Pick<
     OverlayFlagsContext,
-    'cameraRatio' | 'recentPulseEnabled' | 'pulsePhase'
+    'cameraRatio' | 'recentPulseEnabled' | 'pulseSin'
   >,
 ): SigmaNodeAttrs {
   let next = attrs;
 
-  // 1) recent pulse
+  // 1) recent pulse — sin 값은 caller 가 프레임당 1회 계산해 넘긴다.
   if (ctx.recentPulseEnabled && next.recentlyUpdated) {
     next = {
       ...next,
-      size: next.size * (1 + PULSE_AMPLITUDE * Math.sin(ctx.pulsePhase)),
+      size: next.size * (1 + PULSE_AMPLITUDE * ctx.pulseSin),
     };
   }
 

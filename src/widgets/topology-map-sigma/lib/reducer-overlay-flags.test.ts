@@ -92,7 +92,7 @@ describe('applyOverlaySize — recent pulse', () => {
   it('pulse off → size 변동 없음', () => {
     const out = applyOverlaySize(
       attrs({ size: 4, recentlyUpdated: true }),
-      { cameraRatio: 1, recentPulseEnabled: false, pulsePhase: Math.PI / 2 },
+      { cameraRatio: 1, recentPulseEnabled: false, pulseSin: 1 },
     );
     expect(out.size).toBe(4);
   });
@@ -100,7 +100,7 @@ describe('applyOverlaySize — recent pulse', () => {
   it('recentlyUpdated 가 false 면 변동 없음', () => {
     const out = applyOverlaySize(
       attrs({ size: 4, recentlyUpdated: false }),
-      { cameraRatio: 1, recentPulseEnabled: true, pulsePhase: Math.PI / 2 },
+      { cameraRatio: 1, recentPulseEnabled: true, pulseSin: 1 },
     );
     expect(out.size).toBe(4);
   });
@@ -108,10 +108,19 @@ describe('applyOverlaySize — recent pulse', () => {
   it('recentlyUpdated + pulse on → sin(phase) * amplitude 만큼 변조', () => {
     const out = applyOverlaySize(
       attrs({ size: 4, recentlyUpdated: true }),
-      { cameraRatio: 1, recentPulseEnabled: true, pulsePhase: Math.PI / 2 },
+      { cameraRatio: 1, recentPulseEnabled: true, pulseSin: 1 },
     );
     // sin(π/2) = 1 → factor = 1 + amplitude
     expect(out.size).toBeCloseTo(4 * (1 + PULSE_AMPLITUDE));
+  });
+
+  it('size 가 넘겨받은 pulseSin 에 선형 비례 — 프레임당 1회 계산한 sin 을 그대로 사용', () => {
+    const out = applyOverlaySize(
+      attrs({ size: 4, recentlyUpdated: true }),
+      { cameraRatio: 1, recentPulseEnabled: true, pulseSin: 0.5 },
+    );
+    // factor = 1 + amplitude * 0.5 (helper 내부에서 Math.sin 재계산 안 함)
+    expect(out.size).toBeCloseTo(4 * (1 + PULSE_AMPLITUDE * 0.5));
   });
 });
 
@@ -119,7 +128,7 @@ describe('applyOverlaySize — hub boost', () => {
   it('비허브는 boost 적용 안 됨', () => {
     const out = applyOverlaySize(
       attrs({ isHub: false, size: 4 }),
-      { cameraRatio: 0.3, recentPulseEnabled: false, pulsePhase: 0 },
+      { cameraRatio: 0.3, recentPulseEnabled: false, pulseSin: 0 },
     );
     expect(out.size).toBe(4);
   });
@@ -127,7 +136,7 @@ describe('applyOverlaySize — hub boost', () => {
   it('허브 + size >= threshold (5) 면 boost 적용 안 됨', () => {
     const out = applyOverlaySize(
       attrs({ isHub: true, size: HUB_SMALL_SIZE_THRESHOLD + 1 }),
-      { cameraRatio: 0.3, recentPulseEnabled: false, pulsePhase: 0 },
+      { cameraRatio: 0.3, recentPulseEnabled: false, pulseSin: 0 },
     );
     expect(out.size).toBe(HUB_SMALL_SIZE_THRESHOLD + 1);
   });
@@ -138,7 +147,7 @@ describe('applyOverlaySize — hub boost', () => {
       {
         cameraRatio: HUB_BOOST_RATIO_THRESHOLD,
         recentPulseEnabled: false,
-        pulsePhase: 0,
+        pulseSin: 0,
       },
     );
     expect(out.size).toBe(4);
@@ -148,7 +157,7 @@ describe('applyOverlaySize — hub boost', () => {
     // boost = 1 + (0.7 - 0.6) * 3.5 = 1.35
     const out = applyOverlaySize(
       attrs({ isHub: true, size: 4 }),
-      { cameraRatio: 0.6, recentPulseEnabled: false, pulsePhase: 0 },
+      { cameraRatio: 0.6, recentPulseEnabled: false, pulseSin: 0 },
     );
     expect(out.size).toBeCloseTo(4 * 1.35);
   });
@@ -157,7 +166,7 @@ describe('applyOverlaySize — hub boost', () => {
     // boost 가 1 + 0.7 * 3.5 = 3.45 이지만 max 2.5 로 cap
     const out = applyOverlaySize(
       attrs({ isHub: true, size: 4 }),
-      { cameraRatio: 0, recentPulseEnabled: false, pulsePhase: 0 },
+      { cameraRatio: 0, recentPulseEnabled: false, pulseSin: 0 },
     );
     expect(out.size).toBeCloseTo(4 * HUB_BOOST_MAX_SCALE);
   });
@@ -167,7 +176,7 @@ describe('applyOverlaySize — hub boost', () => {
     // 4.4 < 5 라 boost 도 적용 (cameraRatio 0 → max 2.5x)
     const out = applyOverlaySize(
       attrs({ isHub: true, size: 4, recentlyUpdated: true }),
-      { cameraRatio: 0, recentPulseEnabled: true, pulsePhase: Math.PI / 2 },
+      { cameraRatio: 0, recentPulseEnabled: true, pulseSin: 1 },
     );
     expect(out.size).toBeCloseTo(4 * 1.1 * 2.5);
   });

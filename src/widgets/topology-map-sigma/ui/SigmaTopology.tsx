@@ -414,6 +414,10 @@ function SigmaTopologyImpl({
   // 일으키려고 interval 에서 sigma refresh. edgeReducer 의 focus edge 도
   // 이 phase 를 읽어 alpha 를 변조 (전기 흐름 → 기존 선 반짝임).
   const pulsePhaseRef = useRef(0);
+  // pulsePhase 의 sin 값 — 프레임당 1회 tick 에서 계산해 둔다. node/edge
+  // reducer 가 각자 Math.sin(phase) 를 노드·엣지마다 재계산하던 비용을 제거
+  // (한 프레임 안에서는 phase 가 고정이라 sin 값도 동일). sin(0)=0 로 초기화.
+  const pulseSinRef = useRef(0);
   const reduceMotionRef = useRef(false);
   // 그래프에 recentlyUpdated 노드가 1개라도 있는지 — pulse interval 의
   // skip 조건에 사용. 매 interval 마다 graph 순회하면 O(N) × 매 120ms 라
@@ -456,6 +460,8 @@ function SigmaTopologyImpl({
       if (!hasFocus && !hasRecentPulse) return;
       t += 1;
       pulsePhaseRef.current = (t * Math.PI) / 8; // 16 프레임 = 한 사이클
+      // 프레임당 1회만 sin 계산 → node/edge reducer 는 이 값을 읽어 쓴다.
+      pulseSinRef.current = Math.sin(pulsePhaseRef.current);
       sigmaRef.current?.refresh();
     };
     const handle = window.setInterval(tick, 120);
@@ -904,7 +910,7 @@ function SigmaTopologyImpl({
       attrs = applyOverlaySize(attrs, {
         cameraRatio: cameraRatioRef.current,
         recentPulseEnabled: overlayState.recentPulse,
-        pulsePhase: pulsePhaseRef.current,
+        pulseSin: pulseSinRef.current,
       });
       // Owner tint overlay — 허브(인디고)는 허브 정체성을 유지하기 위해 건너뛰고
       // 비허브 노드만 owner 해시 색으로 덮어씌운다. focus/neighbor dim 보다 먼저
@@ -1090,7 +1096,7 @@ function SigmaTopologyImpl({
         const denseFocus = neighbors.size >= 8;
         const wave = reduceMotionRef.current
           ? 0.5
-          : 0.5 + 0.5 * Math.sin(pulsePhaseRef.current);
+          : 0.5 + 0.5 * pulseSinRef.current;
         const alpha = denseFocus
           ? 0.3 + 0.2 * wave   // 0.3 ~ 0.5
           : 0.55 + 0.4 * wave; // 0.55 ~ 0.95
