@@ -33,6 +33,12 @@ interface Props {
   getDocHref?: (slug: string) => string;
 }
 
+// combobox aria-activedescendant 가 가리킬 option id — listbox 옵션 li 와
+// 입력의 active descendant 를 같은 규칙으로 묶어 스크린리더가 방향키 이동 시
+// 활성 항목을 읽게 한다 (WAI-ARIA combobox 패턴).
+const PALETTE_LISTBOX_ID = 'docs-vault-palette-listbox';
+const paletteOptionId = (idx: number) => `docs-vault-palette-option-${idx}`;
+
 type ResultKind = 'doc' | 'command' | 'tag';
 
 interface PaletteRow {
@@ -453,6 +459,13 @@ export function DocsVaultUnifiedPalette({
             onKeyDown={handleKey}
             placeholder={t('inputPlaceholder')}
             aria-label={t('inputAriaLabel')}
+            role="combobox"
+            aria-expanded
+            aria-controls={PALETTE_LISTBOX_ID}
+            aria-autocomplete="list"
+            aria-activedescendant={
+              rows.length > 0 ? paletteOptionId(activeIdx) : undefined
+            }
             className="min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--color-text-primary)] placeholder:text-[color:var(--color-text-quaternary)] focus:outline-none"
           />
           <button
@@ -466,6 +479,7 @@ export function DocsVaultUnifiedPalette({
         </div>
         <ul
           ref={listRef}
+          id={PALETTE_LISTBOX_ID}
           className="max-h-[56vh] overflow-auto py-1"
           role="listbox"
         >
@@ -490,6 +504,7 @@ export function DocsVaultUnifiedPalette({
                   ) : null}
                   <li
                     key={row.key}
+                    id={paletteOptionId(idx)}
                     data-idx={idx}
                     role="option"
                     aria-selected={active}
