@@ -6,6 +6,27 @@
 
 ---
 
+## 2026-05-29 — 접근성 · 성능 · 디자인 일관성 개선 패스
+
+세 핵심 surface(토폴로지 · 온톨로지 · `/docs`)를 한 바퀴 돌며 사용성·접근성·
+성능을 다듬고, 디자인 시스템 규율을 자동 가드로 고정했다.
+
+- **접근성(키보드 · 스크린리더)** — 통합 팔레트를 WAI-ARIA combobox 패턴으로
+  (`aria-activedescendant`), 허브 rail 을 roving tabindex(tab stop 1개)로,
+  관계 쓰기 확인 모달에 Escape·초기 focus 를 추가했다. 토폴로지 컨트롤 range
+  슬라이더와 `/docs` 마크다운 편집기 textarea 에 접근명(`aria-label`)을, 온톨로지
+  로딩 상태·로딩 스켈레톤에 `role=status` announce 를 부여했다.
+- **성능** — 토폴로지 검색 필터를 build-time precompute 로(per-frame
+  toLowerCase 제거), pulse sine 를 프레임당 1회 계산으로 바꿨고, 온톨로지
+  reachability · projectIds 파생 · 관계 제안 최단경로의 BFS 에서 `Array.shift()`
+  (O(n²)) 를 head-pointer(O(n)) 로 통일했다 — 큰 vault 일수록 체감.
+- **사용성** — 온톨로지 트리 검색 무결과에 '검색 지우기' 복구 버튼, 인사이트
+  허브 패널에 "상위 N / 전체 M" truncation 표시(silent cap 해소)를 추가했다.
+- **디자인 시스템** — 라이트 모드 status 신호색을 WCAG AA(≥4.5:1) 충족하도록
+  토큰 override(특히 안 보이던 노랑 경고), 루트 redirect 색을 토큰화(라이트 모드
+  다크 깜빡임 제거). hardcoded hex·금지 패턴(glassmorphism/scale hover/보라핑크
+  그라디언트)·status 대비를 회귀 차단하는 가드 테스트를 추가했다.
+
 ## 2026-05-28 — Topology layout off the main thread (web worker)
 
 토폴로지 force 레이아웃을 Web Worker 로 이전해 데스크톱(WKWebView)에서 드래그 ·

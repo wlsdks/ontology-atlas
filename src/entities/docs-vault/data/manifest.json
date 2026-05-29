@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-28T14:25:56.236Z",
+  "generatedAt": "2026-05-29T10:09:03.966Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -2415,6 +2415,11 @@
         },
         {
           "depth": 2,
+          "text": "2026-05-29 — 접근성 · 성능 · 디자인 일관성 개선 패스",
+          "slug": "2026-05-29-접근성-성능-디자인-일관성-개선-패스"
+        },
+        {
+          "depth": 2,
           "text": "2026-05-28 — Topology layout off the main thread (web worker)",
           "slug": "2026-05-28-topology-layout-off-the-main-thread-web-worker"
         },
@@ -3464,9 +3469,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 토폴로지 force 레이아웃을 Web Worker 로 이전해 데스크톱(WKWebView)에서 드래그 · 자동 정렬 시 끊김을 줄였다. 진단상 Sigma WebGL",
-      "wordCount": 17652,
-      "updatedAt": "2026-05-28T14:23:21.490Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 세 핵심 surface(토폴로지 · 온톨로지 · /docs)를 한 바퀴 돌며 사용성·접근성· 성능을 다듬고, 디자인 시스템 규율을 자동 가드로 고정했다. 접근성(",
+      "wordCount": 17826,
+      "updatedAt": "2026-05-29T04:11:29.766Z",
       "linksOut": [
         "slug"
       ]
