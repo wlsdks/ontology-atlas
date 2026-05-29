@@ -13,6 +13,7 @@ import {
   type VaultDoc,
 } from '@/entities/docs-vault';
 import { splitHighlightSegments } from '@/shared/lib/highlight-match';
+import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { fetchServerDocContent } from '../lib/server-doc-content';
 
 interface Props {
@@ -737,7 +738,8 @@ function HeadingAnchor({
   basePath: string;
 }) {
   const t = useTranslations('vaultWidgets.viewer');
-  const [copied, setCopied] = useState(false);
+  const { state, copy } = useCopyFeedback(2000);
+  const copied = state === "copied";
   const onClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -746,13 +748,7 @@ function HeadingAnchor({
     url.pathname = basePath.endsWith('/') ? basePath : `${basePath}/`;
     url.searchParams.set('slug', docSlug);
     url.hash = anchor;
-    try {
-      await navigator.clipboard.writeText(url.toString());
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      /* clipboard 권한 없음 */
-    }
+    await copy(url.toString());
   };
   return (
     <button

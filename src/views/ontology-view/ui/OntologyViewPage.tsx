@@ -35,6 +35,7 @@ import {
   type OntologyTreeBuildResult,
 } from "@/shared/lib/ontology-tree";
 import { copyText } from "@/shared/lib/copy-text";
+import { useCopyFeedback } from "@/shared/lib/use-copy-feedback";
 import { OntologyChangePanel } from "./parts/OntologyChangePanel";
 import { isTauriVaultRuntime } from "@/shared/lib/tauri-vault-fs";
 import { GlobalSearch, MountedGlobalSearch, useGlobalSearchHotkey } from "@/widgets/global-search";
@@ -851,18 +852,14 @@ function CopyNodeLinkButton({
 }) {
   const t = useTranslations('ontologyView.copyLink');
   const { show } = useToast();
-  const [copied, setCopied] = useState(false);
+  const { state, copy } = useCopyFeedback(1500);
+  const copied = state === "copied";
 
   const handleCopy = async () => {
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const url = `${origin}${buildOntologyNodeHref(node.id)}`;
-    if (await copyText(url)) {
-      setCopied(true);
-      show(t('toastSuccess'), "success");
-      window.setTimeout(() => setCopied(false), 1500);
-      return;
-    }
-    show(t('toastError'), "error");
+    const ok = await copy(url);
+    show(ok ? t('toastSuccess') : t('toastError'), ok ? "success" : "error");
   };
 
   return (

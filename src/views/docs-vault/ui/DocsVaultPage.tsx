@@ -38,6 +38,7 @@ import {
 } from '@/features/docs-vault-local';
 import { VaultToolsMenu } from '@/widgets/docs-vault';
 import { copyText } from '@/shared/lib/copy-text';
+import { useCopyFeedback } from '@/shared/lib/use-copy-feedback';
 import { useTypingShortcuts } from '@/shared/lib/use-typing-shortcut';
 import { usePrevious } from '@/shared/lib/use-previous';
 import {
@@ -136,7 +137,8 @@ function DocsVaultSourceContractBar({
   t: ReturnType<typeof useTranslations>;
 }) {
   const toast = useToast();
-  const [copiedGate, setCopiedGate] = useState(false);
+  const { state: gateCopyState, copy: copyGate } = useCopyFeedback(1500);
+  const copiedGate = gateCopyState === "copied";
   const sourceLabel =
     source === 'local'
       ? t('sourceContract.filesLocalValue', { count: manifest.docs.length })
@@ -188,14 +190,8 @@ function DocsVaultSourceContractBar({
   ] as const;
 
   async function handleCopyGate(text: string, successMessage: string) {
-    const ok = await copyText(text);
-    if (!ok) {
-      toast.show(t('sourceContract.copyFailed'), 'error');
-      return;
-    }
-    setCopiedGate(true);
-    toast.show(successMessage, 'success');
-    window.setTimeout(() => setCopiedGate(false), 1500);
+    const ok = await copyGate(text);
+    toast.show(ok ? successMessage : t('sourceContract.copyFailed'), ok ? 'success' : 'error');
   }
 
   return (
