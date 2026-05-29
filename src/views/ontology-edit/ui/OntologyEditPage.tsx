@@ -51,6 +51,7 @@ import {
   type VaultRelationProposal,
 } from "../lib/relation-proposal";
 import { resolveBuilderQueryNodeSlug } from "../lib/resolve-builder-query-node";
+import { resolveBuilderShortcut } from "../lib/resolve-builder-shortcut";
 import {
   buildBuilderProofHref,
   resolveBuilderProofTarget,
@@ -1209,59 +1210,49 @@ export function OntologyEditPage() {
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
-      if (
+      const isTextEntryTarget = Boolean(
         target &&
-        (target.tagName === "INPUT" ||
-          target.tagName === "TEXTAREA" ||
-          target.isContentEditable)
-      ) {
-        return;
-      }
-      // Esc — 선택 해제 / fullscreen 종료
-      if (event.key === "Escape") {
-        if (selectedId) {
-          event.preventDefault();
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable),
+      );
+      // 단축키 결정은 순수 함수로 분리 (단위 테스트 + repeat 가드).
+      const action = resolveBuilderShortcut(
+        {
+          key: event.key,
+          repeat: event.repeat,
+          metaKey: event.metaKey,
+          ctrlKey: event.ctrlKey,
+          altKey: event.altKey,
+          isTextEntryTarget,
+        },
+        {
+          hasSelection: selectedId !== null,
+          fullscreen,
+          selectionRemovable: selectedId !== null && Boolean(findById(selectedId)),
+        },
+      );
+      if (!action) return;
+      event.preventDefault();
+      switch (action.type) {
+        case "deselect":
           setSelectedId(null);
-          return;
-        }
-        if (fullscreen) {
-          event.preventDefault();
+          break;
+        case "exitFullscreen":
           setFullscreen(false);
-        }
-        return;
-      }
-      // F — fullscreen 토글
-      if (event.key === "f" || event.key === "F") {
-        event.preventDefault();
-        setFullscreen((current) => !current);
-        return;
-      }
-      // 단축키로 4 kind 모두 추가 — palette 클릭과 1:1 (P/D/C/E).
-      // N (legacy alias) 도 P 와 동일 — 기존 사용자 호환.
-      const kindByKey: Record<string, "project" | "domain" | "capability" | "element"> = {
-        p: "project",
-        n: "project",
-        d: "domain",
-        c: "capability",
-        e: "element",
-      };
-      const lower = event.key.toLowerCase();
-      if (lower in kindByKey && !event.metaKey && !event.ctrlKey && !event.altKey) {
-        event.preventDefault();
-        const newId = addNode(kindByKey[lower]);
-        setSelectedId(newId);
-        return;
-      }
-      // Delete / Backspace — selected ephemeral 노드 제거
-      if (
-        (event.key === "Delete" || event.key === "Backspace") &&
-        selectedId &&
-        findById(selectedId)
-      ) {
-        event.preventDefault();
-        removeNode(selectedId);
-        setSelectedId(null);
-        return;
+          break;
+        case "toggleFullscreen":
+          setFullscreen((current) => !current);
+          break;
+        case "addNode":
+          setSelectedId(addNode(action.kind));
+          break;
+        case "removeSelected":
+          if (selectedId) {
+            removeNode(selectedId);
+            setSelectedId(null);
+          }
+          break;
       }
     };
     window.addEventListener("keydown", handler);
