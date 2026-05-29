@@ -1478,6 +1478,7 @@
       "hubsPanelTitle": "허브 노드",
       "hubsPanelSubtitle": "가장 많이 연결된 위 10 (document/project 제외)",
       "hubsEmpty": "아직 연결된 노드가 없어요.",
+      "hubsTruncated": "연결된 노드 {total}개 중 상위 {shown}개 표시",
       "recentPanelTitle": "노드 미리보기",
       "recentSubtitle": "vault frontmatter 노드 {count}",
       "orphansPanelTitle": "미연결 노드",

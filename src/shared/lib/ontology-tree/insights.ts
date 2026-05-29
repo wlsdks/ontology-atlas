@@ -77,14 +77,13 @@ export interface ComputeDomainCouplingMatrixOptions {
 }
 
 /**
- * degree 가 높은 순 top N 노드 — "이 ontology 의 허브" 식별. document / project
- * 는 기본 제외 (메타·구조 노드라 사용자 관심 단위가 아님). 호출자가 includeKinds
- * 로 override 가능.
+ * degree 내림차순으로 정렬된 **전체** 허브 후보 (degree > 0, document / project
+ * 기본 제외). slice 없이 모두 반환하므로 호출자가 "상위 N / 전체 M" 처럼
+ * truncation 을 사용자에게 알릴 수 있다 (silent cap 회피).
  */
-export function selectTopByDegree(
+export function rankAllByDegree(
   nodes: readonly KnowledgeGraphNode[],
   edges: readonly KnowledgeGraphEdge[],
-  limit = 8,
   options?: { includeKinds?: ReadonlyArray<string>; excludeKinds?: ReadonlyArray<string> },
 ): OntologyDegreeRow[] {
   const exclude = new Set(options?.excludeKinds ?? ["document", "project"]);
@@ -103,7 +102,21 @@ export function selectTopByDegree(
     if (b.degree !== a.degree) return b.degree - a.degree;
     return a.node.title.localeCompare(b.node.title);
   });
-  return rows.slice(0, limit);
+  return rows;
+}
+
+/**
+ * degree 가 높은 순 top N 노드 — "이 ontology 의 허브" 식별. document / project
+ * 는 기본 제외 (메타·구조 노드라 사용자 관심 단위가 아님). 호출자가 includeKinds
+ * 로 override 가능. 전체 후보가 필요하면 `rankAllByDegree` 를 직접 쓴다.
+ */
+export function selectTopByDegree(
+  nodes: readonly KnowledgeGraphNode[],
+  edges: readonly KnowledgeGraphEdge[],
+  limit = 8,
+  options?: { includeKinds?: ReadonlyArray<string>; excludeKinds?: ReadonlyArray<string> },
+): OntologyDegreeRow[] {
+  return rankAllByDegree(nodes, edges, options).slice(0, limit);
 }
 
 /**

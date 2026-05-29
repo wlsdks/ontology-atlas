@@ -59,8 +59,8 @@ import {
   countCrossProjectEdges,
   selectAgentProjectEntrypoint,
   selectAgentQueryEntrypoints,
+  rankAllByDegree,
   selectRecentNodes,
-  selectTopByDegree,
 } from "@/shared/lib/ontology-tree";
 import { copyText } from "@/shared/lib/copy-text";
 import { MountedGlobalSearch } from "@/widgets/global-search";
@@ -164,9 +164,16 @@ export function OntologyInsightsPage() {
     () => (insight ? computeKindDistribution(insight.nodes) : new Map<string, number>()),
     [insight],
   );
-  const topHubs = useMemo(
-    () => (insight ? selectTopByDegree(insight.nodes, insight.edges, 10) : []),
+  const HUB_DISPLAY_LIMIT = 10;
+  // 전체 허브 후보를 한 번에 구해 truncation 을 사용자에게 알린다 (silent cap
+  // 회피) — 상위 HUB_DISPLAY_LIMIT 만 표시하되 전체 개수를 caption 으로 노출.
+  const hubRanking = useMemo(
+    () => (insight ? rankAllByDegree(insight.nodes, insight.edges) : []),
     [insight],
+  );
+  const topHubs = useMemo(
+    () => hubRanking.slice(0, HUB_DISPLAY_LIMIT),
+    [hubRanking],
   );
   const recent = useMemo(
     () => (insight ? selectRecentNodes(insight.nodes, 10) : []),
@@ -794,6 +801,14 @@ export function OntologyInsightsPage() {
                 ))}
               </ol>
             )}
+            {hubRanking.length > topHubs.length ? (
+              <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                {t("hubsTruncated", {
+                  shown: topHubs.length,
+                  total: hubRanking.length,
+                })}
+              </p>
+            ) : null}
           </Panel>
 
           {/* 최근 노드 — vault sentinel mode 라 timestamp 없이 chip / 제목만. */}

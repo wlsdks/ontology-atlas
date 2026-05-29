@@ -1478,6 +1478,7 @@
       "hubsPanelTitle": "Hub nodes",
       "hubsPanelSubtitle": "Top 10 most-connected (excluding document/project)",
       "hubsEmpty": "No connected nodes yet.",
+      "hubsTruncated": "Showing top {shown} of {total} connected nodes",
       "recentPanelTitle": "Node preview",
       "recentSubtitle": "{count} vault frontmatter nodes",
       "orphansPanelTitle": "Unconnected nodes",

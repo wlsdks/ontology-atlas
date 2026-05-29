@@ -4,6 +4,7 @@ import {
   computeDomainCouplingMatrix,
   computeDegreeCentrality,
   computeKindDistribution,
+  rankAllByDegree,
   selectRecentNodes,
   selectTopByDegree,
 } from "./insights";
@@ -116,6 +117,18 @@ describe("selectTopByDegree", () => {
   it("includeKinds — 명시 kind 만", () => {
     const top = selectTopByDegree(nodes, edges, 10, { includeKinds: ["element"] });
     expect(top.every((r) => r.node.kind === "element")).toBe(true);
+  });
+
+  it("rankAllByDegree — limit 없이 전체 후보를 degree desc 로 반환 (truncation 신호용)", () => {
+    const all = rankAllByDegree(nodes, edges);
+    // selectTopByDegree 와 동일한 필터 (doc / proj 제외, degree 0 제외)
+    expect(all).toHaveLength(3);
+    expect(all[0]?.node.id).toBe("hub");
+    // selectTopByDegree(limit) 는 rankAll 의 prefix 와 일치 — "상위 N / 전체 M"
+    // 을 계산할 수 있다.
+    const top1 = selectTopByDegree(nodes, edges, 1);
+    expect(top1).toEqual(all.slice(0, 1));
+    expect(all.length).toBeGreaterThan(top1.length);
   });
 });
 
