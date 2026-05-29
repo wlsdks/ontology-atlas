@@ -20,6 +20,7 @@ import {
   Wand2,
 } from "lucide-react";
 import {
+  buildVaultMarkdown,
   vaultManifest as staticVaultManifestRaw,
   type VaultManifest,
 } from "@/entities/docs-vault";
@@ -70,26 +71,6 @@ import { getBuilderSourceStatus } from "../lib/builder-source-status";
  * frontmatter: kind / title / slug. 본문은 `# {title}` 한 줄 — 그 후
  * 사용자 또는 AI agent (MCP) 가 같은 vault 에서 이어서 편집한다.
  */
-function buildVaultMarkdown(args: {
-  kind: string;
-  title: string;
-  slug: string;
-}): string {
-  const lines = ["---"];
-  lines.push(`slug: ${args.slug}`);
-  lines.push(`kind: ${args.kind}`);
-  // title 에 콜론 / 따옴표 들어갈 수 있으니 안전하게 quote.
-  const safeTitle =
-    /[:#\[\]{}"',&|*!%@`]/.test(args.title)
-      ? `"${args.title.replace(/"/g, '\\"')}"`
-      : args.title;
-  lines.push(`title: ${safeTitle}`);
-  lines.push("---");
-  lines.push("");
-  lines.push(`# ${args.title}`);
-  lines.push("");
-  return lines.join("\n");
-}
 import { OntologyKindPalette } from "./OntologyKindPalette";
 import { OntologyInspector, type VaultArrayKey } from "./OntologyInspector";
 import { BuilderOnboarding } from "./BuilderOnboarding";
