@@ -1486,7 +1486,7 @@
       "domainCouplingEmpty": "No cross-domain links yet. Domain boundaries are clean in the current graph.",
       "hubsPanelTitle": "Hub nodes",
       "hubsPanelSubtitle": "Top 10 most-connected (excluding document/project)",
-      "hubsEmpty": "No connected nodes yet.",
+      "hubsEmpty": "No connected nodes yet. Link nodes in the builder and the most-connected ones (hubs) will surface here.",
       "hubsTruncated": "Showing top {shown} of {total} connected nodes",
       "recentPanelTitle": "Node preview",
       "recentSubtitle": "{count} vault frontmatter nodes",
