@@ -363,6 +363,30 @@ html[data-theme="light"] [class*="text-[color:rgba(211,215,255"] {
 }
 
 /*
+ * 라이트 모드 — signal-tone(amber 경고 / green 성공) pale text 시프트.
+ * 인디고 계열(위)과 같은 문제: 다크용 pale amber/green 텍스트가 라이트
+ * 흰/adapting 배경에서 거의 invisible. 각 signal 의 라이트 토큰 값으로 시프트
+ * (warning #8a5a00 / success #177233 — --color-status-* 의 light override 와
+ * 동일). 모두 adapting bg(또는 signal alpha bg) 위 텍스트로, opaque-dark
+ * (rgba(12,14,20,1)) 위 사용 0 확인.
+ *
+ * red(danger) 계열은 일부 callsite 가 element 별 배경 확인이 필요해
+ * (255,179,71 / 248,160,160 / 255,160,160) 별도 패스로 미룬다.
+ */
+html[data-theme="light"] [class*="text-[color:rgba(238,198,128"],
+html[data-theme="light"] [class*="text-[color:rgba(244,196,130"],
+html[data-theme="light"] [class*="text-[color:rgba(224,196,140"],
+html[data-theme="light"] [class*="text-[color:rgba(232,200,148"],
+html[data-theme="light"] [class*="text-[color:rgba(239,200,150"] {
+  color: #8a5a00;
+}
+html[data-theme="light"] [class*="text-[color:rgba(151,230,198"],
+html[data-theme="light"] [class*="text-[color:rgba(180,235,205"],
+html[data-theme="light"] [class*="text-[color:rgba(130,230,180"] {
+  color: #177233;
+}
+
+/*
  * 라이트 모드 — 마크다운 코드 블록 dark island fix. DocsVaultViewer 의
  * <pre> 가 \`bg-[color:rgba(12,14,20,0.8)]\` (거의 black) 로 hardcoded.
  * 다크에선 캔버스보다 약간 짙은 코드 영역이라 자연스럽지만 라이트에선
