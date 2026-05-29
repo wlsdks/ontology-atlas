@@ -50,6 +50,8 @@ User's words (verbatim intent):
   - *통합 매핑 (codegraph, 2026-05-30):* 빌더 저장 경로 = `src/views/ontology-edit/ui/OntologyEditPage.tsx` `saveEphemeral` → `slugify(title)` → `${kind}s/${slug}.md` → `buildVaultMarkdown` → 로컬 vault write(`useLocalVault()` = `src/features/docs-vault-local`, views/home 가 import 가능 — FSD OK). 그러나 `buildVaultMarkdown`/`slugify` 는 `src/views/ontology-edit/lib` (다른 view) → cross-view import 금지.
   - **S1.0 (groundwork, 비파괴):** `buildVaultMarkdown` + `slugify` + frontmatter 직렬화를 shared 레이어(`src/entities/docs-vault/lib` 또는 `src/shared/lib`)로 추출. 빌더는 그 위치에서 import (동작 무변). 단위/contract test 로 drift 차단. ← 토폴로지 재사용 unblock.
   - **S1.1:** 토폴로지 drawer(`src/views/home/ui/TopologyOntologyDrawer.tsx`)에 편집 어포던스 추가 → `useLocalVault()` 저장 + S1.0 의 공용 직렬화 사용. 빈이름/`isUntitledTitle` 가드 + 동시편집(expected_mtime) 가드 재사용.
+    - **S1.1.0 (완료, 커밋 2fcc3e4b):** `src/views/home/lib/topology-node-edit.ts` 순수 모델 — `resolveTopologyNodeEditTarget(node, docs)`(node.evidenceIds[0]=sourceSlug 로 편집 대상 문서 해석) + `buildNodeFrontmatterEdit(current, edits)`(바뀐 frontmatter 키만 updates, 빈값→null 삭제, no-op skip). 9 test.
+    - **S1.1.1 (다음, UI wiring):** drawer 에 domain 인라인 편집 어포던스(읽기=domain chip → 클릭 시 input/select → 저장). `HomePage`(`src/views/home/ui/HomePage.tsx:1303` 렌더, useOntologyInsight+useLocalVault 보유)가 `resolveTopologyNodeEditTarget(node, vault.manifest.docs)` 로 target 잡고, 저장 시 `vault.updateFrontmatter(target.vaultSlug, buildNodeFrontmatterEdit(target.frontmatter,{domain}).updates, {expectedMtime: target.mtime})`. writable vault(manifest!==null) 아닐 때 편집 disabled + "vault 필요" hint. 저장 후 기존 R13 폴링/refresh 가 재-derive → 토폴로지 반영. *검증 한계:* drawer 컴포넌트 test(편집 어포던스 렌더·미가능시 disabled) + 브라우저 static 렌더 확인까지 가능, local-vault write e2e 는 headless 에서 폴더 pick 불가라 정직히 표기.
 - **S2 — 토폴로지 노드 생성.** 그래프에서 새 노드 추가 → add_concept 와 같은 schema 로 vault md.
 - **S3 — 토폴로지 관계 생성.** 두 노드 드래그 연결 → RelationWriteConfirm 재사용 → vault md.
 - **S4 — 문서탭 = 노드 설명.** `/docs` 를 노드 본문(설명) 편집으로 재구성, 온톨로지 스코프. 자유 노트 성격 약화.
@@ -82,4 +84,4 @@ User's words (verbatim intent):
 
 ## 진행 상황 (loop 갱신)
 
-- [x] S1.0 직렬화 추출 (buildVaultMarkdown → entities/docs-vault, 커밋 7fd46b20) · [ ] S1.1 토폴로지 편집 · [ ] S2 · [ ] S3 · [ ] S4 · [ ] S5(비파괴) · [ ] S6 · [ ] live-web · [ ] live-tauri
+- [x] S1.0 직렬화 추출 (buildVaultMarkdown → entities/docs-vault, 커밋 7fd46b20) · [x] S1.1.0 편집 모델 (topology-node-edit, 커밋 2fcc3e4b) · [ ] S1.1.1 drawer UI wiring · [ ] S2 · [ ] S3 · [ ] S4 · [ ] S5(비파괴) · [ ] S6 · [ ] live-web · [ ] live-tauri
