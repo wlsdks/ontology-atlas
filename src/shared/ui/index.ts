@@ -17,4 +17,5 @@ export { ChipListEditor } from './chip-list-editor';
 export { LinkListEditor, type LinkItem } from './link-list-editor';
 export { Tooltip, TooltipProvider, TooltipContent } from './tooltip';
 export { StaggeredFadeIn } from './staggered-fade-in';
+export { HighlightedText } from './highlighted-text';
 export { ErrorBoundary } from './error-boundary';

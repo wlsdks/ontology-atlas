@@ -14,6 +14,7 @@ import {
   MEANINGFUL_ONTOLOGY_KINDS,
   type MeaningfulOntologyKind,
 } from "@/shared/lib/ontology-tree";
+import { HighlightedText } from "@/shared/ui";
 import { matchOntologyNodes, matchProjects } from "../lib/match";
 
 export interface GlobalSearchProps {
@@ -337,7 +338,7 @@ export function GlobalSearch({
                     {kindLabel(node.kind)}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-[color:var(--color-text-primary)]">
-                    {node.title}
+                    <HighlightedText text={node.title} query={isEmptyQuery ? undefined : query} />
                   </span>
                   {node.summary ? (
                     <span className="hidden min-w-0 max-w-[14rem] truncate text-xs text-[color:var(--color-text-quaternary)] md:block">

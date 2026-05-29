@@ -1,7 +1,7 @@
 "use client";
 
-import { createElement, Fragment, useMemo, useRef, useState } from "react";
-import { splitHighlightSegments } from "@/shared/lib/highlight-match";
+import { createElement, useMemo, useRef, useState } from "react";
+import { HighlightedText } from "@/shared/ui";
 import { useTranslations } from "next-intl";
 import { ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Search, X } from "lucide-react";
 import { getOntologyKindIcon, useOntologyKindLabel } from "@/entities/ontology-class";
@@ -117,31 +117,6 @@ function KindChip({ kind }: { kind: string }) {
       {createElement(getOntologyKindIcon(kind), { size: 10, "aria-hidden": true })}
       {kindLabel(kind)}
     </span>
-  );
-}
-
-/**
- * 검색어 매치를 mark 로 강조한 텍스트. query 없으면 plain 텍스트(fast path).
- * 트리 행 제목과 orphan 행 제목에서 공통 사용.
- */
-function HighlightedText({ text, query }: { text: string; query?: string }) {
-  const segs = query ? splitHighlightSegments(text, query) : null;
-  if (!segs) return <>{text}</>;
-  return (
-    <>
-      {segs.map((seg, i) =>
-        seg.match ? (
-          <mark
-            key={i}
-            className="rounded-sm bg-[color:rgba(139,151,255,0.22)] text-[color:rgba(210,218,255,0.98)]"
-          >
-            {seg.text}
-          </mark>
-        ) : (
-          <Fragment key={i}>{seg.text}</Fragment>
-        ),
-      )}
-    </>
   );
 }
 
