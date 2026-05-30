@@ -6,6 +6,7 @@ import { join } from 'node:path';
 
 import {
   deleteDoc,
+  detectDuplicateTitle,
   extractSummaryExcerpt,
   findOrphans,
   findPath,
@@ -375,5 +376,42 @@ describe('extractSummaryExcerpt (R+)', () => {
     const body = '![diagram](./graph.png)\n\n---\n\nActual summary after visual lead.';
     const r = extractSummaryExcerpt(body);
     assert.equal(r, 'Actual summary after visual lead.');
+  });
+});
+
+describe('detectDuplicateTitle', () => {
+  const docs = [
+    { slug: 'capabilities/mcp-server', frontmatter: { title: 'MCP Server', kind: 'capability' } },
+    { slug: 'domains/views', frontmatter: { name: 'Views', kind: 'domain' } },
+  ];
+
+  it('정규화 동일 title(대소문자/공백 차이) → 기존 slug + patch 안내 경고', () => {
+    const w = detectDuplicateTitle('  mcp   server ', 'capabilities/new-mcp', docs);
+    assert.ok(w, 'expected a duplicate warning');
+    assert.match(w, /capabilities\/mcp-server/);
+    assert.match(w, /patch_concept/);
+  });
+
+  it('다른 title → null (오경고 없음)', () => {
+    assert.equal(detectDuplicateTitle('Topology Engine', 'capabilities/topo', docs), null);
+  });
+
+  it('같은 slug(자기 자신)은 중복으로 보지 않음', () => {
+    assert.equal(detectDuplicateTitle('MCP Server', 'capabilities/mcp-server', docs), null);
+  });
+
+  it('frontmatter.name fallback 도 매칭', () => {
+    const w = detectDuplicateTitle('views', 'domains/new-views', docs);
+    assert.ok(w);
+    assert.match(w, /domains\/views/);
+  });
+
+  it('빈/공백 title → null', () => {
+    assert.equal(detectDuplicateTitle('   ', 'x', docs), null);
+    assert.equal(detectDuplicateTitle('', 'x', docs), null);
+  });
+
+  it('빈 docs → null', () => {
+    assert.equal(detectDuplicateTitle('MCP Server', 'x', []), null);
   });
 });

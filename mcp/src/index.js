@@ -57,6 +57,7 @@ import {
   extractSummaryExcerpt,
   findBacklinks,
   findOrphans,
+  detectDuplicateTitle,
   findPath,
   listKinds,
   loadVaultDocs,
@@ -814,6 +815,8 @@ const TOOLS = [
       'arrays; capability gets `elements: []`; capability/element should also ' +
       'set `domain:` so the tree has a parent — missing extras come back as ' +
       '`warnings` in the response, not as an error. ' +
+      'If another node already has the same title, a near-duplicate `warning` is ' +
+      'included too — prefer patch_concept on the existing node over forking a duplicate. ' +
       'Successful writes return ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' so agents can immediately see graph cleanup / relation suggestions after the new node lands. ' +
       '**For bulk creation (e.g. bootstrap flow with 5+ nodes) use `add_concepts({concepts: [...]})` (batch, max 50, partial result) — saves K-1 round-trips.**',
     inputSchema: {
@@ -3283,6 +3286,14 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, body },
     capabilities,
     elements,
   });
+  // 성장하는 vault 의 #1 실패 모드(중복 노드) 안전망 — write *전* 기존 노드를
+  // 훑어 같은 title 이 있으면 advisory 경고. write 를 막지 않는다. batch
+  // (includePostWriteMaintenance === false, /ontology-bootstrap 처럼 사용자가
+  // 후보를 이미 검수한 흐름)에서는 per-node full vault load 비용을 피하려 skip.
+  const duplicateWarning =
+    options.includePostWriteMaintenance === false
+      ? null
+      : detectDuplicateTitle(title, slug, loadVaultDocs(VAULT_ROOT));
   const filePath = writeDoc(VAULT_ROOT, slug, {
     frontmatter: fm,
     body: body === undefined ? defaultBody(kind, title) : body,
@@ -3291,12 +3302,16 @@ function addConcept({ slug, kind, title, domain, capabilities, elements, body },
   // throw 하지 않음 — agent 흐름 자연스럽게, 사용자가 후속 patch_concept 로
   // 보완 가능. (capability/element 의 domain 누락 등이 흔한 케이스)
   const missing = missingExpectedFields(kind, fm);
+  const warnings = [
+    ...missing.map((k) => `expected field "${k}" missing for kind "${kind}"`),
+    ...(duplicateWarning ? [duplicateWarning] : []),
+  ];
   return {
     ok: true,
     slug,
     filePath,
     changed: true,
-    ...(missing.length > 0 ? { warnings: missing.map((k) => `expected field "${k}" missing for kind "${kind}"`) } : {}),
+    ...(warnings.length > 0 ? { warnings } : {}),
     ...(options.includePostWriteMaintenance === false
       ? {}
       : { postWriteMaintenance: compactPostWriteMaintenance() }),

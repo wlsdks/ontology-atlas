@@ -938,6 +938,42 @@ function docTitle(doc) {
   return doc?.slug;
 }
 
+function normalizeForDuplicateTitle(title) {
+  return String(title ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
+}
+
+/**
+ * 새 노드의 title 이 기존 노드와 정규화 기준(소문자·공백 정리)으로 동일하면
+ * advisory 경고 문자열을, 아니면 null 을 반환한다.
+ *
+ * 성장하는 vault 의 #1 실패 모드는 **중복/hallucinated 노드** — agent 가
+ * add_concept 전에 similar_nodes 로 확인하는 게 정석이지만, 잊으면 near-duplicate
+ * 가 조용히 쌓인다. 이 함수는 add_concept 의 안전망: 같은 title 이 이미 있으면
+ * "patch_concept 로 합쳐라" 라고 알린다. write 를 막지 않는 advisory.
+ *
+ * 정확도 우선(정규화 후 *완전 일치*)으로 오경고를 최소화한다 — fuzzy/부분 매칭은
+ * 서로 다른 개념(예: auth-login vs auth-logout)에 오경고를 내므로 배제. 자기 자신
+ * (같은 slug)·빈 title 은 제외.
+ */
+export function detectDuplicateTitle(title, slug, docs) {
+  const norm = normalizeForDuplicateTitle(title);
+  if (!norm) return null;
+  for (const doc of docs ?? []) {
+    if (!doc || doc.slug === slug) continue;
+    if (normalizeForDuplicateTitle(docTitle(doc)) === norm) {
+      const kind = doc.frontmatter?.kind ?? 'unknown';
+      return (
+        `a node titled "${title}" already exists at "${doc.slug}" (kind: ${kind}) — ` +
+        `if this is the same concept, patch_concept on "${doc.slug}" instead of adding a duplicate.`
+      );
+    }
+  }
+  return null;
+}
+
 /**
  * vault root 가 markdown vault 같은지 가벼운 검사. 절대 경로 + 디렉토리만
  * OK 로 본다 (frontmatter 가 없는 폴더도 빈 vault 로 허용).

@@ -210,7 +210,7 @@ A 30-second read at the top of the task often replaces a 10-minute re-discovery 
 
 **Write at the end of a task** (the part that's easy to skip). When a unit of work introduced a new capability / element / domain, or renamed/folded an existing one, mirror the change in the vault:
 
-- new node → `add_concept(slug, kind, title, domain?, …)` — frontmatter is auto-normalized per kind, body defaults to a kind-specific starter, and missing strongly-expected fields come back as `warnings` so you know what to follow up
+- new node → `add_concept(slug, kind, title, domain?, …)` — frontmatter is auto-normalized per kind, body defaults to a kind-specific starter, and missing strongly-expected fields come back as `warnings` so you know what to follow up. If a node with the same title already exists, a near-duplicate `warning` is included too — `patch_concept` the existing node instead of forking a duplicate (duplicates are the #1 growing-vault failure mode)
 - new edge between existing nodes → `add_relation(from, to, type)`
 - node moved or renamed in code → `rename_concept(oldSlug, newSlug)` (dry-run first, then `confirm: true`) — atomically rewrites every backlink
 - two near-duplicates collapse → `merge_concepts(fromSlug, intoSlug)` (same dry-run pattern)
@@ -338,7 +338,7 @@ vault 는 개발자와 AI agent 가 **공유하는 mental model**. ontology 의 
 
 **작업 끝에 write** (쉽게 빠뜨림). 한 작업 단위가 새 capability / element / domain 을 도입했거나 기존 것을 rename / 합쳤다면, vault 에 반영:
 
-- 새 노드 → `add_concept(slug, kind, title, domain?, …)` — frontmatter 가 kind 별 자동 정규화, body 는 kind-specific starter, 강 expected 필드 누락은 `warnings` 로 회신
+- 새 노드 → `add_concept(slug, kind, title, domain?, …)` — frontmatter 가 kind 별 자동 정규화, body 는 kind-specific starter, 강 expected 필드 누락은 `warnings` 로 회신. 같은 title 의 노드가 이미 있으면 near-duplicate `warning` 도 포함 — 중복 대신 기존 노드를 `patch_concept`(중복/hallucination 은 성장 vault 의 #1 실패 모드)
 - 기존 노드 사이 새 edge → `add_relation(from, to, type)`
 - 코드의 노드가 이동/이름 변경 → `rename_concept(oldSlug, newSlug)` (dry-run 후 `confirm: true`) — 모든 backlink 자동 재배선
 - 거의 같은 두 노드 합치기 → `merge_concepts(fromSlug, intoSlug)` (같은 dry-run 패턴)
