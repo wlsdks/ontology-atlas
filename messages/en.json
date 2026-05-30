@@ -2549,19 +2549,6 @@
       "modeLocal": "Local vault",
       "modeStatic": "Static demo"
     },
-    "selectionHint": {
-      "ariaLabel": "Tree selection handoff hint",
-      "eyebrow": "Select a tree row",
-      "slugChip": "canonical slug",
-      "slugChipTitle": "Tree selection chooses the graph handle that Builder and Insights keep in focus.",
-      "body": "Selecting a concept opens the right-side workbench loop for that exact node: visual focus, frontmatter edit, and graph proof stay tied to the same slug.",
-      "browseLabel": "Browse",
-      "browseValue": "topology focus",
-      "writeLabel": "Write",
-      "writeValue": "builder focus",
-      "queryLabel": "Query",
-      "queryValue": "node proof"
-    },
     "copyLink": {
       "tooltip": "Copy a direct link to this node",
       "ariaCopied": "Node link copied",

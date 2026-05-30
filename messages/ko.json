@@ -2549,19 +2549,6 @@
       "modeLocal": "로컬 vault",
       "modeStatic": "정적 데모"
     },
-    "selectionHint": {
-      "ariaLabel": "트리 선택 handoff 안내",
-      "eyebrow": "트리 행을 선택하세요",
-      "slugChip": "canonical slug",
-      "slugChipTitle": "트리 선택은 Builder 와 Insights 가 계속 유지할 graph handle 을 고릅니다.",
-      "body": "개념을 선택하면 그 slug 에 묶인 workbench loop 가 오른쪽에 열립니다. visual focus, frontmatter edit, graph proof 가 같은 노드를 유지합니다.",
-      "browseLabel": "Browse",
-      "browseValue": "topology focus",
-      "writeLabel": "Write",
-      "writeValue": "builder focus",
-      "queryLabel": "Query",
-      "queryValue": "node proof"
-    },
     "copyLink": {
       "tooltip": "이 노드의 직접 링크 복사",
       "ariaCopied": "노드 링크 복사됨",
