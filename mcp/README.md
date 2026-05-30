@@ -526,24 +526,24 @@ A successful run looks like this:
 ✓ query_concepts — 1 query result / 1 total query result
 ✓ query_concepts limited — 1 query result / 63 total query results (limited true)
 ✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 29 element candidates)
-✓ infer_imports — 563 files scanned, 453 module edges (elements/src/views/docs-vault->elements/src/widgets/docs-vault x14 (static:13/dynamic:1), elements/src/views/home->capabilities/knowledge-graph x12 (static:12), +451 more)
+✓ infer_imports — 564 files scanned, 453 module edges (elements/src/views/docs-vault->elements/src/widgets/docs-vault x14 (static:13/dynamic:1), elements/src/views/home->capabilities/knowledge-graph x12 (static:12), +451 more)
 ✓ find_neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ find_path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
 ✓ list_kinds — 64 nodes (capability:29, domain:6, element:27, project:1, vault-readme:1)
 ✓ validate_vault — 64 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (64 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:186)
+✓ workspace_brief — healthy (64 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:187)
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 5 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (64 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:186; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (64 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:187; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
-✓ compile_ontology — graph 5fa4ce38bb2c (64 nodes, 418 edges, issues 0)
-✓ compile_ontology page — 1/64 nodes, 1/418 edges
-✓ compile_ontology indexes — out 64, in 63, edgeById 418, aliases 127, edges 232/186/0
-✓ overview — graph 5fa4ce38bb2c (64 nodes, 418 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 64, edges 418)
-✓ project_map query_plan — aggregate_scan (medium, nodes 64, edges 418)
+✓ compile_ontology — graph fef9eeee1e80 (64 nodes, 419 edges, issues 0)
+✓ compile_ontology page — 1/64 nodes, 1/419 edges
+✓ compile_ontology indexes — out 64, in 63, edgeById 419, aliases 127, edges 232/187/0
+✓ overview — graph fef9eeee1e80 (64 nodes, 419 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 64, edges 419)
+✓ project_map query_plan — aggregate_scan (medium, nodes 64, edges 419)
 ✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ all_paths — elements/file-system-access-api → project (5/25 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)

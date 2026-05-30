@@ -4,6 +4,7 @@ import {
   extractOutLinksWithContext,
   firstHeading,
   parseFrontmatter,
+  type LinkContext,
 } from '@/shared/lib/parse-frontmatter';
 import type {
   VaultBacklinkEntry,
@@ -136,13 +137,82 @@ export async function computeLocalVaultFingerprint(
 }
 
 /**
- * 선택한 로컬 디렉터리에서 마크다운 매니페스트를 빌드. scripts/build-docs-
- * vault.mjs 와 동일한 VaultManifest shape — 공용 뷰어·트리·그래프 그대로.
+ * 빌드 한 단위 — md 문서 1개(+ 역참조 재구성에 필요한 link context) 또는 이미지.
+ * `handle` + `lastModified` 를 들고 있어 증분 재빌드가 mtime 이 같은(=내용 동일)
+ * 파일의 본문 재독을 건너뛰고 직전 결과를 그대로 재사용할 수 있다.
  */
-export async function buildLocalManifest(
-  root: FileSystemDirectoryHandle,
-): Promise<LocalVaultBuild> {
-  const files = await walk(root);
+export interface BuiltVaultEntry {
+  relativePath: string;
+  lastModified: number;
+  handle: FileSystemFileHandle;
+  kind: 'md' | 'image';
+  /** md 전용 — 집계된 VaultDoc. */
+  doc?: VaultDoc;
+  /** md 전용 — backlinksDetail 재구성용 out-link context. */
+  linkContexts?: LinkContext[];
+}
+
+/** 단일 .md 파일의 raw 본문 → BuiltVaultEntry. 순수 변환(I/O 없음). */
+function buildMdEntry(
+  entry: WalkEntry,
+  raw: string,
+  lastModified: number,
+): BuiltVaultEntry {
+  const slug = entry.relativePath.replace(/\.md$/, '');
+  const { frontmatter, body } = parseFrontmatter(raw);
+  const headings = extractHeadings(body);
+  const title =
+    (typeof frontmatter.title === 'string' && frontmatter.title) ||
+    firstHeading(body) ||
+    slug.split('/').pop() ||
+    slug;
+  const description =
+    typeof frontmatter.description === 'string'
+      ? frontmatter.description
+      : undefined;
+  const tags = Array.isArray(frontmatter.tags)
+    ? (frontmatter.tags as unknown[]).filter(
+        (t): t is string => typeof t === 'string',
+      )
+    : typeof frontmatter.tags === 'string'
+      ? frontmatter.tags.split(/\s+/).filter(Boolean)
+      : [];
+  const { slugs: linksOut, contexts: linkContexts } =
+    extractOutLinksWithContext(body, slug);
+
+  const doc: VaultDoc = {
+    slug,
+    path: entry.relativePath,
+    title,
+    description,
+    tags,
+    frontmatter,
+    headings,
+    excerpt: buildExcerpt(body),
+    wordCount: body.split(/\s+/).filter(Boolean).length,
+    updatedAt: new Date(lastModified).toISOString(),
+    linksOut,
+    mtime: lastModified,
+  };
+  return {
+    relativePath: entry.relativePath,
+    lastModified,
+    handle: entry.handle,
+    kind: 'md',
+    doc,
+    linkContexts,
+  };
+}
+
+/**
+ * BuiltVaultEntry[] → 완성된 LocalVaultBuild. 정렬·트리·역참조·태그·fingerprint
+ * 집계는 전부 in-memory (저렴 — derive 와 같은 차수). 전체 빌드와 증분 빌드가
+ * **이 함수 하나를** 공유하므로 두 경로의 결과가 구조적으로 동일하다(중복 0).
+ */
+function aggregateBuild(
+  entries: BuiltVaultEntry[],
+  rootName: string,
+): LocalVaultBuild {
   const docs: VaultDoc[] = [];
   const fileHandles = new Map<string, FileSystemFileHandle>();
   const imageHandles = new Map<string, FileSystemFileHandle>();
@@ -150,84 +220,41 @@ export async function buildLocalManifest(
   const tagsMap = new Map<string, Set<string>>();
   const fingerprintStamps: Array<{ relativePath: string; lastModified: number }> = [];
 
-  for (const entry of files) {
-    if (entry.kind === 'image') {
-      imageHandles.set(entry.relativePath, entry.handle);
-      const imgFile = await entry.handle.getFile();
-      fingerprintStamps.push({
-        relativePath: entry.relativePath,
-        lastModified: imgFile.lastModified,
-      });
-      continue;
-    }
-    const file = await entry.handle.getFile();
+  for (const entry of entries) {
     fingerprintStamps.push({
       relativePath: entry.relativePath,
-      lastModified: file.lastModified,
+      lastModified: entry.lastModified,
     });
-    const raw = await file.text();
-    const slug = entry.relativePath.replace(/\.md$/, '');
-    fileHandles.set(slug, entry.handle);
-
-    const { frontmatter, body } = parseFrontmatter(raw);
-    const headings = extractHeadings(body);
-    const title =
-      (typeof frontmatter.title === 'string' && frontmatter.title) ||
-      firstHeading(body) ||
-      slug.split('/').pop() ||
-      slug;
-    const description =
-      typeof frontmatter.description === 'string'
-        ? frontmatter.description
-        : undefined;
-    const tags = Array.isArray(frontmatter.tags)
-      ? (frontmatter.tags as unknown[]).filter(
-          (t): t is string => typeof t === 'string',
-        )
-      : typeof frontmatter.tags === 'string'
-        ? frontmatter.tags.split(/\s+/).filter(Boolean)
-        : [];
-    const { slugs: linksOut, contexts: linkContexts } =
-      extractOutLinksWithContext(body, slug);
+    if (entry.kind === 'image') {
+      imageHandles.set(entry.relativePath, entry.handle);
+      continue;
+    }
+    const doc = entry.doc;
+    if (!doc) continue;
+    fileHandles.set(doc.slug, entry.handle);
 
     // 단순 backlinks (deprecated) 는 더 이상 manifest 에 포함하지 않는다.
-    // backlinksDetail 만 유지 — 컨텍스트와 함께. linksOut 은 ctx 형태로
-    // 아래 backlinksDetailMap 에 들어감.
-    void linksOut;
-    for (const ctx of linkContexts) {
+    // backlinksDetail 만 유지 — 컨텍스트와 함께.
+    for (const ctx of entry.linkContexts ?? []) {
       if (!backlinksDetailMap.has(ctx.target)) {
         backlinksDetailMap.set(ctx.target, []);
       }
       backlinksDetailMap.get(ctx.target)!.push({
-        fromSlug: slug,
+        fromSlug: doc.slug,
         context: ctx.context,
         linkText: ctx.linkText,
       });
     }
-    for (const tag of tags) {
+    for (const tag of doc.tags) {
       if (!tagsMap.has(tag)) tagsMap.set(tag, new Set());
-      tagsMap.get(tag)!.add(slug);
+      tagsMap.get(tag)!.add(doc.slug);
     }
-
-    docs.push({
-      slug,
-      path: entry.relativePath,
-      title,
-      description,
-      tags,
-      frontmatter,
-      headings,
-      excerpt: buildExcerpt(body),
-      wordCount: body.split(/\s+/).filter(Boolean).length,
-      updatedAt: new Date(file.lastModified).toISOString(),
-      linksOut,
-      mtime: file.lastModified,
-    });
+    docs.push(doc);
   }
 
   docs.sort((a, b) => a.slug.localeCompare(b.slug, 'ko'));
 
-  const tree: VaultTreeNode = { name: root.name, path: '', type: 'dir' };
+  const tree: VaultTreeNode = { name: rootName, path: '', type: 'dir' };
   for (const doc of docs) insertIntoTree(tree, doc.slug, doc.title);
   sortTree(tree);
 
@@ -260,4 +287,93 @@ export async function buildLocalManifest(
     imageHandles,
     fingerprint: fingerprintFromEntries(fingerprintStamps),
   };
+}
+
+/** 디렉터리를 walk 하며 모든 .md 본문을 읽어 BuiltVaultEntry[] 로. (전체 I/O) */
+async function collectEntries(
+  root: FileSystemDirectoryHandle,
+): Promise<BuiltVaultEntry[]> {
+  const files = await walk(root);
+  const entries: BuiltVaultEntry[] = [];
+  for (const entry of files) {
+    const file = await entry.handle.getFile();
+    if (entry.kind === 'image') {
+      entries.push({
+        relativePath: entry.relativePath,
+        lastModified: file.lastModified,
+        handle: entry.handle,
+        kind: 'image',
+      });
+      continue;
+    }
+    const raw = await file.text();
+    entries.push(buildMdEntry(entry, raw, file.lastModified));
+  }
+  return entries;
+}
+
+/**
+ * 전체 빌드 + 재사용 가능한 entries 를 함께 반환. 호출자(use-local-vault `load`)는
+ * entries 를 ref 에 보관했다가 다음 변경 시 증분 재빌드에 넘긴다.
+ */
+export async function buildLocalManifestWithEntries(
+  root: FileSystemDirectoryHandle,
+): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
+  const entries = await collectEntries(root);
+  return { build: aggregateBuild(entries, root.name), entries };
+}
+
+/**
+ * 선택한 로컬 디렉터리에서 마크다운 매니페스트를 빌드. scripts/build-docs-
+ * vault.mjs 와 동일한 VaultManifest shape — 공용 뷰어·트리·그래프 그대로.
+ */
+export async function buildLocalManifest(
+  root: FileSystemDirectoryHandle,
+): Promise<LocalVaultBuild> {
+  return aggregateBuild(await collectEntries(root), root.name);
+}
+
+/**
+ * 증분 재빌드 — 직전 빌드의 `previous` entries 를 재사용한다. walk 후 각 파일의
+ * mtime 만 확인(본문 미독)하고, (relativePath, mtime, kind) 가 직전과 같으면 그
+ * entry(doc + link context)를 그대로 재사용 — **본문 재독·재파싱 skip**. 변경/추가
+ * 파일만 본문을 다시 읽고, 삭제 파일은 자연히 빠진다. 결과 manifest 는 전체
+ * `buildLocalManifest` 와 동치(generatedAt 제외) — `incremental.test.ts` 가
+ * add/change/remove/no-op/rename 으로 보증.
+ *
+ * 가정: 같은 (relativePath, mtime) ⇒ 같은 내용. `computeLocalVaultFingerprint`
+ * 기반 skip 로직이 이미 쓰는 가정과 동일.
+ */
+export async function rebuildLocalManifestIncremental(
+  root: FileSystemDirectoryHandle,
+  previous: BuiltVaultEntry[],
+): Promise<{ build: LocalVaultBuild; entries: BuiltVaultEntry[] }> {
+  const files = await walk(root);
+  const prevByPath = new Map(previous.map((e) => [e.relativePath, e] as const));
+  const entries: BuiltVaultEntry[] = [];
+  for (const entry of files) {
+    const file = await entry.handle.getFile();
+    const prev = prevByPath.get(entry.relativePath);
+    if (
+      prev &&
+      prev.kind === entry.kind &&
+      prev.lastModified === file.lastModified
+    ) {
+      // 변경 없음 — 본문 재독 없이 직전 결과 재사용(handle 만 새 walk 것으로).
+      entries.push({ ...prev, handle: entry.handle });
+      continue;
+    }
+    if (entry.kind === 'image') {
+      entries.push({
+        relativePath: entry.relativePath,
+        lastModified: file.lastModified,
+        handle: entry.handle,
+        kind: 'image',
+      });
+      continue;
+    }
+    const raw = await file.text();
+    entries.push(buildMdEntry(entry, raw, file.lastModified));
+  }
+  return { build: aggregateBuild(entries, root.name), entries };
 }

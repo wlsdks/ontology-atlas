@@ -9,9 +9,14 @@ export { default as vaultManifest } from './data/manifest.json';
 export { default as vaultContent } from './data/content.json';
 export {
   buildLocalManifest,
+  buildLocalManifestWithEntries,
+  rebuildLocalManifestIncremental,
   computeLocalVaultFingerprint,
 } from './lib/build-local-manifest';
-export type { LocalVaultBuild } from './lib/build-local-manifest';
+export type {
+  LocalVaultBuild,
+  BuiltVaultEntry,
+} from './lib/build-local-manifest';
 export {
   buildProjectMarkdown,
   projectToFrontmatter,

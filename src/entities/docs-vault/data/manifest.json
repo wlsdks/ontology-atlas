@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-30T06:58:36.490Z",
+  "generatedAt": "2026-05-30T07:52:19.232Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -5760,6 +5760,7 @@
         "title": "Vault Live Updates (5s polling + diff toast + graph pulse)",
         "domain": "vault-local-first",
         "elements": [
+          "src/entities/docs-vault/lib/build-local-manifest.ts",
           "src/features/docs-vault-local/lib/diff-manifest.ts",
           "src/features/docs-vault-local/model/use-local-vault.ts",
           "src/features/docs-vault-local/model/VaultDiffToaster.tsx",
@@ -5802,8 +5803,8 @@
         }
       ],
       "excerpt": "R14 (155158, 20260504 ~ 20260505) 에 도입된 web 즉시 반영 능력. 사용자 명시 \"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때\" 의 4 단계 답. IDE / AI agent / CLI 어느 surface 가 vault .md 만지면 웹 탭이 focus 안 해도 ~5s 안에 반영. | Step | What | Where 인지 | |||| | 155 polling | 5s 간격 fingerprint check + visibleonly 자동 reload | 백그라운드 | | 156 graph diff pulse | 새 노드 amber ",
-      "wordCount": 415,
-      "updatedAt": "2026-05-30T06:08:05.827Z",
+      "wordCount": 526,
+      "updatedAt": "2026-05-30T07:52:10.828Z",
       "linksOut": []
     },
     {

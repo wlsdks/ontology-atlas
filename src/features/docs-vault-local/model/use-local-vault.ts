@@ -2,8 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  buildLocalManifest,
+  buildLocalManifestWithEntries,
+  rebuildLocalManifestIncremental,
   computeLocalVaultFingerprint,
+  type BuiltVaultEntry,
   type LocalVaultBuild,
   type VaultManifest,
 } from '@/entities/docs-vault';
@@ -400,6 +402,17 @@ export function useLocalVaultInternal() {
   const lastFingerprintRef = useRef<string | null>(null);
 
   /**
+   * 마지막 성공 빌드의 재사용 가능한 entries + 그 때의 handle. 같은 vault 의
+   * 다음 `load` 가 증분 재빌드(변경 파일만 재독)에 쓴다. 다른 vault(handle 변경)
+   * 나 빌드 실패 시 null 로 리셋해 전체 빌드로 폴백. state 가 아닌 ref —
+   * 재렌더 유발 없음.
+   */
+  const lastBuildRef = useRef<{
+    handle: FileSystemDirectoryHandle;
+    entries: BuiltVaultEntry[];
+  } | null>(null);
+
+  /**
    * Round 9 cut — 쓰기 전에 readwrite permission 확보. 거부 시 state 를
    * 'permission-needed' 로 업데이트해 LocalVaultPicker 의 reauth UI 가
    * 즉시 노출되게 한다. 이전엔 saveDoc 가 throw 만 하고 state 는 'loaded'
@@ -420,10 +433,28 @@ export function useLocalVaultInternal() {
   const load = useCallback(async (handle: FileSystemDirectoryHandle) => {
     setState((s) => ({ ...s, status: 'loading', handle, errorMessage: null }));
     try {
-      const build: LocalVaultBuild = await buildLocalManifest(handle);
+      // 같은 vault(handle 동일)에 직전 빌드가 있으면 증분 재빌드 — 변경 파일만
+      // 재독해 큰 vault 의 라이브 갱신 렉을 줄인다. 첫 로드 / 다른 vault / 증분
+      // 실패 시엔 전체 빌드로 폴백(결과는 byte-동치 — incremental.test 가 보증).
+      const reuse =
+        lastBuildRef.current && lastBuildRef.current.handle === handle
+          ? lastBuildRef.current.entries
+          : null;
+      let result: { build: LocalVaultBuild; entries: BuiltVaultEntry[] };
+      if (reuse) {
+        try {
+          result = await rebuildLocalManifestIncremental(handle, reuse);
+        } catch {
+          result = await buildLocalManifestWithEntries(handle);
+        }
+      } else {
+        result = await buildLocalManifestWithEntries(handle);
+      }
+      const { build, entries } = result;
       const { manifest, fileHandles, imageHandles, fingerprint } = build;
       const agentConfigStatus = await readAgentConfigStatus(handle);
       lastFingerprintRef.current = fingerprint;
+      lastBuildRef.current = { handle, entries };
       setState({
         status: 'loaded',
         handle,
@@ -435,6 +466,7 @@ export function useLocalVaultInternal() {
         lastLoadedAt: Date.now(),
       });
     } catch (err) {
+      lastBuildRef.current = null;
       // err.message 가 없을 땐 null 로 두고 LocalVaultPicker 의
       // \`t('errorFallback')\` 가 locale-aware 메시지를 채우게 — 이전엔 한국어
       // 하드코딩 fallback "매니페스트 빌드 실패" 가 en locale 사용자에게도
