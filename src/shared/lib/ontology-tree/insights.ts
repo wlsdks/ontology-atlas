@@ -70,6 +70,9 @@ export interface DomainCouplingMatrix {
   crossDomainEdgeCount: number;
   selfDomainEdgeCount: number;
   domains: DomainCouplingDomainRow[];
+  /** `connections` 가 limit 으로 잘리기 전의 distinct domain-pair 총수 — UI/CLI
+   * 가 "상위 N / 전체 M" truncation 을 사용자에게 알려 silent cap 을 피한다. */
+  totalConnectionCount: number;
   connections: DomainCouplingConnectionRow[];
 }
 
@@ -206,6 +209,7 @@ export function computeDomainCouplingMatrix(
     unassignedNodeCount: nodes.length - assignedNodeCount,
     crossDomainEdgeCount,
     selfDomainEdgeCount,
+    totalConnectionCount: connectionRows.size,
     domains: [...domainRows.values()].sort(
       (a, b) =>
         b.outgoing + b.incoming - (a.outgoing + a.incoming) ||

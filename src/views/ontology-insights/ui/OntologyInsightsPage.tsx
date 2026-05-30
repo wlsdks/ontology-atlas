@@ -716,6 +716,14 @@ export function OntologyInsightsPage() {
                     {t("domainCouplingEmpty")}
                   </p>
                 )}
+                {domainCoupling.totalConnectionCount > domainCoupling.connections.length ? (
+                  <p className="mt-2 font-mono text-[10px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
+                    {t("domainCouplingTruncated", {
+                      shown: domainCoupling.connections.length,
+                      total: domainCoupling.totalConnectionCount,
+                    })}
+                  </p>
+                ) : null}
               </div>
             </Panel>
           ) : null}

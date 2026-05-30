@@ -152,10 +152,38 @@ describe("computeDomainCouplingMatrix", () => {
     expect(matrix.crossDomainEdgeCount).toBe(2);
     expect(matrix.selfDomainEdgeCount).toBe(1);
     expect(matrix.connections).toHaveLength(2);
+    // 잘리지 않은 경우 total === shown (caption 미표시 조건).
+    expect(matrix.totalConnectionCount).toBe(2);
     expect(matrix.connections[0]?.from.id).toBe("domain:auth");
     expect(matrix.connections[0]?.to.id).toBe("domain:billing");
     expect(matrix.connections[0]?.relationCounts).toEqual([{ type: "depends_on", count: 1 }]);
     expect(matrix.connections[0]?.examples[0]?.id).toBe("e6");
+  });
+
+  it("connections 가 limit 으로 잘리면 totalConnectionCount 로 전체 pair 수를 노출 (silent cap 회피)", () => {
+    const nodes = [
+      node("domain:auth", "domain"),
+      node("domain:billing", "domain"),
+      node("domain:core", "domain"),
+      node("capability:login", "capability"),
+      node("capability:invoice", "capability"),
+      node("capability:engine", "capability"),
+    ];
+    // 3 개의 서로 다른 directed cross-domain pair (auth→billing, billing→core,
+    // core→auth) 를 만들고 limit 2 로 자른다.
+    const edges: KnowledgeGraphEdge[] = [
+      { ...edge("c1", "domain:auth", "capability:login"), type: "contains" },
+      { ...edge("c2", "domain:billing", "capability:invoice"), type: "contains" },
+      { ...edge("c3", "domain:core", "capability:engine"), type: "contains" },
+      { ...edge("e1", "capability:login", "capability:invoice"), type: "depends_on" },
+      { ...edge("e2", "capability:invoice", "capability:engine"), type: "depends_on" },
+      { ...edge("e3", "capability:engine", "capability:login"), type: "depends_on" },
+    ];
+
+    const matrix = computeDomainCouplingMatrix(nodes, edges, 2);
+
+    expect(matrix.connections).toHaveLength(2);
+    expect(matrix.totalConnectionCount).toBe(3);
   });
 
   it("cycle 이 있는 containment parent 는 domain 배정 실패로 처리", () => {

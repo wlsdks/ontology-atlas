@@ -1500,6 +1500,7 @@
       "domainCouplingPathCheckMcp": "all_paths MCP check",
       "domainCouplingPathCheckEvidenceContract": "Evidence contract",
       "domainCouplingEmpty": "No cross-domain links yet. Domain boundaries are clean in the current graph.",
+      "domainCouplingTruncated": "Showing top {shown} of {total} domain links",
       "hubsPanelTitle": "Hub nodes",
       "hubsPanelSubtitle": "Top 10 most-connected (excluding document/project)",
       "hubsEmpty": "No connected nodes yet. Link nodes in the builder and the most-connected ones (hubs) will surface here.",
