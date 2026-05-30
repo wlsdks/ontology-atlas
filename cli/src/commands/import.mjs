@@ -1,3 +1,4 @@
+import { COLORS } from '../lib/colors.mjs';
 import { resolve, relative, basename, join, sep } from 'node:path';
 import { readFileSync, statSync, readdirSync, existsSync } from 'node:fs';
 import { writeDoc, slugToPath } from '../lib/write-vault.mjs';
@@ -13,15 +14,6 @@ import { formatUnknownFlagError, parseRequiredFlagValue, parseVaultFlag } from '
 
 const ALLOWED_FLAGS = ['--vault', '--kind', '--auto-prefix', '--raw-slug', '--no-auto-prefix', '--rename', '--dry-run'];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 /**
  * R14 — `oh-my-ontology import <path...> [--vault X] [--kind K] [--raw-slug]

@@ -3,6 +3,7 @@
 // the CLI pair to agent_brief's traversal contract: report completeness
 // metadata before using path absence as evidence.
 
+import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
   assertAllPathsShape,
@@ -39,15 +40,6 @@ const ALLOWED_FLAGS = [
   '--json',
 ];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
-  yellow: '\x1b[33m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 export async function runAllPaths(args) {
   const parsed = parseArgs(args);

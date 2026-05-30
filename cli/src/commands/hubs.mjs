@@ -1,6 +1,7 @@
 // `oh-my-ontology hubs [vault]` — centrality 기반 hub 노드 ranking.
 // MCP `query_ontology({operation: 'centrality'})` thin wrapper.
 
+import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
   assertCentralityShape,
@@ -23,17 +24,6 @@ import {
 const LIMIT_CAP = 500;
 const ALLOWED_FLAGS = ['--vault', '--limit', '--types', '--plan', '--force', '--json'];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  yellow: '\x1b[33m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 const KIND_COLORS = {
   project: COLORS.magenta,
   domain: COLORS.blue,

@@ -2,6 +2,7 @@
 // against the resolved vault. This gives installed CLI users the same
 // first-contact MCP check without knowing the mcp package's internal path.
 
+import { COLORS } from '../lib/colors.mjs';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { existsSync, statSync } from 'node:fs';
@@ -16,11 +17,6 @@ const ALLOWED_FLAGS = ['--vault', '--timeout-ms'];
 const DEFAULT_VERIFY_TIMEOUT_MS = 8_000;
 const DEFAULT_VERIFY_KILL_GRACE_MS = 1_000;
 
-const COLORS = {
-  red: '\x1b[31m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 export async function runMcpVerify(args) {
   const { vault, timeoutMs, error, help } = parseArgs(args);

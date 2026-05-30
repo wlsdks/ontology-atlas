@@ -1,6 +1,7 @@
 // `oh-my-ontology cycles [vault]` — dependency cycle 검출.
 // MCP `query_ontology({operation: 'cycles'})` thin wrapper.
 
+import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertCyclesShape, cyclesResultExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
@@ -14,15 +15,6 @@ import {
 const MAX_HOPS_CAP = 20;
 const ALLOWED_FLAGS = ['--vault', '--max-hops', '--json'];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
-  yellow: '\x1b[33m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 export async function runCycles(args) {
   const { vault, json, maxHops, error, help } = parseArgs(args);

@@ -1,3 +1,4 @@
+import { COLORS } from '../lib/colors.mjs';
 import { resolve, relative } from 'node:path';
 import { writeDoc } from '../lib/write-vault.mjs';
 import {
@@ -12,15 +13,6 @@ import { formatUnknownFlagError, parseRawRequiredFlagValue, parseVaultFlag } fro
 
 const ALLOWED_FLAGS = ['--vault', '--title', '--domain', '--body', '--auto-prefix', '--raw-slug', '--no-auto-prefix'];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 /**
  * R12 #34 — \`oh-my-ontology add <kind> <slug> --title=... [--domain X] [--body "..."] [--vault path]\`

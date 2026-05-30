@@ -3,21 +3,13 @@
 // backlink (frontmatter array entries, inline strings, body links).
 // Thin wrapper over MCP rename_concept (dry-run + confirm pattern).
 
+import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { formatUnknownFlagError, parseVaultFlag, resolveTrailingVaultArg } from '../lib/cli-args.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--confirm', '--overwrite', '--json'];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 export async function runRename(args) {
   const { oldSlug, newSlug, vault, confirm, overwrite, json, error, help } = parseArgs(args);

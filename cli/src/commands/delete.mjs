@@ -3,6 +3,7 @@
 // Default dry-run with backlinks preview (--confirm applies).
 // Thin wrapper over MCP delete_concept.
 
+import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
 import { formatCapturedSummary } from '../lib/captured-summary.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -10,15 +11,6 @@ import { formatUnknownFlagError, parseVaultFlag, resolveTrailingVaultArg } from 
 
 const ALLOWED_FLAGS = ['--vault', '--confirm', '--force', '--json'];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 export async function runDelete(args) {
   const { slug, vault, confirm, force, json, error, help } = parseArgs(args);

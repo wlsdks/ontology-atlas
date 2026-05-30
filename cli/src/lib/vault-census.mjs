@@ -7,13 +7,9 @@
 //
 // 호출 실패 (e.g. mcp 시동 실패) 시 silent — caller 의 exit code 영향 0.
 
+import { COLORS } from './colors.mjs';
 import { callMcpTool } from './mcp-call.mjs';
 
-const COLORS = {
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  reset: '\x1b[0m',
-};
 
 /**
  * mcp list_kinds 호출 → { total, byKind } | null.

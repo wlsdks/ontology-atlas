@@ -2,6 +2,7 @@
 // MCP `query_ontology({operation: 'node_profile'})` thin wrapper.
 // header / 도메인 / containment lineage / incoming-outgoing edges (relation 별 그룹) 한 화면.
 
+import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertNodeProfileShape } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
@@ -16,17 +17,6 @@ import { validateRelationTypeList } from '../lib/relation-types.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--json', '--limit', '--types', '--no-external', '--no-unresolved'];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  yellow: '\x1b[33m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 const KIND_COLORS = {
   project: COLORS.magenta,
   domain: COLORS.blue,

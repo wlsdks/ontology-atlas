@@ -1,6 +1,7 @@
 // R15 follow-up — `oh-my-ontology backlinks <slug> [vault]`
 // Lists every node referencing the target. Thin wrapper over MCP find_backlinks.
 
+import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertBacklinksShape } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
@@ -8,14 +9,6 @@ import { formatUnknownFlagError, parseVaultFlag, resolveTrailingVaultArg } from 
 
 const ALLOWED_FLAGS = ['--vault', '--json'];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 export async function runBacklinks(args) {
   const { slug, vault, json, error, help } = parseArgs(args);

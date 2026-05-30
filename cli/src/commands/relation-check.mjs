@@ -3,6 +3,7 @@
 // query_ontology({ operation: 'relation_check' }) so developer CLI and AI
 // agents see the same proposedAction contract.
 
+import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertRelationCheckShape } from '../lib/query-result-contract.mjs';
 import { validateRelationTypeList } from '../lib/relation-types.mjs';
@@ -15,15 +16,6 @@ import {
 
 const ALLOWED_FLAGS = ['--vault', '--json'];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
-  yellow: '\x1b[33m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 export async function runRelationCheck(args) {
   const { from, to, type, vault, json, error, help } = parseArgs(args);

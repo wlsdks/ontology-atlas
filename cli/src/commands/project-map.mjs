@@ -1,6 +1,7 @@
 // `oh-my-ontology project-map <project> [vault]` — domain-by-domain project map.
 // MCP `query_ontology({operation: 'project_map'})` thin wrapper.
 
+import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
@@ -13,14 +14,6 @@ import {
 const LIMIT_CAP = 500;
 const ALLOWED_FLAGS = ['--vault', '--limit', '--item-limit', '--json'];
 
-const COLORS = {
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
-  blue: '\x1b[34m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 export async function runProjectMap(args) {
   const parsed = parseArgs(args);

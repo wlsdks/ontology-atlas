@@ -1,6 +1,7 @@
 // `oh-my-ontology agent-setup [vault]` — check or repair Claude/Codex MCP configs
 // for an existing vault without scaffolding starter markdown.
 
+import { COLORS } from '../lib/colors.mjs';
 import {
   existsSync,
   mkdirSync,
@@ -91,15 +92,6 @@ const FIRST_CONTACT_PROOF_CONTRACT = Object.freeze([
   }),
 ]);
 
-const COLORS = {
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 export async function runAgentSetup(args) {
   const parsed = parseArgs(args);

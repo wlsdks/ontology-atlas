@@ -1,6 +1,7 @@
 // `oh-my-ontology maintenance [vault]` — graph maintenance work queue.
 // MCP `query_ontology({operation: 'maintenance_plan'})` thin wrapper.
 
+import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertMaintenancePlanShape } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
@@ -25,15 +26,6 @@ const ALLOWED_FLAGS = [
   '--kinds',
 ];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 const SEVERITY_COLORS = {
   fail: COLORS.red,

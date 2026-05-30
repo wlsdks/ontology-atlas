@@ -1,6 +1,7 @@
 // `oh-my-ontology domain-matrix [vault]` — domain coupling matrix.
 // MCP `query_ontology({operation: 'domain_matrix'})` thin wrapper.
 
+import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertDomainMatrixShape } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
@@ -17,14 +18,6 @@ import { validateRelationTypeList } from '../lib/relation-types.mjs';
 const LIMIT_CAP = 500;
 const ALLOWED_FLAGS = ['--vault', '--project', '--limit', '--types', '--json'];
 
-const COLORS = {
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
-  blue: '\x1b[34m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 export async function runDomainMatrix(args) {
   const parsed = parseArgs(args);

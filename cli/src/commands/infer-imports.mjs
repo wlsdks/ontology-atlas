@@ -2,6 +2,7 @@
 // MCP infer_imports wrapper. moduleEdges (capability A → B) 가 add_relation
 // depends_on 후보. side effect 0.
 
+import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
@@ -21,15 +22,6 @@ import {
 const MAX_FILES_CAP = 50000;
 const ALLOWED_FLAGS = ['--vault', '--json', '--apply', '--max-files', '--threshold'];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 export async function runInferImports(args) {
   const { rootPath, vault, json, maxFiles, apply, threshold, error, help } =

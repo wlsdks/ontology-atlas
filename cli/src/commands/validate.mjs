@@ -1,3 +1,4 @@
+import { COLORS } from '../lib/colors.mjs';
 import { readFileSync } from 'node:fs';
 import { relative } from 'node:path';
 import { walkMd } from '../lib/walk-vault.mjs';
@@ -13,14 +14,6 @@ import {
 
 const ALLOWED_FLAGS = ['--vault', '--json', '--strict', '--list-codes', '--fail-on'];
 
-const COLORS = {
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  green: '\x1b[32m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 // R+ — cycle 44: validateVaultDocument 가 surface 하는 issue codes 의
 // canonical list. --list-codes 출력 + --fail-on 의 unknown code 감지에

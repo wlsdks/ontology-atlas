@@ -3,6 +3,7 @@
 // 사용자가 결과 보고 *명시적으로* `oh-my-ontology add` 또는 AI agent 의
 // add_concept 로 진입.
 
+import { COLORS } from '../lib/colors.mjs';
 import { resolve } from 'node:path';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
@@ -28,17 +29,6 @@ import {
 const MAX_DEPTH_CAP = 10;
 const ALLOWED_FLAGS = ['--vault', '--json', '--apply', '--max-depth'];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  yellow: '\x1b[33m',
-  cyan: '\x1b[36m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 const KIND_COLOR = {
   project: COLORS.magenta,

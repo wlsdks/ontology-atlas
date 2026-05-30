@@ -1,6 +1,7 @@
 // `oh-my-ontology explain <from> <to> [vault]` — relationship evidence.
 // MCP `query_ontology({operation: 'explain_relation'})` thin wrapper.
 
+import { COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertExplainRelationShape } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
@@ -21,15 +22,6 @@ const LIMIT_CAP = 100;
 const DIRECTION_VALUES = Object.freeze(['incoming', 'outgoing', 'both', 'undirected']);
 const ALLOWED_FLAGS = ['--vault', '--direction', '--max-hops', '--limit', '--types', '--json'];
 
-const COLORS = {
-  green: '\x1b[32m',
-  red: '\x1b[31m',
-  cyan: '\x1b[36m',
-  yellow: '\x1b[33m',
-  dim: '\x1b[2m',
-  bold: '\x1b[1m',
-  reset: '\x1b[0m',
-};
 
 export async function runExplain(args) {
   const parsed = parseArgs(args);

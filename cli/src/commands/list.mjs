@@ -1,3 +1,4 @@
+import { COLORS } from '../lib/colors.mjs';
 import { readFileSync } from 'node:fs';
 import { parseFrontmatter } from '../lib/parse-frontmatter.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
@@ -12,13 +13,6 @@ import {
 
 const ALLOWED_FLAGS = ['--vault', '--kind', '--json'];
 
-const COLORS = {
-  dim: '\x1b[2m',
-  reset: '\x1b[0m',
-  cyan: '\x1b[36m',
-  bold: '\x1b[1m',
-  red: '\x1b[31m',
-};
 
 const KIND_COLORS = {
   project: '\x1b[35m',

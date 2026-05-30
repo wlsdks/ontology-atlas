@@ -5,6 +5,7 @@
 // 시드 + MCP 등록 안내. 비어 있는 폴더면 그대로, 없으면 생성. 기존 파일은
 // 안 건드리고 (충돌 시 skip + 알림).
 
+import { COLORS } from './lib/colors.mjs';
 import {
   mkdirSync,
   existsSync,
@@ -34,15 +35,6 @@ const MCP_TOOL_SPLIT = MCP_METADATA.splitText ?? 'read/write';
 const INIT_ALLOWED_FLAGS = ['--help'];
 const TOP_LEVEL_COMMAND_VALUES = ['--help', '-h', 'help', '--version', '-v', ...CLI_COMMANDS];
 
-const COLORS = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  cyan: '\x1b[36m',
-};
 
 const ARGS = argv.slice(2);
 const SUBCOMMAND = ARGS[0];
