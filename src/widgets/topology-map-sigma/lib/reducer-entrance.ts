@@ -43,3 +43,40 @@ export function entranceSizeFactor(
   const eased = easeOutCubic(ageMs / durationMs);
   return ENTRANCE_MIN_FACTOR + (1 - ENTRANCE_MIN_FACTOR) * eased;
 }
+
+/**
+ * 그래프 rebuild 마다 first-seen 레지스트리(`seen`: slug → 처음 본 시각)를 현재
+ * 노드 집합과 동기화한다. entrance 가 "어느 노드가 *방금* 돋아났나" 를 아는 근거.
+ *
+ * - **첫 build** (`initialized=false`): 모든 노드를 이미-자란 상태(`now - entranceMs`)로
+ *   seed → 로드 시 일괄 grow-in 안 함. `anyNew=false`.
+ * - **이후 build**: 처음 보는 slug 만 `now` 로 seed → 그 노드들이 grow-in 대상
+ *   (`anyNew=true`). 기존 slug 의 timestamp 는 보존.
+ * - **사라진 slug** 는 prune → 레지스트리 무한 성장 방지 + 같은 slug 가 나중에 다시
+ *   추가되면 새 노드로 취급돼 다시 grow-in.
+ *
+ * `seen` 을 in-place mutate 하고 `anyNew` 를 반환한다 (호출자가 ref 의 Map 을 그대로
+ * 넘기는 hot path). SigmaTopology nodeReducer 의 entrance 분기 가드(`enteringUntil`)
+ * 가 `anyNew` 로 켜진다.
+ */
+export function reconcileFirstSeen(
+  seen: Map<string, number>,
+  presentIds: Iterable<string>,
+  now: number,
+  initialized: boolean,
+  entranceMs: number = NODE_ENTRANCE_MS,
+): { anyNew: boolean } {
+  const present = new Set<string>();
+  let anyNew = false;
+  for (const id of presentIds) {
+    present.add(id);
+    if (!seen.has(id)) {
+      seen.set(id, initialized ? now : now - entranceMs);
+      if (initialized) anyNew = true;
+    }
+  }
+  for (const id of [...seen.keys()]) {
+    if (!present.has(id)) seen.delete(id);
+  }
+  return { anyNew };
+}

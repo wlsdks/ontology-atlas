@@ -34,7 +34,7 @@ import {
 import { useOntologyInsight } from '@/features/vault-ontology';
 import { useOntologyKindLabel } from '@/entities/ontology-class';
 import { ontologyBorderTone } from '../lib/ontology-tone';
-import { entranceSizeFactor, NODE_ENTRANCE_MS } from '../lib/reducer-entrance';
+import { entranceSizeFactor, NODE_ENTRANCE_MS, reconcileFirstSeen } from '../lib/reducer-entrance';
 import { snapshotNodeCoords, restoreNodeCoords, type NodeCoord } from '../lib/coord-preservation';
 import { resolveOwnerDomainLabel } from '../lib/owner-domain';
 import { indigoRgba } from '@/shared/config/indigo-tokens';
@@ -679,21 +679,17 @@ function SigmaTopologyImpl({
   // 첫 build 는 모든 노드를 "이미 자란" 상태로 seed(now - duration) → 로드 시
   // 일괄 애니메이션 안 함. 이후 rebuild 에서 새로 나타난 slug 만 grow-in.
   useEffect(() => {
-    const seen = firstSeenRef.current;
     const now = performance.now();
-    const present = new Set<string>();
-    let anyNew = false;
-    graph.forEachNode((id) => {
-      present.add(id);
-      if (!seen.has(id)) {
-        seen.set(id, entranceInitializedRef.current ? now : now - NODE_ENTRANCE_MS);
-        if (entranceInitializedRef.current) anyNew = true;
-      }
-    });
-    // 제거된 노드 정리 — 같은 slug 가 나중에 다시 추가되면 다시 grow-in.
-    for (const id of [...seen.keys()]) {
-      if (!present.has(id)) seen.delete(id);
-    }
+    const ids: string[] = [];
+    graph.forEachNode((id) => ids.push(id));
+    // first-seen 동기화(첫 build seed / 새 노드 표시 / 사라진 노드 prune)는
+    // reducer-entrance 의 순수 함수로 추출 — 단위 테스트로 contract 고정.
+    const { anyNew } = reconcileFirstSeen(
+      firstSeenRef.current,
+      ids,
+      now,
+      entranceInitializedRef.current,
+    );
     entranceInitializedRef.current = true;
     if (anyNew) {
       enteringUntilRef.current = now + NODE_ENTRANCE_MS;
