@@ -47,36 +47,43 @@ if [ -z "$VAULT" ]; then
   exit 0
 fi
 
-# census + 상위 노드 몇 개. cli list --json 으로 한 번에. 실패 시 silent.
-JSON=$($CLI_BIN list "$VAULT" --json 2>/dev/null) || exit 0
+# census + 도메인 분포 + 상위 hub. cli overview --json 으로 한 번에. 실패 시 silent.
+# (이전엔 list 의 알파벳 첫 8개 — 노이즈였다. overview 는 가장 연결 많은 hub 를
+#  줘서 agent 가 첫 순간부터 "이 코드베이스의 load-bearing 개념" 을 인지한다.)
+JSON=$($CLI_BIN overview "$VAULT" --json 2>/dev/null) || exit 0
 
-# python 으로 빠른 요약 (count + kind 분포 + 처음 8 노드 sample). python3 표준.
+# python 으로 빠른 요약 (kind 분포 + domain 분포 + 상위 hub). python3 표준.
 SUMMARY=$(printf '%s' "$JSON" | python3 -c "$(cat <<'PY'
 import json, sys
 try:
     d = json.load(sys.stdin)
 except Exception:
     sys.exit(0)
-nodes = d.get('nodes', [])
-total = len(nodes)
-if total == 0:
+by_kind = d.get('byKind') or {}
+graph = d.get('graph') or {}
+total = graph.get('nodes') or sum(by_kind.values())
+if not total:
     sys.exit(0)
-by_kind = {}
-for n in nodes:
-    k = n.get('kind') or 'unknown'
-    by_kind[k] = by_kind.get(k, 0) + 1
 kinds = ' · '.join(f'{k} {v}' for k, v in sorted(by_kind.items(), key=lambda x: -x[1]))
-sample = '\n'.join(
-    f"  [{(n.get('kind') or '?'):11s}] {(n.get('slug') or '?'):42s} {n.get('title') or ''}"
-    for n in nodes[:8]
+by_domain = d.get('byDomain') or {}
+domains = ' · '.join(f'{k} {v}' for k, v in sorted(by_domain.items(), key=lambda x: -x[1])[:6])
+hubs = d.get('hubs') or []
+def short(t, n=48):
+    t = t or ''
+    return (t[:n-1] + '…') if len(t) > n else t
+hub_lines = '\n'.join(
+    f"  [{(h.get('kind') or '?'):11s}] {(h.get('slug') or '?'):42s} · deg {h.get('degree') or 0}  {short(h.get('title'))}"
+    for h in hubs[:6]
 )
-more = total - 8
 print(f'Vault has {total} ontology nodes ({kinds}).')
+if domains:
+    print(f'Domains: {domains}')
+if hub_lines:
+    print()
+    print('Most connected (hubs — load-bearing concepts, start here):')
+    print(hub_lines)
 print()
-print('First entries:')
-print(sample)
-if more > 0:
-    print(f'  … {more} more (use list_concepts / list_kinds for the full picture).')
+print('Full graph: list_concepts / list_kinds / query_ontology(operation:\"overview\").')
 PY
 )" 2>/dev/null)
 
