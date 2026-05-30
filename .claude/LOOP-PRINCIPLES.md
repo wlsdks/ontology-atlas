@@ -1,3 +1,8 @@
+> ⚠ **SUPERSEDED (2026-05-31).** 활성 루프 드라이버는 wedge charter 의
+> **"## ★★ 우선순위 재정렬 v2"** 섹션이다. 이 파일의 "매 iteration 개선 1개 무조건"·
+> "surface 하나 더 다듬기" 류 원칙은 **따르지 말 것** — default 는 NO-OP, 폴리시는
+> 아티팩트 기준 금지다. 역사 참고용 보존.
+
 # Loop principles — 20분 1회 자동 개선
 
 이 파일은 20분마다 1회 자동 실행되는 loop 의 단일 진실원이다. 매 iteration

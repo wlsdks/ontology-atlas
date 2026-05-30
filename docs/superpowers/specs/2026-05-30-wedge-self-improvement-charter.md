@@ -34,7 +34,51 @@ wedge 를 흐리는 것(자유노트화, 백엔드 도입, 비-graph 기능, 비
 - **(A) 시각적 아름다움** — 이 모먼트가 *예뻐야* 한다. Linear-grade 폴리시. 노드 등장·pulse·전환이 우아하게(디자인 헌장 내: 무채색+인디고, glow/neon/scale-hover 금지 — 부드러운 opacity/border/위치 ease 로). 빈 상태→자라는 상태의 미학.
 - **(B) 실시간 성능 (렉 0)** — 틀어놓고 보는데 끊기면 끝이다. 60fps 유지, 대형 vault 에서도. **현재 렉 근원: 변경마다 `buildLocalManifest`(전체 FS walk) + `buildGraph`(전체 그래프 재빌드).** north-star = **증분 업데이트**(변경 파일/노드만 patch, 전체 재스캔·재빌드·재레이아웃 회피 — Tauri 워처는 이미 변경 경로 emit, diff toaster 는 mtime diff 보유 → 재료 있음). 폴링 주기·debounce·Sigma render budget·좌표 보존도 이 축.
 
-## 그다음 렌즈 (위 A·B 다음, 레버리지 순)
+## ★★ 우선순위 재정렬 v2 — 이 섹션이 최우선 (2026-05-31 · 사용자 냉정 평가 + 4-critic stress-test 반영)
+
+> 47 iteration 폴리시 끝에 사용자 평가: "20명 주면 1~3명만 2주 후에도 씀 — PMF 미검증,
+> 진짜 약점은 **retention(유지)**, 폴리시 아님." 이 v2 가 위 심장 A·B + 아래 렌즈 스택을
+> **supersede** 한다. 심장(시각/성능)은 *retention blocker 를 직접 없앨 때만* 추구.
+
+### 0. 기본 출력은 NO-OP (가장 중요)
+
+**이 루프의 default 는 "아무것도 안 함".** 진짜 retention 개선이 *이번 firing 에* 있을
+때만 commit. 없으면 — 코드/vault 변경 0, 진행 로그에 "고려한 후보 + 각 기각 이유" 한 줄만
+append 후 멈춘다. **no-op 은 실패가 아니라 성공.** 10분 cadence 채우려 변경 *날조* 금지.
+망설여지면 아무것도 안 함(default-deny). commit 전 *회의적 사용자가 "위장된 폴리시" 라
+거절할 한 문장* 을 써보고 구체적 사용자-행동 변화로 반박 못 하면 → NO-OP.
+
+### 1. retention 레버 (commit 후보는 여기서만 — 위→아래)
+
+- **(1a) cold-start** — 빈 repo 에서 손수 작성 없이 *첫 가치* 도달(미검증 10분 루프). 온보딩 마찰↓.
+- **(1b) drift-surfacing** — vault↔코드 괴리를 *사람에게 보이는* ambient 신호. 메트릭 *노출* 까지(한 곳, 한 번). 메터 재다듬기 금지.
+- **(1c) canvas 사용성** — create/edit/relation/live 는 **shipped**(재구축 금지). 기존 affordance 마찰만, *검증된 write 경로 재사용*.
+- **(2) wedge 자명성** — "왜 grep/codegraph 말고?" 의 *demo 가능 artifact*(시나리오/비교 표면). 랜딩 카피·헤딩·i18n **불가**.
+- **(3) 그래프 깊이** — standing option 아님. (1)/(2) hypothesis 안의 *명시 메커니즘* 일 때만. 그 외엔 폴리시.
+
+### 2. 게이트 — 통과 못 하면 NO-OP + surface
+
+- **commit 본문 필수 한 줄**: `Retention-hypothesis: serves <1a|1b|1c|2>; 사용자 행동 변화 = <…>; 검증(자가채점 불가) = <먼저 쓴 실패테스트 | before→after 수치 | 사람이 눈으로 보는 artifact>.` 정직하게 못 채우면 → NO-OP.
+- **금지 (아티팩트 기준 — 라벨/의도로 우회 불가)**: 주석/문구/헤딩/라벨/i18n/색/토큰 편집 · 동작 변화 없는 standalone refactor·dedup · 동작 변화 없는 docs/charter-only commit · 최근 5 firing 내 만진 파일/표면의 sub-feature 재손질. 후보가 이 목록뿐이면 → NO-OP. (복잡도↓ 는 retention 작업의 *부산물* 로만.)
+- **retention 을 "개선·측정·positive" 라고 *결론* 짓는 commit 금지.** retention 은 사람만 검증. dogfood 자가관찰 승리선언 금지(iter 47 가 그 함정). drift 작업은 *측정값 노출* 까지만.
+
+### 3. gated/파괴적 → surface-first (만들지 말고 SPEC + 멈춤)
+
+라우트/표면 삭제·축소(/ontology/edit 빌더 = `.claude/rules/architecture.md` 보호목록), 데이터 마이그레이션, 백엔드·인증, 새 vault-write 경로, 모호한 제품 방향(비개발자 타겟 등), 큰 IA 분기 → 코드 0, `docs/superpowers/specs/SPEC-<slug>.md`(status: needs-approval) 작성 + 아래 `## Blocked` 한 줄 + 멈춘다. **Blocked 항목은 사람 승인 전 재시도·재surface 금지.**
+
+### 4. 매 10번째 firing = 정직 audit (코드 0)
+
+최근 10 commit 을 {retention | wedge | polish | no-op} 라벨링. **polish 3+ 면** "高레버리지 소진 — drift 중" 사용자에게 surface + 멈춤.
+
+## In-flight (다중-substep 재개용 — 비어있으면 없음)
+
+_(없음)_
+
+## Blocked / Surfaced — 사람 승인 대기 (매 firing 먼저 읽기 · 재시도 금지)
+
+_(없음)_
+
+## 그다음 렌즈 (역사적 맥락 — v2 가 supersede)
 
 - **강력함(powerful)** — 그래프/토폴로지/질의가 "이 코드베이스를 이해·항해·영향분석" 의 진짜 도구가 되는가. 깊이↑.
 - **에이전트 연계** — MCP 루프가 더 타이트한가. 에이전트가 더 좋은 컨텍스트/핸드오프/변경리뷰를 얻는가. (B0~B3 · live 모드 위에)
@@ -59,7 +103,7 @@ wedge 를 흐리는 것(자유노트화, 백엔드 도입, 비-graph 기능, 비
 ## 절차 (매 iteration)
 
 1. `git branch --show-current` = self-improve 아니면 즉시 중단·보고. main commit/push 금지.
-2. 이 charter + 최근 커밋 읽고 → 4렌즈로 **단일 최고-레버리지 개선** 1개 선정. codegraph 로 통합 지점 매핑(grep 루프 금지).
+2. **§0~4 (우선순위 재정렬 v2) 가 이 절차를 지배.** `## In-flight`/`## Blocked` 먼저 읽고 → v2 게이트로 *commit 할지 NO-OP 할지* 결정. retention-hypothesis 게이트 통과 시에만 3~5 진행; 아니면 NO-OP + 로그 한 줄. codegraph 로 통합 지점 매핑(grep 루프 금지).
 3. TDD: 실패 테스트 → 구현 → 검증(tsc · lint · test:run 관련범위 · i18n en·ko · vault). UI 는 chrome-devtools 로 콘솔 0 + 실제 동작. Tauri Rust 는 cargo check/test.
 4. self-improve 커밋(conventional + 한국어 본문 + Co-Authored-By). `--no-verify`·publish 금지.
 5. 새 capability/element/domain → dogfood vault + docs 동기화.
