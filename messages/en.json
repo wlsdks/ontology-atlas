@@ -218,6 +218,8 @@
       "statsNodes": "nodes",
       "statsHubs": "hubs",
       "statsEdges": "relations",
+      "kindLegendTitle": "What the colors mean",
+      "kindLegendUnknown": "Unclassified",
       "auditLegendTitle": "Things to look at",
       "auditLegendStale": "Stale · {threshold} day+ untouched ({count})",
       "auditLegendOrphan": "Orphan · 0 connections ({count})",

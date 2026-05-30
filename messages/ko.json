@@ -218,6 +218,8 @@
       "statsNodes": "노드",
       "statsHubs": "허브",
       "statsEdges": "관계",
+      "kindLegendTitle": "색의 의미",
+      "kindLegendUnknown": "미분류",
       "auditLegendTitle": "챙길 곳 표시",
       "auditLegendStale": "오래된 · {threshold}일+ 안 건드림 ({count})",
       "auditLegendOrphan": "외톨이 · 연결 0 ({count})",

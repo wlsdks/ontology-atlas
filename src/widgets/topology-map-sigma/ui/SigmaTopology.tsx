@@ -32,6 +32,8 @@ import {
   type OntologyCountsForProject,
 } from '@/shared/lib/ontology-tree';
 import { useOntologyInsight } from '@/features/vault-ontology';
+import { useOntologyKindLabel } from '@/entities/ontology-class';
+import { ontologyBorderTone } from '../lib/ontology-tone';
 import { useSyncedCallbackRef } from '@/shared/lib/use-synced-callback-ref';
 import { computeDepthMap, shortestPath } from '../lib/depth';
 import { useCameraUrlSync } from '../lib/use-camera-url-sync';
@@ -296,6 +298,7 @@ function SigmaTopologyImpl({
   className,
 }: SigmaTopologyProps) {
   const t = useTranslations('topologyWidgets.sigma');
+  const kindLabel = useOntologyKindLabel();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const sigmaRef = useRef<ReturnType<typeof createSigma> | null>(null);
   // 미니맵 · aurora 처럼 sigma 인스턴스를 render 에 쓰는 자식들은 ref 를 직접
@@ -2117,6 +2120,21 @@ function SigmaTopologyImpl({
             color={AUDIT_PROMOTION_COLOR}
             label={t('auditLegendPromotion', { threshold: AUDIT_PROMOTION_MIN_FAN_IN, count: auditSets.promotion.size })}
           />
+        </div>
+      ) : null}
+
+      {/* Ontology kind 범례 — 노드 보더 색이 *무슨 의미* 인지 읽히게 한다(comprehension).
+          audit overlay 와 같은 자리, 상호배타(audit off · non-minimal 일 때만). 색은
+          ontologyBorderTone 단일 소스 재사용 → drift 0. */}
+      {!minimal && !overlays?.auditHighlight ? (
+        <div className="pointer-events-none absolute bottom-[60px] left-4 z-10 flex flex-col gap-1 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] px-3 py-2 md:left-6 xl:left-8">
+          <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {t('kindLegendTitle')}
+          </span>
+          <LegendRow color={ontologyBorderTone('domain')!.borderColor} label={kindLabel('domain')} />
+          <LegendRow color={ontologyBorderTone('capability')!.borderColor} label={kindLabel('capability')} />
+          <LegendRow color={ontologyBorderTone('element')!.borderColor} label={kindLabel('element')} />
+          <LegendRow color={ontologyBorderTone('unknown')!.borderColor} label={t('kindLegendUnknown')} />
         </div>
       ) : null}
 
