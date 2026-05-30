@@ -1552,6 +1552,13 @@ export function createOntologyEngine(artifact, options = {}) {
         out: node?.outDegree || 0,
         total: (node?.inDegree || 0) + (node?.outDegree || 0),
       },
+      // 전이 영향 규모 — 1-hop degree 위에서 "이 노드를 바꾸면 N개 영향
+      // (dependents)" + "M개에 의존(dependencies)". 사람 drawer 의 blast radius
+      // 와 같은 신호를 에이전트(node_profile)·개발자(CLI node)도 한 콜에 받게.
+      reach: {
+        dependents: transitiveReachCount(center, 'incoming'),
+        dependencies: transitiveReachCount(center, 'outgoing'),
+      },
       edges: {
         incoming: profileEdgeGroup(incomingRows, 'incoming', limit),
         outgoing: profileEdgeGroup(outgoingRows, 'outgoing', limit),
@@ -3796,6 +3803,26 @@ export function createOntologyEngine(artifact, options = {}) {
       `${a.next}:${edgeSortKey(a.edge)}`.localeCompare(`${b.next}:${edgeSortKey(b.edge)}`),
     );
     return candidates;
+  }
+
+  // 전이 reach 카운트 — start 에서 direction 으로 도달 가능한 *고유* 노드 수
+  // (start 제외, 사이클 안전, resolved edge 만). blast_radius/reachability 와
+  // 같은 traversalEdges 를 쓰되 depth/limit 없이 full closure. node_profile 이
+  // 사람 drawer(전이 blast radius)와 같은 영향 규모를 한 콜에 주기 위함.
+  function transitiveReachCount(start, direction) {
+    const visited = new Set([start]);
+    const queue = [start];
+    let head = 0;
+    while (head < queue.length) {
+      const current = queue[head++];
+      for (const { next } of traversalEdges(current, direction)) {
+        if (!visited.has(next)) {
+          visited.add(next);
+          queue.push(next);
+        }
+      }
+    }
+    return visited.size - 1;
   }
 
   function containmentChildren(slug) {
