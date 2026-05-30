@@ -365,10 +365,12 @@ export function buildGraph(
         color: palette.ontologyFill,
         borderColor: tone?.borderColor ?? palette.nodeBorder,
         outerBorderColor: palette.nodeOuterHalo,
-        // SigmaTopology 의 click handler 가 projectSlug 를 키로 drawer 를
-        // 여는데, ontology 노드는 project 가 아니므로 drawer 가 빈 상태가
-        // 된다 — 일단 id 를 그대로 박아두고 후속 단계에서 ontology 전용
-        // 핸들링을 추가한다 (TODO: ontology 노드 클릭 시 vault md 열기).
+        // projectSlug 는 SigmaTopology click handler 의 노드 식별 키. ontology
+        // 노드는 project 가 아니라 자기 id 를 그대로 키로 쓰고, 소비 view
+        // (HomePage — `/` 와 `/topology` 둘 다 렌더)가 그 선택을
+        // TopologyOntologyDrawer 로 라우팅한다: 도메인/관계/설명 in-place 편집 +
+        // builder/ontology/source 링크 + reach·impact. ("vault md 열기" 는
+        // resolveTopologyNodeEditTarget 로 구현 완료 — 과거 TODO 해소됨.)
         projectSlug: node.id,
         searchText: buildSearchText(node.id, ontologyLabel),
         categoryId: 'ontology',
