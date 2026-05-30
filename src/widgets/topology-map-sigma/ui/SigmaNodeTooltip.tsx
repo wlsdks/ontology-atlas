@@ -5,6 +5,12 @@ import { statusDotColor, statusLabel } from '../lib/labels';
 export interface SigmaNodeTooltipData {
   name: string;
   domain: string;
+  /**
+   * ontology 노드의 kind id (capability / domain / element / unknown). 호출자가
+   * `attrs.ontologyTopKind` 에서 채운다(ontology 노드만). project 노드는
+   * undefined — 그쪽은 `domain` 라벨을 쓴다.
+   */
+  kind?: string;
   description?: string;
   statusId?: string;
   tags?: string[];
@@ -23,6 +29,12 @@ interface Props {
   degreeTitle: string;
   /** degree chip 의 visible 텍스트. \`{count}\` placeholder 를 호출자가 채워서 전달. */
   degreeLabel: string;
+  /**
+   * ontology 노드 kind 의 localized 라벨 (예: "Capability"). 있으면 domain 자리
+   * 에 kind chip 을 띄운다. `data.kind` 를 호출자가 `useOntologyKindLabel` 로
+   * 변환해 전달.
+   */
+  kindLabel?: string;
 }
 
 const TOOLTIP_W = 260;
@@ -37,6 +49,7 @@ export function SigmaNodeTooltip({
   hubLabel,
   degreeTitle,
   degreeLabel,
+  kindLabel,
 }: Props) {
   const vpW = typeof window !== 'undefined' ? window.innerWidth : 1440;
   const vpH = typeof window !== 'undefined' ? window.innerHeight : 900;
@@ -80,6 +93,11 @@ export function SigmaNodeTooltip({
         ) : null}
       </div>
       <div className="flex items-center gap-2">
+        {kindLabel ? (
+          <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.85)]">
+            {kindLabel}
+          </span>
+        ) : null}
         {data.domain ? (
           <span className="font-mono text-[9px] uppercase tracking-[0.16em] text-[color:rgba(139,151,255,0.85)]">
             {data.domain}

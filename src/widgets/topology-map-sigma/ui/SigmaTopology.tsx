@@ -1426,7 +1426,10 @@ function SigmaTopologyImpl({
       setHoveredSlug(node);
       setHoverLabel({
         name: attrs.label,
-        domain: extractDomainLabel(attrs.projectSlug),
+        // ontology 노드는 slug 가 'capabilities/foo' 라 extractDomainLabel(project
+        // slug 용)이 'capabilities/foo' 조각을 만든다 — 비우고 kind chip 으로 대체.
+        domain: attrs.isOntology ? '' : extractDomainLabel(attrs.projectSlug),
+        kind: attrs.isOntology ? attrs.ontologyTopKind : undefined,
         description: attrs.description,
         statusId: attrs.statusId,
         tags: attrs.tags,
@@ -2232,6 +2235,7 @@ function SigmaTopologyImpl({
           hubLabel={t('tooltipHubBadge')}
           degreeTitle={t('tooltipDegreeTitle')}
           degreeLabel={t('tooltipDegreeLabel', { count: hoverLabel.degree ?? 0 })}
+          kindLabel={hoverLabel.kind ? kindLabel(hoverLabel.kind) : undefined}
         />
       ) : null}
     </div>
