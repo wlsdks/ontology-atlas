@@ -82,6 +82,22 @@ if hub_lines:
     print()
     print('Most connected (hubs — load-bearing concepts, start here):')
     print(hub_lines)
+# health drift — vault 가 곧 진실원이라 dangling 참조/컴파일 이슈가 쌓이면
+# 그래프 질의가 조용히 틀어진다. 깨끗하면 한 줄도 안 내보내고(노이즈 0),
+# 문제가 있을 때만 agent 가 작업 첫 순간부터 인지하도록 알린다.
+unresolved = graph.get('unresolvedEdges') or 0
+issues = graph.get('issues') or 0
+ambiguous = graph.get('ambiguousAliases') or 0
+drift = []
+if unresolved:
+    drift.append(f"{unresolved} unresolved edge{'s' if unresolved != 1 else ''}")
+if issues:
+    drift.append(f"{issues} compile issue{'s' if issues != 1 else ''}")
+if ambiguous:
+    drift.append(f"{ambiguous} ambiguous alias{'es' if ambiguous != 1 else ''}")
+if drift:
+    print()
+    print('⚠ Needs attention: ' + ', '.join(drift) + ' — run `oh-my-ontology health` (or validate_vault) and fix before relying on the graph.')
 print()
 print('Full graph: list_concepts / list_kinds / query_ontology(operation:\"overview\").')
 PY

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
-import { access, readFile } from 'node:fs/promises';
+import { access, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { constants } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { describe, it } from 'node:test';
 
@@ -69,6 +71,94 @@ describe('agent hooks', () => {
         assert.equal(result.status, 0, `${config.name}: ${result.stderr}`);
         assert.equal(result.stdout, '', config.name);
       }
+    }
+  });
+});
+
+// SessionStart inject hook 은 vault 요약을 agent context 에 주입한다. 두
+// agent runtime (Claude Code · Codex) 의 mirror 가 같은 출력 규약을 지키는지,
+// 그리고 "건강하면 조용·문제 있으면 첫 순간에 알린다" 계약을 양쪽에서 검증.
+const INJECT_HOOKS = [
+  '.claude/hooks/inject-ontology-summary.sh',
+  '.codex/hooks/inject-ontology-summary.sh',
+];
+
+// 깨끗한 vault — alpha 가 beta 에 의존하고 beta 가 존재 → unresolved 0.
+const CLEAN_VAULT = {
+  'alpha.md':
+    '---\nkind: capability\nslug: alpha\ntitle: Alpha\ndependencies:\n  - beta\n---\n# Alpha\n',
+  'beta.md': '---\nkind: capability\nslug: beta\ntitle: Beta\n---\n# Beta\n',
+};
+
+// drift 있는 vault — alpha 가 존재하지 않는 ghost 슬러그를 참조 → unresolved
+// edge 1 + compile issue 1. agent 가 session 시작 시 이를 인지해야 한다.
+const DRIFT_VAULT = {
+  'alpha.md':
+    '---\nkind: capability\nslug: alpha\ntitle: Alpha\ndependencies:\n  - beta\n  - ghost-nonexistent\n---\n# Alpha\n',
+  'beta.md': '---\nkind: capability\nslug: beta\ntitle: Beta\n---\n# Beta\n',
+};
+
+// 훅이 python3 로 요약을 만든다 — 없는 환경에선 silent 가 정상이므로 skip.
+const hasPython = spawnSync('python3', ['--version']).status === 0;
+
+async function writeVault(files) {
+  const dir = await mkdtemp(join(tmpdir(), 'omot-hook-'));
+  for (const [name, content] of Object.entries(files)) {
+    await writeFile(join(dir, name), content);
+  }
+  return dir;
+}
+
+function runInjectHook(hookPath, vaultDir) {
+  return spawnSync('bash', [hookPath], {
+    env: { ...process.env, OMOT_VAULT: vaultDir },
+    encoding: 'utf8',
+  });
+}
+
+describe('inject-ontology-summary health awareness', () => {
+  it('injects census but stays silent on health when the vault is clean', async (t) => {
+    if (!hasPython) {
+      t.skip('python3 unavailable — hook is silent by design');
+      return;
+    }
+    const dir = await writeVault(CLEAN_VAULT);
+    try {
+      for (const hook of INJECT_HOOKS) {
+        const result = runInjectHook(hook, dir);
+        assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
+        assert.match(result.stdout, /Vault has 2 ontology nodes/, `${hook}: census present`);
+        assert.doesNotMatch(
+          result.stdout,
+          /Needs attention/,
+          `${hook}: clean vault must not emit a health warning (no noise)`,
+        );
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('surfaces actionable drift (unresolved edges / compile issues) at session start', async (t) => {
+    if (!hasPython) {
+      t.skip('python3 unavailable — hook is silent by design');
+      return;
+    }
+    const dir = await writeVault(DRIFT_VAULT);
+    try {
+      for (const hook of INJECT_HOOKS) {
+        const result = runInjectHook(hook, dir);
+        assert.equal(result.status, 0, `${hook}: ${result.stderr}`);
+        assert.match(result.stdout, /Needs attention/, `${hook}: drift surfaced`);
+        assert.match(result.stdout, /unresolved edge/, `${hook}: names the unresolved edge`);
+        assert.match(
+          result.stdout,
+          /oh-my-ontology health|validate_vault/,
+          `${hook}: points to a fix command`,
+        );
+      }
+    } finally {
+      await rm(dir, { recursive: true, force: true });
     }
   });
 });

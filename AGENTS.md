@@ -218,7 +218,7 @@ A 30-second read at the top of the task often replaces a 10-minute re-discovery 
 
 For the explicit "I'm done with this task — please sync the ontology now" loop, invoke the **`/ontology-sync`** skill (see `.claude/skills/ontology-sync/SKILL.md` or `.agents/skills/ontology-sync/SKILL.md`). It bundles the read-then-write pattern with a checklist for when to skip (typos, style nudges).
 
-For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at `.claude/hooks/inject-ontology-summary.sh` or `.codex/hooks/inject-ontology-summary.sh` runs once when Claude Code/Codex attaches to the workspace and injects a short census of the vault (kind counts + first 8 entries) into the agent's system context. The agent then has the ontology in mind from message #1 — no `list_concepts` round trip needed for the first orientation. The hook stays silent in repos without a vault, so it's safe to keep on globally.
+For the *implicit* "I just opened this repo" loop, the **SessionStart hook** at `.claude/hooks/inject-ontology-summary.sh` or `.codex/hooks/inject-ontology-summary.sh` runs once when Claude Code/Codex attaches to the workspace and injects a short census of the vault (kind counts + domains + top hubs) into the agent's system context. When the vault has actionable drift (unresolved refs / compile issues / ambiguous aliases) it also injects a one-line `⚠ Needs attention` nudge so the agent maintains from message #1; a clean vault stays silent (no noise). The agent then has the ontology in mind from message #1 — no `list_concepts` round trip needed for the first orientation. The hook stays silent in repos without a vault, so it's safe to keep on globally.
 
 **Skip the ontology** for: typo fixes, comment tweaks, single-line style nudges, lint config, test fixtures with no shape change. Anything that changes "what the codebase *is*" goes into the vault; anything that doesn't, stays out.
 
@@ -346,7 +346,7 @@ vault 는 개발자와 AI agent 가 **공유하는 mental model**. ontology 의 
 
 명시적 "이 작업 끝났으니 ontology sync 해줘" 루프는 **`/ontology-sync`** skill (`.claude/skills/ontology-sync/SKILL.md` 또는 `.agents/skills/ontology-sync/SKILL.md`) 로. read-then-write 패턴 + skip 케이스 (typo, style nudge) 체크리스트 묶음.
 
-암시적 "이 repo 방금 열었어" 루프는 **SessionStart hook** (`.claude/hooks/inject-ontology-summary.sh` 또는 `.codex/hooks/inject-ontology-summary.sh`) 이 처리. Claude Code/Codex 가 workspace 에 attach 할 때 한 번 vault census (kind 카운트 + 첫 8 항목) 를 system context 에 inject — agent 가 message #1 부터 ontology 를 이미 인지. vault 없는 repo 에선 silent exit, 글로벌 활성화 안전.
+암시적 "이 repo 방금 열었어" 루프는 **SessionStart hook** (`.claude/hooks/inject-ontology-summary.sh` 또는 `.codex/hooks/inject-ontology-summary.sh`) 이 처리. Claude Code/Codex 가 workspace 에 attach 할 때 한 번 vault census (kind 카운트 + 도메인 + 상위 hub) 를 system context 에 inject — agent 가 message #1 부터 ontology 를 이미 인지. vault 에 actionable drift (unresolved 참조 / compile 이슈 / ambiguous alias) 가 있으면 `⚠ Needs attention` 한 줄도 같이 inject 해 agent 가 첫 순간부터 정비하게 함 — 깨끗한 vault 는 silent (노이즈 0). vault 없는 repo 에선 silent exit, 글로벌 활성화 안전.
 
 **ontology skip** 케이스: typo fix, 주석 수정, 한 줄 style nudge, lint config, shape 변화 없는 test fixture. *codebase 가 무엇인지* 바뀌는 변화는 vault 로, 아니면 그대로.
 
