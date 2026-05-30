@@ -518,37 +518,37 @@ A successful run looks like this:
 ✓ maintenance cursor — missing afterActionId reported (afterActionId not found in filtered maintenance actions; phase none; severity none; kind none; executable none; review none)
 ✓ maintenance cursor — ready page stable (0 remaining actions; phase none; severity none; kind none; executable none; review none)
 · maintenance cursor — resume skipped (ready page has no actions)
-✓ list_concepts — vault total 60 nodes (vaultRoot /path/to/docs/ontology)
+✓ list_concepts — vault total 64 nodes (vaultRoot /path/to/docs/ontology)
 ✓ get_concept — project (6 outgoing edges)
 ✓ get_concepts — 2 ok rows, 1 partial row
-✓ find_evidence — 33 evidence results for "project"
+✓ find_evidence — 34 evidence results for "project"
 ✓ find_backlinks — project (1 backlink)
 ✓ query_concepts — 1 query result / 1 total query result
-✓ query_concepts limited — 1 query result / 59 total query results (limited true)
+✓ query_concepts limited — 1 query result / 63 total query results (limited true)
 ✓ analyze_repo_structure — fsd (4 domain candidates, 20 capability candidates, 29 element candidates)
-✓ infer_imports — 491 files scanned, 399 module edges (elements/src/views/docs-vault->elements/src/widgets/docs-vault x14 (static:13/dynamic:1), elements/src/views/ontology-edit->capabilities/docs-vault x11 (static:10/dynamic:1), +397 more)
+✓ infer_imports — 563 files scanned, 453 module edges (elements/src/views/docs-vault->elements/src/widgets/docs-vault x14 (static:13/dynamic:1), elements/src/views/home->capabilities/knowledge-graph x12 (static:12), +451 more)
 ✓ find_neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ find_path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ find_orphans — 0 orphans (root/sentinel defaults excluded)
-✓ list_kinds — 60 nodes (capability:25, domain:6, element:27, project:1, vault-readme:1)
-✓ validate_vault — 60 files, 0 problem files
+✓ list_kinds — 64 nodes (capability:29, domain:6, element:27, project:1, vault-readme:1)
+✓ validate_vault — 64 files, 0 problem files
 ✓ project probe — 1 project node
-✓ workspace_brief — healthy (60 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:182)
+✓ workspace_brief — healthy (64 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:186)
 ✓ agent_brief — healthy (ready 100/100, 3 entrypoints, 5 first calls, 5 graph DB pack items, 4 playbooks, 3 write guardrails, 3 result contracts)
-✓ workspace_brief_tuned — healthy (60 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:182; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
+✓ workspace_brief_tuned — healthy (64 nodes, 0 next actions, 5 health checks, growth actions:0 external:0 ignoredExternal:186; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies; nodeLimit=3)
 ✓ health — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1)
 ✓ health_tuned — healthy (issues:0, unresolved:0, cycles:0, 5 checks: compile_issues:pass:0, unresolved_edges:pass:0, dependency_cycles:pass:0, relation_recommendations:pass:0, components:pass:1; dependencyTypes=dependencies; componentTypes=domains/domain/capabilities/dependencies)
-✓ compile_ontology — graph 0c46556b83da (60 nodes, 399 edges, issues 0)
-✓ compile_ontology page — 1/60 nodes, 1/399 edges
-✓ compile_ontology indexes — out 60, in 59, edgeById 399, aliases 119, edges 217/182/0
-✓ overview — graph 0c46556b83da (60 nodes, 399 edges, hubs 5)
-✓ overview query_plan — aggregate_scan (medium, nodes 60, edges 399)
-✓ project_map query_plan — aggregate_scan (medium, nodes 60, edges 399)
+✓ compile_ontology — graph 5fa4ce38bb2c (64 nodes, 418 edges, issues 0)
+✓ compile_ontology page — 1/64 nodes, 1/418 edges
+✓ compile_ontology indexes — out 64, in 63, edgeById 418, aliases 127, edges 232/186/0
+✓ overview — graph 5fa4ce38bb2c (64 nodes, 418 edges, hubs 5)
+✓ overview query_plan — aggregate_scan (medium, nodes 64, edges 418)
+✓ project_map query_plan — aggregate_scan (medium, nodes 64, edges 418)
 ✓ neighbors — elements/file-system-access-api (3/3 edges, limited false)
 ✓ path — elements/file-system-access-api → project (2 hops, 2 edges)
 ✓ all_paths — elements/file-system-access-api → project (5/25 paths, budget 1000, expanded 1000, exhaustive false, evidence partial)
-✓ project_scope — project (59 nodes, internalEdges 216)
-✓ read census consistency — 60 nodes across list_kinds/list_concepts/compile_ontology/overview, 5 kinds
+✓ project_scope — project (63 nodes, internalEdges 231)
+✓ read census consistency — 64 nodes across list_kinds/list_concepts/compile_ontology/overview, 5 kinds
 ✓ structuredContent — direct 16/16, write 5/5 (batch row-isolation 2/2, batch no-write metadata 2/2, destructive dry-run 3/3), maintenance 2/2 (resume skipped: no actions), graph 13/13
 
 All passed — register .mcp.json with your MCP client and restart to use the 23 tools.
