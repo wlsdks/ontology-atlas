@@ -10,6 +10,7 @@ import {
   buildOntologyBuilderNodeHref,
   buildOntologyInsightsNodeHref,
   buildOntologyNodeHref,
+  useEdgeTypeLabel,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
 import { useOntologyKindLabel } from "@/entities/ontology-class";
@@ -952,6 +953,9 @@ function NodeDetailPanel({
   const t = useTranslations('ontologyView.detail');
   const { show } = useToast();
   const getKindLabel = useOntologyKindLabel();
+  // 관계 타입(related_to/depends_on/contains…)을 로컬라이즈된 라벨로 — insights
+  // 페이지(useEdgeTypeLabel)와 일관, ko 사용자에게 가독성. 미지 타입은 raw 통과.
+  const edgeTypeLabel = useEdgeTypeLabel();
   const kindLabel = getKindLabel(node.kind);
   const isProject = node.kind === "project";
   const isStub = node.kind === "unknown";
@@ -1301,7 +1305,7 @@ function NodeDetailPanel({
                   {row.direction === "outgoing" ? t('reviewRelationPreviewOut') : t('reviewRelationPreviewIn')}
                 </span>
                 <span className="shrink-0 rounded-sm border border-[color:rgba(94,106,210,0.20)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:rgba(159,170,235,0.95)]">
-                  {row.type}
+                  {edgeTypeLabel(row.type)}
                 </span>
                 <span className="min-w-0 flex-1 truncate">{row.title}</span>
                 <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] text-[color:var(--color-text-quaternary)]">
@@ -1325,7 +1329,7 @@ function NodeDetailPanel({
             {t('reviewRelationTypes', {
               types: reviewBrief.relationTypes.length > 0
                 ? reviewBrief.relationTypes
-                    .map((row) => `${row.type} ${row.count}`)
+                    .map((row) => `${edgeTypeLabel(row.type)} ${row.count}`)
                     .join(', ')
                 : t('reviewNoRelationTypes'),
             })}
@@ -1583,7 +1587,7 @@ function NodeDetailPanel({
                       key={relation}
                       className="inline-flex max-w-full items-center gap-1 rounded-full border border-[color:var(--color-border-soft)] px-2 py-0.5 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
                     >
-                      <span className="truncate">{relation}</span>
+                      <span className="truncate">{edgeTypeLabel(relation)}</span>
                       <span className="text-[color:var(--color-text-quaternary)]">{count}</span>
                     </span>
                   ))}
@@ -1712,7 +1716,7 @@ function NodeDetailPanel({
             {(showAllNeighbors ? ego.neighbors : ego.neighbors.slice(0, NEIGHBOR_PREVIEW)).map((neighbor) => {
               const isOutgoing = neighbor.direction === "outgoing";
               const arrow = isOutgoing ? "→" : "←";
-              const relationLabel = neighbor.edge.label ?? neighbor.edge.type;
+              const relationLabel = edgeTypeLabel(neighbor.edge.label ?? neighbor.edge.type);
               const neighborTitle = neighbor.node?.title ?? neighbor.neighborId;
               const neighborKindLabel = neighbor.node ? getKindLabel(neighbor.node.kind) : t('neighborMissingKind');
               const ariaLabel = isOutgoing
