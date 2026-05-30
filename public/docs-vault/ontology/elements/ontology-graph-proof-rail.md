@@ -6,8 +6,11 @@ domain: views
 relates: [elements/insights-query-cockpit]
 ---
 
-`src/views/ontology-view/lib/graph-proof-rail.ts` derives the compact graph proof model shown near the top of `/ontology`, and `src/views/ontology-view/ui/OntologyViewPage.tsx` renders it as an executable query proof strip.
+~~`src/views/ontology-view/lib/graph-proof-rail.ts` 가 `/ontology` 상단에 렌더하던 graph-DB proof 레일~~ — **A1(2026-05-30) 밀도 정리에서 제거됨.**
 
-The strip is intentionally not a marketing card and no longer sits above the tree role contract. `/ontology` first explains that the hierarchy is a browse index via the Tree role / Graph refs / Evidence strip, then shows this compact proof strip as the executable query contract for the same markdown graph.
+`/ontology` 가 browse 허브로 가벼워지면서 무거운 graph-DB proof 레일(코드 스니펫 + Copy MCP/CLI/runtime/sync + metrics)을 걷어냈다. 그 기능(에이전트 query pack 복사·실행 증거)은 중복 없이 이미 두 곳에 있다:
 
-It summarizes the same `buildAgentGraphDbQueryPack` payload used by `/ontology/insights`, showing intent count, MCP calls, CLI fallbacks, query_plan gate, one sample MATCH-style intent, and operation chips without pushing the tree far below the first viewport. It exposes copy actions for the full MCP graph DB query pack, the matching CLI fallback pack, the direct `pnpm dogfood:graph-db` runtime gate, and the shared post-change sync gate, so `/ontology` can hand Claude Code / Codex both an executable scan plan and the verification gate that should close a non-trivial write. This keeps the Browse / Write / Query loop visible on the ontology tree page while preserving `/ontology/insights` as the deeper graph DB cockpit.
+- `/ontology` 헤더의 **"Prime your AI agent"** ([[agent-onboarding-brief]]) — 완전 브리핑(query pack·guardrails·CLI fallback 포함) 1-paste.
+- `/ontology/insights` 의 query cockpit ([[agent-graph-readiness]]).
+
+PRODUCT-DIRECTION 정합: graph-DB proof 는 insights 의 역할, /ontology 는 browse. 이 노드는 *제거된 surface 의 개념 기록* 으로 남긴다(코드 파일·UI 없음).

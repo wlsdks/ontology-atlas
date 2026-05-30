@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-29T10:09:03.966Z",
+  "generatedAt": "2026-05-30T06:52:03.274Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -4513,8 +4513,8 @@
         }
       ],
       "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8445,
-      "updatedAt": "2026-05-28T06:18:51.326Z",
+      "wordCount": 8448,
+      "updatedAt": "2026-05-30T04:40:58.443Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -4854,6 +4854,35 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/agent-onboarding-brief",
+      "path": "docs/ontology/capabilities/agent-onboarding-brief.md",
+      "title": "Agent Onboarding Brief (1-paste prime)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/agent-onboarding-brief",
+        "kind": "capability",
+        "title": "Agent Onboarding Brief (1-paste prime)",
+        "domain": "views",
+        "elements": [
+          "src/shared/lib/ontology-tree/agent-briefing-packet.ts",
+          "src/views/ontology-view/ui/OntologyViewPage.tsx"
+        ],
+        "relates": [
+          "capabilities/agent-graph-readiness",
+          "capabilities/mcp-server",
+          "domains/ai-agent-partner"
+        ],
+        "dependencies": [
+          "capabilities/ontology-hub-mode-aware"
+        ]
+      },
+      "headings": [],
+      "excerpt": "/ontology 허브의 \"Prime your AI agent\" 원클릭 액션. 그동안 /ontology/insights 전반에 흩어져 있던 ~10개의 개별 \"Copy …\" 패킷(run order · graphDB pack · readiness · write guardrails · CLI fallback)을 단일 1paste 브리핑으로 통합한다. buildAgentBriefingPacket(nodes, edges, tree) 가 기존 certified composer (buildAgentHandoffPrompt · buildAgentReadinessSummary · e",
+      "wordCount": 123,
+      "updatedAt": "2026-05-29T11:28:26.719Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/builder-canvas-polish",
       "path": "docs/ontology/capabilities/builder-canvas-polish.md",
       "title": "Builder Canvas Polish (n8n routing + 도메인 tint + 정렬 toolbar)",
@@ -4958,6 +4987,38 @@
       "excerpt": "mission v2 의 사람 + AI agent 양립 약속의 코드 구현. 빌더 ephemeral 노드 → mode 별 분기 저장: local: vault.manifest 가 있는 live vault 에서 vault.createDoc(${kind}s/${slug}, md) — vault 디스크 직접 작성. AI agent (MCP) 가 같은 vault 에서 즉시 본다. 새 노드 저장, inspector write, relation write 는 모두 같은 live manifest 계약으로 writable 여부를 판단해 desktop WebView route transi",
       "wordCount": 362,
       "updatedAt": "2026-05-28T00:23:41.802Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/changes-only-review",
+      "path": "docs/ontology/capabilities/changes-only-review.md",
+      "title": "Changes-Only Review (변경점만 보기)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/changes-only-review",
+        "kind": "capability",
+        "title": "Changes-Only Review (변경점만 보기)",
+        "domain": "views",
+        "elements": [],
+        "relates": [
+          "capabilities/topology-change-visualization"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "어떻게",
+          "slug": "어떻게"
+        },
+        {
+          "depth": 2,
+          "text": "설계 원칙",
+          "slug": "설계-원칙"
+        }
+      ],
+      "excerpt": "baseline 대비 변경된 노드만으로 좁혀 보는 리뷰 흐름 — B1(토폴로지 pulse)의 짝으로, 회의·설계 리뷰에서 \"이번 세션에 뭐가 바뀌었나\" 를 두 분석 surface 에서 드릴다운한다. /ontology — 변경 패널의 \"변경점만\" 토글. 켜면 트리가 filterTreeByNodeIds(roots, touchedNodeIds) 로 변경 노드 + 조상 경로만 남긴 최소 트리로 좁혀진다 (src/shared/lib/ontologytree/filtertree.ts, src/views/ontologyview/ui/parts/OntologyChangePanel.t",
+      "wordCount": 164,
+      "updatedAt": "2026-05-30T06:16:20.354Z",
       "linksOut": []
     },
     {
@@ -5121,8 +5182,8 @@
       },
       "headings": [],
       "excerpt": "/topology, /ontology, and /ontology/insights expose a secondary collaborator reader lane without making nondevelopers the primary product target. The lane translates a selected ontology node into a plainlanguage lens, sourcebacked relation summary, and review prompt. Planners, marketers, and domain collaborators can in",
-      "wordCount": 631,
-      "updatedAt": "2026-05-27T18:21:33.784Z",
+      "wordCount": 677,
+      "updatedAt": "2026-05-30T04:05:17.361Z",
       "linksOut": []
     },
     {
@@ -5538,9 +5599,9 @@
           "slug": "vault-결정-우선순위"
         }
       ],
-      "excerpt": "Claude Code 가 새 세션을 열 때 한 번 실행되어 현재 디렉토리의 ontology vault 요약 (총 노드 수 · kind 분포 · 첫 8 노드 샘플) 을 agent system context 에 inject 한다. 매 prompt 마다 사용자가 \"ontology 활용해\" 라고 알려주지 않아도 agent 가 작업 첫 순간부터 vault 를 인지한다. domains/aiagentpartner — agent 가 vault 와 상호작용하는 surface 군. capabilities/clideveloperentry — vault 요약을 만들 때 ohmyontolo",
-      "wordCount": 152,
-      "updatedAt": "2026-05-05T15:29:33.665Z",
+      "excerpt": "Claude Code 가 새 세션을 열 때 한 번 실행되어 현재 디렉토리의 ontology vault 요약 (총 노드 수 · kind 분포 · domain 분포 · 가장 연결 많은 hub 상위 6개) 을 agent system context 에 inject 한다. 매 prompt 마다 사용자가 \"ontology 활용해\" 라고 알려주지 않아도 agent 가 작업 첫 순간부터 vault 를 인지한다. 이전엔 list 의 알파벳 첫 8개 를 보여줬는데 — 그건 노이즈였다. 이제 overview 로 바꿔, agent 의 첫 인상이 그 코드베이스의 loadbearing 개념(",
+      "wordCount": 212,
+      "updatedAt": "2026-05-30T04:41:16.569Z",
       "linksOut": []
     },
     {
@@ -5565,6 +5626,75 @@
       "linksOut": []
     },
     {
+      "slug": "ontology/capabilities/topology-change-visualization",
+      "path": "docs/ontology/capabilities/topology-change-visualization.md",
+      "title": "Topology Change Visualization (변경점 베이스라인 공유)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/topology-change-visualization",
+        "kind": "capability",
+        "title": "Topology Change Visualization (변경점 베이스라인 공유)",
+        "domain": "views",
+        "elements": [],
+        "relates": [
+          "capabilities/topology-ontology-inspection"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "왜",
+          "slug": "왜"
+        },
+        {
+          "depth": 2,
+          "text": "어떻게",
+          "slug": "어떻게"
+        }
+      ],
+      "excerpt": "/ontology 에서 \"Mark baseline\" 으로 잡은 vault 스냅샷을 기준으로, 그 이후 추가/편집/삭제된 노드를 /topology 의 Sigma 그래프에서 시각적으로 구분(recentpulse 재사용)한다. 에이전트가 MCP 로 vault 를 편집하면 사람은 회의에서 토폴로지를 보며 \"무엇이 바뀌었나\" 를 한눈에 봐야 한다. 변경점이 화면에서 구분되면 사람과 AI agent 가 같은 변경 단위를 두고 A/B 처럼 발전시킬 수 있다. src/shared/lib/ontologytree/changebaselinestore.ts — 모듈 싱글톤 스토어. mar",
+      "wordCount": 166,
+      "updatedAt": "2026-05-29T13:31:27.278Z",
+      "linksOut": []
+    },
+    {
+      "slug": "ontology/capabilities/topology-direct-edit",
+      "path": "docs/ontology/capabilities/topology-direct-edit.md",
+      "title": "Topology Direct Edit (토폴로지에서 직접 편집)",
+      "tags": [],
+      "frontmatter": {
+        "slug": "capabilities/topology-direct-edit",
+        "kind": "capability",
+        "title": "Topology Direct Edit (토폴로지에서 직접 편집)",
+        "domain": "views",
+        "elements": [],
+        "relates": [
+          "capabilities/topology-ontology-inspection"
+        ]
+      },
+      "headings": [
+        {
+          "depth": 2,
+          "text": "4대 편집 액션 (S1~S4 완성)",
+          "slug": "4대-편집-액션-s1s4-완성"
+        },
+        {
+          "depth": 2,
+          "text": "기반 (entity 레이어 공유 — 빌더와 drift 0)",
+          "slug": "기반-entity-레이어-공유-빌더와-drift-0"
+        },
+        {
+          "depth": 2,
+          "text": "남은 단계",
+          "slug": "남은-단계"
+        }
+      ],
+      "excerpt": "토폴로지(/topology)를 온톨로지의 읽기 surface 가 아니라 1차 편집 surface 로 전환하는 흐름. 별도 빌더에서 \"조립\"하는 대신, 공간 그래프에서 노드를 선택해 그 자리에서 만들고·고치고·잇고·설명한다. vault .md 에 바로 쓴다. (ontologyfirst 재구성 spec: docs/superpowers/specs/20260530ontologyfirsttopologyrestructuredesign.md) S1 노드 속성 편집 — drawer 에서 domain 인라인 편집 → updateFrontmatter(본문 보존 patch). topol",
+      "wordCount": 153,
+      "updatedAt": "2026-05-29T18:58:18.792Z",
+      "linksOut": []
+    },
+    {
       "slug": "ontology/capabilities/topology-ontology-inspection",
       "path": "docs/ontology/capabilities/topology-ontology-inspection.md",
       "title": "Topology Ontology Inspection",
@@ -5583,9 +5713,9 @@
         ]
       },
       "headings": [],
-      "excerpt": "/topology supports ontologyaware node inspection instead of treating nonproject nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer summarizes the source document, direct incoming/outgoing relation counts, relationtype chips, and a bounded relation preview. It also l",
-      "wordCount": 436,
-      "updatedAt": "2026-05-25T06:53:22.649Z",
+      "excerpt": "/topology supports ontologyaware node inspection instead of treating nonproject nodes as empty project selections. When a user selects a domain, capability, or element node, the drawer summarizes the source document, direct incoming/outgoing relation counts, relationtype chips, and a bounded relation preview. When the ",
+      "wordCount": 627,
+      "updatedAt": "2026-05-30T05:47:09.477Z",
       "linksOut": []
     },
     {
@@ -5614,9 +5744,9 @@
           "slug": "topology-sigma-webgl-render"
         }
       ],
-      "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount.",
-      "wordCount": 42,
-      "updatedAt": "2026-05-28T14:25:55.870Z",
+      "excerpt": "Sigma.js + Graphology + ForceAtlas2 spatial network. 노드 클릭 → ProjectDrawer, hover → 1hop 이웃 강조, 우측 SigmaHubRail (degree 상위), 우측 SigmaMinimap. ⌘K 검색. / (홈 hub) 와 /topology (alias) 양쪽에서 동일 컴포넌트 (HomePage) 가 mount. hover 시 SigmaNodeTooltip 이 name · degree · description 을 띄운다. ontology 노드는 kind(capability / domain / elemen",
+      "wordCount": 115,
+      "updatedAt": "2026-05-30T06:34:18.225Z",
       "linksOut": []
     },
     {
@@ -5633,7 +5763,9 @@
           "src/features/docs-vault-local/lib/diff-manifest.ts",
           "src/features/docs-vault-local/model/use-local-vault.ts",
           "src/features/docs-vault-local/model/VaultDiffToaster.tsx",
-          "src/widgets/topology-map-sigma/lib/graph-build.ts"
+          "src/widgets/topology-map-sigma/lib/coord-preservation.ts",
+          "src/widgets/topology-map-sigma/lib/graph-build.ts",
+          "src/widgets/topology-map-sigma/lib/reducer-entrance.ts"
         ],
         "relates": [
           "capabilities/builder-vault-write",
@@ -5670,8 +5802,8 @@
         }
       ],
       "excerpt": "R14 (155158, 20260504 ~ 20260505) 에 도입된 web 즉시 반영 능력. 사용자 명시 \"웹에서나 잘 반영되면 좋겠는데? 그걸 강화하는건 어때\" 의 4 단계 답. IDE / AI agent / CLI 어느 surface 가 vault .md 만지면 웹 탭이 focus 안 해도 ~5s 안에 반영. | Step | What | Where 인지 | |||| | 155 polling | 5s 간격 fingerprint check + visibleonly 자동 reload | 백그라운드 | | 156 graph diff pulse | 새 노드 amber ",
-      "wordCount": 289,
-      "updatedAt": "2026-05-13T00:02:55.339Z",
+      "wordCount": 415,
+      "updatedAt": "2026-05-30T06:08:05.827Z",
       "linksOut": []
     },
     {
@@ -5995,6 +6127,10 @@
           "builder-deep-link-focus",
           "builder-relation-write-confirm",
           "builder-vault-write",
+          "capabilities/agent-onboarding-brief",
+          "capabilities/changes-only-review",
+          "capabilities/topology-change-visualization",
+          "capabilities/topology-direct-edit",
           "collaborator-reader-brief",
           "ontology-hub-mode-aware",
           "topology-analysis-modes",
@@ -6045,7 +6181,7 @@
       ],
       "excerpt": "같은 ontology 그래프의 세 출구. 토폴로지 (Sigma + ForceAtlas2 spatial network), 둘러보기 (/ontology 트리 계층 + ego graph + 노드 detail), 빌더 (xyflow ERD canvas + md 내보내기). 검색 — ⌘K 프로젝트 / ⇧⌘K 노드+프로젝트 통합. Builder 와 Insights 는 designsystem 의 operation page header 계약을 따른다: English caption 으로 surface 를 식별하고, Korean h1 로 실제 작업 모드를 읽게 한다.",
       "wordCount": 63,
-      "updatedAt": "2026-05-28T14:25:55.870Z",
+      "updatedAt": "2026-05-29T16:27:50.079Z",
       "linksOut": []
     },
     {
@@ -6336,10 +6472,13 @@
         ]
       },
       "headings": [],
-      "excerpt": "src/views/ontologyview/lib/graphproofrail.ts derives the compact graph proof model shown near the top of /ontology, and src/views/ontologyview/ui/OntologyViewPage.tsx renders it as an executable query proof strip. The strip is intentionally not a marketing card and no longer sits above the tree role contract. /ontology",
-      "wordCount": 186,
-      "updatedAt": "2026-05-28T02:53:53.233Z",
-      "linksOut": []
+      "excerpt": "~~src/views/ontologyview/lib/graphproofrail.ts 가 /ontology 상단에 렌더하던 graphDB proof 레일~~ — A1(20260530) 밀도 정리에서 제거됨. /ontology 가 browse 허브로 가벼워지면서 무거운 graphDB proof 레일(코드 스니펫 + Copy MCP/CLI/runtime/sync + metrics)을 걷어냈다. 그 기능(에이전트 query pack 복사·실행 증거)은 중복 없이 이미 두 곳에 있다: /ontology 헤더의 \"Prime your AI agent\" ([[agentonboard",
+      "wordCount": 84,
+      "updatedAt": "2026-05-30T03:01:33.067Z",
+      "linksOut": [
+        "agent-onboarding-brief",
+        "agent-graph-readiness"
+      ]
     },
     {
       "slug": "ontology/elements/ontology-relation-key-inference",
@@ -6674,8 +6813,8 @@
         }
       ],
       "excerpt": "이 디렉토리는 이 프로젝트 자신의 ontology 다. dogfooding — 이 서비스를 만드는 데 필요한 mental model 을 이 서비스의 데이터 형식 (frontmatter md) 으로 표현. 여기서 ontology 는 단순한 그래프 그림이 아니라 프로젝트가 무엇으로 이루어져 있고, 각 개념이 왜 연결되는지에 대한 실행 가능한 의미 모델이다. project, domain, capability, element 노드와 contains, dependson, relates, describes 같은 관계를 markdown frontmatter 로 저장하고, CLI/",
-      "wordCount": 316,
-      "updatedAt": "2026-05-25T05:43:13.583Z",
+      "wordCount": 315,
+      "updatedAt": "2026-05-29T16:28:08.155Z",
       "linksOut": []
     },
     {
@@ -7430,6 +7569,20 @@
         "context": "출력 | |---|---|---| | [[capabilities/ontology-bootstrap-skill]] | 빈 vault + 코드 (analyze_repo_structure) | 첫 5–15 노드 | | **[capabilities/ontology-sync-skill]** | code change (git diff) | 코드↔vault drift 0 | | **이 skill** | **사용자 prose** | **prose 안 개념 → vault 노드** | bootstrap 은",
         "linkText": "capabilities/ontology-sync-skill"
       }
+    ],
+    "agent-onboarding-brief": [
+      {
+        "fromSlug": "ontology/elements/ontology-graph-proof-rail",
+        "context": "/sync + metrics)을 걷어냈다. 그 기능(에이전트 query pack 복사·실행 증거)은 중복 없이 이미 두 곳에 있다: - `/ontology` 헤더의 **\"Prime your AI agent\"** (**[agent-onboarding-brief]**) — 완전 브리핑(query pack·guardrails·CLI fallback 포함) 1-paste. - `/ontology/insights` 의 query cockpit ([[agent-graph-readine",
+        "linkText": "agent-onboarding-brief"
+      }
+    ],
+    "agent-graph-readiness": [
+      {
+        "fromSlug": "ontology/elements/ontology-graph-proof-rail",
+        "context": "nt-onboarding-brief]]) — 완전 브리핑(query pack·guardrails·CLI fallback 포함) 1-paste. - `/ontology/insights` 의 query cockpit (**[agent-graph-readiness]**). PRODUCT-DIRECTION 정합: graph-DB proof 는 insights 의 역할, /ontology 는 browse. 이 노드는 *제거된 surface 의 개념 기록* 으로 남긴다(코드 파일·U",
+        "linkText": "agent-graph-readiness"
+      }
     ]
   },
   "tags": {
@@ -7688,6 +7841,13 @@
                 "title": "Agent Graph Readiness"
               },
               {
+                "name": "agent-onboarding-brief",
+                "path": "ontology/capabilities/agent-onboarding-brief",
+                "type": "doc",
+                "slug": "ontology/capabilities/agent-onboarding-brief",
+                "title": "Agent Onboarding Brief (1-paste prime)"
+              },
+              {
                 "name": "builder-canvas-polish",
                 "path": "ontology/capabilities/builder-canvas-polish",
                 "type": "doc",
@@ -7714,6 +7874,13 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/builder-vault-write",
                 "title": "Builder ↔ Vault md write (mode-aware)"
+              },
+              {
+                "name": "changes-only-review",
+                "path": "ontology/capabilities/changes-only-review",
+                "type": "doc",
+                "slug": "ontology/capabilities/changes-only-review",
+                "title": "Changes-Only Review (변경점만 보기)"
               },
               {
                 "name": "cli-developer-entry",
@@ -7812,6 +7979,20 @@
                 "type": "doc",
                 "slug": "ontology/capabilities/topology-analysis-modes",
                 "title": "Topology Analysis Modes"
+              },
+              {
+                "name": "topology-change-visualization",
+                "path": "ontology/capabilities/topology-change-visualization",
+                "type": "doc",
+                "slug": "ontology/capabilities/topology-change-visualization",
+                "title": "Topology Change Visualization (변경점 베이스라인 공유)"
+              },
+              {
+                "name": "topology-direct-edit",
+                "path": "ontology/capabilities/topology-direct-edit",
+                "type": "doc",
+                "slug": "ontology/capabilities/topology-direct-edit",
+                "title": "Topology Direct Edit (토폴로지에서 직접 편집)"
               },
               {
                 "name": "topology-ontology-inspection",

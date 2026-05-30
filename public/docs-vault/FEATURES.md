@@ -427,7 +427,7 @@ Run via `pnpm exec node mcp/src/index.js` (registered in user's `.mcp.json`). AI
 
 | Trigger | What | Where |
 |---|---|---|
-| **SessionStart hook** (implicit) | Vault census (kind counts + first 8 entries) auto-injected into agent's system context on session start | `.claude/hooks/inject-ontology-summary.sh` / `.codex/hooks/inject-ontology-summary.sh` — silent in repos without a vault |
+| **SessionStart hook** (implicit) | Vault census (kind counts + domain distribution + top connected hubs) auto-injected into agent's system context on session start | `.claude/hooks/inject-ontology-summary.sh` / `.codex/hooks/inject-ontology-summary.sh` — silent in repos without a vault |
 | **`/ontology-bootstrap` skill** (cold start) | Empty vault → first 5–15 nodes from code structure. `analyze_repo_structure` side-effect-zero → user picks candidates → land via batch writers | `.claude/skills/ontology-bootstrap/SKILL.md` / `.agents/skills/ontology-bootstrap/SKILL.md` |
 | **`/ontology-sync` skill** (code change) | "I'm done with this task — please sync the ontology now" loop. git diff + context → MCP write tools | `.claude/skills/ontology-sync/SKILL.md` / `.agents/skills/ontology-sync/SKILL.md` |
 | **`/ontology-extract` skill** (prose ingress, R+) | User shares prose (meeting note / PR / RFC / Notion paragraph) → `find_evidence` + `similar_nodes` cross-check → candidate table → user picks → land. LLM hallucination guard via prose-source citation in body | `.claude/skills/ontology-extract/SKILL.md` / `.agents/skills/ontology-extract/SKILL.md` |
