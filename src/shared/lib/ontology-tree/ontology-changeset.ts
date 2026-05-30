@@ -12,7 +12,12 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
  * 순수 함수 — React/IO 의존 0. 동일 입력 → 동일 출력.
  */
 
-const SEP = "";
+// 필드 구분자 — U+0001(제어문자). slug / title / relation type 에 절대
+// 나타나지 않으므로 충돌 없는 join 이 보장된다. 빈/평범한 구분자로 concat 하면
+// 인접 필드 경계가 이동한 서로 다른 입력이 같은 문자열로 충돌(예: a+bc vs ab+c)
+// 해 변경을 놓친다. 소스에서 보이도록 raw 제어문자 대신 \u0001 escape 로 명시
+// (오편집 방지 — 보이지 않는 리터럴은 "빈 문자열" 로 오인되기 쉽다).
+const SEP = "\u0001";
 
 export interface OntologySnapshot {
   /** nodeId → 내용 시그니처 (kind/title/summary + 정렬된 outgoing edge). */
@@ -23,7 +28,7 @@ export interface OntologySnapshot {
    * 표시할 수 있게.
    */
   nodeKinds: Map<string, string>;
-  /** "fromtotype" edge key 집합. */
+  /** "from\u0001to\u0001type" (SEP 으로 구분) edge key 집합. */
   edgeKeys: Set<string>;
   /** 스냅샷을 찍은 시점(ms). 호출자가 stamp — 라벨/정렬용. */
   takenAt: number;

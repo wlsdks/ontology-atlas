@@ -93,4 +93,29 @@ describe("ontology-changeset", () => {
     const cs = computeOntologyChangeset(snap, sameContent, baseEdges);
     expect(cs.total).toBe(0);
   });
+
+  // edge/node 시그니처가 필드를 *구분자 없이* concat 하면 인접 필드 경계가
+  // 이동한 서로 다른 입력이 같은 문자열로 충돌해 변경을 놓친다. 아래 두 케이스가
+  // 그 충돌을 재현 — 안전한 구분자라야 통과한다.
+  it("엣지 swap 을 구분한다 — a→bc 와 ab→c(같은 type)가 충돌하지 않음", () => {
+    const nodes = [
+      node("a", "domain"),
+      node("ab", "domain"),
+      node("bc", "element"),
+      node("c", "element"),
+    ];
+    // baseline: a→bc / current: ab→c. 빈 구분자면 둘 다 "abcd" 로 같은 key.
+    const baseline = snapshotOntology(nodes, [edge("a", "bc", "d")], 1);
+    const cs = computeOntologyChangeset(baseline, nodes, [edge("ab", "c", "d")]);
+    expect(cs.removedEdges).toHaveLength(1); // a→bc 제거
+    expect(cs.addedEdges).toHaveLength(1); // ab→c 추가
+  });
+
+  it("노드 kind/title 경계 이동 변경을 감지한다 — (a,b) → (ab,'') 충돌하지 않음", () => {
+    // 같은 id 'x' 가 kind="a"/title="b" → kind="ab"/title="" 로 변경.
+    // 빈 구분자면 두 시그니처가 모두 "ab" 로 같아 변경을 놓친다.
+    const baseline = snapshotOntology([node("x", "a", "b")], [], 1);
+    const cs = computeOntologyChangeset(baseline, [node("x", "ab", "")], []);
+    expect(cs.changedNodes).toContain("x");
+  });
 });
