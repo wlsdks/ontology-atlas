@@ -78,6 +78,11 @@ import {
 } from '../lib/reducer-filter';
 import { applyContextDimOverlay } from '../lib/reducer-context-dim';
 import {
+  HUB_LABEL_RATIO,
+  isTopologyLabelAnchor,
+  shouldCullLabelAtZoom,
+} from '../lib/label-lod';
+import {
   applyOverlaySize,
   shouldHideNode,
 } from '../lib/reducer-overlay-flags';
@@ -1081,22 +1086,16 @@ function SigmaTopologyImpl({
         return { ...base, label: undefined, forceLabel: false };
       }
 
-      if (!hidden && !isFocusOrNeighbor) {
-        if (attrs.isHub) {
-          const HUB_LABEL_RATIO = 0.55;
-          if (ratio > HUB_LABEL_RATIO) {
-            return { ...base, label: undefined, forceLabel: false };
-          }
-        } else {
-          const NODE_LABEL_RATIO = 0.28;
-          if (ratio > NODE_LABEL_RATIO) {
-            return { ...base, label: undefined, forceLabel: false };
-          }
-        }
+      // 라벨 앵커 = 프로젝트 허브 OR graph-build 가 forceLabel 로 승격한 ontology
+      // 랜드마크(도메인/고차수). 앵커는 줌아웃 시 더 오래 라벨 유지(0.55), 일반
+      // 노드는 0.28 — 랜드마크가 fingerprint 로 남게(graph-build 의도 일치).
+      const isAnchor = isTopologyLabelAnchor(attrs);
+      if (!hidden && !isFocusOrNeighbor && shouldCullLabelAtZoom(isAnchor, ratio)) {
+        return { ...base, label: undefined, forceLabel: false };
       }
 
-      if (!hidden && attrs.isHub && !isFocusOrNeighbor) {
-        return { ...base, forceLabel: ratio <= 0.55 };
+      if (!hidden && isAnchor && !isFocusOrNeighbor) {
+        return { ...base, forceLabel: ratio <= HUB_LABEL_RATIO };
       }
 
       if (!hidden && !base.forceLabel && (isFocusNode || shouldShowNeighborLabel)) {
