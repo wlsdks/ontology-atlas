@@ -286,7 +286,10 @@
       "copyError": "복사에 실패했습니다"
     },
     "edgeTooltip": {
-      "kindContains": "소속"
+      "kindContains": "소속",
+      "kindKnowledge": "지식",
+      "kindReferencedBy": "참조됨",
+      "kindDependsOn": "의존"
     }
   },
   "ontologyWidgets": {

@@ -17,11 +17,22 @@ interface Props {
   data: SigmaEdgeTooltipData;
 }
 
-function kindLabel(kind: string | undefined, containsLabel: string): string {
-  if (kind === 'knowledge') return 'knowledge';
-  if (kind === 'referenced-by') return 'referenced by';
-  if (kind === 'contains') return containsLabel;
-  return 'depends on';
+export interface EdgeKindLabels {
+  knowledge: string;
+  referencedBy: string;
+  contains: string;
+  dependsOn: string;
+}
+
+/**
+ * 엣지 kind → 표시 라벨. 모두 i18n labels 로 받아 로컬라이즈한다 — 이전엔
+ * contains 만 로컬라이즈되고 나머지는 하드코딩 영어였다(ko 사용자 회귀).
+ */
+export function kindLabel(kind: string | undefined, labels: EdgeKindLabels): string {
+  if (kind === 'knowledge') return labels.knowledge;
+  if (kind === 'referenced-by') return labels.referencedBy;
+  if (kind === 'contains') return labels.contains;
+  return labels.dependsOn;
 }
 
 /**
@@ -62,7 +73,12 @@ export function SigmaEdgeTooltip({ data }: Props) {
       <span className="text-[color:rgba(139,151,255,0.85)]">→</span>
       <span>{data.targetName}</span>
       <span className="ml-1 font-mono text-[8px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-        {kindLabel(data.kind, t('kindContains'))}
+        {kindLabel(data.kind, {
+          knowledge: t('kindKnowledge'),
+          referencedBy: t('kindReferencedBy'),
+          contains: t('kindContains'),
+          dependsOn: t('kindDependsOn'),
+        })}
       </span>
     </div>
   );

@@ -286,7 +286,10 @@
       "copyError": "Copy failed"
     },
     "edgeTooltip": {
-      "kindContains": "contains"
+      "kindContains": "contains",
+      "kindKnowledge": "knowledge",
+      "kindReferencedBy": "referenced by",
+      "kindDependsOn": "depends on"
     }
   },
   "ontologyWidgets": {
