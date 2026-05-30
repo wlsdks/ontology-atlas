@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type Sigma from 'sigma';
 import type Graph from 'graphology';
-import { INDIGO_HUB } from '@/shared/config/indigo-tokens';
+import { INDIGO_HUB, indigoRgba } from '@/shared/config/indigo-tokens';
 import { coalesceRaf } from '@/shared/lib/coalesce-raf';
 import type { SigmaEdgeAttrs, SigmaNodeAttrs } from '../lib/graph-build';
 
@@ -163,7 +163,7 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
             y1={e.y1}
             x2={e.x2}
             y2={e.y2}
-            stroke="rgba(139,151,255,0.18)"
+            stroke={indigoRgba('highlight', 0.18)}
             strokeWidth={0.6}
           />
         ))}
@@ -185,8 +185,8 @@ export function SigmaMinimap({ sigma, graph }: SigmaMinimapProps) {
             y={rectY}
             width={rectW}
             height={rectH}
-            fill="rgba(139,151,255,0.08)"
-            stroke="rgba(139,151,255,0.85)"
+            fill={indigoRgba('highlight', 0.08)}
+            stroke={indigoRgba('highlight', 0.85)}
             strokeWidth={1.2}
             pointerEvents="none"
             rx={2}

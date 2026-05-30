@@ -35,6 +35,7 @@ import { useOntologyInsight } from '@/features/vault-ontology';
 import { useOntologyKindLabel } from '@/entities/ontology-class';
 import { ontologyBorderTone } from '../lib/ontology-tone';
 import { entranceSizeFactor, NODE_ENTRANCE_MS } from '../lib/reducer-entrance';
+import { indigoRgba } from '@/shared/config/indigo-tokens';
 import { useSyncedCallbackRef } from '@/shared/lib/use-synced-callback-ref';
 import { computeDepthMap, shortestPath } from '../lib/depth';
 import { useCameraUrlSync } from '../lib/use-camera-url-sync';
@@ -1106,7 +1107,7 @@ function SigmaTopologyImpl({
       ) {
         return {
           ...attrs,
-          color: 'rgba(139, 151, 255, 0.9)',
+          color: indigoRgba('highlight', 0.9),
           size: Math.max(attrs.size ?? 1, 1.8),
           zIndex: 10,
         };
@@ -1151,7 +1152,7 @@ function SigmaTopologyImpl({
       if (impactNodesRef.current.size > 0) {
         const set = impactNodesRef.current;
         if (set.has(src) && set.has(tgt)) {
-          return { ...attrs, color: 'rgba(139, 151, 255, 0.55)', size: Math.max(attrs.size ?? 1, 1) };
+          return { ...attrs, color: indigoRgba('highlight', 0.55), size: Math.max(attrs.size ?? 1, 1) };
         }
         return { ...attrs, color: DIM_EDGE() };
       }
@@ -1159,7 +1160,7 @@ function SigmaTopologyImpl({
       // 경로 찾기: 경로 엣지만 강조.
       if (pathEdgeSet.size > 0) {
         if (pathEdgeSet.has(edge)) {
-          return { ...attrs, color: 'rgba(139, 151, 255, 0.9)', size: 2 };
+          return { ...attrs, color: indigoRgba('highlight', 0.9), size: 2 };
         }
         return { ...attrs, color: DIM_EDGE() };
       }
@@ -1196,14 +1197,14 @@ function SigmaTopologyImpl({
           : 0.55 + 0.4 * wave; // 0.55 ~ 0.95
         return {
           ...attrs,
-          color: `rgba(139, 151, 255, ${alpha.toFixed(3)})`,
+          color: indigoRgba('highlight', alpha),
           size: denseFocus ? 1.1 : 1.8,
         };
       }
       // 1-hop 간 엣지 (이웃끼리 연결) 는 아주 옅게 — 포커스와 직접 관련
       // 없는 구조지만 완전히 지우진 않는다. 그 외 모든 엣지는 거의 숨김.
       if (neighbors.has(src) && neighbors.has(tgt)) {
-        return { ...attrs, color: 'rgba(139, 151, 255, 0.1)', size: attrs.size };
+        return { ...attrs, color: indigoRgba('highlight', 0.1), size: attrs.size };
       }
       return { ...attrs, color: DIM_EDGE() };
     });
