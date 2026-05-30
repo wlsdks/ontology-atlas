@@ -2018,6 +2018,8 @@
       "reachTitle": "Blast radius (transitive)",
       "reachDependents": "Affected",
       "reachDependencies": "Depends on",
+      "reachShowOnMap": "Show impact on map",
+      "reachHideOnMap": "Hide impact",
       "noRelations": "No links yet.",
       "openTopologyFocus": "View only this node",
       "openOntology": "View in tree",

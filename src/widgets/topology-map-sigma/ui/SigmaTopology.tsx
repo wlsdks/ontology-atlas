@@ -84,6 +84,8 @@ import { SigmaNodeTooltip, type SigmaNodeTooltipData } from './SigmaNodeTooltip'
 import { copyText } from '@/shared/lib/copy-text';
 
 const POSITION_STORAGE_KEY = 'demo:sigma-node-positions:v1';
+/** 안정 참조 빈 set — impactNodes 미지정 시 매 render 새 Set 생성 회피. */
+const EMPTY_SLUG_SET: ReadonlySet<string> = new Set();
 
 // audit overlay 임계값 — 30 일 이상 비변경 노드를 stale 강조, fan-in 4
 // 이상이면 promotion 후보. dogfood 18 노드 규모 default.
@@ -268,6 +270,12 @@ interface SigmaTopologyProps {
     sourceSlug: string | null;
     targetSlug: string | null;
   }) => void;
+  /**
+   * "지도에서 영향 보기" — 비어 있지 않으면 이 set 의 노드(선택 노드의 전이
+   * blast radius)만 인디고로 띄우고 나머지는 deep dim. drawer 의 blast-radius
+   * 숫자(iter 3)를 *공간적으로* 보게 하는 graph-DB reachability 시각화.
+   */
+  impactNodes?: ReadonlySet<string>;
   className?: string;
 }
 
@@ -295,6 +303,7 @@ function SigmaTopologyImpl({
   pathWorkflowActive = false,
   pathSelection = null,
   onPathSelectionChange,
+  impactNodes,
   className,
 }: SigmaTopologyProps) {
   const t = useTranslations('topologyWidgets.sigma');
@@ -325,6 +334,13 @@ function SigmaTopologyImpl({
   useEffect(() => {
     pathSelectionRef.current = pathSelection;
   }, [pathSelection]);
+  // impact (blast radius) highlight set — reducer closure 가 매 프레임 읽으므로
+  // ref 로. 토글 즉시 반영 위해 변경 시 refresh.
+  const impactNodesRef = useRef<ReadonlySet<string>>(impactNodes ?? EMPTY_SLUG_SET);
+  useEffect(() => {
+    impactNodesRef.current = impactNodes ?? EMPTY_SLUG_SET;
+    sigmaRef.current?.refresh();
+  }, [impactNodes]);
   // overlay 플래그들은 reducer closure 안에서 매 프레임 읽히므로 ref 로.
   // 기본값: recentPulse on (prop 미지정 시에도 기존 동작 유지), 나머지 off.
   const overlaysRef = useRef<SigmaOverlays>({
@@ -951,6 +967,7 @@ function SigmaTopologyImpl({
         depthPassed: passesDepth(node),
         hoveredEdgePair,
         pathNodes,
+        impactNodes: impactNodesRef.current,
       });
       if (contextResult) return contextResult;
 
@@ -1070,6 +1087,17 @@ function SigmaTopologyImpl({
         return { ...attrs, color: DIM_EDGE() };
       }
       if (!passesDepth(src) || !passesDepth(tgt)) {
+        return { ...attrs, color: DIM_EDGE() };
+      }
+
+      // impact (blast radius) 활성: set 안 두 노드를 잇는 엣지만 인디고로 살리고
+      // 나머지는 dim — 영향 부분그래프의 *형태* 가 읽히게 (노드만 dim 하면 흰
+      // 엣지가 남아 시야가 탁해진다). path/focus 보다 우선.
+      if (impactNodesRef.current.size > 0) {
+        const set = impactNodesRef.current;
+        if (set.has(src) && set.has(tgt)) {
+          return { ...attrs, color: 'rgba(139, 151, 255, 0.55)', size: Math.max(attrs.size ?? 1, 1) };
+        }
         return { ...attrs, color: DIM_EDGE() };
       }
 

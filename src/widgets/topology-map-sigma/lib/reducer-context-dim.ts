@@ -32,15 +32,23 @@ export interface ContextDimContext {
   hoveredEdgePair: { source: string; target: string } | null;
   /** 경로 찾기 결과 set. 비어 있으면 비활성. */
   pathNodes: ReadonlySet<string>;
+  /**
+   * "지도에서 영향 보기" 토글 — 선택 노드의 전이 blast radius set. 비어 있으면
+   * 비활성. drawer 의 blast-radius 숫자(iter 3)를 *공간적으로* — graph-DB
+   * reachability 질의를 부분그래프 하이라이트로. 명시적 sustained 모드라
+   * 필터 다음, hover/path 보다 우선.
+   */
+  impactNodes: ReadonlySet<string>;
 }
 
 /**
- * 5 분기 우선순위 적용:
+ * 분기 우선순위 적용:
  *   1. search/category/depth 미통과 → deep dim
- *   2. hoveredEdge 활성 → 양 끝 인디고 / 그 외 약 dim
- *   3. pathNodes 활성 → 경로 인디고 + size 1.25x / 그 외 deep dim
+ *   2. impactNodes 활성 → blast radius set 인디고 / 그 외 deep dim
+ *   3. hoveredEdge 활성 → 양 끝 인디고 / 그 외 약 dim
+ *   4. pathNodes 활성 → 경로 인디고 + size 1.25x / 그 외 deep dim
  *
- * 셋 다 비활성이면 null 반환 (caller 가 focus/일반 attrs 처리).
+ * 모두 비활성이면 null 반환 (caller 가 focus/일반 attrs 처리).
  */
 export function applyContextDimOverlay(
   node: string,
@@ -52,7 +60,23 @@ export function applyContextDimOverlay(
     return { ...attrs, color: CONTEXT_DIM_COLOR, label: undefined };
   }
 
-  // 2) edge hover
+  // 2) impact 활성 — 선택 노드의 전이 blast radius set 강조, 나머지 deep dim.
+  //    size 는 그대로(set 이 클 수 있어 1.25x 미적용) — 색/보더로만 강조해
+  //    부분그래프 형태가 읽히게. 명시적 sustained 모드라 hover/path 보다 우선.
+  if (ctx.impactNodes.size > 0) {
+    if (ctx.impactNodes.has(node)) {
+      return {
+        ...attrs,
+        color: CONTEXT_HIGHLIGHT_COLOR,
+        borderColor: CONTEXT_HIGHLIGHT_BORDER_STRONG,
+        zIndex: 10,
+        label: attrs.label,
+      };
+    }
+    return { ...attrs, color: CONTEXT_DIM_COLOR, label: undefined };
+  }
+
+  // 3) edge hover
   if (ctx.hoveredEdgePair) {
     if (
       node === ctx.hoveredEdgePair.source ||
@@ -73,7 +97,7 @@ export function applyContextDimOverlay(
     };
   }
 
-  // 3) path 활성
+  // 4) path 활성
   if (ctx.pathNodes.size > 0) {
     if (ctx.pathNodes.has(node)) {
       return {

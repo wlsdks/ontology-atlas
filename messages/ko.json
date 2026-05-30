@@ -2018,6 +2018,8 @@
       "reachTitle": "변경 영향 범위 (전이)",
       "reachDependents": "영향받음",
       "reachDependencies": "의존",
+      "reachShowOnMap": "지도에서 영향 보기",
+      "reachHideOnMap": "영향 숨기기",
       "noRelations": "아직 연결이 없습니다.",
       "openTopologyFocus": "이 노드만 보기",
       "openOntology": "트리에서 보기",

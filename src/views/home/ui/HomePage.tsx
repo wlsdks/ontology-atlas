@@ -62,6 +62,8 @@ const SigmaTopology = dynamic(
   () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaTopology),
   { ssr: false, loading: () => <TopologyLoadingFallback /> },
 );
+/** 안정 참조 빈 set — 영향 보기 비활성 시 매 render 새 Set 생성 회피. */
+const EMPTY_IMPACT_SET: ReadonlySet<string> = new Set();
 const SigmaControls = dynamic(
   () => import("@/widgets/topology-map-sigma").then((m) => m.SigmaControls),
   { ssr: false },
@@ -107,7 +109,7 @@ import {
   buildOntologyHealthSignals,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
+import { buildOntologyReachability, computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
 import {
   selectTopologyNodeRouteState,
@@ -270,6 +272,32 @@ export function HomePage() {
     if (!ontologyInsight) return null;
     return resolveTopologySelectedOntologyNode(selectedSlug, ontologyInsight.nodes);
   }, [selectedSlug, selectedProject, ontologyInsight]);
+  // "지도에서 영향 보기" 토글 — 선택 노드의 전이 blast radius(영향받는 노드 set)
+  // 를 그래프에서 공간적으로 강조. drawer 의 숫자(iter 3)를 부분그래프로.
+  // *어느 노드에 대해* 켜졌는지를 state 로 둔다 — 선택이 바뀌면 derived active
+  // 가 자동으로 false (effect 로 reset 안 함 → cascading render 회피).
+  const [impactNodeSlug, setImpactNodeSlug] = useState<string | null>(null);
+  const impactHighlightActive = impactNodeSlug != null && impactNodeSlug === selectedSlug;
+  const toggleImpactHighlight = useCallback(() => {
+    setImpactNodeSlug((prev) => (prev === selectedSlug ? null : (selectedSlug ?? null)));
+  }, [selectedSlug]);
+  const impactHighlightSet = useMemo<ReadonlySet<string>>(() => {
+    if (!impactHighlightActive || !selectedOntologyNode || !ontologyInsight) {
+      return EMPTY_IMPACT_SET;
+    }
+    // incoming = 이 노드를 (전이적으로) 의존하는 쪽 = 변경 시 영향받는 노드.
+    // limit 크게 → 전체 reachable 노드 id 수집(요약 카운트 아닌 set 필요).
+    const reach = buildOntologyReachability(selectedOntologyNode.id, ontologyInsight.nodes, ontologyInsight.edges, {
+      direction: "incoming",
+      depth: Math.max(ontologyInsight.nodes.length, 1),
+      limit: ontologyInsight.nodes.length + 1,
+    });
+    const set = new Set<string>([selectedOntologyNode.id]);
+    for (const layer of reach.layers) {
+      for (const n of layer.nodes) set.add(n.id);
+    }
+    return set;
+  }, [impactHighlightActive, selectedOntologyNode, ontologyInsight]);
   // S1.1 — 토폴로지를 온톨로지의 1차 편집 surface 로. writable 로컬 vault 면
   // 선택 노드를 자기 .md 문서로 해석해 drawer 에서 domain 인라인 편집을 허용.
   const vault = useLocalVault();
@@ -1338,6 +1366,7 @@ export function HomePage() {
                     targetSlug: pathTargetSlug,
                   }}
                   onPathSelectionChange={handlePathSelectionChange}
+                  impactNodes={impactHighlightSet}
                 />
               </div>
               <style jsx>{`
@@ -1495,6 +1524,8 @@ export function HomePage() {
             edges={ontologyInsight.edges}
             onClose={handleClose}
             closeLabel={t("controls.close")}
+            impactActive={impactHighlightActive}
+            onToggleImpact={toggleImpactHighlight}
             labels={{
               caption: t("ontologyDrawer.caption"),
               source: t("ontologyDrawer.source"),
@@ -1505,6 +1536,8 @@ export function HomePage() {
               reachTitle: t("ontologyDrawer.reachTitle"),
               reachDependents: t("ontologyDrawer.reachDependents"),
               reachDependencies: t("ontologyDrawer.reachDependencies"),
+              reachShowOnMap: t("ontologyDrawer.reachShowOnMap"),
+              reachHideOnMap: t("ontologyDrawer.reachHideOnMap"),
               noRelations: t("ontologyDrawer.noRelations"),
               openTopologyFocus: t("ontologyDrawer.openTopologyFocus"),
               openOntology: t("ontologyDrawer.openOntology"),

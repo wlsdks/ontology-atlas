@@ -70,6 +70,8 @@ interface Props {
     reachTitle: string;
     reachDependents: string;
     reachDependencies: string;
+    reachShowOnMap: string;
+    reachHideOnMap: string;
     noRelations: string;
     openTopologyFocus: string;
     openOntology: string;
@@ -150,6 +152,12 @@ interface Props {
     onSave: (next: string) => void | Promise<void>;
     labels: NodeExplanationEditLabels;
   } | null;
+  /**
+   * "지도에서 영향 보기" 토글 상태 + 핸들러. blast-radius 숫자를 그래프에서
+   * 공간적으로(전이 영향 부분그래프 하이라이트). 미지정이면 버튼 숨김.
+   */
+  impactActive?: boolean;
+  onToggleImpact?: () => void;
 }
 
 export function TopologyOntologyDrawer({
@@ -162,6 +170,8 @@ export function TopologyOntologyDrawer({
   domainEdit,
   relationEdit,
   explanationEdit,
+  impactActive = false,
+  onToggleImpact,
 }: Props) {
   const model = buildTopologyOntologyDrawerModel(node, nodes, edges);
   const toast = useToast();
@@ -422,6 +432,24 @@ export function TopologyOntologyDrawer({
               </span>{" "}
               · {labels.reachDependencies}: {model.reach.dependencies}
             </p>
+            {/* blast-radius 숫자를 *공간적으로* — graph-DB reachability 질의를
+                토폴로지 부분그래프 하이라이트로. 영향받는 노드(dependents)가
+                있을 때만. */}
+            {onToggleImpact && model.reach.dependents > 0 ? (
+              <button
+                type="button"
+                onClick={onToggleImpact}
+                aria-pressed={impactActive}
+                data-testid="drawer-impact-toggle"
+                className={`mt-1.5 inline-flex items-center gap-1 rounded-md border px-2 py-1 text-[11px] transition-colors ${
+                  impactActive
+                    ? "border-[color:rgba(139,151,255,0.5)] bg-[color:var(--color-overlay-1)] text-[color:var(--color-text-primary)]"
+                    : "border-[color:var(--color-border-soft)] text-[color:var(--color-text-tertiary)] hover:text-[color:var(--color-text-primary)]"
+                }`}
+              >
+                {impactActive ? labels.reachHideOnMap : labels.reachShowOnMap}
+              </button>
+            ) : null}
           </div>
         ) : null}
         {model.relationCounts.length === 0 ? (

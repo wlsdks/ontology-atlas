@@ -34,6 +34,7 @@ function ctx(overrides: Partial<ContextDimContext> = {}): ContextDimContext {
     depthPassed: true,
     hoveredEdgePair: null,
     pathNodes: new Set(),
+    impactNodes: new Set(),
     ...overrides,
   };
 }
@@ -128,6 +129,55 @@ describe('applyContextDimOverlay — pathNodes', () => {
       'outside',
       attrs(),
       ctx({ pathNodes: new Set(['p1']) }),
+    );
+    expect(out!.color).toBe(CONTEXT_DIM_COLOR);
+  });
+});
+
+describe('applyContextDimOverlay — impactNodes (blast radius)', () => {
+  it('impact set 안 노드는 인디고 highlight (size 변동 없음)', () => {
+    const out = applyContextDimOverlay(
+      'affected',
+      attrs(),
+      ctx({ impactNodes: new Set(['affected', 'other-affected']) }),
+    );
+    expect(out!.color).toBe(CONTEXT_HIGHLIGHT_COLOR);
+    expect(out!.borderColor).toBe(CONTEXT_HIGHLIGHT_BORDER_STRONG);
+    expect(out!.zIndex).toBe(10);
+    expect(out!.label).toBe('L');
+    expect(out!.size).toBe(5); // set 이 클 수 있어 size 안 키움
+  });
+
+  it('impact set 밖 노드는 deep dim', () => {
+    const out = applyContextDimOverlay(
+      'unaffected',
+      attrs(),
+      ctx({ impactNodes: new Set(['affected']) }),
+    );
+    expect(out!.color).toBe(CONTEXT_DIM_COLOR);
+    expect(out!.label).toBeUndefined();
+  });
+
+  it('impact 가 hoveredEdge / path 보다 우선', () => {
+    const out = applyContextDimOverlay(
+      'affected',
+      attrs(),
+      ctx({
+        impactNodes: new Set(['affected']),
+        hoveredEdgePair: { source: 'affected', target: 'tgt' },
+        pathNodes: new Set(['affected']),
+      }),
+    );
+    // impact 분기(size 변동 없음)가 먼저 — path 였으면 1.25x
+    expect(out!.borderColor).toBe(CONTEXT_HIGHLIGHT_BORDER_STRONG);
+    expect(out!.size).toBe(5);
+  });
+
+  it('필터 미통과가 impact 보다 우선', () => {
+    const out = applyContextDimOverlay(
+      'affected',
+      attrs(),
+      ctx({ searchPassed: false, impactNodes: new Set(['affected']) }),
     );
     expect(out!.color).toBe(CONTEXT_DIM_COLOR);
   });
