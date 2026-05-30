@@ -23,6 +23,13 @@ wedge 를 흐리는 것(자유노트화, 백엔드 도입, 비-graph 기능, 비
 > **틀어놓기만 해도 — 에이전트가 vault 를 고치면 온톨로지가 토폴로지로 *실시간으로
 > 자라나는 게 시각적으로 보인다.* 이 모먼트가 제품의 심장이다.**
 
+**graph DB 그 이상의 *시각적* 가치 (user, 2026-05-30):** Atlas 는 사람·에이전트
+*공통의 빠른 이해(comprehension) surface.* 같은 시각 그래프가 두 청중에게:
+- **사람** — Atlas 를 *보기만 해도* 코드베이스 구조·도메인·비즈니스 가치를 빠르게 판단(회의·설계 결정).
+- **AI agent** — "이런 구조구나·이런 의미구나" 를 빠르게 인식해 *더 정확히·더 잘* 코딩(MCP 로 같은 그래프 질의).
+
+즉 시각 표현의 목표는 *예쁨* 만이 아니라 **의미·구조를 한눈에 전달**하는 것. 시각 인코딩(kind/domain/관계/허브/변경)이 *읽히지* 않으면 실패.
+
 그래서 두 가지가 *최우선* 이다 (다른 모든 렌즈보다 위):
 - **(A) 시각적 아름다움** — 이 모먼트가 *예뻐야* 한다. Linear-grade 폴리시. 노드 등장·pulse·전환이 우아하게(디자인 헌장 내: 무채색+인디고, glow/neon/scale-hover 금지 — 부드러운 opacity/border/위치 ease 로). 빈 상태→자라는 상태의 미학.
 - **(B) 실시간 성능 (렉 0)** — 틀어놓고 보는데 끊기면 끝이다. 60fps 유지, 대형 vault 에서도. **현재 렉 근원: 변경마다 `buildLocalManifest`(전체 FS walk) + `buildGraph`(전체 그래프 재빌드).** north-star = **증분 업데이트**(변경 파일/노드만 patch, 전체 재스캔·재빌드·재레이아웃 회피 — Tauri 워처는 이미 변경 경로 emit, diff toaster 는 mtime diff 보유 → 재료 있음). 폴링 주기·debounce·Sigma render budget·좌표 보존도 이 축.
@@ -65,4 +72,4 @@ wedge 를 흐리는 것(자유노트화, 백엔드 도입, 비-graph 기능, 비
 
 ## 진행 로그 (루프가 append)
 
-- (아직 없음 — 첫 iteration 부터 기록)
+- **iter 1 (perf baseline):** `deriveOntologyFromVault` 에 live-update perf 회귀 가드 추가(`derive-ontology-from-vault.perf.test.ts`). **발견: derive 는 싸다 — 611 docs → 611 nodes/edges 를 ~6ms (jsdom).** 즉 "틀어놓고 보는" 렉의 병목은 derive 가 *아니라* (a) `buildLocalManifest` 전체 FS walk(브라우저 I/O) + (b) `buildGraph`/Sigma render. → **증분 업데이트는 FS-walk + graph-build/render 를 타겟**(derive 재실행은 저렴하니 후순위). 다음 iteration: buildGraph 재빌드 비용 측정 또는 변경파일-only manifest 재읽기.
