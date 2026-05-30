@@ -79,6 +79,7 @@ import {
 import { applyContextDimOverlay } from '../lib/reducer-context-dim';
 import {
   HUB_LABEL_RATIO,
+  isOverviewLandmark,
   isTopologyLabelAnchor,
   shouldCullLabelAtZoom,
 } from '../lib/label-lod';
@@ -1086,6 +1087,11 @@ function SigmaTopologyImpl({
         return { ...base, label: undefined, forceLabel: false };
       }
 
+      // overview 랜드마크(degree 최상위 N) — 줌 무관 항상 라벨. 전체 축소에서
+      // 앵커마저 솎여 라벨 0(익명 점)이 되는 걸 막아 최소 방향감 보장.
+      if (!hidden && !isFocusOrNeighbor && isOverviewLandmark(attrs)) {
+        return { ...base, forceLabel: true };
+      }
       // 라벨 앵커 = 프로젝트 허브 OR graph-build 가 forceLabel 로 승격한 ontology
       // 랜드마크(도메인/고차수). 앵커는 줌아웃 시 더 오래 라벨 유지(0.55), 일반
       // 노드는 0.28 — 랜드마크가 fingerprint 로 남게(graph-build 의도 일치).

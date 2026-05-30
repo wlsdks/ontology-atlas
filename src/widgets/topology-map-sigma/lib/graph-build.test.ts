@@ -55,6 +55,23 @@ describe("buildGraph — searchText (검색 hot-path precompute)", () => {
   });
 });
 
+describe("buildGraph — overviewLandmark (overview 항상-라벨 최상위 N)", () => {
+  it("연결 많은 hub 는 overviewLandmark, 고립 노드(degree 0)는 아님", () => {
+    const projects = [
+      project({ slug: "hub" }),
+      project({ slug: "a", dependencies: ["hub"] }),
+      project({ slug: "b", dependencies: ["hub"] }),
+      project({ slug: "c", dependencies: ["hub"] }),
+      project({ slug: "lonely" }),
+    ];
+    const graph = buildGraph(projects, []);
+    // hub 가 가장 많이 연결 → overview 랜드마크
+    expect(graph.getNodeAttribute("hub", "overviewLandmark")).toBe(true);
+    // 아무와도 연결 안 된 노드는 랜드마크 자격 없음(degree 0 제외)
+    expect(graph.getNodeAttribute("lonely", "overviewLandmark")).toBeFalsy();
+  });
+});
+
 describe("buildGraph — ontologyCountsBySlug", () => {
   it("plain project 노드는 ontology 도미넌트 kind 별 borderColor 분기", () => {
     const projects = [

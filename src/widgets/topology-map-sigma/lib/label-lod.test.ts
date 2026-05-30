@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   HUB_LABEL_RATIO,
   NODE_LABEL_RATIO,
+  OVERVIEW_LANDMARK_MAX,
+  isOverviewLandmark,
   isTopologyLabelAnchor,
+  pickOverviewLandmarks,
   shouldCullLabelAtZoom,
 } from './label-lod';
 
@@ -49,5 +52,64 @@ describe('shouldCullLabelAtZoom', () => {
     const ratio = 0.45;
     expect(shouldCullLabelAtZoom(true, ratio)).toBe(false);
     expect(shouldCullLabelAtZoom(false, ratio)).toBe(true);
+  });
+});
+
+describe('pickOverviewLandmarks — overview 에서 항상 라벨할 최상위 N개', () => {
+  it('degree 내림차순 top N(OVERVIEW_LANDMARK_MAX)만 선택', () => {
+    const entries = [
+      { id: 'a', degree: 90 },
+      { id: 'b', degree: 80 },
+      { id: 'c', degree: 30 },
+      { id: 'd', degree: 20 },
+      { id: 'e', degree: 10 },
+      { id: 'f', degree: 5 },
+      { id: 'g', degree: 3 },
+    ];
+    const out = pickOverviewLandmarks(entries, 5);
+    expect(out).toEqual(new Set(['a', 'b', 'c', 'd', 'e']));
+    expect(out.size).toBe(5);
+  });
+
+  it('degree 0(orphan)은 제외 — 랜드마크 자격 없음', () => {
+    const entries = [
+      { id: 'a', degree: 4 },
+      { id: 'orphan', degree: 0 },
+      { id: 'b', degree: 2 },
+    ];
+    const out = pickOverviewLandmarks(entries, 5);
+    expect(out.has('orphan')).toBe(false);
+    expect(out).toEqual(new Set(['a', 'b']));
+  });
+
+  it('동률 degree 는 id 오름차순 tie-break — 결정적', () => {
+    const entries = [
+      { id: 'z', degree: 10 },
+      { id: 'a', degree: 10 },
+      { id: 'm', degree: 10 },
+    ];
+    // max 2 → degree 동률이라 id 사전순 a, m 선택(z 탈락)
+    expect(pickOverviewLandmarks(entries, 2)).toEqual(new Set(['a', 'm']));
+  });
+
+  it('후보가 N 미만이면 있는 만큼만', () => {
+    expect(pickOverviewLandmarks([{ id: 'a', degree: 3 }], 5)).toEqual(new Set(['a']));
+    expect(pickOverviewLandmarks([], 5)).toEqual(new Set());
+  });
+
+  it('OVERVIEW_LANDMARK_MAX 는 작은 양의 정수(overview clutter 방지)', () => {
+    expect(Number.isInteger(OVERVIEW_LANDMARK_MAX)).toBe(true);
+    expect(OVERVIEW_LANDMARK_MAX).toBeGreaterThan(0);
+    expect(OVERVIEW_LANDMARK_MAX).toBeLessThanOrEqual(8);
+  });
+});
+
+describe('isOverviewLandmark', () => {
+  it('overviewLandmark 플래그 노드는 true — 줌 무관 항상 라벨', () => {
+    expect(isOverviewLandmark({ overviewLandmark: true })).toBe(true);
+  });
+  it('플래그 없거나 false 면 false', () => {
+    expect(isOverviewLandmark({})).toBe(false);
+    expect(isOverviewLandmark({ overviewLandmark: false })).toBe(false);
   });
 });

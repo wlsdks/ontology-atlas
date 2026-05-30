@@ -10,6 +10,7 @@ import type {
   KnowledgeGraphNode,
 } from '@/entities/knowledge-graph';
 import { INDIGO_HUB } from '@/shared/config/indigo-tokens';
+import { pickOverviewLandmarks } from './label-lod';
 import {
   isMeaningfulOntologyKind,
   pickDominantOntologyKind,
@@ -44,6 +45,12 @@ export interface SigmaNodeAttrs {
   isHub: boolean;
   /** Sigma label grid 우회 — true면 zoom/density 무관 항상 라벨 렌더. 허브에 적용. */
   forceLabel?: boolean;
+  /**
+   * degree 최상위 N개 랜드마크 — overview(전체 축소)에서도 *항상* 라벨. 줌아웃
+   * 시 앵커마저 솎여 라벨 0(익명 점) 이 되는 걸 막아 방향감 보장. `label-lod`
+   * 의 pickOverviewLandmarks 로 선정.
+   */
+  overviewLandmark?: boolean;
   /** 최근 N일 이내 업데이트 여부 — pulse 효과 대상. */
   recentlyUpdated?: boolean;
   /** owner slug 또는 unassigned. overlay tint 에서 owner 해시 색 매핑에 사용. */
@@ -445,6 +452,16 @@ export function buildGraph(
       );
     }
   });
+
+  // overview 랜드마크 — degree 최상위 N개를 줌 무관 항상-라벨로 flag. 줌아웃
+  // 하면 앵커마저 솎여 라벨이 0(익명 점)이 되는데, 그러면 "Atlas 보기만 해도
+  // 구조 파악" 이 깨진다. 최상위 hub 만 남겨 overview 에 최소 방향감을 준다.
+  const overviewLandmarks = pickOverviewLandmarks(
+    graph.mapNodes((id) => ({ id, degree: graph.degree(id) })),
+  );
+  for (const id of overviewLandmarks) {
+    graph.setNodeAttribute(id, 'overviewLandmark', true);
+  }
 
   // 엣지 두께 degree 가중 — source/target 중 작은 쪽 degree 기반. 0.3 ~ 1.8
   // 범위로 log 스케일. 허브-허브는 이미 0.9 기본이라 weight 만큼 추가.
