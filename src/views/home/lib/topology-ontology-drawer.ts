@@ -1,4 +1,5 @@
 import { formatQueryOntologyCall } from "@/shared/lib/ontology-query-call";
+import { buildOntologyReachability } from "@/shared/lib/ontology-tree";
 import type {
   KnowledgeGraphEdge,
   KnowledgeGraphNode,
@@ -10,12 +11,31 @@ export interface TopologyOntologyDrawerRelation {
   direction: "incoming" | "outgoing";
 }
 
+export interface TopologyOntologyDrawerReach {
+  /**
+   * 전이 incoming closure — 이 노드를 (직접·간접) 의존으로 가진 노드 수.
+   * = "이 노드를 바꾸면 영향받는 노드" = 변경 영향 범위(blast radius).
+   * CLI `blast-radius --direction incoming` 와 같은 방향 semantics.
+   */
+  dependents: number;
+  /**
+   * 전이 outgoing closure — 이 노드가 (직접·간접) 의존하는 노드 수.
+   */
+  dependencies: number;
+}
+
 export interface TopologyOntologyDrawerModel {
   sourceSlug: string | null;
   incomingCount: number;
   outgoingCount: number;
   relationCounts: Array<{ type: string; count: number }>;
   previewRelations: TopologyOntologyDrawerRelation[];
+  /**
+   * 1-hop degree(`incomingCount`/`outgoingCount`)가 과소평가하는 *전이* 영향
+   * 범위. graph-DB 의 reachability 질의를 노드 detail 에 바로 노출 — 사람은
+   * "이거 바꾸면 N개 영향" 을 한눈에, 에이전트는 brief 로 같은 값을 받는다.
+   */
+  reach: TopologyOntologyDrawerReach;
   impactSummary: TopologyOntologyDrawerImpactSummary;
   collaborator: {
     lens: "project" | "domain" | "capability" | "element" | "node";
@@ -121,6 +141,24 @@ export function buildTopologyOntologyDrawerModel(
     })),
   ].slice(0, Math.max(0, previewLimit));
 
+  // 전이 reach — 기존 reachability 엔진 재사용(새 BFS 0). depth = 노드 수면
+  // 사이클·긴 체인 모두 full closure 보장(discovered set 이 중복 차단).
+  // limit:1 — summary.reachableNodes 는 limit 과 무관하게 *전체* 카운트라
+  // 가시 layer 만 1개로 줄여 할당 최소화.
+  const fullDepth = Math.max(nodes.length, 1);
+  const reach: TopologyOntologyDrawerReach = {
+    dependents: buildOntologyReachability(node.id, nodes, edges, {
+      direction: "incoming",
+      depth: fullDepth,
+      limit: 1,
+    }).summary.reachableNodes,
+    dependencies: buildOntologyReachability(node.id, nodes, edges, {
+      direction: "outgoing",
+      depth: fullDepth,
+      limit: 1,
+    }).summary.reachableNodes,
+  };
+
   return {
     sourceSlug: node.evidenceIds[0] ?? null,
     incomingCount: incoming.length,
@@ -129,6 +167,7 @@ export function buildTopologyOntologyDrawerModel(
       .map(([type, count]) => ({ type, count }))
       .sort((a, b) => b.count - a.count || a.type.localeCompare(b.type)),
     previewRelations,
+    reach,
     impactSummary: {
       level: buildImpactLevel(incoming.length, outgoing.length),
       firstIncoming:

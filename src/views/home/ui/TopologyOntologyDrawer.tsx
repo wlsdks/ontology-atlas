@@ -67,6 +67,9 @@ interface Props {
     relations: string;
     incoming: string;
     outgoing: string;
+    reachTitle: string;
+    reachDependents: string;
+    reachDependencies: string;
     noRelations: string;
     openTopologyFocus: string;
     openOntology: string;
@@ -399,6 +402,23 @@ export function TopologyOntologyDrawer({
           </div>
           <GitBranch size={15} className="text-[color:var(--color-text-quaternary)]" />
         </div>
+        {/* 전이 blast radius — 1-hop degree 위 graph-DB reachability 질의를 노드
+            detail 에 바로 노출. "이거 바꾸면 N개 영향" 을 한눈에(graph DB 그
+            이상의 시각적 가치). 0 일 때는 노이즈라 숨김. */}
+        {model.reach.dependents > 0 || model.reach.dependencies > 0 ? (
+          <div className="mt-2.5" data-testid="drawer-blast-radius">
+            <p className="font-mono text-[9px] uppercase tracking-[0.12em] text-[color:var(--color-text-quaternary)]">
+              {labels.reachTitle}
+            </p>
+            <p className="mt-0.5 text-[12px] text-[color:var(--color-text-secondary)]">
+              {labels.reachDependents}:{" "}
+              <span className="font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
+                {model.reach.dependents}
+              </span>{" "}
+              · {labels.reachDependencies}: {model.reach.dependencies}
+            </p>
+          </div>
+        ) : null}
         {model.relationCounts.length === 0 ? (
           <p className="mt-2 text-xs leading-5 text-[color:var(--color-text-tertiary)]">
             {labels.noRelations}

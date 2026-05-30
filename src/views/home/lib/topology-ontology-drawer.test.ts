@@ -110,6 +110,41 @@ describe("buildTopologyOntologyDrawerModel", () => {
     });
   });
 
+  it("counts transitive blast radius (dependents) and dependencies, not just direct degree", () => {
+    // a depends_on core, b depends_on a → core 의 *전이* dependents = {a, b} (2)
+    // 인데 직접 incoming 은 a 하나(1). core depends_on util → 전이 dependencies = 1.
+    // 즉 "변경 영향 범위" 는 1-hop degree 가 *과소평가* 한다 — 전이 reach 가 진짜 값.
+    const core = node("capabilities/core");
+    const nodes = [
+      core,
+      node("capabilities/a"),
+      node("capabilities/b"),
+      node("elements/util", "element"),
+    ];
+    const edges = [
+      edge("a->core", "capabilities/a", "capabilities/core"),
+      edge("b->a", "capabilities/b", "capabilities/a"),
+      edge("core->util", "capabilities/core", "elements/util"),
+    ];
+
+    const model = buildTopologyOntologyDrawerModel(core, nodes, edges);
+    expect(model.incomingCount).toBe(1); // 직접 incoming 만
+    expect(model.outgoingCount).toBe(1); // 직접 outgoing 만
+    expect(model.reach).toEqual({ dependents: 2, dependencies: 1 });
+  });
+
+  it("keeps transitive reach finite on cycles", () => {
+    // a → b → a 사이클. a 의 dependents 는 b 한 번만(무한 루프 X).
+    const a = node("capabilities/a");
+    const b = node("capabilities/b");
+    const edges = [
+      edge("a->b", "capabilities/a", "capabilities/b"),
+      edge("b->a", "capabilities/b", "capabilities/a"),
+    ];
+    const model = buildTopologyOntologyDrawerModel(a, [a, b], edges);
+    expect(model.reach).toEqual({ dependents: 1, dependencies: 1 });
+  });
+
   it("keeps sourceSlug null for synthetic nodes without evidence", () => {
     const selected = node("capabilities/derived", "capability", []);
 
