@@ -59,3 +59,17 @@ export function countCrossProjectEdges(
   }
   return count;
 }
+
+/** 구조(containment) 관계 타입 — domain 계층(project→domain→capability→element). */
+const CONTAINMENT_RELATION_TYPES = new Set(["contains", "belongs_to"]);
+
+/**
+ * edge type 이 구조(containment) edge 인가 — `contains` / `belongs_to`.
+ * 의존(dependency)·연관(soft) edge 와 구별해 다뤄야 하는 곳(coupling 제외,
+ * projectIds BFS, 토폴로지 edge kind, 시각그래프 필터)의 단일 source. 이전엔
+ * `type === 'contains' || type === 'belongs_to'` 가 4곳에 흩어져 있어 새 구조
+ * 타입 추가 시 누락 위험이 있었다.
+ */
+export function isContainmentRelation(type: string): boolean {
+  return CONTAINMENT_RELATION_TYPES.has(type);
+}

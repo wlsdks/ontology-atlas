@@ -26,6 +26,7 @@ import {
   filterTreeByNodeIds,
   formatAgentPostChangeSyncPacket,
   countTreeNodes,
+  isContainmentRelation,
   markChangeBaseline,
   useChangeBaseline,
   type OntologyEgoSubgraph,
@@ -285,8 +286,8 @@ export function OntologyViewPage() {
         containmentRelations: 0,
       };
     }
-    const containmentRelations = insight.edges.filter(
-      (edge) => edge.type === "contains" || edge.type === "belongs_to",
+    const containmentRelations = insight.edges.filter((edge) =>
+      isContainmentRelation(edge.type),
     ).length;
     return {
       semanticRelations: Math.max(insight.edges.length - containmentRelations, 0),

@@ -24,6 +24,7 @@ export {
 export {
   computeEdgeTypeDistribution,
   countCrossProjectEdges,
+  isContainmentRelation,
 } from "./relations";
 export {
   computeDomainCouplingMatrix,

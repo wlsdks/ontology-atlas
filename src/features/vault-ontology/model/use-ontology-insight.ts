@@ -13,6 +13,7 @@ import {
   type VaultManifest,
   type VaultOntologyDerivation,
 } from '@/entities/docs-vault';
+import { isContainmentRelation } from '@/shared/lib/ontology-tree';
 import { useVaultOntology } from './use-vault-ontology';
 
 // vault / dogfood 모드 노드는 frontmatter 가 진실원이라 시간 정보를 갖지
@@ -66,7 +67,7 @@ function derivationToInsight(
   if (projectNodes.length > 0) {
     const containsAdj = new Map<string, string[]>();
     for (const e of edges) {
-      const isContains = e.type === 'contains' || e.type === 'belongs_to';
+      const isContains = isContainmentRelation(e.type);
       if (!isContains) continue;
       // belongs_to 는 contains 의 역방향 — 일관되게 container → contained
       // 로 정규화.

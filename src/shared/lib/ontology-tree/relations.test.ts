@@ -3,6 +3,7 @@ import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledg
 import {
   computeEdgeTypeDistribution,
   countCrossProjectEdges,
+  isContainmentRelation,
 } from "./relations";
 
 const APPROVED_AT = new Date("2026-04-27T00:00:00Z");
@@ -88,5 +89,19 @@ describe("countCrossProjectEdges", () => {
     const ns = [node("a", "A", []), node("b", "B", ["p2"])];
     const es = [edge("e1", "a", "b", "uses")];
     expect(countCrossProjectEdges(es, ns)).toBe(0);
+  });
+});
+
+describe("isContainmentRelation — 구조(containment) edge 단일 판별", () => {
+  it("contains / belongs_to 는 containment", () => {
+    expect(isContainmentRelation("contains")).toBe(true);
+    expect(isContainmentRelation("belongs_to")).toBe(true);
+  });
+  it("의존/연관 등은 containment 아님", () => {
+    expect(isContainmentRelation("depends_on")).toBe(false);
+    expect(isContainmentRelation("related_to")).toBe(false);
+    expect(isContainmentRelation("relates")).toBe(false);
+    expect(isContainmentRelation("describes")).toBe(false);
+    expect(isContainmentRelation("")).toBe(false);
   });
 });

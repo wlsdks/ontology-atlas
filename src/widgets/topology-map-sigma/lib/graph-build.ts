@@ -12,6 +12,7 @@ import type {
 import { INDIGO_HUB } from '@/shared/config/indigo-tokens';
 import { pickOverviewLandmarks } from './label-lod';
 import {
+  isContainmentRelation,
   isMeaningfulOntologyKind,
   pickDominantOntologyKind,
   type MeaningfulOntologyKind,
@@ -387,7 +388,7 @@ export function buildGraph(
       if (graph.hasEdge(edge.from, edge.to)) continue;
       // KnowledgeEdgeType (7종) → SigmaEdgeAttrs.kind (4종) 매핑.
       const kind: SigmaEdgeAttrs['kind'] =
-        edge.type === 'contains' || edge.type === 'belongs_to'
+        isContainmentRelation(edge.type)
           ? 'contains'
           : edge.type === 'describes'
             ? 'knowledge'

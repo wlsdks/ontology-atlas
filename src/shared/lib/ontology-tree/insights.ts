@@ -1,4 +1,5 @@
 import type { KnowledgeGraphEdge, KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { isContainmentRelation } from "./relations";
 
 /**
  * 노드의 kind 별 카운트 — UI 차트 / chip 에 사용. document / project 도 모두
@@ -163,7 +164,7 @@ export function computeDomainCouplingMatrix(
   let crossDomainEdgeCount = 0;
 
   for (const edge of edges) {
-    if (edge.type === "contains" || edge.type === "belongs_to") continue;
+    if (isContainmentRelation(edge.type)) continue;
     if (typeSet && !typeSet.has(edge.type)) continue;
     const fromDomain = domainByNode.get(edge.from);
     const toDomain = domainByNode.get(edge.to);
