@@ -221,9 +221,9 @@ export function InsightsCollaboratorBriefPanel({
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(184,191,255,0.92)]">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:rgba(184,191,255,0.92)]">
             {t("collaboratorInsightsTitle")}
-          </p>
+          </h2>
           <p className="mt-1 max-w-3xl break-keep text-[12px] leading-5 text-[color:var(--color-text-tertiary)]">
             {t("collaboratorInsightsSubtitle")}
           </p>

@@ -102,9 +102,9 @@ export function AgentReadinessPanel({
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
               {t("agentPanelTitle")}
-            </p>
+            </h2>
             <span className={`rounded-full border px-2 py-0.5 text-[10px] ${statusTone}`}>
               {statusLabel}
             </span>

@@ -151,9 +151,9 @@ export function AgentQueryRecipesPanel({
     >
       <header className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+          <h2 className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
             {t("agentRecipesTitle")}
-          </p>
+          </h2>
           <p className="mt-0.5 text-[11px] text-[color:var(--color-text-tertiary)]">
             {t("agentRecipesSubtitle")}
           </p>
