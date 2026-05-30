@@ -2,7 +2,7 @@
 // Vault 의 first-contact dashboard — counts + relation distribution + 허브 노드.
 // MCP `query_ontology({operation: 'overview'})` thin wrapper.
 
-import { COLORS } from '../lib/colors.mjs';
+import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertOverviewShape } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
@@ -17,14 +17,6 @@ const LIMIT_CAP = 500;
 const ALLOWED_FLAGS = ['--vault', '--limit', '--json'];
 
 
-const KIND_COLORS = {
-  project: COLORS.magenta,
-  domain: COLORS.blue,
-  capability: COLORS.cyan,
-  element: COLORS.green,
-  document: COLORS.dim,
-  'vault-readme': COLORS.dim,
-};
 
 export async function runOverview(args) {
   const { vault, json, hubsLimit, error, help } = parseArgs(args);

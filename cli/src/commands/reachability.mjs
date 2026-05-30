@@ -1,7 +1,7 @@
 // `oh-my-ontology reachability <slug> [vault]` — transitive graph traversal.
 // MCP `query_ontology({operation: 'reachability'})` thin wrapper.
 
-import { COLORS } from '../lib/colors.mjs';
+import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
   assertQueryPlanShape,
@@ -38,14 +38,6 @@ const ALLOWED_FLAGS = [
   '--force',
 ];
 
-const KIND_COLORS = {
-  project: COLORS.magenta,
-  domain: COLORS.blue,
-  capability: COLORS.cyan,
-  element: COLORS.green,
-  document: COLORS.dim,
-  'vault-readme': COLORS.dim,
-};
 
 export async function runReachability(args) {
   const {

@@ -1,7 +1,7 @@
 // `oh-my-ontology match-nodes [vault]` — graph DB-style node scan.
 // MCP `query_ontology({operation: 'match_nodes'})` thin wrapper.
 
-import { COLORS } from '../lib/colors.mjs';
+import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
   assertMatchNodesShape,
@@ -44,14 +44,6 @@ const ALLOWED_FLAGS = [
   '--json',
 ];
 
-const KIND_COLORS = {
-  project: COLORS.magenta,
-  domain: COLORS.blue,
-  capability: COLORS.cyan,
-  element: COLORS.green,
-  document: COLORS.dim,
-  'vault-readme': COLORS.dim,
-};
 
 export async function runMatchNodes(args) {
   const parsed = parseArgs(args);

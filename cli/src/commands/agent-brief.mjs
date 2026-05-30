@@ -1,7 +1,7 @@
 // `oh-my-ontology agent-brief [vault]` — Claude Code/Codex handoff snapshot.
 // MCP `query_ontology({operation: 'agent_brief'})` thin wrapper.
 
-import { COLORS } from '../lib/colors.mjs';
+import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { callMcpTool } from '../lib/mcp-call.mjs';
@@ -21,14 +21,6 @@ const FALLBACK_SLOW_ENV = 'OMOT_AGENT_FALLBACK_SLOW_MS';
 const FALLBACK_CONCURRENCY_ENV = 'OMOT_AGENT_FALLBACK_CONCURRENCY';
 const WORKFLOW_GUIDE_PATH = 'docs/AGENT-GRAPH-WORKFLOW.md';
 
-const KIND_COLORS = {
-  project: COLORS.magenta,
-  domain: COLORS.blue,
-  capability: COLORS.cyan,
-  element: COLORS.green,
-  document: COLORS.dim,
-  'vault-readme': COLORS.dim,
-};
 const READINESS_COLORS = {
   ready: COLORS.green,
   needs_attention: COLORS.yellow,

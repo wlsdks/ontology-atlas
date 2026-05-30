@@ -1,7 +1,7 @@
 // `oh-my-ontology match-edges [vault]` — graph DB-style edge scan.
 // MCP `query_ontology({operation: 'match_edges'})` thin wrapper.
 
-import { COLORS } from '../lib/colors.mjs';
+import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
   assertMatchEdgesShape,
@@ -41,16 +41,6 @@ const ALLOWED_FLAGS = [
   '--json',
 ];
 
-const KIND_COLORS = {
-  project: COLORS.magenta,
-  domain: COLORS.blue,
-  capability: COLORS.cyan,
-  element: COLORS.green,
-  document: COLORS.dim,
-  'vault-readme': COLORS.dim,
-  external: COLORS.dim,
-  unresolved: COLORS.dim,
-};
 
 export async function runMatchEdges(args) {
   const parsed = parseArgs(args);

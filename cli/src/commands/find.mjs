@@ -1,4 +1,4 @@
-import { COLORS } from '../lib/colors.mjs';
+import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { readFileSync } from 'node:fs';
 import { parseFrontmatter } from '../lib/parse-frontmatter.mjs';
 import { validateKindValue } from '../lib/kinds.mjs';
@@ -14,14 +14,6 @@ import {
 const ALLOWED_FLAGS = ['--kind', '--json', '--vault'];
 
 
-const KIND_COLORS = {
-  project: '\x1b[35m',
-  domain: '\x1b[34m',
-  capability: '\x1b[36m',
-  element: '\x1b[32m',
-  document: '\x1b[37m',
-  'vault-readme': '\x1b[2m',
-};
 
 /**
  * R12 #36 — \`oh-my-ontology find <query> [vault] [--kind X] [--json]\`

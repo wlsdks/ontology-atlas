@@ -1,7 +1,7 @@
 // `oh-my-ontology workspace-brief [vault]` — first-contact + next actions.
 // MCP `query_ontology({operation: 'workspace_brief'})` thin wrapper.
 
-import { COLORS } from '../lib/colors.mjs';
+import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertWorkspaceBriefShape, workspaceBriefExitCode } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
@@ -16,14 +16,6 @@ import { diagnosisStatusColor } from '../lib/diagnosis-colors.mjs';
 
 const ALLOWED_FLAGS = ['--vault', '--json', '--limit', ...DIAGNOSIS_OPTION_FLAGS];
 
-const KIND_COLORS = {
-  project: COLORS.magenta,
-  domain: COLORS.blue,
-  capability: COLORS.cyan,
-  element: COLORS.green,
-  document: COLORS.dim,
-  'vault-readme': COLORS.dim,
-};
 const SEVERITY_COLORS = {
   fail: COLORS.red,
   warn: COLORS.yellow,

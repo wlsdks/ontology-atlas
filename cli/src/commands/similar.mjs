@@ -2,7 +2,7 @@
 // MCP `query_ontology({operation: 'similar_nodes'})` thin wrapper. 새 노드
 // 만들기 전 *duplicate 회피* 와 `/ontology-extract` skill 의 핵심 cross-check.
 
-import { COLORS } from '../lib/colors.mjs';
+import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { validateKindValue } from '../lib/kinds.mjs';
 import { assertSimilarNodesShape } from '../lib/query-result-contract.mjs';
@@ -19,14 +19,6 @@ import {
 const LIMIT_CAP = 500;
 const ALLOWED_FLAGS = ['--vault', '--json', '--limit', '--kind', '--slug'];
 
-const KIND_COLORS = {
-  project: COLORS.magenta,
-  domain: COLORS.blue,
-  capability: COLORS.cyan,
-  element: COLORS.green,
-  document: COLORS.dim,
-  'vault-readme': COLORS.dim,
-};
 
 export async function runSimilar(args) {
   const { title, slug, vault, json, limit, kind, error, help } = parseArgs(args);

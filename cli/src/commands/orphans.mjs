@@ -2,7 +2,7 @@
 // Lists isolated nodes — docs that no other node references in their
 // frontmatter. Thin wrapper over MCP find_orphans.
 
-import { COLORS } from '../lib/colors.mjs';
+import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { validateKindList, validateKindValue } from '../lib/kinds.mjs';
 import { assertOrphansShape } from '../lib/query-result-contract.mjs';
@@ -18,14 +18,6 @@ import {
 const ALLOWED_FLAGS = ['--vault', '--json', '--kind', '--exclude-kinds'];
 
 
-const KIND_COLORS = {
-  project: '\x1b[35m',
-  domain: '\x1b[34m',
-  capability: '\x1b[36m',
-  element: '\x1b[32m',
-  document: '\x1b[37m',
-  'vault-readme': '\x1b[2m',
-};
 
 export async function runOrphans(args) {
   const { vault, json, kind, excludeKinds, error, help } = parseArgs(args);

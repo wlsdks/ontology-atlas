@@ -1,7 +1,7 @@
 // `oh-my-ontology pattern-walk <slug> [vault]` — explicit relation-sequence traversal.
 // MCP `query_ontology({operation: 'pattern_walk'})` thin wrapper.
 
-import { COLORS } from '../lib/colors.mjs';
+import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
 import {
@@ -19,14 +19,6 @@ const LIMIT_CAP = 500;
 const DIRECTION_VALUES = Object.freeze(['incoming', 'outgoing', 'both']);
 const ALLOWED_FLAGS = ['--vault', '--pattern', '--direction', '--limit', '--json'];
 
-const KIND_COLORS = {
-  project: COLORS.magenta,
-  domain: COLORS.blue,
-  capability: COLORS.cyan,
-  element: COLORS.cyan,
-  document: COLORS.dim,
-  'vault-readme': COLORS.dim,
-};
 
 export async function runPatternWalk(args) {
   const parsed = parseArgs(args);

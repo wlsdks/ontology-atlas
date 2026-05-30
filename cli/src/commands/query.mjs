@@ -2,7 +2,7 @@
 // Typed filter DSL: kind=X AND has(elements) AND NOT domain=auth.
 // Thin wrapper over MCP query_concepts.
 
-import { COLORS } from '../lib/colors.mjs';
+import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import { assertQueryConceptsShape } from '../lib/query-result-contract.mjs';
 import { resolveVaultRoot } from '../lib/resolve-vault.mjs';
@@ -19,13 +19,6 @@ const GRAPH_OPERATION_HINT =
   'query is the typed filter DSL; for graph operations use dedicated commands such as overview, health, agent-brief, workspace-brief, growth, maintenance, path, explain, all-paths, reachability, relation-check, match-nodes, match-edges, domain-matrix, facets, blast-radius, cycles, or hubs.';
 
 
-const KIND_COLORS = {
-  capability: COLORS.cyan,
-  domain: COLORS.blue,
-  element: COLORS.green,
-  project: COLORS.magenta,
-  document: COLORS.dim,
-};
 
 export async function runQuery(args) {
   const { filter, vault, json, limit, error, help } = parseArgs(args);

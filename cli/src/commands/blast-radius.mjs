@@ -2,7 +2,7 @@
 // 이 노드를 바꾸면 무엇이 깨지나 — refactor safety 도구.
 // MCP `query_ontology({operation: 'blast_radius'})` thin wrapper.
 
-import { COLORS } from '../lib/colors.mjs';
+import { COLORS, KIND_COLORS } from '../lib/colors.mjs';
 import { callMcpTool } from '../lib/mcp-call.mjs';
 import {
   assertBlastRadiusShape,
@@ -26,14 +26,6 @@ const DEPTH_CAP = 20;
 const ALLOWED_FLAGS = ['--vault', '--json', '--depth', '--direction', '--plan', '--force'];
 const DIRECTION_VALUES = Object.freeze(['incoming', 'outgoing', 'both']);
 
-const KIND_COLORS = {
-  project: COLORS.magenta,
-  domain: COLORS.blue,
-  capability: COLORS.cyan,
-  element: COLORS.green,
-  document: COLORS.dim,
-  'vault-readme': COLORS.dim,
-};
 const RISK_COLORS = {
   low: COLORS.green,
   medium: COLORS.yellow,
