@@ -2012,6 +2012,7 @@
       "caption": "선택한 노드",
       "source": "문서",
       "noSource": "연결된 문서가 없습니다.",
+      "domainContext": "도메인",
       "relations": "연결",
       "incoming": "참조됨",
       "outgoing": "연결함",

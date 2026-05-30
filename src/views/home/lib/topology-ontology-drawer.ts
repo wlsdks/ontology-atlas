@@ -26,6 +26,12 @@ export interface TopologyOntologyDrawerReach {
 
 export interface TopologyOntologyDrawerModel {
   sourceSlug: string | null;
+  /**
+   * 이 노드를 소유한 domain 노드(있으면). 비즈니스 영역 context 를 read-only
+   * 로 노출 — vault writable 일 땐 domainEdit 인풋이 대신 보인다. incoming
+   * 엣지 중 source 가 kind:domain 인 첫 노드(보통 contains 관계).
+   */
+  ownerDomain: { id: string; title: string } | null;
   incomingCount: number;
   outgoingCount: number;
   relationCounts: Array<{ type: string; count: number }>;
@@ -162,8 +168,20 @@ export function buildTopologyOntologyDrawerModel(
     }).summary.reachableNodes,
   };
 
+  // 소유 domain — incoming 엣지의 source 중 kind:domain 첫 노드. domain 은
+  // 보통 자식을 contains 하므로 (domain → node) incoming 에서 찾는다.
+  let ownerDomain: { id: string; title: string } | null = null;
+  for (const e of incoming) {
+    const src = nodeById.get(e.from);
+    if (src && src.kind === "domain") {
+      ownerDomain = { id: src.id, title: src.title };
+      break;
+    }
+  }
+
   return {
     sourceSlug: node.evidenceIds[0] ?? null,
+    ownerDomain,
     incomingCount: incoming.length,
     outgoingCount: outgoing.length,
     relationCounts: Array.from(relationTypeCounts.entries())

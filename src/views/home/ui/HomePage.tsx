@@ -1530,6 +1530,7 @@ export function HomePage() {
               caption: t("ontologyDrawer.caption"),
               source: t("ontologyDrawer.source"),
               noSource: t("ontologyDrawer.noSource"),
+              domainContext: t("ontologyDrawer.domainContext"),
               relations: t("ontologyDrawer.relations"),
               incoming: t("ontologyDrawer.incoming"),
               outgoing: t("ontologyDrawer.outgoing"),

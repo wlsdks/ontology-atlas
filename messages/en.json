@@ -2012,6 +2012,7 @@
       "caption": "Selected node",
       "source": "Document",
       "noSource": "No linked document.",
+      "domainContext": "Domain",
       "relations": "Links",
       "incoming": "Referenced by",
       "outgoing": "Links to",

@@ -8,7 +8,7 @@ elements: [builder-node-query-focus, ontology-deeplink-node-resolver, topology-o
 
 `/topology` supports ontology-aware node inspection instead of treating non-project nodes as empty project selections.
 
-When a user selects a domain, capability, or element node, the drawer summarizes the source document, direct incoming/outgoing relation counts, relation-type chips, and a bounded relation preview. It also links to the ontology tree, builder focus, and source document so the topology can become the start of an edit or investigation flow. Browser coverage opens a selected-node URL directly and verifies the drawer plus ontology, builder, and source-document handoff links.
+When a user selects a domain, capability, or element node, the drawer summarizes the source document, direct incoming/outgoing relation counts, relation-type chips, and a bounded relation preview. When the vault is read-only it also surfaces the node's owning domain (its business area, derived from the incoming domain-kind edge) as plain context — the writable vault replaces that line with the inline domain-edit input instead. It also links to the ontology tree, builder focus, and source document so the topology can become the start of an edit or investigation flow. Browser coverage opens a selected-node URL directly and verifies the drawer plus ontology, builder, and source-document handoff links.
 
 The selected-node URL flow accepts both graph IDs and vault slugs. `/topology?p=capability:topology-ontology-inspection` and `/topology?p=capabilities/topology-ontology-inspection` resolve to the same drawer node, keep the Sigma selection aligned with the graph ID, and preserve a shareable handoff context.
 

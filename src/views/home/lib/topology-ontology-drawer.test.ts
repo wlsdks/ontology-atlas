@@ -133,6 +133,27 @@ describe("buildTopologyOntologyDrawerModel", () => {
     expect(model.reach).toEqual({ dependents: 2, dependencies: 1 });
   });
 
+  it("resolves the owning domain from an incoming domain-kind edge", () => {
+    const cap = node("capabilities/login", "capability");
+    const dom = node("domains/auth", "domain");
+    const elem = node("elements/jwt", "element");
+    const model = buildTopologyOntologyDrawerModel(cap, [cap, dom, elem], [
+      edge("dom->cap", "domains/auth", "capabilities/login", "contains"),
+      edge("cap->elem", "capabilities/login", "elements/jwt", "elements"),
+    ]);
+    expect(model.ownerDomain).toEqual({ id: "domains/auth", title: "domains/auth" });
+  });
+
+  it("ownerDomain null for a domain node (no owning domain)", () => {
+    const dom = node("domains/auth", "domain");
+    const cap = node("capabilities/login", "capability");
+    // domain contains capability — domain 자신은 owning domain 없음.
+    const model = buildTopologyOntologyDrawerModel(dom, [dom, cap], [
+      edge("dom->cap", "domains/auth", "capabilities/login", "contains"),
+    ]);
+    expect(model.ownerDomain).toBeNull();
+  });
+
   it("keeps transitive reach finite on cycles", () => {
     // a → b → a 사이클. a 의 dependents 는 b 한 번만(무한 루프 X).
     const a = node("capabilities/a");

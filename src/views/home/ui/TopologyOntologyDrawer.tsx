@@ -64,6 +64,7 @@ interface Props {
     caption: string;
     source: string;
     noSource: string;
+    domainContext: string;
     relations: string;
     incoming: string;
     outgoing: string;
@@ -371,6 +372,17 @@ export function TopologyOntologyDrawer({
             onSave={domainEdit.onSave}
             labels={domainEdit.labels}
           />
+        </div>
+      ) : model.ownerDomain ? (
+        /* read-only 모드(vault 비-writable): 소유 domain = 비즈니스 영역 context.
+           writable 이면 위 domainEdit 인풋이 대신 보인다. */
+        <div className="border-t border-[color:var(--color-border-soft)] pt-3" data-testid="drawer-domain-context">
+          <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
+            {labels.domainContext}
+          </p>
+          <p className="mt-1 text-[12px] text-[color:var(--color-text-secondary)]">
+            {model.ownerDomain.title}
+          </p>
         </div>
       ) : null}
 
