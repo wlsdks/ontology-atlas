@@ -36,6 +36,7 @@ import { useOntologyKindLabel } from '@/entities/ontology-class';
 import { ontologyBorderTone } from '../lib/ontology-tone';
 import { entranceSizeFactor, NODE_ENTRANCE_MS } from '../lib/reducer-entrance';
 import { snapshotNodeCoords, restoreNodeCoords, type NodeCoord } from '../lib/coord-preservation';
+import { resolveOwnerDomainLabel } from '../lib/owner-domain';
 import { indigoRgba } from '@/shared/config/indigo-tokens';
 import { useSyncedCallbackRef } from '@/shared/lib/use-synced-callback-ref';
 import { computeDepthMap, shortestPath } from '../lib/depth';
@@ -1441,8 +1442,13 @@ function SigmaTopologyImpl({
       setHoverLabel({
         name: attrs.label,
         // ontology 노드는 slug 가 'capabilities/foo' 라 extractDomainLabel(project
-        // slug 용)이 'capabilities/foo' 조각을 만든다 — 비우고 kind chip 으로 대체.
-        domain: attrs.isOntology ? '' : extractDomainLabel(attrs.projectSlug),
+        // slug 용)이 'capabilities/foo' 조각을 만든다 — 대신 소유 domain 라벨(있으면)
+        // 을 보여줘 hover 에서 kind + 비즈니스 영역을 한눈에(project 노드와 일관).
+        // ontology 노드는 소유 domain 라벨(있으면)을 보여줘 hover 에서 kind +
+        // 비즈니스 영역을 한눈에. resolver 가 domain 노드 자신엔 null 반환.
+        domain: attrs.isOntology
+          ? resolveOwnerDomainLabel(graph, node) ?? ''
+          : extractDomainLabel(attrs.projectSlug),
         kind: attrs.isOntology ? attrs.ontologyTopKind : undefined,
         description: attrs.description,
         statusId: attrs.statusId,
