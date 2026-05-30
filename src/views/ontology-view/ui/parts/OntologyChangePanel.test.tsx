@@ -109,3 +109,39 @@ describe("OntologyChangePanel — changes-only toggle (B2)", () => {
     expect(screen.getByTestId("changes-only-toggle")).toHaveAttribute("aria-pressed", "true");
   });
 });
+
+describe("OntologyChangePanel — chip truncation (no silent cap)", () => {
+  it("24개 초과 변경은 '+N 더' 로 잘림을 명시한다", () => {
+    const ids = Array.from({ length: 30 }, (_, i) => `capability:n${i}`);
+    const nodeById = new Map<string, KnowledgeGraphNode>(
+      ids.map((id, i) => [id, node(id, `Node ${i}`)]),
+    );
+    render(
+      <OntologyChangePanel
+        {...baseProps}
+        nodeById={nodeById}
+        changeset={changeset({ addedNodes: ids })}
+        hasBaseline
+      />,
+    );
+    // 30개 중 24개만 칩으로, 나머지 6개는 "+6" 표시.
+    const more = screen.getByTestId("change-more-added");
+    expect(more).toHaveTextContent("6");
+  });
+
+  it("24개 이하면 잘림 표시 없음", () => {
+    const ids = Array.from({ length: 5 }, (_, i) => `capability:n${i}`);
+    const nodeById = new Map<string, KnowledgeGraphNode>(
+      ids.map((id, i) => [id, node(id, `Node ${i}`)]),
+    );
+    render(
+      <OntologyChangePanel
+        {...baseProps}
+        nodeById={nodeById}
+        changeset={changeset({ addedNodes: ids })}
+        hasBaseline
+      />,
+    );
+    expect(screen.queryByTestId("change-more-added")).not.toBeInTheDocument();
+  });
+});

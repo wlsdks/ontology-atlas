@@ -3,6 +3,9 @@ import { GitBranch, Plus, Minus, PencilLine, Flag, ListFilter } from "lucide-rea
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
 import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
 
+/** kind 별 칩 노출 상한 — 초과분은 "+N 더" 로 명시(silent cap 방지). */
+const MAX_CHANGE_CHIPS = 24;
+
 /**
  * 온톨로지 변경점(changeset) 패널 — 회의·설계 리뷰용 "지금까지 뭐가 바뀌었나".
  *
@@ -36,19 +39,22 @@ function ChangeChips({
   nodeById,
   onSelectNode,
   removedLabel,
+  moreLabel,
 }: {
   ids: string[];
   kind: ChangeKind;
   nodeById: Map<string, KnowledgeGraphNode>;
   onSelectNode: (node: KnowledgeGraphNode) => void;
   removedLabel: (id: string) => string;
+  moreLabel: (count: number) => string;
 }) {
   if (ids.length === 0) return null;
   const meta = KIND_META[kind];
   const Icon = meta.icon;
+  const overflow = ids.length - MAX_CHANGE_CHIPS;
   return (
     <ul className="flex flex-wrap gap-1.5">
-      {ids.slice(0, 24).map((id) => {
+      {ids.slice(0, MAX_CHANGE_CHIPS).map((id) => {
         const node = nodeById.get(id);
         const title = node ? node.title : removedLabel(id);
         const className = `inline-flex max-w-[220px] items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors ${meta.tone}`;
@@ -75,6 +81,14 @@ function ChangeChips({
           </li>
         );
       })}
+      {overflow > 0 ? (
+        <li
+          data-testid={`change-more-${kind}`}
+          className="inline-flex items-center rounded-full px-2 py-0.5 font-mono text-[11px] tabular-nums text-[color:var(--color-text-quaternary)]"
+        >
+          {moreLabel(overflow)}
+        </li>
+      ) : null}
     </ul>
   );
 }
@@ -140,6 +154,7 @@ export function OntologyChangePanel({
   }
 
   const removedLabel = (id: string) => id.split(":").pop() ?? id;
+  const moreLabel = (count: number) => t("more", { count });
 
   return (
     <section
@@ -196,9 +211,9 @@ export function OntologyChangePanel({
       </div>
       {changeset.total > 0 ? (
         <div className="mt-2.5 flex flex-col gap-2">
-          <ChangeChips ids={changeset.addedNodes} kind="added" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} />
-          <ChangeChips ids={changeset.changedNodes} kind="changed" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} />
-          <ChangeChips ids={changeset.removedNodes} kind="removed" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} />
+          <ChangeChips ids={changeset.addedNodes} kind="added" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} moreLabel={moreLabel} />
+          <ChangeChips ids={changeset.changedNodes} kind="changed" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} moreLabel={moreLabel} />
+          <ChangeChips ids={changeset.removedNodes} kind="removed" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} moreLabel={moreLabel} />
         </div>
       ) : null}
     </section>

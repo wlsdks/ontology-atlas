@@ -11,7 +11,7 @@ baseline 대비 변경된 노드만으로 좁혀 보는 리뷰 흐름 — B1(토
 
 ## 어떻게
 
-- `/ontology` — 변경 패널의 "변경점만" 토글. 켜면 트리가 `filterTreeByNodeIds(roots, touchedNodeIds)` 로 변경 노드 + 조상 경로만 남긴 최소 트리로 좁혀진다 (`src/shared/lib/ontology-tree/filter-tree.ts`, `src/views/ontology-view/ui/parts/OntologyChangePanel.tsx`). count strip·빈상태·warning 은 원본 트리 기준 유지.
+- `/ontology` — 변경 패널의 "변경점만" 토글. 켜면 트리가 `filterTreeByNodeIds(roots, touchedNodeIds)` 로 변경 노드 + 조상 경로만 남긴 최소 트리로 좁혀진다 (`src/shared/lib/ontology-tree/filter-tree.ts`, `src/views/ontology-view/ui/parts/OntologyChangePanel.tsx`). count strip·빈상태·warning 은 원본 트리 기준 유지. 변경 칩은 kind 별 24개에서 잘리되 "+N 더" 로 잘림을 명시한다(에이전트 bulk 변경 시 silent cap 방지 — insights 허브 패널과 같은 패턴).
 - `/ontology/insights` — `InsightsChangeStrip` (`src/views/ontology-insights/ui/parts/InsightsChangeStrip.tsx`). census 를 왜곡하지 않도록 스코프 토글이 아니라 가벼운 요약 + deep-link. 칩 클릭 시 `?node=` 로 그 노드의 degree·hub·readiness 지표로 점프.
 
 ## 설계 원칙
