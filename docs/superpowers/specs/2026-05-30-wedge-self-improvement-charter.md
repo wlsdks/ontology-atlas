@@ -76,7 +76,7 @@ _(없음)_
 
 ## Blocked / Surfaced — 사람 승인 대기 (매 firing 먼저 읽기 · 재시도 금지)
 
-_(없음)_
+- **SPEC-loop-reward-substrate** (2026-05-31, firing #3) — 사용자의 "스스로 학습하는 루프" 요청에 대한 reward-signal 제안(human-graded decision journal[Phase1] + 로컬 usage 계측[Phase2]). `docs/superpowers/specs/SPEC-loop-reward-substrate.md` · status: **needs-approval**. **사람 승인 전 재-surface·재구현·재litigation 금지.**
 
 ## 그다음 렌즈 (역사적 맥락 — v2 가 supersede)
 
