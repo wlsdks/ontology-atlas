@@ -30,5 +30,6 @@
 
 | date | firing | lever | objective artifact (test/metric) | adversarial verdict | commit |
 |------|--------|-------|----------------------------------|---------------------|--------|
+| 2026-05-31 | v2.2 #2 | 1b drift (탐색) | none — verify-only(코드 read) | drift surfacing 이 **agent**(postWriteMaintenance·maintenance_plan·SessionStart hook) + **human**(home `TopologyAnalysisBar` healthBreakdown: orphan/stale/promotion · insights `AgentReadinessPanel`) **양측 모두 성숙**. 새 surfacing gap 없음 → **1b 재탐색 금지**. 다음 frontier = **1a cold-start**(fresh vault→first-value; 미성숙·미탐색이 확인된 유일 레버). | NO-OP |
 | 2026-05-31 | v2.2 #1 | 1b drift | none — 게이트에서 pre-build refute | **4/4 high REFUTE.** add_concept 가 이미 `compactPostWriteMaintenance().summary.danglingReferences`(+ maintenance_plan `resolve_dangling_reference` proposedAction) 로 write-time 에 dangling ref 를 *더 풍부하게* 노출. 추가 warning 은 redundant + forward-ref(child→parent)·batch bootstrap 에서 false-positive → warnings[] 희석. **재제안 금지.** | NO-OP |
 | 2026-05-31 | v2.2 setup | meta | (메커니즘 정의 — 평가 대상 아님) | n/a (directive) | 이 커밋 |
