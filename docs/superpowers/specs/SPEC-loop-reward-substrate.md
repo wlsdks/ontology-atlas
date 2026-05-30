@@ -1,5 +1,5 @@
 ---
-status: needs-approval
+status: approved (2026-05-31 — 사용자가 승인 + 세부 결정을 루프에 위임 "알아서 최고로")
 created: 2026-05-31
 surfaced-by: self-improve loop (v2) — responding to user "스스로 강화학습하며 뭘 개선할지 알아가는 루프" 요청
 decision-owner: user (jinan)
@@ -7,8 +7,19 @@ decision-owner: user (jinan)
 
 # SPEC — Loop reward substrate (자가개선 루프에 reward signal 연결)
 
-> ⚠ **status: needs-approval.** 이건 제안(draft)이다. 사용자가 승인/수정/거절하기 전엔
-> 구현하지 않는다. 루프는 이 항목을 charter `## Blocked` 에 두고 재-surface 하지 않는다.
+> ✅ **status: approved (2026-05-31).** Phase 1 구현됨(`docs/superpowers/DECISION-JOURNAL.md`).
+> 사용자가 세부 결정을 루프에 위임 → 아래 "결정" 참고.
+
+## 결정 (approved — 사용자 위임으로 루프가 최선 판단)
+
+1. **Phase 1 도입? → YES.** 구현 완료(decision journal + charter v2/cron 에 convention 배선).
+2. **파일 위치/포맷 → OK 그대로** (`docs/superpowers/DECISION-JOURNAL.md`, 표).
+3. **평가 주기 → "사람은 가끔, 루프는 commit 마다 append + pending 5개↑ 면 채점 유도."**
+   사용자에게 주기 강요 안 함(부담 0); 루프가 pending 쌓이면 한 번 알린다.
+4. **Phase 2(로컬 usage 계측) → 지금은 DEFER (안 만듦).** 이유: 실사용자/실사용이 0 이면
+   계측은 *침묵을 계측* — 신호 없이 표면만 늘린다(v2 복잡도↓ 위반). **트리거**: 실사용자가
+   생기거나 사용자가 앱을 실제 dogfood 하기 시작하면 그때 별도 SPEC 으로 Phase 2 착수.
+   그 전까지 reward 채널은 Phase 1(사람-채점)으로 충분.
 
 ## 왜 (problem)
 
