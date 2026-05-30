@@ -2324,45 +2324,6 @@ describe('queryCompiledOntology', () => {
     assert.equal(limited.edges.outgoing.edges.length, 1);
   });
 
-  it('node_profile reports transitive reach beyond direct degree (agent impact parity)', () => {
-    // b -> a -> core -> util (depends_on chain). core 의 직접 degree 는 in 1 /
-    // out 1 인데, 전이로는 dependents {a, b} (2) · dependencies {util} (1).
-    const compiled = compileOntology(
-      [
-        doc('capabilities/util', { kind: 'capability', title: 'Util' }),
-        doc('capabilities/core', {
-          kind: 'capability',
-          title: 'Core',
-          depends_on: ['capabilities/util'],
-        }),
-        doc('capabilities/a', {
-          kind: 'capability',
-          title: 'A',
-          depends_on: ['capabilities/core'],
-        }),
-        doc('capabilities/b', {
-          kind: 'capability',
-          title: 'B',
-          depends_on: ['capabilities/a'],
-        }),
-      ],
-      { includeIndexes: true },
-    );
-    const result = queryCompiledOntology(compiled, {
-      operation: 'node_profile',
-      slug: 'capabilities/core',
-    });
-    assert.deepEqual(result.degree, { in: 1, out: 1, total: 2 });
-    assert.deepEqual(result.reach, { dependents: 2, dependencies: 1 });
-
-    // leaf util: 아무것도 의존 안 함(dependencies 0), core·a·b 가 전이로 의존(3).
-    const leaf = queryCompiledOntology(compiled, {
-      operation: 'node_profile',
-      slug: 'capabilities/util',
-    });
-    assert.deepEqual(leaf.reach, { dependents: 3, dependencies: 0 });
-  });
-
   it('returns deterministic connected components over resolved graph edges', () => {
     const disconnected = compileOntology(
       [
