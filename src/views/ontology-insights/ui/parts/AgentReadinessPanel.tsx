@@ -191,8 +191,11 @@ export function AgentReadinessPanel({
             compact
           />
         </div>
+        {/* 전체 표시 — copy 버튼이 모든 명령을 복사하므로 표시도 일치해야 한다.
+            slice 로 잘리면 orphans/unknown 등 issue-specific 명령(baseline 8 뒤에
+            append)이 silent 하게 숨겨져 가장 actionable 한 fallback 을 못 본다. */}
         <ol className="mt-2 grid gap-1.5 md:grid-cols-2">
-          {readinessCliCommands.slice(0, 8).map((item, index) => (
+          {readinessCliCommands.map((item, index) => (
             <li
               key={item.key}
               className="min-w-0 rounded-md border border-[color:rgba(73,190,146,0.14)] bg-[color:rgba(3,7,18,0.16)] px-2 py-1.5"
