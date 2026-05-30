@@ -6,7 +6,7 @@ export type {
 } from "./types";
 export { buildOntologyTree, countTreeNodes, flattenTree } from "./build-tree";
 export { buildOntologyEgoSubgraph } from "./build-ego";
-export { buildOntologyReachability } from "./reachability";
+export { buildOntologyReachability, IMPACT_EXCLUDED_RELATION_TYPES } from "./reachability";
 export type {
   BuildOntologyReachabilityOptions,
   OntologyReachability,

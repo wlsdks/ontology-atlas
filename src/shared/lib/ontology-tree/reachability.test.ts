@@ -103,6 +103,42 @@ describe("buildOntologyReachability", () => {
     expect(filtered.limited).toBe(false);
   });
 
+  it("excludeTypes 로 특정 관계 타입을 traversal 에서 제외 (impact blast-radius 용)", () => {
+    // start → a (depends_on), start → b (related_to). impact 에서 related_to
+    // (soft association) 는 제외해야 — "relates to" 는 의존이 아니므로 blast
+    // radius 에 안 들어간다.
+    const nodes = [node("start"), node("a"), node("b")];
+    const edges = [
+      edge("e1", "start", "a", "depends_on"),
+      edge("e2", "start", "b", "related_to"),
+    ];
+
+    const excluded = buildOntologyReachability("start", nodes, edges, {
+      excludeTypes: ["related_to"],
+    });
+    expect(excluded.summary.reachableNodes).toBe(1);
+    expect(excluded.layers[0]?.nodes.map((n) => n.id)).toEqual(["a"]);
+    expect(excluded.byRelation).toEqual({ depends_on: 1 });
+
+    // 제외 안 하면 둘 다 도달 — 대비(baseline).
+    const all = buildOntologyReachability("start", nodes, edges, {});
+    expect(all.summary.reachableNodes).toBe(2);
+  });
+
+  it("excludeTypes 가 transitive 경로를 끊는다 (체인 중간 related_to)", () => {
+    // start →(depends_on) a →(related_to) b. related_to 제외 시 b 는 도달 불가.
+    const nodes = [node("start"), node("a"), node("b")];
+    const edges = [
+      edge("e1", "start", "a", "depends_on"),
+      edge("e2", "a", "b", "related_to"),
+    ];
+    const excluded = buildOntologyReachability("start", nodes, edges, {
+      excludeTypes: ["related_to"],
+      depth: 5,
+    });
+    expect(excluded.layers.flatMap((l) => l.nodes.map((n) => n.id))).toEqual(["a"]);
+  });
+
   it("깊은 체인에서 BFS distance 순서 보존 (head-pointer dequeue 회귀 가드)", () => {
     // start → n1 → n2 → n3 → n4 일직선 체인. head pointer 로 바꾼 BFS 가
     // FIFO(breadth-first) 순서를 유지하는지 — 각 노드가 정확한 hop 거리의

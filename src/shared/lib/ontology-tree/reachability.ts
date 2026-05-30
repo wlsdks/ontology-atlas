@@ -32,6 +32,14 @@ export interface BuildOntologyReachabilityOptions {
   depth?: number;
   limit?: number;
   types?: readonly string[];
+  /**
+   * 이 관계 타입들은 traversal 에서 제외한다. impact / blast-radius 처럼 *의존*
+   * 만 따라야 하는 질의에서 soft association(`related_to` / `describes`) 을 빼
+   * "변경 영향" 이 노드별로 변별력을 갖게 한다 — 안 빼면 related_to 웹이 거의
+   * 모든 노드를 연결해 incoming reach 가 비-discriminating(전부 ~동일) 해진다.
+   * `types`(include-list) 와 함께 쓰면 둘 다 적용(먼저 include, 그 다음 exclude).
+   */
+  excludeTypes?: readonly string[];
 }
 
 interface DiscoveredNode {
@@ -52,6 +60,16 @@ interface ReachabilityAdjacency {
 const DEFAULT_DEPTH = 3;
 const DEFAULT_LIMIT = 20;
 
+/**
+ * impact / blast-radius reach 에서 제외하는 soft-association 관계 타입.
+ * `related_to` / `describes` 는 "의존" 이 아니라 *연관* 이라 "이걸 바꾸면 무엇이
+ * 영향받나" 에 들어가면 안 된다. 특히 `related_to` 웹은 거의 모든 노드를
+ * 연결해(측정: dogfood incoming reach 가 leaf·hub 모두 ~27 로 비-discriminating)
+ * 이걸 빼야 blast-radius 가 노드별 변별력을 갖는다(leaf 2 vs hub 9). 의존/
+ * 구조 edge(`depends_on` / `contains`)는 그대로 둔다.
+ */
+export const IMPACT_EXCLUDED_RELATION_TYPES: readonly string[] = ['related_to', 'describes'];
+
 export function buildOntologyReachability(
   startId: string,
   nodes: readonly KnowledgeGraphNode[],
@@ -64,8 +82,11 @@ export function buildOntologyReachability(
   const typeSet = Array.isArray(options.types) && options.types.length > 0
     ? new Set(options.types)
     : null;
+  const excludeSet = Array.isArray(options.excludeTypes) && options.excludeTypes.length > 0
+    ? new Set(options.excludeTypes)
+    : null;
   const nodeById = new Map(nodes.map((node) => [node.id, node] as const));
-  const adjacency = buildAdjacency(edges, typeSet);
+  const adjacency = buildAdjacency(edges, typeSet, excludeSet);
   const discovered = new Map<string, DiscoveredNode>([
     [startId, { id: startId, distance: 0 }],
   ]);
@@ -121,6 +142,7 @@ export function buildOntologyReachability(
 function buildAdjacency(
   edges: readonly KnowledgeGraphEdge[],
   typeSet: Set<string> | null,
+  excludeSet: Set<string> | null,
 ): ReachabilityAdjacency {
   const adjacency: ReachabilityAdjacency = {
     incoming: new Map(),
@@ -128,6 +150,7 @@ function buildAdjacency(
   };
   for (const edge of edges) {
     if (typeSet && !typeSet.has(edge.type) && (!edge.label || !typeSet.has(edge.label))) continue;
+    if (excludeSet && (excludeSet.has(edge.type) || (edge.label && excludeSet.has(edge.label)))) continue;
     if (edge.from !== edge.to) {
       addCandidate(adjacency.outgoing, edge.from, { next: edge.to, edge });
       addCandidate(adjacency.incoming, edge.to, { next: edge.from, edge });

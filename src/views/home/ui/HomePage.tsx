@@ -109,7 +109,7 @@ import {
   buildOntologyHealthSignals,
   type KnowledgeGraphNode,
 } from "@/entities/knowledge-graph";
-import { buildOntologyReachability, computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
+import { buildOntologyReachability, IMPACT_EXCLUDED_RELATION_TYPES, computeOntologyChangeset, useChangeBaseline } from "@/shared/lib/ontology-tree";
 import { useHomeRouteState } from "../model/use-home-route-state";
 import {
   selectTopologyNodeRouteState,
@@ -287,10 +287,14 @@ export function HomePage() {
     }
     // incoming = 이 노드를 (전이적으로) 의존하는 쪽 = 변경 시 영향받는 노드.
     // limit 크게 → 전체 reachable 노드 id 수집(요약 카운트 아닌 set 필요).
+    // excludeTypes: soft association(related_to/describes) 제외 — drawer 의
+    // "Affected" 카운트와 같은 의존 blast-radius 의미로 맞춰, overlay 가 강조하는
+    // 노드 set 이 드로어 수치와 일치하게(related_to 웹 비-discriminating 제거). iter 27.
     const reach = buildOntologyReachability(selectedOntologyNode.id, ontologyInsight.nodes, ontologyInsight.edges, {
       direction: "incoming",
       depth: Math.max(ontologyInsight.nodes.length, 1),
       limit: ontologyInsight.nodes.length + 1,
+      excludeTypes: IMPACT_EXCLUDED_RELATION_TYPES,
     });
     const set = new Set<string>([selectedOntologyNode.id]);
     for (const layer of reach.layers) {
