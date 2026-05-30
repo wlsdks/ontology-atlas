@@ -34,6 +34,7 @@ import {
 import { useOntologyInsight } from '@/features/vault-ontology';
 import { useOntologyKindLabel } from '@/entities/ontology-class';
 import { ontologyBorderTone } from '../lib/ontology-tone';
+import { entranceSizeFactor, NODE_ENTRANCE_MS } from '../lib/reducer-entrance';
 import { useSyncedCallbackRef } from '@/shared/lib/use-synced-callback-ref';
 import { computeDepthMap, shortestPath } from '../lib/depth';
 import { useCameraUrlSync } from '../lib/use-camera-url-sync';
@@ -459,6 +460,16 @@ function SigmaTopologyImpl({
   // 기본값 1.0 = size 변화 없음.
   const bounceFactorRef = useRef(1);
   const bounceRafRef = useRef<number | null>(null);
+  // 새 노드 "자라남" entrance — slug → 처음 그래프에 등장한 performance.now().
+  // 라이브로 추가된 노드만 size 0→full grow (charter 심장: 실시간 시각 성장).
+  const firstSeenRef = useRef<Map<string, number>>(new Map());
+  const entranceInitializedRef = useRef(false);
+  // 등장 애니메이션이 활성인 마감 시각 — now < 이 값이면 tick/reducer 가 entrance
+  // 처리. 한 번의 비교로 hot-path 분기를 가드(평상시엔 per-node 비용 0).
+  const enteringUntilRef = useRef(0);
+  // 프레임당 1회 갱신되는 now (tick 에서) — reducer 가 노드마다 performance.now()
+  // 부르지 않도록 공유. pulseSinRef 와 동일 패턴.
+  const nowRef = useRef(0);
   // 테마 (light/dark) 별 토폴로지 색 팔레트. 토글 시 mutation observer 가
   // 새 팔레트로 교체 + graph attr 재페인트 + sigma.refresh().
   const paletteRefLocal = useRef(resolveTopologyPalette());
@@ -482,13 +493,17 @@ function SigmaTopologyImpl({
       // 자동 throttle 하므로 별도 처리 불필요.
       if (typeof document !== 'undefined' && document.hidden) return;
       if (reduceMotionRef.current) return;
-      // Pulse 가 실제로 렌더에 영향 주는 상황에서만 refresh — 그래프가
-      // 1979 노드일 때 refresh() 한 번이 비싼데, selection 도 hover 도 없고
-      // 최근 업데이트 노드도 없으면 pulse 로 바뀌는 게 없다. 완전 skip.
+      // reducer 가 노드마다 performance.now() 부르지 않도록 프레임당 1회 공유.
+      const now = performance.now();
+      nowRef.current = now;
+      // Pulse / entrance 가 실제로 렌더에 영향 주는 상황에서만 refresh — 그래프가
+      // 1979 노드일 때 refresh() 한 번이 비싼데, selection 도 hover 도 없고 최근
+      // 업데이트·등장 노드도 없으면 바뀌는 게 없다. 완전 skip.
       const hasFocus = selectedSlugRef.current !== null;
       const hasRecentPulse =
         overlaysRef.current.recentPulse && hasAnyRecentRef.current;
-      if (!hasFocus && !hasRecentPulse) return;
+      const hasEntering = now < enteringUntilRef.current;
+      if (!hasFocus && !hasRecentPulse && !hasEntering) return;
       t += 1;
       pulsePhaseRef.current = (t * Math.PI) / 8; // 16 프레임 = 한 사이클
       // 프레임당 1회만 sin 계산 → node/edge reducer 는 이 값을 읽어 쓴다.
@@ -636,6 +651,32 @@ function SigmaTopologyImpl({
       if (attrs.recentlyUpdated) anyRecent = true;
     });
     hasAnyRecentRef.current = anyRecent;
+  }, [graph]);
+
+  // 새 노드 등장 추적 — 그래프 rebuild 시 처음 보는 slug 의 first-seen 을 기록.
+  // 첫 build 는 모든 노드를 "이미 자란" 상태로 seed(now - duration) → 로드 시
+  // 일괄 애니메이션 안 함. 이후 rebuild 에서 새로 나타난 slug 만 grow-in.
+  useEffect(() => {
+    const seen = firstSeenRef.current;
+    const now = performance.now();
+    const present = new Set<string>();
+    let anyNew = false;
+    graph.forEachNode((id) => {
+      present.add(id);
+      if (!seen.has(id)) {
+        seen.set(id, entranceInitializedRef.current ? now : now - NODE_ENTRANCE_MS);
+        if (entranceInitializedRef.current) anyNew = true;
+      }
+    });
+    // 제거된 노드 정리 — 같은 slug 가 나중에 다시 추가되면 다시 grow-in.
+    for (const id of [...seen.keys()]) {
+      if (!present.has(id)) seen.delete(id);
+    }
+    entranceInitializedRef.current = true;
+    if (anyNew) {
+      enteringUntilRef.current = now + NODE_ENTRANCE_MS;
+      sigmaRef.current?.refresh();
+    }
   }, [graph]);
 
   const pathRelationSteps = useMemo(
@@ -945,6 +986,20 @@ function SigmaTopologyImpl({
         recentPulseEnabled: overlayState.recentPulse,
         pulseSin: pulseSinRef.current,
       });
+      // 새 노드 "자라남" — 라이브 등장 노드만 size 0→full ease-out. 전역 가드
+      // (now < enteringUntilRef) 로 평상시엔 per-node 비용 0; 등장 직후
+      // NODE_ENTRANCE_MS 동안만 동작. position 은 worker 가, size 만 여기서.
+      if (nowRef.current < enteringUntilRef.current) {
+        const seenAt = firstSeenRef.current.get(node);
+        if (seenAt !== undefined) {
+          const factor = entranceSizeFactor(
+            nowRef.current - seenAt,
+            NODE_ENTRANCE_MS,
+            reduceMotionRef.current,
+          );
+          if (factor < 1) attrs = { ...attrs, size: attrs.size * factor };
+        }
+      }
       // Owner tint overlay — 허브(인디고)는 허브 정체성을 유지하기 위해 건너뛰고
       // 비허브 노드만 owner 해시 색으로 덮어씌운다. focus/neighbor dim 보다 먼저
       // 적용해야 "dim 된 색" 이 아닌 "owner 색 기반 dim" 이 된다.
