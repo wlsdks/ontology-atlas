@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useMediaQuery } from 'usehooks-ts';
 import { useTranslations } from 'next-intl';
 import { Check, Clipboard, Maximize2 } from 'lucide-react';
@@ -35,6 +35,7 @@ import { useOntologyInsight } from '@/features/vault-ontology';
 import { useOntologyKindLabel } from '@/entities/ontology-class';
 import { ontologyBorderTone } from '../lib/ontology-tone';
 import { entranceSizeFactor, NODE_ENTRANCE_MS } from '../lib/reducer-entrance';
+import { snapshotNodeCoords, restoreNodeCoords, type NodeCoord } from '../lib/coord-preservation';
 import { indigoRgba } from '@/shared/config/indigo-tokens';
 import { useSyncedCallbackRef } from '@/shared/lib/use-synced-callback-ref';
 import { computeDepthMap, shortestPath } from '../lib/depth';
@@ -461,6 +462,9 @@ function SigmaTopologyImpl({
   // 기본값 1.0 = size 변화 없음.
   const bounceFactorRef = useRef(1);
   const bounceRafRef = useRef<number | null>(null);
+  // 좌표 보존(charter north-star) — 직전 build 의 노드 좌표 캐시. graph useMemo 가
+  // rebuild 시 기존 노드를 제자리로 복원해 전체 reflow 를 회피한다.
+  const layoutCacheRef = useRef<Map<string, NodeCoord>>(new Map());
   // 새 노드 "자라남" entrance — slug → 처음 그래프에 등장한 performance.now().
   // 라이브로 추가된 노드만 size 0→full grow (charter 심장: 실시간 시각 성장).
   const firstSeenRef = useRef<Map<string, number>>(new Map());
@@ -614,25 +618,9 @@ function SigmaTopologyImpl({
     });
     const iterations = getInitialSettleIterations(g.order, minimal);
     settleLayout(g, iterations);
-    // 사용자가 드래그로 옮긴 좌표가 있으면 settle 이후 해당 노드만 덮어쓰기.
-    // 이렇게 하면 새 노드는 force 시뮬레이션 결과를 쓰고 기존에 "내가 저기
-    // 뒀지"는 그대로 유지된다.
-    if (typeof window !== 'undefined') {
-      try {
-        const raw = window.localStorage.getItem(POSITION_STORAGE_KEY);
-        if (raw) {
-          const map = JSON.parse(raw) as Record<string, { x: number; y: number }>;
-          for (const [id, pos] of Object.entries(map)) {
-            if (g.hasNode(id) && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
-              g.setNodeAttribute(id, 'x', pos.x);
-              g.setNodeAttribute(id, 'y', pos.y);
-            }
-          }
-        }
-      } catch {
-        /* corrupt storage — ignore */
-      }
-    }
+    // 좌표 보존(이전 build 복원) + 드래그 위치 적용은 아래 useLayoutEffect 가
+    // paint 전에 imperative 하게 수행한다 — memo 는 순수(ref/localStorage 미접근)
+    // 로 유지해 React Compiler 가 memoization 을 보존하게 한다.
     return g;
   }, [
     projects,
@@ -645,6 +633,32 @@ function SigmaTopologyImpl({
     ontologyInsight,
     minimal,
   ]);
+
+  // 좌표 보존(charter perf north-star) — graph rebuild 시 paint 전에 기존 노드를
+  // 직전 build 좌표로 되돌려 전체 reflow 를 회피한다(새 노드만 settle 위치 유지).
+  // useLayoutEffect 라 renderer/worker useEffect 보다 먼저 + paint 전 → 깜빡임
+  // 0, 그 효과들이 복원된 graph 로 seed 된다. ref 접근은 effect 안에서만(memo 순수).
+  // 순서: cache 복원 → 드래그 위치 적용(명시적 사용자 배치가 우선) → 다음 기준 snapshot.
+  useLayoutEffect(() => {
+    restoreNodeCoords(graph, layoutCacheRef.current);
+    if (typeof window !== 'undefined') {
+      try {
+        const raw = window.localStorage.getItem(POSITION_STORAGE_KEY);
+        if (raw) {
+          const map = JSON.parse(raw) as Record<string, { x: number; y: number }>;
+          for (const [id, pos] of Object.entries(map)) {
+            if (graph.hasNode(id) && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+              graph.setNodeAttribute(id, 'x', pos.x);
+              graph.setNodeAttribute(id, 'y', pos.y);
+            }
+          }
+        }
+      } catch {
+        /* corrupt storage — ignore */
+      }
+    }
+    layoutCacheRef.current = snapshotNodeCoords(graph);
+  }, [graph]);
 
   useEffect(() => {
     let anyRecent = false;
