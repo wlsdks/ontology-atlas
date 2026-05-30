@@ -14,8 +14,11 @@ decision-owner: user (jinan)
 
 1. **Phase 1 도입? → YES.** 구현 완료(decision journal + charter v2/cron 에 convention 배선).
 2. **파일 위치/포맷 → OK 그대로** (`docs/superpowers/DECISION-JOURNAL.md`, 표).
-3. **평가 주기 → "사람은 가끔, 루프는 commit 마다 append + pending 5개↑ 면 채점 유도."**
-   사용자에게 주기 강요 안 함(부담 0); 루프가 pending 쌓이면 한 번 알린다.
+3. **평가 주체 → (2026-05-31 갱신) 사람 아니라 루프 자율.** 사용자가 휴먼 루프 제거 요청 →
+   human-grading(+1/0/-1)을 **자율 평가**로 대체: (a) 객관 게이트(먼저 쓴 실패테스트 통과 /
+   측정 before→after) + (b) commit 전 적대적 critic 패널(Workflow, default-deny — 과반 refute
+   면 kill). 단일 self-opinion 금지(iter 47 rubber-stamp 회피). journal 은 사람 reward 채널이
+   아니라 *자율-평가 transparency 로그*. 최신 메커니즘 = charter §0.5 + DECISION-JOURNAL.
 4. **Phase 2(로컬 usage 계측) → 지금은 DEFER (안 만듦).** 이유: 실사용자/실사용이 0 이면
    계측은 *침묵을 계측* — 신호 없이 표면만 늘린다(v2 복잡도↓ 위반). **트리거**: 실사용자가
    생기거나 사용자가 앱을 실제 dogfood 하기 시작하면 그때 별도 SPEC 으로 Phase 2 착수.
