@@ -873,7 +873,8 @@ const TOOLS = [
       'when the agent has K accepted candidates from the user — replaces K×`add_concept` ' +
       'round-trips. Each row is processed independently: existing-slug / invalid-kind / ' +
       'missing-required-fields / non-object row shape / unknown row fields surface as `{ slug, ok: false, error }` rows whose errors include a `concepts[n]` row label, single unknown-field rows include `receivedField` plus one-row `unknownFields`, multi unknown-field rows report every unknown field with nearest hints and `Received fields: ...`, and duplicate input slugs report the later `concepts[n]` row plus first-seen `concepts[m]` with structured `rowName` / `firstSeenAt`; the rest ' +
-      'still land. `concepts[]` order in the response matches the input. Cap = 50 per ' +
+      'still land. A row whose normalized title matches an earlier landed row in the same batch still lands but carries a near-duplicate `warning` — `patch_concept` the earlier node instead of forking the same concept (duplicates are the #1 growing-vault failure mode). '
+      + '`concepts[]` order in the response matches the input. Cap = 50 per ' +
       'call (split into multiple batches for larger sets). NO atomic rollback — if you ' +
       'need all-or-nothing semantics use single `add_concept` calls. Invalid-only batches return no row-level write metadata and no top-level `postWriteMaintenance`. When at least one row changes the vault, the response includes one ' + POST_WRITE_MAINTENANCE_GUIDANCE + ' for the final graph.',
     inputSchema: {
@@ -3339,6 +3340,9 @@ function addConceptsBatch({ concepts }) {
   // 혼동을 줄임. 같은 slug 의 첫 row 만 land 시도, 후속 동일 slug 는 input
   // 단계에서 ok:false.
   const seenInBatch = new Map();
+  // 이 batch 안에서 이미 land 한 행들({slug, frontmatter}) — 같은 title 의
+  // 후속 행을 near-duplicate 로 잡는 in-memory 비교 대상(vault load 0).
+  const landed = [];
   const results = concepts.map((spec, index) => {
     let slug = '';
     try {
@@ -3368,6 +3372,18 @@ function addConceptsBatch({ concepts }) {
       }
       if (slug) seenInBatch.set(slug, index);
       const result = addConcept(spec, { includePostWriteMaintenance: false });
+      // 같은 batch 안에서 이미 land 한 노드와 정규화 title 이 같으면 advisory
+      // 경고(막지 않음 — 합당할 수도 있으니). bootstrap 의 #1 실패 모드(같은
+      // 개념을 두 노드로 쪼갬)를 vault load 없이 in-batch 비교로 차단. single
+      // add_concept 의 vs-existing dup 검사(iter R+)와 같은 helper 재사용.
+      if (result.ok) {
+        const dupWarning = detectDuplicateTitle(spec.title, result.slug ?? slug, landed);
+        if (dupWarning) result.warnings = [...(result.warnings ?? []), dupWarning];
+        landed.push({
+          slug: result.slug ?? slug,
+          frontmatter: { title: spec.title, kind: spec.kind },
+        });
+      }
       return result;
     } catch (err) {
       const msg = err && err.message ? err.message : String(err);

@@ -4110,6 +4110,39 @@ await test("add_concepts — 입력 내 중복 slug 두번째는 ok:false", asyn
   }
 });
 
+// 같은 slug 는 error(데이터 보호) 지만 같은 title·다른 slug 는 둘 다 land 하되
+// near-duplicate advisory — bootstrap 흐름에서 에이전트가 같은 개념을 두 노드로
+// 쪼개는 #1 실패 모드를 첫 batch 에서 잡는다(vault load 없이 in-batch 비교).
+await test("add_concepts — 같은 title 의 두번째 row 는 land 하되 near-duplicate warning", async () => {
+  const root = makeVault([]);
+  try {
+    const { responses } = await rpc(root, [
+      ...INIT_REQUESTS,
+      callTool(2, "add_concepts", {
+        concepts: [
+          { slug: "alpha", kind: "capability", title: "Shared Title", domain: "x" },
+          { slug: "beta", kind: "capability", title: "shared   title", domain: "x" },
+        ],
+      }),
+    ]);
+    const result = getCallParsed(responses, 2);
+    assert.equal(result.concepts[0].ok, true, "첫 row land");
+    assert.ok(
+      !(result.concepts[0].warnings ?? []).some((w) => /already exists/i.test(w)),
+      "첫 row 는 dup 경고 없음",
+    );
+    assert.equal(result.concepts[1].ok, true, "두번째 row 도 land (advisory, 막지 않음)");
+    assert.ok(
+      (result.concepts[1].warnings ?? []).some(
+        (w) => /already exists at "alpha"/i.test(w) && /patch_concept/i.test(w),
+      ),
+      "두번째 row 는 정규화 동일 title 에 대한 near-duplicate 경고",
+    );
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test("add_concepts — object 가 아닌 row 는 row-level error 로 격리", async () => {
   const root = makeVault([]);
   try {
