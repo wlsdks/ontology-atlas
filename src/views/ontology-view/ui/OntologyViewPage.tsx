@@ -17,7 +17,6 @@ import { getProjectDetailHref, getTopologyProjectHref } from "@/entities/project
 import { buildDocsVaultHref } from "@/entities/docs-vault";
 import {
   buildAgentBriefingPacket,
-  buildAgentGraphDbQueryPack,
   buildOntologyEgoSubgraph,
   buildOntologyReachability,
   buildOntologyTree,
@@ -27,7 +26,6 @@ import {
   formatAgentPostChangeSyncPacket,
   countTreeNodes,
   markChangeBaseline,
-  selectAgentQueryEntrypoints,
   useChangeBaseline,
   type OntologyEgoSubgraph,
   type OntologyReachability,
@@ -66,10 +64,6 @@ import {
   ontologyReviewQuestionsForPrompt,
   type OntologyReviewRelationPreview,
 } from "../lib/review-brief";
-import {
-  buildGraphProofRailModel,
-  type GraphProofRailModel,
-} from "../lib/graph-proof-rail";
 import {
   summarizeTreeProjectionWarnings,
   type TreeProjectionWarningGroup,
@@ -299,14 +293,6 @@ export function OntologyViewPage() {
     };
   }, [insight]);
 
-  const graphProofRailModel = useMemo(() => {
-    if (!insight) {
-      return buildGraphProofRailModel([]);
-    }
-    const entrypoints = selectAgentQueryEntrypoints(insight.nodes, insight.edges, 4);
-    return buildGraphProofRailModel(buildAgentGraphDbQueryPack(entrypoints));
-  }, [insight]);
-
 
   return (
     <>
@@ -507,8 +493,6 @@ export function OntologyViewPage() {
           />
         ) : null}
       </StaggeredFadeIn>
-
-      <GraphProofRail model={graphProofRailModel} />
 
       {error ? (
         <div
@@ -2009,156 +1993,6 @@ function GraphWorkbenchSummary({
         })}
       </div>
     </section>
-  );
-}
-
-function GraphProofRail({ model }: { model: GraphProofRailModel }) {
-  const t = useTranslations("ontologyView.graphProof");
-  const { show } = useToast();
-  const preview = model.previewIntents.slice(0, 3);
-  const operationPreview = model.operations.slice(0, 5);
-  const primaryIntent = preview[0];
-  const copyPack = async (text: string, successMessage: string) => {
-    if (await copyText(text)) {
-      show(successMessage, "success");
-      return;
-    }
-    show(t("copyFailed"), "error");
-  };
-
-  return (
-    <section
-      aria-label={t("ariaLabel")}
-      className="mb-4 rounded-lg border border-[color:var(--color-divider)] bg-[color:var(--color-overlay-1)] px-3 py-2.5"
-    >
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 items-start gap-2">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-[color:rgba(94,106,210,0.30)] bg-[color:rgba(94,106,210,0.08)] text-[color:var(--color-indigo-accent)]">
-            <BarChart3 size={14} aria-hidden />
-          </span>
-          <div className="min-w-0">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-              {t("eyebrow")}
-            </p>
-            <h2 className="mt-0.5 break-keep text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-              {t("title")}
-            </h2>
-            <p className="mt-1 max-w-2xl break-keep text-[11px] leading-5 text-[color:var(--color-text-tertiary)]">
-              {t("body")}
-            </p>
-            <p className="mt-1.5 max-w-2xl break-keep font-mono text-[9.5px] leading-4 text-[color:var(--color-text-quaternary)]">
-              {t("runtimeReplay")}
-            </p>
-          </div>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-1.5">
-          <button
-            type="button"
-            onClick={() => void copyPack(model.queryPackText, t("copyMcpCopied"))}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.32)] bg-[color:rgba(94,106,210,0.10)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.46)] hover:text-[color:var(--color-text-primary)]"
-            aria-label={t("copyMcpAria")}
-          >
-            <Clipboard size={12} aria-hidden />
-            {t("copyMcp")}
-          </button>
-          <button
-            type="button"
-            onClick={() => void copyPack(model.cliPackText, t("copyCliCopied"))}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.34)] hover:text-[color:var(--color-text-primary)]"
-            aria-label={t("copyCliAria")}
-          >
-            <Clipboard size={12} aria-hidden />
-            {t("copyCli")}
-          </button>
-          <button
-            type="button"
-            onClick={() => void copyPack(model.runtimeGateText, t("copyRuntimeGateCopied"))}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.06)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
-            aria-label={t("copyRuntimeGateAria")}
-          >
-            <Clipboard size={12} aria-hidden />
-            {t("copyRuntimeGate")}
-          </button>
-          <button
-            type="button"
-            onClick={() => void copyPack(model.syncGateText, t("copySyncGateCopied"))}
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-md border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.06)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.42)] hover:text-[color:var(--color-text-primary)]"
-            aria-label={t("copySyncGateAria")}
-          >
-            <Clipboard size={12} aria-hidden />
-            {t("copySyncGate")}
-          </button>
-          <Link
-            href="/ontology/insights/"
-            className="inline-flex h-8 items-center justify-center rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-3 text-[11px] font-[var(--font-weight-signature)] text-[color:var(--color-text-secondary)] transition-colors hover:border-[color:rgba(94,106,210,0.34)] hover:text-[color:var(--color-text-primary)]"
-            aria-label={t("ctaAria")}
-          >
-            {t("cta")}
-          </Link>
-        </div>
-      </div>
-
-      <div className="mt-2 grid gap-1.5 lg:grid-cols-[minmax(0,0.58fr)_minmax(0,1fr)_minmax(200px,0.34fr)]">
-        <div className="grid min-w-0 grid-cols-4 gap-1.5">
-          <GraphProofMetric label={t("intents")} value={model.intentCount} />
-          <GraphProofMetric label={t("mcpCalls")} value={model.mcpCallCount} />
-          <GraphProofMetric label={t("cliFallbacks")} value={model.cliFallbackCount} />
-          <GraphProofMetric
-            label={t("health")}
-            value={t("runtimeChecksValue", { count: model.runtimeCheckCount })}
-          />
-        </div>
-        {primaryIntent ? (
-          <div className="min-w-0 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(0,0,0,0.10)] px-2 py-1.5">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-              {t("sampleIntent")}
-            </p>
-            <p
-              className="mt-1 truncate font-mono text-[9px] leading-4 text-[color:var(--color-text-secondary)]"
-              title={primaryIntent}
-            >
-              {primaryIntent}
-            </p>
-          </div>
-        ) : null}
-        {operationPreview.length > 0 ? (
-          <div className="min-w-0 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5">
-            <p className="font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-              {t("operations")}
-            </p>
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {operationPreview.map((operation) => (
-                <span
-                  key={operation}
-                  className="rounded-md border border-[color:rgba(255,255,255,0.08)] bg-[color:rgba(255,255,255,0.03)] px-1.5 py-0.5 font-mono text-[8.5px] text-[color:var(--color-text-tertiary)]"
-                >
-                  {operation}
-                </span>
-              ))}
-            </div>
-          </div>
-        ) : null}
-      </div>
-    </section>
-  );
-}
-
-function GraphProofMetric({
-  label,
-  value,
-}: {
-  label: string;
-  value: number | string;
-}) {
-  return (
-    <div className="min-w-0 rounded-md border border-[color:var(--color-divider)] bg-[color:rgba(255,255,255,0.025)] px-2 py-1.5">
-      <p className="truncate font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-quaternary)]">
-        {label}
-      </p>
-      <p className="mt-0.5 truncate text-[13px] font-[var(--font-weight-signature)] text-[color:var(--color-text-primary)]">
-        {value}
-      </p>
-    </div>
   );
 }
 
