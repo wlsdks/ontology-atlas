@@ -1574,7 +1574,11 @@ function NodeDetailPanel({
               </div>
               {Object.keys(reachability.byRelation).length > 0 ? (
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  {Object.entries(reachability.byRelation).slice(0, 4).map(([relation, count]) => (
+                  {/* 관계 타입 분포는 전부 표시 — 타입 수는 bounded(관계 스키마
+                      ~7종) 라 clutter 없고, 어떤 관계로 도달했는지 완전한 분포가
+                      reachability 질의 결과의 핵심. slice 로 자르면 도달 경로의
+                      일부 관계 타입이 silent 하게 빠진다(no silent caps). */}
+                  {Object.entries(reachability.byRelation).map(([relation, count]) => (
                     <span
                       key={relation}
                       className="inline-flex max-w-full items-center gap-1 rounded-full border border-[color:var(--color-border-soft)] px-2 py-0.5 font-mono text-[10px] text-[color:var(--color-text-tertiary)]"
