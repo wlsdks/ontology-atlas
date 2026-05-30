@@ -1526,6 +1526,7 @@ export function HomePage() {
             closeLabel={t("controls.close")}
             impactActive={impactHighlightActive}
             onToggleImpact={toggleImpactHighlight}
+            onSelectNode={(slug) => handleSelect(slug)}
             labels={{
               caption: t("ontologyDrawer.caption"),
               source: t("ontologyDrawer.source"),

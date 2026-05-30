@@ -159,6 +159,11 @@ interface Props {
    */
   impactActive?: boolean;
   onToggleImpact?: () => void;
+  /**
+   * 관계 미리보기 행의 상대 노드를 클릭하면 그 노드로 이동(토폴로지 선택 +
+   * drawer 교체) — graph-DB 를 클릭으로 *탐색*. 미지정이면 행은 읽기 전용 텍스트.
+   */
+  onSelectNode?: (slug: string) => void;
 }
 
 export function TopologyOntologyDrawer({
@@ -173,6 +178,7 @@ export function TopologyOntologyDrawer({
   explanationEdit,
   impactActive = false,
   onToggleImpact,
+  onSelectNode,
 }: Props) {
   const model = buildTopologyOntologyDrawerModel(node, nodes, edges);
   const toast = useToast();
@@ -483,9 +489,19 @@ export function TopologyOntologyDrawer({
                   <span className="font-mono text-[9px] uppercase tracking-[0.10em] text-[color:var(--color-text-quaternary)]">
                     {relation.direction === "outgoing" ? labels.outgoing : labels.incoming}
                   </span>
-                  <span className="min-w-0 truncate text-[11px] text-[color:var(--color-text-secondary)]">
-                    {relation.other?.title ?? relation.edge.id}
-                  </span>
+                  {onSelectNode && relation.other ? (
+                    <button
+                      type="button"
+                      onClick={() => onSelectNode(relation.other!.id)}
+                      className="min-w-0 truncate text-left text-[11px] text-[color:var(--color-text-secondary)] transition-colors hover:text-[color:var(--color-text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:rgba(139,151,255,0.5)]"
+                    >
+                      {relation.other.title}
+                    </button>
+                  ) : (
+                    <span className="min-w-0 truncate text-[11px] text-[color:var(--color-text-secondary)]">
+                      {relation.other?.title ?? relation.edge.id}
+                    </span>
+                  )}
                 </li>
               ))}
             </ol>

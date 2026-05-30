@@ -200,6 +200,27 @@ describe("TopologyOntologyDrawer", () => {
     );
   });
 
+  it("navigates to a related node when a relation preview row is clicked", () => {
+    const selected = node("capabilities/login");
+    const elem = node("elements/jwt", "element");
+    const onSelectNode = vi.fn();
+
+    render(
+      <TopologyOntologyDrawer
+        node={selected}
+        nodes={[selected, elem]}
+        edges={[edge("cap->elem", selected.id, elem.id, "elements")]}
+        onClose={vi.fn()}
+        closeLabel="Close"
+        labels={labels}
+        onSelectNode={onSelectNode}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "elements/jwt" }));
+    expect(onSelectNode).toHaveBeenCalledWith("elements/jwt");
+  });
+
   it("keeps the drawer concise while retaining collaborator tools", () => {
     const selected = node("capabilities/topology-ontology-inspection");
     const domain = node("domains/views", "domain");
