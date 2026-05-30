@@ -36,6 +36,7 @@ function changeset(over: Partial<OntologyChangeset> = {}): OntologyChangeset {
     removedEdges: over.removedEdges ?? [],
     total: over.total ?? addedNodes.length + changedNodes.length + removedNodes.length,
     touchedNodeIds: over.touchedNodeIds ?? new Set([...addedNodes, ...changedNodes]),
+    removedNodeKinds: over.removedNodeKinds ?? new Map(),
   };
 }
 
@@ -107,6 +108,34 @@ describe("OntologyChangePanel — changes-only toggle (B2)", () => {
       </NextIntlClientProvider>,
     );
     expect(screen.getByTestId("changes-only-toggle")).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+describe("OntologyChangePanel — chip 에 kind 라벨 (A/B 리뷰 triage)", () => {
+  it("added 칩에 노드 kind 라벨(i18n) 노출 — capability → 역량", () => {
+    render(
+      <OntologyChangePanel
+        {...baseProps}
+        changeset={changeset({ addedNodes: ["capability:a"] })}
+        hasBaseline
+      />,
+    );
+    expect(screen.getByTestId("ontology-change-panel")).toHaveTextContent("역량");
+  });
+
+  it("removed 칩은 노드가 그래프에 없어도 removedNodeKinds 의 kind 라벨 노출 — domain → 도메인", () => {
+    render(
+      <OntologyChangePanel
+        {...baseProps}
+        changeset={changeset({
+          removedNodes: ["domain:gone"],
+          removedNodeKinds: new Map([["domain:gone", "domain"]]),
+          touchedNodeIds: new Set(),
+        })}
+        hasBaseline
+      />,
+    );
+    expect(screen.getByTestId("ontology-change-panel")).toHaveTextContent("도메인");
   });
 });
 

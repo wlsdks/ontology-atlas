@@ -47,6 +47,25 @@ describe("ontology-changeset", () => {
     expect(cs.touchedNodeIds.has("c")).toBe(false);
   });
 
+  it("removedNodeKinds 가 baseline 의 kind 를 보존 — 노드가 그래프에서 사라져도 kind 표시 가능", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    // c(element) 삭제 — 현재 그래프엔 없지만 baseline 이 kind 를 기억해야 한다
+    // ("에이전트가 도메인을 지웠다" 같은 alarming 케이스 triage 용).
+    const cs = computeOntologyChangeset(snap, [node("a", "domain"), node("b", "capability")], baseEdges);
+    expect(cs.removedNodeKinds.get("c")).toBe("element");
+  });
+
+  it("removed 없으면 removedNodeKinds 빈 맵", () => {
+    const snap = snapshotOntology(baseNodes, baseEdges, 1);
+    const cs = computeOntologyChangeset(snap, [...baseNodes, node("d", "element")], baseEdges);
+    expect(cs.removedNodeKinds.size).toBe(0);
+  });
+
+  it("baseline null → removedNodeKinds 빈 맵", () => {
+    const cs = computeOntologyChangeset(null, baseNodes, baseEdges);
+    expect(cs.removedNodeKinds.size).toBe(0);
+  });
+
   it("노드 내용(title/summary) 변경 → changedNodes", () => {
     const snap = snapshotOntology(baseNodes, baseEdges, 1);
     const changed = [node("a", "domain"), node("b", "capability", "B renamed"), node("c", "element")];

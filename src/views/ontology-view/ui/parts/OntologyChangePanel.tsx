@@ -1,6 +1,7 @@
 import { useTranslations } from "next-intl";
 import { GitBranch, Plus, Minus, PencilLine, Flag, ListFilter } from "lucide-react";
 import type { KnowledgeGraphNode } from "@/entities/knowledge-graph";
+import { useOntologyKindLabel } from "@/entities/ontology-class";
 import type { OntologyChangeset } from "@/shared/lib/ontology-tree";
 
 /** kind 별 칩 노출 상한 — 초과분은 "+N 더" 로 명시(silent cap 방지). */
@@ -40,6 +41,7 @@ function ChangeChips({
   onSelectNode,
   removedLabel,
   moreLabel,
+  kindLabelOf,
 }: {
   ids: string[];
   kind: ChangeKind;
@@ -47,6 +49,8 @@ function ChangeChips({
   onSelectNode: (node: KnowledgeGraphNode) => void;
   removedLabel: (id: string) => string;
   moreLabel: (count: number) => string;
+  /** 노드 id → 로컬라이즈된 kind 라벨(없으면 null). 칩에 dimmed prefix 로 노출. */
+  kindLabelOf: (id: string) => string | null;
 }) {
   if (ids.length === 0) return null;
   const meta = KIND_META[kind];
@@ -57,10 +61,16 @@ function ChangeChips({
       {ids.slice(0, MAX_CHANGE_CHIPS).map((id) => {
         const node = nodeById.get(id);
         const title = node ? node.title : removedLabel(id);
-        const className = `inline-flex max-w-[220px] items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors ${meta.tone}`;
+        const kindLabel = kindLabelOf(id);
+        const className = `inline-flex max-w-[240px] items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors ${meta.tone}`;
         const inner = (
           <>
             <Icon size={11} aria-hidden />
+            {kindLabel ? (
+              <span className="shrink-0 font-mono text-[9px] uppercase tracking-[0.08em] opacity-60">
+                {kindLabel}
+              </span>
+            ) : null}
             <span className="truncate">{title}</span>
           </>
         );
@@ -114,6 +124,18 @@ export function OntologyChangePanel({
   onToggleChangesOnly: () => void;
 }) {
   const t = useTranslations("ontologyView.changes");
+  const kindLabel = useOntologyKindLabel();
+  // added/changed 노드는 현재 그래프에 있으니 nodeById 로 kind 를 얻고, removed
+  // 노드는 그래프에서 사라졌으니 changeset.removedNodeKinds 로 얻는다 — 어느 쪽도
+  // 없으면 null(라벨 생략). 모든 surface(범례·tooltip·drawer)와 일관되게 kind 노출.
+  const presentKindLabelOf = (id: string): string | null => {
+    const node = nodeById.get(id);
+    return node ? kindLabel(node.kind) : null;
+  };
+  const removedKindLabelOf = (id: string): string | null => {
+    const k = changeset.removedNodeKinds.get(id);
+    return k ? kindLabel(k) : null;
+  };
   // 트리에 보이는 변경(added|changed)이 있을 때만 "변경점만" 토글이 의미 있음.
   // removed 노드는 그래프에 없어 트리 필터 대상이 아님.
   const canScopeTree = changeset.touchedNodeIds.size > 0;
@@ -211,9 +233,9 @@ export function OntologyChangePanel({
       </div>
       {changeset.total > 0 ? (
         <div className="mt-2.5 flex flex-col gap-2">
-          <ChangeChips ids={changeset.addedNodes} kind="added" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} moreLabel={moreLabel} />
-          <ChangeChips ids={changeset.changedNodes} kind="changed" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} moreLabel={moreLabel} />
-          <ChangeChips ids={changeset.removedNodes} kind="removed" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} moreLabel={moreLabel} />
+          <ChangeChips ids={changeset.addedNodes} kind="added" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} moreLabel={moreLabel} kindLabelOf={presentKindLabelOf} />
+          <ChangeChips ids={changeset.changedNodes} kind="changed" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} moreLabel={moreLabel} kindLabelOf={presentKindLabelOf} />
+          <ChangeChips ids={changeset.removedNodes} kind="removed" nodeById={nodeById} onSelectNode={onSelectNode} removedLabel={removedLabel} moreLabel={moreLabel} kindLabelOf={removedKindLabelOf} />
         </div>
       ) : null}
     </section>

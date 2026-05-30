@@ -17,6 +17,12 @@ const SEP = "";
 export interface OntologySnapshot {
   /** nodeId → 내용 시그니처 (kind/title/summary + 정렬된 outgoing edge). */
   nodeSigs: Map<string, string>;
+  /**
+   * nodeId → kind. 시그니처는 SEP 로 join 돼 kind 를 되파싱할 수 없으므로 kind 를
+   * 별도 보존 — removed 노드(현재 그래프엔 없음)의 kind 를 변경 리뷰 UI 가
+   * 표시할 수 있게.
+   */
+  nodeKinds: Map<string, string>;
   /** "fromtotype" edge key 집합. */
   edgeKeys: Set<string>;
   /** 스냅샷을 찍은 시점(ms). 호출자가 stamp — 라벨/정렬용. */
@@ -33,6 +39,13 @@ export interface OntologyChangeset {
   total: number;
   /** 변경(added|changed)된 노드 빠른 조회용 — UI 하이라이트. */
   touchedNodeIds: Set<string>;
+  /**
+   * removed 노드의 nodeId → kind (baseline 에서 보존). removed 노드는 현재
+   * 그래프에 없어 nodeById 로 kind 를 알 수 없으므로 여기서 제공 — 리뷰 패널이
+   * "삭제된 게 domain 인지 element 인지" 를 한눈에 보여줄 수 있다. added/changed
+   * 의 kind 는 현재 그래프에 있으니 호출자가 nodeById 로 직접 얻는다.
+   */
+  removedNodeKinds: Map<string, string>;
 }
 
 function edgeKey(edge: Pick<KnowledgeGraphEdge, "from" | "to" | "type">): string {
@@ -79,10 +92,14 @@ export function snapshotOntology(
 ): OntologySnapshot {
   const outgoing = buildOutgoingMap(edges);
   const nodeSigs = new Map<string, string>();
-  for (const node of nodes) nodeSigs.set(node.id, nodeSignature(node, outgoing));
+  const nodeKinds = new Map<string, string>();
+  for (const node of nodes) {
+    nodeSigs.set(node.id, nodeSignature(node, outgoing));
+    nodeKinds.set(node.id, node.kind);
+  }
   const edgeKeys = new Set<string>();
   for (const edge of edges) edgeKeys.add(edgeKey(edge));
-  return { nodeSigs, edgeKeys, takenAt };
+  return { nodeSigs, nodeKinds, edgeKeys, takenAt };
 }
 
 /**
@@ -102,6 +119,7 @@ export function computeOntologyChangeset(
     removedEdges: [],
     total: 0,
     touchedNodeIds: new Set(),
+    removedNodeKinds: new Map(),
   };
   if (!baseline) return empty;
 
@@ -119,8 +137,13 @@ export function computeOntologyChangeset(
     }
   }
   const removedNodes: string[] = [];
+  const removedNodeKinds = new Map<string, string>();
   for (const id of baseline.nodeSigs.keys()) {
-    if (!currentIds.has(id)) removedNodes.push(id);
+    if (!currentIds.has(id)) {
+      removedNodes.push(id);
+      const kind = baseline.nodeKinds.get(id);
+      if (kind) removedNodeKinds.set(id, kind);
+    }
   }
 
   const currentEdgeKeys = new Set(edges.map(edgeKey));
@@ -147,5 +170,6 @@ export function computeOntologyChangeset(
       addedEdges.length +
       removedEdges.length,
     touchedNodeIds,
+    removedNodeKinds,
   };
 }
