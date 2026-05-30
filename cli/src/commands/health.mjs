@@ -73,9 +73,14 @@ export async function runHealth(args) {
         ` ${COLORS.dim}${c.message ?? ''}${COLORS.reset}\n`,
     );
   }
-  // dependency cycle / components count 강조
+  // dependency cycle / 분리된 그래프(islands) 강조 — 각 실패 검사에 드릴다운 명령 안내.
   if (sum.dependencyCycles) {
     process.stdout.write(`\n${COLORS.red}cycles ${sum.dependencyCycles}${COLORS.reset} — \`cycles\` 명령으로 자세히\n`);
+  }
+  // actionableComponents > 1 = 의미있는 노드가 분리된 섬으로 나뉨(연결 안 됨).
+  // vault-readme 등 ignored 는 제외한 수라 1 초과면 실제 단절. `components` 로 목록.
+  if (sum.actionableComponents > 1) {
+    process.stdout.write(`${COLORS.yellow}components ${sum.actionableComponents}${COLORS.reset} — 그래프가 분리됨, \`components\` 명령으로 자세히\n`);
   }
   return healthResultExitCode(result);
 }
