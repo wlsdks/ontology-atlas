@@ -19,71 +19,97 @@ const GRAPH_ID_KIND_TO_ONTOLOGY_KIND: Record<string, string> = {
   documents: "document",
 };
 
+/**
+ * kind-pair → 관계 키 규칙의 **단일 진실원**. 위에서부터 첫 매치를 쓴다
+ * (순서 의미 있음 — 더 구체적인 규칙이 위). 매치 없으면 `RELATES_FALLBACK`.
+ *
+ * infer (키) 와 explain (그 키를 고른 이유) 이 *같은* 표를 읽으므로 매핑과
+ * 설명이 구조적으로 절대 어긋날 수 없다. 이전엔 두 함수가 동일한 kind-pair
+ * 분기를 각자 들고 있어, 한쪽만 바꾸면 설명이 실제 키와 silent drift 했다.
+ */
+interface RelationKeyRule {
+  matches: (sourceKind: string, targetKind: string) => boolean;
+  key: OntologyRelationKey;
+  explain: (sourceKind: string, targetKind: string) => string;
+}
+
+const RELATION_KEY_RULES: readonly RelationKeyRule[] = [
+  {
+    matches: (s, t) => s === "project" && t === "project",
+    key: "dependencies",
+    explain: () =>
+      "project -> project maps to dependencies because one project can depend on another project.",
+  },
+  {
+    matches: (s, t) => s === "project" && t === "domain",
+    key: "domains",
+    explain: () => "project -> domain maps to domains because projects own domain areas.",
+  },
+  {
+    matches: (s, t) => s === "project" && t === "capability",
+    key: "capabilities",
+    explain: () =>
+      "project -> capability maps to capabilities because projects can own top-level capabilities.",
+  },
+  {
+    matches: (s, t) => s === "project" && t === "element",
+    key: "elements",
+    explain: () =>
+      "project -> element maps to elements because projects can directly reference concrete elements.",
+  },
+  {
+    matches: (s, t) => s === "domain" && t === "capability",
+    key: "capabilities",
+    explain: () => "domain -> capability maps to capabilities because domains own capabilities.",
+  },
+  {
+    matches: (s, t) => s === "capability" && t === "element",
+    key: "elements",
+    explain: () =>
+      "capability -> element maps to elements because capabilities use concrete elements.",
+  },
+  {
+    matches: (s, t) => s === "document" && t !== "document",
+    key: "describes",
+    explain: (_s, t) =>
+      `document -> ${t} maps to describes because documents explain ontology nodes.`,
+  },
+  {
+    matches: (s, t) =>
+      (s === "domain" && t === "element") ||
+      (s === "domain" && t === "domain") ||
+      (s === "capability" && t === "capability"),
+    key: "contains",
+    explain: (s, t) =>
+      `${s} -> ${t} maps to contains because this pair is explicit containment, not a loose semantic edge.`,
+  },
+];
+
+const RELATES_FALLBACK: RelationKeyRule = {
+  matches: () => true,
+  key: "relates",
+  explain: (s, t) =>
+    `${s} -> ${t} falls back to relates because this pair has no hierarchy-specific graph key.`,
+};
+
+function resolveRelationKeyRule(sourceKind: string, targetKind: string): RelationKeyRule {
+  return (
+    RELATION_KEY_RULES.find((rule) => rule.matches(sourceKind, targetKind)) ?? RELATES_FALLBACK
+  );
+}
+
 export function inferOntologyRelationKey(
   sourceKind: string,
   targetKind: string,
 ): OntologyRelationKey {
-  if (sourceKind === "project" && targetKind === "project") {
-    return "dependencies";
-  }
-  if (sourceKind === "project" && targetKind === "domain") {
-    return "domains";
-  }
-  if (sourceKind === "project" && targetKind === "capability") {
-    return "capabilities";
-  }
-  if (sourceKind === "project" && targetKind === "element") {
-    return "elements";
-  }
-  if (sourceKind === "domain" && targetKind === "capability") {
-    return "capabilities";
-  }
-  if (sourceKind === "capability" && targetKind === "element") {
-    return "elements";
-  }
-  if (sourceKind === "document" && targetKind !== "document") {
-    return "describes";
-  }
-  if (
-    (sourceKind === "domain" && targetKind === "element") ||
-    (sourceKind === "domain" && targetKind === "domain") ||
-    (sourceKind === "capability" && targetKind === "capability")
-  ) {
-    return "contains";
-  }
-  return "relates";
+  return resolveRelationKeyRule(sourceKind, targetKind).key;
 }
 
 export function explainOntologyRelationKeyInference(
   sourceKind: string,
   targetKind: string,
 ): string {
-  const key = inferOntologyRelationKey(sourceKind, targetKind);
-  if (sourceKind === "project" && targetKind === "project") {
-    return "project -> project maps to dependencies because one project can depend on another project.";
-  }
-  if (sourceKind === "project" && targetKind === "domain") {
-    return "project -> domain maps to domains because projects own domain areas.";
-  }
-  if (sourceKind === "project" && targetKind === "capability") {
-    return "project -> capability maps to capabilities because projects can own top-level capabilities.";
-  }
-  if (sourceKind === "project" && targetKind === "element") {
-    return "project -> element maps to elements because projects can directly reference concrete elements.";
-  }
-  if (sourceKind === "domain" && targetKind === "capability") {
-    return "domain -> capability maps to capabilities because domains own capabilities.";
-  }
-  if (sourceKind === "capability" && targetKind === "element") {
-    return "capability -> element maps to elements because capabilities use concrete elements.";
-  }
-  if (sourceKind === "document" && targetKind !== "document") {
-    return `document -> ${targetKind} maps to describes because documents explain ontology nodes.`;
-  }
-  if (key === "contains") {
-    return `${sourceKind} -> ${targetKind} maps to contains because this pair is explicit containment, not a loose semantic edge.`;
-  }
-  return `${sourceKind} -> ${targetKind} falls back to relates because this pair has no hierarchy-specific graph key.`;
+  return resolveRelationKeyRule(sourceKind, targetKind).explain(sourceKind, targetKind);
 }
 
 export function inferOntologyRelationKeyForGraphIds(
