@@ -190,6 +190,11 @@ export function TopologyOntologyDrawer({
         impactSummary: labels.collaboratorBriefImpactSummary,
         impactSummaryText:
           labels.collaboratorImpactLabels[model.impactSummary.level],
+        // iter 3 의 drawer reach 라벨 재사용 — brief 도 같은 전이 영향 범위를
+        // 에이전트 핸드오프 텍스트에 노출(새 i18n 키 없이).
+        reachTitle: labels.reachTitle,
+        reachDependents: labels.reachDependents,
+        reachDependencies: labels.reachDependencies,
         firstIncoming: labels.collaboratorBriefFirstIncoming,
         firstOutgoing: labels.collaboratorBriefFirstOutgoing,
         noImpactRelation: labels.collaboratorBriefNoImpactRelation,

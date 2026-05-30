@@ -62,6 +62,9 @@ export interface TopologyCollaboratorBriefFormatLabels {
   reviewQuestions: string;
   impactSummary: string;
   impactSummaryText: string;
+  reachTitle: string;
+  reachDependents: string;
+  reachDependencies: string;
   firstIncoming: string;
   firstOutgoing: string;
   noImpactRelation: string;
@@ -228,6 +231,9 @@ export function formatTopologyCollaboratorBrief({
     "",
     `## ${labels.impactSummary}`,
     `- ${labels.impactSummaryText}`,
+    // 전이 blast radius — 에이전트가 "이거 바꿔도 안전한가" 판단할 때 1-hop
+    // degree 가 아닌 진짜 영향 범위를 보게. drawer(사람)와 같은 model.reach.
+    `- ${labels.reachTitle}: ${labels.reachDependents} ${model.reach.dependents}, ${labels.reachDependencies} ${model.reach.dependencies}`,
     `- ${labels.firstIncoming}: ${formatTopologyImpactRelation(
       model.impactSummary.firstIncoming,
       labels.noImpactRelation,
