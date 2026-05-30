@@ -19,13 +19,42 @@ function makeDoc(partial: Partial<VaultDoc>): VaultDoc {
 }
 
 describe("buildTopologyDeeplinkForDoc", () => {
-  it("kind 가 'project' 가 아니면 null", () => {
+  it("graph 노드 아닌 kind(document/vault-readme)·kind 없음 → null", () => {
     expect(
       buildTopologyDeeplinkForDoc(
-        makeDoc({ slug: "domains/x", frontmatter: { kind: "domain" } }),
+        makeDoc({ slug: "docs/x", frontmatter: { kind: "document" } }),
+      ),
+    ).toBeNull();
+    expect(
+      buildTopologyDeeplinkForDoc(
+        makeDoc({ slug: "README", frontmatter: { kind: "vault-readme" } }),
       ),
     ).toBeNull();
     expect(buildTopologyDeeplinkForDoc(makeDoc({ slug: "y" }))).toBeNull();
+  });
+
+  it("domain/capability/element 도 토폴로지 노드 — ?mode=focus&p=<slug> 로 focus 직링크", () => {
+    // 토폴로지가 이제 전체 ontology 를 렌더하므로 project 외 노드도 focus 가능.
+    expect(
+      buildTopologyDeeplinkForDoc(
+        makeDoc({ slug: "domains/views", frontmatter: { kind: "domain" } }),
+      ),
+    ).toBe(`/topology/?mode=focus&p=${encodeURIComponent("domains/views")}`);
+    expect(
+      buildTopologyDeeplinkForDoc(
+        makeDoc({
+          slug: "capabilities/mcp-server",
+          frontmatter: { kind: "capability" },
+        }),
+      ),
+    ).toBe(
+      `/topology/?mode=focus&p=${encodeURIComponent("capabilities/mcp-server")}`,
+    );
+    expect(
+      buildTopologyDeeplinkForDoc(
+        makeDoc({ slug: "elements/foo", frontmatter: { kind: "element" } }),
+      ),
+    ).toBe(`/topology/?mode=focus&p=${encodeURIComponent("elements/foo")}`);
   });
 
   it("projects/ prefix 는 제거하고 ?p= 로 직링크", () => {

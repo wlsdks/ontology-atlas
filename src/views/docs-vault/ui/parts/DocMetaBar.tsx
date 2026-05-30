@@ -27,7 +27,8 @@ export function DocMetaBar({ doc }: { doc: VaultDoc }) {
   const kindValue = ontologyHref
     ? String(doc.frontmatter?.kind ?? "").trim()
     : "";
-  // project kind 만 토폴로지에 1:1 노드가 있어 ?p= deeplink 의미가 있다.
+  // 토폴로지가 전체 ontology 그래프를 렌더하므로 project·domain·capability·element
+  // 모두 1:1 노드를 가져 토폴로지로 점프 가능 (buildTopologyDeeplinkForDoc 이 kind 별 처리).
   const topologyHref = buildTopologyDeeplinkForDoc(doc);
   return (
     <div className="mx-auto flex max-w-[760px] flex-wrap items-center gap-3 border-b border-[color:var(--color-overlay-2)] px-6 py-3 text-[11px] text-[color:var(--color-text-quaternary)] md:px-10">

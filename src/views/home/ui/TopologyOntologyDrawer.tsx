@@ -19,6 +19,7 @@ import {
   buildOntologyNodeHref,
 } from "@/entities/knowledge-graph";
 import { buildDocsVaultHref } from "@/entities/docs-vault";
+import { getTopologyFocusHref } from "@/entities/project";
 import type { VaultRelationKey } from "@/entities/docs-vault/lib/relation-proposal";
 import { InlineFieldEdit, type InlineFieldEditLabels } from "./InlineFieldEdit";
 import {
@@ -185,7 +186,7 @@ export function TopologyOntologyDrawer({
   const sourceHref = model.sourceSlug
     ? buildDocsVaultHref({ slug: model.sourceSlug })
     : null;
-  const topologyFocusHref = buildTopologyFocusHref(node.id);
+  const topologyFocusHref = getTopologyFocusHref(node.id);
   const ontologyHref = buildOntologyNodeHref(node.id);
   const builderHref = buildOntologyBuilderNodeHref(node);
   const agentCheckSlug = model.sourceSlug ?? node.id;
@@ -625,9 +626,6 @@ export function TopologyOntologyDrawer({
   );
 }
 
-function buildTopologyFocusHref(nodeId: string): string {
-  return `/topology/?mode=focus&p=${encodeURIComponent(nodeId)}`;
-}
 
 function compactNodeTitle(title: string): string {
   const stripped = title.replace(/\s*\(.*$/, "").trim();

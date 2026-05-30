@@ -10,3 +10,14 @@
 export function getTopologyProjectHref(slug: string): string {
   return `/topology/?p=${encodeURIComponent(slug)}`;
 }
+
+/**
+ * ontology 노드(domain·capability·element 등 project 외) 를 토폴로지에서 *focus*
+ * 로 여는 deep-link. `mode=focus` 가 HomePage 의 route state 훅이 읽어 그 노드를
+ * 선택·확대하고 drawer 를 연다. 토폴로지가 전체 ontology 그래프를 렌더하므로
+ * (R3 이후) project 외 노드도 1:1 그래프 노드를 가진다 — `?p=<nodeId>` 가 곧
+ * vault slug. drawer 의 관계-행 navigation 과 같은 URL 계약.
+ */
+export function getTopologyFocusHref(nodeId: string): string {
+  return `/topology/?mode=focus&p=${encodeURIComponent(nodeId)}`;
+}
