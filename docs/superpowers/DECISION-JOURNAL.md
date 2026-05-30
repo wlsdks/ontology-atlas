@@ -30,6 +30,18 @@
 
 | date | firing | lever | objective artifact (test/metric) | adversarial verdict | commit |
 |------|--------|-------|----------------------------------|---------------------|--------|
+| 2026-05-31 | v2.2 #3 | 1a cold-start (탐색) | none — verify-only(코드 read) | cold-start 이 **target user(개발자+agent)** 에 성숙: CLI `init` 이 6-step 안내(추천 `bootstrap` 1-liner 포함) + 3 bootstrap 경로(CLI `bootstrap` · `/ontology-bootstrap` skill · MCP `analyze_repo_structure`). web-only(비-target) cold-start 은 코드 접근 불가 + charter 비-target + copy(artifact-ban). **1a 재탐색 금지.** | NO-OP |
 | 2026-05-31 | v2.2 #2 | 1b drift (탐색) | none — verify-only(코드 read) | drift surfacing 이 **agent**(postWriteMaintenance·maintenance_plan·SessionStart hook) + **human**(home `TopologyAnalysisBar` healthBreakdown: orphan/stale/promotion · insights `AgentReadinessPanel`) **양측 모두 성숙**. 새 surfacing gap 없음 → **1b 재탐색 금지**. 다음 frontier = **1a cold-start**(fresh vault→first-value; 미성숙·미탐색이 확인된 유일 레버). | NO-OP |
 | 2026-05-31 | v2.2 #1 | 1b drift | none — 게이트에서 pre-build refute | **4/4 high REFUTE.** add_concept 가 이미 `compactPostWriteMaintenance().summary.danglingReferences`(+ maintenance_plan `resolve_dangling_reference` proposedAction) 로 write-time 에 dangling ref 를 *더 풍부하게* 노출. 추가 warning 은 redundant + forward-ref(child→parent)·batch bootstrap 에서 false-positive → warnings[] 희석. **재제안 금지.** | NO-OP |
 | 2026-05-31 | v2.2 setup | meta | (메커니즘 정의 — 평가 대상 아님) | n/a (directive) | 이 커밋 |
+
+## ⚑ 수렴 노트 (firing #3, 2026-05-31) — 매 firing 먼저 읽기
+
+상위 retention 레버 **1a(cold-start) · 1b(drift)** 가 firing #1~3 에서 모두 *target user(개발자+agent)* 기준 **성숙 확인**. 1c(canvas)·perf·change-tracking(A/B)·wedge-restructure 는 이전 라운드에 이미 shipped(메모리 기록). 남은 진짜 레버 = **retention 검증**인데 이건 *실사용자 신호*가 필요 — 루프가 코드로 만들 수 없음.
+
+**따라서 코드-레벨 자율 firing 은 당분간 대부분 NO-OP 가 정상**(폴리시 날조 floor 작동 중, 게이트 정상). 루프가 계속 경계할 것:
+1. 코드가 진화하며 생기는 **새** gap(새 capability/route/write 경로 → 그때 1a~3 재평가).
+2. 매 10회 정직 audit(폴리시 drift 감시).
+3. 사용자가 주는 **새 방향 / 실사용자 신호** → 그때 큰 진전 재개.
+
+즉 "할 일이 없어서 멈춘 게 아니라, 코드로 풀 수 있는 retention 레버를 다 풀어서 외부 신호 대기 중" 이 정직한 상태. 무리한 marginal 변경(게이트가 어차피 refute)으로 commit 수 늘리지 말 것.
