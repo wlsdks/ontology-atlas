@@ -206,7 +206,7 @@ function DocsVaultSourceContractBar({
           return (
             <article
               key={cell.key}
-              className="grid min-w-0 grid-cols-[34px_1fr_auto] items-center gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 py-2"
+              className="grid min-w-0 grid-cols-[34px_1fr_auto] items-start gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-elevated)] px-2.5 py-2.5"
             >
               <span className="flex h-8 w-8 items-center justify-center rounded-md border border-[color:rgba(139,151,255,0.2)] bg-[color:rgba(94,106,210,0.06)] text-[color:rgba(205,212,255,0.9)]">
                 <Icon size={14} aria-hidden />
