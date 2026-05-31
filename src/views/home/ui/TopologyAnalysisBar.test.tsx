@@ -251,7 +251,10 @@ describe("TopologyAnalysisBar", () => {
     const bar = screen.getByRole("region", {
       name: "Topology analysis mode",
     });
-    expect(bar.className).toContain("lg:left-4");
+    // shares the same responsive left gutter as the topology header pill +
+    // legend (lg:left-6 → xl:left-8) so all left-anchored overlays align.
+    expect(bar.className).toContain("lg:left-6");
+    expect(bar.className).toContain("xl:left-8");
     expect(bar.className).toContain("lg:w-[min(320px,calc(100vw_-_460px))]");
   });
 

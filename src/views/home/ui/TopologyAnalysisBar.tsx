@@ -548,8 +548,8 @@ export function TopologyAnalysisBar({
       aria-label={labels.title}
       className={`pointer-events-auto absolute inset-x-3 top-[72px] z-20 max-h-[calc(100dvh-8rem)] overflow-y-auto rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-panel)] p-2.5 shadow-[0_14px_34px_rgba(0,0,0,0.18)] md:hidden lg:inset-x-auto lg:top-24 lg:block lg:max-h-[calc(100dvh-7rem)] lg:-translate-x-0 ${
         rightPanelReserved
-          ? "lg:left-4 lg:w-[min(320px,calc(100vw_-_460px))]"
-          : "lg:left-4 lg:w-[320px]"
+          ? "lg:left-6 xl:left-8 lg:w-[min(320px,calc(100vw_-_460px))]"
+          : "lg:left-6 xl:left-8 lg:w-[320px]"
       }`}
     >
       <div className="flex flex-col gap-2">
