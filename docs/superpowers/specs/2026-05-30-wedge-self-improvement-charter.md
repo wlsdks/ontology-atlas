@@ -121,7 +121,8 @@ Track A 순서 (read-only/local/charter-safe, mcp/ 또는 client 격리):
    token-overlap), best-first 정렬, optional limit. **inclusion 불변 실증**(실 vault OLD==NEW set). 3-critic
    게이트 0/3 refute(value critic 이 burial 실측 반증). + mcp-verify 가 발견한 #2 verify.mjs validate_vault
    pathDrift 갭 동봉 정정.
-5. per-doc live-staleness banner (P2). 6. adaptive web polling (P2). 7. incremental fingerprint (P2).
+5. per-doc live-staleness banner (P2) ← **다음 자율 후보**. 6. ✅ **DONE (9a2c116b)** adaptive polling — 게이트가
+   timer-lifecycle 버그(orphan loop) 잡음→generation-token controller 로 수정+테스트. 7. incremental fingerprint (P2).
 8. starter templates (npm publish 후).
 9. **(P3, greenlit) DESIGN SPEC 작성됨 (2026-05-31)** — `specs/2026-05-31-staging-draft-canvas-design.md`.
    빌더 staging/draft 기본 + undo/redo + IndexedDB 영속. **build 는 사용자 review 후 시작**(big-IA, surface-first;
