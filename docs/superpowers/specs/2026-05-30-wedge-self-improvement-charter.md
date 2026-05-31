@@ -107,10 +107,10 @@ audit·게이트 보수적 유지 + 요약 주기 surface[FYI].) SPEC: SPEC-loop
 NO-OP-수렴 상태 종료. 매 firing: Track A 다음 미완료 항목을 v2.2 게이트(객관 test + 적대 critic)로 진행.
 
 Track A 순서 (read-only/local/charter-safe, mcp/ 또는 client 격리):
-1. **`infer_imports` edge reconciliation** ← 현재 진행 (top step, 만장일치 endorse). compiled `via==='depends_on'`
-   edge vs 454 inferred edge set-diff → inCodeMissing/inVaultNotInCode/inBoth. **aliasToSlug 정규화 + ambiguous-alias
-   fixture 를 실패테스트에 first-class 포함**(validator 강제).
-2. `detect_drift` MCP tool+CLI (audit-vault-paths 로직을 shared module 로 추출, read-only).
+1. ✅ **DONE (commit d2bea40d)** `infer_imports` edge reconciliation. 4-bucket set-diff, alias-정규화,
+   reconcile:false 토글. 적대 게이트가 via 버그(compiler 는 'dependencies' emit, 필터는 'depends_on')를
+   잡아 수정 + compiler-grounded anti-drift 테스트 추가. dogfood inVaultNotInCode 0→15 검증.
+2. ← **다음** `detect_drift` MCP tool+CLI (audit-vault-paths 로직을 shared module 로 추출, read-only).
 3. git-aware `/ontology-sync` (1+2 의존 — 먼저 1,2 구축).
 4. `find_evidence` relevance ranking (additive score, shape 불변).
 5. per-doc live-staleness banner (P2). 6. adaptive web polling (P2). 7. incremental fingerprint (P2).
