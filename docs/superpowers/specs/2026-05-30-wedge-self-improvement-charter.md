@@ -123,8 +123,10 @@ Track A 순서 (read-only/local/charter-safe, mcp/ 또는 client 격리):
    pathDrift 갭 동봉 정정.
 5. per-doc live-staleness banner (P2). 6. adaptive web polling (P2). 7. incremental fingerprint (P2).
 8. starter templates (npm publish 후).
-9. **(P3, greenlit 2026-05-31)** 빌더 staging/draft 기본 + undo/redo — big-IA 라 **design step(SPEC) 먼저**,
-   그 다음 TDD. charter border-style(추가=인디고 밑줄/삭제=점선) 준수. developer 회의 설계 캔버스.
+9. **(P3, greenlit) DESIGN SPEC 작성됨 (2026-05-31)** — `specs/2026-05-31-staging-draft-canvas-design.md`.
+   빌더 staging/draft 기본 + undo/redo + IndexedDB 영속. **build 는 사용자 review 후 시작**(big-IA, surface-first;
+   Blocked 참조). build plan = 5 substep(store reducer→mutation routing→visual deltas→Apply replay→persistence),
+   각 TDD+gate. charter border-style 준수.
 10. npm 패키징 위생(`files`/`.npmignore` 로 `*.test.mjs` 제외).
 
 남은 surface-first(자율 금지): 실제 npm publish/Release(사용자만), 백엔드·hosted·share-link(B5 보류) — `## Blocked` 참조.
@@ -138,6 +140,11 @@ Track A 순서 (read-only/local/charter-safe, mcp/ 또는 client 격리):
 - B4 positioning: B1(런치) 이후로 미룸.
 
 **여전히 자율 금지(surface-first 유지):** 실제 npm publish/Release, 백엔드·인증·hosted·share-link(B5 보류), 디자인 헌장 위반.
+
+**[NEW 2026-05-31] staging/draft 캔버스(#9) DESIGN SPEC review 대기** — `specs/2026-05-31-staging-draft-canvas-design.md`.
+사용자의 #1 want(pillar-3 설계도, "임시저장")이고 greenlit 됐으나 big-IA(빌더 write 모델 재편)라 build 전 사용자
+review. open questions 3개(toggle 유무 · Apply 단위 · scope=builder만 vs topology/home 포함). 사용자 승인/조정 후
+build plan 5 substep 을 In-flight 로 진행. **승인 전 build 금지.**
 
 _(이전: SPEC-loop-reward-substrate 2026-05-31 승인 + Phase 1 구현 완료. 해소.)_
 
