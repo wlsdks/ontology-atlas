@@ -9,6 +9,8 @@
  * SSR / 정적 export 시 안전.
  */
 
+import { VaultConflictError } from "@/features/docs-vault-local";
+
 export type DocsVaultSource = "server" | "local";
 export type DocsVaultView = "doc" | "folder-topology";
 
@@ -98,4 +100,36 @@ export function escapeHtml(s: string): string {
  */
 export function scheduleStateSync(sync: () => void) {
   queueMicrotask(sync);
+}
+
+/**
+ * 에디터 저장 핸들러. `saveDoc` 으로 버퍼를 persist 한다.
+ *
+ * **데이터 손실 가드 (핵심):** read↔write 사이에 .md 가 외부(다른 에디터 / AI
+ * MCP)로 바뀌면 saveDoc 이 `VaultConflictError` 를 throw 한다. 이 에러를 여기서
+ * *swallow* 하면 (구버전 onSave 가 그랬음) 호출한 에디터의 doSave 가 resolve 를
+ * 성공으로 오인해 버퍼를 phantom-clean 하고 "저장됨" 을 띄운다 → dirty 가 false 가
+ * 되어 #5(a) poll 가드가 풀리고, 다음 poll re-fetch 가 미저장 편집을 silent
+ * overwrite 한다. 따라서 conflict 든 일반 에러든 **항상 re-throw** 한다. 에디터는
+ * 이 throw 를 근거로 버퍼를 dirty 로 유지해 손실을 막는다.
+ *
+ * `onConflict` 는 사용자 알림(toast 등) 부수효과 hook — 호출돼도 에러는 재던져진다.
+ */
+export async function persistEditorSave(
+  saveDoc: (
+    slug: string,
+    content: string,
+    opts: { expectedMtime?: number },
+  ) => Promise<unknown>,
+  args: { slug: string; content: string; expectedMtime?: number },
+  onConflict?: (err: VaultConflictError) => void,
+): Promise<void> {
+  try {
+    await saveDoc(args.slug, args.content, { expectedMtime: args.expectedMtime });
+  } catch (err) {
+    if (err instanceof VaultConflictError) {
+      onConflict?.(err);
+    }
+    throw err; // 절대 swallow 금지 — 에디터가 throw 로 dirty 를 유지해야 함
+  }
 }

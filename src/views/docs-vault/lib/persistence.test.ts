@@ -1,9 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { VaultConflictError } from "@/features/docs-vault-local";
 import {
   DOCS_VAULT_SOURCE_KEY,
   escapeHtml,
   isDocsVaultLocalSourceDisabled,
   parseDocsVaultView,
+  persistEditorSave,
   readStoredSource,
   scheduleStateSync,
   shouldShowDesktopVaultWelcome,
@@ -22,6 +24,50 @@ describe("parseDocsVaultView", () => {
     expect(parseDocsVaultView(undefined)).toBe("doc");
     expect(parseDocsVaultView("")).toBe("doc");
     expect(parseDocsVaultView("alien")).toBe("doc");
+  });
+});
+
+describe("persistEditorSave", () => {
+  // 데이터 손실 회귀 가드: 에디터 onSave 가 VaultConflictError 를 swallow 하면
+  // (구버전) doSave 가 buffer 를 phantom-clean 하고 "저장됨" 을 띄운 뒤, 다음
+  // poll re-fetch 가 미저장 편집을 덮어쓴다. persistEditorSave 는 conflict 를
+  // 절대 swallow 하지 않고 re-throw 해 에디터가 dirty 를 유지하게 한다.
+  it("성공 시 resolve, onConflict 미호출", async () => {
+    const saveDoc = vi.fn().mockResolvedValue(undefined);
+    const onConflict = vi.fn();
+    await expect(
+      persistEditorSave(saveDoc, { slug: "a", content: "x", expectedMtime: 10 }, onConflict),
+    ).resolves.toBeUndefined();
+    expect(saveDoc).toHaveBeenCalledWith("a", "x", { expectedMtime: 10 });
+    expect(onConflict).not.toHaveBeenCalled();
+  });
+
+  it("VaultConflictError 는 swallow 하지 않고 re-throw + onConflict 호출", async () => {
+    const conflict = new VaultConflictError("a", 10, 20);
+    const saveDoc = vi.fn().mockRejectedValue(conflict);
+    const onConflict = vi.fn();
+    await expect(
+      persistEditorSave(saveDoc, { slug: "a", content: "x", expectedMtime: 10 }, onConflict),
+    ).rejects.toBe(conflict);
+    expect(onConflict).toHaveBeenCalledWith(conflict);
+  });
+
+  it("conflict 가 아닌 에러는 onConflict 없이 re-throw", async () => {
+    const boom = new Error("disk full");
+    const saveDoc = vi.fn().mockRejectedValue(boom);
+    const onConflict = vi.fn();
+    await expect(
+      persistEditorSave(saveDoc, { slug: "a", content: "x" }, onConflict),
+    ).rejects.toBe(boom);
+    expect(onConflict).not.toHaveBeenCalled();
+  });
+
+  it("onConflict 미제공이어도 conflict 를 re-throw", async () => {
+    const conflict = new VaultConflictError("a", 10, 20);
+    const saveDoc = vi.fn().mockRejectedValue(conflict);
+    await expect(
+      persistEditorSave(saveDoc, { slug: "a", content: "x", expectedMtime: 10 }),
+    ).rejects.toBe(conflict);
   });
 });
 

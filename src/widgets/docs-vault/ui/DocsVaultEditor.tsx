@@ -211,7 +211,19 @@ export function DocsVaultEditor({
         setSavedFlash(false);
       }, 1500);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('saveFailed'));
+      // A rejected save (e.g. VaultConflictError — the file changed on disk
+      // between read and write) must NOT mark the buffer clean: we never reached
+      // setSavedContent, so dirty stays true and the #5(a) poll guard keeps the
+      // unsaved edits safe. Surface a localized, reassuring message for the
+      // conflict case (the raw message is technical English).
+      const conflict = err instanceof Error && err.name === 'VaultConflictError';
+      setError(
+        conflict
+          ? t('saveConflict')
+          : err instanceof Error
+            ? err.message
+            : t('saveFailed'),
+      );
     } finally {
       setSaving(false);
     }

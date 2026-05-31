@@ -651,6 +651,7 @@
       "closeUnsavedTooltip": "Discard changes and close (Esc)",
       "closeTooltip": "Close (Esc)",
       "saveFailed": "Save failed",
+      "saveConflict": "This file changed on disk, so your save was blocked. Your edits are kept.",
       "discardConfirm": "Discard unsaved changes and close the editor?",
       "linkText": "Link text",
       "placeholder": "Text",

@@ -117,6 +117,42 @@ describe('DocsVaultEditor', () => {
     );
   });
 
+  // Data-loss guard: a save REJECTED by a disk conflict (VaultConflictError —
+  // the file changed between read and write) must NOT phantom-clean the buffer
+  // or flash "저장됨". If it did, dirty would drop and the next poll would
+  // clobber the unsaved edits. The buffer stays dirty + a localized conflict
+  // message is surfaced; a subsequent poll re-fetch must not overwrite.
+  it('keeps edits dirty (and a poll cannot clobber) when the save is rejected by a conflict', async () => {
+    const conflict = Object.assign(new Error('Vault conflict — external change'), {
+      name: 'VaultConflictError',
+    });
+    const onSave = vi.fn().mockRejectedValue(conflict);
+    const { rerender } = render(
+      <DocsVaultEditor doc={doc} getDocContent={async () => 'initial'} onSave={onSave} onClose={vi.fn()} />,
+    );
+    const editor = await screen.findByDisplayValue('initial');
+    fireEvent.change(editor, { target: { value: 'my unsaved edits' } });
+    fireEvent.click(screen.getByRole('button', { name: '저장' }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+
+    // rejected save → NO phantom "저장됨", and a localized conflict message shows
+    expect(screen.queryByText('저장됨')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('이 파일이 디스크에서 변경되어 저장하지 못했습니다. 편집 내용은 유지됩니다.'),
+    ).toBeInTheDocument();
+
+    // buffer must still be dirty → a subsequent poll re-fetch must not clobber it
+    rerender(
+      <NextIntlClientProvider locale="ko" messages={koMessages}>
+        <DocsVaultEditor doc={doc} getDocContent={async () => 'DISK VERSION'} onSave={onSave} onClose={vi.fn()} />
+      </NextIntlClientProvider>,
+    );
+    await waitFor(() =>
+      expect(screen.getByDisplayValue('my unsaved edits')).toBeInTheDocument(),
+    );
+    expect(screen.queryByDisplayValue('DISK VERSION')).not.toBeInTheDocument();
+  });
+
   it('asks before closing with unsaved changes', async () => {
     const onClose = vi.fn();
     const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);

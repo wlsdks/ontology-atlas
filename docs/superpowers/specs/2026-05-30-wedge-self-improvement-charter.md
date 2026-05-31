@@ -123,8 +123,16 @@ Track A 순서 (read-only/local/charter-safe, mcp/ 또는 client 격리):
    pathDrift 갭 동봉 정정.
 5. **(a) ✅ DONE (commit bc6b9e3d)** — 사전존재 data-loss 버그 수정: dirtyRef-guard 로 poll 재fetch 가
    미저장 편집 clobber 안 하게(+in-flight .then guard). 게이트 0/3 refute. TDD red→green. clean-reflect/save 보존.
-   **남은: (b) `saveDoc` post-save mtime 반환(banner 의 본인-save false-positive 제거), (c) 그 위에 banner.**
-   (b)+(c) 는 dirty-guard 위에서 이제 안전하게 가능 — 다음 자율 후보. banner UI 는 charter border-style.
+   **(b)+(c) banner ❌ KILLED (gate 2/3 refute, 2026-05-31)** — `saveDoc` post-save mtime 반환 + staleness
+   banner 구현했으나 적대 게이트가 (correctness) reload 버튼이 동시 poll 에 silent no-op 되는 green-but-wrong
+   hole + (value) "#5a 가 이미 data-loss 막았으니 banner 는 already-safe 위 awareness = marginal polish" 로
+   과반 refute → revert. **그러나 그 게이트 리뷰가 더 깊은 data-loss 를 발견** → (d) 로 이어짐.
+   **(d) ✅ DONE** — save-into-conflict phantom-clean→clobber data-loss 수정: `DocsVaultPage` onSave 가
+   `VaultConflictError` 를 swallow(return) 해서 editor doSave 가 rejected save 를 성공으로 오인→buffer
+   phantom-clean(dirty→false)→"저장됨" flash→다음 poll 이 미저장 편집 silent overwrite. fix: 테스트된
+   `persistEditorSave` 헬퍼(swallow 금지, 항상 re-throw, conflict 시 toast hook) + editor 가 conflict 시
+   localized 메시지 + dirty 유지. 적대 게이트 **0/3 refute (value=high KEEP)**. TDD red→green(persist 4 + editor
+   integration 1). deps-bar swallow 은 free-text buffer 아니라 안전 — 미변경(critic 검증).
 6. ✅ **DONE (9a2c116b)** adaptive polling — 게이트가 timer-lifecycle 버그(orphan loop) 잡음→generation-token
    controller 로 수정+테스트. 7. incremental fingerprint (P2).
 8. starter templates (npm publish 후).
