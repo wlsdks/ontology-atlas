@@ -858,9 +858,21 @@ function makeDogfoodToolsList() {
           "Validate every doc in the vault with per-doc + per-code aggregate, side effect 0. Run first-contact before writes and before / after a batch write.";
         tool.outputSchema = {
           type: "object",
-          required: ["scanned", "problems", "summary"],
+          required: ["scanned", "problems", "summary", "pathDrift"],
           properties: {
             scanned: { type: "integer", minimum: 0 },
+            pathDrift: {
+              type: "object",
+              required: ["repoRoot", "nodesScanned", "pathsChecked", "drifts", "hint"],
+              additionalProperties: false,
+              properties: {
+                repoRoot: { type: "string" },
+                nodesScanned: { type: "integer", minimum: 0 },
+                pathsChecked: { type: "integer", minimum: 0 },
+                drifts: { type: "array", items: { type: "object" } },
+                hint: { type: "string" },
+              },
+            },
             problems: {
               type: "array",
               items: {

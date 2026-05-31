@@ -17,6 +17,9 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { parseFrontmatter } from "./lib/parse-frontmatter.mjs";
+// R13 #58 logic now lives in the MCP package (shared with the agent-callable
+// validate_vault pathDrift surface) — single source of truth. Atlas Track A #2.
+import { detectVaultPathDrift } from "../mcp/src/detect-drift.mjs";
 
 const COLORS = {
   red: "\x1b[31m",
@@ -92,52 +95,18 @@ function walkMd(dir, out = []) {
   return out;
 }
 
-const drifts = []; // { slug, kind, key, missingPath }
-let nodesScanned = 0;
-let pathsChecked = 0;
-
-for (const filePath of walkMd(VAULT)) {
-  const raw = readFileSync(filePath, "utf-8");
-  const { frontmatter } = parseFrontmatter(raw);
-  const kind = String(frontmatter.kind ?? "").trim();
-  if (!kind) continue;
-  const slug = String(frontmatter.slug ?? "").trim() || filePath;
-  nodesScanned += 1;
-
-  // Single `path:` (typically on element nodes)
-  if (typeof frontmatter.path === "string" && frontmatter.path.trim()) {
-    pathsChecked += 1;
-    const abs = resolve(REPO, frontmatter.path.trim());
-    if (!existsSync(abs)) {
-      drifts.push({ slug, kind, key: "path", missingPath: frontmatter.path });
-    }
-  }
-
-  // Array `elements:` (typically on capability nodes — list of source paths
-  // OR ontology slugs). We only flag entries that *look like* a path
-  // (contain `/` or `.`) to avoid false positives on ontology slugs like
-  // "vault-validator" which are valid as cross-references.
-  if (Array.isArray(frontmatter.elements)) {
-    for (const el of frontmatter.elements) {
-      if (typeof el !== "string") continue;
-      const looksLikePath =
-        el.includes("/") || el.endsWith(".ts") || el.endsWith(".js") ||
-        el.endsWith(".mjs") || el.endsWith(".tsx") || el.endsWith(".json");
-      // ontology slug heuristic: contains '/' AND first segment is a kind plural.
-      const isOntologySlug =
-        el.startsWith("capabilities/") ||
-        el.startsWith("domains/") ||
-        el.startsWith("elements/") ||
-        el.startsWith("documents/");
-      if (!looksLikePath || isOntologySlug) continue;
-      pathsChecked += 1;
-      const abs = resolve(REPO, el);
-      if (!existsSync(abs)) {
-        drifts.push({ slug, kind, key: "elements[]", missingPath: el });
-      }
-    }
-  }
-}
+// Build parsed docs, then delegate to the shared detector (single source of
+// truth with the MCP validate_vault pathDrift surface). slug preserves the
+// previous behavior (frontmatter.slug, else the file path).
+const docs = walkMd(VAULT).map((filePath) => {
+  const { frontmatter } = parseFrontmatter(readFileSync(filePath, "utf-8"));
+  return { slug: String(frontmatter.slug ?? "").trim() || filePath, frontmatter };
+});
+const { nodesScanned, pathsChecked, drifts } = detectVaultPathDrift({
+  docs,
+  repoRoot: REPO,
+  fileExists: existsSync,
+});
 
 if (drifts.length === 0) {
   console.log(

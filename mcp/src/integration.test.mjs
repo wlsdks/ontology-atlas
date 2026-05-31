@@ -606,7 +606,7 @@ await test("tools/list — 단일 도구 description 이 batch 짝을 cross-refe
       "validate_vault description documents first-contact health workflow",
     );
     assert.equal(validateVault?.outputSchema?.type, "object");
-    assert.deepEqual(validateVault?.outputSchema?.required, ["scanned", "problems", "summary"]);
+    assert.deepEqual(validateVault?.outputSchema?.required, ["scanned", "problems", "summary", "pathDrift"]);
     assert.equal(validateVault?.outputSchema?.additionalProperties, false);
     assert.equal(validateVault?.outputSchema?.properties?.scanned?.type, "integer");
     assert.equal(validateVault?.outputSchema?.properties?.problems?.type, "array");

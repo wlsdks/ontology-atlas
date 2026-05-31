@@ -83,6 +83,7 @@ import {
 } from './infer-imports.mjs';
 import { compileOntology } from './ontology-compiler.mjs';
 import { reconcileImportEdges } from './reconcile-imports.mjs';
+import { detectVaultPathDrift } from './detect-drift.mjs';
 import { createCompiledOntologyCache } from './compiled-cache.mjs';
 import {
   EDGE_TARGET_KIND_VALUES,
@@ -2004,10 +2005,17 @@ const TOOLS = [
       'Replaces the K-round-trip pattern of `list_concepts` then per-doc `get_concept` (whose `warnings: [...]` is per-file). ' +
       `8 issue codes — ${VAULT_ISSUE_CODE_DESCRIPTION}. ` +
       'Returns `{ scanned, problems: [{slug, issues: [{code, severity, message}]}], summary: { problemFiles, errorFiles, warningFiles, byCode: { code: { severity, count, files } } } }`. ' +
+      'Also returns `pathDrift`: frontmatter `path:` / `elements:` source paths that no longer exist on disk (vault→code drift), resolved against `repoRoot` (default: server cwd). Ontology-slug references are never flagged. Fix via `patch_concept` or remove the stale entry. ' +
       'side effect 0. Use when an agent needs the *whole-vault* health view: first-contact before writes, before / after a batch write, or surfacing issues to the user.',
     inputSchema: {
       type: 'object',
-      properties: {},
+      properties: {
+        repoRoot: {
+          ...NON_BLANK_STRING_SCHEMA,
+          description:
+            'Repository root that frontmatter source paths resolve against, for the pathDrift check. Defaults to the MCP server cwd. Pass this if the vault lives apart from the code repo.',
+        },
+      },
     },
     outputSchema: {
       type: 'object',
@@ -2074,8 +2082,35 @@ const TOOLS = [
           required: ['problemFiles', 'errorFiles', 'warningFiles', 'byCode'],
           additionalProperties: false,
         },
+        pathDrift: {
+          type: 'object',
+          description:
+            'Vault→code path drift: frontmatter source paths missing on disk, resolved against repoRoot.',
+          properties: {
+            repoRoot: NON_BLANK_STRING_SCHEMA,
+            nodesScanned: { type: 'integer', minimum: 0 },
+            pathsChecked: { type: 'integer', minimum: 0 },
+            drifts: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  slug: { type: 'string' },
+                  kind: { type: 'string' },
+                  key: { type: 'string', enum: ['path', 'elements[]'] },
+                  missingPath: { type: 'string' },
+                },
+                required: ['slug', 'kind', 'key', 'missingPath'],
+                additionalProperties: false,
+              },
+            },
+            hint: { type: 'string' },
+          },
+          required: ['repoRoot', 'nodesScanned', 'pathsChecked', 'drifts', 'hint'],
+          additionalProperties: false,
+        },
       },
-      required: ['scanned', 'problems', 'summary'],
+      required: ['scanned', 'problems', 'summary', 'pathDrift'],
       additionalProperties: false,
     },
   },
@@ -2662,7 +2697,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'query_ontology':
         return ok(queryOntologyTool(args));
       case 'validate_vault':
-        return ok(validateVaultTool());
+        return ok(validateVaultTool(args));
       case 'analyze_repo_structure':
         return ok(analyzeRepoStructureTool(args));
       case 'infer_imports':
@@ -4050,7 +4085,8 @@ function compactMaintenanceNodes(nodesValue) {
 // 호출에 받음. CLI `oh-my-ontology validate --json` 와 같은 shape.
 // per-doc \`warnings\` (get_concept) + vault aggregate (\`vaultWarnings\` in
 // list_concepts) 의 빠진 중간 — 둘 다 합친 detailed report.
-function validateVaultTool() {
+function validateVaultTool({ repoRoot } = {}) {
+  requireOptionalNonBlankString(repoRoot, 'repoRoot');
   const docs = loadVaultDocs(VAULT_ROOT);
   const docIssues = new Map();
   for (const doc of docs) {
@@ -4110,6 +4146,16 @@ function validateVaultTool() {
       files: [...entry.files],
     };
   }
+  // Atlas roadmap Track A #2 — vault→code path drift: frontmatter path:/elements:
+  // entries that no longer exist on disk. Read-only; resolves against repoRoot
+  // (default: server cwd). Surfaced here because it is a vault-health signal the
+  // agent already runs validate_vault for at first-contact. The agent fixes via
+  // patch_concept (correct the path) or by removing the stale entry.
+  const drift = detectVaultPathDrift({
+    docs,
+    repoRoot: repoRoot ? resolve(repoRoot) : process.cwd(),
+    fileExists: existsSync,
+  });
   return {
     scanned: docs.length,
     problems,
@@ -4118,6 +4164,18 @@ function validateVaultTool() {
       errorFiles,
       warningFiles,
       byCode,
+    },
+    pathDrift: {
+      repoRoot: drift.repoRoot,
+      nodesScanned: drift.nodesScanned,
+      pathsChecked: drift.pathsChecked,
+      drifts: drift.drifts,
+      hint:
+        drift.drifts.length > 0
+          ? `${drift.drifts.length} frontmatter path(s) point at files missing under repoRoot — fix the .md (patch_concept) or remove the stale entry. If repoRoot is wrong, re-run validate_vault with the correct repoRoot.`
+          : drift.pathsChecked > 0
+            ? `all ${drift.pathsChecked} frontmatter source path(s) exist under repoRoot (no code drift).`
+            : 'no frontmatter path:/elements: source paths to check.',
     },
   };
 }
