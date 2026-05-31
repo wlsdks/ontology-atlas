@@ -15,6 +15,33 @@ export type DocsVaultSource = "server" | "local";
 export type DocsVaultView = "doc" | "folder-topology";
 
 export const DOCS_VAULT_SOURCE_KEY = "demo:docs-vault:source";
+export const DOCS_VAULT_CONTRACT_OPEN_KEY = "demo:docs-vault:contract-open";
+
+/**
+ * 상단 소스-계약 스트립(01 FILES · 02 GRAPH · 03 AGENT)의 펼침 여부.
+ * 기본 true — 처음 방문자는 오리엔테이션을 보고, 한 번 접으면 그 선호가
+ * 유지된다(돌아오는 사용자는 본문에 바로 집중). SSR/정적 export 안전 가드.
+ */
+export function readStoredContractOpen(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const v = window.localStorage.getItem(DOCS_VAULT_CONTRACT_OPEN_KEY);
+    if (v === "0") return false;
+    if (v === "1") return true;
+  } catch {
+    /* private mode — skip */
+  }
+  return true;
+}
+
+export function storeContractOpen(open: boolean) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(DOCS_VAULT_CONTRACT_OPEN_KEY, open ? "1" : "0");
+  } catch {
+    /* private mode — skip */
+  }
+}
 
 /** URL `?view=` → 검증된 enum. 알 수 없는 값은 'doc' fallback. */
 export function parseDocsVaultView(value?: string | null): DocsVaultView {

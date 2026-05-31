@@ -1,15 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { VaultConflictError } from "@/features/docs-vault-local";
 import {
+  DOCS_VAULT_CONTRACT_OPEN_KEY,
   DOCS_VAULT_SOURCE_KEY,
   escapeHtml,
   isDocsVaultLocalSourceDisabled,
   parseDocsVaultView,
   persistEditorSave,
+  readStoredContractOpen,
   readStoredSource,
   scheduleStateSync,
   shouldShowDesktopVaultWelcome,
   shouldHonorLocalIntent,
+  storeContractOpen,
   storeSource,
 } from "./persistence";
 
@@ -106,6 +109,36 @@ describe("source storage", () => {
   it("source: 잘못된 값 저장돼 있으면 'server' fallback", () => {
     window.localStorage.setItem(DOCS_VAULT_SOURCE_KEY, "garbage");
     expect(readStoredSource()).toBe("server");
+  });
+});
+
+describe("contract strip storage", () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+  afterEach(() => {
+    window.localStorage.clear();
+  });
+
+  it("contract: 빈 storage 는 펼침(true) default — 신규 방문자는 오리엔테이션을 본다", () => {
+    expect(readStoredContractOpen()).toBe(true);
+  });
+
+  it("contract: 접기 저장 후 다시 read 하면 false 유지", () => {
+    storeContractOpen(false);
+    expect(readStoredContractOpen()).toBe(false);
+    expect(window.localStorage.getItem(DOCS_VAULT_CONTRACT_OPEN_KEY)).toBe("0");
+  });
+
+  it("contract: 펼침 저장은 '1' 로 기록", () => {
+    storeContractOpen(true);
+    expect(window.localStorage.getItem(DOCS_VAULT_CONTRACT_OPEN_KEY)).toBe("1");
+    expect(readStoredContractOpen()).toBe(true);
+  });
+
+  it("contract: 잘못된 값이면 펼침(true) fallback", () => {
+    window.localStorage.setItem(DOCS_VAULT_CONTRACT_OPEN_KEY, "garbage");
+    expect(readStoredContractOpen()).toBe(true);
   });
 });
 

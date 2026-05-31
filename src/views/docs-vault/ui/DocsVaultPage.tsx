@@ -18,6 +18,7 @@ import {
   ArrowLeft,
   Bot,
   Check,
+  ChevronDown,
   Clipboard,
   FilePlus,
   FolderCog,
@@ -26,6 +27,7 @@ import {
   Menu,
   Network,
   Package,
+  PanelTop,
   Search,
   Settings2,
   X,
@@ -108,10 +110,12 @@ import {
   parseDocsVaultView as parseView,
   isDocsVaultLocalSourceDisabled,
   persistEditorSave,
+  readStoredContractOpen,
   readStoredSource,
   scheduleStateSync,
   shouldShowDesktopVaultWelcome,
   shouldHonorLocalIntent,
+  storeContractOpen,
   storeSource,
   type DocsVaultSource as Source,
   type DocsVaultView,
@@ -197,6 +201,7 @@ function DocsVaultSourceContractBar({
 
   return (
     <section
+      id="docs-source-contract"
       aria-label={t('sourceContract.ariaLabel')}
       className="flex-none border-b border-[color:var(--color-border-soft)] bg-[color:rgba(16,17,21,0.92)] px-3 py-2 md:px-4"
     >
@@ -599,6 +604,22 @@ function DocsVaultContent() {
     }
     scheduleStateSync(() => setSource(readStoredSource()));
   }, [isDesktopRuntime]);
+
+  // 상단 소스-계약 스트립(01 FILES · 02 GRAPH · 03 AGENT) 펼침/접기.
+  // 기본 펼침 — 정적 export HTML 이 펼침으로 렌더되므로 hydration 후 선호를
+  // 읽어 반영(hydration mismatch 회피). 한 번 접으면 localStorage 에 유지돼
+  // 돌아오는 사용자는 본문에 바로 집중한다.
+  const [contractOpen, setContractOpen] = useState(true);
+  useEffect(() => {
+    scheduleStateSync(() => setContractOpen(readStoredContractOpen()));
+  }, []);
+  const toggleContract = useCallback(() => {
+    setContractOpen((open) => {
+      const next = !open;
+      storeContractOpen(next);
+      return next;
+    });
+  }, []);
 
   // URL 복사 feedback — 최근에 복사된 slug 를 잠깐 기억하고 2초 뒤 reset.
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
@@ -1638,6 +1659,22 @@ function DocsVaultContent() {
               {t('header.localBadge')}
             </span>
           ) : null}
+          <button
+            type="button"
+            onClick={toggleContract}
+            aria-expanded={contractOpen}
+            aria-controls="docs-source-contract"
+            title={contractOpen ? t('header.contractToggleHide') : t('header.contractToggleShow')}
+            className="hidden h-8 flex-none items-center gap-1.5 rounded-md border border-[color:var(--color-divider)] px-2 text-[12px] text-[color:var(--color-text-tertiary)] transition-colors hover:border-[color:rgba(139,151,255,0.35)] hover:text-[color:var(--color-text-primary)] md:inline-flex"
+          >
+            <PanelTop size={13} aria-hidden />
+            <span>{t('header.contractToggleLabel')}</span>
+            <ChevronDown
+              size={12}
+              aria-hidden
+              className={`transition-transform ${contractOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
           <Tooltip content={t('header.topologyTooltip')} withProvider={false}>
             <Link
               href="/topology/"
@@ -1805,18 +1842,20 @@ function DocsVaultContent() {
         />
       ) : (
         <>
-          <DocsVaultSourceContractBar
-            source={source}
-            manifest={manifest}
-            nodeCount={ontologyDerivation.nodes.length}
-            edgeCount={ontologyDerivation.edges.length}
-            graphHref={
-              selectedDoc
-                ? (buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/')
-                : '/ontology/'
-            }
-            t={t}
-          />
+          {contractOpen ? (
+            <DocsVaultSourceContractBar
+              source={source}
+              manifest={manifest}
+              nodeCount={ontologyDerivation.nodes.length}
+              edgeCount={ontologyDerivation.edges.length}
+              graphHref={
+                selectedDoc
+                  ? (buildOntologyDeeplinkForDoc(selectedDoc) ?? '/ontology/')
+                  : '/ontology/'
+              }
+              t={t}
+            />
+          ) : null}
           <div className="flex min-h-0 flex-1">
         {/* 좌측 트리 — md+ 에서만 inline aside */}
         <aside className="hidden w-[260px] flex-none flex-col overflow-auto border-r border-[color:var(--color-overlay-2)] bg-[color:var(--color-elevated)] md:flex">

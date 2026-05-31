@@ -1721,7 +1721,10 @@
       "paletteAriaLabel": "Open palette (search · commands · tags)",
       "sourceAriaLabel": "Vault source",
       "vaultToolsTooltip": "Vault tools",
-      "vaultToolsAriaLabel": "Open vault tools menu"
+      "vaultToolsAriaLabel": "Open vault tools menu",
+      "contractToggleLabel": "Overview",
+      "contractToggleHide": "Hide the FILES · GRAPH · AGENT overview",
+      "contractToggleShow": "Show the FILES · GRAPH · AGENT overview"
     },
     "vaultStatus": {
       "localTooltip": "Pick a folder on your disk as the vault",

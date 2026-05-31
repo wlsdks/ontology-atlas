@@ -1721,7 +1721,10 @@
       "paletteAriaLabel": "팔레트 열기 (검색 · 명령 · 태그)",
       "sourceAriaLabel": "Vault source",
       "vaultToolsTooltip": "Vault 도구",
-      "vaultToolsAriaLabel": "Vault 도구 메뉴 열기"
+      "vaultToolsAriaLabel": "Vault 도구 메뉴 열기",
+      "contractToggleLabel": "개요",
+      "contractToggleHide": "FILES · GRAPH · AGENT 개요 접기",
+      "contractToggleShow": "FILES · GRAPH · AGENT 개요 펼치기"
     },
     "vaultStatus": {
       "localTooltip": "내 디스크의 폴더를 vault 로 선택",
