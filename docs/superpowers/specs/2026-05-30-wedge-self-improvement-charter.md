@@ -113,10 +113,12 @@ Track A 순서 (read-only/local/charter-safe, mcp/ 또는 client 격리):
 2. ✅ **DONE (commit 99bf424c)** `detect_drift`. audit-vault-paths 로직을 공유 모듈 `detect-drift.mjs` 로
    추출 + script 가 import(single source). agent surface = validate_vault `pathDrift` 섹션(새 tool 아님 —
    23-count ripple 회피, shared validate.mjs 불변). 3-critic 게이트 0/3 refute.
-3. **PENDING (#4 보다 뒤로 미룸)** git-aware `/ontology-sync`. **이유:** "deleted file→stale node" 케이스가
-   #2 pathDrift 와 겹치고, agent-surface(새 CLI cmd/MCP tool)가 #2 와 같은 count-ripple 벽 → #4 가
-   independent·동일 leverage·count-ripple 0 라 먼저. 재개 시: pure fn `git diff --name-status` → path index
-   로 owning vault 노드 매핑(rename R-status 주의) + reconcile 후보. 노출 방식(CLI cmd vs skill-only) 미결.
+3. ✅ **DONE (commit 펜딩)** reconcile suggestion. **git-aware 변형은 기각** — `git diff -M HEAD` 는
+   staged 리네임만 잡고(평범한 mv/커밋 후 miss) history-follow 는 fuzzy, 게다가 새 CLI/MCP surface =
+   count-ripple. 대신 **basename-fuzzy** 채택: drift 의 basename 과 *정확히 하나* 일치하는 기존 repo 소스
+   파일이 있으면 `suggestedPath` 로 제시(이동 후보). git 무관·신뢰성↑·count-ripple 0(#2 의 validate_vault
+   pathDrift 표면 enrich). pure fn `suggestPathReconciliations`(detect-drift.mjs, 4 TDD) + 기존 walker
+   `listSourceFiles`(infer-imports.mjs) 재사용, drift>0 일 때만 walk. 적대 게이트 **0/3 refute (PASS)**.
 4. ✅ **DONE (commit ac547ca1)** `find_evidence` relevance ranking. scoreEvidence(location 가중 + title
    token-overlap), best-first 정렬, optional limit. **inclusion 불변 실증**(실 vault OLD==NEW set). 3-critic
    게이트 0/3 refute(value critic 이 burial 실측 반증). + mcp-verify 가 발견한 #2 verify.mjs validate_vault

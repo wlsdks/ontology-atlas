@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
-import { detectVaultPathDrift } from './detect-drift.mjs';
+import { detectVaultPathDrift, suggestPathReconciliations } from './detect-drift.mjs';
 import { loadVaultDocs } from './vault.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -62,6 +62,44 @@ test('detectVaultPathDrift — uses doc.slug when frontmatter.slug absent', () =
     fileExists: () => false,
   });
   assert.equal(r.drifts[0].slug, 'elements/from-path');
+});
+
+// Atlas roadmap Track A #3 — reconcile suggestion. When a frontmatter path
+// drifts (file missing) and EXACTLY ONE existing repo source file shares the
+// same basename, surface it as a one-step reconcile target. Conservative: an
+// ambiguous (>1) or absent match yields no suggestion (never misleads).
+test('suggestPathReconciliations — unique same-basename file → suggestedPath', () => {
+  const drifts = [
+    { slug: 'elements/b', kind: 'element', key: 'path', missingPath: 'src/foo/Bar.tsx' },
+  ];
+  const repoFiles = ['src/baz/Bar.tsx', 'src/lib/util.ts'];
+  const out = suggestPathReconciliations(drifts, repoFiles);
+  assert.equal(out[0].suggestedPath, 'src/baz/Bar.tsx');
+  // original drift fields preserved
+  assert.equal(out[0].slug, 'elements/b');
+  assert.equal(out[0].missingPath, 'src/foo/Bar.tsx');
+});
+
+test('suggestPathReconciliations — no same-basename file → unchanged (no suggestedPath)', () => {
+  const drifts = [
+    { slug: 'elements/b', kind: 'element', key: 'path', missingPath: 'src/foo/Bar.tsx' },
+  ];
+  const out = suggestPathReconciliations(drifts, ['src/lib/util.ts']);
+  assert.equal('suggestedPath' in out[0], false);
+});
+
+test('suggestPathReconciliations — ambiguous basename (>1 match) → no suggestion', () => {
+  const drifts = [
+    { slug: 'elements/b', kind: 'element', key: 'path', missingPath: 'src/a/index.ts' },
+  ];
+  const out = suggestPathReconciliations(drifts, ['src/x/index.ts', 'src/y/index.ts']);
+  assert.equal('suggestedPath' in out[0], false);
+});
+
+test('suggestPathReconciliations — empty inputs are safe no-ops', () => {
+  assert.deepEqual(suggestPathReconciliations([], ['src/x.ts']), []);
+  const drifts = [{ slug: 's', kind: 'element', key: 'path', missingPath: 'a.ts' }];
+  assert.deepEqual(suggestPathReconciliations(drifts, []), drifts);
 });
 
 // Reality smoke: the dogfood vault must be drift-0 (same contract the

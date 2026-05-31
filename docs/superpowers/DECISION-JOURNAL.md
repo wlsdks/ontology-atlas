@@ -59,3 +59,7 @@
 3. 사용자가 주는 **새 방향 / 실사용자 신호** → 그때 큰 진전 재개.
 
 즉 "할 일이 없어서 멈춘 게 아니라, 코드로 풀 수 있는 retention 레버를 다 풀어서 외부 신호 대기 중" 이 정직한 상태. 무리한 marginal 변경(게이트가 어차피 refute)으로 commit 수 늘리지 말 것.
+
+---
+
+**[2026-05-31] Track A #3 — validate_vault pathDrift reconcile 제안 (basename-fuzzy):** drift(사라진 소스 경로)는 대개 *이동*. drift 의 basename 과 정확히 하나 일치하는 기존 repo 소스 파일이 있으면 `suggestedPath` 로 제시 — "어디로 갔지" 헌팅이 "혹시 X?" 한 단계로. **레버:** 1b drift-surfacing(이동 파일 inline 지목으로 vault-fresh 마찰↓). **객관 artifact:** pure fn `suggestPathReconciliations` 4 TDD(unique→제안 / 0·ambiguous→무제안 / empty→no-op) RED→GREEN, detect-drift 9/9 · integration 132 · 스키마 불변 · dogfood drift-0 유지(오탐 0) · 신규 실패 0. **설계 선택:** git-aware 변형 기각(staged 리네임만/fuzzy history + count-ripple) → basename-fuzzy(git 무관·신뢰성·count-ripple 0, 기존 validate_vault pathDrift enrich + 기존 walker 재사용, drift>0 일 때만 walk, unique match 만 추측). **적대 verdict:** 3-critic(disguised-polish / retention-irrelevant / skeptical-user) **0/3 refute → PASS**. **commit:** feat — detect-drift.mjs · infer-imports.mjs(listSourceFiles export) · index.js(validate_vault 핸들러+스키마) · mcp/README.

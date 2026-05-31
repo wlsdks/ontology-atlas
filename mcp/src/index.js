@@ -45,7 +45,7 @@ import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
-import { resolve } from 'node:path';
+import { relative, resolve } from 'node:path';
 
 import { existsSync, readFileSync } from 'node:fs';
 import {
@@ -80,10 +80,11 @@ import {
   IMPORT_EDGE_KIND_VALUES,
   IMPORT_UNRESOLVED_REASON_VALUES,
   inferImports,
+  listSourceFiles,
 } from './infer-imports.mjs';
 import { compileOntology } from './ontology-compiler.mjs';
 import { reconcileImportEdges } from './reconcile-imports.mjs';
-import { detectVaultPathDrift } from './detect-drift.mjs';
+import { detectVaultPathDrift, suggestPathReconciliations } from './detect-drift.mjs';
 import { scoreEvidence } from './evidence-rank.mjs';
 import { createCompiledOntologyCache } from './compiled-cache.mjs';
 import {
@@ -2111,6 +2112,11 @@ const TOOLS = [
                   kind: { type: 'string' },
                   key: { type: 'string', enum: ['path', 'elements[]'] },
                   missingPath: { type: 'string' },
+                  suggestedPath: {
+                    type: 'string',
+                    description:
+                      'Reconcile hint (Track A #3): a unique existing repo file sharing the missing file\'s basename — likely where the source moved. Present only on a unique match.',
+                  },
                 },
                 required: ['slug', 'kind', 'key', 'missingPath'],
                 additionalProperties: false,
@@ -4171,11 +4177,29 @@ function validateVaultTool({ repoRoot } = {}) {
   // (default: server cwd). Surfaced here because it is a vault-health signal the
   // agent already runs validate_vault for at first-contact. The agent fixes via
   // patch_concept (correct the path) or by removing the stale entry.
+  const driftRoot = repoRoot ? resolve(repoRoot) : process.cwd();
   const drift = detectVaultPathDrift({
     docs,
-    repoRoot: repoRoot ? resolve(repoRoot) : process.cwd(),
+    repoRoot: driftRoot,
     fileExists: existsSync,
   });
+  // Atlas roadmap Track A #3 — reconcile suggestion. A drifted path is usually a
+  // MOVE; when exactly one existing repo source file shares the missing file's
+  // basename, annotate the drift with `suggestedPath` so the fix is "did you
+  // mean X?". Only walk the repo when there IS drift (zero cost on a clean vault),
+  // and only suggest on a unique basename match (ambiguous names never guess).
+  let drifts = drift.drifts;
+  let suggestedCount = 0;
+  if (drifts.length > 0) {
+    try {
+      const repoFiles = listSourceFiles(driftRoot).map((abs) => relative(driftRoot, abs));
+      drifts = suggestPathReconciliations(drift.drifts, repoFiles);
+      suggestedCount = drifts.filter((d) => typeof d.suggestedPath === 'string').length;
+    } catch {
+      // walk failure (perms / not a dir) — keep plain drifts, never break validate.
+      drifts = drift.drifts;
+    }
+  }
   return {
     scanned: docs.length,
     problems,
@@ -4189,10 +4213,10 @@ function validateVaultTool({ repoRoot } = {}) {
       repoRoot: drift.repoRoot,
       nodesScanned: drift.nodesScanned,
       pathsChecked: drift.pathsChecked,
-      drifts: drift.drifts,
+      drifts,
       hint:
         drift.drifts.length > 0
-          ? `${drift.drifts.length} frontmatter path(s) point at files missing under repoRoot — fix the .md (patch_concept) or remove the stale entry. If repoRoot is wrong, re-run validate_vault with the correct repoRoot.`
+          ? `${drift.drifts.length} frontmatter path(s) point at files missing under repoRoot — fix the .md (patch_concept) or remove the stale entry.${suggestedCount > 0 ? ` ${suggestedCount} have a same-named file elsewhere in the repo (see suggestedPath — likely a move).` : ''} If repoRoot is wrong, re-run validate_vault with the correct repoRoot.`
           : drift.pathsChecked > 0
             ? `all ${drift.pathsChecked} frontmatter source path(s) exist under repoRoot (no code drift).`
             : 'no frontmatter path:/elements: source paths to check.',

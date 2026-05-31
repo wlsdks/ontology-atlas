@@ -211,6 +211,21 @@ export function inferImports(rootPath, options = {}) {
   };
 }
 
+/**
+ * Enumerate repo source files (absolute paths) reusing the same walker +
+ * ignore set as import inference — so callers (e.g. validate_vault's reconcile
+ * suggestion) skip node_modules / .git / dist / dotfiles and stay bounded.
+ *
+ * @param {string} rootPath
+ * @param {number} [maxFiles=4000]
+ * @returns {string[]} absolute source-file paths
+ */
+export function listSourceFiles(rootPath, maxFiles = 4000) {
+  const out = [];
+  walk(rootPath, DEFAULT_IGNORE, out, maxFiles);
+  return out;
+}
+
 function walk(dir, ignore, out, maxFiles) {
   if (out.length >= maxFiles) return;
   let entries;
