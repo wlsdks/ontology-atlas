@@ -6,7 +6,7 @@
  */
 
 interface StarterFile {
-  /** Relative path inside the vault (e.g. README.md, domains/example.md). */
+  /** Relative path inside the vault (e.g. README.md, domains/example-domain.md). */
   relPath: string;
   content: string;
 }
@@ -166,11 +166,11 @@ slug: project
 kind: project
 title: My project
 domains:
-  - domains/example
+  - domains/example-domain
 capabilities:
-  - capabilities/example
+  - capabilities/example-capability
 elements:
-  - elements/example
+  - elements/example-element
 ---
 
 # My project
@@ -194,17 +194,17 @@ The problem this project solves, or the value it creates, in a single sentence.
 
 1. Edit this file's \`title\` (and any other frontmatter besides \`kind: project\`)
    to match your project.
-2. Rename or copy starters like \`domains/example.md\` into your real domains.
+2. Rename or copy starters like \`domains/example-domain.md\` into your real domains.
 3. Register an AI agent (Claude Code, Cursor, …) and ask it to "tidy up
    the ontology in this vault."
 `;
 
 const DOMAIN_MD = `---
-slug: domains/example
+slug: domains/example-domain
 kind: domain
 title: Example domain
 capabilities:
-  - capabilities/example
+  - capabilities/example-capability
 ---
 
 # Example domain
@@ -231,12 +231,12 @@ the capabilities it owns under \`capabilities:\` in the frontmatter above.
 `;
 
 const CAPABILITY_MD = `---
-slug: capabilities/example
+slug: capabilities/example-capability
 kind: capability
 title: Example capability
-domain: domains/example
+domain: domains/example-domain
 elements:
-  - elements/example
+  - elements/example-element
 ---
 
 # Example capability
@@ -259,10 +259,10 @@ keys above accordingly.
 `;
 
 const ELEMENT_MD = `---
-slug: elements/example
+slug: elements/example-element
 kind: element
 title: Example element
-domain: domains/example
+domain: domains/example-domain
 ---
 
 # Example element
@@ -284,9 +284,9 @@ element (\`elements/jwt-token.md\`) and set \`domain:\` to the right parent.
 export const ONTOLOGY_STARTER_FILES: ReadonlyArray<StarterFile> = [
   { relPath: 'README.md', content: README_MD },
   { relPath: 'project.md', content: PROJECT_MD },
-  { relPath: 'domains/example.md', content: DOMAIN_MD },
-  { relPath: 'capabilities/example.md', content: CAPABILITY_MD },
-  { relPath: 'elements/example.md', content: ELEMENT_MD },
+  { relPath: 'domains/example-domain.md', content: DOMAIN_MD },
+  { relPath: 'capabilities/example-capability.md', content: CAPABILITY_MD },
+  { relPath: 'elements/example-element.md', content: ELEMENT_MD },
 ];
 
 /**

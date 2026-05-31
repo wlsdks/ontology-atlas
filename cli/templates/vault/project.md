@@ -3,11 +3,11 @@ slug: project
 kind: project
 title: My project
 domains:
-  - domains/example
+  - domains/example-domain
 capabilities:
-  - capabilities/example
+  - capabilities/example-capability
 elements:
-  - elements/example
+  - elements/example-element
 ---
 
 # My project
@@ -31,6 +31,6 @@ The problem this project solves, or the value it creates, in a single sentence.
 
 1. Edit this file's `title` (and any other frontmatter besides `kind: project`)
    to match your project.
-2. Rename or copy starters like `domains/example.md` into your real domains.
+2. Rename or copy starters like `domains/example-domain.md` into your real domains.
 3. Register an AI agent (Claude Code, Cursor, …) and ask it to "tidy up
    the ontology in this vault."

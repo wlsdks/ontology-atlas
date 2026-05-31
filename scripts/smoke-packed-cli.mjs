@@ -353,8 +353,8 @@ try {
   assert.match(cliMcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(cliMcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(cliMcpVerify.stdout, /maintenance cursor — ready page stable/);
-  assert.match(cliMcpVerify.stdout, /neighbors — elements\/example/);
-  assert.match(cliMcpVerify.stdout, /path — elements\/example → project \(1 hop, 1 edge\)/);
+  assert.match(cliMcpVerify.stdout, /neighbors — elements\/example-element/);
+  assert.match(cliMcpVerify.stdout, /path — elements\/example-element → project \(1 hop, 1 edge\)/);
   assert.match(cliMcpVerify.stdout, /project_scope/);
   assert.match(cliMcpVerify.stdout, installedVerifyStructuredContentRe);
 
@@ -651,8 +651,8 @@ try {
   assert.match(mcpVerify.stdout, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
   assert.match(mcpVerify.stdout, /maintenance cursor — missing afterActionId reported/);
   assert.match(mcpVerify.stdout, /maintenance cursor — ready page stable/);
-  assert.match(mcpVerify.stdout, /neighbors — elements\/example/);
-  assert.match(mcpVerify.stdout, /path — elements\/example → project \(1 hop, 1 edge\)/);
+  assert.match(mcpVerify.stdout, /neighbors — elements\/example-element/);
+  assert.match(mcpVerify.stdout, /path — elements\/example-element → project \(1 hop, 1 edge\)/);
   assert.match(mcpVerify.stdout, /project_scope/);
   assert.match(mcpVerify.stdout, installedVerifyStructuredContentRe);
 

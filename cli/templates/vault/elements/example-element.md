@@ -1,8 +1,8 @@
 ---
-slug: elements/example
+slug: elements/example-element
 kind: element
 title: Example element
-domain: domains/example
+domain: domains/example-domain
 ---
 
 # Example element

@@ -479,11 +479,11 @@ await test('mcp-verify — runs MCP package verify against a resolved vault', as
     assert.match(clean, /maintenance cursor — missing afterActionId reported/);
     assert.match(clean, /phase none; severity none; kind none; executable none; review none/);
     assert.match(clean, /maintenance cursor — ready page stable/);
-    assert.match(clean, /neighbors — elements\/example/);
-    assert.match(clean, /path — elements\/example → project \(1 hop, 1 edge\)/);
+    assert.match(clean, /neighbors — elements\/example-element/);
+    assert.match(clean, /path — elements\/example-element → project \(1 hop, 1 edge\)/);
     assert.match(clean, /project_scope/);
     assert.match(clean, /destructive dry-runs — rename_concept · merge_concepts · delete_concept preview without write-maintenance/);
-    assert.match(clean, /all_paths — elements\/example → project/);
+    assert.match(clean, /all_paths — elements\/example-element → project/);
     assert.match(clean, /structuredContent — direct 16\/16, write 5\/5 \(batch row-isolation 2\/2, batch no-write metadata 2\/2, destructive dry-run 3\/3\), maintenance 3\/3, graph 13\/13/);
   } finally {
     rmSync(root, { recursive: true, force: true });
@@ -5994,6 +5994,35 @@ function makeRepoFixture() {
   return repo;
 }
 
+await test('init — fresh starter vault compiles clean (no ambiguous alias / compile issue) [cold-start]', async () => {
+  // A freshly scaffolded vault must be CLEAN so the SessionStart hook stays
+  // silent on first contact (AGENTS.md: "a clean vault stays silent (no
+  // noise)"). Starter files that share a tail slug (e.g. all named example.md)
+  // produce an ambiguous-alias compile issue → the hook would nudge the user to
+  // "fix before relying on the graph" on a pristine vault. Guard against that.
+  const root = mkdtempSync(join(tmpdir(), 'cli-init-clean-'));
+  try {
+    const init = await run(['init', 'ontology'], { cwd: root });
+    assert.equal(init.code, 0, `init failed: ${init.stdout}\n${init.stderr}`);
+    const c = await run(['compile', join(root, 'ontology'), '--json']);
+    assert.equal(c.code, 0, `compile failed: ${c.stdout}\n${c.stderr}`);
+    const parsed = JSON.parse(c.stdout);
+    assert.equal(
+      parsed.ambiguousAliasCount,
+      0,
+      `fresh init has ambiguous aliases: ${JSON.stringify(parsed.ambiguousAliases)}`,
+    );
+    assert.equal(
+      parsed.issueCount,
+      0,
+      `fresh init has compile issues: ${JSON.stringify(parsed.issues)}`,
+    );
+    assert.equal(parsed.unresolvedEdgeCount, 0, 'fresh init has unresolved edges');
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 await test('analyze --apply — clean init starter nodes are pruned', async () => {
   const repo = makeRepoFixture();
   try {
@@ -6006,12 +6035,12 @@ await test('analyze --apply — clean init starter nodes are pruned', async () =
     const clean = stripAnsi(r.stdout);
     assert.match(clean, /starters\s+4 removed/);
     assert.equal(existsSyncTest(join(vault, 'project.md')), false);
-    assert.equal(existsSyncTest(join(vault, 'domains', 'example.md')), false);
+    assert.equal(existsSyncTest(join(vault, 'domains', 'example-domain.md')), false);
     assert.equal(
-      existsSyncTest(join(vault, 'capabilities', 'example.md')),
+      existsSyncTest(join(vault, 'capabilities', 'example-capability.md')),
       false,
     );
-    assert.equal(existsSyncTest(join(vault, 'elements', 'example.md')), false);
+    assert.equal(existsSyncTest(join(vault, 'elements', 'example-element.md')), false);
     assert.equal(existsSyncTest(join(vault, 'test-app.md')), true);
     assert.equal(existsSyncTest(join(vault, 'capabilities', 'auth.md')), true);
   } finally {
@@ -6026,7 +6055,7 @@ await test('analyze --apply — edited starter nodes are preserved', async () =>
     assert.equal(init.code, 0, `init failed: ${init.stdout}\n${init.stderr}`);
 
     const vault = join(repo, 'ontology');
-    const editedDomain = join(vault, 'domains', 'example.md');
+    const editedDomain = join(vault, 'domains', 'example-domain.md');
     writeFileSync(
       editedDomain,
       readFileSync(editedDomain, 'utf-8').replace(
@@ -6042,7 +6071,7 @@ await test('analyze --apply — edited starter nodes are preserved', async () =>
     assert.match(clean, /starters\s+3 removed · 1 preserved/);
     assert.equal(existsSyncTest(editedDomain), true);
     assert.match(readFileSync(editedDomain, 'utf-8'), /title: Edited domain/);
-    assert.equal(existsSyncTest(join(vault, 'capabilities', 'example.md')), false);
+    assert.equal(existsSyncTest(join(vault, 'capabilities', 'example-capability.md')), false);
     assert.equal(existsSyncTest(join(vault, 'test-app.md')), true);
   } finally {
     rmSync(repo, { recursive: true, force: true });

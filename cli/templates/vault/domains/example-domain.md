@@ -1,9 +1,9 @@
 ---
-slug: domains/example
+slug: domains/example-domain
 kind: domain
 title: Example domain
 capabilities:
-  - capabilities/example
+  - capabilities/example-capability
 ---
 
 # Example domain

@@ -1,10 +1,10 @@
 ---
-slug: capabilities/example
+slug: capabilities/example-capability
 kind: capability
 title: Example capability
-domain: domains/example
+domain: domains/example-domain
 elements:
-  - elements/example
+  - elements/example-element
 ---
 
 # Example capability

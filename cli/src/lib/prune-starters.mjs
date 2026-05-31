@@ -8,18 +8,18 @@ const STARTER_FILES = [
     markers: ['title: My project', 'Write a one- or two-line summary of your project here'],
   },
   {
-    slug: 'domains/example',
-    path: join('domains', 'example.md'),
+    slug: 'domains/example-domain',
+    path: join('domains', 'example-domain.md'),
     markers: ['title: Example domain', 'A *domain* is a large area of your project'],
   },
   {
-    slug: 'capabilities/example',
-    path: join('capabilities', 'example.md'),
+    slug: 'capabilities/example-capability',
+    path: join('capabilities', 'example-capability.md'),
     markers: ['title: Example capability', 'A *capability* is one user-visible feature'],
   },
   {
-    slug: 'elements/example',
-    path: join('elements', 'example.md'),
+    slug: 'elements/example-element',
+    path: join('elements', 'example-element.md'),
     markers: ['title: Example element', 'An *element* is a smaller unit a capability uses'],
   },
 ];

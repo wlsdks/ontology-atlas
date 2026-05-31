@@ -27,9 +27,9 @@ describe("ONTOLOGY_STARTER_FILES", () => {
     const paths = ONTOLOGY_STARTER_FILES.map((f) => f.relPath);
     expect(paths).toContain("README.md");
     expect(paths).toContain("project.md");
-    expect(paths).toContain("domains/example.md");
-    expect(paths).toContain("capabilities/example.md");
-    expect(paths).toContain("elements/example.md");
+    expect(paths).toContain("domains/example-domain.md");
+    expect(paths).toContain("capabilities/example-capability.md");
+    expect(paths).toContain("elements/example-element.md");
   });
 
   it("모든 파일이 frontmatter 시작 (---) + kind 키 포함", () => {
@@ -41,9 +41,9 @@ describe("ONTOLOGY_STARTER_FILES", () => {
 
   it("3 example 파일은 정확히 1 줄로 example slug 가짐 (도메인/역량/요소 컨벤션)", () => {
     const example = ONTOLOGY_STARTER_FILES.find(
-      (f) => f.relPath === "domains/example.md",
+      (f) => f.relPath === "domains/example-domain.md",
     );
-    expect(example?.content).toMatch(/^slug:\s+domains\/example/m);
+    expect(example?.content).toMatch(/^slug:\s+domains\/example-domain/m);
   });
 
   it("app starter 와 CLI template 은 같은 vault README/setup 안내를 제공", () => {

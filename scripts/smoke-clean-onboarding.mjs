@@ -96,15 +96,15 @@ const bootstrap = run(
 assert.match(bootstrap.stdout, /starters.*4.*removed/);
 assert.equal(existsSync(join(project, 'ontology', 'project.md')), false);
 assert.equal(
-  existsSync(join(project, 'ontology', 'domains', 'example.md')),
+  existsSync(join(project, 'ontology', 'domains', 'example-domain.md')),
   false,
 );
 assert.equal(
-  existsSync(join(project, 'ontology', 'capabilities', 'example.md')),
+  existsSync(join(project, 'ontology', 'capabilities', 'example-capability.md')),
   false,
 );
 assert.equal(
-  existsSync(join(project, 'ontology', 'elements', 'example.md')),
+  existsSync(join(project, 'ontology', 'elements', 'example-element.md')),
   false,
 );
 assert.equal(existsSync(join(project, 'ontology', 'clean-onboarding-app.md')), true);

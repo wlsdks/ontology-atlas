@@ -142,6 +142,14 @@ Track A 순서 (read-only/local/charter-safe, mcp/ 또는 client 격리):
    각 TDD+gate. charter border-style 준수.
 10. npm 패키징 위생(`files`/`.npmignore` 로 `*.test.mjs` 제외).
 
+**[2026-05-31] 1a cold-start 버그 발견+수정 (Track A 번호 외, 신규):** fresh `oh-my-ontology init`
+(+ web starter) 가 3 starter 파일을 모두 `example` tail-slug 로 만들어 ambiguous-alias compile issue 1개를
+ship → SessionStart hook 이 pristine vault 에 "⚠ Needs attention … fix before relying on the graph" 첫-접촉
+false alarm("clean vault stays silent" 약속 위반). starter 를 `example-domain`/`-capability`/`-element` 로
+unique rename(양 source + prune-starters + tests). RED→GREEN(fresh init compile 0/0/0) + 게이트 0/3 refute.
+write-path data-loss class(#5a/#5d) 처럼 *코드가 진화하며 생긴 게 아니라 처음부터 있던* cold-start gap 을
+audit 으로 발견한 사례 — 남은 retention 레버는 대부분 이런 "기존 미발견 gap" 형태.
+
 남은 surface-first(자율 금지): 실제 npm publish/Release(사용자만), 백엔드·hosted·share-link(B5 보류) — `## Blocked` 참조.
 
 ## Blocked / Surfaced — 사람 승인 대기 (매 firing 먼저 읽기 · 재시도 금지)
