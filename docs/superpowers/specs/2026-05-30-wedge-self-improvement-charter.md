@@ -115,20 +115,21 @@ Track A 순서 (read-only/local/charter-safe, mcp/ 또는 client 격리):
 4. `find_evidence` relevance ranking (additive score, shape 불변).
 5. per-doc live-staleness banner (P2). 6. adaptive web polling (P2). 7. incremental fingerprint (P2).
 8. starter templates (npm publish 후).
+9. **(P3, greenlit 2026-05-31)** 빌더 staging/draft 기본 + undo/redo — big-IA 라 **design step(SPEC) 먼저**,
+   그 다음 TDD. charter border-style(추가=인디고 밑줄/삭제=점선) 준수. developer 회의 설계 캔버스.
+10. npm 패키징 위생(`files`/`.npmignore` 로 `*.test.mjs` 제외).
 
-Track B(surface-first, 사람 결정 대기)는 `## Blocked` 참조 — 자율 빌드 금지.
+남은 surface-first(자율 금지): 실제 npm publish/Release(사용자만), 백엔드·hosted·share-link(B5 보류) — `## Blocked` 참조.
 
 ## Blocked / Surfaced — 사람 승인 대기 (매 firing 먼저 읽기 · 재시도 금지)
 
-**Track B — Atlas Vision Roadmap surface-first 결정 (2026-05-31, 사용자에게 surface 완료, 답 대기).**
-자율 빌드 금지 — 사용자 답 후에만 backlog 진입:
-1. **npm publish CLI+MCP + first signed Release** — #1 growth unblock. hard-gated. 루프는 `npm pack --dry-run` audit 만.
-2. **human meeting/design surface 투자 여부** — 현 PRODUCT-DIRECTION 은 "bonus, not target"; present mode 삭제됨
-   (495dd47f). 사용자 pillar-3 비전이 이를 override → 확인 시 PRODUCT-DIRECTION.md 갱신 후 staging overlay + undo/redo 빌드.
-3. **builder write/commit 모델** — immediate-write vs staging/draft.
-4. **landing positioning** — agent-memory-first hero + benchmark chip. PR #274 web-demo-suppression 재검토 포함
-   (`check-hosted-download-surface.mjs` 가드 존재).
-5. **hosted-sync / collaboration / share-link** — R10 no-backend 충돌. pillar-4 가 원할 수 있음 → 신규 product-direction 결정.
+**Track B — 2026-05-31 사용자 결정 완료 (roadmap "## Decisions" 참조).**
+- B2/B3 **greenlit**: 빌더 staging/draft 기본 모델 → 자율 backlog 진입(big-IA 라 design step 먼저). developer 의 회의 설계 캔버스 — PM/비개발자 타깃 전환 *아님*.
+- B5 **local-first 집중, hosted 나중**: 백엔드/협업/share-link 지금 금지(여전히 surface-first). 템플릿·static-HTML export·런치만 자율.
+- B1 **승인용 준비**: npm pack 감사 완료(clean). 실제 `npm publish` + Release 는 **사용자만**(hard-gated, 자율 금지 유지).
+- B4 positioning: B1(런치) 이후로 미룸.
+
+**여전히 자율 금지(surface-first 유지):** 실제 npm publish/Release, 백엔드·인증·hosted·share-link(B5 보류), 디자인 헌장 위반.
 
 _(이전: SPEC-loop-reward-substrate 2026-05-31 승인 + Phase 1 구현 완료. 해소.)_
 

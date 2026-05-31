@@ -50,3 +50,14 @@ Ordered by leverage + dependency. The loop executes these via the v2.2 gate (obj
 ## Sequencing
 
 Track A spine runs autonomously in the loop now (start with #1). Track B waits on the user's answers below; once answered, the confirmed items enter the loop's backlog. Pillar-3 trio (staging/undo/draft-persist) is **hard-gated** behind decision B2, not advisory.
+
+## Decisions (2026-05-31, user — Track B resolved)
+
+- **B2 design surface → Staging/draft 기본 (greenlit).** Builder gets a unified whole-canvas staging/draft layer: edits accumulate as pending diffs (added=indigo underline, removed=dashed — charter border-style), vault written only on "Apply N changes"; "Discard" throws away. This is the developer's *meeting design canvas* (NOT a pivot to PM/non-dev targeting — audience stays developer+agent). Big-IA → needs a focused design step first, then TDD. **B3 (commit model) resolved: staging-default.** PRODUCT-DIRECTION updated to mark the human design-surface a target *capability*.
+- **B5 business → local-first 집중, hosted 나중에 결정.** Near-term growth stays strictly local-first (templates, shareable static-HTML export, npm/launch — all autonomous). NO backend/auth now. Hosted/collaboration/share-link parked until real demand → revisited as a deliberate product-direction decision then.
+- **B1 launch → 승인용으로 준비.** `npm pack --dry-run` audited 2026-05-31: CLI `oh-my-ontology@0.11.0` (219kB/91 files) + MCP `oh-my-ontology-mcp@0.12.0` (209kB/19 files) both pack clean. Hygiene: both tarballs ship `*.test.mjs` (add to `files`/`.npmignore`). Remaining for the user: trigger `npm publish` (hard-gated) + cut first signed Release + signed DMG + demo gif (launch checklist prerequisites). Loop does NOT publish.
+- **B4 positioning** — downstream of B1; revisit (agent-memory-first hero + web-demo discoverability, incl. the PR #274 / `check-hosted-download-surface.mjs` guard) once launch is live.
+
+### Expanded loop backlog (post-decision)
+
+Track A spine (1→8) **plus**: pillar-3 staging/draft layer (design step → build), undo/redo (developer-trust framing), starter templates (after publish), npm packaging hygiene (`files`/`.npmignore`). All autonomous except the actual `npm publish` + Release (user-only).
