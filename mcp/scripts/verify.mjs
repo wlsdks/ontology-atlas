@@ -862,7 +862,7 @@ export function toolsListSchemaFailure(tools) {
   if (
     evidenceMatchesSchema?.type !== 'array' ||
     evidenceMatchesSchema.items?.type !== 'object' ||
-    !sameArray(evidenceMatchesSchema.items?.required, ['slug', 'kind', 'title', 'mtime', 'matchedIn', 'excerpt'])
+    !sameArray(evidenceMatchesSchema.items?.required, ['slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'])
   ) {
     return 'find_evidence outputSchema matches drift';
   }
@@ -879,6 +879,9 @@ export function toolsListSchemaFailure(tools) {
   }
   if (!sameArray(evidenceMatchesSchema.items?.properties?.matchedIn?.enum, ['frontmatter', 'body'])) {
     return 'find_evidence outputSchema match matchedIn drift';
+  }
+  if (evidenceMatchesSchema.items?.properties?.score?.type !== 'number' || evidenceMatchesSchema.items?.properties?.score?.minimum !== 0) {
+    return 'find_evidence outputSchema match score drift';
   }
 
   const findBacklinksTool = tools.find((tool) => tool?.name === 'find_backlinks');
@@ -1629,7 +1632,7 @@ export function toolsListSchemaFailure(tools) {
   if (validateTool.outputSchema?.type !== 'object') {
     return 'validate_vault outputSchema root drift';
   }
-  if (!sameArray(validateTool.outputSchema?.required, ['scanned', 'problems', 'summary'])) {
+  if (!sameArray(validateTool.outputSchema?.required, ['scanned', 'problems', 'summary', 'pathDrift'])) {
     return 'validate_vault outputSchema required drift';
   }
   if (validateTool.outputSchema?.additionalProperties !== false) {

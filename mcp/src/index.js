@@ -84,6 +84,7 @@ import {
 import { compileOntology } from './ontology-compiler.mjs';
 import { reconcileImportEdges } from './reconcile-imports.mjs';
 import { detectVaultPathDrift } from './detect-drift.mjs';
+import { scoreEvidence } from './evidence-rank.mjs';
 import { createCompiledOntologyCache } from './compiled-cache.mjs';
 import {
   EDGE_TARGET_KIND_VALUES,
@@ -770,11 +771,17 @@ const TOOLS = [
   {
     name: 'find_evidence',
     description:
-      "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, heading/표/코드 skip) so agents see *what the matching doc says* without an extra get_concept call.",
+      "Find vault docs that mention a given concept by title. Useful when an AI agent asks where a capability is realized in code or docs. Each match includes a prose `excerpt` (max 200 chars, heading/표/코드 skip) so agents see *what the matching doc says* without an extra get_concept call. Matches are RANKED by a deterministic relevance `score` (title match > frontmatter ref > body, plus a title token-overlap tiebreaker) and returned best-first — so the most relevant node is `matches[0]`, not buried in walk order. Pass `limit` for the top-N.",
     inputSchema: {
       type: 'object',
       properties: {
         title: nonBlankStringSchema('Concept title to search for (case-insensitive substring match).'),
+        limit: {
+          type: 'integer',
+          minimum: 1,
+          maximum: 500,
+          description: 'Return only the top-N highest-scoring matches. Omit for all matches (still ranked).',
+        },
       },
       required: ['title'],
     },
@@ -796,9 +803,14 @@ const TOOLS = [
                 type: 'string',
                 enum: ['frontmatter', 'body'],
               },
+              score: {
+                type: 'number',
+                minimum: 0,
+                description: 'Relevance score (higher = better). matches are sorted by this descending.',
+              },
               excerpt: { type: 'string' },
             },
-            required: ['slug', 'kind', 'title', 'mtime', 'matchedIn', 'excerpt'],
+            required: ['slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
             additionalProperties: false,
           },
         },
@@ -3166,20 +3178,24 @@ function getConceptsBatch({ slugs }) {
   return { concepts };
 }
 
-function findEvidence({ title }) {
+function findEvidence({ title, limit } = {}) {
   requireNonBlankString(title, 'title');
+  requireOptionalPositiveInteger(limit, 'limit', { max: 500 });
   const docs = loadVaultDocs(VAULT_ROOT);
-  const needle = title.toLowerCase();
   const matches = [];
   for (const doc of docs) {
-    const docTitle =
-      String(doc.frontmatter.title || doc.frontmatter.name || '').toLowerCase();
-    const inFrontmatter =
-      docTitle.includes(needle) ||
-      String(doc.frontmatter.capabilities || '').toLowerCase().includes(needle) ||
-      String(doc.frontmatter.elements || '').toLowerCase().includes(needle);
-    const inBody = doc.body.toLowerCase().includes(needle);
-    if (!inFrontmatter && !inBody) continue;
+    const docTitle = String(doc.frontmatter.title || doc.frontmatter.name || '');
+    // capabilities/elements joined with \n so a needle can't false-match across
+    // the field boundary — keeps inclusion identical to the prior per-field sweep.
+    const frontmatterHaystack = `${String(doc.frontmatter.capabilities ?? '')}\n${String(doc.frontmatter.elements ?? '')}`;
+    // Atlas Track A #4 — relevance score (title > frontmatter ref > body + title
+    // token-overlap). Inclusion unchanged: score>0 ⟺ a substring matched.
+    const { score, matchedIn } = scoreEvidence(title, {
+      title: docTitle,
+      frontmatterHaystack,
+      body: doc.body,
+    });
+    if (score <= 0) continue;
     matches.push({
       slug: doc.slug,
       kind: doc.frontmatter.kind,
@@ -3189,14 +3205,18 @@ function findEvidence({ title }) {
       // 결과든 같은 sort/filter 로직 재사용.
       domain: doc.frontmatter.domain,
       mtime: doc.mtime,
-      matchedIn: inFrontmatter ? 'frontmatter' : 'body',
+      matchedIn,
+      score,
       // R+ — 매치된 doc 의 prose 한 줄 요약 (max 200 chars). agent 가 매치를
       // 받자마자 "이 doc 이 무슨 내용인가?" 추가 get_concept 없이 파악.
       // get_concept 의 800자 helper 와 같은 prose-aware 추출 + 더 짧은 cap.
       excerpt: extractSummaryExcerpt(doc.body, 200),
     });
   }
-  return { query: title, matches };
+  // Best match first: score desc, then slug asc for deterministic ties.
+  matches.sort((a, b) => b.score - a.score || a.slug.localeCompare(b.slug));
+  const limited = typeof limit === 'number' ? matches.slice(0, limit) : matches;
+  return { query: title, matches: limited };
 }
 
 const ADD_CONCEPT_KINDS = new Set(['project', 'domain', 'capability', 'element', 'document']);

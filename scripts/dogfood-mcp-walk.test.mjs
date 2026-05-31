@@ -662,13 +662,14 @@ function makeDogfoodToolsList() {
               type: "array",
               items: {
                 type: "object",
-                required: ["slug", "kind", "title", "mtime", "matchedIn", "excerpt"],
+                required: ["slug", "kind", "title", "mtime", "matchedIn", "score", "excerpt"],
                 properties: {
                   slug: { type: "string" },
                   kind: { type: "string" },
                   title: { type: "string" },
                   mtime: { type: "number", minimum: 0 },
                   matchedIn: { enum: ["frontmatter", "body"] },
+                  score: { type: "number", minimum: 0 },
                   excerpt: { type: "string" },
                 },
                 additionalProperties: false,

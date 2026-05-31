@@ -1634,9 +1634,10 @@ describe('verify.mjs first-contact gates', () => {
         inputSchema: { additionalProperties: false, properties: {} },
         outputSchema: {
           type: 'object',
-          required: ['scanned', 'problems', 'summary'],
+          required: ['scanned', 'problems', 'summary', 'pathDrift'],
           properties: {
             scanned: { type: 'integer', minimum: 0 },
+            pathDrift: { type: 'object' },
             problems: {
               type: 'array',
               items: {
@@ -1731,13 +1732,14 @@ describe('verify.mjs first-contact gates', () => {
               type: 'array',
               items: {
                 type: 'object',
-                required: ['slug', 'kind', 'title', 'mtime', 'matchedIn', 'excerpt'],
+                required: ['slug', 'kind', 'title', 'mtime', 'matchedIn', 'score', 'excerpt'],
                 properties: {
                   slug: { type: 'string' },
                   kind: { type: 'string' },
                   title: { type: 'string' },
                   mtime: { type: 'number', minimum: 0 },
                   matchedIn: { enum: ['frontmatter', 'body'] },
+                  score: { type: 'number', minimum: 0 },
                   excerpt: { type: 'string' },
                 },
                 additionalProperties: false,
