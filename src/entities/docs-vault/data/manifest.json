@@ -1,6 +1,6 @@
 {
   "version": "2026-04-23",
-  "generatedAt": "2026-05-31T08:32:12.266Z",
+  "generatedAt": "2026-05-31T09:11:33.304Z",
   "docs": [
     {
       "slug": "AGENT-GRAPH-WORKFLOW",
@@ -772,6 +772,157 @@
       "linksOut": []
     },
     {
+      "slug": "archive/dogfood-friction-2026-05-06",
+      "path": "docs/archive/dogfood-friction-2026-05-06.md",
+      "title": "Dogfood friction report — external-user simulation (2026-05-06)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Dogfood friction report — external-user simulation (2026-05-06)",
+          "slug": "dogfood-friction-report-external-user-simulation-2026-05-06"
+        },
+        {
+          "depth": 2,
+          "text": "TL;DR",
+          "slug": "tldr"
+        },
+        {
+          "depth": 2,
+          "text": "측정 환경",
+          "slug": "측정-환경"
+        },
+        {
+          "depth": 2,
+          "text": "🚨 Critical friction (publish 후에도 그대로)",
+          "slug": "critical-friction-publish-후에도-그대로"
+        },
+        {
+          "depth": 3,
+          "text": "F1. `.mcp.json` 위치가 vault target 안 — 사용자가 codebase root 에서 못 인식",
+          "slug": "f1-mcpjson-위치가-vault-target-안-사용자가-codebase-root-에서-못-인식"
+        },
+        {
+          "depth": 3,
+          "text": "F2. `add` 의 default layout drift — starter 와 다른 위치",
+          "slug": "f2-add-의-default-layout-drift-starter-와-다른-위치"
+        },
+        {
+          "depth": 2,
+          "text": "⚙️ Setup friction (publish 가 plan 이라 자연 해결)",
+          "slug": "setup-friction-publish-가-plan-이라-자연-해결"
+        },
+        {
+          "depth": 3,
+          "text": "F3. `pnpm link --global` 이 `pnpm setup` prereq",
+          "slug": "f3-pnpm-link---global-이-pnpm-setup-prereq"
+        },
+        {
+          "depth": 3,
+          "text": "F4. `npx -y oh-my-ontology-mcp` 가 publish 전 404",
+          "slug": "f4-npx--y-oh-my-ontology-mcp-가-publish-전-404"
+        },
+        {
+          "depth": 2,
+          "text": "측정 통과 사항",
+          "slug": "측정-통과-사항"
+        },
+        {
+          "depth": 2,
+          "text": "Fix priority",
+          "slug": "fix-priority"
+        },
+        {
+          "depth": 2,
+          "text": "기록되지 않은 — *진짜 외부 사용자 입장의 한계*",
+          "slug": "기록되지-않은-진짜-외부-사용자-입장의-한계"
+        },
+        {
+          "depth": 2,
+          "text": "Perf 측정 — vault scale (R11 #31 baseline 갱신, 2026-05-06)",
+          "slug": "perf-측정-vault-scale-r11-31-baseline-갱신-2026-05-06"
+        }
+      ],
+      "excerpt": "Setup: /tmp/omotdogfood 에 작은 todo app (4 도메인: auth/task/notification/user) 만든 후, npm link 로 cli + mcp 글로벌 시뮬. 외부 사용자 첫 흐름 시뮬레이션. 2 critical friction — fix 가치 큼, publish 후에도 그대로 (즉시 fix 가능) 2 setup friction — publish 가 원래 plan 이라 publish 후 사라짐 (fix 불필요) MCP 14 tools 동작 — sandbox vault (7 nodes) 에 spawn 후 listconcepts / ",
+      "wordCount": 941,
+      "updatedAt": "2026-05-06T09:30:43.292Z",
+      "linksOut": []
+    },
+    {
+      "slug": "archive/dogfood-paravel-2026-05-06",
+      "path": "docs/archive/dogfood-paravel-2026-05-06.md",
+      "title": "Dogfood — real external codebase (sanitized, 2026-05-06)",
+      "tags": [],
+      "frontmatter": {},
+      "headings": [
+        {
+          "depth": 1,
+          "text": "Dogfood — real external codebase (sanitized, 2026-05-06)",
+          "slug": "dogfood-real-external-codebase-sanitized-2026-05-06"
+        },
+        {
+          "depth": 2,
+          "text": "TL;DR",
+          "slug": "tldr"
+        },
+        {
+          "depth": 2,
+          "text": "측정 환경",
+          "slug": "측정-환경"
+        },
+        {
+          "depth": 2,
+          "text": "✅ PR #165 두 fix 검증 (real codebase)",
+          "slug": "pr-165-두-fix-검증-real-codebase"
+        },
+        {
+          "depth": 3,
+          "text": "F1 — cwd .mcp.json 자동 생성",
+          "slug": "f1-cwd-mcpjson-자동-생성"
+        },
+        {
+          "depth": 3,
+          "text": "F2 — auto-prefix default on",
+          "slug": "f2-auto-prefix-default-on"
+        },
+        {
+          "depth": 2,
+          "text": "측정 결과 — sub-second cli 부담",
+          "slug": "측정-결과-sub-second-cli-부담"
+        },
+        {
+          "depth": 2,
+          "text": "🚨 새 친구션 발견",
+          "slug": "새-친구션-발견"
+        },
+        {
+          "depth": 3,
+          "text": "F5 — element kind 의 path-style slug + auto-prefix → 4단계 nested",
+          "slug": "f5-element-kind-의-path-style-slug-auto-prefix-4단계-nested"
+        },
+        {
+          "depth": 2,
+          "text": "통과 사항",
+          "slug": "통과-사항"
+        },
+        {
+          "depth": 2,
+          "text": "*진짜 외부 사용자 입장의 한계* 여전히 남음",
+          "slug": "진짜-외부-사용자-입장의-한계-여전히-남음"
+        },
+        {
+          "depth": 2,
+          "text": "Paravel-App vault 자체 정책",
+          "slug": "paravel-app-vault-자체-정책"
+        }
+      ],
+      "excerpt": "Setup: 사용자 본인 real codebase (Korean enterprise community app, React Native + Expo + FSD, 1.8 GB, 20 features) 에 npm link 로 publish 시뮬한 cli + mcp 적용. PR 165 (R15 closeout) 머지 직후 main 의 cli init (cwd .mcp.json + autoprefix default) + cli add 사용. Sanitization: codebase 이름 / company codename / specific feature names 추상화. 도",
+      "wordCount": 825,
+      "updatedAt": "2026-05-06T09:30:43.292Z",
+      "linksOut": []
+    },
+    {
       "slug": "archive/LOCAL-FIRST-SYNC",
       "path": "docs/archive/LOCAL-FIRST-SYNC.md",
       "title": "Local-first / Firebase Sync 정책",
@@ -1474,8 +1625,8 @@
         }
       ],
       "excerpt": "이 폴더는 과거 세션에서 만든 longform 분석 문서 의 보관소다. 현재 mission / contributor 룰의 진실원은 다음 4 개: docs/PRODUCTDIRECTION.md — mission v2 spec docs/FEATURES.md — 사용자 가시 기능 전수 docs/ARCHITECTURE.md / docs/DATAMODEL.md / docs/DESIGNSYSTEM.md / docs/DEPLOYMENT.md — 영역별 룰 docs/CHANGELOG.md — 시간순 변화 archive 안 문서는 역사적 맥락 으로 남겨둘 뿐 contributor 가이",
-      "wordCount": 184,
-      "updatedAt": "2026-05-04T01:27:35.684Z",
+      "wordCount": 229,
+      "updatedAt": "2026-05-31T09:10:08.821Z",
       "linksOut": []
     },
     {
@@ -2412,6 +2563,11 @@
           "depth": 1,
           "text": "CHANGELOG",
           "slug": "changelog"
+        },
+        {
+          "depth": 2,
+          "text": "2026-05-31 — cold-start 정리 · 실시간 폴링 · 에이전트 그래프 도구 정합",
+          "slug": "2026-05-31-cold-start-정리-실시간-폴링-에이전트-그래프-도구-정합"
         },
         {
           "depth": 2,
@@ -3474,9 +3630,9 @@
           "slug": "before-2026-04-30"
         }
       ],
-      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 로컬 vault 편집기에서 저장이 디스크 충돌로 거부됐을 때 미저장 편집이 조용히 사라지던 데이터 손실 버그를 고쳤다. 사람이 .md 를 편집하는 동안 AI 에이",
-      "wordCount": 17939,
-      "updatedAt": "2026-05-31T07:42:35.151Z",
+      "excerpt": "Major change history. Code commit messages answer why; this file answers when / which surface changed. Focused on uservisible changes, not PRlevel granularity. Newest at the top. Datebased since we're presemver in the v0.x stage. 자율 개선 루프가 첫접촉(coldstart)·실시간·에이전트 사용성 레버를 한 바퀴 돌며 다듬었다. freshinit false alarm 제거 — ohmyont",
+      "wordCount": 18072,
+      "updatedAt": "2026-05-31T09:11:24.213Z",
       "linksOut": [
         "slug"
       ]
@@ -3984,157 +4140,6 @@
       "linksOut": []
     },
     {
-      "slug": "dogfood-friction-2026-05-06",
-      "path": "docs/dogfood-friction-2026-05-06.md",
-      "title": "Dogfood friction report — external-user simulation (2026-05-06)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Dogfood friction report — external-user simulation (2026-05-06)",
-          "slug": "dogfood-friction-report-external-user-simulation-2026-05-06"
-        },
-        {
-          "depth": 2,
-          "text": "TL;DR",
-          "slug": "tldr"
-        },
-        {
-          "depth": 2,
-          "text": "측정 환경",
-          "slug": "측정-환경"
-        },
-        {
-          "depth": 2,
-          "text": "🚨 Critical friction (publish 후에도 그대로)",
-          "slug": "critical-friction-publish-후에도-그대로"
-        },
-        {
-          "depth": 3,
-          "text": "F1. `.mcp.json` 위치가 vault target 안 — 사용자가 codebase root 에서 못 인식",
-          "slug": "f1-mcpjson-위치가-vault-target-안-사용자가-codebase-root-에서-못-인식"
-        },
-        {
-          "depth": 3,
-          "text": "F2. `add` 의 default layout drift — starter 와 다른 위치",
-          "slug": "f2-add-의-default-layout-drift-starter-와-다른-위치"
-        },
-        {
-          "depth": 2,
-          "text": "⚙️ Setup friction (publish 가 plan 이라 자연 해결)",
-          "slug": "setup-friction-publish-가-plan-이라-자연-해결"
-        },
-        {
-          "depth": 3,
-          "text": "F3. `pnpm link --global` 이 `pnpm setup` prereq",
-          "slug": "f3-pnpm-link---global-이-pnpm-setup-prereq"
-        },
-        {
-          "depth": 3,
-          "text": "F4. `npx -y oh-my-ontology-mcp` 가 publish 전 404",
-          "slug": "f4-npx--y-oh-my-ontology-mcp-가-publish-전-404"
-        },
-        {
-          "depth": 2,
-          "text": "측정 통과 사항",
-          "slug": "측정-통과-사항"
-        },
-        {
-          "depth": 2,
-          "text": "Fix priority",
-          "slug": "fix-priority"
-        },
-        {
-          "depth": 2,
-          "text": "기록되지 않은 — *진짜 외부 사용자 입장의 한계*",
-          "slug": "기록되지-않은-진짜-외부-사용자-입장의-한계"
-        },
-        {
-          "depth": 2,
-          "text": "Perf 측정 — vault scale (R11 #31 baseline 갱신, 2026-05-06)",
-          "slug": "perf-측정-vault-scale-r11-31-baseline-갱신-2026-05-06"
-        }
-      ],
-      "excerpt": "Setup: /tmp/omotdogfood 에 작은 todo app (4 도메인: auth/task/notification/user) 만든 후, npm link 로 cli + mcp 글로벌 시뮬. 외부 사용자 첫 흐름 시뮬레이션. 2 critical friction — fix 가치 큼, publish 후에도 그대로 (즉시 fix 가능) 2 setup friction — publish 가 원래 plan 이라 publish 후 사라짐 (fix 불필요) MCP 14 tools 동작 — sandbox vault (7 nodes) 에 spawn 후 listconcepts / ",
-      "wordCount": 941,
-      "updatedAt": "2026-05-06T02:02:33.371Z",
-      "linksOut": []
-    },
-    {
-      "slug": "dogfood-paravel-2026-05-06",
-      "path": "docs/dogfood-paravel-2026-05-06.md",
-      "title": "Dogfood — real external codebase (sanitized, 2026-05-06)",
-      "tags": [],
-      "frontmatter": {},
-      "headings": [
-        {
-          "depth": 1,
-          "text": "Dogfood — real external codebase (sanitized, 2026-05-06)",
-          "slug": "dogfood-real-external-codebase-sanitized-2026-05-06"
-        },
-        {
-          "depth": 2,
-          "text": "TL;DR",
-          "slug": "tldr"
-        },
-        {
-          "depth": 2,
-          "text": "측정 환경",
-          "slug": "측정-환경"
-        },
-        {
-          "depth": 2,
-          "text": "✅ PR #165 두 fix 검증 (real codebase)",
-          "slug": "pr-165-두-fix-검증-real-codebase"
-        },
-        {
-          "depth": 3,
-          "text": "F1 — cwd .mcp.json 자동 생성",
-          "slug": "f1-cwd-mcpjson-자동-생성"
-        },
-        {
-          "depth": 3,
-          "text": "F2 — auto-prefix default on",
-          "slug": "f2-auto-prefix-default-on"
-        },
-        {
-          "depth": 2,
-          "text": "측정 결과 — sub-second cli 부담",
-          "slug": "측정-결과-sub-second-cli-부담"
-        },
-        {
-          "depth": 2,
-          "text": "🚨 새 친구션 발견",
-          "slug": "새-친구션-발견"
-        },
-        {
-          "depth": 3,
-          "text": "F5 — element kind 의 path-style slug + auto-prefix → 4단계 nested",
-          "slug": "f5-element-kind-의-path-style-slug-auto-prefix-4단계-nested"
-        },
-        {
-          "depth": 2,
-          "text": "통과 사항",
-          "slug": "통과-사항"
-        },
-        {
-          "depth": 2,
-          "text": "*진짜 외부 사용자 입장의 한계* 여전히 남음",
-          "slug": "진짜-외부-사용자-입장의-한계-여전히-남음"
-        },
-        {
-          "depth": 2,
-          "text": "Paravel-App vault 자체 정책",
-          "slug": "paravel-app-vault-자체-정책"
-        }
-      ],
-      "excerpt": "Setup: 사용자 본인 real codebase (Korean enterprise community app, React Native + Expo + FSD, 1.8 GB, 20 features) 에 npm link 로 publish 시뮬한 cli + mcp 적용. PR 165 (R15 closeout) 머지 직후 main 의 cli init (cwd .mcp.json + autoprefix default) + cli add 사용. Sanitization: codebase 이름 / company codename / specific feature names 추상화. 도",
-      "wordCount": 825,
-      "updatedAt": "2026-05-06T02:24:50.499Z",
-      "linksOut": []
-    },
-    {
       "slug": "FEATURES",
       "path": "docs/FEATURES.md",
       "title": "FEATURES — oh-my-ontology",
@@ -4158,8 +4163,8 @@
         },
         {
           "depth": 2,
-          "text": "2. Routes (8 surfaces)",
-          "slug": "2-routes-8-surfaces"
+          "text": "2. Routes (12 `[locale]`-prefixed routes)",
+          "slug": "2-routes-12-locale-prefixed-routes"
         },
         {
           "depth": 3,
@@ -4517,9 +4522,9 @@
           "slug": "8-source-of-truth-files"
         }
       ],
-      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260528 (graph DB health gate, /ontology Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke). Routes section UI detail remains a maintained product snapshot. When route behavior changes, update this file alongs",
-      "wordCount": 8448,
-      "updatedAt": "2026-05-30T04:40:58.443Z",
+      "excerpt": "Complete inventory of features users can actually use right now. Last updated: 20260531 (realtime adaptive vault polling, /docs editor saveconflict dataloss guard, freshinit starter ambiguousalias fix, findevidence relevance ranking, validatevault vault→code pathDrift, inferimports edge reconciliation). Earlier (202605",
+      "wordCount": 8538,
+      "updatedAt": "2026-05-31T09:09:36.535Z",
       "linksOut": [
         "slug",
         "project:slug",
@@ -7653,6 +7658,20 @@
             "title": "Firebase Hosting deployment guide"
           },
           {
+            "name": "dogfood-friction-2026-05-06",
+            "path": "archive/dogfood-friction-2026-05-06",
+            "type": "doc",
+            "slug": "archive/dogfood-friction-2026-05-06",
+            "title": "Dogfood friction report — external-user simulation (2026-05-06)"
+          },
+          {
+            "name": "dogfood-paravel-2026-05-06",
+            "path": "archive/dogfood-paravel-2026-05-06",
+            "type": "doc",
+            "slug": "archive/dogfood-paravel-2026-05-06",
+            "title": "Dogfood — real external codebase (sanitized, 2026-05-06)"
+          },
+          {
             "name": "LOCAL-FIRST-SYNC",
             "path": "archive/LOCAL-FIRST-SYNC",
             "type": "doc",
@@ -8360,20 +8379,6 @@
         "type": "doc",
         "slug": "DEVELOPMENT-CHECKS",
         "title": "Development Checks"
-      },
-      {
-        "name": "dogfood-friction-2026-05-06",
-        "path": "dogfood-friction-2026-05-06",
-        "type": "doc",
-        "slug": "dogfood-friction-2026-05-06",
-        "title": "Dogfood friction report — external-user simulation (2026-05-06)"
-      },
-      {
-        "name": "dogfood-paravel-2026-05-06",
-        "path": "dogfood-paravel-2026-05-06",
-        "type": "doc",
-        "slug": "dogfood-paravel-2026-05-06",
-        "title": "Dogfood — real external codebase (sanitized, 2026-05-06)"
       },
       {
         "name": "FEATURES",

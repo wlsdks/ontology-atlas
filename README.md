@@ -205,6 +205,10 @@ agent-maintained memory after that.
 | `/ontology/insights` | Kind census, hubs, relation breakdown |
 | `/topology` | Spatial graph view |
 | `/projects` | Project list from `kind: project` docs |
+| `/project/[slug]` | Project detail (inline edit when a local vault is loaded) |
+| `/project/[slug]/edit` | Full project editor |
+| `/project/new` | New project form |
+| `/project/fallback` | Static-export fallback for unknown project slugs |
 
 The public website is a static promo/download site with a read-only demo. Real
 vault editing happens in the installed macOS app after it receives permission

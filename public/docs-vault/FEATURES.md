@@ -1,7 +1,7 @@
 # FEATURES — oh-my-ontology
 
 > Complete inventory of features users can **actually use right now**.
-> Last updated: 2026-05-28 (graph DB health gate, `/ontology` Browse / Write / Query loop, Builder proof handoff role, and desktop route smoke).
+> Last updated: 2026-05-31 (real-time **adaptive** vault polling, `/docs` editor save-conflict data-loss guard, fresh-init starter ambiguous-alias fix, `find_evidence` relevance ranking, `validate_vault` vault→code `pathDrift`, `infer_imports` edge reconciliation). Earlier (2026-05-28): graph DB health gate, `/ontology` Browse / Write / Query loop, Builder proof handoff role, desktop route smoke.
 > Routes section UI detail remains a maintained product snapshot. When route
 > behavior changes, update this file alongside the PR body and CHANGELOG.
 > Update trigger: reflect immediately when surfaces are added or removed. Update alongside the PR body and CHANGELOG.
@@ -54,7 +54,7 @@ input (humans + AI agents)     parse           store              output
 
 ---
 
-## 2. Routes (8 surfaces)
+## 2. Routes (12 `[locale]`-prefixed routes)
 
 ### `/` — Smart entry
 
@@ -441,10 +441,11 @@ R14 also unified `add_concept` / CLI `add` / CLI `import` to a single per-kind f
 
 **R14 — vault live updates** (`/topology` + all pages):
 
-- **5s polling** (visible-only) — `useLocalVault` fingerprint check while tab visible
+- **Adaptive polling** (visible-only) — `useLocalVault` fingerprint check while the tab is visible; bursts to ~1.5s right after a detected change and decays to ~5s when idle, so agent / CLI writes surface fast without idle churn (generation-token poller avoids orphaned timers across hide/show)
 - **Graph diff pulse** — newly appearing slugs amber-pulse for 5s on `/topology`
 - **Toasts** — `Added: <slug>` (info) / `Edited: <slug>` (success, mtime change) on every page
-- Effect: IDE / AI agent / CLI 변경이 웹 탭 *focus 안 해도* ~5s 안에 그래프 + toast.
+- **Save-conflict guard** — if a file changed on disk between read and write, `/docs` editor save surfaces a localized conflict notice and keeps the buffer dirty instead of silently overwriting unsaved edits
+- Effect: IDE / AI agent / CLI 변경이 웹 탭 *focus 안 해도* ~1.5–5s 안에 그래프 + toast.
 
 #### Read tools (15)
 1. **list_concepts** `{ kind?, domain?, since?, summary?, limit? }` — every node, optional filters, mtime, and summary preview

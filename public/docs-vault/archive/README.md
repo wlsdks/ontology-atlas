@@ -22,3 +22,5 @@ archive 안 문서는 *역사적 맥락* 으로 남겨둘 뿐 contributor 가이
 | `LOCAL-FIRST-SYNC.md` | local-first sync 메커니즘 설계 노트. 일부는 PR #99 의 firebase dynamic import 으로 흡수됨. |
 | `OFFLINE-FIRST-UX-FLOW.md` | offline 진입 시 UX flow 초안. 현재 구현은 vault picker 기반 단순 모델. |
 | `ONTOLOGY-MODEL-V2-DRAFT.md` | V1.x → V2 ontology 모델 진화 spec. mission v2 구현이 일부 채택, 일부 폐기. |
+| `dogfood-friction-2026-05-06.md` | 2026-05-06 외부 사용자 시뮬레이션 — F1/F2 critical friction 검증, 결과는 PR #165 로 반영됨. 일회성 세션 노트. |
+| `dogfood-paravel-2026-05-06.md` | 2026-05-06 실제 React Native codebase dogfood — PR #165 fix 검증 + F5(path 스타일 element nesting) 식별. 일회성 세션 노트. |

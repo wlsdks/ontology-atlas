@@ -6,6 +6,23 @@
 
 ---
 
+## 2026-05-31 — cold-start 정리 · 실시간 폴링 · 에이전트 그래프 도구 정합
+
+자율 개선 루프가 첫-접촉(cold-start)·실시간·에이전트 사용성 레버를 한 바퀴 돌며
+다듬었다.
+
+- **fresh-init false alarm 제거** — `oh-my-ontology init`(및 웹 starter)가 3개
+  starter 파일을 모두 `example` 슬러그 꼬리로 만들어 ambiguous-alias compile
+  issue 1개를 ship → 갓 만든 빈 vault 가 첫 세션부터 "고치고 쓰라"는 false
+  alarm 을 띄웠다. starter 를 `example-domain`/`-capability`/`-element` 로
+  고유 rename 해 pristine vault 가 깨끗(0 issue)하게 출발한다.
+- **실시간 adaptive 폴링** — 로컬 vault 자동 새로고침이 고정 5s 에서 변경 직후
+  ~1.5s burst → idle 시 ~5s 로 감쇠하는 adaptive 폴링으로 바뀌어, 에이전트/CLI
+  쓰기가 더 빨리 화면에 뜬다(generation-token 으로 orphan 타이머 제거).
+- **에이전트 그래프 도구 정합** — `find_evidence` 가 관련도 score 로 best-first
+  정렬, `validate_vault` 가 vault→code 경로 drift(`pathDrift`)를 노출,
+  `infer_imports` 가 코드↔vault import 엣지를 reconcile.
+
 ## 2026-05-31 — `/docs` 편집기: 저장 충돌 시 미저장 편집 손실 수정
 
 로컬 vault 편집기에서 **저장이 디스크 충돌로 거부됐을 때 미저장 편집이 조용히

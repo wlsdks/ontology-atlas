@@ -2686,7 +2686,7 @@ describe('package contract helpers', () => {
     assert.ok(smoke.includes('directMcpVerify.stdout, /maintenance cursor'));
     assert.ok(smoke.includes('directMcpVerifyVaultFlag.stdout, /maintenance cursor'));
     assert.match(smoke, /project_scope — skipped \\\(no project node in vault\\\)/);
-    assert.match(smoke, /path — elements\\\/example → project \\\(1 hop, 1 edge\\\)/);
+    assert.match(smoke, /path — elements\\\/example-element → project \\\(1 hop, 1 edge\\\)/);
     assert.ok(smoke.includes('directMcpVerify.stdout, /compile_ontology page'));
     assert.ok(smoke.includes('directMcpVerifyVaultFlag.stdout, /compile_ontology page'));
     assert.match(smoke, /directMcpVerify\.stdout,\s*\/compile_ontology indexes/);

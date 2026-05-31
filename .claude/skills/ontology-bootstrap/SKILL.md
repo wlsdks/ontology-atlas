@@ -11,7 +11,7 @@ Two facts make a fresh `oh-my-ontology` vault feel empty:
    replaced, not extended.
 2. Hand-authoring the first 20–30 nodes is the heaviest friction in the
    onboarding path (measured: ~25 cli `add` calls in the Paravel real-codebase
-   dogfood — `docs/dogfood-paravel-2026-05-06.md`).
+   dogfood — `docs/archive/dogfood-paravel-2026-05-06.md`).
 
 This skill closes that gap with **3 MCP calls total** — one read
 (`analyze_repo_structure`) plus two batch writes (`add_concepts` for the
@@ -124,5 +124,5 @@ Five lines or fewer per reply. Show what changed (counts, slugs), not how. Do no
 
 - **`/ontology-sync`** — the *incremental* counterpart for already-grown vaults.
 - **`AGENTS.md` → "Working with the ontology while you code"** — the read-then-write discipline for non-bootstrap tasks.
-- **`docs/dogfood-paravel-2026-05-06.md`** — the friction measurement that motivated this skill (25 manual `add` calls in a real codebase).
+- **`docs/archive/dogfood-paravel-2026-05-06.md`** — the friction measurement that motivated this skill (25 manual `add` calls in a real codebase).
 - **`mcp/README.md` → "Frontmatter shape per kind"** — what fields each kind needs.
