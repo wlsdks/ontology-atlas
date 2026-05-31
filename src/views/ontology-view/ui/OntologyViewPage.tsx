@@ -1337,6 +1337,14 @@ function NodeDetailPanel({
           </span>
         </div>
       </div>
+      {/* review brief(렌즈·검토 질문·에이전트 점검 copy)도 기본 접힘 —
+          power-user 핸드오프라 항상 펼쳐둘 필요 없음. 관계 미리보기까지가
+          기본 compact 뷰. */}
+      <details className="group mt-4" data-testid="ontology-review-detail">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-md border border-[color:var(--color-border-soft)] bg-[color:var(--color-overlay-1)] px-2.5 py-2 font-mono text-[9px] uppercase tracking-[0.14em] text-[color:var(--color-text-tertiary)] transition-colors hover:text-[color:var(--color-text-primary)] [&::-webkit-details-marker]:hidden">
+          <span>{t('reviewDetailDisclosure')}</span>
+          <span aria-hidden className="transition-transform group-open:rotate-180">▾</span>
+        </summary>
       <div
         className="mt-4 rounded-lg border border-[color:rgba(94,106,210,0.24)] bg-[color:rgba(94,106,210,0.07)] px-3 py-3"
         data-testid="ontology-review-brief"
@@ -1481,6 +1489,7 @@ function NodeDetailPanel({
           reachabilityDepth={reachabilityDepth}
         />
       ) : null}
+      </details>
 
       {/* 우측 패널 정보 과다 완화 — 가장 키 큰 섹션(도달성·ego 그래프·관련
           문서)을 기본 접힌 disclosure 로. 헤더·요약·핸드오프·관계 미리보기는

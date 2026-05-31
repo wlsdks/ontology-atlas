@@ -2626,6 +2626,7 @@
       "relations": "Relations {count}",
       "relationsHopBreakdown": "· 1-hop {one} · 2-hop {two}",
       "graphDetailDisclosure": "Graph view · reachability · related docs",
+      "reviewDetailDisclosure": "Review lens · agent checks",
       "reachabilityTitle": "Reachability",
       "reachabilityMeta": "{depth}-hop {direction}",
       "agentContextTitle": "Agent context",
