@@ -110,8 +110,11 @@ Track A 순서 (read-only/local/charter-safe, mcp/ 또는 client 격리):
 1. ✅ **DONE (commit d2bea40d)** `infer_imports` edge reconciliation. 4-bucket set-diff, alias-정규화,
    reconcile:false 토글. 적대 게이트가 via 버그(compiler 는 'dependencies' emit, 필터는 'depends_on')를
    잡아 수정 + compiler-grounded anti-drift 테스트 추가. dogfood inVaultNotInCode 0→15 검증.
-2. ← **다음** `detect_drift` MCP tool+CLI (audit-vault-paths 로직을 shared module 로 추출, read-only).
-3. git-aware `/ontology-sync` (1+2 의존 — 먼저 1,2 구축).
+2. ✅ **DONE (commit 99bf424c)** `detect_drift`. audit-vault-paths 로직을 공유 모듈 `detect-drift.mjs` 로
+   추출 + script 가 import(single source). agent surface = validate_vault `pathDrift` 섹션(새 tool 아님 —
+   23-count ripple 회피, shared validate.mjs 불변). 3-critic 게이트 0/3 refute.
+3. ← **다음** git-aware `/ontology-sync` (1+2 둘 다 done → 진행 가능). pure fn: `git diff --name-status`
+   → path index 로 owning vault 노드 매핑 + reconcile 후보. skill + read-tool 만, write 는 confirmed.
 4. `find_evidence` relevance ranking (additive score, shape 불변).
 5. per-doc live-staleness banner (P2). 6. adaptive web polling (P2). 7. incremental fingerprint (P2).
 8. starter templates (npm publish 후).
